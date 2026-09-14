@@ -180,6 +180,12 @@ class Alignment:
         while preserving the layout entity and its mandatory zero-length
         terminator (which the layout functions then update in place).
 
+        NOTE: this duplicates `ifcopenshell.api.alignment.clear_layout_segments`,
+        which does the same thing natively. New call sites (e.g. the segment
+        table's Apply operators) should prefer the native function directly;
+        this copy is kept only because the existing PI/PVI draw-tool call
+        sites already depend on its exact behavior and haven't been migrated.
+
         Args:
             layout: The IFC layout entity (IfcAlignmentHorizontal/Vertical/Cant)
         """
@@ -246,6 +252,92 @@ class Alignment:
             return abs(dp.HorizontalLength) < 1e-6
 
         return False
+
+    @classmethod
+    def get_real_layout_segments(cls, layout: "ifcopenshell.entity_instance") -> list:
+        """All of `layout`'s real (non-terminator) IfcAlignmentSegments, in order.
+
+        Centralizes the "skip the mandatory zero-length terminator" filter
+        (via is_zero_length_segment) that both the read-only segment panel and
+        the segment-table editing feature's "populate from IFC" step need to
+        agree on identically.
+
+        Args:
+            layout: The IFC layout entity (IfcAlignmentHorizontal/Vertical/Cant)
+        """
+        segments = []
+        for rel in getattr(layout, "IsNestedBy", []) or []:
+            for obj in rel.RelatedObjects or []:
+                if obj.is_a("IfcAlignmentSegment") and not cls.is_zero_length_segment(obj):
+                    segments.append(obj)
+        return segments
+
+    # =========================================================================
+    # Segment Table Editing — Validation
+    # =========================================================================
+
+    @classmethod
+    def validate_horizontal_segment_rows(cls, rows) -> list[str]:
+        """Checks staged HorizontalSegmentRow entries before an Apply commits
+        them to IFC. Returns a list of human-readable error strings; empty
+        means the rows are safe to rebuild from.
+
+        Deliberately does NOT guard against a spiral-family row (CLOTHOID/
+        CUBIC/HELMERTCURVE/BLOSSCURVE/COSINECURVE/SINECURVE) with
+        start_radius == end_radius, even though that reliably crashes the
+        geometry kernel ("Only finite values are allowed" -- it divides by a
+        curvature-change factor that's exactly zero in that case). Per the
+        user (2026-09-14): the kernel bug should be left to crash rather than
+        silently avoided here, so it stays visible as a reminder to fix it at
+        the source instead of being masked by a UI-side workaround.
+        """
+        errors = []
+        if len(rows) == 0:
+            errors.append("Add at least one segment before applying.")
+        for i, row in enumerate(rows):
+            label = f"Segment {i + 1}"
+            if row.predefined_type == "UNSUPPORTED":
+                errors.append(f"{label}: unsupported type ({row.original_predefined_type}) — remove or fix it.")
+                continue
+            if row.length <= 0.0:
+                errors.append(f"{label}: length must be greater than zero.")
+            if row.predefined_type == "CIRCULARARC" and row.start_radius == 0.0:
+                errors.append(f"{label}: a circular arc needs a non-zero radius.")
+        return errors
+
+    @classmethod
+    def validate_vertical_segment_rows(cls, rows) -> list[str]:
+        """Checks staged VerticalSegmentRow entries before an Apply commits
+        them to IFC. Returns a list of human-readable error strings; empty
+        means the rows are safe to rebuild from."""
+        errors = []
+        if len(rows) == 0:
+            errors.append("Add at least one segment before applying.")
+        for i, row in enumerate(rows):
+            label = f"Segment {i + 1}"
+            if row.predefined_type == "UNSUPPORTED":
+                errors.append(f"{label}: unsupported type ({row.original_predefined_type}) — remove or fix it.")
+                continue
+            if row.h_length <= 0.0:
+                errors.append(f"{label}: length must be greater than zero.")
+        return errors
+
+    @classmethod
+    def validate_cant_segment_rows(cls, rows) -> list[str]:
+        """Checks staged CantSegmentRow entries before an Apply commits them
+        to IFC. Returns a list of human-readable error strings; empty means
+        the rows are safe to rebuild from."""
+        errors = []
+        if len(rows) == 0:
+            errors.append("Add at least one segment before applying.")
+        for i, row in enumerate(rows):
+            label = f"Segment {i + 1}"
+            if row.predefined_type == "UNSUPPORTED":
+                errors.append(f"{label}: unsupported type ({row.original_predefined_type}) — remove or fix it.")
+                continue
+            if row.h_length <= 0.0:
+                errors.append(f"{label}: length must be greater than zero.")
+        return errors
 
     # =========================================================================
     # Blender Object Creation
