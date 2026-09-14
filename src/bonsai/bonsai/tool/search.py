@@ -79,6 +79,28 @@ class Search(bonsai.core.tool.Search):
                 else:
                     ifc_filter.filter_mode = "ADD"
 
+    @classmethod
+    def export_filter_structure(
+        cls,
+        filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup],
+    ) -> list[list[dict[str, Any]]]:
+        filter_structure: list[list[dict[str, Any]]] = []
+        for filter_group in filter_groups:
+            group_data: list[dict[str, Any]] = []
+            for ifc_filter in filter_group.filters:
+                group_data.append(
+                    {
+                        "type": ifc_filter.type,
+                        "name": ifc_filter.name,
+                        "value": ifc_filter.value,
+                        "pset": ifc_filter.pset,
+                        "comparison": ifc_filter.comparison,
+                        "filter_mode": ifc_filter.filter_mode,
+                    }
+                )
+            filter_structure.append(group_data)
+        return filter_structure
+
     FilterModule = Union[Literal["search", "csv", "diff", "drawing_include", "drawing_exclude"], str]
 
     @classmethod
