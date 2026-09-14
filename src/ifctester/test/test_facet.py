@@ -1165,6 +1165,13 @@ class TestProperty:
         run("Any matching value in a table property will pass 2/3", facet=facet, inst=element, expected=True)
         facet = Property(propertySet="Foo_Bar", baseName="Foo", value="Y", dataType="IFCLABEL")
         run("Any matching value in a table property will pass 3/3", facet=facet, inst=element, expected=False)
+        facet = Property(propertySet="Foo_Bar", baseName="Foo")
+        run(
+            "A table property with values passes without a dataType constraint",
+            facet=facet,
+            inst=element,
+            expected=True,
+        )
 
         ifc = self.setup_ifc()
         element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")

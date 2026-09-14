@@ -838,25 +838,30 @@ class Property(Facet):
                             if not column_values:
                                 continue
                             data_type = column_values[0].is_a()
-                            if self.dataType and data_type.lower() == self.dataType.lower():
-                                column_values = [v.wrappedValue for v in column_values]
-                                unit = units[f"{attribute}Unit"]
-                                if unit:
-                                    column_values = [
-                                        ifcopenshell.util.unit.convert(
-                                            v,
-                                            getattr(unit, "Prefix", None),
-                                            unit.Name,
-                                            None,
-                                            ifcopenshell.util.unit.si_type_names[unit.UnitType],
-                                        )
-                                        for v in column_values
-                                    ]
-                                values.extend(column_values)
+                            # A dataType constraint only keeps the matching column, not the whole property
+                            if self.dataType and data_type.lower() != self.dataType.lower():
+                                continue
+                            column_values = [v.wrappedValue for v in column_values]
+                            unit = units[f"{attribute}Unit"]
+                            if unit:
+                                column_values = [
+                                    ifcopenshell.util.unit.convert(
+                                        v,
+                                        getattr(unit, "Prefix", None),
+                                        unit.Name,
+                                        None,
+                                        ifcopenshell.util.unit.si_type_names[unit.UnitType],
+                                    )
+                                    for v in column_values
+                                ]
+                            values.extend(column_values)
                         if not values:
                             is_pass = False
-                            assert data_type is not None, prop_entity
-                            reason = {"type": "DATATYPE", "actual": data_type, "dataType": self.dataType}
+                            reason = (
+                                {"type": "DATATYPE", "actual": data_type, "dataType": self.dataType}
+                                if self.dataType
+                                else {"type": "NOVALUE"}
+                            )
                             break
                         props[pset_name][prop_entity.Name] = values
                     else:
