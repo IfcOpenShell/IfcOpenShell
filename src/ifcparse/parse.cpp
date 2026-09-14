@@ -342,7 +342,9 @@ token spf_lexer<Reader>::next() {
             if (remaining >= 8) {
                 uint64_t x = stream->peek_u64();
                 if ((ttype == token::Token_NONE ? SWAR::has_special_char<false>(x) : SWAR::has_special_char<true>(x)) == 0) {
-                    str.append(reinterpret_cast<const char*>(&x), 8);
+                    if (Policy::keep_keywords || ttype == token::Token_IDENTIFIER) {
+                        str.append(reinterpret_cast<const char*>(&x), 8);
+                    }
                     stream->increment(8);
                     remaining -= 8;
                     continue;
@@ -351,7 +353,9 @@ token spf_lexer<Reader>::next() {
             if (remaining >= 4) {
                 uint32_t x = stream->peek_u32();
                 if ((ttype == token::Token_NONE ? SWAR::has_special_char<false>(x) : SWAR::has_special_char<true>(x)) == 0) {
-                    str.append(reinterpret_cast<const char*>(&x), 4);
+                    if (Policy::keep_keywords || ttype == token::Token_IDENTIFIER) {
+                        str.append(reinterpret_cast<const char*>(&x), 4);
+                    }
                     stream->increment(4);
                     remaining -= 4;
                     continue;
@@ -372,7 +376,7 @@ token spf_lexer<Reader>::next() {
                 if ((ttype == token::Token_BINARY && character == '"') ||
                     (ttype == token::Token_ENUMERATION && character == '.')) {
                     // Skip
-                } else {
+                } else if (Policy::keep_keywords || ttype == token::Token_IDENTIFIER) {
                     str.push_back(character);
                 }
             }
@@ -383,6 +387,12 @@ token spf_lexer<Reader>::next() {
         if constexpr (!Policy::decode_values) {
             // Only names and keywords are read; everything else is a literal
             // whose position is all the caller wants.
+            if constexpr (!Policy::keep_keywords) {
+                if (ttype != token::Token_IDENTIFIER) {
+                    pop_pool_entry();
+                    return token(pos, token::Token_LITERAL);
+                }
+            }
             if (ttype == token::Token_IDENTIFIER) {
                 int int_val;
                 if (!parse_num_(str.c_str(), str.size(), int_val)) {
@@ -443,7 +453,8 @@ template class IFC_PARSE_API ifcopenshell::spf_lexer<file_reader<mmap_impl>>;
 
 #define IFC_INSTANTIATE_LEXER_NEXT(Reader) \
     template IFC_PARSE_API token ifcopenshell::spf_lexer<Reader>::next<ifcopenshell::full_tokens>(); \
-    template IFC_PARSE_API token ifcopenshell::spf_lexer<Reader>::next<ifcopenshell::index_tokens>();
+    template IFC_PARSE_API token ifcopenshell::spf_lexer<Reader>::next<ifcopenshell::index_tokens>(); \
+    template IFC_PARSE_API token ifcopenshell::spf_lexer<Reader>::next<ifcopenshell::attribute_tokens>();
 IFC_INSTANTIATE_LEXER_NEXT(file_reader<full_buffer_impl>)
 IFC_INSTANTIATE_LEXER_NEXT(file_reader<paged_file_impl>)
 IFC_INSTANTIATE_LEXER_NEXT(file_reader<pushed_sequential_impl>)
@@ -2789,7 +2800,7 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
             bool first_value = true;
             size_t guid_begin = 0, guid_end = 0;
             while (depth > 0) {
-                token t = lexer.next<index_tokens>();
+                token t = lexer.next<attribute_tokens>();
                 if (!t) {
                     failure = "file ends inside an instance";
                     failure_offset = attributes_offset;
@@ -2818,7 +2829,7 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
                 }
                 lexer.reset_pool();
             }
-            if (!lexer.next<index_tokens>().is_operator(';')) {
+            if (!lexer.next<attribute_tokens>().is_operator(';')) {
                 failure = "expected ; after )";
                 failure_offset = reader.tell();
                 return false;
