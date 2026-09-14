@@ -24,7 +24,7 @@ def assign_survey_point(annotation: entity_instance, survey_point: entity_instan
     """
     Assigns a coordinate point to a survey point annotation
 
-    :param annotaton: The survey point annotation
+    :param annotation: The survey point annotation
     :param survey_point: The survey point
     :return: None
 

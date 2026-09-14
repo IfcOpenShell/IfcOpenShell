@@ -37,7 +37,7 @@ def create_by_pi_method(
     If vpoints and lengths are omitted, only a horizontal alignment is created.
 
     :param name: value for Name attribute
-    :param points: (X,Y) pairs denoting the location of the horizontal PIs, including start and end
+    :param hpoints: (X,Y) pairs denoting the location of the horizontal PIs, including start and end
     :param radii: radii values to use for transition
     :param vpoints: (distance_along, Z_height) pairs denoting the location of the vertical PIs, including start and end.
     :param lengths: parabolic vertical curve horizontal length values to use for transition

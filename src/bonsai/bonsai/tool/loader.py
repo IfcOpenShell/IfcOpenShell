@@ -519,7 +519,7 @@ class Loader(bonsai.core.tool.Loader):
 
         Method doesn't support elements with openings, see #5405.
 
-        :param representation: IfcShapeRepresentation or IfcRepresentationItem of any type.
+        :param representation_or_item: IfcShapeRepresentation or IfcRepresentationItem of any type.
             Representation may not have an indexed colour map,
             method will automatically check if it does and will skip it otherwise.
 
