@@ -848,18 +848,29 @@ def install_qt6(
         mark_installation(QT6_INSTALL_DIR, build_cfg)
         return
 
-    if pythonhome is not None:
-        AQT_PYTHON = str(pythonhome / "python.exe")
+    def install_via_pip(python_exe: str) -> tuple[str, ...]:
+        run_streamed(python_exe, "-m", "pip", "install", "--upgrade", "aqtinstall")
+        return (python_exe, "-m", "aqt")
+
+    # Prefer uv when available: uvx runs aqtinstall in an ephemeral env, avoiding polluting
+    # any Python installation (isolated or global) with aqtinstall and its dependencies.
+    if uv_path := shutil.which("uv"):
+        logger.info(f"Using uv ('{uv_path}') to run aqtinstall in an ephemeral env.")
+        AQT_CMD = ("uvx", "--from", "aqtinstall", "aqt")
+    elif pythonhome is not None:
+        AQT_CMD = install_via_pip(str(pythonhome / "python.exe"))
     else:
         AQT_PYTHON = require_command("python")
-
-    run_streamed(AQT_PYTHON, "-m", "pip", "install", "--upgrade", "aqtinstall")
+        logger.warning(
+            f"uv is not available and IFCOS_INSTALL_PYTHON is disabled, falling back to '{AQT_PYTHON}' from PATH "
+            "to install aqtinstall. This will install aqtinstall and its dependencies into that global/system "
+            "Python instead of an isolated one."
+        )
+        AQT_CMD = install_via_pip(AQT_PYTHON)
 
     def aqt_install_qt(arch: str, output_dir: Path) -> None:
         run_streamed(
-            AQT_PYTHON,
-            "-m",
-            "aqt",
+            *AQT_CMD,
             "install-qt",
             "windows",
             "desktop",
