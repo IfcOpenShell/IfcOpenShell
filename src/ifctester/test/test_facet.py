@@ -1244,6 +1244,21 @@ class TestProperty:
         run("All matching property sets must satisfy requirements 3/3", facet=facet, inst=element, expected=True)
 
         ifc = self.setup_ifc()
+        restriction = Restriction(options={"pattern": "Foo_.*"})
+        facet = Property(propertySet=restriction, baseName="Foo", value="Bar", cardinality="optional")
+        element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(ifc, product=element, name="Foo_Missing")
+        run("An optional property absent from every matching pset passes", facet=facet, inst=element, expected=True)
+        pset = ifcopenshell.api.pset.add_pset(ifc, product=element, name="Foo_Bad")
+        ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"Foo": "NotBar"})
+        run(
+            "A mismatched value in one matching pset is not masked by another pset lacking the property",
+            facet=facet,
+            inst=element,
+            expected=False,
+        )
+
+        ifc = self.setup_ifc()
         restriction = Restriction(options={"pattern": "Foo.*"})
         facet = Property(propertySet="Foo_Bar", baseName=restriction, value="x", dataType="IFCLABEL")
         element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
