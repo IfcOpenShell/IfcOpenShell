@@ -44,6 +44,7 @@ classes = (
     operator.SetElementVisibility,
     operator.ToggleContainerElement,
     operator.ToggleGrids,
+    operator.ToggleGridsSelectability,
     operator.ToggleSpatialElements,
     prop.Element,
     prop.BIMObjectSpatialProperties,

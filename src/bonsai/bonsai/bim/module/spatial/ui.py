@@ -261,6 +261,8 @@ class BIM_PT_grids(Panel):
         row.label(text="")  # empty text occupies the left of the row
         icon = "HIDE_OFF" if props.is_visible else "HIDE_ON"
         row.prop(props, "is_visible", text="", icon=icon)
+        icon = "RESTRICT_SELECT_OFF" if props.is_selectable else "RESTRICT_SELECT_ON"
+        row.prop(props, "is_selectable", text="", icon=icon)
         icon = "VIEW_LOCKED" if props.is_locked else "VIEW_UNLOCKED"
         row.prop(props, "is_locked", text="", icon=icon)
 
