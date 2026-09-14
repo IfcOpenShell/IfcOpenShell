@@ -217,12 +217,7 @@ def build() -> None:
     for python_version in PYTHON_VERSIONS:
         os.environ["PYTHON_VERSION"] = python_version
         print(f"Building for Python {python_version}...")
-        subprocess.run(
-            [sys.executable, str(REPO_WIN / "build-deps.py"), build_generator(), "Release"],
-            check=True,
-            text=True,
-            input="y\n",
-        )
+        run([sys.executable, str(REPO_WIN / "build-deps.py"), build_generator(), "Release", "-y"])
         OLD_ADD_COMMIT_SHA = set_env("ADD_COMMIT_SHA", "ON")
         run(
             [

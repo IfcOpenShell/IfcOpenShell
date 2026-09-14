@@ -80,6 +80,7 @@ class Args(NamedTuple):
     num_build_procs: int
     install_python: bool
     install_qt6: bool
+    yes: bool
 
 
 def print_build_config(
@@ -229,6 +230,12 @@ def parse_args() -> Args:
             "(default: True)"
         ),
     )
+    parser.add_argument(
+        "-y",
+        "--yes",
+        action="store_true",
+        help="Skip the confirmation prompt before proceeding with the build.",
+    )
     args = parser.parse_args()
     logger.setLevel(args.log_level)
 
@@ -257,6 +264,7 @@ def parse_args() -> Args:
         num_build_procs=num_build_procs,
         install_python=install_python,
         install_qt6=install_qt6,
+        yes=args.yes,
     )
 
 
@@ -316,13 +324,13 @@ def main() -> None:
     )
 
     logger.warning("Warning: You will need roughly 8 GB of disk space to proceed.\n")
-    logger.info(
-        "If you are not ready with the above: type 'n' in the prompt below. Build proceeds on all other inputs!"
-    )
-    # TODO: add a `-y` option to skip this prompt.
-    do_continue = input("> ")
-    if do_continue == "n":
-        sys.exit(0)
+    if not ARGS.yes:
+        logger.info(
+            "If you are not ready with the above: type 'n' in the prompt below. Build proceeds on all other inputs!"
+        )
+        do_continue = input("> ")
+        if do_continue == "n":
+            sys.exit(0)
 
     START_TIME = datetime.now().replace(microsecond=0)
     logger.info(f"Build started at {START_TIME}.")
