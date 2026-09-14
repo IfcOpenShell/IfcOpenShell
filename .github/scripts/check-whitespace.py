@@ -296,6 +296,7 @@ PATTERNS = (
     "*.cmake",
     "*/CMakeLists.txt",
     "*.yml",
+    "*.yaml",
     "*.bat",
     "*.cmd",
     "*.sh",
