@@ -611,10 +611,10 @@ def _generate_alignment_segments(context, alignment, hpoints, radii):
     aren't IFC-linked, so tool.Alignment.get_active_alignment() can't find
     the alignment from them.
 
-    Uses layout_horizontal_alignment_by_pi_method for now (circular curves
-    only). Once spiral segments are needed this has to become genuinely
-    one-segment-at-a-time authoring via create_layout_segment(), since that
-    API only ever emits LINE/CIRCULARARC — see REQUIREMENTS.md §2 step 7.
+    Uses layout_horizontal_alignment_by_pi_method, which now also accepts
+    (radius, entry_length, exit_length) tuples for clothoid spiral-circular,
+    circular-spiral, and spiral-circular-spiral PIs alongside plain-radius
+    circular curves — see solve_horizontal_alignment_by_pi_method.
     """
     ifc = tool.Ifc.get()
 
@@ -638,7 +638,7 @@ def _generate_alignment_segments(context, alignment, hpoints, radii):
 
     tool.Alignment.refresh_alignment_representation_object(alignment)
 
-    n_curved = sum(1 for r in radii if r)
+    n_curved = sum(1 for r in radii if (r[0] if isinstance(r, tuple) else r))
     return True, f"Drew alignment '{alignment.Name}' with {len(hpoints)} PIs ({n_curved} curved)"
 
 
@@ -707,6 +707,43 @@ def _is_interior_pi_marker(obj) -> bool:
     return obj.bonsai_pi_curve_marker.is_pi_marker
 
 
+def _pi_curve_radii_entry(marker):
+    """One radii[] element (see solve_horizontal_alignment_by_pi_method) for a PI marker.
+
+    TANGENT stays a plain 0.0 (no curve). CIRCULAR stays a plain radius float
+    for backward compatibility. The three spiral curve types become a
+    (radius, entry_length, exit_length) tuple with whichever length(s) don't
+    apply left at 0.0 — only the clothoid spiral family is supported, per
+    solve_horizontal_alignment_by_pi_method.
+    """
+    curve_type = marker.curve_type
+    if curve_type == "TANGENT":
+        return 0.0
+    if curve_type == "CIRCULAR":
+        return marker.radius
+    if curve_type == "SPIRAL_CIRCULAR":
+        return (marker.radius, marker.spiral_in_length, 0.0)
+    if curve_type == "CIRCULAR_SPIRAL":
+        return (marker.radius, 0.0, marker.spiral_out_length)
+    # SPIRAL_CIRCULAR_SPIRAL
+    return (marker.radius, marker.spiral_in_length, marker.spiral_out_length)
+
+
+def _pi_curve_marker_label(marker) -> str:
+    """Short label for a PI marker's name, reflecting its curve settings."""
+    curve_type = marker.curve_type
+    if curve_type == "TANGENT":
+        return "tangent"
+    if curve_type == "CIRCULAR":
+        return f"R={marker.radius:.2f}"
+    if curve_type == "SPIRAL_CIRCULAR":
+        return f"R={marker.radius:.2f}, Lin={marker.spiral_in_length:.2f}"
+    if curve_type == "CIRCULAR_SPIRAL":
+        return f"R={marker.radius:.2f}, Lout={marker.spiral_out_length:.2f}"
+    # SPIRAL_CIRCULAR_SPIRAL
+    return f"R={marker.radius:.2f}, Lin={marker.spiral_in_length:.2f}, Lout={marker.spiral_out_length:.2f}"
+
+
 class ALIGN_OT_apply_pi_curve(Operator, tool.Ifc.Operator):
     """Regenerate the alignment using the active PI marker's curve settings.
 
@@ -753,19 +790,12 @@ class ALIGN_OT_apply_pi_curve(Operator, tool.Ifc.Operator):
             + [_world_point_to_local_ifc(ifc, unit_scale, m.location) for m in interior_markers]
             + [end]
         )
-        radii = [
-            (m.bonsai_pi_curve_marker.radius if m.bonsai_pi_curve_marker.curve_type == "CIRCULAR" else 0.0)
-            for m in interior_markers
-        ]
+        radii = [_pi_curve_radii_entry(m.bonsai_pi_curve_marker) for m in interior_markers]
 
         ok, message = _generate_alignment_segments(context, alignment, hpoints, radii)
 
         marker = marker_obj.bonsai_pi_curve_marker
-        marker_obj.name = (
-            f"PI {marker.pi_index} (R={marker.radius:.2f})"
-            if marker.curve_type == "CIRCULAR"
-            else f"PI {marker.pi_index} (tangent)"
-        )
+        marker_obj.name = f"PI {marker.pi_index} ({_pi_curve_marker_label(marker)})"
         # _generate_alignment_segments() replaces every IfcAlignmentSegment
         # with a new one, so a previously-highlighted segment's id is gone —
         # refreshing it would silently keep showing the old, now-stale
@@ -822,7 +852,9 @@ class ALIGN_OT_draw_horizontal_alignment(bpy.types.Operator, PolylineOperator, t
     immediately generates the alignment with every PI a sharp corner. If
     there are interior PIs, a marker empty is left at each one — select a
     marker and use "Apply Curve" (see the Alignments tab panel) to give it a
-    circular curve and regenerate. ESC cancels without creating anything.
+    circular arc, a clothoid spiral-circular/circular-spiral transition, or a
+    symmetric spiral-circular-spiral, and regenerate. ESC cancels without
+    creating anything.
 
     Numeric Distance/Angle input is available via the D/A keys, same as the
     rest of Bonsai's polyline tools.
