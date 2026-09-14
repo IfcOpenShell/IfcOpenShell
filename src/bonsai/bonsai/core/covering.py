@@ -49,7 +49,7 @@ def add_instance_flooring_covering_from_cursor(
     space_polygon = spatial.get_space_polygon_from_context_visible_objects(x, y)
 
     if isinstance(space_polygon, str):
-        return
+        raise NoPolygonFound(space_polygon)
 
     obj = spatial.create_object("Covering")
     spatial.set_obj_origin_to_cursor_position_and_zero_elevation(obj)
@@ -84,7 +84,7 @@ def add_instance_ceiling_covering_from_cursor(
     space_polygon = spatial.get_space_polygon_from_context_visible_objects(x, y)
 
     if isinstance(space_polygon, str):
-        return
+        raise NoPolygonFound(space_polygon)
 
     obj = spatial.create_object("Covering")
     spatial.set_obj_origin_to_cursor_position_and_zero_elevation(obj)
@@ -109,7 +109,7 @@ def regen_selected_covering_object(root: type[tool.Root], spatial: type[tool.Spa
     space_polygon = spatial.get_space_polygon_from_context_visible_objects(x, y)
 
     if isinstance(space_polygon, str):
-        return
+        raise NoPolygonFound(space_polygon)
 
     spatial.set_covering_representation_from_polygon(active_obj, space_polygon, polygon_is_si=True)
 
@@ -152,4 +152,8 @@ def add_instance_ceiling_coverings_from_walls(
 
 
 class NoDefaultContainer(Exception):
+    pass
+
+
+class NoPolygonFound(Exception):
     pass
