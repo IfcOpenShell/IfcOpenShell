@@ -2708,6 +2708,66 @@ class RemoveDrawing(bpy.types.Operator, tool.Ifc.Operator):
             props.should_draw_decorations = False
 
 
+class OverrideDrawingStyles(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.override_drawing_styles"
+    bl_label = "Override Drawing Styles"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = (
+        "Overwrite the currently selected drawing's Stylesheet, Markers, Symbols, Patterns,\n"
+        "Shading Styles and Current Shading Style with the current default drawing style paths\n"
+        "(Bonsai preferences, or the project's BBIM_Documentation overrides if set).\n\n"
+        "SHIFT+CLICK to override all checked drawings in the Drawings list"
+    )
+
+    drawing: bpy.props.IntProperty()
+    override_all: bpy.props.BoolProperty(name="Override All", default=False, options={"SKIP_SAVE"})
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Drawing.get_active_drawing_item():
+            cls.poll_message_set("No drawing selected.")
+            return False
+        return True
+
+    def invoke(self, context, event):
+        # override all checked drawings on shift+click
+        # make sure to use SKIP_SAVE on property, otherwise it might get stuck
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.override_all = True
+        return self.execute(context)
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        props = tool.Drawing.get_document_props()
+        if self.override_all:
+            drawings = [
+                tool.Ifc.get().by_id(d.ifc_definition_id) for d in props.drawings if d.is_drawing and d.is_selected
+            ]
+        else:
+            if not self.drawing:
+                self.report({"ERROR"}, "No drawing selected")
+                return {"CANCELLED"}
+            drawings = [tool.Ifc.get().by_id(self.drawing)]
+
+        properties: dict[str, Union[str, None]] = {
+            resource: tool.Drawing.get_default_drawing_resource_path(resource)
+            for resource in tool.Drawing.RESOURCE_TYPES
+        }
+        properties["CurrentShadingStyle"] = tool.Drawing.get_default_shading_style()
+
+        for drawing in drawings:
+            pset = tool.Pset.get_element_pset(drawing, "EPset_Drawing")
+            if pset is None:
+                pset = ifcopenshell.api.pset.add_pset(ifc_file, product=drawing, name="EPset_Drawing")
+            # NOTE: edit_pset mutates the properties dict it's given (it deletes keys as it
+            # updates existing properties), so each drawing needs its own copy.
+            ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties=dict(properties))
+
+        bonsai.bim.handler.refresh_ui_data()
+        self.report({"INFO"}, f"Overrode drawing styles for {len(drawings)} drawing(s).")
+        return {"FINISHED"}
+
+
 class DrawingStyleJson(TypedDict):
     render_type: "RenderType"
     raster_style: dict[str, Any]
