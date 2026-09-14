@@ -515,7 +515,7 @@ class PartOf(Facet):
                     if self.predefinedType:
                         predefined_type = ifcopenshell.util.element.get_predefined_type(parent)
                         ancestors[-1] += f".{predefined_type}"
-                        if predefined_type == self.predefinedType:
+                        if self.predefined_type_matches(parent):
                             is_pass = True
                     else:
                         is_pass = True
@@ -537,7 +537,7 @@ class PartOf(Facet):
                         if self.predefinedType:
                             predefined_type = ifcopenshell.util.element.get_predefined_type(aggregate)
                             ancestors[-1] += f".{predefined_type}"
-                            if predefined_type == self.predefinedType:
+                            if self.predefined_type_matches(aggregate):
                                 is_pass = True
                         else:
                             is_pass = True
@@ -560,7 +560,7 @@ class PartOf(Facet):
                     reason = {"type": "ENTITY", "actual": group.is_a().upper()}
                 if self.predefinedType:
                     predefined_type = ifcopenshell.util.element.get_predefined_type(group)
-                    if predefined_type != self.predefinedType:
+                    if not self.predefined_type_matches(group):
                         is_pass = False
                         reason = {"type": "PREDEFINEDTYPE", "actual": predefined_type}
         elif self.relation == "IFCRELCONTAINEDINSPATIALSTRUCTURE":
@@ -574,7 +574,7 @@ class PartOf(Facet):
                     reason = {"type": "ENTITY", "actual": container.is_a().upper()}
                 if is_pass and self.predefinedType:
                     predefined_type = ifcopenshell.util.element.get_predefined_type(container)
-                    if predefined_type != self.predefinedType:
+                    if not self.predefined_type_matches(container):
                         is_pass = False
                         reason = {"type": "PREDEFINEDTYPE", "actual": predefined_type}
         elif self.relation == "IFCRELNESTS":
@@ -591,7 +591,7 @@ class PartOf(Facet):
                         if self.predefinedType:
                             predefined_type = ifcopenshell.util.element.get_predefined_type(nest)
                             ancestors[-1] += f".{predefined_type}"
-                            if predefined_type == self.predefinedType:
+                            if self.predefined_type_matches(nest):
                                 is_pass = True
                         else:
                             is_pass = True
@@ -616,7 +616,7 @@ class PartOf(Facet):
                     reason = {"type": "ENTITY", "actual": building_element.is_a().upper()}
                 if is_pass and self.predefinedType:
                     predefined_type = ifcopenshell.util.element.get_predefined_type(building_element)
-                    if predefined_type != self.predefinedType:
+                    if not self.predefined_type_matches(building_element):
                         is_pass = False
                         reason = {"type": "PREDEFINEDTYPE", "actual": predefined_type}
         else:
@@ -634,6 +634,16 @@ class PartOf(Facet):
                     parent = rel.RelatingGroup
                     break
         return parent
+
+    def predefined_type_matches(self, element: ifcopenshell.entity_instance) -> bool:
+        # get_predefined_type() never returns the literal "USERDEFINED": for a
+        # userdefined element it substitutes the custom ObjectType (or
+        # equivalent) text instead. Comparing that text against the literal
+        # "USERDEFINED" would always be false, wrongly failing a required
+        # requirement and wrongly passing a prohibited one.
+        if self.predefinedType == "USERDEFINED":
+            return ifcopenshell.util.element.is_userdefined_type(element)
+        return ifcopenshell.util.element.get_predefined_type(element) == self.predefinedType
 
 
 class Property(Facet):
