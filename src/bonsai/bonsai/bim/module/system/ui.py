@@ -198,12 +198,13 @@ class BIM_PT_ports(Panel):
                 op = cols[1].operator("bim.cycle_flow_direction", text="", icon=flow_direction_icon, emboss=True)
                 op.port_id = port_data["id"]
 
+            size_suffix = f" ({port_data['size_label']})" if port_data["size_label"] else ""
             if port_data["port_obj_name"]:
                 cols[2].operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = port_data["id"]
-                cols[3].label(text=port_data["port_obj_name"])
+                cols[3].label(text=port_data["port_obj_name"] + size_suffix)
             else:
                 cols[2].label(text="", icon="HIDE_ON")
-                cols[3].label(text="Port is hidden")
+                cols[3].label(text="Port is hidden" + size_suffix)
 
             if port_data["connected_obj_name"]:
                 connected_obj = bpy.data.objects[port_data["connected_obj_name"]]
@@ -294,6 +295,14 @@ class BIM_PT_port(Panel):
         row.operator("bim.remove_port", icon="X", text="")
 
         element = tool.Ifc.get_entity(context.active_object)
+
+        size_label = tool.System.get_port_size_label(element)
+        if size_label:
+            row = layout.row(align=True)
+            row.label(text=f"Size: {size_label}", icon="DRIVER_DISTANCE")
+
+        row = layout.row(align=True)
+        row.operator("bim.mep_connect_ports", icon="TRACKING")
 
         row = layout.row(align=True)
         cols = [row.column(align=True) for i in range(10)]

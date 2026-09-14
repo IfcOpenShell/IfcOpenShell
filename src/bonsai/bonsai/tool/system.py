@@ -25,10 +25,12 @@ from typing import TYPE_CHECKING, Any, Optional, Union
 
 import bpy
 import ifcopenshell.api.geometry
+import ifcopenshell.api.pset
 import ifcopenshell.api.system
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.system
+import ifcopenshell.util.unit
 from mathutils import Matrix, Vector
 
 import bonsai.bim.helper
@@ -95,6 +97,7 @@ class System(bonsai.core.tool.System):
             port.FlowDirection = "NOTDEFINED"
             port.PredefinedType = tool.System.get_port_predefined_type(mep_element)
             ifcopenshell.api.geometry.edit_object_placement(ifc_file, product=port, matrix=matrix, is_si=True)
+            cls.sync_port_size(port, mep_element)
             return port
 
         # make sure obj.dimensions and .matrix_world has valid data
@@ -146,8 +149,86 @@ class System(bonsai.core.tool.System):
         matrix.translation = bpy.context.scene.cursor.matrix.translation
 
         ifcopenshell.api.geometry.edit_object_placement(ifc_file, product=port, matrix=matrix, is_si=True)
+        cls.sync_port_size(port, element)
 
         return port
+
+    @classmethod
+    def get_port_size_properties(
+        cls, port: ifcopenshell.entity_instance, mep_element: Optional[ifcopenshell.entity_instance] = None
+    ) -> Union[tuple[str, dict[str, float]], None]:
+        """Derive the port's size pset name and properties (in project units)
+        from the relating element's material profile. Returns None when not derivable."""
+        if mep_element is None:
+            mep_element = ifcopenshell.util.system.get_port_element(port)
+        if mep_element is None:
+            return None
+        material = ifcopenshell.util.element.get_material(mep_element, should_skip_usage=True)
+        if not material or not material.is_a("IfcMaterialProfileSet") or len(material.MaterialProfiles) != 1:
+            return None
+        profile = material.MaterialProfiles[0].Profile
+        if profile is None:
+            return None
+        kind = cls.get_port_predefined_type(mep_element)
+        if kind == "PIPE" and profile.is_a("IfcCircleProfileDef"):
+            return "Pset_DistributionPortTypePipe", {"NominalDiameter": profile.Radius * 2}
+        if kind == "DUCT" and profile.is_a("IfcCircleProfileDef"):
+            return "Pset_DistributionPortTypeDuct", {"NominalWidth": profile.Radius * 2}
+        if kind == "DUCT" and profile.is_a("IfcRectangleProfileDef"):
+            return "Pset_DistributionPortTypeDuct", {"NominalWidth": profile.XDim, "NominalHeight": profile.YDim}
+        return None
+
+    @classmethod
+    def sync_port_size(
+        cls, port: ifcopenshell.entity_instance, mep_element: Optional[ifcopenshell.entity_instance] = None
+    ) -> None:
+        """Write the size derived from the relating element's profile onto the port's pset."""
+        if tool.Ifc.get_schema() == "IFC2X3":
+            # IFC2X3 distribution port psets define no size properties.
+            return
+        result = cls.get_port_size_properties(port, mep_element)
+        if not result:
+            return
+        pset_name, properties = result
+        ifc_file = tool.Ifc.get()
+        pset = ifcopenshell.util.element.get_pset(port, pset_name)
+        if pset:
+            pset = ifc_file.by_id(pset["id"])
+        else:
+            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=port, name=pset_name)
+        ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties=properties)
+
+    @classmethod
+    def get_port_size_values(cls, port: ifcopenshell.entity_instance) -> dict[str, float]:
+        """Port size from its pset if set, falling back to the size derived from the profile."""
+        pset = ifcopenshell.util.element.get_pset(port, "Pset_DistributionPortTypePipe")
+        if pset and pset.get("NominalDiameter") is not None:
+            return {"NominalDiameter": pset["NominalDiameter"]}
+        pset = ifcopenshell.util.element.get_pset(port, "Pset_DistributionPortTypeDuct")
+        if pset and pset.get("NominalWidth") is not None:
+            values = {"NominalWidth": pset["NominalWidth"]}
+            if pset.get("NominalHeight") is not None:
+                values["NominalHeight"] = pset["NominalHeight"]
+            return values
+        derived = cls.get_port_size_properties(port)
+        return derived[1] if derived else {}
+
+    @classmethod
+    def get_port_size_label(cls, port: ifcopenshell.entity_instance) -> str:
+        """Human readable port size, e.g. ``⌀100 mm`` or ``200x100 mm``. Empty when unknown."""
+        values = cls.get_port_size_values(port)
+        if not values:
+            return ""
+        unit = ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "LENGTHUNIT")
+        symbol = ifcopenshell.util.unit.get_unit_symbol(unit) if unit else ""
+        fmt = lambda v: f"{v:g}"
+        if "NominalDiameter" in values:
+            return f"⌀{fmt(values['NominalDiameter'])} {symbol}".strip()
+        width = values["NominalWidth"]
+        height = values.get("NominalHeight")
+        if height is not None:
+            return f"{fmt(width)}x{fmt(height)} {symbol}".strip()
+        return f"⌀{fmt(width)} {symbol}".strip()
 
     @classmethod
     def delete_element_objects(cls, elements: list[ifcopenshell.entity_instance]) -> None:
