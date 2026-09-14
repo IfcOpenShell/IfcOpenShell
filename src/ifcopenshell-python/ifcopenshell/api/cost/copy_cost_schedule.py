@@ -34,7 +34,7 @@ def copy_cost_schedule(
     .. code:: python
 
         schedule = ifcopenshell.api.cost.add_cost_schedule(model)
-        new_schedule = ifcopenshell.api.cost.copy_cost_schedule(schedule)
+        new_schedule = ifcopenshell.api.cost.copy_cost_schedule(model, schedule)
     """
     # Shared code logic with copy_work_schedule.
     new_schedule = ifcopenshell.util.element.copy(file, cost_schedule)
