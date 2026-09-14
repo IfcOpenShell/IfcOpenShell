@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 from collections.abc import Sequence
-from typing import Optional
+from typing import Optional, Union
 
 import ifcopenshell
 import ifcopenshell.api.alignment
@@ -29,7 +29,7 @@ def create_by_pi_method(
     file: ifcopenshell.file,
     name: str,
     hpoints: Sequence[Sequence[float]],
-    radii: Sequence[float],
+    radii: Sequence[Union[float, Sequence[float]]],
     vpoints: Sequence[Sequence[float]] = None,
     lengths: Sequence[float] = None,
     start_station: Optional[float] = None,
@@ -38,9 +38,13 @@ def create_by_pi_method(
     Create an alignment using the PI layout method for both horizontal and vertical alignments.
     If vpoints and lengths are omitted, only a horizontal alignment is created.
 
+    Each element of radii is either a circular curve radius R, or a (R, Lin, Lout) sequence with
+    clothoid spiral transition curve lengths ahead of and following the circular curve (see
+    layout_horizontal_alignment_by_pi_method / solve_horizontal_alignment_by_pi_method).
+
     :param name: value for Name attribute
     :param points: (X,Y) pairs denoting the location of the horizontal PIs, including start and end
-    :param radii: radii values to use for transition
+    :param radii: radii values to use for transition, optionally with spiral transition lengths
     :param vpoints: (distance_along, Z_height) pairs denoting the location of the vertical PIs, including start and end.
     :param lengths: parabolic vertical curve horizontal length values to use for transition
     :param start_station: if given, the starting station value. A STATION IfcReferent named
