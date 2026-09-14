@@ -300,6 +300,7 @@ PATTERNS = (
     "*.json",
     "*.ts",
     "*.js",
+    "*.css",
     "*.bat",
     "*.cmd",
     "*.sh",
