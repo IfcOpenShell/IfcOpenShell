@@ -964,13 +964,18 @@ class file:
         return set(inverses)
 
     def get_total_inverses(self, inst: ifcopenshell.entity_instance) -> int:
-        """Returns the number of entities that reference this entity
+        """Returns the number of attribute references to this entity
 
-        This is equivalent to `len(model.get_inverse(element))`, but
-        significantly faster.
+        This counts reference slots, not distinct entities, so it is NOT
+        equivalent to `len(model.get_inverse(element))`: if another entity
+        refers to `inst` through more than one of its attributes, each
+        occurrence is counted separately and the total is higher than the
+        number of distinct referencing entities. It is still significantly
+        faster than `get_inverse`, so prefer it when you only need to know
+        whether any references exist at all (e.g. comparing against 0).
 
         :param inst: The entity instance to get inverse relationships
-        :returns: The total number of references
+        :returns: The total number of attribute references (not entities)
         """
         return self.wrapped_data.get_total_inverses(inst.wrapped_data)
 
