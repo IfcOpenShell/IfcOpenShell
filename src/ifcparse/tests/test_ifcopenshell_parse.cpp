@@ -296,6 +296,19 @@ TEST_CASE("Only a 22-character GlobalId is indexed", "[ifcparse]") {
     wall.set_attribute_value(0, std::string("1F$7lN9$r5MOA_lpAoNM52"));
     CHECK(file.instance_by_guid("1F$7lN9$r5MOA_lpAoNM52").id() == 2);
 }
+namespace {
+struct recording_consumer {
+    static constexpr bool decode_strings = false;
+    static constexpr bool decode_values = false;
+    static constexpr bool keep_keywords = false;
+    std::vector<std::pair<size_t, char>> seen;
+    bool operator_(size_t pos, char c) { seen.push_back({pos, c}); return true; }
+    bool identifier(size_t pos, uint32_t) { seen.push_back({pos, '#'}); return true; }
+    bool string(size_t pos, size_t) { seen.push_back({pos, '\''}); return true; }
+    bool literal(size_t pos) { seen.push_back({pos, 'L'}); return true; }
+};
+}
+
 TEST_CASE("The index token policy ends every token where the full policy does, without decoding", "[ifcparse]") {
     // Doubled quotes, a \S\' escape (an apostrophe as the page character,
     // which a byte scan would take for the end of the string), a \X2\
@@ -336,6 +349,30 @@ TEST_CASE("The index token policy ends every token where the full policy does, w
     }
     CHECK(count == 34);
     CHECK(names == std::vector<unsigned>{1, 2, 3});
+    // A scan() consumer that decodes nothing sees the same tokens at the same
+    // positions as next() under the index policy, in one pass.
+    ifcopenshell::file_reader<ifcopenshell::full_buffer_impl> scan_reader(data, ifcopenshell::caller_fed_tag{});
+    ifcopenshell::spf_lexer<ifcopenshell::file_reader<ifcopenshell::full_buffer_impl>> scanner(&scan_reader);
+    recording_consumer recorded;
+    scanner.scan(recorded);
+    ifcopenshell::file_reader<ifcopenshell::full_buffer_impl> index_again(data, ifcopenshell::caller_fed_tag{});
+    ifcopenshell::spf_lexer<ifcopenshell::file_reader<ifcopenshell::full_buffer_impl>> index2(&index_again);
+    std::vector<std::pair<size_t, char>> expected;
+    while (true) {
+        ifcopenshell::token tk = index2.next<ifcopenshell::index_tokens>();
+        if (!tk) {
+            break;
+        }
+        expected.push_back({tk.start_pos, tk.is_operator() ? tk.value_char : tk.is_identifier() ? '#' : tk.is_string() ? '\'' : (tk.is_keyword() ? 'K' : 'L')});
+        index2.reset_pool();
+    }
+    // Keywords inside the attribute list are literals to a consumer that keeps no keyword text.
+    for (auto& e : expected) {
+        if (e.second == 'K') {
+            e.second = 'L';
+        }
+    }
+    CHECK(recorded.seen == expected);
     // And the full policy decoded the escapes.
     ifcopenshell::file_reader<ifcopenshell::full_buffer_impl> again(data, ifcopenshell::caller_fed_tag{});
     ifcopenshell::spf_lexer<ifcopenshell::file_reader<ifcopenshell::full_buffer_impl>> lexer(&again);
