@@ -848,7 +848,7 @@ def install_qt6(
         mark_installation(QT6_INSTALL_DIR, build_cfg)
         return
 
-    if pythonhome is not None and (pythonhome / "python.exe").exists():
+    if pythonhome is not None:
         AQT_PYTHON = str(pythonhome / "python.exe")
     else:
         AQT_PYTHON = require_command("python")
