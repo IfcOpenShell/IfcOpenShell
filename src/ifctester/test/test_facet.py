@@ -343,6 +343,21 @@ class TestAttribute:
             inst=element,
             expected=True,
         )
+        facet = Attribute(name="Description", cardinality="optional")
+        unset_element = ifc.createIfcWall(Name="Foobar")
+        run(
+            "An optional facet passes when a valid attribute is simply unset",
+            facet=facet,
+            inst=unset_element,
+            expected=True,
+        )
+        unset_element.Description = ""
+        run(
+            "An optional facet passes when a valid attribute is an empty string",
+            facet=facet,
+            inst=unset_element,
+            expected=True,
+        )
 
         ifc = ifcopenshell.file()
         facet = Attribute(name="Name")
@@ -391,7 +406,14 @@ class TestAttribute:
 
         layer.LayerOn = "UNKNOWN"
         facet = Attribute(name="LayerOn")
-        run("Attributes with a logical unknown always fail", facet=facet, inst=layer, expected=False)
+        run("A logical unknown is a real value and passes an existence check", facet=facet, inst=layer, expected=True)
+        facet = Attribute(name="LayerOn", cardinality="prohibited")
+        run(
+            "A logical unknown is present, so a prohibited attribute fails",
+            facet=facet,
+            inst=layer,
+            expected=False,
+        )
 
         facet = Attribute(name="ScheduleDuration")
         ifc = ifcopenshell.file()
