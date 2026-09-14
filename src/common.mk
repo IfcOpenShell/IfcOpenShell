@@ -27,6 +27,9 @@ dist:
 	mkdir -p build
 	mkdir -p dist
 	cp -r $(PACKAGE_NAME) build/
+ifdef EXTRA_MODULES
+	cp -r $(EXTRA_MODULES) build/
+endif
 	cp pyproject.toml build/
 	if [ -f README.md ]; then cp README.md build/; fi
 ifeq ($(IS_STABLE), TRUE)
