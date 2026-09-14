@@ -2687,7 +2687,7 @@ class Geometry(bonsai.core.tool.Geometry):
         # clean up the orphaned mesh with ifc id of the original object to avoid confusion
         # IfcGridAxis keeps the same mesh data (it's pointing to ifc id 0, so it's not a problem)
         if new and temp_data and not new.is_a("IfcGridAxis"):
-            if new.is_a("IfcRelSpaceBoundary"):
+            if new.is_a("IfcRelSpaceBoundary") and new.ConnectionGeometry:
                 surface = new.ConnectionGeometry.SurfaceOnRelatingElement
                 temp_data.name = f"0/{surface.id()}"
                 tool.Ifc.link(surface, temp_data)

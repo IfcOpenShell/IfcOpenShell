@@ -599,6 +599,8 @@ class ShaderInfo:
                 continue
 
             blender_object = tool.Ifc.get_object_by_identifier(getattr(member, "GlobalId", None))
+            if not blender_object or not blender_object.data or len(blender_object.data.vertices) < 2:
+                continue
 
             start_co = blender_object.matrix_world @ blender_object.data.vertices[0].co
             end_co = blender_object.matrix_world @ blender_object.data.vertices[1].co
