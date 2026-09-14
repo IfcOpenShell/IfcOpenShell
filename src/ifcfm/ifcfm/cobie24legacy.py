@@ -49,7 +49,7 @@ def get_floors(ifc_file: ifcopenshell.file) -> list[ifcopenshell.entity_instance
     return [
         e
         for e in ifc_file.by_type("IfcBuildingStorey")
-        if ifcopenshell.util.element.get_aggregate(e).is_a("IfcBuilding")
+        if (parent := ifcopenshell.util.element.get_aggregate(e)) and parent.is_a("IfcBuilding")
     ]
 
 
@@ -749,8 +749,10 @@ def get_connection_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entit
         or val(element.Name)
     )
     name = val(element.Name)
-    row_name1 = val(ifcopenshell.util.system.get_port_element(element.RelatingPort).Name)
-    row_name2 = val(ifcopenshell.util.system.get_port_element(element.RelatedPort).Name)
+    relating_element = ifcopenshell.util.system.get_port_element(element.RelatingPort)
+    related_element = ifcopenshell.util.system.get_port_element(element.RelatedPort)
+    row_name1 = val(relating_element.Name) if relating_element else None
+    row_name2 = val(related_element.Name) if related_element else None
     return {
         "key": str(name) + str(connection_type) + str(row_name1) + str(row_name2),
         "Name": name,
@@ -937,7 +939,10 @@ def get_attribute_data(
 
 
 def get_unit_type_name(ifc_file: ifcopenshell.file, unit_type: str) -> Union[str, None]:
-    for unit in ifc_file.by_type("IfcUnitAssignment")[0].Units:
+    unit_assignments = ifc_file.by_type("IfcUnitAssignment")
+    if not unit_assignments:
+        return None
+    for unit in unit_assignments[0].Units:
         if unit.is_a("IfcNamedUnit") and unit.UnitType == unit_type:
             if unit.is_a("IfcSIUnit"):
                 prefix = (unit.Prefix or "").lower()
