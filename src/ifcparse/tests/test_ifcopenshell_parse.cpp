@@ -570,6 +570,12 @@ TEST_CASE("Parallel and paged parsing yield the same instances, attributes, inve
     paged_parallel.paged_reading(true);
     paged_parallel.parse_threads(5);
     REQUIRE(paged_parallel.initialize(path.string()));
+    // And the lazy index built by 5 workers.
+    ifcopenshell::file lazy_parallel(ifcopenshell::uninitialized_tag{});
+    lazy_parallel.lazy_loading(true);
+    lazy_parallel.parse_threads(5);
+    REQUIRE(lazy_parallel.initialize(path.string()));
+    REQUIRE(lazy_parallel.lazy_loading());
     std::filesystem::remove(path);
 
     size_t count = 0;
@@ -583,7 +589,7 @@ TEST_CASE("Parallel and paged parsing yield the same instances, attributes, inve
         a.to_string(sa);
         b.to_string(sb);
         REQUIRE(sb.str() == sa.str());
-        for (ifcopenshell::file* other : {&paged, &paged_parallel}) {
+        for (ifcopenshell::file* other : {&paged, &paged_parallel, &lazy_parallel}) {
             const express::base c = other->instance_by_id((int)a.id());
             REQUIRE(c);
             std::ostringstream sc;
@@ -603,5 +609,6 @@ TEST_CASE("Parallel and paged parsing yield the same instances, attributes, inve
     for (const auto& rooted : serial.instances_by_type("IfcRoot")) {
         const std::string guid = rooted.get_attribute_value(0);
         REQUIRE(parallel.instance_by_guid(guid).id() == serial.instance_by_guid(guid).id());
+        REQUIRE(lazy_parallel.instance_by_guid(guid).id() == serial.instance_by_guid(guid).id());
     }
 }
