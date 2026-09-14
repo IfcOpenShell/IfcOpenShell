@@ -119,6 +119,13 @@ class TestGetPropertyUnit(test.bootstrap.IFC4):
         prop.Unit = length2
         assert subject.get_property_unit(prop, self.file) == length2
 
+    def test_single_value_without_nominal_value(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        length = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="MILLI")
+        ifcopenshell.api.unit.assign_unit(self.file, units=[length])
+        prop = self.file.createIfcPropertySingleValue(Name="Foo", NominalValue=None)
+        assert subject.get_property_unit(prop, self.file) is None
+
     def test_enumerated_value(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         length = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="MILLI")
