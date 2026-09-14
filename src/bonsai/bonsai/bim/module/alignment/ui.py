@@ -219,8 +219,12 @@ class ALIGN_PT_alignment_authoring(Panel):
                 pi_data = marker.bonsai_pi_curve_marker
                 box.label(text=f"PI {pi_data.pi_index}", icon="EMPTY_AXIS")
                 box.prop(pi_data, "curve_type")
-                if pi_data.curve_type == "CIRCULAR":
+                if pi_data.curve_type != "TANGENT":
                     box.prop(pi_data, "radius")
+                if pi_data.curve_type in {"SPIRAL_CIRCULAR", "SPIRAL_CIRCULAR_SPIRAL"}:
+                    box.prop(pi_data, "spiral_in_length")
+                if pi_data.curve_type in {"CIRCULAR_SPIRAL", "SPIRAL_CIRCULAR_SPIRAL"}:
+                    box.prop(pi_data, "spiral_out_length")
                 box.operator("align.apply_pi_curve", icon="CHECKMARK")
             else:
                 box.label(text="Select a PI marker to define its curve", icon="INFO")
