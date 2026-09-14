@@ -314,6 +314,36 @@ class TestMirror(test.bootstrap.IFC4):
         assert np.allclose(rectangle.Points.CoordList, ((0.0, 0.0), (-100.0, 0.0), (-100.0, 100.0), (0.0, 100.0)))
 
 
+class TestTransformExtrudedAreaSolidWithUnsetPosition(test.bootstrap.IFC4):
+    # IfcExtrudedAreaSolid.Position is optional since IFC4, so a valid solid
+    # authored elsewhere may reach these transforms with Position unset.
+    def make_solid(self, builder: ShapeBuilder) -> ifcopenshell.entity_instance:
+        rectangle = builder.rectangle(size=(1.0, 1.0))
+        profile = builder.profile(rectangle)
+        solid = builder.extrude(profile)
+        solid.Position = None
+        return solid
+
+    def test_translate(self):
+        builder = ShapeBuilder(self.file)
+        solid = self.make_solid(builder)
+        builder.translate(solid, (1.0, 0.0, 0.0))
+        assert solid.Position is not None
+        assert np.allclose(solid.Position.Location.Coordinates, (1.0, 0.0, 0.0))
+
+    def test_rotate(self):
+        builder = ShapeBuilder(self.file)
+        solid = self.make_solid(builder)
+        builder.rotate(solid, angle=90.0)
+        assert solid.Position is not None
+
+    def test_mirror(self):
+        builder = ShapeBuilder(self.file)
+        solid = self.make_solid(builder)
+        builder.mirror(solid, mirror_axes=(1.0, 0.0))
+        assert solid.Position is not None
+
+
 class TestVertex(test.bootstrap.IFC4):
     def test_run(self):
         builder = ShapeBuilder(self.file)
