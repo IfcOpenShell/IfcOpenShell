@@ -286,11 +286,40 @@ class PICurveMarkerProperties(PropertyGroup):
         items=[
             ("TANGENT", "None (sharp PI)", "No curve — the two tangents meet directly"),
             ("CIRCULAR", "Circular", "A simple circular arc"),
-            # Spiral-Circular / Circular-Spiral / Spiral-Circular-Spiral are not
-            # implemented yet. See REQUIREMENTS.md §2 step 7 — they need each
-            # segment authored individually (create_layout_segment), which
-            # layout_horizontal_alignment_by_pi_method does not support.
+            (
+                "SPIRAL_CIRCULAR",
+                "Spiral-Circular",
+                "An entry clothoid spiral transitions into the circular arc, which runs to the forward tangent",
+            ),
+            (
+                "CIRCULAR_SPIRAL",
+                "Circular-Spiral",
+                "The circular arc leaves the back tangent directly and transitions to the forward tangent via an exit clothoid spiral",
+            ),
+            (
+                "SPIRAL_CIRCULAR_SPIRAL",
+                "Spiral-Circular-Spiral",
+                "An entry clothoid spiral, a circular arc, and an exit clothoid spiral, symmetric about the PI",
+            ),
+            # Only the clothoid spiral family is supported for now — see
+            # solve_horizontal_alignment_by_pi_method. Other families (Bloss,
+            # cosine, sine, cubic, Helmert) would need their own
+            # curvature-vs-length integrand.
         ],
         default="TANGENT",
     )
     radius: FloatProperty(name="Radius", default=100.0, min=0.0001, unit="LENGTH")
+    spiral_in_length: FloatProperty(
+        name="Entry Spiral Length",
+        description="Length of the clothoid spiral ahead of the circular arc",
+        default=100.0,
+        min=0.0001,
+        unit="LENGTH",
+    )
+    spiral_out_length: FloatProperty(
+        name="Exit Spiral Length",
+        description="Length of the clothoid spiral following the circular arc",
+        default=100.0,
+        min=0.0001,
+        unit="LENGTH",
+    )

@@ -34,7 +34,11 @@ This API does not determine alignment parameters based on rules, such as minimum
 This API is under development and subject to code breaking changes in the future.
 
 Presently, this API supports:
-    1. Creating alignments, both horizontal and vertical, using the PI method. Alignment definition can be read from a CSV file.
+    1. Creating alignments, both horizontal and vertical, using the PI method, including clothoid
+       transition spirals in the horizontal layout. The horizontal PI solve is also available as a
+       pure geometric computation (solve_horizontal_alignment_by_pi_method) for callers that need
+       segment parameters without writing to a file, such as interactive editors. Alignment
+       definition can be read from a CSV file.
     2. Creating alignments segment by segment.
     3. Automatic creation of geometric definitions (IfcCompositeCurve, IfcGradientCurve, IfcSegmentedReferenceCurve)
     4. Explicit definition of stationing, including station equations and reverse (decreasing) stationing
@@ -42,7 +46,8 @@ Presently, this API supports:
     6. Utility functions for printing business logical and geometric representations, as well as minimal geometry evaluations
 
 Future versions of this API may support:
-    1. Defining alignments using the PI method, including transition spirals
+    1. Transition spiral families other than the clothoid (Bloss, cosine, sine, cubic, Helmert) in
+       the PI method solver.
     2. Updating horizontal curve definitions by revising transition spiral parameters and circular curve radii
     3. Updating vertical curve definitions by revising horizontal length of curves
     4. Removing a segment at any location along a curve
@@ -94,6 +99,12 @@ from .layout_vertical_alignment_by_pi_method import (
 )
 from .name_segments import name_segments
 from .segment_vertices import segment_vertices
+from .solve_horizontal_alignment_by_pi_method import (
+    HorizontalSegmentDefinition,
+    compute_clothoid_end,
+    compute_horizontal_segment_end,
+    solve_horizontal_alignment_by_pi_method,
+)
 from .update_alignment_parameter_segment_tags import update_alignment_parameter_segment_tags
 from .update_end_point import update_end_point
 from .update_fallback_position import update_fallback_position
@@ -101,6 +112,10 @@ from .update_key_point_referents import update_key_point_referents
 from .util import *
 
 __all__ = [
+    "HorizontalSegmentDefinition",
+    "compute_clothoid_end",
+    "compute_horizontal_segment_end",
+    "solve_horizontal_alignment_by_pi_method",
     "add_positioning_referent",
     "add_stationing_referent",
     "add_vertical_layout",
