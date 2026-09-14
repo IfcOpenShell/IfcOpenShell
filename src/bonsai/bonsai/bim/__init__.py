@@ -268,6 +268,7 @@ def register():
     bpy.app.handlers.depsgraph_update_post.append(on_register)
     bpy.app.handlers.undo_post.append(handler.undo_post)
     bpy.app.handlers.redo_post.append(handler.redo_post)
+    bpy.app.handlers.save_pre.append(handler.save_pre)
     # Must follow the two appends above so regenerators see restored IFC state.
     parametric_lifecycle.install_parametric_lifecycle_handlers()
     bpy.app.handlers.load_post.append(handler.load_post)
@@ -330,6 +331,7 @@ def unregister():
     parametric_lifecycle.uninstall_parametric_lifecycle_handlers()
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.app.handlers.load_post.remove(handler.loadIfcStore)
+    bpy.app.handlers.save_pre.remove(handler.save_pre)
     del bpy.types.Scene.BIMProperties
     del bpy.types.Collection.BIMCollectionProperties
     del bpy.types.Object.BIMObjectProperties
