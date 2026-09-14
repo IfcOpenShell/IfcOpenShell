@@ -56,8 +56,10 @@ def unassign_product(
         # Change our mind.
         ifcopenshell.api.sequence.unassign_product(relating_product=wall, related_object=task)
     """
-    for rel in related_object.HasAssignments or []:
-        if not rel.is_a("IfcRelAssignsToProduct") or rel.RelatingProduct != relating_product:
+    # Scan the product's own IfcRelAssignsToProduct set, not the process's
+    # whole assignment set, which grows with every product assigned to it.
+    for rel in relating_product.ReferencedBy or []:
+        if related_object not in rel.RelatedObjects:
             continue
         if len(rel.RelatedObjects) == 1:
             history = rel.OwnerHistory

@@ -64,14 +64,14 @@ def assign_product(
         # Let's construct that wall!
         ifcopenshell.api.sequence.assign_product(model, relating_product=wall, related_object=task)
     """
-    if related_object.HasAssignments:
-        for assignment in related_object.HasAssignments:
-            if assignment.is_a("IfcRelAssignsToProduct") and assignment.RelatingProduct == relating_product:
-                return assignment
+    # ReferencedBy is the product's own IfcRelAssignsToProduct set, so it does
+    # not grow with the number of products already assigned to related_object.
+    referenced_by_all: tuple[ifcopenshell.entity_instance, ...] = relating_product.ReferencedBy
+    for assignment in referenced_by_all:
+        if related_object in assignment.RelatedObjects:
+            return assignment
 
-    referenced_by = None
-    if relating_product.ReferencedBy:
-        referenced_by = relating_product.ReferencedBy[0]
+    referenced_by = referenced_by_all[0] if referenced_by_all else None
 
     if referenced_by:
         related_objects = list(referenced_by.RelatedObjects)
