@@ -341,7 +341,7 @@ class Resource(bonsai.core.tool.Resource):
         start = time.time()
         csv2ifc = Ifc2Csv(file_path, tool.Ifc.get())
         csv2ifc.execute()
-        print("Importing Resources CSV finished in {:.2f} seconds".format(time.time() - start))
+        print("Exporting Resources CSV finished in {:.2f} seconds".format(time.time() - start))
 
     @classmethod
     def get_highlighted_resource(cls) -> Union[ifcopenshell.entity_instance, None]:
