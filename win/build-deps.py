@@ -187,8 +187,7 @@ def parse_args() -> Args:
     )
     parser.add_argument(
         "--log-level",
-        # TODO: relax default to INFO once things get more stable.
-        default="DEBUG",
+        default="INFO",
         choices=("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"),
         help="Logging verbosity.",
     )
