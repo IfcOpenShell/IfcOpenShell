@@ -38,6 +38,7 @@ from common import (
     colorize,
     ensure_script_dir,
     logger,
+    resolve_cli_or_env,
     resolve_generator,
     run,
     run_streamed,
@@ -141,6 +142,8 @@ def get_var(deps_cache: dict[str, str], key: str, *, deps_cache_only: bool = Fal
 
 class Args(NamedTuple):
     generator: str | None
+    add_commit_sha: bool
+    use_ninja: bool
     extra_args: list[str]
 
 
@@ -171,6 +174,30 @@ def parse_args() -> Args:
         default=None,
         help=HelpStrings.GENERATOR_FLAG,
     )
+    ADD_COMMIT_SHA_DEFAULT = False
+    parser.add_argument(
+        "--add-commit-sha",
+        dest="add_commit_sha",
+        action=argparse.BooleanOptionalAction,
+        default=argparse.SUPPRESS,
+        help=(
+            "Add the commit SHA to the built version string. "
+            "Also can be specified by using ADD_COMMIT_SHA env variable. "
+            f"(default: {ADD_COMMIT_SHA_DEFAULT})"
+        ),
+    )
+    USE_NINJA_DEFAULT = False
+    parser.add_argument(
+        "--use-ninja",
+        dest="use_ninja",
+        action=argparse.BooleanOptionalAction,
+        default=argparse.SUPPRESS,
+        help=(
+            "Use the Ninja generator instead of the MSVC generator/platform. "
+            "Also can be specified by using USE_NINJA env variable. "
+            f"(default: {USE_NINJA_DEFAULT})"
+        ),
+    )
     argv = sys.argv[1:]
     if "--" in argv:
         separator_idx = argv.index("--")
@@ -184,7 +211,17 @@ def parse_args() -> Args:
         parser.error("generator was specified both as a positional argument and as --generator.")
     generator = args.generator or args.generator_flag
 
-    return Args(generator=generator, extra_args=extra_args)
+    add_commit_sha = resolve_cli_or_env(
+        getattr(args, "add_commit_sha", None), "ADD_COMMIT_SHA", ADD_COMMIT_SHA_DEFAULT, arg_type="bool"
+    )
+    use_ninja = resolve_cli_or_env(getattr(args, "use_ninja", None), "USE_NINJA", USE_NINJA_DEFAULT, arg_type="bool")
+
+    return Args(
+        generator=generator,
+        add_commit_sha=add_commit_sha,
+        use_ninja=use_ninja,
+        extra_args=extra_args,
+    )
 
 
 def main() -> None:
@@ -210,8 +247,7 @@ def main() -> None:
     python_include_dir = f"{pythonhome}\\include"
     python_library = f"{pythonhome}\\libs\\python{py_ver_major_minor}.lib"
 
-    # TODO: add as cli arg.
-    ADD_COMMIT_SHA = OFF_ON[bool(os.getenv("ADD_COMMIT_SHA"))]
+    ADD_COMMIT_SHA = OFF_ON[ARGS.add_commit_sha]
     VERSION_OVERRIDE = ADD_COMMIT_SHA
 
     qt_dir = get_var(deps_cache, "QT_DIR") or get_var(deps_cache, "QT6_INSTALL_DIR")
@@ -257,9 +293,7 @@ def main() -> None:
         cmake_prefix_path_parts.append(qt_dir)
     cmake_prefix_path = ";".join(str(part) for part in cmake_prefix_path_parts)
 
-    # TODO: add cli arg.
-    use_ninja = os.getenv("USE_NINJA")
-    if use_ninja:
+    if ARGS.use_ninja:
         cmake_generator = "Ninja"
         arch_option = ()
     else:
