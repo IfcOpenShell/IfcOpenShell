@@ -1,3 +1,5 @@
+# /// script
+# ///
 """
 It's not really a full version of nix/build-all.py for Windows,
 but serves the similar purpose - build all packages during CI (though by using cmd scripts),
