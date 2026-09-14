@@ -330,3 +330,12 @@ class TestEditPsetIFC4(test.bootstrap.IFC4, TestEditPsetIFC2X3):
         assert len(pset.HasProperties[0].ListValues) == 3
         assert set(map(ifcopenshell.entity_instance.is_a, pset.HasProperties[0].ListValues)) == {"IfcIdentifier"}
         assert list(map(operator.itemgetter(0), pset.HasProperties[0].ListValues)) == ["One", "Two", "Three"]
+
+    def test_adding_a_list_valued_property_to_an_untemplated_pset_raises_instead_of_crashing(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Custom_Pset")
+        try:
+            ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Foo": ["One", "Two"]})
+            assert False, "Expected a NotImplementedError, not a successful call."
+        except NotImplementedError:
+            pass
