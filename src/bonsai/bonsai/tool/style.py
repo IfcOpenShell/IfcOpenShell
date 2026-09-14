@@ -190,7 +190,7 @@ class Style(bonsai.core.tool.Style):
         else:
             style = blender_material_or_style
         style_elements = {}
-        for style_ in style.Styles:
+        for style_ in style.Styles or []:
             style_elements[style_.is_a()] = style_
         return style_elements
 
@@ -516,14 +516,14 @@ class Style(bonsai.core.tool.Style):
     @classmethod
     def get_surface_shading_style(cls, obj: bpy.types.Material) -> Union[ifcopenshell.entity_instance, None]:
         if style := tool.Ifc.get_entity(obj):
-            items = [s for s in style.Styles if s.is_a() == "IfcSurfaceStyleShading"]
+            items = [s for s in (style.Styles or []) if s.is_a() == "IfcSurfaceStyleShading"]
             if items:
                 return items[0]
 
     @classmethod
     def get_surface_texture_style(cls, obj: bpy.types.Material) -> Union[ifcopenshell.entity_instance, None]:
         if style := tool.Ifc.get_entity(obj):
-            items = [s for s in style.Styles if s.is_a("IfcSurfaceStyleWithTextures")]
+            items = [s for s in (style.Styles or []) if s.is_a("IfcSurfaceStyleWithTextures")]
             if items:
                 return items[0]
 
