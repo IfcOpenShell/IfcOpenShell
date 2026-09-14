@@ -453,10 +453,55 @@ namespace ifcopenshell {
                 return true;
             }
 
+            // Sorts records into record_less order. Large inputs go through a
+            // stable LSD radix sort on referenced_id (11 bits per pass, as many
+            // passes as the largest id needs) followed by record_less within
+            // each run of equal ids, which is the same order std::sort gives
+            // and several times faster on millions of records.
+            static void sort_records(std::vector<inverse_record>& records) {
+                if (records.size() < 4096) {
+                    std::sort(records.begin(), records.end(), record_less);
+                    return;
+                }
+                uint32_t max_id = 0;
+                for (const auto& r : records) {
+                    max_id = (std::max)(max_id, r.referenced_id);
+                }
+                std::vector<inverse_record> buffer(records.size());
+                constexpr unsigned bits = 11;
+                std::vector<size_t> counts((size_t)1 << bits);
+                for (unsigned shift = 0; shift < 32 && (max_id >> shift) != 0; shift += bits) {
+                    std::fill(counts.begin(), counts.end(), 0);
+                    for (const auto& r : records) {
+                        ++counts[(r.referenced_id >> shift) & ((1u << bits) - 1)];
+                    }
+                    size_t sum = 0;
+                    for (auto& c : counts) {
+                        const size_t n = c;
+                        c = sum;
+                        sum += n;
+                    }
+                    for (const auto& r : records) {
+                        buffer[counts[(r.referenced_id >> shift) & ((1u << bits) - 1)]++] = r;
+                    }
+                    records.swap(buffer);
+                }
+                for (auto run = records.begin(); run != records.end();) {
+                    auto end = run + 1;
+                    while (end != records.end() && end->referenced_id == run->referenced_id) {
+                        ++end;
+                    }
+                    if (end - run > 1) {
+                        std::sort(run, end, record_less);
+                    }
+                    run = end;
+                }
+            }
+
             // Finalizes bulk loading. Subsequent add() calls go to the delta.
             void sort() const {
                 if (!sorted_) {
-                    std::sort(base_.begin(), base_.end(), record_less);
+                    sort_records(base_);
                     base_.shrink_to_fit();
                     sorted_ = true;
                     invalidate_materialized();
