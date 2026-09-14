@@ -1690,6 +1690,31 @@ class SvgWriter:
             self.camera_projection,
         )
 
+    def get_image_rect(self, obj: bpy.types.Object) -> Union[tuple[float, float, float, float], None]:
+        """Project a reference image plane into SVG coordinates.
+
+        Returns the axis-aligned bounding rectangle (x, y, width, height) in
+        SVG units, or None when the projection is degenerate (e.g. the image
+        plane is edge-on to the camera).
+        """
+        if obj.type != "MESH" or not obj.data.vertices:
+            return None
+
+        offset = Vector([self.raw_width, self.raw_height]) / 2
+        projected_points = [
+            (offset + self.project_point_onto_camera(obj.matrix_world @ vertex.co).xy * Vector((1, -1)))
+            * self.svg_scale
+            for vertex in obj.data.vertices
+        ]
+
+        xs = [p.x for p in projected_points]
+        ys = [p.y for p in projected_points]
+        width = max(xs) - min(xs)
+        height = max(ys) - min(ys)
+        if width < 1e-6 or height < 1e-6:
+            return None
+        return (min(xs), min(ys), width, height)
+
     def get_spline_points(self, spline: bpy.types.Spline) -> Union[SplineBezierPoints, SplinePoints]:
         return spline.bezier_points if spline.bezier_points else spline.points
 

@@ -436,3 +436,17 @@ Scenario: Add reference image
     When I press "bim.add_reference_image(filepath='{cwd}/test/files/image.jpg', x_length=1, y_length=0.565)"
     Then the object "IfcAnnotation/image" exists
     And the object "IfcAnnotation/image" dimensions are "1.0,0.565,0."
+
+Scenario: Print reference image into drawing
+    Given an empty IFC project
+    And I save IFC project
+    When I press "bim.add_reference_image(filepath='{cwd}/test/files/image.jpg', x_length=1, y_length=0.565)"
+    And I look at the "Drawings" panel
+    And I click "IMPORT"
+    And I click "ADD"
+    And I press "bim.toggle_target_view(option='EXPAND', target_view='PLAN_VIEW')"
+    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
+    And the variable "assigned" is "tool.Ifc.run('group.assign_group', group=tool.Drawing.get_drawing_group([e for e in tool.Ifc.get().by_type('IfcAnnotation') if e.ObjectType == 'DRAWING'][0]), products=[e for e in tool.Ifc.get().by_type('IfcAnnotation') if ifcopenshell.util.element.get_predefined_type(e) == 'IMAGE'])"
+    Then I click "OUTPUT"
+    And the file "{ifc_dir}/drawings/PLAN_VIEW.svg" should contain "<image"
