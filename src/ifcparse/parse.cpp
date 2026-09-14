@@ -2691,7 +2691,9 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
     struct index_output {
         std::vector<shared_pointer_type> shells;
         std::vector<std::pair<uint32_t, uint64_t>> offsets;
-        std::vector<std::pair<size_t, std::string>> guids;  // shell index, raw text
+        std::vector<std::pair<size_t, std::string>> guids;  // shell index, decoded text
+        std::vector<std::pair<const ifcopenshell::declaration*, std::vector<express::base>>> bytype;
+        std::unordered_map<const ifcopenshell::declaration*, size_t> bytype_index;
         std::vector<unsigned> bypassed;
         entities_by_ref inverses;
         const char* failure = nullptr;
@@ -2718,11 +2720,22 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
                 const size_t guid_begin = consumer.guid_begin, guid_end = consumer.guid_end;
                 out.shells.push_back(ifcopenshell::make_pointer_type<instance_data>(file, declaration, name, instance_data::lazy_tag{}));
                 out.offsets.push_back({name, attributes_offset});
+                {
+                    auto found = out.bytype_index.find(declaration);
+                    if (found == out.bytype_index.end()) {
+                        found = out.bytype_index.emplace(declaration, out.bytype.size()).first;
+                        out.bytype.push_back({declaration, {}});
+                    }
+                    out.bytype[found->second].second.push_back(express::base(out.shells.back()));
+                }
                 if (guid_end > guid_begin && declaration->is(*ifcroot)) {
                     std::string guid;
                     guid.reserve(guid_end - guid_begin);
                     for (size_t at = guid_begin; at < guid_end; ++at) {
                         guid.push_back(chunk_reader.get(at));
+                    }
+                    if (guid.find('\\') != std::string::npos || guid.find("''") != std::string::npos) {
+                        guid = ifcopenshell::decode_spf_string(guid);
                     }
                     out.guids.push_back({out.shells.size() - 1, std::move(guid)});
                 }
@@ -2750,6 +2763,7 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
                 chunk_reader.seek(bounds[k]);
                 spf_lexer<file_reader<paged_file_impl>> chunk_lexer(&chunk_reader, logger_.get());
                 index_chunk(chunk_reader, chunk_lexer, bounds[k + 1], outputs[k]);
+                outputs[k].inverses.sort_in_place();
             });
         }
         for (auto& worker : workers) {
@@ -2759,6 +2773,7 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
         outputs.resize(1);
         outputs[0].inverses.reserve(reader.size() / 32);
         index_chunk(reader, lexer, reader.size(), outputs[0]);
+        outputs[0].inverses.sort();
     }
     for (const auto& out : outputs) {
         if (out.error) {
@@ -2777,6 +2792,7 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
     }
     lazy_offsets_.reserve(shell_count);
     byid_.reserve(byid_.size() + shell_count);
+    std::vector<entities_by_ref*> runs;
     for (auto& out : outputs) {
         for (const auto& data : out.shells) {
             const uint32_t name = data->id();
@@ -2785,15 +2801,16 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
                 byid_.erase(name);
                 byid_.insert({name, data});
             }
-            bytype_excl_[data->declaration()].push_back(express::base(data));
             max_id = (std::max)(max_id, (unsigned int)name);
+        }
+        for (auto& typed : out.bytype) {
+            auto& list = bytype_excl_[typed.first];
+            list.insert(list.end(), typed.second.begin(), typed.second.end());
+            std::vector<express::base>().swap(typed.second);
         }
         lazy_offsets_.insert(lazy_offsets_.end(), out.offsets.begin(), out.offsets.end());
         for (auto& entry : out.guids) {
-            std::string& guid = entry.second;
-            if (guid.find('\\') != std::string::npos || guid.find("''") != std::string::npos) {
-                guid = ifcopenshell::decode_spf_string(guid);
-            }
+            const std::string& guid = entry.second;
             std::array<char, 22> key;
             if (guid_key(guid, key)) {
                 if (byguid_.count(key) != 0) {
@@ -2803,9 +2820,10 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
             }
         }
         lazy_bypassed_.insert(lazy_bypassed_.end(), out.bypassed.begin(), out.bypassed.end());
-        byref_excl_.append(std::move(out.inverses));
+        runs.push_back(&out.inverses);
         std::vector<shared_pointer_type>().swap(out.shells);
     }
+    byref_excl_.merge_sorted(runs);
     outputs.clear();
 
     std::sort(lazy_bypassed_.begin(), lazy_bypassed_.end());
@@ -2820,6 +2838,9 @@ namespace {
 // What one parser worker produces from its chunk of the DATA section.
 struct parse_worker_output {
     std::vector<shared_pointer_type> instances;
+    std::vector<std::pair<std::string, size_t>> guids;  // GlobalId, index into instances
+    std::vector<std::pair<const ifcopenshell::declaration*, std::vector<express::base>>> bytype;
+    std::unordered_map<const ifcopenshell::declaration*, size_t> bytype_index;
     std::vector<unsigned> bypassed;
     unresolved_references mixed_references;
     std::unique_ptr<ifcopenshell::impl::in_memory_file_storage> storage;
@@ -2831,7 +2852,7 @@ struct parse_worker_output {
 // starts a line outside any string or comment, through the same reader
 // the serial parse uses.
 template <typename Reader>
-void parse_chunk(const Reader& source, size_t begin, size_t end, const ifcopenshell::schema_definition* schema, const std::vector<char>& bypassed_types, parse_worker_output& out) {
+void parse_chunk(const Reader& source, size_t begin, size_t end, const ifcopenshell::schema_definition* schema, const std::vector<char>& bypassed_types, const ifcopenshell::declaration* ifcroot, parse_worker_output& out) {
     try {
         Reader reader = source.reopen();
         reader.seek(begin);
@@ -2843,6 +2864,21 @@ void parse_chunk(const Reader& source, size_t begin, size_t end, const ifcopensh
                 storage.try_read_semicolon(&lexer);
                 lexer.reset_pool();
                 out.instances.push_back(data);
+                express::base instance(data);
+                auto found = out.bytype_index.find(declaration);
+                if (found == out.bytype_index.end()) {
+                    found = out.bytype_index.emplace(declaration, out.bytype.size()).first;
+                    out.bytype.push_back({declaration, {}});
+                }
+                out.bytype[found->second].second.push_back(instance);
+                if (declaration->is(*ifcroot)) {
+                    try {
+                        const std::string guid = instance.get_attribute_value(0);
+                        out.guids.push_back({guid, out.instances.size() - 1});
+                    } catch (const exception& ex) {
+                        storage.logger_.get().message(ifcopenshell::logger::LOG_ERROR, ex.what());
+                    }
+                }
                 return true;
             } catch (const invalid_token_exception& e) {
                 out.status = file_open_status::INVALID_SYNTAX;
@@ -2850,6 +2886,7 @@ void parse_chunk(const Reader& source, size_t begin, size_t end, const ifcopensh
                 return false;
             }
         });
+        storage.byref_excl_.sort_in_place();
     } catch (...) {
         out.error = std::current_exception();
     }
@@ -2904,9 +2941,10 @@ bool ifcopenshell::impl::in_memory_file_storage::read_instances_parallel(Reader*
             output->storage->byref_excl_.reserve((bounds[k + 1] - bounds[k]) / 32);
             outputs.push_back(std::move(output));
         }
+        const auto* ifcroot = schema->declaration_by_name("IfcRoot");
         std::vector<std::thread> workers;
         for (size_t k = 0; k < outputs.size(); ++k) {
-            workers.emplace_back([&, k]() { parse_chunk(*s, bounds[k], bounds[k + 1], schema, bypassed_types, *outputs[k]); });
+            workers.emplace_back([&, k]() { parse_chunk(*s, bounds[k], bounds[k + 1], schema, bypassed_types, ifcroot, *outputs[k]); });
         }
         for (auto& worker : workers) {
             worker.join();
@@ -2929,27 +2967,25 @@ bool ifcopenshell::impl::in_memory_file_storage::read_instances_parallel(Reader*
         instances.reserve(instances.size() + instance_count);
         byref_excl_.reserve(byref_excl_.size() + record_count);
         read_simple_type_instances.reserve(read_simple_type_instances.size() + simple_type_count);
-        const auto* ifcroot = schema->declaration_by_name("IfcRoot");
+        byid_.reserve(byid_.size() + instance_count);
+        std::vector<entities_by_ref*> runs;
         for (auto& output : outputs) {
+            for (const auto& entry : output->guids) {
+                std::array<char, 22> key;
+                if (guid_key(entry.first, key)) {
+                    if (byguid_.count(key) != 0) {
+                        logger_.get().message(ifcopenshell::logger::LOG_WARNING, "Instance encountered with non-unique GlobalId " + entry.first);
+                    }
+                    byguid_[key] = express::base(output->instances[entry.second]);
+                }
+            }
+            for (auto& typed : output->bytype) {
+                auto& list = bytype_excl_[typed.first];
+                list.insert(list.end(), typed.second.begin(), typed.second.end());
+                std::vector<express::base>().swap(typed.second);
+            }
             for (const auto& data : output->instances) {
                 const uint32_t name = data->id();
-                const auto* declaration = data->declaration();
-                express::base instance(data);
-                if (declaration->is(*ifcroot)) {
-                    try {
-                        const std::string guid = instance.get_attribute_value(0);
-                        std::array<char, 22> key;
-                        if (guid_key(guid, key)) {
-                            if (byguid_.count(key) != 0) {
-                                logger_.get().message(ifcopenshell::logger::LOG_WARNING, "Instance encountered with non-unique GlobalId " + guid);
-                            }
-                            byguid_[key] = instance;
-                        }
-                    } catch (const exception& ex) {
-                        logger_.get().message(ifcopenshell::logger::LOG_ERROR, ex.what());
-                    }
-                }
-                bytype_excl_[declaration].push_back(instance);
                 if (!byid_.insert({name, data}).second) {
                     logger_.get().message(ifcopenshell::logger::LOG_WARNING, "Overwriting instance with name #" + std::to_string(name));
                     byid_.erase(name);
@@ -2958,7 +2994,7 @@ bool ifcopenshell::impl::in_memory_file_storage::read_instances_parallel(Reader*
                 max_id = (std::max)(max_id, (unsigned int)name);
                 instances.push_back(data);
             }
-            byref_excl_.append(std::move(output->storage->byref_excl_));
+            runs.push_back(&output->storage->byref_excl_);
             auto& simple = output->storage->read_simple_type_instances;
             read_simple_type_instances.insert(read_simple_type_instances.end(), simple.begin(), simple.end());
             std::vector<shared_pointer_type>().swap(simple);
@@ -2970,6 +3006,7 @@ bool ifcopenshell::impl::in_memory_file_storage::read_instances_parallel(Reader*
             }
         }
         std::sort(bypassed.begin(), bypassed.end());
+        byref_excl_.merge_sorted(runs);
         outputs.clear();
         return true;
     }

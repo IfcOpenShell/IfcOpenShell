@@ -456,6 +456,42 @@ namespace ifcopenshell {
             // Finalizes bulk loading. Subsequent add() calls go to the delta.
             // Takes over another index's records, e.g. one built by a parser
             // worker. Both must still be in bulk-load mode (no delta).
+            // Takes over several indexes whose records are each already
+            // sorted (e.g. by their parser workers) by merging them pairwise,
+            // O(n log k), so no sort() follows. Both sides must be in bulk-load
+            // mode (no delta).
+            void merge_sorted(std::vector<inverse_index*> runs) {
+                std::vector<std::vector<inverse_record>> parts;
+                if (!base_.empty()) {
+                    sort();
+                    parts.push_back(std::move(base_));
+                    base_.clear();
+                }
+                for (auto* run : runs) {
+                    run->sort();
+                    parts.push_back(std::move(run->base_));
+                    run->clear();
+                }
+                while (parts.size() > 1) {
+                    std::vector<std::vector<inverse_record>> next;
+                    for (size_t i = 0; i + 1 < parts.size(); i += 2) {
+                        std::vector<inverse_record> merged;
+                        merged.reserve(parts[i].size() + parts[i + 1].size());
+                        std::merge(parts[i].begin(), parts[i].end(), parts[i + 1].begin(), parts[i + 1].end(), std::back_inserter(merged), record_less);
+                        next.push_back(std::move(merged));
+                    }
+                    if (parts.size() % 2 == 1) {
+                        next.push_back(std::move(parts.back()));
+                    }
+                    parts.swap(next);
+                }
+                if (!parts.empty()) {
+                    base_ = std::move(parts.front());
+                }
+                sorted_ = true;
+                invalidate_materialized();
+            }
+
             void append(inverse_index&& other) {
                 if (base_.empty()) {
                     base_ = std::move(other.base_);
@@ -516,6 +552,17 @@ namespace ifcopenshell {
                 if (!sorted_) {
                     sort_records(base_);
                     base_.shrink_to_fit();
+                    sorted_ = true;
+                    invalidate_materialized();
+                }
+            }
+
+            // For a worker's run that merge_sorted() copies anyway: no radix buffer
+            // (it would be allocated on the worker's arena and stay there) and no
+            // shrink.
+            void sort_in_place() const {
+                if (!sorted_) {
+                    std::sort(base_.begin(), base_.end(), record_less);
                     sorted_ = true;
                     invalidate_materialized();
                 }
