@@ -21,6 +21,7 @@
 
 import bpy
 import blf
+import math
 import time
 import bonsai.core.alignment as core
 import bonsai.tool as tool
@@ -31,6 +32,7 @@ from bpy_extras.io_utils import ImportHelper
 from bpy.types import Operator, SpaceView3D
 from bpy.props import StringProperty, FloatProperty, EnumProperty, IntProperty, BoolProperty
 from . import decorator as alignment_decorator
+from . import prop
 from bonsai.bim.module.model.polyline import PolylineOperator
 from bonsai.bim.module.model.decorator import PolylineDecorator
 from bonsai.bim.ifc import IfcStore
@@ -1070,12 +1072,62 @@ def _refresh_vertical_profile_view(context, alignment):
     if not dec.is_installed:
         return
     dec._compute_profile(alignment)
-    ve = context.scene.CivilAlignmentProperties.vertical_exaggeration
     space = next((s for s in dec.profile_area.spaces if s.type == "VIEW_3D"), None)
     if space is not None:
-        dec.fit_view(space, ve, area_width=dec.profile_area.width, area_height=dec.profile_area.height)
+        dec.fit_view(space, area_width=dec.profile_area.width, area_height=dec.profile_area.height)
     _sync_profile_visibility_items(context, dec)
     dec.tag_redraw()
+
+
+_PROFILE_ROTATION_GUARD_INTERVAL = 0.05
+
+
+def _profile_rotation_guard_tick():
+    """bpy.app.timers callback that keeps the docked vertical profile view
+    locked to front-orthographic.
+
+    Blender's native MMB-drag orbit still runs — there's no per-area way to
+    disable it without hijacking the global 3D-view keymap, which would also
+    affect the main viewport — so instead this polls at a short interval and
+    snaps view_rotation/view_perspective back the moment they drift away
+    from the locked front-ortho orientation. Pan and zoom (view_location/
+    view_distance) are left untouched. Returning None stops the timer;
+    returning a float reschedules it after that many seconds.
+    """
+    import mathutils
+
+    dec = alignment_decorator.VerticalProfileDecorator
+    if not dec.is_installed or dec.profile_area_ptr == 0:
+        return None
+
+    area = next((a for a in bpy.context.screen.areas if a.as_pointer() == dec.profile_area_ptr), None)
+    if area is None:
+        # Profile area vanished outside of ALIGN_OT_show_vertical_profile
+        # (e.g. dragged/merged away) — stop polling rather than leak a timer.
+        return None
+
+    space = next((s for s in area.spaces if s.type == "VIEW_3D"), None)
+    if space is None:
+        return _PROFILE_ROTATION_GUARD_INTERVAL
+    rv3d = space.region_3d
+
+    locked_rotation = mathutils.Quaternion((0.7071068, 0.7071068, 0.0, 0.0))
+    changed = False
+    if rv3d.view_perspective != "ORTHO":
+        rv3d.view_perspective = "ORTHO"
+        changed = True
+    if rv3d.view_rotation.rotation_difference(locked_rotation).angle > 1e-4:
+        rv3d.view_rotation = locked_rotation
+        changed = True
+    if changed:
+        area.tag_redraw()
+
+    return _PROFILE_ROTATION_GUARD_INTERVAL
+
+
+def _start_profile_rotation_guard():
+    if not bpy.app.timers.is_registered(_profile_rotation_guard_tick):
+        bpy.app.timers.register(_profile_rotation_guard_tick, first_interval=_PROFILE_ROTATION_GUARD_INTERVAL)
 
 
 def _open_vertical_profile(context, alignment):
@@ -1094,10 +1146,9 @@ def _open_vertical_profile(context, alignment):
         # Already open — just refresh the data (the active alignment may
         # have changed) and re-fit the view.
         dec._compute_profile(alignment)
-        ve = context.scene.CivilAlignmentProperties.vertical_exaggeration
         space = next((s for s in dec.profile_area.spaces if s.type == "VIEW_3D"), None)
         if space is not None:
-            dec.fit_view(space, ve, area_width=dec.profile_area.width, area_height=dec.profile_area.height)
+            dec.fit_view(space, area_width=dec.profile_area.width, area_height=dec.profile_area.height)
         _sync_profile_visibility_items(context, dec)
         dec.profile_area.tag_redraw()
         return dec.profile_area
@@ -1141,8 +1192,7 @@ def _open_vertical_profile(context, alignment):
     space.region_3d.view_perspective = "ORTHO"
     space.region_3d.view_rotation = mathutils.Quaternion((0.7071068, 0.7071068, 0.0, 0.0))
 
-    ve = context.scene.CivilAlignmentProperties.vertical_exaggeration
-    dec.fit_view(space, ve, area_width=profile_area.width, area_height=profile_area.height)
+    dec.fit_view(space, area_width=profile_area.width, area_height=profile_area.height)
 
     space.overlay.show_floor = False
     space.overlay.show_axis_x = False
@@ -1160,6 +1210,7 @@ def _open_vertical_profile(context, alignment):
 
     dec.install(context, profile_area)
     profile_area.tag_redraw()
+    _start_profile_rotation_guard()
 
     return profile_area
 
@@ -1510,6 +1561,586 @@ class ALIGN_OT_clear_vertical_pi_markers(Operator):
 
     def execute(self, context):
         context.scene.CivilAlignmentProperties.vertical_pi_markers.clear()
+        return {"FINISHED"}
+
+
+# =============================================================================
+# Segment Table Editing ("stage edits, then Apply")
+# =============================================================================
+
+_SEGMENT_KIND_ITEMS = [
+    ("HORIZONTAL", "Horizontal", ""),
+    ("VERTICAL", "Vertical", ""),
+    ("CANT", "Cant", ""),
+]
+_SEGMENT_ROW_FIELD = {
+    "HORIZONTAL": "h_segment_rows",
+    "VERTICAL": "v_segment_rows",
+    "CANT": "cant_segment_rows",
+}
+_SEGMENT_ROW_ACTIVE_INDEX_FIELD = {
+    "HORIZONTAL": "active_h_segment_row_index",
+    "VERTICAL": "active_v_segment_row_index",
+    "CANT": "active_cant_segment_row_index",
+}
+
+
+class ALIGN_OT_add_segment_row(Operator):
+    """Add a new segment row to the currently-staged edit table"""
+
+    bl_idname = "align.add_segment_row"
+    bl_label = "Add Segment"
+    bl_description = "Insert a new segment after the selected row"
+    bl_options = {"REGISTER", "UNDO"}
+
+    kind: EnumProperty(items=_SEGMENT_KIND_ITEMS, options={"HIDDEN"})
+
+    def execute(self, context):
+        props = context.scene.CivilAlignmentProperties
+        rows = getattr(props, _SEGMENT_ROW_FIELD[self.kind])
+        index_attr = _SEGMENT_ROW_ACTIVE_INDEX_FIELD[self.kind]
+        active_index = getattr(props, index_attr)
+
+        insert_at = active_index + 1 if len(rows) else 0
+        prev_row = rows[active_index] if 0 <= active_index < len(rows) else None
+
+        rows.add()
+        rows.move(len(rows) - 1, insert_at)
+        new_row = rows[insert_at]
+
+        if self.kind == "VERTICAL":
+            new_row.predefined_type = "CONSTANTGRADIENT"
+            new_row.h_length = 10.0
+            seed = prev_row.end_gradient if prev_row else 0.0
+            new_row.start_gradient = seed
+            new_row.end_gradient = seed
+        elif self.kind == "CANT":
+            new_row.predefined_type = "CONSTANTCANT"
+            new_row.h_length = 10.0
+            seed_left = prev_row.end_cant_left if prev_row else 0.0
+            seed_right = prev_row.end_cant_right if prev_row else 0.0
+            new_row.start_cant_left = seed_left
+            new_row.start_cant_right = seed_right
+            new_row.end_cant_left = seed_left
+            new_row.end_cant_right = seed_right
+        else:
+            new_row.predefined_type = "LINE"
+            new_row.length = 10.0
+
+        setattr(props, index_attr, insert_at)
+        return {"FINISHED"}
+
+
+class ALIGN_OT_remove_segment_row(Operator):
+    """Remove the selected row from the currently-staged edit table"""
+
+    bl_idname = "align.remove_segment_row"
+    bl_label = "Remove Segment"
+    bl_description = "Remove the selected row"
+    bl_options = {"REGISTER", "UNDO"}
+
+    kind: EnumProperty(items=_SEGMENT_KIND_ITEMS, options={"HIDDEN"})
+
+    def execute(self, context):
+        props = context.scene.CivilAlignmentProperties
+        rows = getattr(props, _SEGMENT_ROW_FIELD[self.kind])
+        index_attr = _SEGMENT_ROW_ACTIVE_INDEX_FIELD[self.kind]
+        active_index = getattr(props, index_attr)
+        if not (0 <= active_index < len(rows)):
+            return {"CANCELLED"}
+        rows.remove(active_index)
+        setattr(props, index_attr, max(0, min(active_index, len(rows) - 1)))
+        return {"FINISHED"}
+
+
+class ALIGN_OT_move_segment_row(Operator):
+    """Reorder the selected row in the currently-staged edit table"""
+
+    bl_idname = "align.move_segment_row"
+    bl_label = "Move Segment"
+    bl_description = "Move the selected row up or down"
+    bl_options = {"REGISTER", "UNDO"}
+
+    kind: EnumProperty(items=_SEGMENT_KIND_ITEMS, options={"HIDDEN"})
+    direction: EnumProperty(items=[("UP", "Up", ""), ("DOWN", "Down", "")], options={"HIDDEN"})
+
+    def execute(self, context):
+        props = context.scene.CivilAlignmentProperties
+        rows = getattr(props, _SEGMENT_ROW_FIELD[self.kind])
+        index_attr = _SEGMENT_ROW_ACTIVE_INDEX_FIELD[self.kind]
+        active_index = getattr(props, index_attr)
+        target = active_index - 1 if self.direction == "UP" else active_index + 1
+        if not (0 <= target < len(rows)):
+            return {"CANCELLED"}
+        rows.move(active_index, target)
+        setattr(props, index_attr, target)
+        return {"FINISHED"}
+
+
+class ALIGN_OT_enable_editing_h_segments(Operator):
+    """Stage a horizontal layout's segments for table editing"""
+
+    bl_idname = "align.enable_editing_h_segments"
+    bl_label = "Edit Horizontal Segments"
+    bl_description = "Edit this layout's segments as a table (add/remove/reorder/edit, then Apply)"
+    bl_options = {"REGISTER", "UNDO"}
+
+    layout_id: IntProperty(options={"HIDDEN"})
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.CivilAlignmentProperties
+        if props.editing_segment_kind not in ("NONE", "HORIZONTAL"):
+            cls.poll_message_set("Finish or cancel the current segment edit first")
+            return False
+        return True
+
+    def execute(self, context):
+        ifc_file = tool.Ifc.get()
+        props = context.scene.CivilAlignmentProperties
+        h_layout = ifc_file.by_id(self.layout_id)
+
+        # IfcAlignmentHorizontalSegment's length/radius fields are in the
+        # project's own length unit (e.g. feet), but a Blender FloatProperty
+        # tagged unit="LENGTH" always treats its raw stored value as being in
+        # Blender's internal unit (metres, scale_length=1.0) and converts
+        # from there for display -- so the IFC value must be scaled into
+        # that space first, or a foot-based project shows numbers inflated
+        # by ~3.28x (1/0.3048). Reversed on write-back in apply_h_segments.
+        length_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file, "LENGTHUNIT")
+
+        props.h_segment_rows.clear()
+        for seg in tool.Alignment.get_real_layout_segments(h_layout):
+            dp = seg.DesignParameters
+            row = props.h_segment_rows.add()
+            row.segment_id = seg.id()
+            seg_type = dp.PredefinedType
+            if seg_type in prop.SUPPORTED_HORIZONTAL_TYPES:
+                row.predefined_type = seg_type
+            else:
+                row.predefined_type = "UNSUPPORTED"
+                row.original_predefined_type = seg_type or "?"
+            row.length = abs(dp.SegmentLength) * length_scale
+            row.start_radius = (dp.StartRadiusOfCurvature or 0.0) * length_scale
+            row.end_radius = (dp.EndRadiusOfCurvature or 0.0) * length_scale
+
+        props.active_h_segment_row_index = 0
+        props.editing_segment_kind = "HORIZONTAL"
+        props.editing_layout_id = self.layout_id
+
+        # The read-only "#" toggle disappears once the table replaces it, so
+        # clear any stale highlight now -- nothing else could turn it off
+        # while the table is showing.
+        props.selected_h_segment_id = 0
+        alignment_decorator.AlignmentSegmentDecorator.uninstall()
+
+        tool.Blender.update_viewport()
+        return {"FINISHED"}
+
+
+class ALIGN_OT_disable_editing_h_segments(Operator):
+    """Discard the staged horizontal segment edits without touching IFC"""
+
+    bl_idname = "align.disable_editing_h_segments"
+    bl_label = "Cancel"
+    bl_description = "Discard these changes"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = context.scene.CivilAlignmentProperties
+        props.h_segment_rows.clear()
+        props.editing_segment_kind = "NONE"
+        props.editing_layout_id = 0
+        return {"FINISHED"}
+
+
+class ALIGN_OT_apply_h_segments(Operator, tool.Ifc.Operator):
+    """Rebuild a horizontal layout from the staged segment table"""
+
+    bl_idname = "align.apply_h_segments"
+    bl_label = "Apply"
+    bl_description = "Rebuild this layout's segments from the table above"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        props = context.scene.CivilAlignmentProperties
+        h_layout = ifc_file.by_id(props.editing_layout_id)
+        if h_layout is None:
+            self.report({"ERROR"}, "The layout being edited no longer exists")
+            props.h_segment_rows.clear()
+            props.editing_segment_kind = "NONE"
+            props.editing_layout_id = 0
+            return {"CANCELLED"}
+
+        rows = props.h_segment_rows
+        errors = tool.Alignment.validate_horizontal_segment_rows(rows)
+        if errors:
+            self.report({"ERROR"}, "; ".join(errors))
+            return {"CANCELLED"}
+
+        alignment = tool.Alignment._get_top_level_alignment(ifcopenshell.api.alignment.get_alignment(h_layout))
+
+        # The overall start point/direction is preserved as-is (moving it is
+        # a separate feature, REQUIREMENTS §4) -- read it straight off the
+        # current first real segment before wiping anything.
+        existing = tool.Alignment.get_real_layout_segments(h_layout)
+        if existing:
+            first_dp = existing[0].DesignParameters
+            x, y = first_dp.StartPoint.Coordinates
+            direction = first_dp.StartDirection
+        else:
+            x, y, direction = 0.0, 0.0, 0.0
+
+        length_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file, "LENGTHUNIT")
+        angle_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file, "PLANEANGLEUNIT")
+
+        ifcopenshell.api.alignment.clear_layout_segments(ifc_file, h_layout)
+
+        for row in rows:
+            # row.length/start_radius/end_radius are in Blender's internal
+            # unit="LENGTH" space (metres) -- see enable_editing_h_segments'
+            # own comment -- so they're converted back to the project's
+            # length unit here before going into IFC.
+            row_length = row.length / length_scale
+            if row.predefined_type == "LINE":
+                start_radius, end_radius = 0.0, 0.0
+            elif row.predefined_type == "CIRCULARARC":
+                start_radius, end_radius = row.start_radius / length_scale, row.start_radius / length_scale
+            else:  # spiral family (CLOTHOID/CUBIC/HELMERTCURVE/BLOSSCURVE/COSINECURVE/SINECURVE)
+                start_radius, end_radius = row.start_radius / length_scale, row.end_radius / length_scale
+
+            design_parameters = ifc_file.createIfcAlignmentHorizontalSegment(
+                StartTag=None,
+                EndTag=None,
+                StartPoint=ifc_file.createIfcCartesianPoint((x, y)),
+                StartDirection=direction,
+                StartRadiusOfCurvature=start_radius,
+                EndRadiusOfCurvature=end_radius,
+                SegmentLength=row_length,
+                GravityCenterLineHeight=None,
+                PredefinedType=row.predefined_type,
+            )
+            placement = ifcopenshell.api.alignment.create_layout_segment(ifc_file, h_layout, design_parameters)
+            x = float(placement[0, 3]) / length_scale
+            y = float(placement[1, 3]) / length_scale
+            # atan2, not atan(Rdy/Rdx) (what ifcopenshell's own internal
+            # _update_zero_length_segment_placement uses) -- atan can't tell
+            # a segment pointing north from one pointing south when Rdx≈0.
+            direction = math.atan2(float(placement[1, 0]), float(placement[0, 0])) / angle_scale
+
+        ifcopenshell.api.alignment.create_representation(ifc_file, alignment)
+        tool.Alignment.refresh_alignment_representation_object(alignment)
+        _refresh_vertical_profile_view(context, alignment)
+
+        # Every segment id in this layout just changed.
+        props.selected_h_segment_id = 0
+        alignment_decorator.AlignmentSegmentDecorator.uninstall()
+
+        n = len(rows)
+        props.h_segment_rows.clear()
+        props.editing_segment_kind = "NONE"
+        props.editing_layout_id = 0
+
+        tool.Blender.update_viewport()
+        self.report({"INFO"}, f"Rebuilt {n} horizontal segment(s)")
+        return {"FINISHED"}
+
+
+class ALIGN_OT_enable_editing_v_segments(Operator):
+    """Stage a vertical layout's segments for table editing"""
+
+    bl_idname = "align.enable_editing_v_segments"
+    bl_label = "Edit Vertical Segments"
+    bl_description = "Edit this layout's segments as a table (add/remove/reorder/edit, then Apply)"
+    bl_options = {"REGISTER", "UNDO"}
+
+    layout_id: IntProperty(options={"HIDDEN"})
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.CivilAlignmentProperties
+        if props.editing_segment_kind not in ("NONE", "VERTICAL"):
+            cls.poll_message_set("Finish or cancel the current segment edit first")
+            return False
+        return True
+
+    def execute(self, context):
+        ifc_file = tool.Ifc.get()
+        props = context.scene.CivilAlignmentProperties
+        v_layout = ifc_file.by_id(self.layout_id)
+
+        # See enable_editing_h_segments' comment: a unit="LENGTH" FloatProperty
+        # always treats its raw value as Blender-internal metres, so the
+        # project-unit IFC value must be scaled into that space here.
+        length_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file, "LENGTHUNIT")
+
+        props.v_segment_rows.clear()
+        for seg in tool.Alignment.get_real_layout_segments(v_layout):
+            dp = seg.DesignParameters
+            row = props.v_segment_rows.add()
+            row.segment_id = seg.id()
+            seg_type = dp.PredefinedType
+            if seg_type in prop.SUPPORTED_VERTICAL_TYPES:
+                row.predefined_type = seg_type
+            else:
+                row.predefined_type = "UNSUPPORTED"
+                row.original_predefined_type = seg_type or "?"
+            row.h_length = dp.HorizontalLength * length_scale
+            row.start_gradient = (dp.StartGradient or 0.0) * 100.0
+            row.end_gradient = (dp.EndGradient or 0.0) * 100.0
+
+        props.active_v_segment_row_index = 0
+        props.editing_segment_kind = "VERTICAL"
+        props.editing_layout_id = self.layout_id
+        props.selected_v_segment_id = 0
+
+        tool.Blender.update_viewport()
+        return {"FINISHED"}
+
+
+class ALIGN_OT_disable_editing_v_segments(Operator):
+    """Discard the staged vertical segment edits without touching IFC"""
+
+    bl_idname = "align.disable_editing_v_segments"
+    bl_label = "Cancel"
+    bl_description = "Discard these changes"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = context.scene.CivilAlignmentProperties
+        props.v_segment_rows.clear()
+        props.editing_segment_kind = "NONE"
+        props.editing_layout_id = 0
+        return {"FINISHED"}
+
+
+class ALIGN_OT_apply_v_segments(Operator, tool.Ifc.Operator):
+    """Rebuild a vertical layout from the staged segment table"""
+
+    bl_idname = "align.apply_v_segments"
+    bl_label = "Apply"
+    bl_description = "Rebuild this layout's segments from the table above"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        props = context.scene.CivilAlignmentProperties
+        v_layout = ifc_file.by_id(props.editing_layout_id)
+        if v_layout is None:
+            self.report({"ERROR"}, "The layout being edited no longer exists")
+            props.v_segment_rows.clear()
+            props.editing_segment_kind = "NONE"
+            props.editing_layout_id = 0
+            return {"CANCELLED"}
+
+        rows = props.v_segment_rows
+        errors = tool.Alignment.validate_vertical_segment_rows(rows)
+        if errors:
+            self.report({"ERROR"}, "; ".join(errors))
+            return {"CANCELLED"}
+
+        alignment = tool.Alignment._get_top_level_alignment(ifcopenshell.api.alignment.get_alignment(v_layout))
+
+        existing = tool.Alignment.get_real_layout_segments(v_layout)
+        if existing:
+            first_dp = existing[0].DesignParameters
+            dist_along, height = first_dp.StartDistAlong, first_dp.StartHeight
+        else:
+            dist_along, height = 0.0, 0.0
+
+        # row.h_length is in Blender's internal unit="LENGTH" space (metres) --
+        # see enable_editing_v_segments -- convert back to the project's
+        # length unit before mixing it with dist_along/height (already in
+        # project units, read straight from IFC above).
+        length_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file, "LENGTHUNIT")
+
+        ifcopenshell.api.alignment.clear_layout_segments(ifc_file, v_layout)
+
+        for row in rows:
+            h_length = row.h_length / length_scale
+            start_gradient = row.start_gradient / 100.0
+            end_gradient = (
+                row.end_gradient / 100.0 if row.predefined_type in prop.VERTICAL_TWO_GRADIENT_TYPES else start_gradient
+            )
+
+            design_parameters = ifc_file.createIfcAlignmentVerticalSegment(
+                StartTag=None,
+                EndTag=None,
+                StartDistAlong=dist_along,
+                HorizontalLength=h_length,
+                StartHeight=height,
+                StartGradient=start_gradient,
+                EndGradient=end_gradient,
+                RadiusOfCurvature=None,
+                PredefinedType=row.predefined_type,
+            )
+            placement = ifcopenshell.api.alignment.create_layout_segment(ifc_file, v_layout, design_parameters)
+            # Read the next segment's start state back off the kernel-evaluated
+            # end placement, rather than the closed-form "average gradient"
+            # shortcut -- that's only exact for CONSTANTGRADIENT/PARABOLICARC.
+            # A CIRCULARARC's height doesn't vary linearly enough for it to
+            # hold (confirmed by direct comparison against this same
+            # evaluation): using the real placement keeps every type exact.
+            dist_along = float(placement[0, 3]) / length_scale
+            height = float(placement[1, 3]) / length_scale
+
+        ifcopenshell.api.alignment.create_representation(ifc_file, alignment)
+        tool.Alignment.refresh_alignment_representation_object(alignment)
+        _refresh_vertical_profile_view(context, alignment)
+
+        props.selected_v_segment_id = 0
+
+        n = len(rows)
+        props.v_segment_rows.clear()
+        props.editing_segment_kind = "NONE"
+        props.editing_layout_id = 0
+
+        tool.Blender.update_viewport()
+        self.report({"INFO"}, f"Rebuilt {n} vertical segment(s)")
+        return {"FINISHED"}
+
+
+class ALIGN_OT_enable_editing_cant_segments(Operator):
+    """Stage a cant layout's segments for table editing"""
+
+    bl_idname = "align.enable_editing_cant_segments"
+    bl_label = "Edit Cant Segments"
+    bl_description = "Edit this layout's segments as a table (add/remove/reorder/edit, then Apply)"
+    bl_options = {"REGISTER", "UNDO"}
+
+    layout_id: IntProperty(options={"HIDDEN"})
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.CivilAlignmentProperties
+        if props.editing_segment_kind not in ("NONE", "CANT"):
+            cls.poll_message_set("Finish or cancel the current segment edit first")
+            return False
+        return True
+
+    def execute(self, context):
+        ifc_file = tool.Ifc.get()
+        props = context.scene.CivilAlignmentProperties
+        c_layout = ifc_file.by_id(self.layout_id)
+
+        # See enable_editing_h_segments' comment: a unit="LENGTH" FloatProperty
+        # always treats its raw value as Blender-internal metres, so the
+        # project-unit IFC value must be scaled into that space here.
+        length_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file, "LENGTHUNIT")
+
+        props.cant_segment_rows.clear()
+        for seg in tool.Alignment.get_real_layout_segments(c_layout):
+            dp = seg.DesignParameters
+            row = props.cant_segment_rows.add()
+            row.segment_id = seg.id()
+            seg_type = dp.PredefinedType
+            if seg_type in ("CONSTANTCANT", "LINEARTRANSITION"):
+                row.predefined_type = seg_type
+            else:
+                row.predefined_type = "UNSUPPORTED"
+                row.original_predefined_type = seg_type or "?"
+            row.h_length = dp.HorizontalLength * length_scale
+            start_l = dp.StartCantLeft or 0.0
+            start_r = dp.StartCantRight or 0.0
+            row.start_cant_left = start_l
+            row.start_cant_right = start_r
+            row.end_cant_left = dp.EndCantLeft if dp.EndCantLeft is not None else start_l
+            row.end_cant_right = dp.EndCantRight if dp.EndCantRight is not None else start_r
+
+        props.active_cant_segment_row_index = 0
+        props.editing_segment_kind = "CANT"
+        props.editing_layout_id = self.layout_id
+        props.selected_cant_segment_id = 0
+
+        tool.Blender.update_viewport()
+        return {"FINISHED"}
+
+
+class ALIGN_OT_disable_editing_cant_segments(Operator):
+    """Discard the staged cant segment edits without touching IFC"""
+
+    bl_idname = "align.disable_editing_cant_segments"
+    bl_label = "Cancel"
+    bl_description = "Discard these changes"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = context.scene.CivilAlignmentProperties
+        props.cant_segment_rows.clear()
+        props.editing_segment_kind = "NONE"
+        props.editing_layout_id = 0
+        return {"FINISHED"}
+
+
+class ALIGN_OT_apply_cant_segments(Operator, tool.Ifc.Operator):
+    """Rebuild a cant layout from the staged segment table"""
+
+    bl_idname = "align.apply_cant_segments"
+    bl_label = "Apply"
+    bl_description = "Rebuild this layout's segments from the table above"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        props = context.scene.CivilAlignmentProperties
+        c_layout = ifc_file.by_id(props.editing_layout_id)
+        if c_layout is None:
+            self.report({"ERROR"}, "The layout being edited no longer exists")
+            props.cant_segment_rows.clear()
+            props.editing_segment_kind = "NONE"
+            props.editing_layout_id = 0
+            return {"CANCELLED"}
+
+        rows = props.cant_segment_rows
+        errors = tool.Alignment.validate_cant_segment_rows(rows)
+        if errors:
+            self.report({"ERROR"}, "; ".join(errors))
+            return {"CANCELLED"}
+
+        alignment = tool.Alignment._get_top_level_alignment(ifcopenshell.api.alignment.get_alignment(c_layout))
+
+        existing = tool.Alignment.get_real_layout_segments(c_layout)
+        dist_along = existing[0].DesignParameters.StartDistAlong if existing else 0.0
+
+        # row.h_length is in Blender's internal unit="LENGTH" space (metres) --
+        # see enable_editing_cant_segments -- convert back to the project's
+        # length unit before mixing it with dist_along (already in project
+        # units, read straight from IFC above).
+        length_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file, "LENGTHUNIT")
+
+        ifcopenshell.api.alignment.clear_layout_segments(ifc_file, c_layout)
+
+        for row in rows:
+            h_length = row.h_length / length_scale
+            is_transition = row.predefined_type == "LINEARTRANSITION"
+            design_parameters = ifc_file.createIfcAlignmentCantSegment(
+                StartTag=None,
+                EndTag=None,
+                StartDistAlong=dist_along,
+                HorizontalLength=h_length,
+                StartCantLeft=row.start_cant_left,
+                EndCantLeft=row.end_cant_left if is_transition else None,
+                StartCantRight=row.start_cant_right,
+                EndCantRight=row.end_cant_right if is_transition else None,
+                PredefinedType=row.predefined_type,
+            )
+            ifcopenshell.api.alignment.create_layout_segment(ifc_file, c_layout, design_parameters)
+            dist_along += h_length
+
+        ifcopenshell.api.alignment.create_representation(ifc_file, alignment)
+        tool.Alignment.refresh_alignment_representation_object(alignment)
+        _refresh_vertical_profile_view(context, alignment)
+
+        props.selected_cant_segment_id = 0
+
+        n = len(rows)
+        props.cant_segment_rows.clear()
+        props.editing_segment_kind = "NONE"
+        props.editing_layout_id = 0
+
+        tool.Blender.update_viewport()
+        self.report({"INFO"}, f"Rebuilt {n} cant segment(s)")
         return {"FINISHED"}
 
 
