@@ -354,29 +354,32 @@ class Ifc2CA:
 
         if geometry_type == "Vertex":
             return {
-                "dx": condition.TranslationalStiffnessX.wrappedValue,
-                "dy": condition.TranslationalStiffnessY.wrappedValue,
-                "dz": condition.TranslationalStiffnessZ.wrappedValue,
-                "drx": condition.RotationalStiffnessX.wrappedValue,
-                "dry": condition.RotationalStiffnessY.wrappedValue,
-                "drz": condition.RotationalStiffnessZ.wrappedValue,
+                "dx": condition.TranslationalStiffnessX and condition.TranslationalStiffnessX.wrappedValue,
+                "dy": condition.TranslationalStiffnessY and condition.TranslationalStiffnessY.wrappedValue,
+                "dz": condition.TranslationalStiffnessZ and condition.TranslationalStiffnessZ.wrappedValue,
+                "drx": condition.RotationalStiffnessX and condition.RotationalStiffnessX.wrappedValue,
+                "dry": condition.RotationalStiffnessY and condition.RotationalStiffnessY.wrappedValue,
+                "drz": condition.RotationalStiffnessZ and condition.RotationalStiffnessZ.wrappedValue,
             }
 
         if geometry_type == "Edge":
             return {
-                "dx": condition.TranslationalStiffnessByLengthX.wrappedValue,
-                "dy": condition.TranslationalStiffnessByLengthY.wrappedValue,
-                "dz": condition.TranslationalStiffnessByLengthZ.wrappedValue,
-                "drx": condition.RotationalStiffnessByLengthX.wrappedValue,
-                "dry": condition.RotationalStiffnessByLengthY.wrappedValue,
-                "drz": condition.RotationalStiffnessByLengthZ.wrappedValue,
+                "dx": condition.TranslationalStiffnessByLengthX
+                and condition.TranslationalStiffnessByLengthX.wrappedValue,
+                "dy": condition.TranslationalStiffnessByLengthY
+                and condition.TranslationalStiffnessByLengthY.wrappedValue,
+                "dz": condition.TranslationalStiffnessByLengthZ
+                and condition.TranslationalStiffnessByLengthZ.wrappedValue,
+                "drx": condition.RotationalStiffnessByLengthX and condition.RotationalStiffnessByLengthX.wrappedValue,
+                "dry": condition.RotationalStiffnessByLengthY and condition.RotationalStiffnessByLengthY.wrappedValue,
+                "drz": condition.RotationalStiffnessByLengthZ and condition.RotationalStiffnessByLengthZ.wrappedValue,
             }
 
         if geometry_type == "Face":
             return {
-                "dx": condition.TranslationalStiffnessByAreaX.wrappedValue,
-                "dy": condition.TranslationalStiffnessByAreaY.wrappedValue,
-                "dz": condition.TranslationalStiffnessByAreaZ.wrappedValue,
+                "dx": condition.TranslationalStiffnessByAreaX and condition.TranslationalStiffnessByAreaX.wrappedValue,
+                "dy": condition.TranslationalStiffnessByAreaY and condition.TranslationalStiffnessByAreaY.wrappedValue,
+                "dz": condition.TranslationalStiffnessByAreaZ and condition.TranslationalStiffnessByAreaZ.wrappedValue,
             }
 
     def parse_element(self, element: ios.entity_instance):
