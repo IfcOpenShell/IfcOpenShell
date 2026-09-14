@@ -293,7 +293,7 @@ def main() -> None:
 
     cmake_prefix_path_parts = Deps.cmake_prefix_paths()
     if qt_dir:
-        cmake_prefix_path_parts.append(qt_dir)
+        cmake_prefix_path_parts.append(Path(qt_dir))
     cmake_prefix_path = ";".join(str(part) for part in cmake_prefix_path_parts)
 
     if ARGS.use_ninja:

@@ -220,6 +220,7 @@ cmake-format = "gersemi . --in-place"
 cmd = """
     ty check
     nix/
+    win/
     src/bcf
     src/bsdd
     src/ifc2ca
