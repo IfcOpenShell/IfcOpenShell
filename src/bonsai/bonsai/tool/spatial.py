@@ -1177,6 +1177,11 @@ class Spatial(bonsai.core.tool.Spatial):
         )
 
     @classmethod
+    def unhide_viewport(cls, obj: bpy.types.Object) -> None:
+        """Clear the "Disable in Viewports" flag on an object."""
+        obj.hide_viewport = False
+
+    @classmethod
     def assign_type_to_obj(cls, obj: bpy.types.Object) -> None:
         props = tool.Model.get_model_props()
         ifc_file = tool.Ifc.get()

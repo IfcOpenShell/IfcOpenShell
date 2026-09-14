@@ -222,6 +222,7 @@ def generate_space(
 
     if element and element.is_a("IfcSpace"):
         spatial.set_space_representation_from_polygon(active_obj, element, space_polygon, h, polygon_is_si=True)
+        target_obj = active_obj
     else:
         if relating_type:
             name = model.generate_occurrence_name(relating_type, "IfcSpace")
@@ -235,9 +236,12 @@ def generate_space(
 
         element = ifc.get_entity(obj)
         spatial.set_space_representation_from_polygon(obj, element, space_polygon, h, polygon_is_si=True)
+        target_obj = obj
 
         if relating_type:
             spatial.assign_relating_type_to_element(ifc, type, element, relating_type)
+
+    spatial.unhide_viewport(target_obj)
 
     spatial.import_spatial_decomposition()
 
@@ -262,6 +266,7 @@ def generate_spaces_from_walls(
 
         element = ifc.get_entity(obj)
         spatial.set_space_representation_from_polygon(obj, element, poly, h, polygon_is_si=False)
+        spatial.unhide_viewport(obj)
 
 
 def toggle_space_visibility(ifc: type[tool.Ifc], spatial: type[tool.Spatial]) -> None:
