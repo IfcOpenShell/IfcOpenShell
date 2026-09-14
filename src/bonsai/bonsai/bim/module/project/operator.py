@@ -1504,8 +1504,12 @@ class UnloadLink(bpy.types.Operator, tool.Ifc.Operator):
         link_index: int
 
     def _execute(self, context):
-        link = tool.Project.get_project_props().links[self.link_index]
+        props = tool.Project.get_project_props()
+        link = props.links[self.link_index]
         if obj := tool.Project.get_link_empty_handle(link):
+            if props.queried_obj_root == obj:
+                tool.Project.Link.deselect_queried_linked_element()
+                LinksData.linked_data = {}
             collection = obj.instance_collection
             library = collection.library
             tool.Ifc.unlink(obj=obj)

@@ -35,6 +35,7 @@ from ifcpatch.recipes import Ifc2Sql
 
 import bonsai.core.tool
 import bonsai.tool as tool
+from bonsai.bim.module.project.data import LinksData
 from bonsai.tool.project import Project as subject
 from test.bim.bootstrap import NewFile
 
@@ -336,6 +337,65 @@ class TestLoadLinkedModels(NewFile):
             subject.load_linked_models_from_ifc()
             assert len(props.links) == 1
             assert props.links[0].query == ""
+
+
+class TestUnloadLink(NewFile):
+    @staticmethod
+    def create_link(name: str) -> tuple[bpy.types.Object, bpy.types.Object]:
+        collection = bpy.data.collections.new(f"IfcProject/{name}")
+        chunk = bpy.data.objects.new("Chunk", bpy.data.meshes.new(f"{name} Mesh"))
+        collection.objects.link(chunk)
+
+        handle = bpy.data.objects.new(f"IfcProject/{name}", None)
+        handle.instance_type = "COLLECTION"
+        handle.instance_collection = collection
+        bpy.context.scene.collection.objects.link(handle)
+
+        link = tool.Project.get_project_props().links.add()
+        link.name = name
+        link.empty_handle = handle
+        link.is_loaded = True
+        return handle, chunk
+
+    @staticmethod
+    def query_linked_element(handle: bpy.types.Object, chunk: bpy.types.Object, guid: str) -> None:
+        props = tool.Project.get_project_props()
+        props.queried_obj = chunk
+        props.queried_obj_root = handle
+        props.queried_guid = guid
+        for field in subject.Link.SelectedGeometry._fields:
+            chunk[field] = []
+        LinksData.linked_data = {
+            "attributes": {"GlobalId": guid},
+            "properties": [],
+            "type_properties": [],
+        }
+
+    def test_unloading_the_queried_link_clears_queried_element_state(self):
+        handle, chunk = self.create_link("queried.ifc")
+        self.query_linked_element(handle, chunk, "queried-guid")
+
+        bpy.ops.bim.unload_link(link_index=0)
+
+        props = tool.Project.get_project_props()
+        assert props.queried_obj is None
+        assert props.queried_obj_root is None
+        assert props.queried_guid == ""
+        assert LinksData.linked_data == {}
+
+    def test_unloading_another_link_preserves_queried_element_state(self):
+        queried_handle, queried_chunk = self.create_link("queried.ifc")
+        self.create_link("other.ifc")
+        self.query_linked_element(queried_handle, queried_chunk, "queried-guid")
+
+        bpy.ops.bim.unload_link(link_index=1)
+
+        props = tool.Project.get_project_props()
+        assert props.queried_obj == queried_chunk
+        assert props.queried_obj_root == queried_handle
+        assert props.queried_guid == "queried-guid"
+        assert LinksData.linked_data["attributes"]["GlobalId"] == "queried-guid"
+        LinksData.linked_data = {}
 
 
 class TestCalculateLinkMatrix(NewFile):
