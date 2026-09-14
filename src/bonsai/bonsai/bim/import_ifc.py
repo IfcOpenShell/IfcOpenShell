@@ -751,6 +751,15 @@ class IfcImporter:
             if not iterator.next():
                 break
         print("Done creating geometry")
+        missing = {p for p in products if p.Representation} - results
+        if missing:
+            sample = ", ".join(f"#{p.id()}={p.is_a()}" for p in list(missing)[:5])
+            self.ifc_import_settings.logger.error(
+                "Failed to generate geometry for %d element(s) (e.g. %s) using Geometry Library '%s'",
+                len(missing),
+                sample,
+                self.ifc_import_settings.geometry_library,
+            )
         return results
 
     def create_structural_items(self):

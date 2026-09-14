@@ -18,12 +18,15 @@
 
 import json
 from pathlib import Path
+from unittest import mock
 
 import bmesh
 import bpy
 import ifcopenshell
 import ifcopenshell.api.library
 import ifcopenshell.api.style
+import ifcopenshell.geom
+import ifcopenshell.guid
 import ifcopenshell.util.schema
 import numpy as np
 from ifcopenshell.util.shape_builder import ShapeBuilder
@@ -602,3 +605,22 @@ class TestCreatePointCloudMesh(NewFile):
         assert len(mesh.vertices) == 1
         verts = np.array([v.co for v in mesh.vertices])
         assert np.allclose(verts, np.array([np.array(c) for c in coords3d]))
+
+
+class TestCreateGenericShape(NewFile):
+    def test_warns_and_returns_none_when_the_kernel_fails_for_every_context(self, capsys):
+        bpy.ops.bim.create_project()
+        tool.Loader.load_settings()
+        ifc_file = tool.Ifc.get()
+        wall = ifc_file.createIfcWall(GlobalId=ifcopenshell.guid.new())
+
+        def always_fail(*args, **kwargs):
+            raise RuntimeError("Failed to process shape")
+
+        with mock.patch("ifcopenshell.geom.create_shape", side_effect=always_fail):
+            result = subject.create_generic_shape(wall)
+
+        assert result is None
+        output = capsys.readouterr().out
+        assert f"#{wall.id()}={wall.is_a()}" in output
+        assert "Failed to process shape" in output
