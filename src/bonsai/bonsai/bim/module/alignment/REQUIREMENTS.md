@@ -42,14 +42,33 @@ improvements:
    command.
 6. Click each PI (or only the PIs of interest) and input the smoothing type and its parameters.
    Smoothing types include: Circular, Spiral-Circular, Circular-Spiral, Spiral-Circular-Spiral.
+   **Implemented** (`ALIGN_OT_apply_pi_curve`, `PICurveMarkerProperties.curve_type` in the
+   Alignments tab panel) for the clothoid spiral family, via the PI method: each PI marker still
+   stands for one combined "curve" in the UI, but resolves to a run of independent
+   `IfcAlignmentSegment`s underneath (tangent run / entry spiral / arc / exit spiral / tangent
+   run), placed by `ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method` and
+   written via `layout_horizontal_alignment_by_pi_method`.
 7. In a pop-up (or other appropriate UI element), input the parameters:
    - **Circular curve**: radius only.
-   - **Spiral curve**: spiral type (Clothoid, Bloss, Cosine, Helmert, etc.) and spiral length.
-     This assumes all spirals have infinite start/end radius and share the circular arc's radius.
+   - **Spiral curve**: spiral length(s) (entry, exit, or both). **Implemented for the clothoid
+     family only** — this assumes all spirals have infinite start/end radius and share the
+     circular arc's radius. Other spiral families (Bloss, Cosine, Sine, Cubic, Helmert) are not
+     yet supported by the PI-method solver; each would need its own curvature-vs-length
+     integrand substituted into `solve_horizontal_alignment_by_pi_method`'s displacement
+     composition (the tangent-distance projection itself is spiral-family agnostic).
 
-   **Open question**: other cases exist that this doesn't cover, e.g. a spiral between two
-   circular arcs of different radius (Spiral-Circular-Spiral-Circular-Spiral). No UI is proposed
-   for this yet — it may require selecting 2 PIs and defining all parameters together.
+   **Confirmed future requirement**: compound curves (PCC, point of compound curvature — two
+   arcs curving the same direction) and reverse curves (PRC, point of reverse curvature — two
+   arcs curving opposite directions), joined directly with no tangent run between them, optionally
+   with a spiral on the outer/non-joined side of either curve (e.g.
+   Spiral-Circular-Spiral-Circular-Spiral). A PCC/PRC-capable solver variant (`join_next` on a PI's
+   radii entry, closure-validated so the two curves' tangent lengths exactly span the PI-to-PI
+   distance) exists as prior art on another branch, ported from upstream PR #8833, but was not
+   brought in with the clothoid spiral-circular-spiral pass.
+
+   **Open question**: the UI for this — since a compound/reverse curve junction spans two PIs, it
+   may need selecting 2 PIs and defining both curves' parameters together, rather than the
+   single-PI marker interaction used for §2 steps 6-7 today.
 8. Right-click (or whatever is standard) to end the command. Generate the alignment automatically.
 
 ## 3. Interrogating an alignment
