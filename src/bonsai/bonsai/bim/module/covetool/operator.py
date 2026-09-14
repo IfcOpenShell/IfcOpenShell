@@ -55,6 +55,13 @@ class RunSimpleAnalysis(bpy.types.Operator):
     bl_idname = "bim.covetool_run_simple_analysis"
     bl_label = "Run Simple Analysis"
 
+    @classmethod
+    def poll(cls, context):
+        if not tool.Blender.get_covetool_props().projects:
+            cls.poll_message_set("Login to cove.tool and select a project first.")
+            return False
+        return True
+
     def execute(self, context):
         props = tool.Blender.get_covetool_props()
         simple_analysis = props.simple_analysis
@@ -91,6 +98,13 @@ class RunSimpleAnalysis(bpy.types.Operator):
 class RunAnalysis(bpy.types.Operator):
     bl_idname = "bim.covetool_run_analysis"
     bl_label = "Run Analysis"
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Blender.get_covetool_props().projects:
+            cls.poll_message_set("Login to cove.tool and select a project first.")
+            return False
+        return True
 
     def execute(self, context):
         props = tool.Blender.get_covetool_props()
