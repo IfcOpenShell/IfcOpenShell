@@ -165,6 +165,8 @@ class Ifc(bonsai.core.tool.Ifc):
     @classmethod
     def get_entity_by_id(cls, entity_id: int) -> Union[ifcopenshell.entity_instance, None]:
         """useful to check whether entity_id is still exists in IFC"""
+        if not entity_id:
+            return None
         ifc_file = tool.Ifc.get()
         try:
             return ifc_file.by_id(entity_id)

@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Any
+from typing import Any, Union
 
 import bpy
 import ifcopenshell
@@ -50,7 +50,13 @@ def refresh():
 
 class Data:
     @classmethod
-    def psetqtos(cls, element: ifcopenshell.entity_instance, psets_only: bool = False, qtos_only: bool = False):
+    def psetqtos(
+        cls, element: Union[ifcopenshell.entity_instance, None], psets_only: bool = False, qtos_only: bool = False
+    ):
+        # A stale or absent ifc_definition_id resolves to None; render no psets
+        # instead of aborting every panel draw that shares this data class.
+        if element is None:
+            return []
         ifc_file = tool.Ifc.get()
         results = []
         psetqtos = ifcopenshell.util.element.get_psets(
@@ -185,7 +191,7 @@ class MaterialPsetsData(Data):
 
         cls.data = {
             "ifc_definition_id": ifc_definition_id,
-            "psets": cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id)),
+            "psets": cls.psetqtos(tool.Ifc.get_entity_by_id(ifc_definition_id)),
             "pset_name": cls.pset_name(),
         }
         cls.is_loaded = True
@@ -195,7 +201,9 @@ class MaterialPsetsData(Data):
         props = tool.Material.get_material_props()
         if material := props.active_material:
             if material.ifc_definition_id:
-                material = tool.Ifc.get().by_id(material.ifc_definition_id)
+                material = tool.Ifc.get_entity_by_id(material.ifc_definition_id)
+                if material is None:
+                    return []
                 category = getattr(material, "Category", None) or None
                 psets = bonsai.bim.schema.ifc.psetqto.get_applicable(
                     props.material_type, category, pset_only=True, schema=tool.Ifc.get_schema()
@@ -219,7 +227,7 @@ class MaterialSetItemPsetsData(Data):
         assert obj
         ifc_definition_id = tool.Material.get_object_material_props(obj).active_material_set_item_id
         if ifc_definition_id:
-            psets = cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id))
+            psets = cls.psetqtos(tool.Ifc.get_entity_by_id(ifc_definition_id))
         cls.data = {"psets": psets}
         cls.is_loaded = True
 
@@ -233,7 +241,7 @@ class TaskQtosData(Data):
         wprops = tool.Sequence.get_work_schedule_props()
         tprops = tool.Sequence.get_task_tree_props()
         ifc_definition_id = tprops.tasks[wprops.active_task_index].ifc_definition_id
-        cls.data = {"qtos": cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id), qtos_only=True)}
+        cls.data = {"qtos": cls.psetqtos(tool.Ifc.get_entity_by_id(ifc_definition_id), qtos_only=True)}
         cls.is_loaded = True
 
 
@@ -246,7 +254,7 @@ class ResourceQtosData(Data):
         active_resource = tool.Resource.get_resource_props().active_resource
         assert active_resource
         ifc_definition_id = active_resource.ifc_definition_id
-        cls.data = {"qtos": cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id), qtos_only=True)}
+        cls.data = {"qtos": cls.psetqtos(tool.Ifc.get_entity_by_id(ifc_definition_id), qtos_only=True)}
         cls.is_loaded = True
 
 
@@ -259,7 +267,7 @@ class ResourcePsetsData(Data):
         active_resource = tool.Resource.get_resource_props().active_resource
         assert active_resource
         ifc_definition_id = active_resource.ifc_definition_id
-        cls.data = {"psets": cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id), psets_only=True)}
+        cls.data = {"psets": cls.psetqtos(tool.Ifc.get_entity_by_id(ifc_definition_id), psets_only=True)}
         cls.is_loaded = True
 
 
@@ -298,7 +306,7 @@ class ProfilePsetsData(Data):
         active_profile = tool.Profile.get_active_profile_ui()
         if active_profile:
             ifc_definition_id = active_profile.ifc_definition_id
-            psets_data = cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id), psets_only=True)
+            psets_data = cls.psetqtos(tool.Ifc.get_entity_by_id(ifc_definition_id), psets_only=True)
         else:
             ifc_definition_id = 0
             psets_data = []
@@ -318,7 +326,7 @@ class WorkSchedulePsetsData(Data):
     def load(cls):
         props = tool.Sequence.get_work_schedule_props()
         ifc_definition_id = props.active_work_schedule_id
-        cls.data = {"psets": cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id), psets_only=True)}
+        cls.data = {"psets": cls.psetqtos(tool.Ifc.get_entity_by_id(ifc_definition_id), psets_only=True)}
         cls.is_loaded = True
 
 
@@ -332,7 +340,7 @@ class ZonePsetsData(Data):
         assert (active_zone := props.active_zone)
         ifc_definition_id = active_zone.ifc_definition_id
         cls.data = {
-            "psets": (cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id), psets_only=True)),
+            "psets": (cls.psetqtos(tool.Ifc.get_entity_by_id(ifc_definition_id), psets_only=True)),
         }
         cls.is_loaded = True
 
