@@ -35,8 +35,8 @@ call cecho.cmd 0 12 "Use `python build-all.py` instead. It's intended to be a dr
 call cecho.cmd 0 12 "except CMake args now need to be passed after `"--`", e.g. `python build-all.py vs2022-x64 -- -DGLTF_SUPPORT=ON`."
 echo.
 
-:: Use "yes" trick to break the pause in build-deps.py
-echo y | python build-deps.py %1 %2
+:: Use "yes" trick to break the pause in build-deps.cmd
+echo y | call build-deps.cmd %1 %2
 if not %ERRORLEVEL%==0 goto :EOF
 :: Same trick as in run-cmake.bat
 set ARGUMENTS=%*
