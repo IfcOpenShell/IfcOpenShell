@@ -21,6 +21,7 @@ import re
 import string
 from pathlib import Path
 from textwrap import wrap
+from typing import Union
 
 import openpyxl
 import openpyxl.cell  # Unnecessary, bug in typeshed.
@@ -35,6 +36,30 @@ import bonsai.tool as tool
 from bonsai.bim.module.drawing.svgwriter import SvgWriter
 
 DEBUG = False
+
+# What a spreadsheet may call a cell's borders: the shorthand ruling every side
+# the same, and one key per side that departs from it.
+BORDER_KEYS = ("border", "border-left", "border-right", "border-top", "border-bottom")
+
+# dash patterns in multiples of the line width, anything missing draws plain
+BORDER_DASHES = {"dotted": (1, 1), "dashed": (3, 2)}
+
+# xlsx names a border weight instead of measuring it, so the widths are ours
+XLSX_BORDERS = {
+    "hair": ("0.25pt", None),
+    "thin": ("0.5pt", None),
+    "medium": ("1pt", None),
+    "thick": ("1.5pt", None),
+    "double": ("1pt", None),
+    "dotted": ("0.5pt", BORDER_DASHES["dotted"]),
+    "dashed": ("0.5pt", BORDER_DASHES["dashed"]),
+    "dashDot": ("0.5pt", (3, 2, 1, 2)),
+    "dashDotDot": ("0.5pt", (3, 2, 1, 2, 1, 2)),
+    "mediumDashed": ("1pt", BORDER_DASHES["dashed"]),
+    "mediumDashDot": ("1pt", (3, 2, 1, 2)),
+    "mediumDashDotDot": ("1pt", (3, 2, 1, 2, 1, 2)),
+    "slantDashDot": ("1pt", (3, 2, 1, 2)),
+}
 
 
 def col2num(col):
@@ -160,14 +185,7 @@ class Scheduler:
                 else:
                     background_color = "#ffffff"
 
-                self.svg.add(
-                    self.svg.rect(
-                        insert=(x, y),
-                        size=(width, height),
-                        style=f"fill: {background_color};",
-                        class_="border",
-                    )
-                )
+                self.draw_cell(x, y, width, height, background_color, self.get_xlsx_cell_borders(cell.border))
 
                 if not cell.value:
                     x += unmerged_width
@@ -440,15 +458,7 @@ class Scheduler:
                         col_style = self.get_style(column_styles[tdi], styles)
                         final_cell_style = cell_style or col_style
                         background_color = final_cell_style.get("background-color", "#ffffff")
-
-                        self.svg.add(
-                            self.svg.rect(
-                                insert=(x, y),
-                                size=(width, height),
-                                style=f"fill: {background_color};",
-                                class_="border",
-                            )
-                        )
+                        self.draw_cell(x, y, width, height, background_color, self.get_cell_borders(final_cell_style))
 
                         p_tags = td.getElementsByType(P)
                         text_color = final_cell_style.get("color", None)
@@ -504,6 +514,93 @@ class Scheduler:
         self.svg["height"] = "{}mm".format(total_height)
         self.svg["viewBox"] = "0 0 {} {}".format(total_width, total_height)
         self.svg.save(pretty=True)
+
+    def draw_cell(
+        self, x: float, y: float, width: float, height: float, background_color: str, borders: Union[dict, None]
+    ) -> None:
+        """Draw a cell background, and a line for each side that has a border.
+
+        A cell with no borders of its own keeps the `.border` class, so the
+        stylesheet still styles it as it did before.
+        """
+        if borders is None:
+            self.svg.add(
+                self.svg.rect(
+                    insert=(x, y),
+                    size=(width, height),
+                    style=f"fill: {background_color};",
+                    class_="border",
+                )
+            )
+            return
+
+        self.svg.add(
+            self.svg.rect(insert=(x, y), size=(width, height), style=f"fill: {background_color}; stroke: none;")
+        )
+        edges = {
+            "left": ((x, y), (x, y + height)),
+            "right": ((x + width, y), (x + width, y + height)),
+            "top": ((x, y), (x + width, y)),
+            "bottom": ((x, y + height), (x + width, y + height)),
+        }
+        for side, border in borders.items():
+            if border is None:
+                continue
+            border_width, color, dashes = border
+            stroke = f"stroke: {color}; stroke-width: {border_width};"
+            if dashes:
+                # dashes scale with the line width, so a hairline dots finely
+                dasharray = ",".join(str(dash * border_width) for dash in dashes)
+                stroke += f" stroke-dasharray: {dasharray};"
+            start, end = edges[side]
+            self.svg.add(self.svg.line(start=start, end=end, style=stroke))
+
+    def get_cell_borders(self, style: dict) -> Union[dict, None]:
+        """Border of each side of an .ods cell, or None if it declares none."""
+        if not any(key in style for key in BORDER_KEYS):
+            return None
+        # `border` rules every side, `border-<side>` overrides one of them
+        shorthand = self.parse_border(style.get("border"))
+        return {
+            side: self.parse_border(style[f"border-{side}"]) if f"border-{side}" in style else shorthand
+            for side in ("left", "right", "top", "bottom")
+        }
+
+    def parse_border(self, value: Union[str, None]) -> Union[tuple, None]:
+        """(width in mm, color, dashes) of an .ods border, None if it has no line."""
+        if not value:
+            return None
+        # CSS shorthand: width, style and color in any order, any of them absent
+        border_width, color, dashes = None, "#000000", None
+        for token in value.split():
+            if token in ("none", "hidden"):
+                return None
+            elif token.startswith("#"):
+                color = token
+            elif token[0].isdigit() or token[0] == ".":
+                border_width = self.convert_to_mm(token)
+            elif token in BORDER_DASHES:
+                dashes = BORDER_DASHES[token]
+        if border_width is None:
+            return None
+        return border_width, color, dashes
+
+    def get_xlsx_cell_borders(self, border) -> Union[dict, None]:
+        """Border of each side of an .xlsx cell, or None if it declares none."""
+        sides = {side: getattr(border, side, None) for side in ("left", "right", "top", "bottom")}
+        if not any(side is not None and side.style for side in sides.values()):
+            return None
+        return {name: self.parse_xlsx_border(side) for name, side in sides.items()}
+
+    def parse_xlsx_border(self, side) -> Union[tuple, None]:
+        """(width in mm, color, dashes) of an openpyxl Side, None if it has no line."""
+        if side is None or not side.style:
+            return None
+        border_width, dashes = XLSX_BORDERS[side.style]
+        # NOTE: only a plain ARGB reads here, an indexed or theme color draws black
+        rgb = getattr(side.color, "rgb", None) if side.color else None
+        color = f"#{rgb[2:].lower()}" if isinstance(rgb, str) and len(rgb) == 8 else "#000000"
+        return self.convert_to_mm(border_width), color, dashes
 
     def get_style(self, style_name: str, styles: dict) -> dict:
         style = styles[style_name] if style_name else {}
