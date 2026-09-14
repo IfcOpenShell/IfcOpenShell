@@ -324,6 +324,15 @@ class Attribute(Facet):
                         names.append(k)
                         values.append(v)
 
+        if self.cardinality == "prohibited" and not self.value:
+            # "Must not exist, even if empty": an empty string or empty
+            # aggregate is still a populated attribute, only a genuinely
+            # unset (None) attribute counts as absent. Checked before the
+            # empty-value filtering below, which exists to serve REQUIRED
+            # and OPTIONAL's different definition of "populated".
+            exists = any(value is not None for value in values)
+            return AttributeResult(not exists, {"type": "PROHIBITED"})
+
         is_pass = bool(values)
         reason = None
 
