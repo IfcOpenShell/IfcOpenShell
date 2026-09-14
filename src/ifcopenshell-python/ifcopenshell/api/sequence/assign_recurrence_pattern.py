@@ -99,7 +99,7 @@ def assign_recurrence_pattern(
 
         # We create a monthly recurrence
         pattern = ifcopenshell.api.sequence.assign_recurrence_pattern(model,
-            parent=work_time, recurrence_type="MONTHLY_BY_DAY_OF_MONTH")
+            parent=time, recurrence_type="MONTHLY_BY_DAY_OF_MONTH")
 
         # Specifically, the maintenance task must occur every 6 months
         ifcopenshell.api.sequence.edit_recurrence_pattern(model,
