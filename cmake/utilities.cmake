@@ -18,6 +18,12 @@
 ################################################################################
 
 # Create a cache entry if absent for environment variables
+#
+# The env var fallback was mostly relied on by the Windows buil. It's not used anymore
+# (all build scripts now pass these as -D cache args instead), so in theory it could be
+# dropped in the future.
+# It also lets unrelated/stray environment state silently configure the build, since these
+# var names aren't namespaced to this project.
 macro(UNIFY_ENVVARS_AND_CACHE VAR)
     if(NOT DEFINED ${VAR} AND DEFINED ENV{${VAR}} AND NOT ENV{${VAR}} STREQUAL "")
         set(${VAR} "$ENV{${VAR}}" CACHE STRING "${VAR}" FORCE)

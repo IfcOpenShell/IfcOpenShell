@@ -51,8 +51,8 @@ class Dep(NamedTuple):
     rel_path: Path | None
     cmake_prefix: bool = True
     """Whether the dep's dir should be added to CMAKE_PREFIX_PATH."""
-    pass_to_env: bool = False
-    """Whether `env_var` should be added to the subprocess env passed to cmake."""
+    pass_as_cmake_arg: bool = False
+    """Whether `env_var` should be passed to cmake as a `-D` cache variable."""
     required: bool = True
     """Whether to error out if the dep's value can't be resolved."""
     base: Literal["DEPS", "INSTALL"] = "INSTALL"
@@ -66,7 +66,7 @@ class Deps:
         "opencollada": Dep("OPENCOLLADA_INSTALL_DIR", Path("OpenCOLLADA")),
         # We don't install Eigen currently,
         # so there's no Eigen3config.cmake and therefore we provide path explicitly.
-        "eigen": Dep("EIGEN_DIR", Path("Eigen"), cmake_prefix=False, pass_to_env=True),
+        "eigen": Dep("EIGEN_DIR", Path("Eigen"), cmake_prefix=False, pass_as_cmake_arg=True),
         "cgal": Dep("CGAL_INSTALL_DIR", Path("cgal")),
         "gmp": Dep("GMP_INSTALL_DIR", Path("mpir")),
         "mpfr": Dep("MPFR_INSTALL_DIR", Path("mpfr")),
@@ -75,15 +75,18 @@ class Deps:
         "zstd": Dep("ZSTD_INSTALL_DIR", Path("zstd")),
         "swig": Dep("SWIG_INSTALL_DIR", None),
         "rocksdb": Dep("ROCKSDB_INSTALL_DIR", Path("rocksdb")),
-        "json": Dep("JSON_INCLUDE_DIR", Path("json"), cmake_prefix=False, pass_to_env=True),
+        "json": Dep("JSON_INCLUDE_DIR", Path("json"), cmake_prefix=False, pass_as_cmake_arg=True),
         "libxml2_libraries": Dep(
-            "LIBXML2_LIBRARIES", Path("OpenCOLLADA/lib/opencollada/xml.lib"), cmake_prefix=False, pass_to_env=True
+            "LIBXML2_LIBRARIES",
+            Path("OpenCOLLADA/lib/opencollada/xml.lib"),
+            cmake_prefix=False,
+            pass_as_cmake_arg=True,
         ),
         "libxml2_include_dir": Dep(
             "LIBXML2_INCLUDE_DIR",
             Path("OpenCOLLADA/Externals/LibXML/include"),
             cmake_prefix=False,
-            pass_to_env=True,
+            pass_as_cmake_arg=True,
             base="DEPS",
         ),
         # TODO: drop this TRANSITION check once everyone has re-run build-deps.py with manifold support.
@@ -129,8 +132,8 @@ class Deps:
         ]
 
     @classmethod
-    def env_dict(cls) -> dict[str, str]:
-        return {dep.env_var: str(cls.values()[name]) for name, dep in cls.DEPS.items() if dep.pass_to_env}
+    def cmake_args(cls) -> list[str]:
+        return [f"-D{dep.env_var}={cls.values()[name]}" for name, dep in cls.DEPS.items() if dep.pass_as_cmake_arg]
 
 
 def get_var(deps_cache: dict[str, str], key: str, *, deps_cache_only: bool = False) -> str | None:
@@ -321,13 +324,13 @@ def main() -> None:
         cmake_args.append(f"-DQT_HOST_PATH={qt_host_path}")
     if Deps.values()["manifold"]:
         cmake_args.append("-DWITH_MANIFOLD=ON")
+    cmake_args += Deps.cmake_args()
     cmake_args += ARGS.extra_args
 
     run_streamed(
         "cmake",
         *cmake_args,
         cwd=build_dir,
-        env=Deps.env_dict(),
     )
 
     logger.info("")
