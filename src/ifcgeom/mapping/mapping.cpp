@@ -823,18 +823,47 @@ void mapping::initialize_units_() {
     angle_unit_ = -1.;
     length_unit_name_ = "METER";
     
+    IfcSchema::IfcUnitAssignment* unit_assignment = nullptr;
+
 #ifdef SCHEMA_HAS_IfcContext
-    auto projects = file_->instances_by_type<IfcSchema::IfcContext>();
+    // IfcProjectLibrary is also an IfcContext, so a file with a project and one
+    // or more libraries legitimately has more than one IfcContext instance.
+    // Prefer the unique IfcProject, then fall back to a unique IfcContext (this
+    // is what makes library-only files resolve), then to a context that is the
+    // only one carrying units.
+    auto ifc_projects = file_->instances_by_type<IfcSchema::IfcProject>();
+    if (ifc_projects->size() == 1) {
+        unit_assignment = (*ifc_projects->begin())->UnitsInContext();
+    } else {
+        auto contexts = file_->instances_by_type<IfcSchema::IfcContext>();
+        if (contexts->size() == 1) {
+            unit_assignment = (*contexts->begin())->UnitsInContext();
+        } else {
+            IfcSchema::IfcContext* context_with_units = nullptr;
+            for (auto it = contexts->begin(); it != contexts->end(); ++it) {
+                if ((*it)->UnitsInContext() != nullptr) {
+                    if (context_with_units != nullptr) {
+                        context_with_units = nullptr;
+                        break;
+                    }
+                    context_with_units = *it;
+                }
+            }
+            if (context_with_units != nullptr) {
+                unit_assignment = context_with_units->UnitsInContext();
+            } else {
+                logger_.Warning("GEO", 308, "Not a single project or context in file");
+            }
+        }
+    }
 #else
     auto projects = file_->instances_by_type<IfcSchema::IfcProject>();
-#endif
-    IfcSchema::IfcUnitAssignment* unit_assignment = nullptr;
     if (projects->size() == 1) {
-        auto* project = *projects->begin();
-        unit_assignment = project->UnitsInContext();
+        unit_assignment = (*projects->begin())->UnitsInContext();
     } else {
         logger_.Warning("GEO", 308, "Not a single project or context in file");
     }
+#endif
     if (unit_assignment == nullptr) {
         logger_.Warning("GEO", 309, "Unable to detect unit information");
         return;
