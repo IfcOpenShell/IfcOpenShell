@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import pytest
+
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.geometry
 import ifcopenshell.api.root
@@ -60,6 +62,10 @@ class TestResetSpatialElementLocations(test.bootstrap.IFC4):
         ifcpatch.execute({"file": self.file, "recipe": "ResetSpatialElementLocations", "arguments": ["", True]})
         m = ifcopenshell.util.placement.get_local_placement(site.ObjectPlacement)
         assert np.allclose(m, m2)
+
+    def test_raises_on_missing_project(self):
+        with pytest.raises(ValueError):
+            ifcpatch.execute({"file": self.file, "recipe": "ResetSpatialElementLocations", "arguments": ["", False]})
 
 
 class TestResetSpatialElementLocationsIFC2X3(test.bootstrap.IFC2X3, TestResetSpatialElementLocations):
