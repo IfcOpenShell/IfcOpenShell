@@ -805,7 +805,6 @@ IF DEFINED QT6_HOST_INSTALL_DIR (
 IF "%QT6_TARGET_INSTALLED%"=="TRUE" IF "%QT6_HOST_INSTALLED%"=="TRUE" (
     echo Found existing "%QT6_INSTALL_DIR%" for %BUILD_CFG%, skipping
     IF DEFINED QT6_HOST_INSTALL_DIR echo Found existing Qt host tools at "%QT6_HOST_INSTALL_DIR%", skipping
-    call :MarkInstallation
     goto %NEXT_DEPENDENCY_LABEL%
 )
 
@@ -819,6 +818,9 @@ IF NOT "%QT6_TARGET_INSTALLED%"=="TRUE" (
     REM Keep the install lean by filtering archives: qtbase provides
     REM Core/Gui/Widgets (and the Qt6::CorePrivate target), qtsvg provides
     REM Qt6::Svg. Both are base-Qt archives, not add-on modules.
+    REM Qt's official archives always bundle both RelWithDebInfo and Debug builds together.
+    REM aqtinstall has no option to download only one of them, or other configs
+    REM (Release/MinSizeRel) instead.
     %AQT_PYTHON% -m aqt install-qt windows desktop %QT6_VERSION% %QT6_ARCH% -O "%QT6_AQT_OUTPUT_DIR%" --archives qtbase qtsvg
     IF ERRORLEVEL 1 GOTO :Error
 )
@@ -862,7 +864,6 @@ IF DEFINED QT6_HOST_INSTALL_DIR (
     )
 )
 
-call :MarkInstallation
 goto %NEXT_DEPENDENCY_LABEL%
 
 :manifold

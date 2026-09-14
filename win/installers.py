@@ -845,7 +845,6 @@ def install_qt6(
         logger.info(f"Found existing '{QT6_INSTALL_DIR}' for {build_cfg}, skipping")
         if QT6_CROSS_COMPILING:
             logger.info(f"Found existing Qt host tools at '{QT6_HOST_INSTALL_DIR}', skipping")
-        mark_installation(QT6_INSTALL_DIR, build_cfg)
         return
 
     def install_via_pip(python_exe: str) -> tuple[str, ...]:
@@ -869,6 +868,9 @@ def install_qt6(
         AQT_CMD = install_via_pip(AQT_PYTHON)
 
     def aqt_install_qt(arch: str, output_dir: Path) -> None:
+        # Qt's official archives always bundle both RelWithDebInfo and Debug builds together.
+        # aqtinstall has no option to download only one of them, or other configs
+        # (Release/MinSizeRel) instead.
         run_streamed(
             *AQT_CMD,
             "install-qt",
@@ -911,9 +913,6 @@ def install_qt6(
         assert QT6_HOST_EXPECTED_FILES is not None
         for path in QT6_HOST_EXPECTED_FILES:
             require_exists("Qt6 host installation", path)
-
-    # TODO: check if it's actually needed, since we don't use check it.
-    mark_installation(QT6_INSTALL_DIR, build_cfg)
 
 
 def install_python(
