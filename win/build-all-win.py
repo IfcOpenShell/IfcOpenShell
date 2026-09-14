@@ -16,7 +16,7 @@ from zipfile import ZipFile
 
 
 def is_arm64() -> bool:
-    arch = os.environ.get("VS_PLATFORM", "").lower()
+    arch = os.environ.get("TARGET_ARCH", "").lower()
     if arch in ("arm64", "aarch64"):
         return True
     if arch in ("x64", "amd64", "x86_64"):
