@@ -62,8 +62,10 @@ def remove_product(file: ifcopenshell.file, product: ifcopenshell.entity_instanc
     """
     representations: list[ifcopenshell.entity_instance] = []
     if product.is_a("IfcProduct"):
-        if product.Representation:
-            representations = product.Representation.Representations or []
+        # only remove representations if this product is their sole owner
+        product_def_shape = product.Representation
+        if product_def_shape and len(product_def_shape.ShapeOfProduct) == 1:
+            representations = product_def_shape.Representations or []
         else:
             representations = []
 

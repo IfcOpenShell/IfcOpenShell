@@ -61,6 +61,25 @@ class TestRemoveContext(test.bootstrap.IFC4):
         else:
             assert len([e for e in self.file]) == 1
 
+    def test_removing_a_context_used_by_two_products_sharing_one_shape(self):
+        # two products referencing the exact same IfcProductDefinitionShape
+        # (eg. Revit-authored files, #9207) must not crash and must not
+        # leak an orphaned representation once both are detached
+        context = self.file.createIfcGeometricRepresentationContext()
+        rep = self.file.createIfcRepresentation(ContextOfItems=context)
+        shape = self.file.createIfcProductDefinitionShape(Representations=[rep])
+        element_a = ifcopenshell.api.root.create_entity(self.file)
+        element_b = ifcopenshell.api.root.create_entity(self.file)
+        element_a.Representation = shape
+        element_b.Representation = shape
+
+        ifcopenshell.api.context.remove_context(self.file, context=context)
+
+        assert element_a.Representation is None
+        assert element_b.Representation is None
+        assert len(self.file.by_type("IfcProductDefinitionShape")) == 0
+        assert len(self.file.by_type("IfcRepresentation")) == 0
+
 
 class TestRemoveContextIFC2X3(test.bootstrap.IFC2X3, TestRemoveContext):
     pass

@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.api.type
+import ifcopenshell.api.root
 import test.bootstrap
 
 
@@ -50,6 +51,32 @@ class TestMapTypeRepresentations(test.bootstrap.IFC4):
         assert rep.RepresentationType == "MappedRepresentation"
         assert rep.Items[0].MappingSource == type.RepresentationMaps[0]
         assert len(self.file.by_type("IfcShapeRepresentation")) == 2
+
+    def test_mapping_type_representations_keeps_a_sibling_sharing_the_old_shape(self):
+        # #9207: some authoring tools reuse the same IfcProductDefinitionShape
+        # across occurrences. Stripping related_object's own representations
+        # before mapping the type's must not destroy a sibling's copy.
+        context = self.file.createIfcGeometricRepresentationSubContext()
+        old_rep = self.file.createIfcShapeRepresentation(ContextOfItems=context)
+        shape = self.file.createIfcProductDefinitionShape(Representations=[old_rep])
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        sibling = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element.Representation = shape
+        sibling.Representation = shape
+
+        type = self.file.createIfcWallType(
+            RepresentationMaps=[
+                self.file.createIfcRepresentationMap(
+                    MappedRepresentation=self.file.createIfcShapeRepresentation(ContextOfItems=context)
+                )
+            ]
+        )
+        self.file.createIfcRelDefinesByType(RelatingType=type, RelatedObjects=[element])
+
+        ifcopenshell.api.type.map_type_representations(self.file, related_object=element, relating_type=type)
+
+        assert sibling.Representation is not None
+        assert old_rep in sibling.Representation.Representations
 
 
 class TestMapTypeRepresentationsIFC2X3(test.bootstrap.IFC2X3, TestMapTypeRepresentations):
