@@ -810,7 +810,7 @@ IF "%QT6_TARGET_INSTALLED%"=="TRUE" IF "%QT6_HOST_INSTALLED%"=="TRUE" (
 )
 
 set AQT_PYTHON=python
-IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" IF EXIST "%PYTHONHOME%\python.exe" set AQT_PYTHON="%PYTHONHOME%\python.exe"
+IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" set AQT_PYTHON="%PYTHONHOME%\python.exe"
 
 %AQT_PYTHON% -m pip install --upgrade aqtinstall
 IF NOT %ERRORLEVEL%==0 GOTO :Error
