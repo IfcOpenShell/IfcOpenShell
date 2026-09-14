@@ -61,11 +61,6 @@ jobs:
           lfs: true
           token: ${{ secrets.BUILD_REPO_TOKEN }}
 
-      - name: Unpack Dependencies
-        run: |
-          cd build
-          uv run ../nix/cache_dependencies.py unpack
-
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1.2.24
         with:
@@ -76,8 +71,8 @@ jobs:
         run: |
           set -o pipefail
           CXXFLAGS="-O3" CFLAGS="-O3" ADD_COMMIT_SHA=1 BUILD_CFG=Release \
-            uv run --with aqtinstall ./nix/build-all.py \
-            -v --diskcleanup --ifcopenshell-shared 2>&1 \
+            uv run --with conan ./nix/build-all.py \
+              -v --diskcleanup --ifcopenshell-shared --build-bonsaiviewer 2>&1 \
             | tee build.log
 
       - name: Upload Build Logs
@@ -89,20 +84,6 @@ jobs:
             build.log
             build/*/*/logs/*.log
           retention-days: 30
-
-      - name: Pack Dependencies
-        run: |
-          cd build
-          uv run ../nix/cache_dependencies.py pack
-
-      - name: Commit and Push Changes to Build Repository
-        run: |
-          cd build
-          git config user.name "IfcOpenBot"
-          git config user.email "ifcopenbot@ifcopenshell.org"
-          git add "$(find . -maxdepth 4 -name install)/*.tar.gz"
-          git commit -m "Update build artifacts [skip ci]" || echo "No changes to commit"
-          git push || true
 
       - name: Package .zip archives
         shell: bash

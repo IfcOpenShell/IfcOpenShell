@@ -87,7 +87,7 @@ foreach(schema ${SCHEMA_VERSIONS})
         list(APPEND SCHEMA_PLUGIN_SOURCES alignment_helper.cpp)
     endif()
 
-    add_library(${SCHEMA_PLUGIN_TARGET} SHARED ${SCHEMA_PLUGIN_SOURCES})
+    add_library(${SCHEMA_PLUGIN_TARGET} ${SCHEMA_PLUGIN_SOURCES})
     target_compile_definitions(${SCHEMA_PLUGIN_TARGET} PRIVATE
         IFC_SCHEMA_EXPORTS
         BOOST_DLL_USE_STD_FS

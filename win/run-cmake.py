@@ -309,6 +309,7 @@ def main() -> None:
         cmake_generator,
         *arch_option,
         f"-DCMAKE_INSTALL_PREFIX={cmake_install_prefix}",
+        "-DBUILD_SHARED_LIBS=OFF",
         "-DWITH_ROCKSDB=ON",
         "-DWITH_ZSTD=ON",
         f"-DCMAKE_PREFIX_PATH={cmake_prefix_path}",
@@ -318,6 +319,8 @@ def main() -> None:
         f"-DPYTHON_INCLUDE_DIR={python_include_dir}",
         f"-DPYTHON_LIBRARY={python_library}",
     ]
+    if conan_toolchain := deps_cache.get("CONAN_TOOLCHAIN_FILE"):
+        cmake_args.append(f"-DCMAKE_TOOLCHAIN_FILE={conan_toolchain}")
     if qt_dir:
         cmake_args.append(f"-DQT_DIR={qt_dir}")
     if qt_host_path:
