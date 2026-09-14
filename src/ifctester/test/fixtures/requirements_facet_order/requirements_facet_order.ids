@@ -1,0 +1,33 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ids xmlns="http://standards.buildingsmart.org/IDS" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/1.0/ids.xsd">
+    <info>
+        <title>Requirements facet order</title>
+        <description>Property is written before attribute. Schema/ids.xsd requirementsType allows this because its sequence carries maxOccurs="unbounded" (buildingSMART/IDS#344), but the reference implementation should still report facets in the canonical entity/partOf/classification/attribute/property/material order.</description>
+    </info>
+    <specifications>
+        <specification name="Walls must have Name and a Reference" ifcVersion="IFC4">
+            <applicability minOccurs="0" maxOccurs="unbounded">
+                <entity>
+                    <name>
+                        <simpleValue>IFCWALL</simpleValue>
+                    </name>
+                </entity>
+            </applicability>
+            <requirements>
+                <property dataType="IFCLABEL" cardinality="required">
+                    <propertySet>
+                        <simpleValue>Pset_WallCommon</simpleValue>
+                    </propertySet>
+                    <baseName>
+                        <simpleValue>Reference</simpleValue>
+                    </baseName>
+                </property>
+                <attribute cardinality="required">
+                    <name>
+                        <simpleValue>Name</simpleValue>
+                    </name>
+                </attribute>
+            </requirements>
+        </specification>
+    </specifications>
+</ids>
