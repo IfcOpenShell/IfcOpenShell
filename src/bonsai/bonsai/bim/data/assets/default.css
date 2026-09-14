@@ -46,6 +46,9 @@ path.flush { stroke: blue; stroke-width: 0.1; stroke-opacity: 0.4; }
 .annotation { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 0.3; }
 .IfcAnnotation { fill: none; stroke: black; stroke-linecap: 'round'; stroke-width: 0.3; }
 /* .IfcGeographicElement { fill: none; stroke: rgb(150, 150, 150); stroke-linecap: 'round'; stroke-dasharray: 1, 2;} */
+/* Trees (IfcGeographicElement) and furniture indicate an overhead/non-permanent presence,
+   so they print at the 'fine' weight instead of the thicker default .cut/.projection line (issue #5428). */
+.IfcFurniture, .IfcGeographicElement { stroke-width: 0.18; }
 .PredefinedType-LINEWORK { stroke: black; stroke-width: 0.25; }
 .PredefinedType-LINEWORK.dashed { stroke-dasharray: 3, 2; }
 .PredefinedType-LINEWORK.fine { stroke-width: 0.18; stroke: #777777; }
