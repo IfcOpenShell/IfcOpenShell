@@ -272,6 +272,23 @@ def import_attribute(
 
 ATTRIBUTE_MIN_MAX_CONSTRAINTS = {"IfcMaterialLayer": {"Priority": {"value_min": 0, "value_max": 100}}}
 
+# `Attribute.value_min`/`value_max` (bim/prop.py) are an inclusive clamp applied by
+# `set_numerical_value()` every time `int_value`/`float_value` is written (typed in the UI,
+# dragged on a slider, or set from Python), not a Blender RNA `min=`/`max=` kwarg. An inclusive
+# clamp cannot express a strict "self > 0.0" EXPRESS WHERE rule exactly: `value_min = 0.0` still
+# lets 0.0 through. Bonsai already accepts this same limitation for dedicated dimension properties
+# by using a small epsilon as the practical minimum instead (PR #9087: `min=0.01` for the drawing
+# camera's width/height; PR #9123: `min=0.001` for IfcDoor/IfcWindow overall dimensions). This
+# constant reuses that approach for the generic Attributes panel, which serves many different
+# measure types (length, plane angle, ratio, heating value) reused across ~196 attributes, so it
+# is deliberately smaller than either of those two dimension-specific values: 1e-4 sits a full
+# order of magnitude above Bonsai's own default model geometric precision of 1e-5 (see
+# `get_length_decimal_places()`/#3129), so a value clamped up to this epsilon will not round back
+# down to the schema-invalid 0.0 on export, while still being negligible for every unit this is
+# applied to. It is an approximation of "> 0.0", not an exact expression of it; excluding the
+# always-invalid 0.0 is the improvement being made here.
+STRICTLY_POSITIVE_FLOAT_MIN = 1e-4
+
 
 def add_attribute_min_max(attribute: W.attribute, attribute_blender: bonsai.bim.prop.Attribute) -> None:
     if attribute_blender.ifc_class in ATTRIBUTE_MIN_MAX_CONSTRAINTS:
@@ -281,9 +298,66 @@ def add_attribute_min_max(attribute: W.attribute, attribute_blender: bonsai.bim.
             setattr(attribute_blender, constraint + "_constraint", True)
     attribute_type = attribute.type_of_attribute()
 
-    if attribute_type._is("IfcPositiveLengthMeasure") or attribute_type._is("IfcNonNegativeLengthMeasure"):
-        attribute_blender.value_min = 0.0
+    def set_min(value: float) -> None:
+        attribute_blender.value_min = value
         attribute_blender.value_min_constraint = True
+
+    def set_max(value: float) -> None:
+        attribute_blender.value_max = value
+        attribute_blender.value_max_constraint = True
+
+    # Types below are every measure/simple type in IFC4's express/rules that constrains a plain
+    # numeric value (WR1-style rules on REAL/INTEGER base types), re-derived directly from
+    # `ifcopenshell/express/rules/IFC4.py`. Select types, aggregates and enumerations are out of
+    # scope: aggregates never reach this function (`import_attribute` returns before calling it),
+    # and enumerations/booleans have no numeric bound to enforce.
+    #
+    # `self >= 0.0` -> exact with an inclusive min, no approximation needed.
+    if attribute_type._is("IfcNonNegativeLengthMeasure"):
+        set_min(0.0)
+    # `self > 0.0` (float) -> cannot be expressed exactly by an inclusive clamp; see
+    # STRICTLY_POSITIVE_FLOAT_MIN above.
+    elif attribute_type._is("IfcPositiveLengthMeasure"):
+        set_min(STRICTLY_POSITIVE_FLOAT_MIN)
+    elif attribute_type._is("IfcPositiveRatioMeasure"):
+        set_min(STRICTLY_POSITIVE_FLOAT_MIN)
+    elif attribute_type._is("IfcPositivePlaneAngleMeasure"):
+        set_min(STRICTLY_POSITIVE_FLOAT_MIN)
+    elif attribute_type._is("IfcHeatingValueMeasure"):
+        # Only reachable on IFC2X3 (IfcFuelProperties.Lower/HigherHeatingValue); IFC4 and
+        # IFC4X3 drop the entities that carry it, but Bonsai still supports authoring IFC2X3.
+        set_min(STRICTLY_POSITIVE_FLOAT_MIN)
+    # `0.0 <= self <= 1.0` -> both bounds inclusive, exact.
+    elif attribute_type._is("IfcNormalisedRatioMeasure"):
+        set_min(0.0)
+        set_max(1.0)
+    # `0.0 <= self <= 14.0` -> exact.
+    elif attribute_type._is("IfcPHMeasure"):
+        # Only reachable on IFC2X3 (IfcWaterProperties.PHLevel).
+        set_min(0.0)
+        set_max(14.0)
+    # Integer types: `self > 0` on an integer is exactly `self >= 1`, no approximation needed.
+    elif attribute_type._is("IfcCardinalPointReference"):
+        set_min(1)
+    # `0 < self <= 3` on an integer is exactly `1 <= self <= 3`.
+    elif attribute_type._is("IfcDimensionCount"):
+        set_min(1)
+        set_max(3)
+    # `1 <= self <= 31/12` -> exact.
+    elif attribute_type._is("IfcDayInMonthNumber"):
+        # Only reachable on IFC2X3 (IfcCalendarDate.DayComponent).
+        set_min(1)
+        set_max(31)
+    elif attribute_type._is("IfcMonthInYearNumber"):
+        # Only reachable on IFC2X3 (IfcCalendarDate.MonthComponent).
+        set_min(1)
+        set_max(12)
+    # IfcSpecularRoughness, IfcPositiveInteger and IfcDayInWeekNumber are also WR1-constrained
+    # simple types, but no entity in IFC2X3, IFC4 or IFC4X3 (the three schemas Bonsai supports,
+    # see `IfcStore.schema_identifiers`) exposes any of them as a direct attribute type, checked
+    # by enumerating every entity's attributes in all three schemas. This function is only ever
+    # called for a real entity attribute (`import_attribute` returns before calling it for
+    # aggregates/entities), so a branch for them here would be dead code. Not added.
 
 
 def add_attribute_enum_items_descriptions(
