@@ -91,6 +91,21 @@ class TestOptimise(test.bootstrap.IFC4):
         assert len(output.by_type("IfcPolyline")) == 1
 
 
+class TestOptimiseUnsetMandatoryAttribute(test.bootstrap.IFC2X3):
+    def test_entity_with_an_unset_mandatory_attribute_is_preserved_not_crashed(self):
+        # IfcOpenShell does not enforce schema-mandatory attributes on
+        # create/read, so a real (if non-compliant) file can contain an
+        # entity like this. Optimise must not crash on it.
+        material_layer_set = self.file.create_entity("IfcMaterialLayerSet")
+        assert material_layer_set.MaterialLayers is None
+
+        output = ifcpatch.execute({"file": self.file, "recipe": "Optimise", "arguments": []})
+
+        optimised = output.by_type("IfcMaterialLayerSet")
+        assert len(optimised) == 1
+        assert optimised[0].MaterialLayers is None
+
+
 GRAPH = {4: {2, 3}, 2: {1}, 3: {1}, 1: set()}
 
 
