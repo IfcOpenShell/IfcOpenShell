@@ -134,312 +134,13 @@ std::string& spf_lexer<Reader>::get_temp_string() const {
     return (*stringpool_[slice])[offset];
 }
 
-namespace {
 
 #if defined(__APPLE__) || defined(__EMSCRIPTEN__)
-double parse_double_c(const char* start, char** end) {
+double ifcopenshell::parse_double_c(const char* start, char** end) {
     static const locale_t loc = newlocale(LC_NUMERIC_MASK, "C", (locale_t)0);
     return strtod_l(start, end, loc);
 }
 #endif
-
-template <typename T>
-bool parse_num_(const char* pStart, size_t size, T& val) {
-    if (size == 0) {
-        return false;
-    }
-    if (*pStart == '+') {
-        ++pStart;
-        --size;
-        if (size == 0) {
-            return false;
-        }
-    }
-    if constexpr (std::is_floating_point_v<T>) {
-#if defined(__APPLE__) || defined(__EMSCRIPTEN__)
-        // pStart is NUL-terminated at pStart + size (callers pass c_str()), so
-        // strtod_l stops exactly at the end of a well-formed number. from_chars
-        // is not instantiated for double here — its float overload is =deleted
-        // in libc++ (Apple's and Emscripten's).
-        char* pEnd = nullptr;
-        const double result = parse_double_c(pStart, &pEnd);
-        if (pEnd != pStart + size) {
-            return false;
-        }
-        val = static_cast<T>(result);
-        return true;
-#else
-        auto re = std::from_chars(pStart, pStart + size, val);
-        return re.ec == std::errc() && re.ptr == pStart + size;
-#endif
-    } else {
-        auto re = std::from_chars(pStart, pStart + size, val);
-        return re.ec == std::errc() && re.ptr == pStart + size;
-    }
-}
-
-} // namespace
-
-// These helpers sit on the tokenizer's innermost loop; left to the
-// compiler's heuristics they end up as calls, one per eight bytes.
-#if defined(_MSC_VER)
-#define IFC_SWAR_INLINE __forceinline
-#else
-#define IFC_SWAR_INLINE inline __attribute__((always_inline))
-#endif
-
-namespace SWAR {
-constexpr uint32_t ONES32 = 0x01010101u;
-constexpr uint32_t HIGHS32 = 0x80808080u;
-constexpr uint64_t ONES = 0x0101010101010101ull;
-constexpr uint64_t HIGHS = 0x8080808080808080ull;
-
-constexpr uint64_t splat(unsigned char c) {
-    return ONES * c;
-}
-
-IFC_SWAR_INLINE uint32_t has_zero_byte(uint32_t x) {
-    return (x - ONES32) & ~x & HIGHS32;
-}
-
-IFC_SWAR_INLINE uint64_t has_zero_byte(uint64_t x) {
-    return (x - ONES) & ~x & HIGHS;
-}
-
-IFC_SWAR_INLINE uint32_t eq_mask(uint32_t x, uint32_t c) {
-    return has_zero_byte(x ^ c);
-}
-
-IFC_SWAR_INLINE uint64_t eq_mask(uint64_t x, uint64_t c) {
-    return has_zero_byte(x ^ c);
-}
-
-namespace chars {
-constexpr uint64_t lpar = splat('(');
-constexpr uint64_t rpar = splat(')');
-constexpr uint64_t eq = splat('=');
-constexpr uint64_t comma = splat(',');
-constexpr uint64_t semi = splat(';');
-constexpr uint64_t slash = splat('/');
-
-constexpr uint64_t space = splat(' ');
-constexpr uint64_t cr = splat('\r');
-constexpr uint64_t lf = splat('\n');
-constexpr uint64_t tab = splat('\t');
-
-constexpr uint64_t quote = splat('"');
-constexpr uint64_t dot = splat('.');
-} // namespace chars
-
-template <bool IncludeDot = true>
-IFC_SWAR_INLINE uint64_t has_special_char(uint64_t x) {
-    return eq_mask(x, chars::lpar) |
-           eq_mask(x, chars::rpar) |
-           eq_mask(x, chars::eq) |
-           eq_mask(x, chars::comma) |
-           eq_mask(x, chars::semi) |
-           eq_mask(x, chars::slash) |
-           eq_mask(x, chars::space) |
-           eq_mask(x, chars::cr) |
-           eq_mask(x, chars::lf) |
-           eq_mask(x, chars::tab) |
-           eq_mask(x, chars::quote) |
-           (IncludeDot ? eq_mask(x, chars::dot) : uint64_t{0});
-}
-
-template <bool IncludeDot = true>
-IFC_SWAR_INLINE uint32_t has_special_char(uint32_t x) {
-    return eq_mask(x, static_cast<uint32_t>(chars::lpar)) |
-           eq_mask(x, static_cast<uint32_t>(chars::rpar)) |
-           eq_mask(x, static_cast<uint32_t>(chars::eq)) |
-           eq_mask(x, static_cast<uint32_t>(chars::comma)) |
-           eq_mask(x, static_cast<uint32_t>(chars::semi)) |
-           eq_mask(x, static_cast<uint32_t>(chars::slash)) |
-           eq_mask(x, static_cast<uint32_t>(chars::space)) |
-           eq_mask(x, static_cast<uint32_t>(chars::cr)) |
-           eq_mask(x, static_cast<uint32_t>(chars::lf)) |
-           eq_mask(x, static_cast<uint32_t>(chars::tab)) |
-           eq_mask(x, static_cast<uint32_t>(chars::quote)) |
-           (IncludeDot ? eq_mask(x, static_cast<uint32_t>(chars::dot)) : uint32_t{0});
-}
-
-}
-
-//
-// Returns the offset of the current token and moves cursor to next
-//
-template <typename Reader>
-template <typename Policy>
-token spf_lexer<Reader>::next() {
-
-    if (stream->eof()) {
-        return token{};
-    }
-
-    auto pos = stream->tell();
-    char character = stream->read();
-
-    if (character == '/' || character == ' ' || character == '\r' || character == '\n' || character == '\t') {
-        if (character == '/') {
-            // skip_comment() wants to see the slash itself, so a comment
-            // that follows the previous token without whitespace is skipped.
-            stream->seek(pos);
-        }
-        while ((skip_whitespace() != 0U) || (skip_comment() != 0U)) {
-        }
-        if (stream->eof()) {
-            return token{};
-        }
-        pos = stream->tell();
-        character = stream->read();
-    }
-
-    // If the cursor is at [()=,;$*] we know token consists of single char
-    if (character == '(' ||
-        character == ')' ||
-        character == '=' ||
-        character == ',' ||
-        character == ';' ||
-        character == '$' ||
-        character == '*')
-    {
-        return token(pos, character);
-    }
-
-    auto& str = get_temp_string();
-
-    if (character == '\'') {
-        // If a string is encountered defer processing to the character_decoder
-        if constexpr (Policy::decode_strings) {
-            str = *decoder_;
-            return token(pos, token::Token_STRING, str);
-        } else {
-            decoder_->skip();
-            pop_pool_entry();
-            return token(pos, token::Token_STRING);
-        }
-    } else {
-        auto ttype = token::Token_NONE;
-        if (character == '"' || character == '.') {
-            if (character == '"') {
-                ttype = token::Token_BINARY;
-            } else {
-                ttype = token::Token_ENUMERATION;
-            }
-            str.clear();
-        } else if (character == '#') {
-            ttype = token::Token_IDENTIFIER;
-            str.clear();
-        } else {
-            str.assign(&character, 1);
-        }
-
-        auto remaining = stream->remaining();
-        while (remaining) {
-            if (remaining >= 8) {
-                uint64_t x = stream->peek_u64();
-                if ((ttype == token::Token_NONE ? SWAR::has_special_char<false>(x) : SWAR::has_special_char<true>(x)) == 0) {
-                    if (Policy::keep_keywords || ttype == token::Token_IDENTIFIER) {
-                        str.append(reinterpret_cast<const char*>(&x), 8);
-                    }
-                    stream->increment(8);
-                    remaining -= 8;
-                    continue;
-                }
-            }
-            if (remaining >= 4) {
-                uint32_t x = stream->peek_u32();
-                if ((ttype == token::Token_NONE ? SWAR::has_special_char<false>(x) : SWAR::has_special_char<true>(x)) == 0) {
-                    if (Policy::keep_keywords || ttype == token::Token_IDENTIFIER) {
-                        str.append(reinterpret_cast<const char*>(&x), 4);
-                    }
-                    stream->increment(4);
-                    remaining -= 4;
-                    continue;
-                }
-            }
-
-            // Read character and increment pointer if not starting a new token
-            char character = stream->peek();
-            if (character == '(' ||
-                character == ')' ||
-                character == '=' ||
-                character == ',' ||
-                character == ';' ||
-                character == '/') {
-                break;
-            }
-            if (!(character == ' ' || character == '\r' || character == '\n' || character == '\t')) {
-                if ((ttype == token::Token_BINARY && character == '"') ||
-                    (ttype == token::Token_ENUMERATION && character == '.')) {
-                    // Skip
-                } else if (Policy::keep_keywords || ttype == token::Token_IDENTIFIER) {
-                    str.push_back(character);
-                }
-            }
-            stream->increment();
-            remaining -= 1;
-        }
-
-        if constexpr (!Policy::decode_values) {
-            // Only names and keywords are read; everything else is a literal
-            // whose position is all the caller wants.
-            if constexpr (!Policy::keep_keywords) {
-                if (ttype != token::Token_IDENTIFIER) {
-                    pop_pool_entry();
-                    return token(pos, token::Token_LITERAL);
-                }
-            }
-            if (ttype == token::Token_IDENTIFIER) {
-                int int_val;
-                if (!parse_num_(str.c_str(), str.size(), int_val)) {
-                    throw invalid_token_exception(pos, str, "instance name");
-                }
-                pop_pool_entry();
-                return token(pos, ttype, (int64_t)int_val);
-            }
-            if (ttype == token::Token_NONE && !str.empty()) {
-                const char first = str.front();
-                if ((first >= 'A' && first <= 'Z') || (first >= 'a' && first <= 'z')) {
-                    return token(pos, token::Token_KEYWORD, str);
-                }
-            }
-            pop_pool_entry();
-            return token(pos, token::Token_LITERAL);
-        }
-        if (ttype == token::Token_ENUMERATION && str.size() == 1 && (str[0] == 'T' || str[0] == 'F' || str[0] == 'U')) {
-            pop_pool_entry();
-            return token(pos, token::Token_BOOL, str[0]);
-        } else if (ttype == token::Token_IDENTIFIER) {
-            int int_val;
-            if (!parse_num_(str.c_str(), str.size(), int_val)) {
-                throw invalid_token_exception(pos, str, "instance name");
-            }
-            pop_pool_entry();
-            return token(pos, ttype, (int64_t)int_val);
-        } else if (ttype == token::Token_NONE && !str.empty()) {
-            int64_t int_val;
-            double float_val;
-            auto& first = str.front();
-            if ((first >= 'A' && first <= 'Z') || (first >= 'a' && first <= 'z')) {
-                ttype = token::Token_KEYWORD;
-                return token(pos, ttype, str);
-            } else if (parse_num_(str.c_str(), str.size(), int_val)) {
-                ttype = token::Token_INT;
-                pop_pool_entry();
-                return token(pos, ttype, int_val);
-            } else if (parse_num_(str.c_str(), str.size(), float_val)) {
-                ttype = token::Token_FLOAT;
-                pop_pool_entry();
-                return token(pos, float_val);
-            }
-        } else if (ttype == token::Token_BINARY || ttype == token::Token_ENUMERATION) {
-            return token(pos, ttype, str);
-        }
-
-        throw invalid_token_exception(pos, str, "valid token");
-    }
-}
 
 template class IFC_PARSE_API ifcopenshell::spf_lexer<file_reader<full_buffer_impl>>;
 template class IFC_PARSE_API ifcopenshell::spf_lexer<file_reader<paged_file_impl>>;
@@ -450,8 +151,7 @@ template class IFC_PARSE_API ifcopenshell::spf_lexer<file_reader<mmap_impl>>;
 
 #define IFC_INSTANTIATE_LEXER_NEXT(Reader) \
     template IFC_PARSE_API token ifcopenshell::spf_lexer<Reader>::next<ifcopenshell::full_tokens>(); \
-    template IFC_PARSE_API token ifcopenshell::spf_lexer<Reader>::next<ifcopenshell::index_tokens>(); \
-    template IFC_PARSE_API token ifcopenshell::spf_lexer<Reader>::next<ifcopenshell::attribute_tokens>();
+    template IFC_PARSE_API token ifcopenshell::spf_lexer<Reader>::next<ifcopenshell::index_tokens>();
 IFC_INSTANTIATE_LEXER_NEXT(file_reader<full_buffer_impl>)
 IFC_INSTANTIATE_LEXER_NEXT(file_reader<paged_file_impl>)
 IFC_INSTANTIATE_LEXER_NEXT(file_reader<pushed_sequential_impl>)
@@ -2664,6 +2364,105 @@ void for_each_instance_header(Reader& reader, spf_lexer<Reader>& lexer, size_t e
 
 }
 
+namespace {
+
+// The lazy index's consumer for one instance's attribute list, fed by
+// spf_lexer::scan() from just past the opening parenthesis: depth and the
+// attribute index from the operators, every name straight into the inverse
+// index, the bounds of the first attribute if it is a string (the GlobalId
+// candidate), and done at the semicolon that closes the instance. Nothing
+// is decoded or copied.
+struct attribute_consumer {
+    static constexpr bool decode_strings = false;
+    static constexpr bool decode_values = false;
+    static constexpr bool keep_keywords = false;
+
+    ifcopenshell::impl::in_memory_file_storage::entities_by_ref& inverses;
+    uint32_t name;
+    uint16_t type;
+    int depth = 1;
+    int attribute = 0;
+    bool first_value = true;
+    bool closed = false;
+    bool done = false;
+    size_t guid_begin = 0, guid_end = 0;
+    const char* failure = nullptr;
+    size_t failure_offset = 0;
+
+    bool after_close(size_t pos) {
+        failure = "expected ; after )";
+        failure_offset = pos;
+        return false;
+    }
+    bool operator_(size_t pos, char c) {
+        if (closed) {
+            if (c == ';') {
+                done = true;
+                return false;
+            }
+            return after_close(pos);
+        }
+        switch (c) {
+        case '(':
+            ++depth;
+            return true;
+        case ')':
+            if (--depth == 0) {
+                closed = true;
+            }
+            return true;
+        case ',':
+            if (depth == 1) {
+                ++attribute;
+            }
+            return true;
+        case ';':
+            failure = "; inside an instance";
+            failure_offset = pos;
+            return false;
+        default:
+            if (depth == 1) {
+                first_value = false;
+            }
+            return true;
+        }
+    }
+    bool identifier(size_t pos, uint32_t referenced) {
+        if (closed) {
+            return after_close(pos);
+        }
+        inverses.add(referenced, name, type, attribute);
+        if (depth == 1) {
+            first_value = false;
+        }
+        return true;
+    }
+    bool string(size_t begin, size_t end) {
+        if (closed) {
+            return after_close(begin);
+        }
+        if (depth == 1 && attribute == 0 && first_value) {
+            guid_begin = begin + 1;
+            guid_end = end - 1;
+        }
+        if (depth == 1) {
+            first_value = false;
+        }
+        return true;
+    }
+    bool literal(size_t pos) {
+        if (closed) {
+            return after_close(pos);
+        }
+        if (depth == 1) {
+            first_value = false;
+        }
+        return true;
+    }
+};
+
+}
+
 struct ifcopenshell::impl::in_memory_file_storage::lazy_source {
     file_reader<paged_file_impl> reader;
     spf_lexer<file_reader<paged_file_impl>> lexer;
@@ -2754,57 +2553,31 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
     lazy_ = true;
     byref_excl_.reserve(reader.size() / 32);
 
-    // One pass over the DATA section with the tokenizer's index policy:
-    // the instance headers through the shared loop, then the attribute list
-    // as tokens with only the parentheses, commas and names looked at.
-    // Nothing is decoded. A token the tokenizer rejects, or a structure the
-    // loop below does not expect, stops the index and the caller parses in
+    // One pass over the DATA section with the tokenizer's index policy: the
+    // instance headers through the shared loop, then the attribute list to
+    // the index's consumer, which looks at the parentheses, commas and names
+    // only. Nothing is decoded. A token the tokenizer rejects, or a structure
+    // the consumer does not expect, stops the index and the caller parses in
     // full.
     const char* failure = nullptr;
     size_t failure_offset = 0;
     try {
         for_each_instance_header<index_tokens>(reader, lexer, reader.size(), schema, bypassed_types, lazy_bypassed_, logger_.get(), [&](uint32_t name, const ifcopenshell::declaration* declaration, size_t) {
             const uint64_t attributes_offset = reader.tell();
-            const uint16_t type_index = (uint16_t)declaration->index_in_schema();
-            int depth = 1;
-            int attribute = 0;
-            bool first_value = true;
-            size_t guid_begin = 0, guid_end = 0;
-            while (depth > 0) {
-                token t = lexer.next<attribute_tokens>();
-                if (!t) {
-                    failure = "file ends inside an instance";
-                    failure_offset = attributes_offset;
-                    return false;
-                }
-                if (t.is_operator()) {
-                    if (t.value_char == '(') {
-                        ++depth;
-                    } else if (t.value_char == ')') {
-                        --depth;
-                    } else if (t.value_char == ',' && depth == 1) {
-                        ++attribute;
-                    } else if (t.value_char == ';') {
-                        failure = "; inside an instance";
-                        failure_offset = t.start_pos;
-                        return false;
-                    }
-                } else if (t.is_identifier()) {
-                    byref_excl_.add((uint32_t)t.as_identifier(), name, type_index, attribute);
-                } else if (t.type == token::Token_STRING && depth == 1 && attribute == 0 && first_value) {
-                    guid_begin = t.start_pos + 1;
-                    guid_end = reader.tell() - 1;
-                }
-                if (depth == 1) {
-                    first_value = false;
-                }
-                lexer.reset_pool();
-            }
-            if (!lexer.next<attribute_tokens>().is_operator(';')) {
-                failure = "expected ; after )";
-                failure_offset = reader.tell();
+            attribute_consumer consumer{byref_excl_, name, (uint16_t)declaration->index_in_schema()};
+            lexer.scan(consumer);
+            lexer.reset_pool();
+            if (consumer.failure != nullptr) {
+                failure = consumer.failure;
+                failure_offset = consumer.failure_offset;
                 return false;
             }
+            if (!consumer.done) {
+                failure = "file ends inside an instance";
+                failure_offset = attributes_offset;
+                return false;
+            }
+            const size_t guid_begin = consumer.guid_begin, guid_end = consumer.guid_end;
             auto data = ifcopenshell::make_pointer_type<instance_data>(file, declaration, name, instance_data::lazy_tag{});
             if (!byid_.insert({name, data}).second) {
                 logger_.get().message(ifcopenshell::logger::LOG_WARNING, "Overwriting instance with name #" + std::to_string(name));
