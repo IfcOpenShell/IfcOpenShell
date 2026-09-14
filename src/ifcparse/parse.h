@@ -66,14 +66,7 @@ struct index_tokens {
     static constexpr bool decode_values = false;
     static constexpr bool keep_keywords = true;
 };
-/// Inside an attribute list the index only looks at operators and names, so
-/// a keyword (an inline typed value such as IFCLABEL), an enumeration or a
-/// binary comes back as Token_LITERAL without its text being copied.
-struct attribute_tokens {
-    static constexpr bool decode_strings = false;
-    static constexpr bool decode_values = false;
-    static constexpr bool keep_keywords = false;
-};
+
 
 /// A stream of tokens to be read from a file_reader.
 template <typename Reader>
@@ -106,9 +99,14 @@ class IFC_PARSE_API spf_lexer {
     Reader* stream;
     // file* file;
     spf_lexer(Reader* stream, ifcopenshell::logger& logger = ifcopenshell::logger::root());
-    // The next token. With index_tokens a string, number, enumeration or
-    // binary comes back as Token_LITERAL (Token_STRING for a string) with
-    // only its position; names, keywords and operators are always read.
+    // The tokenizer: every token from the cursor on is handed to the
+    // consumer's callbacks, which inline into the loop; see spf_scan.h.
+    template <typename Consumer>
+    void scan(Consumer& consumer);
+    // The next token, through scan() with a consumer that stops after one.
+    // With index_tokens a string, number, enumeration or binary comes back
+    // as Token_LITERAL (Token_STRING for a string) with only its position;
+    // names, keywords and operators are always read.
     template <typename Policy = full_tokens>
     token next();
     ~spf_lexer();
@@ -121,5 +119,7 @@ IFC_PARSE_API std::vector<express::base> traverse_breadth_first(const express::b
 } // namespace ifcopenshell
 
 IFC_PARSE_API std::ostream& operator<<(std::ostream& stream, const ifcopenshell::file& file);
+
+#include "spf_scan.h"
 
 #endif
