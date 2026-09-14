@@ -32,6 +32,8 @@ def step_impl(context, ifc_class, qto_name, quantity_name):
         if not element.IsDefinedBy:
             assert False
         for relationship in element.IsDefinedBy:
+            if not relationship.is_a("IfcRelDefinesByProperties"):
+                continue
             if relationship.RelatingPropertyDefinition.Name == qto_name:
                 for quantity in relationship.RelatingPropertyDefinition.Quantities:
                     if quantity.Name == quantity_name:

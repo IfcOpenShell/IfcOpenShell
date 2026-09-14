@@ -89,7 +89,7 @@ def assert_attribute(element, name, value=None):
 def assert_pset(element, pset_name, prop_name=None, value=None):
     if value == "NULL":
         value = None
-    psets = ifcopenshell.util.element.get_psets(site)
+    psets = ifcopenshell.util.element.get_psets(element)
     if pset_name not in psets:
         assert False, _("The element {} does not have a property set named {}").format(element, pset_name)
     if prop_name is None:

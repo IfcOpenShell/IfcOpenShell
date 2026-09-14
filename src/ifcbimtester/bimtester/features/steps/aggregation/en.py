@@ -189,7 +189,7 @@ def check_if_element_exists_by_types_with_attribute_name(ifc_types, attribute_na
 
 def check_starts_with(attribute_name, value, elements):
     """Make sure at least an element of the list has a attribute starting with the value"""
-    if any(hasattr(x, attribute_name) and getattr(x, attribute_name).startswith(value) for x in elements):
+    if any(getattr(x, attribute_name, None) and getattr(x, attribute_name).startswith(value) for x in elements):
         return True
     return False
 

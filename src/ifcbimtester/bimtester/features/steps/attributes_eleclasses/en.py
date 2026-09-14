@@ -59,7 +59,7 @@ def step_impl(context, ifc_class, pattern):
 
     elements = IfcStore.file.by_type(ifc_class)
     for element in elements:
-        if not re.search(pattern, element.Name):
+        if not element.Name or not re.search(pattern, element.Name):
             assert False
 
 
