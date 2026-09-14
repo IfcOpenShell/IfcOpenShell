@@ -276,6 +276,19 @@ class TestChecker:
     ) -> None:
         self._assert_check(Checker._check_trailing_whitespaces, content, expected_issues, fixed, check, line_ending)
 
+    def test_trailing_whitespace_runs_before_eof_newline(self, tmp_path: Path) -> None:
+        # 'foo\n\s\s` should result in `foo\n`.
+        # If we run eof check first before trailing whitespace check,
+        # it will result in `foo\n\n` instead.
+        filepath = tmp_path / "test.txt"
+        filepath.write_bytes(b"foo\n  \n\n")
+
+        checker = Checker(LF)
+        checker.check_trailing_whitespaces(filepath, False)
+        checker.check_eof_newline(filepath, False)
+
+        assert filepath.read_bytes() == b"foo\n"
+
     @staticmethod
     def run_tests(extra_args: list[str] | None = None) -> None:
         pytest.main([__file__, *(extra_args or [])])
@@ -382,8 +395,8 @@ def main() -> int:
         checker.set_newline_for_path(filepath)
         checker.check_stray_cr(filepath, args.check)
         checker.check_line_endings_mismatch(filepath, args.check)
-        checker.check_eof_newline(filepath, args.check)
         checker.check_trailing_whitespaces(filepath, args.check)
+        checker.check_eof_newline(filepath, args.check)
     print(f"{len(filepaths)} file(s) checked.")
     if not checker.issues:
         color = C.GREEN
