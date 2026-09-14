@@ -22,7 +22,6 @@
 ###############################################################################
 #
 import argparse
-import subprocess
 import sys
 from typing import NamedTuple, NoReturn
 
@@ -33,7 +32,6 @@ from common import (
     BuildCfg,
     HelpStrings,
     ensure_script_dir,
-    logger,
     run_streamed,
 )
 
@@ -110,10 +108,7 @@ def main() -> None:
 
     generator_args = [ARGS.generator] if ARGS.generator else []
 
-    # Auto-answer build-deps.py's "are you ready" prompt, same trick as build-all.cmd's "echo y |".
-    build_deps_cmd = [sys.executable, str(SCRIPT_DIR / "build-deps.py"), *generator_args, ARGS.build_cfg]
-    logger.info(f"$ {' '.join(build_deps_cmd)}")
-    subprocess.run(build_deps_cmd, input="y\n", text=True, check=True)
+    run_streamed(sys.executable, str(SCRIPT_DIR / "build-deps.py"), *generator_args, ARGS.build_cfg, "-y")
 
     run_streamed(sys.executable, str(SCRIPT_DIR / "run-cmake.py"), *generator_args, "--", *ARGS.extra_args)
     run_streamed(sys.executable, str(SCRIPT_DIR / "build-ifcopenshell.py"), *generator_args, ARGS.build_cfg)
