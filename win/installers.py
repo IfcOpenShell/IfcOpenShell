@@ -881,6 +881,9 @@ def install_qt6(
             "--archives",
             "qtbase",
             "qtsvg",
+            # aqtinstall writes its log as `aqtinstall.log` relative to cwd. Run from
+            # deps_dir instead of the repo's win/ dir so it doesn't leave a stray file there.
+            cwd=vs_cfg_vars.deps_dir,
         )
 
     if not QT6_TARGET_INSTALLED:

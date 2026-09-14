@@ -1012,7 +1012,10 @@ def install_qt6() -> str:
             "icu",
             "qtbase",
             "qtsvg",
-        ]
+        ],
+        # aqtinstall writes its log as `aqtinstall.log` relative to cwd. Run from
+        # DEPS_DIR instead of the repo dir so it doesn't leave a stray file there.
+        cwd=DEPS_DIR,
     )
 
     if not (qt_config.exists() and qt_core.exists() and qt_svg.exists()):
