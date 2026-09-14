@@ -51,6 +51,13 @@ class TestAssignConstraint(test.bootstrap.IFC4):
         ifcopenshell.api.constraint.assign_constraint(self.file, products=[element2, element3], constraint=constraint)
         assert len(rel.RelatedObjects) == 3
 
+    def test_setting_intent_default_for_ifc2x3(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        constraint = ifcopenshell.api.constraint.add_objective(self.file)
+        rel = ifcopenshell.api.constraint.assign_constraint(self.file, products=[element], constraint=constraint)
+        if self.file.schema == "IFC2X3":
+            assert rel.Intent == "X"
+
 
 class TestAssignConstraintIFC2X3(test.bootstrap.IFC2X3, TestAssignConstraint):
     pass

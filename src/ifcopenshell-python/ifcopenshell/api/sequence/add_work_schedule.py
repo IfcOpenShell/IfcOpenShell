@@ -81,6 +81,8 @@ def add_work_schedule(
         predefined_type=predefined_type,
         name=name,
     )
+    if file.schema == "IFC2X3":
+        work_schedule.Identifier = "X"
     work_schedule.CreationDate = ifcopenshell.api.sequence.add_date_time(file, datetime.now())
     user = ifcopenshell.api.owner.settings.get_user(file)
     if user:

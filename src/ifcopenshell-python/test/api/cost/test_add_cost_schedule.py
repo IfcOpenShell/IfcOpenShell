@@ -34,6 +34,11 @@ class TestAddCostSchedule(test.bootstrap.IFC4):
         assert schedule.PredefinedType == "USERDEFINED"
         assert schedule.ObjectType == "FOO"
 
+    def test_setting_default_values_for_validity(self):
+        schedule = ifcopenshell.api.cost.add_cost_schedule(self.file, name="Foo")
+        if self.file.schema == "IFC2X3":
+            assert schedule.ID is not None
+
 
 class TestAddCostScheduleIFC2X3(test.bootstrap.IFC2X3, TestAddCostSchedule):
     pass

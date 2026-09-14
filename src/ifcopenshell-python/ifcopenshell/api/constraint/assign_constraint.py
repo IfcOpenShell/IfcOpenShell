@@ -74,15 +74,15 @@ class Usecase:
             ifcopenshell.api.owner.update_owner_history(self.file, element=rel)
             return rel
 
-        return self.file.create_entity(
-            "IfcRelAssociatesConstraint",
-            **{
-                "GlobalId": ifcopenshell.guid.new(),
-                "OwnerHistory": ifcopenshell.api.owner.create_owner_history(self.file),
-                "RelatingConstraint": constraint,
-                "RelatedObjects": list(products_to_assign),
-            }
-        )
+        attributes = {
+            "GlobalId": ifcopenshell.guid.new(),
+            "OwnerHistory": ifcopenshell.api.owner.create_owner_history(self.file),
+            "RelatingConstraint": constraint,
+            "RelatedObjects": list(products_to_assign),
+        }
+        if self.file.schema == "IFC2X3":
+            attributes["Intent"] = "X"
+        return self.file.create_entity("IfcRelAssociatesConstraint", **attributes)
 
     def get_constraint_rels(self, constraint: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         rels = []
