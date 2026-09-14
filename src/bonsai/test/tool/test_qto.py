@@ -24,6 +24,7 @@ import ifcopenshell.api.cost
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
+import ifcopenshell.guid
 import ifcopenshell.util.pset
 
 import bonsai.bim.import_ifc as import_ifc
@@ -218,3 +219,65 @@ class TestGetRelatedCostItemQuantities(test.bim.bootstrap.NewFile):
         assert subject.get_related_cost_item_quantities(wall)[0]["quantity_name"] == "NetVolume"
         assert subject.get_related_cost_item_quantities(wall)[0]["quantity_value"] == 42
         assert subject.get_related_cost_item_quantities(wall)[0]["quantity_type"] == "IfcQuantityVolume"
+
+
+class TestGetCalculatedVoidQuantities(test.bim.bootstrap.NewFile):
+    def test_earthworks_cut_quantities_measure_the_removed_material(self):
+        # The subtraction solid is deliberately oversized, so quantities must be
+        # evaluated against the voided host, not the solid itself (#9376).
+        import logging
+
+        import ifc5d.qto
+
+        self.ifc = ifcopenshell.file(schema="IFC4X3")
+        tool.Ifc.set(self.ifc)
+        ifcopenshell.api.root.create_entity(self.ifc, ifc_class="IfcProject", name="My Project")
+        ifcopenshell.api.unit.assign_unit(
+            self.ifc,
+            length={"is_metric": True, "raw": "METERS"},
+            area={"is_metric": True, "raw": "SQUARE_METERS"},
+            volume={"is_metric": True, "raw": "CUBIC_METERS"},
+        )
+        ifc_import_settings = import_ifc.IfcImportSettings.factory(
+            bpy.context, tool.Ifc.get_path(), logging.getLogger("ImportIFC")
+        )
+        ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
+        ifc_importer.file = self.ifc
+        ifc_importer.create_project()
+        context = ifcopenshell.api.context.add_context(self.ifc, context_type="Model")
+
+        # Host box spanning z 0..2, cut box spanning z 1..3: only a 2x2x1 slab
+        # of the host is actually removed, while the solid itself is 2x2x2.
+        bpy.ops.mesh.primitive_cube_add(location=(0.0, 0.0, 1.0), size=2)
+        host_obj = bpy.context.active_object
+        host = bonsai.core.root.assign_class(
+            tool.Ifc, tool.Collector, tool.Root, obj=host_obj, ifc_class="IfcGeographicElement", context=context
+        )
+        bpy.ops.mesh.primitive_cube_add(location=(0.0, 0.0, 2.0), size=2)
+        cut_obj = bpy.context.active_object
+        cut = bonsai.core.root.assign_class(
+            tool.Ifc, tool.Collector, tool.Root, obj=cut_obj, ifc_class="IfcEarthworksCut", context=context
+        )
+        self.ifc.createIfcRelVoidsElement(ifcopenshell.guid.new(), None, None, None, host, cut)
+
+        rules = {
+            "calculators": {
+                "Blender": {
+                    "IfcEarthworksCut": {
+                        "Qto_EarthworksCutBaseQuantities": {
+                            "Depth": "get_void_height",
+                            "Length": "get_void_length",
+                            "UndisturbedVolume": "get_void_volume",
+                            "Width": "get_void_width",
+                        }
+                    },
+                }
+            }
+        }
+        results = ifc5d.qto.quantify(self.ifc, {cut}, rules)
+        quantities = {k: round(v, 3) for k, v in results[cut]["Qto_EarthworksCutBaseQuantities"].items()}
+
+        assert quantities["UndisturbedVolume"] == 4.0
+        assert quantities["Depth"] == 1.0
+        assert quantities["Length"] == 2.0
+        assert quantities["Width"] == 2.0
