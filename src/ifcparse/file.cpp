@@ -1,5 +1,6 @@
 #include "file.h"
 #include "logger.h"
+#include "utils.h"
 
 #ifdef IFOPSH_WITH_ROCKSDB
 #include <rocksdb/table.h>
@@ -7,10 +8,10 @@
 #include <rocksdb/version.h>
 #endif
 
+#include <filesystem>
 #include <fstream>
 #include <memory>
-#include <sys/types.h>
-#include <sys/stat.h>
+#include <system_error>
 #include <utility>
 
 /*
@@ -269,58 +270,24 @@ express::base ifcopenshell::impl::in_memory_file_storage::instance_by_id(int id)
 
 ifcopenshell::file::~file() {}
 
-namespace {
-	// Utility functions for path handling in order not to rely on C++17's std::filesystem
-#ifdef _WIN32
-#define stat_t struct _stat
-    inline int stat_(const char* p, stat_t* s) { return ::_stat(p, s); }
-#ifndef S_ISDIR
-#define S_ISDIR(m) (((m) & _S_IFDIR) != 0)
-#endif
-#ifndef S_ISREG
-#define S_ISREG(m) (((m) & _S_IFREG) != 0)
-#endif
-#else
-    using stat_t = struct stat;
-    inline int stat_(const char* p, stat_t* s) { return ::stat(p, s); }
-#endif
-
-    inline bool path_exists_(const std::string& p, stat_t* out = nullptr) {
-        stat_t tmp;
-        stat_t* s = out ? out : &tmp;
-        return stat_(p.c_str(), s) == 0;
-    }
-
-    inline bool path_is_directory_(const stat_t& s) { return S_ISDIR(s.st_mode); }
-    inline bool path_is_regular_file_(const stat_t& s) { return S_ISREG(s.st_mode); }
-
-    inline std::string path_join_(const std::string& dir, const std::string& name) {
-        if (dir.empty()) return name;
-        const char last = dir.back();
-        if (last == '/' || last == '\\') return dir + name;
-#ifdef _WIN32
-        const char sep = '\\';
-#else
-        const char sep = '/';
-#endif
-        return dir + sep + name;
-    }
-} // namespace
-
 ifcopenshell::filetype ifcopenshell::guess_file_type(const std::string& fn) {
-    stat_t st{};
-    if (!path_exists_(fn, &st)) {
+    namespace fs = std::filesystem;
+
+    // The error_code overloads report inaccessible paths as "not there"
+    // instead of throwing, matching the previous stat()-based behaviour.
+    std::error_code ec;
+    const fs::path path(ifcopenshell::path::from_utf8(fn));
+    if (!fs::exists(path, ec)) {
         // @todo this is just weird, but for consistency with earlier behaviour
         // for now the only intent for this function is to auto-detect RocksDB
         return FT_IFCSPF;
     }
 
-    if (path_is_directory_(st)) {
+    if (fs::is_directory(path, ec)) {
         // Typical RocksDB file to look for
-        auto currentFile = path_join_(fn, "CURRENT");
-        stat_t cst{};
+        const auto currentFile = path / "CURRENT";
 
-        if (!path_exists_(currentFile, &cst) || !path_is_regular_file_(cst)) {
+        if (!fs::is_regular_file(currentFile, ec)) {
             return FT_UNKNOWN;
         }
 
