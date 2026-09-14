@@ -27,6 +27,8 @@ import ifcopenshell.api.root
 import ifcopenshell.api.sequence
 import ifcopenshell.util.date
 
+from .common import validate_input_path
+
 
 class MSP2Ifc:
     def __init__(self, optionalColumns: list[str] = []):
@@ -42,6 +44,7 @@ class MSP2Ifc:
         self.RESOURCE_TYPES_MAPPING = {"1": "LABOR", "0": "MATERIAL", "2": None}
 
     def execute(self):
+        validate_input_path(self.xml, "MS Project .xml file")
         self.parse_xml()
         self.create_ifc()
 
