@@ -82,7 +82,7 @@ class BcfXml:
     @property
     def extensions(self) -> Optional[mdl.Extensions]:
         """BCF extensions."""
-        if not self._extensions and self._zip_file:
+        if not self._extensions and self._zip_file and zipfile.Path(self._zip_file, "extensions.xml").exists():
             self._extensions = self._xml_handler.parse(self._zip_file.read("extensions.xml"), mdl.Extensions)
         return self._extensions
 

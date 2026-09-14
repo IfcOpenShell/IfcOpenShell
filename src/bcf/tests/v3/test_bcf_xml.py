@@ -1,6 +1,7 @@
 """BCF XML tests."""
 
 import uuid
+import zipfile
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -120,3 +121,20 @@ def test_equality_with_wrong_object(build_sample) -> None:
 
 def test_topic_equality_with_wrong_object(build_sample) -> None:
     assert build_sample[1] != "Wrong object"
+
+
+def test_extensions_missing_from_file(xml_handler) -> None:
+    """extensions.xml is optional per the BCF v3 spec, loading a file without it must not crash."""
+    with TemporaryDirectory() as tmp_dir:
+        file_path = Path(tmp_dir) / "no_extensions.bcf"
+        with zipfile.ZipFile(file_path, "w") as bcf_zip:
+            bcf_zip.writestr(
+                "bcf.version",
+                '<Version VersionId="3.0" xmlns="http://www.buildingsmart.org/API/BCF-XML/V3"></Version>',
+            )
+            bcf_zip.writestr(
+                "project.bcfp",
+                '<ProjectInfo xmlns="http://www.buildingsmart.org/API/BCF-XML/V3"></ProjectInfo>',
+            )
+        with BcfXml.load(file_path, xml_handler=xml_handler) as parsed:
+            assert parsed.extensions is None
