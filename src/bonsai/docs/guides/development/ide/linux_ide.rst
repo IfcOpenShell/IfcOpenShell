@@ -395,45 +395,11 @@ Now let's find out how to interact with GitHub in order to make changes to the B
    .. image:: images/cloned-repo.png
       :width: 1000 px
 
-10. **Link the Bonsai addon to the local cloned repository**: We will now edit the following 
-    script that establishes links from the unstable-installation to the cloned repository so we 
-    can easily see the changes done in the cloned repository taken effect when we load blender 
-    locally.
-
-    .. container:: blockbutton
-
-       :download:`Download dev_environment.sh <linux/dev_environment.sh>`
-
-    Edit the file to match the paths in your system. In our case we will edit the following lines:
-
-    - REPO_PATH="$HOME/bonsaiDevel/IfcOpenShell"
-    - BLENDER_PATH="$HOME/.config/blender/4.2"
-    - PACKAGE_PATH="${BLENDER_PATH}/extensions/.local/lib/python3.11/site-packages"
-    - BONSAI_PATH="${BLENDER_PATH}/extensions/raw_githubusercontent_com/bonsai"
-
-    We execute the script in the terminal. Confirm the data and the script will create the necessary links.
-
-    .. code-block:: bash
-
-       ./dev_environment.sh
-
-    .. image:: images/dev-environment-sh.png
-       :width: 1000 px
-
-    .. image:: images/dev-environment-sh-executed.png
-       :width: 1000 px
-
-    .. warning::
-   
-       If you receive an error like this:
-
-       .. code-block:: bash
-
-          cp: cannot stat '/home/falken10vdl/.config/blender/4.2/extensions/.local/lib/python3.11/site-packages/ifcopenshell/*_wrapper*': No such file or directory
-
-       It means that you have not installed the Bonsai Blender extension. Please refer to tha 
-       last part of point 2. above and follow the `Unstable installation <https://docs.bonsaibim.org/guides/development/installation.html#unstable-installation>`__.
-
+10. **Link the Bonsai addon to the local cloned repository**: We will now run a script that
+    establishes links from the unstable-installation to the cloned repository so we
+    can easily see the changes done in the cloned repository taken effect when we load blender
+    locally. Follow the :ref:`guides/development/installation:Live development
+    environment` section to run ``dev_environment.py``.
 
 11. **Adjust the VSCode Blender extension**: We will now make some adjustments to the VSCode Blender extension to ease the reload of the addon.
     Select the Extensions tool. Then  :menuselection:`Blender Development` and then select :menuselection:`Settings`.
