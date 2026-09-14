@@ -21,10 +21,12 @@ import os
 import tempfile
 
 import ifcopenshell
+import ifcopenshell.api.aggregate
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
+import ifcopenshell.api.spatial
 import ifcopenshell.api.unit
 import ifcopenshell.util.representation
 
@@ -39,6 +41,19 @@ def setup_project() -> ifcopenshell.file:
     model = ifcopenshell.api.context.add_context(ifc_file, "Model")
     ifcopenshell.api.context.add_context(ifc_file, "Model", "Body", "MODEL_VIEW", parent=model)
     return ifc_file
+
+
+def setup_spatial_tree(ifc_file: ifcopenshell.file) -> tuple[ifcopenshell.entity_instance, ...]:
+    """Aggregate a Project > Site > Building > (Level 1, Level 2) tree."""
+    project = ifc_file.by_type("IfcProject")[0]
+    site = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcSite", name="Site")
+    building = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcBuilding", name="Building")
+    level_1 = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcBuildingStorey", name="Level 1")
+    level_2 = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcBuildingStorey", name="Level 2")
+    ifcopenshell.api.aggregate.assign_object(ifc_file, products=[site], relating_object=project)
+    ifcopenshell.api.aggregate.assign_object(ifc_file, products=[building], relating_object=site)
+    ifcopenshell.api.aggregate.assign_object(ifc_file, products=[level_1, level_2], relating_object=building)
+    return site, building, level_1, level_2
 
 
 class TestIfcDiff:
@@ -121,6 +136,48 @@ class TestIfcDiff:
             with open(output) as f:
                 results = json.load(f)
             assert "Pset_WallCommon" in str(results["changed"][wall.GlobalId]["properties_changed"])
+
+    def test_unchanged_container_is_not_a_change(self):
+        # Regression test for #4110: the container check compared the entity
+        # instances returned by get_container. They belong to two different
+        # ifcopenshell.file objects and so never compare equal, meaning every
+        # contained element was reported as changed even when it had not moved.
+        ifc_file = setup_project()
+        _, _, level_1, _ = setup_spatial_tree(ifc_file)
+        wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall", name="Foo")
+        ifcopenshell.api.spatial.assign_container(ifc_file, products=[wall], relating_structure=level_1)
+
+        new_file = ifc_file.from_string(ifc_file.to_string())
+
+        ifc_diff = ifcdiff.IfcDiff(ifc_file, new_file, relationships=["container"])
+        ifc_diff.diff()
+        assert ifc_diff.change_register == {}
+
+    def test_unchanged_aggregate_is_not_a_change(self):
+        # Regression test for #4110, the same defect on the aggregate check.
+        ifc_file = setup_project()
+        setup_spatial_tree(ifc_file)
+
+        new_file = ifc_file.from_string(ifc_file.to_string())
+
+        ifc_diff = ifcdiff.IfcDiff(ifc_file, new_file, relationships=["aggregate"])
+        ifc_diff.diff()
+        assert ifc_diff.change_register == {}
+
+    def test_changed_container(self):
+        ifc_file = setup_project()
+        _, _, level_1, level_2 = setup_spatial_tree(ifc_file)
+        wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall", name="Foo")
+        ifcopenshell.api.spatial.assign_container(ifc_file, products=[wall], relating_structure=level_1)
+
+        new_file = ifc_file.from_string(ifc_file.to_string())
+        ifcopenshell.api.spatial.assign_container(
+            new_file, products=[new_file.by_id(wall.id())], relating_structure=new_file.by_id(level_2.id())
+        )
+
+        ifc_diff = ifcdiff.IfcDiff(ifc_file, new_file, relationships=["container"])
+        ifc_diff.diff()
+        assert ifc_diff.change_register == {wall.GlobalId: {"container_changed": True}}
 
     def test_changed_geometry(self):
         ifc_file = setup_project()
