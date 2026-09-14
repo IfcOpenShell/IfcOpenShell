@@ -16,6 +16,9 @@ jobs:
       - uses: dorny/paths-filter@v4
         id: filter
         with:
+          # 'some-with-excludes' is required for the '!...' rule to be honoured.
+          # With the default 'some', the negated rule ends up matching everything.
+          predicate-quantifier: 'some-with-excludes'
           filters: |
             code:
               - 'src/bcf/**'
