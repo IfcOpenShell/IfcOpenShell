@@ -84,7 +84,6 @@ def _on_active_object_changed(scene, depsgraph):
                         item.label = c_label
                         item.is_visible = True
                     # Refit the camera to the new alignment's extent
-                    ve = props.vertical_exaggeration
                     for window in ctx.window_manager.windows:
                         for a in window.screen.areas:
                             if a.as_pointer() == dec.profile_area_ptr:
@@ -92,7 +91,7 @@ def _on_active_object_changed(scene, depsgraph):
                                     (s for s in a.spaces if s.type == "VIEW_3D"), None
                                 )
                                 if space:
-                                    dec.fit_view(space, ve, area_width=a.width, area_height=a.height)
+                                    dec.fit_view(space, area_width=a.width, area_height=a.height)
                     dec.tag_redraw()
 
         for window in ctx.window_manager.windows:
@@ -108,6 +107,9 @@ classes = (
     prop.VerticalAlignmentItem,
     prop.CantAlignmentItem,
     prop.VerticalPIMarker,
+    prop.HorizontalSegmentRow,
+    prop.VerticalSegmentRow,
+    prop.CantSegmentRow,
     prop.CivilAlignmentProperties,
     prop.PICurveMarkerProperties,
     # UILists and section-toggle operators
@@ -115,6 +117,9 @@ classes = (
     ui.ALIGN_OT_toggle_v_segments,
     ui.ALIGN_OT_toggle_cant_segments,
     ui.ALIGN_UL_vertical_pi_markers,
+    ui.ALIGN_UL_h_segments,
+    ui.ALIGN_UL_v_segments,
+    ui.ALIGN_UL_cant_segments,
     operator.ImportAlignmentCSV,
     # Operators - Vertical Profile Window
     operator.ALIGN_OT_show_vertical_profile,
@@ -136,6 +141,19 @@ classes = (
     operator.ALIGN_OT_draw_vertical_alignment,
     operator.ALIGN_OT_apply_vertical_pi_curve,
     operator.ALIGN_OT_clear_vertical_pi_markers,
+    # Operators - Segment table editing (stage edits, then Apply)
+    operator.ALIGN_OT_add_segment_row,
+    operator.ALIGN_OT_remove_segment_row,
+    operator.ALIGN_OT_move_segment_row,
+    operator.ALIGN_OT_enable_editing_h_segments,
+    operator.ALIGN_OT_disable_editing_h_segments,
+    operator.ALIGN_OT_apply_h_segments,
+    operator.ALIGN_OT_enable_editing_v_segments,
+    operator.ALIGN_OT_disable_editing_v_segments,
+    operator.ALIGN_OT_apply_v_segments,
+    operator.ALIGN_OT_enable_editing_cant_segments,
+    operator.ALIGN_OT_disable_editing_cant_segments,
+    operator.ALIGN_OT_apply_cant_segments,
     # UI Panels (appear in Properties sidebar under ALIGNMENTS tab)
     ui.ALIGN_PT_alignment_authoring,
     ui.ALIGN_PT_vertical_alignment_authoring,

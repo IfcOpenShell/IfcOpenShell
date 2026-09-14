@@ -59,6 +59,13 @@ class AlignmentSegmentDecorator:
     label_world_pos: tuple[float, float, float] | None = None
     tangent_data: dict | None = None
 
+    # Blender selection state at the moment this segment was highlighted
+    # (see _has_selection_changed) -- used to auto-clear the highlight the
+    # moment the user picks something else, instead of leaving it stuck
+    # until the same side-panel row is clicked again.
+    _baseline_active_ptr: int = 0
+    _baseline_selected_ptrs: frozenset = frozenset()
+
     COLOR_HIGHLIGHT = (1.0, 0.55, 0.0, 1.0)        # Orange - segment polyline
     COLOR_TANGENT = (0.75, 0.75, 0.75, 0.85)        # Light gray - tangent extension lines
     COLOR_PI = (1.0, 0.85, 0.25, 1.0)               # Yellow - PI crosshair
@@ -87,6 +94,39 @@ class AlignmentSegmentDecorator:
             SpaceView3D.draw_handler_add(handler.draw_label, (context,), "WINDOW", "POST_PIXEL")
         )
         cls.is_installed = True
+        cls._capture_selection_baseline(context)
+
+    @classmethod
+    def _capture_selection_baseline(cls, context) -> None:
+        try:
+            active_obj = context.view_layer.objects.active
+            cls._baseline_active_ptr = active_obj.as_pointer() if active_obj else 0
+            cls._baseline_selected_ptrs = frozenset(o.as_pointer() for o in context.selected_objects)
+        except Exception:
+            cls._baseline_active_ptr = 0
+            cls._baseline_selected_ptrs = frozenset()
+
+    @classmethod
+    def _has_selection_changed(cls) -> bool:
+        """True if Blender's active object or selection set differs from
+        what it was when this segment was highlighted.
+
+        Selecting a segment in the side panel doesn't itself touch Blender's
+        object selection, so any subsequent change to it -- clicking on
+        nothing or on something else in the 3D viewport, picking a different
+        object in the Outliner, or switching the active alignment via the
+        dropdown (which reselects that alignment's own object, see
+        _on_active_alignment_update in prop.py) -- means the user has moved
+        on and the highlight/label should clear rather than stick around
+        referencing a segment that's no longer the focus.
+        """
+        try:
+            active_obj = bpy.context.view_layer.objects.active
+            active_ptr = active_obj.as_pointer() if active_obj else 0
+            selected_ptrs = frozenset(o.as_pointer() for o in bpy.context.selected_objects)
+        except Exception:
+            return False
+        return active_ptr != cls._baseline_active_ptr or selected_ptrs != cls._baseline_selected_ptrs
 
     @classmethod
     def refresh(cls) -> None:
@@ -96,10 +136,18 @@ class AlignmentSegmentDecorator:
         segment is already selected and highlighted; without this its PC/PI/PT
         station labels would stay stale until the segment was deselected and
         reselected. Called by the stationing operators after they succeed.
+
+        Also re-captures the selection baseline (see _has_selection_changed):
+        the triggering operator ran with the segment's highlight still valid,
+        so whatever Blender's active object/selection happens to be right now
+        is the new "nothing has changed yet" baseline -- protects against a
+        false-positive auto-clear on the next redraw if the operator itself
+        touched object selection along the way.
         """
         if not cls.is_installed or cls.segment_id is None:
             return
         cls._compute_segment_geometry(cls.segment_id)
+        cls._capture_selection_baseline(bpy.context)
         tool.Blender.update_viewport()
 
     @classmethod
@@ -116,6 +164,18 @@ class AlignmentSegmentDecorator:
         cls.segment_label = ""
         cls.label_world_pos = None
         cls.tangent_data = None
+        cls._baseline_active_ptr = 0
+        cls._baseline_selected_ptrs = frozenset()
+
+        # Keep the side panel's row depress-state in sync -- uninstall() can
+        # now be triggered autonomously (see _has_selection_changed), not
+        # just from the toggle operator, which already clears this itself.
+        try:
+            props = bpy.context.scene.CivilAlignmentProperties
+            if props.selected_h_segment_id:
+                props.selected_h_segment_id = 0
+        except Exception:
+            pass
 
     @classmethod
     def _compute_segment_geometry(cls, segment_id: int) -> None:
@@ -385,6 +445,22 @@ class AlignmentSegmentDecorator:
 
     def draw_segment(self, context):
         """Draw the orange highlight polyline and gray tangent extension lines to PI."""
+        cls = self.__class__
+        if not cls.is_installed:
+            return
+
+        # Selection moved on elsewhere (viewport pick, Outliner, alignment
+        # dropdown) -- clear rather than keep showing a stale highlight.
+        if cls._has_selection_changed():
+            cls.uninstall()
+            try:
+                for area in bpy.context.screen.areas:
+                    if area.type == "VIEW_3D":
+                        area.tag_redraw()
+            except Exception:
+                pass
+            return
+
         # Never draw segment overlays inside the vertical profile area
         pa_ptr = VerticalProfileDecorator.profile_area_ptr
         if pa_ptr != 0:
@@ -394,7 +470,7 @@ class AlignmentSegmentDecorator:
             except Exception:
                 pass
 
-        verts = self.__class__.segment_verts
+        verts = cls.segment_verts
         if not verts or len(verts) < 2:
             return
 
@@ -491,6 +567,12 @@ class AlignmentSegmentDecorator:
         Linear segments (has_pi=False): start and end station + coords, no tag prefix.
         Circular arcs: also label the center of curvature.
         """
+        if not self.__class__.is_installed:
+            # draw_segment (POST_VIEW, runs first) may have just auto-cleared
+            # the highlight this same frame because the selection moved on --
+            # don't draw a label for data that's already gone.
+            return
+
         try:
             if not bpy.context.scene.CivilAlignmentProperties.show_h_segment_labels:
                 return
@@ -608,6 +690,25 @@ def _nice_interval(span: float, target_count: int = 8) -> float:
     return factor * magnitude
 
 
+def _dot_tris(centers: list, radius: float, segments: int = 12):
+    """Build a triangle-fan mesh for filled circular dots, one per (x, z) in
+    ``centers`` (world X/Z plane, Y=0), combined into a single TRIS batch.
+
+    Returns (verts, indices) ready for batch_for_shader(shader, "TRIS", ...).
+    """
+    verts = []
+    indices = []
+    for cx, cz in centers:
+        base = len(verts)
+        verts.append((cx, 0.0, cz))
+        for i in range(segments):
+            ang = 2.0 * math.pi * i / segments
+            verts.append((cx + radius * math.cos(ang), 0.0, cz + radius * math.sin(ang)))
+        for i in range(segments):
+            indices.append((base, base + 1 + i, base + 1 + (i + 1) % segments))
+    return verts, indices
+
+
 def _frange(start: float, stop: float, step: float):
     """Yield evenly-spaced floats aligned to step boundaries, from start to stop."""
     if step <= 0 or not math.isfinite(start) or not math.isfinite(stop):
@@ -682,11 +783,15 @@ class VerticalProfileDecorator:
     Opens a dedicated SpaceView3D window in front orthographic mode and draws the
     IfcGradientCurve as a distance-along vs. elevation plot with a configurable
     vertical exaggeration factor.  Middle-mouse pan/zoom are handled by Blender's
-    native orthographic navigation.
+    native orthographic navigation; orbit/rotate is continuously suppressed by
+    operator._profile_rotation_guard_tick (a bpy.app.timers poll) so the view
+    stays locked front-on.
 
     Coordinate mapping inside the 3D viewport:
         world X  = distance along alignment
-        world Z  = elevation × vertical_exaggeration
+        world Z  = elevation, normalized into the elevation zone so it always
+                   fills the viewport proportionally (see fit_view/_ez) --
+                   there is no user-facing vertical exaggeration factor
         world Y  = 0  (orthographic front view collapses the depth axis)
     """
 
@@ -773,7 +878,7 @@ class VerticalProfileDecorator:
 
     COLOR_GRID = (0.27, 0.27, 0.27, 1.0)       # Subtle dark-gray grid
     COLOR_PROFILE = (0.25, 0.85, 0.45, 1.0)   # Green profile curve
-    COLOR_BOUNDARY = (0.90, 0.85, 0.25, 1.0)  # Yellow segment ticks
+    COLOR_BOUNDARY = (0.90, 0.85, 0.25, 1.0)  # Yellow segment boundary dots
     COLOR_LABEL = (0.80, 0.80, 0.80, 1.0)     # Light-gray axis labels
     COLOR_AXIS_TITLE = (0.65, 0.65, 0.65, 1.0)
     COLOR_HEADER = (0.95, 0.95, 0.95, 1.0)
@@ -784,7 +889,6 @@ class VerticalProfileDecorator:
     COLOR_GRAD = (0.75, 0.95, 0.75, 1.0)            # Light green — gradient endpoints
     LINE_GRID = 1.0
     LINE_PROFILE = 2.5
-    LINE_BOUNDARY = 1.2
     LINE_TANGENT_VERT = 1.0
 
     # ------------------------------------------------------------------ public
@@ -867,7 +971,7 @@ class VerticalProfileDecorator:
             pass
 
     @classmethod
-    def fit_view(cls, space, ve: float, area_width: int = 1920, area_height: int = 400) -> None:
+    def fit_view(cls, space, area_width: int = 1920, area_height: int = 400) -> None:
         """Reposition the profile camera so both zones always fill the viewport proportionally.
 
         Zone heights are derived from the area aspect ratio so they remain visible
@@ -1318,7 +1422,6 @@ class VerticalProfileDecorator:
 
         try:
             props = bpy.context.scene.CivilAlignmentProperties
-            ve = props.vertical_exaggeration
         except Exception:
             return
 
@@ -1471,21 +1574,24 @@ class VerticalProfileDecorator:
                 batch = batch_for_shader(shader, "LINES", {"pos": verts}, indices=edges)
                 batch.draw(shader)
 
-        # --- Segment boundary ticks ------------------------------------------
-        tick = max((cls.elev_zone_top - cls.elev_zone_bot) * 0.04, 0.5)
-        shader.uniform_float("lineWidth", cls.LINE_BOUNDARY)
-        shader.uniform_float("color", cls.COLOR_BOUNDARY)
-        for info in cls.segments_info:
-            if visible_ids is not None and info.get("vertical_id", -1) not in visible_ids:
-                continue
-            d = info["dist"]
-            z = cls._ez(info["height"])
-            batch = batch_for_shader(
-                shader, "LINES",
-                {"pos": [(d, 0.0, z - tick), (d, 0.0, z + tick)]},
-                indices=[[0, 1]],
-            )
-            batch.draw(shader)
+        # --- Segment boundary dots --------------------------------------------
+        # Sized in screen pixels (like lineWidth) rather than world units, so
+        # the dot stays a fixed on-screen size — matching the profile line's
+        # weight — instead of ballooning at zoomed-in scales.
+        world_per_px = (vis_d_max - vis_d_min) / max(region.width, 1)
+        dot_r = cls.LINE_PROFILE * world_per_px
+        dot_centers = [
+            (info["dist"], cls._ez(info["height"]))
+            for info in cls.segments_info
+            if visible_ids is None or info.get("vertical_id", -1) in visible_ids
+        ]
+        if dot_centers:
+            dot_verts, dot_indices = _dot_tris(dot_centers, dot_r)
+            dot_shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+            dot_shader.bind()
+            dot_shader.uniform_float("color", cls.COLOR_BOUNDARY)
+            batch_for_shader(dot_shader, "TRIS", {"pos": dot_verts}, indices=dot_indices).draw(dot_shader)
+            shader.bind()
 
         # --- Vertical curve tangent lines (BVC→PVI and EVC→PVI) --------------
         shader.uniform_float("lineWidth", cls.LINE_TANGENT_VERT)
@@ -1636,20 +1742,24 @@ class VerticalProfileDecorator:
                     edges = [[i, i + 1] for i in range(len(verts) - 1)]
                     batch_for_shader(shader, "LINES", {"pos": verts}, indices=edges).draw(shader)
 
-            # Cant segment boundary ticks
-            tick_c = cant_h * 0.04
-            shader.uniform_float("lineWidth", cls.LINE_BOUNDARY)
-            shader.uniform_float("color", cls.COLOR_BOUNDARY)
-            for info in cls.cant_info:
-                if info.get("rail") == "C":
-                    continue
-                if visible_cant_ids is not None and info.get("cant_id", -1) not in visible_cant_ids:
-                    continue
-                d = info["dist"]
-                gz = _cz(info["start_cant"])
-                batch_for_shader(shader, "LINES",
-                    {"pos": [(d, 0.0, gz - tick_c), (d, 0.0, gz + tick_c)]},
-                    indices=[[0, 1]]).draw(shader)
+            # Cant segment boundary dots (same fixed screen-pixel sizing as the
+            # elevation zone's — world_per_px is shared across the whole view).
+            dot_r_c = cls.LINE_PROFILE * world_per_px
+            cant_dot_centers = [
+                (info["dist"], _cz(info["start_cant"]))
+                for info in cls.cant_info
+                if info.get("rail") != "C"
+                and (visible_cant_ids is None or info.get("cant_id", -1) in visible_cant_ids)
+            ]
+            if cant_dot_centers:
+                cant_dot_verts, cant_dot_indices = _dot_tris(cant_dot_centers, dot_r_c)
+                cant_dot_shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+                cant_dot_shader.bind()
+                cant_dot_shader.uniform_float("color", cls.COLOR_BOUNDARY)
+                batch_for_shader(
+                    cant_dot_shader, "TRIS", {"pos": cant_dot_verts}, indices=cant_dot_indices
+                ).draw(cant_dot_shader)
+                shader.bind()
 
             # Cant subplot — full 4-sided border box (right side = cant Y-axis)
             shader.uniform_float("lineWidth", 1.5)
@@ -1694,7 +1804,6 @@ class VerticalProfileDecorator:
 
         try:
             props = bpy.context.scene.CivilAlignmentProperties
-            ve = props.vertical_exaggeration
         except Exception:
             return
 
@@ -1736,7 +1845,7 @@ class VerticalProfileDecorator:
         blf.size(font_id, tool.Blender.scale_font_size(13))
         blf.color(font_id, *cls.COLOR_HEADER)
         blf.position(font_id, 16, region.height - 28, 0)
-        blf.draw(font_id, f"Vertical Profile — {cls.alignment_name}   VE = {ve:.0f}×")
+        blf.draw(font_id, f"Vertical Profile — {cls.alignment_name}")
 
         # --- Station axis labels (horizontal, along the bottom) --------------
         BOTTOM_MARGIN = 28   # px from bottom for label baseline
