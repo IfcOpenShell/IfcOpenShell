@@ -71,22 +71,6 @@ def run(command: list[str]) -> None:
     subprocess.check_call(command)
 
 
-def set_env(var_name: str, value: str) -> tuple[str, str | None]:
-    """
-    :return: Tuple of ``(var_name, old_value)`` to be passed to ``restore_env``.
-    """
-    old_value = os.getenv(var_name)
-    os.environ[var_name] = value
-    return var_name, old_value
-
-
-def restore_env(var_name: str, old_value: str | None) -> None:
-    if old_value is None:
-        del os.environ[var_name]
-    else:
-        os.environ[var_name] = old_value
-
-
 def find_install_dir() -> Path:
     arch_install_dir = REPO_PATH / f"_installed-{build_generator()}"
     if arch_install_dir.exists():
@@ -215,15 +199,24 @@ def write_zip(zip_path: Path, files: dict[str, Path], generated_files: dict[str,
 
 def build() -> None:
     for python_version in PYTHON_VERSIONS:
-        os.environ["PYTHON_VERSION"] = python_version
         print(f"Building for Python {python_version}...")
-        run([sys.executable, str(REPO_WIN / "build-deps.py"), build_generator(), "Release", "-y"])
-        OLD_ADD_COMMIT_SHA = set_env("ADD_COMMIT_SHA", "ON")
+        run(
+            [
+                sys.executable,
+                str(REPO_WIN / "build-deps.py"),
+                build_generator(),
+                "Release",
+                "-y",
+                "--python-version",
+                python_version,
+            ]
+        )
         run(
             [
                 sys.executable,
                 str(REPO_WIN / "run-cmake.py"),
                 build_generator(),
+                "--add-commit-sha",
                 "--",
                 "-DENABLE_BUILD_OPTIMIZATIONS=ON",
                 "-DGLTF_SUPPORT=ON",
@@ -232,7 +225,6 @@ def build() -> None:
                 "-DUSE_CCACHE=ON",
             ]
         )
-        restore_env(*OLD_ADD_COMMIT_SHA)
         run([sys.executable, str(REPO_WIN / "install-ifcopenshell.py"), build_generator(), "Release"])
 
 
