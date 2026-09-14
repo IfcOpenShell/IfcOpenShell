@@ -1469,8 +1469,14 @@ class CreateDrawing(bpy.types.Operator):
                 # This group is one material layer, so a material query describes that layer,
                 # not the whole element. Otherwise a slab's concrete layer is tagged with the
                 # gravel layer's classes as well, and any CSS matching them paints it wrongly.
-                cut_material = self.get_cut_material(element, layer)
-                value = ifcopenshell.util.selector.get_element_value(cut_material, tail) if cut_material else None
+                # Category is defined on both the set item and the material it references, and
+                # the set item wins where it is set - mirror the precedence util.selector uses
+                # for "mats.Category", so a layer keys the same way whether or not it is cut.
+                if tail == "Category" and getattr(layer, "Category", None) is not None:
+                    source = layer
+                else:
+                    source = self.get_cut_material(element, layer)
+                value = ifcopenshell.util.selector.get_element_value(source, tail) if source else None
             else:
                 value = ifcopenshell.util.selector.get_element_value(element, key)
             if not value:
