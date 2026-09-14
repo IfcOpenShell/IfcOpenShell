@@ -133,12 +133,6 @@ def _on_cant_visibility_update(self, context):
     VerticalProfileDecorator.tag_redraw()
 
 
-def _on_ve_update(self, context):
-    from .decorator import VerticalProfileDecorator
-
-    VerticalProfileDecorator.tag_redraw()
-
-
 class CantAlignmentItem(PropertyGroup):
     """Tracks one IfcAlignmentCant available in the profile view."""
 
@@ -184,6 +178,117 @@ class VerticalPIMarker(PropertyGroup):
     )
 
 
+# Horizontal spiral transition curve families that _map_alignment_horizontal_segment
+# (ifcopenshell.api.alignment) maps to real geometry, all sharing the exact same
+# DesignParameters shape as CLOTHOID (StartPoint/StartDirection/StartRadiusOfCurvature/
+# EndRadiusOfCurvature/SegmentLength -- no extra fields), so the table can treat every
+# one of them identically to CLOTHOID. VIENNESEBEND is intentionally excluded: its
+# geometry additionally depends on the alignment's CANT segment at the same station
+# (rail cant angle, gravity centerline height) and a GravityCenterLineHeight field this
+# table has no place for -- editing it here could silently desync it from its cant data.
+HORIZONTAL_SPIRAL_TYPES = ("CLOTHOID", "CUBIC", "HELMERTCURVE", "BLOSSCURVE", "COSINECURVE", "SINECURVE")
+SUPPORTED_HORIZONTAL_TYPES = ("LINE", "CIRCULARARC") + HORIZONTAL_SPIRAL_TYPES
+
+# Vertical types whose EndGradient can genuinely differ from StartGradient
+# (a CONSTANTGRADIENT segment always has EndGradient == StartGradient by
+# definition, so it gets no separate "G Out" field).
+SUPPORTED_VERTICAL_TYPES = ("CONSTANTGRADIENT", "PARABOLICARC", "CIRCULARARC")
+VERTICAL_TWO_GRADIENT_TYPES = ("PARABOLICARC", "CIRCULARARC")
+
+
+class HorizontalSegmentRow(PropertyGroup):
+    """One staged edit to a horizontal alignment segment, for the
+    Alignment Segments table's "stage edits, then Apply" editing flow (see
+    ALIGN_OT_enable_editing_h_segments / ALIGN_OT_apply_h_segments).
+
+    segment_id is the originating IfcAlignmentSegment's entity id (0 for a
+    row added during this edit session, with no IFC counterpart yet) — used
+    only for provenance/debugging, not read by the Apply operator, which
+    always rebuilds every segment from scratch in row order.
+    """
+
+    segment_id: IntProperty(name="Source Segment ID", default=0)
+    predefined_type: EnumProperty(
+        name="Type",
+        items=[
+            ("LINE", "Line", "A straight tangent run"),
+            ("CIRCULARARC", "Circular Arc", "A constant-radius curve"),
+            ("CLOTHOID", "Clothoid", "A spiral transition curve (linear curvature change)"),
+            ("CUBIC", "Cubic", "A spiral transition curve (cubic parabola)"),
+            ("HELMERTCURVE", "Helmert Curve", "A spiral transition curve (sine-based curvature change)"),
+            ("BLOSSCURVE", "Bloss Curve", "A spiral transition curve (S-shaped curvature change)"),
+            ("COSINECURVE", "Cosine Curve", "A spiral transition curve (cosine-based curvature change)"),
+            ("SINECURVE", "Sine Curve", "A spiral transition curve (sine-based curvature change)"),
+            ("UNSUPPORTED", "Unsupported", "A segment type this table can't edit — remove it or fix it in IFC directly"),
+        ],
+        default="LINE",
+    )
+    original_predefined_type: StringProperty(
+        name="Original Type", description="The real IFC PredefinedType, when it's not one this table supports editing"
+    )
+    length: FloatProperty(name="Length", default=10.0, min=0.0001, unit="LENGTH")
+    start_radius: FloatProperty(name="Radius", default=0.0, unit="LENGTH")
+    end_radius: FloatProperty(name="End Radius", default=0.0, unit="LENGTH")
+
+
+class VerticalSegmentRow(PropertyGroup):
+    """One staged edit to a vertical alignment segment (see
+    HorizontalSegmentRow for the general pattern this mirrors).
+
+    start_gradient/end_gradient are stored as PERCENT (matching the existing
+    read-only panel's display, e.g. 2.5 for 2.5%) — the Apply operator must
+    divide by 100 before writing IfcAlignmentVerticalSegment.StartGradient/
+    EndGradient, which are unitless ratios.
+
+    CIRCULARARC is supported (_map_alignment_vertical_segment implements it,
+    deriving the true radius from StartGradient/EndGradient/HorizontalLength
+    rather than reading RadiusOfCurvature) -- CLOTHOID is not (that mapper
+    raises NotImplementedError), so it's intentionally left off this list.
+    """
+
+    segment_id: IntProperty(name="Source Segment ID", default=0)
+    predefined_type: EnumProperty(
+        name="Type",
+        items=[
+            ("CONSTANTGRADIENT", "Constant Grade", "A straight tangent grade"),
+            ("PARABOLICARC", "Parabolic", "A parabolic vertical curve"),
+            ("CIRCULARARC", "Circular Arc", "A constant-radius vertical curve"),
+            ("UNSUPPORTED", "Unsupported", "A segment type this table can't edit — remove it or fix it in IFC directly"),
+        ],
+        default="CONSTANTGRADIENT",
+    )
+    original_predefined_type: StringProperty(
+        name="Original Type", description="The real IFC PredefinedType, when it's not one this table supports editing"
+    )
+    h_length: FloatProperty(name="Length", default=10.0, min=0.0001, unit="LENGTH")
+    start_gradient: FloatProperty(name="G In %", default=0.0, precision=3)
+    end_gradient: FloatProperty(name="G Out %", default=0.0, precision=3)
+
+
+class CantSegmentRow(PropertyGroup):
+    """One staged edit to a cant alignment segment (see HorizontalSegmentRow
+    for the general pattern this mirrors)."""
+
+    segment_id: IntProperty(name="Source Segment ID", default=0)
+    predefined_type: EnumProperty(
+        name="Type",
+        items=[
+            ("CONSTANTCANT", "Constant Cant", "A constant left/right cant"),
+            ("LINEARTRANSITION", "Linear Transition", "Cant that changes linearly over the segment"),
+            ("UNSUPPORTED", "Unsupported", "A segment type this table can't edit — remove it or fix it in IFC directly"),
+        ],
+        default="CONSTANTCANT",
+    )
+    original_predefined_type: StringProperty(
+        name="Original Type", description="The real IFC PredefinedType, when it's not one this table supports editing"
+    )
+    h_length: FloatProperty(name="Length", default=10.0, min=0.0001, unit="LENGTH")
+    start_cant_left: FloatProperty(name="Start L", default=0.0)
+    start_cant_right: FloatProperty(name="Start R", default=0.0)
+    end_cant_left: FloatProperty(name="End L", default=0.0)
+    end_cant_right: FloatProperty(name="End R", default=0.0)
+
+
 class CivilAlignmentProperties(PropertyGroup):
     """Properties for the alignment module"""
 
@@ -194,17 +299,6 @@ class CivilAlignmentProperties(PropertyGroup):
         items=_alignment_enum_items,
         update=_on_active_alignment_update,
         default=0,
-    )
-
-    # Vertical profile window settings
-    vertical_exaggeration: FloatProperty(
-        name="Vertical Exaggeration",
-        description="Multiply elevation differences by this factor for the profile view",
-        default=10.0,
-        min=1.0,
-        max=1000.0,
-        precision=1,
-        update=_on_ve_update,
     )
 
     # Selected horizontal segment (for viewport highlight)
@@ -257,6 +351,32 @@ class CivilAlignmentProperties(PropertyGroup):
         description="Show cant start/end value labels in the profile view",
         default=True,
     )
+
+    # Segment table editing ("stage edits, then Apply") -- only one of
+    # horizontal/vertical/cant can be mid-edit at a time; editing_layout_id
+    # names the specific IfcAlignmentHorizontal/Vertical/Cant entity being
+    # staged (vertical/cant layouts can have several sibling layouts, e.g.
+    # "Road Profile" vs "Existing Ground", so the kind alone isn't enough).
+    editing_segment_kind: EnumProperty(
+        name="Editing Segments",
+        items=[
+            ("NONE", "None", ""),
+            ("HORIZONTAL", "Horizontal", ""),
+            ("VERTICAL", "Vertical", ""),
+            ("CANT", "Cant", ""),
+        ],
+        default="NONE",
+    )
+    editing_layout_id: IntProperty(name="Editing Layout ID", default=0)
+
+    h_segment_rows: CollectionProperty(type=HorizontalSegmentRow)
+    active_h_segment_row_index: IntProperty(default=0)
+
+    v_segment_rows: CollectionProperty(type=VerticalSegmentRow)
+    active_v_segment_row_index: IntProperty(default=0)
+
+    cant_segment_rows: CollectionProperty(type=CantSegmentRow)
+    active_cant_segment_row_index: IntProperty(default=0)
 
 
 class PICurveMarkerProperties(PropertyGroup):
