@@ -126,6 +126,92 @@ class ALIGN_UL_vertical_pi_markers(UIList):
             row.label(text="")
 
 
+class ALIGN_UL_h_segments(UIList):
+    """Editable table of a horizontal layout's staged segment edits (see
+    align.enable_editing_h_segments / align.apply_h_segments).
+
+    Columns are built via chained split(factor=...) calls -- one field per
+    step -- matching the read-only segment tables' own technique (see
+    ALIGN_PT_alignment_segments._draw_horizontal), rather than a plain
+    row.prop() sequence: a bare row gives every widget an equal share of the
+    available width, which stretches short numeric fields across the whole
+    list and looks scattered instead of left-packed.
+    """
+
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        if self.layout_type not in {"DEFAULT", "COMPACT"}:
+            return
+        row = layout.split(factor=0.08)
+        row.label(text=str(index + 1))
+        if item.predefined_type == "UNSUPPORTED":
+            row.label(text=item.original_predefined_type, icon="ERROR")
+            return
+        r2 = row.split(factor=0.35)
+        r2.prop(item, "predefined_type", text="")
+        r3 = r2.split(factor=0.30)
+        r3.prop(item, "length", text="")
+        if item.predefined_type == "CIRCULARARC":
+            r4 = r3.split(factor=0.5)
+            r4.prop(item, "start_radius", text="R")
+        elif item.predefined_type != "LINE":
+            r4 = r3.split(factor=0.5)
+            r4.prop(item, "start_radius", text="R1")
+            r5 = r4.split(factor=0.5)
+            r5.prop(item, "end_radius", text="R2")
+
+
+class ALIGN_UL_v_segments(UIList):
+    """Editable table of a vertical layout's staged segment edits (see
+    align.enable_editing_v_segments / align.apply_v_segments). See
+    ALIGN_UL_h_segments for why chained split() is used instead of a plain
+    row.prop() sequence."""
+
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        if self.layout_type not in {"DEFAULT", "COMPACT"}:
+            return
+        row = layout.split(factor=0.08)
+        row.label(text=str(index + 1))
+        if item.predefined_type == "UNSUPPORTED":
+            row.label(text=item.original_predefined_type, icon="ERROR")
+            return
+        r2 = row.split(factor=0.35)
+        r2.prop(item, "predefined_type", text="")
+        r3 = r2.split(factor=0.30)
+        r3.prop(item, "h_length", text="")
+        r4 = r3.split(factor=0.5)
+        r4.prop(item, "start_gradient", text="G In")
+        if item.predefined_type in ("PARABOLICARC", "CIRCULARARC"):
+            r4.prop(item, "end_gradient", text="G Out")
+
+
+class ALIGN_UL_cant_segments(UIList):
+    """Editable table of a cant layout's staged segment edits (see
+    align.enable_editing_cant_segments / align.apply_cant_segments). See
+    ALIGN_UL_h_segments for why chained split() is used instead of a plain
+    row.prop() sequence."""
+
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        if self.layout_type not in {"DEFAULT", "COMPACT"}:
+            return
+        row = layout.split(factor=0.08)
+        row.label(text=str(index + 1))
+        if item.predefined_type == "UNSUPPORTED":
+            row.label(text=item.original_predefined_type, icon="ERROR")
+            return
+        r2 = row.split(factor=0.30)
+        r2.prop(item, "predefined_type", text="")
+        r3 = r2.split(factor=0.25)
+        r3.prop(item, "h_length", text="")
+        r4 = r3.split(factor=0.5)
+        start_pair = r4.row(align=True)
+        start_pair.prop(item, "start_cant_left", text="SL")
+        start_pair.prop(item, "start_cant_right", text="SR")
+        if item.predefined_type == "LINEARTRANSITION":
+            end_pair = r4.row(align=True)
+            end_pair.prop(item, "end_cant_left", text="EL")
+            end_pair.prop(item, "end_cant_right", text="ER")
+
+
 # =============================================================================
 # Alignments Tab – Segment Breakdown Panel
 # =============================================================================
@@ -427,7 +513,6 @@ class ALIGN_PT_alignment_segments(Panel):
             dec = VerticalProfileDecorator
             row = layout.row(align=True)
             row.label(text="Vertical Profile:", icon="FCURVE")
-            row.prop(props, "vertical_exaggeration", text="VE")
             row.operator(
                 "align.show_vertical_profile", text="",
                 icon="GRAPH", depress=dec.is_installed,
@@ -446,12 +531,40 @@ class ALIGN_PT_alignment_segments(Panel):
                 if seg.is_a("IfcAlignmentSegment"):
                     yield seg
 
+    def _draw_segment_editor(
+        self, box, props, uilist_idname, rows_propname, active_index_propname,
+        kind, apply_idname, cancel_idname,
+    ):
+        """Shared "stage edits, then Apply" table UI for one layout's segments
+        -- an editable UIList + Add/Remove/Move-Up/Move-Down row toolbar +
+        Apply/Cancel, used identically by the horizontal/vertical/cant
+        sections while that section is the active edit session (see
+        align.enable_editing_*_segments)."""
+        box.template_list(uilist_idname, "", props, rows_propname, props, active_index_propname, rows=5)
+        toolbar = box.row(align=True)
+        op = toolbar.operator("align.add_segment_row", text="", icon="ADD")
+        op.kind = kind
+        op = toolbar.operator("align.remove_segment_row", text="", icon="REMOVE")
+        op.kind = kind
+        op = toolbar.operator("align.move_segment_row", text="", icon="TRIA_UP")
+        op.kind, op.direction = kind, "UP"
+        op = toolbar.operator("align.move_segment_row", text="", icon="TRIA_DOWN")
+        op.kind, op.direction = kind, "DOWN"
+
+        apply_row = box.row(align=True)
+        apply_row.operator(apply_idname, icon="CHECKMARK")
+        apply_row.operator(cancel_idname, text="", icon="X")
+
     def _draw_horizontal(self, layout, context, layout_entity, alignment_id=0):
         ifc_file = tool.Ifc.get()
         props = context.scene.CivilAlignmentProperties
         selected_id = props.selected_h_segment_id
         expanded = _H_EXPANDED.get(alignment_id, True)
         box = layout.box()
+
+        is_editing_this = (
+            props.editing_segment_kind == "HORIZONTAL" and props.editing_layout_id == layout_entity.id()
+        )
 
         # Collapsible header with label toggle
         row = box.row(align=True)
@@ -462,8 +575,19 @@ class ALIGN_PT_alignment_segments(Panel):
         op.alignment_id = alignment_id
         row.label(text="Horizontal", icon="DRIVER_ROTATIONAL_DIFFERENCE")
         row.prop(props, "show_h_segment_labels", text="", icon="FONT_DATA")
+        edit_op = row.operator(
+            "align.enable_editing_h_segments", text="", icon="GREASEPENCIL", depress=is_editing_this
+        )
+        edit_op.layout_id = layout_entity.id()
 
         if not expanded:
+            return
+
+        if is_editing_this:
+            self._draw_segment_editor(
+                box, props, "ALIGN_UL_h_segments", "h_segment_rows", "active_h_segment_row_index",
+                "HORIZONTAL", "align.apply_h_segments", "align.disable_editing_h_segments",
+            )
             return
 
         # Column headers (no separate select column — index cell is the select button)
@@ -540,6 +664,7 @@ class ALIGN_PT_alignment_segments(Panel):
         label = label or layout_entity.Name or f"Vertical #{v_id}"
         expanded = _V_EXPANDED.get(v_id, True)
         selected_v_id = props.selected_v_segment_id
+        is_editing_this = props.editing_segment_kind == "VERTICAL" and props.editing_layout_id == v_id
 
         # Eye-icon uses vertical_items (populated when the profile window is open)
         v_item = next((it for it in props.vertical_items if it.entity_id == v_id), None)
@@ -565,7 +690,19 @@ class ALIGN_PT_alignment_segments(Panel):
         if dec.is_installed and v_item is not None:
             row.prop(v_item, "show_labels", text="", icon="FONT_DATA")
 
+        edit_op = row.operator(
+            "align.enable_editing_v_segments", text="", icon="GREASEPENCIL", depress=is_editing_this
+        )
+        edit_op.layout_id = v_id
+
         if not expanded:
+            return
+
+        if is_editing_this:
+            self._draw_segment_editor(
+                box, props, "ALIGN_UL_v_segments", "v_segment_rows", "active_v_segment_row_index",
+                "VERTICAL", "align.apply_v_segments", "align.disable_editing_v_segments",
+            )
             return
 
         # Column headers (index cell is the select button)
@@ -632,6 +769,7 @@ class ALIGN_PT_alignment_segments(Panel):
         label = layout_entity.Name or f"Cant #{c_id}"
         expanded = _C_EXPANDED.get(c_id, True)
         selected_c_id = props.selected_cant_segment_id
+        is_editing_this = props.editing_segment_kind == "CANT" and props.editing_layout_id == c_id
 
         c_item = next((it for it in props.cant_items if it.entity_id == c_id), None)
 
@@ -651,7 +789,19 @@ class ALIGN_PT_alignment_segments(Panel):
 
         row.prop(props, "show_cant_segment_labels", text="", icon="FONT_DATA")
 
+        edit_op = row.operator(
+            "align.enable_editing_cant_segments", text="", icon="GREASEPENCIL", depress=is_editing_this
+        )
+        edit_op.layout_id = c_id
+
         if not expanded:
+            return
+
+        if is_editing_this:
+            self._draw_segment_editor(
+                box, props, "ALIGN_UL_cant_segments", "cant_segment_rows", "active_cant_segment_row_index",
+                "CANT", "align.apply_cant_segments", "align.disable_editing_cant_segments",
+            )
             return
 
         # Column headers (# is the select button)

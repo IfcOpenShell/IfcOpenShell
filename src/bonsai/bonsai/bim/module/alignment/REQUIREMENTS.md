@@ -7,18 +7,42 @@ resolving them.
 
 ## 1. Table-based editing
 
-The Alignment tab's UI lists the horizontal, vertical, and cant layouts. These listings need to
-become editable:
+**Implemented.** The Alignment tab's segment tables (`ALIGN_PT_alignment_segments`) now support
+edit/add/delete/reorder, one section (horizontal, a given vertical layout, or cant) at a time via a
+pencil icon that swaps the read-only rows for an editable `UIList`
+(`ALIGN_UL_h_segments`/`_v_segments`/`_cant_segments`, staged in `HorizontalSegmentRow`/
+`VerticalSegmentRow`/`CantSegmentRow` on `CivilAlignmentProperties`). Interaction model is
+"stage edits, then Apply" — add/remove/reorder rows and edit values freely with nothing touching
+IFC until Apply, mirroring the existing `VerticalPIMarker` + `ALIGN_OT_apply_vertical_pi_curve`
+precedent rather than writing per-cell. Apply (`ALIGN_OT_apply_h_segments`/`_v_segments`/
+`_cant_segments`) rebuilds the whole layout in one pass (`ifcopenshell.api.alignment.
+clear_layout_segments` + a `create_layout_segment` loop over the staged rows), then refreshes the
+`IfcAlignment` representation, the 3D viewport mesh (`refresh_alignment_representation_object`),
+and the vertical/cant profile view (`_refresh_vertical_profile_view`) — all three refresh targets
+from the original ask are covered. Cancel discards the staged rows without touching IFC.
 
-- Edit existing segments
-- Add new segments
-- Delete segments
+Segment type coverage: horizontal supports LINE, CIRCULARARC, and the full spiral-transition family
+(CLOTHOID, CUBIC, HELMERTCURVE, BLOSSCURVE, COSINECURVE, SINECURVE); vertical supports
+CONSTANTGRADIENT, PARABOLICARC, and CIRCULARARC. Excluded, each for a specific documented reason
+(see `prop.py`'s `HorizontalSegmentRow`/`VerticalSegmentRow` docstrings): horizontal VIENNESEBEND
+(its geometry also depends on the CANT segment at the same station — rail cant angle, gravity
+centerline height — which this table has no place for) and vertical CLOTHOID (`ifcopenshell`'s own
+mapper raises `NotImplementedError` for it). A row whose real IFC type is something else entirely
+(e.g. a file authored outside Bonsai) shows as "Unsupported" and blocks Apply rather than silently
+mis-editing it.
 
-When editing finishes, the `IfcAlignment` model and its representations must be updated, and the
-updated representations must automatically refresh in:
+**Known, deliberate gap carried over from §4's existing note below:** Apply is a full rebuild, not
+a partial/in-place regenerate — every segment in that layout gets a fresh GUID each time, same
+limitation §4 already documents for the interactive draw tools. Not fixed here; a future "regenerate
+only the affected subset" pass would benefit both this and §4 together.
 
-- the 3D viewport
-- the vertical/cant profile view
+**Known, deliberate non-validation (per the user, 2026-09-14):** a spiral-family row with equal
+start/end radius, or a vertical CIRCULARARC row with equal start/end gradient, is degenerate input
+that reliably crashes the geometry kernel (divides by a curvature-change factor that's exactly
+zero) rather than erroring gracefully. This is intentionally left unguarded in
+`tool.Alignment.validate_horizontal_segment_rows`/`validate_vertical_segment_rows` — the crash is
+meant to stay visible as a reminder that the kernel itself needs the fix, not papered over with a
+UI-side check.
 
 ## 2. Interactive creation of a horizontal alignment
 
@@ -76,7 +100,9 @@ improvements:
 Replace the PI-grid display with basic information about the alignment layout — PI points
 themselves are no longer needed in that grid.
 
-With each alignment segment represented in the Scene Collection:
+Segments do **not** need to be represented as individual objects in the Scene Collection
+(decided — the existing panel-list + on-the-fly viewport decorator approach is sufficient;
+see `AlignmentSegmentDecorator`, which already covers the three items below):
 
 - Selecting a segment highlights it.
 - Display segment information in the 3D viewport: Start Point, End Point, Length, Radius, PI,
