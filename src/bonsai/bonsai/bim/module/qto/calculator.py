@@ -770,7 +770,8 @@ def get_lateral_area(
     :param bool exclude_side_areas: , defaults to False
     :param int angle_z1: Angle measured from the positive z-axis to the normal-vector of the area. Openings with a normal_vector lower than this value will be ignored, defaults to 45
     :param int angle_z2: Angle measured from the positive z-axis to the normal-vector of the area. Openings with a normal_vector greater than this value will be ignored, defaults to 135
-    :param str main_axis: set main axis, for example a wall must have x main axis default 'x'
+    :param str main_axis: force the main (length) axis to "x", "y" or "z" instead of guessing
+        it from the object's bounding box. Defaults to "", which uses the guess.
     :return float: Lateral Area
     """
 
@@ -778,21 +779,21 @@ def get_lateral_area(
     y_axis = [0, 1, 0]
     z_axis = [0, 0, 1]
 
-    main_axis_guess = get_object_main_axis(obj)
-    if main_axis_guess == "x" or main_axis == "x":
+    resolved_axis: AxisType = main_axis if main_axis in ("x", "y", "z") else get_object_main_axis(obj)
+    if resolved_axis == "x":
         main_axis_v = x_axis
         side_axis = y_axis
         top_axis = z_axis
-    elif main_axis_guess == "z":
+    elif resolved_axis == "z":
         main_axis_v = z_axis
         side_axis = x_axis
         top_axis = y_axis
-    elif main_axis_guess == "y":
+    elif resolved_axis == "y":
         main_axis_v = y_axis
-        side_axis = z_axis
-        top_axis = x_axis
+        side_axis = x_axis
+        top_axis = z_axis
     else:
-        assert_never(main_axis_guess)
+        assert_never(resolved_axis)
 
     area = 0
     total_opening_area = 0 if subtract_openings else get_opening_area(obj, angle_z1=angle_z1, angle_z2=angle_z2)
@@ -815,17 +816,81 @@ def get_lateral_area(
     return area + total_opening_area
 
 
+def get_elevation_main_axis(obj: bpy.types.Object) -> Literal["x", "y"]:
+    """The horizontal axis a wall-like element runs along: "x" or "y".
+
+    Compares only the local X and Y bounding box extents, unlike
+    get_object_main_axis which also compares Z. Wall-like elements (walls,
+    AXIS2 coverings, vertical openings) are always vertical, so Z is the
+    height axis regardless of how long or short the element is; including
+    it in the comparison would wrongly pick "z" for an element that is
+    taller than it is wide, such as a typical door or window opening.
+    """
+    return "x" if get_x(obj) >= get_y(obj) else "y"
+
+
+def get_side_void_area(obj: bpy.types.Object, main_axis: Literal["x", "y"] = "x") -> float:
+    """Total area of holes enclosed by the object's elevational mesh faces.
+
+    Openings can be baked directly into the body tessellation (e.g. an
+    IfcIndexedPolygonalFaceWithVoids) rather than modelled as an
+    IfcOpeningElement relationship. Such holes leave no trace in
+    ifcopenshell.util.element.get_openings, but they do leave a real gap
+    in the mesh. Projecting the elevational faces onto the plane spanned by
+    the length axis and Z, and unioning them, exposes that gap as an
+    interior ring, so its area can be recovered exactly instead of guessed
+    from a bounding box.
+
+    :param main_axis: the wall's length axis, as returned by
+        get_elevation_main_axis. The elevational faces are the ones normal
+        to the other horizontal axis.
+
+    Returns 0 if no such enclosed hole is found, which is also the correct
+    answer for a solid wall of any (including non-rectangular) outline.
+    """
+    assert isinstance(obj.data, bpy.types.Mesh)
+    odata = obj.data
+    side_axis = "y" if main_axis == "x" else "x"
+    shapely_polygons = []
+    for polygon in odata.polygons:
+        if getattr(polygon.normal, side_axis) == 0:
+            continue
+        polygon_tuples = []
+        for loop_index in polygon.loop_indices:
+            loop = odata.loops[loop_index]
+            co = odata.vertices[loop.vertex_index].co
+            polygon_tuples.append((getattr(co, main_axis), co.z))
+        try:
+            shapely_polygon = Polygon(polygon_tuples)
+        except Exception:
+            continue
+        if shapely_polygon.is_valid and not shapely_polygon.is_empty:
+            shapely_polygons.append(shapely_polygon)
+
+    if not shapely_polygons:
+        return 0.0
+
+    union = unary_union(shapely_polygons)
+    parts = union.geoms if hasattr(union, "geoms") else [union]
+
+    void_area = 0.0
+    for part in parts:
+        for interior in getattr(part, "interiors", []):
+            void_area += Polygon(interior).area
+    return void_area
+
+
 def get_gross_side_area(obj: bpy.types.Object) -> float:
-    if not has_openings(obj):
-        return get_net_side_area(obj)
+    main_axis = get_elevation_main_axis(obj)
+    if has_openings(obj):
+        return get_lateral_area(obj, exclude_end_areas=True, subtract_openings=False, main_axis=main_axis) / 2
 
-    gross_side_area = get_lateral_area(obj, exclude_end_areas=True, subtract_openings=False, main_axis="x") / 2
-
-    return gross_side_area
+    return get_net_side_area(obj) + get_side_void_area(obj, main_axis)
 
 
 def get_net_side_area(obj: bpy.types.Object) -> float:
-    net_side_area = get_lateral_area(obj, exclude_end_areas=True, main_axis="x") / 2
+    main_axis = get_elevation_main_axis(obj)
+    net_side_area = get_lateral_area(obj, exclude_end_areas=True, main_axis=main_axis) / 2
     return net_side_area
 
 
