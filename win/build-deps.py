@@ -24,7 +24,6 @@
 #
 import argparse
 import multiprocessing
-import os
 import shutil
 import sys
 from datetime import datetime
@@ -45,9 +44,9 @@ from common import (
     HelpStrings,
     colorize,
     ensure_script_dir,
-    is_on_off,
     logger,
     require_command,
+    resolve_cli_or_env,
     validate_cmake_version,
 )
 from installers import (
@@ -79,7 +78,9 @@ class Args(NamedTuple):
     reuse_boost: bool
     num_build_procs: int
     install_python: bool
+    python_version: str
     install_qt6: bool
+    qt6_version: str
     yes: bool
 
 
@@ -206,6 +207,7 @@ def parse_args() -> Args:
         default=argparse.SUPPRESS,
         help=HelpStrings.NUM_BUILD_PROCS,
     )
+    INSTALL_PYTHON_DEFAULT = True
     parser.add_argument(
         "--install-python",
         dest="install_python",
@@ -215,9 +217,20 @@ def parse_args() -> Args:
             "Download and install Python. If disabled, an already installed Python is used - "
             "set the PYTHONHOME env variable to its installation path before running run-cmake.py. "
             "Also can be specified by using IFCOS_INSTALL_PYTHON env variable. "
-            "(default: True)"
+            f"(default: {INSTALL_PYTHON_DEFAULT})"
         ),
     )
+    PYTHON_VERSION_DEFAULT = "3.11.7"
+    parser.add_argument(
+        "--python-version",
+        dest="python_version",
+        default=None,
+        help=(
+            "Python version to download and install. Also can be specified by using PYTHON_VERSION env variable. "
+            f"(default: {PYTHON_VERSION_DEFAULT})"
+        ),
+    )
+    INSTALL_QT6_DEFAULT = True
     parser.add_argument(
         "--install-qt6",
         dest="install_qt6",
@@ -227,7 +240,17 @@ def parse_args() -> Args:
             "Download and install Qt6 using aqtinstall. If disabled, an already installed Qt6 is used - "
             "set the QT_DIR env variable to its installation path before running run-cmake.py. "
             "Also can be specified by using IFCOS_INSTALL_QT6 env variable. "
-            "(default: True)"
+            f"(default: {INSTALL_QT6_DEFAULT})"
+        ),
+    )
+    QT6_VERSION_DEFAULT = "6.8.3"
+    parser.add_argument(
+        "--qt6-version",
+        dest="qt6_version",
+        default=None,
+        help=(
+            "Qt6 version to download and install. Also can be specified by using QT6_VERSION env variable. "
+            f"(default: {QT6_VERSION_DEFAULT})"
         ),
     )
     parser.add_argument(
@@ -246,15 +269,20 @@ def parse_args() -> Args:
     build_cfg = getattr(args, "build_cfg", None) or args.build_cfg_flag
     build_type = getattr(args, "build_type", None) or args.build_type_flag
 
-    num_build_procs = getattr(args, "num_build_procs", None) or int(
-        os.getenv("IFCOS_NUM_BUILD_PROCS") or multiprocessing.cpu_count()
+    num_build_procs = resolve_cli_or_env(
+        getattr(args, "num_build_procs", None),
+        "IFCOS_NUM_BUILD_PROCS",
+        multiprocessing.cpu_count(),
+        arg_type="int",
     )
-    install_python = getattr(args, "install_python", None)
-    if install_python is None:
-        install_python = is_on_off(os.getenv("IFCOS_INSTALL_PYTHON"), default=True)
-    install_qt6 = getattr(args, "install_qt6", None)
-    if install_qt6 is None:
-        install_qt6 = is_on_off(os.getenv("IFCOS_INSTALL_QT6"), default=True)
+    install_python = resolve_cli_or_env(
+        getattr(args, "install_python", None), "IFCOS_INSTALL_PYTHON", INSTALL_PYTHON_DEFAULT, arg_type="bool"
+    )
+    python_version = resolve_cli_or_env(args.python_version, "PYTHON_VERSION", PYTHON_VERSION_DEFAULT, arg_type="str")
+    install_qt6 = resolve_cli_or_env(
+        getattr(args, "install_qt6", None), "IFCOS_INSTALL_QT6", INSTALL_QT6_DEFAULT, arg_type="bool"
+    )
+    qt6_version = resolve_cli_or_env(args.qt6_version, "QT6_VERSION", QT6_VERSION_DEFAULT, arg_type="str")
 
     return Args(
         generator=generator,
@@ -263,7 +291,9 @@ def parse_args() -> Args:
         reuse_boost=args.reuse_boost,
         num_build_procs=num_build_procs,
         install_python=install_python,
+        python_version=python_version,
         install_qt6=install_qt6,
+        qt6_version=qt6_version,
         yes=args.yes,
     )
 
@@ -346,13 +376,13 @@ def main() -> None:
     install_json(vs_cfg_vars.install_dir)
     install_opencollada(vs_cfg_vars, ARGS.build_type, ARGS.build_cfg, MSBUILD_MULTIPROC)
     install_occt(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.build_cfg, MSBUILD_MULTIPROC)
-    pythonhome = install_python(vs_cfg_vars, ARGS.install_python, build_deps_cache, nuget_exe)
+    pythonhome = install_python(vs_cfg_vars, ARGS.install_python, ARGS.python_version, build_deps_cache, nuget_exe)
     install_swig(vs_cfg_vars, ARGS.build_type, build_deps_cache, MSBUILD_MULTIPROC)
     install_cgal(vs_cfg_vars, ARGS.build_type, ARGS.build_cfg, MSBUILD_MULTIPROC)
     install_eigen(vs_cfg_vars)
     install_zstd(vs_cfg_vars, ARGS.build_type, ARGS.build_cfg, MSBUILD_MULTIPROC)
     install_rocksdb(vs_cfg_vars, ARGS.build_type, ARGS.build_cfg, MSBUILD_MULTIPROC)
-    install_qt6(vs_cfg_vars, build_deps_cache, ARGS.build_cfg, ARGS.install_qt6, pythonhome)
+    install_qt6(vs_cfg_vars, build_deps_cache, ARGS.build_cfg, ARGS.install_qt6, ARGS.qt6_version, pythonhome)
     install_manifold(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.build_cfg, MSBUILD_MULTIPROC)
 
     print_success(START_TIME)

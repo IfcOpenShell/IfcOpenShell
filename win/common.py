@@ -27,7 +27,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, get_args
+from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast, get_args
 
 if TYPE_CHECKING:
     from vs_cfg import VsCfgResult
@@ -97,6 +97,31 @@ def is_on_off(value: str | None, *, default: bool) -> bool:
     if lowered in {"0", "off", "false", "no"}:
         return False
     return default
+
+
+T = TypeVar("T")
+
+
+def resolve_cli_or_env(
+    cli_value: T | None, env_var_name: str, default: T, *, arg_type: Literal["str", "int", "bool"]
+) -> T:
+    if cli_value is not None:
+        return cli_value
+    env_value = os.getenv(env_var_name)
+    if not env_value:
+        return default
+    logger.info(f"Using {env_var_name} from env: '{env_value}'")
+    parsed: Any = env_value
+    if arg_type == "str":
+        parsed = env_value
+    elif arg_type == "int":
+        parsed = int(env_value)
+    elif arg_type == "bool":
+        parsed = is_on_off(env_value, default=True)
+    else:
+        # TODO: use assert_never once we bump min version to 3.11.
+        assert False, f"Unhandled arg_type: {arg_type!r}"
+    return cast(T, parsed)
 
 
 OFF_ON = ("OFF", "ON")
