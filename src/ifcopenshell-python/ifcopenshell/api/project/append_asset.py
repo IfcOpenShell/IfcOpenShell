@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from collections import deque
 from collections.abc import Callable
 from functools import partial
 from typing import Any, Literal, Optional, Union, get_args
@@ -42,6 +43,13 @@ APPENDABLE_ASSET = Literal[
 ]
 APPENDABLE_ASSET_TYPES: tuple[APPENDABLE_ASSET, ...] = get_args(APPENDABLE_ASSET)
 MATERIAL_SETS = ("IfcMaterialLayerSet", "IfcMaterialConstituentSet", "IfcMaterialProfileSet")
+
+# Reserved keys stashed inside a caller-supplied ``reuse_identities`` dict to carry
+# per-relationship "not yet resolved member" state across separate append_asset()
+# calls that share it. Unique objects can never collide with a real identity (int).
+_INVERSE_PENDING_MEMBERS_KEY = object()
+_PENDING_BY_ITEM_KEY = object()
+_RESERVED_REUSE_IDENTITY_KEYS = (_INVERSE_PENDING_MEMBERS_KEY, _PENDING_BY_ITEM_KEY)
 
 
 def append_asset(
@@ -183,6 +191,8 @@ class SafeRemovalContext:
         assert self.file.to_delete is not None
         removed_elements = self.file.to_delete
         for identity, element in self.reuse_identities.items():
+            if identity in _RESERVED_REUSE_IDENTITY_KEYS:
+                continue
             if element in removed_elements:
                 removed_identities[element] = identity
         assert len(removed_identities) == len(removed_elements)
@@ -210,10 +220,23 @@ class Usecase:
     reuse_identities: dict[int, ifcopenshell.entity_instance]
     """Mapping of old element ids to new elements, usually fiiled by ``file_add``."""
 
+    inverse_pending_members: dict[tuple[int, int], dict[int, ifcopenshell.entity_instance]]
+    """Per-relationship (element identity, attribute index) -> {member identity: member},
+    for members not yet resolved as belonging to this asset. Lives inside
+    ``reuse_identities`` so it survives across append_asset() calls sharing the same dict."""
+
+    pending_by_item: dict[int, list[tuple[int, int]]]
+    """Reverse index of ``inverse_pending_members``: member identity -> list of
+    (element identity, attribute index) relationship slots still waiting on it.
+    Lets a member get resolved the moment it is actually added, instead of
+    re-walking every relationship that might contain it."""
+
     def execute(self):
         # mapping of old element ids to new elements
         self.added_elements: dict[int, ifcopenshell.entity_instance] = {}
         self.reuse_identities: dict[int, ifcopenshell.entity_instance] = self.settings["reuse_identities"]
+        self.inverse_pending_members = self.reuse_identities.setdefault(_INVERSE_PENDING_MEMBERS_KEY, {})
+        self.pending_by_item = self.reuse_identities.setdefault(_PENDING_BY_ITEM_KEY, {})
         self.whitelisted_inverse_attributes = {}
         self.base_material_class = "IfcMaterial" if self.file.schema == "IFC2X3" else "IfcMaterialDefinition"
         self.assume_asset_uniqueness_by_name = self.settings["assume_asset_uniqueness_by_name"]
@@ -449,20 +472,50 @@ class Usecase:
             return existing_element
         new = self.file_add(element)
         self.added_elements[element.id()] = new
+        self.resolve_pending_members(element, new)
         self.check_inverses(element)
-        subelement_queue = self.settings["library"].traverse(element, max_levels=1)[1:]
+        subelement_queue = deque(self.settings["library"].traverse(element, max_levels=1)[1:])
         while subelement_queue:
-            subelement = subelement_queue.pop(0)
+            subelement = subelement_queue.popleft()
             existing_element = self.get_existing_element(subelement)
             if existing_element:
                 self.added_elements[subelement.id()] = existing_element
                 if not self.has_whitelisted_inverses(existing_element):
                     self.check_inverses(subelement)
             else:
-                self.added_elements[subelement.id()] = self.file_add(subelement)
+                new_subelement = self.file_add(subelement)
+                self.added_elements[subelement.id()] = new_subelement
+                self.resolve_pending_members(subelement, new_subelement)
                 self.check_inverses(subelement)
                 subelement_queue.extend(self.settings["library"].traverse(subelement, max_levels=1)[1:])
         return new
+
+    def resolve_pending_members(
+        self, source_element: ifcopenshell.entity_instance, mapped_element: ifcopenshell.entity_instance
+    ) -> None:
+        """Resolve relationship members that were waiting on ``source_element``.
+
+        Called right after ``source_element`` is newly added to the destination
+        file. Any relationship attribute that previously skipped this member
+        (because it wasn't part of the destination yet, see ``add_inverse_element``)
+        gets it appended now, without re-walking the relationship's full member
+        tuple, which may be shared by thousands of other assets.
+        """
+        source_identity = source_element.wrapped_data.identity()
+        pending_keys = self.pending_by_item.pop(source_identity, None)
+        if not pending_keys:
+            return
+        for pending_key in pending_keys:
+            pending = self.inverse_pending_members.get(pending_key)
+            if pending is None or pending.pop(source_identity, None) is None:
+                continue
+            rel_identity, i = pending_key
+            new_rel = self.reuse_identities.get(rel_identity)
+            if new_rel is None:
+                continue
+            current = list(new_rel[i] or ())
+            current.append(mapped_element)
+            new_rel[i] = current
 
     def has_whitelisted_inverses(self, element: ifcopenshell.entity_instance) -> bool:
         for source_class, attributes in self.whitelisted_inverse_attributes.items():
@@ -544,22 +597,47 @@ class Usecase:
                 ):
                     new_attribute = self.add_element(attribute)
             elif isinstance(attribute, tuple) and attribute and isinstance(attribute[0], ifcopenshell.entity_instance):
-                new_attribute = []
-                for item in attribute:
-                    if self.is_another_asset(item):
-                        continue
-                    if skip_not_reused_entities_attr_i is not None and i == skip_not_reused_entities_attr_i:
-                        identity = item.wrapped_data.identity()
-                        if (item := self.reuse_identities.get(identity)) is None:
+                is_layer_assignment_items = (
+                    skip_not_reused_entities_attr_i is not None and i == skip_not_reused_entities_attr_i
+                )
+                if existing_rel is None and not is_layer_assignment_items:
+                    # A relationship shared by many assets (e.g. one IfcRelAssociatesMaterial
+                    # for thousands of products) gets touched once per asset appended. Members
+                    # not yet part of the destination file can't be resolved yet, but they don't
+                    # need to be re-checked on every future touch either: once registered here,
+                    # `resolve_pending_members` appends them the moment they are actually added
+                    # elsewhere, so this (possibly huge) tuple is only ever walked once.
+                    pending_key = (element_identity, i)
+                    if pending_key not in self.inverse_pending_members:
+                        pending: dict[int, ifcopenshell.entity_instance] = {}
+                        newly_resolved = []
+                        for item in attribute:
+                            if self.is_another_asset(item):
+                                item_identity = item.wrapped_data.identity()
+                                pending[item_identity] = item
+                                self.pending_by_item.setdefault(item_identity, []).append(pending_key)
+                            else:
+                                newly_resolved.append(self.add_element(item))
+                        self.inverse_pending_members[pending_key] = pending
+                        if newly_resolved:
+                            new_attribute = list(new[i] or ()) + newly_resolved
+                else:
+                    new_attribute = []
+                    for item in attribute:
+                        if self.is_another_asset(item):
                             continue
-                    else:
-                        item = self.add_element(item)
-                    new_attribute.append(item)
-                # If rel exists we need to make sure previously assigned elements are untouched
-                # e.g. not to assign a material or a pset from element.
-                if existing_rel:
-                    new_attribute.extend(existing_rel[i])
-                    new_attribute = list(set(new_attribute))
+                        if is_layer_assignment_items:
+                            identity = item.wrapped_data.identity()
+                            if (item := self.reuse_identities.get(identity)) is None:
+                                continue
+                        else:
+                            item = self.add_element(item)
+                        new_attribute.append(item)
+                    # If rel exists we need to make sure previously assigned elements are untouched
+                    # e.g. not to assign a material or a pset from element.
+                    if existing_rel:
+                        new_attribute.extend(existing_rel[i])
+                        new_attribute = list(set(new_attribute))
             else:
                 new_attribute = attribute
             if new_attribute is not None:
