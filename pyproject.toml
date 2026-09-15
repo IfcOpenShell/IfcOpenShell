@@ -219,6 +219,7 @@ cmake-format = "gersemi . --in-place"
 [tool.poe.tasks.ty-ios]
 cmd = """
     ty check
+    conda/
     nix/
     win/
     src/bcf
