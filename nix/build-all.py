@@ -1519,13 +1519,9 @@ if "boost" in targets:
         mode="bjam",
         build_tool_args=[
             f"--stagedir={Dependencies.get_install_dir('boost')}",
-            "--with-system",
             "--with-program_options",
             "--with-regex",
-            "--with-thread",
-            "--with-date_time",
             "--with-iostreams",
-            "--with-filesystem",
             # By default boost will keep ICU enabled, if it manages to find dev ICU dev package on the system.
             # Which then creates issues when during our executables packaging.
             # E.g. it ends up linking system's `libicudata.so.67`, so then we need to somehow detect and bundle

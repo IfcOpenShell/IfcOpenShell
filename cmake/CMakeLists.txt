@@ -373,10 +373,12 @@ endif()
 if(WASM_BUILD)
     set(BOOST_COMPONENTS)
 else()
-    # @todo review this, shouldn't this be all possible header-only now?
-    # ... or rewritten using C++17 features?
-    # set(BOOST_COMPONENTS system program_options regex thread date_time iostreams)
-    set(BOOST_COMPONENTS program_options regex thread date_time iostreams)
+    set(BOOST_COMPONENTS "")
+    if(BUILD_IFCGEOM OR BUILD_CONVERT)
+        # TODO: drop `regex` once BOOST_MIN_VERSION >= 1.76, where its matcher engine
+        # became header-only (boostorg/regex@49e8067b) and no longer needs linking.
+        set(BOOST_COMPONENTS ${BOOST_COMPONENTS} program_options regex)
+    endif()
 endif()
 
 if(USE_MMAP)
@@ -389,6 +391,10 @@ if(USE_MMAP)
 endif()
 
 find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
+# TODO: drop this whole `if` (and the `regex` component above) once BOOST_MIN_VERSION >= 1.76.
+if(Boost_VERSION VERSION_GREATER_EQUAL 1.76)
+    list(REMOVE_ITEM Boost_LIBRARIES ${Boost_REGEX_LIBRARY} Boost::regex)
+endif()
 # This is only needed for FindBoost, when libraries are just paths to the library files on the disk.
 # If Boost is found using cmake config, then all its Boost_LIBRARIES are targets
 # and automatically depend on the headers.

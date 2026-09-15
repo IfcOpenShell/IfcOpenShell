@@ -307,11 +307,8 @@ def install_boost(
         sys.exit(1)
 
     BOOST_LIBS = (
-        "--with-system",
         "--with-program_options",
         "--with-regex",
-        "--with-thread",
-        "--with-date_time",
         "--with-iostreams",
         "--with-filesystem",
     )
