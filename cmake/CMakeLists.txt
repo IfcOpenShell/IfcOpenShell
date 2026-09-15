@@ -489,7 +489,7 @@ else()
     endif()
 endif(MSVC)
 
-include_directories(${INCLUDE_DIRECTORIES}
+include_directories(
 	${Boost_INCLUDE_DIRS}
     ${CGAL_INCLUDE_DIR} ${GMP_INCLUDE_DIR} ${MPFR_INCLUDE_DIR}
 )

@@ -35,7 +35,6 @@ if(HAS_MAX)
         message(STATUS "Building IFCMax library for Autodesk 3ds Max SDK ${max_year}")
 
         include_directories(
-            ${INCLUDE_DIRECTORIES}
             ${OPENCOLLADA_INCLUDE_DIRS}
             ${ICU_INCLUDE_DIR}
             ${Boost_INCLUDE_DIRS}
