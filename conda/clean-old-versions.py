@@ -1,7 +1,7 @@
 # /// script
 # requires-python = ">=3.11"
 # dependencies = [
-#     "anaconda-client==1.12.3",
+#     "anaconda-client==1.15.0",
 # ]
 # ///
 
