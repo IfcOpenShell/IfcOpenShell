@@ -723,10 +723,6 @@ if(BUILD_IFCGEOM)
     #     DESTINATION ${INCLUDEDIR}/ifcgeom
     # )
 
-    install(FILES ${SCHEMA_AGNOSTIC_H_FILES}
-        DESTINATION ${INCLUDEDIR}/ifcgeom
-    )
-
     file(GLOB SERIALIZATION_H_FILES ../src/ifcgeom/serialization/*.h)
     install(FILES ${SERIALIZATION_H_FILES}
         DESTINATION ${INCLUDEDIR}/ifcgeom/serialization
@@ -740,7 +736,7 @@ if(BUILD_IFCGEOM)
     endforeach()
 
     install(
-        TARGETS ${IFCGEOM_SCHEMA_LIBRARIES} ${kernel_libraries} IfcGeom
+        TARGETS ${kernel_libraries} IfcGeom
         EXPORT ${IFCOPENSHELL_EXPORT_TARGETS}
     )
 endif(BUILD_IFCGEOM)
