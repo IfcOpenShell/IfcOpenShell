@@ -389,7 +389,12 @@ if(USE_MMAP)
 endif()
 
 find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
+# This is only needed for FindBoost, when libraries are just paths to the library files on the disk.
+# If Boost is found using cmake config, then all its Boost_LIBRARIES are targets
+# and automatically depend on the headers.
+list(APPEND Boost_LIBRARIES Boost::headers)
 message(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
+message(STATUS "Boost libraries found in ${Boost_LIBRARIES}")
 
 if(COLLADA_SUPPORT)
     find_package(OpenCOLLADA REQUIRED)
@@ -489,8 +494,6 @@ else()
         add_definitions(-fPIC)
     endif()
 endif(MSVC)
-
-include_directories(${Boost_INCLUDE_DIRS})
 
 if(NOT SCHEMA_VERSIONS)
     if(WASM_BUILD)
