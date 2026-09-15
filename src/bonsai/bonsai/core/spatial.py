@@ -20,9 +20,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Union
 
+import ifcopenshell
+
 if TYPE_CHECKING:
     import bpy
-    import ifcopenshell
 
     import bonsai.tool as tool
 
@@ -186,9 +187,6 @@ def generate_space(
     """
     :return: None if successful, error message string if not.
     """
-    if not root.get_default_container():
-        raise SpaceGenerationError("Please set a default container to create the space in.")
-
     active_obj = spatial.get_active_obj()
     selected_objects = spatial.get_selected_objects()
     element = None
@@ -206,7 +204,14 @@ def generate_space(
     else:
         x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_cursor()
 
-    space_polygon, bounding_walls = spatial.get_space_polygon_from_context_visible_objects(x, y)
+    if element and element.is_a("IfcSpace"):
+        container = ifcopenshell.util.element.get_parent(element) or root.get_default_container()
+    else:
+        container = root.get_default_container()
+        if not container:
+            raise SpaceGenerationError("Please set a default container to create the space in.")
+
+    space_polygon, bounding_walls = spatial.get_space_polygon_from_context_visible_objects(x, y, container=container)
 
     if isinstance(space_polygon, str):
         if space_polygon == "NO POLYGONS FOUND":

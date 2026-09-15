@@ -874,15 +874,25 @@ class Spatial(bonsai.core.tool.Spatial):
         return ifcopenshell.util.space.get_boundary_lines(tool.Ifc.get(), cache["shapes"], cut_z)
 
     @classmethod
-    def get_space_polygon_from_context_visible_objects(cls, x: float, y: float) -> tuple[
+    def get_space_polygon_from_context_visible_objects(cls, x: float, y: float, container: Optional[ifcopenshell.entity_instance] = None) -> tuple[
         Union[shapely.Polygon, Literal["NO POLYGONS FOUND", "NO POLYGON FOR POINT"]],
         list[ifcopenshell.entity_instance],
     ]:
         props = tool.Model.get_model_props()
         calculation_rl = props.rl3
-        container = tool.Root.get_default_container()
+        if container is None:
+            container = tool.Root.get_default_container()
         container_obj = tool.Ifc.get_object(container)
         cut_z = container_obj.matrix_world.translation.z + calculation_rl
+
+        # Commit any moved visible bounding objects before reading IFC geometry,
+        # so the IFC-based cache uses the current Blender positions.
+        for obj in bpy.context.visible_objects:
+            element = tool.Ifc.get_entity(obj)
+            if element is None or not any(element.is_a(c) for c in ifcopenshell.util.space.BOUNDING_CLASSES):
+                continue
+            tool.Geometry.commit_placement_if_moved(obj)
+        cls._geom_cache.clear()
 
         boundary_lines, bounding_elements = cls.get_boundary_lines_from_ifc_elements(cut_z)
         polygon, _ = ifcopenshell.util.space.get_space_polygon(boundary_lines, x, y)
