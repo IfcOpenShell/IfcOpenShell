@@ -32,12 +32,14 @@
 *.html text
 *.i text
 *.ifc text
+*.js text
 *.json text
 *.md text
 *.po text
 *.pot text
 *.py text
 *.sh text eol=lf
+*.ts text
 *.txt text
 
 
