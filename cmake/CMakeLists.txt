@@ -373,10 +373,10 @@ endif()
 if(WASM_BUILD)
     set(BOOST_COMPONENTS)
 else()
-    # @todo review this, shouldn't this be all possible header-only now?
-    # ... or rewritten using C++17 features?
-    # set(BOOST_COMPONENTS system program_options regex thread date_time iostreams)
-    set(BOOST_COMPONENTS program_options regex thread date_time iostreams)
+    set(BOOST_COMPONENTS "")
+    if(BUILD_IFCGEOM OR BUILD_CONVERT)
+        set(BOOST_COMPONENTS ${BOOST_COMPONENTS} program_options)
+    endif()
 endif()
 
 if(USE_MMAP)
