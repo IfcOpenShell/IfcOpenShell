@@ -123,6 +123,8 @@ classes = (
     operator.ImportAlignmentCSV,
     # Operators - Vertical Profile Window
     operator.ALIGN_OT_show_vertical_profile,
+    operator.ALIGN_OT_pan_vertical_profile,
+    operator.ALIGN_OT_reset_vertical_profile_view,
     # Operators - Segment Selection
     operator.ALIGN_OT_select_h_segment,
     operator.ALIGN_OT_select_v_segment,
@@ -134,11 +136,13 @@ classes = (
     operator.ALIGN_OT_add_station_equation,
     operator.ALIGN_OT_edit_station_equation,
     operator.ALIGN_OT_remove_station_equation,
+    operator.ALIGN_OT_edit_horizontal_pis,
     operator.ALIGN_OT_apply_pi_curve,
     operator.ALIGN_OT_clear_pi_markers,
     operator.ALIGN_OT_draw_horizontal_alignment,
     # Operators - Vertical alignment authoring (draw-by-PI in the profile view)
     operator.ALIGN_OT_draw_vertical_alignment,
+    operator.ALIGN_OT_load_vertical_pis,
     operator.ALIGN_OT_apply_vertical_pi_curve,
     operator.ALIGN_OT_clear_vertical_pi_markers,
     # Operators - Segment table editing (stage edits, then Apply)
@@ -166,6 +170,9 @@ def menu_func_import(self, context):
     self.layout.operator(operator.ImportAlignmentCSV.bl_idname, text="Alignment (.csv)")
 
 
+addon_keymaps = []
+
+
 def register():
     bpy.types.Scene.CivilAlignmentProperties = bpy.props.PointerProperty(type=prop.CivilAlignmentProperties)
     bpy.types.Object.bonsai_pi_curve_marker = bpy.props.PointerProperty(type=prop.PICurveMarkerProperties)
@@ -179,6 +186,23 @@ def register():
     VerticalProfileDecorator.handlers = []
     VerticalProfileDecorator.profile_area = None
     VerticalProfileDecorator.profile_area_ptr = 0
+
+    # Shift+wheel pans and Home resets the vertical profile view. Registered on
+    # the generic "3D View" keymap since it needs to fire in any VIEW_3D area,
+    # but the operators' poll() only allows them in the docked profile area
+    # (falling through to Blender's defaults, e.g. view3d.view_all on Home,
+    # everywhere else).
+    wm = bpy.context.window_manager
+    if wm.keyconfigs.addon:
+        km = wm.keyconfigs.addon.keymaps.new(name="3D View", space_type="VIEW_3D")
+        kmi = km.keymap_items.new(operator.ALIGN_OT_pan_vertical_profile.bl_idname, "WHEELUPMOUSE", "PRESS", shift=True)
+        kmi.properties.direction = -1
+        addon_keymaps.append((km, kmi))
+        kmi = km.keymap_items.new(operator.ALIGN_OT_pan_vertical_profile.bl_idname, "WHEELDOWNMOUSE", "PRESS", shift=True)
+        kmi.properties.direction = 1
+        addon_keymaps.append((km, kmi))
+        kmi = km.keymap_items.new(operator.ALIGN_OT_reset_vertical_profile_view.bl_idname, "HOME", "PRESS")
+        addon_keymaps.append((km, kmi))
 
 
 def unregister():
@@ -196,3 +220,9 @@ def unregister():
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
     del bpy.types.Scene.CivilAlignmentProperties
     del bpy.types.Object.bonsai_pi_curve_marker
+
+    wm = bpy.context.window_manager
+    if wm.keyconfigs.addon:
+        for km, kmi in addon_keymaps:
+            km.keymap_items.remove(kmi)
+    addon_keymaps.clear()

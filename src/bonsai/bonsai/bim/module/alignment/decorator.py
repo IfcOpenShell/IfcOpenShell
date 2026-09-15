@@ -38,6 +38,9 @@ from typing import Optional, Tuple
 from bpy.types import SpaceView3D
 from bpy_extras.view3d_utils import location_3d_to_region_2d, region_2d_to_location_3d
 from gpu_extras.batch import batch_for_shader
+from ifcopenshell.api.alignment._get_segment_start_point_label import (
+    _get_segment_start_point_label,
+)
 
 
 class AlignmentSegmentDecorator:
@@ -280,6 +283,19 @@ class AlignmentSegmentDecorator:
         if segment not in segments:
             return
         seg_idx = segments.index(segment)
+        seg_type = getattr(dp, "PredefinedType", "") or ""
+
+        # Key-point labels (P.C., T.S., S.C., P.O.B., ...) — shares
+        # _get_segment_start_point_label with update_key_point_referents so the
+        # on-screen labels always agree with the IfcReferents it creates,
+        # including any jurisdiction-specific naming registered via
+        # register_referent_name_callback().
+        prev_segment = segments[seg_idx - 1] if seg_idx > 0 else None
+        next_segment = segments[seg_idx + 1] if seg_idx + 1 < len(segments) else None
+        if next_segment is not None and tool.Alignment.is_zero_length_segment(next_segment):
+            next_segment = None  # the mandatory terminator isn't a real transition
+        start_label = _get_segment_start_point_label(prev_segment, segment)
+        end_label = _get_segment_start_point_label(segment, next_segment)
 
         # IFC local start coordinate and start tangent direction
         sx, sy = dp.StartPoint.Coordinates[0], dp.StartPoint.Coordinates[1]
@@ -289,10 +305,21 @@ class AlignmentSegmentDecorator:
         # Next segment data — provides the IFC end-point and end tangent
         has_next = seg_idx + 1 < len(segments)
         next_dp = segments[seg_idx + 1].DesignParameters if has_next else None
+        arc_radius = getattr(dp, "StartRadiusOfCurvature", None) or 0.0
         if next_dp and getattr(next_dp, "StartPoint", None):
             ex = next_dp.StartPoint.Coordinates[0]
             ey = next_dp.StartPoint.Coordinates[1]
             d2x, d2y = math.cos(next_dp.StartDirection), math.sin(next_dp.StartDirection)
+        elif seg_type == "CIRCULARARC" and abs(arc_radius) > 1e-6:
+            # No next segment to read the true end tangent from (last/only
+            # segment) — the straight-line fallback below would make it
+            # parallel to the start tangent, degenerating the PI below to "none".
+            turn = seg_len / arc_radius
+            cos_t, sin_t = math.cos(turn), math.sin(turn)
+            d2x, d2y = d1x * cos_t - d1y * sin_t, d1x * sin_t + d1y * cos_t
+            cix, ciy = sx + arc_radius * -d1y, sy + arc_radius * d1x
+            rvx, rvy = sx - cix, sy - ciy
+            ex, ey = cix + rvx * cos_t - rvy * sin_t, ciy + rvx * sin_t + rvy * cos_t
         else:
             # Last segment or next has no StartPoint — approximate end along start tangent
             ex = sx + seg_len * d1x
@@ -370,13 +397,14 @@ class AlignmentSegmentDecorator:
             "end_en": (e_enh[0], e_enh[1]),
             "unit_symbol": unit_symbol,
             "station_separator": station_separator,
+            "start_label": start_label,
+            "end_label": end_label,
             "has_pi": False,
         }
 
         # PI and perpendicular-tick data — only for non-linear segments with a finite PI
-        seg_type = getattr(dp, "PredefinedType", "") or ""
         denom_ifc = d1x * d2y - d1y * d2x
-        if seg_type == "LINESEGMENT" or abs(denom_ifc) < 1e-10:
+        if seg_type == "LINE" or abs(denom_ifc) < 1e-10:
             return  # Linear or parallel tangents — labels only, no PI geometry
 
         dx_ifc, dy_ifc = ex - sx, ey - sy
@@ -419,6 +447,26 @@ class AlignmentSegmentDecorator:
                 ciy = sy + R * d1x
                 cwx, cwy = ifc_to_world_xy(cix, ciy)
                 center_world = (cwx, cwy, s_w[2])
+                try:
+                    c_enh = ifcopenshell.util.geolocation.auto_xyz2enh(ifc_file, cix, ciy, 0.0)
+                    center_en = (c_enh[0], c_enh[1])
+                except Exception:
+                    pass
+
+        if center_world is None:
+            # Non-circular curves (spirals, etc.) have no single center, but the
+            # PC/PT normals still meet at a useful reference point — same
+            # line-intersection as the PI above, using the perpendicular
+            # directions instead of the tangents.
+            pc_perp_ifc = (-d1y * sign_turn, d1x * sign_turn)
+            pt_perp_ifc = (-d2y * sign_turn, d2x * sign_turn)
+            perp_denom = pc_perp_ifc[0] * pt_perp_ifc[1] - pc_perp_ifc[1] * pt_perp_ifc[0]
+            if abs(perp_denom) > 1e-10:
+                t2 = (dx_ifc * pt_perp_ifc[1] - dy_ifc * pt_perp_ifc[0]) / perp_denom
+                cix = sx + t2 * pc_perp_ifc[0]
+                ciy = sy + t2 * pc_perp_ifc[1]
+                cwx, cwy = ifc_to_world_xy(cix, ciy)
+                center_world = (cwx, cwy, pi_wz)
                 try:
                     c_enh = ifcopenshell.util.geolocation.auto_xyz2enh(ifc_file, cix, ciy, 0.0)
                     center_en = (c_enh[0], c_enh[1])
@@ -563,9 +611,10 @@ class AlignmentSegmentDecorator:
     def draw_label(self, context):
         """Draw point labels with station and E/N coordinates in screen space.
 
-        Curve segments (has_pi=True): PC label, PI crosshair + label, PT label.
-        Linear segments (has_pi=False): start and end station + coords, no tag prefix.
-        Circular arcs: also label the center of curvature.
+        Start/end tags (P.C., T.S., S.C., P.O.B., ...) come from
+        _get_segment_start_point_label — see _compute_tangent_data. Curve
+        segments (has_pi=True) also get a PI crosshair + label, and — where a
+        finite curve center or normals intersection exists — a labeled center.
         """
         if not self.__class__.is_installed:
             # draw_segment (POST_VIEW, runs first) may have just auto-cleared
@@ -615,7 +664,7 @@ class AlignmentSegmentDecorator:
                 if not screen:
                     return
                 sx, sy = screen.x, screen.y
-                if name == "PI":
+                if name == "P.I.":
                     self._draw_screen_crosshair(sx, sy, self.COLOR_PI, region)
                 blf.size(font_id, font_size)
                 blf.color(font_id, *color)
@@ -623,38 +672,48 @@ class AlignmentSegmentDecorator:
                 if station:
                     lines.append(f"Sta {station}")
                 lines.append(coords)
-                for i, line in enumerate(reversed(lines)):
-                    blf.position(font_id, sx + 12, sy + 4 + i * line_h, 0)
-                    blf.draw(font_id, line)
+                # Stack upward from the point by default; flip downward near the
+                # top edge so a multi-line label can't run off-screen -- a point
+                # can end up arbitrarily close to any edge once you zoom in far
+                # enough.
+                total_h = len(lines) * line_h
+                if sy > region.height - total_h - 8:
+                    for i, line in enumerate(lines):
+                        blf.position(font_id, sx + 12, sy - 4 - (i + 1) * line_h, 0)
+                        blf.draw(font_id, line)
+                else:
+                    for i, line in enumerate(reversed(lines)):
+                        blf.position(font_id, sx + 12, sy + 4 + i * line_h, 0)
+                        blf.draw(font_id, line)
 
             if has_pi:
-                # Curve segment: PC / PI / PT with name tags
+                # Curve segment: start tag / PI / end tag
                 draw_point_label(
-                    td["start_world"], "PC", fmt_sta(td["pc_station"]),
+                    td["start_world"], td["start_label"], fmt_sta(td["pc_station"]),
                     fmt_en(*td["start_en"]), self.COLOR_LABEL_PC,
                 )
                 draw_point_label(
-                    td["pi_world"], "PI", None,
+                    td["pi_world"], "P.I.", None,
                     fmt_en(*td["pi_en"]), self.COLOR_LABEL_PI,
                 )
                 draw_point_label(
-                    td["end_world"], "PT", fmt_sta(td["pt_station"]),
+                    td["end_world"], td["end_label"], fmt_sta(td["pt_station"]),
                     fmt_en(*td["end_en"]), self.COLOR_LABEL_PT,
                 )
-                # Center of curvature label (circular arcs only)
+                # Center of curvature / normals-intersection label
                 if td.get("center_world") and td.get("center_en"):
                     draw_point_label(
                         td["center_world"], "Center",
                         None, fmt_en(*td["center_en"]), self.COLOR_PI,
                     )
             else:
-                # Linear segment: start and end without PC/PT tags
+                # Linear segment: start and end tags (e.g. P.O.B., T.S.)
                 draw_point_label(
-                    td["start_world"], "", fmt_sta(td["pc_station"]),
+                    td["start_world"], td["start_label"], fmt_sta(td["pc_station"]),
                     fmt_en(*td["start_en"]), self.COLOR_LABEL_PC,
                 )
                 draw_point_label(
-                    td["end_world"], "", fmt_sta(td["pt_station"]),
+                    td["end_world"], td["end_label"], fmt_sta(td["pt_station"]),
                     fmt_en(*td["end_en"]), self.COLOR_LABEL_PT,
                 )
         else:
@@ -781,17 +840,20 @@ class VerticalProfileDecorator:
     """GPU-drawn 2D vertical profile window.
 
     Opens a dedicated SpaceView3D window in front orthographic mode and draws the
-    IfcGradientCurve as a distance-along vs. elevation plot with a configurable
-    vertical exaggeration factor.  Middle-mouse pan/zoom are handled by Blender's
-    native orthographic navigation; orbit/rotate is continuously suppressed by
-    operator._profile_rotation_guard_tick (a bpy.app.timers poll) so the view
-    stays locked front-on.
+    IfcGradientCurve as a distance-along vs. elevation plot with a fixed, user-
+    adjustable vertical exaggeration factor (CivilAlignmentProperties.
+    vertical_exaggeration). Zoom is Blender's native orthographic zoom (mouse
+    wheel or the corner navigate gizmo's magnifier); panning is Shift+wheel
+    (operator.ALIGN_OT_pan_vertical_profile) or the gizmo's pan hand -- same as
+    the main viewport, and the exaggeration itself doesn't change as you zoom/pan,
+    exactly like zooming the main viewport doesn't stretch a scene. Orbit/rotate
+    is continuously suppressed by operator._profile_rotation_guard_tick (a
+    bpy.app.timers poll) so the view stays locked front-on.
 
     Coordinate mapping inside the 3D viewport:
-        world X  = distance along alignment
-        world Z  = elevation, normalized into the elevation zone so it always
-                   fills the viewport proportionally (see fit_view/_ez) --
-                   there is no user-facing vertical exaggeration factor
+        world X  = distance along alignment, unscaled
+        world Z  = (elevation - elev_ref) * ve -- a fixed linear scale (see _ez),
+                   not a function of the current view/zoom
         world Y  = 0  (orthographic front view collapses the depth axis)
     """
 
@@ -822,9 +884,15 @@ class VerticalProfileDecorator:
     station_separator: int = 1000  # value at which station '+' splits
     _alignment = None              # IfcAlignment entity for station conversion at draw time
 
-    # Normalized world-Z zone boundaries (set by fit_view from area dimensions).
-    # These replace the old `elev_min * ve` / `elev_max * ve` approach so that
-    # both zones always fill the viewport proportionally, regardless of elevation scale.
+    # Fixed vertical exaggeration: world-Z = (elevation - elev_ref) * ve. Both are
+    # set once by _refit_zones (from CivilAlignmentProperties.vertical_exaggeration
+    # and the data range), not per-frame -- see _ez.
+    elev_ref: float = 0.0
+    ve: float = 10.0
+
+    # World-Z zone boundaries, derived from elev_ref/ve/the data range by
+    # _refit_zones -- fixed until the data or ve changes, not a function of the
+    # current view/zoom.
     elev_zone_bot: float = 0.0
     elev_zone_top: float = 1.0
     cant_zone_bot: float = -0.4
@@ -932,6 +1000,7 @@ class VerticalProfileDecorator:
         cls.cant_info = []
         cls.available_cants = []
         cls.has_cant = False
+        cls.elev_ref = 0.0
         cls.elev_zone_bot = 0.0
         cls.elev_zone_top = 1.0
         cls.cant_zone_bot = -0.4
@@ -971,20 +1040,23 @@ class VerticalProfileDecorator:
             pass
 
     @classmethod
-    def fit_view(cls, space, area_width: int = 1920, area_height: int = 400) -> None:
-        """Reposition the profile camera so both zones always fill the viewport proportionally.
+    def _refit_zones(cls) -> None:
+        """(Re)derive the fixed elevation/cant zone bounds from the data, the
+        current vertical exaggeration, and the cant range.
 
-        Zone heights are derived from the area aspect ratio so they remain visible
-        regardless of the elevation data scale (including flat/near-zero alignments).
+        Unlike the old per-frame _recompute_zones this replaces, the result depends
+        only on the data and ve -- never on the current view/zoom -- so it only
+        needs to run when either of those changes (_compute_profile, fit_view, a
+        resize, or the vertical_exaggeration property), not every frame.
         """
-        h_span = max(cls.dist_max - cls.dist_min, 1.0)
-        # An ortho VIEW_3D shows ~1.08x its view_distance in world height, so the
-        # distance that frames h_span across ~86% of the pane width is
-        # vd = h_span * (H/W) / (0.86 * 1.08).  This is only the initial guess —
-        # draw_3d refines it against the real projection (and re-fits on resize).
-        ar = area_height / max(area_width, 1)
-        vd = h_span * ar / (0.86 * 1.08)
-        vis_z = 2 * vd
+        try:
+            cls.ve = bpy.context.scene.CivilAlignmentProperties.vertical_exaggeration
+        except Exception:
+            pass
+        if not cls.ve or cls.ve <= 0:
+            cls.ve = 10.0
+
+        cls.elev_ref = (cls.elev_min + cls.elev_max) * 0.5
 
         # Elevation display range: at least 1 m visible so flat profiles show a usable axis.
         e_span = max(cls.elev_max - cls.elev_min, 0.0)
@@ -992,61 +1064,56 @@ class VerticalProfileDecorator:
         cls._e_display_min = cls.elev_min - e_pad * 0.05
         cls._e_display_max = cls._e_display_min + max(e_span, 0.0) + e_pad
 
-        # Zone boundaries: cant at bottom, elevation above, small gap between.
+        cls.elev_zone_bot = (cls._e_display_min - cls.elev_ref) * cls.ve
+        cls.elev_zone_top = (cls._e_display_max - cls.elev_ref) * cls.ve
+
         if cls.has_cant:
-            total_content_h = vis_z * 0.92
-            cant_h = total_content_h * 0.25
-            gap_h = vis_z * 0.02
-            elev_h = total_content_h - cant_h - gap_h
-            total = elev_h + gap_h + cant_h
-            cls.cant_zone_bot = -total / 2
-            cls.cant_zone_top = cls.cant_zone_bot + cant_h
-            cls.elev_zone_bot = cls.cant_zone_top + gap_h
-            cls.elev_zone_top = cls.elev_zone_bot + elev_h
+            # Cant panel sits below the elevation panel, sized/gapped as fixed
+            # fractions of the (now fixed) elevation zone height.
+            elev_h = cls.elev_zone_top - cls.elev_zone_bot
+            cant_h = elev_h * cls.CANT_HEIGHT_FRACTION
+            gap_h = elev_h * cls.CANT_GAP_FRACTION
+            cls.cant_zone_top = cls.elev_zone_bot - gap_h
+            cls.cant_zone_bot = cls.cant_zone_top - cant_h
 
             # Cant display range with 5 % padding on each side
             c_span = max(cls.cant_max - cls.cant_min, 0.0)
             c_pad = max(c_span * 0.10, 0.001)
             cls._c_display_min = cls.cant_min - c_pad * 0.05
             cls._c_display_max = cls.cant_max + c_pad * 0.95
-        else:
-            elev_h = vis_z * 0.90
-            cls.elev_zone_bot = -elev_h / 2
-            cls.elev_zone_top = elev_h / 2
-
-        mid_d = (cls.dist_min + cls.dist_max) * 0.5
-        space.region_3d.view_location = mathutils.Vector((mid_d, 0.0, 0.0))
-        space.region_3d.view_distance = max(vd, 1.0)
-        cls._xfit_frames = 6
-        cls._last_region_wh = (0, 0)
 
     @classmethod
-    def _recompute_zones(cls, center_z: float, span_z: float) -> None:
-        """Derive the elevation / cant zone bands from the LIVE visible Z span.
+    def fit_view(cls, space, area_width: int = 1920, area_height: int = 400) -> None:
+        """Reposition the profile camera so the fixed data+VE layout is fully visible.
 
-        Called every frame from the draw handlers with the Z range actually
-        measured from the viewport's screen corners.  fit_view can only estimate
-        this from the area size, which Blender has not finalised at split time
-        (and which changes whenever the user drags the pane border) — its
-        estimate is routinely 2-4x off, which pushes the bottom (cant) band
-        clean off the bottom edge of the viewport.  Recomputing here from the
-        real visible span keeps both panels framed correctly no matter what.
+        Chooses view_distance as a "contain" fit of both axes -- whichever of the
+        horizontal (distance) or vertical (elevation*ve, plus cant if present)
+        extent needs more room at the given area's aspect ratio wins, so neither
+        axis is cropped. This is only an initial estimate — draw_3d refines it
+        against the real projection (and re-fits on resize).
         """
-        if not math.isfinite(span_z) or span_z <= 0:
-            return
-        if cls.has_cant:
-            content_h = span_z * 0.92
-            cant_h = content_h * 0.25
-            gap_h = span_z * 0.02
-            elev_h = content_h - cant_h - gap_h
-            cls.cant_zone_bot = center_z - content_h / 2.0
-            cls.cant_zone_top = cls.cant_zone_bot + cant_h
-            cls.elev_zone_bot = cls.cant_zone_top + gap_h
-            cls.elev_zone_top = cls.elev_zone_bot + elev_h
-        else:
-            elev_h = span_z * 0.90
-            cls.elev_zone_bot = center_z - elev_h / 2.0
-            cls.elev_zone_top = center_z + elev_h / 2.0
+        cls._refit_zones()
+
+        h_span = max(cls.dist_max - cls.dist_min, 1.0)
+        z_bot = cls.cant_zone_bot if cls.has_cant else cls.elev_zone_bot
+        z_span = max(cls.elev_zone_top - z_bot, 1.0)
+
+        # An ortho VIEW_3D shows ~1.08x its view_distance in world height, so the
+        # distance that frames h_span across ~86% of the pane width is
+        # vd = h_span * (H/W) / (0.86 * 1.08); framing z_span across ~90% of the
+        # pane height is vd = z_span / (0.90 * 1.08). Take whichever is larger so
+        # both axes fit (one may end up with extra margin — expected/correct).
+        ar = area_height / max(area_width, 1)
+        vd_for_x = h_span * ar / (0.86 * 1.08)
+        vd_for_z = z_span / (0.90 * 1.08)
+        vd = max(vd_for_x, vd_for_z, 1.0)
+
+        mid_d = (cls.dist_min + cls.dist_max) * 0.5
+        mid_z = (cls.elev_zone_top + z_bot) * 0.5
+        space.region_3d.view_location = mathutils.Vector((mid_d, 0.0, mid_z))
+        space.region_3d.view_distance = vd
+        cls._xfit_frames = 6
+        cls._last_region_wh = (0, 0)
 
     # --------------------------------------------------------------- geometry
 
@@ -1072,6 +1139,8 @@ class VerticalProfileDecorator:
             color_idx = len(cls.available_verticals)
             cls.available_verticals.append((v_id, v_label))
 
+            real_segments = []  # entities, in order, for this vertical only
+
             for seg_rel in getattr(layout_entity, "IsNestedBy", []) or []:
                 for seg in seg_rel.RelatedObjects or []:
                     if not seg.is_a("IfcAlignmentSegment"):
@@ -1090,6 +1159,7 @@ class VerticalProfileDecorator:
                     if h_len <= 0:
                         continue
 
+                    real_segments.append(seg)
                     pts = cls._sample_segment(dist, height, h_len, g_start, g_end, seg_type)
                     cls.segments_polylines.append(pts)
                     cls.segments_info.append(
@@ -1108,6 +1178,20 @@ class VerticalProfileDecorator:
                     )
                     all_dists.extend(d for d, _ in pts)
                     all_elevs.extend(e for _, e in pts)
+
+            # Key-point labels (P.V.C., P.V.I., P.V.T., V.C.C., V.P.O.B., V.P.O.E.) --
+            # shares _get_segment_start_point_label with update_key_point_referents and
+            # AlignmentSegmentDecorator's horizontal labeling, so these always agree with
+            # the IfcReferents that function creates, including any jurisdiction-specific
+            # naming registered via register_referent_name_callback().
+            n = len(real_segments)
+            start_index = len(cls.segments_info) - n
+            for k, seg in enumerate(real_segments):
+                prev_seg = real_segments[k - 1] if k > 0 else None
+                next_seg = real_segments[k + 1] if k + 1 < n else None
+                info = cls.segments_info[start_index + k]
+                info["start_label"] = _get_segment_start_point_label(prev_seg, seg)
+                info["end_label"] = _get_segment_start_point_label(seg, next_seg)
 
         if all_dists:
             cls.dist_min = min(all_dists)
@@ -1151,6 +1235,10 @@ class VerticalProfileDecorator:
             info["evc"] = (evc_d, evc_e)
             info["pvi"] = pvi
             info["is_curve"] = is_curve
+
+        # New data means the fixed elevation/cant zones (and the VE they're built
+        # from) need recomputing -- see _refit_zones.
+        cls._refit_zones()
 
     @classmethod
     def _collect_cant_data(cls, alignment) -> None:
@@ -1347,10 +1435,8 @@ class VerticalProfileDecorator:
 
     @classmethod
     def _ez(cls, e: float) -> float:
-        """Map an elevation data value to world-Z within the elevation zone."""
-        e_span = max(cls._e_display_max - cls._e_display_min, 1e-10)
-        t = (e - cls._e_display_min) / e_span
-        return cls.elev_zone_bot + t * (cls.elev_zone_top - cls.elev_zone_bot)
+        """Map an elevation data value to world-Z via the fixed vertical exaggeration."""
+        return (e - cls.elev_ref) * cls.ve
 
     @classmethod
     def screen_to_data(
@@ -1368,12 +1454,8 @@ class VerticalProfileDecorator:
         looks like it's outside the profile area, so clicks silently do
         nothing — see ALIGN_OT_draw_vertical_alignment._locate_profile_view.
 
-        Inverse of the data -> world-Z mapping draw_3d uses for its grid/curve
-        (world X is distance-along directly; world Z goes through _ez's
-        normalized zone). Re-derives the zone bounds from the view's current
-        (possibly just panned/zoomed) visible Z span first, exactly like
-        draw_3d does every frame, so a click lands on the same point the
-        background grid shows under the cursor.
+        Inverse of _ez (world X is distance-along directly; world Z is a fixed
+        linear function of elevation, so no per-call zone resync is needed).
 
         Returns None if there's no valid region/view to project against.
         """
@@ -1385,16 +1467,7 @@ class VerticalProfileDecorator:
         if point is None:
             return None
 
-        bl = region_2d_to_location_3d(region, rv3d, (0, 0), ref)
-        tr = region_2d_to_location_3d(region, rv3d, (region.width, region.height), ref)
-        if bl is not None and tr is not None:
-            cls._recompute_zones((bl.z + tr.z) * 0.5, tr.z - bl.z)
-
-        span = cls.elev_zone_top - cls.elev_zone_bot
-        if abs(span) < 1e-9:
-            return None
-        t = (point.z - cls.elev_zone_bot) / span
-        elevation = cls._e_display_min + t * (cls._e_display_max - cls._e_display_min)
+        elevation = point.z / cls.ve + cls.elev_ref
         return point.x, elevation
 
     @classmethod
@@ -1443,36 +1516,40 @@ class VerticalProfileDecorator:
         vis_d_min, vis_d_max = bl.x, tr.x
         vis_z_min, vis_z_max = bl.z, tr.z
 
-        # --- Horizontal-zoom self-correction --------------------------------
-        # fit_view can only estimate the ortho projection; nail the X framing
-        # against the real one here so the whole alignment (segment 1 to the
-        # end) is on screen, and re-fit whenever the pane is resized.
+        # --- Zoom self-correction (both axes) --------------------------------
+        # fit_view can only estimate the ortho projection; nail the real framing
+        # here so the whole alignment (and the fixed elevation/cant zones) are on
+        # screen, and re-fit whenever the pane is resized. Zones themselves are
+        # fixed (see _refit_zones) — only the camera's view_distance is corrected,
+        # exactly like the main viewport doesn't restretch a scene as you zoom.
         wh = (region.width, region.height)
         if wh != cls._last_region_wh:
             cls._last_region_wh = wh
             cls._xfit_frames = 6
         if cls._xfit_frames > 0:
             cls._xfit_frames -= 1
-            vis_span = vis_d_max - vis_d_min
-            data_span = max(cls.dist_max - cls.dist_min, 1e-6)
-            if vis_span > 1e-6:
-                ratio = (data_span / 0.88) / vis_span  # alignment fills ~88% of width
-                if abs(ratio - 1.0) > 0.02:
-                    # Adjust and repaint next frame; this frame still draws
-                    # (one slightly-off frame reads better than a blank flash).
-                    try:
-                        rv3d.view_distance = max(rv3d.view_distance * ratio, 1.0)
-                        rv3d.view_location = mathutils.Vector(
-                            ((cls.dist_min + cls.dist_max) * 0.5, 0.0, 0.0)
-                        )
-                        bpy.context.area.tag_redraw()
-                    except Exception:
-                        pass
-                else:
-                    cls._xfit_frames = 0
-
-        # Frame the zone bands to the Z span actually visible right now.
-        cls._recompute_zones((vis_z_min + vis_z_max) * 0.5, vis_z_max - vis_z_min)
+            vis_span_x = vis_d_max - vis_d_min
+            vis_span_z = vis_z_max - vis_z_min
+            data_span_x = max(cls.dist_max - cls.dist_min, 1e-6)
+            z_bot = cls.cant_zone_bot if cls.has_cant else cls.elev_zone_bot
+            data_span_z = max(cls.elev_zone_top - z_bot, 1e-6)
+            ratio_x = (data_span_x / 0.88) / vis_span_x if vis_span_x > 1e-6 else 1.0  # fills ~88% of width
+            ratio_z = (data_span_z / 0.92) / vis_span_z if vis_span_z > 1e-6 else 1.0  # fills ~92% of height
+            ratio = max(ratio_x, ratio_z)  # whichever axis needs more room wins (contain fit)
+            if abs(ratio - 1.0) > 0.02:
+                # Adjust and repaint next frame; this frame still draws
+                # (one slightly-off frame reads better than a blank flash).
+                try:
+                    rv3d.view_distance = max(rv3d.view_distance * ratio, 1.0)
+                    mid_z = (cls.elev_zone_top + z_bot) * 0.5
+                    rv3d.view_location = mathutils.Vector(
+                        ((cls.dist_min + cls.dist_max) * 0.5, 0.0, mid_z)
+                    )
+                    bpy.context.area.tag_redraw()
+                except Exception:
+                    pass
+            else:
+                cls._xfit_frames = 0
 
         # Small padding so grid lines fully cover the viewport edges
         d_pad = (vis_d_max - vis_d_min) * 0.02
@@ -1829,9 +1906,6 @@ class VerticalProfileDecorator:
         vis_d_min, vis_d_max = bl.x, tr.x
         vis_z_min, vis_z_max = bl.z, tr.z
 
-        # Keep the label geometry in lock-step with draw_3d's zone framing.
-        cls._recompute_zones((vis_z_min + vis_z_max) * 0.5, vis_z_max - vis_z_min)
-
         d_interval = _nice_interval(vis_d_max - vis_d_min, 8)
         vis_e_min_clamp = cls._e_display_min
         vis_e_max_clamp = cls._e_display_max
@@ -1948,9 +2022,18 @@ class VerticalProfileDecorator:
                 gpu.state.blend_set("NONE")
             blf.size(font_id, pt_font_size)
             blf.color(font_id, *color)
-            for j, line in enumerate(reversed(stacked_lines)):
-                blf.position(font_id, sx + 12, sy + 4 + j * pt_line_h, 0)
-                blf.draw(font_id, line)
+            # Stack upward from the point by default; flip downward near the top
+            # edge so a multi-line label can't run off-screen -- a point can end
+            # up arbitrarily close to any edge once you zoom in far enough.
+            total_h = len(stacked_lines) * pt_line_h
+            if sy > region.height - total_h - 8:
+                for j, line in enumerate(stacked_lines):
+                    blf.position(font_id, sx + 12, sy - 4 - (j + 1) * pt_line_h, 0)
+                    blf.draw(font_id, line)
+            else:
+                for j, line in enumerate(reversed(stacked_lines)):
+                    blf.position(font_id, sx + 12, sy + 4 + j * pt_line_h, 0)
+                    blf.draw(font_id, line)
 
         # Track labeled stations per vertical so duplicate-suppression stays
         # within one vertical (different verticals can share the same station).
@@ -1989,11 +2072,17 @@ class VerticalProfileDecorator:
             # When multiple verticals are visible, prefix point names with the vertical label
             pfx = f" [{v_label}]" if show_vertical_prefix and v_label else ""
 
+            # start_label/end_label come from _get_segment_start_point_label (set in
+            # _compute_profile) -- e.g. "P.V.C."/"P.V.T." for a real curve, "P.V.I."
+            # for a sharp break, "V.P.O.B."/"V.P.O.E." at the alignment's true ends.
+            start_label = info.get("start_label", "")
+            end_label = info.get("end_label", "")
+
             if is_curve:
                 if bvc_key not in labeled:
                     _draw_vp_label(
                         bvc_w,
-                        [f"BVC{pfx}", f"Sta {sta_bvc}", f"Elev {_fmt_elev(bvc_e, e_interval)}"],
+                        [f"{start_label}{pfx}", f"Sta {sta_bvc}", f"Elev {_fmt_elev(bvc_e, e_interval)}"],
                         cls.COLOR_BVC,
                     )
                     labeled.add(bvc_key)
@@ -2003,21 +2092,21 @@ class VerticalProfileDecorator:
                     sta_pvi = cls._dist_to_station_str(pvi_d)
                     _draw_vp_label(
                         pvi_w,
-                        [f"PVI{pfx}", f"Sta {sta_pvi}", f"Elev {_fmt_elev(pvi_e, e_interval)}"],
+                        [f"P.V.I.{pfx}", f"Sta {sta_pvi}", f"Elev {_fmt_elev(pvi_e, e_interval)}"],
                         cls.COLOR_PVI_VERT,
                         draw_cross=True,
                     )
                 if evc_key not in labeled:
                     _draw_vp_label(
                         evc_w,
-                        [f"EVC{pfx}", f"Sta {sta_evc}", f"Elev {_fmt_elev(evc_e, e_interval)}"],
+                        [f"{end_label}{pfx}", f"Sta {sta_evc}", f"Elev {_fmt_elev(evc_e, e_interval)}"],
                         cls.COLOR_EVC,
                     )
                     labeled.add(evc_key)
             else:
                 g_pct = info["g_start"] * 100.0
                 if bvc_key not in labeled:
-                    lines = [f"Sta {sta_bvc}", f"Elev {_fmt_elev(bvc_e, e_interval)}", f"{g_pct:+.2f}%"]
+                    lines = [f"{start_label}{pfx}", f"Sta {sta_bvc}", f"Elev {_fmt_elev(bvc_e, e_interval)}", f"{g_pct:+.2f}%"]
                     if show_vertical_prefix and v_label:
                         lines.append(f"[{v_label}]")
                     _draw_vp_label(bvc_w, lines, cls.COLOR_GRAD)
@@ -2030,7 +2119,7 @@ class VerticalProfileDecorator:
                 if is_last_for_vertical and evc_key not in labeled:
                     _draw_vp_label(
                         evc_w,
-                        [f"Sta {sta_evc}", f"Elev {_fmt_elev(evc_e, e_interval)}"],
+                        [f"{end_label}{pfx}", f"Sta {sta_evc}", f"Elev {_fmt_elev(evc_e, e_interval)}"],
                         cls.COLOR_GRAD,
                     )
                     labeled.add(evc_key)

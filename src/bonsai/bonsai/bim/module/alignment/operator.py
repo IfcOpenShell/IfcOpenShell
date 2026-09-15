@@ -22,13 +22,16 @@
 import bpy
 import blf
 import math
+import mathutils
 import time
+from typing import TYPE_CHECKING
 import bonsai.core.alignment as core
 import bonsai.tool as tool
 import ifcopenshell.api.alignment
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.unit
 from bpy_extras.io_utils import ImportHelper
+from bpy_extras.view3d_utils import region_2d_to_location_3d
 from bpy.types import Operator, SpaceView3D
 from bpy.props import StringProperty, FloatProperty, EnumProperty, IntProperty, BoolProperty
 from . import decorator as alignment_decorator
@@ -746,6 +749,181 @@ def _pi_curve_marker_label(marker) -> str:
     return f"R={marker.radius:.2f}, Lin={marker.spiral_in_length:.2f}, Lout={marker.spiral_out_length:.2f}"
 
 
+def _local_ifc_to_world_point(ifc, unit_scale, xy):
+    """Inverse of _world_point_to_local_ifc: local IFC (x, y) -> Blender-world (metres)."""
+    e, n = ifcopenshell.util.geolocation.auto_xyz2enh(ifc, xy[0], xy[1], 0.0)[:2]
+    local = tool.Georeference.enh2xyz((e, n, 0.0))
+    return (local[0] * unit_scale, local[1] * unit_scale, 0.0)
+
+
+def _tangent_line_intersection(dp_a, dp_b):
+    """Where two LINE segments' own tangent lines cross, in local IFC coords.
+
+    Same technique as AlignmentSegmentDecorator._compute_tangent_data's PI
+    computation. Returns None if the two tangents are parallel (no PI).
+    """
+    sx, sy = dp_a.StartPoint.Coordinates[0], dp_a.StartPoint.Coordinates[1]
+    ex, ey = dp_b.StartPoint.Coordinates[0], dp_b.StartPoint.Coordinates[1]
+    d1x, d1y = math.cos(dp_a.StartDirection), math.sin(dp_a.StartDirection)
+    d2x, d2y = math.cos(dp_b.StartDirection), math.sin(dp_b.StartDirection)
+    denom = d1x * d2y - d1y * d2x
+    if abs(denom) < 1e-10:
+        return None
+    t1 = ((ex - sx) * d2y - (ey - sy) * d2x) / denom
+    return sx + t1 * d1x, sy + t1 * d1y
+
+
+def _reconstruct_horizontal_pis(h_layout):
+    """Classify every interior PI of h_layout's current real segments.
+
+    Only the five shapes PICurveMarkerProperties.curve_type already supports
+    are recognized: a sharp corner between two LINEs (TANGENT), a lone
+    CIRCULARARC (CIRCULAR), or a CIRCULARARC with a CLOTHOID on one or both
+    sides (SPIRAL_CIRCULAR / CIRCULAR_SPIRAL / SPIRAL_CIRCULAR_SPIRAL) --
+    matching what solve_horizontal_alignment_by_pi_method can (re)generate.
+
+    Returns (specs, skipped). ``specs`` is a list of dicts with pi_local
+    (x, y) plus curve_type/radius/spiral_in_length/spiral_out_length, one per
+    interior PI, in order. ``skipped`` is a list of (segment, reason) for any
+    segment that isn't part of one of those five shapes -- callers should
+    refuse to create markers at all when this is non-empty (regenerating from
+    a partial marker list would silently drop whatever those segments were).
+    """
+    segments = tool.Alignment.get_real_layout_segments(h_layout)
+    line_indices = [i for i, s in enumerate(segments) if s.DesignParameters.PredefinedType == "LINE"]
+
+    specs = []
+    skipped = []
+    if len(line_indices) < 2:
+        return specs, [(s, "no bounding tangent") for s in segments]
+
+    for s in segments[: line_indices[0]]:
+        skipped.append((s, "before the first tangent"))
+    for s in segments[line_indices[-1] + 1 :]:
+        skipped.append((s, "after the last tangent"))
+
+    for k in range(len(line_indices) - 1):
+        a_idx, b_idx = line_indices[k], line_indices[k + 1]
+        line_a, line_b = segments[a_idx], segments[b_idx]
+        between = segments[a_idx + 1 : b_idx]
+        types = [s.DesignParameters.PredefinedType for s in between]
+
+        if types == []:
+            curve_type, arc, spiral_in, spiral_out = "TANGENT", None, None, None
+        elif types == ["CIRCULARARC"]:
+            curve_type, arc, spiral_in, spiral_out = "CIRCULAR", between[0], None, None
+        elif types == ["CLOTHOID", "CIRCULARARC"]:
+            curve_type, arc, spiral_in, spiral_out = "SPIRAL_CIRCULAR", between[1], between[0], None
+        elif types == ["CIRCULARARC", "CLOTHOID"]:
+            curve_type, arc, spiral_in, spiral_out = "CIRCULAR_SPIRAL", between[0], None, between[1]
+        elif types == ["CLOTHOID", "CIRCULARARC", "CLOTHOID"]:
+            curve_type, arc, spiral_in, spiral_out = "SPIRAL_CIRCULAR_SPIRAL", between[1], between[0], between[2]
+        else:
+            skipped.extend((s, "unsupported curve family/shape") for s in between)
+            continue
+
+        pi_local = _tangent_line_intersection(line_a.DesignParameters, line_b.DesignParameters)
+        if pi_local is None:
+            # Degenerate (colinear tangents) -- report whatever's between them, or
+            # the two LINEs themselves if there's nothing between (sharp-corner case).
+            skipped.extend((s, "tangents are parallel") for s in (between or [line_a, line_b]))
+            continue
+
+        specs.append(
+            {
+                "pi_local": pi_local,
+                "curve_type": curve_type,
+                # PICurveMarkerProperties.radius (like the radii[] the solver takes) is
+                # always an unsigned magnitude -- the solver infers turn direction from
+                # the PI geometry itself, unlike DesignParameters.StartRadiusOfCurvature
+                # which is signed (+left/-right).
+                "radius": abs(arc.DesignParameters.StartRadiusOfCurvature or 0.0) if arc else 0.0,
+                "spiral_in_length": (spiral_in.DesignParameters.SegmentLength or 0.0) if spiral_in else 0.0,
+                "spiral_out_length": (spiral_out.DesignParameters.SegmentLength or 0.0) if spiral_out else 0.0,
+            }
+        )
+
+    return specs, skipped
+
+
+class ALIGN_OT_edit_horizontal_pis(Operator, tool.Ifc.Operator):
+    """Create editable PI markers from this alignment's current real segments.
+
+    Lets a previously-drawn (and saved) or IFC-imported alignment be tuned
+    the same way a freshly-drawn one is: select a marker, adjust its curve
+    type/radius/spiral lengths (or drag it), click "Apply Curve".
+    """
+
+    bl_idname = "align.edit_horizontal_pis"
+    bl_label = "Edit PIs"
+    bl_description = (
+        "Create PI markers from this alignment's current segments, pre-filled with their "
+        "existing curve type/radius/spiral lengths, so they can be adjusted or dragged "
+        "and re-applied without redrawing from scratch"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not poll_ifc4x3(cls, context):
+            return False
+        if context.scene.CivilAlignmentProperties.editing_segment_kind != "NONE":
+            cls.poll_message_set("Finish or cancel the segment table edit first")
+            return False
+        alignment = tool.Alignment.get_active_alignment()
+        if not alignment:
+            cls.poll_message_set("Select an alignment first")
+            return False
+        h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+        if not h_layout or not tool.Alignment.get_real_layout_segments(h_layout):
+            cls.poll_message_set("This alignment has no horizontal segments yet")
+            return False
+        return True
+
+    def _execute(self, context):
+        alignment = tool.Alignment.get_active_alignment()
+        alignment_id = alignment.id()
+        h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+
+        specs, skipped = _reconstruct_horizontal_pis(h_layout)
+        if skipped:
+            details = "; ".join(f"{s.DesignParameters.PredefinedType} ({reason})" for s, reason in skipped[:5])
+            more = f", and {len(skipped) - 5} more" if len(skipped) > 5 else ""
+            self.report(
+                {"ERROR"},
+                f"Can't create PI markers: {len(skipped)} segment(s) couldn't be classified: "
+                f"{details}{more}.",
+            )
+            return {"CANCELLED"}
+
+        for m in _find_pi_markers(alignment_id):
+            bpy.data.objects.remove(m, do_unlink=True)
+
+        ifc = tool.Ifc.get()
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc)
+        for i, spec in enumerate(specs, start=1):
+            x, y, z = _local_ifc_to_world_point(ifc, unit_scale, spec["pi_local"])
+            empty = bpy.data.objects.new(f"PI {i}", None)
+            empty.empty_display_type = "SPHERE"
+            empty.empty_display_size = 2.0
+            empty.location = (x, y, z)
+            marker = empty.bonsai_pi_curve_marker
+            marker.is_pi_marker = True
+            marker.alignment_id = alignment_id
+            marker.pi_index = i
+            marker.curve_type = spec["curve_type"]
+            marker.radius = spec["radius"] or 100.0
+            marker.spiral_in_length = spec["spiral_in_length"] or 100.0
+            marker.spiral_out_length = spec["spiral_out_length"] or 100.0
+            empty.name = f"PI {i} ({_pi_curve_marker_label(marker)})"
+            context.collection.objects.link(empty)
+
+        alignment_decorator.AlignmentSegmentDecorator.uninstall()
+        tool.Blender.update_viewport()
+        self.report({"INFO"}, f"Created {len(specs)} PI marker(s)")
+        return {"FINISHED"}
+
+
 class ALIGN_OT_apply_pi_curve(Operator, tool.Ifc.Operator):
     """Regenerate the alignment using the active PI marker's curve settings.
 
@@ -874,8 +1052,15 @@ class ALIGN_OT_draw_horizontal_alignment(bpy.types.Operator, PolylineOperator, t
     def poll(cls, context):
         if not poll_ifc4x3(cls, context):
             return False
-        if not tool.Alignment.get_active_alignment():
+        if context.scene.CivilAlignmentProperties.editing_segment_kind != "NONE":
+            cls.poll_message_set("Finish or cancel the segment table edit first")
+            return False
+        alignment = tool.Alignment.get_active_alignment()
+        if not alignment:
             cls.poll_message_set("Add or select an alignment first")
+            return False
+        if _find_pi_markers(alignment.id()):
+            cls.poll_message_set("Finish or clear the PI marker edit first")
             return False
         return True
 
@@ -1198,7 +1383,13 @@ def _open_vertical_profile(context, alignment):
     space.overlay.show_axis_x = False
     space.overlay.show_axis_y = False
     space.overlay.show_axis_z = False
-    space.show_gizmo = False
+    # Keep the corner navigate gizmo (pan hand / zoom magnifier) so panning here
+    # is discoverable the same way it is in the main viewport, but drop the
+    # tool gizmo inherited from the split-off viewport (e.g. an active Move/
+    # Rotate tool) since there's nothing meaningful to transform here.
+    space.show_gizmo = True
+    space.show_gizmo_navigate = True
+    space.show_gizmo_tool = False
 
     # Hide tool shelf and N-panel so they don't obscure the profile extents.
     # Set directly on the space (absolute, not a toggle) so this works reliably
@@ -1222,7 +1413,8 @@ class ALIGN_OT_show_vertical_profile(Operator):
     bl_label = "Toggle Vertical Profile"
     bl_description = (
         "Dock a 2D vertical profile view below this viewport (click again to close). "
-        "Elevation is exaggerated by the VE factor. Use middle-mouse to pan/zoom."
+        "Elevation is exaggerated by the VE factor. Mouse wheel to zoom, Shift+wheel to pan "
+        "left/right, Home to reset the view."
     )
     bl_options = {"REGISTER"}
 
@@ -1249,12 +1441,87 @@ class ALIGN_OT_show_vertical_profile(Operator):
         return {"FINISHED"}
 
 
+class ALIGN_OT_pan_vertical_profile(Operator):
+    """Pan the docked vertical profile view left/right (Shift+wheel)"""
+
+    bl_idname = "align.pan_vertical_profile"
+    bl_label = "Pan Vertical Profile"
+    bl_description = "Pan the vertical profile view left/right"
+    bl_options = {"INTERNAL"}
+
+    # -1 pans toward lower stations (left), 1 toward higher stations (right).
+    direction: IntProperty(default=1)
+
+    if TYPE_CHECKING:
+        direction: int
+
+    @classmethod
+    def poll(cls, context):
+        dec = alignment_decorator.VerticalProfileDecorator
+        return (
+            dec.is_installed
+            and context.area is not None
+            and context.area.as_pointer() == dec.profile_area_ptr
+        )
+
+    def execute(self, context):
+        dec = alignment_decorator.VerticalProfileDecorator
+        region = context.region
+        rv3d = context.region_data
+        if region is None or rv3d is None:
+            return {"CANCELLED"}
+
+        # Measure the currently visible station span from the screen corners
+        # (same technique the profile decorator uses to frame its grid), so the
+        # pan step scales naturally with the current zoom level.
+        ref = (rv3d.view_location.x, 0.0, rv3d.view_location.z)
+        bottom_left = region_2d_to_location_3d(region, rv3d, (0, 0), ref)
+        top_right = region_2d_to_location_3d(region, rv3d, (region.width, region.height), ref)
+        if bottom_left is None or top_right is None:
+            return {"CANCELLED"}
+        visible_span = top_right.x - bottom_left.x
+
+        new_x = rv3d.view_location.x + visible_span * 0.2 * self.direction
+        # Don't let the view center pan past the alignment's own station range.
+        new_x = max(dec.dist_min, min(dec.dist_max, new_x))
+        rv3d.view_location = mathutils.Vector((new_x, rv3d.view_location.y, rv3d.view_location.z))
+        context.area.tag_redraw()
+        return {"FINISHED"}
+
+
+class ALIGN_OT_reset_vertical_profile_view(Operator):
+    """Reset the docked vertical profile view to fit the full station range (Home)"""
+
+    bl_idname = "align.reset_vertical_profile_view"
+    bl_label = "Reset Vertical Profile View"
+    bl_description = "Reset the vertical profile view to fit the full station range"
+    bl_options = {"INTERNAL"}
+
+    @classmethod
+    def poll(cls, context):
+        dec = alignment_decorator.VerticalProfileDecorator
+        return (
+            dec.is_installed
+            and context.area is not None
+            and context.area.as_pointer() == dec.profile_area_ptr
+        )
+
+    def execute(self, context):
+        dec = alignment_decorator.VerticalProfileDecorator
+        space = context.space_data
+        if space is None or space.type != "VIEW_3D":
+            return {"CANCELLED"}
+        dec.fit_view(space, area_width=context.area.width, area_height=context.area.height)
+        context.area.tag_redraw()
+        return {"FINISHED"}
+
+
 # =============================================================================
 # Vertical Alignment Drawing (draw-by-PI in the profile view)
 # =============================================================================
 
 
-def _generate_vertical_alignment_segments(context, alignment, vpoints, lengths):
+def _generate_vertical_alignment_segments(context, alignment, vpoints, lengths, v_layout=None):
     """Build vertical alignment segments from PI points and per-PI curve lengths.
 
     Mirrors _generate_alignment_segments() for the vertical layout. ``vpoints``
@@ -1264,12 +1531,28 @@ def _generate_vertical_alignment_segments(context, alignment, vpoints, lengths):
     project-unit distance/elevation values (see
     VerticalProfileDecorator.screen_to_data). ``lengths`` has exactly
     len(vpoints) - 2 entries, one per interior PI (0.0 = sharp grade break).
+
+    ``alignment`` is always the top-level alignment — it's only used for the
+    representation/Blender-object refresh below, which are keyed to the
+    top-level alignment regardless of which sibling vertical changed (IFC CT
+    4.1.4.4.1.2). ``v_layout``, when given, is the specific
+    IfcAlignmentVertical to regenerate (resolved by the caller, e.g. from
+    props.editing_vertical_pi_layout_id) instead of the one/only vertical
+    ``get_vertical_layout(alignment)`` would find directly on ``alignment``
+    itself — which is nothing once a second sibling vertical exists, since
+    add_vertical_layout() moves every vertical onto its own child alignment
+    at that point.
+
+    Returns (ok, message, v_layout) — callers that don't already know which
+    vertical they're targeting (e.g. drawing a brand new one) can use the
+    returned entity to remember it for a subsequent apply.
     """
     ifc = tool.Ifc.get()
 
-    v_layout = ifcopenshell.api.alignment.get_vertical_layout(alignment)
     if v_layout is None:
-        v_layout = ifcopenshell.api.alignment.add_vertical_layout(ifc, alignment)
+        v_layout = ifcopenshell.api.alignment.get_vertical_layout(alignment)
+        if v_layout is None:
+            v_layout = ifcopenshell.api.alignment.add_vertical_layout(ifc, alignment)
 
     tool.Alignment.clear_layout_segments(v_layout)
     tool.Alignment.safe_layout_vertical_by_pi_method(ifc, v_layout, vpoints, lengths)
@@ -1278,7 +1561,7 @@ def _generate_vertical_alignment_segments(context, alignment, vpoints, lengths):
     tool.Alignment.refresh_alignment_representation_object(alignment)
 
     n_curved = sum(1 for l in lengths if l)
-    return True, f"Drew vertical alignment with {len(vpoints)} PIs ({n_curved} curved)"
+    return True, f"Drew vertical alignment with {len(vpoints)} PIs ({n_curved} curved)", v_layout
 
 
 def _sync_vertical_pi_markers(context, vpoints):
@@ -1296,6 +1579,157 @@ def _sync_vertical_pi_markers(context, vpoints):
         item.elevation = elevation
         item.curve_type = "TANGENT"
         item.curve_length = 100.0
+
+
+def _tangent_grade_intersection(dp_a, dp_b):
+    """Where two CONSTANTGRADIENT segments' own grade lines cross, as (dist_along, elevation).
+
+    Mirrors _tangent_line_intersection for the vertical (1D) case. Returns
+    None if the two grades are equal (no PI).
+    """
+    d1, d2 = dp_a.StartGradient, dp_b.StartGradient
+    if abs(d1 - d2) < 1e-10:
+        return None
+    t = (dp_b.StartHeight - dp_a.StartHeight - d2 * dp_b.StartDistAlong + d1 * dp_a.StartDistAlong) / (d1 - d2)
+    elevation = dp_a.StartHeight + d1 * (t - dp_a.StartDistAlong)
+    return t, elevation
+
+
+def _reconstruct_vertical_pis(v_layout):
+    """Classify every interior PI of v_layout's current real segments.
+
+    Mirrors _reconstruct_horizontal_pis for the vertical case: only a sharp
+    grade break between two CONSTANTGRADIENTs (TANGENT) or a CONSTANTGRADIENT
+    -PARABOLICARC-CONSTANTGRADIENT run (PARABOLIC) is recognized -- the two
+    states VerticalPIMarker.curve_type already has. Returns (specs, skipped)
+    exactly like _reconstruct_horizontal_pis.
+
+    A lone CIRCULARARC is a real, valid IfcAlignmentVerticalSegmentTypeEnum
+    value, but layout_vertical_alignment_by_pi_method (what "Apply Vertical
+    Curves" regenerates through) only ever produces PARABOLICARC/
+    CONSTANTGRADIENT -- there's no solver support for it yet. So it's called
+    out with its own skip reason rather than lumped in as generically
+    "unsupported", but still skipped (no marker), since creating one anyway
+    would let a later Apply silently discard it.
+    """
+    segments = tool.Alignment.get_real_layout_segments(v_layout)
+    grade_indices = [i for i, s in enumerate(segments) if s.DesignParameters.PredefinedType == "CONSTANTGRADIENT"]
+
+    specs = []
+    skipped = []
+    if len(grade_indices) < 2:
+        return specs, [(s, "no bounding grade") for s in segments]
+
+    for s in segments[: grade_indices[0]]:
+        skipped.append((s, "before the first grade"))
+    for s in segments[grade_indices[-1] + 1 :]:
+        skipped.append((s, "after the last grade"))
+
+    for k in range(len(grade_indices) - 1):
+        a_idx, b_idx = grade_indices[k], grade_indices[k + 1]
+        grade_a, grade_b = segments[a_idx], segments[b_idx]
+        between = segments[a_idx + 1 : b_idx]
+        types = [s.DesignParameters.PredefinedType for s in between]
+
+        if types == []:
+            curve_type, curve_seg = "TANGENT", None
+        elif types == ["PARABOLICARC"]:
+            curve_type, curve_seg = "PARABOLIC", between[0]
+        elif types == ["CIRCULARARC"]:
+            skipped.append((between[0], "circular vertical curve, not yet editable here"))
+            continue
+        else:
+            skipped.extend((s, "unsupported curve type") for s in between)
+            continue
+
+        pi = _tangent_grade_intersection(grade_a.DesignParameters, grade_b.DesignParameters)
+        if pi is None:
+            skipped.extend((s, "equal grades") for s in (between or [grade_a, grade_b]))
+            continue
+
+        specs.append(
+            {
+                "dist_along": pi[0],
+                "elevation": pi[1],
+                "curve_type": curve_type,
+                "curve_length": (curve_seg.DesignParameters.HorizontalLength or 0.0) if curve_seg else 0.0,
+            }
+        )
+
+    return specs, skipped
+
+
+class ALIGN_OT_load_vertical_pis(Operator, tool.Ifc.Operator):
+    """Populate the vertical PI list from this alignment's current real segments.
+
+    Lets a previously-drawn (and saved) or IFC-imported vertical alignment be
+    tuned the same way a freshly-drawn one is: pick a row, adjust its curve
+    type/length, click "Apply Vertical Curves".
+    """
+
+    bl_idname = "align.load_vertical_pis"
+    bl_label = "Edit PIs"
+    bl_description = (
+        "Populate the vertical PI list from this alignment's current segments, pre-filled "
+        "with their existing curve type/length, so they can be adjusted and re-applied "
+        "without redrawing from scratch"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    # Explicit target for a specific sibling vertical (IFC CT 4.1.4.4.1.2 — the
+    # per-vertical button in ALIGN_PT_alignment_segments passes this). 0 falls
+    # back to get_active_alignment()'s own direct vertical, the common
+    # single-vertical case.
+    layout_id: IntProperty(default=0, options={"HIDDEN"})
+
+    @classmethod
+    def poll(cls, context):
+        if not poll_ifc4x3(cls, context):
+            return False
+        if context.scene.CivilAlignmentProperties.editing_segment_kind != "NONE":
+            cls.poll_message_set("Finish or cancel the segment table edit first")
+            return False
+        return True
+
+    def _execute(self, context):
+        ifc = tool.Ifc.get()
+
+        if self.layout_id:
+            v_layout = ifc.by_id(self.layout_id)
+        else:
+            alignment = tool.Alignment.get_active_alignment()
+            if not alignment:
+                self.report({"ERROR"}, "Select an alignment first")
+                return {"CANCELLED"}
+            v_layout = ifcopenshell.api.alignment.get_vertical_layout(alignment)
+
+        if not v_layout or not tool.Alignment.get_real_layout_segments(v_layout):
+            self.report({"ERROR"}, "This alignment has no vertical segments yet")
+            return {"CANCELLED"}
+
+        specs, skipped = _reconstruct_vertical_pis(v_layout)
+        if skipped:
+            details = "; ".join(f"{s.DesignParameters.PredefinedType} ({reason})" for s, reason in skipped[:5])
+            more = f", and {len(skipped) - 5} more" if len(skipped) > 5 else ""
+            self.report(
+                {"ERROR"},
+                f"Can't load PI list: {len(skipped)} segment(s) couldn't be classified: "
+                f"{details}{more}.",
+            )
+            return {"CANCELLED"}
+
+        props = context.scene.CivilAlignmentProperties
+        props.vertical_pi_markers.clear()
+        for spec in specs:
+            item = props.vertical_pi_markers.add()
+            item.dist_along = spec["dist_along"]
+            item.elevation = spec["elevation"]
+            item.curve_type = spec["curve_type"]
+            item.curve_length = spec["curve_length"] or 100.0
+        props.editing_vertical_pi_layout_id = v_layout.id()
+
+        self.report({"INFO"}, f"Loaded {len(specs)} PI(s)")
+        return {"FINISHED"}
 
 
 class ALIGN_OT_draw_vertical_alignment(Operator, tool.Ifc.Operator):
@@ -1330,6 +1764,13 @@ class ALIGN_OT_draw_vertical_alignment(Operator, tool.Ifc.Operator):
     @classmethod
     def poll(cls, context):
         if not poll_ifc4x3(cls, context):
+            return False
+        props = context.scene.CivilAlignmentProperties
+        if props.editing_segment_kind != "NONE":
+            cls.poll_message_set("Finish or cancel the segment table edit first")
+            return False
+        if props.vertical_pi_markers:
+            cls.poll_message_set("Finish or clear the current PI marker edit first")
             return False
         alignment = tool.Alignment.get_active_alignment()
         if not alignment:
@@ -1501,9 +1942,14 @@ class ALIGN_OT_draw_vertical_alignment(Operator, tool.Ifc.Operator):
         vpoints = sorted(self._points, key=lambda p: p[0])
         lengths = [0.0] * (len(vpoints) - 2)
 
-        ok, message = _generate_vertical_alignment_segments(context, alignment, vpoints, lengths)
+        ok, message, v_layout = _generate_vertical_alignment_segments(context, alignment, vpoints, lengths)
         if ok:
             _sync_vertical_pi_markers(context, vpoints)
+            # Remember which sibling vertical this is so a follow-up "Apply
+            # Vertical Curves" targets it too, not whatever get_active_alignment()
+            # would resolve to (nothing, once a second vertical exists — see
+            # _generate_vertical_alignment_segments).
+            context.scene.CivilAlignmentProperties.editing_vertical_pi_layout_id = v_layout.id()
             _refresh_vertical_profile_view(context, alignment)
         self.report({"INFO"} if ok else {"WARNING"}, message)
 
@@ -1529,19 +1975,39 @@ class ALIGN_OT_apply_vertical_pi_curve(Operator, tool.Ifc.Operator):
         return True
 
     def _execute(self, context):
+        props = context.scene.CivilAlignmentProperties
         alignment = tool.Alignment.get_active_alignment()
+
+        # editing_vertical_pi_layout_id, when set, names the specific sibling
+        # vertical vertical_pi_markers came from (see its own comment) — resolve
+        # start/end from the alignment that actually owns it, not the top-level
+        # one, which has no vertical of its own once a second sibling exists.
+        v_layout = None
+        if props.editing_vertical_pi_layout_id:
+            try:
+                v_layout = tool.Ifc.get().by_id(props.editing_vertical_pi_layout_id)
+            except RuntimeError:
+                v_layout = None
+
         try:
-            start, end = tool.Alignment.get_vertical_alignment_start_end_points(alignment)
+            if v_layout is not None:
+                owning_alignment = ifcopenshell.api.alignment.get_alignment(v_layout)
+                start, end = tool.Alignment.get_vertical_alignment_start_end_points(owning_alignment)
+            else:
+                start, end = tool.Alignment.get_vertical_alignment_start_end_points(alignment)
         except ValueError as e:
             self.report({"ERROR"}, str(e))
             return {"CANCELLED"}
 
-        markers = list(context.scene.CivilAlignmentProperties.vertical_pi_markers)
+        markers = list(props.vertical_pi_markers)
         vpoints = [start] + [(m.dist_along, m.elevation) for m in markers] + [end]
         lengths = [m.curve_length if m.curve_type == "PARABOLIC" else 0.0 for m in markers]
 
-        ok, message = _generate_vertical_alignment_segments(context, alignment, vpoints, lengths)
+        ok, message, v_layout = _generate_vertical_alignment_segments(
+            context, alignment, vpoints, lengths, v_layout=v_layout
+        )
         if ok:
+            props.editing_vertical_pi_layout_id = v_layout.id()
             _refresh_vertical_profile_view(context, alignment)
         self.report({"INFO"} if ok else {"WARNING"}, message)
         return {"FINISHED"}
@@ -1560,7 +2026,9 @@ class ALIGN_OT_clear_vertical_pi_markers(Operator):
         return bool(context.scene.CivilAlignmentProperties.vertical_pi_markers)
 
     def execute(self, context):
-        context.scene.CivilAlignmentProperties.vertical_pi_markers.clear()
+        props = context.scene.CivilAlignmentProperties
+        props.vertical_pi_markers.clear()
+        props.editing_vertical_pi_layout_id = 0
         return {"FINISHED"}
 
 
@@ -1692,6 +2160,10 @@ class ALIGN_OT_enable_editing_h_segments(Operator):
         props = context.scene.CivilAlignmentProperties
         if props.editing_segment_kind not in ("NONE", "HORIZONTAL"):
             cls.poll_message_set("Finish or cancel the current segment edit first")
+            return False
+        alignment = tool.Alignment.get_active_alignment()
+        if alignment and _find_pi_markers(alignment.id()):
+            cls.poll_message_set("Finish or clear the PI marker edit first")
             return False
         return True
 
@@ -1862,6 +2334,9 @@ class ALIGN_OT_enable_editing_v_segments(Operator):
         props = context.scene.CivilAlignmentProperties
         if props.editing_segment_kind not in ("NONE", "VERTICAL"):
             cls.poll_message_set("Finish or cancel the current segment edit first")
+            return False
+        if props.vertical_pi_markers:
+            cls.poll_message_set("Finish or clear the PI marker edit first")
             return False
         return True
 
