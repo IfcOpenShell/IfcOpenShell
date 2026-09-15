@@ -30,11 +30,8 @@ if(NOT "${IFCOPENSHELL_BOOST_USE_MULTITHREADED}" STREQUAL "")
     set(Boost_USE_MULTITHREADED ${IFCOPENSHELL_BOOST_USE_MULTITHREADED})
 endif()
 set(Boost_COMPONENTS
-    system
     program_options
     regex
-    thread
-    date_time
     iostreams
 )
 find_dependency(Boost CONFIG COMPONENTS ${Boost_COMPONENTS})

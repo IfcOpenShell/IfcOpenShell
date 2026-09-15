@@ -25,13 +25,9 @@ jobs:
           sudo apt update
           sudo apt-get install --no-install-recommends \
           git cmake gcc g++ \
-          libboost-date-time-dev \
-          libboost-filesystem-dev \
           libboost-iostreams-dev \
           libboost-program-options-dev \
           libboost-regex-dev \
-          libboost-system-dev \
-          libboost-thread-dev \
           python3-all-dev python3-pip \
           swig libpcre3-dev libxml2-dev \
           libtbb-dev nlohmann-json3-dev \
