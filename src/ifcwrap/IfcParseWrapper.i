@@ -325,35 +325,22 @@ private:
 			throw ifcopenshell::exception("Only entities with ids are supported for _all_inverses_within. Provided entity: '" + e.declaration().name() + "'.");
 		}
 		const std::unordered_set<uint32_t> allowed(ids.begin(), ids.end());
-		const auto referenced_id = (uint32_t)e_.id();
-		return std::visit([referenced_id, &allowed](auto& x) -> bool {
-			if constexpr (std::is_same_v<std::decay_t<decltype(x)>, ifcopenshell::impl::in_memory_file_storage>) {
-				return x.byref_excl_.all_sources(referenced_id, [&allowed](uint32_t source_id) {
-					return allowed.count(source_id) != 0;
-				});
-			} else {
-				throw ifcopenshell::exception("_all_inverses_within is only implemented for in-memory storage");
-			}
-		}, $self->storage_);
+		return $self->all_referencing_instances(e_.id(), [&allowed](uint32_t source_id) {
+			return allowed.count(source_id) != 0;
+		});
 	}
 
 	// The subset of ids whose every referencing instance is itself in ids:
-	// one crossing in, one crossing out, early exit per id in C++.
+	// one crossing in, one crossing out, early exit per id.
 	std::vector<int> _ids_referenced_only_within(const std::vector<int>& ids) {
 		const std::unordered_set<uint32_t> allowed(ids.begin(), ids.end());
 		const auto within = [&allowed](uint32_t source_id) { return allowed.count(source_id) != 0; };
 		std::vector<int> contained;
-		std::visit([&](auto& x) {
-			if constexpr (std::is_same_v<std::decay_t<decltype(x)>, ifcopenshell::impl::in_memory_file_storage>) {
-				for (int id : ids) {
-					if (x.byref_excl_.all_sources((uint32_t)id, within)) {
-						contained.push_back(id);
-					}
-				}
-			} else {
-				throw ifcopenshell::exception("_ids_referenced_only_within is only implemented for in-memory storage");
+		for (int id : ids) {
+			if ($self->all_referencing_instances(id, within)) {
+				contained.push_back(id);
 			}
-		}, $self->storage_);
+		}
 		return contained;
 	}
 
