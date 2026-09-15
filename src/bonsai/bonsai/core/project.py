@@ -48,9 +48,6 @@ def create_project(
         project.run_owner_set_user(user=user)
 
     project_obj = project.create_empty("My Project")
-    site = project.create_empty("My Site")
-    building = project.create_empty("My Building")
-    storey = project.create_empty("My Storey")
 
     project.run_root_assign_class(obj=project_obj, ifc_class="IfcProject", should_add_representation=False)
     project.run_unit_assign_scene_units()
@@ -94,20 +91,27 @@ def create_project(
         context_type="Plan", context_identifier="Annotation", target_view="REFLECTED_PLAN_VIEW", parent=plan
     )
 
-    project.run_root_assign_class(obj=site, ifc_class="IfcSite", context=body)
-    project.run_root_assign_class(obj=building, ifc_class="IfcBuilding", context=body)
-    project.run_root_assign_class(obj=storey, ifc_class="IfcBuildingStorey", context=body)
+    has_structure_template = bool(template) and project.append_structure_from_template(template)
+    if not has_structure_template:
+        site = project.create_empty("My Site")
+        building = project.create_empty("My Building")
+        storey = project.create_empty("My Storey")
 
-    project.run_aggregate_assign_object(relating_obj=project_obj, related_obj=site)
-    project.run_aggregate_assign_object(relating_obj=site, related_obj=building)
-    project.run_aggregate_assign_object(relating_obj=building, related_obj=storey)
+        project.run_root_assign_class(obj=site, ifc_class="IfcSite", context=body)
+        project.run_root_assign_class(obj=building, ifc_class="IfcBuilding", context=body)
+        project.run_root_assign_class(obj=storey, ifc_class="IfcBuildingStorey", context=body)
+
+        project.run_aggregate_assign_object(relating_obj=project_obj, related_obj=site)
+        project.run_aggregate_assign_object(relating_obj=site, related_obj=building)
+        project.run_aggregate_assign_object(relating_obj=building, related_obj=storey)
 
     project.set_context(body)
     spatial.run_spatial_import_spatial_decomposition()
     if default_container := spatial.guess_default_container():
         spatial.set_default_container(default_container)
 
-    if template:
+    # A structure template's types were already merged in above; avoid duplicating them.
+    if template and not has_structure_template:
         project.append_all_types_from_template(template)
 
     project.load_default_thumbnails()
