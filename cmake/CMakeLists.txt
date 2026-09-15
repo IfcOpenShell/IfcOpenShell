@@ -257,6 +257,8 @@ foreach(option_flag IN LISTS option_flags)
     convert_env_var_to_bool("${option_flag}")
 endforeach()
 
+set(SWIG_DEFINES "")
+
 if(WITH_CGAL)
     find_package(CGAL REQUIRED)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_CGAL)
@@ -342,7 +344,7 @@ endif()
 
 # Find Boost: On win32 the (hardcoded) default is to use static libraries and
 # runtime, when doing running conda-build we pick what conda prepared for us.
-if(WIN32 AND("$ENV{CONDA_BUILD}" STREQUAL ""))
+if(WIN32 AND NOT DEFINED ENV{CONDA_BUILD})
     set(Boost_USE_STATIC_LIBS ON)
     set(Boost_USE_STATIC_RUNTIME OFF)
     set(Boost_USE_MULTITHREADED ON)
@@ -788,6 +790,7 @@ set(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
 set(CPACK_GENERATOR "TGZ;DEB")
 set(CPACK_SOURCE_GENERATOR "TGZ")
 
+set(BOOST_DEPS "")
 foreach(COMPONENT IN ITEMS ${BOOST_COMPONENTS})
     string(REPLACE "_" "-" COMP ${COMPONENT})
     set(BOOST_DEPS "${BOOST_DEPS}, libboost-${COMP}-dev")
