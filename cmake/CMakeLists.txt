@@ -491,10 +491,7 @@ else()
     endif()
 endif(MSVC)
 
-include_directories(
-	${Boost_INCLUDE_DIRS}
-    ${CGAL_INCLUDE_DIR} ${GMP_INCLUDE_DIR} ${MPFR_INCLUDE_DIR}
-)
+include_directories(${Boost_INCLUDE_DIRS})
 
 if(NOT SCHEMA_VERSIONS)
     if(WASM_BUILD)
