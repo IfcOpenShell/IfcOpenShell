@@ -39,6 +39,24 @@ def _on_vertical_visibility_update(self, context):
     VerticalProfileDecorator.tag_redraw()
 
 
+def _on_vertical_exaggeration_update(self, context):
+    """Re-fit the profile camera to the new fixed elevation zone (see
+    VerticalProfileDecorator._refit_zones/fit_view) -- mirrors the same
+    re-fit _on_active_object_changed does when the active alignment changes.
+    """
+    from .decorator import VerticalProfileDecorator as dec
+
+    if not dec.is_installed or dec.profile_area_ptr == 0:
+        return
+    for window in context.window_manager.windows:
+        for area in window.screen.areas:
+            if area.as_pointer() == dec.profile_area_ptr:
+                space = next((s for s in area.spaces if s.type == "VIEW_3D"), None)
+                if space:
+                    dec.fit_view(space, area_width=area.width, area_height=area.height)
+    dec.tag_redraw()
+
+
 # Blender requires a dynamic EnumProperty callback to keep a reference to the
 # items it returns — the strings are read by the C/RNA layer after the Python
 # call returns, and if the list is only local to the function it can be
@@ -331,9 +349,30 @@ class CivilAlignmentProperties(PropertyGroup):
     # Interior PIs of the most recently drawn/edited vertical alignment
     vertical_pi_markers: CollectionProperty(type=VerticalPIMarker)
     active_vertical_pi_marker_index: IntProperty(name="Active Vertical PI", default=0)
+    # Which IfcAlignmentVertical vertical_pi_markers belongs to -- a horizontal can be
+    # reused by several sibling verticals (IFC CT 4.1.4.4.1.2), each on its own child
+    # IfcAlignment, so "the active alignment" alone can't identify one. Set by
+    # align.load_vertical_pis / align.draw_vertical_alignment, read by
+    # align.apply_vertical_pi_curve so it regenerates the right one; 0 falls back to
+    # resolving a single vertical straight off the active alignment (the common case).
+    editing_vertical_pi_layout_id: IntProperty(name="Editing Vertical PI Layout ID", default=0)
 
     # Per-vertical visibility filter for the profile window
     vertical_items: CollectionProperty(type=VerticalAlignmentItem)
+
+    # Fixed vertical exaggeration for the profile view -- world-Z = (elevation -
+    # elev_ref) * this, unaffected by zoom/pan (see VerticalProfileDecorator._ez).
+    vertical_exaggeration: FloatProperty(
+        name="Vertical Exaggeration",
+        description=(
+            "How much elevation is exaggerated relative to distance in the profile "
+            "view (10 draws 1 unit of elevation as 10 units of distance)"
+        ),
+        default=10.0,
+        min=0.01,
+        soft_max=100.0,
+        update=_on_vertical_exaggeration_update,
+    )
 
     # Per-cant visibility filter for the profile window
     cant_items: CollectionProperty(type=CantAlignmentItem)
