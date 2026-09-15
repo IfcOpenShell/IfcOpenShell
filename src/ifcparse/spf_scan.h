@@ -243,26 +243,30 @@ void spf_lexer<Reader>::scan(Consumer& consumer) {
 
         auto remaining = stream->remaining();
         while (remaining) {
-            if (remaining >= 8) {
-                uint64_t x = stream->peek_u64();
-                if ((ttype == token::Token_NONE ? SWAR::has_special_char<false>(x) : SWAR::has_special_char<true>(x)) == 0) {
-                    if (Consumer::keep_keywords || ttype == token::Token_IDENTIFIER) {
-                        text->append(reinterpret_cast<const char*>(&x), 8);
+            // Most index tokens are shorter than a word. Testing both word
+            // widths at every byte costs more than the scalar delimiter check.
+            if constexpr (Consumer::keep_keywords) {
+                if (remaining >= 8) {
+                    uint64_t x = stream->peek_u64();
+                    if ((ttype == token::Token_NONE ? SWAR::has_special_char<false>(x) : SWAR::has_special_char<true>(x)) == 0) {
+                        if (Consumer::keep_keywords || ttype == token::Token_IDENTIFIER) {
+                            text->append(reinterpret_cast<const char*>(&x), 8);
+                        }
+                        stream->increment(8);
+                        remaining -= 8;
+                        continue;
                     }
-                    stream->increment(8);
-                    remaining -= 8;
-                    continue;
                 }
-            }
-            if (remaining >= 4) {
-                uint32_t x = stream->peek_u32();
-                if ((ttype == token::Token_NONE ? SWAR::has_special_char<false>(x) : SWAR::has_special_char<true>(x)) == 0) {
-                    if (Consumer::keep_keywords || ttype == token::Token_IDENTIFIER) {
-                        text->append(reinterpret_cast<const char*>(&x), 4);
+                if (remaining >= 4) {
+                    uint32_t x = stream->peek_u32();
+                    if ((ttype == token::Token_NONE ? SWAR::has_special_char<false>(x) : SWAR::has_special_char<true>(x)) == 0) {
+                        if (Consumer::keep_keywords || ttype == token::Token_IDENTIFIER) {
+                            text->append(reinterpret_cast<const char*>(&x), 4);
+                        }
+                        stream->increment(4);
+                        remaining -= 4;
+                        continue;
                     }
-                    stream->increment(4);
-                    remaining -= 4;
-                    continue;
                 }
             }
 
