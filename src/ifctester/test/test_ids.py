@@ -251,6 +251,32 @@ class TestIds:
         assert spec.requirements[0].failures[0]["element"] == wall
         assert spec2.requirements[0].failures[0]["element"] == wall
 
+    def test_entity_facet_without_a_predefined_type_does_not_leak_across_classes(self, monkeypatch):
+        # Regression test: Entity.filter() returns ifc_file.by_type()'s result
+        # unmodified when no predefinedType is given. That result is not guaranteed to
+        # be a `list` - some ifcopenshell builds return a `tuple` - and every other
+        # facet's filter() decides whether to narrow the population handed to it, or
+        # discard it and rescan the *entire* model, based on `isinstance(elements,
+        # list)`. A `tuple` fails that check, so the very next facet silently ignored
+        # the entity restriction and matched any class sharing the same attribute
+        # value. Force by_type() to return a tuple here so this reproduces regardless
+        # of what the local ifcopenshell build's by_type() normally returns.
+        specs = ids.Ids(title="Title")
+        spec = ids.Specification(name="Name")
+        spec.applicability.append(ids.Entity(name="IFCMATERIAL"))
+        spec.applicability.append(ids.Attribute(name="Name", value="Foo"))
+        specs.specifications.append(spec)
+
+        model = ifcopenshell.file()
+        material = model.createIfcMaterial(Name="Foo")
+        model.createIfcWall(Name="Foo")  # a different class sharing the same Name
+
+        real_by_type = model.by_type
+        monkeypatch.setattr(model, "by_type", lambda *a, **kw: tuple(real_by_type(*a, **kw)))
+
+        specs.validate(model)
+        assert set(spec.applicable_entities) == {material}
+
     def test_parsing_entities_with_no_attributes(self):
         model = ifcopenshell.file()
         wall1 = model.createIfcWall(Name="Waldo")
