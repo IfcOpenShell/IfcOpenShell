@@ -209,6 +209,7 @@ def build() -> None:
                 build_generator(),
                 "Release",
                 "-y",
+                "--reuse-boost",
                 "--python-version",
                 python_version,
             ]
