@@ -291,8 +291,38 @@ bool attribute_value::isNull() const
 
 unsigned int attribute_value::size() const
 {
-    // @todo
-    return array_.storage_ptr->apply_visitor(size_visitor{}, index_);
+    if (storage_model_ == 0) {
+        return array_.storage_ptr->apply_visitor(size_visitor{}, index_);
+    }
+#ifdef IFOPSH_WITH_ROCKSDB
+    else {
+        // Same answers as size_visitor: element count for aggregates, -1 otherwise.
+        switch (type()) {
+        case Argument_EMPTY_AGGREGATE:
+        case Argument_AGGREGATE_OF_EMPTY_AGGREGATE:
+            return 0;
+        case Argument_AGGREGATE_OF_INT:
+            return (unsigned int)dispatch_get_<std::vector<int64_t>>(array_, storage_model_, instance_name_, entity_or_type_, index_).size();
+        case Argument_AGGREGATE_OF_DOUBLE:
+            return (unsigned int)dispatch_get_<std::vector<double>>(array_, storage_model_, instance_name_, entity_or_type_, index_).size();
+        case Argument_AGGREGATE_OF_STRING:
+            return (unsigned int)dispatch_get_<std::vector<std::string>>(array_, storage_model_, instance_name_, entity_or_type_, index_).size();
+        case Argument_AGGREGATE_OF_BINARY:
+            return (unsigned int)dispatch_get_<std::vector<boost::dynamic_bitset<>>>(array_, storage_model_, instance_name_, entity_or_type_, index_).size();
+        case Argument_AGGREGATE_OF_ENTITY_INSTANCE:
+            return (unsigned int)((std::vector<express::base>)*this).size();
+        case Argument_AGGREGATE_OF_AGGREGATE_OF_INT:
+            return (unsigned int)dispatch_get_<std::vector<std::vector<int64_t>>>(array_, storage_model_, instance_name_, entity_or_type_, index_).size();
+        case Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE:
+            return (unsigned int)dispatch_get_<std::vector<std::vector<double>>>(array_, storage_model_, instance_name_, entity_or_type_, index_).size();
+        case Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE:
+            return (unsigned int)((std::vector<std::vector<express::base>>)*this).size();
+        default:
+            return (unsigned int)-1;
+        }
+    }
+#endif
+    throw std::logic_error("RocksDB storage is unavailable");
 }
 
 ifcopenshell::argument_type attribute_value::type() const

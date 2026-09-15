@@ -23,6 +23,7 @@
 #ifdef IFOPSH_WITH_ROCKSDB
 #include <rocksdb/db.h>
 #include <rocksdb/options.h>
+#include <rocksdb/write_batch.h>
 #endif
 
 #include <memory>
@@ -196,6 +197,27 @@ public:
         return iterator();
     }
 
+    // Removes the element: every key under prefix + key + "|". The prefix
+    // with its last byte incremented is the exclusive upper bound ('}'
+    // follows '|'). Returns 1 if the element existed, 0 otherwise.
+    size_t erase(const key_type& key) {
+#ifdef IFOPSH_WITH_ROCKSDB
+        if (find(key) == end()) {
+            return 0;
+        }
+        const std::string lower_bound = prefix_ + key_to_string(key) + "|";
+        std::string upper_bound = lower_bound;
+        upper_bound.back() = '}';
+        rocksdb::WriteBatch batch;
+        batch.DeleteRange(lower_bound, upper_bound);
+        db_->Write(rocksdb::WriteOptions{}, &batch);
+        return 1;
+#else
+        static_cast<void>(key);
+        return 0;
+#endif
+    }
+
     // Read-only find: returns an iterator to the element with the given key if it exists.
     iterator find(const key_type& key) const {
 #ifdef IFOPSH_WITH_ROCKSDB
@@ -216,11 +238,6 @@ public:
         return end();
     }
 
-    size_t erase(const key_type& key) {
-        static_cast<void>(key);
-        // @todo
-        return 0;
-    }
 };
 
 #endif

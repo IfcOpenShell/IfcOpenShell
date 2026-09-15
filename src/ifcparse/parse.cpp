@@ -2636,16 +2636,32 @@ template void ifcopenshell::impl::in_memory_file_storage::read_from_stream(file_
 #endif
 
 void file::recalculate_id_counter() {
-    /*
-    // @todo
-    entity_by_id::key_type k = 0;
-    for (auto& p : byid_) {
-        if (p.first > k) {
-            k = p.first;
+    unsigned int k = 0;
+    std::visit([&k](auto& x) {
+        if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
+            for (const auto& p : x.byid_) {
+                k = std::max(k, (unsigned int)p.first);
+            }
         }
-    }
-    max_id_ = (unsigned int)k;
-    */
+#ifdef IFOPSH_WITH_ROCKSDB
+        else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
+            // Keys sort as text, so the largest id can't be found by seeking;
+            // scan the i|<id>|_ type records, one per entity instance.
+            const std::string prefix = "i|";
+            auto it = std::unique_ptr<rocksdb::Iterator>(x.db->NewIterator(rocksdb::ReadOptions()));
+            for (it->Seek(prefix); it->Valid() && it->key().starts_with(prefix); it->Next()) {
+                const auto key = it->key().ToString();
+                if (key.size() > 2 && key.compare(key.size() - 2, 2, "|_") == 0) {
+                    k = std::max(k, (unsigned int)std::stoul(key.substr(2, key.size() - 4)));
+                }
+            }
+        }
+#endif
+        else {
+            throw std::runtime_error("Storage not initialized");
+        }
+    }, storage_);
+    max_id_ = k;
 }
 
 class traversal_recorder {
