@@ -82,6 +82,19 @@ export async function getStandardClassificationSystems() {
     return result.toJs({ dict_converter: Object.fromEntries });
 }
 
+export async function testPattern(pattern: string, values: string[]) {
+    // JSON.stringify twice: the inner call encodes the payload, the outer call
+    // produces a quoted literal that is safe to embed in the Python source.
+    const payload = JSON.stringify(JSON.stringify({ pattern, values }));
+    const result = await pyodide.runPythonAsync(`
+        import json
+        from api import test_pattern
+        payload = json.loads(${payload})
+        json.dumps(test_pattern(payload["pattern"], payload["values"]))
+    `);
+    return JSON.parse(result) as { error: string | null; results: boolean[] };
+}
+
 export async function loadIfc(ifcData: number[] | Uint8Array | ArrayBuffer) {
     const ifc_id = id();
     const path = `/tmp/${encodeURIComponent(ifc_id)}.ifc`;
@@ -140,6 +153,7 @@ export const API = {
     "getApplicablePsets": getApplicablePsets,
     "getMaterialCategories": getMaterialCategories,
     "getStandardClassificationSystems": getStandardClassificationSystems,
+    "testPattern": testPattern,
     "loadIfc": loadIfc,
     "unloadIfc": unloadIfc,
     "auditIfc": auditIfc
