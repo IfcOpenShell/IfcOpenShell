@@ -2,36 +2,51 @@ name: ci
 
 on:
   push:
-    paths: &ci_paths
-      - 'src/bcf/**'
-      - 'src/bsdd/**'
-      - 'src/examples/**'
-      - 'src/ifcblender/**'
-      - 'src/ifcconvert/**'
-      - 'src/ifcdiff/**'
-      - 'src/ifcgeom/**'
-      - 'src/ifcgeomserver/**'
-      - 'src/ifcmax/**'
-      - 'src/ifc5d/**'
-      - 'src/ifcedit/**'
-      - 'src/ifcmcp/**'
-      - 'src/ifcopenshell-python/**'
-      - '!src/ifcopenshell-python/docs/**'
-      - 'src/ifcparse/**'
-      - 'src/ifcpatch/**'
-      - 'src/ifcquery/**'
-      - 'src/ifctester/**'
-      - 'src/ifcwrap/**'
-      - 'src/svgfill/**'
-      - 'src/serializers/**'
-      - 'conda/**'
-      - 'cmake/**'
-      - 'test/**'
-      - '.github/workflows/ci.yml'
   pull_request:
-    paths: *ci_paths
 
 jobs:
+  changes:
+    runs-on: ubuntu-22.04
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          # 'some-with-excludes' is required for the '!...' rule to be honoured.
+          # With the default 'some', the negated rule ends up matching everything.
+          predicate-quantifier: 'some-with-excludes'
+          filters: |
+            code:
+              - 'src/bcf/**'
+              - 'src/bsdd/**'
+              - 'src/examples/**'
+              - 'src/ifcblender/**'
+              - 'src/ifcconvert/**'
+              - 'src/ifcdiff/**'
+              - 'src/ifcgeom/**'
+              - 'src/ifcgeomserver/**'
+              - 'src/ifcmax/**'
+              - 'src/ifc5d/**'
+              - 'src/ifcedit/**'
+              - 'src/ifcmcp/**'
+              - 'src/ifcopenshell-python/**'
+              - '!src/ifcopenshell-python/docs/**'
+              - 'src/ifcparse/**'
+              - 'src/ifcpatch/**'
+              - 'src/ifcquery/**'
+              - 'src/ifctester/**'
+              - 'src/ifcwrap/**'
+              - 'src/svgfill/**'
+              - 'src/serializers/**'
+              - 'conda/**'
+              - 'cmake/**'
+              - 'test/**'
+              - '.github/workflows/ci.yml'
+
   activate:
     runs-on: ubuntu-22.04
     if: |
@@ -42,7 +57,8 @@ jobs:
 
   compile-and-test:
     runs-on: ubuntu-22.04
-    needs: activate
+    needs: [activate, changes]
+    if: needs.changes.outputs.code == 'true'
     strategy:
       fail-fast: false
       matrix:
