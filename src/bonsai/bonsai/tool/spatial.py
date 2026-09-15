@@ -42,6 +42,7 @@ import ifcopenshell.util.type
 import ifcopenshell.util.unit
 import numpy as np
 import shapely
+import shapely.affinity
 import shapely.ops
 from mathutils import Matrix, Vector
 from natsort import natsorted
@@ -874,7 +875,9 @@ class Spatial(bonsai.core.tool.Spatial):
         return ifcopenshell.util.space.get_boundary_lines(tool.Ifc.get(), cache["shapes"], cut_z)
 
     @classmethod
-    def get_space_polygon_from_context_visible_objects(cls, x: float, y: float, container: Optional[ifcopenshell.entity_instance] = None) -> tuple[
+    def get_space_polygon_from_context_visible_objects(
+        cls, x: float, y: float, container: Optional[ifcopenshell.entity_instance] = None
+    ) -> tuple[
         Union[shapely.Polygon, Literal["NO POLYGONS FOUND", "NO POLYGON FOR POINT"]],
         list[ifcopenshell.entity_instance],
     ]:
@@ -887,9 +890,13 @@ class Spatial(bonsai.core.tool.Spatial):
 
         # Commit any moved visible bounding objects before reading IFC geometry,
         # so the IFC-based cache uses the current Blender positions.
+        # Walls/roofs/slabs that affect the space footprint or height must be
+        # committed before the cache is rebuilt; otherwise the IFC geometry read by
+        # the iterator will be stale and a moved roof/slab will not be picked up.
+        affected_classes = ifcopenshell.util.space.BOUNDING_CLASSES + ifcopenshell.util.space.HEIGHT_DETECTION_CLASSES
         for obj in bpy.context.visible_objects:
             element = tool.Ifc.get_entity(obj)
-            if element is None or not any(element.is_a(c) for c in ifcopenshell.util.space.BOUNDING_CLASSES):
+            if element is None or not any(element.is_a(c) for c in affected_classes):
                 continue
             tool.Geometry.commit_placement_if_moved(obj)
         cls._geom_cache.clear()
@@ -919,6 +926,109 @@ class Spatial(bonsai.core.tool.Spatial):
         cache = cls.get_or_build_geom_cache()
         return ifcopenshell.util.space.get_auto_space_height(
             tool.Ifc.get(), cache["shapes"], space_polygon, base_z, bounding_walls
+        )
+
+    @classmethod
+    def get_space_volume_strategy(
+        cls,
+        space_polygon: shapely.Polygon,
+        base_z: float,
+        bounding_walls: list[ifcopenshell.entity_instance],
+        container: Optional[ifcopenshell.entity_instance] = None,
+    ) -> tuple[str, Optional[list], Optional[list]]:
+        """Decide how to build the space volume (clipped extrusion or B-rep).
+
+        Rays are cast from the RL cut elevation (``container_z + props.rl3``), the
+        same level at which the space footprint polygon was found.
+        """
+        ifc_file = tool.Ifc.get()
+        cache = cls.get_or_build_geom_cache()
+        start_z = None
+        if container is None:
+            container = tool.Root.get_default_container()
+        if container is not None:
+            container_obj = tool.Ifc.get_object(container)
+            props = tool.Model.get_model_props()
+            start_z = container_obj.matrix_world.translation.z + props.rl3
+        tree = ifcopenshell.geom.tree(ifc_file)
+        settings = ifcopenshell.geom.settings()
+        settings.set("disable-opening-subtractions", True)
+        settings.set("use-world-coords", True)
+        tree.add_file(ifc_file, settings)
+        return ifcopenshell.util.space.detect_space_volume_strategy(
+            ifc_file, cache["shapes"], tree, space_polygon, base_z, bounding_walls, start_z=start_z
+        )
+
+    @classmethod
+    def _get_or_create_body_context(cls, ifc_file: ifcopenshell.file) -> ifcopenshell.entity_instance:
+        """Return the Model/Body/MODEL_VIEW context, creating one if absent."""
+        context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+        if context is not None:
+            return context
+        # Some subcontexts may not expose the inherited ContextType value, so also
+        # search by ContextIdentifier/TargetView directly.
+        for ctx in ifc_file.by_type("IfcGeometricRepresentationSubContext"):
+            if ctx.ContextIdentifier == "Body" and getattr(ctx, "TargetView", None) == "MODEL_VIEW":
+                return ctx
+        # Create a minimal context if none exists.
+        model_context = ifcopenshell.util.representation.get_context(ifc_file, "Model")
+        if model_context is None:
+            model_context = ifc_file.createIfcGeometricRepresentationContext(
+                ContextType="Model",
+                CoordinateSpaceDimension=3,
+                Precision=1e-5,
+                WorldCoordinateSystem=ifc_file.createIfcAxis2Placement3D(
+                    ifc_file.createIfcCartesianPoint([0.0, 0.0, 0.0])
+                ),
+                TrueNorth=ifc_file.createIfcDirection([0.0, 1.0, 0.0]),
+            )
+        return ifc_file.createIfcGeometricRepresentationSubContext(
+            ParentContext=model_context,
+            ContextIdentifier="Body",
+            TargetView="MODEL_VIEW",
+            ContextType="Model",
+        )
+
+    @classmethod
+    def _remove_existing_body_representations(
+        cls, element: ifcopenshell.entity_instance
+    ) -> Optional[ifcopenshell.entity_instance]:
+        """Remove every existing Body representation from an element.
+
+        Returns the context of the first removed representation, or None.
+        """
+        ifc_file = tool.Ifc.get()
+        if element.Representation is None:
+            return None
+        body_reps = [r for r in element.Representation.Representations if r.RepresentationIdentifier == "Body"]
+        context = None
+        for rep in body_reps:
+            context = rep.ContextOfItems
+            ifcopenshell.api.geometry.unassign_representation(ifc_file, product=element, representation=rep)
+            ifcopenshell.api.geometry.remove_representation(ifc_file, representation=rep)
+        return context
+
+    @classmethod
+    def set_brep_representation_from_mesh(
+        cls,
+        obj: bpy.types.Object,
+        element: ifcopenshell.entity_instance,
+        item: ifcopenshell.entity_instance,
+    ) -> None:
+        """Assign a representation item (clipped solid or B-rep) to the element."""
+        ifc_file = tool.Ifc.get()
+        context = cls._remove_existing_body_representations(element)
+        if context is None:
+            context = cls._get_or_create_body_context(ifc_file)
+
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
+        new_body = builder.get_representation(context, item)
+        ifcopenshell.api.geometry.assign_representation(ifc_file, product=element, representation=new_body)
+        bonsai.core.geometry.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=new_body,
         )
 
     @classmethod
@@ -1232,13 +1342,9 @@ class Spatial(bonsai.core.tool.Spatial):
         curve = builder.polyline(coords_2d, closed=True)
         item = builder.extrude(curve, magnitude=depth_ifc)
 
-        old_body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        if old_body:
-            context = old_body.ContextOfItems
-            ifcopenshell.api.geometry.unassign_representation(ifc_file, product=element, representation=old_body)
-            ifcopenshell.api.geometry.remove_representation(ifc_file, representation=old_body)
-        else:
-            context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+        context = cls._remove_existing_body_representations(element)
+        if context is None:
+            context = cls._get_or_create_body_context(ifc_file)
 
         new_body = builder.get_representation(context, item)
         ifcopenshell.api.geometry.assign_representation(ifc_file, product=element, representation=new_body)
@@ -1257,13 +1363,104 @@ class Spatial(bonsai.core.tool.Spatial):
         poly: Polygon,
         h: float,
         polygon_is_si: bool = True,
+        bounding_walls: Optional[list[ifcopenshell.entity_instance]] = None,
+        container: Optional[ifcopenshell.entity_instance] = None,
     ) -> None:
         """Create or replace the IFC body representation of a space from a polygon.
 
         :param h: The height in SI (meters).
         """
+        # Remove collinear points introduced by the mesh bisection so the
+        # footprint polygon has a minimal vertex count.
+        poly = poly.simplify(0, preserve_topology=True)
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        cls.set_extrusion_representation_from_polygon(obj, element, poly, h / unit_scale, polygon_is_si)
+        ifc_file = tool.Ifc.get()
+        x, y, z = obj.matrix_world.translation
+        origin = obj.matrix_world.translation  # Blender SI
+        # The space builders expect base_z and polygon in SI (world) units.
+        base_z = z
+        poly_si = poly if polygon_is_si else shapely.affinity.scale(poly, unit_scale, unit_scale, origin=(0, 0))
+
+        # Ensure the IFC entity has an ObjectPlacement matching the Blender object,
+        # so the generated representation is in the correct local coordinate system.
+        bpy.context.view_layer.update()
+        matrix = np.array(obj.matrix_world)
+        ifcopenshell.api.geometry.edit_object_placement(
+            ifc_file,
+            product=element,
+            matrix=matrix,
+            is_si=True,
+        )
+
+        for b in list(element.BoundedBy or []):
+            ifcopenshell.api.boundary.remove_boundary(ifc_file, b)
+
+        cls._remove_existing_body_representations(element)
+
+        if cls.get_spatial_props().force_space_height:
+            cls.set_extrusion_representation_from_polygon(obj, element, poly, h / unit_scale, polygon_is_si)
+            return
+        if bounding_walls is None:
+            bounding_walls = []
+            if container is None:
+                container = ifcopenshell.util.element.get_container(element)
+            if container is not None:
+                for wall in ifc_file.by_type("IfcWall"):
+                    if wall in ifcopenshell.util.element.get_decomposition(container):
+                        bounding_walls.append(wall)
+
+        # Detect planes in world SI (same coordinate system as the geom cache).
+        strategy, top_planes, bottom_planes = cls.get_space_volume_strategy(poly_si, base_z, bounding_walls, container)
+
+        # Build the geometry in the space's local coordinate system so the IFC
+        # representation is relative to the object's ObjectPlacement.
+        # Use the full inverse of the object's placement matrix so rotated spaces
+        # keep the correct footprint orientation.
+        matrix_inv = np.array(obj.matrix_world.inverted())
+        # shapely.affine_transform expects [a, b, d, e, xoff, yoff]
+        # where x' = a*x + b*y + xoff, y' = d*x + e*y + yoff.
+        affine_params = [
+            matrix_inv[0, 0],
+            matrix_inv[0, 1],
+            matrix_inv[1, 0],
+            matrix_inv[1, 1],
+            matrix_inv[0, 3],
+            matrix_inv[1, 3],
+        ]
+        local_poly_si = shapely.affinity.affine_transform(poly_si, affine_params)
+        local_base_z = base_z - origin.z
+
+        def localize_plane(plane):
+            point, normal = plane
+            local_point = matrix_inv @ np.array([*point, 1.0])
+            rotation_inv = matrix_inv[:3, :3]
+            local_normal = rotation_inv @ np.array(normal)
+            local_normal = local_normal / np.linalg.norm(local_normal)
+            return (local_point[:3], local_normal)
+
+        local_top_planes = [localize_plane(p) for p in (top_planes or [])]
+        local_bottom_planes = [localize_plane(p) for p in (bottom_planes or [])]
+
+        if strategy == "EXTRUDE_CLIP" and top_planes:
+            item = ifcopenshell.util.space.build_extruded_clipped_space(
+                ifc_file, local_poly_si, local_base_z, local_top_planes, local_bottom_planes
+            )
+            cls.set_brep_representation_from_mesh(obj, element, item)
+        else:
+            shapes = cls.get_or_build_geom_cache()["shapes"]
+            local_shapes = {}
+            for shape_id, shape_data in shapes.items():
+                local_shape_data = dict(shape_data)
+                local_shape_data["top_z"] = shape_data["top_z"] - origin.z
+                local_shape_data["bottom_z"] = shape_data["bottom_z"] - origin.z
+                local_shapes[shape_id] = local_shape_data
+            item = ifcopenshell.util.space.build_brep_space(
+                ifc_file, element, local_shapes, local_poly_si, local_base_z
+            )
+            if item is None:
+                cls.set_extrusion_representation_from_polygon(obj, element, poly, h / unit_scale, polygon_is_si)
+            else:
+                cls.set_brep_representation_from_mesh(obj, element, item)
 
     @classmethod
     def set_obj_origin_to_cursor_position_and_zero_elevation(cls, obj: bpy.types.Object) -> None:
