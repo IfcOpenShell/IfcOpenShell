@@ -180,7 +180,7 @@ def _vertical_label(prev_segment: entity_instance, segment: entity_instance) -> 
             "CONSTANTGRADIENT": {
                 "CIRCULARARC": "xx",
                 "CLOTHOID": "xx",
-                "CONSTANTGRADIENT": "P.V.I",
+                "CONSTANTGRADIENT": "P.V.I.",
                 "PARABOLICARC": "P.V.C.",
             },
             "PARABOLICARC": {
