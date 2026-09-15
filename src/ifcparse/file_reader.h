@@ -183,6 +183,22 @@ public:
         }
     }
 
+    // The current contiguous bytes, valid until the shared page cache evicts
+    // them. An empty span asks callers to use the regular reader operations.
+    IFC_READER_INLINE std::pair<const char*, size_t> span() const {
+        if (eof()) {
+            return {nullptr, 0};
+        }
+        if constexpr (std::is_same_v<Impl, paged_file_impl>) {
+            const char* data = cached_(cursor_, 1);
+            return {data, cached_end_ - cursor_};
+        } else if constexpr (std::is_same_v<Impl, pushed_sequential_impl>) {
+            return {nullptr, 0};
+        } else {
+            return {impl_->data() + cursor_, remaining()};
+        }
+    }
+
     IFC_READER_INLINE char peek() const {
         if (cursor_ >= size()) {
             throw std::out_of_range("peek at EOF");

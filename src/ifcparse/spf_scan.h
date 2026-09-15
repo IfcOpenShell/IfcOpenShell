@@ -158,6 +158,10 @@ IFC_SWAR_INLINE uint32_t has_special_char(uint32_t x) {
 }
 
 
+inline bool is_token_delimiter(char c) {
+    return c == '(' || c == ')' || c == '=' || c == ',' || c == ';' || c == '/';
+}
+
 // One pass over the tokens from the cursor, handing each to the consumer
 // without building a token; each callback returns whether to go on. The
 // consumer's constexpr flags decide what is decoded: decode_strings (else a
@@ -223,6 +227,26 @@ void spf_lexer<Reader>::scan(Consumer& consumer) {
             continue;
         }
 
+        // Parse names directly when the complete spelling is in this span.
+        // Whitespace, page splits and invalid names use the normal token loop.
+        if (character == '#') {
+            const auto span = stream->span();
+            if (span.second) {
+                const char* begin = span.first;
+                const char* end = begin + span.second;
+                const char* digits = begin + (*begin == '+');
+                int value;
+                const auto parsed = std::from_chars(digits, end, value);
+                if (parsed.ec == std::errc() && parsed.ptr != end && is_token_delimiter(*parsed.ptr)) {
+                    stream->increment(static_cast<size_t>(parsed.ptr - begin));
+                    if (!consumer.identifier(pos, static_cast<uint32_t>(value))) {
+                        return;
+                    }
+                    continue;
+                }
+            }
+        }
+
         auto ttype = token::Token_NONE;
         if (character == '"') {
             ttype = token::Token_BINARY;
@@ -272,12 +296,7 @@ void spf_lexer<Reader>::scan(Consumer& consumer) {
 
             // Read character and increment pointer if not starting a new token
             char c = stream->peek();
-            if (c == '(' ||
-                c == ')' ||
-                c == '=' ||
-                c == ',' ||
-                c == ';' ||
-                c == '/') {
+            if (is_token_delimiter(c)) {
                 break;
             }
             if (!(c == ' ' || c == '\r' || c == '\n' || c == '\t')) {
