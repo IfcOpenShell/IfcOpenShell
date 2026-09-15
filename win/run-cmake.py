@@ -23,6 +23,7 @@
 #
 import argparse
 import os
+import shutil
 import sys
 from itertools import chain
 from pathlib import Path
@@ -147,6 +148,7 @@ class Args(NamedTuple):
     generator: str | None
     add_commit_sha: bool
     use_ninja: bool
+    clean: bool
     extra_args: list[str]
 
 
@@ -201,6 +203,12 @@ def parse_args() -> Args:
             f"(default: {USE_NINJA_DEFAULT})"
         ),
     )
+    parser.add_argument(
+        "--clean",
+        dest="clean",
+        action="store_true",
+        help="Remove the existing build directory before running CMake.",
+    )
     argv = sys.argv[1:]
     if "--" in argv:
         separator_idx = argv.index("--")
@@ -223,6 +231,7 @@ def parse_args() -> Args:
         generator=generator,
         add_commit_sha=add_commit_sha,
         use_ninja=use_ninja,
+        clean=args.clean,
         extra_args=extra_args,
     )
 
@@ -282,6 +291,9 @@ def main() -> None:
     logger.info("")
 
     build_dir = REPO_ROOT / vs_cfg_vars.build_dir
+    if ARGS.clean and build_dir.exists():
+        logger.info(f"Removing existing build directory: {build_dir}")
+        shutil.rmtree(build_dir)
     build_dir.mkdir(parents=True, exist_ok=True)
 
     cmakelists_dir = REPO_ROOT / "cmake"
