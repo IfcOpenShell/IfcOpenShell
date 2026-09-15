@@ -198,8 +198,10 @@ ifcopenshell::geom::native_element* ifcopenshell::geom::converter::create_brep_f
 
 			if (opening_items.empty()) {
 				opened_shapes = shapes;
-			} else {
-				kernel_->convert_openings(product, opening_items, shapes, *place, opened_shapes);
+			} else if (!kernel_->convert_openings(product, opening_items, shapes, *place, opened_shapes)) {
+				// A clean `false` return is a failure just like a thrown exception.
+				logger_.message(ifcopenshell::logger::LOG_ERROR, "GEO", 34, "Error processing openings for:", product);
+				caught_error = true;
 			}
 		} catch (const std::exception& e) {
 			logger_.message(ifcopenshell::logger::LOG_ERROR, "GEO", 33, std::string("Error processing openings for: ") + e.what() + ":", product);
