@@ -148,6 +148,7 @@ PyObject* get_feature(const std::string& x) {
 
 #include <fstream>
 #include <random>
+#include <unordered_set>
 
 // Atomic IFC/STEP write (issue #4797): serialize to a temporary file next to
 // the destination, then atomically rename it onto the destination. If the
@@ -314,6 +315,33 @@ private:
 			return $self->get_inverse_indices_by_id(e_.id()).size();
 		}
 		throw ifcopenshell::exception("Only entities with ids are supported for get_total_inverses. Provided entity: '" + e.declaration().name() + "'.");
+	}
+
+	// True iff every instance referencing e has an id in ids. Stops at the
+	// first referencing instance outside the set, without materializing any.
+	bool _all_inverses_within(const express::base& e, const std::vector<int>& ids) {
+		auto e_ = e.as<express::entity>();
+		if (!e_) {
+			throw ifcopenshell::exception("Only entities with ids are supported for _all_inverses_within. Provided entity: '" + e.declaration().name() + "'.");
+		}
+		const std::unordered_set<uint32_t> allowed(ids.begin(), ids.end());
+		return $self->all_referencing_instances(e_.id(), [&allowed](uint32_t source_id) {
+			return allowed.count(source_id) != 0;
+		});
+	}
+
+	// The subset of ids whose every referencing instance is itself in ids:
+	// one crossing in, one crossing out, early exit per id.
+	std::vector<int> _ids_referenced_only_within(const std::vector<int>& ids) {
+		const std::unordered_set<uint32_t> allowed(ids.begin(), ids.end());
+		const auto within = [&allowed](uint32_t source_id) { return allowed.count(source_id) != 0; };
+		std::vector<int> contained;
+		for (int id : ids) {
+			if ($self->all_referencing_instances(id, within)) {
+				contained.push_back(id);
+			}
+		}
+		return contained;
 	}
 
 	void _write(const std::string& fn) {

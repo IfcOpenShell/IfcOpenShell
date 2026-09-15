@@ -592,6 +592,27 @@ namespace ifcopenshell {
                 return n;
             }
 
+            // True iff pred accepts the source of every live record
+            // referencing referenced_id. Stops at the first rejection.
+            template <typename Pred>
+            bool all_sources(uint32_t referenced_id, Pred&& pred) const {
+                auto range = base_range(referenced_id);
+                for (auto it = range.first; it != range.second; ++it) {
+                    if (!is_dead(*it) && !pred(it->source_id)) {
+                        return false;
+                    }
+                }
+                auto bucket = delta_.find(referenced_id);
+                if (bucket != delta_.end()) {
+                    for (const auto& record : bucket->second) {
+                        if (!pred(record.source_id)) {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
+
             bool empty() const {
                 return size() == 0;
             }
