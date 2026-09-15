@@ -6,22 +6,24 @@
 # ///
 
 import os
+from typing import Any
 
-from binstar_client.errors import BinstarError
-from binstar_client.utils import get_server_api
+from binstar_client import Binstar  # ty: ignore[unresolved-import]
+from binstar_client.errors import BinstarError  # ty: ignore[unresolved-import]
+from binstar_client.utils import get_server_api  # ty: ignore[unresolved-import]
 
 # Configuration
-api_token = os.environ.get("ANACONDA_TOKEN")
+api_token = os.environ["ANACONDA_TOKEN"]
 pkg_name = "ifcopenshell"
 channel_name = "ifcopenshell"
 number_of_supported_versions = int(os.environ["NUM_SUPPORTED_VERSIONS"])
 
 # Authenticate with Anaconda
-aserver_api = get_server_api(token=api_token)
+aserver_api: Binstar = get_server_api(token=api_token)
 
 
 # Get the list of packages in the channel
-def get_package(filter_package_name: str = None):
+def get_package(filter_package_name: str | None = None) -> dict[str, Any]:
     try:
         user_packages = aserver_api.user_packages(channel_name)
         if filter_package_name:
@@ -39,7 +41,7 @@ def get_package(filter_package_name: str = None):
 
 
 # Delete a package version
-def delete_package(package_name, version):
+def delete_package(package_name: str, version: str) -> None:
     try:
         aserver_api.remove_release(channel_name, package_name, version)
         print(f"Deleted {package_name} version {version}")
@@ -48,12 +50,8 @@ def delete_package(package_name, version):
 
 
 # Main logic
-def main():
+def main() -> None:
     package = get_package(pkg_name)
-    if not package:
-        print("No packages found.")
-        return
-
     package_name = package["name"]
     versions = package["versions"]
     if len(versions) <= number_of_supported_versions:
