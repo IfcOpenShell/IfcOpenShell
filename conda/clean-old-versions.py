@@ -1,3 +1,10 @@
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#     "anaconda-client==1.12.3",
+# ]
+# ///
+
 import os
 
 from binstar_client.errors import BinstarError

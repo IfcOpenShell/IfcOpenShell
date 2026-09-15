@@ -18,20 +18,13 @@ env:
 jobs:
   activate:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash -l {0}
     if: |
       github.repository == 'IfcOpenShell/IfcOpenShell'
     steps:
       - uses: actions/checkout@v7
 
-      - uses: mamba-org/setup-micromamba@v3 # https://github.com/mamba-org/setup-micromamba
-        with:
-          environment-name: test-env
-          create-args: >-
-            python=3.11
-            anaconda-client=1.12.3
+      - name: Set up uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
 
       - name: Run conda cleaner
-        run: python conda/clean-old-versions.py
+        run: uv run --script conda/clean-old-versions.py
