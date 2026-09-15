@@ -21,6 +21,7 @@
 #                                                                             #
 ###############################################################################
 #
+import datetime
 import os
 import re
 import shutil
@@ -917,7 +918,8 @@ def install_qt6(
 
 def python_consider_rc(python_version: str) -> str:
     # TODO: remove after Python 3.15 release.
-    if python_version == "3.15.0":
+    # Python 3.15.0 is released on 2026-10-01, before that only rc builds are available.
+    if python_version == "3.15.0" and datetime.date.today() < datetime.date(2026, 10, 2):
         python_version += "-rc2"
     return python_version
 

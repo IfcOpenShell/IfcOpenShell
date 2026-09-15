@@ -1380,7 +1380,8 @@ if "OpenCOLLADA" in targets:
 
 def python_consider_rc(python_version: str) -> str:
     # TODO: remove after Python 3.15 release.
-    if python_version == "3.15.0":
+    # Python 3.15.0 is released on 2026-10-01, before that only rc builds are available.
+    if python_version == "3.15.0" and date.today() < date(2026, 10, 2):
         python_version += "rc2"
     return python_version
 
