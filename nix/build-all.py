@@ -1026,9 +1026,6 @@ def install_qt6() -> str:
 
 cecho("Collecting dependencies:", GREEN)
 
-# Set compiler flags for 32bit builds on 64bit system
-# TODO: This is untested
-
 ADDITIONAL_ARGS = []
 
 if APPLE:
