@@ -21,6 +21,9 @@ public:
     int operator()(const empty_aggregate& /*unused*/) const { return 0; }
     int operator()(const empty_aggregate_of_aggregate& /*unused*/) const { return 0; }
     int operator()(const std::vector<int64_t>& i) const { return (int)i.size(); }
+    int operator()(const instance_reference& /*i*/) const { return -1; }
+    int operator()(const std::vector<reference_or_simple_type>& i) const { return (int)i.size(); }
+    int operator()(const std::vector<std::vector<reference_or_simple_type>>& i) const { return (int)i.size(); }
     int operator()(const std::vector<double>& i) const { return (int)i.size(); }
     int operator()(const std::vector<std::vector<int64_t>>& i) const { return (int)i.size(); }
     int operator()(const std::vector<std::vector<double>>& i) const { return (int)i.size(); }

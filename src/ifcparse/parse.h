@@ -51,6 +51,23 @@ IFC_PARSE_API std::string encode_spf_string(const std::string& value);
 
 IFC_PARSE_API std::string decode_spf_string(const std::string& value);
 
+/// What a pass over the tokens has to produce. The parser needs every
+/// value; the lazy index only needs to know where the tokens are and which
+/// of them are instance names, so it ends strings without decoding them and
+/// passes over numbers, enumerations and binaries. The choice is a template
+/// parameter of spf_lexer::next(), so each pass compiles to its own loop.
+struct full_tokens {
+    static constexpr bool decode_strings = true;
+    static constexpr bool decode_values = true;
+    static constexpr bool keep_keywords = true;
+};
+struct index_tokens {
+    static constexpr bool decode_strings = false;
+    static constexpr bool decode_values = false;
+    static constexpr bool keep_keywords = true;
+};
+
+
 /// A stream of tokens to be read from a file_reader.
 template <typename Reader>
 class IFC_PARSE_API spf_lexer {
@@ -82,6 +99,15 @@ class IFC_PARSE_API spf_lexer {
     Reader* stream;
     // file* file;
     spf_lexer(Reader* stream, ifcopenshell::logger& logger = ifcopenshell::logger::root());
+    // The tokenizer: every token from the cursor on is handed to the
+    // consumer's callbacks, which inline into the loop; see spf_scan.h.
+    template <typename Consumer>
+    void scan(Consumer& consumer);
+    // The next token, through scan() with a consumer that stops after one.
+    // With index_tokens a string, number, enumeration or binary comes back
+    // as Token_LITERAL (Token_STRING for a string) with only its position;
+    // names, keywords and operators are always read.
+    template <typename Policy = full_tokens>
     token next();
     ~spf_lexer();
     // void TokenString(size_t offset, std::string& result);
@@ -93,5 +119,7 @@ IFC_PARSE_API std::vector<express::base> traverse_breadth_first(const express::b
 } // namespace ifcopenshell
 
 IFC_PARSE_API std::ostream& operator<<(std::ostream& stream, const ifcopenshell::file& file);
+
+#include "spf_scan.h"
 
 #endif
