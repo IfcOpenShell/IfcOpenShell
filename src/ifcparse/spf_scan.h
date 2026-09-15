@@ -223,20 +223,22 @@ void spf_lexer<Reader>::scan(Consumer& consumer) {
             continue;
         }
 
-        auto& str = get_temp_string();
         auto ttype = token::Token_NONE;
-        if (character == '"' || character == '.') {
-            if (character == '"') {
-                ttype = token::Token_BINARY;
-            } else {
-                ttype = token::Token_ENUMERATION;
-            }
-            str.clear();
+        if (character == '"') {
+            ttype = token::Token_BINARY;
+        } else if (character == '.') {
+            ttype = token::Token_ENUMERATION;
         } else if (character == '#') {
             ttype = token::Token_IDENTIFIER;
-            str.clear();
-        } else {
-            str.assign(&character, 1);
+        }
+        std::string* text = nullptr;
+        if (Consumer::keep_keywords || ttype == token::Token_IDENTIFIER) {
+            text = &get_temp_string();
+            if (ttype == token::Token_NONE) {
+                text->assign(&character, 1);
+            } else {
+                text->clear();
+            }
         }
 
         auto remaining = stream->remaining();
@@ -245,7 +247,7 @@ void spf_lexer<Reader>::scan(Consumer& consumer) {
                 uint64_t x = stream->peek_u64();
                 if ((ttype == token::Token_NONE ? SWAR::has_special_char<false>(x) : SWAR::has_special_char<true>(x)) == 0) {
                     if (Consumer::keep_keywords || ttype == token::Token_IDENTIFIER) {
-                        str.append(reinterpret_cast<const char*>(&x), 8);
+                        text->append(reinterpret_cast<const char*>(&x), 8);
                     }
                     stream->increment(8);
                     remaining -= 8;
@@ -256,7 +258,7 @@ void spf_lexer<Reader>::scan(Consumer& consumer) {
                 uint32_t x = stream->peek_u32();
                 if ((ttype == token::Token_NONE ? SWAR::has_special_char<false>(x) : SWAR::has_special_char<true>(x)) == 0) {
                     if (Consumer::keep_keywords || ttype == token::Token_IDENTIFIER) {
-                        str.append(reinterpret_cast<const char*>(&x), 4);
+                        text->append(reinterpret_cast<const char*>(&x), 4);
                     }
                     stream->increment(4);
                     remaining -= 4;
@@ -279,7 +281,7 @@ void spf_lexer<Reader>::scan(Consumer& consumer) {
                     (ttype == token::Token_ENUMERATION && c == '.')) {
                     // Skip
                 } else if (Consumer::keep_keywords || ttype == token::Token_IDENTIFIER) {
-                    str.push_back(c);
+                    text->push_back(c);
                 }
             }
             stream->increment();
@@ -287,6 +289,7 @@ void spf_lexer<Reader>::scan(Consumer& consumer) {
         }
 
         if (ttype == token::Token_IDENTIFIER) {
+            auto& str = *text;
             int int_val;
             if (!parse_num_(str.c_str(), str.size(), int_val)) {
                 throw invalid_token_exception(pos, str, "instance name");
@@ -302,6 +305,7 @@ void spf_lexer<Reader>::scan(Consumer& consumer) {
             // Only names and keywords are read; everything else is a literal
             // whose position is all the consumer wants.
             if constexpr (Consumer::keep_keywords) {
+                auto& str = *text;
                 if (ttype == token::Token_NONE && !str.empty()) {
                     const char first = str.front();
                     if ((first >= 'A' && first <= 'Z') || (first >= 'a' && first <= 'z')) {
@@ -312,12 +316,15 @@ void spf_lexer<Reader>::scan(Consumer& consumer) {
                     }
                 }
             }
-            pop_pool_entry();
+            if constexpr (Consumer::keep_keywords) {
+                pop_pool_entry();
+            }
             if (!consumer.literal(pos)) {
                 return;
             }
             continue;
         } else {
+            auto& str = *text;
             if (ttype == token::Token_ENUMERATION && str.size() == 1 && (str[0] == 'T' || str[0] == 'F' || str[0] == 'U')) {
                 pop_pool_entry();
                 if (!consumer.boolean(pos, str[0])) {
