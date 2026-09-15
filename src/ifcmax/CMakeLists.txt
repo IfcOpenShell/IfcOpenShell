@@ -47,7 +47,6 @@ if(HAS_MAX)
             ${IfcOpenShell_BINARY_DIR}
             ${OPENCOLLADA_LIBRARY_DIR}
             ${ICU_LIBRARY_DIR}
-            ${Boost_LIBRARY_DIRS}
             ${max_sdk}/lib/x64/Release
         )
 
@@ -57,6 +56,7 @@ if(HAS_MAX)
         target_link_libraries(
             IfcMax_${max_year}
             ${IFCOPENSHELL_LIBRARIES}
+            ${Boost_LIBRARIES}
             bmm.lib
             Comctl32.lib
             core.lib
