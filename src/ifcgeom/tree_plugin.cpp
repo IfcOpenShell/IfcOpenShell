@@ -21,6 +21,10 @@
 
 #include <boost/algorithm/string/case_conv.hpp>
 
+#ifdef __EMSCRIPTEN__
+#include <dlfcn.h>
+#endif
+
 #include <algorithm>
 
 namespace ifcopenshell {
@@ -70,11 +74,29 @@ void ifcopenshell::geom::trees::load_tree_plugins(tree_registry& registry) {
 }
 
 bool ifcopenshell::geom::trees::load_tree_plugin(tree_registry& registry, const std::string& backend_id) {
-	plugin::manager manager;
-	plugin::add_search_paths_or_default(manager, &tree_plugin_directory);
-
 	const auto plugin_name = tree_plugin_name(backend_id);
 	const auto basename = std::string(tree_plugin_prefix) + plugin_name;
+
+#ifdef __EMSCRIPTEN__
+	auto emscripten_id = plugin_name;
+	std::replace(emscripten_id.begin(), emscripten_id.end(), '.', '_');
+	using emscripten_register_fn = void (*)(tree_registry*);
+	const auto emscripten_symbol = std::string("ifcopenshell_emscripten_register_tree_") + emscripten_id;
+	if (auto* register_ptr = dlsym(RTLD_DEFAULT, emscripten_symbol.c_str())) {
+		union {
+			void* ptr;
+			emscripten_register_fn fn;
+		} register_symbol;
+		register_symbol.ptr = register_ptr;
+		if (register_symbol.fn) {
+			register_symbol.fn(&registry);
+			return registry.has(backend_id);
+		}
+	}
+#endif
+
+	plugin::manager manager;
+	plugin::add_search_paths_or_default(manager, &tree_plugin_directory);
 
 	for (const auto& path : manager.discover_exact(basename)) {
 		auto module = manager.load(path);
