@@ -752,3 +752,81 @@ def get_total_edge_length(geometry: W.triangulation) -> float:
     vertices = get_vertices(geometry)
     vertices = vertices[get_edges(geometry)]
     return np.linalg.norm(vertices[:, 1] - vertices[:, 0], axis=1).sum().item()
+
+
+def _extend_line(start: np.ndarray, end: np.ndarray, distance: float) -> tuple[np.ndarray, np.ndarray]:
+    """Extend a line segment by a fixed distance on both ends.
+
+    :param start: (x, y) or (x, y, z) array.
+    :param end: (x, y) or (x, y, z) array.
+    :param distance: Distance to extend on each end.
+    :return: (new_start, new_end) arrays.
+    """
+    direction = end - start
+    norm = np.linalg.norm(direction)
+    if norm == 0:
+        return start, end
+    offset = distance * (direction / norm)
+    return start - offset, end + offset
+
+
+def bisect_mesh_plane_vf(
+    verts: npt.NDArray[np.float64],
+    faces: npt.NDArray[np.int32],
+    plane_z: float,
+    *,
+    precision: int = 3,
+    extend: float = 0.0,
+) -> list:
+    """Intersect a triangulated mesh with a horizontal Z plane.
+
+    All faces are processed at once via numpy broadcasting for performance.
+
+    :param verts: (n, 3) array of vertices in world coordinates.
+    :param faces: (m, 3) array of triangle vertex indices.
+    :param plane_z: Z elevation of the horizontal cutting plane.
+    :param precision: Decimal places to round intersection point coordinates to.
+    :param extend: Distance to extend each segment on both ends, to ensure
+        overlap with neighbouring segments for polygon closure.
+    :return: List of (start_xy, end_xy) tuples where each coordinate is (x, y).
+    """
+    if len(faces) == 0:
+        return []
+    v0 = verts[faces[:, 0]]
+    v1 = verts[faces[:, 1]]
+    v2 = verts[faces[:, 2]]
+    d0 = v0[:, 2] - plane_z
+    d1 = v1[:, 2] - plane_z
+    d2 = v2[:, 2] - plane_z
+    straddle = ~((np.minimum(np.minimum(d0, d1), d2) > 0) | (np.maximum(np.maximum(d0, d1), d2) < 0))
+    if not np.any(straddle):
+        return []
+    idx = np.where(straddle)[0]
+    d0s, d1s, d2s = d0[idx], d1[idx], d2[idx]
+    v0s, v1s, v2s = v0[idx], v1[idx], v2[idx]
+
+    def _edge_intersections(va, vb, da, db):
+        mask = da * db < 0
+        diff = da - db
+        diff = np.where(diff == 0, 1.0, diff)
+        t = np.where(mask, da / diff, 0.0)
+        pts = va + t[:, np.newaxis] * (vb - va)
+        return pts, mask
+
+    p01, m01 = _edge_intersections(v0s, v1s, d0s, d1s)
+    p12, m12 = _edge_intersections(v1s, v2s, d1s, d2s)
+    p20, m20 = _edge_intersections(v2s, v0s, d2s, d0s)
+
+    segments = []
+    for i in range(len(idx)):
+        pts_xy = []
+        for pt, mask in ((p01[i], m01[i]), (p12[i], m12[i]), (p20[i], m20[i])):
+            if mask:
+                pts_xy.append((round(float(pt[0]), precision), round(float(pt[1]), precision)))
+        if len(pts_xy) == 2 and pts_xy[0] != pts_xy[1]:
+            if extend > 0:
+                s, e = _extend_line(np.array(pts_xy[0]), np.array(pts_xy[1]), extend)
+                segments.append((s.tolist(), e.tolist()))
+            else:
+                segments.append(pts_xy)
+    return segments
