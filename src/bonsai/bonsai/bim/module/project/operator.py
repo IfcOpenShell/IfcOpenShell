@@ -1973,6 +1973,29 @@ class SelectLinkedModelElement(bpy.types.Operator):
         return {"FINISHED"}
 
 
+def save_blend_file_with_retries(filepath: str, attempts: int = 5, delay: float = 0.2) -> Union[str, None]:
+    """Save the current .blend, retrying while another process briefly holds it open.
+
+    Blender writes to "<file>.blend@" and then renames it over the .blend. On Windows
+    that rename fails while a sync client (Dropbox, OneDrive) or antivirus has the file
+    open, usually for well under a second, raising "Cannot change old file (file saved
+    with @)".
+
+    :return: None on success, otherwise the error from the last attempt.
+    """
+    error = None
+    for attempt in range(1, attempts + 1):
+        try:
+            bpy.ops.wm.save_mainfile(filepath=filepath)
+            return None
+        except RuntimeError as e:
+            error = str(e).strip()
+            print(f"Bonsai: saving {filepath} failed (attempt {attempt} of {attempts}): {error}")
+            if attempt < attempts:
+                time.sleep(delay)
+    return error
+
+
 class ExportIFC(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.save_project"
     bl_label = "Save IFC"
@@ -2150,12 +2173,17 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
                 self.report({"ERROR"}, f"Failed to save blend metadata file: {e}")
         else:
             save_blend_file = bool(bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath)
-            if save_blend_file:
-                bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
-            self.report(
-                {"INFO"},
-                f'IFC Project "{os.path.basename(output_file)}" {"" if not save_blend_file else "And Current Blend File Are"} Saved{commit_suffix}',
-            )
+            if save_blend_file and (error := save_blend_file_with_retries(bpy.data.filepath)):
+                # The IFC is already written, so don't abort the save over the .blend.
+                self.report(
+                    {"WARNING"},
+                    f'IFC Project "{os.path.basename(output_file)}" Saved{commit_suffix}, but the Blend File could not be saved: {error}',
+                )
+            else:
+                self.report(
+                    {"INFO"},
+                    f'IFC Project "{os.path.basename(output_file)}" {"" if not save_blend_file else "And Current Blend File Are"} Saved{commit_suffix}',
+                )
 
         bonsai.bim.handler.refresh_ui_data()
         tool.Autosave.reset_timer()
