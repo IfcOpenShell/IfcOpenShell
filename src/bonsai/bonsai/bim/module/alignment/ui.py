@@ -291,6 +291,7 @@ class ALIGN_PT_alignment_authoring(Panel):
         row = col.row(align=True)
         row.enabled = bool(alignment)
         row.operator("align.draw_horizontal_alignment", icon="EYEDROPPER")
+        row.operator("align.edit_horizontal_pis", text="", icon="EMPTY_AXIS")
         row.operator("align.remove_alignment", text="", icon="TRASH")
         if not alignment:
             col.label(text="Add or select an alignment first", icon="INFO")
@@ -348,7 +349,9 @@ class ALIGN_PT_vertical_alignment_authoring(Panel):
         props = context.scene.CivilAlignmentProperties
 
         col = layout.column(align=True)
-        col.operator("align.draw_vertical_alignment", icon="EYEDROPPER")
+        row = col.row(align=True)
+        row.operator("align.draw_vertical_alignment", icon="EYEDROPPER")
+        row.operator("align.load_vertical_pis", text="", icon="EMPTY_AXIS")
 
         if props.vertical_pi_markers:
             box = layout.box()
@@ -517,6 +520,7 @@ class ALIGN_PT_alignment_segments(Panel):
                 "align.show_vertical_profile", text="",
                 icon="GRAPH", depress=dec.is_installed,
             )
+            row.prop(props, "vertical_exaggeration", text="VE")
 
         for layout_entity in all_verticals:
             self._draw_vertical(layout, context, layout_entity)
@@ -695,6 +699,18 @@ class ALIGN_PT_alignment_segments(Panel):
         )
         edit_op.layout_id = v_id
 
+        is_editing_pi = props.editing_vertical_pi_layout_id == v_id and bool(props.vertical_pi_markers)
+        pi_op = row.operator(
+            "align.load_vertical_pis", text="", icon="EMPTY_AXIS", depress=is_editing_pi,
+        )
+        pi_op.layout_id = v_id
+
+        # Only shown once this vertical's PIs are loaded -- the button that ends the
+        # edit lives right next to the one that started it, rather than only in the
+        # (separate, collapsed-by-default) Vertical Alignment panel below.
+        if is_editing_pi:
+            row.operator("align.clear_vertical_pi_markers", text="", icon="X")
+
         if not expanded:
             return
 
@@ -723,6 +739,8 @@ class ALIGN_PT_alignment_segments(Panel):
                 continue
             seg_type = dp.PredefinedType or "?"
             h_len = getattr(dp, "HorizontalLength", 0.0) or 0.0
+            if h_len == 0.0:
+                continue  # zero-length terminators are invisible to users
             g_start = getattr(dp, "StartGradient", 0.0) or 0.0
             g_end = getattr(dp, "EndGradient", 0.0) or 0.0
             dist_along = getattr(dp, "StartDistAlong", None)
@@ -828,6 +846,8 @@ class ALIGN_PT_alignment_segments(Panel):
             h_len = getattr(dp, "HorizontalLength", None)
             if h_len is None:
                 h_len = getattr(dp, "Length", 0.0) or 0.0
+            if h_len == 0.0:
+                continue  # zero-length terminators are invisible to users
             start_l = getattr(dp, "StartCantLeft", None) or 0.0
             start_r = getattr(dp, "StartCantRight", None) or 0.0
             end_l = getattr(dp, "EndCantLeft", None)
