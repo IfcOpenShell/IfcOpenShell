@@ -17,6 +17,9 @@ Utility for applying modification recipes to IFC files. IfcPatch enables program
 - **ConvertPropertiesToQuantities** - Convert properties to quantities
 - **Migrate** - Migrate between IFC schema versions
 
+### Drawings and Documentation
+- **GenerateGeneralArrangementDrawings** - Generate General Arrangement plans, elevations and sheets for each building
+
 ### Element Extraction and Manipulation
 - **ExtractElements** - Extract specific elements into a new model
 - **ExtractPropertiesToSQLite** - Export properties to SQLite database
