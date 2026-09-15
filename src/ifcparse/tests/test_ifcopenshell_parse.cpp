@@ -302,12 +302,26 @@ struct recording_consumer {
     static constexpr bool decode_values = false;
     static constexpr bool keep_keywords = false;
     std::vector<std::pair<size_t, char>> seen;
-    bool operator_(size_t pos, char c) { seen.push_back({pos, c}); return true; }
-    bool identifier(size_t pos, uint32_t) { seen.push_back({pos, '#'}); return true; }
-    bool string(size_t pos, size_t) { seen.push_back({pos, '\''}); return true; }
-    bool literal(size_t pos) { seen.push_back({pos, 'L'}); return true; }
+    std::vector<uint32_t> identifiers;
+    bool operator_(size_t pos, char c) {
+        seen.push_back({pos, c});
+        return true;
+    }
+    bool identifier(size_t pos, uint32_t value) {
+        seen.push_back({pos, '#'});
+        identifiers.push_back(value);
+        return true;
+    }
+    bool string(size_t pos, size_t) {
+        seen.push_back({pos, '\''});
+        return true;
+    }
+    bool literal(size_t pos) {
+        seen.push_back({pos, 'L'});
+        return true;
+    }
 };
-}
+} // namespace
 
 TEST_CASE("The index token policy ends every token where the full policy does, without decoding", "[ifcparse]") {
     // Doubled quotes, a \S\' escape (an apostrophe as the page character,
@@ -380,6 +394,62 @@ TEST_CASE("The index token policy ends every token where the full policy does, w
     CHECK(lexer.next().as_string() == "it's");
     lexer.next();
     CHECK(lexer.next().as_string() == "a\xc2\xa7" "b");
+}
+
+TEST_CASE("Scanning preserves identifiers and token boundaries across reader pages", "[ifcparse][scan]") {
+    const std::string data =
+        "#1=IFCEXAMPLE(#0,#+12,#-1,#2147483647,#+-2,#1 2,#000003,"
+        "'it''s','a\\S\\'b','\\X2\\00E9\\X0\\c',/* #999 */ .T.,\"0A\",-1.5E-3,$,*,(IFCLABEL(''),#42));#9";
+    ifcopenshell::file_reader<ifcopenshell::full_buffer_impl> reference(data, ifcopenshell::caller_fed_tag{});
+    ifcopenshell::spf_lexer<decltype(reference)> lexer(&reference);
+    recording_consumer expected;
+    while (auto tk = lexer.next()) {
+        expected.seen.push_back({tk.start_pos, tk.is_operator() ? tk.value_char : tk.is_identifier() ? '#' : tk.is_string() ? '\'' : 'L'});
+        if (tk.is_identifier()) {
+            expected.identifiers.push_back(tk.as_identifier());
+        }
+        lexer.reset_pool();
+    }
+    CHECK(expected.identifiers == std::vector<uint32_t>{1, 0, 12, UINT32_MAX, INT32_MAX, UINT32_MAX - 1, 12, 3, 42, 9});
+    const auto check = [&](auto& source) {
+        ifcopenshell::spf_lexer<std::decay_t<decltype(source)>> scanner(&source);
+        recording_consumer actual;
+        scanner.scan(actual);
+        CHECK(actual.seen == expected.seen);
+        CHECK(actual.identifiers == expected.identifiers);
+        CHECK(source.tell() == data.size());
+    };
+    reference.seek(0);
+    check(reference);
+    ifcopenshell::file_reader<ifcopenshell::pushed_sequential_impl> pushed(ifcopenshell::caller_fed_tag{});
+    for (char c : data) {
+        pushed.push_next_page(std::string(1, c));
+    }
+    check(pushed);
+    const auto path = std::filesystem::temp_directory_path() / "ifcopenshell_scan_pages_test.ifc";
+    {
+        std::ofstream out(path, std::ios::binary);
+        out << data;
+    }
+    for (size_t page_size : {1, 2, 3, 7, 8, 9, 16, 64}) {
+        CAPTURE(page_size);
+        ifcopenshell::file_reader<ifcopenshell::paged_file_impl> paged(path.string(), page_size, 1);
+        check(paged);
+    }
+    std::filesystem::remove(path);
+}
+
+TEST_CASE("Identifier shortcuts retain invalid-token errors", "[ifcparse][scan]") {
+    for (const std::string data : {"#;", "#+;", "#2147483648;", "#-2147483649;", "#12a;", "#1.0;", "##2;"}) {
+        CAPTURE(data);
+        ifcopenshell::file_reader<ifcopenshell::full_buffer_impl> reader(data, ifcopenshell::caller_fed_tag{});
+        ifcopenshell::spf_lexer<decltype(reader)> lexer(&reader);
+        CHECK_THROWS_AS(lexer.next(), ifcopenshell::invalid_token_exception);
+        reader.seek(0);
+        lexer.reset_pool();
+        recording_consumer consumer;
+        CHECK_THROWS_AS(lexer.scan(consumer), ifcopenshell::invalid_token_exception);
+    }
 }
 
 namespace {
