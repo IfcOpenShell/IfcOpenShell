@@ -486,10 +486,28 @@ class SheetBuilder:
                 data.update({"Sheet" + k: v for k, v in sheet.get_info().items()})
                 if not data["Name"]:
                     data["Name"] = document.Name or "Unnamed"
+                if view.attrib.get("data-type") == "reference":
+                    human_scale = self.get_scale_from_svg(os.path.join(self.layout_dir, path))
+                    if human_scale:
+                        data["Scale"] = human_scale
                 view.append(self.parse_embedded_svg(view_title, data))
 
             for image in images:
                 view.remove(image)
+
+    def get_scale_from_svg(self, svg_path: str) -> str:
+        try:
+            tree = ET.parse(svg_path)
+            root = tree.getroot()
+            for g in root.iter(f"{SVG}g"):
+                for cls in g.attrib.get("class", "").split():
+                    if cls.startswith("scale-"):
+                        denominator = cls[6:]
+                        if denominator.isdigit():
+                            return tool.Drawing.get_human_scale_from_scale_denominator(denominator)
+        except Exception:
+            pass
+        return ""
 
     def get_href(self, element: ET.Element) -> str:
         return urllib.parse.unquote(element.attrib[f"{XLINK}href"]).replace("\\", "/")
