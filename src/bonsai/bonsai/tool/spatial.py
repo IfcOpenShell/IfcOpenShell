@@ -1309,6 +1309,13 @@ class Spatial(bonsai.core.tool.Spatial):
                         for subelement3 in ifcopenshell.util.element.get_parts(subelement2):
                             if subelement3.is_a("IfcBuildingStorey"):
                                 return subelement3
+                # No Building > Storey convention found (e.g. a template-defined
+                # facility). Descend while unambiguous, without hardcoding classes.
+                container = subelement
+                while len(children := ifcopenshell.util.element.get_parts(container)) == 1:
+                    container = children[0]
+                if container != subelement:
+                    return container
         if subelement:
             return subelement
         return None
