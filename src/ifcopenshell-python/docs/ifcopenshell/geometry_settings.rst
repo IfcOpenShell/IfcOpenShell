@@ -231,7 +231,7 @@ circle-segments
 | INT  | ``--circle-segments`` | 0       |
 +------+-----------------------+---------+
 
-Number of segments to approximate full circles in the CGAL kernel. When 0 (the default) the segment count is derived from mesher-linear-deflection instead, so curves stay within the deflection tolerance regardless of radius.
+Number of segments to approximate full circles in the CGAL kernel. When 0 (the default) the segment count is derived from mesher-linear-deflection and mesher-angular-deflection instead, whichever is stricter, so curves stay within tolerance regardless of radius.
 
 context-identifiers
 ^^^^^^^^^^^^^^^^^^^
