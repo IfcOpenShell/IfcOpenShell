@@ -21,7 +21,7 @@ import subprocess
 import sys
 import urllib.request
 from pathlib import Path
-from typing import Union
+from typing import Tuple, Union
 
 available_platforms = ("win32", "darwin", "linux")
 if sys.platform not in available_platforms:
@@ -92,8 +92,34 @@ BONSAI_PATH = find_bonsai_path()
 
 # Never changed by user.
 BLENDER_VERSION_INT = tuple(map(int, BLENDER_VERSION.split(".")))
-PYTHON_VERSION = "3.13" if BLENDER_VERSION_INT >= (5, 1) else "3.11"
-PACKAGE_PATH = BLENDER_PATH / rf"extensions/.local/lib/python{PYTHON_VERSION}/site-packages"
+
+
+# PACKAGE_PATH: Path to the site-packages of the Python bundled with Blender.
+# Blender bundles a different Python per release (3.11 for 4.x, 3.13 for 5.1+), so read the
+# version off the extensions folder instead of hardcoding a mapping that needs an edit
+# every time Blender bumps it.
+def find_package_path() -> Path:
+    extensions_lib = BLENDER_PATH / "extensions/.local/lib"
+
+    def version_key(path: Path) -> Tuple[int, ...]:
+        version = path.parent.name[len("python") :]
+        try:
+            return tuple(int(part) for part in version.split("."))
+        except ValueError:
+            # Unrecognized folder name, sort it below the versions we can parse.
+            return (-1,)
+
+    candidates = sorted(extensions_lib.glob("python*/site-packages"), key=version_key)
+    if candidates:
+        # Highest version wins in case an older Blender left a folder behind.
+        return candidates[-1]
+
+    # Fallback to the known mapping so the assert in `main` can report a sensible path.
+    fallback_version = "3.13" if BLENDER_VERSION_INT >= (5, 1) else "3.11"
+    return extensions_lib / f"python{fallback_version}/site-packages"
+
+
+PACKAGE_PATH = find_package_path()
 
 
 def main() -> None:
@@ -115,6 +141,7 @@ def main() -> None:
     print(f"REPO_PATH={REPO_PATH}")
     print(f"BLENDER_PATH={BLENDER_PATH}")
     print(f"BONSAI_PATH={BONSAI_PATH}")
+    print(f"PACKAGE_PATH={PACKAGE_PATH}")
     print("-" * 10)
 
     assert REPO_PATH.exists(), f"Path '{REPO_PATH=!s}' doesn't exist, ensure variable is set correctly."
