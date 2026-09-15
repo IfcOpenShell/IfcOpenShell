@@ -100,7 +100,8 @@ class Usecase:
 
             if self.file.get_total_inverses(old_placement) == 1:
                 self.settings["product"].ObjectPlacement = None
-                old_placement.PlacementRelTo = None
+                # PlacementRelTo is kept so remove_deep2 also purges unreferenced
+                # ancestor placements; ancestors used elsewhere survive its checks.
                 ifcopenshell.util.element.remove_deep2(self.file, old_placement)
 
         new_placement.PlacementRelTo = placement_rel_to
