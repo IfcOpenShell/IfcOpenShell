@@ -298,7 +298,9 @@ if(BUILD_IFCGEOM)
 endif()
 
 if(GLTF_SUPPORT)
-    find_package(nlohmann_json REQUIRED)
+    # 3.6.1 is the version currently used on the Windows build.
+    # 3.10.5 is the version shipped with Ubuntu 22.04.
+    find_package(nlohmann_json 3.6.1 REQUIRED)
 endif()
 
 # Add USD support to serializers
