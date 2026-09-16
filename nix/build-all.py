@@ -210,6 +210,7 @@ class Args(NamedTuple):
     mac_cross_compile_intel: bool
     wasm: bool
     num_build_procs: int
+    schemas: str | None
 
 
 class DynamicArgs(NamedTuple):
@@ -319,6 +320,13 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         default=argparse.SUPPRESS,
         help=HelpStrings.NUM_BUILD_PROCS,
     )
+    arg_parser.add_argument(
+        "--schemas",
+        dest="schemas",
+        default=argparse.SUPPRESS,
+        help="IFC schemas to be built, e.g. '2x3;4;4x3_add2'. Also can be specified by using IFCOS_SCHEMAS "
+        "env variable. (default: cmake default, currently 8 schemas)",
+    )
     namespace, unknown_flags = arg_parser.parse_known_args()
     num_build_procs = resolve_cli_or_env(
         getattr(namespace, "num_build_procs", None),
@@ -326,6 +334,7 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         multiprocessing.cpu_count() + 1,
         arg_type="int",
     )
+    schemas = resolve_cli_or_env(getattr(namespace, "schemas", None), "IFCOS_SCHEMAS", None, arg_type="str")
     args = Args(
         explicit_targets=namespace.explicit_targets,
         build_examples=namespace.build_examples,
@@ -338,6 +347,7 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         mac_cross_compile_intel=namespace.mac_cross_compile_intel,
         wasm=namespace.wasm,
         num_build_procs=num_build_procs,
+        schemas=schemas,
     )
 
     dynamic_args = DynamicArgs.from_unknown_flags(unknown_flags, arg_parser)
@@ -485,7 +495,7 @@ if BUILD_CFG == "MinSizeRel":
 
 cecho(f"* IFCOS_NUM_BUILD_PROCS  = {IFCOS_NUM_BUILD_PROCS}", MAGENTA)
 cecho(""" - How many compiler processes may be run in parallel.""")
-cecho(f"* IFCOS_SCHEMAS = '{os.environ.get('IFCOS_SCHEMAS')}'", MAGENTA)
+cecho(f"* IFCOS_SCHEMAS = '{ARGS.schemas}'", MAGENTA)
 cecho(""" - IFC Schemas to compile. If not provided, fallback to default provided in cmake.
 """)
 
@@ -1723,9 +1733,8 @@ if WASM:
     # inside of the sysroot set by the emscriptem toolchain
     cmake_args.append("-DWASM_BUILD=On")
 
-schemas = os.environ.get("IFCOS_SCHEMAS")
-if schemas:
-    cmake_args.append(f"-DSCHEMA_VERSIONS={schemas}")
+if ARGS.schemas:
+    cmake_args.append(f"-DSCHEMA_VERSIONS={ARGS.schemas}")
 
 if "cgal" in targets:
     cmake_args_prefix_path.append(str(Dependencies.get_install_dir("cgal")))
