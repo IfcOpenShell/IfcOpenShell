@@ -390,7 +390,13 @@ if(USE_MMAP)
     endif()
 endif()
 
-find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
+# 1.74 is the version shipped with Ubuntu 22.04.
+set(BOOST_MIN_VERSION 1.74)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 14)
+    # https://github.com/boostorg/math/issues/992
+    set(BOOST_MIN_VERSION 1.83)
+endif()
+find_package(Boost ${BOOST_MIN_VERSION} REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 # TODO: drop this whole `if` (and the `regex` component above) once BOOST_MIN_VERSION >= 1.76.
 if(Boost_VERSION VERSION_GREATER_EQUAL 1.76)
     list(REMOVE_ITEM Boost_LIBRARIES ${Boost_REGEX_LIBRARY} Boost::regex)
