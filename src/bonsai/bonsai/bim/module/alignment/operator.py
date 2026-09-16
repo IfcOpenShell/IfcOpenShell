@@ -255,8 +255,16 @@ class ALIGN_OT_remove_alignment(Operator, tool.Ifc.Operator):
     def poll(cls, context):
         if not poll_ifc4x3(cls, context):
             return False
-        if not tool.Alignment.get_active_alignment():
+        alignment = tool.Alignment.get_active_alignment()
+        if not alignment:
             cls.poll_message_set("Select an alignment first")
+            return False
+        if _find_pi_markers(alignment.id()):
+            cls.poll_message_set("Finish or clear the PI marker edit first")
+            return False
+        props = context.scene.CivilAlignmentProperties
+        if props.horizontal_pi_rows and props.editing_horizontal_pi_alignment_id == alignment.id():
+            cls.poll_message_set("Finish or clear the PI table edit first")
             return False
         return True
 
@@ -685,6 +693,7 @@ def _create_pi_markers(context, alignment_id, raw_points):
         empty.empty_display_type = "PLAIN_AXES"
         empty.empty_display_size = 0.3
         empty.location = (x, y, z)
+        _lock_pi_marker_transform(empty)
         marker = empty.bonsai_pi_curve_marker
         marker.is_pi_marker = True
         marker.alignment_id = alignment_id
@@ -693,6 +702,25 @@ def _create_pi_markers(context, alignment_id, raw_points):
         context.collection.objects.link(empty)
         markers.append(empty)
     return markers
+
+
+def _lock_pi_marker_transform(empty) -> None:
+    """Restrict a PI marker empty to dragging in the XY plane.
+
+    Dragging a marker to reposition it (mentioned in ALIGN_OT_edit_horizontal_pis's
+    own docstring as a supported way to edit a PI, alongside typing curve_type/
+    radius in the panel) is just Blender's native move tool -- ALIGN_OT_apply_pi_curve
+    already reads every marker's *current* .location when it regenerates the
+    alignment, so nothing further is needed to wire dragging up. But a horizontal
+    alignment is inherently 2D (_world_point_to_local_ifc always discards Z), so an
+    accidental drag off the XY plane would silently do nothing at Apply Curve time
+    while leaving the marker floating above/below the curve -- confusing, not
+    dangerous. Locking Z, plus rotation/scale (meaningless for a point marker),
+    heads that off instead of relying on the user not to trigger it.
+    """
+    empty.lock_location[2] = True
+    empty.lock_rotation = (True, True, True)
+    empty.lock_scale = (True, True, True)
 
 
 def _find_pi_markers(alignment_id):
@@ -939,6 +967,9 @@ class ALIGN_OT_edit_horizontal_pis(Operator, tool.Ifc.Operator):
         if context.scene.CivilAlignmentProperties.editing_segment_kind != "NONE":
             cls.poll_message_set("Finish or cancel the segment table edit first")
             return False
+        if context.scene.CivilAlignmentProperties.horizontal_pi_rows:
+            cls.poll_message_set("Finish or clear the PI table edit first")
+            return False
         alignment = tool.Alignment.get_active_alignment()
         if not alignment:
             cls.poll_message_set("Select an alignment first")
@@ -978,6 +1009,7 @@ class ALIGN_OT_edit_horizontal_pis(Operator, tool.Ifc.Operator):
             empty.empty_display_type = "PLAIN_AXES"
             empty.empty_display_size = 0.3
             empty.location = (x, y, z)
+            _lock_pi_marker_transform(empty)
             marker = empty.bonsai_pi_curve_marker
             marker.is_pi_marker = True
             marker.alignment_id = alignment_id
@@ -1139,6 +1171,9 @@ class ALIGN_OT_load_horizontal_pi_table(Operator, tool.Ifc.Operator):
             cls.poll_message_set("Finish or cancel the segment table edit first")
             return False
         alignment = tool.Alignment.get_active_alignment()
+        if alignment and _find_pi_markers(alignment.id()):
+            cls.poll_message_set("Finish or clear the PI marker edit first")
+            return False
         if not alignment:
             cls.poll_message_set("Select an alignment first")
             return False
@@ -1237,12 +1272,15 @@ class ALIGN_OT_apply_horizontal_pi_table(Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class ALIGN_OT_clear_horizontal_pi_table(Operator):
-    """Clear the horizontal PI table without changing the alignment"""
+class ALIGN_OT_finish_horizontal_pi_table(Operator):
+    """Dismiss the horizontal PI table (rows are staging data, not IFC --
+    whatever was last applied via Apply Horizontal Curves is already saved to
+    the alignment regardless of whether the table stays open).
+    """
 
-    bl_idname = "align.clear_horizontal_pi_table"
-    bl_label = "Clear Horizontal PI Table"
-    bl_description = "Clear the PI table rows (does not affect the alignment already drawn)"
+    bl_idname = "align.finish_horizontal_pi_table"
+    bl_label = "Finish"
+    bl_description = "Finish table editing: dismiss the PI table (does not affect the alignment already drawn)"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -1288,6 +1326,9 @@ class ALIGN_OT_draw_horizontal_alignment(bpy.types.Operator, PolylineOperator, t
             return False
         if context.scene.CivilAlignmentProperties.vertical_pi_markers:
             cls.poll_message_set("Finish or clear the vertical PI marker edit first")
+            return False
+        if context.scene.CivilAlignmentProperties.horizontal_pi_rows:
+            cls.poll_message_set("Finish or clear the PI table edit first")
             return False
         alignment = tool.Alignment.get_active_alignment()
         if not alignment:
@@ -1937,6 +1978,9 @@ class ALIGN_OT_load_vertical_pis(Operator, tool.Ifc.Operator):
         if alignment and _find_pi_markers(alignment.id()):
             cls.poll_message_set("Finish or clear the horizontal PI marker edit first")
             return False
+        if context.scene.CivilAlignmentProperties.horizontal_pi_rows:
+            cls.poll_message_set("Finish or clear the horizontal PI table edit first")
+            return False
         return True
 
     def _execute(self, context):
@@ -2018,7 +2062,7 @@ class ALIGN_OT_draw_vertical_alignment(Operator, tool.Ifc.Operator):
             cls.poll_message_set("Finish or cancel the segment table edit first")
             return False
         if props.vertical_pi_markers:
-            cls.poll_message_set("Finish or clear the current PI marker edit first")
+            cls.poll_message_set("Finish or clear the PI marker edit first")
             return False
         alignment = tool.Alignment.get_active_alignment()
         if not alignment:
@@ -2026,6 +2070,9 @@ class ALIGN_OT_draw_vertical_alignment(Operator, tool.Ifc.Operator):
             return False
         if _find_pi_markers(alignment.id()):
             cls.poll_message_set("Finish or clear the horizontal PI marker edit first")
+            return False
+        if props.horizontal_pi_rows:
+            cls.poll_message_set("Finish or clear the horizontal PI table edit first")
             return False
         h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
         has_real_segments = h_layout and any(
@@ -2264,12 +2311,16 @@ class ALIGN_OT_apply_vertical_pi_curve(Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class ALIGN_OT_clear_vertical_pi_markers(Operator):
-    """Clear the vertical PI list without changing the vertical alignment"""
+class ALIGN_OT_finish_vertical_pi_editing(Operator):
+    """Dismiss the vertical PI list (rows are staging data, not IFC -- whatever
+    was last applied via Apply Vertical Curves is already saved to the
+    alignment regardless of whether the list stays open). Mirrors
+    ALIGN_OT_finish_pi_editing / ALIGN_OT_finish_horizontal_pi_table.
+    """
 
-    bl_idname = "align.clear_vertical_pi_markers"
-    bl_label = "Clear Vertical PI List"
-    bl_description = "Clear the interior-PI list (does not affect the vertical alignment already drawn)"
+    bl_idname = "align.finish_vertical_pi_editing"
+    bl_label = "Finish"
+    bl_description = "Finish PI editing: dismiss the vertical PI list (does not affect the alignment already drawn)"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -2410,10 +2461,13 @@ class ALIGN_OT_enable_editing_h_segments(Operator):
     def poll(cls, context):
         props = context.scene.CivilAlignmentProperties
         if props.editing_segment_kind not in ("NONE", "HORIZONTAL"):
-            cls.poll_message_set("Finish or cancel the current segment edit first")
+            cls.poll_message_set("Finish or cancel the segment table edit first")
             return False
         if props.vertical_pi_markers:
             cls.poll_message_set("Finish or clear the vertical PI marker edit first")
+            return False
+        if props.horizontal_pi_rows:
+            cls.poll_message_set("Finish or clear the PI table edit first")
             return False
         alignment = tool.Alignment.get_active_alignment()
         if alignment and _find_pi_markers(alignment.id()):
@@ -2587,7 +2641,7 @@ class ALIGN_OT_enable_editing_v_segments(Operator):
     def poll(cls, context):
         props = context.scene.CivilAlignmentProperties
         if props.editing_segment_kind not in ("NONE", "VERTICAL"):
-            cls.poll_message_set("Finish or cancel the current segment edit first")
+            cls.poll_message_set("Finish or cancel the segment table edit first")
             return False
         if props.vertical_pi_markers:
             cls.poll_message_set("Finish or clear the PI marker edit first")
@@ -2595,6 +2649,9 @@ class ALIGN_OT_enable_editing_v_segments(Operator):
         alignment = tool.Alignment.get_active_alignment()
         if alignment and _find_pi_markers(alignment.id()):
             cls.poll_message_set("Finish or clear the horizontal PI marker edit first")
+            return False
+        if props.horizontal_pi_rows:
+            cls.poll_message_set("Finish or clear the horizontal PI table edit first")
             return False
         return True
 
@@ -2748,7 +2805,7 @@ class ALIGN_OT_enable_editing_cant_segments(Operator):
     def poll(cls, context):
         props = context.scene.CivilAlignmentProperties
         if props.editing_segment_kind not in ("NONE", "CANT"):
-            cls.poll_message_set("Finish or cancel the current segment edit first")
+            cls.poll_message_set("Finish or cancel the segment table edit first")
             return False
         return True
 
