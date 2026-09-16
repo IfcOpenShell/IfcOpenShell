@@ -34,7 +34,13 @@ import numpy as np
 import bonsai.tool as tool
 import bonsai.bim.import_ifc
 import ifcopenshell.api.alignment
+import ifcopenshell.api.aggregate
+import ifcopenshell.api.geometry
+import ifcopenshell.api.nest
+import ifcopenshell.guid
+import ifcopenshell.util.element
 import ifcopenshell.util.placement
+import ifcopenshell.util.representation
 import ifcopenshell.util.shape
 import ifcopenshell.util.unit
 from typing import TYPE_CHECKING, Optional, List, Tuple
@@ -273,6 +279,387 @@ class Alignment:
                 if obj.is_a("IfcAlignmentSegment") and not cls.is_zero_length_segment(obj):
                     segments.append(obj)
         return segments
+
+    # =========================================================================
+    # Cant — generate from horizontal, keep curve types in sync
+    # =========================================================================
+
+    #: Cant PredefinedType for each horizontal spiral-family PredefinedType --
+    #: _map_alignment_cant_segment (ifcopenshell) implements HELMERTCURVE/
+    #: BLOSSCURVE/COSINECURVE/SINECURVE/VIENNESEBEND as direct 1:1 matches, so
+    #: those map to themselves; CLOTHOID and CUBIC have no cant-side
+    #: equivalent in the IFC schema, so both fall back to LINEARTRANSITION
+    #: (a plain linear cant ramp -- the conventional real-world pairing for a
+    #: clothoid transition anyway). LINE/CIRCULARARC both become CONSTANTCANT
+    #: (0 on tangents, the design value on arcs). Used by both
+    #: generate_cant_layout() and sync_cant_segment_types() so the two always
+    #: agree on the mapping.
+    CANT_TYPE_FOR_HORIZONTAL_TYPE = {
+        "LINE": "CONSTANTCANT",
+        "CIRCULARARC": "CONSTANTCANT",
+        "CLOTHOID": "LINEARTRANSITION",
+        "CUBIC": "LINEARTRANSITION",
+        "HELMERTCURVE": "HELMERTCURVE",
+        "BLOSSCURVE": "BLOSSCURVE",
+        "COSINECURVE": "COSINECURVE",
+        "SINECURVE": "SINECURVE",
+        "VIENNESEBEND": "VIENNESEBEND",
+    }
+
+    @classmethod
+    def has_real_vertical_segments(cls, alignment: "ifcopenshell.entity_instance") -> bool:
+        """Whether ``alignment`` has any drawn vertical geometry yet, across
+        all of its vertical layouts (direct, or under child alignments per
+        IFC CT 4.1.4.4.1.2). Used to gate deleting the horizontal layout: per
+        the user (2026-09-16), horizontal can't be deleted while a vertical
+        exists (it's defined against the horizontal's distance-along range) --
+        delete the vertical(s) first, or the whole alignment to start over.
+        """
+        return any(cls.get_real_layout_segments(v) for v in cls.get_all_vertical_layouts(alignment))
+
+    @classmethod
+    def get_all_cant_layouts(cls, alignment: "ifcopenshell.entity_instance") -> list:
+        """Return all IfcAlignmentCant layouts for ``alignment``.
+
+        Mirrors get_all_vertical_layouts(): a cant layout nests onto whichever
+        alignment entity (top-level, or a child per IFC CT 4.1.4.4.1.2) also
+        nests the vertical it pairs with -- get_cant_layout() (ifcopenshell)
+        only ever checks one alignment's own direct IsNestedBy, so with
+        multiple verticals (hence multiple children, each with its own cant
+        or none) this is the only way to find all of them.
+        """
+        cants = []
+        for rel in getattr(alignment, "IsNestedBy", []) or []:
+            for obj in rel.RelatedObjects or []:
+                if obj.is_a("IfcAlignmentCant"):
+                    cants.append(obj)
+        for child in cls.get_child_alignments(alignment):
+            for rel in getattr(child, "IsNestedBy", []) or []:
+                for obj in rel.RelatedObjects or []:
+                    if obj.is_a("IfcAlignmentCant"):
+                        cants.append(obj)
+        return cants
+
+    @classmethod
+    def has_real_cant_segments(cls, alignment: "ifcopenshell.entity_instance") -> bool:
+        """Whether ``alignment`` has a cant layout with real segments yet, on
+        the top-level alignment or any child (see get_all_cant_layouts).
+
+        Used to gate deleting a vertical layout the same way
+        has_real_vertical_segments() gates deleting horizontal: cant is
+        generated from (and station-matched to) a specific horizontal/vertical
+        pair, so deleting that vertical while its cant still exists would
+        leave the cant layout referencing a basis curve that's gone.
+        """
+        return any(cls.get_real_layout_segments(c) for c in cls.get_all_cant_layouts(alignment))
+
+    @classmethod
+    def get_or_create_cant_layout(cls, alignment: "ifcopenshell.entity_instance") -> "ifcopenshell.entity_instance":
+        """The alignment's IfcAlignmentCant layout, creating one (with its
+        mandatory zero-length terminator) if it doesn't have one yet.
+
+        Mirrors the cant half of ifcopenshell.api.alignment.create() -- the
+        only existing reference for constructing a fresh IfcAlignmentCant --
+        rather than the fuller ifcopenshell.api.alignment.add_vertical_layout()
+        pattern: cant doesn't have vertical's child-alignment-on-second-layout
+        complexity (an alignment has at most one cant layout).
+
+        Also upgrades the alignment's Axis/Curve3D representation from
+        IfcGradientCurve to IfcSegmentedReferenceCurve if it isn't already
+        (confirmed empirically, 2026-09-16: create_layout_segment's cant path
+        -- _add_segment_to_curve -- raises TypeError otherwise, since it
+        requires the alignment's curve to already be an
+        IfcSegmentedReferenceCurve). _create_geometric_representation
+        (ifcopenshell) only builds that wrapping when an alignment is
+        created with horizontal+vertical+cant from the start (its own case
+        3, IFC CT 4.1.7.1.1.3); there's no existing ifcopenshell.api.alignment
+        function that performs this specific upgrade for an alignment that
+        already has real horizontal+vertical geometry, which is the only
+        path this project's own workflow ever takes (cant is always added
+        after horizontal+vertical already exist, never all three at once).
+        """
+        existing = ifcopenshell.api.alignment.get_cant_layout(alignment)
+        if existing:
+            return existing
+
+        from ifcopenshell.api.alignment._add_zero_length_segment import _add_zero_length_segment
+
+        file = tool.Ifc.get()
+
+        for representation in ifcopenshell.util.representation.get_representations_iter(alignment):
+            if representation.RepresentationIdentifier == "Axis" and representation.RepresentationType == "Curve3D":
+                base_curve = representation.Items[0]
+                if not base_curve.is_a("IfcSegmentedReferenceCurve"):
+                    segmented_reference_curve = file.createIfcSegmentedReferenceCurve(
+                        Segments=[], BaseCurve=base_curve, SelfIntersect=False
+                    )
+                    representation.Items = (segmented_reference_curve,)
+                break
+
+        cant_layout = file.createIfcAlignmentCant(GlobalId=ifcopenshell.guid.new(), RailHeadDistance=1.0)
+        ifcopenshell.api.nest.assign_object(file, related_objects=[cant_layout], relating_object=alignment)
+        _add_zero_length_segment(file, cant_layout)
+        return cant_layout
+
+    @classmethod
+    def build_cant_specs_from_horizontal(
+        cls, h_segments: list, cant_value: float
+    ) -> list[tuple[str, float, float, float, Optional[float], Optional[float]]]:
+        """One cant segment spec per real horizontal segment, mirroring its
+        station range and curve family (see CANT_TYPE_FOR_HORIZONTAL_TYPE).
+
+        cant_value is the full left/right rail height difference on a curve;
+        the OUTER rail (opposite the direction of turn -- positive
+        StartRadiusOfCurvature is a left/CCW turn per this project's
+        convention, so the outer rail is on the right) is raised by the full
+        value, the inner rail stays at 0 -- rather than splitting the value
+        symmetrically about the centerline, which would leave both rails
+        offset from datum for no reason a caller asked for. A transition
+        segment ramps between whatever the alignment's cant already is
+        entering it and the adjacent arc's target left/right values, working
+        out entry vs. exit by which neighbour (next or previous) is the
+        CIRCULARARC.
+
+        Only handles the tangent-spiral-arc-spiral-tangent pattern the
+        PI-method solver already produces; raises ValueError for any
+        horizontal segment type with no CANT_TYPE_FOR_HORIZONTAL_TYPE entry.
+
+        :return: (predefined_type, length, start_left, start_right, end_left,
+            end_right) tuples, in station order. end_left/end_right are None
+            for CONSTANTCANT (matches how ALIGN_OT_apply_cant_segments already
+            leaves End* unset for a non-transition row).
+        """
+
+        def _outer_left_right(radius: float) -> tuple[float, float]:
+            if radius > 0.0:
+                return 0.0, cant_value
+            if radius < 0.0:
+                return cant_value, 0.0
+            return 0.0, 0.0
+
+        specs = []
+        cur_left, cur_right = 0.0, 0.0
+        n = len(h_segments)
+        for i, seg in enumerate(h_segments):
+            dp = seg.DesignParameters
+            h_type = dp.PredefinedType
+            length = dp.SegmentLength or 0.0
+            if length <= 0.0:
+                continue
+            cant_type = cls.CANT_TYPE_FOR_HORIZONTAL_TYPE.get(h_type)
+            if cant_type is None:
+                raise ValueError(f"Horizontal segment type {h_type!r} has no cant equivalent")
+
+            if h_type == "LINE":
+                specs.append((cant_type, length, cur_left, cur_right, None, None))
+                continue
+
+            if h_type == "CIRCULARARC":
+                cur_left, cur_right = _outer_left_right(dp.StartRadiusOfCurvature or 0.0)
+                specs.append((cant_type, length, cur_left, cur_right, None, None))
+                continue
+
+            # Transition segment: ramp between the current cant and whichever
+            # adjacent arc this transition borders (entering it if the arc
+            # comes next, leaving it if the arc came just before).
+            next_dp = h_segments[i + 1].DesignParameters if i + 1 < n else None
+            prev_dp = h_segments[i - 1].DesignParameters if i > 0 else None
+            if next_dp is not None and next_dp.PredefinedType == "CIRCULARARC":
+                target = _outer_left_right(next_dp.StartRadiusOfCurvature or 0.0)
+                start_left, start_right = cur_left, cur_right
+                end_left, end_right = target
+            elif prev_dp is not None and prev_dp.PredefinedType == "CIRCULARARC":
+                start_left, start_right = cur_left, cur_right
+                end_left, end_right = 0.0, 0.0
+            else:
+                start_left, start_right = cur_left, cur_right
+                end_left, end_right = cur_left, cur_right
+
+            specs.append((cant_type, length, start_left, start_right, end_left, end_right))
+            cur_left, cur_right = end_left, end_right
+
+        return specs
+
+    @classmethod
+    def sync_cant_segment_types(cls, alignment: "ifcopenshell.entity_instance") -> int:
+        """Keep an already-generated cant layout's curve *types* in step with
+        the horizontal layout's own, after a horizontal edit (Apply Curve,
+        Apply Horizontal Curves, or the raw segment table's Apply) changes
+        which spiral family a transition uses -- e.g. BLOSSCURVE to
+        COSINECURVE (per the user, 2026-09-16: "When editing horizontal curve
+        types update the cant layout to keep them in sync").
+
+        Matches cant segments to horizontal segments by position (the i-th
+        real cant segment corresponds to the i-th real horizontal segment) --
+        exactly how generate_cant_layout() built them in the first place, so
+        this holds as long as neither layout's segment *count* has drifted
+        independently (e.g. the raw segment table adding/removing rows on one
+        side only) since the last (re)generation. Silently does nothing if
+        there's no cant layout yet, or if the segment counts no longer match
+        -- forcing a positional correspondence that's gone stale would silently
+        retype the wrong segments, worse than leaving cant untouched until the
+        user regenerates it.
+
+        Only the PredefinedType changes here, in place -- start/end cant
+        values are left exactly as they are (this is a curve-family swap, not
+        a re-generation; see generate_cant_layout() for that). Returns the
+        number of cant segments actually retyped.
+        """
+        h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+        cant_layouts = cls.get_all_cant_layouts(alignment)
+        if not h_layout or not cant_layouts:
+            return 0
+
+        h_segments = cls.get_real_layout_segments(h_layout)
+
+        changed = 0
+        for cant_layout in cant_layouts:
+            cant_segments = cls.get_real_layout_segments(cant_layout)
+            if len(h_segments) != len(cant_segments):
+                # Horizontal is shared across every vertical/cant pairing --
+                # a count mismatch here means THIS cant is stale relative to
+                # the (just-changed) horizontal, not that the mapping is
+                # wrong in general. Skip it, same reasoning as the module
+                # docstring above.
+                continue
+            for h_seg, cant_seg in zip(h_segments, cant_segments):
+                h_type = h_seg.DesignParameters.PredefinedType
+                expected = cls.CANT_TYPE_FOR_HORIZONTAL_TYPE.get(h_type)
+                if expected is None:
+                    continue
+                cant_dp = cant_seg.DesignParameters
+                if cant_dp.PredefinedType != expected:
+                    cant_dp.PredefinedType = expected
+                    changed += 1
+
+        if changed:
+            file = tool.Ifc.get()
+            ifcopenshell.api.alignment.create_representation(file, alignment)
+
+        return changed
+
+    @classmethod
+    def remove_cant_layout(cls, cant_layout: "ifcopenshell.entity_instance") -> None:
+        """Remove one cant layout entirely: its segments, the layout entity,
+        its nesting under whichever alignment owns it, and (if present) the
+        IfcSegmentedReferenceCurve wrapping that alignment's own Axis/Curve3D
+        curve -- reverting that representation back to the plain
+        IfcGradientCurve it wrapped (the reverse of get_or_create_cant_layout's
+        own upgrade). Always safe to call regardless of how many verticals
+        exist -- a cant layout only ever nests alongside the one vertical it
+        pairs with, never spanning several.
+        """
+        file = tool.Ifc.get()
+        owning_alignment = ifcopenshell.api.alignment.get_alignment(cant_layout)
+
+        for representation in ifcopenshell.util.representation.get_representations_iter(owning_alignment):
+            if representation.RepresentationIdentifier == "Axis" and representation.RepresentationType == "Curve3D":
+                item = representation.Items[0]
+                if item.is_a("IfcSegmentedReferenceCurve"):
+                    representation.Items = (item.BaseCurve,)
+                    file.remove(item)
+                break
+
+        ifcopenshell.api.nest.unassign_object(file, related_objects=[cant_layout])
+        ifcopenshell.util.element.remove_deep2(file, cant_layout)
+
+    @classmethod
+    def remove_vertical_layout(cls, vertical_layout: "ifcopenshell.entity_instance") -> None:
+        """Remove one vertical layout entirely: its segments, the layout
+        entity, and whatever geometric representation existed only for it.
+        Caller's responsibility to have already removed its cant layout
+        first, if it had one (has_real_cant_segments gates this at the poll
+        level -- see ALIGN_OT_remove_vertical_layout).
+
+        Two structurally different cases, both handled here:
+
+        - The only vertical, nested directly on the top-level alignment:
+          reverts the representation back to horizontal-only (IFC CT
+          4.1.7.1.1.1) -- removing the Axis/Curve3D IfcGradientCurve
+          representation and renaming the FootPrint/Curve2D one back to
+          Axis/Curve2D, the reverse of what _create_geometric_representation
+          itself builds for its "Horizontal and Vertical" case.
+        - One of several verticals (IFC CT 4.1.4.4.1.2): per
+          add_vertical_layout's own docstring, every vertical beyond the
+          first ends up on its own, independent child alignment (siblings,
+          not nested within each other) -- so removing any one of them, once
+          2+ exist, never affects the others, and the owning child alignment
+          (with everything exclusively nested under it -- this vertical, its
+          own Representation) is simply removed outright.
+        """
+        file = tool.Ifc.get()
+        owning_alignment = ifcopenshell.api.alignment.get_alignment(vertical_layout)
+        top_level = cls._get_top_level_alignment(owning_alignment)
+
+        if owning_alignment.id() == top_level.id():
+            for representation in list(ifcopenshell.util.representation.get_representations_iter(owning_alignment)):
+                if (
+                    representation.RepresentationIdentifier == "Axis"
+                    and representation.RepresentationType == "Curve3D"
+                ):
+                    ifcopenshell.api.geometry.unassign_representation(file, owning_alignment, representation)
+                    ifcopenshell.util.element.remove_deep2(file, representation)
+                    break
+            for representation in ifcopenshell.util.representation.get_representations_iter(owning_alignment):
+                if (
+                    representation.RepresentationIdentifier == "FootPrint"
+                    and representation.RepresentationType == "Curve2D"
+                ):
+                    representation.RepresentationIdentifier = "Axis"
+                    break
+
+            ifcopenshell.api.nest.unassign_object(file, related_objects=[vertical_layout])
+            ifcopenshell.util.element.remove_deep2(file, vertical_layout)
+        else:
+            ifcopenshell.api.aggregate.unassign_object(file, products=[owning_alignment])
+            ifcopenshell.util.element.remove_deep2(file, owning_alignment)
+
+    @classmethod
+    def remove_horizontal_layout(cls, alignment: "ifcopenshell.entity_instance") -> None:
+        """Remove the alignment's horizontal layout entirely -- its segments,
+        the layout entity, its whole geometric representation (there's
+        nothing left to represent once horizontal, the foundation every
+        other layout is defined against, is gone), and its stationing
+        referents (their IfcLinearPlacement references the now-gone basis
+        curve). Caller's responsibility to have already removed every
+        vertical (hence every cant) first -- has_real_vertical_segments
+        gates this at the poll level (see ALIGN_OT_remove_horizontal_layout).
+
+        Leaves the bare IfcAlignment entity itself in place, exactly the
+        state ALIGN_OT_add_alignment produces -- ready to draw again.
+
+        TODO once key-point referents (REQUIREMENTS.md future work) are
+        generated by this project's own workflow: remove those here too, the
+        same reason stationing referents already are -- their placements
+        reference this same now-gone basis curve.
+        """
+        file = tool.Ifc.get()
+        h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+        if not h_layout:
+            return
+
+        for referent, *_ in cls.get_stationing_referents(alignment):
+            referent_obj = tool.Ifc.get_object(referent)
+            if referent_obj:
+                bpy.data.objects.remove(referent_obj, do_unlink=True)
+        stationing_nest = ifcopenshell.api.alignment.get_stationing_nest(file, alignment)
+        if stationing_nest:
+            for referent in list(stationing_nest.RelatedObjects):
+                ifcopenshell.util.element.remove_deep2(file, referent)
+            ifcopenshell.util.element.remove_deep2(file, stationing_nest)
+
+        if alignment.Representation:
+            representation = alignment.Representation
+            alignment.Representation = None
+            ifcopenshell.util.element.remove_deep2(file, representation)
+
+        ifcopenshell.api.nest.unassign_object(file, related_objects=[h_layout])
+        ifcopenshell.util.element.remove_deep2(file, h_layout)
+
+        obj = tool.Ifc.get_object(alignment)
+        if obj is not None and obj.type == "MESH":
+            cls._remove_blender_object(obj)
+            cls.create_object_for_alignment(alignment)
 
     # =========================================================================
     # Segment Table Editing — Validation

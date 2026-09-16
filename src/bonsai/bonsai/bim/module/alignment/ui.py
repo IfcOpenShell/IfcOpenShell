@@ -640,6 +640,14 @@ class ALIGN_PT_alignment_segments(Panel):
         )
         edit_op.layout_id = layout_entity.id()
 
+        # Delete Horizontal Layout's own poll() already checks
+        # has_real_vertical_segments() against the *active* alignment -- fine
+        # here since, unlike the per-vertical buttons above, there's only
+        # ever one horizontal per alignment, so this row's own alignment_id
+        # and "whatever's active" agree whenever this button is actually
+        # reachable/relevant.
+        row.operator("align.remove_horizontal_layout", text="", icon="TRASH")
+
         if not expanded:
             return
 
@@ -783,6 +791,25 @@ class ALIGN_PT_alignment_segments(Panel):
         if is_editing_pi:
             row.operator("align.finish_vertical_pi_editing", text="", icon="CHECKMARK")
 
+        # Same "poll() can't see this row's own v_id" reasoning as edit_row/
+        # pi_row above -- has_cant is computed directly from this row's own
+        # vertical, since a classmethod poll() has no way to know which
+        # specific vertical Delete Vertical Layout's button is about to act
+        # on until after it's clicked.
+        owning_alignment = ifcopenshell.api.alignment.get_alignment(layout_entity)
+        existing_cant = ifcopenshell.api.alignment.get_cant_layout(owning_alignment) if owning_alignment else None
+        has_cant = bool(existing_cant and tool.Alignment.get_real_layout_segments(existing_cant))
+
+        cant_row = row.row(align=True)
+        cant_row.enabled = not h_markers_open
+        cant_op = cant_row.operator("align.generate_cant_layout", text="", icon="MOD_CURVE")
+        cant_op.layout_id = v_id
+
+        del_row = row.row(align=True)
+        del_row.enabled = not h_markers_open and not has_cant
+        del_op = del_row.operator("align.remove_vertical_layout", text="", icon="TRASH")
+        del_op.layout_id = v_id
+
         if not expanded:
             return
 
@@ -883,6 +910,9 @@ class ALIGN_PT_alignment_segments(Panel):
             "align.enable_editing_cant_segments", text="", icon="GREASEPENCIL", depress=is_editing_this
         )
         edit_op.layout_id = c_id
+
+        del_op = row.operator("align.remove_cant_layout", text="", icon="TRASH")
+        del_op.layout_id = c_id
 
         if not expanded:
             return
