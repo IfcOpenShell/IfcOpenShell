@@ -196,6 +196,63 @@ class VerticalPIMarker(PropertyGroup):
     )
 
 
+class HorizontalPIMarker(PropertyGroup):
+    """One interior PI of a horizontal alignment, for table-based curve editing.
+
+    The table-editing companion to the draggable viewport Empties (see
+    PICurveMarkerProperties) -- same underlying PI list
+    (operator._reconstruct_horizontal_pis), staged as numeric rows instead
+    via align.load_horizontal_pi_table / align.apply_horizontal_pi_table, for
+    users who'd rather type/tab through numbers than drag a marker in the
+    viewport. Mirrors VerticalPIMarker's "PI list as a plain table" pattern.
+
+    x/y are local IFC plan coordinates (not Blender-world/metres) -- what
+    _generate_alignment_segments expects directly, so applying this table
+    needs no world<->local conversion the Empty-based flow requires.
+    """
+
+    x: FloatProperty(name="Easting (Local)", default=0.0, precision=3, unit="LENGTH")
+    y: FloatProperty(name="Northing (Local)", default=0.0, precision=3, unit="LENGTH")
+    curve_type: EnumProperty(
+        name="Curve Type",
+        items=[
+            ("TANGENT", "None (sharp PI)", "No curve — the two tangents meet directly"),
+            ("CIRCULAR", "Circular", "A simple circular arc"),
+            (
+                "SPIRAL_CIRCULAR",
+                "Spiral-Circular",
+                "An entry clothoid spiral transitions into the circular arc, which runs to the forward tangent",
+            ),
+            (
+                "CIRCULAR_SPIRAL",
+                "Circular-Spiral",
+                "The circular arc leaves the back tangent directly and transitions to the forward tangent via an exit clothoid spiral",
+            ),
+            (
+                "SPIRAL_CIRCULAR_SPIRAL",
+                "Spiral-Circular-Spiral",
+                "An entry clothoid spiral, a circular arc, and an exit clothoid spiral, symmetric about the PI",
+            ),
+        ],
+        default="TANGENT",
+    )
+    radius: FloatProperty(name="Radius", default=100.0, min=0.0001, unit="LENGTH")
+    spiral_in_length: FloatProperty(
+        name="Entry Spiral Length",
+        description="Length of the clothoid spiral ahead of the circular arc",
+        default=100.0,
+        min=0.0001,
+        unit="LENGTH",
+    )
+    spiral_out_length: FloatProperty(
+        name="Exit Spiral Length",
+        description="Length of the clothoid spiral following the circular arc",
+        default=100.0,
+        min=0.0001,
+        unit="LENGTH",
+    )
+
+
 # Horizontal spiral transition curve families that _map_alignment_horizontal_segment
 # (ifcopenshell.api.alignment) maps to real geometry, all sharing the exact same
 # DesignParameters shape as CLOTHOID (StartPoint/StartDirection/StartRadiusOfCurvature/
@@ -356,6 +413,18 @@ class CivilAlignmentProperties(PropertyGroup):
     # align.apply_vertical_pi_curve so it regenerates the right one; 0 falls back to
     # resolving a single vertical straight off the active alignment (the common case).
     editing_vertical_pi_layout_id: IntProperty(name="Editing Vertical PI Layout ID", default=0)
+
+    # Interior PIs of the horizontal alignment, table-editing companion to the
+    # draggable viewport Empties (PICurveMarkerProperties) -- see
+    # HorizontalPIMarker.
+    horizontal_pi_rows: CollectionProperty(type=HorizontalPIMarker)
+    active_horizontal_pi_row_index: IntProperty(name="Active Horizontal PI", default=0)
+    # Which IfcAlignment horizontal_pi_rows belongs to -- guards against
+    # applying stale rows to a different alignment if the active alignment
+    # is switched while the table is populated. 0 falls back to the active
+    # alignment (the common case), same convention as
+    # editing_vertical_pi_layout_id.
+    editing_horizontal_pi_alignment_id: IntProperty(name="Editing Horizontal PI Alignment ID", default=0)
 
     # Per-vertical visibility filter for the profile window
     vertical_items: CollectionProperty(type=VerticalAlignmentItem)
