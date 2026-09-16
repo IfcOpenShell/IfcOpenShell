@@ -9,7 +9,10 @@ source:
 
 build:
   script: |
-    BUILD_CFG=Release python nix/build-all.py -v --wasm
+    python nix/build-all.py \
+      -v \
+      --wasm \
+      --build-cfg Release
 
 about:
   home: http://ifcopenshell.org

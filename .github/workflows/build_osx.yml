@@ -103,9 +103,15 @@ jobs:
           # in as a literal string, so `@rpath/ifcopenshell.document.rdb
           # .dylib` failed to resolve at import time. ifcwrap now sets
           # INSTALL_RPATH to "@loader_path" on Apple.
-          CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release \
+          CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" \
             QT_DIR="${QT_DIR}" \
-            uv run ./nix/build-all.py -v --diskcleanup --ifcopenshell-shared ${MAC_INTEL} \
+            uv run ./nix/build-all.py \
+              -v \
+              --diskcleanup \
+              --ifcopenshell-shared \
+              --add-commit-sha \
+              --build-cfg Release \
+              ${MAC_INTEL} \
             | tee build.log
 
       - name: Upload Build Logs
