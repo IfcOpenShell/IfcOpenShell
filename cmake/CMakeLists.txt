@@ -398,6 +398,10 @@ if(USE_MMAP)
     endif()
 endif()
 
+# 3.3.9 is the version currently used on the Windows build.
+# 3.4.0 is the version shipped with Ubuntu 22.04.
+set(EIGEN_MIN_VERSION 3.3.9)
+
 # 1.74 is the version shipped with Ubuntu 22.04.
 set(BOOST_MIN_VERSION 1.74)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 14)

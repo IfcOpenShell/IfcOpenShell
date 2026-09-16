@@ -41,7 +41,7 @@ if(UNIX)
     find_package(Threads)
 endif()
 
-find_package(Eigen3 REQUIRED)
+find_package(Eigen3 ${EIGEN_MIN_VERSION} REQUIRED)
 
 add_subdirectory(kernels)
 set(kernel_libraries ${kernel_libraries} PARENT_SCOPE)
