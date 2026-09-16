@@ -611,21 +611,8 @@ endif()
 
 if(BUILD_IFCGEOM)
     # CGAL::CGAL target already has dependencies resolved.
-    if(WITH_CGAL AND CGAL_DIR)
+    if(WITH_CGAL)
         set(CGAL_LIBRARIES CGAL::CGAL)
-        message(STATUS "Using found CGAL package at '${CGAL_DIR}'")
-    elseif(WITH_CGAL AND NOT CGAL_DIR)
-        find_library(libGMP NAMES gmp mpir PATHS ${GMP_LIBRARY_DIR} NO_DEFAULT_PATH)
-        find_library(libMPFR NAMES mpfr PATHS ${MPFR_LIBRARY_DIR} NO_DEFAULT_PATH)
-        if(NOT libGMP)
-            message(FATAL_ERROR "Unable to find GMP library files, aborting")
-        endif()
-        if(NOT libMPFR)
-            message(FATAL_ERROR "Unable to find MPFR library files, aborting")
-        endif()
-
-        list(APPEND CGAL_LIBRARIES "${libMPFR}")
-        list(APPEND CGAL_LIBRARIES "${libGMP}")
     endif()
 
     add_subdirectory(../src/ifcgeom ifcgeom)
