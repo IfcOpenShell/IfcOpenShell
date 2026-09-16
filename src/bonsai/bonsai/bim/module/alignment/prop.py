@@ -294,6 +294,13 @@ class HorizontalSegmentRow(PropertyGroup):
             ("BLOSSCURVE", "Bloss Curve", "A spiral transition curve (S-shaped curvature change)"),
             ("COSINECURVE", "Cosine Curve", "A spiral transition curve (cosine-based curvature change)"),
             ("SINECURVE", "Sine Curve", "A spiral transition curve (sine-based curvature change)"),
+            (
+                "VIENNESEBEND",
+                "Viennese Bend",
+                "A spiral transition curve whose shape also depends on cant -- the alignment's "
+                "cant layout must already cover this segment's station range before Apply, or "
+                "the geometry kernel has nothing to resolve it against",
+            ),
             ("UNSUPPORTED", "Unsupported", "A segment type this table can't edit — remove it or fix it in IFC directly"),
         ],
         default="LINE",
@@ -342,7 +349,16 @@ class VerticalSegmentRow(PropertyGroup):
 
 class CantSegmentRow(PropertyGroup):
     """One staged edit to a cant alignment segment (see HorizontalSegmentRow
-    for the general pattern this mirrors)."""
+    for the general pattern this mirrors).
+
+    predefined_type mirrors the horizontal spiral family 1:1 where a direct
+    cant equivalent exists (HELMERTCURVE/BLOSSCURVE/COSINECURVE/SINECURVE/
+    VIENNESEBEND -- _map_alignment_cant_segment implements all of these);
+    CLOTHOID and CUBIC have no matching cant curve type in the IFC schema, so
+    both map to LINEARTRANSITION instead (see
+    tool.Alignment.CANT_TYPE_FOR_HORIZONTAL_TYPE, the same table
+    align.generate_cant_layout and the horizontal-edit-time sync use).
+    """
 
     segment_id: IntProperty(name="Source Segment ID", default=0)
     predefined_type: EnumProperty(
@@ -350,6 +366,11 @@ class CantSegmentRow(PropertyGroup):
         items=[
             ("CONSTANTCANT", "Constant Cant", "A constant left/right cant"),
             ("LINEARTRANSITION", "Linear Transition", "Cant that changes linearly over the segment"),
+            ("HELMERTCURVE", "Helmert Curve", "A cant transition (sine-based curvature change)"),
+            ("BLOSSCURVE", "Bloss Curve", "A cant transition (S-shaped curvature change)"),
+            ("COSINECURVE", "Cosine Curve", "A cant transition (cosine-based curvature change)"),
+            ("SINECURVE", "Sine Curve", "A cant transition (sine-based curvature change)"),
+            ("VIENNESEBEND", "Viennese Bend", "A cant transition paired with a horizontal Viennese Bend segment"),
             ("UNSUPPORTED", "Unsupported", "A segment type this table can't edit — remove it or fix it in IFC directly"),
         ],
         default="CONSTANTCANT",
