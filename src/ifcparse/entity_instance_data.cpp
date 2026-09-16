@@ -135,6 +135,12 @@ namespace {
 #endif
         throw std::logic_error("RocksDB storage is unavailable");
     }
+
+    template<argument_type A>
+    inline size_t aggregate_size_(attribute_value::pointer_type array_, uint8_t storage_model_, size_t instance_name_, const ifcopenshell::declaration* entity_or_type, uint8_t index_)
+    {
+        return dispatch_get_<argument_storage_type_t<A>>(array_, storage_model_, instance_name_, entity_or_type, index_).size();
+    }
 }
 
 attribute_value::operator int64_t() const
@@ -289,10 +295,10 @@ bool attribute_value::isNull() const
     return dispatch_has_<blank>(array_, storage_model_, instance_name_, entity_or_type_, index_);
 }
 
-unsigned int attribute_value::size() const
+size_t attribute_value::size() const
 {
     if (storage_model_ == 0) {
-        return array_.storage_ptr->apply_visitor(size_visitor{}, index_);
+        return (size_t)array_.storage_ptr->apply_visitor(size_visitor{}, index_);
     }
 #ifdef IFOPSH_WITH_ROCKSDB
     else {
@@ -302,23 +308,23 @@ unsigned int attribute_value::size() const
         case Argument_AGGREGATE_OF_EMPTY_AGGREGATE:
             return 0;
         case Argument_AGGREGATE_OF_INT:
-            return (unsigned int)dispatch_get_<std::vector<int64_t>>(array_, storage_model_, instance_name_, entity_or_type_, index_).size();
+            return aggregate_size_<Argument_AGGREGATE_OF_INT>(array_, storage_model_, instance_name_, entity_or_type_, index_);
         case Argument_AGGREGATE_OF_DOUBLE:
-            return (unsigned int)dispatch_get_<std::vector<double>>(array_, storage_model_, instance_name_, entity_or_type_, index_).size();
+            return aggregate_size_<Argument_AGGREGATE_OF_DOUBLE>(array_, storage_model_, instance_name_, entity_or_type_, index_);
         case Argument_AGGREGATE_OF_STRING:
-            return (unsigned int)dispatch_get_<std::vector<std::string>>(array_, storage_model_, instance_name_, entity_or_type_, index_).size();
+            return aggregate_size_<Argument_AGGREGATE_OF_STRING>(array_, storage_model_, instance_name_, entity_or_type_, index_);
         case Argument_AGGREGATE_OF_BINARY:
-            return (unsigned int)dispatch_get_<std::vector<boost::dynamic_bitset<>>>(array_, storage_model_, instance_name_, entity_or_type_, index_).size();
+            return aggregate_size_<Argument_AGGREGATE_OF_BINARY>(array_, storage_model_, instance_name_, entity_or_type_, index_);
         case Argument_AGGREGATE_OF_ENTITY_INSTANCE:
-            return (unsigned int)((std::vector<express::base>)*this).size();
+            return aggregate_size_<Argument_AGGREGATE_OF_ENTITY_INSTANCE>(array_, storage_model_, instance_name_, entity_or_type_, index_);
         case Argument_AGGREGATE_OF_AGGREGATE_OF_INT:
-            return (unsigned int)dispatch_get_<std::vector<std::vector<int64_t>>>(array_, storage_model_, instance_name_, entity_or_type_, index_).size();
+            return aggregate_size_<Argument_AGGREGATE_OF_AGGREGATE_OF_INT>(array_, storage_model_, instance_name_, entity_or_type_, index_);
         case Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE:
-            return (unsigned int)dispatch_get_<std::vector<std::vector<double>>>(array_, storage_model_, instance_name_, entity_or_type_, index_).size();
+            return aggregate_size_<Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE>(array_, storage_model_, instance_name_, entity_or_type_, index_);
         case Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE:
-            return (unsigned int)((std::vector<std::vector<express::base>>)*this).size();
+            return aggregate_size_<Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE>(array_, storage_model_, instance_name_, entity_or_type_, index_);
         default:
-            return (unsigned int)-1;
+            return (size_t)-1;
         }
     }
 #endif

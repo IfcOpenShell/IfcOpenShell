@@ -197,17 +197,16 @@ public:
         return iterator();
     }
 
-    // Removes the element: every key under prefix + key + "|". The prefix
-    // with its last byte incremented is the exclusive upper bound ('}'
-    // follows '|'). Returns 1 if the element existed, 0 otherwise.
+    // Removes the element: every key under prefix + key + "|". The exclusive
+    // upper bound is the same prefix with its separator incremented. Returns
+    // 1 if the element existed, 0 otherwise.
     size_t erase(const key_type& key) {
 #ifdef IFOPSH_WITH_ROCKSDB
         if (find(key) == end()) {
             return 0;
         }
         const std::string lower_bound = prefix_ + key_to_string(key) + "|";
-        std::string upper_bound = lower_bound;
-        upper_bound.back() = '}';
+        const std::string upper_bound = prefix_ + key_to_string(key) + std::string(1, '|' + 1);
         rocksdb::WriteBatch batch;
         batch.DeleteRange(lower_bound, upper_bound);
         db_->Write(rocksdb::WriteOptions{}, &batch);

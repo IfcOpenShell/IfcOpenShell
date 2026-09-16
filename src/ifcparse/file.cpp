@@ -215,12 +215,11 @@ void ifcopenshell::impl::rocks_db_file_storage::process_deletion_inverse(const e
     auto id = inst.id();
 
     {
-        // Delete every record referencing inst: all keys under v|{id}|. The
-        // prefix with its last byte incremented is the exclusive upper bound
-        // ('}' follows '|'), so no iterator is needed to find the range end.
+        // Delete every record referencing inst: all keys under v|<id>|. The
+        // exclusive upper bound is the same prefix with its separator
+        // incremented, so no iterator is needed to find the range end.
         auto prefix = "v|" + std::to_string(id) + "|";
-        auto upper_bound = prefix;
-        upper_bound.back() = '}';
+        auto upper_bound = "v|" + std::to_string(id) + std::string(1, '|' + 1);
 
         rocksdb::WriteBatch batch;
         batch.DeleteRange(prefix, upper_bound);

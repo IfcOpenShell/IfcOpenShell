@@ -32,6 +32,7 @@
 #undef Handle
 
 #include <rocksdb/db.h>
+#include <tuple>
 
 #pragma pop_macro("Handle")
 
@@ -225,6 +226,24 @@ struct pack_to_variant_array<parameter_pack<Args...>> {
 };
 
 using in_memory_attribute_storage = pack_to_variant_array<type_variant_parameter_pack>::type;
+
+// argument_type enumerates the members of type_variant_parameter_pack in
+// order, so a member maps back to the type stored for it.
+template <typename Pack>
+struct pack_element;
+
+template <typename... Args>
+struct pack_element<parameter_pack<Args...>> {
+    template <size_t I>
+    using type = std::tuple_element_t<I, std::tuple<Args...>>;
+};
+
+template <argument_type A>
+using argument_storage_type_t = typename pack_element<type_variant_parameter_pack>::template type<A>;
+
+static_assert(std::is_same_v<argument_storage_type_t<Argument_INT>, int64_t>, "argument_type must enumerate type_variant_parameter_pack in order");
+static_assert(std::is_same_v<argument_storage_type_t<Argument_AGGREGATE_OF_INT>, std::vector<int64_t>>, "argument_type must enumerate type_variant_parameter_pack in order");
+static_assert(std::is_same_v<argument_storage_type_t<Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE>, std::vector<std::vector<express::base>>>, "argument_type must enumerate type_variant_parameter_pack in order");
 
 template <typename Pack>
 struct type_encoder_impl;
@@ -427,7 +446,7 @@ public:
     operator enumeration_reference() const;
 
     bool isNull() const;
-    unsigned int size() const;
+    size_t size() const;
 
     ifcopenshell::argument_type type() const;
 
