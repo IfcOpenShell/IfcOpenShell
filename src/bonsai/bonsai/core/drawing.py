@@ -331,6 +331,7 @@ def add_drawing(
             "HasUnderlay": False,
             "HasLinework": True,
             "HasAnnotation": True,
+            "HasAxisLinework": False,
             "GlobalReferencing": True,
             "Stylesheet": drawing.get_default_drawing_resource_path("Stylesheet"),
             "Markers": drawing.get_default_drawing_resource_path("Markers"),
