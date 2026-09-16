@@ -103,8 +103,13 @@ class WheelBuilder:
         return f"https://s3.amazonaws.com/ifcopenshell-builds/{encoded_filename}"
 
     @staticmethod
-    def download_and_extract_so(url: str, build_dir: Path) -> tuple[Path, Path]:
-        """Download wheel from URL and extract .so and .py files."""
+    def download_and_extract_so(url: str, build_dir: Path) -> tuple[list[Path], Path]:
+        """Download wheel from URL and extract .so and .py files.
+
+        Besides `_ifcopenshell_wrapper`, the wheel bundles the underscore-prefixed
+        runtime plugins (e.g. `ifcopenshell_parse_schema_ifc4.so`) that are loaded
+        by name, so every `.so` has to be kept.
+        """
         py_wrapper_filename = "ifcopenshell_wrapper.py"
         build_dir.mkdir(parents=True, exist_ok=True)
 
@@ -124,17 +129,22 @@ class WheelBuilder:
             py_files = [f for f in zf.namelist() if f.endswith(py_wrapper_filename)]
 
             assert so_files, "No .so file found in wheel"
+            assert any(
+                Path(f).name.startswith("_ifcopenshell_wrapper") for f in so_files
+            ), "No _ifcopenshell_wrapper .so file found in wheel"
             assert py_files, f"No {py_wrapper_filename} file found in wheel"
 
-            so_file = so_files[0]
-            so_dst = build_dir / Path(so_file).name
-            so_dst.write_bytes(zf.read(so_file))
+            so_dsts = []
+            for so_file in so_files:
+                so_dst = build_dir / Path(so_file).name
+                so_dst.write_bytes(zf.read(so_file))
+                so_dsts.append(so_dst)
 
             py_file = py_files[0]
             py_dst = build_dir / Path(py_file).name
             py_dst.write_bytes(zf.read(py_file))
 
-        return so_dst, py_dst
+        return so_dsts, py_dst
 
 
 class Tools:
@@ -203,9 +213,10 @@ def main() -> None:
     print("Downloading and extracting _ifcopenshell_wrapper files...")
     makefile = REPO_ROOT / "src" / "ifcopenshell-python" / "Makefile"
     wheel_url = WheelBuilder.get_wheel_url(makefile)
-    so_file, py_file = WheelBuilder.download_and_extract_so(wheel_url, BUILD_DIR)
+    so_files, py_file = WheelBuilder.download_and_extract_so(wheel_url, BUILD_DIR)
 
-    Tools.create_symlink(IFCOPENSHELL_DIR / Path(so_file).name, so_file)
+    for so_file in so_files:
+        Tools.create_symlink(IFCOPENSHELL_DIR / so_file.name, so_file)
     Tools.create_symlink(IFCOPENSHELL_DIR / Path(py_file).name, py_file)
 
     print("Installing pyodide-build...")
