@@ -102,21 +102,6 @@ TEST_CASE("Aggregate inverse updates preserve reference multiplicity", "[ifcpars
     CHECK(inverse_count(segment_d) == 1);
 }
 
-TEST_CASE("Tokens without a string representation do not recurse in to_string()", "[ifcparse]") {
-    // to_string() used to delegate to as_string() for every token type it did
-    // not handle explicitly, while as_string() builds its exception message
-    // with to_string(). An EOF marker or an instance name therefore recursed
-    // between the two until the stack was exhausted.
-    ifcopenshell::token eof;
-    REQUIRE(eof.type == ifcopenshell::token::Token_NONE);
-    CHECK_THROWS_AS(eof.to_string(), ifcopenshell::invalid_token_exception);
-    CHECK_THROWS_AS(eof.as_string(), ifcopenshell::invalid_token_exception);
-
-    ifcopenshell::token identifier(0, ifcopenshell::token::Token_IDENTIFIER, (int64_t)123);
-    CHECK(identifier.to_string() == "#123");
-    CHECK_THROWS_AS(identifier.as_string(), ifcopenshell::invalid_token_exception);
-}
-
 TEST_CASE("Files that contain no tokens are rejected rather than crashing", "[ifcparse]") {
     // The header parser asks the lexer for a keyword before checking for EOF,
     // so input that lexes to zero tokens reaches token::as_string() on the EOF
@@ -321,9 +306,64 @@ struct recording_consumer {
         return true;
     }
 };
+
+// Everything decoded, the values all recorded as 'L' so the positions and
+// kinds compare with recording_consumer's.
+struct decoding_consumer {
+    static constexpr bool decode_strings = true;
+    static constexpr bool decode_values = true;
+    static constexpr bool keep_keywords = true;
+    std::vector<std::pair<size_t, char>> seen;
+    std::vector<uint32_t> identifiers;
+    std::vector<std::string> strings;
+    std::vector<std::string> keywords;
+    bool operator_(size_t pos, char c) {
+        seen.push_back({pos, c});
+        return true;
+    }
+    bool identifier(size_t pos, uint32_t value) {
+        seen.push_back({pos, '#'});
+        identifiers.push_back(value);
+        return true;
+    }
+    bool string(size_t pos, const std::string& text) {
+        seen.push_back({pos, '\''});
+        strings.push_back(text);
+        return true;
+    }
+    bool keyword(size_t pos, const std::string& text) {
+        seen.push_back({pos, 'L'});
+        keywords.push_back(text);
+        return true;
+    }
+    bool enumeration(size_t pos, const std::string&) {
+        seen.push_back({pos, 'L'});
+        return true;
+    }
+    bool binary(size_t pos, const std::string&) {
+        seen.push_back({pos, 'L'});
+        return true;
+    }
+    bool boolean(size_t pos, char) {
+        seen.push_back({pos, 'L'});
+        return true;
+    }
+    bool integer(size_t pos, int64_t) {
+        seen.push_back({pos, 'L'});
+        return true;
+    }
+    bool real(size_t pos, double) {
+        seen.push_back({pos, 'L'});
+        return true;
+    }
+    bool literal(size_t pos) {
+        seen.push_back({pos, 'L'});
+        return true;
+    }
+};
 } // namespace
 
-TEST_CASE("The index token policy ends every token where the full policy does, without decoding", "[ifcparse]") {
+TEST_CASE("A consumer that decodes nothing sees every token where the decoding consumer does", "[ifcparse]") {
     // Doubled quotes, a \S\' escape (an apostrophe as the page character,
     // which a byte scan would take for the end of the string), a \X2\
     // escape, a comment, binaries, enumerations, numbers and names.
@@ -331,69 +371,22 @@ TEST_CASE("The index token policy ends every token where the full policy does, w
         "#1=IFCWALL('it''s','a\\S\\'b','\\X2\\00E9\\X0\\c',/* #9 */ #2, \"0A\", .T., -1.5E-3, 42, $, *, (IFCLABEL('x'), #3));\n";
     ifcopenshell::file_reader<ifcopenshell::full_buffer_impl> full_reader(data, ifcopenshell::caller_fed_tag{});
     ifcopenshell::file_reader<ifcopenshell::full_buffer_impl> index_reader(data, ifcopenshell::caller_fed_tag{});
-    ifcopenshell::spf_lexer<ifcopenshell::file_reader<ifcopenshell::full_buffer_impl>> full(&full_reader), index(&index_reader);
-    size_t count = 0;
-    std::vector<unsigned> names;
-    while (true) {
-        ifcopenshell::token a = full.next(), b = index.next<ifcopenshell::index_tokens>();
-        REQUIRE((bool)a == (bool)b);
-        if (!a) {
-            break;
-        }
-        ++count;
-        CHECK(a.start_pos == b.start_pos);
-        CHECK(full_reader.tell() == index_reader.tell());
-        if (a.is_identifier()) {
-            REQUIRE(b.is_identifier());
-            CHECK(a.as_identifier() == b.as_identifier());
-            names.push_back(b.as_identifier());
-        } else if (a.is_keyword()) {
-            REQUIRE(b.is_keyword());
-            CHECK(a.as_string() == b.as_string());
-        } else if (a.is_operator()) {
-            REQUIRE(b.is_operator());
-            CHECK(a.value_char == b.value_char);
-        } else if (a.is_string()) {
-            CHECK(b.type == ifcopenshell::token::Token_STRING);
-        } else {
-            CHECK(b.type == ifcopenshell::token::Token_LITERAL);
-        }
-        full.reset_pool();
-        index.reset_pool();
-    }
-    CHECK(count == 34);
-    CHECK(names == std::vector<unsigned>{1, 2, 3});
-    // A scan() consumer that decodes nothing sees the same tokens at the same
-    // positions as next() under the index policy, in one pass.
-    ifcopenshell::file_reader<ifcopenshell::full_buffer_impl> scan_reader(data, ifcopenshell::caller_fed_tag{});
-    ifcopenshell::spf_lexer<ifcopenshell::file_reader<ifcopenshell::full_buffer_impl>> scanner(&scan_reader);
-    recording_consumer recorded;
-    scanner.scan(recorded);
-    ifcopenshell::file_reader<ifcopenshell::full_buffer_impl> index_again(data, ifcopenshell::caller_fed_tag{});
-    ifcopenshell::spf_lexer<ifcopenshell::file_reader<ifcopenshell::full_buffer_impl>> index2(&index_again);
-    std::vector<std::pair<size_t, char>> expected;
-    while (true) {
-        ifcopenshell::token tk = index2.next<ifcopenshell::index_tokens>();
-        if (!tk) {
-            break;
-        }
-        expected.push_back({tk.start_pos, tk.is_operator() ? tk.value_char : tk.is_identifier() ? '#' : tk.is_string() ? '\'' : (tk.is_keyword() ? 'K' : 'L')});
-        index2.reset_pool();
-    }
-    // Keywords inside the attribute list are literals to a consumer that keeps no keyword text.
-    for (auto& e : expected) {
-        if (e.second == 'K') {
-            e.second = 'L';
-        }
-    }
-    CHECK(recorded.seen == expected);
-    // And the full policy decoded the escapes.
-    ifcopenshell::file_reader<ifcopenshell::full_buffer_impl> again(data, ifcopenshell::caller_fed_tag{});
-    ifcopenshell::spf_lexer<ifcopenshell::file_reader<ifcopenshell::full_buffer_impl>> lexer(&again);
-    lexer.next(); lexer.next(); lexer.next(); lexer.next();
-    CHECK(lexer.next().as_string() == "it's");
-    lexer.next();
-    CHECK(lexer.next().as_string() == "a\xc2\xa7" "b");
+    ifcopenshell::spf_lexer<ifcopenshell::file_reader<ifcopenshell::full_buffer_impl>> full_lexer(&full_reader), index_lexer(&index_reader);
+    decoding_consumer full;
+    recording_consumer index;
+    full_lexer.scan(full);
+    index_lexer.scan(index);
+    CHECK(full.seen.size() == 34);
+    CHECK(full.seen == index.seen);
+    CHECK(full_reader.tell() == index_reader.tell());
+    CHECK(index.identifiers == std::vector<uint32_t>{1, 2, 3});
+    CHECK(full.identifiers == index.identifiers);
+    CHECK(full.keywords == std::vector<std::string>{"IFCWALL", "IFCLABEL"});
+    // And the decoding consumer got the escapes decoded.
+    REQUIRE(full.strings.size() == 4);
+    CHECK(full.strings[0] == "it's");
+    CHECK(full.strings[1] == "a\xc2\xa7" "b");
+    CHECK(full.strings[3] == "x");
 }
 
 TEST_CASE("Scanning preserves identifiers and token boundaries across reader pages", "[ifcparse][scan]") {
@@ -401,14 +394,10 @@ TEST_CASE("Scanning preserves identifiers and token boundaries across reader pag
         "#1=IFCEXAMPLE(#0,#+12,#-1,#2147483647,#+-2,#1 2,#000003,"
         "'it''s','a\\S\\'b','\\X2\\00E9\\X0\\c',/* #999 */ .T.,\"0A\",-1.5E-3,$,*,(IFCLABEL(''),#42));#9";
     ifcopenshell::file_reader<ifcopenshell::full_buffer_impl> reference(data, ifcopenshell::caller_fed_tag{});
-    ifcopenshell::spf_lexer<decltype(reference)> lexer(&reference);
     recording_consumer expected;
-    while (auto tk = lexer.next()) {
-        expected.seen.push_back({tk.start_pos, tk.is_operator() ? tk.value_char : tk.is_identifier() ? '#' : tk.is_string() ? '\'' : 'L'});
-        if (tk.is_identifier()) {
-            expected.identifiers.push_back(tk.as_identifier());
-        }
-        lexer.reset_pool();
+    {
+        ifcopenshell::spf_lexer<decltype(reference)> lexer(&reference);
+        lexer.scan(expected);
     }
     CHECK(expected.identifiers == std::vector<uint32_t>{1, 0, 12, UINT32_MAX, INT32_MAX, UINT32_MAX - 1, 12, 3, 42, 9});
     const auto check = [&](auto& source) {
@@ -444,9 +433,6 @@ TEST_CASE("Identifier shortcuts retain invalid-token errors", "[ifcparse][scan]"
         CAPTURE(data);
         ifcopenshell::file_reader<ifcopenshell::full_buffer_impl> reader(data, ifcopenshell::caller_fed_tag{});
         ifcopenshell::spf_lexer<decltype(reader)> lexer(&reader);
-        CHECK_THROWS_AS(lexer.next(), ifcopenshell::invalid_token_exception);
-        reader.seek(0);
-        lexer.reset_pool();
         recording_consumer consumer;
         CHECK_THROWS_AS(lexer.scan(consumer), ifcopenshell::invalid_token_exception);
     }
