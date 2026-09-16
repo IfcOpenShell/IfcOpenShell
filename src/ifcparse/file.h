@@ -91,7 +91,7 @@ enum filetype {
 IFC_PARSE_API filetype guess_file_type(const std::string& path);
 
 template <typename Reader = file_reader<full_buffer_impl>>
-class IFC_PARSE_API instance_streamer {
+class instance_streamer {
 private:
     std::unique_ptr<Reader> owned_stream_;
     Reader* stream_;
