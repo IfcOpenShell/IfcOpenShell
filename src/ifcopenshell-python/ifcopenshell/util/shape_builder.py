@@ -1938,7 +1938,7 @@ class ShapeBuilder:
 
         body = ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW")
         assert body
-        representation = self.get_representation(body, transition_items, "Tesselation")
+        representation = self.get_representation(body, transition_items, "Tessellation")
 
         transition_data = {
             "start_length": start_length,
