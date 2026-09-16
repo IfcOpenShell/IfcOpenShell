@@ -38,9 +38,9 @@ from common import (
     ensure_script_dir,
     logger,
     resolve_cli_or_env,
-    resolve_generator,
     run_streamed,
 )
+from common_win import resolve_generator
 from vs_cfg import vs_cfg
 
 

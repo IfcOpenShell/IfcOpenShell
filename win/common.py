@@ -27,10 +27,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast, get_args
-
-if TYPE_CHECKING:
-    from vs_cfg import VsCfgResult
+from typing import Any, Literal, TypeVar, cast, get_args
 
 
 class C:
@@ -195,46 +192,3 @@ def validate_cmake_version() -> None:
     if not match or tuple(map(int, match.groups())) < MIN_CMAKE_VERSION:
         logger.error(error_msg)
         sys.exit(1)
-
-
-class BuildDepsCache:
-    def __init__(self, vs_cfg_vars: VsCfgResult) -> None:
-        if vs_cfg_vars.vs_toolset_override:
-            self.path = SCRIPT_DIR / f"BuildDepsCache-{vs_cfg_vars.vs_platform}-{vs_cfg_vars.vs_toolset_override}.txt"
-        else:
-            self.path = SCRIPT_DIR / f"BuildDepsCache-{vs_cfg_vars.vs_platform}.txt"
-        self.path.write_text("")
-
-    def add_entry(self, key: str, value: str) -> None:
-        with self.path.open("a") as f:
-            f.write(f"{key}={value}\n")
-
-    @staticmethod
-    def parse(path: Path) -> dict[str, str]:
-        entries: dict[str, str] = {}
-        for line in path.read_text().splitlines():
-            key, _, value = line.partition("=")
-            entries[key] = value
-        return entries
-
-
-def resolve_generator(generator: str | None) -> str:
-    """Return `generator` as-is, or fall back to the GEN_SHORTHAND from the most recently modified
-    BuildDepsCache-*.txt. Exits if neither is available.
-    """
-    if generator is not None:
-        return generator
-
-    cache_files = sorted(SCRIPT_DIR.glob("BuildDepsCache-*.txt"), key=lambda p: p.stat().st_mtime, reverse=True)
-    cached_generator = None
-    if cache_files:
-        cache_file = cache_files[0]
-        logger.info(f"Found {cache_file.name}, reading GEN_SHORTHAND from it.")
-        cached_generator = BuildDepsCache.parse(cache_file).get("GEN_SHORTHAND")
-
-    if cached_generator is None:
-        logger.error(
-            "BuildDepsCache file does not exist and/or GEN_SHORTHAND missing from it. Run build-deps.py to create it."
-        )
-        sys.exit(1)
-    return cached_generator

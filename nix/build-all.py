@@ -3,6 +3,8 @@
 # dependencies = [
 #     "typing_extensions",
 # ]
+# [tool.ty.environment]
+# root = ["."]
 # ///
 ###############################################################################
 #                                                                             #
@@ -135,12 +137,11 @@ from pathlib import Path
 from typing import Literal, NamedTuple, TypeAlias
 from urllib.request import urlretrieve
 
+from common import ColorFormatter, HelpStrings, resolve_cli_or_env
 from typing_extensions import assert_never
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-ch = logging.StreamHandler()
-logger.addHandler(ch)
+# `common` configures the root logger on import, so reuse it here.
+logger = logging.getLogger()
 
 
 def is_on_off(value: str | None, *, default: bool) -> bool:
@@ -208,6 +209,7 @@ class Args(NamedTuple):
     occt_shared: bool
     mac_cross_compile_intel: bool
     wasm: bool
+    num_build_procs: int
 
 
 class DynamicArgs(NamedTuple):
@@ -310,7 +312,20 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         help="Cross compile for Intel Mac on Apple Silicon host.",
     )
     arg_parser.add_argument("-wasm", "--wasm", action="store_true", default=False, help="Compile for wasm.")
+    arg_parser.add_argument(
+        "--num-build-procs",
+        dest="num_build_procs",
+        type=int,
+        default=argparse.SUPPRESS,
+        help=HelpStrings.NUM_BUILD_PROCS,
+    )
     namespace, unknown_flags = arg_parser.parse_known_args()
+    num_build_procs = resolve_cli_or_env(
+        getattr(namespace, "num_build_procs", None),
+        "IFCOS_NUM_BUILD_PROCS",
+        multiprocessing.cpu_count() + 1,
+        arg_type="int",
+    )
     args = Args(
         explicit_targets=namespace.explicit_targets,
         build_examples=namespace.build_examples,
@@ -322,6 +337,7 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         occt_shared=namespace.occt_shared or namespace.shared,
         mac_cross_compile_intel=namespace.mac_cross_compile_intel,
         wasm=namespace.wasm,
+        num_build_procs=num_build_procs,
     )
 
     dynamic_args = DynamicArgs.from_unknown_flags(unknown_flags, arg_parser)
@@ -409,7 +425,7 @@ if APPLE:
     # /Users/runner/work/IfcOpenShell/IfcOpenShell/src/ifcparse/IfcFile.cpp:539:14: error: 'exists' is unavailable: introduced in macOS 10.15
     TOOLSET = "10.15"
 
-IFCOS_NUM_BUILD_PROCS = os.getenv("IFCOS_NUM_BUILD_PROCS", multiprocessing.cpu_count() + 1)
+IFCOS_NUM_BUILD_PROCS = ARGS.num_build_procs
 
 SCRIPT_PATH = Path(__file__).parent
 REPO_PATH = SCRIPT_PATH.parent
@@ -508,8 +524,8 @@ def gather_dependencies(dep: str) -> Generator[str]:
 
 if ARGS.verbose:
     logger.setLevel(logging.DEBUG)
-    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-    ch.setFormatter(formatter)
+    formatter = ColorFormatter("%(asctime)s - %(levelname)s - %(message)s")
+    logger.handlers[0].setFormatter(formatter)
 else:
     logger.setLevel(logging.INFO)
 

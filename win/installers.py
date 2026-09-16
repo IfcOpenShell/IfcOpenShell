@@ -34,7 +34,6 @@ from common import (
     REPO_ROOT,
     SCRIPT_DIR,
     BuildCfg,
-    BuildDepsCache,
     BuildType,
     debug_or_release,
     logger,
@@ -42,6 +41,7 @@ from common import (
     run,
     run_streamed,
 )
+from common_win import BuildDepsCache
 from vs_cfg import CMAKE_GENERATORS, VS_TOOLSET_TO_VS_VER, VsCfgResult, get_vs_var
 
 
