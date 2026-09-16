@@ -120,3 +120,15 @@ Two editing scenarios:
 
 For now, edits trigger a full wipe-out-and-regenerate of the alignment. A future iteration should
 regenerate only the affected subset instead of the whole alignment.
+
+**Implemented (2026-09-15):** horizontal PIs now also have a table-editing path
+(`ALIGN_UL_horizontal_pi_markers`, staged in `HorizontalPIMarker`, loaded by
+`ALIGN_OT_load_horizontal_pi_table` and applied by `ALIGN_OT_apply_horizontal_pi_table`), added
+alongside the existing draggable-Empty workflow rather than replacing it — mirrors
+`VerticalPIMarker`'s "PI list as a plain table" pattern exactly, reusing the same
+`_reconstruct_horizontal_pis` classification the Empty-based `align.edit_horizontal_pis` already
+used. Decided not to converge the two alignments onto one single editing model: a horizontal PI has
+a real (X, Y) position in the actual 3D scene, so viewport dragging (with native snapping/numeric
+entry) is a natural, already-working fit with no equivalent for vertical PIs, which only have
+meaning in the profile view's synthetic (distance-along, elevation) space. The table is offered as
+an additional, keyboard-precise path for horizontal rather than swapping out what already works.
