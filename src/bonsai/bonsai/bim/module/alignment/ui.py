@@ -316,25 +316,28 @@ class ALIGN_PT_alignment_authoring(Panel):
         col = layout.column(align=True)
         col.operator("align.add_alignment", icon="ADD")
 
+        props = context.scene.CivilAlignmentProperties
+        marker = context.active_object
+        is_marker = bool(marker) and _is_interior_pi_marker(marker)
+        markers_present = _pi_markers_present(context)
+        table_present = bool(props.horizontal_pi_rows)
+
         alignment = tool.Alignment.get_active_alignment()
         row = col.row(align=True)
         row.enabled = bool(alignment)
         row.operator("align.draw_horizontal_alignment", icon="EYEDROPPER")
-        row.operator("align.edit_horizontal_pis", text="", icon="EMPTY_AXIS")
-        row.operator("align.load_horizontal_pi_table", text="", icon="SHORTDISPLAY")
+        row.operator("align.edit_horizontal_pis", text="", icon="EMPTY_AXIS", depress=markers_present)
+        row.operator("align.load_horizontal_pi_table", text="", icon="ANIM_DATA", depress=table_present)
         row.operator("align.remove_alignment", text="", icon="TRASH")
         if not alignment:
             col.label(text="Add or select an alignment first", icon="INFO")
-
-        marker = context.active_object
-        is_marker = bool(marker) and _is_interior_pi_marker(marker)
-        markers_present = _pi_markers_present(context)
 
         if is_marker or markers_present:
             box = layout.box()
             if is_marker:
                 pi_data = marker.bonsai_pi_curve_marker
                 box.label(text=f"PI {pi_data.pi_index}", icon="EMPTY_AXIS")
+                box.label(text="Drag in the viewport to reposition", icon="ORIENTATION_GLOBAL")
                 box.prop(pi_data, "curve_type")
                 if pi_data.curve_type != "TANGENT":
                     box.prop(pi_data, "radius")
@@ -342,15 +345,14 @@ class ALIGN_PT_alignment_authoring(Panel):
                     box.prop(pi_data, "spiral_in_length")
                 if pi_data.curve_type in {"CIRCULAR_SPIRAL", "SPIRAL_CIRCULAR_SPIRAL"}:
                     box.prop(pi_data, "spiral_out_length")
-                box.operator("align.apply_pi_curve", icon="CHECKMARK")
+                row = box.row(align=True)
+                row.operator("align.apply_pi_curve", icon="CHECKMARK")
+                row.operator("align.finish_pi_editing", icon="CHECKMARK")
             else:
                 box.label(text="Select a PI marker to define its curve", icon="INFO")
-
-            if markers_present:
                 box.operator("align.finish_pi_editing", icon="CHECKMARK")
 
-        props = context.scene.CivilAlignmentProperties
-        if props.horizontal_pi_rows:
+        if table_present:
             box = layout.box()
             box.label(text="Horizontal PIs", icon="ANIM_DATA")
             header = box.row(align=True)
@@ -371,7 +373,7 @@ class ALIGN_PT_alignment_authoring(Panel):
 
             row = box.row(align=True)
             row.operator("align.apply_horizontal_pi_table", icon="CHECKMARK")
-            row.operator("align.clear_horizontal_pi_table", text="", icon="TRASH")
+            row.operator("align.finish_horizontal_pi_table", icon="CHECKMARK")
 
 
 class ALIGN_PT_vertical_alignment_authoring(Panel):
@@ -405,7 +407,7 @@ class ALIGN_PT_vertical_alignment_authoring(Panel):
         col = layout.column(align=True)
         row = col.row(align=True)
         row.operator("align.draw_vertical_alignment", icon="EYEDROPPER")
-        row.operator("align.load_vertical_pis", text="", icon="EMPTY_AXIS")
+        row.operator("align.load_vertical_pis", text="", icon="ANIM_DATA", depress=bool(props.vertical_pi_markers))
 
         if props.vertical_pi_markers:
             box = layout.box()
@@ -428,7 +430,7 @@ class ALIGN_PT_vertical_alignment_authoring(Panel):
 
             row = box.row(align=True)
             row.operator("align.apply_vertical_pi_curve", icon="CHECKMARK")
-            row.operator("align.clear_vertical_pi_markers", text="", icon="TRASH")
+            row.operator("align.finish_vertical_pi_editing", icon="CHECKMARK")
 
 
 class ALIGN_PT_alignment_stationing_authoring(Panel):
@@ -771,7 +773,7 @@ class ALIGN_PT_alignment_segments(Panel):
         pi_row = row.row(align=True)
         pi_row.enabled = not h_markers_open
         pi_op = pi_row.operator(
-            "align.load_vertical_pis", text="", icon="EMPTY_AXIS", depress=is_editing_pi,
+            "align.load_vertical_pis", text="", icon="ANIM_DATA", depress=is_editing_pi,
         )
         pi_op.layout_id = v_id
 
@@ -779,7 +781,7 @@ class ALIGN_PT_alignment_segments(Panel):
         # edit lives right next to the one that started it, rather than only in the
         # (separate, collapsed-by-default) Vertical Alignment panel below.
         if is_editing_pi:
-            row.operator("align.clear_vertical_pi_markers", text="", icon="X")
+            row.operator("align.finish_vertical_pi_editing", text="", icon="CHECKMARK")
 
         if not expanded:
             return

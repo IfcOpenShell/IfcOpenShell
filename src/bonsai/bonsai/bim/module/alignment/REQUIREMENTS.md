@@ -132,3 +132,67 @@ a real (X, Y) position in the actual 3D scene, so viewport dragging (with native
 entry) is a natural, already-working fit with no equivalent for vertical PIs, which only have
 meaning in the profile view's synthetic (distance-along, elevation) space. The table is offered as
 an additional, keyboard-precise path for horizontal rather than swapping out what already works.
+
+## 5. Alternative alignment definition methods
+
+**Confirmed future requirement (per the user, 2026-09-16).** Beyond the PI-based tangent+curve
+workflow (§2), support defining an alignment's geometry directly from:
+
+1. **3D polyline.** A sequence of 3D points (X, Y, Z) defines both the horizontal alignment and a
+   vertical profile in one pass — each point's elevation implies a vertical PI at the corresponding
+   distance-along. Presumably straight-tangent segments only at this stage; curve smoothing would
+   still be layered on afterward via the existing PI-curve workflow (§2 steps 6-7).
+2. **2D polyline.** The same, but points carry only (X, Y) — horizontal geometry only, with no
+   vertical profile implied (vertical would need defining separately, e.g. via the existing
+   draw-by-PI tool in the profile view).
+3. **Offset curve by distance(s).** Define a new alignment as an offset from an existing reference
+   alignment, by a given distance (or distances, if the offset varies along the alignment) — e.g. a
+   parallel ramp or lane edge defined relative to a mainline alignment rather than drawn from
+   scratch.
+
+**Open questions:**
+- Input source for the polyline methods — trace an existing Blender curve/mesh-edge object? Import
+  points from a table/file? Draw interactively (reusing the existing click-to-place tool, just
+  without forcing tangent-only PI-method smoothing)?
+- For the offset-curve method: constant offset only, or does the distance vary by station (a table
+  of station/offset pairs, similar to how station equations are entered today)? Which side
+  (left/right) convention? Does it need its own live preview/decorator, the way the PI-method draw
+  tool has one?
+- How does an offset curve interact with vertical — does the new alignment inherit the reference
+  alignment's vertical profile (shifted), get its own, or default to flat until vertical is added
+  separately?
+
+## 6. Vertical draw/edit parity with horizontal
+
+**Confirmed future requirement (per the user, 2026-09-16).** Two modes horizontal's draw/edit tools
+have that vertical's don't:
+
+1. **Numeric keyboard entry while drawing.** `ALIGN_OT_draw_horizontal_alignment` inherits
+   `PolylineOperator`, giving it typed D/A/X/Y entry (§2's `PolylineDecorator`-driven input).
+   `ALIGN_OT_draw_vertical_alignment` is a separate, bespoke modal with no `event.ascii` handling at
+   all — mouse-click only (plus Backspace/Enter/Esc), no way to type an exact value while placing a
+   vertical PI.
+
+   Inputs for a vertical PI, specifically:
+   - **Elevation** — always available, every point.
+   - **Slope** (grade, i.e. the incoming/outgoing gradient) — always available, every point.
+   - **Distance along** — available for interior PIs only. The first point is pinned to the
+     horizontal's start station and the last to its end station (already enforced today — see §2's
+     "the first PI is anchored to the start station... moving past the last station locks
+     distance-along there too"), so distance-along has nothing to type for those two; only interior
+     PIs have a free distance-along value worth entering numerically.
+
+2. **Drag-to-edit a PI in the viewport**, as an alternative to the table (horizontal has this as of
+   2026-09-16). Vertical's PI editing is table-only today. `REQUIREMENTS.md` §4's original decision
+   not to build this ("no equivalent for vertical PIs, which only have meaning in the profile view's
+   synthetic (distance-along, elevation) space") is worth revisiting — the profile view is a real
+   `SpaceView3D` in ortho mode with an addressable (distance-along, scaled-elevation) coordinate
+   space that `VerticalProfileDecorator` already converts to/from for its own drawing, so a
+   draggable marker there isn't actually impossible, just not yet built.
+
+**Open questions:**
+- For numeric entry: does Tab cycle Elevation → Slope → Distance Along (skipping Distance Along at
+  the endpoints), mirroring horizontal's D → A → X → Y cycle?
+- For drag-to-edit: would it reuse the same `PICurveMarkerProperties`-style Empty-in-a-3D-view
+  pattern horizontal uses, translated into the profile view's (distance-along, scaled-elevation)
+  plane, or something bespoke to that view?
