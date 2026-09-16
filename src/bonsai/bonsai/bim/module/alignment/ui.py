@@ -126,6 +126,30 @@ class ALIGN_UL_vertical_pi_markers(UIList):
             row.label(text="")
 
 
+class ALIGN_UL_horizontal_pi_markers(UIList):
+    """UIList for the interior PIs of a just-drawn/edited horizontal alignment.
+
+    Table-editing companion to the draggable viewport Empties (see
+    PICurveMarkerProperties) -- same PI list, applied all at once via
+    align.apply_horizontal_pi_table. Mirrors ALIGN_UL_vertical_pi_markers.
+    """
+
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        if self.layout_type not in {"DEFAULT", "COMPACT"}:
+            return
+        row = layout.row(align=True)
+        row.label(text=str(index + 1))
+        row.label(text=f"{item.x:.2f}")
+        row.label(text=f"{item.y:.2f}")
+        row.prop(item, "curve_type", text="")
+        if item.curve_type != "TANGENT":
+            row.prop(item, "radius", text="")
+        if item.curve_type in {"SPIRAL_CIRCULAR", "SPIRAL_CIRCULAR_SPIRAL"}:
+            row.prop(item, "spiral_in_length", text="")
+        if item.curve_type in {"CIRCULAR_SPIRAL", "SPIRAL_CIRCULAR_SPIRAL"}:
+            row.prop(item, "spiral_out_length", text="")
+
+
 class ALIGN_UL_h_segments(UIList):
     """Editable table of a horizontal layout's staged segment edits (see
     align.enable_editing_h_segments / align.apply_h_segments).
@@ -292,6 +316,7 @@ class ALIGN_PT_alignment_authoring(Panel):
         row.enabled = bool(alignment)
         row.operator("align.draw_horizontal_alignment", icon="EYEDROPPER")
         row.operator("align.edit_horizontal_pis", text="", icon="EMPTY_AXIS")
+        row.operator("align.load_horizontal_pi_table", text="", icon="SHORTDISPLAY")
         row.operator("align.remove_alignment", text="", icon="TRASH")
         if not alignment:
             col.label(text="Add or select an alignment first", icon="INFO")
@@ -318,6 +343,30 @@ class ALIGN_PT_alignment_authoring(Panel):
 
             if markers_present:
                 box.operator("align.clear_pi_markers", icon="TRASH")
+
+        props = context.scene.CivilAlignmentProperties
+        if props.horizontal_pi_rows:
+            box = layout.box()
+            box.label(text="Horizontal PIs", icon="ANIM_DATA")
+            header = box.row(align=True)
+            header.label(text="#")
+            header.label(text="Easting")
+            header.label(text="Northing")
+            header.label(text="Curve")
+
+            box.template_list(
+                "ALIGN_UL_horizontal_pi_markers",
+                "",
+                props,
+                "horizontal_pi_rows",
+                props,
+                "active_horizontal_pi_row_index",
+                rows=4,
+            )
+
+            row = box.row(align=True)
+            row.operator("align.apply_horizontal_pi_table", icon="CHECKMARK")
+            row.operator("align.clear_horizontal_pi_table", text="", icon="TRASH")
 
 
 class ALIGN_PT_vertical_alignment_authoring(Panel):
