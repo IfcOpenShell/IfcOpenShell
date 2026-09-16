@@ -266,6 +266,33 @@ void spf_lexer<Reader>::scan(Consumer& consumer) {
         }
 
         auto remaining = stream->remaining();
+
+        // A literal whose text is discarded only needs its end: walk the
+        // reader's contiguous span with a local pointer instead of a bounds
+        // and page check per byte. A span that ends before a delimiter (a
+        // page boundary) hands over to the loop below at the same cursor.
+        if constexpr (!Consumer::keep_keywords) {
+            if (text == nullptr) {
+                while (remaining) {
+                    const auto span = stream->span();
+                    if (span.second == 0) {
+                        break;
+                    }
+                    const char* p = span.first;
+                    const char* const end = p + span.second;
+                    while (p != end && !is_token_delimiter(*p)) {
+                        ++p;
+                    }
+                    const size_t n = static_cast<size_t>(p - span.first);
+                    stream->increment(n);
+                    remaining -= n;
+                    if (p != end) {
+                        break;
+                    }
+                }
+            }
+        }
+
         while (remaining) {
             // Most index tokens are shorter than a word. Testing both word
             // widths at every byte costs more than the scalar delimiter check.
