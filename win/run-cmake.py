@@ -30,6 +30,7 @@ from pathlib import Path
 from typing import Literal, NamedTuple, NoReturn
 
 from common import (
+    ADD_COMMIT_SHA_DEFAULT,
     OFF_ON,
     PROJECT_NAME,
     REPO_ROOT,
@@ -178,17 +179,12 @@ def parse_args() -> Args:
         default=None,
         help=HelpStrings.GENERATOR_FLAG,
     )
-    ADD_COMMIT_SHA_DEFAULT = False
     parser.add_argument(
         "--add-commit-sha",
         dest="add_commit_sha",
         action=argparse.BooleanOptionalAction,
         default=argparse.SUPPRESS,
-        help=(
-            "Add the commit SHA to the built version string. "
-            "Also can be specified by using ADD_COMMIT_SHA env variable. "
-            f"(default: {ADD_COMMIT_SHA_DEFAULT})"
-        ),
+        help=HelpStrings.ADD_COMMIT_SHA,
     )
     USE_NINJA_DEFAULT = False
     parser.add_argument(

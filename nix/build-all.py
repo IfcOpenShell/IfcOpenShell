@@ -137,7 +137,15 @@ from pathlib import Path
 from typing import Literal, NamedTuple, TypeAlias
 from urllib.request import urlretrieve
 
-from common import BUILD_CFG_DEFAULT, BUILD_CFGS, BuildCfg, ColorFormatter, HelpStrings, resolve_cli_or_env
+from common import (
+    ADD_COMMIT_SHA_DEFAULT,
+    BUILD_CFG_DEFAULT,
+    BUILD_CFGS,
+    BuildCfg,
+    ColorFormatter,
+    HelpStrings,
+    resolve_cli_or_env,
+)
 from typing_extensions import assert_never
 
 # `common` configures the root logger on import, so reuse it here.
@@ -157,7 +165,6 @@ def is_on_off(value: str | None, *, default: bool) -> bool:
 
 PROJECT_NAME = "IfcOpenShell"
 USE_CURRENT_PYTHON_VERSION = is_on_off(os.getenv("USE_CURRENT_PYTHON_VERSION"), default=False)
-ADD_COMMIT_SHA = is_on_off(os.getenv("ADD_COMMIT_SHA"), default=False)
 IFCOS_BUILD_PYTHON_WRAPPER = is_on_off(os.getenv("IFCOS_BUILD_PYTHON_WRAPPER"), default=True)
 USE_OCCT = is_on_off(os.getenv("USE_OCCT"), default=True)
 PYTHON_USER_SITE = is_on_off(os.getenv("PYTHON_USER_SITE"), default=False)
@@ -219,6 +226,7 @@ class Args(NamedTuple):
     num_build_procs: int
     schemas: str | None
     build_cfg: BuildCfg
+    add_commit_sha: bool
 
 
 class DynamicArgs(NamedTuple):
@@ -342,6 +350,13 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         default=argparse.SUPPRESS,
         help=HelpStrings.BUILD_CFG + " Also can be specified by using BUILD_CFG env variable.",
     )
+    arg_parser.add_argument(
+        "--add-commit-sha",
+        dest="add_commit_sha",
+        action=argparse.BooleanOptionalAction,
+        default=argparse.SUPPRESS,
+        help=HelpStrings.ADD_COMMIT_SHA,
+    )
     namespace, unknown_flags = arg_parser.parse_known_args()
     num_build_procs = resolve_cli_or_env(
         getattr(namespace, "num_build_procs", None),
@@ -352,6 +367,9 @@ def parse_args() -> tuple[Args, DynamicArgs]:
     schemas = resolve_cli_or_env(getattr(namespace, "schemas", None), "IFCOS_SCHEMAS", None, arg_type="str")
     build_cfg = resolve_cli_or_env(
         getattr(namespace, "build_cfg", None), "BUILD_CFG", BUILD_CFG_DEFAULT, arg_type="str"
+    )
+    add_commit_sha = resolve_cli_or_env(
+        getattr(namespace, "add_commit_sha", None), "ADD_COMMIT_SHA", ADD_COMMIT_SHA_DEFAULT, arg_type="bool"
     )
     args = Args(
         explicit_targets=namespace.explicit_targets,
@@ -367,6 +385,7 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         num_build_procs=num_build_procs,
         schemas=schemas,
         build_cfg=build_cfg,
+        add_commit_sha=add_commit_sha,
     )
 
     dynamic_args = DynamicArgs.from_unknown_flags(unknown_flags, arg_parser)
@@ -482,6 +501,7 @@ if not os.path.exists(DEPS_DIR):
 
 INSTALL_DIR = Path(DEPS_DIR) / "install"
 BUILD_CFG = ARGS.build_cfg
+ADD_COMMIT_SHA = ARGS.add_commit_sha
 
 
 # Print build configuration information
