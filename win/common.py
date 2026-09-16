@@ -135,6 +135,8 @@ BuildType = Literal["Build", "Rebuild", "Clean"]
 BUILD_TYPES = get_args(BuildType)
 BUILD_TYPE_DEFAULT: BuildType = "Build"
 
+ADD_COMMIT_SHA_DEFAULT = False
+
 
 class HelpStrings:
     NUM_BUILD_PROCS = (
@@ -149,6 +151,12 @@ class HelpStrings:
 
     BUILD_CFG = f"Build configuration type. (default: {BUILD_CFG_DEFAULT})"
     BUILD_CFG_FLAG = "Alternative way to specify the build configuration type, instead of the positional argument."
+
+    ADD_COMMIT_SHA = (
+        "Add the commit SHA to the built version string. "
+        "Also can be specified by using ADD_COMMIT_SHA env variable. "
+        f"(default: {ADD_COMMIT_SHA_DEFAULT})"
+    )
 
     @staticmethod
     def generator(omitted_behavior: str) -> str:
