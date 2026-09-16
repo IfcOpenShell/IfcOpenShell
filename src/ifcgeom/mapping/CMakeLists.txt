@@ -1,12 +1,6 @@
 find_package(Eigen3 REQUIRED)
 
-set(mapping_plugin_runtime_dir "$<TARGET_FILE_DIR:IfcGeom>")
-
-if (NOT WASM_BUILD)
-# wasm-ld (?) trips up on multiple defined symbols. IfcParse already brings
-# in plugin so we skip it here.
-set(plugin_when_not_wasm plugin)
-endif()
+ifcopenshell_wasm_plugin_dependency(plugin_when_not_wasm)
 
 foreach(schema ${SCHEMA_VERSIONS})
     file(GLOB IFCGEOM_I_FILES *.i)
@@ -21,11 +15,18 @@ foreach(schema ${SCHEMA_VERSIONS})
         RUNTIME_OUTPUT_DIRECTORY "${mapping_plugin_runtime_dir}"
         LIBRARY_OUTPUT_DIRECTORY "${mapping_plugin_runtime_dir}"
     )
+    ifcopenshell_native_plugin_target(geometry_mapping_ifc${schema} IfcGeom)
+    if(WASM_BUILD)
+        ifcopenshell_wasm_configure_plugin_target(
+            geometry_mapping_ifc${schema}
+            KIND mapping
+            ID "ifc${schema}"
+            SYMBOL_ID "ifc${schema}"
+            EXPORT_SYMBOL "ifcopenshell_emscripten_register_mapping_ifc${schema}"
+        )
+    endif()
 
     ifcopenshell_wasm_plugin_link_options(geometry_mapping_ifc${schema} ifcopenshell_register_mapping_plugin_v1)
-    if(WASM_BUILD)
-        target_link_options(geometry_mapping_ifc${schema} PRIVATE "SHELL:-s ERROR_ON_UNDEFINED_SYMBOLS=0")
-    endif()
 
     if(NOT WASM_BUILD)
         set(schema_plugin_library parse_schema_ifc${schema})
@@ -33,7 +34,10 @@ foreach(schema ${SCHEMA_VERSIONS})
         set(schema_plugin_library)
     endif()
 
-    target_link_libraries(geometry_mapping_ifc${schema} PRIVATE ${plugin_when_not_wasm} IfcGeom IfcParse ${schema_plugin_library} Eigen3::Eigen)
+    ifcopenshell_wasm_plugin_target_link(geometry_mapping_ifc${schema}
+        MAIN_TARGETS IfcGeom IfcParse
+        PRIVATE ${plugin_when_not_wasm} ${schema_plugin_library} Eigen3::Eigen
+    )
 
     list(APPEND mapping_libraries geometry_mapping_ifc${schema})
 
