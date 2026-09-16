@@ -38,7 +38,6 @@ from common import (
     REPO_ROOT,
     SCRIPT_DIR,
     BuildCfg,
-    BuildDepsCache,
     BuildType,
     C,
     HelpStrings,
@@ -49,6 +48,7 @@ from common import (
     resolve_cli_or_env,
     validate_cmake_version,
 )
+from common_win import BuildDepsCache
 from installers import (
     install_boost,
     install_ccache,

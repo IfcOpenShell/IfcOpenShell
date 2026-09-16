@@ -33,17 +33,16 @@ from common import (
     OFF_ON,
     PROJECT_NAME,
     REPO_ROOT,
-    BuildDepsCache,
     C,
     HelpStrings,
     colorize,
     ensure_script_dir,
     logger,
     resolve_cli_or_env,
-    resolve_generator,
     run,
     run_streamed,
 )
+from common_win import BuildDepsCache, resolve_generator
 from vs_cfg import VsCfgResult, vs_cfg
 
 
