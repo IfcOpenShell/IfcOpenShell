@@ -162,6 +162,7 @@ class AlignmentSegmentDecorator:
                 pass
         cls.handlers = []
         cls.is_installed = False
+        old_segment_id = cls.segment_id
         cls.segment_id = None
         cls.segment_verts = []
         cls.segment_label = ""
@@ -173,9 +174,16 @@ class AlignmentSegmentDecorator:
         # Keep the side panel's row depress-state in sync -- uninstall() can
         # now be triggered autonomously (see _has_selection_changed), not
         # just from the toggle operator, which already clears this itself.
+        # Only clear it if it still points at the segment being uninstalled
+        # here: install() calls uninstall() on the previously-installed
+        # segment before switching to a new one, and by then
+        # selected_h_segment_id already holds the *new* segment's id --
+        # blindly zeroing it here (the old bug) stomped that new selection
+        # right after the toggle operator set it, so every row-highlight
+        # after the first got silently cleared.
         try:
             props = bpy.context.scene.CivilAlignmentProperties
-            if props.selected_h_segment_id:
+            if old_segment_id and props.selected_h_segment_id == old_segment_id:
                 props.selected_h_segment_id = 0
         except Exception:
             pass
