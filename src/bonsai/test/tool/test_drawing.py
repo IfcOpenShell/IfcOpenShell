@@ -687,6 +687,33 @@ class TestGetTextLiteral(NewFile):
         assert subject.get_text_literal(obj) == item
 
 
+class TestEditTextLiteralValue(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        obj = bpy.data.objects.new("Object", None)
+        element = ifc.createIfcAnnotation()
+        element.Representation = ifc.createIfcProductDefinitionShape()
+        context = ifc.createIfcGeometricRepresentationSubContext(ContextType="Plan", ContextIdentifier="Annotation")
+        item = ifc.createIfcTextLiteralWithExtent(Literal="Literal", Path="RIGHT", BoxAlignment="bottom-left")
+        representation = ifc.createIfcShapeRepresentation(ContextOfItems=context, Items=[item])
+        element.Representation.Representations = [representation]
+        element.ObjectType = "TEXT"
+        tool.Ifc.link(element, obj)
+        subject.edit_text_literal_value(obj, 0, "Line one\nLine two")
+        assert item.Literal == "Line one\nLine two"
+
+
+class TestSanitizeMultilineLiteral(NewFile):
+    def test_run(self):
+        assert subject.sanitize_multiline_literal("Line one\r\nLine two\n") == "Line one\nLine two"
+
+
+class TestUnescapeLiteralNewlines(NewFile):
+    def test_run(self):
+        assert subject.unescape_literal_newlines("Line one\\nLine two") == "Line one\nLine two"
+
+
 class TestGetAssignedProduct(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
