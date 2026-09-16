@@ -141,9 +141,12 @@ from common import (
     ADD_COMMIT_SHA_DEFAULT,
     BUILD_CFG_DEFAULT,
     BUILD_CFGS,
+    OFF_ON,
+    PROJECT_NAME,
     BuildCfg,
     ColorFormatter,
     HelpStrings,
+    is_on_off,
     resolve_cli_or_env,
 )
 from typing_extensions import assert_never
@@ -152,18 +155,6 @@ from typing_extensions import assert_never
 logger = logging.getLogger()
 
 
-def is_on_off(value: str | None, *, default: bool) -> bool:
-    if value is None:
-        return default
-    lowered = value.lower()
-    if lowered in {"1", "on", "true", "yes"}:
-        return True
-    if lowered in {"0", "off", "false", "no"}:
-        return False
-    return default
-
-
-PROJECT_NAME = "IfcOpenShell"
 USE_CURRENT_PYTHON_VERSION = is_on_off(os.getenv("USE_CURRENT_PYTHON_VERSION"), default=False)
 IFCOS_BUILD_PYTHON_WRAPPER = is_on_off(os.getenv("IFCOS_BUILD_PYTHON_WRAPPER"), default=True)
 USE_OCCT = is_on_off(os.getenv("USE_OCCT"), default=True)
@@ -591,7 +582,6 @@ else:
     MAC_CROSS_COMPILE_INTEL_CC = ""
     MAC_CROSS_COMPILE_INTEL_AUTOCONF_HOST_ARGS = []
 
-OFF_ON = ["OFF", "ON"]
 BUILD_STATIC = not ARGS.shared
 """Whether dependencies are built static."""
 BUILD_SHARED = not BUILD_STATIC
