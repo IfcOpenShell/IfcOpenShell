@@ -46,7 +46,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build_shared_libs: [ON, OFF]
+        build_shared_libs: [shared, static]
     env:
       # Colored output for cmake.
       CLICOLOR_FORCE: "1"
@@ -214,7 +214,7 @@ jobs:
                -DPYTHON_INCLUDE_DIR:PATH=$(python -c "import sysconfig; print(sysconfig.get_path('include'))") \
                -DUSE_MMAP=On \
                -DUSE_CCACHE=ON \
-               -DBUILD_SHARED_LIBS=${{ matrix.build_shared_libs }} \
+               -DBUILD_SHARED_LIBS=${{ matrix.build_shared_libs == 'shared' && 'ON' || 'OFF' }} \
                "-DSCHEMA_VERSIONS=2x3;4;4x3_add2" \
                -DGLTF_SUPPORT=On \
                -DWITH_ROCKSDB=On \
