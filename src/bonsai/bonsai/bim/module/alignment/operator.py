@@ -1025,6 +1025,150 @@ def _resolve_alignment_id_for_markers(context):
     return alignment.id() if alignment else 0
 
 
+class ALIGN_OT_load_horizontal_pi_table(Operator, tool.Ifc.Operator):
+    """Populate the horizontal PI table from this alignment's current real segments.
+
+    The table-editing companion to align.edit_horizontal_pis (which creates
+    draggable viewport Empties for the same PIs): same underlying PI list
+    (_reconstruct_horizontal_pis), staged as numeric rows instead, for
+    keyboard-precise editing without leaving the panel. Mirrors
+    align.load_vertical_pis / VerticalPIMarker.
+    """
+
+    bl_idname = "align.load_horizontal_pi_table"
+    bl_label = "Edit PIs (Table)"
+    bl_description = (
+        "Populate the horizontal PI table from this alignment's current segments, pre-filled "
+        "with their existing curve type/radius/spiral lengths, so they can be adjusted and "
+        "re-applied without redrawing from scratch"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not poll_ifc4x3(cls, context):
+            return False
+        if context.scene.CivilAlignmentProperties.editing_segment_kind != "NONE":
+            cls.poll_message_set("Finish or cancel the segment table edit first")
+            return False
+        alignment = tool.Alignment.get_active_alignment()
+        if not alignment:
+            cls.poll_message_set("Select an alignment first")
+            return False
+        h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+        if not h_layout or not tool.Alignment.get_real_layout_segments(h_layout):
+            cls.poll_message_set("This alignment has no horizontal segments yet")
+            return False
+        return True
+
+    def _execute(self, context):
+        alignment = tool.Alignment.get_active_alignment()
+        h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+
+        specs, skipped = _reconstruct_horizontal_pis(h_layout)
+        if skipped:
+            details = "; ".join(f"{s.DesignParameters.PredefinedType} ({reason})" for s, reason in skipped[:5])
+            more = f", and {len(skipped) - 5} more" if len(skipped) > 5 else ""
+            self.report(
+                {"ERROR"},
+                f"Can't load PI table: {len(skipped)} segment(s) couldn't be classified: "
+                f"{details}{more}.",
+            )
+            return {"CANCELLED"}
+
+        props = context.scene.CivilAlignmentProperties
+        props.horizontal_pi_rows.clear()
+        for spec in specs:
+            item = props.horizontal_pi_rows.add()
+            item.x, item.y = spec["pi_local"]
+            item.curve_type = spec["curve_type"]
+            item.radius = spec["radius"] or 100.0
+            item.spiral_in_length = spec["spiral_in_length"] or 100.0
+            item.spiral_out_length = spec["spiral_out_length"] or 100.0
+        props.editing_horizontal_pi_alignment_id = alignment.id()
+
+        self.report({"INFO"}, f"Loaded {len(specs)} PI(s)")
+        return {"FINISHED"}
+
+
+class ALIGN_OT_apply_horizontal_pi_table(Operator, tool.Ifc.Operator):
+    """Regenerate the horizontal alignment using the PI table's curve settings"""
+
+    bl_idname = "align.apply_horizontal_pi_table"
+    bl_label = "Apply Horizontal Curves"
+    bl_description = "Regenerate the horizontal alignment using each PI's curve type/radius/spiral lengths"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not poll_ifc4x3(cls, context):
+            return False
+        if not context.scene.CivilAlignmentProperties.horizontal_pi_rows:
+            cls.poll_message_set("Load the PI table first")
+            return False
+        if not tool.Alignment.get_active_alignment():
+            cls.poll_message_set("Select the alignment first")
+            return False
+        return True
+
+    def _execute(self, context):
+        props = context.scene.CivilAlignmentProperties
+        alignment = tool.Alignment.get_active_alignment()
+
+        # editing_horizontal_pi_alignment_id, when set, names the specific
+        # alignment horizontal_pi_rows came from -- resolve against that one
+        # rather than whatever's active now, same guard as the vertical PI
+        # table's editing_vertical_pi_layout_id.
+        if props.editing_horizontal_pi_alignment_id:
+            try:
+                target = tool.Ifc.get().by_id(props.editing_horizontal_pi_alignment_id)
+            except RuntimeError:
+                target = None
+            if target is not None:
+                alignment = target
+
+        try:
+            start, end = tool.Alignment.get_alignment_start_end_points(alignment)
+        except ValueError as e:
+            self.report({"ERROR"}, str(e))
+            return {"CANCELLED"}
+
+        rows = list(props.horizontal_pi_rows)
+        hpoints = [start] + [(row.x, row.y) for row in rows] + [end]
+        radii = [_pi_curve_radii_entry(row) for row in rows]
+
+        ok, message = _generate_alignment_segments(context, alignment, hpoints, radii)
+        if ok:
+            props.editing_horizontal_pi_alignment_id = alignment.id()
+            # _generate_alignment_segments() replaces every IfcAlignmentSegment
+            # with a new one, so a previously-highlighted segment's id is gone --
+            # refreshing it would silently keep showing the old, now-stale
+            # highlight at its old position.
+            alignment_decorator.AlignmentSegmentDecorator.uninstall()
+        tool.Blender.update_viewport()
+        self.report({"INFO"} if ok else {"WARNING"}, message)
+        return {"FINISHED"}
+
+
+class ALIGN_OT_clear_horizontal_pi_table(Operator):
+    """Clear the horizontal PI table without changing the alignment"""
+
+    bl_idname = "align.clear_horizontal_pi_table"
+    bl_label = "Clear Horizontal PI Table"
+    bl_description = "Clear the PI table rows (does not affect the alignment already drawn)"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return bool(context.scene.CivilAlignmentProperties.horizontal_pi_rows)
+
+    def execute(self, context):
+        props = context.scene.CivilAlignmentProperties
+        props.horizontal_pi_rows.clear()
+        props.editing_horizontal_pi_alignment_id = 0
+        return {"FINISHED"}
+
+
 class ALIGN_OT_draw_horizontal_alignment(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
     """Draw the horizontal alignment of the active IfcAlignment directly in the viewport.
 
