@@ -34,7 +34,9 @@ import numpy as np
 import bonsai.tool as tool
 import bonsai.bim.import_ifc
 import ifcopenshell.api.alignment
+import ifcopenshell.util.placement
 import ifcopenshell.util.shape
+import ifcopenshell.util.unit
 from typing import TYPE_CHECKING, Optional, List, Tuple
 
 if TYPE_CHECKING:
@@ -426,7 +428,26 @@ class Alignment:
         if geometry is None:
             return None
 
-        mesh = ifc_importer.create_mesh(alignment, geometry)
+        # Force the same "recenter mesh vertices around the first vertex, and
+        # carry that as the object's own matrix_world offset" treatment
+        # create_mesh() normally only applies once tool.Loader.is_point_far_away()'s
+        # magnitude threshold is crossed (see that function and
+        # apply_blender_offset_to_matrix_world's CARTESIAN_POINT branch). An
+        # interactively-drawn alignment's own start point is exactly where its
+        # object's own origin -- what a click-to-select highlight dot uses --
+        # is expected to sit, regardless of whether that point happens to be
+        # "far" from Blender's (0,0,0) in the far-away-detector's sense. Without
+        # forcing it, a small/local-coordinate alignment (e.g. starting at
+        # (0, 100)) never crosses that threshold, so the object is left at
+        # identity with its geometry baked in as absolute vertex coordinates
+        # instead: visibly correct in the viewport, but the object's own
+        # origin stays stuck at (0, 0, 0) regardless of where the alignment
+        # actually starts.
+        inner_geometry = geometry.geometry if hasattr(geometry, "geometry") else geometry
+        verts = ifcopenshell.util.shape.get_vertices(inner_geometry)
+        cartesian_point_offset = verts[0] if verts.size else False
+
+        mesh = ifc_importer.create_mesh(alignment, geometry, cartesian_point_offset=cartesian_point_offset)
         if mesh is not None:
             # Without this, the mesh has no record of which IfcRepresentation
             # it came from, so a later reload_representation() (the branch
@@ -827,6 +848,7 @@ class Alignment:
         referent_obj = bpy.data.objects.new(tool.Loader.get_name(referent), None)
         tool.Geometry.link(referent, referent_obj)
         tool.Collector.assign(referent_obj, should_clean_users_collection=False)
+        cls.sync_referent_object_placement(referent)
         return referent_obj
 
     @classmethod
@@ -843,6 +865,57 @@ class Alignment:
                     cls.create_object_for_referent(referent)
                     count += 1
         return count
+
+    @classmethod
+    def sync_referent_object_placement(cls, referent: "ifcopenshell.entity_instance") -> None:
+        """Move one IfcReferent's Blender object to match its current ObjectPlacement.
+
+        add_stationing_referent()'s own docstring spells out why this is needed: with
+        no basis curve yet (a brand-new alignment with no horizontal geometry drawn),
+        a stationing referent is placed with an IfcLocalPlacement at the global origin;
+        once the curve has real segments, create_representation() "restates" it onto the
+        curve with a proper IfcLinearPlacement -- at the IFC level. Nothing previously
+        re-read that restated placement back into the Blender object, so it stayed
+        sitting at the origin forever, regardless of where the real alignment ended up.
+
+        Resolving an IfcLinearPlacement (its Location is an IfcPointByDistanceExpression,
+        not a plain IfcCartesianPoint) requires evaluating the referenced curve, which
+        ifcopenshell.util.placement.get_axis2placement already does via the geometry
+        kernel — the same ifcopenshell.util.placement.get_local_placement() call the
+        standard IFC-import pipeline uses for any placement-only product (see
+        ImportIfc.get_element_matrix). No-op if there's no Blender object for this
+        referent, or if its placement still can't be resolved (e.g. still no real
+        geometry -- get_axis2placement's geometry-kernel fallback then legitimately has
+        nothing to evaluate).
+        """
+        referent_obj = tool.Ifc.get_object(referent)
+        if not referent_obj or not referent.ObjectPlacement:
+            return
+
+        ifc = tool.Ifc.get()
+        try:
+            matrix = ifcopenshell.util.placement.get_local_placement(referent.ObjectPlacement)
+        except Exception:
+            return
+
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc)
+        matrix[0][3] *= unit_scale
+        matrix[1][3] *= unit_scale
+        matrix[2][3] *= unit_scale
+
+        referent_obj.matrix_world = tool.Loader.apply_blender_offset_to_matrix_world(referent_obj, matrix)
+        tool.Geometry.record_object_position(referent_obj)
+
+    @classmethod
+    def sync_stationing_referent_placements(cls, alignment: "ifcopenshell.entity_instance") -> None:
+        """Refresh every stationing referent's Blender object position for ``alignment``.
+
+        Call this after (re)generating real horizontal geometry (see
+        sync_referent_object_placement for why) -- ALIGN_OT_draw_horizontal_alignment
+        and ALIGN_OT_apply_pi_curve both do, via _generate_alignment_segments().
+        """
+        for referent, *_ in cls.get_stationing_referents(alignment):
+            cls.sync_referent_object_placement(referent)
 
     # =========================================================================
     # Stationing

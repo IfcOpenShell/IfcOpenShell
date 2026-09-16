@@ -31,7 +31,12 @@ import bonsai.tool as tool
 from bpy.types import Panel, Operator, UIList
 from bpy.props import IntProperty, BoolProperty
 from .prop import _alignment_enum_items
-from .operator import _find_pi_markers, _resolve_alignment_id_for_markers, _is_interior_pi_marker
+from .operator import (
+    _find_pi_markers,
+    _resolve_alignment_id_for_markers,
+    _is_interior_pi_marker,
+    _alignment_id_owning_layout,
+)
 
 
 def _pi_markers_present(context) -> bool:
@@ -342,7 +347,7 @@ class ALIGN_PT_alignment_authoring(Panel):
                 box.label(text="Select a PI marker to define its curve", icon="INFO")
 
             if markers_present:
-                box.operator("align.clear_pi_markers", icon="TRASH")
+                box.operator("align.finish_pi_editing", icon="CHECKMARK")
 
         props = context.scene.CivilAlignmentProperties
         if props.horizontal_pi_rows:
@@ -743,13 +748,29 @@ class ALIGN_PT_alignment_segments(Panel):
         if dec.is_installed and v_item is not None:
             row.prop(v_item, "show_labels", text="", icon="FONT_DATA")
 
-        edit_op = row.operator(
+        # A classmethod poll() can't see this row's own v_id (operator
+        # properties like layout_id aren't set until after the button
+        # fires), so it can only ever check tool.Alignment.get_active_alignment()
+        # -- whatever object happens to be active/selected. That's a no-op
+        # whenever the active object isn't this specific vertical's own
+        # alignment, letting these buttons stay clickable (and only fail
+        # with a poll-message-less error on click) even while this row's own
+        # alignment has an open horizontal PI marker edit. Disable them here
+        # instead, computed directly from this row's v_id.
+        owning_alignment_id = _alignment_id_owning_layout(layout_entity)
+        h_markers_open = bool(owning_alignment_id and _find_pi_markers(owning_alignment_id))
+
+        edit_row = row.row(align=True)
+        edit_row.enabled = not h_markers_open
+        edit_op = edit_row.operator(
             "align.enable_editing_v_segments", text="", icon="GREASEPENCIL", depress=is_editing_this
         )
         edit_op.layout_id = v_id
 
         is_editing_pi = props.editing_vertical_pi_layout_id == v_id and bool(props.vertical_pi_markers)
-        pi_op = row.operator(
+        pi_row = row.row(align=True)
+        pi_row.enabled = not h_markers_open
+        pi_op = pi_row.operator(
             "align.load_vertical_pis", text="", icon="EMPTY_AXIS", depress=is_editing_pi,
         )
         pi_op.layout_id = v_id
