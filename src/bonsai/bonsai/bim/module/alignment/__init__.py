@@ -23,6 +23,56 @@ _last_active_ptr: int = 0
 _last_profile_alignment_id: int = 0  # tracks which alignment the profile was last built for
 
 
+def _auto_finish_unrelated_pi_markers(active, alignment) -> None:
+    """Delete PI marker empties left over from any alignment other than the
+    one ``alignment`` (the alignment tool.Alignment.get_active_alignment()
+    now resolves for the just-changed active object) represents.
+
+    PI markers are meant to be temporary, only-during-editing scaffolding
+    (see ALIGN_OT_finish_pi_editing): once focus moves elsewhere -- most
+    visibly by creating a new IFC element/type via one of Bonsai's many
+    bim.add_* operators, but equally by picking a different existing element
+    to work on -- there's no good reason for them to keep sitting
+    half-resolved in the scene. Called from _on_active_object_changed rather
+    than hooking "Add" specifically: there is no single choke point for
+    that (dozens of bim.add_* operators exist scattered across modules),
+    whereas every one of them ends by making the new object active, which
+    that handler already watches.
+
+    Deliberately does nothing when ``active`` is None (a plain deselect) --
+    that's not "moving on to something else," and clearing markers on every
+    empty-space click would be far too eager. Also does nothing to
+    ``alignment``'s own markers: if the active object is one of them (or the
+    alignment itself), that PI edit is still the one in progress.
+    """
+    if active is None:
+        return
+
+    marker_alignment_ids = {
+        obj.bonsai_pi_curve_marker.alignment_id
+        for obj in bpy.data.objects
+        if obj.bonsai_pi_curve_marker.is_pi_marker
+    }
+    if not marker_alignment_ids:
+        return
+
+    active_alignment_id = alignment.id() if alignment else None
+    if marker_alignment_ids == {active_alignment_id}:
+        return  # only the still-in-progress alignment has markers -- nothing to finish
+
+    finished_any = False
+    for alignment_id in marker_alignment_ids:
+        if alignment_id == active_alignment_id:
+            continue
+        for m in operator._find_pi_markers(alignment_id):
+            bpy.data.objects.remove(m, do_unlink=True)
+        decorator.PIMarkerDecorator.uninstall()
+        finished_any = True
+
+    if finished_any:
+        operator._refresh_pi_marker_visuals(bpy.context, active_alignment_id or 0)
+
+
 @bpy.app.handlers.persistent
 def _on_active_object_changed(scene, depsgraph):
     """Sync the alignment dropdown, vertical profile, and Properties panel on selection change.
@@ -51,6 +101,7 @@ def _on_active_object_changed(scene, depsgraph):
 
         props = scene.CivilAlignmentProperties
         alignment = tool.Alignment.get_active_alignment()
+        _auto_finish_unrelated_pi_markers(active, alignment)
         new_val = str(alignment.id()) if alignment else "0"
 
         # Sync dropdown (only needed when selection came from 3D view / outliner)
@@ -140,7 +191,7 @@ classes = (
     operator.ALIGN_OT_remove_station_equation,
     operator.ALIGN_OT_edit_horizontal_pis,
     operator.ALIGN_OT_apply_pi_curve,
-    operator.ALIGN_OT_clear_pi_markers,
+    operator.ALIGN_OT_finish_pi_editing,
     operator.ALIGN_OT_load_horizontal_pi_table,
     operator.ALIGN_OT_apply_horizontal_pi_table,
     operator.ALIGN_OT_clear_horizontal_pi_table,

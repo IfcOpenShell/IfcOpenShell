@@ -643,6 +643,12 @@ def _generate_alignment_segments(context, alignment, hpoints, radii):
 
     tool.Alignment.refresh_alignment_representation_object(alignment)
 
+    # create_representation() just "restated" any origin-placed stationing
+    # referent onto the real curve at the IFC level (see add_stationing_referent's
+    # docstring) -- sync the Blender objects to match, or the start-station marker
+    # stays stuck at the origin forever regardless of where the alignment ended up.
+    tool.Alignment.sync_stationing_referent_placements(alignment)
+
     n_curved = sum(1 for r in radii if (r[0] if isinstance(r, tuple) else r))
     return True, f"Drew alignment '{alignment.Name}' with {len(hpoints)} PIs ({n_curved} curved)"
 
@@ -662,7 +668,7 @@ def _create_pi_markers(context, alignment_id, raw_points):
     start/end using their sort order, not that number.
 
     Tagged via Object.bonsai_pi_curve_marker so ALIGN_OT_apply_pi_curve /
-    ALIGN_OT_clear_pi_markers can find them without any operator-instance
+    ALIGN_OT_finish_pi_editing can find them without any operator-instance
     state (the drawing operator that created them has already finished by
     the time a curve is applied).
     """
@@ -672,8 +678,12 @@ def _create_pi_markers(context, alignment_id, raw_points):
         if i == 0 or i == n - 1:
             continue
         empty = bpy.data.objects.new(f"PI {i} (tangent)", None)
-        empty.empty_display_type = "SPHERE"
-        empty.empty_display_size = 2.0
+        # A minimal, small click target -- PIMarkerDecorator's colored
+        # screen-space dot (red/green by curve state) plus its "PI n" label
+        # is the actual visual cue now; a full-size SPHERE display here would
+        # just double it up with a second, competing circle.
+        empty.empty_display_type = "PLAIN_AXES"
+        empty.empty_display_size = 0.3
         empty.location = (x, y, z)
         marker = empty.bonsai_pi_curve_marker
         marker.is_pi_marker = True
@@ -703,6 +713,26 @@ def _active_pi_marker(context):
     return None
 
 
+def _alignment_id_owning_layout(layout_entity) -> int | None:
+    """Top-level IfcAlignment id that nests ``layout_entity`` (an
+    IfcAlignmentHorizontal/Vertical/Cant), or None if it isn't nested under one.
+
+    A per-row UI button (e.g. the per-vertical Edit Segments / Edit PIs
+    buttons in ALIGN_PT_alignment_segments) needs to check the *specific*
+    alignment that row belongs to -- not tool.Alignment.get_active_alignment(),
+    which only ever reflects whatever object happens to be active/selected
+    right now, and has no visibility into which layout_id a given row's
+    button is about to set once clicked. A classmethod poll() can't see that
+    either (operator properties aren't set until after the button fires), so
+    rows that need to grey out a specific button use this to compute their
+    own alignment_id and disable that button directly in the draw call.
+    """
+    for rel in getattr(layout_entity, "Nests", []) or []:
+        if rel.RelatingObject.is_a("IfcAlignment"):
+            return tool.Alignment._get_top_level_alignment(rel.RelatingObject).id()
+    return None
+
+
 def _is_interior_pi_marker(obj) -> bool:
     """Whether ``obj`` is one of our PI markers — _create_pi_markers() never
     makes one for Start/End (they can't have a curve), so is_pi_marker being
@@ -710,6 +740,45 @@ def _is_interior_pi_marker(obj) -> bool:
     "is this an editable PI" check.
     """
     return obj.bonsai_pi_curve_marker.is_pi_marker
+
+
+def _refresh_pi_marker_visuals(context, alignment_id) -> None:
+    """(Re)draw, or clear, both viewport cues for this alignment's PI markers:
+    the persistent status-bar hint (outstanding TANGENT markers) and the
+    PIMarkerDecorator dot/label overlay (every marker, curved or not).
+
+    Drawing an alignment leaves the same kind of silence: the finished
+    ALIGN_OT_draw_horizontal_alignment clears its own D/A/X/Y modal
+    instructions and there's nothing telling the user PI markers are now
+    sitting in the viewport waiting for a curve, short of the report() toast
+    and a properties-panel box easy to miss if that tab isn't open.
+    status_text_set() persists in the header on its own once called -- no
+    running modal needed to keep it alive -- so this is called once after
+    drawing/editing finishes and again whenever apply_pi_curve/finish_pi_editing
+    changes which markers are still pending, keeping both cues in sync with
+    current state.
+
+    Known gap: switching the active alignment via the dropdown, or an undo,
+    doesn't re-run this, so the cues can go stale until the next
+    draw/edit/apply/clear touches PI markers. Acceptable for now -- revisit
+    if it proves confusing in practice.
+    """
+    alignment_decorator.PIMarkerDecorator.refresh(context, alignment_id)
+
+    pending = [
+        m for m in _find_pi_markers(alignment_id) if m.bonsai_pi_curve_marker.curve_type == "TANGENT"
+    ]
+    if not pending:
+        context.workspace.status_text_set(text=None)
+        return
+
+    noun = "PI" if len(pending) == 1 else "PIs"
+    hint = f"{len(pending)} {noun} still need a curve — select a marker and click Apply Curve, or click Finish"
+
+    def draw(self, context):
+        self.layout.label(text=hint, icon="INFO")
+
+    context.workspace.status_text_set(draw)
 
 
 def _pi_curve_radii_entry(marker):
@@ -904,8 +973,10 @@ class ALIGN_OT_edit_horizontal_pis(Operator, tool.Ifc.Operator):
         for i, spec in enumerate(specs, start=1):
             x, y, z = _local_ifc_to_world_point(ifc, unit_scale, spec["pi_local"])
             empty = bpy.data.objects.new(f"PI {i}", None)
-            empty.empty_display_type = "SPHERE"
-            empty.empty_display_size = 2.0
+            # See _create_pi_markers -- PIMarkerDecorator's colored dot/label
+            # is the visual cue now, so this only needs to be a click target.
+            empty.empty_display_type = "PLAIN_AXES"
+            empty.empty_display_size = 0.3
             empty.location = (x, y, z)
             marker = empty.bonsai_pi_curve_marker
             marker.is_pi_marker = True
@@ -921,6 +992,7 @@ class ALIGN_OT_edit_horizontal_pis(Operator, tool.Ifc.Operator):
         alignment_decorator.AlignmentSegmentDecorator.uninstall()
         tool.Blender.update_viewport()
         self.report({"INFO"}, f"Created {len(specs)} PI marker(s)")
+        _refresh_pi_marker_visuals(context, alignment_id)
         return {"FINISHED"}
 
 
@@ -984,14 +1056,28 @@ class ALIGN_OT_apply_pi_curve(Operator, tool.Ifc.Operator):
         alignment_decorator.AlignmentSegmentDecorator.uninstall()
         tool.Blender.update_viewport()
         self.report({"INFO"} if ok else {"WARNING"}, message)
+        _refresh_pi_marker_visuals(context, alignment_id)
         return {"FINISHED"}
 
 
-class ALIGN_OT_clear_pi_markers(Operator, tool.Ifc.Operator):
-    """Remove the PI marker empties left over from drawing/curve-editing"""
+class ALIGN_OT_finish_pi_editing(Operator, tool.Ifc.Operator):
+    """Wrap up this PI-curve editing pass: remove the temporary PI marker
+    empties and dismiss the "PIs still need a curve" status-bar reminder.
 
-    bl_idname = "align.clear_pi_markers"
-    bl_label = "Clear PI Markers"
+    The markers are scaffolding for choosing each PI's curve, not IFC data --
+    the alignment's real geometry is already saved to IfcAlignmentSegments the
+    moment Apply Curve (or the initial draw) runs, so there's nothing left to
+    lose by removing them. Leaving some interior PIs as plain TANGENT (a
+    sharp, un-curved corner) is a valid, deliberate choice, so finishing
+    doesn't require every marker to have a curve first. They can always be
+    brought back later via Edit PIs, which reconstructs them straight from
+    the alignment's current segments -- there's no reason for them to sit
+    around in the scene in the meantime.
+    """
+
+    bl_idname = "align.finish_pi_editing"
+    bl_label = "Finish"
+    bl_description = "Finish curve editing: remove the temporary PI markers"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -1009,11 +1095,12 @@ class ALIGN_OT_clear_pi_markers(Operator, tool.Ifc.Operator):
         for m in markers:
             bpy.data.objects.remove(m, do_unlink=True)
         tool.Blender.update_viewport()
-        self.report({"INFO"}, f"Removed {len(markers)} PI markers")
+        self.report({"INFO"}, f"Finished — removed {len(markers)} PI marker(s)")
+        _refresh_pi_marker_visuals(context, alignment_id)
 
 
 def _resolve_alignment_id_for_markers(context):
-    """The alignment id whose PI markers apply_pi_curve/clear_pi_markers act on.
+    """The alignment id whose PI markers apply_pi_curve/finish_pi_editing act on.
 
     Works whether the active object is the alignment itself or one of its
     own (non-IFC-linked) PI markers.
@@ -1199,6 +1286,9 @@ class ALIGN_OT_draw_horizontal_alignment(bpy.types.Operator, PolylineOperator, t
         if context.scene.CivilAlignmentProperties.editing_segment_kind != "NONE":
             cls.poll_message_set("Finish or cancel the segment table edit first")
             return False
+        if context.scene.CivilAlignmentProperties.vertical_pi_markers:
+            cls.poll_message_set("Finish or clear the vertical PI marker edit first")
+            return False
         alignment = tool.Alignment.get_active_alignment()
         if not alignment:
             cls.poll_message_set("Add or select an alignment first")
@@ -1271,11 +1361,17 @@ class ALIGN_OT_draw_horizontal_alignment(bpy.types.Operator, PolylineOperator, t
         self.handle_mouse_move(context, event, should_round=True)
         self.choose_axis(event)
         self.handle_snap_selection(context, event)
-        self.handle_keyboard_input(context, event)
-        _insert_polyline_point_no_close(self, context, event)
 
         # Finish: generate the alignment (sharp corners) and, if there are
         # interior PIs, leave a marker at each for later curve editing.
+        #
+        # This must be checked before handle_keyboard_input()/
+        # _insert_polyline_point_no_close() below: those two also react to
+        # RET/NUMPAD_ENTER/RIGHTMOUSE (to confirm a typed D/A/X/Y value and
+        # insert that PI), and as a side effect clear is_input_on. Checking
+        # is_input_on here first means a single Enter/RMB that confirms
+        # numeric input is never also treated as the finish keystroke in the
+        # same event.
         if (
             not self.tool_state.is_input_on
             and event.value == "RELEASE"
@@ -1288,6 +1384,9 @@ class ALIGN_OT_draw_horizontal_alignment(bpy.types.Operator, PolylineOperator, t
             tool.Polyline.clear_polyline()
             tool.Blender.update_viewport()
             return {"FINISHED"}
+
+        self.handle_keyboard_input(context, event)
+        _insert_polyline_point_no_close(self, context, event)
 
         cancel = self.handle_cancelation(context, event)
         if cancel is not None:
@@ -1333,6 +1432,7 @@ class ALIGN_OT_draw_horizontal_alignment(bpy.types.Operator, PolylineOperator, t
                 context.view_layer.objects.active = alignment_obj
 
         self.report({"INFO"} if ok else {"WARNING"}, message)
+        _refresh_pi_marker_visuals(context, alignment.id())
 
     def _uninstall_bearing_hud(self):
         if self._bearing_handle is not None:
@@ -1833,6 +1933,10 @@ class ALIGN_OT_load_vertical_pis(Operator, tool.Ifc.Operator):
         if context.scene.CivilAlignmentProperties.editing_segment_kind != "NONE":
             cls.poll_message_set("Finish or cancel the segment table edit first")
             return False
+        alignment = tool.Alignment.get_active_alignment()
+        if alignment and _find_pi_markers(alignment.id()):
+            cls.poll_message_set("Finish or clear the horizontal PI marker edit first")
+            return False
         return True
 
     def _execute(self, context):
@@ -1919,6 +2023,9 @@ class ALIGN_OT_draw_vertical_alignment(Operator, tool.Ifc.Operator):
         alignment = tool.Alignment.get_active_alignment()
         if not alignment:
             cls.poll_message_set("Add or select an alignment first")
+            return False
+        if _find_pi_markers(alignment.id()):
+            cls.poll_message_set("Finish or clear the horizontal PI marker edit first")
             return False
         h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
         has_real_segments = h_layout and any(
@@ -2305,6 +2412,9 @@ class ALIGN_OT_enable_editing_h_segments(Operator):
         if props.editing_segment_kind not in ("NONE", "HORIZONTAL"):
             cls.poll_message_set("Finish or cancel the current segment edit first")
             return False
+        if props.vertical_pi_markers:
+            cls.poll_message_set("Finish or clear the vertical PI marker edit first")
+            return False
         alignment = tool.Alignment.get_active_alignment()
         if alignment and _find_pi_markers(alignment.id()):
             cls.poll_message_set("Finish or clear the PI marker edit first")
@@ -2481,6 +2591,10 @@ class ALIGN_OT_enable_editing_v_segments(Operator):
             return False
         if props.vertical_pi_markers:
             cls.poll_message_set("Finish or clear the PI marker edit first")
+            return False
+        alignment = tool.Alignment.get_active_alignment()
+        if alignment and _find_pi_markers(alignment.id()):
+            cls.poll_message_set("Finish or clear the horizontal PI marker edit first")
             return False
         return True
 

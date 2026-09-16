@@ -739,6 +739,150 @@ class AlignmentSegmentDecorator:
         blf.disable(font_id, blf.SHADOW)
 
 
+class PIMarkerDecorator:
+    """Screen-space overlay for interior PI marker empties: a colored dot plus
+    a "PI n" label at each marker's projected screen position.
+
+    Color signals curve state at a glance -- red/orange while the marker is
+    still a plain TANGENT (sharp PI, no curve chosen), green once a curve has
+    been applied -- so it's visible which PIs still need attention without
+    opening the side panel or clicking each marker.
+
+    Deliberately drawn in screen space (POST_PIXEL) at a fixed pixel radius
+    rather than sized off rv3d.view_distance the way AlignmentSegmentDecorator
+    scales its PI crosshairs: that view_distance trick only approximates a
+    constant apparent size in an orthographic view, whereas a literal pixel
+    radius, computed straight from the projected 2D position every frame, is
+    exact and holds regardless of projection mode or zoom.
+
+    Install/refresh lifecycle mirrors AlignmentSegmentDecorator: refresh()
+    is called by every operator that adds, resolves, or removes PI markers
+    (ALIGN_OT_draw_horizontal_alignment._finish, ALIGN_OT_apply_pi_curve,
+    ALIGN_OT_finish_pi_editing) and installs/keeps installed while the
+    alignment has any marker, or uninstalls once none remain.
+    """
+
+    is_installed = False
+    handlers: list = []
+    alignment_id: int | None = None
+
+    RADIUS_PX = 9.0
+    COLOR_PENDING = (1.0, 0.35, 0.25, 1.0)  # Red-orange -- still a sharp PI (TANGENT)
+    COLOR_DONE = (0.35, 0.9, 0.45, 1.0)  # Green -- curve applied
+    COLOR_RING = (0.05, 0.05, 0.05, 0.75)  # Dark outline so the dot reads on any background
+    COLOR_LABEL = (1.0, 1.0, 1.0, 1.0)
+
+    @classmethod
+    def install(cls, context, alignment_id: int) -> None:
+        if cls.is_installed:
+            cls.uninstall()
+        cls.alignment_id = alignment_id
+        handler = cls()
+        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw, (context,), "WINDOW", "POST_PIXEL"))
+        cls.is_installed = True
+
+    @classmethod
+    def uninstall(cls) -> None:
+        for handler in cls.handlers:
+            try:
+                SpaceView3D.draw_handler_remove(handler, "WINDOW")
+            except ValueError:
+                pass
+        cls.handlers = []
+        cls.is_installed = False
+        cls.alignment_id = None
+
+    @classmethod
+    def refresh(cls, context, alignment_id: int) -> None:
+        """(Re)install for ``alignment_id`` if it still has PI markers, else uninstall."""
+        from . import operator as alignment_operator
+
+        if alignment_operator._find_pi_markers(alignment_id):
+            cls.install(context, alignment_id)
+        else:
+            cls.uninstall()
+
+    def draw(self, context):
+        # Reads bpy.context rather than the ``context`` captured at install()
+        # time -- that captured context can go stale (viewport closed,
+        # areas re-split) while this handler stays registered, whereas
+        # bpy.context.region/region_data/area reflect whichever region is
+        # actually being redrawn right now. Same reasoning as
+        # AlignmentSegmentDecorator.draw_segment.
+        cls = self.__class__
+        if not cls.is_installed or cls.alignment_id is None:
+            return
+
+        from . import operator as alignment_operator
+
+        markers = alignment_operator._find_pi_markers(cls.alignment_id)
+        if not markers:
+            cls.uninstall()
+            return
+
+        region = bpy.context.region
+        rv3d = bpy.context.region_data
+        if not region or not rv3d:
+            return
+
+        # Never draw inside the vertical profile area
+        pa_ptr = VerticalProfileDecorator.profile_area_ptr
+        if pa_ptr != 0:
+            try:
+                if bpy.context.area is not None and bpy.context.area.as_pointer() == pa_ptr:
+                    return
+            except Exception:
+                pass
+
+        font_id = 0
+        font_size = tool.Blender.scale_font_size(11)
+        blf.size(font_id, font_size)
+        blf.enable(font_id, blf.SHADOW)
+        blf.shadow(font_id, 6, 0, 0, 0, 1)
+
+        gpu.state.blend_set("ALPHA")
+        for marker in markers:
+            screen = location_3d_to_region_2d(region, rv3d, marker.location)
+            if not screen:
+                continue
+            sx, sy = screen.x, screen.y
+            pending = marker.bonsai_pi_curve_marker.curve_type == "TANGENT"
+            color = cls.COLOR_PENDING if pending else cls.COLOR_DONE
+            self._draw_dot(sx, sy, cls.RADIUS_PX, color, region)
+
+            blf.color(font_id, *cls.COLOR_LABEL)
+            blf.position(font_id, sx + cls.RADIUS_PX + 4, sy - font_size * 0.35, 0)
+            blf.draw(font_id, f"PI {marker.bonsai_pi_curve_marker.pi_index}")
+        gpu.state.blend_set("NONE")
+        blf.disable(font_id, blf.SHADOW)
+
+    @classmethod
+    def _draw_dot(cls, cx: float, cy: float, radius: float, color: tuple, region, segments: int = 16) -> None:
+        perimeter = [
+            (
+                cx + radius * math.cos(2.0 * math.pi * i / segments),
+                cy + radius * math.sin(2.0 * math.pi * i / segments),
+                0,
+            )
+            for i in range(segments)
+        ]
+
+        fill_shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+        fill_shader.bind()
+        fill_shader.uniform_float("color", color)
+        fill_batch = batch_for_shader(fill_shader, "TRI_FAN", {"pos": [(cx, cy, 0)] + perimeter + [perimeter[0]]})
+        fill_batch.draw(fill_shader)
+
+        ring_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
+        ring_shader.bind()
+        ring_shader.uniform_float("viewportSize", (region.width, region.height))
+        ring_shader.uniform_float("lineWidth", 1.5)
+        ring_shader.uniform_float("color", cls.COLOR_RING)
+        ring_indices = [[i, (i + 1) % segments] for i in range(segments)]
+        ring_batch = batch_for_shader(ring_shader, "LINES", {"pos": perimeter}, indices=ring_indices)
+        ring_batch.draw(ring_shader)
+
+
 # ---------------------------------------------------------------------------
 # Vertical profile grid helpers
 # ---------------------------------------------------------------------------
