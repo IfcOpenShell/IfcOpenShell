@@ -657,6 +657,11 @@ def _generate_alignment_segments(context, alignment, hpoints, radii):
     # stays stuck at the origin forever regardless of where the alignment ended up.
     tool.Alignment.sync_stationing_referent_placements(alignment)
 
+    # Keep an already-generated cant layout's curve types matching the
+    # horizontal's own (a no-op if there's no cant layout yet, or if the
+    # segment counts have drifted apart -- see sync_cant_segment_types).
+    tool.Alignment.sync_cant_segment_types(alignment)
+
     n_curved = sum(1 for r in radii if (r[0] if isinstance(r, tuple) else r))
     return True, f"Drew alignment '{alignment.Name}' with {len(hpoints)} PIs ({n_curved} curved)"
 
@@ -2561,6 +2566,21 @@ class ALIGN_OT_apply_h_segments(Operator, tool.Ifc.Operator):
 
         alignment = tool.Alignment._get_top_level_alignment(ifcopenshell.api.alignment.get_alignment(h_layout))
 
+        # VIENNESEBEND's own geometry depends on the cant segment at the same
+        # station (ifcopenshell.api.alignment.create()'s own docstring: "The
+        # horizontal segment geometric representation will fail if the cant
+        # segment is not defined") -- catch that here with a clear message
+        # rather than letting create_layout_segment() below blow up on it.
+        if any(row.predefined_type == "VIENNESEBEND" for row in rows):
+            cant_layout = ifcopenshell.api.alignment.get_cant_layout(alignment)
+            if not cant_layout or not tool.Alignment.get_real_layout_segments(cant_layout):
+                self.report(
+                    {"ERROR"},
+                    "Viennese Bend needs a cant layout first -- use Generate Cant Layout, "
+                    "then retry Apply.",
+                )
+                return {"CANCELLED"}
+
         # The overall start point/direction is preserved as-is (moving it is
         # a separate feature, REQUIREMENTS §4) -- read it straight off the
         # current first real segment before wiping anything.
@@ -2612,6 +2632,14 @@ class ALIGN_OT_apply_h_segments(Operator, tool.Ifc.Operator):
         ifcopenshell.api.alignment.create_representation(ifc_file, alignment)
         tool.Alignment.refresh_alignment_representation_object(alignment)
         _refresh_vertical_profile_view(context, alignment)
+
+        # Keep an already-generated cant layout's curve types matching the
+        # horizontal's own (per the user, 2026-09-16: "change BLOSS to COSINE
+        # in horizontal makes the same change in cant layout") -- a no-op if
+        # there's no cant layout yet, or if the segment counts have drifted
+        # apart (e.g. this Apply added/removed rows on the horizontal side
+        # only) -- see sync_cant_segment_types.
+        tool.Alignment.sync_cant_segment_types(alignment)
 
         # Every segment id in this layout just changed.
         props.selected_h_segment_id = 0
@@ -2791,6 +2819,290 @@ class ALIGN_OT_apply_v_segments(Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
+class ALIGN_OT_generate_cant_layout(Operator, tool.Ifc.Operator):
+    """Generate a full cant layout from a single cant value, paired to one
+    specific vertical layout.
+
+    Mirrors the horizontal layout's own segment structure and curve family
+    (see tool.Alignment.build_cant_specs_from_horizontal /
+    .CANT_TYPE_FOR_HORIZONTAL_TYPE): 0 on tangents, the given value on arcs
+    (raised on whichever rail is outer to the turn), ramping between them on
+    the matching transition curve type. Replaces any cant layout already
+    paired with that vertical outright -- edit individual values afterward
+    via Edit Cant Segments (align.generate_cant_layout only sets the
+    starting point; per-segment tuning is the table's job, same division of
+    labour as Draw Horizontal Alignment vs. its own PI-curve editing).
+
+    With multiple verticals (IFC CT 4.1.4.4.1.2), which one matters (per the
+    user, 2026-09-16): cant's IfcSegmentedReferenceCurve wraps a specific
+    vertical's own IfcGradientCurve, so it has to nest onto that same
+    vertical's owning alignment (its own child alignment, not necessarily
+    the top-level one that owns the shared horizontal) -- exactly the same
+    "reusing horizontal" structure multiple verticals already use, just with
+    cant added alongside. layout_id targets a specific vertical the same way
+    ALIGN_OT_load_vertical_pis's own layout_id does; 0 falls back to
+    get_vertical_layout(alignment)'s direct vertical, the common
+    single-vertical case.
+    """
+
+    bl_idname = "align.generate_cant_layout"
+    bl_label = "Generate Cant Layout"
+    bl_description = (
+        "Generate a cant layout from a single cant value, matching the horizontal "
+        "layout's own segments and curve types. Replaces any cant layout already "
+        "paired with this vertical."
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    cant_value: FloatProperty(
+        name="Cant",
+        description="Full left/right rail height difference on curves (0 on tangents)",
+        default=0.1,
+    )
+    layout_id: IntProperty(default=0, options={"HIDDEN"})
+
+    @classmethod
+    def poll(cls, context):
+        if not poll_ifc4x3(cls, context):
+            return False
+        if context.scene.CivilAlignmentProperties.editing_segment_kind != "NONE":
+            cls.poll_message_set("Finish or cancel the segment table edit first")
+            return False
+        alignment = tool.Alignment.get_active_alignment()
+        if not alignment:
+            cls.poll_message_set("Select an alignment first")
+            return False
+        h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+        if not h_layout or not tool.Alignment.get_real_layout_segments(h_layout):
+            cls.poll_message_set("Draw the horizontal alignment first")
+            return False
+        # Cant is fundamentally a 3D (rail) concept -- superelevation between
+        # the two rails only means something once there's a vertical profile
+        # to be superelevated along, and IFC's own IfcSegmentedReferenceCurve
+        # for cant is inherently 3D. Per the user (2026-09-16): "adding cant
+        # can only happen if there is a horizontal and a vertical alignment."
+        if not tool.Alignment.has_real_vertical_segments(alignment):
+            cls.poll_message_set("Draw the vertical alignment first")
+            return False
+        return True
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def _execute(self, context):
+        alignment = tool.Alignment.get_active_alignment()
+        ifc = tool.Ifc.get()
+
+        if self.layout_id:
+            v_layout = ifc.by_id(self.layout_id)
+        else:
+            v_layout = ifcopenshell.api.alignment.get_vertical_layout(alignment)
+        if not v_layout or not tool.Alignment.get_real_layout_segments(v_layout):
+            self.report({"ERROR"}, "That vertical layout has no segments yet")
+            return {"CANCELLED"}
+
+        # The alignment that directly nests v_layout -- the top-level
+        # alignment for the single-vertical case, or v_layout's own child
+        # alignment once a second+ vertical has moved it there. Cant nests
+        # alongside whichever one that is, not necessarily the top level.
+        owning_alignment = ifcopenshell.api.alignment.get_alignment(v_layout)
+
+        h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+        h_segments = tool.Alignment.get_real_layout_segments(h_layout)
+
+        try:
+            specs = tool.Alignment.build_cant_specs_from_horizontal(h_segments, self.cant_value)
+        except ValueError as e:
+            self.report({"ERROR"}, str(e))
+            return {"CANCELLED"}
+
+        cant_layout = tool.Alignment.get_or_create_cant_layout(owning_alignment)
+        ifcopenshell.api.alignment.clear_layout_segments(ifc, cant_layout)
+
+        dist_along = 0.0
+        for predefined_type, length, start_left, start_right, end_left, end_right in specs:
+            design_parameters = ifc.createIfcAlignmentCantSegment(
+                StartTag=None,
+                EndTag=None,
+                StartDistAlong=dist_along,
+                HorizontalLength=length,
+                StartCantLeft=start_left,
+                EndCantLeft=end_left,
+                StartCantRight=start_right,
+                EndCantRight=end_right,
+                PredefinedType=predefined_type,
+            )
+            ifcopenshell.api.alignment.create_layout_segment(ifc, cant_layout, design_parameters)
+            dist_along += length
+
+        ifcopenshell.api.alignment.create_representation(ifc, alignment)
+        tool.Alignment.refresh_alignment_representation_object(alignment)
+        _refresh_vertical_profile_view(context, alignment)
+
+        tool.Blender.update_viewport()
+        self.report({"INFO"}, f"Generated {len(specs)} cant segment(s)")
+        return {"FINISHED"}
+
+
+class ALIGN_OT_remove_cant_layout(Operator, tool.Ifc.Operator):
+    """Delete one cant layout -- its segments and, if present, the
+    IfcSegmentedReferenceCurve that wrapped its paired vertical's own curve
+    (reverted back to a plain IfcGradientCurve). Never blocked by anything
+    downstream -- cant is always the leaf of the horizontal/vertical/cant
+    chain.
+    """
+
+    bl_idname = "align.remove_cant_layout"
+    bl_label = "Delete Cant Layout"
+    bl_description = "Delete this cant layout"
+    bl_options = {"REGISTER", "UNDO"}
+
+    layout_id: IntProperty(default=0, options={"HIDDEN"})
+
+    @classmethod
+    def poll(cls, context):
+        if not poll_ifc4x3(cls, context):
+            return False
+        if context.scene.CivilAlignmentProperties.editing_segment_kind != "NONE":
+            cls.poll_message_set("Finish or cancel the segment table edit first")
+            return False
+        return True
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_confirm(self, event)
+
+    def _execute(self, context):
+        ifc = tool.Ifc.get()
+        cant_layout = ifc.by_id(self.layout_id) if self.layout_id else None
+        if cant_layout is None:
+            alignment = tool.Alignment.get_active_alignment()
+            cant_layouts = tool.Alignment.get_all_cant_layouts(alignment) if alignment else []
+            cant_layout = cant_layouts[0] if cant_layouts else None
+        if cant_layout is None:
+            self.report({"ERROR"}, "No cant layout to delete")
+            return {"CANCELLED"}
+
+        top_level = tool.Alignment._get_top_level_alignment(ifcopenshell.api.alignment.get_alignment(cant_layout))
+        tool.Alignment.remove_cant_layout(cant_layout)
+        tool.Alignment.refresh_alignment_representation_object(top_level)
+        _refresh_vertical_profile_view(context, top_level)
+        tool.Blender.update_viewport()
+        self.report({"INFO"}, "Deleted the cant layout")
+        return {"FINISHED"}
+
+
+class ALIGN_OT_remove_vertical_layout(Operator, tool.Ifc.Operator):
+    """Delete one vertical layout -- its segments and its own geometric
+    representation. Blocked while that vertical has a cant layout paired
+    with it (per the user, 2026-09-16): delete the cant first.
+    """
+
+    bl_idname = "align.remove_vertical_layout"
+    bl_label = "Delete Vertical Layout"
+    bl_description = "Delete this vertical layout. Blocked while it has a cant layout."
+    bl_options = {"REGISTER", "UNDO"}
+
+    layout_id: IntProperty(default=0, options={"HIDDEN"})
+
+    @classmethod
+    def poll(cls, context):
+        if not poll_ifc4x3(cls, context):
+            return False
+        if context.scene.CivilAlignmentProperties.editing_segment_kind != "NONE":
+            cls.poll_message_set("Finish or cancel the segment table edit first")
+            return False
+        return True
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_confirm(self, event)
+
+    def _execute(self, context):
+        ifc = tool.Ifc.get()
+        if self.layout_id:
+            v_layout = ifc.by_id(self.layout_id)
+        else:
+            alignment = tool.Alignment.get_active_alignment()
+            v_layout = ifcopenshell.api.alignment.get_vertical_layout(alignment) if alignment else None
+        if v_layout is None:
+            self.report({"ERROR"}, "No vertical layout to delete")
+            return {"CANCELLED"}
+
+        # A per-row UI button (ui.py's _draw_vertical) already disables
+        # itself once this specific vertical has a cant -- a classmethod
+        # poll() can't see that (layout_id isn't set until after the button
+        # fires, same reason every other per-layout_id operator in this
+        # module re-checks in _execute instead of poll). This is the safety
+        # net for anything that reaches here regardless (search menu, redo
+        # panel, scripting).
+        owning_alignment = ifcopenshell.api.alignment.get_alignment(v_layout)
+        cant_layout = ifcopenshell.api.alignment.get_cant_layout(owning_alignment)
+        if cant_layout and tool.Alignment.get_real_layout_segments(cant_layout):
+            self.report({"ERROR"}, "Delete this vertical's cant layout first")
+            return {"CANCELLED"}
+
+        top_level = tool.Alignment._get_top_level_alignment(owning_alignment)
+        tool.Alignment.remove_vertical_layout(v_layout)
+        tool.Alignment.refresh_alignment_representation_object(top_level)
+        _refresh_vertical_profile_view(context, top_level)
+        tool.Blender.update_viewport()
+        self.report({"INFO"}, "Deleted the vertical layout")
+        return {"FINISHED"}
+
+
+class ALIGN_OT_remove_horizontal_layout(Operator, tool.Ifc.Operator):
+    """Delete the alignment's horizontal layout -- its segments, its
+    stationing referents, and the alignment's whole geometric representation
+    (there's nothing left to represent once horizontal, the foundation
+    every vertical is defined against, is gone). Blocked while a vertical
+    layout exists (per the user, 2026-09-16): delete the vertical(s) -- and,
+    for each, its own cant first -- first, or delete the whole alignment to
+    start over in one step.
+    """
+
+    bl_idname = "align.remove_horizontal_layout"
+    bl_label = "Delete Horizontal Layout"
+    bl_description = "Delete the horizontal layout and its stationing. Blocked while a vertical layout exists."
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not poll_ifc4x3(cls, context):
+            return False
+        alignment = tool.Alignment.get_active_alignment()
+        if not alignment:
+            cls.poll_message_set("Select an alignment first")
+            return False
+        h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+        if not h_layout or not tool.Alignment.get_real_layout_segments(h_layout):
+            cls.poll_message_set("This alignment has no horizontal segments yet")
+            return False
+        if tool.Alignment.has_real_vertical_segments(alignment):
+            cls.poll_message_set("Delete the vertical layout(s) first")
+            return False
+        if context.scene.CivilAlignmentProperties.editing_segment_kind != "NONE":
+            cls.poll_message_set("Finish or cancel the segment table edit first")
+            return False
+        if _find_pi_markers(alignment.id()):
+            cls.poll_message_set("Finish or clear the PI marker edit first")
+            return False
+        if context.scene.CivilAlignmentProperties.horizontal_pi_rows:
+            cls.poll_message_set("Finish or clear the PI table edit first")
+            return False
+        return True
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_confirm(self, event)
+
+    def _execute(self, context):
+        alignment = tool.Alignment.get_active_alignment()
+        for marker in _find_pi_markers(alignment.id()):
+            bpy.data.objects.remove(marker, do_unlink=True)
+        tool.Alignment.remove_horizontal_layout(alignment)
+        tool.Blender.update_viewport()
+        self.report({"INFO"}, "Deleted the horizontal layout")
+        return {"FINISHED"}
+
+
 class ALIGN_OT_enable_editing_cant_segments(Operator):
     """Stage a cant layout's segments for table editing"""
 
@@ -2825,7 +3137,15 @@ class ALIGN_OT_enable_editing_cant_segments(Operator):
             row = props.cant_segment_rows.add()
             row.segment_id = seg.id()
             seg_type = dp.PredefinedType
-            if seg_type in ("CONSTANTCANT", "LINEARTRANSITION"):
+            if seg_type in (
+                "CONSTANTCANT",
+                "LINEARTRANSITION",
+                "HELMERTCURVE",
+                "BLOSSCURVE",
+                "COSINECURVE",
+                "SINECURVE",
+                "VIENNESEBEND",
+            ):
                 row.predefined_type = seg_type
             else:
                 row.predefined_type = "UNSUPPORTED"
@@ -2903,7 +3223,11 @@ class ALIGN_OT_apply_cant_segments(Operator, tool.Ifc.Operator):
 
         for row in rows:
             h_length = row.h_length / length_scale
-            is_transition = row.predefined_type == "LINEARTRANSITION"
+            # Every cant type except CONSTANTCANT is a transition that needs
+            # End* set -- see _map_alignment_cant_segment (ifcopenshell):
+            # HELMERTCURVE/BLOSSCURVE/COSINECURVE/SINECURVE/VIENNESEBEND all
+            # read EndCantLeft/EndCantRight the same way LINEARTRANSITION does.
+            is_transition = row.predefined_type != "CONSTANTCANT"
             design_parameters = ifc_file.createIfcAlignmentCantSegment(
                 StartTag=None,
                 EndTag=None,
