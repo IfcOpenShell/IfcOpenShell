@@ -269,8 +269,8 @@ const std::string& token::as_string() {
     throw invalid_token_exception(start_pos, to_string(), "string");
 }
 
-boost::dynamic_bitset<> token::as_binary() {
-    const std::string& str = as_string();
+// The value of a binary token: the count of unused bits, then hex digits.
+boost::dynamic_bitset<> binary_from_text(const std::string& str) {
     if (str.empty()) {
         throw exception("token is not a valid binary sequence");
     }
@@ -299,6 +299,10 @@ boost::dynamic_bitset<> token::as_binary() {
     }
 
     return bitset;
+}
+
+boost::dynamic_bitset<> token::as_binary() {
+    return binary_from_text(as_string());
 }
 
 std::string token::to_string() {
@@ -336,6 +340,25 @@ std::string ifcopenshell::encode_spf_string(const std::string& value) {
     return character_encoder(value);
 }
 
+namespace {
+
+// The first token if it is a string, decoded.
+struct first_string_consumer {
+    static constexpr bool decode_strings = true;
+    static constexpr bool decode_values = false;
+    static constexpr bool keep_keywords = false;
+    std::optional<std::string> result;
+    bool string(size_t, const std::string& text) {
+        result = text;
+        return false;
+    }
+    bool operator_(size_t, char) { return false; }
+    bool identifier(size_t, uint32_t) { return false; }
+    bool literal(size_t) { return false; }
+};
+
+} // namespace
+
 std::string ifcopenshell::decode_spf_string(const std::string& value) {
     std::string wrapped;
     auto value_p = &value;
@@ -345,11 +368,12 @@ std::string ifcopenshell::decode_spf_string(const std::string& value) {
     }
     file_reader<full_buffer_impl> reader(*value_p, caller_fed_tag{});
     spf_lexer<file_reader<full_buffer_impl>> lexer(&reader);
-    token decoded = lexer.next();
-    if (!decoded.is_string()) {
+    first_string_consumer consumer;
+    lexer.scan(consumer);
+    if (!consumer.result) {
         throw exception("Expected an SPF string");
     }
-    return decoded.as_string();
+    return *consumer.result;
 }
 
 namespace {
@@ -449,38 +473,6 @@ void warn_attribute_count(
         logger.warning("VAL", 15, "Expected " + std::to_string(expected_size) + " attribute values, found " + std::to_string(actual_size) + " for header entity " + declaration->name());
     } else {
         logger.warning("VAL", 16, "Expected " + std::to_string(expected_size) + " attribute values, found " + std::to_string(actual_size) + (instance_name ? std::string(" for instance #" + std::to_string(*instance_name)) : std::string("")));
-    }
-}
-
-template <typename Fn>
-void dispatch_token_direct(ifcopenshell::token token, ifcopenshell::declaration* declaration, int attribute_index, logger& logger, Fn&& fn) {
-    if (token.is_binary()) {
-        fn(token.as_binary());
-    } else if (token.is_bool()) {
-        fn(token.as_bool());
-    } else if (token.is_logical()) {
-        fn(token.as_logical());
-    } else if (token.is_enumeration()) {
-        const auto& value = token.as_string();
-        if (declaration && declaration->as_enumeration_type()) {
-            try {
-                fn(enumeration_reference(declaration->as_enumeration_type(), declaration->as_enumeration_type()->lookup_enum_offset(value)));
-            } catch (ifcopenshell::exception&) {
-                logger.error("VAL", 12, "An enumeration literal '" + value + "' is not valid for type '" + declaration->name() + "' at offset " + std::to_string(token.start_pos));
-            }
-        } else {
-            logger.error("VAL", 13, "An enumeration literal '" + value + "' is not expected at attribute index '" + std::to_string(attribute_index) + "' at offset " + std::to_string(token.start_pos));
-        }
-    } else if (token.is_int()) {
-        fn(token.as_int());
-    } else if (token.is_float()) {
-        fn(token.as_float());
-    } else if (token.is_identifier()) {
-        fn(ifcopenshell::reference_or_simple_type{ifcopenshell::instance_reference{(int) token.as_identifier(), token.start_pos}});
-    } else if (token.is_string()) {
-        fn(token.as_string());
-    } else if (token.is_operator('*')) {
-        fn(derived{});
     }
 }
 
@@ -699,77 +691,389 @@ void set_direct_attribute(
     }
 }
 
+// The attribute list of one instance, from just after its '(' to the ')'
+// that closes it, built from the tokenizer's callbacks. What the pull
+// parser did by recursion (an attribute list, an aggregate in it, a typed
+// value such as IFCLABEL('x') in either, nested to any depth) is an
+// explicit stack of frames, one per open parenthesis: a list frame fills
+// the instance's slots, an aggregate frame accumulates a direct_aggregate,
+// a skip frame only counts parentheses for a value beyond the schema's
+// attribute count. Inverse records, unresolved references, the messages
+// and their offsets are made as the pull parser made them.
 template <typename Reader>
-void skip_aggregate(ifcopenshell::spf_lexer<Reader>* tokens) {
-    size_t depth = 1;
-    while (depth) {
-        token next = tokens->next();
-        if (!next) {
-            break;
+class list_consumer {
+  public:
+    static constexpr bool decode_strings = true;
+    static constexpr bool decode_values = true;
+    static constexpr bool keep_keywords = true;
+
+    list_consumer(ifcopenshell::impl::in_memory_file_storage& storage, ifcopenshell::logger& logger)
+        : storage_(storage)
+        , logger_(logger) {}
+
+    // Opens the list of `declaration`. `instance_name` and `entity` are the
+    // owning entity instance's, for the inverse records; `attribute_index`
+    // is the owner's attribute for a typed value read on its behalf and -1
+    // for the instance's own list, as load() took them.
+    void start(std::optional<size_t> instance_name, const ifcopenshell::declaration* declaration, const ifcopenshell::entity* entity, int attribute_index) {
+        frames_.clear();
+        pending_ = false;
+        done_ = false;
+        result_.reset();
+        instance_name_ = instance_name;
+        entity_ = entity;
+        push_list(declaration, attribute_index);
+    }
+
+    // The list's storage once its ')' was seen. At the end of the input
+    // every open frame is closed as if it had been, which is what the pull
+    // parser's loops did when the tokens ran out.
+    in_memory_attribute_storage finish() {
+        while (!done_) {
+            close();
         }
-        if (next.is_operator('(')) {
-            ++depth;
-        } else if (next.is_operator(')')) {
-            --depth;
+        return std::move(*result_);
+    }
+
+    bool operator_(size_t, char c) {
+        if (take_pending()) {
+            return true;
+        }
+        switch (c) {
+        case '(':
+            return open();
+        case ')':
+            return close();
+        case ',':
+            if (frames_.back().what == kind::list) {
+                ++frames_.back().attribute;
+            }
+            return true;
+        case '*':
+            if (frame* f = target()) {
+                deliver(*f, derived{});
+            }
+            return true;
+        default:
+            // '$', or a '=' or ';' where none belongs: a value of the list
+            // as far as the count goes, nothing stored.
+            target();
+            return true;
         }
     }
-}
-
-template <typename Reader>
-direct_aggregate read_direct_aggregate(
-    ifcopenshell::impl::in_memory_file_storage& storage,
-    ifcopenshell::spf_lexer<Reader>* tokens,
-    std::optional<size_t> entity_instance_name,
-    const ifcopenshell::entity* entity,
-    int attribute_index,
-    const ifcopenshell::aggregation_type* aggregate_type,
-    ifcopenshell::logger& logger
-) {
-    direct_aggregate aggregate(logger);
-    token next = tokens->next();
-
-    while (next) {
-        if (next.is_operator(',')) {
-        } else if (next.is_operator(')')) {
-            break;
-        } else if (next.is_operator('(')) {
-            auto nested = read_direct_aggregate(storage, tokens, entity_instance_name, entity, attribute_index, nested_aggregation_type(aggregate_type), logger);
-            if (nested.values == 0 && nested.storage.index() == 0) {
-                aggregate.append_empty_nested();
+    bool identifier(size_t pos, uint32_t name) {
+        if (take_pending()) {
+            return true;
+        }
+        frame& f = frames_.back();
+        if (f.what != kind::skip && entity_ && instance_name_) {
+            storage_.register_inverse((unsigned)*instance_name_, entity_, (int)name, reference_attribute(f));
+        }
+        if (frame* t = target()) {
+            deliver(*t, ifcopenshell::reference_or_simple_type{ifcopenshell::instance_reference{(int)name, pos}});
+        }
+        return true;
+    }
+    bool string(size_t, const std::string& text) {
+        if (take_pending()) {
+            return true;
+        }
+        if (frame* t = target()) {
+            deliver(*t, text);
+        }
+        return true;
+    }
+    bool keyword(size_t pos, const std::string& text) {
+        if (take_pending()) {
+            return true;
+        }
+        frame& f = frames_.back();
+        if (f.what == kind::skip) {
+            return true;
+        }
+        const ifcopenshell::declaration* typed = nullptr;
+        try {
+            typed = (storage_.schema ? storage_.schema : storage_.file->schema())->declaration_by_name(text);
+        } catch (ifcopenshell::exception& e) {
+            if (f.what == kind::list) {
+                logger_.message(ifcopenshell::logger::LOG_ERROR, std::string(e.what()) + " at offset " + std::to_string(pos));
             } else {
-                std::visit([&aggregate](const auto& value) {
-                    if constexpr (!std::is_same_v<std::decay_t<decltype(value)>, blank>) {
-                        aggregate.append(value);
-                    }
-                }, nested.storage);
+                logger_.error("SYN", 123, std::string(e.what()) + " at offset " + std::to_string(pos));
             }
-        } else if (next.is_keyword()) {
+            return true;
+        }
+        // The token after the keyword, its '(', opens the typed value's
+        // list; a value beyond the schema's count is passed over instead.
+        pending_ = true;
+        pending_typed_ = typed;
+        if (f.what == kind::list) {
+            ++f.values_read;
+            pending_retained_ = f.attribute < f.expected;
+            pending_owner_ = reference_attribute(f);
+        } else {
+            pending_retained_ = true;
+            pending_owner_ = f.reference_attribute;
+        }
+        return true;
+    }
+    bool enumeration(size_t pos, const std::string& text) {
+        if (take_pending()) {
+            return true;
+        }
+        frame* t = target();
+        if (t == nullptr) {
+            return true;
+        }
+        const ifcopenshell::declaration* type = value_type(*t);
+        if (type && type->as_enumeration_type()) {
             try {
-                const auto* declaration = (storage.schema ? storage.schema : storage.file->schema())->declaration_by_name(next.as_string());
-                tokens->next();
-                auto data = storage.load(tokens, entity_instance_name, declaration, entity, attribute_index);
-                storage.read_simple_type_instances.push_back(data);
-                aggregate.append(ifcopenshell::reference_or_simple_type{express::base(data)});
-            } catch (exception& e) {
-                logger.error("SYN", 123, std::string(e.what()) + " at offset " + std::to_string(next.start_pos));
+                deliver(*t, enumeration_reference(type->as_enumeration_type(), type->as_enumeration_type()->lookup_enum_offset(text)));
+            } catch (ifcopenshell::exception&) {
+                logger_.error("VAL", 12, "An enumeration literal '" + text + "' is not valid for type '" + type->name() + "' at offset " + std::to_string(pos));
             }
         } else {
-            if (next.is_identifier() && entity && entity_instance_name) {
-                storage.register_inverse((unsigned)*entity_instance_name, entity, next.value_int, attribute_index);
-            }
-            dispatch_token_direct(next, aggregate_type && aggregate_type->type_of_element()->as_named_type() ? aggregate_type->type_of_element()->as_named_type()->declared_type() : nullptr, attribute_index, logger, [&aggregate](const auto& value) {
-                aggregate.append(value);
-            });
+            logger_.error("VAL", 13, "An enumeration literal '" + text + "' is not expected at attribute index '" + std::to_string(message_index(*t)) + "' at offset " + std::to_string(pos));
         }
-        next = tokens->next();
+        return true;
+    }
+    bool binary(size_t, const std::string& text) {
+        if (take_pending()) {
+            return true;
+        }
+        if (frame* t = target()) {
+            deliver(*t, binary_from_text(text));
+        }
+        return true;
+    }
+    bool boolean(size_t, char c) {
+        if (take_pending()) {
+            return true;
+        }
+        if (frame* t = target()) {
+            if (c == 'U') {
+                deliver(*t, boost::logic::tribool(boost::logic::indeterminate));
+            } else {
+                deliver(*t, c == 'T');
+            }
+        }
+        return true;
+    }
+    bool integer(size_t, int64_t value) {
+        if (take_pending()) {
+            return true;
+        }
+        if (frame* t = target()) {
+            deliver(*t, value);
+        }
+        return true;
+    }
+    bool real(size_t, double value) {
+        if (take_pending()) {
+            return true;
+        }
+        if (frame* t = target()) {
+            deliver(*t, value);
+        }
+        return true;
+    }
+    bool literal(size_t) {
+        return true;
     }
 
-    if (aggregate.values == 0) {
-        append_empty_direct_aggregate(aggregate_type, aggregate);
+  private:
+    enum class kind : uint8_t { list, aggregate, skip };
+    struct frame {
+        kind what = kind::skip;
+        // list
+        const ifcopenshell::declaration* declaration = nullptr;
+        std::optional<parameter_type_view> parameters;
+        std::optional<in_memory_attribute_storage> values;
+        size_t expected = 0;
+        size_t attribute = 0;
+        size_t values_read = 0;
+        int owner_attribute = -1;
+        // aggregate
+        const ifcopenshell::aggregation_type* aggregate_type = nullptr;
+        std::optional<direct_aggregate> aggregate;
+        int reference_attribute = -1;
+        // skip
+        int depth = 0;
+    };
+
+    void push_list(const ifcopenshell::declaration* declaration, int owner_attribute) {
+        frame& f = frames_.emplace_back();
+        f.what = kind::list;
+        f.declaration = declaration;
+        f.parameters.emplace(declaration);
+        f.expected = f.parameters->size();
+        f.values.emplace(f.expected);
+        f.owner_attribute = owner_attribute;
+    }
+    void push_aggregate(const ifcopenshell::aggregation_type* type, int reference_attribute) {
+        frame& f = frames_.emplace_back();
+        f.what = kind::aggregate;
+        f.aggregate_type = type;
+        f.aggregate.emplace(logger_);
+        f.reference_attribute = reference_attribute;
+    }
+    void push_skip() {
+        frame& f = frames_.emplace_back();
+        f.what = kind::skip;
+        f.depth = 1;
     }
 
-    return aggregate;
-}
+    // The attribute index an inverse record or a diverted reference names.
+    int reference_attribute(const frame& f) const {
+        if (f.what == kind::list) {
+            return f.owner_attribute == -1 ? (int)f.attribute : f.owner_attribute;
+        }
+        return f.reference_attribute;
+    }
+    static ifcopenshell::declaration* element_type(const ifcopenshell::aggregation_type* type) {
+        return type && type->type_of_element()->as_named_type() ? type->type_of_element()->as_named_type()->declared_type() : nullptr;
+    }
+    ifcopenshell::declaration* value_type(const frame& f) const {
+        return f.what == kind::list ? declared_type((*f.parameters)[f.attribute]) : element_type(f.aggregate_type);
+    }
+    int message_index(const frame& f) const {
+        return f.what == kind::list ? (int)f.attribute : f.reference_attribute;
+    }
+
+    // The frame the next value goes to, after counting it: nullptr for a
+    // value beyond the schema's count or inside a list passed over.
+    frame* target() {
+        frame& f = frames_.back();
+        if (f.what == kind::skip) {
+            return nullptr;
+        }
+        if (f.what == kind::list) {
+            ++f.values_read;
+            if (f.attribute >= f.expected) {
+                return nullptr;
+            }
+        }
+        return &f;
+    }
+    template <typename T>
+    void deliver(frame& f, const T& value) {
+        if (f.what == kind::list) {
+            set_direct_attribute(*f.values, instance_name_, storage_.references_to_resolve, storage_.resolve_references_in_place, f.attribute, f.owner_attribute, value);
+        } else {
+            f.aggregate->append(value);
+        }
+    }
+
+    // The token after a keyword opens the typed value's list, whatever it
+    // is, as the pull parser consumed one token there before reading on.
+    bool take_pending() {
+        if (!pending_) {
+            return false;
+        }
+        pending_ = false;
+        if (pending_retained_) {
+            push_list(pending_typed_, pending_owner_);
+        } else {
+            push_skip();
+        }
+        return true;
+    }
+
+    bool open() {
+        frame& f = frames_.back();
+        switch (f.what) {
+        case kind::skip:
+            ++f.depth;
+            return true;
+        case kind::list: {
+            ++f.values_read;
+            if (f.attribute >= f.expected) {
+                push_skip();
+                return true;
+            }
+            const auto* type = aggregate_parameter_type((*f.parameters)[f.attribute]);
+            const int reference = reference_attribute(f);
+            push_aggregate(type, reference);
+            return true;
+        }
+        case kind::aggregate: {
+            const auto* type = nested_aggregation_type(f.aggregate_type);
+            const int reference = f.reference_attribute;
+            push_aggregate(type, reference);
+            return true;
+        }
+        }
+        return true;
+    }
+
+    bool close() {
+        frame& f = frames_.back();
+        switch (f.what) {
+        case kind::skip:
+            if (--f.depth == 0) {
+                frames_.pop_back();
+            }
+            return true;
+        case kind::aggregate: {
+            if (f.aggregate->values == 0) {
+                append_empty_direct_aggregate(f.aggregate_type, *f.aggregate);
+            }
+            direct_aggregate finished = std::move(*f.aggregate);
+            frames_.pop_back();
+            frame& parent = frames_.back();
+            if (parent.what == kind::list) {
+                std::visit([&](const auto& value) {
+                    if constexpr (!std::is_same_v<std::decay_t<decltype(value)>, blank>) {
+                        set_direct_attribute(*parent.values, instance_name_, storage_.references_to_resolve, storage_.resolve_references_in_place, parent.attribute, parent.owner_attribute, value);
+                    }
+                }, finished.storage);
+            } else if (finished.values == 0 && finished.storage.index() == 0) {
+                parent.aggregate->append_empty_nested();
+            } else {
+                std::visit([&](const auto& value) {
+                    if constexpr (!std::is_same_v<std::decay_t<decltype(value)>, blank>) {
+                        parent.aggregate->append(value);
+                    }
+                }, finished.storage);
+            }
+            return true;
+        }
+        case kind::list: {
+            warn_attribute_count(f.declaration, instance_name_, f.expected, f.values_read, logger_);
+            in_memory_attribute_storage values = std::move(*f.values);
+            const auto* declaration = f.declaration;
+            frames_.pop_back();
+            if (frames_.empty()) {
+                result_.emplace(std::move(values));
+                done_ = true;
+                return false;
+            }
+            // A typed value: its own instance, as load() made it.
+            auto data = ifcopenshell::make_pointer_type<instance_data>(storage_.file, declaration, (declaration && declaration->as_entity()) ? (uint32_t)instance_name_.value_or(0) : 0, std::move(values));
+            storage_.read_simple_type_instances.push_back(data);
+            frame& parent = frames_.back();
+            if (parent.what == kind::list) {
+                parent.values->set(parent.attribute, express::base(data));
+            } else {
+                parent.aggregate->append(ifcopenshell::reference_or_simple_type{express::base(data)});
+            }
+            return true;
+        }
+        }
+        return true;
+    }
+
+    ifcopenshell::impl::in_memory_file_storage& storage_;
+    ifcopenshell::logger& logger_;
+    std::vector<frame> frames_;
+    std::optional<size_t> instance_name_;
+    const ifcopenshell::entity* entity_ = nullptr;
+    bool pending_ = false;
+    bool pending_retained_ = false;
+    int pending_owner_ = -1;
+    const ifcopenshell::declaration* pending_typed_ = nullptr;
+    bool done_ = false;
+    std::optional<in_memory_attribute_storage> result_;
+};
 
 } // namespace
 
@@ -791,6 +1095,7 @@ shared_pointer_type ifcopenshell::impl::in_memory_file_storage::load(
     return ifcopenshell::make_pointer_type<instance_data>(file, declaration, (declaration && declaration->as_entity()) ? (uint32_t)entity_instance_name.value_or(0) : 0, std::move(storage));
 }
 
+// The attribute list from just past its '(' through the ')' that closes it.
 template <typename Reader, typename Storage>
 Storage ifcopenshell::impl::in_memory_file_storage::load_attributes(
     ifcopenshell::spf_lexer<Reader>* tokens,
@@ -799,76 +1104,10 @@ Storage ifcopenshell::impl::in_memory_file_storage::load_attributes(
     const ifcopenshell::entity* entity,
     int attribute_index
 ) {
-    parameter_type_view parameter_types(declaration);
-    const size_t expected_size = parameter_types.size();
-    Storage storage(expected_size);
-
-    token next = tokens->next();
-    size_t attribute_index_within_data = 0;
-    size_t values_read = 0;
-
-    while (next) {
-        if (next.is_operator(',')) {
-            ++attribute_index_within_data;
-        } else if (next.is_operator(')')) {
-            break;
-        } else {
-            ++values_read;
-            const bool retain_value = attribute_index_within_data < expected_size;
-            const ifcopenshell::parameter_type* parameter_type = retain_value ? parameter_types[attribute_index_within_data] : nullptr;
-            const int reference_attribute_index = attribute_index == -1 ? (int) attribute_index_within_data : attribute_index;
-
-            if (next.is_operator('(')) {
-                if (retain_value) {
-                    auto aggregate = read_direct_aggregate(*this, tokens, entity_instance_name, entity, reference_attribute_index, aggregate_parameter_type(parameter_type), logger_.get());
-                    std::visit([&](const auto& value) {
-                        if constexpr (!std::is_same_v<std::decay_t<decltype(value)>, blank>) {
-                            set_direct_attribute(storage, entity_instance_name, references_to_resolve, resolve_references_in_place, attribute_index_within_data, attribute_index, value);
-                        }
-                    }, aggregate.storage);
-                } else {
-                    skip_aggregate(tokens);
-                }
-            } else if (next.is_keyword()) {
-                try {
-                    const auto* simple_declaration = (schema ? schema : file->schema())->declaration_by_name(next.as_string());
-                    tokens->next();
-                    if (retain_value) {
-                        auto data = load(tokens, entity_instance_name, simple_declaration, entity, reference_attribute_index);
-                        read_simple_type_instances.push_back(data);
-                        storage.set(attribute_index_within_data, express::base(data));
-                    } else {
-                        skip_aggregate(tokens);
-                    }
-                } catch (exception& e) {
-                    logger_.get().message(ifcopenshell::logger::LOG_ERROR, std::string(e.what()) + " at offset " + std::to_string(next.start_pos));
-                    --values_read;
-                }
-            } else {
-                if (next.is_identifier() && entity && entity_instance_name) {
-                    register_inverse((unsigned)*entity_instance_name, entity, next.value_int, reference_attribute_index);
-                }
-                if (retain_value) {
-                    dispatch_token_direct(next, declared_type(parameter_type), (int) attribute_index_within_data, logger_.get(), [&](const auto& value) {
-                        set_direct_attribute(storage, entity_instance_name, references_to_resolve, resolve_references_in_place, attribute_index_within_data, attribute_index, value);
-                    });
-                }
-            }
-        }
-        next = tokens->next();
-    }
-
-    warn_attribute_count(declaration, entity_instance_name, expected_size, values_read, logger_.get());
-    return storage;
-}
-
-template <typename Reader>
-void ifcopenshell::impl::in_memory_file_storage::try_read_semicolon(ifcopenshell::spf_lexer<Reader>* tokens) const {
-    auto old_offset = tokens->stream->tell();
-    token semilocon = tokens->next();
-    if (!semilocon.is_operator(';')) {
-        tokens->stream->seek(old_offset);
-    }
+    list_consumer<Reader> consumer(*this, logger_.get());
+    consumer.start(entity_instance_name, declaration, entity, attribute_index);
+    tokens->scan(consumer);
+    return consumer.finish();
 }
 
 void ifcopenshell::impl::in_memory_file_storage::register_inverse(unsigned id_from, const ifcopenshell::entity* from_entity, int inst_id, int attribute_index) {
@@ -1815,30 +2054,138 @@ file::file(const ifcopenshell::schema_definition* schema, filetype ty, const std
 
 namespace {
 
+// The header section as a consumer: the two terminals, then the three
+// header entities, each read through load() from just past its '(' with
+// the lexer continuing after the ')'. A token out of sequence throws, with
+// the message the terminal reader gave; the caller logs it and reports no
+// header.
 template <typename Reader>
-void read_terminal(spf_lexer<Reader>& lexer, const std::string& term, bool trailing_semicolon) {
-    if (lexer.next().as_string() != term) {
-        throw exception(std::string("Expected " + term));
+class header_consumer {
+  public:
+    static constexpr bool decode_strings = false;
+    static constexpr bool decode_values = false;
+    static constexpr bool keep_keywords = true;
+
+    header_consumer(ifcopenshell::spf_header& header, ifcopenshell::impl::in_memory_file_storage& storage, spf_lexer<Reader>& lexer, ifcopenshell::unresolved_references& references_to_resolve)
+        : header_(header)
+        , storage_(storage)
+        , lexer_(lexer)
+        , references_to_resolve_(references_to_resolve) {}
+
+    bool done() const {
+        return step_ == 13;
     }
-    if (trailing_semicolon) {
-        if (!lexer.next().is_operator(';')) {
+
+    bool keyword(size_t, const std::string& text) {
+        switch (step_) {
+        case 0:
+            expect(text, "ISO-10303-21");
+            break;
+        case 2:
+            expect(text, "HEADER");
+            break;
+        case 4:
+            expect(text, Header_section_schema::file_description::Class().name_uc());
+            break;
+        case 7:
+            expect(text, Header_section_schema::file_name::Class().name_uc());
+            break;
+        case 10:
+            expect(text, Header_section_schema::file_schema::Class().name_uc());
+            break;
+        default:
             throw exception("Expected ;");
         }
+        ++step_;
+        return true;
     }
-}
+    bool operator_(size_t, char c) {
+        switch (step_) {
+        case 1:
+        case 3:
+        case 6:
+        case 9:
+        case 12:
+            if (c != ';') {
+                throw exception("Expected ;");
+            }
+            break;
+        case 5:
+        case 8:
+        case 11: {
+            if (c != '(') {
+                throw exception("Expected (");
+            }
+            storage_.file = header_.owner_file();
+            storage_.references_to_resolve = &references_to_resolve_;
+            if (step_ == 5) {
+                header_.set_file_description(storage_.load(&lexer_, std::nullopt, &Header_section_schema::file_description::Class(), nullptr, -1));
+            } else if (step_ == 8) {
+                header_.set_file_name(storage_.load(&lexer_, std::nullopt, &Header_section_schema::file_name::Class(), nullptr, -1));
+            } else {
+                header_.set_file_schema(storage_.load(&lexer_, std::nullopt, &Header_section_schema::file_schema::Class(), nullptr, -1));
+            }
+            break;
+        }
+        default:
+            throw exception("Expected " + expected_keyword());
+        }
+        ++step_;
+        return step_ != 13;
+    }
+    bool identifier(size_t, uint32_t) {
+        return unexpected();
+    }
+    bool string(size_t, size_t) {
+        return unexpected();
+    }
+    bool literal(size_t) {
+        return unexpected();
+    }
 
-template <typename Reader>
-shared_pointer_type read_header_entity(
-    ifcopenshell::file* file,
-    ifcopenshell::impl::in_memory_file_storage& storage,
-    spf_lexer<Reader>& lexer,
-    ifcopenshell::unresolved_references& references_to_resolve,
-    const ifcopenshell::entity& decl) {
-    lexer.next();
-    storage.file = file;
-    storage.references_to_resolve = &references_to_resolve;
-    return storage.load(&lexer, std::nullopt, &decl, nullptr, -1);
-}
+  private:
+    void expect(const std::string& text, const std::string& term) const {
+        if (text != term) {
+            throw exception("Expected " + term);
+        }
+    }
+    std::string expected_keyword() const {
+        switch (step_) {
+        case 0:
+            return "ISO-10303-21";
+        case 2:
+            return "HEADER";
+        case 4:
+            return Header_section_schema::file_description::Class().name_uc();
+        case 7:
+            return Header_section_schema::file_name::Class().name_uc();
+        default:
+            return Header_section_schema::file_schema::Class().name_uc();
+        }
+    }
+    bool unexpected() const {
+        switch (step_) {
+        case 1:
+        case 3:
+        case 6:
+        case 9:
+        case 12:
+            throw exception("Expected ;");
+        case 5:
+        case 8:
+        case 11:
+            throw exception("Expected (");
+        default:
+            throw exception("Expected " + expected_keyword());
+        }
+    }
+
+    ifcopenshell::spf_header& header_;
+    ifcopenshell::impl::in_memory_file_storage& storage_;
+    spf_lexer<Reader>& lexer_;
+    ifcopenshell::unresolved_references& references_to_resolve_;
+    int step_ = 0;
+};
 
 template <typename Reader>
 void parse_header(
@@ -1846,29 +2193,196 @@ void parse_header(
     ifcopenshell::impl::in_memory_file_storage& storage,
     spf_lexer<Reader>& lexer,
     ifcopenshell::unresolved_references& references_to_resolve) {
-    static const char* const ISO_10303_21 = "ISO-10303-21";
-    static const char* const HEADER = "HEADER";
+    header_consumer<Reader> consumer(header, storage, lexer, references_to_resolve);
+    lexer.scan(consumer);
+    if (!consumer.done()) {
+        throw exception("Unexpected end of file in the header section");
+    }
+}
 
-    read_terminal(lexer, ISO_10303_21, true);
-    read_terminal(lexer, HEADER, true);
+// The top level of the DATA section. `#name = KEYWORD (` is detected the
+// way file::read() detected it in its three-token window, here as the
+// states of a consumer; the list that follows is handed to `visit(name,
+// declaration, keyword_offset)` with the lexer just past the '('. The
+// visit reads the list (a scan of its own; this one continues from where
+// that stopped) and returns whether to go on; the ';' after the list is
+// taken if present. An unknown or non-entity keyword is logged and its
+// list passed over, a bypassed type's list passed over and its name
+// recorded. Stops at the ENDSEC that closes the DATA section, at `end`, or
+// when `visit` says so; a header ENDSEC, the DATA keyword and a stray
+// token are passed over, as the serial reader passed over what it could
+// not match.
+template <typename Bypassed, typename Visit>
+class instance_header_consumer {
+  public:
+    static constexpr bool decode_strings = false;
+    static constexpr bool decode_values = false;
+    static constexpr bool keep_keywords = true;
 
-    read_terminal(lexer, Header_section_schema::file_description::Class().name_uc(), false);
-    header.set_file_description(read_header_entity(header.owner_file(), storage, lexer, references_to_resolve, Header_section_schema::file_description::Class()));
-    if (!lexer.next().is_operator(';')) {
-        throw exception("Expected ;");
+    instance_header_consumer(size_t end, const ifcopenshell::schema_definition* schema, const Bypassed& bypassed_types, std::vector<unsigned>& bypassed, ifcopenshell::logger& log, Visit& visit)
+        : end_(end)
+        , schema_(schema)
+        , bypassed_types_(bypassed_types)
+        , bypassed_(bypassed)
+        , log_(log)
+        , visit_(visit) {}
+
+    bool operator_(size_t pos, char c) {
+        if (state_ == state::skipping) {
+            if (c == '(') {
+                ++depth_;
+            } else if (c == ')' && --depth_ == 0) {
+                state_ = state::between;
+            }
+            return true;
+        }
+        if (state_ == state::after_list) {
+            state_ = state::between;
+            if (c == ';') {
+                return true;
+            }
+        }
+        switch (state_) {
+        case state::between:
+            return pos < end_;
+        case state::after_name:
+            state_ = c == '=' ? state::after_equals : state::between;
+            return true;
+        case state::after_keyword:
+            state_ = state::between;
+            if (c != '(') {
+                return true;
+            }
+            if (declaration_ == nullptr || bypassed_types_[declaration_->index_in_schema()]) {
+                if (declaration_ != nullptr) {
+                    bypassed_.push_back(name_);
+                }
+                state_ = state::skipping;
+                depth_ = 1;
+                return true;
+            }
+            if (!visit_(name_, declaration_, keyword_pos_)) {
+                return false;
+            }
+            state_ = state::after_list;
+            return true;
+        default:
+            state_ = state::between;
+            return true;
+        }
+    }
+    bool identifier(size_t pos, uint32_t name) {
+        if (state_ == state::skipping) {
+            return true;
+        }
+        if (state_ == state::after_list) {
+            state_ = state::between;
+        }
+        if (state_ == state::between) {
+            if (pos >= end_) {
+                return false;
+            }
+            in_data_ = true;
+            name_ = name;
+            state_ = state::after_name;
+            return true;
+        }
+        state_ = state::between;
+        return true;
+    }
+    bool keyword(size_t pos, const std::string& text) {
+        if (state_ == state::skipping) {
+            return true;
+        }
+        if (state_ == state::after_list) {
+            state_ = state::between;
+        }
+        if (state_ == state::between) {
+            if (pos >= end_) {
+                return false;
+            }
+            if (text == "ENDSEC") {
+                if (in_data_) {
+                    return false;
+                }
+                in_data_ = true;  // the header's: the DATA section follows
+            }
+            return true;
+        }
+        if (state_ == state::after_equals) {
+            declaration_ = lookup(text, pos);
+            keyword_pos_ = pos;
+            state_ = state::after_keyword;
+            return true;
+        }
+        state_ = state::between;
+        return true;
+    }
+    bool string(size_t begin, size_t) {
+        return other(begin);
+    }
+    bool literal(size_t pos) {
+        return other(pos);
     }
 
-    read_terminal(lexer, Header_section_schema::file_name::Class().name_uc(), false);
-    header.set_file_name(read_header_entity(header.owner_file(), storage, lexer, references_to_resolve, Header_section_schema::file_name::Class()));
-    if (!lexer.next().is_operator(';')) {
-        throw exception("Expected ;");
+  private:
+    enum class state : uint8_t { between, after_name, after_equals, after_keyword, skipping, after_list };
+
+    bool other(size_t pos) {
+        if (state_ == state::skipping) {
+            return true;
+        }
+        if (state_ == state::after_list) {
+            state_ = state::between;
+        }
+        if (state_ == state::between) {
+            return pos < end_;
+        }
+        state_ = state::between;
+        return true;
     }
 
-    read_terminal(lexer, Header_section_schema::file_schema::Class().name_uc(), false);
-    header.set_file_schema(read_header_entity(header.owner_file(), storage, lexer, references_to_resolve, Header_section_schema::file_schema::Class()));
-    if (!lexer.next().is_operator(';')) {
-        throw exception("Expected ;");
+    const ifcopenshell::declaration* lookup(const std::string& text, size_t pos) {
+        auto found = declarations_.find(text);
+        if (found != declarations_.end()) {
+            return found->second;
+        }
+        const ifcopenshell::declaration* declaration = nullptr;
+        try {
+            if (schema_ == nullptr) {
+                throw exception("No schema for " + text);
+            }
+            declaration = schema_->declaration_by_name(text);
+            if (declaration->as_entity() == nullptr) {
+                log_.message(ifcopenshell::logger::LOG_ERROR, "Non-entity type " + declaration->name() + " at offset " + std::to_string(pos));
+                declaration = nullptr;
+            }
+        } catch (const exception& e) {
+            log_.message(ifcopenshell::logger::LOG_ERROR, std::string(e.what()) + " at offset " + std::to_string(pos));
+        }
+        declarations_.emplace(text, declaration);
+        return declaration;
     }
+
+    size_t end_;
+    const ifcopenshell::schema_definition* schema_;
+    const Bypassed& bypassed_types_;
+    std::vector<unsigned>& bypassed_;
+    ifcopenshell::logger& log_;
+    Visit& visit_;
+    std::unordered_map<std::string, const ifcopenshell::declaration*> declarations_;
+    state state_ = state::between;
+    bool in_data_ = false;
+    uint32_t name_ = 0;
+    const ifcopenshell::declaration* declaration_ = nullptr;
+    size_t keyword_pos_ = 0;
+    int depth_ = 0;
+};
+
+template <typename Reader, typename Bypassed, typename Visit>
+void for_each_instance_header(Reader&, spf_lexer<Reader>& lexer, size_t end, const ifcopenshell::schema_definition* schema, const Bypassed& bypassed_types, std::vector<unsigned>& bypassed, ifcopenshell::logger& log, Visit visit) {
+    instance_header_consumer<Bypassed, Visit> consumer(end, schema, bypassed_types, bypassed, log, visit);
+    lexer.scan(consumer);
 }
 
 template <typename Reader>
@@ -1951,51 +2465,51 @@ void ifcopenshell::instance_streamer<Reader>::initialize_header() {
     materialize_bypass_types();
 }
 
+namespace {
+
+// Counts the semicolons from the cursor on, or stops at the first.
+struct semicolon_consumer {
+    static constexpr bool decode_strings = false;
+    static constexpr bool decode_values = false;
+    static constexpr bool keep_keywords = false;
+    bool first_only;
+    size_t count = 0;
+    bool operator_(size_t, char c) {
+        if (c == ';') {
+            ++count;
+            return !first_only;
+        }
+        return true;
+    }
+    bool identifier(size_t, uint32_t) { return true; }
+    bool string(size_t, size_t) { return true; }
+    bool literal(size_t) { return true; }
+};
+
+} // namespace
+
 template <typename Reader>
 bool ifcopenshell::instance_streamer<Reader>::has_semicolon() const {
     auto local_stream = stream_->clone();
     auto local_lexer = spf_lexer<Reader>(&local_stream, logger_.get());
-    token t;
+    semicolon_consumer consumer{true};
     try {
-        t = local_lexer.next();
+        local_lexer.scan(consumer);
     } catch (const std::out_of_range&) {
-        return false;
     }
-    while (t.type != token::Token_NONE) {
-        if (t.is_operator(';')) {
-            return true;
-        }
-        try {
-            t = local_lexer.next();
-        } catch (const std::out_of_range&) {
-            break;
-        }
-    }
-    return false;
+    return consumer.count > 0;
 }
 
 template <typename Reader>
 size_t ifcopenshell::instance_streamer<Reader>::semicolon_count() const {
     auto local_stream = stream_->clone();
     auto local_lexer = spf_lexer<Reader>(&local_stream, logger_.get());
-    token t;
-    size_t count = 0;
+    semicolon_consumer consumer{false};
     try {
-        t = local_lexer.next();
+        local_lexer.scan(consumer);
     } catch (const std::out_of_range&) {
-        return false;
     }
-    while (t.type != token::Token_NONE) {
-        if (t.is_operator(';')) {
-            count++;
-        }
-        try {
-            t = local_lexer.next();
-        } catch (const std::out_of_range&) {
-            break;
-        }
-    }
-    return count;
+    return consumer.count;
 }
 
 template <typename Reader>
@@ -2010,7 +2524,6 @@ template <typename Reader>
 ifcopenshell::instance_streamer<Reader>::instance_streamer(ifcopenshell::file* f, ifcopenshell::logger& log)
     : stream_(nullptr)
     , owner_(f)
-    , token_stream_(3, token{})
     , schema_(nullptr)
     , storage_(nullptr, log)
     , logger_(log)
@@ -2035,7 +2548,6 @@ template <typename Reader>
 ifcopenshell::instance_streamer<Reader>::instance_streamer(const std::string& fn, bool mmap, ifcopenshell::file* f, ifcopenshell::logger& log)
     : stream_(nullptr)
     , owner_(f)
-    , token_stream_(3, token{})
     , schema_(nullptr)
     , storage_(nullptr, log)
     , logger_(log)
@@ -2063,7 +2575,6 @@ template <typename Reader>
 ifcopenshell::instance_streamer<Reader>::instance_streamer(void* data, int length, ifcopenshell::file* f, ifcopenshell::logger& log)
     : stream_(nullptr)
     , owner_(f)
-    , token_stream_(3, token{})
     , schema_(nullptr)
     , storage_(nullptr, log)
     , logger_(log)
@@ -2087,7 +2598,6 @@ template <typename Reader>
 ifcopenshell::instance_streamer<Reader>::instance_streamer(Reader* stream, ifcopenshell::file* f, ifcopenshell::logger& log)
     : stream_(stream)
     , owner_(f)
-    , token_stream_(3, token{})
     , schema_(nullptr)
     , storage_(nullptr, log)
     , logger_(log)
@@ -2148,70 +2658,36 @@ std::optional<std::tuple<size_t, const ifcopenshell::declaration*, shared_pointe
         return return_value;
     }
 
-    unsigned current_id = 0;
-    while (good_ && !lexer_->stream->eof() && !current_id) {
-        if (token_stream_[0].type == ifcopenshell::token::Token_IDENTIFIER &&
-            token_stream_[1].type == ifcopenshell::token::Token_OPERATOR &&
-            token_stream_[1].value_char == '=' &&
-            token_stream_[2].type == ifcopenshell::token::Token_KEYWORD) {
-            current_id = token_stream_[0].as_identifier();
-            const ifcopenshell::declaration* entity_type;
+    if (good_ && lexer_ && stream_ && !lexer_->stream->eof()) {
+        auto visit = [&](uint32_t name, const ifcopenshell::declaration* entity_type, size_t) {
             try {
-                entity_type = schema_->declaration_by_name(token_stream_[2].as_string());
-            } catch (const exception& ex) {
-                logger_.get().message(ifcopenshell::logger::LOG_ERROR, std::string(ex.what()) + " at offset " + std::to_string(token_stream_[2].start_pos));
-                current_id = 0;
-                goto advance;
-            }
-
-            if (entity_type->as_entity() == nullptr) {
-                logger_.get().message(ifcopenshell::logger::LOG_ERROR, "Non-entity type " + entity_type->name() + " at offset " + std::to_string(token_stream_[2].start_pos));
-                current_id = 0;
-                goto advance;
-            }
-
-            if (types_to_bypass_materialized_[entity_type->index_in_schema()]) {
-                bypassed_instances_.push_back(current_id);
-                current_id = 0;
-                goto advance;
-            }
-
-            lexer_->next();
-            try {
-                auto data = storage_.load(lexer_.get(), current_id, entity_type, entity_type->as_entity(), -1, coerce_attribute_count);
+                auto data = storage_.load(lexer_.get(), name, entity_type, entity_type->as_entity(), -1, coerce_attribute_count);
 
                 if (((++progress_) % 1000) == 0) {
                     std::stringstream ss;
-                    ss << "\r#" << current_id;
+                    ss << "\r#" << name;
                     logger_.get().status(ss.str(), false);
                 }
 
-                return_value.emplace(
-                    (size_t)current_id,
-                    entity_type,
-                    data);
+                return_value.emplace((size_t)name, entity_type, data);
             } catch (const invalid_token_exception& e) {
                 good_ = file_open_status::INVALID_SYNTAX;
                 logger_.get().error(e);
-                break;
             }
-        }
-    advance:
-        token next_token;
+            return false;
+        };
         try {
-            next_token = lexer_->next();
+            for_each_instance_header(*stream_, *lexer_, stream_->size(), schema_, types_to_bypass_materialized_, bypassed_instances_, logger_.get(), visit);
+        } catch (const invalid_token_exception& e) {
+            good_ = file_open_status::INVALID_SYNTAX;
+            logger_.get().error(e);
         } catch (const exception& e) {
+            good_ = file_open_status::INVALID_SYNTAX;
             logger_.get().message(ifcopenshell::logger::LOG_ERROR, std::string(e.what()) + ". Parsing terminated");
         } catch (...) {
+            good_ = file_open_status::INVALID_SYNTAX;
             logger_.get().message(ifcopenshell::logger::LOG_ERROR, "Parsing terminated");
         }
-
-        if (!lexer_->stream->eof() && !next_token) {
-            good_ = file_open_status::INVALID_SYNTAX;
-            break;
-        }
-
-        token_stream_.push_back(next_token);
     }
 
     stream_->drop_pages();
@@ -2289,107 +2765,6 @@ void ifcopenshell::impl::in_memory_file_storage::resolve_instance_references(con
 
 namespace {
 
-// Walks the instance headers "#name = KEYWORD(" from the cursor to `end`
-// the way instance_streamer::read_instance() does: the declaration is
-// looked up once per keyword, unknown and non-entity types are logged and
-// skipped, a bypassed instance is collected and its attribute list passed
-// over, and every other instance is handed to `visit(name, declaration,
-// keyword_offset)` with the lexer just past its opening parenthesis. Stops
-// at the ENDSEC that closes the DATA section, at `end`, or when `visit`
-// returns false; a header ENDSEC, the DATA keyword and a stray keyword are
-// passed over, as the serial reader passes over what it cannot match.
-template <typename Policy, typename Reader, typename Visit>
-void for_each_instance_header(Reader& reader, spf_lexer<Reader>& lexer, size_t end, const ifcopenshell::schema_definition* schema, const std::vector<char>& bypassed_types, std::vector<unsigned>& bypassed, ifcopenshell::logger& log, Visit visit) {
-    std::unordered_map<std::string, const ifcopenshell::declaration*> declarations;
-    bool in_data = false;
-    while (true) {
-        while (!reader.eof()) {
-            const char c = reader.peek();
-            if (c == ' ' || c == '\t' || c == '\r' || c == '\n') {
-                reader.increment();
-            } else {
-                break;
-            }
-        }
-        if (reader.eof() || reader.tell() >= end) {
-            return;
-        }
-        token first = lexer.template next<Policy>();
-        if (!first) {
-            return;
-        }
-        if (first.is_keyword()) {
-            const std::string keyword = first.as_string();
-            lexer.reset_pool();
-            if (keyword == "ENDSEC") {
-                if (in_data) {
-                    return;
-                }
-                in_data = true;  // the header's: the DATA section follows
-            }
-            continue;
-        }
-        if (!first.is_identifier()) {
-            lexer.reset_pool();
-            continue;
-        }
-        in_data = true;
-        const uint32_t name = (uint32_t)first.as_identifier();
-        if (!lexer.template next<Policy>().is_operator('=')) {
-            continue;
-        }
-        token keyword = lexer.template next<Policy>();
-        if (!keyword.is_keyword()) {
-            lexer.reset_pool();
-            continue;
-        }
-        const ifcopenshell::declaration* declaration = nullptr;
-        const std::string keyword_text = keyword.as_string();
-        const size_t keyword_offset = keyword.start_pos;
-        lexer.reset_pool();
-        auto found = declarations.find(keyword_text);
-        if (found == declarations.end()) {
-            try {
-                declaration = schema->declaration_by_name(keyword_text);
-                if (declaration->as_entity() == nullptr) {
-                    log.message(ifcopenshell::logger::LOG_ERROR, "Non-entity type " + declaration->name() + " at offset " + std::to_string(keyword_offset));
-                    declaration = nullptr;
-                }
-            } catch (const exception& e) {
-                log.message(ifcopenshell::logger::LOG_ERROR, std::string(e.what()) + " at offset " + std::to_string(keyword_offset));
-            }
-            declarations.emplace(keyword_text, declaration);
-        } else {
-            declaration = found->second;
-        }
-        if (!lexer.template next<Policy>().is_operator('(')) {
-            continue;
-        }
-        if (declaration == nullptr || bypassed_types[declaration->index_in_schema()]) {
-            if (declaration != nullptr) {
-                bypassed.push_back(name);
-            }
-            // Pass over the attribute list, whatever it holds.
-            int depth = 1;
-            while (depth > 0) {
-                token t = lexer.template next<Policy>();
-                if (!t) {
-                    return;
-                }
-                if (t.is_operator('(')) {
-                    ++depth;
-                } else if (t.is_operator(')')) {
-                    --depth;
-                }
-                lexer.reset_pool();
-            }
-            continue;
-        }
-        if (!visit(name, declaration, keyword_offset)) {
-            return;
-        }
-    }
-}
 
 }
 
@@ -2702,7 +3077,7 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
     };
     const auto index_chunk = [&](file_reader<paged_file_impl>& chunk_reader, spf_lexer<file_reader<paged_file_impl>>& chunk_lexer, size_t end, index_output& out) {
         try {
-            for_each_instance_header<index_tokens>(chunk_reader, chunk_lexer, end, schema, bypassed_types, out.bypassed, logger_.get(), [&](uint32_t name, const ifcopenshell::declaration* declaration, size_t) {
+            for_each_instance_header(chunk_reader, chunk_lexer, end, schema, bypassed_types, out.bypassed, logger_.get(), [&](uint32_t name, const ifcopenshell::declaration* declaration, size_t) {
                 const uint64_t attributes_offset = chunk_reader.tell();
                 attribute_consumer consumer{out.inverses, name, (uint16_t)declaration->index_in_schema()};
                 chunk_lexer.scan(consumer);
@@ -2858,10 +3233,12 @@ void parse_chunk(const Reader& source, size_t begin, size_t end, const ifcopensh
         reader.seek(begin);
         auto& storage = *out.storage;
         spf_lexer<Reader> lexer(&reader, storage.logger_.get());
-        for_each_instance_header<full_tokens>(reader, lexer, end, schema, bypassed_types, out.bypassed, storage.logger_.get(), [&](uint32_t name, const ifcopenshell::declaration* declaration, size_t) {
+        list_consumer<Reader> attributes(storage, storage.logger_.get());
+        for_each_instance_header(reader, lexer, end, schema, bypassed_types, out.bypassed, storage.logger_.get(), [&](uint32_t name, const ifcopenshell::declaration* declaration, size_t) {
             try {
-                auto data = storage.load(&lexer, name, declaration, declaration->as_entity(), -1, true);
-                storage.try_read_semicolon(&lexer);
+                attributes.start(name, declaration, declaration->as_entity(), -1);
+                lexer.scan(attributes);
+                auto data = ifcopenshell::make_pointer_type<instance_data>(storage.file, declaration, name, attributes.finish());
                 lexer.reset_pool();
                 out.instances.push_back(data);
                 express::base instance(data);

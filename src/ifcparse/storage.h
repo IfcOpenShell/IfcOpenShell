@@ -792,8 +792,6 @@ namespace ifcopenshell {
 
             template <typename Reader>
             shared_pointer_type load(ifcopenshell::spf_lexer<Reader>* tokens, std::optional<size_t> entity_instance_name, const ifcopenshell::declaration* declaration, const ifcopenshell::entity* entity, int attribute_index = -1, bool coerce_attribute_count = true);
-            template <typename Reader>
-            void try_read_semicolon(ifcopenshell::spf_lexer<Reader>* tokens) const;
             // The attribute-reading half of load(): the tokens after the
             // opening parenthesis into a fresh attribute array. Storage is
             // always in_memory_attribute_storage; it is a template parameter

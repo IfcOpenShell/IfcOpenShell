@@ -32,7 +32,6 @@
 #include <boost/multi_index/random_access_index.hpp>
 #include <boost/multi_index/sequenced_index.hpp>
 #include <boost/multi_index_container.hpp>
-#include <boost/circular_buffer.hpp>
 #include <iterator>
 #include <map>
 #include <memory>
@@ -98,7 +97,6 @@ private:
     std::unique_ptr<spf_lexer<Reader>> lexer_;
     std::unique_ptr<spf_header> owned_header_;
     ifcopenshell::file* owner_;
-    boost::circular_buffer<token> token_stream_;
     const ifcopenshell::schema_definition* schema_;
     ifcopenshell::impl::in_memory_file_storage storage_;
     ifcopenshell::file_open_status good_ = ifcopenshell::file_open_status::SUCCESS;
