@@ -198,6 +198,13 @@ xz = "xz"  # Used implicitly for `tar -xf *.tar.xz`.
 brew = "brew"
 
 
+class ArgFormatter(argparse.RawDescriptionHelpFormatter, argparse.ArgumentDefaultsHelpFormatter):
+    """
+    `RawDescriptionHelpFormatter`needed to keep epilog's manual formatting.
+    Default formatter collapses whitespaces.
+    """
+
+
 class Args(NamedTuple):
     explicit_targets: list[str]
     build_examples: bool
@@ -249,7 +256,7 @@ class DynamicArgs(NamedTuple):
 
 def parse_args() -> tuple[Args, DynamicArgs]:
     arg_parser = argparse.ArgumentParser(
-        formatter_class=argparse.RawDescriptionHelpFormatter,
+        formatter_class=ArgFormatter,
         epilog=textwrap.dedent("""\
             Additional dynamic -flags (not declared above):
                 -py-313               build for specific Python version
@@ -257,7 +264,7 @@ def parse_args() -> tuple[Args, DynamicArgs]:
                 -occt-xxx             use a specific OCCT version (e.g. -occt-7.8.1) instead of the default
                 -without-xxx          do not build dependency `xxx` (e.g. --without-swig)"""),
     )
-    arg_parser.add_argument("explicit_targets", nargs="*", help="Targets provided by CLI.")
+    arg_parser.add_argument("explicit_targets", nargs="*", default=[], help="Targets provided by CLI.")
     arg_parser.add_argument(
         "--build-examples",
         action="store_true",
