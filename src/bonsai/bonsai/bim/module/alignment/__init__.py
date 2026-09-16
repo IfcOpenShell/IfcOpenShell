@@ -194,13 +194,13 @@ classes = (
     operator.ALIGN_OT_finish_pi_editing,
     operator.ALIGN_OT_load_horizontal_pi_table,
     operator.ALIGN_OT_apply_horizontal_pi_table,
-    operator.ALIGN_OT_clear_horizontal_pi_table,
+    operator.ALIGN_OT_finish_horizontal_pi_table,
     operator.ALIGN_OT_draw_horizontal_alignment,
     # Operators - Vertical alignment authoring (draw-by-PI in the profile view)
     operator.ALIGN_OT_draw_vertical_alignment,
     operator.ALIGN_OT_load_vertical_pis,
     operator.ALIGN_OT_apply_vertical_pi_curve,
-    operator.ALIGN_OT_clear_vertical_pi_markers,
+    operator.ALIGN_OT_finish_vertical_pi_editing,
     # Operators - Segment table editing (stage edits, then Apply)
     operator.ALIGN_OT_add_segment_row,
     operator.ALIGN_OT_remove_segment_row,
