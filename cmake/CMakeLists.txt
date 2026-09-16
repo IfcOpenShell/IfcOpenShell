@@ -260,7 +260,13 @@ endforeach()
 set(SWIG_DEFINES "")
 
 if(WITH_CGAL)
-    find_package(CGAL REQUIRED)
+    # 5.4 is the version shipped with Ubuntu 22.04.
+    set(CGAL_MIN_VERSION 5.4)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15)
+        # https://github.com/CGAL/cgal/issues/8313
+        set(CGAL_MIN_VERSION 5.6.2)
+    endif()
+    find_package(CGAL ${CGAL_MIN_VERSION} REQUIRED)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_CGAL)
     list(APPEND GEOMETRY_KERNELS cgal)
 endif()

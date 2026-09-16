@@ -25,12 +25,16 @@ UNIFY_ENVVARS_AND_CACHE(MPFR_LIBRARY_DIR)
 if(CGAL_INCLUDE_DIR)
     find_library(libGMP NAMES gmp mpir PATHS ${GMP_LIBRARY_DIR} NO_DEFAULT_PATH)
     find_library(libMPFR NAMES mpfr PATHS ${MPFR_LIBRARY_DIR} NO_DEFAULT_PATH)
-    if(NOT libGMP)
-        message(FATAL_ERROR "Unable to find GMP library files, aborting")
-    endif()
-    if(NOT libMPFR)
-        message(FATAL_ERROR "Unable to find MPFR library files, aborting")
-    endif()
+
+    file(STRINGS "${CGAL_INCLUDE_DIR}/CGAL/version.h" CGAL_VERSION_LINE REGEX "^#define CGAL_VERSION ")
+    string(REGEX REPLACE "^#define CGAL_VERSION ([0-9.]+)$" "\\1" CGAL_VERSION "${CGAL_VERSION_LINE}")
+
+    include(FindPackageHandleStandardArgs)
+    find_package_handle_standard_args(
+        CGAL
+        REQUIRED_VARS CGAL_INCLUDE_DIR libGMP libMPFR
+        VERSION_VAR CGAL_VERSION
+    )
 
     add_library(CGAL::CGAL INTERFACE IMPORTED)
     target_include_directories(CGAL::CGAL INTERFACE "${CGAL_INCLUDE_DIR}")
