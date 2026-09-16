@@ -137,7 +137,7 @@ from pathlib import Path
 from typing import Literal, NamedTuple, TypeAlias
 from urllib.request import urlretrieve
 
-from common import ColorFormatter, HelpStrings, resolve_cli_or_env
+from common import BUILD_CFG_DEFAULT, BUILD_CFGS, BuildCfg, ColorFormatter, HelpStrings, resolve_cli_or_env
 from typing_extensions import assert_never
 
 # `common` configures the root logger on import, so reuse it here.
@@ -211,6 +211,7 @@ class Args(NamedTuple):
     wasm: bool
     num_build_procs: int
     schemas: str | None
+    build_cfg: BuildCfg
 
 
 class DynamicArgs(NamedTuple):
@@ -327,6 +328,13 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         help="IFC schemas to be built, e.g. '2x3;4;4x3_add2'. Also can be specified by using IFCOS_SCHEMAS "
         "env variable. (default: cmake default, currently 8 schemas)",
     )
+    arg_parser.add_argument(
+        "--build-cfg",
+        dest="build_cfg",
+        choices=BUILD_CFGS,
+        default=argparse.SUPPRESS,
+        help=HelpStrings.BUILD_CFG + " Also can be specified by using BUILD_CFG env variable.",
+    )
     namespace, unknown_flags = arg_parser.parse_known_args()
     num_build_procs = resolve_cli_or_env(
         getattr(namespace, "num_build_procs", None),
@@ -335,6 +343,9 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         arg_type="int",
     )
     schemas = resolve_cli_or_env(getattr(namespace, "schemas", None), "IFCOS_SCHEMAS", None, arg_type="str")
+    build_cfg = resolve_cli_or_env(
+        getattr(namespace, "build_cfg", None), "BUILD_CFG", BUILD_CFG_DEFAULT, arg_type="str"
+    )
     args = Args(
         explicit_targets=namespace.explicit_targets,
         build_examples=namespace.build_examples,
@@ -348,6 +359,7 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         wasm=namespace.wasm,
         num_build_procs=num_build_procs,
         schemas=schemas,
+        build_cfg=build_cfg,
     )
 
     dynamic_args = DynamicArgs.from_unknown_flags(unknown_flags, arg_parser)
@@ -462,7 +474,7 @@ if not os.path.exists(DEPS_DIR):
     os.makedirs(DEPS_DIR)
 
 INSTALL_DIR = Path(DEPS_DIR) / "install"
-BUILD_CFG = os.getenv("BUILD_CFG", "RelWithDebInfo")
+BUILD_CFG = ARGS.build_cfg
 
 
 # Print build configuration information
