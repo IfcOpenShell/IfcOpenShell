@@ -2873,6 +2873,7 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
     std::sort(lazy_bypassed_.begin(), lazy_bypassed_.end());
     std::sort(lazy_offsets_.begin(), lazy_offsets_.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
     byref_excl_.sort();
+    sort_type_lists();
     good_ = file_open_status::SUCCESS;
     return true;
 }
@@ -2976,6 +2977,7 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
     bypassed = streamer.bypassed_instances();
     mixed_references = std::move(streamer.references());
     byref_excl_.sort();
+    sort_type_lists();
 
     logger_.get().status("\rDone scanning file   ");
 

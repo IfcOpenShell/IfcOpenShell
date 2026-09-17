@@ -687,3 +687,81 @@ TEST_CASE("Paged and lazy parsing yield the same instances, attributes, inverses
         REQUIRE(lazy.instance_by_guid(guid).id() == serial.instance_by_guid(guid).id());
     }
 }
+
+TEST_CASE("Type lists stay sorted by id across creation and removal", "[ifcparse]") {
+    ifcopenshell::file file(ifcopenshell::schema_by_name("IFC4"));
+    const auto* point_declaration = file.schema()->declaration_by_name("IfcCartesianPoint");
+    const auto* direction_declaration = file.schema()->declaration_by_name("IfcDirection");
+    const auto ids_of_type = [&file](const ifcopenshell::declaration* declaration) {
+        std::vector<int> ids;
+        for (const auto& instance : file.instances_by_type_excl_subtypes(declaration)) {
+            ids.push_back(instance.id());
+        }
+        return ids;
+    };
+    const auto has_type = [&file](const ifcopenshell::declaration* declaration) {
+        return std::find(file.types_begin(), file.types_end(), declaration) != file.types_end();
+    };
+
+    std::vector<express::base> points;
+    for (int i = 0; i < 20; ++i) {
+        points.push_back(file.create(point_declaration));
+    }
+    auto direction = file.create(direction_declaration);
+    auto ids = ids_of_type(point_declaration);
+    REQUIRE(ids.size() == 20);
+    CHECK(std::is_sorted(ids.begin(), ids.end()));
+
+    // Removing from the front, middle and back keeps the rest sorted, and a
+    // read afterwards sees none of the removed instances.
+    file.remove_entity(points[3]);
+    file.remove_entity(points[0]);
+    file.remove_entity(points[19]);
+    std::vector<int> expected;
+    for (int i = 1; i < 19; ++i) {
+        if (i != 3) {
+            expected.push_back(points[(size_t)i].id());
+        }
+    }
+    CHECK(ids_of_type(point_declaration) == expected);
+
+    // An instance created with an explicit id below the others is inserted
+    // in id order, not appended; a reused id names only the new instance.
+    const int reused_id = points[5].id();
+    file.remove_entity(points[5]);
+    auto replacement = file.create(point_declaration, reused_id);
+    ids = ids_of_type(point_declaration);
+    CHECK(std::is_sorted(ids.begin(), ids.end()));
+    CHECK(std::count(ids.begin(), ids.end(), reused_id) == 1);
+    CHECK(ids.size() == expected.size());
+
+    // Batched removal of everything that is left of the type drops the type.
+    file.batch();
+    for (int i = 1; i < 19; ++i) {
+        if (i != 3 && i != 5) {
+            file.remove_entity(points[(size_t)i]);
+        }
+    }
+    file.remove_entity(replacement);
+    file.unbatch();
+    CHECK(ids_of_type(point_declaration).empty());
+    CHECK(!has_type(point_declaration));
+    CHECK(ids_of_type(direction_declaration) == std::vector<int>{(int)direction.id()});
+}
+
+TEST_CASE("A file loaded out of id order lists each type in id order", "[ifcparse]") {
+    // Instances written in descending id order.
+    const std::string contents =
+        "ISO-10303-21;\nHEADER;\nFILE_DESCRIPTION((''),'2;1');\nFILE_NAME('','',(''),(''),'','','');\nFILE_SCHEMA(('IFC4'));\nENDSEC;\nDATA;\n"
+        "#5=IFCCARTESIANPOINT((0.,0.,0.));\n#3=IFCCARTESIANPOINT((1.,0.,0.));\n#9=IFCDIRECTION((1.,0.,0.));\n#1=IFCCARTESIANPOINT((2.,0.,0.));\n"
+        "ENDSEC;\nEND-ISO-10303-21;\n";
+    ifcopenshell::logger log;
+    std::istringstream input(contents);
+    ifcopenshell::file file(input, (int)contents.size(), log);
+    REQUIRE(file.good());
+    std::vector<int> ids;
+    for (const auto& instance : file.instances_by_type_excl_subtypes(file.schema()->declaration_by_name("IfcCartesianPoint"))) {
+        ids.push_back(instance.id());
+    }
+    CHECK(ids == std::vector<int>{1, 3, 5});
+}
