@@ -54,7 +54,7 @@ LAST_GIT_BRANCH:=$(shell git rev-parse --abbrev-ref HEAD)
 PYPI_IMP:=cp
 
 ifdef PYVERSION
-SUPPORTED_PYVERSIONS := py311 py312 py313
+SUPPORTED_PYVERSIONS := py311 py313
 
 ifeq ($(filter $(PYVERSION),$(SUPPORTED_PYVERSIONS)),)
 $(error Unsupported PYVERSION=$(PYVERSION). Must be one of $(SUPPORTED_PYVERSIONS))
