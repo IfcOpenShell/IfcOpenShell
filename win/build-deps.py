@@ -377,7 +377,7 @@ def main() -> None:
     install_occt(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.build_cfg, MSBUILD_MULTIPROC)
     pythonhome = install_python(vs_cfg_vars, ARGS.install_python, ARGS.python_version, build_deps_cache, nuget_exe)
     install_swig(vs_cfg_vars, ARGS.build_type, build_deps_cache, MSBUILD_MULTIPROC)
-    install_cgal(vs_cfg_vars, ARGS.build_type, ARGS.build_cfg, MSBUILD_MULTIPROC)
+    install_cgal(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.build_cfg, MSBUILD_MULTIPROC)
     install_eigen(vs_cfg_vars)
     install_zstd(vs_cfg_vars, ARGS.build_type, ARGS.build_cfg, MSBUILD_MULTIPROC)
     install_rocksdb(vs_cfg_vars, ARGS.build_type, ARGS.build_cfg, MSBUILD_MULTIPROC)

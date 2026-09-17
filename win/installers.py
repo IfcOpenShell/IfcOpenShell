@@ -1036,6 +1036,7 @@ def install_swig(
 def install_cgal(
     vs_cfg_vars: VsCfgResult,
     build_type: BuildType,
+    build_deps_cache: BuildDepsCache,
     build_cfg: BuildCfg,
     msbuild_multiproc: tuple[str, ...],
 ) -> None:
@@ -1043,11 +1044,15 @@ def install_cgal(
     install_dir = vs_cfg_vars.install_dir
 
     # TODO: bump to v5.6.3 to match nix/build-all.py.
-    # TODO: add CGAL_VERSION to the install path during the next version bump.
     CGAL_VERSION = "5.5.5"
     DEPENDENCY_NAME = "cgal"
     dependency_dir = deps_dir / "cgal"
-    dependency_install_dir = install_dir / "cgal"
+    # The version is part of the install path: the CI dependency cache is keyed on the
+    # directory name and only ever adds to it, so the unversioned `cgal` directory kept
+    # serving CGAL 5.2.3 after the minimum was raised to 5.4.
+    dependency_install_dir = install_dir / f"cgal-{CGAL_VERSION}"
+
+    build_deps_cache.add_entry("CGAL_INSTALL_DIR", str(dependency_install_dir))
 
     if is_already_installed(dependency_install_dir):
         return
