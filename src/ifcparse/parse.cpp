@@ -3165,6 +3165,36 @@ std::vector<express::base> file::instances_by_reference(int t) {
     return ret;
 }
 
+bool file::all_referencing_instances(int instance_id, const std::function<bool(uint32_t)>& pred) {
+    return std::visit([instance_id, &pred](auto& x) -> bool {
+        if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
+            return x.byref_excl_.all_sources((uint32_t)instance_id, pred);
+        }
+#ifdef IFOPSH_WITH_ROCKSDB
+        else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
+            // @todo no lower/upper_bounds() implemented yet
+            auto prefix = rocksdb_key::inverse_prefix(instance_id);
+            auto it = std::unique_ptr<rocksdb::Iterator>(x.db->NewIterator(rocksdb::ReadOptions()));
+            it->Seek(prefix);
+            while (it->Valid() && it->key().starts_with(prefix)) {
+                std::vector<uint32_t> vals(it->value().size() / sizeof(uint32_t));
+                memcpy(vals.data(), it->value().data(), it->value().size());
+                for (auto& v : vals) {
+                    if (!pred(v)) {
+                        return false;
+                    }
+                }
+                it->Next();
+            }
+            return true;
+        }
+#endif
+        else {
+            throw std::runtime_error("Storage not initialized");
+        }
+    }, storage_);
+}
+
 express::base file::instance_by_id(int id) {
     return std::visit([id](auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, std::monostate>) {
