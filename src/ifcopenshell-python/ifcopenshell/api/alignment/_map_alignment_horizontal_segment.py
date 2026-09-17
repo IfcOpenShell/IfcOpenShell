@@ -24,6 +24,7 @@ import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 import ifcopenshell.util.unit
 from ifcopenshell import entity_instance
 from ifcopenshell.api.alignment._get_cant_segment import _get_cant_segment
+from ifcopenshell.api.alignment import _spiral_curvature
 
 
 def _get_curve_factor(design_parameters: entity_instance) -> float:
@@ -164,22 +165,7 @@ def _map_cubic(file: ifcopenshell.file, design_parameters: entity_instance) -> S
 
     transition = "DISCONTINUOUS"
 
-    offset = 0.0
-    A0 = 0.0  # constant term
-    A1 = 0.0  # linear term
-    A2 = 0.0  # quadratic term
-    A3 = 0.0  # cubic term
-
-    if end_radius != 0.0 and start_radius != 0.0 and end_radius != start_radius:
-        f = (start_radius - end_radius) / end_radius  # note, this "f" is different that _get_curve_factor computes
-        A3 = f / (6.0 * start_radius * length)
-        offset = length / f
-    elif end_radius != 0.0:
-        A3 = 1.0 / (6.0 * end_radius * length)
-        offset = 0.0
-    elif start_radius != 0.0:
-        A3 = -1.0 / (6.0 * start_radius * length)
-        offset = -length
+    A0, A1, A2, A3, offset = _spiral_curvature.cubic_coefficients(length, start_radius, end_radius)
 
     parent_curve = file.createIfcPolynomialCurve(
         Position=file.createIfcAxis2Placement2D(
@@ -216,15 +202,8 @@ def _map_helmert_curve(file: ifcopenshell.file, design_parameters: entity_instan
     start_direction *= angle_unit_scale
 
     transition = "DISCONTINUOUS"
-    f = _get_curve_factor(design_parameters)
 
-    a0_1 = 0.0 * f + length / start_radius if start_radius != 0 else 0.0  # constant term, first half
-    a1_1 = 0.0 * f  # linear term, first half
-    a2_1 = 2.0 * f  # quadratic term, first half
-
-    A0_1 = length * math.pow(math.fabs(a0_1), -1.0 / 1.0) * a0_1 / math.fabs(a0_1) if a0_1 != 0.0 else 0.0
-    A1_1 = length * math.pow(math.fabs(a1_1), -1.0 / 2.0) * a1_1 / math.fabs(a1_1) if a1_1 != 0.0 else 0.0
-    A2_1 = length * math.pow(math.fabs(a2_1), -1.0 / 3.0) * a2_1 / math.fabs(a2_1) if a2_1 != 0.0 else 0.0
+    (A0_1, A1_1, A2_1), (A0_2, A1_2, A2_2) = _spiral_curvature.helmert_coefficients(length, start_radius, end_radius)
 
     x1, y1, angle1 = ifcopenshell_wrapper.helmert_curve_point(A0_1, A1_1, A2_1, length / 2)
 
@@ -249,14 +228,6 @@ def _map_helmert_curve(file: ifcopenshell.file, design_parameters: entity_instan
         SegmentLength=file.createIfcLengthMeasure(length / 2),
         ParentCurve=parent_curve1,
     )
-
-    a0_2 = -1.0 * f + (length / start_radius if start_radius != 0.0 else 0.0)  # constant term, second half
-    a1_2 = 4.0 * f  # linear term, second half
-    a2_2 = -2.0 * f  # quadratic term, second half
-
-    A0_2 = length * math.pow(math.fabs(a0_2), -1.0 / 1.0) * (a0_2 / math.fabs(a0_2)) if a0_2 != 0.0 else 0.0
-    A1_2 = length * math.pow(math.fabs(a1_2), -1.0 / 2.0) * (a1_2 / math.fabs(a1_2)) if a1_2 != 0.0 else 0.0
-    A2_2 = length * math.pow(math.fabs(a2_2), -1.0 / 3.0) * (a2_2 / math.fabs(a2_2)) if a2_2 != 0.0 else 0.0
 
     x2, y2, angle2 = ifcopenshell_wrapper.helmert_curve_point(A0_2, A1_2, A2_2, length / 2)
     anglep = angle1 - angle2
@@ -300,23 +271,15 @@ def _map_bloss_curve(file: ifcopenshell.file, design_parameters: entity_instance
     start_point = design_parameters.StartPoint
     start_direction = design_parameters.StartDirection
     start_radius = design_parameters.StartRadiusOfCurvature
+    end_radius = design_parameters.EndRadiusOfCurvature
     length = design_parameters.SegmentLength
 
     angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file, "PLANEANGLEUNIT")
     start_direction *= angle_unit_scale
 
     transition = "DISCONTINUOUS"
-    f = _get_curve_factor(design_parameters)
 
-    a0 = length / start_radius if start_radius != 0.0 else 0.0  # constant term
-    a1 = 0.0  # linear term
-    a2 = 3.0 * f  # quadratic term
-    a3 = -2.0 * f  # cubic term
-
-    A0 = length * math.pow(math.fabs(a0), -1.0 / 1.0) * (a0 / math.fabs(a0)) if a0 != 0.0 else 0.0
-    A1 = length * math.pow(math.fabs(a1), -1.0 / 2.0) * (a1 / math.fabs(a1)) if a1 != 0.0 else 0.0
-    A2 = length * math.pow(math.fabs(a2), -1.0 / 3.0) * (a2 / math.fabs(a2)) if a2 != 0.0 else 0.0
-    A3 = length * math.pow(math.fabs(a3), -1.0 / 4.0) * (a3 / math.fabs(a3)) if a3 != 0.0 else 0.0
+    A0, A1, A2, A3 = _spiral_curvature.bloss_coefficients(length, start_radius, end_radius)
 
     parent_curve = file.createIfcThirdOrderPolynomialSpiral(
         Position=file.createIfcAxis2Placement2D(
@@ -347,6 +310,7 @@ def _map_cosine_curve(file: ifcopenshell.file, design_parameters: entity_instanc
     start_point = design_parameters.StartPoint
     start_direction = design_parameters.StartDirection
     start_radius = design_parameters.StartRadiusOfCurvature
+    end_radius = design_parameters.EndRadiusOfCurvature
     length = design_parameters.SegmentLength
 
     angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file, "PLANEANGLEUNIT")
@@ -354,13 +318,7 @@ def _map_cosine_curve(file: ifcopenshell.file, design_parameters: entity_instanc
 
     transition = "DISCONTINUOUS"
 
-    f = _get_curve_factor(design_parameters)
-
-    a0 = 0.5 * f + (length / start_radius if start_radius != 0.0 else 0.0)
-    a1 = -0.5 * f
-
-    A0 = length * math.pow(math.fabs(a0), -1.0 / 1.0) * (a0 / math.fabs(a0)) if a0 != 0.0 else 0.0
-    A1 = length * math.pow(math.fabs(a1), -1.0 / 1.0) * (a1 / math.fabs(a1)) if a1 != 0.0 else 0.0
+    A0, A1 = _spiral_curvature.cosine_coefficients(length, start_radius, end_radius)
 
     parent_curve = file.createIfcCosineSpiral(
         Position=file.createIfcAxis2Placement2D(
@@ -390,6 +348,7 @@ def _map_sine_curve(file: ifcopenshell.file, design_parameters: entity_instance)
     start_point = design_parameters.StartPoint
     start_direction = design_parameters.StartDirection
     start_radius = design_parameters.StartRadiusOfCurvature
+    end_radius = design_parameters.EndRadiusOfCurvature
     length = design_parameters.SegmentLength
 
     angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file, "PLANEANGLEUNIT")
@@ -397,14 +356,7 @@ def _map_sine_curve(file: ifcopenshell.file, design_parameters: entity_instance)
 
     transition = "DISCONTINUOUS"
 
-    f = _get_curve_factor(design_parameters)
-    a0 = length / start_radius if start_radius != 0.0 else 0.0
-    a1 = f
-    a2 = -f / (2.0 * math.pi)
-
-    A0 = length * math.pow(math.fabs(a0), -1.0 / 1.0) * (a0 / math.fabs(a0)) if a0 != 0.0 else 0.0
-    A1 = length * math.pow(math.fabs(a1), -1.0 / 2.0) * (a1 / math.fabs(a1)) if a1 != 0.0 else 0.0
-    A2 = length * math.pow(math.fabs(a2), -1.0 / 1.0) * (a2 / math.fabs(a2)) if a2 != 0.0 else 0.0
+    A0, A1, A2 = _spiral_curvature.sine_coefficients(length, start_radius, end_radius)
 
     parent_curve = file.createIfcSineSpiral(
         Position=file.createIfcAxis2Placement2D(
@@ -437,6 +389,7 @@ def _map_viennese_bend(file: ifcopenshell.file, segment: entity_instance) -> Seq
     start_point = design_parameters.StartPoint
     start_direction = design_parameters.StartDirection
     start_radius = design_parameters.StartRadiusOfCurvature
+    end_radius = design_parameters.EndRadiusOfCurvature
     length = design_parameters.SegmentLength
     gravity_centerline_height = (
         design_parameters.GravityCenterLineHeight if design_parameters.GravityCenterLineHeight != None else 0.0
@@ -469,25 +422,9 @@ def _map_viennese_bend(file: ifcopenshell.file, segment: entity_instance) -> Seq
 
     cant_factor = -420.0 * (gravity_centerline_height / length) * (cant_angle_end - cant_angle_start)
 
-    f = _get_curve_factor(design_parameters)
-
-    a0 = length / start_radius if start_radius != 0.0 else 0.0  # constant term
-    a1 = 0.0  # linear term
-    a2 = 1.0 * cant_factor  # quadratic term
-    a3 = -4.0 * cant_factor  # cubic term
-    a4 = 5.0 * cant_factor + 35.0 * f  # quartic term
-    a5 = -2.0 * cant_factor - 84.0 * f  # quintic term
-    a6 = 70.0 * f  # sextic term
-    a7 = -20.0 * f  # septic term
-
-    A0 = length * math.pow(math.fabs(a0), -1.0 / 1.0) * (a0 / math.fabs(a0)) if a0 != 0.0 else 0.0
-    A1 = length * math.pow(math.fabs(a1), -1.0 / 2.0) * (a1 / math.fabs(a1)) if a1 != 0.0 else 0.0
-    A2 = length * math.pow(math.fabs(a2), -1.0 / 3.0) * (a2 / math.fabs(a2)) if a2 != 0.0 else 0.0
-    A3 = length * math.pow(math.fabs(a3), -1.0 / 4.0) * (a3 / math.fabs(a3)) if a3 != 0.0 else 0.0
-    A4 = length * math.pow(math.fabs(a4), -1.0 / 5.0) * (a4 / math.fabs(a4)) if a4 != 0.0 else 0.0
-    A5 = length * math.pow(math.fabs(a5), -1.0 / 6.0) * (a5 / math.fabs(a5)) if a5 != 0.0 else 0.0
-    A6 = length * math.pow(math.fabs(a6), -1.0 / 7.0) * (a6 / math.fabs(a6)) if a6 != 0.0 else 0.0
-    A7 = length * math.pow(math.fabs(a7), -1.0 / 8.0) * (a7 / math.fabs(a7)) if a7 != 0.0 else 0.0
+    A0, A1, A2, A3, A4, A5, A6, A7 = _spiral_curvature.viennese_bend_coefficients(
+        length, start_radius, end_radius, cant_factor
+    )
 
     parent_curve = file.createIfcSeventhOrderPolynomialSpiral(
         Position=file.createIfcAxis2Placement2D(

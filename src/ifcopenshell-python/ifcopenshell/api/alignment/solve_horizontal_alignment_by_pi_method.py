@@ -21,12 +21,24 @@
 
 import math
 from collections.abc import Sequence
-from typing import NamedTuple, Optional, Union
+from typing import Callable, NamedTuple, Optional, Union
 
 import numpy as np
 
-# Gauss-Legendre quadrature nodes and weights used to integrate the clothoid position functions
+from ifcopenshell.api.alignment import _spiral_curvature
+
+# Gauss-Legendre quadrature nodes and weights used to integrate the spiral position functions
 _gauss_legendre_points = np.polynomial.legendre.leggauss(32)
+
+# Spiral families the PI method can produce, besides CLOTHOID (see compute_spiral_end).
+# VIENNESEBEND's true shape also depends on the CANT segment at the same station (gravity
+# centerline height, cant angle change) -- nothing in this codebase exposes GravityCenterLineHeight
+# yet (it's always written as None/0.0, here and in the raw segment table), so compute_spiral_end
+# always solves it with zero cant contribution, same as every other VIENNESEBEND this project
+# creates today. It's still gated on an alignment actually having a cant layout at the Bonsai UI
+# layer (see prop.SPIRAL_FAMILY_ITEMS / operator._pi_curve_radii_entry) -- a real cant segment
+# needs to exist there for the geometry kernel to resolve VIENNESEBEND's representation against.
+SPIRAL_FAMILIES = ("CLOTHOID", "BLOSSCURVE", "COSINECURVE", "SINECURVE", "HELMERTCURVE", "CUBIC", "VIENNESEBEND")
 
 
 class HorizontalSegmentDefinition(NamedTuple):
@@ -54,7 +66,7 @@ class HorizontalSegmentDefinition(NamedTuple):
     """length of the segment along the curve"""
 
     predefined_type: str
-    """IfcAlignmentHorizontalSegmentTypeEnum value: LINE, CLOTHOID, or CIRCULARARC"""
+    """IfcAlignmentHorizontalSegmentTypeEnum value: LINE, CIRCULARARC, or one of SPIRAL_FAMILIES"""
 
     start_dist_along: float = 0.0
     """distance along the alignment at the segment start"""
@@ -67,6 +79,13 @@ class HorizontalSegmentDefinition(NamedTuple):
 
     raise_left_rail: bool = False
     """True when the outside of the curve is the left rail (a curve to the right)"""
+
+    gravity_centerline_height: float = 0.0
+    """VIENNESEBEND only (0.0/unused for every other predefined_type): IfcAlignmentHorizontalSegment.
+    GravityCenterLineHeight, the value _map_alignment_horizontal_segment will read back when
+    rendering this segment's representation -- carried on the definition so the family's
+    cant-derived curvature term stays consistent between what this solver assumed and what gets
+    written and later rendered."""
 
 
 def compute_clothoid_end(length: float, start_curvature: float, end_curvature: float) -> tuple[float, float, float]:
@@ -93,6 +112,145 @@ def compute_clothoid_end(length: float, start_curvature: float, end_curvature: f
     return dx, dy, dtheta
 
 
+def _quadrature_range(theta: Callable[[float], float], t0: float, t1: float) -> tuple[float, float, float]:
+    """
+    Computes (dx, dy, dtheta) for the piece of a curve from t0 to t1 of a heading-angle function
+    theta(t), normalized into the frame of the tangent at t0 (i.e. as if t0 were 0), with the same
+    32-point Gauss-Legendre quadrature compute_clothoid_end uses for the clothoid's closed-form
+    theta. t0 need not be 0 -- this is what a family like HELMERTCURVE needs, whose second half is
+    a curve trimmed starting partway through its own parametrization (see
+    _spiral_curvature.helmert_theta_halves).
+    """
+    length = t1 - t0
+    u, w = _gauss_legendre_points
+    t = t0 + 0.5 * length * (u + 1.0)  # map quadrature points from (-1,1) onto (t0,t1)
+    angles = np.array([theta(float(ti)) for ti in t])
+    theta0 = theta(t0)
+    dx_raw = 0.5 * length * float(np.sum(w * np.cos(angles)))
+    dy_raw = 0.5 * length * float(np.sum(w * np.sin(angles)))
+    dtheta = theta(t1) - theta0
+    # rotate the raw (t0-anchored) displacement into the frame of the tangent at t0
+    dx = dx_raw * math.cos(theta0) + dy_raw * math.sin(theta0)
+    dy = -dx_raw * math.sin(theta0) + dy_raw * math.cos(theta0)
+    return dx, dy, dtheta
+
+
+def _quadrature_end(theta: Callable[[float], float], length: float) -> tuple[float, float, float]:
+    """
+    Computes (dx, dy, dtheta) for a spiral transition given its heading-angle function theta(l)
+    (arc length l in [0, length], heading measured from the tangent at l=0). The t0=0 case of
+    _quadrature_range, kept separate since it's what most families use and needs no normalization
+    (theta(0) is always 0 for them).
+    """
+    return _quadrature_range(theta, 0.0, length)
+
+
+def _cubic_arc_length(A1: float, A2: float, A3: float, x: float) -> float:
+    """Signed arc length of y = A0 + A1*t + A2*t^2 + A3*t^3 from 0 to x (A0 doesn't affect arc
+    length), via the same 32-point Gauss-Legendre quadrature used elsewhere in this module."""
+    u, w = _gauss_legendre_points
+    t = 0.5 * x * (u + 1.0)
+    slope = A1 + 2.0 * A2 * t + 3.0 * A3 * t * t
+    return 0.5 * x * float(np.sum(w * np.sqrt(1.0 + slope * slope)))
+
+
+def _cubic_x_at_arc_length(A1: float, A2: float, A3: float, s: float) -> float:
+    """Inverts _cubic_arc_length by Newton's method, matching the geometry kernel's own
+    x_at_dist_along (IfcCurveSegment.cpp) so a CUBIC endpoint predicted here matches what the
+    kernel will later render for the same IfcPolynomialCurve."""
+    x = s  # s = x is a very close starting guess for a curve this gentle
+    for _ in range(50):
+        slope = A1 + 2.0 * A2 * x + 3.0 * A3 * x * x
+        step = (_cubic_arc_length(A1, A2, A3, x) - s) / math.sqrt(1.0 + slope * slope)
+        x -= step
+        if abs(step) < 1.0e-12 * max(1.0, abs(x)):
+            break
+    return x
+
+
+def compute_spiral_end(
+    family: str, length: float, start_radius: float, end_radius: float, cant_factor: float = 0.0
+) -> tuple[float, float, float]:
+    """
+    Computes the (dx, dy, dtheta) displacement of a spiral transition of the given family, the same
+    way compute_clothoid_end does for CLOTHOID, generalized to every spiral family
+    _map_alignment_horizontal_segment can turn into real geometry (see SPIRAL_FAMILIES).
+
+    The curvature law for each family comes from _spiral_curvature, which is also what
+    _map_alignment_horizontal_segment uses to build the actual IfcCurveSegment representation --
+    so the endpoint this function predicts is the one the geometry kernel will later render.
+
+    :param family: one of SPIRAL_FAMILIES
+    :param length: length of the transition, measured along the curve
+    :param start_radius: radius at the start (0.0 for a straight), signed as elsewhere in this module
+    :param end_radius: radius at the end, same sign convention
+    :param cant_factor: VIENNESEBEND only (ignored otherwise) -- see
+        _spiral_curvature.viennese_bend_coefficients; the main solve loop derives this per spiral
+        leg from a PI's gravity centerline height and cant, see the "extra" element of its radii
+        tuple.
+    :return: (dx, dy, dtheta) displacement and change in tangent direction over the transition
+    """
+    if family == "CLOTHOID":
+        start_curvature = 1.0 / start_radius if start_radius != 0.0 else 0.0
+        end_curvature = 1.0 / end_radius if end_radius != 0.0 else 0.0
+        return compute_clothoid_end(length, start_curvature, end_curvature)
+
+    if family == "BLOSSCURVE":
+        return _quadrature_end(_spiral_curvature.bloss_theta(length, start_radius, end_radius), length)
+
+    if family == "COSINECURVE":
+        return _quadrature_end(_spiral_curvature.cosine_theta(length, start_radius, end_radius), length)
+
+    if family == "SINECURVE":
+        return _quadrature_end(_spiral_curvature.sine_theta(length, start_radius, end_radius), length)
+
+    if family == "VIENNESEBEND":
+        return _quadrature_end(
+            _spiral_curvature.viennese_bend_theta(length, start_radius, end_radius, cant_factor), length
+        )
+
+    if family == "HELMERTCURVE":
+        # Helmert is inherently two pieces, the second trimmed starting at its own parameter
+        # length/2 (see _spiral_curvature.helmert_theta_halves) -- integrate each half over its own
+        # true range, then compose them the same way this module's own main loop composes
+        # entry-spiral/arc/exit-spiral pieces into one alignment.
+        half_length = length / 2.0
+        theta1, theta2 = _spiral_curvature.helmert_theta_halves(length, start_radius, end_radius)
+        dx1, dy1, dtheta1 = _quadrature_range(theta1, 0.0, half_length)
+        dx2, dy2, dtheta2 = _quadrature_range(theta2, half_length, length)
+        dx = dx1 + dx2 * math.cos(dtheta1) - dy2 * math.sin(dtheta1)
+        dy = dy1 + dx2 * math.sin(dtheta1) + dy2 * math.cos(dtheta1)
+        dtheta = dtheta1 + dtheta2
+        return dx, dy, dtheta
+
+    if family == "CUBIC":
+        # Cartesian curve (y = A3*x^3), not a curvature-vs-arclength law like the other families.
+        # The geometry kernel evaluates it by numerically inverting the true arc-length integral to
+        # find the x matching each end of the trimmed [offset, offset+length] range (see
+        # IfcCurveSegment.cpp's x_at_dist_along) -- _cubic_x_at_arc_length mirrors that inversion so
+        # this endpoint matches what the kernel will render.
+        A0, A1, A2, A3, offset = _spiral_curvature.cubic_coefficients(length, start_radius, end_radius)
+
+        def y(t: float) -> float:
+            return A0 + A1 * t + A2 * t * t + A3 * t**3
+
+        def slope(t: float) -> float:
+            return A1 + 2.0 * A2 * t + 3.0 * A3 * t * t
+
+        x0 = _cubic_x_at_arc_length(A1, A2, A3, offset)
+        x1 = _cubic_x_at_arc_length(A1, A2, A3, offset + length)
+        theta0 = math.atan(slope(x0))
+        theta1 = math.atan(slope(x1))
+        dx_raw = x1 - x0
+        dy_raw = y(x1) - y(x0)
+        # rotate the raw (world-frame) displacement into the frame of the tangent at x0
+        dx = dx_raw * math.cos(theta0) + dy_raw * math.sin(theta0)
+        dy = -dx_raw * math.sin(theta0) + dy_raw * math.cos(theta0)
+        return dx, dy, theta1 - theta0
+
+    raise ValueError(f"unsupported spiral family '{family}'; expected one of {SPIRAL_FAMILIES}")
+
+
 def compute_horizontal_segment_end(segment: HorizontalSegmentDefinition) -> tuple[float, float, float]:
     """
     Computes the end point and end direction of a horizontal segment definition.
@@ -110,15 +268,15 @@ def compute_horizontal_segment_end(segment: HorizontalSegmentDefinition) -> tupl
     if segment.predefined_type == "LINE":
         return (x + length * math.cos(direction), y + length * math.sin(direction), direction)
 
-    start_curvature = 1.0 / segment.start_radius_of_curvature if segment.start_radius_of_curvature != 0.0 else 0.0
-    end_curvature = 1.0 / segment.end_radius_of_curvature if segment.end_radius_of_curvature != 0.0 else 0.0
-
     if segment.predefined_type == "CIRCULARARC":
+        start_curvature = 1.0 / segment.start_radius_of_curvature if segment.start_radius_of_curvature != 0.0 else 0.0
         dtheta = start_curvature * length
         dx = math.sin(dtheta) / start_curvature
         dy = (1.0 - math.cos(dtheta)) / start_curvature
-    elif segment.predefined_type == "CLOTHOID":
-        dx, dy, dtheta = compute_clothoid_end(length, start_curvature, end_curvature)
+    elif segment.predefined_type in SPIRAL_FAMILIES:
+        dx, dy, dtheta = compute_spiral_end(
+            segment.predefined_type, length, segment.start_radius_of_curvature, segment.end_radius_of_curvature
+        )
     else:
         raise NotImplementedError(f"unsupported predefined type '{segment.predefined_type}'")
 
@@ -148,15 +306,25 @@ def solve_horizontal_alignment_by_pi_method(
         R - radius of a circular curve (tangent runs connect directly to the circular curve), or
 
         (R, Lin, Lout) - radius of a circular curve with clothoid spiral transition curves of length
-        Lin ahead of the curve and Lout following the curve. When spiral transitions are used the
-        circular curve shifts inward relative to the tangent runs so the tangent runs, spirals, and
-        circular curve are continuous in position and direction. Lin and Lout can be 0.0 for a
-        spiral-less connection on that end of the curve.
+        Lin ahead of the curve and Lout following the curve, or
 
-    Only clothoid spirals are supported at present (other spiral families - Bloss, cosine, sine,
-    cubic, Helmert - would need their own curvature-vs-length integrand substituted into the
-    displacement composition below; the tangent-distance projection itself is spiral-family
-    agnostic).
+        (R, Lin, Lout, family) - as above, with the entry and exit spirals both built from the
+        named family instead of CLOTHOID. family is one of SPIRAL_FAMILIES; entry and exit always
+        share the same family at a given PI, or
+
+        (R, Lin, Lout, family, cant_params) - as above, with cant_params supplying the extra data
+        VIENNESEBEND's curvature needs (ignored for every other family): a
+        (gravity_centerline_height, cant, rail_head_distance) tuple, where cant is the outer rail's
+        superelevation magnitude at the arc (same convention as the cants parameter below) and
+        rail_head_distance is the alignment's cant layout's own RailHeadDistance. cant_params may be
+        None (or the whole 5-tuple omitted) for a VIENNESEBEND PI with no cant contribution -- it
+        then solves as a plain degree-7 curvature-integral spiral, same as every other family.
+        Unlike cants below, this never creates or modifies any cant segment -- it only feeds
+        already-known cant data into the horizontal segment's own geometry.
+
+        When spiral transitions are used the circular curve shifts inward relative to the tangent
+        runs so the tangent runs, spirals, and circular curve are continuous in position and
+        direction. Lin and Lout can be 0.0 for a spiral-less connection on that end of the curve.
 
     If cants is provided, each definition also carries the cant at the segment start and end,
     applied to the rail on the outside of the curve: zero cant on tangent runs, linearly varying
@@ -189,10 +357,19 @@ def solve_horizontal_alignment_by_pi_method(
             radius = float(curve)
             entry_length = 0.0
             exit_length = 0.0
+            family = "CLOTHOID"
+            vb_params = None
         else:
-            if len(curve) != 3:
-                raise ValueError("each radii element should be a radius R or a (R, Lin, Lout) sequence")
-            radius, entry_length, exit_length = (float(v) for v in curve)
+            if len(curve) not in (3, 4, 5):
+                raise ValueError(
+                    "each radii element should be a radius R, a (R, Lin, Lout) sequence, a "
+                    "(R, Lin, Lout, family) sequence, or a (R, Lin, Lout, family, cant_params) sequence"
+                )
+            radius, entry_length, exit_length = (float(v) for v in curve[:3])
+            family = curve[3] if len(curve) >= 4 else "CLOTHOID"
+            vb_params = curve[4] if len(curve) == 5 else None
+            if family not in SPIRAL_FAMILIES:
+                raise ValueError(f"unsupported spiral family '{family}'; expected one of {SPIRAL_FAMILIES}")
             if radius == 0.0 and (entry_length != 0.0 or exit_length != 0.0):
                 raise ValueError("spiral transition lengths require a non-zero radius")
 
@@ -276,8 +453,40 @@ def solve_horizontal_alignment_by_pi_method(
 
             R = abs(radius)
             s = 1.0 if 0.0 < delta else -1.0  # +1 curve to the left, -1 curve to the right
-            theta1 = entry_length / (2.0 * R)  # deflection of the entry spiral
-            theta2 = exit_length / (2.0 * R)  # deflection of the exit spiral
+
+            # VIENNESEBEND's cant-derived curvature correction (ignored for every other family --
+            # see compute_spiral_end/_spiral_curvature.viennese_bend_coefficients). The cant angle
+            # ramps 0 -> full at the arc over the entry spiral and full -> 0 over the exit spiral,
+            # mirroring how start_radius_of_curvature/end_radius_of_curvature ramp over the same two
+            # spirals; its sign follows which rail is raised, exactly as _map_viennese_bend derives
+            # cant_angle_start/end from StartCantLeft/Right (raise_left_rail=True, i.e. a curve to
+            # the right, puts the raised rail on the left, giving a negative angle by that formula).
+            entry_cant_factor = 0.0
+            exit_cant_factor = 0.0
+            gravity_centerline_height = 0.0
+            if family == "VIENNESEBEND" and vb_params is not None:
+                gravity_centerline_height, vb_cant, rail_head_distance = (float(v) for v in vb_params)
+                cant_angle_full = vb_cant / rail_head_distance if rail_head_distance else 0.0
+                if s < 0.0:  # curve to the right -> raised rail is the left one
+                    cant_angle_full = -cant_angle_full
+                if 0.0 < entry_length:
+                    entry_cant_factor = -420.0 * (gravity_centerline_height / entry_length) * cant_angle_full
+                if 0.0 < exit_length:
+                    exit_cant_factor = -420.0 * (gravity_centerline_height / exit_length) * (-cant_angle_full)
+
+            # deflection of the entry/exit spiral, taken from the family's own actual (dx, dy,
+            # dtheta) rather than assumed to be entry_length / (2*R) -- that closed form is exact
+            # for CLOTHOID and happens to also hold for the other curvature-integral families
+            # (Bloss, Cosine, Sine, Helmert are all normalized to the same total deflection as
+            # clothoid for a given length and radius), but CUBIC's Cartesian small-angle
+            # approximation doesn't hit it exactly, and using the real dtheta keeps every family
+            # geometrically exact here regardless.
+            entry_end = (
+                compute_spiral_end(family, entry_length, 0.0, R, entry_cant_factor) if 0.0 < entry_length else None
+            )
+            exit_end = compute_spiral_end(family, exit_length, R, 0.0, exit_cant_factor) if 0.0 < exit_length else None
+            theta1 = entry_end[2] if entry_end is not None else 0.0
+            theta2 = exit_end[2] if exit_end is not None else 0.0
             theta_c = abs(delta) - theta1 - theta2  # deflection of the circular curve
             if theta_c < 0.0:
                 raise ValueError(
@@ -289,11 +498,11 @@ def solve_horizontal_alignment_by_pi_method(
             # exit spiral (ST), in a frame with the x-axis along the back tangent.
             # pieces are computed for a curve to the left and mirrored by s.
             pieces = []
-            if 0.0 < entry_length:
-                pieces.append(compute_clothoid_end(entry_length, 0.0, 1.0 / R))
+            if entry_end is not None:
+                pieces.append(entry_end)
             pieces.append((R * math.sin(theta_c), R * (1.0 - math.cos(theta_c)), theta_c))
-            if 0.0 < exit_length:
-                pieces.append(compute_clothoid_end(exit_length, 1.0 / R, 0.0))
+            if exit_end is not None:
+                pieces.append(exit_end)
 
             x = 0.0
             y = 0.0
@@ -340,16 +549,17 @@ def solve_horizontal_alignment_by_pi_method(
                         start_radius_of_curvature=0.0,
                         end_radius_of_curvature=signed_radius,
                         segment_length=entry_length,
-                        predefined_type="CLOTHOID",
+                        predefined_type=family,
                         start_dist_along=dist_along,
                         start_cant=0.0,
                         end_cant=cant,
                         raise_left_rail=delta < 0.0,
+                        gravity_centerline_height=gravity_centerline_height,
                     )
                 )
                 dist_along += entry_length
 
-                dx_, dy_, dtheta_ = compute_clothoid_end(entry_length, 0.0, 1.0 / R)
+                dx_, dy_, dtheta_ = entry_end
                 cur_x += dx_ * math.cos(cur_direction) - s * dy_ * math.sin(cur_direction)
                 cur_y += dx_ * math.sin(cur_direction) + s * dy_ * math.cos(cur_direction)
                 cur_direction += s * dtheta_
@@ -389,11 +599,12 @@ def solve_horizontal_alignment_by_pi_method(
                         start_radius_of_curvature=signed_radius,
                         end_radius_of_curvature=0.0,
                         segment_length=exit_length,
-                        predefined_type="CLOTHOID",
+                        predefined_type=family,
                         start_dist_along=dist_along,
                         start_cant=cant,
                         end_cant=0.0,
                         raise_left_rail=delta < 0.0,
+                        gravity_centerline_height=gravity_centerline_height,
                     )
                 )
                 dist_along += exit_length

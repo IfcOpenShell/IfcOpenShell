@@ -33,6 +33,67 @@ from bpy.props import (
 import bpy
 
 
+# Horizontal spiral transition curve families that _map_alignment_horizontal_segment
+# (ifcopenshell.api.alignment) maps to real geometry. Shared between HorizontalSegmentRow's
+# predefined_type (which also needs LINE/CIRCULARARC/VIENNESEBEND/UNSUPPORTED), HorizontalPIMarker,
+# and PICurveMarkerProperties -- the latter two both need a spiral-family choice per PI (entry and
+# exit spirals at one PI always share the same family), reusing the same six items so the choice
+# reads identically everywhere it appears.
+SPIRAL_FAMILY_ITEMS = [
+    ("CLOTHOID", "Clothoid", "A spiral transition curve (linear curvature change)"),
+    ("CUBIC", "Cubic", "A spiral transition curve (cubic parabola)"),
+    ("HELMERTCURVE", "Helmert Curve", "A spiral transition curve (sine-based curvature change)"),
+    ("BLOSSCURVE", "Bloss Curve", "A spiral transition curve (S-shaped curvature change)"),
+    ("COSINECURVE", "Cosine Curve", "A spiral transition curve (cosine-based curvature change)"),
+    ("SINECURVE", "Sine Curve", "A spiral transition curve (sine-based curvature change)"),
+]
+
+# Viennese Bend needs a real cant segment at the same station to resolve its representation
+# against -- ifcopenshell.api.alignment._get_cant_segment has no fallback for "no cant layout
+# anywhere on this alignment" (see the raw segment table's own "Viennese Bend needs a cant layout
+# first" check in ALIGN_OT_apply_h_segments). Kept out of SPIRAL_FAMILY_ITEMS itself -- unlike the
+# other six, its availability is conditional (see _spiral_family_items below), and
+# HorizontalSegmentRow.predefined_type already lists it separately with its own longer
+# description, so folding it into the shared list would duplicate that enum id there.
+VIENNESE_BEND_ITEM = (
+    "VIENNESEBEND",
+    "Viennese Bend",
+    "A spiral transition curve whose shape also depends on cant -- only available once this "
+    "alignment has a cant layout",
+)
+
+# Two pre-built, stable item lists for PICurveMarkerProperties.spiral_family /
+# HorizontalPIMarker.spiral_family's dynamic items callback (_spiral_family_items) to choose
+# between at draw time. Built once at import time, not freshly per call: Blender's dynamic
+# EnumProperty items callbacks must return a stable list each time a given result is wanted, not
+# newly constructed tuples/strings, or the returned strings can be garbage collected out from under
+# the UI (a well-known EnumProperty pitfall).
+_SPIRAL_FAMILY_ITEMS_NO_VIENNESE_BEND = list(SPIRAL_FAMILY_ITEMS)
+_SPIRAL_FAMILY_ITEMS_WITH_VIENNESE_BEND = list(SPIRAL_FAMILY_ITEMS) + [VIENNESE_BEND_ITEM]
+
+
+def _spiral_family_items(self, context):
+    """items= callback for spiral_family: Viennese Bend only appears once the marker/row's own
+    alignment has a real cant layout (see VIENNESE_BEND_ITEM's docstring) -- unavailable rather
+    than merely unselectable, since a plain EnumProperty dropdown can't grey out one entry.
+
+    PICurveMarkerProperties carries its own alignment_id; HorizontalPIMarker rows don't (the whole
+    table belongs to one alignment, tracked on CivilAlignmentProperties.
+    editing_horizontal_pi_alignment_id instead) -- try the former first, since it's cheaper and
+    more direct when present.
+    """
+    import bonsai.tool as tool
+
+    alignment_id = getattr(self, "alignment_id", 0) or getattr(
+        context.scene.CivilAlignmentProperties, "editing_horizontal_pi_alignment_id", 0
+    )
+    ifc = tool.Ifc.get()
+    alignment = ifc.by_id(alignment_id) if ifc and alignment_id else None
+    if alignment and tool.Alignment.has_real_cant_segments(alignment):
+        return _SPIRAL_FAMILY_ITEMS_WITH_VIENNESE_BEND
+    return _SPIRAL_FAMILY_ITEMS_NO_VIENNESE_BEND
+
+
 def _on_vertical_visibility_update(self, context):
     from .decorator import VerticalProfileDecorator
 
@@ -221,17 +282,17 @@ class HorizontalPIMarker(PropertyGroup):
             (
                 "SPIRAL_CIRCULAR",
                 "Spiral-Circular",
-                "An entry clothoid spiral transitions into the circular arc, which runs to the forward tangent",
+                "An entry spiral transitions into the circular arc, which runs to the forward tangent",
             ),
             (
                 "CIRCULAR_SPIRAL",
                 "Circular-Spiral",
-                "The circular arc leaves the back tangent directly and transitions to the forward tangent via an exit clothoid spiral",
+                "The circular arc leaves the back tangent directly and transitions to the forward tangent via an exit spiral",
             ),
             (
                 "SPIRAL_CIRCULAR_SPIRAL",
                 "Spiral-Circular-Spiral",
-                "An entry clothoid spiral, a circular arc, and an exit clothoid spiral, symmetric about the PI",
+                "An entry spiral, a circular arc, and an exit spiral, symmetric about the PI",
             ),
         ],
         default="TANGENT",
@@ -239,16 +300,34 @@ class HorizontalPIMarker(PropertyGroup):
     radius: FloatProperty(name="Radius", default=100.0, min=0.0001, unit="LENGTH")
     spiral_in_length: FloatProperty(
         name="Entry Spiral Length",
-        description="Length of the clothoid spiral ahead of the circular arc",
+        description="Length of the spiral ahead of the circular arc",
         default=100.0,
         min=0.0001,
         unit="LENGTH",
     )
     spiral_out_length: FloatProperty(
         name="Exit Spiral Length",
-        description="Length of the clothoid spiral following the circular arc",
+        description="Length of the spiral following the circular arc",
         default=100.0,
         min=0.0001,
+        unit="LENGTH",
+    )
+    spiral_family: EnumProperty(
+        name="Spiral Family",
+        description="Curve family for the entry and exit spirals -- both share the same family at a given PI",
+        items=_spiral_family_items,
+        default=0,  # CLOTHOID -- dynamic items (a callback) can't take a string default
+    )
+    gravity_centerline_height: FloatProperty(
+        name="Gravity Centerline Height",
+        description=(
+            "Viennese Bend only: IfcAlignmentHorizontalSegment.GravityCenterLineHeight, the vehicle's "
+            "center of gravity height above rail. Combined with this PI's cant (read live from the "
+            "existing cant layout) to drive the cant-derived part of the curve's shape -- 0.0 gives a "
+            "Viennese Bend with no cant contribution, same as every other spiral family"
+        ),
+        default=0.0,
+        min=0.0,
         unit="LENGTH",
     )
 
@@ -257,12 +336,20 @@ class HorizontalPIMarker(PropertyGroup):
 # (ifcopenshell.api.alignment) maps to real geometry, all sharing the exact same
 # DesignParameters shape as CLOTHOID (StartPoint/StartDirection/StartRadiusOfCurvature/
 # EndRadiusOfCurvature/SegmentLength -- no extra fields), so the table can treat every
-# one of them identically to CLOTHOID. VIENNESEBEND is intentionally excluded: its
-# geometry additionally depends on the alignment's CANT segment at the same station
-# (rail cant angle, gravity centerline height) and a GravityCenterLineHeight field this
-# table has no place for -- editing it here could silently desync it from its cant data.
-HORIZONTAL_SPIRAL_TYPES = ("CLOTHOID", "CUBIC", "HELMERTCURVE", "BLOSSCURVE", "COSINECURVE", "SINECURVE")
-SUPPORTED_HORIZONTAL_TYPES = ("LINE", "CIRCULARARC") + HORIZONTAL_SPIRAL_TYPES
+# one of them identically to CLOTHOID. VIENNESEBEND is kept separate from this specific
+# tuple (rather than folded in) since its own geometry additionally depends on the
+# alignment's CANT segment at the same station -- HorizontalSegmentRow.predefined_type
+# still lists it explicitly, gated at Apply time (see the "Viennese Bend needs a cant
+# layout first" check in ALIGN_OT_apply_h_segments) rather than editable unconditionally
+# like the other six.
+HORIZONTAL_SPIRAL_TYPES = tuple(item[0] for item in SPIRAL_FAMILY_ITEMS)
+SUPPORTED_HORIZONTAL_TYPES = ("LINE", "CIRCULARARC") + HORIZONTAL_SPIRAL_TYPES + ("VIENNESEBEND",)
+
+# Every spiral family the PI-curve marker/table workflow can reconstruct an existing PI's shape
+# into (see operator._reconstruct_horizontal_pis) -- HORIZONTAL_SPIRAL_TYPES plus VIENNESEBEND,
+# which isn't in that tuple (see above) but is still one of PICurveMarkerProperties.spiral_family's
+# possible values once a cant layout exists (_spiral_family_items).
+PI_METHOD_SPIRAL_TYPES = HORIZONTAL_SPIRAL_TYPES + ("VIENNESEBEND",)
 
 # Vertical types whose EndGradient can genuinely differ from StartGradient
 # (a CONSTANTGRADIENT segment always has EndGradient == StartGradient by
@@ -288,12 +375,7 @@ class HorizontalSegmentRow(PropertyGroup):
         items=[
             ("LINE", "Line", "A straight tangent run"),
             ("CIRCULARARC", "Circular Arc", "A constant-radius curve"),
-            ("CLOTHOID", "Clothoid", "A spiral transition curve (linear curvature change)"),
-            ("CUBIC", "Cubic", "A spiral transition curve (cubic parabola)"),
-            ("HELMERTCURVE", "Helmert Curve", "A spiral transition curve (sine-based curvature change)"),
-            ("BLOSSCURVE", "Bloss Curve", "A spiral transition curve (S-shaped curvature change)"),
-            ("COSINECURVE", "Cosine Curve", "A spiral transition curve (cosine-based curvature change)"),
-            ("SINECURVE", "Sine Curve", "A spiral transition curve (sine-based curvature change)"),
+            *SPIRAL_FAMILY_ITEMS,
             (
                 "VIENNESEBEND",
                 "Viennese Bend",
@@ -538,37 +620,51 @@ class PICurveMarkerProperties(PropertyGroup):
             (
                 "SPIRAL_CIRCULAR",
                 "Spiral-Circular",
-                "An entry clothoid spiral transitions into the circular arc, which runs to the forward tangent",
+                "An entry spiral transitions into the circular arc, which runs to the forward tangent",
             ),
             (
                 "CIRCULAR_SPIRAL",
                 "Circular-Spiral",
-                "The circular arc leaves the back tangent directly and transitions to the forward tangent via an exit clothoid spiral",
+                "The circular arc leaves the back tangent directly and transitions to the forward tangent via an exit spiral",
             ),
             (
                 "SPIRAL_CIRCULAR_SPIRAL",
                 "Spiral-Circular-Spiral",
-                "An entry clothoid spiral, a circular arc, and an exit clothoid spiral, symmetric about the PI",
+                "An entry spiral, a circular arc, and an exit spiral, symmetric about the PI",
             ),
-            # Only the clothoid spiral family is supported for now — see
-            # solve_horizontal_alignment_by_pi_method. Other families (Bloss,
-            # cosine, sine, cubic, Helmert) would need their own
-            # curvature-vs-length integrand.
         ],
         default="TANGENT",
     )
     radius: FloatProperty(name="Radius", default=100.0, min=0.0001, unit="LENGTH")
     spiral_in_length: FloatProperty(
         name="Entry Spiral Length",
-        description="Length of the clothoid spiral ahead of the circular arc",
+        description="Length of the spiral ahead of the circular arc",
         default=100.0,
         min=0.0001,
         unit="LENGTH",
     )
     spiral_out_length: FloatProperty(
         name="Exit Spiral Length",
-        description="Length of the clothoid spiral following the circular arc",
+        description="Length of the spiral following the circular arc",
         default=100.0,
         min=0.0001,
+        unit="LENGTH",
+    )
+    spiral_family: EnumProperty(
+        name="Spiral Family",
+        description="Curve family for the entry and exit spirals -- both share the same family at a given PI",
+        items=_spiral_family_items,
+        default=0,  # CLOTHOID -- dynamic items (a callback) can't take a string default
+    )
+    gravity_centerline_height: FloatProperty(
+        name="Gravity Centerline Height",
+        description=(
+            "Viennese Bend only: IfcAlignmentHorizontalSegment.GravityCenterLineHeight, the vehicle's "
+            "center of gravity height above rail. Combined with this PI's cant (read live from the "
+            "existing cant layout) to drive the cant-derived part of the curve's shape -- 0.0 gives a "
+            "Viennese Bend with no cant contribution, same as every other spiral family"
+        ),
+        default=0.0,
+        min=0.0,
         unit="LENGTH",
     )

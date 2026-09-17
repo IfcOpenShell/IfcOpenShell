@@ -100,9 +100,11 @@ from .layout_vertical_alignment_by_pi_method import (
 from .name_segments import name_segments
 from .segment_vertices import segment_vertices
 from .solve_horizontal_alignment_by_pi_method import (
+    SPIRAL_FAMILIES,
     HorizontalSegmentDefinition,
     compute_clothoid_end,
     compute_horizontal_segment_end,
+    compute_spiral_end,
     solve_horizontal_alignment_by_pi_method,
 )
 from .update_alignment_parameter_segment_tags import update_alignment_parameter_segment_tags
@@ -112,9 +114,11 @@ from .update_key_point_referents import update_key_point_referents
 from .util import *
 
 __all__ = [
+    "SPIRAL_FAMILIES",
     "HorizontalSegmentDefinition",
     "compute_clothoid_end",
     "compute_horizontal_segment_end",
+    "compute_spiral_end",
     "solve_horizontal_alignment_by_pi_method",
     "add_positioning_referent",
     "add_stationing_referent",
