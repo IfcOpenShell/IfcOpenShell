@@ -31,6 +31,14 @@ WASM_PLATFORM = "pyodide_2025_0_wasm32"
 WASM_TEMPLATE = "https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-{BINARY_VERSION}%2B{BUILD_COMMIT}-cp{PYNUMBER}-cp{PYNUMBER}-{PLATFORM}.whl"
 
 
+def normalize_version(version: str) -> str:
+    """Normalize a version the way packaging does, e.g. ``0.9.0alpha0`` -> ``0.9.0a0``.
+
+    Mirrors ``VERSION_PYTHON`` in src/ifcopenshell-python/Makefile.
+    """
+    return version.replace("alpha", "a")
+
+
 class TestPackageSupportedPlatforms:
     @staticmethod
     def get_required_urls() -> list[str]:
@@ -76,12 +84,12 @@ class TestPackageSupportedPlatforms:
                 else:
                     assert_never(url_type)
 
-        # WASM wheels.
+        # WASM wheels, named with the normalized version, unlike the binaries above.
         for pyver in WASM_SUPPORTED_PY_VERSIONS:
             url = WASM_TEMPLATE.format(
                 PYNUMBER=pyver,
                 PLATFORM=WASM_PLATFORM,
-                BINARY_VERSION=BINARY_VERSION,
+                BINARY_VERSION=normalize_version(BINARY_VERSION),
                 BUILD_COMMIT=BUILD_COMMIT,
             )
             required_urls.append(url)
@@ -136,4 +144,4 @@ class TestPackageSupportedPlatforms:
         maybe_missing_urls = self.get_missing_urls_fast(required_urls)
         missing_urls = self.get_missing_urls_slow(maybe_missing_urls)
 
-        assert not missing_urls
+        assert not missing_urls, "Build artifacts are not published:\n" + "\n".join(missing_urls)
