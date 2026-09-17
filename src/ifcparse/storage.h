@@ -678,6 +678,13 @@ namespace ifcopenshell {
             typedef std::map<uint32_t, shared_pointer_type> entity_by_iden_cache;
             entity_by_iden_cache instance_cache_, type_instance_cache_;
             std::mutex instance_cache_mutex_;
+            // Opening a database doesn't visit every instance, so the file's
+            // id counter is recalculated on the first create().
+            bool id_counter_recalculated_ = false;
+
+            // Deletes every key of the given instances and drops their cached
+            // handles, in one write and under one lock.
+            void erase_instances(const std::vector<uint32_t>& ids);
 
             // @todo all these size_ts should probably be uint32_t for consistency with in-mem storage
 

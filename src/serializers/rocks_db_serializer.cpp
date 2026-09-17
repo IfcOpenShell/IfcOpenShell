@@ -98,16 +98,6 @@ namespace {
 	}
 }
 
-namespace {
-	template <typename T>
-	std::string to_string_fixed_width(const T& t, size_t w) {
-		// @todo currently inactive
-		std::ostringstream oss;
-		oss << /*std::setfill('0') << std::setw(w) <<*/ t;
-		return oss.str();
-	}
-}
-
 void RocksDbSerializer::write_streaming_() {
 	ifcopenshell::impl::rocks_db_file_storage storage(rocksdb_filename_, nullptr);
 
@@ -170,15 +160,13 @@ void RocksDbSerializer::write_streaming_() {
 				// @nb cast to int in order not be interpreted as a char when appending to string
 				int index = p.first.index_;
 
-				auto key = (is_header ? "h|" : (decl->as_entity() ? "i|" : "t|")) +
-					(is_header ? decl->name() : std::to_string(p.first.name_)) + "|" +
-					std::to_string(index);
+				auto key = (is_header ? rocksdb_key::header_attribute(decl->name(), index) : rocksdb_key::attribute(decl->as_entity() != nullptr, p.first.name_, index));
 
 				if (storage.db->Get(storage.ropts, key, &tmp) == rocksdb::Status::OK() && tmp.size() == (sizeof(size_t) + 2) && tmp[0] == ifcopenshell::type_encoder::encode_type<express::base>() && tmp[1] == 't')
 				{
 					size_t iden;
 					memcpy(&iden, tmp.data() + 2, sizeof(size_t));
-					key = "t|" + std::to_string(iden) + "|0";
+					key = rocksdb_key::attribute(false, iden, 0);
 					type_identities_wrote_as_refs.insert(iden);
 				}
 
@@ -215,7 +203,7 @@ void RocksDbSerializer::write_streaming_() {
 
 				auto write_inverse = [&](const ifcopenshell::reference_or_simple_type& v) {
 					if (auto* ref = std::get_if<ifcopenshell::instance_reference>(&v)) {
-						auto key = "v|" + to_string_fixed_width(*ref, 10) + "|" + to_string_fixed_width(decl->index_in_schema(), 4) + "|" + to_string_fixed_width(index, 2);
+						auto key = rocksdb_key::inverse(*ref, decl->index_in_schema(), index);
 						static std::string s;
 						uint32_t vv = name;
 						s.resize(sizeof(uint32_t));
@@ -247,7 +235,7 @@ void RocksDbSerializer::write_streaming_() {
 
 				storage.db->Put(
 					storage.wopts,
-					(inst.declaration().as_entity() ? "i|" : "t|") + std::to_string(inst.identity()) + "|_", s);
+					rocksdb_key::type_record(inst.declaration().as_entity() != nullptr, inst.identity()), s);
 
 				if (type_identities_wrote_as_refs.find(inst.identity()) != type_identities_wrote_as_refs.end()) {
 					// already written as reference, skip
@@ -275,13 +263,13 @@ void RocksDbSerializer::write_streaming_() {
 				memcpy(s.data(), &v, sizeof(size_t));
 				storage.db->Put(
 					storage.wopts,
-					(decl->as_entity() ? "i|" : "t|") + std::to_string(name) + "|_", s);
+					rocksdb_key::type_record(decl->as_entity() != nullptr, name), s);
 
 				{
 					size_t v = name;
 					std::string s(sizeof(size_t), ' ');
 					memcpy(s.data(), &v, sizeof(size_t));
-					storage.db->Merge(storage.wopts, "t|" + std::to_string(decl->index_in_schema()), s);
+					storage.db->Merge(storage.wopts, rocksdb_key::type_list(decl->index_in_schema()), s);
 				}
 
 				// GlobalId as numeric ref to instance name, so that the guid map in
