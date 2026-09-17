@@ -35,9 +35,11 @@ endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(POLICY CMP0148) # 3.27
+    # The FindPythonInterp and FindPythonLibs modules are removed.
     cmake_policy(SET CMP0148 OLD)
 endif()
 if(POLICY CMP0177) # 3.31
+    # install() DESTINATION paths are normalized.
     cmake_policy(SET CMP0177 OLD)
 endif()
 
