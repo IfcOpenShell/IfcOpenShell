@@ -88,8 +88,9 @@ def layout_horizontal_alignment_by_pi_method(
     :param file: file
     :param layout: An IfcAlignmentHorizontal layout
     :param hpoints: (X, Y) pairs denoting the location of the horizontal PIs, including start (POB) and end (POE).
-    :param radii: radius values to use for transition, optionally with clothoid spiral transition lengths
-        as (R, Lin, Lout)
+    :param radii: radius values to use for transition, optionally with spiral transition lengths as
+        (R, Lin, Lout), and optionally a spiral family other than clothoid as (R, Lin, Lout, family)
+        -- see solve_horizontal_alignment_by_pi_method
     :param cant_layout: An IfcAlignmentCant layout to receive the cant segments. Required when cants is provided.
     :param cants: cant values, one per PI curve, applied to the outer rail. Required when cant_layout is provided.
     :return: None
@@ -113,7 +114,7 @@ def layout_horizontal_alignment_by_pi_method(
             StartRadiusOfCurvature=segment.start_radius_of_curvature,
             EndRadiusOfCurvature=segment.end_radius_of_curvature,
             SegmentLength=segment.segment_length,
-            GravityCenterLineHeight=None,
+            GravityCenterLineHeight=segment.gravity_centerline_height or None,
             PredefinedType=segment.predefined_type,
         )
         ifcopenshell.api.alignment.create_layout_segment(file, layout, design_parameters)

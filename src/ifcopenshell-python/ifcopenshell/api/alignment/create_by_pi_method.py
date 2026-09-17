@@ -38,8 +38,9 @@ def create_by_pi_method(
     Create an alignment using the PI layout method for both horizontal and vertical alignments.
     If vpoints and lengths are omitted, only a horizontal alignment is created.
 
-    Each element of radii is either a circular curve radius R, or a (R, Lin, Lout) sequence with
-    clothoid spiral transition curve lengths ahead of and following the circular curve (see
+    Each element of radii is either a circular curve radius R, a (R, Lin, Lout) sequence with
+    clothoid spiral transition curve lengths ahead of and following the circular curve, or a
+    (R, Lin, Lout, family) sequence to use a different spiral family (see
     layout_horizontal_alignment_by_pi_method / solve_horizontal_alignment_by_pi_method).
 
     :param name: value for Name attribute

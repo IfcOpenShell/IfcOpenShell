@@ -153,6 +153,10 @@ class ALIGN_UL_horizontal_pi_markers(UIList):
             row.prop(item, "spiral_in_length", text="")
         if item.curve_type in {"CIRCULAR_SPIRAL", "SPIRAL_CIRCULAR_SPIRAL"}:
             row.prop(item, "spiral_out_length", text="")
+        if item.curve_type in {"SPIRAL_CIRCULAR", "CIRCULAR_SPIRAL", "SPIRAL_CIRCULAR_SPIRAL"}:
+            row.prop(item, "spiral_family", text="")
+            if item.spiral_family == "VIENNESEBEND":
+                row.prop(item, "gravity_centerline_height", text="")
 
 
 class ALIGN_UL_h_segments(UIList):
@@ -345,6 +349,10 @@ class ALIGN_PT_alignment_authoring(Panel):
                     box.prop(pi_data, "spiral_in_length")
                 if pi_data.curve_type in {"CIRCULAR_SPIRAL", "SPIRAL_CIRCULAR_SPIRAL"}:
                     box.prop(pi_data, "spiral_out_length")
+                if pi_data.curve_type in {"SPIRAL_CIRCULAR", "CIRCULAR_SPIRAL", "SPIRAL_CIRCULAR_SPIRAL"}:
+                    box.prop(pi_data, "spiral_family")
+                    if pi_data.spiral_family == "VIENNESEBEND":
+                        box.prop(pi_data, "gravity_centerline_height")
                 row = box.row(align=True)
                 row.operator("align.apply_pi_curve", icon="CHECKMARK")
                 row.operator("align.finish_pi_editing", icon="CHECKMARK")
