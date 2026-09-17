@@ -1954,9 +1954,30 @@ class OpenLayout(bpy.types.Operator, tool.Ifc.Operator):
         sheet_item = tool.Drawing.get_active_sheet_item()
         assert sheet_item
         sheet = tool.Ifc.get().by_id(sheet_item.ifc_definition_id)
+        restore_moved_files(self)
+        if warnings := tool.Drawing.validate_sheet_files(sheet):
+            self.report({"ERROR"}, " ".join(w.message for w in warnings))
+            return {"CANCELLED"}
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.update_sheet_drawing_sizes(sheet)
         core.open_layout(tool.Drawing, sheet=sheet)
+
+
+def restore_moved_files(operator: bpy.types.Operator) -> None:
+    """Put back files renamed in a session whose model was never saved, and say so.
+
+    Renaming a sheet or a drawing moves its files immediately, but the rename is
+    only kept if the IFC is saved - so reopening the model leaves it pointing at
+    files that are gone. Every sheet is checked, whichever one this operator is
+    about: the open model names them all. See
+    `tool.Drawing.restore_all_moved_files`.
+    """
+    if changes := tool.Drawing.restore_all_moved_files():
+        operator.report(
+            {"WARNING"},
+            "Files renamed in a session that was not saved were put back to the names in this model - "
+            f"{'; '.join(changes)}. Rename again, and save, to keep a new name.",
+        )
 
 
 class SelectAllSheets(bpy.types.Operator):
@@ -2025,6 +2046,7 @@ class OpenSheet(bpy.types.Operator):
         sheets_not_found: list[str] = []
         warnings: list[tool.Drawing.SheetWarningType] = []
 
+        restore_moved_files(self)
         for sheet in sheets:
             if not sheet.is_a("IfcDocumentInformation"):
                 continue
@@ -2206,8 +2228,8 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
 
         warnings: list[tool.Drawing.SheetWarningType] = []
         n_sheets_created = 0
+        restore_moved_files(self)
         for sheet in sheets:
-
             warnings.extend(sheet_warnings := tool.Drawing.validate_sheet_files(sheet))
             if sheet_warnings:
                 continue
