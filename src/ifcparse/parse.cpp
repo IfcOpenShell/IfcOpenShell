@@ -2059,7 +2059,10 @@ void parse_header(
 // recorded. Stops at the ENDSEC that closes the DATA section, at `end`, or
 // when `visit` says so; a header ENDSEC, the DATA keyword and a stray
 // token are passed over, as the serial reader passed over what it could
-// not match.
+// not match. In one-instance mode (the streamer) the scan stops once the
+// ';' after the visited list is taken, which is what tells the caller that
+// the next instance is not yet in the buffer; a token other than ';' there
+// is left for the next scan.
 template <typename Bypassed, typename Visit>
 class instance_header_consumer {
   public:
@@ -2075,6 +2078,15 @@ class instance_header_consumer {
         , log_(log)
         , visit_(visit) {}
 
+    void one_instance(bool value) {
+        one_instance_ = value;
+    }
+    // Where a token that was not the ';' after a visited list starts, when
+    // the scan stopped on it in one-instance mode: the caller seeks back.
+    std::optional<size_t> rewind() const {
+        return rewind_;
+    }
+
     bool operator_(size_t pos, char c) {
         if (state_ == state::skipping) {
             if (c == '(') {
@@ -2087,7 +2099,11 @@ class instance_header_consumer {
         if (state_ == state::after_list) {
             state_ = state::between;
             if (c == ';') {
-                return true;
+                return !one_instance_;
+            }
+            if (one_instance_) {
+                rewind_ = pos;
+                return false;
             }
         }
         switch (state_) {
@@ -2125,6 +2141,10 @@ class instance_header_consumer {
         }
         if (state_ == state::after_list) {
             state_ = state::between;
+            if (one_instance_) {
+                rewind_ = pos;
+                return false;
+            }
         }
         if (state_ == state::between) {
             if (pos >= end_) {
@@ -2144,6 +2164,10 @@ class instance_header_consumer {
         }
         if (state_ == state::after_list) {
             state_ = state::between;
+            if (one_instance_) {
+                rewind_ = pos;
+                return false;
+            }
         }
         if (state_ == state::between) {
             if (pos >= end_) {
@@ -2182,6 +2206,10 @@ class instance_header_consumer {
         }
         if (state_ == state::after_list) {
             state_ = state::between;
+            if (one_instance_) {
+                rewind_ = pos;
+                return false;
+            }
         }
         if (state_ == state::between) {
             return pos < end_;
@@ -2225,6 +2253,8 @@ class instance_header_consumer {
     const ifcopenshell::declaration* declaration_ = nullptr;
     size_t keyword_pos_ = 0;
     int depth_ = 0;
+    bool one_instance_ = false;
+    std::optional<size_t> rewind_;
 };
 
 template <typename Reader, typename Bypassed, typename Visit>
@@ -2518,6 +2548,7 @@ std::optional<std::tuple<size_t, const ifcopenshell::declaration*, shared_pointe
                 }
 
                 return_value.emplace((size_t)name, entity_type, data);
+                return true;  // on to the ';' after the list, then stop
             } catch (const invalid_token_exception& e) {
                 good_ = file_open_status::INVALID_SYNTAX;
                 logger_.get().error(e);
@@ -2525,7 +2556,12 @@ std::optional<std::tuple<size_t, const ifcopenshell::declaration*, shared_pointe
             return false;
         };
         try {
-            for_each_instance_header(*stream_, *lexer_, stream_->size(), schema_, types_to_bypass_materialized_, bypassed_instances_, logger_.get(), visit);
+            instance_header_consumer<std::vector<bool>, decltype(visit)> consumer(stream_->size(), schema_, types_to_bypass_materialized_, bypassed_instances_, logger_.get(), visit);
+            consumer.one_instance(true);
+            lexer_->scan(consumer);
+            if (consumer.rewind()) {
+                stream_->seek(*consumer.rewind());
+            }
         } catch (const invalid_token_exception& e) {
             good_ = file_open_status::INVALID_SYNTAX;
             logger_.get().error(e);
