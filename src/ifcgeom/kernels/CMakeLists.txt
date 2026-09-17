@@ -41,6 +41,12 @@ foreach(kernel ${GEOMETRY_KERNELS})
     endif()
 endforeach()
 
+if("opencascade" IN_LIST GEOMETRY_KERNELS AND "cgal" IN_LIST GEOMETRY_KERNELS)
+    # Used by boolean_cgal_fallback.cpp.
+    target_link_libraries(geometry_kernel_opencascade IFCOPENSHELL_CGAL)
+    set_property(TARGET geometry_kernel_opencascade APPEND_STRING PROPERTY COMPILE_FLAGS " -DCGAL_HAS_THREADS")
+endif()
+
 set(kernel_libraries ${kernel_libraries} PARENT_SCOPE)
 
 install(FILES ifc_geomlibrary_api.h DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/ifcgeom/kernels/")
