@@ -310,7 +310,6 @@ def install_boost(
         "--with-program_options",
         "--with-regex",
         "--with-iostreams",
-        "--with-filesystem",
     )
 
     logger.info(f"Building {DEPENDENCY_NAME} {' '.join(BOOST_LIBS)}. Please be patient, this will take a while.")
