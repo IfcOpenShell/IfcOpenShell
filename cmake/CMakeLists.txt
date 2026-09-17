@@ -392,12 +392,7 @@ else()
 endif()
 
 if(USE_MMAP)
-    if(MSVC)
-        # filesystem is necessary for the utf-16 wpath
-        set(BOOST_COMPONENTS ${BOOST_COMPONENTS} iostreams filesystem)
-    else()
-        set(BOOST_COMPONENTS ${BOOST_COMPONENTS} iostreams)
-    endif()
+    set(BOOST_COMPONENTS ${BOOST_COMPONENTS} iostreams)
 endif()
 
 # 3.3.9 is the version currently used on the Windows build.
