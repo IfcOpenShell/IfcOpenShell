@@ -443,10 +443,12 @@ def install_occt(
     OCCT_VER = f"V{OCCT_VERSION.replace('.', '_')}"
 
     DEPENDENCY_NAME = f"Open CASCADE {OCCT_VERSION}"
-    # TODO: `new-layout` suffix can be dropped on the next OCCT version update, it's only needed
-    # to separate the legacy layout installation (used by version 7.8.1) from the new one.
-    new_layout_suffix = "-new-layout" if OCCT_VERSION == "7.8.1" else ""
-    OCCT_DEPENDENCY_INSTALL_NAME = f"opencascade-{OCCT_VERSION}{new_layout_suffix}"
+    # OCCT is built as shared libraries: a static OCCT gets linked privately into every
+    # plug-in DLL, giving each its own Standard_Type registry and allocator, so shapes
+    # handed between plug-ins (kernel -> tree, kernel -> SVG serializer) are misread.
+    # The `-shared-` infix mirrors `nix/build-all.py` and keeps the dependency cache
+    # from silently serving a static build under the same name.
+    OCCT_DEPENDENCY_INSTALL_NAME = f"opencascade-shared-{OCCT_VERSION}"
     dependency_install_dir = install_dir / OCCT_DEPENDENCY_INSTALL_NAME
 
     build_deps_cache.add_entry("OCC_INSTALL_DIR", str(dependency_install_dir))
@@ -464,6 +466,10 @@ def install_occt(
 
     # Patching always blindly would trigger a rebuild each time.
     cmake_lists_path = dependency_dir / "CMakeLists.txt"
+    # A checkout carrying an older revision of our patch is reset so the current one applies.
+    if "IfcOpenShell" in cmake_lists_path.read_text() and "NOT BUILD_SHARED_LIBS" not in cmake_lists_path.read_text():
+        logger.info(f"Resetting {DEPENDENCY_NAME} checkout to re-apply the updated patch.")
+        run_streamed("git", "checkout", "--", ".", cwd=dependency_dir)
     # TODO: probably can use `git apply --reverse --check` for better validation.
     if "IfcOpenShell" not in cmake_lists_path.read_text():
         run_streamed(
@@ -488,7 +494,7 @@ def install_occt(
         vs_cfg_vars,
         build_type,
         f"-DCMAKE_INSTALL_PREFIX={dependency_install_dir}",
-        "-DBUILD_LIBRARY_TYPE=Static",
+        "-DBUILD_LIBRARY_TYPE=Shared",
         "-DCMAKE_DEBUG_POSTFIX=",
         "-DBUILD_MODULE_Draw=0",
         "-DBUILD_RELEASE_DISABLE_EXCEPTIONS=OFF",

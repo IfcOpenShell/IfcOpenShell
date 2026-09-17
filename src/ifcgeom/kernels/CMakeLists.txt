@@ -73,6 +73,16 @@ foreach(kernel ${GEOMETRY_KERNELS})
             target_link_libraries(${KERNEL_TARGET} PRIVATE ${OpenCASCADE_LIBRARIES})
         endif()
 
+        if(WIN32 AND TARGET TKernel)
+            get_target_property(_occt_library_type TKernel TYPE)
+            if(_occt_library_type STREQUAL "SHARED_LIBRARY")
+                # Ship the shared OCCT runtime next to the plug-ins that load it.
+                # Every OCCT consumer links the same toolkit list, so the kernel's
+                # runtime DLL set covers the tree and serializer plug-ins too.
+                install(FILES $<TARGET_RUNTIME_DLLS:${KERNEL_TARGET}> DESTINATION ${CMAKE_INSTALL_BINDIR})
+            endif()
+        endif()
+
 	if (NOT WASM_BUILD)
         foreach(tree_backend brep trianglebvh)
             set(TREE_TARGET "geometry_tree_opencascade_${tree_backend}")
