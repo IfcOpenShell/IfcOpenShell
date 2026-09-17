@@ -220,7 +220,7 @@ set(IFCVIEWER_CORE_HEADERS
 list(TRANSFORM IFCVIEWER_CORE_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 list(TRANSFORM IFCVIEWER_CORE_HEADERS PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 
-add_library(IfcViewerCore STATIC ${IFCVIEWER_CORE_SOURCES} ${IFCVIEWER_CORE_HEADERS})
+add_library(IfcViewerCore ${IFCVIEWER_CORE_SOURCES} ${IFCVIEWER_CORE_HEADERS})
 
 target_include_directories(IfcViewerCore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -251,7 +251,11 @@ if(EMSCRIPTEN)
     target_include_directories(IfcViewerCore PRIVATE ${ZSTD_DEC_DIR})
 else()
     find_package(zstd ${ZSTD_MIN_VERSION} CONFIG REQUIRED)
-    target_link_libraries(IfcViewerCore PUBLIC zstd::libzstd_static)
+    if (TARGET zstd::libzstd_shared)
+        target_link_libraries(IfcViewerCore PUBLIC zstd::libzstd_shared)
+    else()
+        target_link_libraries(IfcViewerCore PUBLIC zstd::libzstd_static)
+    endif()
 endif()
 install(TARGETS IfcViewerCore EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
 

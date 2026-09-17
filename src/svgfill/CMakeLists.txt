@@ -52,17 +52,19 @@ include_directories(${Boost_INCLUDE_DIRS} ${SVGPP_INCLUDE})
 file(GLOB LIB_H_FILES src/*.h)
 set(LIB_CPP_FILES src/svgfill.cpp src/arrange_polygons.cpp src/svgfill_plugin.cpp)
 set(LIB_SRC_FILES ${LIB_H_FILES} ${LIB_CPP_FILES})
-add_library(svgfill SHARED ${LIB_SRC_FILES})
+add_library(svgfill ${LIB_SRC_FILES})
 target_compile_definitions(svgfill PRIVATE BOOST_DLL_USE_STD_FS)
 if(NOT WASM_BUILD)
     target_link_libraries(svgfill PRIVATE plugin)
 endif()
-target_link_libraries(svgfill PRIVATE ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES} LibXml2::LibXml2 IFCOPENSHELL_CGAL IfcParse)
-# `IFC_SHARED_BUILD` definition only exists since we have part of svgfill
-# compiled directly inside `ifcwrap` (linework_processing_facade.cpp).
-# It needs to be able to compile those symbols without dllimport attributes,
-# which is achieved by omitting `IFC_SHARED_BUILD`.
-target_compile_definitions(svgfill PUBLIC IFC_SHARED_BUILD)
+target_link_libraries(svgfill PRIVATE ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES} LibXml2::LibXml2 CGAL::CGAL IfcParse)
+if(BUILD_SHARED_LIBS)
+    # `IFC_SHARED_BUILD` definition only exists since we have part of svgfill
+    # compiled directly inside `ifcwrap` (linework_processing_facade.cpp).
+    # It needs to be able to compile those symbols without dllimport attributes,
+    # which is achieved by omitting `IFC_SHARED_BUILD`.
+    target_compile_definitions(svgfill PUBLIC IFC_SHARED_BUILD)
+endif()
 set_target_properties(svgfill PROPERTIES PUBLIC_HEADER "${LIB_H_FILES}")
 set_target_properties(svgfill PROPERTIES OUTPUT_NAME "ifcopenshell_geometry_svgfill")
 ifcopenshell_wasm_plugin_link_options(svgfill ifcopenshell_register_linework_processing_plugin_v1)

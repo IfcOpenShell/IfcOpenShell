@@ -12,6 +12,7 @@
 
 # output directories
 /cmake/out/
+/cmake/CMakeUserPresets.json
 /src/examples/out/
 /src/ifcmax/out/
 /src/ifcwrap/out/
