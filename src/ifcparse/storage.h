@@ -682,6 +682,10 @@ namespace ifcopenshell {
             // id counter is recalculated on the first create().
             bool id_counter_recalculated_ = false;
 
+            // Deletes every key of the given instances and drops their cached
+            // handles, in one write and under one lock.
+            void erase_instances(const std::vector<uint32_t>& ids);
+
             // @todo all these size_ts should probably be uint32_t for consistency with in-mem storage
 
             // lookup id->identity

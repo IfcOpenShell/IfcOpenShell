@@ -55,7 +55,7 @@ express::base ifcopenshell::impl::rocks_db_file_storage::assert_existance(size_t
 
     std::string v;
 
-    rocksdb::Status s = db->Get(rocksdb::ReadOptions{}, (r == entityinstance_ref ? "i|" : "t|") + std::to_string(number) + "|_", &v);
+    rocksdb::Status s = db->Get(rocksdb::ReadOptions{}, rocksdb_key::type_record(r == entityinstance_ref, number), &v);
     if (s.ok()) {
         size_t s;
         memcpy(&s, v.data(), sizeof(size_t));
@@ -155,15 +155,7 @@ ifcopenshell::impl::rocks_db_file_storage::rocks_db_file_storage(const std::stri
     : db(init_db(filepath, readonly))
     , file(ffile)
     , instance_ids_(db.get(), "i|")
-    , instance_by_name_(
-        &instance_ids_,
-        [this](size_t v) { return assert_existance(v, entityinstance_ref); },
-        [this](size_t v) {
-            // The instance's keys are gone from the database; drop the
-            // cached handle so lookups don't keep resolving it.
-            std::lock_guard<std::mutex> lock(instance_cache_mutex_);
-            instance_cache_.erase((uint32_t)v);
-        })
+    , instance_by_name_(&instance_ids_, [this](size_t v) { return assert_existance(v, entityinstance_ref); })
     , bytype_(db.get(), "t|")
     , byguid_internal_(db.get(), "g|"),
       byguid_(&byguid_internal_, [this](size_t v) { return assert_existance(v, entityinstance_ref); }, [](const express::base& v) { return v.identity(); })
@@ -218,8 +210,8 @@ void ifcopenshell::impl::rocks_db_file_storage::process_deletion_inverse(const e
         // Delete every record referencing inst: all keys under v|<id>|. The
         // exclusive upper bound is the same prefix with its separator
         // incremented, so no iterator is needed to find the range end.
-        auto prefix = "v|" + std::to_string(id) + "|";
-        auto upper_bound = "v|" + std::to_string(id) + std::string(1, '|' + 1);
+        const auto prefix = rocksdb_key::inverse_prefix(id);
+        const auto upper_bound = rocksdb_key::upper_bound(prefix);
 
         rocksdb::WriteBatch batch;
         batch.DeleteRange(prefix, upper_bound);
@@ -239,7 +231,7 @@ void ifcopenshell::impl::rocks_db_file_storage::process_deletion_inverse(const e
         const unsigned int name = entity_attribute.id();
         // Do not update inverses for simple types (which have id()==0 in IfcOpenShell).
         if (name != 0) {
-            auto prefix = "v|" + std::to_string(name) + "|";
+            auto prefix = rocksdb_key::inverse_prefix(name);
             auto it = std::unique_ptr<rocksdb::Iterator>(db->NewIterator(rocksdb::ReadOptions()));
             it->Seek(prefix);
             while (it->Valid() && it->key().starts_with(prefix)) {
@@ -259,6 +251,27 @@ void ifcopenshell::impl::rocks_db_file_storage::process_deletion_inverse(const e
                 it->Next();
             }
         }
+    }
+#endif
+}
+
+void ifcopenshell::impl::rocks_db_file_storage::erase_instances(const std::vector<uint32_t>& ids)
+{
+#ifndef IFOPSH_WITH_ROCKSDB
+    (void)ids;
+#endif
+#ifdef IFOPSH_WITH_ROCKSDB
+    // One write for every instance's keys, one lock for their cached handles.
+    rocksdb::WriteBatch batch;
+    for (auto id : ids) {
+        const auto prefix = rocksdb_key::instance(true, id);
+        batch.DeleteRange(prefix, rocksdb_key::upper_bound(prefix));
+    }
+    db->Write(wopts, &batch);
+
+    std::lock_guard<std::mutex> lock(instance_cache_mutex_);
+    for (auto id : ids) {
+        instance_cache_.erase(id);
     }
 #endif
 }

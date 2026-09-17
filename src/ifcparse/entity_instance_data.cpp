@@ -65,9 +65,7 @@ namespace {
             {
                 std::string str;
                 array_.db_ptr->db->Get(rocksdb::ReadOptions{},
-                    (is_header ? "h|" : (entity_or_type->as_entity() ? "i|" : "t|")) +
-                    (is_header ? entity_or_type->name() : std::to_string(instance_name_)) + "|" +
-                    std::to_string(index_), &str);
+                    (is_header ? rocksdb_key::header_attribute(entity_or_type->name(), index_) : rocksdb_key::attribute(entity_or_type->as_entity() != nullptr, instance_name_, index_)), &str);
                 ::impl::deserialize(array_.db_ptr, str, val);
             } else {
                 static_assert(
@@ -97,9 +95,7 @@ namespace {
             std::string str;
             const bool is_header = entity_or_type->schema() == &Header_section_schema::get_schema();
             array_.db_ptr->db->Get(rocksdb::ReadOptions{},
-                (is_header ? "h|" : (entity_or_type->as_entity() ? "i|" : "t|")) +
-                (is_header ? entity_or_type->name() : std::to_string(instance_name_)) + "|" +
-                std::to_string(index_), &str);
+                (is_header ? rocksdb_key::header_attribute(entity_or_type->name(), index_) : rocksdb_key::attribute(entity_or_type->as_entity() != nullptr, instance_name_, index_)), &str);
             if constexpr (std::is_same_v<T, blank>) {
                 if (str.size() == 0) {
                     return true;
@@ -125,9 +121,7 @@ namespace {
             std::string str;
             const bool is_header = entity_or_type->schema() == &Header_section_schema::get_schema();
             if (!array_.db_ptr->db->Get(rocksdb::ReadOptions{},
-                (is_header ? "h|" : (entity_or_type->as_entity() ? "i|" : "t|")) +
-                (is_header ? entity_or_type->name() : std::to_string(instance_name_)) + "|" +
-                std::to_string(index_), &str).ok()) {
+                (is_header ? rocksdb_key::header_attribute(entity_or_type->name(), index_) : rocksdb_key::attribute(entity_or_type->as_entity() != nullptr, instance_name_, index_)), &str).ok()) {
                 return type_encoder::encode_type<blank>() - 'A';
             }
             return (size_t) str[0] - 'A';
@@ -179,9 +173,7 @@ attribute_value::operator std::string() const
             std::string str;
             const bool is_header = entity_or_type_->schema() == &Header_section_schema::get_schema();
             array_.db_ptr->db->Get(rocksdb::ReadOptions{},
-                (is_header ? "h|" : (entity_or_type_->as_entity() ? "i|" : "t|")) +
-                (is_header ? entity_or_type_->name() : std::to_string(instance_name_)) + "|" +
-                std::to_string(index_), &str);
+                (is_header ? rocksdb_key::header_attribute(entity_or_type_->name(), index_) : rocksdb_key::attribute(entity_or_type_->as_entity() != nullptr, instance_name_, index_)), &str);
             size_t v;
             memcpy(&v, str.data() + 1, sizeof(size_t));
             auto decl = array_.db_ptr->file->schema()->declarations()[v]->as_enumeration_type();
@@ -203,9 +195,7 @@ attribute_value::operator enumeration_reference() const
         std::string str;
         const bool is_header = entity_or_type_->schema() == &Header_section_schema::get_schema();
         array_.db_ptr->db->Get(rocksdb::ReadOptions{},
-            (is_header ? "h|" : (entity_or_type_->as_entity() ? "i|" : "t|")) +
-            (is_header ? entity_or_type_->name() : std::to_string(instance_name_)) + "|" +
-            std::to_string(index_), &str);
+            (is_header ? rocksdb_key::header_attribute(entity_or_type_->name(), index_) : rocksdb_key::attribute(entity_or_type_->as_entity() != nullptr, instance_name_, index_)), &str);
         size_t v;
         memcpy(&v, str.data() + 1, sizeof(size_t));
         auto decl = array_.db_ptr->file->schema()->declarations()[v]->as_enumeration_type();
@@ -231,9 +221,7 @@ attribute_value::operator express::base () const
         std::string str;
         const bool is_header = entity_or_type_->schema() == &Header_section_schema::get_schema();
         array_.db_ptr->db->Get(rocksdb::ReadOptions{},
-            (is_header ? "h|" : (entity_or_type_->as_entity() ? "i|" : "t|")) +
-            (is_header ? entity_or_type_->name() : std::to_string(instance_name_)) + "|" +
-            std::to_string(index_), &str);
+            (is_header ? rocksdb_key::header_attribute(entity_or_type_->name(), index_) : rocksdb_key::attribute(entity_or_type_->as_entity() != nullptr, instance_name_, index_)), &str);
         size_t v;
         memcpy(&v, str.data() + 2, sizeof(size_t));
         if (str.size() > 1 && str[1] == 'i') {
@@ -548,9 +536,7 @@ bool rocks_db_attribute_storage::has(void* storage, const ifcopenshell::declarat
     std::string v;
     auto success = rdb_storage->db->Get(
         rocksdb::ReadOptions{},
-        (is_header ? "h|" : (decl->as_entity() ? "i|" : "t|")) +
-        (is_header ? decl->name() : std::to_string(identity)) + "|" +
-        std::to_string(index), &v);
+        (is_header ? rocksdb_key::header_attribute(decl->name(), index) : rocksdb_key::attribute(decl->as_entity() != nullptr, identity, index)), &v);
     if constexpr (std::is_same_v<std::decay_t<T>, blank>) {
         if (!success.ok()) {
             return true;
@@ -568,9 +554,7 @@ void rocks_db_attribute_storage::set(void* storage, const ifcopenshell::declarat
     ::impl::serialize(v, value);
     rdb_storage->db->Put(
         rdb_storage->wopts,
-        (is_header ? "h|" : (decl->as_entity() ? "i|" : "t|")) +
-        (is_header ? decl->name() : std::to_string(identity)) + "|" +
-        std::to_string(index), v);
+        (is_header ? rocksdb_key::header_attribute(decl->name(), index) : rocksdb_key::attribute(decl->as_entity() != nullptr, identity, index)), v);
 }
 
 template IFC_PARSE_API void rocks_db_attribute_storage::set<blank>(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, size_t index, const blank& value);

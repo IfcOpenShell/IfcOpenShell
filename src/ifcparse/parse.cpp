@@ -1099,16 +1099,6 @@ void ifcopenshell::impl::in_memory_file_storage::unregister_inverse(unsigned id_
     }
 }
 
-namespace {
-    template <typename T>
-    std::string to_string_fixed_width(const T& t, size_t) {
-        // @todo currently inactive
-        std::ostringstream oss;
-        oss << /*std::setfill('0') << std::setw(w) <<*/ t;
-        return oss.str();
-    }
-}
-
 void ifcopenshell::impl::rocks_db_file_storage::register_inverse(unsigned id_from, const ifcopenshell::entity* from_entity, int inst_id, int attribute_index) {
 #ifndef IFOPSH_WITH_ROCKSDB
     (void)id_from;
@@ -1122,7 +1112,7 @@ void ifcopenshell::impl::rocks_db_file_storage::register_inverse(unsigned id_fro
     s.resize(sizeof(uint32_t));
     memcpy(s.data(), &v, sizeof(uint32_t));
 
-    auto key = "v|" + to_string_fixed_width(inst_id, 10) + "|" + to_string_fixed_width(from_entity->index_in_schema(), 4) + "|" + to_string_fixed_width(attribute_index, 2);
+    auto key = rocksdb_key::inverse(inst_id, from_entity->index_in_schema(), attribute_index);
 
     db->Merge(wopts, key, s);
     /*
@@ -1147,7 +1137,7 @@ void ifcopenshell::impl::rocks_db_file_storage::unregister_inverse(unsigned id_f
 #ifdef IFOPSH_WITH_ROCKSDB
     static std::string s;
     auto inst_id = inst.id();
-    auto key = "v|" + to_string_fixed_width(inst_id, 10) + "|" + to_string_fixed_width(from_entity->index_in_schema(), 4) + "|" + to_string_fixed_width(attribute_index, 2);
+    auto key = rocksdb_key::inverse(inst_id, from_entity->index_in_schema(), attribute_index);
     if (db->Get(rocksdb::ReadOptions{}, key, &s).ok()) {
         std::vector<uint32_t> vals(s.size() / sizeof(uint32_t));
         memcpy(vals.data(), s.data(), s.size());
@@ -1178,12 +1168,12 @@ void ifcopenshell::impl::rocks_db_file_storage::add_type_ref(const express::base
         memcpy(s.data(), &v, sizeof(size_t));
 
         // no merges yet, because the python client doesn't support them
-        db->Merge(wopts, "t|" + std::to_string(new_entity.declaration().index_in_schema()), s);
+        db->Merge(wopts, rocksdb_key::type_list(new_entity.declaration().index_in_schema()), s);
 
         /*{
             std::string current;
             // @todo this uses the same key-namespace as typedecl instances, not a direct conflict, but also not very clear
-            auto key = "t|" + std::to_string(new_entity.declaration().index_in_schema());
+            auto key = rocksdb_key::type_list(new_entity.declaration().index_in_schema());
             db->Get(rocksdb::ReadOptions{}, key, &current);
             auto new_val = current + s;
             db->Put(wopts, key, new_val);
@@ -1193,7 +1183,7 @@ void ifcopenshell::impl::rocks_db_file_storage::add_type_ref(const express::base
     // not only mapping also register type
     v = new_entity.declaration().index_in_schema();
     memcpy(s.data(), &v, sizeof(size_t));
-    db->Put(wopts, (new_entity.declaration().as_entity() ? "i|" : "t|") + std::to_string(new_entity.id() ? new_entity.id() : new_entity.identity()) + "|_", s);
+    db->Put(wopts, rocksdb_key::type_record(new_entity.declaration().as_entity() != nullptr, new_entity.id() ? new_entity.id() : new_entity.identity()), s);
 #endif
 }
 
@@ -1205,7 +1195,7 @@ void ifcopenshell::impl::rocks_db_file_storage::remove_type_ref(const express::b
 #ifdef IFOPSH_WITH_ROCKSDB
     if (new_entity.declaration().as_entity()) {
         std::string s;
-        auto key = "t|" + std::to_string(new_entity.declaration().index_in_schema());
+        auto key = rocksdb_key::type_list(new_entity.declaration().index_in_schema());
         if (db->Get(rocksdb::ReadOptions{}, key, &s).ok()) {
             std::vector<size_t> vals(s.size() / sizeof(size_t));
             memcpy(vals.data(), s.data(), s.size());
@@ -1216,7 +1206,7 @@ void ifcopenshell::impl::rocks_db_file_storage::remove_type_ref(const express::b
         }
     }
 
-    db->Delete(wopts, (new_entity.declaration().as_entity() ? "i|" : "t|") + std::to_string(new_entity.id() ? new_entity.id() : new_entity.identity()) + "|_");
+    db->Delete(wopts, rocksdb_key::type_record(new_entity.declaration().as_entity() != nullptr, new_entity.id() ? new_entity.id() : new_entity.identity()));
 #endif
 }
 
@@ -2645,15 +2635,13 @@ void file::recalculate_id_counter() {
         }
 #ifdef IFOPSH_WITH_ROCKSDB
         else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
-            // Keys sort as text, so the largest id can't be found by seeking;
-            // scan the i|<id>|_ type records, one per entity instance.
+            // Ids are fixed-width hex in the keys, so the largest id owns the
+            // last key under the entity prefix.
             const std::string prefix = "i|";
             auto it = std::unique_ptr<rocksdb::Iterator>(x.db->NewIterator(rocksdb::ReadOptions()));
-            for (it->Seek(prefix); it->Valid() && it->key().starts_with(prefix); it->Next()) {
-                const auto key = it->key().ToString();
-                if (key.size() > 2 && key.compare(key.size() - 2, 2, "|_") == 0) {
-                    k = std::max(k, (unsigned int)std::stoul(key.substr(2, key.size() - 4)));
-                }
+            it->SeekForPrev(rocksdb_key::upper_bound(prefix));
+            if (it->Valid() && it->key().starts_with(prefix)) {
+                k = (unsigned int)parse_hex_key(it->key().ToString().substr(prefix.size(), 16));
             }
         }
 #endif
@@ -2956,8 +2944,22 @@ void file::remove_entity(const express::base& entity) {
         batch_deletion_ids_.push_back(id);
     } else {
         process_deletion_(entity);
-        byid_.erase(entity.id());
+        erase_instances_({(uint32_t)id});
     }
+}
+
+void file::erase_instances_(const std::vector<uint32_t>& ids) {
+    std::visit([this, &ids](auto& x) {
+        if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
+            for (auto id : ids) {
+                byid_.erase(id);
+            }
+        } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
+            x.erase_instances(ids);
+        } else {
+            throw std::runtime_error("Storage not initialized");
+        }
+    }, storage_);
 }
 
 void file::process_deletion_(const express::base& entity) {
@@ -3143,7 +3145,7 @@ std::vector<express::base> file::instances_by_reference(int t) {
 #ifdef IFOPSH_WITH_ROCKSDB
         else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
             // @todo no lower/upper_bounds() implemented yet
-            auto prefix = "v|" + std::to_string(t) + "|";
+            auto prefix = rocksdb_key::inverse_prefix(t);
             auto it = std::unique_ptr<rocksdb::Iterator>(x.db->NewIterator(rocksdb::ReadOptions()));
             it->Seek(prefix);
             while (it->Valid() && it->key().starts_with(prefix)) {
@@ -3301,7 +3303,7 @@ std::vector<int> file::get_inverse_indices_by_id(int instance_id) {
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
 #ifdef IFOPSH_WITH_ROCKSDB
             // @todo no lower/upper_bounds() implemented yet
-            auto prefix = "v|" + std::to_string(instance_id) + "|";
+            auto prefix = rocksdb_key::inverse_prefix(instance_id);
             auto it = std::unique_ptr<rocksdb::Iterator>(x.db->NewIterator(rocksdb::ReadOptions()));
             it->Seek(prefix);
             while (it->Valid() && it->key().starts_with(prefix)) {
@@ -3374,7 +3376,7 @@ std::vector<express::entity> file::get_inverse(int instance_id, const ifcopenshe
             visit_subtypes(type->as_entity(), [this, attribute_index, instance_id, &return_value, &x](const ifcopenshell::declaration* ent) {
                 if (attribute_index == -1) {
                     // @todo no lower/upper_bounds() implemented yet
-                    auto prefix = "v|" + std::to_string(instance_id) + "|" + std::to_string(ent->index_in_schema()) + "|";
+                    auto prefix = rocksdb_key::inverse_prefix(instance_id) + key_to_string(ent->index_in_schema()) + "|";
                     auto it = std::unique_ptr<rocksdb::Iterator>(x.db->NewIterator(rocksdb::ReadOptions()));
                     it->Seek(prefix);
                     while (it->Valid() && it->key().starts_with(prefix)) {
@@ -3523,9 +3525,7 @@ void ifcopenshell::file::unbatch() {
         process_deletion_(instance_by_id(id));
     }
     // keep in memory until all deletions are processed
-    for (auto& id : batch_deletion_ids_) {
-        byid_.erase(id);
-    }
+    erase_instances_(std::vector<uint32_t>(batch_deletion_ids_.begin(), batch_deletion_ids_.end()));
     batch_mode_ = false;
     batch_deletion_ids_.clear();
 }
@@ -3629,7 +3629,7 @@ bool ifcopenshell::impl::rocks_db_file_storage::read_schema(const ifcopenshell::
 #endif
 #ifdef IFOPSH_WITH_ROCKSDB
     std::string value;
-    auto key = "h|file_schema|0";
+    const auto key = rocksdb_key::header_attribute("file_schema", 0);
     db->Get(rocksdb::ReadOptions{}, key, &value);
     std::vector<std::string> strings;
     if (::impl::deserialize(this, value, strings) && strings.size() == 1) {

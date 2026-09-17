@@ -36,16 +36,10 @@ public:
 private:
     BaseSet* base_map_;
     Transform transform_;
-    std::function<void(const key_type&)> on_erase_;
 
 public:
     set_to_map_transformer(BaseSet* base_set, Transform transform)
         : base_map_(base_set), transform_(transform) {}
-
-    // on_erase runs after erase(key), whether or not the base set still
-    // held the key, so state derived from the set can be dropped.
-    set_to_map_transformer(BaseSet* base_set, Transform transform, std::function<void(const key_type&)> on_erase)
-        : base_map_(base_set), transform_(transform), on_erase_(std::move(on_erase)) {}
 
     class iterator {
     public:
@@ -113,10 +107,6 @@ public:
     }
 
     size_t erase(const key_type& key) {
-        const size_t erased = base_map_->erase(key);
-        if (on_erase_) {
-            on_erase_(key);
-        }
-        return erased;
+        return base_map_->erase(key);
     }
 };

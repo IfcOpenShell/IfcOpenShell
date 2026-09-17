@@ -234,6 +234,7 @@ public:
     batch_deletion_ids_t batch_deletion_ids_;
     bool batch_mode_ = false;
     void process_deletion_(const express::base& entity);
+    void erase_instances_(const std::vector<uint32_t>& ids);
 
   public:
 #ifdef USE_MMAP
