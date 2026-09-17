@@ -1753,21 +1753,44 @@ def remove_deep2(
     # ifc_file.batch()
     if not ifc_file:
         ifc_file = element.file
-    # The start element may only be referenced from also_consider; decided in
-    # C++ without traversing each considered element.
-    if not ifc_file._all_inverses_within(element, [e.id() for e in also_consider if e.id()]):
-        return
+    # TODO: remove after everyone rebuilds against the wrapper from #9502.
+    has_native_inverse_check = hasattr(ifc_file, "_all_inverses_within")
+
+    if has_native_inverse_check:
+        # The start element may only be referenced from also_consider; decided
+        # in C++ without traversing each considered element.
+        if not ifc_file._all_inverses_within(element, [e.id() for e in also_consider if e.id()]):
+            return
+    else:
+        total_inverses = ifc_file.get_total_inverses(element)
+        if total_inverses > 0:
+
+            def are_inverses_contained() -> bool:
+                also_considered_inverses = 0
+
+                for considered_element in also_consider:
+                    traverse = ifc_file.traverse(considered_element, max_levels=1)
+                    if element in traverse:
+                        also_considered_inverses += 1
+                        if total_inverses == also_considered_inverses:
+                            return True
+                return False
+
+            if not are_inverses_contained():
+                return
 
     to_delete: set[ifcopenshell.entity_instance] = set()
     subgraph = list(ifc_file.traverse(element, breadth_first=True))
     subgraph.extend(also_consider)
     subgraph_set = set(subgraph)
-    # Which subgraph members are referenced only from inside the subgraph,
-    # decided once in C++ without materializing any inverse list. Clearing
-    # large aggregates below only removes references whose source is inside
-    # the subgraph, so this doesn't change while the loop runs.
-    subgraph_ids = [e.id() for e in subgraph_set if e.id()]
-    referenced_only_within = set(ifc_file._ids_referenced_only_within(subgraph_ids))
+    referenced_only_within: set[int] | None = None
+    if has_native_inverse_check:
+        # Which subgraph members are referenced only from inside the subgraph,
+        # decided once in C++ without materializing any inverse list. Clearing
+        # large aggregates below only removes references whose source is inside
+        # the subgraph, so this doesn't change while the loop runs.
+        subgraph_ids = [e.id() for e in subgraph_set if e.id()]
+        referenced_only_within = set(ifc_file._ids_referenced_only_within(subgraph_ids))
     subelement_queue = [element]
 
     # Cache already processed entities to avoid traversing them multiple time.
@@ -1777,11 +1800,20 @@ def remove_deep2(
     while subelement_queue:
         subelement = subelement_queue.pop(0)
         subelement_id = subelement.id()
+        if referenced_only_within is not None:
+            is_contained = subelement_id in referenced_only_within
+        else:
+            is_contained = (
+                # 0 or 1 inverses guarantees that the subelement only exists in this subgraph
+                ifc_file.get_total_inverses(subelement) < 2
+                # Alternatively, let's ensure all inverses are within the subgraph
+                or len(set(ifc_file.get_inverse(subelement)) - subgraph_set) == 0
+            )
         if (
             subelement_id
             and subelement_id not in processed_ids
             and subelement not in do_not_delete
-            and subelement_id in referenced_only_within
+            and is_contained
         ):
             to_delete.add(subelement)
             subelement_queue.extend(ifc_file.traverse(subelement, max_levels=1)[1:])
