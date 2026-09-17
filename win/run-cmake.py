@@ -68,7 +68,7 @@ class Deps:
         # We don't install Eigen currently,
         # so there's no Eigen3config.cmake and therefore we provide path explicitly.
         "eigen": Dep("EIGEN_DIR", Path("Eigen"), cmake_prefix=False, pass_as_cmake_arg=True),
-        "cgal": Dep("CGAL_INSTALL_DIR", Path("cgal")),
+        "cgal": Dep("CGAL_INSTALL_DIR", None),
         "gmp": Dep("GMP_INSTALL_DIR", Path("mpir")),
         "mpfr": Dep("MPFR_INSTALL_DIR", Path("mpfr")),
         # CCACHE_INSTALL_DIR is only set when ccache wasn't found on PATH.
