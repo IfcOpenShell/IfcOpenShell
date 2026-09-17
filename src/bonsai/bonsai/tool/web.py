@@ -57,6 +57,16 @@ if TYPE_CHECKING:
 sio = None
 ws_process = None
 ws_thread = None
+# The connection belongs to this Blender process, but WebProperties live on the
+# scene, and loading a project (wm.read_homefile) replaces the scene. The port is
+# kept here so the props can be restored afterwards - see restore_connection_state.
+connected_port = None
+# The exact callable registered as the queue timer. `cls.check_operator_queue`
+# makes a new bound method each time, and bpy.app.timers matches by identity.
+queue_timer = None
+# Likewise for the "Keep Web Connection" preference's timer.
+keep_connection_timer = None
+KEEP_CONNECTION_SECONDS = 10.0
 web_operator_queue = queue.Queue()
 
 RECONNECTION_ATTEMPTS = 3
@@ -155,11 +165,18 @@ class Web(bonsai.core.tool.Web):
 
         :param port: The port number to connect to the WebSocket server.
         """
-        global ws_thread, sio
+        global ws_thread, sio, connected_port
 
-        if tool.Web.get_web_props().is_connected:
-            print(f"Already connected to websocket server on port: {port}")
+        # Checked on the process, not the scene: after a project load the scene's
+        # flag reads False while the client is still connected, and a second
+        # client would be created alongside it.
+        if cls.is_connected():
+            print(f"Already connected to websocket server on port: {connected_port}")
+            cls.restore_connection_state()
             return
+        if sio is not None:
+            # A client whose server has gone - it gave up reconnecting. Start over.
+            cls.disconnect_websocket_server()
 
         sio = socketio.AsyncClient(
             reconnection=True,
@@ -174,8 +191,76 @@ class Web(bonsai.core.tool.Web):
 
         ws_url = f"ws://localhost:{port}/blender"
         ws_thread.run_coro(cls.sio_connect(ws_url))
+        connected_port = port
         cls.set_is_connected(True)
-        bpy.app.timers.register(cls.check_operator_queue)
+        cls.ensure_queue_timer()
+
+    @classmethod
+    def ensure_queue_timer(cls) -> None:
+        """
+        Process web requests on a timer that survives loading a file.
+
+        A non-persistent timer is removed when a project is loaded, after which
+        requests from the web queue forever unanswered.
+        """
+        global queue_timer
+        if queue_timer is None:
+            queue_timer = cls.check_operator_queue
+        if not bpy.app.timers.is_registered(queue_timer):
+            bpy.app.timers.register(queue_timer, persistent=True)
+
+    @classmethod
+    def keep_connection(cls) -> None | float:
+        """
+        Timer behind the "Keep Web Connection" preference: connect, without
+        opening a browser, whenever there is no connection.
+
+        For tools that read from Bonsai live, which should not depend on someone
+        having opened a web page first. Stops itself when the preference is off;
+        turning it on starts it again.
+
+        :return: None to stop, otherwise seconds until the next check.
+        """
+        if not tool.Blender.get_addon_preferences().keep_web_connection:
+            return None
+        if not cls.is_connected():
+            try:
+                bpy.ops.bim.connect_websocket_server(open_browser=False)
+            except Exception as error:
+                print(f"Could not connect to the web server: {error}")
+        return KEEP_CONNECTION_SECONDS
+
+    @classmethod
+    def ensure_keep_connection_timer(cls, first_interval: float = 0.0) -> None:
+        """Run `keep_connection` on a timer that survives loading a file."""
+        global keep_connection_timer
+        if keep_connection_timer is None:
+            keep_connection_timer = cls.keep_connection
+        if not bpy.app.timers.is_registered(keep_connection_timer):
+            bpy.app.timers.register(keep_connection_timer, first_interval=first_interval, persistent=True)
+
+    @classmethod
+    def is_connected(cls) -> bool:
+        """Whether this Blender has a live web connection, whatever the current scene's props say."""
+        return sio is not None and sio.connected
+
+    @classmethod
+    def restore_connection_state(cls) -> None:
+        """
+        Mirror the live connection onto the current scene's WebProperties.
+
+        Loading a project replaces the scene, resetting its props to "not
+        connected" while the client stays connected - so the UI misreports it, and
+        the next connect would start a second client. Called on load_post.
+        """
+        if sio is None:
+            return
+        props = cls.get_web_props()
+        if connected_port is not None:
+            props.webserver_port = connected_port
+        props.is_running = ws_process is not None and ws_process.poll() is None
+        props.is_connected = True
+        cls.ensure_queue_timer()
 
     @classmethod
     def disconnect_websocket_server(cls) -> None:
@@ -185,11 +270,12 @@ class Web(bonsai.core.tool.Web):
         This method is responsible for disconnecting the WebSocket server, stopping the asyncio thread,
         and resetting the global variables related to the WebSocket connection.
         """
-        global ws_thread, sio
+        global ws_thread, sio, connected_port
         ws_thread.run_coro(cls.sio_disconnect())
         ws_thread.stop()
         ws_thread = None
         sio = None
+        connected_port = None
         cls.set_is_connected(False)
 
     @classmethod
@@ -285,19 +371,24 @@ class Web(bonsai.core.tool.Web):
         if data is not None:
             payload[data_key] = data
 
-        if ws_thread is not None and tool.Web.get_web_props().is_connected:
+        # The client, not the scene's flag, says whether there is a connection -
+        # the flag reads False after a project load (see restore_connection_state).
+        if ws_thread is not None and sio is not None:
             ws_thread.run_coro(cls.sio_send(payload, event, namespace))
 
     @classmethod
     def check_operator_queue(cls) -> None | float:
         """
         this method checks the operator queue and processes the operators based on the source page.
-        If the WebProperties.is_connected is False, it clears the queue and returns None to unregister the timer.
+        If there is no connection, it clears the queue and returns None to unregister the timer.
         If the queue is not empty, it processes each operator by calling the corresponding handling function.
 
-        :return: Returns None if the WebProperties.is_connected is False, otherwise returns 1.0 to continue the timer.
+        Connection is judged by the client itself rather than WebProperties.is_connected, which lives
+        on the scene and reads False after a project load even while the client is connected.
+
+        :return: Returns None if not connected, otherwise returns 1.0 to continue the timer.
         """
-        if not tool.Web.get_web_props().is_connected:
+        if sio is None:
             with web_operator_queue.mutex:
                 web_operator_queue.queue.clear()
             return None  # unregister timer if not connected
@@ -306,18 +397,52 @@ class Web(bonsai.core.tool.Web):
             operator = web_operator_queue.get_nowait()
             if not operator:
                 continue
-            if operator["sourcePage"] == "csv":
-                cls.handle_csv_operator(operator["operator"])
-            elif operator["sourcePage"] == "gantt":
-                cls.handle_gantt_operator(operator["operator"])
-            elif operator["sourcePage"] == "drawings":
-                cls.handle_drawings_operator(operator["operator"])
-            elif operator["sourcePage"] == "demo":
-                message = operator["operator"]["message"]
-                print(f"Message from demo page: {message}")
-            elif operator["sourcePage"] == "cost":
-                cls.handle_cost_operator(operator["operator"])
+            # A timer that raises is unregistered by Blender, which would silently
+            # stop every later request - so one failure must not end the loop.
+            try:
+                if operator["sourcePage"] == "csv":
+                    cls.handle_csv_operator(operator["operator"])
+                elif operator["sourcePage"] == "gantt":
+                    cls.handle_gantt_operator(operator["operator"])
+                elif operator["sourcePage"] == "drawings":
+                    cls.handle_drawings_operator(operator["operator"])
+                elif operator["sourcePage"] == "sheets":
+                    cls.handle_sheets_operator(operator["operator"])
+                elif operator["sourcePage"] == "demo":
+                    message = operator["operator"]["message"]
+                    print(f"Message from demo page: {message}")
+                elif operator["sourcePage"] == "cost":
+                    cls.handle_cost_operator(operator["operator"])
+            except Exception:
+                import traceback
+
+                print(f"Web operator from {operator.get('sourcePage')!r} failed:")
+                traceback.print_exc()
         return 1.0
+
+    @classmethod
+    def handle_sheets_operator(cls, operator_data: dict) -> None:
+        """
+        Sheet data for tools that display sheets without building them.
+
+        `getTemplateValues` answers with what every sheet's view-titles and
+        titleblock are filled with (`SheetBuilder.get_template_values`), from the
+        model in memory - so unsaved edits are included. SketchSpace uses it to
+        show sheets as a build would.
+
+        :param operator_data: A dictionary containing the operator data.
+        """
+        if operator_data.get("type") == "getTemplateValues":
+            import bonsai.bim.module.drawing.sheeter as sheeter
+
+            values = sheeter.SheetBuilder().get_template_values()
+            values["requestId"] = operator_data.get("requestId")
+            cls.send_webui_data(
+                data=values,
+                data_key="template_values",
+                event="sheet_template_values",
+                use_web_data=False,
+            )
 
     @classmethod
     def handle_csv_operator(cls, operator_data: dict) -> None:
