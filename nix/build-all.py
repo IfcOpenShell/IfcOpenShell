@@ -310,7 +310,17 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         "--occt-shared",
         action="store_true",
         default=False,
-        help="Build OCCT as shared. Redundant if -shared is also passed.",
+        help="Build OCCT as shared. This is the default; the flag is kept for compatibility.",
+    )
+    arg_parser.add_argument(
+        "--occt-static",
+        action="store_true",
+        default=False,
+        help=(
+            "Build OCCT as static archives. Not recommended: a static OCCT is linked privately into "
+            "every plug-in, so shapes handed between plug-ins (kernel -> tree, kernel -> SVG serializer) "
+            "are misread. Implied for wasm, which has no shared libraries."
+        ),
     )
     arg_parser.add_argument(
         "-mac-cross-compile-intel",
@@ -370,7 +380,7 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         verbose=namespace.verbose,
         shared=namespace.shared,
         ifcopenshell_shared=namespace.ifcopenshell_shared or namespace.shared,
-        occt_shared=namespace.occt_shared or namespace.shared,
+        occt_shared=namespace.shared or (not namespace.occt_static and not namespace.wasm),
         mac_cross_compile_intel=namespace.mac_cross_compile_intel,
         wasm=namespace.wasm,
         num_build_procs=num_build_procs,
@@ -1843,7 +1853,7 @@ ld_library_paths = [
     # E.g. Rocky.
     f"{IFCOPENSHELL_INSTALL_PATH}/lib64",
 ]
-if ARGS.occt_shared and "occ" in targets:
+if ARGS.occt_shared and USE_OCCT and "occ" in targets:
     ld_library_paths.append(f"{OCCT_INSTALL_PATH}/lib")
 if ARGS.shared and "boost" in targets:
     ld_library_paths.append(f"{Dependencies.get_install_dir('boost')}/lib")

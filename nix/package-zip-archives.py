@@ -104,14 +104,19 @@ def get_runtime_info(install_root: Path, qt6_version: str) -> RuntimeInfo:
     qt_dir = Path(qt_dir_env) if qt_dir_env else find_qt_dir(install_root, qt6_version, qt6_install_root)
 
     if ARGS.shared:
-        dependencies_to_stage = install_dirs.keys()
-    elif ARGS.occt_shared:
-        dependencies_to_stage = {"occt"}
+        dependencies_to_stage = set(install_dirs.keys())
     else:
-        return RuntimeInfo([], qt_dir)
+        # OCCT is shared by default (see `build-all.py --occt-static`): a static OCCT gets a
+        # private copy in every plug-in and shapes handed between plug-ins are misread.
+        # Whatever was built shared is staged; `--occt-shared` additionally insists on it.
+        dependencies_to_stage = {
+            name for name in ("occt",) if name in install_dirs and "-shared-" in Path(install_dirs[name]).name
+        }
+        if ARGS.occt_shared:
+            assert "occt" in dependencies_to_stage, f"Expected a shared OCCT build, found: {install_dirs.get('occt')}"
 
     runtime_dirs = []
-    for name in dependencies_to_stage:
+    for name in sorted(dependencies_to_stage):
         runtime_dir = Path(install_dirs[name])
         assert "-shared-" in runtime_dir.name, f"Expected a shared build, found: {runtime_dir}"
         runtime_dirs.append(runtime_dir)
@@ -140,6 +145,37 @@ def ensure_soname_links(paths: list[Path]) -> None:
 def is_shared_library(path: Path) -> bool:
     name = path.name.lower()
     return name.endswith((".so", ".dylib", ".dll")) or ".so." in name
+
+
+def mac_rpaths(binary: Path) -> list[str]:
+    """LC_RPATH entries of a Mach-O binary."""
+    output = run("otool", "-l", str(binary))
+    return re.findall(r"cmd LC_RPATH\n\s+cmdsize \d+\n\s+path (\S+)", output)
+
+
+def mac_add_rpath(binary: Path, rpath: str) -> None:
+    """Add `rpath` to `binary` and re-sign it: editing a Mach-O invalidates its signature,
+    and arm64 macOS refuses to load an unsigned or mis-signed image."""
+    if rpath in mac_rpaths(binary):
+        return
+    run("install_name_tool", "-add_rpath", rpath, str(binary))
+    run("codesign", "--force", "--sign", "-", str(binary))
+
+
+def mac_fix_rpaths(package_dir: Path, executables: tuple[Path, ...] = ()) -> None:
+    """Make every shared library in `package_dir` resolve its @rpath dependencies next to itself.
+
+    With CREATE_BUNDLE the plug-ins and core dylibs get no LC_RPATH from CMake at all;
+    only the Python wrapper carries `@loader_path`. That is enough when the plug-in is
+    dlopen'd through the wrapper (dyld accumulates rpaths along the load chain) but not
+    for IfcConvert & co, whose plug-ins would otherwise fail to find OCCT and each other.
+    """
+    for binary in package_dir.rglob("*"):
+        if not binary.is_file() or binary.is_symlink() or not is_shared_library(binary):
+            continue
+        mac_add_rpath(binary, "@loader_path")
+    for exe in executables:
+        mac_add_rpath(exe, "@executable_path")
 
 
 def stage_runtime_payload(install_dir: Path, dest: Path, *, include_geometry_writers: bool = True) -> None:
@@ -171,6 +207,10 @@ def stage_runtime_payload(install_dir: Path, dest: Path, *, include_geometry_wri
         for lib_so in runtime_files:
             if lib_so.is_file():
                 run("patchelf", "--set-rpath", "$ORIGIN", str(lib_so))
+    else:
+        for lib in runtime_files:
+            if lib.is_file() and not lib.is_symlink():
+                mac_add_rpath(lib, "@loader_path")
 
 
 def stage_qt_runtime_payload(exe_path: Path, dest: Path, qt_dir: Path | None) -> None:
@@ -286,6 +326,52 @@ def check_runtime_dependencies(package_dir: Path) -> None:
         logger.warning("Runtime dependency check found issues; continuing packaging.")
 
 
+MAC_SYSTEM_LIBRARY_PREFIXES = ("/usr/lib/", "/System/")
+
+
+def check_runtime_dependencies_mac(package_dir: Path) -> None:
+    """macOS counterpart of `check_runtime_dependencies`, based on `otool -L`.
+
+    Every `@rpath/` dependency must be present in `package_dir` (all staged binaries carry
+    an `@loader_path` rpath, see `mac_fix_rpaths`), and no dependency may point at an
+    absolute path outside the system frameworks, since that would only resolve on the
+    build machine.
+    """
+    missing = False
+    staged = {p.name for p in package_dir.rglob("*") if is_shared_library(p)}
+    for binary_file in package_dir.rglob("*"):
+        if not binary_file.is_file() or binary_file.is_symlink():
+            continue
+        if not (is_shared_library(binary_file) or os.access(binary_file, os.X_OK)):
+            continue
+        try:
+            otool_output = run("otool", "-L", str(binary_file), stderr=subprocess.DEVNULL)
+        except subprocess.CalledProcessError:
+            continue  # Not a Mach-O file.
+        problems = []
+        for line in otool_output.splitlines()[1:]:
+            dependency = line.strip().split(" (")[0]
+            if not dependency:
+                continue
+            if dependency.startswith(MAC_SYSTEM_LIBRARY_PREFIXES):
+                continue
+            if dependency.startswith(("@rpath/", "@loader_path/", "@executable_path/")):
+                if dependency.split("/", 1)[1] not in staged:
+                    problems.append(f"{dependency} => not found")
+            elif dependency.startswith("/"):
+                problems.append(f"{dependency} => absolute path outside the package")
+        if problems:
+            logger.warning(f"Missing runtime dependencies for {binary_file}")
+            for problem in problems:
+                logger.warning(problem)
+            missing = True
+
+    if missing:
+        global HAS_MISSING_DEPENDENCIES
+        HAS_MISSING_DEPENDENCIES = True
+        logger.warning("Runtime dependency check found issues; continuing packaging.")
+
+
 def package_python_wrapper(
     py_dir: Path,
     ifcopenshell_install_dir: Path,
@@ -335,7 +421,10 @@ def package_python_wrapper(
     for runtime_dir in runtime_dirs:
         stage_runtime_payload(runtime_dir, ifcopenshell_dir)
 
-    if not is_platform("MAC"):
+    if is_platform("MAC"):
+        mac_fix_rpaths(ifcopenshell_dir)
+        check_runtime_dependencies_mac(ifcopenshell_dir)
+    else:
         check_runtime_dependencies(ifcopenshell_dir)
 
     if ARGS.no_zip:
@@ -377,9 +466,12 @@ def package_executable(
     for runtime_dir in runtime_dirs:
         stage_runtime_payload(runtime_dir, package_dir)
 
-    # On macOS, rpath is already set at build time via CMake's INSTALL_RPATH, and
-    # QT apps are packaged as .app bundles (`package_app_bundle`) instead.
-    if not is_platform("MAC"):
+    # On macOS QT apps are packaged as .app bundles (`package_app_bundle`) instead,
+    # and the flat executables get their rpaths patched below.
+    if is_platform("MAC"):
+        mac_fix_rpaths(package_dir, executables=(package_dir / exe,))
+        check_runtime_dependencies_mac(package_dir)
+    else:
         run("patchelf", "--set-rpath", "$ORIGIN", str(package_dir / exe))
         stage_qt_runtime_payload(exe_path, package_dir, qt_dir)
 
@@ -449,7 +541,11 @@ def main() -> None:
     parser.add_argument("arch_suffix", choices=ARCH_SUFFIXES, help="Zip filename suffix.")
     # TODO: relax default to INFO once things get more stable.
     parser.add_argument("--log-level", default="DEBUG", choices=LOG_LEVELS, help="Logging verbosity.")
-    parser.add_argument("--occt-shared", action="store_true", help="OCCT was built as shared libraries.")
+    parser.add_argument(
+        "--occt-shared",
+        action="store_true",
+        help="Insist that OCCT was built as shared libraries (the default; a shared OCCT is always staged).",
+    )
     parser.add_argument("--shared", action="store_true", help="Build was made with shared libraries.")
     parser.add_argument(
         "--no-zip",
