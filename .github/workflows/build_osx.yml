@@ -94,7 +94,7 @@ jobs:
           fi
           set -o pipefail
           export QT_DIR="$(brew --prefix qt)"
-          # --shared mirrors build_rocky.yml after 27249770e: builds
+          # --ifcopenshell-shared mirrors build_rocky.yml after 27249770e: builds
           # IfcOpenShell as shared libs so each plug-in dylib references
           # libIfcParse / libIfcGeom via @rpath instead of statically
           # embedding them — the dominant size win for BonsaiViewer.app
@@ -144,6 +144,13 @@ jobs:
       - name: Package .zip archives
         run: |
           uv run nix/package-zip-archives.py "macos${{ matrix.oldarch }}64"
+
+      - name: Test packaged Python wrapper
+        # Imports the *packaged* wrapper and exercises the cross-plug-in hand-offs
+        # (kernel -> tree, kernel -> SVG serializer) that a duplicated OCCT breaks.
+        run: |
+          uv run --no-project --python 3.13 --with pytest --with typing_extensions --with numpy \
+            test/package/run_against_package.py "$HOME/output/ifcopenshell-python-313-*-macos${{ matrix.oldarch }}64.zip"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6

@@ -107,6 +107,15 @@ jobs:
           git commit -m "Update build artifacts [skip ci]" || echo "No changes to commit"
           git push --set-upstream origin ${{ matrix.build_branch }} || echo "Push failed"
 
+      - name: Test packaged Python wrapper
+        # Imports the *packaged* wrapper and exercises the cross-plug-in hand-offs
+        # (kernel -> tree, kernel -> SVG serializer) that a duplicated OCCT breaks.
+        # Uses the 3.12 interpreter set up above, so it tests the 312 zip. Runs after
+        # the dependency cache is pushed, so a failing package never costs the cache.
+        run: |
+          python -m pip install pytest typing_extensions numpy
+          python test/package/run_against_package.py "$env:USERPROFILE\output\ifcopenshell-python-312-*-${{ matrix.zip_suffix }}.zip"
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v6
         with:
