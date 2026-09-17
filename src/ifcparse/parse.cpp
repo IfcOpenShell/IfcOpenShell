@@ -3173,7 +3173,7 @@ bool file::all_referencing_instances(int instance_id, const std::function<bool(u
 #ifdef IFOPSH_WITH_ROCKSDB
         else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
             // @todo no lower/upper_bounds() implemented yet
-            auto prefix = "v|" + std::to_string(instance_id) + "|";
+            auto prefix = rocksdb_key::inverse_prefix(instance_id);
             auto it = std::unique_ptr<rocksdb::Iterator>(x.db->NewIterator(rocksdb::ReadOptions()));
             it->Seek(prefix);
             while (it->Valid() && it->key().starts_with(prefix)) {
