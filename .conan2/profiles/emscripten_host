@@ -1,0 +1,18 @@
+[settings]
+arch=wasm
+build_type=Release
+compiler=emcc
+compiler.cppstd=17
+compiler.libcxx=libc++
+# Optional settings to enable multithreading (see note below)
+# compiler.threads=posix
+compiler.version=4.0.10
+os=Emscripten
+
+[tool_requires]
+emsdk/5.0.3
+
+[conf]
+# Optional settings to enable memory allocation
+tools.build:exelinkflags=['-sALLOW_MEMORY_GROWTH=1', '-sMAXIMUM_MEMORY=4GB', '-sINITIAL_MEMORY=64MB']
+tools.build:sharedlinkflags=['-sALLOW_MEMORY_GROWTH=1', '-sMAXIMUM_MEMORY=4GB', '-sINITIAL_MEMORY=64MB']

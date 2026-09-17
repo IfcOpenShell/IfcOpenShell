@@ -14,7 +14,7 @@ function(add_document_serializer_plugin target output_name)
     cmake_parse_arguments(PLUGIN "" "" "SOURCES;LIBRARIES;DEFINITIONS" ${ARGN})
     string(REPLACE "." "_" plugin_output_name "${output_name}")
 
-    add_library(${target} ${PLUGIN_SOURCES})
+    add_library(${target} SHARED ${PLUGIN_SOURCES})
     target_compile_definitions(${target} PRIVATE SERIALIZERS_EXPORTS BOOST_DLL_USE_STD_FS ${PLUGIN_DEFINITIONS})
     target_link_libraries(${target} PRIVATE ${plugin_when_not_wasm} IfcGeom IfcParse ${PLUGIN_LIBRARIES})
     set_target_properties(${target} PROPERTIES
@@ -33,7 +33,7 @@ function(add_geometry_serializer_plugin target output_name)
     cmake_parse_arguments(PLUGIN "" "" "SOURCES;LIBRARIES;DEFINITIONS" ${ARGN})
     string(REPLACE "." "_" plugin_output_name "${output_name}")
 
-    add_library(${target} ${PLUGIN_SOURCES})
+    add_library(${target} SHARED ${PLUGIN_SOURCES})
     target_compile_definitions(${target} PRIVATE SERIALIZERS_EXPORTS BOOST_DLL_USE_STD_FS ${PLUGIN_DEFINITIONS})
     target_link_libraries(${target} PRIVATE ${plugin_when_not_wasm} IfcGeom IfcParse ${PLUGIN_LIBRARIES})
     if(WITH_PROJ)

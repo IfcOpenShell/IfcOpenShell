@@ -1,0 +1,17 @@
+[settings]
+os=Macos
+os.version=13.0
+arch=armv8
+compiler=apple-clang
+compiler.version=15
+compiler.libcxx=libc++
+compiler.cppstd=17
+build_type=Release
+
+[conf]
+# Automatically install required system packages
+tools.system.package_manager:mode=install
+tools.system.package_manager:sudo=True
+
+[options]
+libxml2/*:iconv=False
