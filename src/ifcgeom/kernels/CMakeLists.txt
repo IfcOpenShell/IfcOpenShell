@@ -21,7 +21,7 @@ foreach(kernel ${GEOMETRY_KERNELS})
     set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
 
     set(KERNEL_TARGET "geometry_kernel_${kernel}")
-    add_library(${KERNEL_TARGET} ${IFCGEOM_FILES})
+    add_library(${KERNEL_TARGET} SHARED ${IFCGEOM_FILES})
     if((NOT WIN32) AND NOT WASM_BUILD AND NOT CREATE_BUNDLE AND NOT CMAKE_INSTALL_RPATH AND COMMAND SET_INSTALL_SELF_RPATH)
         SET_INSTALL_SELF_RPATH(${KERNEL_TARGET})
     endif()
@@ -47,7 +47,7 @@ foreach(kernel ${GEOMETRY_KERNELS})
         set_property(TARGET ${KERNEL_TARGET} APPEND_STRING PROPERTY COMPILE_FLAGS " -DCGAL_HAS_THREADS")
 
         set(KERNEL_TARGET_SIMPLE "${KERNEL_TARGET}_simple")
-        add_library(${KERNEL_TARGET_SIMPLE} ${IFCGEOM_FILES})
+        add_library(${KERNEL_TARGET_SIMPLE} SHARED ${IFCGEOM_FILES})
         if((NOT WIN32) AND NOT CREATE_BUNDLE AND NOT CMAKE_INSTALL_RPATH AND COMMAND SET_INSTALL_SELF_RPATH)
             SET_INSTALL_SELF_RPATH(${KERNEL_TARGET_SIMPLE})
         endif()
@@ -86,7 +86,7 @@ foreach(kernel ${GEOMETRY_KERNELS})
 	if (NOT WASM_BUILD)
         foreach(tree_backend brep trianglebvh)
             set(TREE_TARGET "geometry_tree_opencascade_${tree_backend}")
-            add_library(${TREE_TARGET}
+            add_library(${TREE_TARGET} SHARED
                 ${kernel}/tree_${tree_backend}_plugin.cpp
                 ${kernel}/tree_backends.h
             )

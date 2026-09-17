@@ -14,7 +14,7 @@ foreach(schema ${SCHEMA_VERSIONS})
     file(GLOB IFCGEOM_CPP_FILES *.cpp)
     set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES} ${IFCGEOM_I_FILES})
 
-    add_library(geometry_mapping_ifc${schema} ${IFCGEOM_FILES})
+    add_library(geometry_mapping_ifc${schema} SHARED ${IFCGEOM_FILES})
     set_target_properties(geometry_mapping_ifc${schema} PROPERTIES
         COMPILE_FLAGS "-DIfcSchema=Ifc${schema}"
         OUTPUT_NAME "ifcopenshell_geometry_mapping_ifc${schema}"

@@ -1,7 +1,7 @@
 if (NOT WASM_BUILD)
 
 foreach(schema ${SCHEMA_VERSIONS})
-    add_library(geometry_serializer_ifc${schema} serialization.cpp plugin.cpp)
+    add_library(geometry_serializer_ifc${schema} SHARED serialization.cpp plugin.cpp)
     target_link_libraries(geometry_serializer_ifc${schema} PRIVATE plugin geometry_serializer IfcGeom IfcParse parse_schema_ifc${schema} ${OpenCASCADE_LIBRARIES})
     set_target_properties(geometry_serializer_ifc${schema} PROPERTIES
         COMPILE_FLAGS "-DIfcSchema=Ifc${schema}"
