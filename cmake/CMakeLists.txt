@@ -46,6 +46,10 @@ endif()
 
 add_definitions(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
 
+if(POLICY CMP0135) # 3.24
+  # FetchContent/ExternalProject URL downloads use extraction-time timestamps.
+  cmake_policy(SET CMP0135 NEW)
+endif()
 if(POLICY CMP0141) # 3.25+
   cmake_policy(SET CMP0141 NEW) # Support for `CMAKE_MSVC_DEBUG_INFORMATION_FORMAT`.
 endif()
