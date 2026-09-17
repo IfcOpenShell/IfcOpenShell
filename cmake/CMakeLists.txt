@@ -383,9 +383,11 @@ if(WASM_BUILD)
 else()
     set(BOOST_COMPONENTS "")
     if(BUILD_IFCGEOM OR BUILD_CONVERT)
-        # TODO: drop `regex` once BOOST_MIN_VERSION >= 1.76, where its matcher engine
-        # became header-only (boostorg/regex@49e8067b) and no longer needs linking.
-        set(BOOST_COMPONENTS ${BOOST_COMPONENTS} program_options regex)
+        set(BOOST_COMPONENTS ${BOOST_COMPONENTS} program_options)
+    endif()
+    # TODO: drop `regex` once BOOST_MIN_VERSION >= 1.76, since then it became header-only.
+    if(BUILD_IFCGEOM)
+        set(BOOST_COMPONENTS ${BOOST_COMPONENTS} regex)
     endif()
 endif()
 
