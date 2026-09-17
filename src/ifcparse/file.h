@@ -350,9 +350,12 @@ public:
     /// Returns all entities in the file that reference the id
     std::vector<express::base> instances_by_reference(int reference_id);
 
+#ifndef SWIG
     /// Returns whether pred accepts the id of every instance that references
-    /// instance_id, stopping at the first one it rejects.
+    /// instance_id, stopping at the first one it rejects. Used by the Python
+    /// wrapper's helpers; a std::function can't be exposed to Python itself.
     bool all_referencing_instances(int instance_id, const std::function<bool(uint32_t)>& pred);
+#endif
 
     /// Returns the entity with the specified id
     express::base instance_by_id(int instance_id);
