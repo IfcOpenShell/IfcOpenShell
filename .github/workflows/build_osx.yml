@@ -16,7 +16,9 @@ jobs:
           # /usr/local to cross-build BonsaiViewer. Revisit if Intel-Mac
           # demand resurfaces.
           - os: macos
-            runner: macos-14
+            # macos-14 no longer receives Homebrew bottles, so `brew install qt`
+            # compiles Qt (and QtWebEngine) from source there and fails.
+            runner: macos-15
             arch: arm64
             oldarch: m1
 
