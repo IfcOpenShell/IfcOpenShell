@@ -29,14 +29,15 @@ def generate_port_number(web: type[tool.Web]) -> int:
     return web.generate_port_number()
 
 
-def connect_websocket_server(web: type[tool.Web], port: int, page: str) -> None:
+def connect_websocket_server(web: type[tool.Web], port: int, page: str, open_browser: bool = True) -> None:
     # check if port already has a server listening to it
     if web.is_port_available(port):
         web.start_websocket_server(port)
         if web.has_started(port):
             web.connect_websocket_server(port)
             web.send_theme_data()
-            web.open_web_browser(port, page)
+            if open_browser:
+                web.open_web_browser(port, page)
         return
 
     web.connect_websocket_server(port)

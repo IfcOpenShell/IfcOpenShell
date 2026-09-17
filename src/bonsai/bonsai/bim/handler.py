@@ -579,3 +579,5 @@ def load_post(scene):
     _apply_save_file_invariants(scene)
     _apply_user_preferences()
     _install_viewport_overlays()
+    # A web connection outlives the file; its WebProperties do not.
+    tool.Web.restore_connection_state()
