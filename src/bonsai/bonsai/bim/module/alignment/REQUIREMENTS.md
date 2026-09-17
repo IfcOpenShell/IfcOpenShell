@@ -74,12 +74,92 @@ improvements:
    written via `layout_horizontal_alignment_by_pi_method`.
 7. In a pop-up (or other appropriate UI element), input the parameters:
    - **Circular curve**: radius only.
-   - **Spiral curve**: spiral length(s) (entry, exit, or both). **Implemented for the clothoid
-     family only** — this assumes all spirals have infinite start/end radius and share the
-     circular arc's radius. Other spiral families (Bloss, Cosine, Sine, Cubic, Helmert) are not
-     yet supported by the PI-method solver; each would need its own curvature-vs-length
-     integrand substituted into `solve_horizontal_alignment_by_pi_method`'s displacement
-     composition (the tangent-distance projection itself is spiral-family agnostic).
+   - **Spiral curve**: spiral length(s) (entry, exit, or both). **Implemented for all seven spiral
+     families (2026-09-17)** — CLOTHOID, BLOSSCURVE, COSINECURVE, SINECURVE, HELMERTCURVE, CUBIC,
+     VIENNESEBEND — chosen per PI via `PICurveMarkerProperties.spiral_family` /
+     `HorizontalPIMarker.spiral_family` (entry and exit spirals at one PI always share the family —
+     no UI for choosing them independently). `solve_horizontal_alignment_by_pi_method`'s `radii`
+     element gained an optional 4th field, `(R, Lin, Lout, family)`; `compute_spiral_end` dispatches
+     each family's own curvature-vs-length integrand, defined once in the new
+     `ifcopenshell.api.alignment._spiral_curvature` module and reused by
+     `_map_alignment_horizontal_segment` itself (so the solver's assumed endpoint and the geometry
+     kernel's rendered endpoint can't drift apart -- they're built from the same coefficient math).
+     The circular arc's own deflection (`theta_c`) is now derived from each spiral's *actual*
+     accumulated deflection rather than the clothoid-specific `length / (2 * radius)` closed form,
+     which happens to also hold exactly for Bloss/Cosine/Sine/Helmert (all normalized to the same
+     total deflection as clothoid) but not for CUBIC's Cartesian small-angle approximation -- this
+     fix is what makes every family close geometrically exactly, not just clothoid. HELMERTCURVE
+     carries one pre-existing, unrelated approximation: its own two-piece representation
+     (`_map_helmert_curve`, via `ifcopenshell_wrapper.helmert_curve_point`) has an inherent ~1e-6
+     rad residual at the internal split between its two `IfcCurveSegment`s, present for any
+     HELMERTCURVE regardless of whether it's authored via the PI method or the raw segment table --
+     see the widened tolerance in `test_author_transition_curve_alignment`.
+
+     **VIENNESEBEND (per the user, 2026-09-17): "I would like to see Viennese Bend in the selection
+     list, but be disabled if there is not a cant layout. It will only work if there is an existing
+     cant layout."** `spiral_family` is now a dynamic `EnumProperty` (`prop._spiral_family_items`)
+     that only includes Viennese Bend once `tool.Alignment.has_real_cant_segments(alignment)` is
+     true for the marker/row's alignment — unavailable rather than merely greyed out, since a plain
+     Blender enum dropdown can't disable one entry. `_generate_alignment_segments` also rejects it
+     defensively (same message as the raw table's existing check) in case a marker already held
+     "VIENNESEBEND" before its cant layout was deleted.
+
+     **`GravityCenterLineHeight` (per the user, same day, follow-up): "Yes, add the gravity
+     centerline height field."** A new `gravity_centerline_height` FloatProperty on both
+     `PICurveMarkerProperties`/`HorizontalPIMarker` (shown only when `spiral_family ==
+     "VIENNESEBEND"`), defaulting to 0.0 (same degenerate/no-cant-contribution shape as before this
+     field existed). Unlike every other per-PI field, it's paired with data the marker/row does
+     *not* itself store: the outer rail's cant magnitude and the cant layout's RailHeadDistance, read
+     live from the alignment's *current* real cant segment at the arc (`operator.
+     _cant_lookup_for_pi_markers`, reusing `_reconstruct_horizontal_pis`'s own positional
+     segment-to-cant-segment matching -- the same correspondence `tool.Alignment.
+     sync_cant_segment_types` already relies on elsewhere) rather than being entered by hand, since
+     the cant magnitude is defined by the separate Generate/Edit Cant Segments workflow, not the
+     horizontal PI curve UI. `HorizontalSegmentDefinition` gained a `gravity_centerline_height`
+     field so the value survives from `solve_horizontal_alignment_by_pi_method`'s own geometric
+     closure (which now derives a per-spiral `cant_factor` from gravity centerline height + cant +
+     rail head distance, needed for entry/exit spiral tangent-length fitting to stay exact) through
+     to `layout_horizontal_alignment_by_pi_method`, which writes it to
+     `IfcAlignmentHorizontalSegment.GravityCenterLineHeight` -- so the solver's assumed shape and
+     the geometry kernel's later-rendered shape use the same cant-derived curvature, not just the
+     same radius/length. `solve_horizontal_alignment_by_pi_method`'s `radii` element gained an
+     optional 5th field, `(R, Lin, Lout, family, cant_params)`, where `cant_params` is `None` for
+     every family except VIENNESEBEND. Verified end to end (a real cant layout, non-zero gravity
+     centerline height, checked against the geometry kernel) in
+     `test_solve_viennese_bend_with_cant_factor`.
+     Along the way, fixed a real crash in `ifcopenshell.api.alignment._get_cant_segment`
+     (`IndexError` on `alignment.IsDecomposedBy[0]` when an alignment has no cant layout *and* no
+     child alignments) and a stale `prop.SUPPORTED_HORIZONTAL_TYPES` that didn't include
+     `VIENNESEBEND`, which made an existing Viennese Bend segment show as "Unsupported" when loading
+     the raw segment table for editing even though `HorizontalSegmentRow.predefined_type` already
+     listed it as choosable.
+
+     **Fixed (2026-09-17): stale read-only segment data after Apply.** Per the user: "When I am
+     editing a PI with spiral-curve-spiral and change the spiral type, the start point of the
+     spiral, curve, and spiral should update in the tabular data." Root cause: `tool.Blender.
+     update_viewport()` (called by every Apply-type operator here) only tags a `VIEW_3D` area for
+     redraw, but `ALIGN_PT_alignment_segments` (the read-only Start Point/End Point/Length/Radius
+     breakdown, showing live IFC data on every `draw()`) lives in the Properties editor -- a
+     different area, never told anything changed, since these operators mutate the IFC file
+     directly rather than through Blender's own RNA/depsgraph. New `_tag_all_areas_redraw()` tags
+     every area in every window and is now called from `_generate_alignment_segments` (covers
+     `ALIGN_OT_apply_pi_curve`, `ALIGN_OT_apply_horizontal_pi_table`, and the initial draw operator)
+     and `ALIGN_OT_apply_h_segments`.
+
+     **Verified in a running Blender session (2026-09-17)**, headless via `blender --background`
+     against the real registered `bl_ext...bonsai` addon (not just static analysis): built an
+     alignment via the PI method, ran the actual `align.generate_cant_layout` /
+     `align.edit_horizontal_pis` / `align.apply_pi_curve` operators. Confirmed `spiral_family`'s
+     dropdown includes Viennese Bend only once a cant layout exists and correctly excludes it
+     otherwise; setting a non-zero `gravity_centerline_height` and applying writes
+     `GravityCenterLineHeight` to both spiral segments and produces the expected `LINE`/
+     `VIENNESEBEND`/`CIRCULARARC`/`VIENNESEBEND`/`LINE` structure; the cant layout's own segments get
+     synced to `VIENNESEBEND` too; and forcing Viennese Bend with no cant layout is rejected
+     cleanly (`"Viennese Bend needs a cant layout first..."`) with the horizontal layout left
+     untouched. Not individually re-verified live for the other five families (Bloss/Cosine/Sine/
+     Helmert/Cubic) beyond Clothoid -- they share the exact same operator code path already
+     exercised here, and are separately validated against the geometry kernel by the automated
+     `ifcopenshell.api.alignment` test suite.
 
    **Confirmed future requirement**: compound curves (PCC, point of compound curvature — two
    arcs curving the same direction) and reverse curves (PRC, point of reverse curvature — two
@@ -93,6 +173,35 @@ improvements:
    **Open question**: the UI for this — since a compound/reverse curve junction spans two PIs, it
    may need selecting 2 PIs and defining both curves' parameters together, rather than the
    single-PI marker interaction used for §2 steps 6-7 today.
+
+   **Confirmed future requirement (per the user, 2026-09-17): laying out PI curves should fail
+   gracefully when the curve is too long for the space available.** Two distinct gaps today, both
+   in `solve_horizontal_alignment_by_pi_method`:
+
+   - **Not validated at all:** `tangent_run` (the straight run left over between the previous
+     curve's end and this curve's start, or between this curve's end and the next PI) is computed
+     for every PI but never checked for being negative -- only whether it's large enough to bother
+     emitting a `LINE` segment (`1.0e-03 < tangent_run`). When a curve's own radius/spiral lengths
+     need more tangent distance than two PIs are actually apart (PIs too close together, or the
+     curve too large for the gap), `tangent_run` goes negative and the solver silently keeps going,
+     producing overlapping/self-intersecting geometry with no error at all. This is likely the
+     single biggest practical way a user hits "too long a curve" in ordinary use (tightening one
+     PI's radius without checking neighboring PIs), and needs a proper closure check, not just a
+     value large enough to matter.
+   - **Validated, but not gracefully:** the existing `"spiral transition curves are too long; their
+     combined deflection exceeds the PI deflection angle"` `ValueError` (entry + exit spiral
+     deflection together exceeding the PI's own turn angle) is a real check, but nothing between
+     the solver and the user's screen catches it specifically --
+     `tool.Alignment.safe_layout_horizontal_by_pi_method` only documents its own "no parent
+     alignment" `ValueError`, so this one propagates uncaught through `_generate_alignment_segments`
+     into `tool.Ifc.Operator`'s generic exception handler, surfacing as "Operation partially
+     completed (IFC changed, Blender state may be stale). Press Ctrl+Z to restore the previous
+     state." rather than a clean, specific message pointing at which PI and why.
+
+   Both should end up reported the same way validation errors already are elsewhere in this module
+   (e.g. `ALIGN_OT_apply_h_segments`'s cant-layout check): a clear `self.report({"ERROR"}, ...)`
+   naming the offending PI, `{"CANCELLED"}`, and no partial mutation -- not a raised exception and
+   not silently-wrong geometry.
 8. Right-click (or whatever is standard) to end the command. Generate the alignment automatically.
 
 ## 3. Interrogating an alignment
