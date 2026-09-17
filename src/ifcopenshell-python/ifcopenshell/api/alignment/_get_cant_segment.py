@@ -62,6 +62,8 @@ def _get_cant_segment(horizontal_segment: entity_instance) -> entity_instance:
     # For this reason, use the first cant layout found
     if cant_segment == None:
         alignment = ifcopenshell.api.alignment.get_alignment(horizontal_layout)
+        if not alignment.IsDecomposedBy:
+            return None
         for child_alignment in alignment.IsDecomposedBy[0].RelatedObjects:
             for layout in child_alignment.Nests[0].RelatedObjects:
                 if layout.is_a("IfcAlignmentCant"):

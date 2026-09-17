@@ -611,6 +611,26 @@ def _hpoints_from_polyline(context):
     return True, (raw_points, hpoints)
 
 
+def _tag_all_areas_redraw(context):
+    """Tag every area in every window for redraw, not just the active 3D viewport.
+
+    tool.Blender.update_viewport() (called alongside this at most of this module's call sites)
+    only tags a VIEW_3D area. That's fine for the alignment mesh/decorators, but this module's IFC
+    writes (creating/replacing IfcAlignmentSegments) never touch Blender's own RNA data, so nothing
+    tells Blender's dependency graph anything changed -- the read-only "Alignment Segments" panel
+    (ALIGN_PT_alignment_segments, in the Properties editor's Scene tab, reading straight from the
+    live IFC file on every draw()) doesn't get a fresh draw() call at all unless something
+    explicitly tags its area, and is left showing stale segment data (start point, radius, type...)
+    until some unrelated interaction happens to repaint it.
+    """
+    wm = getattr(context, "window_manager", None)
+    if wm is None:
+        return
+    for window in wm.windows:
+        for area in window.screen.areas:
+            area.tag_redraw()
+
+
 def _generate_alignment_segments(context, alignment, hpoints, radii):
     """Build horizontal alignment segments from PI points and per-PI radii.
 
@@ -630,6 +650,19 @@ def _generate_alignment_segments(context, alignment, hpoints, radii):
     circular curves — see solve_horizontal_alignment_by_pi_method.
     """
     ifc = tool.Ifc.get()
+
+    # Viennese Bend's own geometry depends on a real cant segment at the same station
+    # (ifcopenshell.api.alignment._get_cant_segment has no fallback for "no cant layout anywhere on
+    # this alignment") -- same check as the raw segment table's ALIGN_OT_apply_h_segments, applied
+    # here too since the PI-method dropdown (prop._spiral_family_items) only *usually* keeps
+    # Viennese Bend hidden until a cant layout exists; a marker/row that already had it selected
+    # before the cant layout was deleted would otherwise slip through. Returning early here (rather
+    # than raising) keeps this a clean, reportable failure through the same (ok, message) contract
+    # every caller already handles, instead of the generic "partially completed" recovery path
+    # tool.Ifc.Operator falls back to for an uncaught exception.
+    if any(isinstance(r, tuple) and len(r) >= 4 and r[3] == "VIENNESEBEND" for r in radii):
+        if not tool.Alignment.has_real_cant_segments(alignment):
+            return False, "Viennese Bend needs a cant layout first -- use Generate Cant Layout, then retry Apply."
 
     h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
     if h_layout is None:
@@ -661,6 +694,8 @@ def _generate_alignment_segments(context, alignment, hpoints, radii):
     # horizontal's own (a no-op if there's no cant layout yet, or if the
     # segment counts have drifted apart -- see sync_cant_segment_types).
     tool.Alignment.sync_cant_segment_types(alignment)
+
+    _tag_all_areas_redraw(context)
 
     n_curved = sum(1 for r in radii if (r[0] if isinstance(r, tuple) else r))
     return True, f"Drew alignment '{alignment.Name}' with {len(hpoints)} PIs ({n_curved} curved)"
@@ -814,26 +849,57 @@ def _refresh_pi_marker_visuals(context, alignment_id) -> None:
     context.workspace.status_text_set(draw)
 
 
-def _pi_curve_radii_entry(marker):
+def _cant_lookup_for_pi_markers(alignment, n):
+    """(cant, rail_head_distance) per interior PI, in PI order, for feeding into
+    _pi_curve_radii_entry's VIENNESEBEND handling -- a fresh read of the alignment's *current* real
+    segments and cant layout (via _reconstruct_horizontal_pis, which already does this exact
+    positional lookup when reconstructing markers) taken right before a PI-method Apply rebuilds
+    everything, so a marker/row that doesn't itself store cant data still gets the real value.
+
+    Always returns exactly n entries, defaulting to (0.0, 1.0) for any PI
+    _reconstruct_horizontal_pis doesn't account for (a different count than n means something --
+    typically a manually added/removed marker -- has already broken the positional correspondence
+    this relies on, same as the reason _reconstruct_horizontal_pis/sync_cant_segment_types both
+    already tolerate a mismatched count elsewhere rather than erroring on it).
+    """
+    h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+    if h_layout is None:
+        return [(0.0, 1.0)] * n
+    specs, _ = _reconstruct_horizontal_pis(h_layout)
+    lookup = [(spec["cant"], spec["rail_head_distance"]) for spec in specs]
+    lookup += [(0.0, 1.0)] * (n - len(lookup))
+    return lookup[:n]
+
+
+def _pi_curve_radii_entry(marker, cant_and_rail_head_distance=(0.0, 1.0)):
     """One radii[] element (see solve_horizontal_alignment_by_pi_method) for a PI marker.
 
     TANGENT stays a plain 0.0 (no curve). CIRCULAR stays a plain radius float
     for backward compatibility. The three spiral curve types become a
-    (radius, entry_length, exit_length) tuple with whichever length(s) don't
-    apply left at 0.0 — only the clothoid spiral family is supported, per
-    solve_horizontal_alignment_by_pi_method.
+    (radius, entry_length, exit_length, spiral_family, vb_params) tuple with
+    whichever length(s) don't apply left at 0.0 -- entry and exit always
+    share one family per PI (marker.spiral_family). vb_params is None unless
+    spiral_family is VIENNESEBEND, in which case it's (marker.
+    gravity_centerline_height, cant, rail_head_distance) -- see
+    _cant_lookup_for_pi_markers for where cant/rail_head_distance come from.
     """
     curve_type = marker.curve_type
     if curve_type == "TANGENT":
         return 0.0
     if curve_type == "CIRCULAR":
         return marker.radius
+
+    vb_params = None
+    if marker.spiral_family == "VIENNESEBEND":
+        cant, rail_head_distance = cant_and_rail_head_distance
+        vb_params = (marker.gravity_centerline_height, cant, rail_head_distance)
+
     if curve_type == "SPIRAL_CIRCULAR":
-        return (marker.radius, marker.spiral_in_length, 0.0)
+        return (marker.radius, marker.spiral_in_length, 0.0, marker.spiral_family, vb_params)
     if curve_type == "CIRCULAR_SPIRAL":
-        return (marker.radius, 0.0, marker.spiral_out_length)
+        return (marker.radius, 0.0, marker.spiral_out_length, marker.spiral_family, vb_params)
     # SPIRAL_CIRCULAR_SPIRAL
-    return (marker.radius, marker.spiral_in_length, marker.spiral_out_length)
+    return (marker.radius, marker.spiral_in_length, marker.spiral_out_length, marker.spiral_family, vb_params)
 
 
 def _pi_curve_marker_label(marker) -> str:
@@ -843,12 +909,15 @@ def _pi_curve_marker_label(marker) -> str:
         return "tangent"
     if curve_type == "CIRCULAR":
         return f"R={marker.radius:.2f}"
+    # the three spiral shapes all carry a family; only name it when it isn't the default, so a
+    # plain clothoid PI's label doesn't grow noisier than it already was
+    family_suffix = "" if marker.spiral_family == "CLOTHOID" else f" [{marker.spiral_family}]"
     if curve_type == "SPIRAL_CIRCULAR":
-        return f"R={marker.radius:.2f}, Lin={marker.spiral_in_length:.2f}"
+        return f"R={marker.radius:.2f}, Lin={marker.spiral_in_length:.2f}{family_suffix}"
     if curve_type == "CIRCULAR_SPIRAL":
-        return f"R={marker.radius:.2f}, Lout={marker.spiral_out_length:.2f}"
+        return f"R={marker.radius:.2f}, Lout={marker.spiral_out_length:.2f}{family_suffix}"
     # SPIRAL_CIRCULAR_SPIRAL
-    return f"R={marker.radius:.2f}, Lin={marker.spiral_in_length:.2f}, Lout={marker.spiral_out_length:.2f}"
+    return f"R={marker.radius:.2f}, Lin={marker.spiral_in_length:.2f}, Lout={marker.spiral_out_length:.2f}{family_suffix}"
 
 
 def _local_ifc_to_world_point(ifc, unit_scale, xy):
@@ -880,16 +949,21 @@ def _reconstruct_horizontal_pis(h_layout):
 
     Only the five shapes PICurveMarkerProperties.curve_type already supports
     are recognized: a sharp corner between two LINEs (TANGENT), a lone
-    CIRCULARARC (CIRCULAR), or a CIRCULARARC with a CLOTHOID on one or both
-    sides (SPIRAL_CIRCULAR / CIRCULAR_SPIRAL / SPIRAL_CIRCULAR_SPIRAL) --
-    matching what solve_horizontal_alignment_by_pi_method can (re)generate.
+    CIRCULARARC (CIRCULAR), or a CIRCULARARC with a spiral (any one family in
+    prop.PI_METHOD_SPIRAL_TYPES) on one or both sides (SPIRAL_CIRCULAR /
+    CIRCULAR_SPIRAL / SPIRAL_CIRCULAR_SPIRAL) -- matching what
+    solve_horizontal_alignment_by_pi_method can (re)generate. A two-spiral PI
+    whose entry and exit families differ is reported as skipped: entry and
+    exit always share one family per PI (see PICurveMarkerProperties.
+    spiral_family), so there's no marker shape to reconstruct it into.
 
     Returns (specs, skipped). ``specs`` is a list of dicts with pi_local
-    (x, y) plus curve_type/radius/spiral_in_length/spiral_out_length, one per
-    interior PI, in order. ``skipped`` is a list of (segment, reason) for any
-    segment that isn't part of one of those five shapes -- callers should
-    refuse to create markers at all when this is non-empty (regenerating from
-    a partial marker list would silently drop whatever those segments were).
+    (x, y) plus curve_type/radius/spiral_in_length/spiral_out_length/
+    spiral_family/gravity_centerline_height, one per interior PI, in order.
+    ``skipped`` is a list of (segment, reason) for any segment that isn't
+    part of one of those five shapes -- callers should refuse to create
+    markers at all when this is non-empty (regenerating from a partial
+    marker list would silently drop whatever those segments were).
     """
     segments = tool.Alignment.get_real_layout_segments(h_layout)
     line_indices = [i for i, s in enumerate(segments) if s.DesignParameters.PredefinedType == "LINE"]
@@ -898,6 +972,17 @@ def _reconstruct_horizontal_pis(h_layout):
     skipped = []
     if len(line_indices) < 2:
         return specs, [(s, "no bounding tangent") for s in segments]
+
+    # Positionally match the arc segment (see below) to a real cant segment at the same station,
+    # the same correspondence tool.Alignment.sync_cant_segment_types relies on -- only meaningful
+    # for VIENNESEBEND (see _pi_curve_radii_entry), but cheap enough to always compute here rather
+    # than duplicate this lookup at Apply time on a fresh walk of the same segments.
+    alignment = ifcopenshell.api.alignment.get_alignment(h_layout)
+    cant_layouts = tool.Alignment.get_all_cant_layouts(alignment)
+    cant_layout = cant_layouts[0] if cant_layouts else None
+    cant_segments = tool.Alignment.get_real_layout_segments(cant_layout) if cant_layout else []
+    cant_matches_positionally = bool(cant_layout) and len(cant_segments) == len(segments)
+    rail_head_distance = cant_layout.RailHeadDistance if cant_layout else 1.0
 
     for s in segments[: line_indices[0]]:
         skipped.append((s, "before the first tangent"))
@@ -909,17 +994,32 @@ def _reconstruct_horizontal_pis(h_layout):
         line_a, line_b = segments[a_idx], segments[b_idx]
         between = segments[a_idx + 1 : b_idx]
         types = [s.DesignParameters.PredefinedType for s in between]
+        family = "CLOTHOID"  # unused (no spiral), but every spec needs the key
 
         if types == []:
             curve_type, arc, spiral_in, spiral_out = "TANGENT", None, None, None
         elif types == ["CIRCULARARC"]:
             curve_type, arc, spiral_in, spiral_out = "CIRCULAR", between[0], None, None
-        elif types == ["CLOTHOID", "CIRCULARARC"]:
-            curve_type, arc, spiral_in, spiral_out = "SPIRAL_CIRCULAR", between[1], between[0], None
-        elif types == ["CIRCULARARC", "CLOTHOID"]:
-            curve_type, arc, spiral_in, spiral_out = "CIRCULAR_SPIRAL", between[0], None, between[1]
-        elif types == ["CLOTHOID", "CIRCULARARC", "CLOTHOID"]:
-            curve_type, arc, spiral_in, spiral_out = "SPIRAL_CIRCULAR_SPIRAL", between[1], between[0], between[2]
+        elif len(types) == 2 and types[1] == "CIRCULARARC" and types[0] in prop.PI_METHOD_SPIRAL_TYPES:
+            curve_type, arc, spiral_in, spiral_out, family = "SPIRAL_CIRCULAR", between[1], between[0], None, types[0]
+        elif len(types) == 2 and types[0] == "CIRCULARARC" and types[1] in prop.PI_METHOD_SPIRAL_TYPES:
+            curve_type, arc, spiral_in, spiral_out, family = "CIRCULAR_SPIRAL", between[0], None, between[1], types[1]
+        elif (
+            len(types) == 3
+            and types[1] == "CIRCULARARC"
+            and types[0] in prop.PI_METHOD_SPIRAL_TYPES
+            and types[2] in prop.PI_METHOD_SPIRAL_TYPES
+        ):
+            if types[0] != types[2]:
+                skipped.extend((s, "entry and exit spiral families differ") for s in between)
+                continue
+            curve_type, arc, spiral_in, spiral_out, family = (
+                "SPIRAL_CIRCULAR_SPIRAL",
+                between[1],
+                between[0],
+                between[2],
+                types[0],
+            )
         else:
             skipped.extend((s, "unsupported curve family/shape") for s in between)
             continue
@@ -930,6 +1030,22 @@ def _reconstruct_horizontal_pis(h_layout):
             # the two LINEs themselves if there's nothing between (sharp-corner case).
             skipped.extend((s, "tangents are parallel") for s in (between or [line_a, line_b]))
             continue
+
+        # GravityCenterLineHeight is a horizontal segment field, carried on the entry and/or exit
+        # spiral (both, in practice, since one marker/row sets it for the whole PI) -- only
+        # meaningful for VIENNESEBEND, 0.0 for everything else.
+        gch_source = spiral_in or spiral_out
+        gravity_centerline_height = (gch_source.DesignParameters.GravityCenterLineHeight or 0.0) if gch_source else 0.0
+
+        # The outer rail's cant magnitude at the arc, read from whichever real cant segment sits at
+        # the same position as `arc` -- only meaningful for VIENNESEBEND (see
+        # _pi_curve_radii_entry), 0.0 when there's no cant layout, the position correspondence has
+        # drifted, or this PI has no arc to match against.
+        cant = 0.0
+        if arc is not None and cant_matches_positionally:
+            arc_idx = a_idx + 1 + between.index(arc)
+            cant_dp = cant_segments[arc_idx].DesignParameters
+            cant = max(abs(cant_dp.StartCantLeft or 0.0), abs(cant_dp.StartCantRight or 0.0))
 
         specs.append(
             {
@@ -942,6 +1058,10 @@ def _reconstruct_horizontal_pis(h_layout):
                 "radius": abs(arc.DesignParameters.StartRadiusOfCurvature or 0.0) if arc else 0.0,
                 "spiral_in_length": (spiral_in.DesignParameters.SegmentLength or 0.0) if spiral_in else 0.0,
                 "spiral_out_length": (spiral_out.DesignParameters.SegmentLength or 0.0) if spiral_out else 0.0,
+                "spiral_family": family,
+                "gravity_centerline_height": gravity_centerline_height,
+                "cant": cant,
+                "rail_head_distance": rail_head_distance,
             }
         )
 
@@ -1023,6 +1143,8 @@ class ALIGN_OT_edit_horizontal_pis(Operator, tool.Ifc.Operator):
             marker.radius = spec["radius"] or 100.0
             marker.spiral_in_length = spec["spiral_in_length"] or 100.0
             marker.spiral_out_length = spec["spiral_out_length"] or 100.0
+            marker.spiral_family = spec["spiral_family"]
+            marker.gravity_centerline_height = spec["gravity_centerline_height"]
             empty.name = f"PI {i} ({_pi_curve_marker_label(marker)})"
             context.collection.objects.link(empty)
 
@@ -1079,7 +1201,10 @@ class ALIGN_OT_apply_pi_curve(Operator, tool.Ifc.Operator):
             + [_world_point_to_local_ifc(ifc, unit_scale, m.location) for m in interior_markers]
             + [end]
         )
-        radii = [_pi_curve_radii_entry(m.bonsai_pi_curve_marker) for m in interior_markers]
+        cant_lookup = _cant_lookup_for_pi_markers(alignment, len(interior_markers))
+        radii = [
+            _pi_curve_radii_entry(m.bonsai_pi_curve_marker, cant_lookup[i]) for i, m in enumerate(interior_markers)
+        ]
 
         ok, message = _generate_alignment_segments(context, alignment, hpoints, radii)
 
@@ -1212,6 +1337,8 @@ class ALIGN_OT_load_horizontal_pi_table(Operator, tool.Ifc.Operator):
             item.radius = spec["radius"] or 100.0
             item.spiral_in_length = spec["spiral_in_length"] or 100.0
             item.spiral_out_length = spec["spiral_out_length"] or 100.0
+            item.spiral_family = spec["spiral_family"]
+            item.gravity_centerline_height = spec["gravity_centerline_height"]
         props.editing_horizontal_pi_alignment_id = alignment.id()
 
         self.report({"INFO"}, f"Loaded {len(specs)} PI(s)")
@@ -1262,7 +1389,8 @@ class ALIGN_OT_apply_horizontal_pi_table(Operator, tool.Ifc.Operator):
 
         rows = list(props.horizontal_pi_rows)
         hpoints = [start] + [(row.x, row.y) for row in rows] + [end]
-        radii = [_pi_curve_radii_entry(row) for row in rows]
+        cant_lookup = _cant_lookup_for_pi_markers(alignment, len(rows))
+        radii = [_pi_curve_radii_entry(row, cant_lookup[i]) for i, row in enumerate(rows)]
 
         ok, message = _generate_alignment_segments(context, alignment, hpoints, radii)
         if ok:
@@ -2651,6 +2779,7 @@ class ALIGN_OT_apply_h_segments(Operator, tool.Ifc.Operator):
         props.editing_layout_id = 0
 
         tool.Blender.update_viewport()
+        _tag_all_areas_redraw(context)
         self.report({"INFO"}, f"Rebuilt {n} horizontal segment(s)")
         return {"FINISHED"}
 
