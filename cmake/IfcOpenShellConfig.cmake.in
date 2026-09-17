@@ -29,11 +29,7 @@ endif()
 if(NOT "${IFCOPENSHELL_BOOST_USE_MULTITHREADED}" STREQUAL "")
     set(Boost_USE_MULTITHREADED ${IFCOPENSHELL_BOOST_USE_MULTITHREADED})
 endif()
-set(Boost_COMPONENTS
-    program_options
-    regex
-    iostreams
-)
+set(Boost_COMPONENTS @BOOST_COMPONENTS@)
 find_dependency(Boost CONFIG COMPONENTS ${Boost_COMPONENTS})
 find_dependency(Eigen3 CONFIG)
 
