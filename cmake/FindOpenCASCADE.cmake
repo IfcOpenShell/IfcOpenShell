@@ -59,6 +59,31 @@ if(NOT OCC_INCLUDE_DIR AND NOT OCC_LIBRARY_DIR)
         list(APPEND OpenCASCADE_LIBRARIES WSOCK32.lib)
     endif()
 
+    if(UNIX AND NOT WASM_BUILD)
+        # OpenCASCADE_LIBRARIES is OCCT's complete toolkit list, Visualization
+        # included (TKV3d, TKService, TKOpenGl). Against a static OCCT an
+        # unreferenced toolkit contributes nothing. Against a shared OCCT every
+        # entry becomes a hard load-time dependency, and TKV3d pulls in
+        # libGL/libEGL, so `import ifcopenshell` fails on any headless machine
+        # even though IfcOpenShell never opens a window. Record only the
+        # toolkits whose symbols are actually referenced.
+        #
+        # On GNU ld this is deliberately not closed with --no-as-needed: CMake
+        # emits the imported targets' INTERFACE_LINK_LIBRARIES (where OCCT lists
+        # libGL/libEGL) after this item, so closing the bracket would switch
+        # recording back on for exactly the libraries this exists to exclude.
+        # The flag is a no-op for static archives, so it is safe for both link
+        # types; wasm is excluded only because wasm-ld has no shared OCCT to
+        # trim and need not see the GNU ld spelling at all.
+        #
+        # Windows / MSVC doesn't have this option and behaves like --as-needed by default.
+        if(APPLE)
+            set(OpenCASCADE_LIBRARIES "-Wl,-dead_strip_dylibs" "${OpenCASCADE_LIBRARIES}")
+        else()
+            set(OpenCASCADE_LIBRARIES "-Wl,--as-needed" "${OpenCASCADE_LIBRARIES}")
+        endif()
+    endif()
+
     return()
 endif()
 
