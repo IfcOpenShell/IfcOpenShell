@@ -132,6 +132,56 @@ class AddContextDependentUnit(bpy.types.Operator, tool.Ifc.Operator):
         core.add_context_dependent_unit(tool.Ifc, tool.Unit, unit_type=self.unit_type, name=self.name)
 
 
+class AddDerivedUnitElement(bpy.types.Operator):
+    bl_idname = "bim.add_derived_unit_element"
+    bl_label = "Add Derived Unit Element"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Add a new named unit and exponent to the derived unit definition"
+
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
+        props = tool.Unit.get_unit_props()
+        props.derived_unit_elements.add()
+        return {"FINISHED"}
+
+
+class RemoveDerivedUnitElement(bpy.types.Operator):
+    bl_idname = "bim.remove_derived_unit_element"
+    bl_label = "Remove Derived Unit Element"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Remove this named unit and exponent from the derived unit definition"
+    index: bpy.props.IntProperty()
+
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
+        props = tool.Unit.get_unit_props()
+        props.derived_unit_elements.remove(self.index)
+        return {"FINISHED"}
+
+
+class AddDerivedUnit(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_derived_unit"
+    bl_label = "Add Derived Unit"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Add a derived unit built from the defined named units and exponents"
+
+    def _execute(self, context):
+        props = tool.Unit.get_unit_props()
+        elements = {}
+        for element in props.derived_unit_elements:
+            if not element.unit:
+                self.report({"ERROR"}, "No named unit selected. Add a named unit (e.g. an SI unit) first.")
+                return {"CANCELLED"}
+            unit = tool.Ifc.get().by_id(int(element.unit))
+            if unit in elements:
+                self.report({"ERROR"}, f"Unit '{unit.Name}' is used in more than one element.")
+                return {"CANCELLED"}
+            elements[unit] = element.exponent
+        if not elements:
+            self.report({"ERROR"}, "A derived unit requires at least one element. Click 'Add Element' first.")
+            return {"CANCELLED"}
+        core.add_derived_unit(tool.Ifc, tool.Unit, unit_type=props.derived_unit_types, elements=elements)
+        props.derived_unit_elements.clear()
+
+
 class EnableEditingUnit(bpy.types.Operator):
     bl_idname = "bim.enable_editing_unit"
     bl_label = "Enable Editing Unit"

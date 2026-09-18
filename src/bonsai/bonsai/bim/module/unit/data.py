@@ -41,6 +41,8 @@ class UnitsData:
             "unit_classes": cls.unit_classes(),
             "named_unit_types": cls.named_unit_types(),
             "conversion_unit_types": cls.conversion_unit_types(),
+            "derived_unit_types": cls.derived_unit_types(),
+            "named_units": cls.named_units(),
             "total_units": cls.get_total_units(),
         }
         cls.is_loaded = True
@@ -87,6 +89,21 @@ class UnitsData:
     @classmethod
     def conversion_unit_types(cls):
         return [(u, u, "") for u in ifcopenshell.util.unit.si_conversions.keys()]
+
+    @classmethod
+    def derived_unit_types(cls):
+        assert (entity := tool.Ifc.schema().declaration_by_name("IfcDerivedUnit").as_entity())
+        values = ifcopenshell.util.attribute.get_enum_items(entity.all_attributes()[1])
+        # USERDEFINED is skipped as it additionally requires a UserDefinedType.
+        return [(c, c, "") for c in sorted(values) if c != "USERDEFINED"]
+
+    @classmethod
+    def named_units(cls):
+        results = []
+        for unit in sorted(tool.Ifc.get().by_type("IfcNamedUnit"), key=lambda u: u.id()):
+            name = ifcopenshell.util.unit.get_full_unit_name(unit)
+            results.append((str(unit.id()), f"{name} ({unit.UnitType})", ""))
+        return results
 
     @classmethod
     def get_total_units(cls):

@@ -91,6 +91,17 @@ def add_conversion_based_unit(ifc: type[tool.Ifc], unit: type[tool.Unit], name: 
     return result
 
 
+def add_derived_unit(
+    ifc: type[tool.Ifc],
+    unit: type[tool.Unit],
+    unit_type: str,
+    elements: dict[ifcopenshell.entity_instance, int],
+) -> ifcopenshell.entity_instance:
+    result = ifc.run("unit.add_derived_unit", unit_type=unit_type, userdefinedtype=None, attributes=elements)
+    unit.import_units()
+    return result
+
+
 def enable_editing_unit(unit_tool: type[tool.Unit], unit: ifcopenshell.entity_instance) -> None:
     unit_tool.set_active_unit(unit)
     unit_tool.import_unit_attributes(unit)
