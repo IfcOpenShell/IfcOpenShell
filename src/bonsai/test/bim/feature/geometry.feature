@@ -610,6 +610,21 @@ Scenario: Duplicate linked aggregate
     And the object "Assembly_01" exists
     Then the object "IfcElementAssembly/Assembly" and "Assembly_01" belong to the same Linked Aggregate Group
 
+Scenario: Duplicate linked aggregate - a nested aggregate stays inside its parent aggregate
+    Given I load the IFC test file "/test/files/linked-aggregates.ifc"
+    And the object "IfcWall/Wall_01" is selected
+    And additionally the object "IfcWall/Wall_02" is selected
+    When I press "bim.add_aggregate(aggregate_name='Nested')"
+    Then the object "IfcElementAssembly/Nested" is aggregated by object "IfcElementAssembly/Assembly"
+    When the object "IfcWall/Wall_01" is selected
+    And I duplicate linked aggregate the selected objects
+    Then the object "IfcWall/Wall_01.001" exists
+    And the object "IfcWall/Wall_02.001" exists
+    # msgbus updates don't happen in background mode, so obj is not renamed to "IfcElementAssembly/Nested_01"
+    And the object "Nested_01" exists
+    And the object "IfcWall/Wall_01.001" is aggregated by object "Nested_01"
+    And the object "Nested_01" is aggregated by object "IfcElementAssembly/Assembly"
+
 Scenario: Refresh linked aggregate
     Given I load the IFC test file "/test/files/linked-aggregates.ifc"
     And the object "IfcWall/Wall_01" is selected
