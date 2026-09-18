@@ -866,6 +866,11 @@ class DecoratorData:
                     results.append((obj, handler.decorators["HIDDEN_LINE"]))
                 else:
                     results.append((obj, handler.decorators["MISC"]))
+            elif tool.Drawing.get_text_literal(obj, return_list=True):
+                # Annotations authored outside Bonsai's own PredefinedType vocabulary (e.g.
+                # imported from ArchiCAD) still carry real IfcTextLiteral items even though
+                # they have no matching decorator key and no mesh geometry.
+                results.append((obj, handler.decorators["TEXT"]))
 
         return results
 
