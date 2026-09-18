@@ -692,10 +692,13 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
         if tool.Ifc.is_moved(space_obj):
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=space_obj)
 
-        # Don't generate boundaries of building elements that we've already got bounaries for.
+        # Index existing boundaries by their related element so they can be
+        # matched and updated in place instead of deleted and recreated,
+        # which would discard manual attribute corrections (#3446).
+        existing_boundaries: dict[int, list[ifcopenshell.entity_instance]] = {}
         for boundary in space.BoundedBy:
-            if boundary.RelatedBuildingElement in building_elements:
-                building_elements.remove(boundary.RelatedBuildingElement)
+            if related_element := boundary.RelatedBuildingElement:
+                existing_boundaries.setdefault(related_element.id(), []).append(boundary)
 
         # Create tree of gross shapes of all potential related building elements
         include = building_elements + [space]
@@ -801,37 +804,41 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
                     # we cheat by using the exterior boundary to mean "gross".
                     exterior_boundary_polygon = shapely.Polygon(gross_boundary_polygon.exterior.coords)
 
-                    parent_boundary = ifcopenshell.api.root.create_entity(ifc_file, ifc_class=props.boundary_class)
-                    if building_element.is_a("IfcVirtualElement"):
-                        parent_boundary.PhysicalOrVirtualBoundary = "VIRTUAL"
-                    else:
-                        parent_boundary.PhysicalOrVirtualBoundary = "PHYSICAL"
-                    parent_boundary.InternalOrExternalBoundary = "NOTDEFINED"
-                    if building_element.is_a("IfcWall"):
-                        is_external = ifcopenshell.util.element.get_pset(
-                            building_element, "Pset_WallCommon", "IsExternal"
-                        )
-                        if is_external is True:
-                            parent_boundary.InternalOrExternalBoundary = "EXTERNAL"
-                        elif is_external is False:
-                            parent_boundary.InternalOrExternalBoundary = "INTERNAL"
-                    elif building_element.is_a("IfcSlab"):
-                        predefined_type = ifcopenshell.util.element.get_predefined_type(building_element)
-                        if predefined_type == "BASESLAB":
-                            parent_boundary.InternalOrExternalBoundary = "EXTERNAL_EARTH"
+                    parent_boundary = self.get_matching_boundary(
+                        existing_boundaries, building_element, props.boundary_class
+                    )
+                    if parent_boundary is None:
+                        parent_boundary = ifcopenshell.api.root.create_entity(ifc_file, ifc_class=props.boundary_class)
+                        if building_element.is_a("IfcVirtualElement"):
+                            parent_boundary.PhysicalOrVirtualBoundary = "VIRTUAL"
                         else:
+                            parent_boundary.PhysicalOrVirtualBoundary = "PHYSICAL"
+                        parent_boundary.InternalOrExternalBoundary = "NOTDEFINED"
+                        if building_element.is_a("IfcWall"):
                             is_external = ifcopenshell.util.element.get_pset(
-                                building_element, "Pset_SlabCommon", "IsExternal"
+                                building_element, "Pset_WallCommon", "IsExternal"
                             )
                             if is_external is True:
                                 parent_boundary.InternalOrExternalBoundary = "EXTERNAL"
                             elif is_external is False:
                                 parent_boundary.InternalOrExternalBoundary = "INTERNAL"
-                    parent_boundary.RelatingSpace = space
-                    parent_boundary.RelatedBuildingElement = building_element
-                    parent_boundary.ConnectionGeometry = self.create_connection_geometry_from_polygon(
-                        exterior_boundary_polygon, space_face_matrix
-                    )
+                        elif building_element.is_a("IfcSlab"):
+                            predefined_type = ifcopenshell.util.element.get_predefined_type(building_element)
+                            if predefined_type == "BASESLAB":
+                                parent_boundary.InternalOrExternalBoundary = "EXTERNAL_EARTH"
+                            else:
+                                is_external = ifcopenshell.util.element.get_pset(
+                                    building_element, "Pset_SlabCommon", "IsExternal"
+                                )
+                                if is_external is True:
+                                    parent_boundary.InternalOrExternalBoundary = "EXTERNAL"
+                                elif is_external is False:
+                                    parent_boundary.InternalOrExternalBoundary = "INTERNAL"
+                        parent_boundary.RelatingSpace = space
+                        parent_boundary.RelatedBuildingElement = building_element
+                    # Reused boundaries only get their geometry refreshed, keeping
+                    # manual corrections (eg. InternalOrExternalBoundary) intact.
+                    self.update_boundary_geometry(parent_boundary, exterior_boundary_polygon, space_face_matrix)
                     self.set_boundary_name(parent_boundary)
                     boundaries.append(parent_boundary)
 
@@ -878,23 +885,72 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
                         if opening_polygon.intersection(exterior_boundary_polygon).area == 0:
                             continue
 
-                        boundary = ifcopenshell.api.root.create_entity(ifc_file, ifc_class=props.boundary_class)
-                        boundary.RelatingSpace = space
-                        boundary.RelatedBuildingElement = filling or opening
-                        boundary.ConnectionGeometry = self.create_connection_geometry_from_polygon(
-                            opening_polygon, space_face_matrix
+                        opening_element = filling or opening
+                        boundary = self.get_matching_boundary(
+                            existing_boundaries, opening_element, props.boundary_class
                         )
-                        if filling:
-                            boundary.PhysicalOrVirtualBoundary = "PHYSICAL"
-                        else:
-                            boundary.PhysicalOrVirtualBoundary = "VIRTUAL"
-                        boundary.InternalOrExternalBoundary = parent_boundary.InternalOrExternalBoundary
+                        if boundary is None:
+                            boundary = ifcopenshell.api.root.create_entity(ifc_file, ifc_class=props.boundary_class)
+                            boundary.RelatingSpace = space
+                            boundary.RelatedBuildingElement = opening_element
+                            if filling:
+                                boundary.PhysicalOrVirtualBoundary = "PHYSICAL"
+                            else:
+                                boundary.PhysicalOrVirtualBoundary = "VIRTUAL"
+                            boundary.InternalOrExternalBoundary = parent_boundary.InternalOrExternalBoundary
+                        self.update_boundary_geometry(boundary, opening_polygon, space_face_matrix)
                         if boundary.is_a() != "IfcRelSpaceBoundary":
                             boundary.ParentBoundary = parent_boundary
                         self.set_boundary_name(boundary)
                         boundaries.append(boundary)
 
+        # Boundaries whose element no longer touches the space (moved away,
+        # removed geometry, etc) are now stale and should not linger.
+        self.remove_stale_boundaries(existing_boundaries)
         return boundaries
+
+    def get_matching_boundary(
+        self,
+        existing_boundaries: dict[int, list[ifcopenshell.entity_instance]],
+        element: ifcopenshell.entity_instance,
+        ifc_class: str,
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        """Pop and return a previously generated boundary for ``element``, if any, so it can be reused."""
+        candidates = existing_boundaries.get(element.id())
+        if not candidates:
+            return None
+        for i, candidate in enumerate(candidates):
+            if candidate.is_a(ifc_class):
+                return candidates.pop(i)
+        return None
+
+    def update_boundary_geometry(
+        self,
+        boundary: ifcopenshell.entity_instance,
+        polygon: shapely.Polygon,
+        face_matrix: Matrix,
+    ) -> None:
+        """Assign new connection geometry to boundary, refreshing its Blender mesh if loaded."""
+        old_geometry = boundary.ConnectionGeometry
+        boundary.ConnectionGeometry = self.create_connection_geometry_from_polygon(polygon, face_matrix)
+        if old_geometry:
+            ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_geometry)
+        if obj := tool.Ifc.get_object(boundary):
+            old_mesh = obj.data
+            loader = getattr(self, "_boundary_loader", None) or Loader(self)
+            self._boundary_loader = loader
+            obj.data = loader.create_mesh(boundary)
+            tool.Geometry.delete_data(old_mesh)
+
+    def remove_stale_boundaries(self, existing_boundaries: dict[int, list[ifcopenshell.entity_instance]]) -> None:
+        """Remove boundaries left unmatched after regeneration (their element no longer bounds the space)."""
+        ifc_file = tool.Ifc.get()
+        for candidates in existing_boundaries.values():
+            for boundary in candidates:
+                if obj := tool.Ifc.get_object(boundary):
+                    tool.Ifc.unlink(element=boundary)
+                    bpy.data.objects.remove(obj)
+                ifcopenshell.api.boundary.remove_boundary(ifc_file, boundary=boundary)
 
     def create_element_boundary(
         self,
