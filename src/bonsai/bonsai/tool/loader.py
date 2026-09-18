@@ -923,7 +923,9 @@ class Loader(bonsai.core.tool.Loader):
         return camera
 
     @classmethod
-    def get_offset_point(cls, ifc_file: ifcopenshell.file) -> Union[npt.NDArray[np.float64], None]:
+    def get_geometry_point(cls, ifc_file: ifcopenshell.file) -> Union[npt.NDArray[np.float64], None]:
+        """Absolute location in meters of the first vertex of the first element
+        that has geometry, or None when the file has no geometry at all."""
         # Check walls first, as they're usually cheap
         elements = ifc_file.by_type("IfcWall")
         elements += ifc_file.by_type("IfcElement")
@@ -946,12 +948,28 @@ class Loader(bonsai.core.tool.Loader):
                 continue
             mat = ifcopenshell.util.shape.get_shape_matrix(shape)
             verts = ifcopenshell.util.shape.get_vertices(shape.geometry)
-            point = (mat @ np_to_4d(verts[0]))[:3]
-            if cls.is_point_far_away(point, is_meters=True):
-                # Arbitrary origins should be to the nearest millimeter.
-                # Anything more precise is just ridiculous from a practical surveying perspective.
-                return np.array([round(float(p), 3) / cls.unit_scale for p in point])
-            break
+            return (mat @ np_to_4d(verts[0]))[:3]
+        return None
+
+    @classmethod
+    def get_offset_point(cls, ifc_file: ifcopenshell.file) -> Union[npt.NDArray[np.float64], None]:
+        point = cls.get_geometry_point(ifc_file)
+        if point is None or not cls.is_point_far_away(point, is_meters=True):
+            return None
+        # Arbitrary origins should be to the nearest millimeter.
+        # Anything more precise is just ridiculous from a practical surveying perspective.
+        return np.array([round(float(p), 3) / cls.unit_scale for p in point])
+
+    @classmethod
+    def moves_geometry_towards_origin(cls, ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> bool:
+        """True when subtracting ``element``'s placement would bring the model's
+        geometry closer to the Blender origin than it already is."""
+        point = cls.get_geometry_point(ifc_file)
+        if point is None:
+            return True
+        placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+        offset = placement[:3, 3] * cls.unit_scale
+        return bool(np.linalg.norm(point - offset) < np.linalg.norm(point))
 
     @classmethod
     def guess_false_origin_from_elements(cls, ifc_file: ifcopenshell.file) -> None:
@@ -976,10 +994,10 @@ class Loader(bonsai.core.tool.Loader):
         else:
             project = ifc_file.by_type("IfcContext")[0]
         site = cls.find_decomposed_ifc_class(project, "IfcSite")
-        if site and cls.is_element_far_away(site):
+        if site and cls.is_element_far_away(site) and cls.moves_geometry_towards_origin(ifc_file, site):
             return cls.guess_false_origin_and_project_north(ifc_file, site)
         building = cls.find_decomposed_ifc_class(project, "IfcBuilding")
-        if building and cls.is_element_far_away(building):
+        if building and cls.is_element_far_away(building) and cls.moves_geometry_towards_origin(ifc_file, building):
             return cls.guess_false_origin_and_project_north(ifc_file, building)
         return cls.guess_false_origin_from_elements(ifc_file)
 
