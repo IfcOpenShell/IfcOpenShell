@@ -442,12 +442,11 @@ namespace {
 			// in the CGAL kernel. Two modes, one or the other:
 			//  - CircleSegments == 0 (the default): the segment count is derived from
 			//    MesherLinearDeflection and MesherAngularDeflection, whichever is stricter,
-			//    matching the deflection based meshing the OpenCascade kernel already does
-			//    and fixing issue #8051, where large radius arcs (curved curtain wall
-			//    mullions) collapsed to straight chords because a fixed segment count is
-			//    radius agnostic. The angular bound is what keeps small radii from
-			//    collapsing: chord deviation scales with radius, so a linear tolerance alone
-			//    lets a small circle degenerate into a triangle.
+			//    matching the deflection based meshing in the OpenCascade kernel.
+			//    Use the strictest angular bound: min(pi/2, sagitta-derived linear bound,
+			//    angular deflection). The sagitta is the maximum arc-to-chord deviation;
+			//    pi/2 guarantees at least 4 parts per circle and acts as fallback when
+			//    radius <= linear deflection.
 			//  - CircleSegments > 0: it is used directly as the number of segments for a full
 			//    circle, giving deterministic, radius independent output.
 			int num_segments;
