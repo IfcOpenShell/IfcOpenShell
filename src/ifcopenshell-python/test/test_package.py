@@ -20,15 +20,20 @@ import http.client
 from pathlib import Path
 from urllib.parse import urlparse
 
-import pytest
 from typing_extensions import assert_never
 
 SUPPORTED_PY_VERSIONS = ("310", "311", "312", "313", "314")
 SUPPORTED_PLATFORMS = ("win64", "linux64", "macosm164")
 
 WASM_SUPPORTED_PY_VERSIONS = ("313",)
-WASM_PLATFORM = "pyodide_2025_0_wasm32"
+# The platform tag pyodide-build stamps on the wheel; it changed from pyodide_* to pyemscripten_* in 2025.
+WASM_PLATFORM = "pyemscripten_2025_0_wasm32"
 WASM_TEMPLATE = "https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-{BINARY_VERSION}%2B{BUILD_COMMIT}-cp{PYNUMBER}-cp{PYNUMBER}-{PLATFORM}.whl"
+
+
+def pep440_version(version: str) -> str:
+    """Normalise a version the way setuptools does when naming a wheel: "0.9.0alpha0" -> "0.9.0a0"."""
+    return version.replace("alpha", "a").replace("beta", "b").replace("pre", "rc").replace("preview", "rc")
 
 
 class TestPackageSupportedPlatforms:
@@ -76,12 +81,13 @@ class TestPackageSupportedPlatforms:
                 else:
                     assert_never(url_type)
 
-        # WASM wheels.
+        # WASM wheels. The wheel carries the PEP 440 normalised version ("0.9.0a0"),
+        # not the "0.9.0alpha0" the zips use.
         for pyver in WASM_SUPPORTED_PY_VERSIONS:
             url = WASM_TEMPLATE.format(
                 PYNUMBER=pyver,
                 PLATFORM=WASM_PLATFORM,
-                BINARY_VERSION=BINARY_VERSION,
+                BINARY_VERSION=pep440_version(BINARY_VERSION),
                 BUILD_COMMIT=BUILD_COMMIT,
             )
             required_urls.append(url)
@@ -124,13 +130,6 @@ class TestPackageSupportedPlatforms:
 
         return missing_urls
 
-    # TODO: drop this xfail once BUILD_COMMIT is bumped past ad113e1.
-    @pytest.mark.xfail(
-        condition="BUILD_COMMIT:=ad113e1"
-        in (Path(__file__).parents[3] / "src/ifcopenshell-python/Makefile").read_text(),
-        reason="pyodide wasm32 wheel is not published for build ad113e1",
-        strict=False,
-    )
     def test_run(self) -> None:
         required_urls = self.get_required_urls()
         maybe_missing_urls = self.get_missing_urls_fast(required_urls)
