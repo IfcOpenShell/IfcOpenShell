@@ -242,6 +242,6 @@ class Usecase:
             self.file.remove(self.style)
             self.style = reuse_item
 
-        reuse_item.Styles = (self.settings["style"],)
+        reuse_item.Styles = (self.style,)
         reuse_item.Name = self.settings["style"].Name
         return reuse_item

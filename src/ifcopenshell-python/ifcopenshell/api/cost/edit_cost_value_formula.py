@@ -69,7 +69,7 @@ class Usecase:
         if not ifc:
             ifc = ifcopenshell.api.cost.add_cost_value(self.file, parent=parent)
         if "AppliedValue" in data:
-            if data["AppliedValue"]:
+            if data["AppliedValue"] is not None:
                 ifc.AppliedValue = self.file.createIfcMonetaryMeasure(data["AppliedValue"])
             else:
                 ifc.AppliedValue = None
