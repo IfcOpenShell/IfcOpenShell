@@ -421,6 +421,18 @@ class Drawing(bonsai.core.tool.Drawing):
             element, "Plan", "Annotation"
         ) or ifcopenshell.util.representation.get_representation(element, "Model", "Annotation")
         if not rep:
+            # Some files attach the Annotation representation directly to the
+            # parent Model or Plan context instead of an Annotation subcontext,
+            # so fall back to matching by RepresentationIdentifier.
+            rep = next(
+                (
+                    r
+                    for r in ifcopenshell.util.representation.get_representations_iter(element)
+                    if r.RepresentationIdentifier == "Annotation"
+                ),
+                None,
+            )
+        if not rep:
             return None
 
         rep = tool.Geometry.resolve_mapped_representation(rep)
