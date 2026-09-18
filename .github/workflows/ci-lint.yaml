@@ -2,6 +2,7 @@ name: ci-lint
 
 on:
   push:
+    branches: [v0.9.0]
   pull_request:
 
 jobs:
