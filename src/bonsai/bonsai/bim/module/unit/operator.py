@@ -27,11 +27,30 @@ if TYPE_CHECKING:
     from bpy.stub_internal import rna_enums
 
 
+def draw_length_rescale_warning(layout: bpy.types.UILayout, factor: float) -> None:
+    layout.label(text="The project length unit is about to change.", icon="ERROR")
+    layout.label(text="Stored length values are not converted: they keep their numbers,")
+    layout.label(text=f"so the model is physically rescaled by {factor:g}x on the next load.")
+    layout.label(text="To change units while keeping the model size, use the")
+    layout.label(text="ConvertLengthUnit recipe in Quality Control > Patch instead.")
+
+
 class AssignSceneUnits(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_scene_units"
     bl_label = "Assign Scene Units"
     bl_description = "Add new units based on the current Blender scene units and assign them as project default."
     bl_options = {"REGISTER", "UNDO"}
+    rescale_factor: bpy.props.FloatProperty(options={"HIDDEN", "SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        factor = tool.Unit.get_scene_units_rescale_factor()
+        if factor is None:
+            return self.execute(context)
+        self.rescale_factor = factor
+        return context.window_manager.invoke_props_dialog(self, width=420)
+
+    def draw(self, context):
+        draw_length_rescale_warning(self.layout, self.rescale_factor)
 
     def _execute(self, context):
         core.assign_scene_units(tool.Ifc, tool.Unit)
@@ -44,6 +63,17 @@ class AssignUnit(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Assign provided unit as the default project unit for it's unit type."
     bl_options = {"REGISTER", "UNDO"}
     unit: bpy.props.IntProperty()
+    rescale_factor: bpy.props.FloatProperty(options={"HIDDEN", "SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        factor = tool.Unit.get_assign_unit_rescale_factor(tool.Ifc.get().by_id(self.unit))
+        if factor is None:
+            return self.execute(context)
+        self.rescale_factor = factor
+        return context.window_manager.invoke_props_dialog(self, width=420)
+
+    def draw(self, context):
+        draw_length_rescale_warning(self.layout, self.rescale_factor)
 
     def _execute(self, context):
         core.assign_unit(tool.Ifc, tool.Unit, unit=tool.Ifc.get().by_id(self.unit))
@@ -158,6 +188,17 @@ class EditUnit(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Edit Unit"
     bl_options = {"REGISTER", "UNDO"}
     unit: bpy.props.IntProperty()
+    rescale_factor: bpy.props.FloatProperty(options={"HIDDEN", "SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        factor = tool.Unit.get_edit_unit_rescale_factor(tool.Ifc.get().by_id(self.unit))
+        if factor is None:
+            return self.execute(context)
+        self.rescale_factor = factor
+        return context.window_manager.invoke_props_dialog(self, width=420)
+
+    def draw(self, context):
+        draw_length_rescale_warning(self.layout, self.rescale_factor)
 
     def _execute(self, context):
         core.edit_unit(tool.Ifc, tool.Unit, unit=tool.Ifc.get().by_id(self.unit))
