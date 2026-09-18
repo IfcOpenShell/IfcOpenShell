@@ -18,7 +18,14 @@ UNIFY_ENVVARS_AND_CACHE(PROJ_LIBRARIES)
 if((NOT PROJ_INCLUDE_DIR AND NOT PROJ_LIBRARIES))
     find_package(PROJ QUIET CONFIG)
 
-    if(NOT PROJ_FOUND)
+    if(PROJ_FOUND)
+        # cmake configs only define `PROJ::proj`.
+        # Guarded since find_package(PROJ) is invoked once per serializer plugin,
+        # and re-defining the alias on a later call would error out.
+        if(NOT TARGET proj::proj)
+            add_library(proj::proj ALIAS PROJ::proj)
+        endif()
+    else()
         find_path(PROJ_INCLUDE_DIR proj.h PATHS /usr/include/proj REQUIRED)
         if(PROJ_INCLUDE_DIR)
             message(STATUS "Found PROJ include files in: ${PROJ_INCLUDE_DIR}")
