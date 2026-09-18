@@ -804,6 +804,23 @@ def i_add_a_cube():
     bpy.ops.mesh.primitive_cube_add()
 
 
+@given("I add a collection instance of a cube")
+@when("I add a collection instance of a cube")
+def i_add_a_collection_instance_of_a_cube():
+    # Mimics what Blender's Asset Browser creates when an asset is dragged
+    # into the scene: an empty of instance_type COLLECTION with no data of
+    # its own, instancing a collection that holds the actual mesh object.
+    bpy.ops.mesh.primitive_cube_add()
+    cube = bpy.context.active_object
+    collection = bpy.data.collections.new("CubeAsset")
+    collection.objects.link(cube)
+    for coll in list(cube.users_collection):
+        if coll is not collection:
+            coll.objects.unlink(cube)
+    bpy.ops.object.collection_instance_add(collection=collection.name)
+    bpy.context.active_object.name = "CubeAsset"
+
+
 @given("I add an empty")
 @when("I add an empty")
 def i_add_an_empty():

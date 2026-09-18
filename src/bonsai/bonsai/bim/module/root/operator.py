@@ -352,6 +352,11 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                     if is_structural:
                         return False
                     data = obj.data
+                    # obj.data is None for empties, including collection instances
+                    # (e.g. objects dragged in from the Asset Browser), which have no
+                    # convertible geometry of their own.
+                    if not tool.Geometry.is_data_supported_for_adding_representation(data):
+                        return False
                     # Is empty mesh.
                     if isinstance(data, bpy.types.Mesh) and not data.vertices:
                         return False
@@ -359,6 +364,10 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                     if isinstance(data, bpy.types.Curve) and not data.splines:
                         return False
                     return True
+
+                is_unresolved_collection_instance = (
+                    obj.data is None and obj.type == "EMPTY" and obj.instance_type == "COLLECTION"
+                )
 
                 element = core.assign_class(
                     tool.Ifc,
@@ -376,6 +385,13 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                     tool.Geometry.reload_representation(obj)
                 elif obj.data is not None:
                     new_obj = tool.Geometry.recreate_object_with_data(obj, None)
+                elif is_unresolved_collection_instance:
+                    self.report(
+                        {"WARNING"},
+                        f"Object '{obj.name}' is a collection instance (e.g. dragged in from the Asset Browser) "
+                        "with no mesh data of its own, so no IFC representation was created. "
+                        "Use Object > Apply > Make Instances Real, or append the object directly, then assign the class again.",
+                    )
 
             # Accomodate existing importers to Blender from other formats that set custom props
             if self.props_to_pset:
