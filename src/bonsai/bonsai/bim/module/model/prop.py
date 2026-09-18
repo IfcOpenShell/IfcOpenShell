@@ -831,11 +831,21 @@ def window_type_prop_update(self, context):
     update_window(self, context)
 
 
+def window_shape_prop_update(self, context):
+    # non-rectangular shapes are single-partition by design
+    if self.window_shape != "RECTANGLE" and self.window_type != "SINGLE_PANEL":
+        self.window_type = "SINGLE_PANEL"  # triggers its own update
+        return
+    update_window(self, context)
+
+
 # default prop values are in mm and converted later
 class BIMWindowProperties(PropertyGroup):
     non_si_units_props = (
         "is_editing",
         "window_type",
+        "window_shape",
+        "arch_muntin_count",
         "lining_material",
         "framing_material",
         "glazing_material",
@@ -857,6 +867,16 @@ class BIMWindowProperties(PropertyGroup):
     # fmt: on
 
     is_editing: bpy.props.BoolProperty(default=False)
+    window_shape: bpy.props.EnumProperty(
+        name="Window Shape",
+        items=[
+            ("RECTANGLE", "Rectangle", "Rectangular window"),
+            ("ROUND", "Round", "Circular window, overall width is used as the diameter"),
+            ("ARCH", "Arch", "Rectangular window topped by a semicircular fanlight with radiating muntin bars"),
+        ],
+        default="RECTANGLE",
+        update=window_shape_prop_update,
+    )
     window_type: bpy.props.EnumProperty(
         name="Window Type",
         items=[(i, i, "") for i in get_args(tool.Model.WindowType)],
@@ -867,6 +887,14 @@ class BIMWindowProperties(PropertyGroup):
         name="Overall Height", default=0.9, subtype="DISTANCE", update=update_window
     )
     overall_width: bpy.props.FloatProperty(name="Overall Width", default=0.6, subtype="DISTANCE", update=update_window)
+    arch_muntin_count: bpy.props.IntProperty(
+        name="Arch Muntin Bars",
+        description="Number of radiating muntin bars in the arch fanlight",
+        default=4,
+        min=0,
+        max=24,
+        update=update_window,
+    )
 
     # lining properties
     lining_depth: bpy.props.FloatProperty(
@@ -935,9 +963,11 @@ class BIMWindowProperties(PropertyGroup):
 
     if TYPE_CHECKING:
         is_editing: bool
+        window_shape: tool.Model.WindowShape
         window_type: tool.Model.WindowType
         overall_height: float
         overall_width: float
+        arch_muntin_count: int
         lining_depth: float
         lining_thickness: float
         lining_offset: float
@@ -960,19 +990,27 @@ class BIMWindowProperties(PropertyGroup):
 
     def get_general_kwargs(self, convert_to_project_units: bool = False) -> dict[str, Any]:
         kwargs = {
+            "window_shape": self.window_shape,
             "window_type": self.window_type,
             "overall_height": self.overall_height,
             "overall_width": self.overall_width,
         }
+        if self.window_shape == "ARCH":
+            kwargs["arch_muntin_count"] = self.arch_muntin_count
         if not convert_to_project_units:
             return kwargs
-        return tool.Model.convert_data_to_project_units(kwargs, ["window_type"])
+        return tool.Model.convert_data_to_project_units(kwargs, ["window_shape", "window_type", "arch_muntin_count"])
 
     def get_lining_kwargs(
-        self, window_type: Optional[tool.Model.WindowType] = None, convert_to_project_units: bool = False
+        self,
+        window_type: Optional[tool.Model.WindowType] = None,
+        window_shape: Optional[tool.Model.WindowShape] = None,
+        convert_to_project_units: bool = False,
     ) -> dict[str, Any]:
         if not window_type:
             window_type = self.window_type
+        if not window_shape:
+            window_shape = self.window_shape
         kwargs = {
             "lining_depth": self.lining_depth,
             "lining_thickness": self.lining_thickness,
@@ -981,33 +1019,39 @@ class BIMWindowProperties(PropertyGroup):
             "lining_to_panel_offset_y": self.lining_to_panel_offset_y,
         }
 
-        if window_type in (
-            "DOUBLE_PANEL_VERTICAL",
-            "TRIPLE_PANEL_BOTTOM",
-            "TRIPLE_PANEL_TOP",
-            "TRIPLE_PANEL_LEFT",
-            "TRIPLE_PANEL_RIGHT",
-            "TRIPLE_PANEL_VERTICAL",
-        ):
+        if window_shape == "ARCH":
+            # spring line transom and radiating muntin bars of the fanlight
             kwargs["mullion_thickness"] = self.mullion_thickness
-            kwargs["first_mullion_offset"] = self.first_mullion_offset
-
-        if window_type in (
-            "DOUBLE_PANEL_HORIZONTAL",
-            "TRIPLE_PANEL_BOTTOM",
-            "TRIPLE_PANEL_TOP",
-            "TRIPLE_PANEL_LEFT",
-            "TRIPLE_PANEL_RIGHT",
-            "TRIPLE_PANEL_HORIZONTAL",
-        ):
             kwargs["transom_thickness"] = self.transom_thickness
-            kwargs["first_transom_offset"] = self.first_transom_offset
 
-        if window_type in ("TRIPLE_PANEL_VERTICAL",):
-            kwargs["second_mullion_offset"] = self.second_mullion_offset
+        if window_shape == "RECTANGLE":
+            if window_type in (
+                "DOUBLE_PANEL_VERTICAL",
+                "TRIPLE_PANEL_BOTTOM",
+                "TRIPLE_PANEL_TOP",
+                "TRIPLE_PANEL_LEFT",
+                "TRIPLE_PANEL_RIGHT",
+                "TRIPLE_PANEL_VERTICAL",
+            ):
+                kwargs["mullion_thickness"] = self.mullion_thickness
+                kwargs["first_mullion_offset"] = self.first_mullion_offset
 
-        if window_type in ("TRIPLE_PANEL_HORIZONTAL",):
-            kwargs["second_transom_offset"] = self.second_transom_offset
+            if window_type in (
+                "DOUBLE_PANEL_HORIZONTAL",
+                "TRIPLE_PANEL_BOTTOM",
+                "TRIPLE_PANEL_TOP",
+                "TRIPLE_PANEL_LEFT",
+                "TRIPLE_PANEL_RIGHT",
+                "TRIPLE_PANEL_HORIZONTAL",
+            ):
+                kwargs["transom_thickness"] = self.transom_thickness
+                kwargs["first_transom_offset"] = self.first_transom_offset
+
+            if window_type in ("TRIPLE_PANEL_VERTICAL",):
+                kwargs["second_mullion_offset"] = self.second_mullion_offset
+
+            if window_type in ("TRIPLE_PANEL_HORIZONTAL",):
+                kwargs["second_transom_offset"] = self.second_transom_offset
 
         if not convert_to_project_units:
             return kwargs

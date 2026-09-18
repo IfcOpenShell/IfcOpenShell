@@ -484,7 +484,9 @@ class WindowData:
         data = cls.data["pset_data"]["data_dict"]
         lining_data = data["lining_properties"]
         lining_params = {}
-        lining_props = props.get_lining_kwargs(window_type=data["window_type"])
+        lining_props = props.get_lining_kwargs(
+            window_type=data["window_type"], window_shape=data.get("window_shape", "RECTANGLE")
+        )
         for prop_name in lining_props:
             prop_readable_name, prop_value = get_prop_from_data(props, lining_data, prop_name)
             lining_params[prop_readable_name] = prop_value

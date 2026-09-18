@@ -774,6 +774,12 @@ def draw_window_properties(layout: bpy.types.UILayout, props: module_prop.BIMWin
     # General and lining properties
     general_props = props.get_general_kwargs()
     for prop in general_props:
+        # partitioning is forced to SINGLE_PANEL for non-rectangular shapes
+        if prop == "window_type" and props.window_shape != "RECTANGLE":
+            continue
+        # a round window is defined by its diameter (overall width)
+        if prop == "overall_height" and props.window_shape == "ROUND":
+            continue
         layout.prop(props, prop)
 
     layout.label(text="Lining Properties")
