@@ -84,3 +84,66 @@ class TestCalculateDistanceAndAngle(NewFile):
 
         assert input_ui.get_number_value("D") == 0
         assert input_ui.get_number_value("A") == 0
+
+
+class TestPolylineUIUnsetField(NewFile):
+    def test_get_number_value_returns_none_for_an_unset_field(self):
+        # Regression test: pressing "D" clears `_D` to "" to accept fresh
+        # typing (bim/module/model/polyline.py). If the user tabs away before
+        # typing a digit, `_D` stays "" rather than becoming a real number.
+        # get_number_value() used to return that raw "" instead of None,
+        # which crashed downstream code that only guards against None
+        # (format_input_ui_units's `value / unit_scale`, and
+        # calculate_x_y_and_z's `distance < 0 or distance > 0`).
+        input_ui = subject.create_input_ui(input_options=["D", "A", "X", "Y"])
+        assert input_ui.get_number_value("D") is None
+        assert input_ui.get_formatted_value("D") is None
+
+    def test_it_does_not_crash_when_distance_has_not_been_typed_yet(self, monkeypatch):
+        monkeypatch.setattr(tool.Snap, "get_increment_snap_value", classmethod(lambda cls, context: 1.0))
+
+        polyline_props = tool.Model.get_polyline_props()
+        mouse_point = polyline_props.snap_mouse_point.add()
+        mouse_point.x, mouse_point.y, mouse_point.z = 1, 2, 0
+
+        tool_state = subject.create_tool_state()
+        tool_state.is_input_on = True
+        tool_state.use_default_container = True
+
+        input_ui = subject.create_input_ui(input_options=["D", "A", "X", "Y"])
+        input_ui.set_value("X", 1)
+        input_ui.set_value("Y", 2)
+        input_ui.set_value("A", 0)
+        # "D" left unset, as if "D" was pressed but nothing typed before Tab.
+
+        subject.calculate_x_y_and_z(bpy.context, input_ui, tool_state)
+
+    def test_it_does_not_crash_for_a_2d_only_tool_with_no_z_input(self, monkeypatch):
+        # Regression test: the alignment horizontal-draw tool (a plan/XY-only
+        # workflow) sets use_default_container=False but, unlike
+        # DrawPolylineProfile, never adds "Z" to input_options — so `_Z` is
+        # never given a value. calculate_distance_and_angle/calculate_x_y_and_z
+        # used to build `Vector((x, y, input_ui.get_number_value("Z")))`
+        # unconditionally in the `is_input_on and not use_default_container`
+        # branch, crashing with a None/str third component as soon as the
+        # user tabbed into "D" or "A" (bim/module/alignment/operator.py's
+        # ALIGN_OT_draw_horizontal_alignment).
+        monkeypatch.setattr(tool.Snap, "get_increment_snap_value", classmethod(lambda cls, context: 1.0))
+
+        polyline_props = tool.Model.get_polyline_props()
+        mouse_point = polyline_props.snap_mouse_point.add()
+        mouse_point.x, mouse_point.y, mouse_point.z = 1, 2, 0
+
+        tool_state = subject.create_tool_state()
+        tool_state.is_input_on = True
+        tool_state.use_default_container = False
+        tool_state.plane_method = "XY"
+
+        input_ui = subject.create_input_ui(input_options=["D", "A", "X", "Y"])
+        input_ui.set_value("X", 1)
+        input_ui.set_value("Y", 2)
+        input_ui.set_value("A", 0)
+        input_ui.set_value("D", 5)
+
+        subject.calculate_x_y_and_z(bpy.context, input_ui, tool_state)
+        subject.calculate_distance_and_angle(bpy.context, input_ui, tool_state)

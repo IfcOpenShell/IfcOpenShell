@@ -56,7 +56,7 @@ class Polyline(bonsai.core.tool.Polyline):
             if value:
                 return float(value)
             else:
-                return value
+                return None
 
         def get_formatted_value(self, attribute_name):
             value = self.get_number_value(attribute_name)
@@ -137,8 +137,9 @@ class Polyline(bonsai.core.tool.Polyline):
                     (input_ui.get_number_value("X"), input_ui.get_number_value("Y"), default_container_elevation)
                 )
             else:
+                z = input_ui.get_number_value("Z")
                 mouse_vector = Vector(
-                    (input_ui.get_number_value("X"), input_ui.get_number_value("Y"), input_ui.get_number_value("Z"))
+                    (input_ui.get_number_value("X"), input_ui.get_number_value("Y"), z if z is not None else 0)
                 )
         else:
             if tool_state.use_default_container:
@@ -285,8 +286,9 @@ class Polyline(bonsai.core.tool.Polyline):
                     (input_ui.get_number_value("X"), input_ui.get_number_value("Y"), default_container_elevation)
                 )
             else:
+                z = input_ui.get_number_value("Z")
                 mouse_vector = Vector(
-                    (input_ui.get_number_value("X"), input_ui.get_number_value("Y"), input_ui.get_number_value("Z"))
+                    (input_ui.get_number_value("X"), input_ui.get_number_value("Y"), z if z is not None else 0)
                 )
         else:
             if tool_state.use_default_container:
@@ -309,7 +311,7 @@ class Polyline(bonsai.core.tool.Polyline):
 
         distance = input_ui.get_number_value("D")
 
-        if distance < 0 or distance > 0:
+        if distance is not None and (distance < 0 or distance > 0):
             angle = radians(input_ui.get_number_value("A"))
 
             rot_vector = tool.Cad.angle_3_vectors(second_to_last_point, last_point, snap_vector, angle, degrees=True)

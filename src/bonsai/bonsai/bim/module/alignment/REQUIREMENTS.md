@@ -1,7 +1,7 @@
 # Alignment Authoring — Requirements
 
-Working requirements doc for the Bonsai alignment authoring UI (Civil Infrastructure tab and the
-Alignment BIM tab). Captures planned work, not yet implemented unless noted. Update in place as
+Working requirements doc for the Bonsai alignment authoring UI (Alignment BIM tab). 
+Captures planned work, not yet implemented unless noted. Update in place as
 scope is refined or decisions are made; keep open questions marked as such rather than silently
 resolving them.
 
@@ -42,7 +42,8 @@ that reliably crashes the geometry kernel (divides by a curvature-change factor 
 zero) rather than erroring gracefully. This is intentionally left unguarded in
 `tool.Alignment.validate_horizontal_segment_rows`/`validate_vertical_segment_rows` — the crash is
 meant to stay visible as a reminder that the kernel itself needs the fix, not papered over with a
-UI-side check.
+UI-side check. Offer to user that this needs to be handled - offer to explore graceful handling
+in the ifcopenshell geometry kernel, if not practical/possible there, then error guard in the UI.
 
 ## 2. Interactive creation of a horizontal alignment
 
@@ -174,34 +175,46 @@ improvements:
    may need selecting 2 PIs and defining both curves' parameters together, rather than the
    single-PI marker interaction used for §2 steps 6-7 today.
 
-   **Confirmed future requirement (per the user, 2026-09-17): laying out PI curves should fail
-   gracefully when the curve is too long for the space available.** Two distinct gaps today, both
-   in `solve_horizontal_alignment_by_pi_method`:
+   **Fixed (2026-09-17): laying out PI curves now fails gracefully when the curve is too long for
+   the space available.** Two distinct gaps existed, both in `solve_horizontal_alignment_by_pi_method`,
+   and both are now closed:
 
-   - **Not validated at all:** `tangent_run` (the straight run left over between the previous
-     curve's end and this curve's start, or between this curve's end and the next PI) is computed
-     for every PI but never checked for being negative -- only whether it's large enough to bother
-     emitting a `LINE` segment (`1.0e-03 < tangent_run`). When a curve's own radius/spiral lengths
-     need more tangent distance than two PIs are actually apart (PIs too close together, or the
-     curve too large for the gap), `tangent_run` goes negative and the solver silently keeps going,
-     producing overlapping/self-intersecting geometry with no error at all. This is likely the
-     single biggest practical way a user hits "too long a curve" in ordinary use (tightening one
-     PI's radius without checking neighboring PIs), and needs a proper closure check, not just a
-     value large enough to matter.
-   - **Validated, but not gracefully:** the existing `"spiral transition curves are too long; their
-     combined deflection exceeds the PI deflection angle"` `ValueError` (entry + exit spiral
-     deflection together exceeding the PI's own turn angle) is a real check, but nothing between
-     the solver and the user's screen catches it specifically --
-     `tool.Alignment.safe_layout_horizontal_by_pi_method` only documents its own "no parent
-     alignment" `ValueError`, so this one propagates uncaught through `_generate_alignment_segments`
-     into `tool.Ifc.Operator`'s generic exception handler, surfacing as "Operation partially
-     completed (IFC changed, Blender state may be stale). Press Ctrl+Z to restore the previous
-     state." rather than a clean, specific message pointing at which PI and why.
+   - **Was not validated at all, now is:** `tangent_run` (the straight run left over between the
+     previous curve's end and this curve's start) is computed for every PI in both the plain-circular
+     branch and the spiral-transition branch, but was only ever checked for being *large enough to
+     bother emitting* a `LINE` segment (`1.0e-03 < tangent_run`), never for being negative. When a
+     curve's own radius/spiral lengths need more tangent distance than two PIs are actually apart
+     (PIs too close together, or the curve too large for the gap), `tangent_run` went negative and
+     the solver silently kept going, producing overlapping/self-intersecting geometry with no error
+     at all -- this was likely the single biggest practical way a user hit "too long a curve" in
+     ordinary use (tightening one PI's radius without checking neighboring PIs). Both branches now
+     raise `ValueError(f"PI {n}: ...too large/too long for the distance between PIs...")` the moment
+     `tangent_run < -1.0e-03`, naming the specific offending PI (1-based, matching this module's
+     "PI n" labels elsewhere) and suggesting the fix (smaller radius/shorter spirals, or move the
+     PIs farther apart). Verified this doesn't false-positive on genuinely-tight-but-valid curves
+     (`test_solve_errors_when_tangent_run_goes_negative` checks both a failing and a fitting radius,
+     and both a failing and a fitting spiral pair, on the same PI) -- the check only ever fires when
+     a curve would otherwise have produced backtracking geometry, and it doesn't affect the existing
+     `xBT/yBT` chaining that already nets consecutive curves' tangent consumption against each other
+     across PIs (verified via the full `test/api/alignment` suite, no regressions).
+   - **Was validated, but not gracefully, now is:** the existing `"spiral transition curves are too
+     long; their combined deflection exceeds the PI deflection angle"` `ValueError` (entry + exit
+     spiral deflection together exceeding the PI's own turn angle) is a real, separate check (still
+     present, unchanged) -- but nothing between the solver and the user's screen used to catch it
+     specifically, so it propagated uncaught through `_generate_alignment_segments` into
+     `tool.Ifc.Operator`'s generic exception handler, surfacing as "Operation partially completed
+     (IFC changed, Blender state may be stale). Press Ctrl+Z to restore the previous state."
 
-   Both should end up reported the same way validation errors already are elsewhere in this module
-   (e.g. `ALIGN_OT_apply_h_segments`'s cant-layout check): a clear `self.report({"ERROR"}, ...)`
-   naming the offending PI, `{"CANCELLED"}`, and no partial mutation -- not a raised exception and
-   not silently-wrong geometry.
+   Both are now reported the same way validation errors already are elsewhere in this module (e.g.
+   `ALIGN_OT_apply_h_segments`'s cant-layout check): `_generate_alignment_segments` catches `ValueError`
+   from `tool.Alignment.safe_layout_horizontal_by_pi_method`, clears whatever segments the solver had
+   already written for earlier PIs before hitting the failing one (the solver is a streaming generator
+   consumed segment-by-segment, so partial writes can happen before the failure), and returns
+   `(False, message)` -- the same `(ok, message)` contract every caller here already handles, reporting
+   a `WARNING` with the specific message and finishing cleanly (`{"FINISHED"}`, matching the existing
+   Viennese-Bend-without-cant precedent) rather than crashing. Both `ValueError` messages now name the
+   offending PI number for both of these fixed cases plus the pre-existing "PI deflection angle is
+   zero" case, since all three share the same message-formatting change.
 8. Right-click (or whatever is standard) to end the command. Generate the alignment automatically.
 
 ## 3. Interrogating an alignment
@@ -241,6 +254,156 @@ a real (X, Y) position in the actual 3D scene, so viewport dragging (with native
 entry) is a natural, already-working fit with no equivalent for vertical PIs, which only have
 meaning in the profile view's synthetic (distance-along, elevation) space. The table is offered as
 an additional, keyboard-precise path for horizontal rather than swapping out what already works.
+
+**Implemented (2026-09-18): dragging the Start Point or End Point.** Was a real, confirmed gap
+(only interior PIs ever got a marker/table row — see the "Not yet built" note this replaces).
+Mirrors the interior-PI marker pattern exactly: `_create_endpoint_marker` builds the same kind of
+draggable, XY-plane-locked `PLAIN_AXES` Empty as `_create_pi_markers`'s interior markers, tagged
+with a new `PICurveMarkerProperties.role` field (`"PI"`/`"START"`/`"END"`) instead of the
+previously-implicit "every marker is an interior PI" assumption. `_create_pi_markers` now always
+creates Start/End markers alongside any interior ones — including when there are zero interior PIs
+at all (a dead-straight two-point alignment still gets draggable endpoints) — and
+`ALIGN_OT_edit_horizontal_pis` does the same for a previously-drawn/imported alignment.
+`ALIGN_OT_apply_pi_curve` (poll broadened to accept any marker, not just an interior one) now reads
+the Start/End points from these markers' current `.location` instead of always calling
+`tool.Alignment.get_alignment_start_end_points()` — that read is kept only as a defensive fallback
+for a marker set predating this feature. `PIMarkerDecorator` and `ALIGN_PT_alignment_authoring`
+both got a third, endpoint-specific branch (blue dot/"Start"/"End" label; a minimal panel box with
+just Apply/Finish, no curve-type fields, since an endpoint has no curve). Verified end-to-end via
+direct script (headless Blender, since `test/bim/` needs `pytest-bdd`, not installed): create
+markers → drag Start/End → Apply → new segment start point matches the dragged location exactly;
+also verified a straight 2-point alignment gets Start/End markers with no interior PI, and that
+endpoint markers never count toward the "N PIs still need a curve" status-bar hint. Regression
+tests added in `test_alignment_operators.py` (`TestStartEndPointMarkers`).
+
+**Also fixed alongside this (per the user, 2026-09-18): Finish now reselects the alignment.**
+`ALIGN_OT_finish_pi_editing` removes the marker Empties, and if the active object was one of them
+(the common case — you just dragged and applied it), Blender left nothing selected afterward. It
+now explicitly reselects the alignment's own object first, same convention already used by
+`ALIGN_OT_add_alignment`/`ALIGN_OT_draw_horizontal_alignment`.
+
+**Confirmed future requirement (per the user, 2026-09-17): typed numeric input while dragging a
+PI/Start/End marker, matching the original draw command.** Today, dragging one of these marker
+Empties (see the "Implemented (2026-09-18)" note above, and the interior-PI markers from §2 step 6)
+is plain Blender object movement — `_lock_pi_marker_transform` only locks Z/rotation/scale, so the
+drag itself is Blender's native Move, which does already accept *some* numeric entry (`G` then type
+an X value, `Tab`, a Y value, `Enter`; or the N-panel's Location fields) — but that's Blender's
+generic transform input, not the civil-engineer-style Distance + Bearing/Angle/Deflection Angle
+popup that `ALIGN_OT_draw_horizontal_alignment` already has via the `PolylineOperator` mixin (D/A/X/Y
+typed entry, §2 step 2). No marker-drag path reuses that input system. The building blocks already
+exist (`PolylineOperator`/`PolylineDecorator`'s D/A/X/Y-with-Tab-cycling UI, and the markers are
+already modal-draggable Empties) — this would be extending that proven input overlay to the
+marker-drag interaction (or a bespoke modal replacing the plain Move-tool drag) rather than
+inventing a new mechanism. Same gap exists for vertical's PI editing per §6 item 2, once that gets
+its own drag-to-edit path — one input system, ideally shared by both. Not yet designed or built.
+
+**Fixed (2026-09-17): the start-station "dot" wasn't following the Start Point marker when it
+moved, for alignments bootstrapped via Blender's generic Add Element rather than the Alignments
+tab's own Add Alignment button.** When an alignment is first created, the start stationing referent
+(distance-along 0.0) gets a viewport Empty immediately (`create_object_for_referent`) — visually a
+small dot at the alignment's start. Dragging the Start Point marker and clicking Apply Curve is
+supposed to keep that dot in sync: `_generate_alignment_segments` calls `tool.Alignment.
+sync_stationing_referent_placements()` → `sync_referent_object_placement()` after every rebuild,
+re-resolving the referent's `IfcLinearPlacement` (an `IfcPointByDistanceExpression` at
+`DistanceAlong=0.0` on the layout's basis curve) and writing the result to the referent's Blender
+object.
+
+Set up the dev environment properly to chase this down live rather than by inspection alone: the
+`bonsai`/`ifcopenshell` packages Blender's extensions folder actually imports
+(`extensions/.local/lib/python3.13/site-packages/{bonsai,ifcopenshell}`) turned out to already be
+symlinked straight to this repo (this repo's own `scripts/dev_environment.py` had already been run at
+some point) — confirmed by enabling the addon in a `blender --background` session and checking
+`bonsai.__file__`. Reproduced the exact reported interaction end to end from there (create alignment
+→ draw → Edit PIs → drag Start marker → Apply Curve, via the real, registered operators, no mocking)
+in a headless script.
+
+That repro came back clean for the Alignments-tab-button path (`tool.Alignment.create_alignment()` →
+`ifcopenshell.api.alignment.create()`): the dot followed the dragged Start point correctly, including
+across a second edit/drag/Apply cycle and after Finish. So the sync mechanism itself, and the
+IFC-level placement math underneath it, were never the bug.
+
+The same repro against the *other* alignment-creation path — `tool.Alignment.
+add_horizontal_layout_to_alignment()`, used to bootstrap an alignment created via Blender's generic
+Add Element rather than the Alignments tab's Add Alignment button — reproduced the reported symptom
+exactly: the dot stayed pinned at the origin no matter how far or how many times the Start marker was
+dragged and applied. Root cause: that function calls `_create_geometric_representation()` (which sets
+`alignment.Representation`) and then `add_stationing_referent()` *before* `_add_zero_length_segment()`
+— so at the moment the referent is created, the basis curve has zero segments on it yet, and
+`add_stationing_referent()`'s own logic (see its docstring) falls back to a plain `IfcLocalPlacement`
+at the origin instead of an `IfcLinearPlacement` tracking the curve. Every later real draw/Apply calls
+`ifcopenshell.api.alignment.create_representation()`, whose one job is to restate exactly this kind of
+origin-placed referent onto the curve once real geometry exists — but it opens with `if alignment.
+Representation: return`, and `alignment.Representation` was already set by that earlier
+`_create_geometric_representation()` call, so the restate is permanently unreachable. The referent's
+placement was never wrong by a little; it just never got upgraded past the origin at all.
+`ifcopenshell.api.alignment.create()` (the function the *other*, working creation path calls) avoids
+this by adding its zero-length segments before returning — i.e. before any caller can add a stationing
+referent — so `add_stationing_referent()` always finds a segment already on the curve.
+
+Fix: reordered `add_horizontal_layout_to_alignment()` to add the zero-length segment before the
+stationing referent, mirroring `create()`'s own ordering. Verified with the same headless script:
+referent placement is `IfcLinearPlacement` from the moment of bootstrap (rather than
+`IfcLocalPlacement`), and the dot now follows the Start marker correctly through drag → Apply, a
+second drag/Apply cycle, and Finish — matching the already-working Add Alignment path. Confirmed no
+regression via the existing `test/core/test_alignment.py` and `test/tool/test_alignment.py` suites
+(40 passed; the one pre-existing failure there, an unrelated CSV-import interface mismatch, reproduces
+identically with this fix reverted, so it predates this change). `test/bim/` itself still can't run in
+this environment (`pytest-bdd` not installed, same gap already noted elsewhere in this doc).
+
+**Fixed (2026-09-17): the alignment object's own origin (its click-to-select dot) fell behind the
+curve's real start point after any PI edit past the first draw.** Per the user, after chasing several
+false leads first (see the trail below — kept for the next person hitting the same confusion): "the
+dot is annoying and we didn't have it before."
+
+`refresh_alignment_representation_object` special-cases an interactively-drawn alignment so its
+Blender object's own origin sits at the curve's start point (rather than at Blender's `(0,0,0)`,
+which is what happens by default unless the point is "far away" in `tool.Loader.is_point_far_away`'s
+sense — see the code comment there) by baking the mesh's vertices relative to that start point and
+carrying it as `matrix_world`'s translation, via a `cartesian_point_offset` mesh property. That
+special-casing only ran the *first* time the object was created, though: every later call (from every
+Apply, via `_generate_alignment_segments`) took the "already a MESH object" branch, which just called
+the generic `tool.Geometry.reload_representation()`. That reload path *reuses the already-stored*
+`cartesian_point_offset` rather than recomputing it — correct for rendering the curve itself (mesh
+vertices and `matrix_world` still agree with each other, just both anchored to a stale point) but it
+meant the object's own origin silently stayed wherever the curve's start was on the very first draw,
+never advancing as PIs got edited afterward — while the actual curve, and the separate stationing
+referent object, both did keep moving correctly. Three genuinely different things were all named "the
+dot" across this investigation, which is what made it confusing to pin down:
+
+1. The stationing referent (`IfcReferent/... 0+000.000`) — always correct; this is the one meant to
+   mark the start station and it always tracked the drag correctly, including before this fix.
+2. The alignment's own object-origin dot — the one actually broken here, now fixed.
+3. Blender's default per-selected-object origin indicator is what dot 2 *is*, which is why comparing
+   it to the alignment object's own `.location` reads as "the dot is stuck" rather than "the object's
+   origin is stuck" — same underlying fact, just easy to describe either way mid-investigation.
+
+Fix: `refresh_alignment_representation_object` now recomputes `cartesian_point_offset` fresh from the
+current geometry and rebuilds the mesh (`create_mesh`) on *every* call, reusing the existing object/mesh
+datablock rather than reloading in place or recreating the object — preserves object identity (so
+selection/outliner state survives an Apply) while keeping the origin anchored to the curve's *current*
+start point. Verified via headless script: object identity is preserved across repeated drag/Apply/
+Finish cycles, the origin correctly follows the Start marker each time (not just once), and no orphaned
+mesh datablocks accumulate (the previous mesh, now unused, is explicitly removed once `obj.data` moves
+to the fresh one). Also verified against the user's own saved file. No regressions in
+`test/core/test_alignment.py` / `test/tool/test_alignment.py` (40 passed; same pre-existing, unrelated
+CSV-import failure as before).
+
+**The false leads, for the record (all confirmed correct, none needed fixing):**
+- The stationing referent itself, first suspected — proven correct via a pure-`ifcopenshell` placement
+  resolution test (no Blender objects involved) and later via headless replay of the real operators.
+- A second alignment-creation path, `add_horizontal_layout_to_alignment` (used by Blender's generic
+  Add Element, as opposed to the Alignments tab's own Add Alignment button) — this one *was* genuinely
+  broken (referent permanently stuck at `IfcLocalPlacement`/origin, a real ordering bug, fixed
+  separately — see the "Fixed (2026-09-17): the start-station 'dot' wasn't following..." entry above)
+  but turned out to be a different bug from the one the user was actually hitting, since they'd used
+  the Add Alignment button.
+- A theory that `AlignmentSegmentDecorator`'s cached segment highlight goes stale after Apply (it does,
+  in principle — its cache tracks a `segment_id` that Apply's full rebuild deletes and replaces with a
+  fresh one — but `ALIGN_OT_edit_horizontal_pis` already uninstalls that decorator on entry, so it
+  never stays installed across the exact drag/Apply/Finish sequence being debugged).
+- A theory that this was a pure viewport-repaint lag rather than a real data problem — ruled out once
+  the user reported the *numeric* N-panel Location field itself (not just the on-screen paint) showing
+  a stale value, which a render-only lag can't explain.
 
 ## 5. Alternative alignment definition methods
 

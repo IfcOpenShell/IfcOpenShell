@@ -769,6 +769,7 @@ class PIMarkerDecorator:
     RADIUS_PX = 9.0
     COLOR_PENDING = (1.0, 0.35, 0.25, 1.0)  # Red-orange -- still a sharp PI (TANGENT)
     COLOR_DONE = (0.35, 0.9, 0.45, 1.0)  # Green -- curve applied
+    COLOR_ENDPOINT = (0.4, 0.65, 1.0, 1.0)  # Blue -- Start/End Point marker, no curve state to show
     COLOR_RING = (0.05, 0.05, 0.05, 0.75)  # Dark outline so the dot reads on any background
     COLOR_LABEL = (1.0, 1.0, 1.0, 1.0)
 
@@ -846,13 +847,19 @@ class PIMarkerDecorator:
             if not screen:
                 continue
             sx, sy = screen.x, screen.y
-            pending = marker.bonsai_pi_curve_marker.curve_type == "TANGENT"
-            color = cls.COLOR_PENDING if pending else cls.COLOR_DONE
+            role = marker.bonsai_pi_curve_marker.role
+            if role == "PI":
+                pending = marker.bonsai_pi_curve_marker.curve_type == "TANGENT"
+                color = cls.COLOR_PENDING if pending else cls.COLOR_DONE
+                label = f"PI {marker.bonsai_pi_curve_marker.pi_index}"
+            else:
+                color = cls.COLOR_ENDPOINT
+                label = "Start" if role == "START" else "End"
             self._draw_dot(sx, sy, cls.RADIUS_PX, color, region)
 
             blf.color(font_id, *cls.COLOR_LABEL)
             blf.position(font_id, sx + cls.RADIUS_PX + 4, sy - font_size * 0.35, 0)
-            blf.draw(font_id, f"PI {marker.bonsai_pi_curve_marker.pi_index}")
+            blf.draw(font_id, label)
         gpu.state.blend_set("NONE")
         blf.disable(font_id, blf.SHADOW)
 
