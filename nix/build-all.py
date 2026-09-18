@@ -308,18 +308,15 @@ def parse_args() -> tuple[Args, DynamicArgs]:
     )
     arg_parser.add_argument(
         "--occt-shared",
-        action="store_true",
-        default=False,
-        help="Build OCCT as shared. This is the default; the flag is kept for compatibility.",
-    )
-    arg_parser.add_argument(
-        "--occt-static",
-        action="store_true",
-        default=False,
+        action=argparse.BooleanOptionalAction,
+        # None (rather than True) so the -wasm fallback below can tell "unset" apart from
+        # an explicit --occt-shared and default to static only when the user said nothing.
+        default=None,
         help=(
-            "Build OCCT as static archives. Not recommended: a static OCCT is linked privately into "
-            "every plug-in, so shapes handed between plug-ins (kernel -> tree, kernel -> SVG serializer) "
-            "are misread. Implied for wasm, which has no shared libraries."
+            "Build OCCT as shared libraries. Default unless -wasm, which has no shared libraries. "
+            "--no-occt-shared is not recommended: a static OCCT is linked privately into every "
+            "plug-in, so shapes handed between plug-ins (kernel -> tree, kernel -> SVG serializer) "
+            "are misread."
         ),
     )
     arg_parser.add_argument(
@@ -380,7 +377,9 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         verbose=namespace.verbose,
         shared=namespace.shared,
         ifcopenshell_shared=namespace.ifcopenshell_shared or namespace.shared,
-        occt_shared=namespace.shared or (not namespace.occt_static and not namespace.wasm),
+        # -shared implies a shared OCCT too, even overriding an explicit --no-occt-shared.
+        occt_shared=namespace.shared
+        or (namespace.occt_shared if namespace.occt_shared is not None else not namespace.wasm),
         mac_cross_compile_intel=namespace.mac_cross_compile_intel,
         wasm=namespace.wasm,
         num_build_procs=num_build_procs,
