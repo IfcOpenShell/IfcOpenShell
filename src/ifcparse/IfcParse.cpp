@@ -1623,57 +1623,63 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
     logger().Status("Scanning file...");
 
     while (streamer) {
+        try {
+            auto inst = streamer.readInstance();
 
-        auto inst = streamer.readInstance();
+            if (!inst) {
+                // No more instances to read
+                break;
+            }
 
-        if (!inst) {
-            // No more instances to read
-            break;
-		}
+            auto current_id = std::get<0>(*inst);
 
-        auto current_id = std::get<0>(*inst);
+            auto instance = schema->instantiate(std::get<1>(*inst), std::move(std::get<2>(*inst)));
+            instance->file_ = file;
+            instance->id_ = (uint32_t) current_id;
 
-        auto instance = schema->instantiate(std::get<1>(*inst), std::move(std::get<2>(*inst)));
-        instance->file_ = file;
-        instance->id_ = (uint32_t) current_id;
-
-        if (instance->declaration().is(*ifcroot_type_)) {
-            try {
-                // @nb here we know we're using in-memory so 'nullptr, nullptr, 0' is safe
-                const std::string guid = instance->data().get_attribute_value(nullptr, nullptr, 0, 0);
-                if (byguid_.find(guid) != byguid_.end()) {
-                    std::stringstream ss;
-                    ss << "Instance encountered with non-unique GlobalId " << guid;
-                    logger().Message(Logger::LOG_WARNING, "SYN", 16, ss.str());
+            if (instance->declaration().is(*ifcroot_type_)) {
+                try {
+                    // @nb here we know we're using in-memory so 'nullptr, nullptr, 0' is safe
+                    const std::string guid = instance->data().get_attribute_value(nullptr, nullptr, 0, 0);
+                    if (byguid_.find(guid) != byguid_.end()) {
+                        std::stringstream ss;
+                        ss << "Instance encountered with non-unique GlobalId " << guid;
+                        logger().Message(Logger::LOG_WARNING, "SYN", 16, ss.str());
+                    }
+                    byguid_[guid] = instance;
+                } catch (const IfcException& ex) {
+                    logger().Message(Logger::LOG_ERROR, "SYN", 17, ex.what());
                 }
-                byguid_[guid] = instance;
-            } catch (const IfcException& ex) {
-                logger().Message(Logger::LOG_ERROR, "SYN", 17, ex.what());
             }
-        }
 
-        const IfcParse::declaration* ty = &instance->declaration();
+            const IfcParse::declaration* ty = &instance->declaration();
 
-        {
-            if (bytype_excl_.find(ty) == bytype_excl_.end()) {
-                bytype_excl_[ty].reset(new aggregate_of_instance());
+            {
+                if (bytype_excl_.find(ty) == bytype_excl_.end()) {
+                    bytype_excl_[ty].reset(new aggregate_of_instance());
+                }
+                bytype_excl_[ty]->push(instance);
             }
-            bytype_excl_[ty]->push(instance);
+
+            if (byid_.find(current_id) != byid_.end()) {
+                std::stringstream ss;
+                ss << "Overwriting instance with name #" << current_id;
+                logger().Message(Logger::LOG_WARNING, "SYN", 18, ss.str());
+            }
+
+            // byidentity_[instance->identity()] = instance;
+            byid_.insert({(uint32_t) current_id, instance });
+
+            // @nb cannot assign to byid_;
+            // byid_[current_id] = instance;
+
+            max_id = (std::max)(max_id, (unsigned int) current_id);
+        } catch (const std::exception& e) {
+            // Stop scanning (like a bad header already does via tryRead()) instead of letting this escape IfcFile's constructor, which has no try/catch of its own and would leak everything already in byid_.
+            good_ = file_open_status::INVALID_SYNTAX;
+            logger().Error("SYN", 42, e);
+            break;
         }
-
-        if (byid_.find(current_id) != byid_.end()) {
-            std::stringstream ss;
-            ss << "Overwriting instance with name #" << current_id;
-            logger().Message(Logger::LOG_WARNING, "SYN", 18, ss.str());
-        }
-
-        // byidentity_[instance->identity()] = instance;
-        byid_.insert({(uint32_t) current_id, instance });
-
-        // @nb cannot assign to byid_;
-        // byid_[current_id] = instance;
-
-        max_id = (std::max)(max_id, (unsigned int) current_id);
     }
 
 	good_ = streamer.status();
