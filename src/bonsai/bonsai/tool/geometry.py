@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# This file was modified with the assistance of an AI coding tool.
 
 from __future__ import annotations
 
@@ -897,6 +899,21 @@ class Geometry(bonsai.core.tool.Geometry):
         cls, element: ifcopenshell.entity_instance, context: ifcopenshell.entity_instance
     ) -> Union[ifcopenshell.entity_instance, None]:
         return ifcopenshell.util.representation.get_representation(element, context)
+
+    @classmethod
+    def get_host_representation_to_recut(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
+        """The representation a voided host should be re-tessellated from.
+
+        The host's active representation, i.e. the one the viewport is already
+        showing. Falls back to the first representation sharing the active
+        context when the host has no active `IfcShapeRepresentation`."""
+        representation = cls.get_active_representation(obj)
+        if representation is not None and representation.is_a("IfcShapeRepresentation"):
+            return representation
+        element = tool.Ifc.get_entity(obj)
+        if element is None:
+            return None
+        return cls.get_representation_by_context(element, cls.get_active_representation_context(obj))
 
     @classmethod
     def get_cartesian_point_offset(cls, obj: bpy.types.Object) -> npt.NDArray[np.float64] | None:
