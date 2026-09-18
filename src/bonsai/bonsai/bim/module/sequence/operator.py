@@ -1615,6 +1615,40 @@ class LoadAnimationColorScheme(bpy.types.Operator, tool.Ifc.Operator):
         return context.window_manager.invoke_props_dialog(self)
 
 
+class AddAnimationTaskTypeColor(bpy.types.Operator):
+    bl_idname = "bim.add_animation_task_type_color"
+    bl_label = "Add Colour"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = (
+        "Adds a colour keyed by an ObjectType, used for tasks whose PredefinedType is USERDEFINED "
+        "and whose ObjectType matches"
+    )
+    group: bpy.props.StringProperty()
+    object_type: bpy.props.StringProperty(name="ObjectType")
+
+    def execute(self, context):
+        core.add_animation_task_type_color(tool.Sequence, group=self.group, object_type=self.object_type)
+        return {"FINISHED"}
+
+    def draw(self, context):
+        self.layout.prop(self, "object_type")
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+
+class RemoveAnimationTaskTypeColor(bpy.types.Operator):
+    bl_idname = "bim.remove_animation_task_type_color"
+    bl_label = "Remove Colour"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Removes the active colour from the list"
+    group: bpy.props.StringProperty()
+
+    def execute(self, context):
+        core.remove_animation_task_type_color(tool.Sequence, group=self.group)
+        return {"FINISHED"}
+
+
 class CopyTask(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.duplicate_task"
     bl_label = "Copy Task"
