@@ -22,6 +22,9 @@ import json
 from typing import TYPE_CHECKING, Literal, Union
 
 import bpy
+import ifcopenshell.util.geolocation
+import ifcopenshell.util.unit
+import numpy as np
 from ifcclash import ifcclash
 from ifcclash.ifcclash import ClashSource
 from mathutils import Vector
@@ -128,6 +131,25 @@ class Clash(bonsai.core.tool.Clash):
         """
         with open(fn) as f:
             ClashStore.clash_sets = json.load(f)
+
+    @classmethod
+    def convert_clash_point_to_blender(cls, point: Union[list[float], tuple[float, float, float]]) -> Vector:
+        """Convert a raw ifcclash point into Bonsai's displayed viewport coordinates."""
+        props = tool.Georeference.get_georeference_props()
+        if not props.has_blender_offset:
+            return Vector(point)
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        matrix = np.eye(4)
+        matrix[:3, 3] = point
+        matrix = ifcopenshell.util.geolocation.global2local(
+            matrix,
+            float(props.blender_offset_x) * unit_scale,
+            float(props.blender_offset_y) * unit_scale,
+            float(props.blender_offset_z) * unit_scale,
+            float(props.blender_x_axis_abscissa),
+            float(props.blender_x_axis_ordinate),
+        )
+        return Vector(matrix[:3, 3])
 
     @classmethod
     def look_at(cls, target: Vector, location: Vector) -> None:
