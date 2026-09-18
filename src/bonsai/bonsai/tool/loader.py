@@ -727,6 +727,15 @@ class Loader(bonsai.core.tool.Loader):
             settings.set("layerset-first", True)
             # Wire intersection checks is prohibitively slow on advanced breps. See bug #5999.
             settings.set("no-wire-intersection-check", True)
+            # By default the CGAL kernel groups adjacent coplanar triangles into a
+            # single face boundary, discarding edges between distinct but coplanar
+            # source faces (e.g. a tessellation deliberately split into two
+            # coplanar quads). This makes those edges vanish when entering edit
+            # mode (see #5711, #5862). Preserve the original face boundaries
+            # instead. This is a no-op for the OpenCASCADE kernel and, in the
+            # default hybrid-cgal-simple-opencascade library, booleans/voids are
+            # resolved via the OpenCASCADE fallback so this does not affect them.
+            settings.set("cgal-original-edges", True)
             # settings.set("triangulation-type", ifcopenshell.ifcopenshell_wrapper.POLYHEDRON_WITHOUT_HOLES)
             if is_gross:
                 settings.set("disable-opening-subtractions", True)
