@@ -150,9 +150,9 @@ class Cityjson2ifc:
 
     def create_metadata(self):
         # Georeferencing
-        self.properties["local_translation"] = None
+        self.properties["local_translation"] = {"Eastings": 0.0, "Northings": 0.0, "OrthogonalHeight": 0.0}
         self.properties["local_scale"] = None
-        if self.city_model.is_transformed:
+        if self.city_model.transform is not None:
             self.properties["local_scale"] = self.city_model.transform["scale"]
             local_translation = self.city_model.transform["translate"]
             self.properties["local_translation"] = {
