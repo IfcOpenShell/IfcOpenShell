@@ -595,6 +595,7 @@ def install_proj(
             f'-DSQLite3_LIBRARY={install_dir / "sqlite3" / "lib" / "sqlite3.lib"}',
             "-DENABLE_TIFF=OFF",
             "-DENABLE_CURL=OFF",
+            "-DBUILD_APPS=OFF",
             "-DBUILD_PROJSYNC=OFF",
             "-DBUILD_SHARED_LIBS=OFF",
             "-DBUILD_TESTING=OFF",
