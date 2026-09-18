@@ -34,7 +34,12 @@ from bpy.props import (
     StringProperty,
 )
 from bpy.types import Operator
-from natsort import natsorted
+
+try:
+    from natsort import natsorted
+except Exception:
+    # See #6900: don't let a broken natsort disable all of Bonsai.
+    natsorted = sorted
 
 import bonsai.core.search as core
 import bonsai.tool as tool

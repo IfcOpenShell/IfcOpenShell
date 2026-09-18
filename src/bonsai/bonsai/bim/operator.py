@@ -38,7 +38,12 @@ import bpy
 import ifcopenshell
 from bpy_extras.io_utils import ImportHelper
 from mathutils import Euler, Vector
-from natsort import natsorted
+
+try:
+    from natsort import natsorted
+except Exception:
+    # See #6900: don't let a broken natsort disable all of Bonsai.
+    natsorted = sorted
 
 import bonsai.bim
 import bonsai.bim.handler
