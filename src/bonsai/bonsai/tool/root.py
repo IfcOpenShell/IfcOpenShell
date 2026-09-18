@@ -205,7 +205,10 @@ class Root(bonsai.core.tool.Root):
     @classmethod
     def get_object_representation(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
         if obj.data and (mesh_props := tool.Geometry.get_mesh_props(obj.data)).ifc_definition_id:
-            return tool.Ifc.get().by_id(mesh_props.ifc_definition_id)
+            try:
+                return tool.Ifc.get().by_id(mesh_props.ifc_definition_id)
+            except RuntimeError:
+                return None
         element = tool.Ifc.get_entity(obj)
         if element.is_a("IfcTypeProduct"):
             if element.RepresentationMaps:
@@ -334,7 +337,11 @@ class Root(bonsai.core.tool.Root):
 
                     for voided_obj in voided_objs:
                         if data := voided_obj.data:
-                            representation = tool.Ifc.get().by_id(tool.Geometry.get_mesh_props(data).ifc_definition_id)
+                            ifc_id = tool.Geometry.get_mesh_props(data).ifc_definition_id
+                            try:
+                                representation = tool.Ifc.get().by_id(ifc_id)
+                            except RuntimeError:
+                                continue
                             bonsai.core.geometry.switch_representation(
                                 tool.Ifc,
                                 tool.Geometry,

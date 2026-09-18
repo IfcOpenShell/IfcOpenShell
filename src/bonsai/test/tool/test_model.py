@@ -920,6 +920,30 @@ class TestApplyIfcMaterialChanges(NewFile):
         assert self.get_mesh(obj).materials[:] == [bpy.data.materials["Red"]]
 
 
+class TestApplyIfcMaterialChangesToleratesStaleIfcDefinitionId(NewFile):
+    def test_run(self):
+        # Regression test for #7909's bug class: apply_ifc_material_changes
+        # iterates several elements and can invalidate a shared representation
+        # while reloading an earlier one, so a later element's cached
+        # ifc_definition_id can go stale mid-loop. It must be skipped instead
+        # of raising.
+        from unittest import mock
+
+        ifc_file = ifcopenshell.file()
+        tool.Ifc.set(ifc_file)
+        element = ifc_file.createIfcWall()
+        representation = ifc_file.createIfcShapeRepresentation()
+        obj = bpy.data.objects.new("Object", (mesh := bpy.data.meshes.new("Mesh")))
+        tool.Ifc.link(element, obj)
+        stale_id = representation.id()
+        tool.Geometry.get_mesh_props(mesh).ifc_definition_id = stale_id
+        ifc_file.remove(representation)
+
+        with mock.patch("bonsai.core.geometry.switch_representation") as switch_representation:
+            subject.apply_ifc_material_changes([element])
+        switch_representation.assert_not_called()
+
+
 class TestOffsetWall(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()

@@ -231,9 +231,11 @@ class Duplicate(bonsai.core.tool.Duplicate):
 
                     for voided_obj in voided_objs:
                         if mesh_data := voided_obj.data:
-                            representation = tool.Ifc.get().by_id(
-                                tool.Geometry.get_mesh_props(mesh_data).ifc_definition_id
-                            )
+                            ifc_id = tool.Geometry.get_mesh_props(mesh_data).ifc_definition_id
+                            try:
+                                representation = tool.Ifc.get().by_id(ifc_id)
+                            except RuntimeError:
+                                continue
                             bonsai.core.geometry.switch_representation(
                                 tool.Ifc,
                                 tool.Geometry,
