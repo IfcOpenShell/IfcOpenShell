@@ -580,7 +580,7 @@ class Spatial(bonsai.core.tool.Spatial):
                 return
 
         # this spatial element has a unique orientation
-        orientation_name = container.is_a() + "/" + container.Name
+        orientation_name = container.is_a() + "/" + (container.Name or "Unnamed")
 
         # stash selected objects
         active_object = bpy.context.view_layer.objects.active

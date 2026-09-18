@@ -1577,7 +1577,7 @@ class Sequence(bonsai.core.tool.Sequence):
         string_resources = ""
         resources_usage = ""
         for resource in resources:
-            string_resources += resource.Name + ", "
+            string_resources += (resource.Name or "Unnamed") + ", "
             resources_usage += str(resource.Usage.ScheduleUsage) + ", " if resource.Usage else "-, "
 
         schedule_start = task_time.ScheduleStart if task_time else ""
