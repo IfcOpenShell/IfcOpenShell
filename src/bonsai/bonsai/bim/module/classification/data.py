@@ -46,10 +46,24 @@ class ClassificationsData:
         cls.data["classifications"] = cls.classifications()
         cls.data["available_classifications"] = cls.available_classifications()
         cls.data["classification_source"] = cls.classification_source()
+        cls.data["builtin_classification_libraries"] = cls.builtin_classification_libraries()
 
     @classmethod
     def has_classification_file(cls):
         return bool(IfcStore.classification_file)
+
+    @classmethod
+    def builtin_classification_libraries(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
+        """Enumerate classification libraries bundled with Bonsai (and any user-provided ones),
+        so a built-in library can be picked directly without browsing for a file.
+
+        See how ``bonsai.bim.module.project.data.ProjectData.library_file`` does the same
+        for the project's built-in libraries.
+        """
+        results: tool.Blender.BLENDER_ENUM_ITEMS = [("0", "Custom File", "")]
+        for filepath in sorted(tool.Blender.get_data_dir_paths("classifications", "*.ifc*"), key=lambda p: p.stem):
+            results.append((filepath.name, filepath.stem, "Built-in Classification Library"))
+        return results
 
     @classmethod
     def classifications(cls):
