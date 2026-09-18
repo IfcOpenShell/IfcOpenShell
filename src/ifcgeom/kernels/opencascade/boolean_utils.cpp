@@ -1218,6 +1218,24 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 				}
 			}
 
+			// #5630 A solid-solid CUT whose tool operands survived the disjoint/
+			// touching/narrow elimination above is expected to remove material. On
+			// dense tessellated first operands (e.g. IfcPolygonalFaceSet terrain)
+			// OCCT's BOP can silently return an essentially unchanged result at a
+			// tight fuzzy value, reporting IsDone yet subtracting ~nothing. Detect
+			// this near zero volume removal and, while a higher fuzziness retry is
+			// still permitted, treat it as a failure so the existing escalation can
+			// find a fuzzy value at which the section is actually computed. When no
+			// retry is left the result is accepted as is, preserving prior behaviour.
+			if (success && op == BOPAlgo_CUT && allow_retry) {
+				const double va = shape_volume(a);
+				const double vr = shape_volume(r);
+				if (va > 1.e-9 && (va - vr) < va * 1.e-4) {
+					success = false;
+					Logger::Root().Notice("GEO", 156, "Boolean subtraction removed no volume, retrying with higher fuzziness");
+				}
+			}
+
 			if (success) {
 
 				{
