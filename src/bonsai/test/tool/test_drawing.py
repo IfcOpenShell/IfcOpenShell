@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
 import os
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -1067,6 +1068,40 @@ class TestDrawingStyles(NewFile):
         self.drawing_styles.clear()
         bpy.ops.bim.reload_drawing_styles()
         assert len(self.drawing_styles) == 3
+
+    def test_add_drawing_style_preserves_styles_saved_in_a_previous_session(self):
+        """Regression test for #4739.
+
+        Pressing "Add Drawing Style" must never wipe out styles that were saved
+        to the shared ShadingStyles JSON file in a previous session but haven't
+        yet been reloaded into the in-memory `drawing_styles` cache (e.g. right
+        after reopening the project, before the underlay/refresh has run).
+        """
+        self.setup_project_with_drawing()
+        props = tool.Drawing.get_document_props()
+        drawing = props.get_active_drawing()
+        assert drawing
+        pset = ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing")
+        json_path = tool.Ifc.resolve_uri(pset["ShadingStyles"])
+
+        # Simulate a previous session having saved a custom style to disk.
+        with open(json_path) as fi:
+            styles_on_disk = json.load(fi)
+        assert len(styles_on_disk) == 3
+        styles_on_disk["My Custom Style"] = dict(next(iter(styles_on_disk.values())))
+        with open(json_path, "w") as fo:
+            json.dump(styles_on_disk, fo)
+
+        # Simulate a fresh session where the in-memory cache is still empty/stale.
+        self.drawing_styles.clear()
+        assert len(self.drawing_styles) == 0
+
+        bpy.ops.bim.add_drawing_style()
+
+        with open(json_path) as fi:
+            styles_after = json.load(fi)
+        assert set(styles_on_disk) <= set(styles_after), "previously saved styles must survive Add Drawing Style"
+        assert len(styles_after) == 5  # 3 defaults + 1 pre-existing custom + 1 newly added
 
 
 class TestAddReferenceImage(NewFile):
