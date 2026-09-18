@@ -857,7 +857,9 @@ class EditObjectUI:
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             add_layout_hotkey_operator(row, "Unjoin Walls", "S_U", "", ui_context)
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-            add_layout_hotkey_operator(row, "Merge", "S_M", "Merge selected Elements", ui_context)
+            add_layout_hotkey_operator(
+                row, "Merge", "S_M", "Merge selected Elements", ui_context, operator="bim.merge_wall"
+            )
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             add_layout_hotkey_operator(
                 row, "Split", "S_K", "Split selected Element into two Elements at the cursor location", ui_context
@@ -1037,7 +1039,9 @@ class EditObjectUI:
         row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
         add_layout_hotkey_operator(row, "Interior", "S_V", description, ui_context)
         row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-        add_layout_hotkey_operator(row, "Mirror", "S_M", bpy.ops.bim.mirror_elements.__doc__, ui_context)
+        add_layout_hotkey_operator(
+            row, "Mirror", "S_M", bpy.ops.bim.mirror_elements.__doc__, ui_context, operator="bim.mirror_elements"
+        )
 
     @classmethod
     def draw_aggregation(cls, context):
