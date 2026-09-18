@@ -179,6 +179,7 @@ TBB_VERSION = "2021.9.0"
 ROCKSDB_VERSION = "10.4.2"
 ZSTD_VERSION = "1.5.7"
 MANIFOLD_VERSION = "3.2.1"
+PROJ_VERSION = "9.4.1"
 QT6_VERSION = os.getenv("QT6_VERSION", "6.8.3")
 
 # binaries
@@ -559,6 +560,7 @@ dependency_tree: dict[str, tuple[str, ...]] = {
     "zstd": (),
     "manifold": (),
     "qt6": (),
+    "proj": (),
     # 'usd': ('boost', 'oneTBB')
 }
 
@@ -654,6 +656,8 @@ if WASM:
     required_commands.append("pyodide")
 if platform.system() == "Linux" and "BonsaiViewer" in targets:
     required_commands.append("patchelf")
+if "proj" in targets:
+    required_commands.append("sqlite3")
 
 for cmd in required_commands:
     if shutil.which(cmd) is None:
@@ -1175,6 +1179,7 @@ Dependency: TypeAlias = Literal[
     "tbb",
     "usd",
     "python",
+    "proj",
 ]
 
 
@@ -1384,6 +1389,23 @@ if "manifold" in targets:
         download_tool=download_tool_git,
         revision=f"v{MANIFOLD_VERSION}",
         patch=patches,
+    )
+
+if "proj" in targets:
+    dependency_name = Dependencies.register("proj", PROJ_VERSION, use_shared_suffix=False)
+    build_dependency(
+        name=dependency_name,
+        mode="cmake",
+        build_tool_args=[
+            "-DENABLE_TIFF=OFF",
+            "-DENABLE_CURL=OFF",
+            "-DBUILD_APPS=OFF",
+            "-DBUILD_PROJSYNC=OFF",
+            "-DBUILD_SHARED_LIBS=OFF",
+            "-DBUILD_TESTING=OFF",
+        ],
+        download_url="https://download.osgeo.org/proj/",
+        download_name=f"proj-{PROJ_VERSION}.tar.gz",
     )
 
 if "libxml2" in targets:
@@ -1793,6 +1815,10 @@ elif "occ" in targets:
 if "manifold" in targets:
     cmake_args_prefix_path.append(str(Dependencies.get_install_dir("manifold")))
     cmake_args.append("-DWITH_MANIFOLD=On")
+
+if "proj" in targets:
+    cmake_args_prefix_path.append(str(Dependencies.get_install_dir("proj")))
+    cmake_args.append("-DWITH_PROJ=ON")
 
 if "OpenCOLLADA" in targets:
     # pcre is a dependency of OpenCOLLADA, but since we `find_package`,
