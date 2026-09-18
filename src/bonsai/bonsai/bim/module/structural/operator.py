@@ -853,7 +853,7 @@ class LoadBoundaryConditions(bpy.types.Operator):
             names = [boundary_condition.Name or "Unnamed" for boundary_condition in conditions]
             for boundary_condition in conditions:
                 if (
-                    names.count(boundary_condition["Name"] or "Unnamed") > 1
+                    names.count(boundary_condition.Name or "Unnamed") > 1
                     and self.file.get_total_inverses(boundary_condition) < 2
                 ):
                     continue
