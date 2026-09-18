@@ -488,20 +488,41 @@ namespace {
 #endif
 
         IfcSchema::IfcSurfaceStyle *surface_style_ = nullptr;
+        // A surface style with Side == NEGATIVE targets the back (negative) face.
+        // When a POSITIVE or BOTH style is also present it is preferred for the
+        // visible front face, but a NEGATIVE style must still be used as a
+        // fallback so a styled item is not left completely unstyled (see #5618).
+        IfcSchema::IfcSurfaceStyle *negative_surface_style_ = nullptr;
+        std::pair<IfcSchema::IfcSurfaceStyle*, T*> negative_fallback{nullptr, nullptr};
         for (auto& style : prs_styles) {
             if (auto surface_style = style->as<IfcSchema::IfcSurfaceStyle>()) {
-                if (surface_style->Side() != IfcSchema::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE) {
+                const bool is_negative = surface_style->Side() == IfcSchema::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE;
+                if (is_negative) {
+                    if (negative_surface_style_ == nullptr) {
+                        negative_surface_style_ = surface_style;
+                    }
+                } else {
                     surface_style_ = surface_style;
-                    auto styles_elements = surface_style->Styles();
-                    for (auto mt = styles_elements->begin(); mt != styles_elements->end(); ++mt) {
-                        if ((*mt)->template as<T>()) {
+                }
+                auto styles_elements = surface_style->Styles();
+                for (auto mt = styles_elements->begin(); mt != styles_elements->end(); ++mt) {
+                    if ((*mt)->template as<T>()) {
+                        if (!is_negative) {
                             return std::make_pair(surface_style, (*mt)->as<T>());
+                        } else if (negative_fallback.first == nullptr) {
+                            negative_fallback = std::make_pair(surface_style, (*mt)->as<T>());
                         }
                     }
                 }
             }
         }
-        return std::make_pair(surface_style_, nullptr);
+        if (negative_fallback.first != nullptr) {
+            return negative_fallback;
+        }
+        if (surface_style_ != nullptr) {
+            return std::make_pair(surface_style_, nullptr);
+        }
+        return std::make_pair(negative_surface_style_, nullptr);
     }
 
     bool process_colour(IfcSchema::IfcColourRgb* colour, double* rgb) {
