@@ -286,15 +286,21 @@ class Scheduler:
         # collect columns width
         column_widths = []
         column_styles = []
+        # columns hidden in the source spreadsheet (table:visibility="collapse"/"filter")
+        # should not be rendered in the schedule (see #6729)
+        hidden_columns = set()
         for col in table.getElementsByType(TableColumn):
             style_name = col.getAttribute("stylename")
             col_repeat = col.getAttribute("numbercolumnsrepeated")
             col_repeat = int(col_repeat) if col_repeat else 1
+            is_hidden = col.getAttribute("visibility") in ("collapse", "filter")
             for i in range(col_repeat):
                 if not style_name or "column-width" not in styles[style_name]:
                     column_width = 50
                 else:
                     column_width = self.convert_to_mm(styles[style_name]["column-width"])
+                if is_hidden:
+                    hidden_columns.add(len(column_widths))
                 column_styles.append(style_name)
                 column_widths.append(column_width)
             cell_style = col.getAttribute("defaultcellstylename")
@@ -436,7 +442,14 @@ class Scheduler:
                         if end_tdi > max_col:
                             end_tdi = max_col
 
-                        width = sum(column_widths[start_tdi : end_tdi + 1])
+                        # skip columns hidden in the source spreadsheet (#6729):
+                        # they contribute no width and their cell is not drawn.
+                        visible_span = [i for i in range(start_tdi, end_tdi + 1) if i not in hidden_columns]
+                        if not visible_span:
+                            tdi += column_span
+                            continue
+
+                        width = sum(column_widths[i] for i in visible_span)
                         col_style = self.get_style(column_styles[tdi], styles)
                         final_cell_style = cell_style or col_style
                         background_color = final_cell_style.get("background-color", "#ffffff")
