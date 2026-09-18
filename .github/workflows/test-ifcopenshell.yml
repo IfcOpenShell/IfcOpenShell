@@ -3,37 +3,61 @@ name: Test IfcOpenShell
 on:
   push:
     branches: [v0.9.0]
-    paths: &ci_paths
-      - 'src/bcf/**'
-      - 'src/bsdd/**'
-      - 'src/examples/**'
-      - 'src/ifcblender/**'
-      - 'src/ifcconvert/**'
-      - 'src/ifcdiff/**'
-      - 'src/ifcgeom/**'
-      - 'src/ifcgeomserver/**'
-      - 'src/ifcmax/**'
-      - 'src/ifc5d/**'
-      - 'src/ifcedit/**'
-      - 'src/ifcmcp/**'
-      - 'src/ifcopenshell-python/**'
-      - '!src/ifcopenshell-python/docs/**'
-      - 'src/ifcparse/**'
-      - 'src/ifcpatch/**'
-      - 'src/ifcquery/**'
-      - 'src/ifctester/**'
-      - 'src/ifcwrap/**'
-      - 'src/svgfill/**'
-      - 'src/serializers/**'
-      - 'conda/**'
-      - 'cmake/**'
-      - 'test/**'
-      - '.github/workflows/test-ifcopenshell.yml'
   pull_request:
-    paths: *ci_paths
+  workflow_dispatch:
 
 jobs:
-  activate:
+  detect-ifcopenshell-changes:
+    runs-on: ubuntu-22.04
+    permissions:
+      pull-requests: read  # paths-filter lists a pull request's files through the API
+    outputs:
+      # A manual dispatch has nothing to diff, so it always tests; a push or
+      # pull request tests only when it touches a path in the filter below.
+      should_run: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.code == 'true' }}
+    steps:
+      # A push has no pull request to ask the API about, so paths-filter
+      # diffs the pushed commits with git and needs the history for that.
+      - uses: actions/checkout@v7
+        if: github.event_name == 'push'
+        with:
+          fetch-depth: 0
+      - uses: dorny/paths-filter@v4
+        id: filter
+        if: github.event_name != 'workflow_dispatch'
+        with:
+          # 'some-with-excludes' is required for the '!...' rule to be honoured.
+          # With the default 'some', the negated rule ends up matching everything.
+          predicate-quantifier: 'some-with-excludes'
+          filters: |
+            code:
+              - 'src/bcf/**'
+              - 'src/bsdd/**'
+              - 'src/examples/**'
+              - 'src/ifcblender/**'
+              - 'src/ifcconvert/**'
+              - 'src/ifcdiff/**'
+              - 'src/ifcgeom/**'
+              - 'src/ifcgeomserver/**'
+              - 'src/ifcmax/**'
+              - 'src/ifc5d/**'
+              - 'src/ifcedit/**'
+              - 'src/ifcmcp/**'
+              - 'src/ifcopenshell-python/**'
+              - '!src/ifcopenshell-python/docs/**'
+              - 'src/ifcparse/**'
+              - 'src/ifcpatch/**'
+              - 'src/ifcquery/**'
+              - 'src/ifctester/**'
+              - 'src/ifcwrap/**'
+              - 'src/svgfill/**'
+              - 'src/serializers/**'
+              - 'conda/**'
+              - 'cmake/**'
+              - 'test/**'
+              - '.github/workflows/test-ifcopenshell.yml'
+
+  upstream-only:
     runs-on: ubuntu-22.04
     if: |
       github.repository == 'IfcOpenShell/IfcOpenShell' &&
@@ -41,9 +65,10 @@ jobs:
     steps:
       - run: echo ok go
 
-  compile-and-test:
+  test-ifcopenshell:
     runs-on: ubuntu-22.04
-    needs: activate
+    needs: [upstream-only, detect-ifcopenshell-changes]
+    if: needs.detect-ifcopenshell-changes.outputs.should_run == 'true'
     strategy:
       fail-fast: false
       matrix:
