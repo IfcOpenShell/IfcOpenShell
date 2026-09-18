@@ -297,19 +297,28 @@ class FilledOpeningGenerator:
             layers = tool.Model.get_material_layer_parameters(element)
             if layers["layer_set_direction"] == "AXIS2":
                 opening_thickness_si = layers["thickness"] * 2
-                axes = tool.Model.get_wall_axis(voided_obj, layers=layers)
-                axis_base = axes["base"]
-                axis_side = axes["side"]
-                new_matrix = voided_obj.matrix_world.copy()
-                point_on_base_axis = tool.Cad.point_on_edge(target, axis_base)
-                point_on_side_axis = tool.Cad.point_on_edge(target, axis_side)
-                if (point_on_base_axis - target).length <= (point_on_side_axis - target).length:
-                    new_matrix.translation.x = point_on_base_axis.x
-                    new_matrix.translation.y = point_on_base_axis.y
+                face_frame = None
+                if not tool.Model.has_layer2_reference_line(element):
+                    face_frame = tool.Model.get_wall_face_frame(voided_obj, target)
+                if face_frame is not None:
+                    inward, face_point = face_frame
+                    new_matrix = tool.Model.get_filling_rotation(inward)
+                    new_matrix.translation.x = face_point.x
+                    new_matrix.translation.y = face_point.y
                 else:
-                    new_matrix.translation.x = point_on_side_axis.x
-                    new_matrix.translation.y = point_on_side_axis.y
-                    new_matrix = new_matrix @ Matrix.Rotation(radians(180.0), 4, "Z")
+                    axes = tool.Model.get_wall_axis(voided_obj, layers=layers)
+                    axis_base = axes["base"]
+                    axis_side = axes["side"]
+                    new_matrix = voided_obj.matrix_world.copy()
+                    point_on_base_axis = tool.Cad.point_on_edge(target, axis_base)
+                    point_on_side_axis = tool.Cad.point_on_edge(target, axis_side)
+                    if (point_on_base_axis - target).length <= (point_on_side_axis - target).length:
+                        new_matrix.translation.x = point_on_base_axis.x
+                        new_matrix.translation.y = point_on_base_axis.y
+                    else:
+                        new_matrix.translation.x = point_on_side_axis.x
+                        new_matrix.translation.y = point_on_side_axis.y
+                        new_matrix = new_matrix @ Matrix.Rotation(radians(180.0), 4, "Z")
 
                 if should_set_z_level:
                     if filling.is_a("IfcDoor"):
