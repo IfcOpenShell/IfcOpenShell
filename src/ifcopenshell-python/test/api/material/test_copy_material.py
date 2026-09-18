@@ -131,11 +131,11 @@ class TestCopyMaterial(test.bootstrap.IFC4):
         assert new.Name == "Foo"
         assert new.MaterialProfiles[0] != item
         assert new.MaterialProfiles[0].Material == material
-        assert new.MaterialProfiles[0].Profile == profile
+        assert new.MaterialProfiles[0].Profile != profile
         assert len(self.file.by_type("IfcMaterialProfileSet")) == 2
         assert len(self.file.by_type("IfcMaterialProfile")) == 2
         assert len(self.file.by_type("IfcMaterial")) == 1
-        assert len(self.file.by_type("IfcProfileDef")) == 1
+        assert len(self.file.by_type("IfcProfileDef")) == 2
 
     def test_copy_a_material_list(self):
         material = ifcopenshell.api.material.add_material(self.file, name="CON01")
