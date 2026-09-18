@@ -158,6 +158,10 @@ class ALIGN_UL_horizontal_pi_markers(UIList):
             row.prop(item, "spiral_family", text="")
             if item.spiral_family == "VIENNESEBEND":
                 row.prop(item, "gravity_centerline_height", text="")
+        # join_next needs no exit spiral on this curve (the joined side must be spiral-free) --
+        # CIRCULAR_SPIRAL/SPIRAL_CIRCULAR_SPIRAL always have one, so the toggle isn't offered there.
+        if item.curve_type in {"CIRCULAR", "SPIRAL_CIRCULAR"}:
+            row.prop(item, "join_next", text="Join Next", toggle=True)
 
 
 class ALIGN_UL_h_segments(UIList):
@@ -355,6 +359,13 @@ class ALIGN_PT_alignment_authoring(Panel):
                     box.prop(pi_data, "spiral_family")
                     if pi_data.spiral_family == "VIENNESEBEND":
                         box.prop(pi_data, "gravity_centerline_height")
+                # join_next needs no exit spiral on this curve (the joined side must be
+                # spiral-free) -- CIRCULAR_SPIRAL/SPIRAL_CIRCULAR_SPIRAL always have one, so the
+                # toggle isn't offered there. The solver itself reports cleanly (via Apply Curve's
+                # WARNING) if this is the last PI or the closure doesn't fit -- not pre-validated
+                # here.
+                if pi_data.curve_type in {"CIRCULAR", "SPIRAL_CIRCULAR"}:
+                    box.prop(pi_data, "join_next", text="Join to Next PI (Compound/Reverse Curve)")
                 row = box.row(align=True)
                 row.operator("align.apply_pi_curve", icon="CHECKMARK")
                 row.operator("align.finish_pi_editing", icon="CHECKMARK")

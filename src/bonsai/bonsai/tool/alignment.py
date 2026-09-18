@@ -75,22 +75,31 @@ class Alignment:
         return align_api.get_horizontal_layout(alignment)
 
     @classmethod
-    def create_alignment(cls, name: str, start_station: float = 0.0) -> "ifcopenshell.entity_instance":
+    def create_alignment(
+        cls, name: str, start_station: float = 0.0, define_stationing: bool = True
+    ) -> "ifcopenshell.entity_instance":
         """Create a full IfcAlignment with horizontal layout via the alignment API.
 
         Creates the complete IFC structure: IfcAlignment, IfcAlignmentHorizontal,
-        stationing referent, geometric representation, and zero-length terminal.
-        Also creates the Blender object for the alignment itself — but not for
-        its (still segment-less) horizontal layout: create_hierarchy_for_alignment()
-        would create that eagerly, leaving a stray "Layout" object with no
-        segments in the scene before anything has actually been drawn, unlike
-        a loaded file which never has one until it's meaningful. The
-        Alignments tab's draw tool creates the layout object lazily, once
-        there's something to show.
+        stationing referent (unless define_stationing is False), geometric
+        representation, and zero-length terminal. Also creates the Blender
+        object for the alignment itself — but not for its (still segment-less)
+        horizontal layout: create_hierarchy_for_alignment() would create that
+        eagerly, leaving a stray "Layout" object with no segments in the scene
+        before anything has actually been drawn, unlike a loaded file which
+        never has one until it's meaningful. The Alignments tab's draw tool
+        creates the layout object lazily, once there's something to show.
 
         Args:
             name: The alignment name
-            start_station: Starting station value (default 0.0)
+            start_station: Starting station value (default 0.0), ignored
+                when define_stationing is False
+            define_stationing: Whether to add a start-station referent at
+                all. False leaves the alignment with no stationing defined
+                yet — a state this codebase already handles gracefully
+                elsewhere (e.g. ALIGN_OT_set_start_station's own "no
+                stationing at all yet" branch) — for a user who doesn't
+                want/need stationing, or wants to define it later.
 
         Returns:
             The created IfcAlignment entity
@@ -104,9 +113,10 @@ class Alignment:
         # ourselves, same as add_horizontal_layout_to_alignment() does for the
         # bare/Add-Element bootstrap path below.
         alignment = align_api.create(ifc_file, name=name)
-        station_string = ifcopenshell.util.alignment.station_as_string(ifc_file, start_station)
-        referent_name = f"{alignment.Name or 'Alignment'} {station_string}"
-        align_api.add_stationing_referent(ifc_file, referent_name, alignment, 0.0, start_station)
+        if define_stationing:
+            station_string = ifcopenshell.util.alignment.station_as_string(ifc_file, start_station)
+            referent_name = f"{alignment.Name or 'Alignment'} {station_string}"
+            align_api.add_stationing_referent(ifc_file, referent_name, alignment, 0.0, start_station)
         cls.create_object_for_alignment(alignment)
         return alignment
 
