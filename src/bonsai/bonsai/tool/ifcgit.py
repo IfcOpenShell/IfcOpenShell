@@ -40,8 +40,11 @@ try:
     import git
     import git.exc
     import git.objects
+
+    GIT_AVAILABLE = True
 except ImportError:
     print("Warning: GitPython not available.")
+    GIT_AVAILABLE = False
 
 if TYPE_CHECKING:
     import git
@@ -123,6 +126,25 @@ class IfcGit(bonsai.core.tool.IfcGit):
         if repo:
             IfcGitRepo.repo = repo
         return repo
+
+    @classmethod
+    def get_repo_description(cls, path_ifc: str) -> Union[str, None]:
+        """Return a `git describe --tags --always --dirty` style string for the
+        repository containing path_ifc (e.g. "v1.2-4-gabcdef1"), or None if
+        unavailable.
+
+        Returns None instead of raising when GitPython isn't installed, the
+        path isn't inside a git repository, or the repository has no commits.
+        """
+        if not GIT_AVAILABLE:
+            return None
+        try:
+            repo = cls.repo_from_path(path_ifc)
+            if repo is None:
+                return None
+            return repo.git.describe(tags=True, always=True, dirty=True)
+        except Exception:
+            return None
 
     @classmethod
     def add_file_to_repo(cls, repo: git.Repo, path_file: str) -> None:
