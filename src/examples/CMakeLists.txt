@@ -98,3 +98,12 @@ if("4x3_add2" IN_LIST SCHEMA_VERSIONS)
     build_example(IfcAlignment)
     build_example(IfcSimplifiedAlignment)
 endif()
+
+# Unlike the other examples above, this one is compiled once (no per-schema
+# -DIfcSchema= build trick) and dispatches across IFC2X3, IFC4 and
+# IFC4X3_ADD2 at runtime from within the same binary. See schema_visitor.h
+# and schema_visitor_demo.cpp for the IfcOpenShell/IfcOpenShell#1333
+# ("Template programming for schema independent code") prototype.
+if("2x3" IN_LIST SCHEMA_VERSIONS AND "4" IN_LIST SCHEMA_VERSIONS AND "4x3_add2" IN_LIST SCHEMA_VERSIONS)
+    build_example(schema_visitor_demo)
+endif()
