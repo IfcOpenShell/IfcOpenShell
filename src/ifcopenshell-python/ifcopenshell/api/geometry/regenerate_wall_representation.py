@@ -266,11 +266,12 @@ class Regenerator:
         else:
             # A wall footprint may be multiple profiles if the wall is split into two due to an ATPATH connection
             profiles = []
-            minx = max([p[0] for p in self.start_points])
-            maxx = min([p[0] for p in self.end_points])
+            minx = min([p[0] for p in self.start_points])
+            maxx = max([p[0] for p in self.end_points])
             split_points = []
             for points in sorted(self.split_points, key=lambda x: x[0][0]):  # Sort islands in the +X direction
-                if any([p[0] > maxx or p[0] < minx for p in points]):  # Can't have anything outside our start/end
+                # Can't have anything outside our start/end (with precision buffer)
+                if any([ifcopenshell.util.shape_builder.is_greater(p[0], maxx) or ifcopenshell.util.shape_builder.is_less(p[0], minx) for p in points]):
                     continue
                 split_points.append(points)
             start_points = [p.copy() for p in self.start_points]
