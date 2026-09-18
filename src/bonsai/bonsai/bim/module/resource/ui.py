@@ -290,9 +290,11 @@ class BIM_PT_resources(Panel):
     def draw_editable_resource_costs_ui(self) -> None:
         row = self.layout.row(align=True)
         row.prop(self.props, "cost_types", text="")
+        if self.props.cost_types == "FIXED":
+            row.prop(self.props, "fixed_cost_value", text="")
         if self.props.cost_types == "CATEGORY":
             row.prop(self.props, "cost_category", text="")
-        op = row.operator("bim.add_cost_value", text="", icon="ADD")
+        op = row.operator("bim.add_resource_cost_value", text="", icon="ADD")
         op.parent = self.props.active_resource_id
         op.cost_type = self.props.cost_types
         if self.props.cost_types == "CATEGORY":
