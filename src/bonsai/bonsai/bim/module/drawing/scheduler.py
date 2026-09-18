@@ -30,6 +30,7 @@ from odf.opendocument import load as load_ods
 from odf.style import Style
 from odf.table import Table, TableCell, TableColumn, TableRow
 from odf.text import P
+from odf.teletype import extractText
 
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.svgwriter import SvgWriter
@@ -63,6 +64,9 @@ class Scheduler:
             debug=False,
             id="root",
         )
+        # Preserve runs of whitespace inside cells; without this SVG renderers
+        # collapse multiple spaces (e.g. from ODF `<text:s>`) down to one.
+        self.svg.attribs["xml:space"] = "preserve"
         self.padding = 1
         self.margin = 1
 
@@ -555,7 +559,14 @@ class Scheduler:
         :param wrap_text: if True, text will be wrapped to fit in cell
         :param cell_width: width of cell, used for wrapping text
         """
-        text_lines = [str(p) for p in p_tags]
+        # `str(p)` only concatenates raw character data and silently drops
+        # ODF whitespace/line-break elements (`<text:s>`, `<text:tab>`,
+        # `<text:line-break>`), so runs of spaces and in-paragraph newlines were
+        # lost. `extractText` expands those into real characters; splitting on
+        # the resulting newlines turns each line break into its own SVG line.
+        text_lines = []
+        for p in p_tags:
+            text_lines.extend(extractText(p).split("\n"))
         box_alignment_params = SvgWriter.get_box_alignment_parameters(box_alignment)
         text_params = {"font-size": font_size}
         if bold:
