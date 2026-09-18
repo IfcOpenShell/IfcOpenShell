@@ -139,19 +139,40 @@ def assign_material(
 
         if can_be_usage and not material_tool.is_type_product(element):
             element_material_type = material_type + "Usage"
+            # A "...Usage" type always wraps an existing material *set*
+            # (IfcMaterialLayerSet/IfcMaterialProfileSet), never a plain
+            # IfcMaterial. `material` here is whatever single IfcMaterial is
+            # selected in the Object Materials UI, so it can't be passed
+            # through as-is or ifcopenshell.api.material.assign_material will
+            # assert (e.g. "IfcMaterial cannot be assiged as a
+            # IfcMaterialLayerSetUsage."). Passing None lets the API derive
+            # (or create) the proper set from the element's type; the
+            # selected material is added into that set below instead.
+            material_for_assignment = None
         else:
             element_material_type = material_type
+            material_for_assignment = material
 
-        ifc.run("material.assign_material", products=[element], type=element_material_type, material=material)
+        ifc.run(
+            "material.assign_material", products=[element], type=element_material_type, material=material_for_assignment
+        )
         assigned_material = material_tool.get_material(element)
         assert assigned_material  # Type checker.
+
+        # Usages wrap the actual material set, unwrap it so an empty derived
+        # set (occurrence without a type) still gets its first layer/profile.
+        assigned_material_set = assigned_material
+        if assigned_material.is_a("IfcMaterialLayerSetUsage"):
+            assigned_material_set = assigned_material.ForLayerSet
+        elif assigned_material.is_a("IfcMaterialProfileSetUsage"):
+            assigned_material_set = assigned_material.ForProfileSet
 
         if material_tool.is_a_material_set(material):
             # Ensure set is a valid IFC.
             default_material = material_tool.get_default_material()
             material_tool.add_material_to_set(material_set=material, material=default_material)
-        elif material_tool.is_a_material_set(assigned_material):
-            material_tool.add_material_to_set(material_set=assigned_material, material=material)
+        elif material_tool.is_a_material_set(assigned_material_set):
+            material_tool.add_material_to_set(material_set=assigned_material_set, material=material)
         material_tool.ensure_material_assigned(
             elements=[element], material_type=element_material_type, material=material
         )
