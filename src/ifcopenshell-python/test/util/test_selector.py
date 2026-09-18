@@ -440,6 +440,35 @@ class TestFilterElements(test.bootstrap.IFC4):
         new_set = subject.filter_elements(self.file, "IfcWall", original_set, edit_in_place=True)
         assert new_set == original_set == {wall}
 
+    def test_selecting_by_regex_pset_with_shared_types_and_occurrence_overrides(self):
+        # Regression test for the per-call psets cache used by the regex pset
+        # facet (e.g. `/Pset_.*Common/."Status"`): many occurrences typically
+        # share the same type, and the cache must not let one occurrence's
+        # own override leak into another occurrence that inherits from the
+        # same type.
+        type_element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=type_element, name="Pset_WallCommon")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Status": "NEW"})
+
+        wall1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        wall2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[wall1, wall2], relating_type=type_element)
+
+        query = 'IfcWall, /Pset_.*Common/."Status"='
+        assert subject.filter_elements(self.file, query + "NEW") == {wall1, wall2}
+
+        wall1_pset = ifcopenshell.api.pset.add_pset(self.file, product=wall1, name="Pset_WallCommon")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=wall1_pset, properties={"Status": "DEMOLISH"})
+        assert subject.filter_elements(self.file, query + "DEMOLISH") == {wall1}
+        assert subject.filter_elements(self.file, query + "NEW") == {wall2}
+
+        # A live edit to the shared type between two separate filter_elements()
+        # calls must be reflected immediately: the cache is rebuilt from
+        # scratch every call, so nothing observed here can be stale.
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Status": "TEMPORARY"})
+        assert subject.filter_elements(self.file, query + "TEMPORARY") == {wall2}
+        assert subject.filter_elements(self.file, query + "NEW") == set()
+
 
 class TestSetElementValue(test.bootstrap.IFC4):
     def test_set_xyz_coordinates(self):

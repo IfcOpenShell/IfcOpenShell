@@ -214,6 +214,52 @@ class TestGetPsetsIFC4(test.bootstrap.IFC4):
         ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"x": "y"})
         assert subject.get_psets(profile) == {"name": {"x": "y", "id": pset.id()}}
 
+    def test_getting_psets_with_a_shared_cache_does_not_leak_between_occurrences(self):
+        # Regression test for the psets_cache parameter: it memoises the
+        # shared type's psets by id, but each occurrence must still get its
+        # own copy to merge its own overrides into, never the cached dict
+        # itself, or one occurrence's override would corrupt what every
+        # other occurrence of that type sees.
+        type_element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=type_element, name="Pset_WallCommon")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Status": "NEW"})
+
+        wall1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        wall2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        wall3 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[wall1, wall2, wall3], relating_type=type_element)
+
+        wall3_pset = ifcopenshell.api.pset.add_pset(self.file, product=wall3, name="Pset_WallCommon")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=wall3_pset, properties={"Status": "DEMOLISH"})
+
+        cache: dict = {}
+        # Query the overriding occurrence in between two plain ones: if the
+        # cached type dict were mutated in place, wall2 would incorrectly
+        # inherit wall3's override.
+        assert subject.get_psets(wall1, psets_cache=cache)["Pset_WallCommon"]["Status"] == "NEW"
+        assert subject.get_psets(wall3, psets_cache=cache)["Pset_WallCommon"]["Status"] == "DEMOLISH"
+        assert subject.get_psets(wall2, psets_cache=cache)["Pset_WallCommon"]["Status"] == "NEW"
+
+        # Uncached calls must agree.
+        assert subject.get_psets(wall1)["Pset_WallCommon"]["Status"] == "NEW"
+        assert subject.get_psets(wall2)["Pset_WallCommon"]["Status"] == "NEW"
+        assert subject.get_psets(wall3)["Pset_WallCommon"]["Status"] == "DEMOLISH"
+
+    def test_getting_psets_with_a_fresh_cache_never_serves_stale_data(self):
+        type_element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[wall], relating_type=type_element)
+
+        assert subject.get_psets(wall, psets_cache={}) == {}
+
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=type_element, name="Pset_WallCommon")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Status": "NEW"})
+
+        # A caller that creates a new cache per call (as filter_elements does)
+        # must see the edit immediately, not stale data from before the edit.
+        assert subject.get_psets(wall, psets_cache={})["Pset_WallCommon"]["Status"] == "NEW"
+        assert subject.get_psets(wall)["Pset_WallCommon"]["Status"] == "NEW"
+
     def test_getting_psets_from_an_element_which_cannot_have_psets(self):
         assert subject.get_psets(self.file.create_entity("IfcPerson")) == {}
 
