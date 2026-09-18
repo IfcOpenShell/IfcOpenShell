@@ -945,6 +945,9 @@ class OverrideDelete(bpy.types.Operator):
                 if tool.Drawing.is_auto_annotation(element):
                     self.report({"INFO"}, "References cannot be deleted. Exclude the referenced element instead.")
                     continue
+                if element.is_a("IfcTypeProduct"):
+                    bpy.ops.bim.remove_type(element=element.id())
+                    continue
                 tool.Geometry.delete_ifc_object(obj, batch_being_deleted_ids=batch_being_deleted_ids)
             elif tool.Geometry.is_representation_item(obj):
                 tool.Geometry.delete_ifc_item(obj)
