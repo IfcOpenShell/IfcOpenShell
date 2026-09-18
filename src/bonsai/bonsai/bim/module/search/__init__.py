@@ -28,6 +28,7 @@ classes = (
     operator.ApplyFilterFromText,
     operator.ColourByProperty,
     operator.EditFilterQuery,
+    operator.FilterFromSelection,
     operator.FilterValueSuggestions,
     operator.LoadColourscheme,
     operator.LoadSearch,

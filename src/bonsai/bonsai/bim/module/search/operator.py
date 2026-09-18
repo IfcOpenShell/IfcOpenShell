@@ -1443,6 +1443,51 @@ class ShowAllElements(Operator):
         return {"FINISHED"}
 
 
+class FilterFromSelection(Operator):
+    bl_idname = "bim.filter_from_selection"
+    bl_label = "Filter From Selection"
+    bl_description = (
+        "Build a search query from the selected objects,"
+        " combining their IFC classes with the container and type values they all share"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not context.selected_objects:
+            cls.poll_message_set("No selected objects found.")
+            return False
+        return True
+
+    def execute(self, context):
+        elements = []
+        for obj in context.selected_objects:
+            if element := tool.Ifc.get_entity(obj):
+                elements.append(element)
+        if not elements:
+            self.report({"WARNING"}, "No IFC elements in the selection.")
+            return {"CANCELLED"}
+
+        def quote(value: str) -> str:
+            value = value.replace("\\", "\\\\").replace('"', '\\"')
+            return f'"{value}"'
+
+        common_facets: list[str] = []
+        containers = {ifcopenshell.util.element.get_container(element) for element in elements}
+        if len(containers) == 1 and (container := next(iter(containers))) is not None and container.Name:
+            common_facets.append(f"location={quote(container.Name)}")
+        types = {ifcopenshell.util.element.get_type(element) for element in elements}
+        if len(types) == 1 and (relating_type := next(iter(types))) is not None and relating_type.Name:
+            common_facets.append(f"type={quote(relating_type.Name)}")
+
+        ifc_classes = sorted({element.is_a() for element in elements})
+        query = " + ".join(", ".join([ifc_class] + common_facets) for ifc_class in ifc_classes)
+        props = tool.Search.get_search_props()
+        tool.Search.import_filter_query(query, props.filter_groups)
+        self.report({"INFO"}, f"Filter set to: {query}")
+        return {"FINISHED"}
+
+
 class SelectSimilar(Operator):
     bl_idname = "bim.select_similar"
     bl_label = "Select Similar"
