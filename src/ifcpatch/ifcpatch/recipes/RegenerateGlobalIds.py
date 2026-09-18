@@ -70,7 +70,7 @@ class Patcher:
                         ifcopenshell.guid.expand(element.GlobalId)
                     except:
                         element.GlobalId = ifcopenshell.guid.new()
-                    invalid_ids += 1
+                        invalid_ids += 1
                 guids.add(element.GlobalId)
 
             print("Replaced %s duplicate GlobalIds" % duplicates)
