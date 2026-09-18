@@ -521,6 +521,7 @@ def install_occt(
 def install_proj(
     vs_cfg_vars: VsCfgResult,
     build_type: BuildType,
+    build_deps_cache: BuildDepsCache,
     build_cfg: BuildCfg,
     msbuild_multiproc: tuple[str, ...],
 ) -> None:
@@ -528,8 +529,11 @@ def install_proj(
     install_dir = vs_cfg_vars.install_dir
 
     PROJ_VERSION = "9.4.1"
+    dependency_install_dir = install_dir / f"proj-{PROJ_VERSION}"
 
-    if is_already_installed(install_dir / f"proj-{PROJ_VERSION}"):
+    build_deps_cache.add_entry("PROJ_INSTALL_DIR", str(dependency_install_dir))
+
+    if is_already_installed(dependency_install_dir):
         return
 
     def install_sqlite3() -> None:
@@ -589,7 +593,7 @@ def install_proj(
             dependency_dir,
             vs_cfg_vars,
             build_type,
-            f'-DCMAKE_INSTALL_PREFIX={install_dir / f"proj-{PROJ_VERSION}"}',
+            f"-DCMAKE_INSTALL_PREFIX={dependency_install_dir}",
             f'-DCMAKE_PREFIX_PATH={install_dir / "sqlite3"}',
             f'-DSQLite3_INCLUDE_DIR={install_dir / "sqlite3" / "include"}',
             f'-DSQLite3_LIBRARY={install_dir / "sqlite3" / "lib" / "sqlite3.lib"}',
