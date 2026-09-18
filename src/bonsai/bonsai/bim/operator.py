@@ -45,6 +45,7 @@ import bonsai.bim.handler
 import bonsai.tool as tool
 from bonsai.bim import import_ifc
 from bonsai.bim.helper import get_enum_items
+from bonsai.bim.ifc import IfcStore
 from bonsai.bim.prop import StrProperty
 from bonsai.bim.ui import IFCFileSelector
 
@@ -1046,6 +1047,7 @@ class ReloadIfcFile(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         delta_elements = [new.by_guid(global_id) for global_id in ifc_diff.added_elements | changed_elements]
         tool.Ifc.set(new)
 
+        stale_objs = []
         for obj in bpy.data.objects:
             if obj.library:
                 continue
@@ -1053,9 +1055,20 @@ class ReloadIfcFile(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
             if global_id:
                 try:
                     tool.Ifc.link(new.by_guid(global_id), obj)
-                except:
+                except RuntimeError:
                     # Still prototyping, so things like types definitely won't work
                     print("Could not relink", obj)
+                    IfcStore.unlink_element(obj=obj)
+                    stale_objs.append(obj.name)
+
+        tool.Ifc.rebuild_element_maps()
+
+        if stale_objs:
+            self.report(
+                {"WARNING"},
+                f"Could not relink {len(stale_objs)} object(s) to the reloaded file, "
+                f"they were detached from IFC: {', '.join(stale_objs)}",
+            )
 
         start = time.time()
         logger = logging.getLogger("ImportIFC")
