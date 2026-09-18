@@ -35,6 +35,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.api.attribute
 import ifcopenshell.api.document
+import ifcopenshell.api.group
 import ifcopenshell.api.nest
 import ifcopenshell.api.project
 import ifcopenshell.api.root
@@ -637,10 +638,16 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
         elif element.is_a("IfcProduct"):
             # NOTE: Non-types are not exposed in UI directly
             # but the code is still used when appending products by query.
-            self.import_product_from_ifc(element, context)
-            element_type = ifcopenshell.util.element.get_type(element)
-            if element_type is not None and tool.Ifc.get_object(element_type) is None:
-                self.import_type_from_ifc(element_type, context)
+            if element.is_a("IfcAnnotation") and ifcopenshell.util.element.get_predefined_type(element) == "DRAWING":
+                # Drawings (views) are cameras grouped in a DRAWING group. append_asset does
+                # not carry over the group nor the grouped annotations, so import them here
+                # instead of creating a generic mesh object for the camera.
+                self.import_drawing_from_ifc(element, library_file.by_id(self.definition))
+            else:
+                self.import_product_from_ifc(element, context)
+                element_type = ifcopenshell.util.element.get_type(element)
+                if element_type is not None and tool.Ifc.get_object(element_type) is None:
+                    self.import_type_from_ifc(element_type, context)
         elif element.is_a("IfcMaterial"):
             self.import_material_from_ifc(element, context)
         elif element.is_a("IfcSurfaceStyle"):
@@ -688,6 +695,47 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
         self.import_styles(element, ifc_importer)
         ifc_importer.create_generic_elements({element})
         ifc_importer.place_objects_in_collections()
+
+    def import_drawing_from_ifc(
+        self, element: ifcopenshell.entity_instance, library_element: ifcopenshell.entity_instance
+    ) -> None:
+        self.file = tool.Ifc.get()
+        library = IfcStore.library_file
+        assert library
+
+        # append_asset only carries the drawing camera itself, so bring over the
+        # annotations (text, dimensions, etc.) grouped under the source drawing.
+        group_elements: list[ifcopenshell.entity_instance] = [element]
+        library_group = tool.Drawing.get_drawing_group(library_element)
+        if library_group:
+            for library_annotation in tool.Drawing.get_group_elements(library_group) or []:
+                if library_annotation == library_element:
+                    continue
+                appended = ifcopenshell.api.project.append_asset(
+                    self.file,
+                    library=library,
+                    element=library_annotation,
+                    assume_asset_uniqueness_by_name=self.assume_unique_by_name,
+                )
+                if appended:
+                    group_elements.append(appended)
+
+        # Recreate the DRAWING group so the drawing is a well formed, activatable view.
+        drawings_parent_group = self.get_or_add_drawings_parent_group()
+        group = ifcopenshell.api.group.add_group(self.file, name=element.Name or "Unnamed")
+        ifcopenshell.api.group.edit_group(self.file, group=group, attributes={"ObjectType": "DRAWING"})
+        ifcopenshell.api.group.assign_group(self.file, products=group_elements, group=group)
+        ifcopenshell.api.group.assign_group(self.file, products=[group], group=drawings_parent_group)
+        # The camera and its annotations are imported lazily when the drawing is activated,
+        # matching how drawings are loaded when opening a project.
+
+    def get_or_add_drawings_parent_group(self) -> ifcopenshell.entity_instance:
+        for group in self.file.by_type("IfcGroup"):
+            if group.Name == "DRAWINGS" and group.ObjectType == "DRAWINGS":
+                return group
+        group = ifcopenshell.api.group.add_group(self.file, name="DRAWINGS")
+        ifcopenshell.api.group.edit_group(self.file, group=group, attributes={"ObjectType": "DRAWINGS"})
+        return group
 
     def import_type_from_ifc(self, element: ifcopenshell.entity_instance, context: bpy.types.Context) -> None:
         self.file = tool.Ifc.get()
