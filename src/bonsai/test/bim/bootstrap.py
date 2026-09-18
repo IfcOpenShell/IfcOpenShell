@@ -24,6 +24,7 @@ import webbrowser
 import bpy
 import ifcopenshell
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import pytest
 from mathutils import Vector
@@ -354,6 +355,16 @@ def the_object_name_is_at_location(name, location):
     ).length < 0.1, f"Object is at {obj_location}"
 
 
+def the_object_name_has_an_ifc_location_of_value(name, location):
+    ifc = an_ifc_file_exists()
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
+    matrix = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+    ifc_location = Vector(matrix[:3, 3])
+    assert (
+        ifc_location - Vector([float(co) for co in location.split(",")])
+    ).length < 0.1, f"IFC placement is at {ifc_location}"
+
+
 def the_variable_key_is_value(key, value):
     variables[key] = eval(value)
 
@@ -399,6 +410,7 @@ definitions = {
     'the object "(.*)" should display as "(.*)"': the_object_name_should_display_as_mode,
     'the object "(.*)" has "([0-9]+)" vertices': the_object_name_has_number_vertices,
     'the object "(.*)" is at "(.*)"': the_object_name_is_at_location,
+    'the object "(.*)" has an ifc location of "(.*)"': the_object_name_has_an_ifc_location_of_value,
     "nothing interesting happens": lambda: None,
     'the void "(.*)" is filled by "(.*)"': the_void_name_is_filled_by_filling,
     'the void "(.*)" is not filled by "(.*)"': the_void_name_is_not_filled_by_filling,
