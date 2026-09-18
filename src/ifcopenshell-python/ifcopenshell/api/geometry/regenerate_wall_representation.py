@@ -286,6 +286,10 @@ class Regenerator:
                 if self.minpath_points:
                     self.minpath_points[0] = list(reversed(self.minpath_points[0]))
 
+            # Stitch multiple path cuts in the order they are met along each edge
+            self.maxpath_points.sort(key=lambda seg: min(p[0] for p in seg))
+            self.minpath_points.sort(key=lambda seg: min(p[0] for p in seg), reverse=True)
+
             while True:
                 # Draw each profile as clockwise starting from (minx, miny)
                 start_split = next(split_points, None)
