@@ -679,7 +679,19 @@ def _generate_alignment_segments(context, alignment, hpoints, radii):
     tool.Alignment.remove_layout_and_child_layout_objects(alignment)
 
     tool.Alignment.clear_layout_segments(h_layout)
-    tool.Alignment.safe_layout_horizontal_by_pi_method(ifc, h_layout, hpoints, radii)
+    try:
+        tool.Alignment.safe_layout_horizontal_by_pi_method(ifc, h_layout, hpoints, radii)
+    except ValueError as e:
+        # solve_horizontal_alignment_by_pi_method() is a streaming generator that
+        # layout_horizontal_alignment_by_pi_method() writes to IFC segment-by-segment as it goes
+        # (e.g. entry+exit spiral deflection exceeding the PI's own deflection angle, raised only
+        # once it reaches that PI) -- so by the time this raises, earlier PIs' segments may already
+        # be written. Clear them rather than leaving a half-built, broken layout sitting in IFC:
+        # this keeps the same clean (ok, message) contract every caller here already handles
+        # (see the VIENNESEBEND check above) instead of the generic "partially completed" recovery
+        # path tool.Ifc.Operator falls back to for an uncaught exception.
+        tool.Alignment.clear_layout_segments(h_layout)
+        return False, f"Could not lay out alignment: {e}"
     ifcopenshell.api.alignment.create_representation(ifc, alignment)
 
     tool.Alignment.refresh_alignment_representation_object(alignment)
@@ -702,18 +714,12 @@ def _generate_alignment_segments(context, alignment, hpoints, radii):
 
 
 def _create_pi_markers(context, alignment_id, raw_points):
-    """Place a marker empty at every interior PI (Blender-world position, metres).
+    """Place a marker empty at every interior PI, plus the Start and End points
+    (Blender-world position, metres).
 
-    Start and end never get a curve, so — unlike an earlier version of this
-    feature — they get no marker: nothing to select, nothing to click.
-    Their positions aren't needed from a marker either;
-    tool.Alignment.get_alignment_start_end_points() reads them straight off
-    the alignment's own current segments instead.
-
-    ``pi_index`` keeps counting from the full point list (1-based among
-    interior PIs, i.e. never 0 or the last index) purely for the "PI n"
-    label; ALIGN_OT_apply_pi_curve interleaves markers with the derived
-    start/end using their sort order, not that number.
+    ``pi_index`` keeps counting from the full point list (0 for Start, 1-based
+    among interior PIs, the last index for End) purely for sort order — see
+    _find_pi_markers — and, for interior PIs, the "PI n" label.
 
     Tagged via Object.bonsai_pi_curve_marker so ALIGN_OT_apply_pi_curve /
     ALIGN_OT_finish_pi_editing can find them without any operator-instance
@@ -721,7 +727,7 @@ def _create_pi_markers(context, alignment_id, raw_points):
     the time a curve is applied).
     """
     n = len(raw_points)
-    markers = []
+    markers = [_create_endpoint_marker(context, alignment_id, "START", raw_points[0], pi_index=0)]
     for i, (x, y, z) in enumerate(raw_points):
         if i == 0 or i == n - 1:
             continue
@@ -741,7 +747,32 @@ def _create_pi_markers(context, alignment_id, raw_points):
         marker.curve_type = "TANGENT"
         context.collection.objects.link(empty)
         markers.append(empty)
+    markers.append(_create_endpoint_marker(context, alignment_id, "END", raw_points[n - 1], pi_index=n - 1))
     return markers
+
+
+def _create_endpoint_marker(context, alignment_id, role, point, pi_index=0):
+    """Create a draggable Start/End Point marker Empty at ``point`` (Blender-world XYZ).
+
+    Mirrors _create_pi_markers()'s interior-PI markers exactly (same PLAIN_AXES/size and
+    XY-plane-only lock, same Object.bonsai_pi_curve_marker tagging), but for the alignment's own
+    endpoint rather than an interior PI -- it has no curve to define, just a position. Read back by
+    ALIGN_OT_apply_pi_curve in place of tool.Alignment.get_alignment_start_end_points() whenever a
+    Start/End marker exists.
+    """
+    label = "Start Point" if role == "START" else "End Point"
+    empty = bpy.data.objects.new(label, None)
+    empty.empty_display_type = "PLAIN_AXES"
+    empty.empty_display_size = 0.3
+    empty.location = point
+    _lock_pi_marker_transform(empty)
+    marker = empty.bonsai_pi_curve_marker
+    marker.is_pi_marker = True
+    marker.alignment_id = alignment_id
+    marker.role = role
+    marker.pi_index = pi_index
+    context.collection.objects.link(empty)
+    return empty
 
 
 def _lock_pi_marker_transform(empty) -> None:
@@ -802,12 +833,16 @@ def _alignment_id_owning_layout(layout_entity) -> int | None:
 
 
 def _is_interior_pi_marker(obj) -> bool:
-    """Whether ``obj`` is one of our PI markers — _create_pi_markers() never
-    makes one for Start/End (they can't have a curve), so is_pi_marker being
-    set is enough now; kept as its own function since callers read it as an
-    "is this an editable PI" check.
+    """Whether ``obj`` is an interior-PI marker specifically (has a curve to define),
+    as opposed to a Start/End Point marker (see _is_endpoint_marker) -- only an
+    interior PI marker gets the curve-type/radius/spiral fields in the panel.
     """
-    return obj.bonsai_pi_curve_marker.is_pi_marker
+    return obj.bonsai_pi_curve_marker.is_pi_marker and obj.bonsai_pi_curve_marker.role == "PI"
+
+
+def _is_endpoint_marker(obj) -> bool:
+    """Whether ``obj`` is a Start/End Point marker (see _create_endpoint_marker)."""
+    return obj.bonsai_pi_curve_marker.is_pi_marker and obj.bonsai_pi_curve_marker.role in {"START", "END"}
 
 
 def _refresh_pi_marker_visuals(context, alignment_id) -> None:
@@ -833,9 +868,7 @@ def _refresh_pi_marker_visuals(context, alignment_id) -> None:
     """
     alignment_decorator.PIMarkerDecorator.refresh(context, alignment_id)
 
-    pending = [
-        m for m in _find_pi_markers(alignment_id) if m.bonsai_pi_curve_marker.curve_type == "TANGENT"
-    ]
+    pending = [m for m in _find_pi_markers(alignment_id) if _is_interior_pi_marker(m) and m.bonsai_pi_curve_marker.curve_type == "TANGENT"]
     if not pending:
         context.workspace.status_text_set(text=None)
         return
@@ -1126,6 +1159,14 @@ class ALIGN_OT_edit_horizontal_pis(Operator, tool.Ifc.Operator):
 
         ifc = tool.Ifc.get()
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc)
+
+        try:
+            start, end = tool.Alignment.get_alignment_start_end_points(alignment)
+        except ValueError as e:
+            self.report({"ERROR"}, str(e))
+            return {"CANCELLED"}
+        _create_endpoint_marker(context, alignment_id, "START", _local_ifc_to_world_point(ifc, unit_scale, start), pi_index=0)
+
         for i, spec in enumerate(specs, start=1):
             x, y, z = _local_ifc_to_world_point(ifc, unit_scale, spec["pi_local"])
             empty = bpy.data.objects.new(f"PI {i}", None)
@@ -1148,15 +1189,19 @@ class ALIGN_OT_edit_horizontal_pis(Operator, tool.Ifc.Operator):
             empty.name = f"PI {i} ({_pi_curve_marker_label(marker)})"
             context.collection.objects.link(empty)
 
+        _create_endpoint_marker(
+            context, alignment_id, "END", _local_ifc_to_world_point(ifc, unit_scale, end), pi_index=len(specs) + 1
+        )
+
         alignment_decorator.AlignmentSegmentDecorator.uninstall()
         tool.Blender.update_viewport()
-        self.report({"INFO"}, f"Created {len(specs)} PI marker(s)")
+        self.report({"INFO"}, f"Created {len(specs)} PI marker(s) plus Start/End Point markers")
         _refresh_pi_marker_visuals(context, alignment_id)
         return {"FINISHED"}
 
 
 class ALIGN_OT_apply_pi_curve(Operator, tool.Ifc.Operator):
-    """Regenerate the alignment using the active PI marker's curve settings.
+    """Regenerate the alignment using every current PI/Start/End marker's position and settings.
 
     A plain button click — a top-level operator invocation, not one nested
     inside another operator's still-running modal() — which is what the
@@ -1169,7 +1214,7 @@ class ALIGN_OT_apply_pi_curve(Operator, tool.Ifc.Operator):
 
     bl_idname = "align.apply_pi_curve"
     bl_label = "Apply Curve"
-    bl_description = "Regenerate the alignment using this PI's curve type/radius"
+    bl_description = "Regenerate the alignment using every current PI/Start/End marker's position and settings"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -1177,8 +1222,8 @@ class ALIGN_OT_apply_pi_curve(Operator, tool.Ifc.Operator):
         if not poll_ifc4x3(cls, context):
             return False
         marker = _active_pi_marker(context)
-        if not marker or not _is_interior_pi_marker(marker):
-            cls.poll_message_set("Select an interior PI marker first")
+        if not marker:
+            cls.poll_message_set("Select a PI, Start, or End marker first")
             return False
         return True
 
@@ -1187,15 +1232,26 @@ class ALIGN_OT_apply_pi_curve(Operator, tool.Ifc.Operator):
         alignment_id = marker_obj.bonsai_pi_curve_marker.alignment_id
         alignment = tool.Ifc.get().by_id(alignment_id)
 
-        try:
-            start, end = tool.Alignment.get_alignment_start_end_points(alignment)
-        except ValueError as e:
-            self.report({"ERROR"}, str(e))
-            return {"CANCELLED"}
-
         ifc = tool.Ifc.get()
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc)
-        interior_markers = _find_pi_markers(alignment_id)
+        all_markers = _find_pi_markers(alignment_id)
+        interior_markers = [m for m in all_markers if _is_interior_pi_marker(m)]
+        start_marker = next((m for m in all_markers if m.bonsai_pi_curve_marker.role == "START"), None)
+        end_marker = next((m for m in all_markers if m.bonsai_pi_curve_marker.role == "END"), None)
+
+        if start_marker and end_marker:
+            start = _world_point_to_local_ifc(ifc, unit_scale, start_marker.location)
+            end = _world_point_to_local_ifc(ifc, unit_scale, end_marker.location)
+        else:
+            # Defensive fallback for a marker set predating Start/End markers (e.g. an older
+            # session's markers still sitting in a .blend file) -- every current code path that
+            # creates markers always creates Start/End alongside any interior PIs.
+            try:
+                start, end = tool.Alignment.get_alignment_start_end_points(alignment)
+            except ValueError as e:
+                self.report({"ERROR"}, str(e))
+                return {"CANCELLED"}
+
         hpoints = (
             [start]
             + [_world_point_to_local_ifc(ifc, unit_scale, m.location) for m in interior_markers]
@@ -1209,7 +1265,8 @@ class ALIGN_OT_apply_pi_curve(Operator, tool.Ifc.Operator):
         ok, message = _generate_alignment_segments(context, alignment, hpoints, radii)
 
         marker = marker_obj.bonsai_pi_curve_marker
-        marker_obj.name = f"PI {marker.pi_index} ({_pi_curve_marker_label(marker)})"
+        if marker.role == "PI":
+            marker_obj.name = f"PI {marker.pi_index} ({_pi_curve_marker_label(marker)})"
         # _generate_alignment_segments() replaces every IfcAlignmentSegment
         # with a new one, so a previously-highlighted segment's id is gone —
         # refreshing it would silently keep showing the old, now-stale
@@ -1256,6 +1313,19 @@ class ALIGN_OT_finish_pi_editing(Operator, tool.Ifc.Operator):
         markers = _find_pi_markers(alignment_id)
         for m in markers:
             bpy.data.objects.remove(m, do_unlink=True)
+
+        # The active object may have been one of the markers just removed (Blender leaves nothing
+        # selected once its active object is deleted) -- select the alignment itself instead, same
+        # convention as ALIGN_OT_add_alignment/ALIGN_OT_draw_horizontal_alignment, so Finish never
+        # leaves the viewport with nothing selected.
+        alignment = tool.Ifc.get().by_id(alignment_id)
+        alignment_obj = tool.Ifc.get_object(alignment) if alignment else None
+        if alignment_obj:
+            for obj in context.selected_objects:
+                obj.select_set(False)
+            alignment_obj.select_set(True)
+            context.view_layer.objects.active = alignment_obj
+
         tool.Blender.update_viewport()
         self.report({"INFO"}, f"Finished — removed {len(markers)} PI marker(s)")
         _refresh_pi_marker_visuals(context, alignment_id)
@@ -1589,9 +1659,14 @@ class ALIGN_OT_draw_horizontal_alignment(bpy.types.Operator, PolylineOperator, t
 
         radii = [0.0] * (len(hpoints) - 2)
         ok, message = _generate_alignment_segments(context, alignment, hpoints, radii)
-        if ok and radii:
+        if ok:
+            # Always create Start/End Point markers, even with no interior PIs at all (a
+            # dead-straight two-point alignment still has an endpoint to drag).
             _create_pi_markers(context, alignment.id(), raw_points)
-            message += " — select a PI marker and click Apply Curve to add a curve"
+            if radii:
+                message += " — select a PI marker and click Apply Curve to add a curve"
+            else:
+                message += " — drag the Start/End Point markers, or click Finish"
 
         # Make the alignment the active/selected object so it's immediately
         # visible in the outliner/properties pane without a manual click —

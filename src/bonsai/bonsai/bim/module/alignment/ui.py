@@ -35,6 +35,7 @@ from .operator import (
     _find_pi_markers,
     _resolve_alignment_id_for_markers,
     _is_interior_pi_marker,
+    _is_endpoint_marker,
     _alignment_id_owning_layout,
 )
 
@@ -323,6 +324,7 @@ class ALIGN_PT_alignment_authoring(Panel):
         props = context.scene.CivilAlignmentProperties
         marker = context.active_object
         is_marker = bool(marker) and _is_interior_pi_marker(marker)
+        is_endpoint_marker = bool(marker) and _is_endpoint_marker(marker)
         markers_present = _pi_markers_present(context)
         table_present = bool(props.horizontal_pi_rows)
 
@@ -336,7 +338,7 @@ class ALIGN_PT_alignment_authoring(Panel):
         if not alignment:
             col.label(text="Add or select an alignment first", icon="INFO")
 
-        if is_marker or markers_present:
+        if is_marker or is_endpoint_marker or markers_present:
             box = layout.box()
             if is_marker:
                 pi_data = marker.bonsai_pi_curve_marker
@@ -356,8 +358,16 @@ class ALIGN_PT_alignment_authoring(Panel):
                 row = box.row(align=True)
                 row.operator("align.apply_pi_curve", icon="CHECKMARK")
                 row.operator("align.finish_pi_editing", icon="CHECKMARK")
+            elif is_endpoint_marker:
+                pi_data = marker.bonsai_pi_curve_marker
+                label = "Start Point" if pi_data.role == "START" else "End Point"
+                box.label(text=label, icon="EMPTY_AXIS")
+                box.label(text="Drag in the viewport to reposition", icon="ORIENTATION_GLOBAL")
+                row = box.row(align=True)
+                row.operator("align.apply_pi_curve", text="Apply", icon="CHECKMARK")
+                row.operator("align.finish_pi_editing", icon="CHECKMARK")
             else:
-                box.label(text="Select a PI marker to define its curve", icon="INFO")
+                box.label(text="Select a PI/Start/End marker to edit it", icon="INFO")
                 box.operator("align.finish_pi_editing", icon="CHECKMARK")
 
         if table_present:
