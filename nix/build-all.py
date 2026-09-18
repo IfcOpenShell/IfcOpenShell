@@ -872,10 +872,7 @@ def build_dependency(
     download_tool: Literal["py", "git"] = download_tool_default,
     revision: str | None = None,
     patch: list[str] | None = None,
-    shell=None,
     pre_compile_subs: Sequence[tuple[str, str, str]] = (),
-    additional_files: dict[str, str] | None = None,
-    no_append_name=False,
     cmake_dir=None,
     cmake_native: bool = False,
 ) -> None:
@@ -885,7 +882,6 @@ def build_dependency(
     linker flags.
 
     :param pre_compile_subs: A sequence of ``(fn, before, after)``
-    :param additional_files: Mapping path->url.
     :param cmake_native: For ``mode="cmake"``, force a native (host) build
         even when building for WASM. Needed for build-time tools like swig.
     """
@@ -900,10 +896,7 @@ def build_dependency(
     logger.info(f"\rFetching {name}...   ")
 
     if download_tool == download_tool_py:
-        if no_append_name:
-            url = download_url
-        else:
-            url = os.path.join(download_url, download_name)
+        url = os.path.join(download_url, download_name)
 
         download_path = os.path.join(build_dir, download_name)
         if not os.path.exists(download_path):
@@ -954,11 +947,6 @@ def build_dependency(
         if not os.path.exists(extract_dir):
             run([tar, "-xf", download_name], cwd=build_dir)
 
-    if additional_files:
-        for path, url in additional_files.items():
-            if not os.path.exists(path):
-                urlretrieve(url, os.path.join(extract_dir, path))
-
     if patch is not None:
         for p in patch:
             patch_abs = (SCRIPT_PATH / p).absolute().__str__()
@@ -970,9 +958,6 @@ def build_dependency(
                     run(["patch", "-p1", "--batch", "--reverse", "--dry-run", "-i", patch_abs], cwd=extract_dir)
             else:
                 raise FileNotFoundError(patch_abs)
-
-    if shell is not None:
-        sp.run(shell, shell=True, check=True, cwd=extract_dir)
 
     if mode != "bjam":
         extract_build_dir = os.path.join(extract_dir, *([cmake_dir] if cmake_dir else []), "build")
