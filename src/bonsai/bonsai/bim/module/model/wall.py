@@ -1468,7 +1468,9 @@ class DumbWallPlaner:
             else:
                 for rel in inverse.AssociatedTo:
                     walls.extend([tool.Ifc.get_object(e) for e in rel.RelatedObjects])
-        tool.Model.recalculate_walls([w for w in set(walls) if w])
+        walls = [w for w in set(walls) if w]
+        tool.Model.recalculate_walls(walls)
+        tool.Model.resync_hosted_fillings([e for w in walls if (e := tool.Ifc.get_entity(w))])
 
 
 def _opening_axis_extent(opening, axis_reference, unit_scale):
