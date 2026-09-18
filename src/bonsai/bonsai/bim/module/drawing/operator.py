@@ -821,7 +821,7 @@ class CreateDrawing(bpy.types.Operator):
                 no = tool.Drawing.get_extrusion_vector(element).normalized()
                 no = Vector([0.0, 0.0, 1.0])
             elif usage.LayerSetDirection == "AXIS1":
-                co = Vector((0.0, 0.0, offset))
+                co = Vector((offset, 0.0, 0.0))
                 no = tool.Drawing.get_extrusion_vector(element).normalized()
                 no = Vector([1.0, 0.0, 0.0])
             else:
