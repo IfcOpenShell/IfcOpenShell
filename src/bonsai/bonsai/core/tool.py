@@ -357,7 +357,7 @@ class Drawing:
     def ensure_annotation_in_drawing_plane(cls, obj, camera=None): pass
     def ensure_drawings_parent_document(cls): pass
     def ensure_drawings_parent_group(cls): pass
-    def ensure_unique_drawing_name(cls, name): pass
+    def ensure_unique_drawing_name(cls, name, ignore=None): pass
     def ensure_unique_identification(cls, identification): pass
     def export_font_size(cls, obj): pass
     def export_symbol(cls, obj): pass

@@ -533,6 +533,7 @@ class TestRemoveDrawing:
 
 class TestUpdateDrawingName:
     def test_do_not_update_if_name_unchanged(self, ifc, drawing):
+        drawing.ensure_unique_drawing_name("name", ignore="drawing").should_be_called().will_return("name")
         drawing.get_name("drawing").should_be_called().will_return("name")
         drawing.set_camera_name("drawing", "name").should_be_called()
         drawing.get_drawing_group("drawing").should_be_called().will_return("group")
@@ -549,6 +550,7 @@ class TestUpdateDrawingName:
         subject.update_drawing_name(ifc, drawing, drawing="drawing", name="name")
 
     def test_run(self, ifc, drawing):
+        drawing.ensure_unique_drawing_name("name", ignore="drawing").should_be_called().will_return("name")
         drawing.get_name("drawing").should_be_called().will_return("oldname")
         ifc.run("attribute.edit_attributes", product="drawing", attributes={"Name": "name"}).should_be_called()
         drawing.set_camera_name("drawing", "name").should_be_called()

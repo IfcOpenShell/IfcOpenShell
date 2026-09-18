@@ -617,8 +617,14 @@ class Drawing(bonsai.core.tool.Drawing):
         props.is_editing_product = True
 
     @classmethod
-    def ensure_unique_drawing_name(cls, name: str) -> str:
-        names = [e.Name for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"]
+    def ensure_unique_drawing_name(
+        cls, name: str, ignore: Optional[ifcopenshell.entity_instance] = None
+    ) -> str:
+        names = [
+            e.Name
+            for e in tool.Ifc.get().by_type("IfcAnnotation")
+            if e.ObjectType == "DRAWING" and e != ignore
+        ]
         while name in names:
             name += "-X"
         return name
