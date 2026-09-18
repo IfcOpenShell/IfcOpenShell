@@ -197,7 +197,7 @@ class CadTool(WorkSpaceTool):
             )
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
             add_layout_hotkey_operator(
-                row, "Fillet", "S_F", bpy.ops.bim.add_ifcarcindex_fillet.__doc__.split("\n", 1)[1].strip(), ui_context
+                row, "Fillet", "S_F", bpy.ops.bim.cad_fillet.__doc__.split("\n", 1)[1].strip(), ui_context
             )
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
             add_layout_hotkey_operator(
