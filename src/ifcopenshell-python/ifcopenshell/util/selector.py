@@ -34,6 +34,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
 import ifcopenshell.util.pset
+import ifcopenshell.util.representation
 import ifcopenshell.util.schema
 import ifcopenshell.util.shape
 import ifcopenshell.util.shape_builder
@@ -484,6 +485,9 @@ def _get_element_value(element: ifcopenshell.entity_instance, keys: list[str]) -
         elif key in ("x", "y", "z", "easting", "northing", "elevation") and hasattr(value, "ObjectPlacement"):
             if getattr(value, "ObjectPlacement", None):
                 matrix = ifcopenshell.util.placement.get_local_placement(value.ObjectPlacement)
+                mapping_matrix = ifcopenshell.util.representation.get_mapped_item_matrix(value)
+                if mapping_matrix is not None:
+                    matrix = matrix @ mapping_matrix
                 xyz = matrix[:, 3][:3]
                 if key in ("x", "y", "z"):
                     value = xyz["xyz".index(key)]
@@ -495,6 +499,9 @@ def _get_element_value(element: ifcopenshell.entity_instance, keys: list[str]) -
         elif key in ("rotation_x", "rotation_y", "rotation_z") and hasattr(value, "ObjectPlacement"):
             if getattr(value, "ObjectPlacement", None):
                 matrix = ifcopenshell.util.placement.get_local_placement(value.ObjectPlacement)
+                mapping_matrix = ifcopenshell.util.representation.get_mapped_item_matrix(value)
+                if mapping_matrix is not None:
+                    matrix = matrix @ mapping_matrix
                 euler = ifcopenshell.util.shape_builder.np_matrix_to_euler(matrix)
                 value = float(np.degrees(euler[("rotation_x", "rotation_y", "rotation_z").index(key)]))
             else:
