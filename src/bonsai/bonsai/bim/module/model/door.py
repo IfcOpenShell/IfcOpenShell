@@ -538,6 +538,14 @@ class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
     def add_door_on_object(self, obj: bpy.types.Object) -> None:
         element = tool.Ifc.get_entity(obj)
         assert element
+        # A door element may be assigned to a Blender empty (for example an
+        # IfcDoorType created by assigning the class to an empty). An empty has
+        # no mesh data and cannot hold the parametric door representation, which
+        # later fails in replace_object_ifc_representation. Recreate it as a mesh
+        # object first so the geometry can be attached. See #7117.
+        if not isinstance(obj.data, bpy.types.Mesh):
+            obj = tool.Geometry.recreate_object_with_data(obj, bpy.data.meshes.new(obj.name))
+            tool.Blender.set_active_object(obj)
         props = tool.Model.get_door_props(obj)
 
         tool.Blender.get_addon_preferences().default_parameters.door.copy_to(props)
