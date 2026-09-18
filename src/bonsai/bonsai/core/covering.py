@@ -151,5 +151,27 @@ def add_instance_ceiling_coverings_from_walls(
         spatial.set_covering_representation_from_polygon(obj, poly, polygon_is_si=False)
 
 
+def add_instance_wall_coverings_from_walls(
+    ifc: type[tool.Ifc],
+    root: type[tool.Root],
+    covering: type[tool.Covering],
+    spatial: type[tool.Spatial],
+    facing_cursor: bool = True,
+) -> None:
+    if not root.get_default_container():
+        raise NoDefaultContainer()
+    if not covering.get_relating_type_layer_thickness():
+        raise NoLayerSetThickness()
+
+    for obj in spatial.get_selected_objects():
+        element = ifc.get_entity(obj)
+        if element and element.is_a("IfcWall"):
+            covering.create_wall_covering(obj, facing_cursor=facing_cursor)
+
+
 class NoDefaultContainer(Exception):
+    pass
+
+
+class NoLayerSetThickness(Exception):
     pass
