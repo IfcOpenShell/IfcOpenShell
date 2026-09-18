@@ -756,6 +756,7 @@ class EditObjectUI:
             cls.draw_aggregation(context)
             cls.draw_qto(context)
             cls.draw_modes(context)
+            cls.draw_void_edit_actions(context)
 
         if context.region.type in ("UI", "WINDOW"):
             text = format_ifc_camel_case(AuthoringData.data["active_class"])
@@ -767,6 +768,7 @@ class EditObjectUI:
             cls.draw_aggregation(context)
             cls.draw_qto(context)
             cls.draw_modes(context)
+            cls.draw_void_edit_actions(context)
 
     @classmethod
     def draw_parameter_adjustments(cls, context):
@@ -1001,6 +1003,12 @@ class EditObjectUI:
             if ui_context != "TOOL_HEADER":
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_O")
+
+    @classmethod
+    def draw_void_edit_actions(cls, context):
+        # Drawn last so these buttons don't shift earlier ones like Toggle Openings.
+        ui_context = str(context.region.type)
+        IS_TOOL_HEADER = ui_context == "TOOL_HEADER"
 
         if AuthoringData.data["is_voidable_element"]:
             if AuthoringData.data["has_visible_openings"]:
