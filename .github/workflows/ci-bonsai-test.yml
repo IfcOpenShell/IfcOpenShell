@@ -4,17 +4,20 @@ on:
   pull_request:
     paths:
       - '.github/workflows/ci-bonsai-test.yml'
+      # Bonsai itself, then every package whose wheel `make dist` bundles into it.
       - 'src/bonsai/**'
-      - 'src/ifcopenshell-python/ifcopenshell/**'
-      - 'src/bcf/bcf/**'
-      - 'src/ifcclash/ifcclash/**'
-      - 'src/ifccobie/**'
-      - 'src/ifcdiff/**'
-      - 'src/ifccsv/**'
-      - 'src/ifcpatch/ifcpatch/**'
-      - 'src/ifc4d/ifc4d/**'
-      - 'src/ifc5d/ifc5d/**'
+      - 'src/ifcopenshell-python/**'
+      - 'src/bcf/**'
+      - 'src/bsdd/**'
+      - 'src/ifc4d/**'
+      - 'src/ifc5d/**'
       - 'src/ifccityjson/**'
+      - 'src/ifcclash/**'
+      - 'src/ifccsv/**'
+      - 'src/ifcdiff/**'
+      - 'src/ifcfm/**'
+      - 'src/ifcpatch/**'
+      - 'src/ifctester/**'
   workflow_dispatch:
 
 # A new push to the same pull request cancels the run still going for its previous commit.
