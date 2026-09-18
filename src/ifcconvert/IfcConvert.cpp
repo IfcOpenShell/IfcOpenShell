@@ -957,7 +957,8 @@ int main(int argc, char** argv) {
 		std::vector<double> offset(3);
 
 		IfcGeom::Iterator tmp_context_iterator(ifcopenshell::geometry::kernels::construct(ifc_file, geometry_kernel, geometry_settings, logger), geometry_settings, ifc_file, filter_funcs, num_threads, logger);
-			
+		tmp_context_iterator.suppress_progress(no_progress);
+
 		time_t start, end;
 		time(&start);
 		if (!quiet) logger.Status("Computing bounds...");
@@ -1003,7 +1004,8 @@ int main(int argc, char** argv) {
 	std::unique_ptr<IfcGeom::Iterator> context_iterator;
 	if (!elems_from_adaptor) {
 		context_iterator.reset(new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(ifc_file, geometry_kernel, geometry_settings, logger), geometry_settings, ifc_file, filter_funcs, num_threads, logger));
-	}	
+		context_iterator->suppress_progress(no_progress);
+	}
 
 #if defined(WITH_HDF5) && defined(IFOPSH_WITH_OPENCASCADE)
 	std::unique_ptr<HdfSerializer> cache;

@@ -283,7 +283,7 @@ void IfcGeom::Iterator::process_concurrently() {
 
 	logger_.SetProduct(boost::none);
 
-	if (!terminating_) {
+	if (!terminating_ && !no_progress_) {
 		logger_.Status("\rDone creating geometry (" + boost::lexical_cast<std::string>(all_processed_elements_.size()) +
 			" objects)								");
 	}
