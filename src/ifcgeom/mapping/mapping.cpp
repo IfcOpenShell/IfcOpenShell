@@ -249,6 +249,20 @@ void mapping::get_representations(std::vector<geometry_conversion_task>& tasks, 
 
         IfcSchema::IfcRepresentationMap::list::ptr maps = representation->RepresentationMap();
 
+        // Per IfcShapeModel WR11 a representation shall be used by exactly one of
+        // OfProductRepresentation, RepresentationMap or OfShapeAspect. Detect the
+        // invalid situation where a representation is assigned to a product directly
+        // and, at the same time, used as the source of a mapped item. This is not
+        // handled/recovered here; just warn so the invalid data can be corrected.
+        if (representation->OfProductRepresentation()->size() > 0) {
+            for (auto& used_map : *maps) {
+                if (used_map->MapUsage()->size() > 0) {
+                    logger_.Warning("GEO", 329, "Representation is used both directly by a product and as a mapped item, which is not valid (IfcShapeModel WR11)", representation);
+                    break;
+                }
+            }
+        }
+
         if (!geometry_reuse_ok_for_current_representation_ && maps->size() == 1) {
             // unfiltered_products contains products represented by this representation by means of mapped items.
             // For example because of openings applied to products, reuse might not be acceptable and then the
