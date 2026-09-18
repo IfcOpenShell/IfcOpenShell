@@ -86,7 +86,13 @@ class Facet:
         self.passed_entities: set[ifcopenshell.entity_instance] = set()
         self.failures: list[FacetFailure] = []
         for i, name in enumerate(self.parameters):
-            setattr(self, name.replace("@", ""), parameters[i])
+            key = name.replace("@", "")
+            parameter = parameters[i]
+            # An IDS value is always XML text coerced to the model data type, so a scalar
+            # passed through the Python API is normalised to the string it serialises to.
+            if key == "value" and isinstance(parameter, (int, float)):
+                parameter = str(parameter)
+            setattr(self, key, parameter)
 
     def asdict(self, clause_type: str) -> dict[str, Any]:
         results = {}
