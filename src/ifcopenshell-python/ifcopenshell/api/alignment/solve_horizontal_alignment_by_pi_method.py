@@ -411,6 +411,12 @@ def solve_horizontal_alignment_by_pi_method(
 
             tangent_run = lengthBT - tangent
 
+            if tangent_run < -1.0e-03:
+                raise ValueError(
+                    f"PI {curve_index + 1}: curve radius is too large for the distance between PIs; "
+                    "use a smaller radius or move the PIs farther apart"
+                )
+
             # back tangent run
             if 1.0e-03 < tangent_run:
                 segments.append(
@@ -449,7 +455,7 @@ def solve_horizontal_alignment_by_pi_method(
             # normalize the deflection angle onto (-pi, pi)
             delta = math.atan2(math.sin(delta), math.cos(delta))
             if delta == 0.0:
-                raise ValueError("PI deflection angle is zero; spiral transitions cannot be created")
+                raise ValueError(f"PI {curve_index + 1}: deflection angle is zero; spiral transitions cannot be created")
 
             R = abs(radius)
             s = 1.0 if 0.0 < delta else -1.0  # +1 curve to the left, -1 curve to the right
@@ -490,7 +496,8 @@ def solve_horizontal_alignment_by_pi_method(
             theta_c = abs(delta) - theta1 - theta2  # deflection of the circular curve
             if theta_c < 0.0:
                 raise ValueError(
-                    "spiral transition curves are too long; their combined deflection exceeds the PI deflection angle"
+                    f"PI {curve_index + 1}: spiral transition curves are too long; their combined deflection "
+                    "exceeds the PI deflection angle"
                 )
             lc = R * theta_c
 
@@ -518,6 +525,12 @@ def solve_horizontal_alignment_by_pi_method(
             pi_to_st = y / math.sin(delta)  # distance from the PI to ST, along the forward tangent
 
             tangent_run = lengthBT - ts_to_pi
+
+            if tangent_run < -1.0e-03:
+                raise ValueError(
+                    f"PI {curve_index + 1}: spiral transition curves are too long for the distance between PIs; "
+                    "use shorter spirals/a smaller radius or move the PIs farther apart"
+                )
 
             # back tangent run
             if 1.0e-03 < tangent_run:
