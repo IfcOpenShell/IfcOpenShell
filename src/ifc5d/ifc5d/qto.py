@@ -568,7 +568,7 @@ class IfcOpenShell(QtoCalculator):
             or ``None`` if mass density calculation for this element is not supported.
         """
 
-        if calculation_type == "gross" or not ifcopenshell.util.element.has_openings(element):
+        if calculation_type == "GROSS" or not ifcopenshell.util.element.has_openings(element):
             weight = cls.get_weight_profile_based(element)
             if weight is not None:
                 return weight
