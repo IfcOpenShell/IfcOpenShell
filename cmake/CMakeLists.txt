@@ -437,6 +437,9 @@ message(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
 message(STATUS "Boost libraries found in ${Boost_LIBRARIES}")
 
 if(COLLADA_SUPPORT)
+    # OpenCOLLADA is ancient and never properly hardcodes its version to any of the installed files.
+    # Version used in header is partial, -version.cmake hardcodes "0.1.0".
+    # So we don't set any minimal version and just take whatever there is.
     find_package(OpenCOLLADA REQUIRED)
 endif()
 
