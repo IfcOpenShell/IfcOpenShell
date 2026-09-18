@@ -312,6 +312,10 @@ if(GLTF_SUPPORT)
     find_package(nlohmann_json 3.6.1 REQUIRED)
 endif()
 
+if(WITH_PROJ)
+    set(PROJ_MIN_VERSION 9.4.1)
+endif()
+
 # Add USD support to serializers
 if(USD_SUPPORT)
     find_package(USD REQUIRED)
