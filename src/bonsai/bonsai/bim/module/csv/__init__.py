@@ -22,15 +22,19 @@ from . import operator, prop, ui
 
 classes = (
     operator.AddCsvAttribute,
+    operator.AddStackedCsvTemplates,
     operator.ExportCsvAttributes,
     operator.ExportIfcCsv,
+    operator.ExportStackedIfcCsv,
     operator.ImportCsvAttributes,
     operator.ImportIfcCsv,
     operator.RemoveAllCsvAttributes,
     operator.RemoveCsvAttribute,
+    operator.RemoveStackedCsvTemplate,
     operator.ReorderCsvAttribute,
     operator.SelectCsvIfcFile,
     prop.CsvAttribute,
+    prop.CsvTemplateFile,
     prop.CsvProperties,
     ui.BIM_PT_ifccsv,
 )
