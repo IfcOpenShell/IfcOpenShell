@@ -866,6 +866,8 @@ class IfcImporter:
                 if mesh is not None:
                     tool.Loader.link_mesh(shape, mesh)
                     self.meshes[mesh_name] = mesh
+        elif self.is_light_element(element):
+            mesh = self.create_light(element)
         else:
             mesh = None
 
@@ -1065,6 +1067,9 @@ class IfcImporter:
             and tool.Drawing.ANNOTATION_TYPES_DATA[object_type].data_type == "curve"
         )
 
+    def is_light_element(self, element: ifcopenshell.entity_instance) -> bool:
+        return element.is_a("IfcLightFixture") or element.is_a("IfcLamp")
+
     def get_drawing_group(self, element):
         for rel in element.HasAssignments or []:
             if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.ObjectType == "DRAWING":
@@ -1079,6 +1084,10 @@ class IfcImporter:
         result[1][3] *= self.unit_scale
         result[2][3] *= self.unit_scale
         return result
+
+    def create_light(self, element: ifcopenshell.entity_instance) -> bpy.types.Light:
+        light_type = "SUN" if getattr(element, "PredefinedType", None) == "DIRECTIONSOURCE" else "POINT"
+        return bpy.data.lights.new(tool.Loader.get_name(element), type=light_type)
 
     def create_curve(
         self,

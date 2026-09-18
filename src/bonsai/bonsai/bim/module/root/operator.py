@@ -374,7 +374,7 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                 representation = tool.Geometry.get_active_representation(obj)
                 if representation:
                     tool.Geometry.reload_representation(obj)
-                elif obj.data is not None:
+                elif obj.data is not None and not isinstance(obj.data, bpy.types.Light):
                     new_obj = tool.Geometry.recreate_object_with_data(obj, None)
 
             # Accomodate existing importers to Blender from other formats that set custom props
