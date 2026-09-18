@@ -1785,6 +1785,7 @@ class Geometry(bonsai.core.tool.Geometry):
         [consider_inverses.append(texture := t) for t in getattr(representation_item, "HasTextures", [])]
 
         representation = None
+        containers: list[ifcopenshell.entity_instance] = []
         boolean_results_to_remove: set[ifcopenshell.entity_instance] = set()
         for inverse in ifc_file.get_inverse(representation_item):
             if inverse.is_a("IfcShapeRepresentation"):
@@ -1806,6 +1807,8 @@ class Geometry(bonsai.core.tool.Geometry):
                     elif inverse2.is_a("IfcShapeRepresentation"):
                         inverse2.Items = tuple(set(inverse2.Items) - {inverse} | {other_operand})
                 boolean_results_to_remove.add(inverse)
+            elif inverse.is_a("IfcRepresentationItem") and not inverse.is_a("IfcStyledItem"):
+                containers.append(inverse)
 
         if styled_item:
             consider_inverses.remove(styled_item)
@@ -1828,12 +1831,44 @@ class Geometry(bonsai.core.tool.Geometry):
             if not new_items:
                 return
             representation.Items = new_items
+
+        emptied_containers = [c for c in containers if cls.detach_representation_item(representation_item, c)]
+
         also_consider = list(consider_inverses)
         ifcopenshell.util.element.remove_deep2(ifc_file, representation_item, also_consider=also_consider)
+
+        for container in emptied_containers:
+            cls.remove_representation_item(container, element)
 
         tool.Model.unmark_manual_booleans(element, [b.id() for b in boolean_results_to_remove])
         for boolean_result in boolean_results_to_remove:
             cls.remove_representation_item(boolean_result, element)
+
+    @classmethod
+    def detach_representation_item(
+        cls, representation_item: ifcopenshell.entity_instance, container: ifcopenshell.entity_instance
+    ) -> bool:
+        """Clear references to an item from another item that nests it.
+
+        Covers containers such as IfcGeometricSet.Elements,
+        IfcShellBasedSurfaceModel.SbsmBoundary or IfcCsgSolid.TreeRootExpression.
+
+        :param representation_item: item to detach.
+        :param container: item referencing ``representation_item``.
+        :return: whether ``container`` is left invalid and has to be removed too.
+        """
+        is_emptied = False
+        for i in range(len(container)):
+            value = container[i]
+            if value == representation_item:
+                container[i] = None
+                is_emptied = True
+            elif isinstance(value, tuple) and any(v == representation_item for v in value):
+                value = tuple(v for v in value if v != representation_item)
+                container[i] = value
+                if not value:
+                    is_emptied = True
+        return is_emptied
 
     @classmethod
     def create_shape_aspect(
