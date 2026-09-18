@@ -1288,7 +1288,8 @@ class CreateDrawing(bpy.types.Operator):
                             ]
 
                         if elements:
-                            classes = self.get_svg_classes(ifc.by_id(elements[0].instance.id()))
+                            # Resolve via the hit's own file, not the stale `ifc` loop variable.
+                            classes = self.get_svg_classes(ifcopenshell.entity_instance(elements[0].instance))
                             classes.append("projection")
                             classes.append("surface")
 
