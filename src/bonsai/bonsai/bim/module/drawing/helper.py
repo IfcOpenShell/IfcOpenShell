@@ -346,7 +346,7 @@ def format_distance(
                 tx_dist += str(frac) + "/" + str(base)
             if add_inches or frac:
                 # Only add inch symbol if we actually added inch content
-                if inches > 0 or frac > 0 or feet == 0:
+                if inches > 0 or frac or feet == 0:
                     tx_dist += '"'
 
             if precision == "12" and unit_system == "IMPERIAL":
