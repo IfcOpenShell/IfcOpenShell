@@ -1,0 +1,34 @@
+name: Publish IfcTester Org
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - v0.9.0
+    paths:
+      - src/ifctester/**
+
+jobs:
+  publish_ifctester_org:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Checkout ifctester_org_static_html
+        uses: actions/checkout@v7
+        with:
+          repository: IfcOpenShell/ifctester_org_static_html
+          token: ${{ secrets.IFCOPENBOT_TOKEN }}
+          path: ifctester_org_static_html
+      - name: Build webapp
+        working-directory: ./src/ifctester
+        run: |
+          sudo apt update && sudo apt install -y nodejs
+          git config --global user.name 'IfcOpenBot'
+          git config --global user.email 'IfcOpenBot@users.noreply.github.com'
+          make webapp-build
+      - name: Commit and push
+        run: |
+          cp -r src/ifctester/webapp/dist/* ifctester_org_static_html/
+          git -C ifctester_org_static_html add .
+          git -C ifctester_org_static_html commit --allow-empty -m "$(git log --oneline -1)"
+          git -C ifctester_org_static_html push

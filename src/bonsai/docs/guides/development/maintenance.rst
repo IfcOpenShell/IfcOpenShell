@@ -13,11 +13,11 @@ When adding or removing a supported Python version, update the following:
 
    * - File
      - What to update
-   * - ``.github/workflows/ci-lint.yaml``
+   * - ``.github/workflows/test-lint.yml``
      - ``MIN_IOS_PY_VERSION``
-   * - ``.github/workflows/ci-ifcopenshell-python-pypi.yml``
+   * - ``.github/workflows/publish-ifcopenshell-python-pypi.yml``
      - ``pyver`` matrix
-   * - ``.github/workflows/ci-ifcopenshell-python.yml``
+   * - ``.github/workflows/publish-ifcopenshell-python.yml``
      - ``pyver`` matrix
    * - ``nix/build-all.py``
      - ``PYTHON_VERSIONS`` list
@@ -44,7 +44,7 @@ When a new Blender version is released and supported:
 
    * - File
      - What to update
-   * - ``.github/workflows/ci-bonsai-daily.yml``
+   * - ``.github/workflows/publish-bonsai-unstable.yml``
      - Blender download URL
 
 Blender's Bundled Python Version Updated
@@ -57,11 +57,11 @@ When Blender ships with a new Python version:
 
    * - File
      - What to update
-   * - ``.github/workflows/ci-lint.yaml``
+   * - ``.github/workflows/test-lint.yml``
      - ``MIN_BLENDER_PY_VERSION``
-   * - ``.github/workflows/ci-bonsai.yml``
+   * - ``.github/workflows/publish-bonsai.yml``
      - ``pyver`` matrix
-   * - ``.github/workflows/ci-bonsai-daily.yml``
+   * - ``.github/workflows/publish-bonsai-unstable.yml``
      - ``pyver`` matrix
    * - ``.github/scripts/publish-bonsai-releases.py``
      - ``CURRENT_PYTHON_VERSION``
@@ -96,26 +96,26 @@ Notes:
 
 Things to update:
 
-- ``.github/workflows/ci-bcf-pypi.yml`` - release `bcf-client <https://pypi.org/project/bcf-client/>`_ to PyPI
-- ``.github/workflows/ci-bonsai.yml`` - release bonsai in GitHub releases
-- ``.github/workflows/ci-bsdd-pypi.yaml`` - release `bsdd <https://pypi.org/project/bsdd/>`_ to PyPI
-- ``.github/workflows/ci-ifc4d-pypi.yaml`` - release `ifc4d <https://pypi.org/project/ifc4d/>`_ to PyPI
-- ``.github/workflows/ci-ifc5d-pypi.yaml`` - release `ifc5d <https://pypi.org/project/ifc5d/>`_ to PyPI
-- ``.github/workflows/ci-ifcclash-pypi.yaml`` - release `ifcclash <https://pypi.org/project/ifcclash/>`_ to PyPI
-- ``.github/workflows/ci-ifcconvert.yml`` - release ifcconvert binaries in GitHub releases
-- ``.github/workflows/ci-ifccsv-pypi.yaml`` - release `ifccsv <https://pypi.org/project/ifccsv/>`_ to PyPI
-- ``.github/workflows/ci-ifcdiff-pypi.yaml`` - release `ifcdiff <https://pypi.org/project/ifcdiff/>`_ to PyPI
-- ``.github/workflows/ci-ifcedit-pypi.yaml`` - release `ifcedit <https://pypi.org/project/ifcedit/>`_ to PyPI
-- ``.github/workflows/ci-ifcfm-pypi.yaml`` - release `ifcfm <https://pypi.org/project/ifcfm/>`_ to PyPI
-- ``.github/workflows/ci-ifccityjson-pypi.yaml`` - release `ifccityjson <https://pypi.org/project/ifccityjson/>`_ to PyPI
-- ``.github/workflows/ci-ifcmcp-pypi.yaml`` - release `ifcopenshell-mcp <https://pypi.org/project/ifcopenshell-mcp/>`_ to PyPI
-- ``.github/workflows/ci-ifcopenshell-python.yml`` - release ifcopenshell-python binaries in GitHub releases
-- ``.github/workflows/ci-ifcopenshell-python-pypi.yml`` - release `ifcopenshell <https://pypi.org/project/ifcopenshell/>`_ wheels to PyPI
-- ``.github/workflows/ci-ifcpatch-pypi.yaml`` - release `ifcpatch <https://pypi.org/project/ifcpatch/>`_ to PyPI
-- ``.github/workflows/ci-ifcquery-pypi.yaml`` - release `ifcquery <https://pypi.org/project/ifcquery/>`_ to PyPI
-- ``.github/workflows/ci-ifcsverchok.yml`` - release ifcsverchok Blender add-on in GitHub releases
-- ``.github/workflows/ci-ifctester-pypi.yml`` - release `ifctester <https://pypi.org/project/ifctester/>`_ to PyPI
-- ``.github/workflows/ci-pyodide-wasm-release.yml`` - release pyodide wasm wheel to `wasm-wheels <https://github.com/IfcOpenShell/wasm-wheels>`_
+- ``.github/workflows/publish-bcf-pypi.yml`` - release `bcf-client <https://pypi.org/project/bcf-client/>`_ to PyPI
+- ``.github/workflows/publish-bonsai.yml`` - release bonsai in GitHub releases
+- ``.github/workflows/publish-bsdd-pypi.yml`` - release `bsdd <https://pypi.org/project/bsdd/>`_ to PyPI
+- ``.github/workflows/publish-ifc4d-pypi.yml`` - release `ifc4d <https://pypi.org/project/ifc4d/>`_ to PyPI
+- ``.github/workflows/publish-ifc5d-pypi.yml`` - release `ifc5d <https://pypi.org/project/ifc5d/>`_ to PyPI
+- ``.github/workflows/publish-ifcclash-pypi.yml`` - release `ifcclash <https://pypi.org/project/ifcclash/>`_ to PyPI
+- ``.github/workflows/publish-ifcconvert.yml`` - release ifcconvert binaries in GitHub releases
+- ``.github/workflows/publish-ifccsv-pypi.yml`` - release `ifccsv <https://pypi.org/project/ifccsv/>`_ to PyPI
+- ``.github/workflows/publish-ifcdiff-pypi.yml`` - release `ifcdiff <https://pypi.org/project/ifcdiff/>`_ to PyPI
+- ``.github/workflows/publish-ifcedit-pypi.yml`` - release `ifcedit <https://pypi.org/project/ifcedit/>`_ to PyPI
+- ``.github/workflows/publish-ifcfm-pypi.yml`` - release `ifcfm <https://pypi.org/project/ifcfm/>`_ to PyPI
+- ``.github/workflows/publish-ifccityjson-pypi.yml`` - release `ifccityjson <https://pypi.org/project/ifccityjson/>`_ to PyPI
+- ``.github/workflows/publish-ifcmcp-pypi.yml`` - release `ifcopenshell-mcp <https://pypi.org/project/ifcopenshell-mcp/>`_ to PyPI
+- ``.github/workflows/publish-ifcopenshell-python.yml`` - release ifcopenshell-python binaries in GitHub releases
+- ``.github/workflows/publish-ifcopenshell-python-pypi.yml`` - release `ifcopenshell <https://pypi.org/project/ifcopenshell/>`_ wheels to PyPI
+- ``.github/workflows/publish-ifcpatch-pypi.yml`` - release `ifcpatch <https://pypi.org/project/ifcpatch/>`_ to PyPI
+- ``.github/workflows/publish-ifcquery-pypi.yml`` - release `ifcquery <https://pypi.org/project/ifcquery/>`_ to PyPI
+- ``.github/workflows/publish-ifcsverchok.yml`` - release ifcsverchok Blender add-on in GitHub releases
+- ``.github/workflows/publish-ifctester-pypi.yml`` - release `ifctester <https://pypi.org/project/ifctester/>`_ to PyPI
+- ``.github/workflows/publish-ifcopenshell-wasm-wheel.yml`` - release pyodide wasm wheel to `wasm-wheels <https://github.com/IfcOpenShell/wasm-wheels>`_
 - ``.github/workflows/publish-bonsai-releases.yml`` - publish Bonsai Blender extension to `Blender extensions platform <https://extensions.blender.org/add-ons/bonsai/>`_
 
   - ❗ Requires ``BLENDER_EXTENSIONS_TOKEN`` secret to be set - ❗ not yet configured
