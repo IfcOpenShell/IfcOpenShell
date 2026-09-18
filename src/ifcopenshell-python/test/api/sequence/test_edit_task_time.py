@@ -234,3 +234,68 @@ class TestEditTaskTime(test.bootstrap.IFC4):
         assert task_time.ScheduleStart == "2020-01-01T09:00:00"
         assert task_time.ScheduleFinish == "2020-01-09T17:00:00"
         assert task_time.ScheduleDuration == "P7D"
+
+    def test_schedule_start_and_finish_honour_the_calendars_declared_work_hours(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        calendar = ifcopenshell.api.sequence.add_work_calendar(self.file)
+        task = self.file.createIfcTask()
+        ifcopenshell.api.control.assign_control(self.file, relating_control=calendar, related_objects=[task])
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=task)
+
+        work_time = ifcopenshell.api.sequence.add_work_time(self.file, work_calendar=calendar, time_type="WorkingTimes")
+        pattern = ifcopenshell.api.sequence.assign_recurrence_pattern(
+            self.file, parent=work_time, recurrence_type="WEEKLY"
+        )
+        ifcopenshell.api.sequence.edit_recurrence_pattern(
+            self.file,
+            recurrence_pattern=pattern,
+            attributes={"WeekdayComponent": [1, 2, 3, 4, 5]},
+        )
+        # The calendar declares an 8am to 4pm working day, not the default 9 to 5.
+        ifcopenshell.api.sequence.add_time_period(
+            self.file, recurrence_pattern=pattern, start_time="08:00", end_time="16:00"
+        )
+
+        ifcopenshell.api.sequence.edit_task_time(
+            self.file,
+            task_time=task_time,
+            attributes={
+                "DurationType": "WORKTIME",
+                "ScheduleDuration": "P1D",
+                "ScheduleStart": datetime.datetime(2020, 1, 1),
+            },
+        )
+        assert task_time.ScheduleStart == "2020-01-01T08:00:00"
+        assert task_time.ScheduleFinish == "2020-01-01T16:00:00"
+        assert task_time.ScheduleDuration == "P1D"
+
+    def test_schedule_start_and_finish_fall_back_to_9_to_5_when_no_hours_are_declared(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        calendar = ifcopenshell.api.sequence.add_work_calendar(self.file)
+        task = self.file.createIfcTask()
+        ifcopenshell.api.control.assign_control(self.file, relating_control=calendar, related_objects=[task])
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=task)
+
+        # A calendar exists and declares working weekdays, but no explicit time periods.
+        work_time = ifcopenshell.api.sequence.add_work_time(self.file, work_calendar=calendar, time_type="WorkingTimes")
+        pattern = ifcopenshell.api.sequence.assign_recurrence_pattern(
+            self.file, parent=work_time, recurrence_type="WEEKLY"
+        )
+        ifcopenshell.api.sequence.edit_recurrence_pattern(
+            self.file,
+            recurrence_pattern=pattern,
+            attributes={"WeekdayComponent": [1, 2, 3, 4, 5]},
+        )
+
+        ifcopenshell.api.sequence.edit_task_time(
+            self.file,
+            task_time=task_time,
+            attributes={
+                "DurationType": "WORKTIME",
+                "ScheduleDuration": "P1D",
+                "ScheduleStart": datetime.datetime(2020, 1, 1),
+            },
+        )
+        assert task_time.ScheduleStart == "2020-01-01T09:00:00"
+        assert task_time.ScheduleFinish == "2020-01-01T17:00:00"
+        assert task_time.ScheduleDuration == "P1D"
