@@ -10,7 +10,7 @@ import ifcpatch
 
 class Patcher(ifcpatch.BasePatcher):
     def __init__(self, file: ifcopenshell.file, logger: Union[Logger, None] = None):
-        """Adds a zero length segments to alignment layouts
+        """Sets the missing ObjectPlacement of alignment station referents based on their Pset_Stationing Station value
 
         Example:
 
