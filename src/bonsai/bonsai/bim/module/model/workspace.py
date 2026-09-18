@@ -1411,7 +1411,18 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         if not bpy.context.selected_objects:
             return
         if self.active_class in ("IfcDuctSegment", "IfcPipeSegment", "IfcCableCarrierSegment", "IfcCableSegment"):
-            bpy.ops.bim.fit_flow_segments()
+            # bim.fit_flow_segments() reports a clean single-line ERROR (e.g.
+            # an unsupported profile class for a bend, see #5450) when it
+            # can't build a fitting. Blender re-raises any ERROR-level report
+            # from a nested bpy.ops.X() call as a RuntimeError to the Python
+            # caller, so without this guard that clean message would surface
+            # as an uncaught exception here, producing Bonsai's generic
+            # "experienced an error" popup with a full traceback instead of
+            # the intended one-line message.
+            try:
+                bpy.ops.bim.fit_flow_segments()
+            except RuntimeError as e:
+                self.report({"ERROR"}, str(e).removeprefix("Error: ").strip())
         elif self.active_material_usage == "PROFILE":
             bpy.ops.bim.extend_profile(join_type="V")
 
