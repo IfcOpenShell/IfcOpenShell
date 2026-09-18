@@ -38,7 +38,7 @@ find_package(LibXml2 REQUIRED)
 # libxml2's CMake config has no -version.cmake file, so a versioned find_package() always rejects it.
 check_min_version(LibXml2 "${LibXml2_VERSION}" "${LIBXML2_MIN_VERSION}")
 
-find_package(CGAL REQUIRED)
+find_package(CGAL ${CGAL_MIN_VERSION} REQUIRED)
 
 set(SVGPP_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/svgpp/include")
 if(NOT EXISTS ${SVGPP_INCLUDE})
