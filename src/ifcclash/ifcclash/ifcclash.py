@@ -207,7 +207,6 @@ class Clasher:
         assert iterator.initialize()
         while True:
             self.tree.add_element(iterator.get())
-            shape = iterator.get()
             if not iterator.next():
                 break
         self.logger.info(f"Tree finished {time.time() - start}")
