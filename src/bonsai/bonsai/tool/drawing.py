@@ -223,7 +223,7 @@ class Drawing(bonsai.core.tool.Drawing):
                         return e
 
     @classmethod
-    def exclude_annotation_from_drawing(
+    def exclude_element_from_drawing(
         cls, element: ifcopenshell.entity_instance, drawing: ifcopenshell.entity_instance
     ) -> None:
         ifc_file = tool.Ifc.get()
@@ -232,7 +232,7 @@ class Drawing(bonsai.core.tool.Drawing):
             pset = ifcopenshell.api.pset.add_pset(ifc_file, product=drawing, name="EPset_Drawing")
         exclude = ifcopenshell.util.element.get_property_definition(pset, prop="Exclude") or ""
         if exclude:
-            exclude += "+"
+            exclude += " + "
         exclude += element.GlobalId
         ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Exclude": exclude})
 
