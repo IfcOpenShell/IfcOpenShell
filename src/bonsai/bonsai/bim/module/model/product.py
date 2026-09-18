@@ -659,6 +659,7 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
 
         bpy.ops.bim.override_object_duplicate_move(is_interactive=False)
 
+        wall_objs = []
         for obj in context.selected_objects:
             if obj == mirror:
                 continue
@@ -676,6 +677,14 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             newmat.translation = Vector(newmat.translation) - (newmat.to_quaternion() @ centroid)
 
             obj.matrix_world = newmat
+
+            element = tool.Ifc.get_entity(obj)
+            if element and tool.Model.get_usage_type(element) == "LAYER2":
+                wall_objs.append(obj)
+
+        # Resync fillings/openings to the walls' new mirrored placement.
+        if wall_objs:
+            tool.Model.recalculate_walls(wall_objs)
 
 
 def generate_box(usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
