@@ -187,7 +187,7 @@ def import_attributes(
         info = {a.name(): None for a in attributes}
         info["type"] = element
     else:
-        assert (entity := element.wrapped_data.declaration().as_entity())
+        assert (entity := element.declaration.as_entity())
         attributes = entity.all_attributes()
         info = element.get_info()
     for attribute in attributes:
@@ -236,11 +236,8 @@ def import_attribute(
     elif data_type == "integer":
         new.int_value = 0 if new.is_null else int(data[attribute.name()])
     elif data_type == "float":
-        attribute_type = attribute.type_of_attribute()
-        if attribute_type._is("IfcLengthMeasure"):
-            new.special_type = "LENGTH"
-        elif attribute_type._is("IfcForceMeasure"):
-            new.special_type = "FORCE"
+        measure_class = attribute.type_of_attribute().declared_type().name()
+        new.special_type = tool.Pset.get_special_type_for_measure_class(measure_class)
         new.float_value = 0.0 if new.is_null else float(data[attribute.name()])
     elif data_type == "enum":
         attribute_type = attribute.type_of_attribute()

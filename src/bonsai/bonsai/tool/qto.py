@@ -177,6 +177,19 @@ class Qto(bonsai.core.tool.Qto):
         return {rule_id: rule for rule_id, rule in ifc5d.qto.rules.items() if rule_id.startswith("IFC4X3") == is_ifc4x3}
 
     @classmethod
+    def get_target_units(cls) -> dict[str, ifcopenshell.entity_instance]:
+        from bonsai.bim.module.qto.prop import MEASURE_TO_TARGET_UNIT_FIELD
+
+        props = cls.get_qto_props()
+        ifc_file = tool.Ifc.get()
+        target_units: dict[str, ifcopenshell.entity_instance] = {}
+        for measure_class, (field_name, _special_type, _label) in MEASURE_TO_TARGET_UNIT_FIELD.items():
+            unit_id = int(tool.Blender.get_enum_safe(props, field_name) or "0")
+            if unit_id:
+                target_units[measure_class] = ifc_file.by_id(unit_id)
+        return target_units
+
+    @classmethod
     def get_not_quantified_elements_message(cls, not_quantified_elements: set[ifcopenshell.entity_instance]) -> str:
         not_quantified_message = ""
         if not_quantified_elements:

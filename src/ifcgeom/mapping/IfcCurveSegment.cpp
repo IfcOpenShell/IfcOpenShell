@@ -19,7 +19,7 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 #ifdef SCHEMA_HAS_IfcCurveSegment
 
@@ -44,19 +44,19 @@ enum segment_type_t {
 // @todo use std::numbers::pi when upgrading to C++ 20
 static const double PI = boost::math::constants::pi<double>();
 
-double translate_to_length_measure(const IfcSchema::IfcCurve* crv, double param_value) {
+double translate_to_length_measure(const IfcSchema::IfcCurve& crv, double param_value) {
     if (std::abs(param_value) < 1.e-7) {
         return param_value;
-    } else if (auto line = crv->as<IfcSchema::IfcLine>()) {
-        return line->Dir()->Magnitude() * param_value;
-    } else if (auto clothoid = crv->as<IfcSchema::IfcClothoid>()) {
+    } else if (auto line = crv.as<IfcSchema::IfcLine>()) {
+        return line.Dir().Magnitude() * param_value;
+    } else if (auto clothoid = crv.as<IfcSchema::IfcClothoid>()) {
        // param_value = 1.0, corresponds to tangent direction = PI/2
        // param_value = (arc length)/fabs(A*PI)
-        return fabs(clothoid->ClothoidConstant()*sqrt(PI))*param_value;
-    } else if (auto circ = crv->as<IfcSchema::IfcCircle>()) {
-        return circ->Radius() * param_value;
+        return fabs(clothoid.ClothoidConstant()*sqrt(PI))*param_value;
+    } else if (auto circ = crv.as<IfcSchema::IfcCircle>()) {
+        return circ.Radius() * param_value;
 #ifdef SCHEMA_HAS_IfcPolynomialCurve
-    } else if (auto poly = crv->as<IfcSchema::IfcPolynomialCurve>()) {
+    } else if (auto poly = crv.as<IfcSchema::IfcPolynomialCurve>()) {
         return param_value;
 #endif
     } else {
@@ -64,12 +64,12 @@ double translate_to_length_measure(const IfcSchema::IfcCurve* crv, double param_
     }
 }
 
-double translate_if_param_value(const IfcSchema::IfcCurve* crv, IfcSchema::IfcCurveMeasureSelect* val) {
-    if (auto param = val->as<IfcSchema::IfcParameterValue>()) {
+double translate_if_param_value(const IfcSchema::IfcCurve& crv, const IfcSchema::IfcCurveMeasureSelect& val) {
+    if (auto param = val.as<IfcSchema::IfcParameterValue>()) {
         // We don't care whether length- or positive length measure.
-        return translate_to_length_measure(crv, *param);
+        return translate_to_length_measure(crv, param);
     } else {
-        return val->as<IfcUtil::IfcBaseClass>()->get_attribute_value(0);
+        return val.concrete().get_attribute_value(0);
     }
 }
 
@@ -133,7 +133,7 @@ struct spiral_parent_curve : public parent_curve_function {
 
 // this is the piecewise curve segment function for horizontal and vertical
 struct curve_segment_function {
-    curve_segment_function(const Eigen::Matrix4d& curve_segment_placement, const Eigen::Matrix4d& parent_curve_normalization, std::shared_ptr<parent_curve_function> parent_curve_fn) : 
+    curve_segment_function(const Eigen::Matrix4d& curve_segment_placement, const Eigen::Matrix4d& parent_curve_normalization, std::shared_ptr<parent_curve_function> parent_curve_fn) :
        curve_segment_placement_(curve_segment_placement),
        parent_curve_normalization_(parent_curve_normalization),
        parent_curve_fn_(parent_curve_fn) {
@@ -153,7 +153,7 @@ struct curve_segment_function {
 
 // this is the piecewise curve segment function for cant
 struct cant_curve_segment_function {
-    cant_curve_segment_function(const Eigen::Matrix4d& curve_segment_placement, const Eigen::Matrix4d& parent_curve_start_point, std::shared_ptr<parent_curve_function> parent_curve_fn) : 
+    cant_curve_segment_function(const Eigen::Matrix4d& curve_segment_placement, const Eigen::Matrix4d& parent_curve_start_point, std::shared_ptr<parent_curve_function> parent_curve_fn) :
        curve_segment_placement_(curve_segment_placement),
        parent_curve_start_point_(parent_curve_start_point),
        parent_curve_fn_(parent_curve_fn) {
@@ -216,13 +216,13 @@ struct cant_curve_segment_function {
 class curve_segment_evaluator {
   private:
     mapping* mapping_ = nullptr;
-    Logger& logger_;
-    const IfcSchema::IfcCurveSegment* inst_ = nullptr;      // this curve segment instance
+    ifcopenshell::logger& logger_;
+    IfcSchema::IfcCurveSegment inst_;      // this curve segment instance
     double length_unit_;
     double start_;
     double length_; // length along the curve, as provided from the IfcCurveSegment
     segment_type_t segment_type_;
-    const IfcSchema::IfcCurve* parent_curve_ = nullptr;
+    IfcSchema::IfcCurve parent_curve_;
 
     double projected_length_; // for vertical segments, this is the length of curve projected onto the "Distance Along" axis
 
@@ -233,97 +233,95 @@ class curve_segment_evaluator {
     std::optional<Eigen::Matrix4d> next_segment_placement_; // placement of the next segment
 
   public:
-    curve_segment_evaluator(mapping* mapping, const IfcSchema::IfcCurveSegment* inst, double length_unit)
+    curve_segment_evaluator(mapping* mapping, const IfcSchema::IfcCurveSegment& inst, double length_unit)
         : mapping_(mapping),
           logger_(mapping->logger()),
           inst_(inst),
           length_unit_(length_unit),
-          parent_curve_(inst->ParentCurve()) {
+          parent_curve_(inst.ParentCurve()) {
 #ifdef SCHEMA_IfcSegment_HAS_UsingCurves
-           auto composite_curves = inst->UsingCurves();
+           auto composite_curves = inst.UsingCurves();
 #else
         aggregate_of<IfcSchema::IfcCompositeCurve>::ptr composite_curves;
         throw std::runtime_error("Schema not supported");
 #endif
 
         // Find the next segment after inst
-        const IfcSchema::IfcCurveSegment* next_inst = nullptr;
-        if (composite_curves) {
-            if (composite_curves->size() == 1) {
-                auto segments = (*composite_curves->begin())->as<IfcSchema::IfcCompositeCurve>()->Segments();
-                bool emit_next = false;
-                for (auto& s : *segments) {
-                    if (emit_next) {
-                        next_inst = s->as<IfcSchema::IfcCurveSegment>();
-                        break;
-                    }
-                    if (s == inst) {
-                        emit_next = true;
-                    }
+        IfcSchema::IfcCurveSegment next_inst;
+        if (composite_curves.size() == 1) {
+            auto segments = composite_curves.front().as<IfcSchema::IfcCompositeCurve>().Segments();
+            bool emit_next = false;
+            for (auto& s : segments) {
+                if (emit_next) {
+                    next_inst = s.as<IfcSchema::IfcCurveSegment>();
+                    break;
                 }
-            } else {
-                mapping_->logger().Warning("GEO", 242, "IfcCurveSegment belongs to multiple IfcCompositeCurve instances. Cannot determine the next segment.");
+                if (s == inst) {
+                    emit_next = true;
+                } else {
+                    logger_.warning("GEO", 242, "IfcCurveSegment belongs to multiple IfcCompositeCurve instances. Cannot determine the next segment.");
+                }
             }
+        } else {
+            logger_.warning("IfcCurveSegment belongs to multiple IfcCompositeCurve instances. Cannot determine the next segment.");
         }
 
         bool is_horizontal = false;
         bool is_vertical = false;
         bool is_cant = false;
 
-        if (composite_curves) {
-            for (auto& cc : *composite_curves) {
-                if (cc->as<IfcSchema::IfcSegmentedReferenceCurve>()) {
-                    is_cant = true;
-                } else if (cc->as<IfcSchema::IfcGradientCurve>()) {
-                    is_vertical = true;
-                } else {
-                    is_horizontal = true;
-                }
+        for (auto& cc : composite_curves) {
+            if (cc.as<IfcSchema::IfcSegmentedReferenceCurve>()) {
+                is_cant = true;
+            } else if (cc.as<IfcSchema::IfcGradientCurve>()) {
+                is_vertical = true;
+            } else {
+                is_horizontal = true;
             }
         }
 
         if ((is_horizontal + is_vertical + is_cant) != 1) {
             // We have to choose the correct functor based on usage. We can't
             // support multiple, because we don't know the caller at this point.
-            mapping_->logger().Error("UNS", 10, std::runtime_error("multiple uses of IfcSegmentCurve not supported"), inst_);
+            logger_.error("UNS", 10, std::runtime_error("multiple uses of IfcSegmentCurve not supported"), inst_);
         }
 
         segment_type_ = is_horizontal ? ST_HORIZONTAL : is_vertical ? ST_VERTICAL : is_cant  ? ST_CANT : ST_HORIZONTAL;
 
 #ifdef SCHEMA_IfcCurveSegment_HAS_SegmentStart
-        start_ = translate_if_param_value(inst->ParentCurve(), inst->SegmentStart()) * length_unit;
+        start_ = translate_if_param_value(inst.ParentCurve(), inst.SegmentStart()) * length_unit;
 #else
         throw std::runtime_error("Schema not supported");
 #endif
-        length_ = translate_if_param_value(inst->ParentCurve(), inst->SegmentLength()) * length_unit;
+        length_ = translate_if_param_value(inst.ParentCurve(), inst.SegmentLength()) * length_unit;
         projected_length_ = length_; // initialize with something reasonable
 
         if (inst) {
 #ifdef SCHEMA_IfcCurveSegment_HAS_Placement
-            curve_segment_placement_ = taxonomy::cast<taxonomy::matrix4>(mapping_->map(inst->Placement()))->ccomponents();
+            curve_segment_placement_ = taxonomy::cast<taxonomy::matrix4>(mapping_->map(inst.Placement()))->ccomponents();
 #endif
         }
         if (next_inst) {
 #ifdef SCHEMA_IfcCurveSegment_HAS_Placement
-            next_segment_placement_ = taxonomy::cast<taxonomy::matrix4>(mapping_->map(next_inst->Placement()))->ccomponents();
+            next_segment_placement_ = taxonomy::cast<taxonomy::matrix4>(mapping_->map(next_inst.Placement()))->ccomponents();
 #endif
         } else {
            // there is not a next segment, however IfcGradientCurve and IfcSegmentReferenceCurve have an
            // optional EndPoint which services the same purpose as the zero-length last segment.
-            IfcSchema::IfcPlacement* end_point = nullptr;
-            if (composite_curves->size() == 1) {
-                auto& cc = *(composite_curves)->begin();
+            IfcSchema::IfcPlacement end_point;
+            if (composite_curves.size() == 1) {
+                auto& cc = composite_curves.front();
                 if (segment_type_ == ST_VERTICAL) {
-                    auto gradient_curve = cc->as<IfcSchema::IfcGradientCurve>();
+                    auto gradient_curve = cc.as<IfcSchema::IfcGradientCurve>();
 #ifdef SCHEMA_IfcCurveSegment_HAS_Placement
-                    end_point = gradient_curve->EndPoint();
+                    end_point = gradient_curve.EndPoint();
 #endif
                 } else if (segment_type_ == ST_CANT) {
-                    auto segmented_reference_curve = cc->as<IfcSchema::IfcSegmentedReferenceCurve>();
-                    end_point = segmented_reference_curve->EndPoint();
+                    auto segmented_reference_curve = cc.as<IfcSchema::IfcSegmentedReferenceCurve>();
+                    end_point = segmented_reference_curve.EndPoint();
                 }
             } else {
-                mapping_->logger().Warning("GEO", 243, "IfcCurveSegment belongs to multiple IfcCompositeCurve instances. Cannot determine the end point.");
+                logger_.warning("GEO", 243, "IfcCurveSegment belongs to multiple IfcCompositeCurve instances. Cannot determine the end point.");
             }
             if (end_point) {
                 next_segment_placement_ = taxonomy::cast<taxonomy::matrix4>(mapping_->map(end_point))->ccomponents();
@@ -334,8 +332,8 @@ class curve_segment_evaluator {
     // Take the boost::type value from mpl::for_each and test it against our curve instance
     template <typename T>
     void operator()(boost::type<T>) {
-        if (parent_curve_->as<T>()) {
-            (*this)(parent_curve_->as<T>());
+        if (parent_curve_.as<T>()) {
+            (*this)(parent_curve_.as<T>());
         }
     }
 
@@ -345,7 +343,7 @@ class curve_segment_evaluator {
 
     taxonomy::ptr get_segment_curve_function() {
         if (!parent_curve_fn_ || !parent_curve_start_point_) {
-            mapping_->logger().Error("UNS", 11, std::runtime_error(inst_->ParentCurve()->declaration().name() + " not implemented"), inst_);
+            mapping_->logger().error("UNS", 11, std::runtime_error(inst_.ParentCurve().declaration().name() + " not implemented"), inst_);
         }
 
         auto length = fabs(this->length());
@@ -356,7 +354,7 @@ class curve_segment_evaluator {
         } else {
             // The parent curve function returns the 4x4 matrix for the parent curve.
             // Normalize the parent curve so that the trim start point and tangent direction at the start point
-            // are aligned with the origin. This is accomplished with a normalization matrix that subtracts the 
+            // are aligned with the origin. This is accomplished with a normalization matrix that subtracts the
             // incremental parent curve start point and applies a rotation. Apply the incremental
             // translation and rotation to the curve_segment_placement to get the curve_segment_point
 
@@ -478,13 +476,13 @@ class curve_segment_evaluator {
                 projected_length_ = length_;
             }
         } else if (segment_type_ == ST_CANT) {
-            mapping_->logger().Error("GEO", 244, std::runtime_error("Unexpected segment type encountered - cant is handled in set_cant_spiral_function - should never get here"));
+            mapping_->logger().error("GEO", 244, std::runtime_error("Unexpected segment type encountered - cant is handled in set_cant_spiral_function - should never get here"));
             parent_curve_fn_ = std::make_shared<parent_curve_function>(
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); }
              );
         } else {
-            mapping_->logger().Error("GEO", 245, std::runtime_error("Unexpected segment type encountered"));
+            mapping_->logger().error("GEO", 245, "Unexpected segment type encountered");
             parent_curve_fn_ = std::make_shared<parent_curve_function>(
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); }
@@ -550,9 +548,9 @@ class curve_segment_evaluator {
     // returns function for super elevation and the slope of the super elevation curve if the super elevation is constant
     // over the length of the segment. otherwise, no functions are returned because they are the same as the cant tilt angle
     // functions.
-    std::pair<boost::optional<std::function<double(double)>>, boost::optional<std::function<double(double)>>> get_superelevation_functions() {
-        boost::optional<std::function<double(double)>> superelevation_fn;
-        boost::optional<std::function<double(double)>> superelevation_slope_fn;
+    std::pair<std::optional<std::function<double(double)>>, std::optional<std::function<double(double)>>> get_superelevation_functions() {
+        std::optional<std::function<double(double)>> superelevation_fn;
+        std::optional<std::function<double(double)>> superelevation_slope_fn;
 
         if (curve_segment_placement_.has_value() && next_segment_placement_.has_value()) {
             double y1 = (*curve_segment_placement_)(1, 3);
@@ -570,12 +568,12 @@ class curve_segment_evaluator {
     }
 
 #ifdef SCHEMA_HAS_IfcClothoid
-    void operator()(const IfcSchema::IfcClothoid* c) {
-        auto A = c->ClothoidConstant() * length_unit_;
+    void operator()(const IfcSchema::IfcClothoid& c) {
+        auto A = c.ClothoidConstant() * length_unit_;
         auto L = length(); // already includes length_unit_
 
         if (segment_type_ == ST_CANT) {
-            boost::optional<std::function<double(double)>> super, slope;
+            std::optional<std::function<double(double)>> super, slope;
             std::tie(super, slope) = get_superelevation_functions();
             auto cant = [A, L](double t) -> double { return A ? L * L * A * t / fabs(pow(A, 3)) : 0.0; };
 
@@ -599,12 +597,12 @@ class curve_segment_evaluator {
 #endif
 
 #if defined SCHEMA_HAS_IfcCosineSpiral
-    void operator()(const IfcSchema::IfcCosineSpiral* c) {
-        auto constant_term = c->ConstantTerm();
+    void operator()(const IfcSchema::IfcCosineSpiral& c) {
+        auto constant_term = c.ConstantTerm();
         if (constant_term.has_value()) {
             constant_term.value() *= length_unit_;
         }
-        auto cosine_term = c->CosineTerm() * length_unit_;
+        auto cosine_term = c.CosineTerm() * length_unit_;
         auto L = length(); // already converted to internal units by constructor
         if (segment_type_ == ST_HORIZONTAL) {
 
@@ -623,9 +621,9 @@ class curve_segment_evaluator {
             double s = 1.0;
             set_spiral_function(s, fn_x, fn_y, curvature);
         } else if (segment_type_ == ST_CANT) {
-            boost::optional<std::function<double(double)>> super, slope;
+            std::optional<std::function<double(double)>> super, slope;
             std::tie(super, slope) = get_superelevation_functions();
-            
+
             auto cant = [constant_term, cosine_term, L](double t) -> double {
                 auto a0 = constant_term.has_value() ? 1 / constant_term.value() : 0.0;
                 auto a1 = (1 / cosine_term) * cos(PI * t / L);
@@ -645,13 +643,13 @@ class curve_segment_evaluator {
 
             set_cant_spiral_function(*super, *slope, cant);
         } else if (segment_type_ == ST_VERTICAL) {
-            mapping_->logger().Error("GEO", 246, std::runtime_error("IfcCosineSpiral cannot be used for vertical alignment"));
+            mapping_->logger().error("GEO", 246, "IfcCosineSpiral cannot be used for vertical alignment");
             parent_curve_fn_ = std::make_shared<parent_curve_function>(
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); }
             );
         } else {
-            mapping_->logger().Error("GEO", 247, std::runtime_error("Unexpected segment type encountered"));
+            mapping_->logger().error("GEO", 247, "Unexpected segment type encountered");
             parent_curve_fn_ = std::make_shared<parent_curve_function>(
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); }
@@ -661,16 +659,16 @@ class curve_segment_evaluator {
 #endif
 
 #if defined SCHEMA_HAS_IfcSineSpiral
-    void operator()(const IfcSchema::IfcSineSpiral* c) {
-        auto constant_term = c->ConstantTerm();
+    void operator()(const IfcSchema::IfcSineSpiral& c) {
+        auto constant_term = c.ConstantTerm();
         if (constant_term.has_value()) {
             constant_term.value() *= length_unit_;
         }
-        auto linear_term = c->LinearTerm();
+        auto linear_term = c.LinearTerm();
         if (linear_term.has_value()) {
             linear_term.value() *= length_unit_;
         }
-        auto sine_term = c->SineTerm() * length_unit_;
+        auto sine_term = c.SineTerm() * length_unit_;
         auto L = length(); // already converted to internal units by constructor
         if (segment_type_ == ST_HORIZONTAL) {
             auto theta = [constant_term, linear_term, sine_term, L](double t) -> double {
@@ -690,9 +688,9 @@ class curve_segment_evaluator {
             double s = 1.0;
             set_spiral_function(s, fn_x, fn_y, curvature);
         } else if (segment_type_ == ST_CANT) {
-            boost::optional<std::function<double(double)>> super, slope;
+            std::optional<std::function<double(double)>> super, slope;
             std::tie(super, slope) = get_superelevation_functions();
-            
+
             auto cant = [constant_term, linear_term, sine_term, L](double t) -> double {
                auto a0 = constant_term.has_value() ? 1 / constant_term.value() : 0.0;
                auto a1 = linear_term.has_value() ? (linear_term.value()/fabs(linear_term.value())) * pow(1 / linear_term.value(), 2.0) * t : 0.0;
@@ -714,12 +712,12 @@ class curve_segment_evaluator {
 
             set_cant_spiral_function(*super, *slope, cant);
         } else if (segment_type_ == ST_VERTICAL) {
-            mapping_->logger().Error("GEO", 248, std::runtime_error("IfcSineSpiral cannot be used for vertical alignment"));
+            mapping_->logger().error("GEO", 248, "IfcSineSpiral cannot be used for vertical alignment");
             parent_curve_fn_ = std::make_shared<parent_curve_function>(
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
         } else {
-            mapping_->logger().Error("GEO", 249, std::runtime_error("Unexpected segment type encountered"));
+            mapping_->logger().error("GEO", 249, "Unexpected segment type encountered");
             parent_curve_fn_ = std::make_shared<parent_curve_function>(
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
@@ -727,16 +725,16 @@ class curve_segment_evaluator {
     }
 #endif
 
-    void polynomial_spiral(boost::optional<double> A0, boost::optional<double> A1, boost::optional<double> A2, boost::optional<double> A3, boost::optional<double> A4, boost::optional<double> A5, boost::optional<double> A6, boost::optional<double> A7) {
+    void polynomial_spiral(std::optional<double> A0, std::optional<double> A1, std::optional<double> A2, std::optional<double> A3, std::optional<double> A4, std::optional<double> A5, std::optional<double> A6, std::optional<double> A7) {
         auto theta = [A0, A1, A2, A3, A4, A5, A6, A7, start = start_ * length_unit_, lu = length_unit_](double t) -> double {
-            auto a0 = A0.get_value_or(0.0) != 0.0 ? t / (A0.value() * lu) : 0.0;
-            auto a1 = A1.get_value_or(0.0) != 0.0 ? A1.value() * lu * std::pow(t, 2) / (2 * fabs(std::pow(A1.value() * lu, 3))) : 0.0;
-            auto a2 = A2.get_value_or(0.0) != 0.0 ? std::pow(t, 3) / (3 * std::pow(A2.value() * lu, 3)) : 0.0;
-            auto a3 = A3.get_value_or(0.0) != 0.0 ? A3.value() * lu * std::pow(t, 4) / (4 * fabs(std::pow(A3.value() * lu, 5))) : 0.0;
-            auto a4 = A4.get_value_or(0.0) != 0.0 ? std::pow(t, 5) / (5 * std::pow(A4.value() * lu, 5)) : 0.0;
-            auto a5 = A5.get_value_or(0.0) != 0.0 ? A5.value() * lu * std::pow(t, 6) / (6 * fabs(std::pow(A5.value() * lu, 7))) : 0.0;
-            auto a6 = A6.get_value_or(0.0) != 0.0 ? std::pow(t, 7) / (7 * std::pow(A6.value() * lu, 7)) : 0.0;
-            auto a7 = A7.get_value_or(0.0) != 0.0 ? A7.value() * lu * std::pow(t, 8) / (8 * fabs(std::pow(A7.value() * lu, 9))) : 0.0;
+            auto a0 = A0.value_or(0.0) != 0.0 ? t / (A0.value() * lu) : 0.0;
+            auto a1 = A1.value_or(0.0) != 0.0 ? A1.value() * lu * std::pow(t, 2) / (2 * fabs(std::pow(A1.value() * lu, 3))) : 0.0;
+            auto a2 = A2.value_or(0.0) != 0.0 ? std::pow(t, 3) / (3 * std::pow(A2.value() * lu, 3)) : 0.0;
+            auto a3 = A3.value_or(0.0) != 0.0 ? A3.value() * lu * std::pow(t, 4) / (4 * fabs(std::pow(A3.value() * lu, 5))) : 0.0;
+            auto a4 = A4.value_or(0.0) != 0.0 ? std::pow(t, 5) / (5 * std::pow(A4.value() * lu, 5)) : 0.0;
+            auto a5 = A5.value_or(0.0) != 0.0 ? A5.value() * lu * std::pow(t, 6) / (6 * fabs(std::pow(A5.value() * lu, 7))) : 0.0;
+            auto a6 = A6.value_or(0.0) != 0.0 ? std::pow(t, 7) / (7 * std::pow(A6.value() * lu, 7)) : 0.0;
+            auto a7 = A7.value_or(0.0) != 0.0 ? A7.value() * lu * std::pow(t, 8) / (8 * fabs(std::pow(A7.value() * lu, 9))) : 0.0;
             return a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7;
         };
 
@@ -747,14 +745,14 @@ class curve_segment_evaluator {
         // this is same as cant function in polynomial_cant_spiral
         auto curvature = [A0, A1, A2, A3, A4, A5, A6, A7, start = start_, L = length_, lu = length_unit_, length = length_](double t) -> double {
             t += start;
-            auto a0 = A0.get_value_or(0.0) != 0.0 ? 1 / (A0.value() * lu) : 0.0;
-            auto a1 = A1.get_value_or(0.0) != 0.0 ? A1.value() * lu * t / fabs(std::pow(A1.value() * lu, 3)) : 0.0;
-            auto a2 = A2.get_value_or(0.0) != 0.0 ? std::pow(t, 2) / std::pow(A2.value() * lu, 3) : 0.0;
-            auto a3 = A3.get_value_or(0.0) != 0.0 ? A3.value() * lu * std::pow(t, 3) / fabs(std::pow(A3.value() * lu, 5)) : 0.0;
-            auto a4 = A4.get_value_or(0.0) != 0.0 ? std::pow(t, 4) / std::pow(A4.value() * lu, 5) : 0.0;
-            auto a5 = A5.get_value_or(0.0) != 0.0 ? A5.value() * lu * std::pow(t, 5) / fabs(std::pow(A5.value() * lu, 7)) : 0.0;
-            auto a6 = A6.get_value_or(0.0) != 0.0 ? std::pow(t, 6) / std::pow(A6.value() * lu, 7) : 0.0;
-            auto a7 = A7.get_value_or(0.0) != 0.0 ? A7.value() * lu * std::pow(t, 7) / fabs(std::pow(A7.value() * lu, 9)) : 0.0;
+            auto a0 = A0.value_or(0.0) != 0.0 ? 1 / (A0.value() * lu) : 0.0;
+            auto a1 = A1.value_or(0.0) != 0.0 ? A1.value() * lu * t / fabs(std::pow(A1.value() * lu, 3)) : 0.0;
+            auto a2 = A2.value_or(0.0) != 0.0 ? std::pow(t, 2) / std::pow(A2.value() * lu, 3) : 0.0;
+            auto a3 = A3.value_or(0.0) != 0.0 ? A3.value() * lu * std::pow(t, 3) / fabs(std::pow(A3.value() * lu, 5)) : 0.0;
+            auto a4 = A4.value_or(0.0) != 0.0 ? std::pow(t, 4) / std::pow(A4.value() * lu, 5) : 0.0;
+            auto a5 = A5.value_or(0.0) != 0.0 ? A5.value() * lu * std::pow(t, 5) / fabs(std::pow(A5.value() * lu, 7)) : 0.0;
+            auto a6 = A6.value_or(0.0) != 0.0 ? std::pow(t, 6) / std::pow(A6.value() * lu, 7) : 0.0;
+            auto a7 = A7.value_or(0.0) != 0.0 ? A7.value() * lu * std::pow(t, 7) / fabs(std::pow(A7.value() * lu, 9)) : 0.0;
             return L * (a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7);
         };
 
@@ -763,20 +761,20 @@ class curve_segment_evaluator {
         set_spiral_function(s, fn_x, fn_y, curvature);
     }
 
-    void polynomial_cant_spiral(boost::optional<double> A0, boost::optional<double> A1, boost::optional<double> A2, boost::optional<double> A3, boost::optional<double> A4, boost::optional<double> A5, boost::optional<double> A6, boost::optional<double> A7) {
-        boost::optional<std::function<double(double)>> super, slope;
+    void polynomial_cant_spiral(std::optional<double> A0, std::optional<double> A1, std::optional<double> A2, std::optional<double> A3, std::optional<double> A4, std::optional<double> A5, std::optional<double> A6, std::optional<double> A7) {
+        std::optional<std::function<double(double)>> super, slope;
         std::tie(super, slope) = get_superelevation_functions();
 
         auto cant = [A0, A1, A2, A3, A4, A5, A6, A7, start = start_, L = length_, lu = length_unit_, length = length_](double t) -> double {
             t += start;
-            auto a0 = A0.get_value_or(0.0) != 0.0 ? 1 / (A0.value() * lu) : 0.0;
-            auto a1 = A1.get_value_or(0.0) != 0.0 ? A1.value() * lu * t / fabs(std::pow(A1.value() * lu, 3)) : 0.0;
-            auto a2 = A2.get_value_or(0.0) != 0.0 ? std::pow(t, 2) / std::pow(A2.value() * lu, 3) : 0.0;
-            auto a3 = A3.get_value_or(0.0) != 0.0 ? A3.value() * lu * std::pow(t, 3) / fabs(std::pow(A3.value() * lu, 5)) : 0.0;
-            auto a4 = A4.get_value_or(0.0) != 0.0 ? std::pow(t, 4) / std::pow(A4.value() * lu, 5) : 0.0;
-            auto a5 = A5.get_value_or(0.0) != 0.0 ? A5.value() * lu * std::pow(t, 5) / fabs(std::pow(A5.value() * lu, 7)) : 0.0;
-            auto a6 = A6.get_value_or(0.0) != 0.0 ? std::pow(t, 6) / std::pow(A6.value() * lu, 7) : 0.0;
-            auto a7 = A7.get_value_or(0.0) != 0.0 ? A7.value() * lu * std::pow(t, 7) / fabs(std::pow(A7.value() * lu, 9)) : 0.0;
+            auto a0 = A0.value_or(0.0) != 0.0 ? 1 / (A0.value() * lu) : 0.0;
+            auto a1 = A1.value_or(0.0) != 0.0 ? A1.value() * lu * t / fabs(std::pow(A1.value() * lu, 3)) : 0.0;
+            auto a2 = A2.value_or(0.0) != 0.0 ? std::pow(t, 2) / std::pow(A2.value() * lu, 3) : 0.0;
+            auto a3 = A3.value_or(0.0) != 0.0 ? A3.value() * lu * std::pow(t, 3) / fabs(std::pow(A3.value() * lu, 5)) : 0.0;
+            auto a4 = A4.value_or(0.0) != 0.0 ? std::pow(t, 4) / std::pow(A4.value() * lu, 5) : 0.0;
+            auto a5 = A5.value_or(0.0) != 0.0 ? A5.value() * lu * std::pow(t, 5) / fabs(std::pow(A5.value() * lu, 7)) : 0.0;
+            auto a6 = A6.value_or(0.0) != 0.0 ? std::pow(t, 6) / std::pow(A6.value() * lu, 7) : 0.0;
+            auto a7 = A7.value_or(0.0) != 0.0 ? A7.value() * lu * std::pow(t, 7) / fabs(std::pow(A7.value() * lu, 9)) : 0.0;
             return L * L * (a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7);
         };
 
@@ -787,13 +785,13 @@ class curve_segment_evaluator {
         if (!slope.has_value()) {
             slope = [A1, A2, A3, A4, A5, A6, A7, start = start_, L = length_, lu = length_unit_, length = length_](double t) -> double {
                 t += start;
-                auto a1 = A1.get_value_or(0.0) != 0.0 ? A1.value() * lu / fabs(std::pow(A1.value() * lu, 3)) : 0.0;
-                auto a2 = A2.get_value_or(0.0) != 0.0 ? 2 * t / std::pow(A2.value() * lu, 3) : 0.0;
-                auto a3 = A3.get_value_or(0.0) != 0.0 ? 3 * A3.value() * lu * std::pow(t, 2) / fabs(std::pow(A3.value() * lu, 5)) : 0.0;
-                auto a4 = A4.get_value_or(0.0) != 0.0 ? 4 * std::pow(t, 3) / std::pow(A4.value() * lu, 5) : 0.0;
-                auto a5 = A5.get_value_or(0.0) != 0.0 ? 5 * A5.value() * lu * std::pow(t, 4) / fabs(std::pow(A5.value() * lu, 7)) : 0.0;
-                auto a6 = A6.get_value_or(0.0) != 0.0 ? 6 * std::pow(t, 5) / std::pow(A6.value() * lu, 7) : 0.0;
-                auto a7 = A7.get_value_or(0.0) != 0.0 ? 7 * A7.value() * lu * std::pow(t, 6) / fabs(std::pow(A7.value() * lu, 9)) : 0.0;
+                auto a1 = A1.value_or(0.0) != 0.0 ? A1.value() * lu / fabs(std::pow(A1.value() * lu, 3)) : 0.0;
+                auto a2 = A2.value_or(0.0) != 0.0 ? 2 * t / std::pow(A2.value() * lu, 3) : 0.0;
+                auto a3 = A3.value_or(0.0) != 0.0 ? 3 * A3.value() * lu * std::pow(t, 2) / fabs(std::pow(A3.value() * lu, 5)) : 0.0;
+                auto a4 = A4.value_or(0.0) != 0.0 ? 4 * std::pow(t, 3) / std::pow(A4.value() * lu, 5) : 0.0;
+                auto a5 = A5.value_or(0.0) != 0.0 ? 5 * A5.value() * lu * std::pow(t, 4) / fabs(std::pow(A5.value() * lu, 7)) : 0.0;
+                auto a6 = A6.value_or(0.0) != 0.0 ? 6 * std::pow(t, 5) / std::pow(A6.value() * lu, 7) : 0.0;
+                auto a7 = A7.value_or(0.0) != 0.0 ? 7 * A7.value() * lu * std::pow(t, 6) / fabs(std::pow(A7.value() * lu, 9)) : 0.0;
                 return L * L * (a1 + a2 + a3 + a4 + a5 + a6 + a7);
             };
         }
@@ -802,11 +800,11 @@ class curve_segment_evaluator {
     }
 
 #ifdef SCHEMA_HAS_IfcSecondOrderPolynomialSpiral
-    void operator()(const IfcSchema::IfcSecondOrderPolynomialSpiral* c) {
-        auto A0 = c->ConstantTerm();
-        auto A1 = c->LinearTerm();
-        auto A2 = c->QuadraticTerm();
-        boost::optional<double> A3, A4, A5, A6, A7;
+    void operator()(const IfcSchema::IfcSecondOrderPolynomialSpiral& c) {
+        auto A0 = c.ConstantTerm();
+        auto A1 = c.LinearTerm();
+        auto A2 = c.QuadraticTerm();
+        std::optional<double> A3, A4, A5, A6, A7;
 
         if (segment_type_ == ST_CANT) {
             polynomial_cant_spiral(A0, A1, A2, A3, A4, A5, A6, A7);
@@ -817,17 +815,17 @@ class curve_segment_evaluator {
 #endif
 
 #ifdef SCHEMA_HAS_IfcThirdOrderPolynomialSpiral
-    void operator()(const IfcSchema::IfcThirdOrderPolynomialSpiral* c) {
-        auto A0 = c->ConstantTerm();
-        auto A1 = c->LinearTerm();
-        auto A2 = c->QuadraticTerm();
-        boost::optional<double> A3, A4, A5, A6, A7;
+    void operator()(const IfcSchema::IfcThirdOrderPolynomialSpiral& c) {
+        auto A0 = c.ConstantTerm();
+        auto A1 = c.LinearTerm();
+        auto A2 = c.QuadraticTerm();
+        std::optional<double> A3, A4, A5, A6, A7;
 #ifdef SCHEMA_IfcThirdOrderPolynomialSpiral_HAS_CubicTerm
-        A3 = c->CubicTerm();
+        A3 = c.CubicTerm();
 #else
-        A3 = c->QubicTerm();
+        A3 = c.QubicTerm();
 #endif
-        
+
         if (segment_type_ == ST_CANT) {
             polynomial_cant_spiral(A0, A1, A2, A3, A4, A5, A6, A7);
         } else {
@@ -837,15 +835,15 @@ class curve_segment_evaluator {
 #endif
 
 #ifdef SCHEMA_HAS_IfcSeventhOrderPolynomialSpiral
-    void operator()(const IfcSchema::IfcSeventhOrderPolynomialSpiral* c) {
-        auto A0 = c->ConstantTerm();
-        auto A1 = c->LinearTerm();
-        auto A2 = c->QuadraticTerm();
-        auto A3 = c->CubicTerm();
-        auto A4 = c->QuarticTerm();
-        auto A5 = c->QuinticTerm();
-        auto A6 = c->SexticTerm();
-        auto A7 = c->SepticTerm();
+    void operator()(const IfcSchema::IfcSeventhOrderPolynomialSpiral& c) {
+        auto A0 = c.ConstantTerm();
+        auto A1 = c.LinearTerm();
+        auto A2 = c.QuadraticTerm();
+        auto A3 = c.CubicTerm();
+        auto A4 = c.QuarticTerm();
+        auto A5 = c.QuinticTerm();
+        auto A6 = c.SexticTerm();
+        auto A7 = c.SepticTerm();
 
         if (segment_type_ == ST_CANT) {
             polynomial_cant_spiral(A0, A1, A2, A3, A4, A5, A6, A7);
@@ -855,10 +853,10 @@ class curve_segment_evaluator {
     }
 #endif
 
-    void operator()(const IfcSchema::IfcCircle* c) {
+    void operator()(const IfcSchema::IfcCircle& c) {
         if (segment_type_ == ST_HORIZONTAL || segment_type_ == ST_VERTICAL) {
-            auto R = c->Radius() * length_unit_;
-            auto parent_curve_position = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c->Position()))->ccomponents();
+            auto R = c.Radius() * length_unit_;
+            auto parent_curve_position = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c.Position()))->ccomponents();
 
             auto sign_l = sign(length_);
 
@@ -886,7 +884,7 @@ class curve_segment_evaluator {
             } else {
                 Eigen::Matrix4d curve_segment_placement;
 #ifdef SCHEMA_IfcCurveSegment_HAS_Placement
-                curve_segment_placement = taxonomy::cast<taxonomy::matrix4>(mapping_->map(inst_->Placement()))->ccomponents();
+                curve_segment_placement = taxonomy::cast<taxonomy::matrix4>(mapping_->map(inst_.Placement()))->ccomponents();
 #endif
                 // determine projected length along the x-axis
                 auto subtended_angle = R ? length_ / R : 0.0;
@@ -963,10 +961,6 @@ class curve_segment_evaluator {
                 auto cos_start_angle = cos(start_angle);
                 auto sin_start_angle = sin(start_angle);
 
-                // point on the parent curve
-                auto pcStartX = R * cos_start_angle + pcCenterX;
-                auto pcStartY = R * sin_start_angle + pcCenterY;
-
                 auto pcStartDx = -sign_l * sin_start_angle;
                 auto pcStartDy =  sign_l * cos_start_angle;
 
@@ -978,22 +972,22 @@ class curve_segment_evaluator {
             }
 
         } else if (segment_type_ == ST_CANT) {
-            mapping_->logger().Warning("UNS", 12, std::runtime_error("Use of IfcCircle for cant is not supported"));
+            mapping_->logger().warning("UNS", 12, "Use of IfcCircle for cant is not supported");
             parent_curve_fn_ = std::make_shared<parent_curve_function>(
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
         } else {
-            mapping_->logger().Error("GEO", 250, std::runtime_error("Unexpected segment type encountered"));
+            mapping_->logger().error("GEO", 250, "Unexpected segment type encountered");
             parent_curve_fn_ = std::make_shared<parent_curve_function>(
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
         }
     }
-    
-    void operator()(const IfcSchema::IfcLine* l) {
+
+    void operator()(const IfcSchema::IfcLine& l) {
        projected_length_ = length_;
 
-       auto c = l->Pnt()->Coordinates();
+       auto c = l.Pnt().Coordinates();
        auto pcX = c[0] * length_unit_;
        auto pcY = c[1] * length_unit_;
 
@@ -1001,11 +995,11 @@ class curve_segment_evaluator {
        // 8.9.3.30 IfcDirection https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcDirection.htm
        // "The IfcDirection does not imply a vector length, and the direction ratios does not have to be normalized."
        //
-       // Therefore, the direction ratios need to be normalized to compute points on the line. 
-       // 
+       // Therefore, the direction ratios need to be normalized to compute points on the line.
+       //
        // Magnitude is not used because it relates to the parameterization of the line, which isn't currently done for IfcCurveSegment
        // @todo - parameterization was recently added so Magnitude needs to be taking into consideration
-       auto dr = l->Dir()->Orientation()->DirectionRatios();
+       auto dr = l.Dir().Orientation().DirectionRatios();
 
        // normalize the direction ratios
        double m_squared = std::inner_product(dr.begin(), dr.end(), dr.begin(), 0.0);
@@ -1036,7 +1030,7 @@ class curve_segment_evaluator {
 
           auto pcDZy = curve_segment_placement_ ? (*curve_segment_placement_)(1, 2) : 0.;
           auto pcDZz = curve_segment_placement_ ? (*curve_segment_placement_)(2, 2) : 1.;
-          
+
           parent_curve_fn_ = std::make_shared<line_parent_curve>(
               [segment_type = segment_type_,pcX, pcY, pcDXx, pcDXy, pcDZy, pcDZz, convert_u](double u)->Eigen::Matrix4d {
                   u = convert_u(u);
@@ -1069,7 +1063,7 @@ class curve_segment_evaluator {
 
           parent_curve_start_point_ = (*parent_curve_fn_)(start_);
        } else {
-           mapping_->logger().Warning("GEO", 251, std::runtime_error("Unexpected segment type encountered"));
+           mapping_->logger().warning("GEO", 251, "Unexpected segment type encountered");
            parent_curve_fn_ = std::make_shared<parent_curve_function>(
                [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
                [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
@@ -1077,13 +1071,13 @@ class curve_segment_evaluator {
     }
 
 #ifdef SCHEMA_HAS_IfcPolynomialCurve
-    void operator()(const IfcSchema::IfcPolynomialCurve* pc) {
+    void operator()(const IfcSchema::IfcPolynomialCurve& pc) {
         // see https://forums.buildingsmart.org/t/ifcpolynomialcurve-clarification/4716 for discussion on IfcPolynomialCurve
-        auto coeffX = pc->CoefficientsX().get_value_or(std::vector<double>());
-        auto coeffY = pc->CoefficientsY().get_value_or(std::vector<double>());
-        auto coeffZ = pc->CoefficientsZ().get_value_or(std::vector<double>());
+        auto coeffX = pc.CoefficientsX().value_or(std::vector<double>());
+        auto coeffY = pc.CoefficientsY().value_or(std::vector<double>());
+        auto coeffZ = pc.CoefficientsZ().value_or(std::vector<double>());
         if (!coeffZ.empty()) {
-            mapping_->logger().Warning("GEO", 252, "Expected IfcPolynomialCurve.CoefficientsZ to be undefined for alignment geometry. Coefficients ignored.", pc);
+            mapping_->logger().warning("GEO", 252, "Expected IfcPolynomialCurve.CoefficientsZ to be undefined for alignment geometry. Coefficients ignored.", pc);
         }
 
         if (segment_type_ == ST_HORIZONTAL || segment_type_ == ST_VERTICAL) {
@@ -1149,7 +1143,7 @@ class curve_segment_evaluator {
                     auto result = boost::math::tools::bracket_and_solve_root(f, x, 2.0, true, tol, max_iter);
                     x = result.first;
                 } catch (...) {
-                    logger_.Warning("GEO", 253, "root solver failed");
+                    logger_.warning("GEO", 253, "root solver failed");
                 }
                 return x;
             };
@@ -1200,8 +1194,7 @@ class curve_segment_evaluator {
                      m.col(3) = Eigen::Vector4d(X, Y, 0.0, 1.0);
                      return m;
                 },
-                [start = start_, lu = length_unit_, coeffX, coeffY, convert_u](double u) -> Eigen::Matrix4d { 
-                     auto x = convert_u(u + start); // find x for u
+                [coeffY](double) -> Eigen::Matrix4d {
                     Eigen::Matrix4d c = Eigen::Matrix4d::Zero();
                     c(3, 0) = coeffY[2]; // this may need a unit conversion (also assume there is only 3 coefficients)
                      return c;
@@ -1210,12 +1203,12 @@ class curve_segment_evaluator {
 
             parent_curve_start_point_ = (*parent_curve_fn_)(0.0); // start is added to u in parent_curve_fn_, so use 0.0 here
         } else if (segment_type_ == ST_CANT) {
-            mapping_->logger().Warning("UNS", 13, std::runtime_error("Use of IfcPolynomialCurve for cant is not supported"));
+            mapping_->logger().warning("UNS", 13, std::runtime_error("Use of IfcPolynomialCurve for cant is not supported"));
             parent_curve_fn_ = std::make_shared<parent_curve_function>(
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
         } else {
-            mapping_->logger().Error("GEO", 254, std::runtime_error("Unexpected segment type encountered"));
+            mapping_->logger().error("GEO", 254, std::runtime_error("Unexpected segment type encountered"));
             parent_curve_fn_ = std::make_shared<parent_curve_function>(
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
@@ -1225,7 +1218,7 @@ class curve_segment_evaluator {
 };
 } // namespace
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment& inst) {
     curve_segment_evaluator cse(this, inst, length_unit_);
     boost::mpl::for_each<curve_seg_types, boost::type<boost::mpl::_>>(std::ref(cse));
     return cse.get_segment_curve_function();

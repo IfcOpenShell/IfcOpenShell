@@ -872,7 +872,7 @@ class Loader(bonsai.core.tool.Loader):
         cls,
         element: ifcopenshell.entity_instance,
         representation: ifcopenshell.entity_instance,
-        shape: W.TriangulationElement,
+        shape: W.triangulation_element,
     ) -> bpy.types.Camera:
         """Create camera data.
 
@@ -1026,7 +1026,7 @@ class Loader(bonsai.core.tool.Loader):
     @classmethod
     def convert_geometry_to_mesh(
         cls,
-        geometry: W.Triangulation,
+        geometry: W.triangulation,
         mesh: bpy.types.Mesh,
         verts: Optional[npt.NDArray[np.float64]] = None,
         *,
@@ -1087,21 +1087,20 @@ class Loader(bonsai.core.tool.Loader):
         bm = bmesh.new()
         bm.from_mesh(mesh)
         prev_co = None
-        layer_set_direction = usage.LayerSetDirection
-        if layer_set_direction == "AXIS2":
+        if usage.LayerSetDirection == "AXIS2":
             co = Vector((0.0, offset, 0.0))
             no = cls.get_extrusion_vector(element).normalized()
             no = no.cross(Vector([1.0, 0.0, 0.0]))
-        elif layer_set_direction == "AXIS3":
+        elif usage.LayerSetDirection == "AXIS3":
             co = Vector((0.0, 0.0, offset))
             no = cls.get_extrusion_vector(element).normalized()
             no = Vector([0.0, 0.0, 1.0])
-        elif layer_set_direction == "AXIS1":
+        elif usage.LayerSetDirection == "AXIS1":
             co = Vector((0.0, 0.0, offset))
             no = cls.get_extrusion_vector(element).normalized()
             no = Vector([1.0, 0.0, 0.0])
         else:
-            assert False, layer_set_direction
+            assert False, usage.LayerSetDirection
         no *= sense_factor
         # Cache this
         body = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")

@@ -37,7 +37,6 @@ classes = (
     operator.PrintObjectPlacement,
     operator.PrintUnusedElementStats,
     operator.ProfileImportIFC,
-    operator.PurgeHdf5Cache,
     operator.PurgeUnusedElementsByClass,
     operator.PurgeUnusedObjects,
     operator.RestartBlender,

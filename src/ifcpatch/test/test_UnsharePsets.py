@@ -75,7 +75,7 @@ class TestUnsharePsets(test.bootstrap.IFC4):
         rel.RelatedObjects = elements
 
         ifcpatch.execute({"file": self.file, "recipe": "UnsharePsets", "arguments": ["IfcWall"]})
-        assert len(psets := self.file.by_type("IfcPropertySet")) == 4
+        assert len(psets := list(self.file.by_type("IfcPropertySet"))) == 4
         assert len(self.file.by_type("IfcRelDefinesByProperties")) == 4
 
         psets.remove(shared_pset)

@@ -15,7 +15,7 @@ There are two ways to build pyodide ifcopenshell Python wrapper wheel.
         The way to avoid it, if build fails, is to use `pyodide build-recipes-no-deps ifcopenshell --continue` instead.
     - run `setup.py` in `IfcOpenShell` root, producing a wheel in `IfcOpenShell/dist`
     - copy that wheel to `packages/ifcopenshell/dist`
-    - `--install` it to current build envrionment
+    - `--install` it to current build environment
         - copy the wheel next to `dist` folder (in root directory, next to `packages`)
         - add wheel to `dist/pyodide-lock.json`
 
@@ -28,5 +28,13 @@ since it's pure cmake without any additional moving parts.
 - clone IfcOpenShell repo next to it to `IfcOpenShell` folder
 - run `python nix/build-all.py -wasm -py-313` in `IfcOpenShell`
     - it will produce Python package in `IfcOpenShell/ifcopenshell`
-- run `pyodide build`
-    - it will produce a wheel in `IfcOpenShell/dist`
+- run `python pyodide/build-all-pack-wheel-local.py`, it will
+    - clean up previous wheels
+    - run `pyodide build`
+    - prepare standalone and modular wheels
+    - produce final wheels in `IfcOpenShell/dist` and `IfcOpenshell/dist-modular`
+- testing:
+  - ensure you're in pyodide environment
+  - `cd IfcOpenshell/pyodide`
+  - `./run_pytest.py setup`
+  - `./run_pytest.py run`

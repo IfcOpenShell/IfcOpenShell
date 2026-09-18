@@ -83,7 +83,6 @@ CLI Manual
       .json  JSON           Property definitions and decomposition tree in xeokit json format
       .rdb   RocksDB        RocksDB Key-Value store serialization of IFC data
       .svg   SVG            Scalable Vector Graphics (2D floor plan)
-      .h5    HDF            Hierarchical Data Format storing positions, normals and indices
       .ttl   TTL/WKT        RDF Turtle with Well-Known-Text geometry
       .ifc   IFC-SPF        Industry Foundation Classes
 
@@ -314,8 +313,9 @@ CLI Manual
       --circle-segments arg (= 0)           Number of segments to approximate full
                                             circles in the CGAL kernel. When 0 (the
                                             default) the segment count is derived from
-                                            mesher-linear-deflection instead, so curves
-                                            stay within the deflection tolerance
+                                            mesher-linear-deflection and
+                                            mesher-angular-deflection instead, whichever
+                                            is stricter, so curves stay within tolerance
                                             regardless of radius.
       --cgal-smooth-angle-degrees arg (= -1)
                                             Angle in degrees under which adjacent 

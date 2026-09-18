@@ -19,17 +19,17 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 #include "../profile_helper.h"
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolyline* inst) {
-	IfcSchema::IfcCartesianPoint::list::ptr points = inst->Points();
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolyline& inst) {
+	std::vector<IfcSchema::IfcCartesianPoint> points = inst.Points();
 
 	// Parse and store the points in a sequence
 	std::vector<taxonomy::point3::ptr> polygon;
-	polygon.reserve(points->size());
-	std::transform(points->begin(), points->end(), std::back_inserter(polygon), [this](const IfcSchema::IfcCartesianPoint* p) {
+	polygon.reserve(points.size());
+	std::transform(points.begin(), points.end(), std::back_inserter(polygon), [this](const IfcSchema::IfcCartesianPoint& p) {
 		return taxonomy::cast<taxonomy::point3>(map(p));
 	});
 
@@ -44,12 +44,12 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolyline* inst) {
 	auto previous_size = polygon.size();
 	remove_duplicate_points_from_loop(polygon, closed_by_proximity, eps);
 	if (polygon.size() != previous_size) {
-		logger_.Warning("GEO", 276, "Removed " + std::to_string(previous_size - polygon.size()) + " (near) duplicate points from:", inst);
+		logger_.warning("GEO", 276, "Removed " + std::to_string(previous_size - polygon.size()) + " (near) duplicate points from:", inst);
 	}
 
 	if (polygon.size() < 2) {
 		// We somehow need to signal we fail this curve on purpose not to trigger an error.
-		logger_.Warning("GEO", 277, "Invalid polyline with " + std::to_string(polygon.size()) + " points:", inst);
+		logger_.warning("GEO", 277, "Invalid polyline with " + std::to_string(polygon.size()) + " points:", inst);
 		return nullptr;
 	}
 

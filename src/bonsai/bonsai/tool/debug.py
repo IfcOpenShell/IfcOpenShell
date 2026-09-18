@@ -19,7 +19,6 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 from collections import defaultdict
 from collections.abc import Iterable
@@ -58,17 +57,6 @@ class Debug(bonsai.core.tool.Debug):
         schema = ifcopenshell.express.parse(filename)
         ifcopenshell.register_schema(schema)
         return schema.schema
-
-    @classmethod
-    def purge_hdf5_cache(cls) -> None:
-        prefs = tool.Blender.get_addon_preferences()
-        cache_dir = prefs.cache_dir
-        filelist = [f for f in os.listdir(cache_dir) if f.endswith(".h5")]
-        for f in filelist:
-            try:
-                os.remove(os.path.join(cache_dir, f))
-            except PermissionError:
-                pass
 
     @classmethod
     def debug_bmesh(cls, bm: bmesh.types.BMesh, name: str = "Debug") -> bpy.types.Object:
@@ -164,7 +152,7 @@ class Debug(bonsai.core.tool.Debug):
             return name
 
         def get_hash(element: ifcopenshell.entity_instance) -> int:
-            data = element.get_info_2(include_identifier=False, recursive=True)
+            data = element.get_info(include_identifier=False, recursive=True)
             if object_type == "APPLICATION":
                 # To avoid disruption let user merge organizations separately.
                 data["ApplicationDeveloper"] = element.ApplicationDeveloper.id()

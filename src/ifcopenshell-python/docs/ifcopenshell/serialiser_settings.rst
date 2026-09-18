@@ -1,15 +1,15 @@
 Serialiser settings
 ===================
 
-The geometry serialiser has a variety of settings which can impact its output.
-This is set during the construction of the serialiser.
+Geometry serialisers use the same settings object as geometry conversion. These
+options affect serialised output and are set before constructing a serialiser.
 
 Here's an example of changing settings in Python:
 
 .. code-block:: python
 
-    serialiser_settings = ifcopenshell.geom.serializer_settings()
-    serialiser_settings.set("use-element-guids", True)
+    settings = ifcopenshell.geom.settings()
+    settings.set("use-element-guids", True)
 
 base-uri
 ^^^^^^^^

@@ -1,7 +1,10 @@
 SHELL := sh
 IS_STABLE:=FALSE
 VERSION:=$(shell cat ../../VERSION)
+VERSION_BASE:=$(shell sed -E 's/[[:alpha:]]+[0-9]+$$//' ../../VERSION)
+VERSION_PYTHON:=$(shell sed 's/alpha/a/' ../../VERSION)
 VERSION_DATE:=$(shell date '+%y%m%d')
+VERSION_DAILY:=$(VERSION_BASE)a$(VERSION_DATE)
 PYVERSION:=py311
 PLATFORM:=linux64
 
@@ -54,8 +57,8 @@ ifeq ($(PLATFORM), win64)
 PLATFORMTAG:=win_amd64
 endif
 
-BINARY_VERSION:=0.8.6
-BUILD_COMMIT:=e333c1c
+BINARY_VERSION:=0.9.0alpha0
+BUILD_COMMIT:=8003d43
 IOS_URL:=https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v$(BINARY_VERSION)-$(BUILD_COMMIT)-$(PLATFORM).zip
 IFCCONVERT_URL:=https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v$(BINARY_VERSION)-$(BUILD_COMMIT)-$(PLATFORM).zip
 
@@ -68,22 +71,13 @@ build-urls:
 
 .PHONY: test
 test:
-	pytest -p no:pytest-blender test --ignore=test/util/test_shape_builder.py
+	pytest --import-mode=importlib -p no:pytest-blender test
 
 .PHONY: test-parallel
 test-parallel:
 	@NPROCS=$$(nproc 2>/dev/null || sysctl -n hw.ncpu); \
-	pytest -p no:pytest-blender -n $$NPROCS test --ignore=test/util/test_shape_builder.py
+	pytest --import-mode=importlib -p no:pytest-blender -n $$NPROCS test
 
-.PHONY: test-mathutils
-test-mathutils:
-	pytest -p no:pytest-blender test/util/test_shape_builder.py
-
-
-.PHONY: qa
-qa:
-	black .
-	pylint ./* --output-format=colorized --disable all --enable E
 
 .PHONY: license
 license:
@@ -92,7 +86,7 @@ license:
 
 .PHONY: coverage
 coverage:
-	coverage run --source ifcopenshell -m pytest -p no:pytest-blender test
+	coverage run --source ifcopenshell -m pytest --import-mode=importlib -p no:pytest-blender test
 	coverage html
 	xdg-open htmlcov/index.html
 
@@ -122,6 +116,10 @@ endif
 	cd dist/working && wget $(IOS_URL)
 	cd dist/working && unzip ifcopenshell-python*
 	cp -r dist/working/ifcopenshell/*ifcopenshell_wrapper* dist/ifcopenshell/
+	# v0.9.0 splits IfcOpenShell into shared libraries loaded from next to the
+	# wrapper (libifcopenshell.parse, ifcopenshell_document_rdb, ...). Copy
+	# them too, otherwise the wrapper fails to import. See #9364.
+	find dist/working/ifcopenshell -maxdepth 1 \( -name '*.so' -o -name '*.so.*' -o -name '*.dylib' -o -name '*.dll' \) -exec cp {} dist/ifcopenshell/ \;
 	rm -rf dist/working
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' dist/ifcopenshell/__init__.py
 	cd dist && zip -r ifcopenshell-python-$(VERSION)-$(PYVERSION)-$(PLATFORM).zip ifcopenshell
@@ -140,22 +138,26 @@ endif
 	mkdir build/botbuild
 	cd build/botbuild && wget $(IOS_URL) && unzip ifcopenshell-python*
 	cp -r build/botbuild/ifcopenshell/*ifcopenshell_wrapper* build/ifcopenshell/
+	# v0.9.0 splits IfcOpenShell into shared libraries loaded from next to the
+	# wrapper (libifcopenshell.parse, ifcopenshell_document_rdb, ...). Copy
+	# them too, otherwise the wrapper fails to import. See #9364.
+	find build/botbuild/ifcopenshell -maxdepth 1 \( -name '*.so' -o -name '*.so.*' -o -name '*.dylib' -o -name '*.dll' \) -exec cp {} build/ifcopenshell/ \;
 	cp ../../README.md build/
 	cp pyproject.toml build/
 ifeq ($(IS_STABLE), TRUE)
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' build/pyproject.toml
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' build/ifcopenshell/__init__.py
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION_PYTHON)"/' build/pyproject.toml
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION_PYTHON)"/' build/ifcopenshell/__init__.py
 else
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)a$(VERSION_DATE)"/' build/pyproject.toml
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)-alpha$(VERSION_DATE)"/' build/ifcopenshell/__init__.py
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION_DAILY)"/' build/pyproject.toml
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION_DAILY)"/' build/ifcopenshell/__init__.py
 endif
 
 	cd build && $(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && $(PIP) install build
 	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m build
 
 ifeq ($(IS_STABLE), TRUE)
-	mv build/dist/ifcopenshell-*.whl dist/ifcopenshell-$(VERSION)-$(PYVERSION)-none-$(PLATFORMTAG).whl
+	mv build/dist/ifcopenshell-*.whl dist/ifcopenshell-$(VERSION_PYTHON)-$(PYVERSION)-none-$(PLATFORMTAG).whl
 else
-	cp build/dist/ifcopenshell-*.whl dist/ifcopenshell-$(VERSION)a$(VERSION_DATE)-$(PYVERSION)-none-$(PLATFORMTAG).whl
+	cp build/dist/ifcopenshell-*.whl dist/ifcopenshell-$(VERSION_DAILY)-$(PYVERSION)-none-$(PLATFORMTAG).whl
 endif
 	rm -rf build

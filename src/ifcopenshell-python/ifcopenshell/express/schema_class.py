@@ -110,9 +110,7 @@ class LateBoundSchemaInstantiator:
         self.declarations[str(name)].set_subtypes([self.declarations[str(v)] for v in tys])
 
     def finalize(self, can_be_instantiated_set, override_schema_name=None):
-        self.schema = w.schema_definition(
-            override_schema_name or self.schema_name, list(self.declarations.values()), None
-        )
+        self.schema = w.schema_definition(override_schema_name or self.schema_name, list(self.declarations.values()))
 
     def disown(self):
         for elem in self.cache + list(self.declarations.values()):
@@ -147,12 +145,12 @@ class EarlyBoundCodeWriter:
 
         self.statements = [
             "",
-            '#include "../ifcparse/IfcSchema.h"',
-            '#include "../ifcparse/%(schema_name_title)s.h"' % self.__dict__,
+            '#include "../../ifcparse/schema.h"',
+            '#include "../../ifcparse/schemas/%(schema_name_title)s.h"' % self.__dict__,
             "#include <string>",
             "",
             "using namespace std::string_literals;",
-            "using namespace IfcParse;",
+            "using namespace ifcopenshell;",
             "",
         ]
 
@@ -181,7 +179,7 @@ class EarlyBoundCodeWriter:
         num_names = len(self.names)
         self.statements.append("declaration* %(schema_name)s_types[%(num_names)d] = {nullptr};" % locals())
 
-        self.statements.append("{factory_placeholder}")
+        # self.statements.append("{factory_placeholder}")
 
         #         self.statements.append(
         #             """
@@ -195,7 +193,7 @@ class EarlyBoundCodeWriter:
         # #endif
         #         """
         #         )
-        self.statements.append("IfcParse::schema_definition* %s_populate_schema() {" % self.schema_name.upper())
+        self.statements.append("ifcopenshell::schema_definition* %s_populate_schema() {" % self.schema_name.upper())
         self.statements.append("{string_pool_placeholder}")
 
     def typedef(self, name, declared_type):
@@ -307,10 +305,7 @@ class EarlyBoundCodeWriter:
 
         declarations = ",".join(_())
         schema_name_ref = self.strings.append(schema_name)
-        self.statements.append(
-            "    return new schema_definition(%(schema_name_ref)s, {%(declarations)s}, new %(schema_name)s_instance_factory());"
-            % locals()
-        )
+        self.statements.append("    return new schema_definition(%(schema_name_ref)s, {%(declarations)s});" % locals())
         self.statements.append("}")
 
         #         self.statements.append(
@@ -354,7 +349,7 @@ class EarlyBoundCodeWriter:
 
         instance_mapping = """switch(decl->index_in_schema()) {
             %s
-            default: throw IfcParse::IfcException(decl->name() + " cannot be instantiated");
+            default: throw ifcopenshell::exception(decl->name() + " cannot be instantiated");
         }
 """ % "\n            ".join(
             map(
@@ -363,13 +358,17 @@ class EarlyBoundCodeWriter:
             )
         )
 
-        self.statements[self.statements.index("{factory_placeholder}")] = """
-class %(schema_name)s_instance_factory : public IfcParse::instance_factory {
-    virtual IfcUtil::IfcBaseClass* operator()(const IfcParse::declaration* decl, IfcEntityInstanceData&& data) const {
-        %(instance_mapping)s
-    }
-};
-""" % locals()
+        # Factor no longer exists because we don't have virtual methods anymore.
+        # self.statements[self.statements.index("{factory_placeholder}")] = (
+        #     """
+        #     class %(schema_name)s_instance_factory : public ifcopenshell::instance_factory {
+        #         virtual ifcopenshell::IfcBaseClass* operator()(const ifcopenshell::declaration* decl, const std::weak_ptr<instance_data>& data) const {
+        #             %(instance_mapping)s
+        #         }
+        #     };
+        #     """
+        #     % locals()
+        # )
 
         ""
         self.statements[self.statements.index("{string_pool_placeholder}")] = """

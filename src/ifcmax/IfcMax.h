@@ -24,7 +24,7 @@
 
 extern ClassDesc* GetIFCImpDesc();
 
-class IFCImp : public SceneImport 
+class IFCImp : public SceneImport
 {
 public:
 	int ExtCount();                   //  = 1
