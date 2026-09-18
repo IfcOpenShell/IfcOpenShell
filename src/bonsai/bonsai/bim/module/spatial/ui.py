@@ -327,31 +327,33 @@ class BIM_UL_containers_manager(UIList):
                 row.label(text="", icon="BLANK1")
 
     def draw_filter(self, context, layout):
-        row = layout.row()
         props = tool.Spatial.get_spatial_props()
-        row.prop(props, "container_filter", text="", icon="VIEWZOOM")
+        row = layout.row(align=True)
+        subrow = row.row(align=True)
+        if (
+            props.container_filter_regex
+            and props.container_filter
+            and not tool.Spatial.is_valid_regex(props.container_filter)
+        ):
+            subrow.alert = True
+        subrow.prop(props, "container_filter", text="", icon="VIEWZOOM")
+        row.prop(props, "container_filter_regex", text=".*", toggle=True)
 
     def filter_items(self, context: bpy.types.Context, data: BIMSpatialDecompositionProperties, propname: str):
         items = getattr(data, propname)
-        filter_name = data.container_filter.lower()
         filter_flags = [self.bitflag_filter_item] * len(items)
 
+        if not data.container_filter:
+            return filter_flags, []
+
+        matcher = tool.Spatial.get_filter_matcher(data.container_filter, data.container_filter_regex)
         for idx, item in enumerate(items):
-            if (
-                filter_name in item.name.lower()
-                or filter_name in item.long_name.lower()
-                or filter_name in item.ifc_class.lower()
-            ):
+            if matcher(item.name) or matcher(item.long_name) or matcher(item.ifc_class):
                 filter_flags[idx] |= self.bitflag_filter_item
             else:
                 filter_flags[idx] &= ~self.bitflag_filter_item
 
         return filter_flags, []
-
-        items = getattr(data, propname)
-        filter_name = data.container_filter
-        filtered = bpy.types.UI_UL_list.filter_items_by_name(filter_name, self.bitflag_filter_item, items, "name")
-        return filtered, []
 
 
 class BIM_UL_elements(UIList):
@@ -388,13 +390,29 @@ class BIM_UL_elements(UIList):
                 col.label(text=str(item.total))
 
     def draw_filter(self, context, layout):
-        row = layout.row()
         props = tool.Spatial.get_spatial_props()
-        row.prop(props, "element_filter", text="", icon="VIEWZOOM")
+        row = layout.row(align=True)
+        subrow = row.row(align=True)
+        if (
+            props.element_filter_regex
+            and props.element_filter
+            and not tool.Spatial.is_valid_regex(props.element_filter)
+        ):
+            subrow.alert = True
+        subrow.prop(props, "element_filter", text="", icon="VIEWZOOM")
+        row.prop(props, "element_filter_regex", text=".*", toggle=True)
 
     def filter_items(self, context: bpy.types.Context, data: BIMSpatialDecompositionProperties, propname: str):
         items = getattr(data, propname)
         filter_name = data.element_filter
+        if not filter_name:
+            return [self.bitflag_filter_item] * len(items), []
+
+        if data.element_filter_regex:
+            matcher = tool.Spatial.get_filter_matcher(filter_name, True)
+            filter_flags = [self.bitflag_filter_item if matcher(item.name) else 0 for item in items]
+            return filter_flags, []
+
         filtered = bpy.types.UI_UL_list.filter_items_by_name(filter_name, self.bitflag_filter_item, items, "name")
         return filtered, []
 

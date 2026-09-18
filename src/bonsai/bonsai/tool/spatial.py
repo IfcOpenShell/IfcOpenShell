@@ -19,8 +19,9 @@
 from __future__ import annotations
 
 import json
+import re
 from collections import defaultdict
-from collections.abc import Generator, Iterable
+from collections.abc import Callable, Generator, Iterable
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 import bmesh
@@ -489,6 +490,33 @@ class Spatial(bonsai.core.tool.Spatial):
         add_elements(results)
 
     @classmethod
+    def get_filter_matcher(cls, pattern: str, is_regex: bool) -> Callable[[str], bool]:
+        """Build a case insensitive matcher for a name filter.
+
+        If `is_regex` is set and `pattern` compiles, matching is done with
+        `re.search`. Otherwise it falls back to plain substring matching, so
+        an incomplete pattern typed character by character (for example
+        "^SPP-[" before the closing bracket is typed) never raises and still
+        filters sensibly instead of the list going blank.
+        """
+        if is_regex:
+            try:
+                regex = re.compile(pattern, re.IGNORECASE)
+                return lambda value: regex.search(value) is not None
+            except re.error:
+                pass
+        pattern = pattern.lower()
+        return lambda value: pattern in value.lower()
+
+    @classmethod
+    def is_valid_regex(cls, pattern: str) -> bool:
+        try:
+            re.compile(pattern)
+            return True
+        except re.error:
+            return False
+
+    @classmethod
     def filter_elements(
         cls,
         elements: Iterable[ifcopenshell.entity_instance],
@@ -496,8 +524,9 @@ class Spatial(bonsai.core.tool.Spatial):
         relating_type: ifcopenshell.entity_instance | None,
         is_untyped: bool,
         keyword: str | None,
+        is_regex: bool = False,
     ) -> filter[ifcopenshell.entity_instance]:
-        keyword = keyword.lower() if keyword else keyword
+        matcher = cls.get_filter_matcher(keyword, is_regex) if keyword else None
 
         def filter_element(element: ifcopenshell.entity_instance) -> bool:
             if ifc_class:
@@ -510,9 +539,9 @@ class Spatial(bonsai.core.tool.Spatial):
             if is_untyped:
                 if element_type is not None:
                     return False
-            if keyword:
+            if matcher:
                 type_name = getattr(element_type, "Name", "") or ""
-                if keyword not in f"{element.is_a()} {type_name}".lower():
+                if not matcher(f"{element.is_a()} {type_name}"):
                     return False
             return True
 
@@ -1355,6 +1384,7 @@ class Spatial(bonsai.core.tool.Spatial):
         props = cls.get_spatial_props()
         container = ifc_file.by_id(props.active_container.ifc_definition_id)
         element_filter = props.element_filter
+        is_regex = props.element_filter_regex
         active_element = props.active_element
 
         if not should_filter:
@@ -1370,20 +1400,20 @@ class Spatial(bonsai.core.tool.Spatial):
             if not element_filter:
                 return elements
 
-            keyword = element_filter.lower()
+            matcher = cls.get_filter_matcher(element_filter, is_regex)
             if props.element_mode == "TYPE":
                 filtered_occurrences = set()
                 filtered_classes = set()
                 filtered_types = set()
                 for item in props.elements:
-                    if item.type == "CLASS" and not item.is_expanded and keyword in item.name.lower():
+                    if item.type == "CLASS" and not item.is_expanded and matcher(item.name):
                         filtered_classes.add(item.name)
-                    elif item.type == "TYPE" and not item.is_expanded and keyword in item.name.lower():
+                    elif item.type == "TYPE" and not item.is_expanded and matcher(item.name):
                         if item.ifc_definition_id:
                             filtered_types.add(ifc_file.by_id(item.ifc_definition_id))
                         else:
                             filtered_types.add(item.name.split(" ")[1])
-                    elif item.type == "OCCURRENCE" and keyword in item.name.lower():
+                    elif item.type == "OCCURRENCE" and matcher(item.name):
                         filtered_occurrences.add(ifc_file.by_id(item.ifc_definition_id))
                 return {
                     e
@@ -1393,14 +1423,14 @@ class Spatial(bonsai.core.tool.Spatial):
                     or (not e_type and e.is_a() in filtered_types)
                 } | filtered_occurrences
             elif props.element_mode == "DECOMPOSITION":
-                return [ifc_file.by_id(i.ifc_definition_id) for i in props.elements if keyword in i.name.lower()]
+                return [ifc_file.by_id(i.ifc_definition_id) for i in props.elements if matcher(i.name)]
             elif props.element_mode == "CLASSIFICATION":
                 filtered_classifications = set()
                 filtered_occurrences = set()
                 for item in props.elements:
-                    if item.type == "CLASSIFICATION" and not item.is_expanded and keyword in item.name.lower():
+                    if item.type == "CLASSIFICATION" and not item.is_expanded and matcher(item.name):
                         filtered_classifications.add(item.identification)
-                    elif item.type == "OCCURRENCE" and keyword in item.name.lower():
+                    elif item.type == "OCCURRENCE" and matcher(item.name):
                         filtered_occurrences.add(ifc_file.by_id(item.ifc_definition_id))
                 for element in elements:
                     if refs := ifcopenshell.util.classification.get_references(element):
@@ -1437,7 +1467,7 @@ class Spatial(bonsai.core.tool.Spatial):
                 if is_recursive:
                     for e in list(elements):
                         elements.update(ifcopenshell.util.element.get_decomposition(e))
-            return cls.filter_elements(elements, ifc_class, relating_type, is_untyped, element_filter)
+            return cls.filter_elements(elements, ifc_class, relating_type, is_untyped, element_filter, is_regex)
         elif props.element_mode == "DECOMPOSITION":
             occurrence = ifc_file.by_id(active_element.ifc_definition_id)
             elements = ifcopenshell.util.element.get_decomposition(occurrence, is_recursive=is_recursive)

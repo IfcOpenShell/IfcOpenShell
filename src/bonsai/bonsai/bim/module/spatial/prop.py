@@ -255,10 +255,20 @@ class BIMSpatialDecompositionProperties(PropertyGroup):
         update=update_spatial_is_visible,
     )
     container_filter: StringProperty(name="Container Filter", default="", options={"TEXTEDIT_UPDATE"})
+    container_filter_regex: BoolProperty(
+        name="Use Regex",
+        description="Interpret the container filter as a regular expression instead of plain text, e.g. ^Level [0-9]+",
+        default=False,
+    )
     containers: CollectionProperty(name="Containers", type=BIMContainer)
     contracted_containers: StringProperty(name="Contracted containers", default="[]")
     active_container_index: IntProperty(name="Active Container Index", update=update_active_container_index)
     element_filter: StringProperty(name="Element Filter", default="", options={"TEXTEDIT_UPDATE"})
+    element_filter_regex: BoolProperty(
+        name="Use Regex",
+        description="Interpret the element filter as a regular expression instead of plain text, e.g. ^SPP-\\d+ or .*Level 2.*",
+        default=False,
+    )
     elements: CollectionProperty(name="Elements", type=Element)
     expanded_elements: StringProperty(name="Expanded Elements", default="{}")
     active_element_index: IntProperty(name="Active Element Index")
@@ -282,10 +292,12 @@ class BIMSpatialDecompositionProperties(PropertyGroup):
         is_locked: bool
         is_visible: bool
         container_filter: str
+        container_filter_regex: bool
         containers: bpy.types.bpy_prop_collection_idprop[BIMContainer]
         contracted_containers: str
         active_container_index: int
         element_filter: str
+        element_filter_regex: bool
         elements: bpy.types.bpy_prop_collection_idprop[Element]
         expanded_elements: str
         active_element_index: int
