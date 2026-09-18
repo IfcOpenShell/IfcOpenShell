@@ -24,7 +24,9 @@ import os
 import types
 from collections import defaultdict
 from collections.abc import Iterable
-from typing import Any, Literal, NamedTuple, Union, get_args
+from typing import Any, Literal, NamedTuple, Optional, Union, get_args
+
+import numpy as np
 
 import ifcopenshell
 import ifcopenshell.api.pset
@@ -45,8 +47,10 @@ class Function(NamedTuple):
 
 RULE_SET = Literal[
     "IFC4QtoBaseQuantities",
+    "IFC4QtoBaseQuantitiesAnnotation",
     "IFC4QtoBaseQuantitiesBlender",
     "IFC4X3QtoBaseQuantities",
+    "IFC4X3QtoBaseQuantitiesAnnotation",
     "IFC4X3QtoBaseQuantitiesBlender",
 ]
 rules: dict[RULE_SET, dict[str, Any]] = {}
@@ -753,7 +757,133 @@ class Blender(QtoCalculator):
                 del results[element]
 
 
+class AnnotationBoundary(QtoCalculator):
+    """Copies areas measured from boundary annotations onto their assigned products.
+
+    Spaces are not quantified from their own geometry. Instead, the user draws
+    an IfcAnnotation polygon along the legally relevant boundary convention
+    (e.g. wall centrelines) and assigns it to the space with
+    IfcRelAssignsToProduct. This calculator measures the polygon and writes
+    the area to the assigned product, so the quantity always reflects an
+    explicit, auditable boundary rather than an automatic guess.
+    """
+
+    functions: dict[str, Function] = {
+        "get_boundary_area": Function(
+            "IfcAreaMeasure",
+            "Boundary Area",
+            "Total area of closed boundary annotation polygons assigned to the product with IfcRelAssignsToProduct",
+        ),
+    }
+
+    @classmethod
+    def calculate(
+        cls,
+        ifc_file: ifcopenshell.file,
+        elements: Iterable[ifcopenshell.entity_instance],
+        qtos: QtosFormulas,
+        results: ResultsDict,
+    ) -> None:
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        unit_converter = SI2ProjectUnitConverter(ifc_file)
+        for element in elements:
+            area = cls.get_boundary_area(element)
+            if area is None:
+                continue
+            area = unit_converter.convert(area * unit_scale**2, "IfcAreaMeasure")
+            for name, quantities in qtos.items():
+                qto_results = {}
+                for quantity, formula in quantities.items():
+                    if not formula:
+                        continue
+                    if formula not in cls.functions:
+                        print(f"WARNING. Unexpected formula: '{formula}' ({name}.{quantity}).")
+                        continue
+                    qto_results[quantity] = area
+                if qto_results:
+                    results.setdefault(element, {}).setdefault(name, {}).update(qto_results)
+
+    @classmethod
+    def get_boundary_area(cls, element: ifcopenshell.entity_instance) -> Optional[float]:
+        """Get the total area of the element's assigned boundary annotations.
+
+        :param element: IFC product the boundary annotations are assigned to.
+        :return: ``float`` area in project units, or ``None`` if no assigned
+            annotation contains a closed boundary polygon.
+        """
+        total = 0.0
+        found = False
+        for rel in getattr(element, "ReferencedBy", None) or ():
+            for related in rel.RelatedObjects:
+                if not related.is_a("IfcAnnotation"):
+                    continue
+                representation = ifcopenshell.util.representation.get_representation(
+                    related, "Plan", "Annotation"
+                ) or ifcopenshell.util.representation.get_representation(related, "Model", "Annotation")
+                if not representation:
+                    continue
+                representation = ifcopenshell.util.representation.resolve_representation(representation)
+                if area := sum(cls.get_item_area(item) for item in representation.Items or ()):
+                    found = True
+                    total += area
+        return total if found else None
+
+    @classmethod
+    def get_item_area(cls, item: ifcopenshell.entity_instance) -> float:
+        if item.is_a("IfcMappedItem"):
+            scale = item.MappingTarget.Scale or 1.0
+            source = item.MappingSource.MappedRepresentation
+            return scale * scale * sum(cls.get_item_area(i) for i in source.Items or ())
+        if item.is_a("IfcAnnotationFillArea"):
+            area = cls.get_curve_area(item.OuterBoundary, assume_closed=True)
+            for inner in item.InnerBoundaries or ():
+                area -= cls.get_curve_area(inner, assume_closed=True)
+            return max(area, 0.0)
+        if item.is_a("IfcGeometricSet"):
+            return sum(cls.get_item_area(i) for i in item.Elements or ())
+        if item.is_a("IfcCurve"):
+            return cls.get_curve_area(item)
+        return 0.0
+
+    @classmethod
+    def get_curve_area(cls, curve: ifcopenshell.entity_instance, assume_closed: bool = False) -> float:
+        points = cls.get_curve_points(curve)
+        if points is None or len(points) < 3:
+            return 0.0
+        tolerance = 1e-6 * max(float(np.ptp(points, axis=0).max()), 1.0)
+        if float(np.linalg.norm(points[0] - points[-1])) <= tolerance:
+            points = points[:-1]
+        elif not assume_closed:
+            return 0.0
+        if len(points) < 3:
+            return 0.0
+        if points.shape[1] == 2:
+            x, y = points[:, 0], points[:, 1]
+            return float(abs(x @ np.roll(y, -1) - y @ np.roll(x, -1)) / 2)
+        cross = np.cross(points, np.roll(points, -1, axis=0))
+        return float(np.linalg.norm(cross.sum(axis=0)) / 2)
+
+    @staticmethod
+    def get_curve_points(curve: ifcopenshell.entity_instance) -> Optional[np.ndarray]:
+        if curve.is_a("IfcPolyline"):
+            return np.array([p.Coordinates for p in curve.Points], dtype=float)
+        if curve.is_a("IfcIndexedPolyCurve"):
+            coords = np.array(curve.Points.CoordList, dtype=float)
+            if not curve.Segments:
+                return coords
+            path: list[int] = []
+            for segment in curve.Segments:
+                # Arc segments are measured by their chords.
+                indices = list(segment[0])
+                if path and path[-1] == indices[0]:
+                    indices = indices[1:]
+                path.extend(indices)
+            return coords[np.array(path) - 1]
+        return None
+
+
 calculators: dict[str, type[QtoCalculator]] = {
+    "Annotation": AnnotationBoundary,
     "Blender": Blender,
     "IfcOpenShell": IfcOpenShell,
 }
