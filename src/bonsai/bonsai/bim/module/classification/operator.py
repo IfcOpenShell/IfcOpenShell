@@ -477,18 +477,32 @@ class ChangeClassificationLevel(bpy.types.Operator):
 
     def execute(self, context):
         props = tool.Classification.get_classification_props()
+        parent = IfcStore.classification_file.by_id(self.parent_id)
+        try:
+            references = parent.HasReferences
+        except AttributeError:
+            # HasReferences is only defined on IfcClassification/IfcClassificationReference
+            # from IFC4 onwards. A user-supplied IFC2X3 classification library has no way
+            # to look up a level's child references, so browsing it level by level isn't
+            # supported.
+            self.report(
+                {"ERROR"},
+                "This classification library uses the IFC2X3 schema, which does not support "
+                "browsing nested classification references. Load an IFC4 classification "
+                "library instead, or add references manually.",
+            )
+            return {"CANCELLED"}
+
         props.available_library_references.clear()
-        reference = None
-        for reference in IfcStore.classification_file.by_id(self.parent_id).HasReferences:
+        for reference in references:
             new = props.available_library_references.add()
             new.identification = reference.Identification or ""
             new.name = reference.Name or ""
             new.ifc_definition_id = reference.id()
             new.has_references = bool(reference.HasReferences)
             new.referenced_source
-        assert reference
-        if reference.ReferencedSource.is_a("IfcClassificationReference"):
-            props.active_library_referenced_source = reference.ReferencedSource.ReferencedSource.id()
+        if parent.is_a("IfcClassificationReference"):
+            props.active_library_referenced_source = parent.ReferencedSource.id()
         else:
             props.active_library_referenced_source = 0
         return {"FINISHED"}
