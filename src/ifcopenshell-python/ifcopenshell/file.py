@@ -35,7 +35,7 @@ import ifcopenshell
 from ifcopenshell.util.mvd_info import LARK_AVAILABLE, MvdInfo
 
 from . import ifcopenshell_wrapper
-from .entity_instance import entity_instance
+from .entity_instance import entity_instance, resolve_select_type
 
 if TYPE_CHECKING:
     import ifcopenshell.util.schema
@@ -866,13 +866,37 @@ class file:
 
         If an IFC type class has subclasses, all entities of those subclasses are also returned.
 
-        :param type: The case insensitive type of IFC class to return.
+        `type` may also be an EXPRESS SELECT type (e.g. ``IfcDefinitionSelect``),
+        in which case the union of all its ENTITY members is returned (recursing
+        through any nested SELECTs), with duplicates removed. Note that a SELECT
+        may also admit defined types or enumeration types (e.g.
+        ``IfcLengthMeasure``, as part of ``IfcValue``): these are not indexed as
+        standalone, retrievable instances by IfcOpenShell, so they never
+        contribute to the result. A SELECT that only admits such types (e.g.
+        ``IfcValue``) will therefore always return an empty list.
+
+        :param type: The case insensitive type of IFC class (or SELECT) to return.
         :param include_subtypes: Whether or not to return subtypes of the IFC class
 
         :raises RuntimeError: If `type` is not found in IFC schema.
 
         :returns: A list of ifcopenshell.entity_instance objects
         """
+        resolved = resolve_select_type(self.wrapped_data.schema, type)
+        if resolved is not None:
+            entity_names, _simple_type_names = resolved
+            fn = self.wrapped_data.by_type if include_subtypes else self.wrapped_data.by_type_excl_subtypes
+            results: list[ifcopenshell.entity_instance] = []
+            seen_ids: set[int] = set()
+            for entity_name in entity_names:
+                for e in fn(entity_name):
+                    inst = entity_instance(e, self)
+                    key = inst.id()
+                    if key in seen_ids:
+                        continue
+                    seen_ids.add(key)
+                    results.append(inst)
+            return results
         if include_subtypes:
             return [entity_instance(e, self) for e in self.wrapped_data.by_type(type)]
         return [entity_instance(e, self) for e in self.wrapped_data.by_type_excl_subtypes(type)]
