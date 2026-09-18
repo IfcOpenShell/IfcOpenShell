@@ -57,10 +57,21 @@ def discard_uncommitted(ifcgit: type[tool.IfcGit], ifc: type[tool.Ifc]) -> None:
 
 
 def commit_changes(
-    ifcgit: type[tool.IfcGit], ifc: type[tool.Ifc], commit_message: str, new_branch_name: str = ""
+    ifcgit: type[tool.IfcGit],
+    ifc: type[tool.Ifc],
+    commit_message: str,
+    new_branch_name: str = "",
+    operator: bpy.types.Operator | None = None,
 ) -> None:
-    """Commit and create new branches as required"""
+    """Commit the IFC file and its referenced assets, creating new branches as required"""
     path_ifc = ifc.get_path()
+
+    external_assets = ifcgit.stage_asset_files(ifcgit.get_project_asset_paths(path_ifc))
+    if external_assets and operator:
+        operator.report(
+            {"WARNING"},
+            "Referenced assets outside the repository were not committed: " + ", ".join(external_assets),
+        )
 
     if ifcgit.is_head_detached():
         ifcgit.git_commit(path_ifc, commit_message)
