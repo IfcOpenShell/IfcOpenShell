@@ -61,6 +61,20 @@ def _horizontal_label(prev_segment: entity_instance, segment: entity_instance) -
         label = "P.O.B."
     elif prev_segment != None and segment == None:
         label = "P.O.E."
+    elif (
+        prev_segment.DesignParameters.PredefinedType == "CIRCULARARC"
+        and segment.DesignParameters.PredefinedType == "CIRCULARARC"
+    ):
+        # A direct arc-to-arc transition with no intervening LINE (or spiral -- join_next never
+        # allows one on the joined side, see solve_horizontal_alignment_by_pi_method) is a
+        # compound (PCC) or reverse (PRC) curve junction. Which one depends on whether the two
+        # curves turn the same way -- StartRadiusOfCurvature is signed (+left/-right, see e.g.
+        # bonsai's _pi_curve_radii_entry) -- not on the segment types alone, so this can't be a
+        # static lookup-table entry the way every other transition here is.
+        prev_radius = prev_segment.DesignParameters.StartRadiusOfCurvature or 0.0
+        radius = segment.DesignParameters.StartRadiusOfCurvature or 0.0
+        same_direction = (prev_radius >= 0.0) == (radius >= 0.0)
+        label = "P.C.C." if same_direction else "P.R.C."
     else:
         lookup_table = {
             "BLOSSCURVE": {
@@ -76,7 +90,8 @@ def _horizontal_label(prev_segment: entity_instance, segment: entity_instance) -
             },
             "CIRCULARARC": {
                 "BLOSSCURVE": "C.S.",
-                "CIRCULARARC": "P.C.C.",
+                # CIRCULARARC -> CIRCULARARC (PCC/PRC) is handled above, before this table is ever
+                # consulted -- it depends on curve direction, not just the segment types.
                 "CLOTHOID": "C.S.",
                 "COSINECURVE": "C.S.",
                 "CUBIC": "C.S.",

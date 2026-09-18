@@ -105,7 +105,9 @@ from .solve_horizontal_alignment_by_pi_method import (
     compute_clothoid_end,
     compute_horizontal_segment_end,
     compute_spiral_end,
+    curve_tangent_out,
     solve_horizontal_alignment_by_pi_method,
+    solve_join_next_radius,
 )
 from .update_alignment_parameter_segment_tags import update_alignment_parameter_segment_tags
 from .update_end_point import update_end_point
@@ -119,7 +121,9 @@ __all__ = [
     "compute_clothoid_end",
     "compute_horizontal_segment_end",
     "compute_spiral_end",
+    "curve_tangent_out",
     "solve_horizontal_alignment_by_pi_method",
+    "solve_join_next_radius",
     "add_positioning_referent",
     "add_stationing_referent",
     "add_vertical_layout",

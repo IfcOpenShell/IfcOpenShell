@@ -330,6 +330,18 @@ class HorizontalPIMarker(PropertyGroup):
         min=0.0,
         unit="LENGTH",
     )
+    join_next: BoolProperty(
+        name="Join to Next PI",
+        description=(
+            "Connect this curve directly to the curve at the next PI, at a shared tangency point, "
+            "with no intermediate tangent run -- a compound (PCC, same-direction curves) or reverse "
+            "(PRC, opposite-direction curves) curve junction. Only valid when this curve has no exit "
+            "spiral and the next PI's curve has no entry spiral (spirals remain fine on the outer, "
+            "non-joined side of either curve); not valid on the last PI, which has no next curve to "
+            "join to"
+        ),
+        default=False,
+    )
 
 
 # Horizontal spiral transition curve families that _map_alignment_horizontal_segment
@@ -623,6 +635,18 @@ class PICurveMarkerProperties(PropertyGroup):
     )
     pi_index: IntProperty(
         name="PI Index", description="0-based index among the alignment's interior PIs", default=0
+    )
+    join_next: BoolProperty(
+        name="Join to Next PI",
+        description=(
+            "Connect this curve directly to the curve at the next PI, at a shared tangency point, "
+            "with no intermediate tangent run -- a compound (PCC, same-direction curves) or reverse "
+            "(PRC, opposite-direction curves) curve junction. Only valid when this curve has no exit "
+            "spiral and the next PI's curve has no entry spiral (spirals remain fine on the outer, "
+            "non-joined side of either curve); not valid on the last PI, which has no next curve to "
+            "join to"
+        ),
+        default=False,
     )
     curve_type: EnumProperty(
         name="Curve Type",
