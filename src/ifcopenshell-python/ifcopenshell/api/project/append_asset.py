@@ -397,7 +397,7 @@ class Usecase:
         self.whitelisted_inverse_attributes = {
             "IfcObjectDefinition": ["HasAssociations"],
             "IfcObject": ["IsDefinedBy.IfcRelDefinesByProperties"],
-            "IfcElement": ["HasOpenings"],
+            "IfcElement": ["HasOpenings", "IsDecomposedBy"],
             "IfcDistributionElement": ["IsNestedBy"],
             self.base_material_class: ["HasExternalReferences", "HasProperties", "HasRepresentation"],
             "IfcRepresentationItem": [
@@ -529,24 +529,18 @@ class Usecase:
             new = self.file.create_entity(element.is_a())
             self.reuse_identities[element_identity] = new
 
+        # Void, projection, and aggregation relationships are "dependent" and always considered.
+        is_dependent_rel = element.is_a() in ("IfcRelVoidsElement", "IfcRelProjectsElement", "IfcRelAggregates")
+
         for i, attribute in enumerate(element):
             new_attribute = None
             if isinstance(attribute, ifcopenshell.entity_instance):
-                # Void and projection relationships are special because they
-                # are "dependent" relationships, so we always consider them.
-                # We do _not_ whitelist (i.e. in is_another_asset)
-                # IfcFeatureElement because you can have things like
-                # IfcRelAssociatesClassification to openings! We only ever want
-                # to consider IfcFeatureElements in IfcRelVoidsElements and
-                # IfcRelProjectsElements.
-                if element.is_a() in ("IfcRelVoidsElement", "IfcRelProjectsElement") or not self.is_another_asset(
-                    attribute
-                ):
+                if is_dependent_rel or not self.is_another_asset(attribute):
                     new_attribute = self.add_element(attribute)
             elif isinstance(attribute, tuple) and attribute and isinstance(attribute[0], ifcopenshell.entity_instance):
                 new_attribute = []
                 for item in attribute:
-                    if self.is_another_asset(item):
+                    if not is_dependent_rel and self.is_another_asset(item):
                         continue
                     if skip_not_reused_entities_attr_i is not None and i == skip_not_reused_entities_attr_i:
                         identity = item.wrapped_data.identity()

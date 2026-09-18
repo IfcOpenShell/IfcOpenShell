@@ -637,10 +637,12 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
         elif element.is_a("IfcProduct"):
             # NOTE: Non-types are not exposed in UI directly
             # but the code is still used when appending products by query.
-            self.import_product_from_ifc(element, context)
-            element_type = ifcopenshell.util.element.get_type(element)
-            if element_type is not None and tool.Ifc.get_object(element_type) is None:
-                self.import_type_from_ifc(element_type, context)
+            elements = self.get_appended_elements(element)
+            self.import_product_from_ifc(elements, context)
+            for appended_element in elements:
+                element_type = ifcopenshell.util.element.get_type(appended_element)
+                if element_type is not None and tool.Ifc.get_object(element_type) is None:
+                    self.import_type_from_ifc(element_type, context)
         elif element.is_a("IfcMaterial"):
             self.import_material_from_ifc(element, context)
         elif element.is_a("IfcSurfaceStyle"):
@@ -676,17 +678,32 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
         ifc_importer.file = self.file
         ifc_importer.create_style(style)
 
-    def import_product_from_ifc(self, element: ifcopenshell.entity_instance, context: bpy.types.Context) -> None:
+    def get_appended_elements(self, element: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
+        """``element`` plus any parts brought in with it (e.g. the parts of an appended assembly)."""
+        elements = {element}
+        for part in ifcopenshell.util.element.get_decomposition(element):
+            if not part.is_a("IfcFeatureElement") or part.is_a("IfcSurfaceFeature"):
+                elements.add(part)
+        return elements
+
+    def import_product_from_ifc(
+        self,
+        elements: Union[ifcopenshell.entity_instance, set[ifcopenshell.entity_instance]],
+        context: bpy.types.Context,
+    ) -> None:
         self.file = tool.Ifc.get()
+        if isinstance(elements, ifcopenshell.entity_instance):
+            elements = {elements}
         logger = logging.getLogger("ImportIFC")
         ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = self.file
         ifc_importer.process_context_filter()
         ifc_importer.material_creator.load_existing_materials()
-        self.import_materials(element, ifc_importer)
-        self.import_styles(element, ifc_importer)
-        ifc_importer.create_generic_elements({element})
+        for element in elements:
+            self.import_materials(element, ifc_importer)
+            self.import_styles(element, ifc_importer)
+        ifc_importer.create_generic_elements(elements)
         ifc_importer.place_objects_in_collections()
 
     def import_type_from_ifc(self, element: ifcopenshell.entity_instance, context: bpy.types.Context) -> None:
@@ -2777,10 +2794,12 @@ class AppendInspectedLinkedElement(AppendLibraryElement):
             library=linked_ifc_file,
             element=element_to_append,
         )
-        self.import_product_from_ifc(element, context)
-        element_type = ifcopenshell.util.element.get_type(element)
-        if element_type and tool.Ifc.get_object(element_type) is None:
-            self.import_type_from_ifc(element_type, context)
+        elements = self.get_appended_elements(element)
+        self.import_product_from_ifc(elements, context)
+        for appended_element in elements:
+            element_type = ifcopenshell.util.element.get_type(appended_element)
+            if element_type and tool.Ifc.get_object(element_type) is None:
+                self.import_type_from_ifc(element_type, context)
 
         return {"FINISHED"}
 
