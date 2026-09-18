@@ -33,6 +33,7 @@ import ifcopenshell.util.shape_builder
 import numpy as np
 from ifcopenshell.util.shape_builder import ShapeBuilder, V
 
+import bonsai.core.root
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.tool.model import Model as subject
@@ -158,7 +159,15 @@ class TestStairCalculatedParams(NewFile):
 
     def test_run(self):
         bpy.ops.bim.create_project()
-        bpy.ops.mesh.add_stair()
+
+        obj = bpy.data.objects.new("StairFlight", bpy.data.meshes.new("IfcStairFlight"))
+        bonsai.core.root.assign_class(
+            tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcStairFlight", should_add_representation=False
+        )
+        bpy.context.view_layer.objects.active = obj
+        tool.Blender.select_object(obj)
+        bpy.ops.bim.add_stair()
+
         pset_data_base = {
             "number_of_treads": 3,
             "height": 1.0,

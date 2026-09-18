@@ -33,7 +33,6 @@ import ifcopenshell.util.unit
 from mathutils import Matrix, Vector
 
 import bonsai.core.geometry as core
-import bonsai.core.root
 import bonsai.tool as tool
 from bonsai.bim.module.drawing import gizmos as gizmo
 from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig
@@ -486,46 +485,6 @@ def update_door_modifier_bmesh(context: bpy.types.Context) -> None:
         bm.to_mesh(obj.data)
         bm.free()
     obj.data.update()
-
-
-class BIM_OT_add_door(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "mesh.add_door"
-    bl_label = "Add Door"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context: bpy.types.Context) -> bool:
-        return tool.Ifc.get() and context.mode == "OBJECT"
-
-    def _execute(self, context: bpy.types.Context) -> set[str]:
-        ifc_file = tool.Ifc.get()
-        if not ifc_file:
-            self.report({"ERROR"}, "You need to start IFC project first to create a door.")
-            return {"CANCELLED"}
-
-        if context.active_object is not None:
-            spawn_location = context.active_object.location.copy()
-            context.active_object.select_set(False)
-        else:
-            spawn_location = bpy.context.scene.cursor.location.copy()
-
-        mesh = bpy.data.meshes.new("IfcDoor")
-        obj = bpy.data.objects.new("IfcDoor", mesh)
-        obj.location = spawn_location
-
-        element = bonsai.core.root.assign_class(
-            tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcDoor", should_add_representation=False
-        )
-        core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
-        if tool.Ifc.get_schema() != "IFC2X3":
-            element.PredefinedType = "DOOR"
-
-        bpy.ops.object.select_all(action="DESELECT")
-        bpy.context.view_layer.objects.active = None
-        bpy.context.view_layer.objects.active = obj
-        tool.Blender.select_object(obj)
-        bpy.ops.bim.add_door()
-        return {"FINISHED"}
 
 
 # UI operators
