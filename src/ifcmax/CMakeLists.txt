@@ -35,7 +35,6 @@ if(HAS_MAX)
         message(STATUS "Building IFCMax library for Autodesk 3ds Max SDK ${max_year}")
 
         include_directories(
-            ${INCLUDE_DIRECTORIES}
             ${OPENCOLLADA_INCLUDE_DIRS}
             ${ICU_INCLUDE_DIR}
             ${Boost_INCLUDE_DIRS}
@@ -48,7 +47,6 @@ if(HAS_MAX)
             ${IfcOpenShell_BINARY_DIR}
             ${OPENCOLLADA_LIBRARY_DIR}
             ${ICU_LIBRARY_DIR}
-            ${Boost_LIBRARY_DIRS}
             ${max_sdk}/lib/x64/Release
         )
 
@@ -58,6 +56,7 @@ if(HAS_MAX)
         target_link_libraries(
             IfcMax_${max_year}
             ${IFCOPENSHELL_LIBRARIES}
+            ${Boost_LIBRARIES}
             bmm.lib
             Comctl32.lib
             core.lib

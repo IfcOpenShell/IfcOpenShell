@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 from typing import Union
+
 import numpy as np
 
 import ifcopenshell
@@ -24,8 +25,6 @@ import ifcopenshell.api.alignment
 import ifcopenshell.geom
 from ifcopenshell import entity_instance
 from ifcopenshell.api.alignment._get_segment_endpoint import _get_segment_endpoint
-from ifcopenshell.api.alignment._update_zero_length_segment_placement import _update_zero_length_segment_placement
-
 from ifcopenshell.api.alignment._map_alignment_cant_segment import (
     _map_alignment_cant_segment,
 )
@@ -38,6 +37,7 @@ from ifcopenshell.api.alignment._map_alignment_vertical_segment import (
 from ifcopenshell.api.alignment._update_curve_segment_transition_code import (
     _update_curve_segment_transition_code,
 )
+from ifcopenshell.api.alignment._update_zero_length_segment_placement import _update_zero_length_segment_placement
 
 
 def _add_curve_segment_to_composite_curve(

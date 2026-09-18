@@ -20,14 +20,14 @@ import math
 
 import ifcopenshell
 import ifcopenshell.api.alignment
-from ifcopenshell.api.alignment._get_segment_endpoint import _get_segment_endpoint
-from ifcopenshell.api.alignment._update_zero_length_segment_placement import _update_zero_length_segment_placement
 import ifcopenshell.api.nest
 import ifcopenshell.util.unit
 from ifcopenshell import entity_instance
+from ifcopenshell.api.alignment._get_segment_endpoint import _get_segment_endpoint
 from ifcopenshell.api.alignment._update_curve_segment_transition_code import (
     _update_curve_segment_transition_code,
 )
+from ifcopenshell.api.alignment._update_zero_length_segment_placement import _update_zero_length_segment_placement
 
 
 def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance) -> bool:

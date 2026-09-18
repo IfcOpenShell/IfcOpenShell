@@ -90,6 +90,12 @@ def run(f: ifcopenshell.file, logger: Logger) -> None:
     orig = ifcopenshell.settings.unpack_non_aggregate_inverses
     ifcopenshell.settings.unpack_non_aggregate_inverses = True
 
+    # Rules are transpiled with EXPRESS `=` emitted as Python `==`, so `==` has
+    # to mean value comparison for the duration. See the @todo on
+    # rule_compiler.process_rel_op.
+    orig_compare = ifcopenshell.settings.compare_instances_by_value
+    ifcopenshell.settings.compare_instances_by_value = True
+
     fn = os.path.join(os.path.dirname(__file__), "rules", f"{f.schema_identifier}.py")
     try:
         source = open(fn, "r").read()
@@ -272,6 +278,7 @@ def run(f: ifcopenshell.file, logger: Logger) -> None:
                 )
 
     ifcopenshell.settings.unpack_non_aggregate_inverses = orig
+    ifcopenshell.settings.compare_instances_by_value = orig_compare
 
 
 if __name__ == "__main__":

@@ -58,20 +58,19 @@
 #include <BRepAdaptor_HCompCurve.hxx>
 #endif
 
-#include "OpenCascadeKernel.h"
+#include "opencascade_kernel.h"
 #include "face_definition.h"
 #include "wire_utils.h"
 #include "base_utils.h"
 
-using namespace ifcopenshell::geometry;
-using namespace ifcopenshell::geometry::kernels;
-using namespace IfcGeom;
-using namespace IfcGeom::util;
+using namespace ifcopenshell::geom;
+using namespace ifcopenshell::geom::kernels;
+using namespace ifcopenshell::geom::util;
 
 
 namespace {
 	struct surface_creation_visitor {
-		OpenCascadeKernel* kernel;
+		open_cascade_kernel* kernel;
 		Handle(Geom_Surface) result;
 
 		Handle(Geom_Surface) operator()(const taxonomy::bspline_surface::ptr& bs) {
@@ -122,34 +121,34 @@ namespace {
 		Handle(Geom_Surface) operator()(const taxonomy::plane::ptr& p) {
 			const auto& m = p->matrix->ccomponents();
 			return result = Handle(Geom_Surface)(new Geom_Plane(
-				OpenCascadeKernel::convert_xyz2<gp_Pnt>(m.col(3)),
-				OpenCascadeKernel::convert_xyz2<gp_Dir>(m.col(2))));
+				open_cascade_kernel::convert_xyz2<gp_Pnt>(m.col(3)),
+				open_cascade_kernel::convert_xyz2<gp_Dir>(m.col(2))));
 		}
 
 		Handle(Geom_Surface) operator()(const taxonomy::cylinder::ptr& c) {
 			const auto& m = c->matrix->ccomponents();
 			return result = Handle(Geom_Surface)(new Geom_CylindricalSurface(gp_Ax3(
-				OpenCascadeKernel::convert_xyz2<gp_Pnt>(m.col(3)),
-				OpenCascadeKernel::convert_xyz2<gp_Dir>(m.col(2)),
-				OpenCascadeKernel::convert_xyz2<gp_Dir>(m.col(0))
+				open_cascade_kernel::convert_xyz2<gp_Pnt>(m.col(3)),
+				open_cascade_kernel::convert_xyz2<gp_Dir>(m.col(2)),
+				open_cascade_kernel::convert_xyz2<gp_Dir>(m.col(0))
 			), c->radius));
 		}
 
 		Handle(Geom_Surface) operator()(const taxonomy::sphere::ptr& s) {
 			const auto& m = s->matrix->ccomponents();
 			return result = Handle(Geom_Surface)(new Geom_SphericalSurface(gp_Ax3(
-				OpenCascadeKernel::convert_xyz2<gp_Pnt>(m.col(3)),
-				OpenCascadeKernel::convert_xyz2<gp_Dir>(m.col(2)),
-				OpenCascadeKernel::convert_xyz2<gp_Dir>(m.col(0))
+				open_cascade_kernel::convert_xyz2<gp_Pnt>(m.col(3)),
+				open_cascade_kernel::convert_xyz2<gp_Dir>(m.col(2)),
+				open_cascade_kernel::convert_xyz2<gp_Dir>(m.col(0))
 			), s->radius));
 		}
 
 		Handle(Geom_Surface) operator()(const taxonomy::torus::ptr& t) {
 			const auto& m = t->matrix->ccomponents();
 			return result = Handle(Geom_Surface)(new Geom_ToroidalSurface(gp_Ax3(
-				OpenCascadeKernel::convert_xyz2<gp_Pnt>(m.col(3)),
-				OpenCascadeKernel::convert_xyz2<gp_Dir>(m.col(2)),
-				OpenCascadeKernel::convert_xyz2<gp_Dir>(m.col(0))
+				open_cascade_kernel::convert_xyz2<gp_Pnt>(m.col(3)),
+				open_cascade_kernel::convert_xyz2<gp_Dir>(m.col(2)),
+				open_cascade_kernel::convert_xyz2<gp_Dir>(m.col(0))
 			), t->radius1, t->radius2));
 		}
 
@@ -157,8 +156,8 @@ namespace {
 			// It's a bit more convenient to use high level BRepPrimAPI calls that operate on
 			// topology. On a single edge that will create a Geom_TrimmedCurve for us.
 			auto crv_or_wire = kernel->convert_curve(i);
-			if (crv_or_wire.which() == 2) {
-				const auto& w = boost::get<TopoDS_Wire>(crv_or_wire);
+			if (crv_or_wire.index() == 2) {
+				const auto& w = std::get<TopoDS_Wire>(crv_or_wire);
 				return w;
 			} else {
 				throw std::runtime_error("Unexpected curve evaluation");
@@ -168,15 +167,15 @@ namespace {
 		Handle(Geom_Curve) get_curve(const taxonomy::item::ptr& i) {
 			// @todo unify with trimmed curve handling
 			auto crv_or_wire = kernel->convert_curve(i);
-			if (crv_or_wire.which() == 0) {
+			if (crv_or_wire.index() == 0) {
 				throw std::runtime_error("Failed to obtain curve");
-			} else if (crv_or_wire.which() == 1) {
-				return boost::get<Handle(Geom_Curve)>(crv_or_wire);
-			} else if (crv_or_wire.which() == 2) {
+			} else if (crv_or_wire.index() == 1) {
+				return std::get<Handle(Geom_Curve)>(crv_or_wire);
+			} else if (crv_or_wire.index() == 2) {
 				// @todo
 				const double precision_ = 1.e-5;
-				Logger::Root().Warning("GEO", 156, "Approximating BasisCurve due to possible discontinuities", i->instance);
-				const auto& w = boost::get<TopoDS_Wire>(crv_or_wire);
+				ifcopenshell::logger::root().warning("GEO", 156, "Approximating BasisCurve due to possible discontinuities", i->instance);
+				const auto& w = std::get<TopoDS_Wire>(crv_or_wire);
 #if OCC_VERSION_HEX < 0x70600
 				BRepAdaptor_CompCurve cc(w, true);
 				Handle(Adaptor3d_HCurve) hcc = Handle(Adaptor3d_HCurve)(new BRepAdaptor_HCompCurve(cc));
@@ -187,6 +186,7 @@ namespace {
 				Approx_Curve3d approx(hcc, precision_, GeomAbs_C0, 10, 10);
 				return approx.Curve();
 			}
+			throw std::runtime_error("Unexpected curve evaluation");
 		}
 
 		Handle(Geom_Surface) operator()(const taxonomy::extrusion::ptr& e) {
@@ -204,7 +204,7 @@ namespace {
 
 			result = Handle(Geom_Surface)(new Geom_SurfaceOfLinearExtrusion(
 				crv,
-				OpenCascadeKernel::convert_xyz<gp_Dir>(*e->direction)
+				open_cascade_kernel::convert_xyz<gp_Dir>(*e->direction)
 			));
 
 			result->Transform(tr);
@@ -214,8 +214,8 @@ namespace {
 
 		Handle(Geom_Surface) operator()(const taxonomy::revolve::ptr& e) {
 			gp_Ax1 ax(
-				OpenCascadeKernel::convert_xyz<gp_Pnt>(*e->axis_origin),
-				OpenCascadeKernel::convert_xyz<gp_Dir>(*e->direction));
+				open_cascade_kernel::convert_xyz<gp_Pnt>(*e->axis_origin),
+				open_cascade_kernel::convert_xyz<gp_Dir>(*e->direction));
 
 			gp_Trsf tr;
 			if (e->matrix && !e->matrix->is_identity()) {
@@ -247,7 +247,7 @@ namespace {
 
 			auto crv = get_curve(e->basis);
 			result = Handle(Geom_Surface)(new Geom_SurfaceOfRevolution(
-				crv, ax	
+				crv, ax
 			));
 
 			result->Transform(tr);
@@ -257,8 +257,8 @@ namespace {
 	};
 }
 
-Handle(Geom_Surface) OpenCascadeKernel::convert_surface(const taxonomy::ptr surface) {
-	surface_creation_visitor v{ this };
+Handle(Geom_Surface) open_cascade_kernel::convert_surface(const taxonomy::ptr surface) {
+	surface_creation_visitor v{ this, {} };
 	if (dispatch_surface_creation<surface_creation_visitor, 0>::dispatch(surface, v)) {
 		return v.result;
 	} else {
@@ -266,7 +266,7 @@ Handle(Geom_Surface) OpenCascadeKernel::convert_surface(const taxonomy::ptr surf
 	}
 }
 
-bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& result, bool reversed_surface) {
+bool open_cascade_kernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& result, bool reversed_surface) {
 #ifdef IFOPSH_DEBUG
 	std::ostringstream oss;
 	face->print(oss);
@@ -282,10 +282,10 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 	}
 
 	const size_t num_bounds = face->children.size();
-	int num_outer_bounds = 0;
+	std::size_t num_outer_bounds = 0;
 
 	for (auto& bound : face->children) {
-		if (bound->external.get_value_or(false)) {
+		if (bound->external.value_or(false)) {
 			num_outer_bounds++;
 		}
 	}
@@ -295,12 +295,12 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 	// the face will still be processed as long as there are no holes. A compound of faces
 	// is returned in that case.
 	if (num_bounds > 1 && num_outer_bounds > 1 && num_bounds != num_outer_bounds) {
-		Logger::Root().Message(Logger::LOG_ERROR, "GEO", 157, "Invalid configuration of boundaries for:", face->instance);
+		ifcopenshell::logger::root().message(ifcopenshell::logger::LOG_ERROR, "GEO", 157, "Invalid configuration of boundaries for:", face->instance);
 		return false;
 	}
 
 	if (num_outer_bounds > 1) {
-		Logger::Root().Message(Logger::LOG_WARNING, "GEO", 158, "Multiple outer boundaries for:", face->instance);
+		ifcopenshell::logger::root().message(ifcopenshell::logger::LOG_WARNING, "GEO", 158, "Multiple outer boundaries for:", face->instance);
 		fd.all_outer() = true;
 	}
 
@@ -311,7 +311,7 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 			bool same_sense = true; /* todo bound->Orientation(); */
 
 			const bool is_interior =
-				!bound->external.get_value_or(false) &&
+				!bound->external.value_or(false) &&
 				(num_bounds > 1) &&
 				(num_outer_bounds < num_bounds);
 
@@ -321,11 +321,11 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 			TopoDS_Wire wire;
 			if (faceset_helper_ && bound->is_polyhedron()) {
 				if (!faceset_helper_->wire(bound, wire)) {
-					Logger::Root().Message(Logger::LOG_WARNING, "GEO", 159, "Face boundary loop not included", bound->instance);
+					ifcopenshell::logger::root().message(ifcopenshell::logger::LOG_WARNING, "GEO", 159, "Face boundary loop not included", bound->instance);
 					continue;
 				}
 			} else if (!convert(bound, wire)) {
-				Logger::Root().Message(Logger::LOG_ERROR, "GEO", 160, "Failed to process face boundary loop", bound->instance);
+				ifcopenshell::logger::root().message(ifcopenshell::logger::LOG_ERROR, "GEO", 160, "Failed to process face boundary loop", bound->instance);
 				return false;
 			}
 
@@ -342,7 +342,7 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 			};
 			NCollection_List<TopoDS_Shape> results;
 			if (settings.use_wire_intersection_check && util::wire_intersections(wire, results, settings)) {
-				Logger::Root().Warning("GEO", 161, "Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
+				ifcopenshell::logger::root().warning("GEO", 161, "Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
 				util::select_largest(results, wire);
 			}
 
@@ -353,7 +353,7 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 	}
 
 	if (fd.wires().empty()) {
-		Logger::Root().Warning("GEO", 162, "Face with no boundaries", face->instance);
+		ifcopenshell::logger::root().warning("GEO", 162, "Face with no boundaries", face->instance);
 		return false;
 	}
 
@@ -371,7 +371,7 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 			for (size_t j = 0; j < i && !reported; ++j) {
 				BRepExtrema_DistShapeShape dss(fwires[i], fwires[j]);
 				if (dss.IsDone() && dss.Value() < precision_) {
-					logger().Warning("GEO", 402, "Face inner boundary intersects another face boundary", face->instance);
+					logger().warning("GEO", 402, "Face inner boundary intersects another face boundary", face->instance);
 					reported = true;
 				}
 			}
@@ -431,7 +431,7 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 
 	if (fd.surface().IsNull()) {
 		// The set of wires is triangulated in case no surface can be found
-		Logger::Root().Message(Logger::LOG_WARNING, "GEO", 163, "Triangulating face boundaries for face", face->instance);
+		ifcopenshell::logger::root().message(ifcopenshell::logger::LOG_WARNING, "GEO", 163, "Triangulating face boundaries for face", face->instance);
 
 		if (fd.all_outer()) {
 			for (const auto& w : fd.wires()) {
@@ -484,7 +484,7 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 						kt.Value().Original().ToUTF8CString(c);
 						std::string message = c;
 						delete[] c;
-						Logger::Root().Warning("GEO", 164, message, face->instance);
+						ifcopenshell::logger::root().warning("GEO", 164, message, face->instance);
 					}
 				}
 
@@ -496,17 +496,17 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 						if (it.Value().ShapeType() == TopAbs_FACE) {
 							face_list.Append(it.Value());
 						} else {
-							Logger::Root().Error("UNS", 7, "Unsupported output from face healing");
+							ifcopenshell::logger::root().error("UNS", 7, "Unsupported output from face healing");
 						}
 					}
 				} else {
-					Logger::Root().Error("UNS", 8, "Unsupported output from face healing");
+					ifcopenshell::logger::root().error("UNS", 8, "Unsupported output from face healing");
 				}
 			} else {
 				face_list.Append(f);
 			}
 		} else {
-			Logger::Root().Error("GEO", 165, "Internal error in face creation");
+			ifcopenshell::logger::root().error("GEO", 165, "Internal error in face creation");
 			return false;
 		}
 	} else {
@@ -547,14 +547,14 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 						delete[] c;
 #if OCC_VERSION_MAJOR==7 && OCC_VERSION_MINOR >= 7
 						if (!reversed_surface && !fd.surface().IsNull() && fd.surface()->IsUPeriodic() && message == "Unknown message invoked with the keyword FixAdvFace.FixOrientation.MSG0") {
-							Logger::Root().Notice("GEO", 166, "Detected reversed wire, reattempting with reversed basis surface");
+							ifcopenshell::logger::root().notice("GEO", 166, "Detected reversed wire, reattempting with reversed basis surface");
 							TopoDS_Face reversed_result;
 							convert(face, reversed_result, true);
 							result = reversed_result;
 							return true;
 						} else
 #endif
-							Logger::Root().Warning("GEO", 167, message, face->instance);
+							ifcopenshell::logger::root().warning("GEO", 167, message, face->instance);
 					}
 				}
 			}
@@ -625,16 +625,16 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 	return true;
 }
 
-bool OpenCascadeKernel::convert_impl(const taxonomy::face::ptr face, IfcGeom::ConversionResults& results) {
+bool open_cascade_kernel::convert_impl(const taxonomy::face::ptr face, std::vector<ifcopenshell::geom::conversion_result>& results) {
     return handle_occt_exception([&]() -> bool {
 
 	TopoDS_Shape shape;
 	if (!convert(face, shape)) {
 		return false;
 	}
-	results.emplace_back(ConversionResult(
-		face->instance->as<IfcUtil::IfcBaseEntity>()->id(),
-		new OpenCascadeShape(shape),
+	results.emplace_back(conversion_result(
+		face->instance.id(),
+		new open_cascade_shape(shape),
 		face->surface_style
 	));
 	return true;

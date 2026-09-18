@@ -3,7 +3,7 @@ Introduction
 
 **IfcOpenShell** is an open source software library for software developers and BIM powerusers working with Industry Foundation Classes (`IFC <https://technical.buildingsmart.org/standards/ifc/>`_).
 
-In addition to a C++ and Python API, **IfcOpenShell** comes with an ecosystem of tools, notably including **IfcConvert** (an application to convert IFC models to other formats), **Bonsai** (an add-on to Blender providing a graphical IFC authoring platform), and many other libraries, CLI apps, and more. Support is also provided for auxiliary standards such as BCF, bSDD, and IDS.
+In addition to a C++ and Python API, **IfcOpenShell** comes with an ecosystem of tools, notably including **IfcConvert** (an application to convert IFC models to other formats), **Bonsai** (an add-on to Blender providing a graphical IFC authoring platform and viewer), and many other libraries, CLI apps, and more. Support is also provided for auxiliary standards such as BCF, bSDD, and IDS.
 
 Things you can do
 -----------------
@@ -38,7 +38,7 @@ IfcOpenShell has a huge amount of unique features and capabilities not found in 
 - All tools can be used either as a developer library, through a command line interface, or using a rich graphical interface. Whether you're deploying headless server tools for your own pipeline, writing your own apps, or an end-user, there's something for you.
 - Supports IFC2X3, IFC4, and IFC4.3. Custom schemas (such as experimental or draft schemas) may be loaded at run-time instead of having to recompile.
 - Built-in IFC validation is possible from basic syntax validation to more detailed "Where Rule" checks. This is the same validation that powers the official buildingSMART validation engine.
-- Read and write IFC-SPF, IFCJSON, IFCXML, IFCHDF5, MySQL, and SQLite.
+- Read and write IFC-SPF, IFCJSON, IFCXML, MySQL, and SQLite.
 - High level API for hundreds of tasks. Perform complex authoring like copying objects, cost calculation, or 4D simulation with one line of code. Imagine a complete native IFC authoring and editing platform where every function is available to you as a library.
 - Convert parametric geometry into explicit geometry for any CAD system from booleans to complex sweeps. Geometry has been battle-tested over many years to accommodate complex geometric edge cases with an extensive test suite.
 - Geometry may be converted into voxels and analysed through voxels to resolve complex non-manifold geometry and precision issues. This analysis may be used from things like head height calculations, formwork analysis, to egress distances.
@@ -58,6 +58,9 @@ IfcOpenShell is a modular ecosystem of tools that work together, where each tool
     "`IfcOpenShell-Python <https://docs.ifcopenshell.org/ifcopenshell-python.html>`_", "Python bindings to the core IfcOpenShell C++ system, as well as high level analysis and authoring functions."
     "`IfcConvert <https://docs.ifcopenshell.org/ifcconvert.html>`_", "A command-line application for converting IFC geometry into file formats such as OBJ, DAE, GLB, STP, IGS, XML, SVG, H5, and IFC itself."
     "`Bonsai <https://docs.ifcopenshell.org/bonsai.html>`_", "A graphical add-on for Blender that lets you analyse, author, and modify IFC with Blender. Graphically create BIM models from scratch!"
+    "`Bonsai Viewer <https://docs.ifcopenshell.org/bonsai-viewer.html>`_", "A high performance viewing and coordination tool for opening and inspecting IFC models."
+    "`IfcViewer <https://docs.ifcopenshell.org/ifcviewer.html>`_", "A WebGPU-based desktop IFC viewer and shared viewer core used by the standalone viewer targets."
+    "IfcViewerWeb", "A WebAssembly and WebGPU viewer target for viewing IFC models in a web browser."
     "`BCF <https://docs.ifcopenshell.org/bcf.html>`_", "BIM Collaboration Format (BCF) is a standard to manage and exchange coordination topics between disciplines collaborating on a project by changing XML files or querying an API."
     "`BIMServer-Plugin <https://docs.ifcopenshell.org/bimserver-plugin.html>`_", "A plugin to the open source BIMServer CDE to allow you to use IfcOpenShell to parse, view, and audit models."
     "`BIMTester <https://docs.ifcopenshell.org/bimtester.html>`_", "A utility that allows you to write Gherkin-based tests for models."
@@ -81,7 +84,9 @@ IfcOpenShell is a modular ecosystem of tools that work together, where each tool
 
 .. note::
 
-    **IfcOpenShell** and all of its libraries are licensed under LGPL-3.0-or-later. Two exceptions to this are **Bonsai** and **IfcSverchok**, which are both licensed under GPL-3.0-or-later.
+    **IfcOpenShell** and its libraries and viewer targets are licensed under
+    LGPL-3.0-or-later. Exceptions include **Bonsai**, **Bonsai Viewer**, and
+    **IfcSverchok**, which are licensed under GPL-3.0-or-later.
 
 .. toctree::
    :hidden:

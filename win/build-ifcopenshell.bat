@@ -20,6 +20,9 @@
 :: This batch file expects CMake generator as %1 and build configuration type as %2. If not provided,
 :: a deduced generator will be used for %1 and BUILD_CFG_DEFAULT for %2 (both set in vs-cfg.cmd)
 :: Possible extra parameters are passed for the MSBuild call.
+::
+:: Example usage:
+::   build-ifcopenshell.bat vs2022-x64 Debug
 
 @if not defined ECHO_ON ( echo off )
 set PROJECT_NAME=IfcOpenShell
@@ -37,7 +40,7 @@ for /f "tokens=*" %%f in ('dir BuildDepsCache-*.txt /o:-n /t:a /b') do (
 set GENERATOR=%1
 if (%1)==() (
     if not defined GEN_SHORTHAND (
-        echo BuildDepsCache file does and/or GEN_SHORTHAND missing from it. Run build-deps.cmd to create it.
+        echo BuildDepsCache file does and/or GEN_SHORTHAND missing from it. Run build-deps.py to create it.
         set IFCOS_PAUSE_ON_ERROR=pause
         goto :Error
     )
@@ -55,8 +58,14 @@ if not defined IFCOS_NUM_BUILD_PROCS set IFCOS_NUM_BUILD_PROCS=%NUMBER_OF_PROCES
 call cecho.cmd 0 13 "* IFCOS_NUM_BUILD_PROCS`t= %IFCOS_NUM_BUILD_PROCS%"
 echo.
 
+call cecho.cmd 0 12 "WARNING: build-ifcopenshell.bat is deprecated since 11 Sep 2026 and will be removed very shortly."
+call cecho.cmd 0 12 "Use `python build-ifcopenshell.py` instead. It's intended to be a drop-in replacement, so exactly the same args apply,"
+call cecho.cmd 0 12 "except MSBuild args now need to be passed after `"--`", e.g. `python build-ifcopenshell.py vs2022-x64 -- /p:Foo=bar`."
+echo.
+
 call cecho.cmd 0 13 "Building %VS_PLATFORM% %BUILD_CFG% %PROJECT_NAME%"
-cmake --build ..\%BUILD_DIR% -- /nologo /m:%IFCOS_NUM_BUILD_PROCS% /p:Platform=%VS_PLATFORM% /p:Configuration=%BUILD_CFG% ^
+set MSBUILD_MULTIPROC=/m /p:CL_MPCount=%IFCOS_NUM_BUILD_PROCS% /p:UseMultiToolTask=true /p:EnforceProcessCountAcrossBuilds=true
+cmake --build ..\%BUILD_DIR% -- /nologo %MSBUILD_MULTIPROC% /p:Platform=%VS_PLATFORM% /p:Configuration=%BUILD_CFG% ^
     %3 %4 %5 %6 %7 %8 %9
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 

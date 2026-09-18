@@ -1,9 +1,12 @@
 import ifcopenshell
+import ifcopenshell.util.schema
+
+from ...fixture_generate import normalize_header, pass_if, write_fixture
 
 depth = 1.0
 for dir_x, dir_z in ((0.0, -1.0), (0.0, 0.0), (1.0, 0.0), (1.0, 0.001), (0.0, 1.0)):
 
-    schemas = ["IFC2X3"]
+    schemas: list[ifcopenshell.util.schema.IFC_SCHEMA] = ["IFC2X3"]
     if (dir_x, dir_z) == (0.0, 0.0):
         schemas.append("IFC4")
 
@@ -26,4 +29,5 @@ for dir_x, dir_z in ((0.0, -1.0), (0.0, 0.0), (1.0, 0.0), (1.0, 0.001), (0.0, 1.
         if f.schema == "IFC2X3" and (dir_x, dir_z) == (0.0, 0.0):
             valid = True
 
-        f.write(f"{'pass' if valid else 'fail'}-extrusion-dir-{dir_x}-{dir_z}-{f.schema.lower()}.ifc")
+        normalize_header(f)
+        write_fixture(f, __file__, pass_if(valid), f"extrusion-dir-{dir_x}-{dir_z}-{f.schema.lower()}")

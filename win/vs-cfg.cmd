@@ -32,14 +32,11 @@
 ::   "vs2013-x86"         => cmake -G "Visual Studio 12 2013" -A Win32
 ::   "vs2015-x64"         => cmake -G "Visual Studio 14 2015" -A x64
 ::   "vs2017-ARM64"       => cmake -G "Visual Studio 15 2017" -A ARM64
-::   "vs2019-x86-v141_xp" => cmake -G "Visual Studio 16 2019" -A Win32 -T v141_xp
+::   "vs2019-x86-v141"    => cmake -G "Visual Studio 16 2019" -A Win32 -T v141
 ::
 :: NOTE: The delayed environment variable expansion needs to be enabled before calling this.
 ::
-:: Output variables:
-:: - VC_VER - e.g. "14.5"
-:: - VS_VER - e.g. "2026"
-:: - BOOST_BOOTSTRAP_VER - e.g. "vc145"
+:: See CMake3AndNewer for script output variables.
 
 @if not defined ECHO_ON ( echo off )
 
@@ -73,12 +70,11 @@ echo(!GEN_SHORTHAND! | findstr /c:"-ARM"     >nul && ( set "VS_PLATFORM=ARM" )
 echo(!GEN_SHORTHAND! | findstr /c:"-ARM64"   >nul && ( set "VS_PLATFORM=ARM64" )
 
 echo(!GEN_SHORTHAND! | findstr /c:"-v120"    >nul && ( set "VS_TOOLSET=v120" )    && ( set "BOOST_TOOLSET=12.0" )
-echo(!GEN_SHORTHAND! | findstr /c:"-v120_xp" >nul && ( set "VS_TOOLSET=v120_xp" ) && ( set "BOOST_TOOLSET=12.0" )
 echo(!GEN_SHORTHAND! | findstr /c:"-v140"    >nul && ( set "VS_TOOLSET=v140" )    && ( set "BOOST_TOOLSET=14.0" )
-echo(!GEN_SHORTHAND! | findstr /c:"-v140_xp" >nul && ( set "VS_TOOLSET=v140_xp" ) && ( set "BOOST_TOOLSET=14.0" )
 echo(!GEN_SHORTHAND! | findstr /c:"-v141"    >nul && ( set "VS_TOOLSET=v141" )    && ( set "BOOST_TOOLSET=14.1" )
-echo(!GEN_SHORTHAND! | findstr /c:"-v141_xp" >nul && ( set "VS_TOOLSET=v141_xp" ) && ( set "BOOST_TOOLSET=14.1" )
 echo(!GEN_SHORTHAND! | findstr /c:"-v142"    >nul && ( set "VS_TOOLSET=v142" )    && ( set "BOOST_TOOLSET=14.2" )
+echo(!GEN_SHORTHAND! | findstr /c:"-v143"    >nul && ( set "VS_TOOLSET=v143" )    && ( set "BOOST_TOOLSET=14.3" )
+echo(!GEN_SHORTHAND! | findstr /c:"-v145"    >nul && ( set "VS_TOOLSET=v145" )    && ( set "BOOST_TOOLSET=14.5" )
 
 SET VS_VER=%GEN_SHORTHAND:~0,4%
 
@@ -92,16 +88,10 @@ echo(!GENERATOR! | findstr /c:"vs20" >nul && (
 )
 :GeneratorShorthandCheckDone
 
-:: Deduce desired architecture from the location of cl.exe
-:: TODO harmless "INFO: Could not find files for the given pattern(s)." spam if cl.exe not in path
-:: Look for path with either "amd64" or "x64" (VS 2017 and newer)
-where cl.exe | findstr "amd64 x64" >nul
-set START=%ERRORLEVEL%
-
 :: NOTE add space before VC_VER so that e.g. "12" doesn't match with "2012"
 IF "!GENERATOR!"=="" IF NOT "%VisualStudioVersion%"=="" (
     set VC_VER=%VisualStudioVersion:.0=%
-    FOR /L %%i in (%START%,1,%LAST_GENERATOR_IDX%) DO (
+    FOR /L %%i in (1,1,%LAST_GENERATOR_IDX%) DO (
         echo(!GENERATORS[%%i]! | findstr /c:" !VC_VER!" >nul && (
             set GENERATOR=!GENERATORS[%%i]!
             call utils\cecho.cmd black cyan "Generator not passed, but VisualStudioVersion=%VisualStudioVersion% environment variable detected:"
@@ -116,8 +106,7 @@ IF "!GENERATOR!"=="" IF NOT "%VisualStudioVersion%"=="" (
 )
 
 :: Check that the used CMake version supports the chosen generator
-set GENERATOR_CHECK=%GENERATOR: Win64=%
-cmake --help | findstr /c:%GENERATOR_CHECK% >nul
+cmake --help | findstr /c:%GENERATOR% >nul
 if not %ERRORLEVEL%==0 (
 call utils\cecho.cmd 0 12 "%~nx0: The used CMake version does not support generator '`"!GENERATOR!`'"- cannot proceed."
 exit /b 1
@@ -152,10 +141,6 @@ FOR %%i IN (%GENERATOR_SPLIT%) DO (
     IF !LEN!==1 set VC_VER=%%i
     IF !LEN!==2 set VC_VER=%%i
     IF !LEN!==4 set VS_VER=%%i
-    :: Are going to perform a 64-bit build?
-    IF %%i==Win64 (
-        set VS_PLATFORM=x64
-    )
 )
 
 :PlatformDefined
@@ -172,44 +157,27 @@ IF %VS_VER%==2026 ( set "VC_VER=14.5" )
 set BOOST_BOOTSTRAP_VER=vc%VC_VER%
 set BOOST_BOOTSTRAP_VER=%BOOST_BOOTSTRAP_VER:.=%
 
-set VS_TOOLSET_HOST=
-
-:: determine the toolset and winapi for Boost b2
-:: optionally use 64bit toolset to work around memory errors when linking
+:: determine the toolset for Boost b2
 IF DEFINED VS_TOOLSET (
     set BOOST_TOOLSET=msvc-%BOOST_TOOLSET%
-    if "!VS_TOOLSET:~-3!"=="_xp" (
-        set BOOST_WIN_API=define=BOOST_USE_WINAPI_VERSION=0x0501
-    )
-    IF NOT "%VS_HOST%"=="" (
-        set VS_TOOLSET_HOST=%VS_TOOLSET%,host=%VS_HOST%
-    )
 ) ELSE (
     set BOOST_TOOLSET=msvc-%VC_VER%
-    set BOOST_WIN_API=
-    IF NOT "%VS_HOST%"=="" (
-        set VS_TOOLSET_HOST=host=%VS_HOST%
-    )
 )
 
 IF %VS_PLATFORM%==Win32 (
     set ARCH_BITS=32
-    set TARGET_ARCH=x86
 )
 
 IF %VS_PLATFORM%==x64 (
     set ARCH_BITS=64
-    set TARGET_ARCH=x64
 )
 
 IF %VS_PLATFORM%==ARM (
     set ARCH_BITS=32
-    set TARGET_ARCH=ARM
 )
 
 IF %VS_PLATFORM%==ARM64 (
     set ARCH_BITS=64
-    set TARGET_ARCH=ARM64
 )
 
 :: Check CMake version and convert possible new format (>= 3.0) generator names to the old versions if using older CMake for VS <= 2013,
@@ -220,23 +188,25 @@ IF NOT "%CMAKE_PATH%"=="" (
     FOR /f "delims=" %%i in ('cmake --version ^| findstr /C:"cmake version 4"') DO GOTO :CMake3AndNewer
 )
 
-:: reject older CMake, see also build-deps.cmd
-echo "CMake v3.11.4 or higher is required"
+:: reject older CMake, see also build-deps.py
+echo "CMake v3.21.0 or higher is required"
 exit /b 1
 
 :CMake3AndNewer
 
+    :: Script output variables.
     :: check variables for debugging
      echo GENERATOR:           [!GENERATOR!]
+    ::VS_VER - e.g. "2026"
      echo VS_VER:              [!VS_VER!]
      echo VS_PLATFORM:         [!VS_PLATFORM!]
      echo VS_TOOLSET:          [!VS_TOOLSET!]
+    ::VC_VER - e.g. "14.5"
      echo VC_VER:              [!VC_VER!]
      echo ARCH_BITS:           [!ARCH_BITS!]
-     echo TARGET_ARCH:         [!TARGET_ARCH!]
+    ::BOOST_BOOTSTRAP_VER - e.g. "vc145"
      echo BOOST_BOOTSTRAP_VER: [!BOOST_BOOTSTRAP_VER!]
      echo BOOST_TOOLSET:       [!BOOST_TOOLSET!]
-     echo BOOST_WIN_API:       [!BOOST_WIN_API!]
 
 IF DEFINED VS_TOOLSET (
     set GEN_SHORTHAND=vs%VS_VER%-%VS_PLATFORM%-%VS_TOOLSET%
@@ -244,21 +214,18 @@ IF DEFINED VS_TOOLSET (
     set GEN_SHORTHAND=vs%VS_VER%-%VS_PLATFORM%
 )
 
-:: VS project file extension is different on older VS versions
-set VCPROJ_FILE_EXT=vcxproj
-
 :: Add utils to PATH
 set ORIGINAL_PATH=%PATH%
 set PATH=%~dp0utils;%PATH%
 
 :: Fetch and build the dependencies to a dedicated directory depending on the used VS version and target architecture.
 :: NOTE For IfcOpenShell we can build all of our deps both x86 and x64 using different VS versions in the same directories
-:: so no need for -%VS_VER%-%TARGET_ARCH% postfix.
-:: set DEPS_DIR=%CD%\deps-%VS_VER%-%TARGET_ARCH%
+:: so no need for -%VS_VER%-%VS_PLATFORM% postfix.
+:: set DEPS_DIR=%CD%\deps-%VS_VER%-%VS_PLATFORM%
 pushd ..
 set DEPS_DIR=%CD%\_deps
 set INSTALL_DIR=%CD%\_deps-%GEN_SHORTHAND%-installed
-:: set INSTALL_DIR=%CD%\deps-vs%VS_VER%-%TARGET_ARCH%-%DEBUG_OR_RELEASE_LOWERCASE%-installed
+:: set INSTALL_DIR=%CD%\deps-vs%VS_VER%-%VS_PLATFORM%-%DEBUG_OR_RELEASE_LOWERCASE%-installed
 :: BUILD_DIR is a relative build directory used for CMake-based projects
 set BUILD_DIR=_build-%GEN_SHORTHAND%
 popd

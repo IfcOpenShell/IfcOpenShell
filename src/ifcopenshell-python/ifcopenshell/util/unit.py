@@ -16,13 +16,18 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 from collections.abc import Generator
 from fractions import Fraction
 from math import pi
-from typing import Literal, Optional, Union
+from typing import TYPE_CHECKING, Literal, Optional, TypeAlias, Union
 
 import ifcopenshell
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
+
+if TYPE_CHECKING:
+    DimensionalExponents: TypeAlias = tuple[int, int, int, int, int, int, int]
 
 prefixes = {
     "EXA": 1e18,
@@ -76,7 +81,7 @@ unit_names = [
     "WEBER",
 ]
 
-si_dimensions = {
+si_dimensions: dict[str, DimensionalExponents] = {
     "METRE": (1, 0, 0, 0, 0, 0, 0),
     "SQUARE_METRE": (2, 0, 0, 0, 0, 0, 0),
     "CUBIC_METRE": (3, 0, 0, 0, 0, 0, 0),
@@ -146,7 +151,7 @@ si_type_names = {
 
 # See IfcDimensionalExponents:
 # (Length, Mass, Time, ElectricCurrent, ThermodynamicTemperature, AmountOfSubstance, LuminousIntensity)
-named_dimensions = {
+named_dimensions: dict[str, DimensionalExponents] = {
     "ABSORBEDDOSEUNIT": (2, 0, -2, 0, 0, 0, 0),
     "AMOUNTOFSUBSTANCEUNIT": (0, 0, 0, 0, 0, 1, 0),
     "AREAUNIT": (2, 0, 0, 0, 0, 0, 0),
@@ -398,12 +403,57 @@ def get_full_unit_name(unit: ifcopenshell.entity_instance) -> str:
     return prefix + unit.Name.upper()
 
 
-def get_si_dimensions(name):
+def get_si_dimensions(name: str) -> DimensionalExponents:
     return si_dimensions.get(name, si_dimensions["OTHERWISE"])
 
 
-def get_named_dimensions(name):
+def get_named_dimensions(name: str) -> DimensionalExponents:
     return named_dimensions.get(name, (0, 0, 0, 0, 0, 0, 0))
+
+
+def get_unit_dimensions(unit: ifcopenshell.entity_instance) -> DimensionalExponents:
+    """Get the dimensional exponents of a unit, per IfcDimensionalExponents.
+
+    Supports IfcSIUnit, IfcConversionBasedUnit, IfcContextDependentUnit, and
+    IfcDerivedUnit (composed recursively from its elements).
+
+    :param unit: The unit to inspect.
+    :return: A 7-tuple of (Length, Mass, Time, ElectricCurrent,
+        ThermodynamicTemperature, AmountOfSubstance, LuminousIntensity).
+    """
+    if unit.is_a("IfcDerivedUnit"):
+        dimensions = [0, 0, 0, 0, 0, 0, 0]
+        for element in unit.Elements:
+            element_dimensions = get_unit_dimensions(element.Unit)
+            for i in range(7):
+                dimensions[i] += element_dimensions[i] * element.Exponent
+        return tuple(dimensions)
+    if unit.is_a("IfcSIUnit"):
+        return get_si_dimensions(unit.Name.replace("METER", "METRE"))
+    return get_named_dimensions(getattr(unit, "UnitType", None))
+
+
+def identify_unit_dimensions(unit: ifcopenshell.entity_instance) -> Union[str, None]:
+    """Identify which named IfcUnitEnum type a unit's dimensions correspond to.
+
+    This is mainly useful for an IfcDerivedUnit that has no named
+    IfcDerivedUnitEnum match for its measure type, allowing it to still be
+    recognised as, e.g., a pressure unit by dimensional analysis alone.
+
+    Note that dimensionless quantities (e.g. plane angle, solid angle, or a
+    genuinely unitless value) are dimensionally indistinguishable, so this
+    heuristically returns the first zero-dimension match rather than
+    disambiguating them.
+
+    :param unit: The unit to identify.
+    :return: An uppercase IfcUnitEnum value, or None if no named type shares
+        the same dimensions.
+    """
+    dimensions = get_unit_dimensions(unit)
+    for name, named in named_dimensions.items():
+        if named == dimensions:
+            return name
+    return None
 
 
 def get_unit_assignment(ifc_file: ifcopenshell.file) -> Union[ifcopenshell.entity_instance, None]:
@@ -421,7 +471,16 @@ def cache_units(ifc_file: ifcopenshell.file) -> None:
     """
     ifc_file.units = {}
     if assignment := get_unit_assignment(ifc_file):
-        ifc_file.units = {u.UnitType: u for u in assignment.Units if getattr(u, "UnitType", None)}
+        all_units = assignment.Units or []
+        units = {u.UnitType: u for u in all_units if getattr(u, "UnitType", None)}
+        # As in get_project_unit(): a literal match always wins; an IfcDerivedUnit with no
+        # literal UnitType match is matched dimensionally instead, only to fill a gap.
+        for unit in all_units:
+            if unit.is_a("IfcDerivedUnit"):
+                dimension = identify_unit_dimensions(unit)
+                if dimension and dimension not in units:
+                    units[dimension] = unit
+        ifc_file.units = units
 
 
 def clear_unit_cache(ifc_file: ifcopenshell.file) -> None:
@@ -437,6 +496,10 @@ def get_project_unit(
 ) -> Union[ifcopenshell.entity_instance, None]:
     """Get the default project unit of a particular unit type
 
+    IfcDerivedUnit is matched first by a literal `UnitType` match, then, as a fallback, by
+    dimensional analysis (:func:`identify_unit_dimensions`), mirroring
+    :func:`get_candidate_units`.
+
     :param ifc_file: The IFC file.
     :param unit_type: The type of unit, taken from the list of IFC unit types,
         such as "LENGTHUNIT".
@@ -448,9 +511,43 @@ def get_project_unit(
     if units := ifc_file.units:
         return units.get(unit_type, None)
     if unit_assignment := get_unit_assignment(ifc_file):
+        dimensional_match = None
         for unit in unit_assignment.Units or []:
             if getattr(unit, "UnitType", None) == unit_type:
                 return unit
+            if (
+                dimensional_match is None
+                and unit.is_a("IfcDerivedUnit")
+                and identify_unit_dimensions(unit) == unit_type
+            ):
+                dimensional_match = unit
+        return dimensional_match
+
+
+def get_candidate_units(ifc_file: ifcopenshell.file, unit_type: str) -> list[ifcopenshell.entity_instance]:
+    """Get all units in the file usable as an override for `unit_type`.
+
+    Unlike :func:`get_project_unit`, this returns every matching unit defined
+    in the file (e.g. both an mm and an m IfcSIUnit might be present), not
+    just the one currently assigned as the project default.
+
+    IfcDerivedUnit is matched first by a literal `UnitType` match, then, as a
+    fallback, by dimensional analysis (:func:`identify_unit_dimensions`) --
+    that fallback only helps for the dimension families covered by
+    `named_dimensions` (the core `IfcUnitEnum` types); it won't match e.g.
+    `"MODULUSOFELASTICITYUNIT"` by dimension alone, only by literal `UnitType`.
+
+    :param ifc_file: The IFC file.
+    :param unit_type: The type of unit, taken from the list of IFC unit
+        types, such as "LENGTHUNIT", or an IfcDerivedUnitEnum value such as
+        "MODULUSOFELASTICITYUNIT".
+    :return: All matching IfcNamedUnit / IfcDerivedUnit entities in the file.
+    """
+    candidates = [u for u in ifc_file.by_type("IfcNamedUnit") if getattr(u, "UnitType", None) == unit_type]
+    for unit in ifc_file.by_type("IfcDerivedUnit"):
+        if getattr(unit, "UnitType", None) == unit_type or identify_unit_dimensions(unit) == unit_type:
+            candidates.append(unit)
+    return candidates
 
 
 def get_property_unit(
@@ -477,10 +574,11 @@ def get_property_unit(
     measure_class = None
 
     if prop.is_a("IfcPhysicalSimpleQuantity"):
-        entity = prop.wrapped_data.declaration().as_entity()
+        entity = prop.declaration
         measure_class = entity.attribute_by_index(3).type_of_attribute().declared_type().name()
     elif prop.is_a("IfcPropertySingleValue"):
-        measure_class = prop.NominalValue.is_a()
+        if value := prop.NominalValue:
+            measure_class = value.is_a()
     elif prop.is_a("IfcPropertyEnumeratedValue"):
         if prop.EnumerationReference:
             if unit := prop.EnumerationReference.Unit:
@@ -622,6 +720,8 @@ def get_symbol_quantity_class(symbol: Optional[str] = None) -> QUANTITY_CLASS:
 
 
 def get_unit_symbol(unit: ifcopenshell.entity_instance) -> str:
+    if unit.is_a("IfcDerivedUnit"):
+        return get_derived_unit_symbol(unit)
     symbol: str = ""
     if unit.is_a("IfcSIUnit"):
         symbol += prefix_symbols.get(unit.Prefix, "")
@@ -629,6 +729,28 @@ def get_unit_symbol(unit: ifcopenshell.entity_instance) -> str:
     if unit.is_a("IfcContextDependentUnit") and unit.UnitType == "USERDEFINED":
         symbol = unit.Name
     return symbol
+
+
+def get_derived_unit_symbol(unit: ifcopenshell.entity_instance) -> str:
+    """Compose a unit symbol for an IfcDerivedUnit from its elements.
+
+    E.g. a derived unit of NEWTON / SQUARE_METRE composes to "N/m2".
+
+    :param unit: The IfcDerivedUnit.
+    :return: The composed symbol.
+    """
+    numerator = []
+    denominator = []
+    for element in unit.Elements:
+        symbol = get_unit_symbol(element.Unit)
+        exponent = abs(element.Exponent)
+        if exponent != 1:
+            symbol += str(exponent)
+        (numerator if element.Exponent > 0 else denominator).append(symbol)
+    result = ".".join(numerator) or "1"
+    if denominator:
+        result += "/" + ".".join(denominator)
+    return result
 
 
 def convert_unit(value: float, from_unit: ifcopenshell.entity_instance, to_unit: ifcopenshell.entity_instance) -> float:
@@ -684,6 +806,70 @@ def convert(value: float, from_prefix: Optional[str], from_unit: str, to_prefix:
     return value
 
 
+def get_named_unit_scale(unit: ifcopenshell.entity_instance) -> float:
+    """Get the scale factor to convert a value in a named unit to SI units.
+
+    Supports IfcSIUnit and IfcConversionBasedUnit (including chains of
+    conversion-based units). Does not support IfcDerivedUnit -- see
+    :func:`get_derived_unit_scale` for that.
+
+    :param unit: The IfcNamedUnit.
+    :returns: The scale factor.
+    """
+    scale = 1.0
+    while unit.is_a("IfcConversionBasedUnit"):
+        conversion_factor = unit.ConversionFactor
+        scale *= conversion_factor.ValueComponent.wrappedValue
+        unit = conversion_factor.UnitComponent
+    if unit.is_a("IfcSIUnit"):
+        prefix_multiplier = get_prefix_multiplier(unit.Prefix)
+        # An SI prefix attaches to the base unit symbol, and the prefixed
+        # symbol is raised to the power as a whole: dm3 = (dm)3 = 1e-3 m3,
+        # not 0.1 m3. For units whose dimensions are a pure power of length
+        # (METRE, SQUARE_METRE, CUBIC_METRE) the prefix multiplier must
+        # therefore be raised to the length exponent. Units with mixed or
+        # non-length dimensions (PASCAL, NEWTON, GRAM, ...) keep the linear
+        # multiplier, as there the prefix scales the derived unit itself.
+        # https://github.com/IfcOpenShell/IfcOpenShell/issues/9278
+        #
+        # Dimensions is looked up from si_dimensions by name rather than via
+        # unit.Dimensions (the schema-derived IfcDimensionalExponents), since
+        # the derived attribute isn't computed for SQLite-linked files and
+        # would return None there.
+        length_exponent, *other_exponents = get_si_dimensions(unit.Name.replace("METER", "METRE"))
+        if length_exponent > 0 and not any(other_exponents):
+            prefix_multiplier **= length_exponent
+        scale *= prefix_multiplier
+    return scale
+
+
+def get_derived_unit_scale(unit: ifcopenshell.entity_instance) -> float:
+    """Get the scale factor to convert a value in an IfcDerivedUnit to SI units.
+
+    :param unit: The IfcDerivedUnit.
+    :returns: The scale factor.
+    """
+    scale = 1.0
+    for element in unit.Elements:
+        scale *= get_named_unit_scale(element.Unit) ** element.Exponent
+    return scale
+
+
+def get_unit_scale(unit: ifcopenshell.entity_instance) -> float:
+    """Get the scale factor to convert a value in `unit` to SI units.
+
+    Dispatches to :func:`get_derived_unit_scale` for IfcDerivedUnit, or
+    :func:`get_named_unit_scale` otherwise (IfcSIUnit / IfcConversionBasedUnit,
+    including chains).
+
+    :param unit: The unit to get the scale factor for.
+    :returns: The scale factor.
+    """
+    if unit.is_a("IfcDerivedUnit"):
+        return get_derived_unit_scale(unit)
+    return get_named_unit_scale(unit)
+
+
 def calculate_unit_scale(ifc_file: ifcopenshell.file, unit_type: str = "LENGTHUNIT") -> float:
     """Returns a unit scale factor to convert to and from IFC project units and SI units.
 
@@ -695,17 +881,17 @@ def calculate_unit_scale(ifc_file: ifcopenshell.file, unit_type: str = "LENGTHUN
         si_meters / unit_scale = ifc_project_length
 
     :param ifc_file: The IFC file.
-    :param unit_type: The type of SI unit, defaults to "LENGTHUNIT"
+    :param unit_type: The type of SI unit, defaults to "LENGTHUNIT". This may
+        also be an IfcDerivedUnitEnum value (e.g. "MASSDENSITYUNIT") to
+        support project units defined as an IfcDerivedUnit.
     :returns: The scale factor
     """
-    if (
-        type(ifc_file) is ifcopenshell.file
-        and unit_type
-        not in ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema_identifier)
-        .declaration_by_name("IfcUnitEnum")
-        .enumeration_items()
-    ):
-        raise ValueError(f"Unit type {unit_type!r} does not name a valid type")
+    if type(ifc_file) is ifcopenshell.file and unit_type:
+        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema_identifier)
+        valid_types = set(schema.declaration_by_name("IfcUnitEnum").enumeration_items())
+        valid_types |= set(schema.declaration_by_name("IfcDerivedUnitEnum").enumeration_items())
+        if unit_type not in valid_types:
+            raise ValueError(f"Unit type {unit_type!r} does not name a valid type")
 
     # Currently we assume that all ifc projects must have IfcProject.
     if not (projects := ifc_file.by_type("IfcProject")) or not (units := projects[0].UnitsInContext):
@@ -715,12 +901,7 @@ def calculate_unit_scale(ifc_file: ifcopenshell.file, unit_type: str = "LENGTHUN
     for unit in units.Units:
         if getattr(unit, "UnitType", ...) != unit_type:
             continue
-        while unit.is_a("IfcConversionBasedUnit"):
-            conversion_factor = unit.ConversionFactor
-            unit_scale *= conversion_factor.ValueComponent.wrappedValue
-            unit = conversion_factor.UnitComponent
-        if unit.is_a("IfcSIUnit"):
-            unit_scale *= get_prefix_multiplier(unit.Prefix)
+        unit_scale *= get_unit_scale(unit)
     return unit_scale
 
 
@@ -882,7 +1063,7 @@ def convert_file_length_units(ifc_file: ifcopenshell.file, target_units: str = "
     si_unit = get_unit_name(target_units)
 
     # Copy all elements from the original file to the patched file
-    file_patched = ifcopenshell.file.from_string(ifc_file.wrapped_data.to_string())
+    file_patched = ifcopenshell.file.from_string(ifc_file.to_string())
 
     old_length = get_project_unit(file_patched, "LENGTHUNIT")
     if si_unit:
@@ -940,7 +1121,11 @@ def convert_file_length_units(ifc_file: ifcopenshell.file, target_units: str = "
         )
 
     unit_assignment = get_unit_assignment(file_patched)
-    unit_assignment.Units = [new_length, *(u for u in unit_assignment.Units if u.UnitType != new_length.UnitType)]
+    # UnitType not available on IfcMonetaryUnit
+    unit_assignment.Units = [
+        new_length,
+        *(u for u in unit_assignment.Units if getattr(u, "UnitType", None) != new_length.UnitType),
+    ]
     if not file_patched.get_total_inverses(old_length):
         ifcopenshell.util.element.remove_deep2(file_patched, old_length)
 

@@ -29,8 +29,6 @@ IfcOpenShell depends on:
 - (Optional) `SWIG <http://www.swig.org/>`__ and `Python
   <https://www.python.org/>`__ - for building the IfcOpenShell Python interface
   and use in Bonsai
-- (Optional) `HDF5 <https://www.hdfgroup.org/solutions/hdf5>`__ - for caching
-  geometry using the HDF5 format
 
 Compiling on Linux
 ------------------
@@ -60,7 +58,7 @@ operating systems. GCC (4.7 or newer) or Clang (any version) is required.
 
    .. code-block:: bash
 
-       sudo apt-get install git cmake gcc g++ libboost-all-dev libcgal-dev
+       sudo apt-get install git cmake gcc g++ libboost-all-dev libcgal-dev libeigen3-dev
 
    The CGAL version that ships with Ubuntu 20.04 is too old. Users on Ubuntu 20.04 are advised to manually install CGAL 5.3.
 
@@ -125,13 +123,7 @@ operating systems. GCC (4.7 or newer) or Clang (any version) is required.
 
         sudo apt-get install python-all-dev swig
 
-6. For building support for HDF5 caching (ON by default), install dependencies:
-
-   .. code-block:: bash
-
-        sudo apt-get install libhdf5-dev libaec-dev zlibc
-
-7. Compile IfcOpenShell itself.
+6. Compile IfcOpenShell itself.
 
    .. code-block:: bash
 
@@ -148,11 +140,6 @@ operating systems. GCC (4.7 or newer) or Clang (any version) is required.
               -DOPENCOLLADA_INCLUDE_DIR="/usr/local/include/opencollada" \
               -DOPENCOLLADA_LIBRARY_DIR="/usr/local/lib/opencollada"  \
               -DPCRE_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu/ \
-              \
-              # Optional HDF5 support
-              -DHDF5_SUPPORT=On \
-              -DHDF5_LIBRARIES="/usr/local/hdf5/lib/libhdf5_cpp.so;/usr/local/hdf5/lib/libhdf5.so;/usr/lib64/libz.so;/usr/lib64/libsz.so;/usr/lib64/libaec.so" \
-              -DHDF5_INCLUDE_DIR="/usr/local/hdf5/include" \
               \
               -DCGAL_INCLUDE_DIR=/usr/include \
               -DGMP_INCLUDE_DIR=/usr/include \
@@ -187,7 +174,7 @@ GCC (4.7 or newer) or Clang (any version) is required.
 
    .. code-block:: bash
 
-        brew install boost cmake python3 cgal ftgl gmp libaec opencascade swig hdf5 zlib eigen
+        brew install boost cmake python3 cgal ftgl gmp opencascade swig zlib eigen
         # homebrew automatically links most libraries, except some keg-only ones
         brew link zlib --force
 
@@ -209,8 +196,6 @@ GCC (4.7 or newer) or Clang (any version) is required.
             -DCGAL_INCLUDE_DIR=/opt/homebrew/include/ \
             -DGMP_LIBRARY_DIR=/opt/homebrew/lib/ \
             -DMPFR_LIBRARY_DIR=/opt/homebrew/lib/ \
-            -DHDF5_LIBRARY_DIR=/opt/homebrew/lib/ \
-            -DHDF5_INCLUDE_DIR=/opt/homebrew/include/ \
             -DEIGEN_DIR=/opt/homebrew/Cellar/eigen/3.4.0_1/include/eigen3 \
             -DCOLLADA_SUPPORT=0
         # `sysctl -n hw.ncpu` returns the number of cpu cores on macOS
@@ -240,8 +225,8 @@ C++ Build Tools <http://landinghub.visualstudio.com/visual-cpp-build-tools>`__).
    .. code-block:: bat
 
         cd IfcOpenShell\win
-        build-deps.cmd
-        run-cmake.bat
+        python build-deps.py
+        python run-cmake.py
 
 3. Open and build the solution file in Visual Studio:
 
@@ -255,45 +240,13 @@ C++ Build Tools <http://landinghub.visualstudio.com/visual-cpp-build-tools>`__).
    Only) to deploy the headers and binaries into a single location if
    wanted/needed.
 
-   Alternatively, one can use the utility batch file(s) to build and install the
+   Alternatively, one can use the utility script(s) to build and install the
    project easily from the command-line (installing a project will build it
    also, if required):
 
    .. code-block:: bat
 
-        install-ifcopenshell.bat
-
-.. seealso::
-
-    For more information on configuring a Windows compilation see the `Windows
-    Readme
-    <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.8.0/win/readme.md>`__.
-
-Compiling on Windows (MSYS2 + MinGW)
-------------------------------------
-
-This is for users of `MSYS2 <https://msys2.github.io/>`__ and `MinGW
-<https://www.mingw-w64.org/>`__.
-
-1. Fetch the latest source code, including all submodules.
-
-   .. code-block:: bat
-
-        git clone --recursive https://github.com/IfcOpenShell/IfcOpenshell.git
-
-   .. warning::
-
-        The path where the source code is cloned to can contain spaces but non-ASCII
-        characters are very likely to cause problems with the build.
-
-2. Start the MSYS2 Shell and then:
-
-   .. code-block:: bat
-
-        cd IfcOpenShell/win
-        ./build-deps.sh
-        ./run-cmake.sh
-        ./install-ifcopenshell.sh
+        python install-ifcopenshell.py
 
 .. seealso::
 

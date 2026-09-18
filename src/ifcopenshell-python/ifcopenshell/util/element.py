@@ -978,7 +978,7 @@ def get_elements_by_profile(profile: ifcopenshell.entity_instance) -> set[ifcope
     :return: The elements using the profile.
     """
     ifc_file = profile.file
-    queue = ifc_file.get_inverse(profile)
+    queue = set(ifc_file.get_inverse(profile))
     processed: set[ifcopenshell.entity_instance] = set()
     representations: set[ifcopenshell.entity_instance] = set()
     while queue:
@@ -1753,27 +1753,21 @@ def remove_deep2(
     # ifc_file.batch()
     if not ifc_file:
         ifc_file = element.file
-    total_inverses = ifc_file.get_total_inverses(element)
-    if total_inverses > 0:
-
-        def are_inverses_contained() -> bool:
-            also_considered_inverses = 0
-
-            for considered_element in also_consider:
-                traverse = ifc_file.traverse(considered_element, max_levels=1)
-                if element in traverse:
-                    also_considered_inverses += 1
-                    if total_inverses == also_considered_inverses:
-                        return True
-            return False
-
-        if not are_inverses_contained():
-            return
+    # The start element may only be referenced from also_consider; decided in
+    # C++ without traversing each considered element.
+    if not ifc_file._all_inverses_within(element, [e.id() for e in also_consider if e.id()]):
+        return
 
     to_delete: set[ifcopenshell.entity_instance] = set()
     subgraph = list(ifc_file.traverse(element, breadth_first=True))
     subgraph.extend(also_consider)
     subgraph_set = set(subgraph)
+    # Which subgraph members are referenced only from inside the subgraph,
+    # decided once in C++ without materializing any inverse list. Clearing
+    # large aggregates below only removes references whose source is inside
+    # the subgraph, so this doesn't change while the loop runs.
+    subgraph_ids = [e.id() for e in subgraph_set if e.id()]
+    referenced_only_within = set(ifc_file._ids_referenced_only_within(subgraph_ids))
     subelement_queue = [element]
 
     # Cache already processed entities to avoid traversing them multiple time.
@@ -1787,12 +1781,7 @@ def remove_deep2(
             subelement_id
             and subelement_id not in processed_ids
             and subelement not in do_not_delete
-            and (
-                # 0 or 1 inverses guarantees that the subelement only exists in this subgraph
-                ifc_file.get_total_inverses(subelement) < 2
-                # Alternatively, let's ensure all inverses are within the subgraph
-                or len(set(ifc_file.get_inverse(subelement)) - subgraph_set) == 0
-            )
+            and subelement_id in referenced_only_within
         ):
             to_delete.add(subelement)
             subelement_queue.extend(ifc_file.traverse(subelement, max_levels=1)[1:])
@@ -1816,6 +1805,7 @@ def remove_deep2(
 
     # We delete elements from subgraph in reverse order to allow batching to work
     for subelement in filter(lambda e: e in to_delete, subgraph[::-1]):
+        to_delete.remove(subelement)
         ifc_file.remove(subelement)
     # ifc_file.unbatch()
 
@@ -1939,7 +1929,7 @@ def has_property(product: ifcopenshell.entity_instance, property_name: str) -> b
     return any(property_name in quantities.keys() for quantities in qtos.values())
 
 
-def get_openings(element: ifcopenshell.entity_instance) -> Generator[ifcopenshell.entity_instance, None, None]:
+def get_openings(element: ifcopenshell.entity_instance) -> Generator[ifcopenshell.entity_instance]:
     """Get element openings as IfcRelVoidsElements.
 
     Use `.RelatedOpeningElement` to get the opening element.

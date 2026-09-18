@@ -30,10 +30,6 @@ def parse_express(debug: type[tool.Debug], filename: str) -> None:
     debug.add_schema_identifier(debug.load_express(filename))
 
 
-def purge_hdf5_cache(debug: type[tool.Debug]) -> None:
-    debug.purge_hdf5_cache()
-
-
 def purge_unused_elements(ifc: type[tool.Ifc], debug: type[tool.Debug], ifc_class: str) -> int:
     ifc_file = ifc.get()
     unused_elements = [i for i in ifc_file.by_type(ifc_class) if ifc_file.get_total_inverses(i) == 0]

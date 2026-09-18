@@ -1,58 +1,58 @@
 #ifdef IFOPSH_WITH_CGAL
 
-#include "../ifcgeom/kernels/cgal/CgalKernel.h"
-#include "../ifcgeom/IfcGeomFilter.h"
-#include "../ifcgeom/Iterator.h"
+#include "../ifcgeom/kernels/cgal/cgal_kernel.h"
+#include "../ifcgeom/filter.h"
+#include "../ifcgeom/iterator.h"
 
 #include <CGAL/Polygon_mesh_processing/measure.h>
 #include <CGAL/Polygon_mesh_processing/bbox.h>
 
 #include <algorithm>
 
-void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool stderr_progress, Logger& logger = Logger::Root()) {
-	ifcopenshell::geometry::Settings settings;
+void fix_storeycontainment(ifcopenshell::file& f, bool no_progress, bool quiet, bool stderr_progress, ifcopenshell::logger& logger = ifcopenshell::logger::root()) {
+	ifcopenshell::geom::settings settings;
 
-	settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = false;
-	settings.get<ifcopenshell::geometry::settings::WeldVertices>().value = false;
-	settings.get<ifcopenshell::geometry::settings::ReorientShells>().value = true;
-	settings.get<ifcopenshell::geometry::settings::ConvertBackUnits>().value = true;
-	settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
-	settings.get<ifcopenshell::geometry::settings::DisableOpeningSubtractions>().value = true;
+	settings.get<ifcopenshell::geom::settings::UseWorldCoords>().value = false;
+	settings.get<ifcopenshell::geom::settings::WeldVertices>().value = false;
+	settings.get<ifcopenshell::geom::settings::ReorientShells>().value = true;
+	settings.get<ifcopenshell::geom::settings::ConvertBackUnits>().value = true;
+	settings.get<ifcopenshell::geom::settings::IteratorOutput>().value = ifcopenshell::geom::settings::NATIVE;
+	settings.get<ifcopenshell::geom::settings::DisableOpeningSubtractions>().value = true;
 
-	std::vector<ifcopenshell::geometry::filter_t> no_openings_and_spaces = {
-		IfcGeom::entity_filter(false, false, {"IfcOpeningElement", "IfcSpace"})
+	std::vector<ifcopenshell::geom::filter_function> no_openings_and_spaces = {
+		ifcopenshell::geom::entity_filter(false, false, {"IfcOpeningElement", "IfcSpace"})
 	};
 
-	IfcGeom::Iterator context_iterator(ifcopenshell::geometry::kernels::construct(&f, "cgal", settings, logger), settings, &f, no_openings_and_spaces, 1, logger);
+	ifcopenshell::geom::iterator context_iterator(ifcopenshell::geom::kernels::construct(&f, "cgal", settings, logger), settings, &f, no_openings_and_spaces, 1, logger);
 
-	auto get_elevation = [](const IfcUtil::IfcBaseClass* a) {
-		return ((const IfcUtil::IfcBaseEntity*)a)->get_value<double>("Elevation", 0.);
+	auto get_elevation = [](const ifcopenshell::IfcBaseClass* a) {
+		return ((const ifcopenshell::IfcBaseEntity*)a)->get_value<double>("Elevation", 0.);
 	};
 
 	// latebound inverse attribute lookup not working
 	auto rels = f.instances_by_type("IfcRelContainedInSpatialStructure");
-	std::map<const IfcUtil::IfcBaseClass*, const IfcUtil::IfcBaseClass*> elem_to_storey;
-	std::for_each(rels->begin(), rels->end(), [&elem_to_storey](IfcUtil::IfcBaseClass* r) {
-		auto elems = ((IfcUtil::IfcBaseEntity*)r)->get_value<aggregate_of_instance::ptr>("RelatedElements");
-		auto storey = ((IfcUtil::IfcBaseEntity*)r)->get_value<IfcUtil::IfcBaseClass*>("RelatingStructure");
+	std::map<const ifcopenshell::IfcBaseClass*, const ifcopenshell::IfcBaseClass*> elem_to_storey;
+	std::for_each(rels->begin(), rels->end(), [&elem_to_storey](ifcopenshell::IfcBaseClass* r) {
+		auto elems = ((ifcopenshell::IfcBaseEntity*)r)->get_value<aggregate_of_instance::ptr>("RelatedElements");
+		auto storey = ((ifcopenshell::IfcBaseEntity*)r)->get_value<ifcopenshell::IfcBaseClass*>("RelatingStructure");
 
 		if (storey->declaration().name() == "IfcBuildingStorey") {
 			for (auto it = elems->begin(); it != elems->end(); ++it) {
 				elem_to_storey[*it] = storey;
 			}
 		}
-	});	
+	});
 
 	auto storeys = f.instances_by_type("IfcBuildingStorey");
-	std::vector<const IfcUtil::IfcBaseClass*> storeys_sorted(storeys->begin(), storeys->end());
-	std::sort(storeys_sorted.begin(), storeys_sorted.end(), [&get_elevation](const IfcUtil::IfcBaseClass* a, const IfcUtil::IfcBaseClass* b) {
+	std::vector<const ifcopenshell::IfcBaseClass*> storeys_sorted(storeys->begin(), storeys->end());
+	std::sort(storeys_sorted.begin(), storeys_sorted.end(), [&get_elevation](const ifcopenshell::IfcBaseClass* a, const ifcopenshell::IfcBaseClass* b) {
 		return get_elevation(a) < get_elevation(b);
 	});
 
 	/*
 	std::wcout << "Storeys ";
 	for (auto& s : storeys_sorted) {
-		auto n = ((IfcUtil::IfcBaseEntity*)s)->get_value<std::string>("Name");
+		auto n = ((ifcopenshell::IfcBaseEntity*)s)->get_value<std::string>("Name");
 		std::wcout << n.c_str() << " ";
 	}
 	std::wcout << std::endl;
@@ -81,13 +81,13 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 		// std::wcout << p.first << " - " << p.second << std::endl;
 		Kernel_::Point_3 p1(-LARGE, -LARGE, p.first);
 		Kernel_::Point_3 p2(+LARGE, +LARGE, p.second);
-		auto poly = ifcopenshell::geometry::utils::create_cube(p1, p2);
-		return ifcopenshell::geometry::utils::create_nef_polyhedron(poly);
+		auto poly = ifcopenshell::geom::utils::create_cube(p1, p2);
+		return ifcopenshell::geom::utils::create_nef_polyhedron(poly);
 	});
 
 	/*
 	for (auto& n : nefs) {
-		auto poly = ifcopenshell::geometry::utils::create_polyhedron(n);
+		auto poly = ifcopenshell::geom::utils::create_polyhedron(n);
 		auto bounds = CGAL::Polygon_mesh_processing::bbox_3(poly);
 		for (int i = 0; i < 3; ++i) {
 			std::wcout << bounds.min(i) << std::endl;
@@ -98,7 +98,7 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 		std::wcout << "---" << std::endl;
 	}
 	*/
-	
+
 	if (!context_iterator.initialize()) {
 		return;
 	}
@@ -111,7 +111,7 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 		if (num_created) {
 			has_more = context_iterator.next();
 		}
-		IfcGeom::BRepElement* geom_object = nullptr;
+		std::unique_ptr<ifcopenshell::geom::native_element> geom_object;
 		if (has_more) {
 			geom_object = context_iterator.get_native();
 		}
@@ -121,7 +121,7 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 
 		/*
 		std::stringstream ss;
-		ss << geom_object->product()->data().toString();
+		ss << geom_object->product()->data().to_string();
 		auto sss = ss.str();
 		std::wcout << sss.c_str() << std::endl;
 		*/
@@ -134,16 +134,16 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 		std::vector<double> intersection_volumes(nefs.size());
 
 		for (auto& g : geom_object->geometry()) {
-			auto s = std::static_pointer_cast<ifcopenshell::geometry::CgalShape>(g.Shape())->poly();
-			const auto& m = g.Placement()->ccomponents();
+			auto s = std::static_pointer_cast<ifcopenshell::geom::cgal_shape>(g.shape())->poly();
+			const auto& m = g.placement()->ccomponents();
 			const auto& n = geom_object->transformation().data()->ccomponents();
 
-			const cgal_placement_t trsf(
+			const cgal_placement trsf(
 				m(0, 0), m(0, 1), m(0, 2), m(0, 3),
 				m(1, 0), m(1, 1), m(1, 2), m(1, 3),
 				m(2, 0), m(2, 1), m(2, 2), m(2, 3));
 
-			const cgal_placement_t trsf2(
+			const cgal_placement trsf2(
 				n(0, 0), n(0, 1), n(0, 2), n(0, 3),
 				n(1, 0), n(1, 1), n(1, 2), n(1, 3),
 				n(2, 0), n(2, 1), n(2, 2), n(2, 3));
@@ -166,7 +166,7 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 			}
 			*/
 
-			CGAL::Nef_polyhedron_3<Kernel_> part_nef = ifcopenshell::geometry::utils::create_nef_polyhedron(s);
+			CGAL::Nef_polyhedron_3<Kernel_> part_nef = ifcopenshell::geom::utils::create_nef_polyhedron(s);
 
 			if (!part_nef.is_simple()) {
 				// std::wcout << "not simple" << std::endl;
@@ -175,7 +175,7 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 
 			std::vector<double>::iterator accumulator = intersection_volumes.begin();
 			std::for_each(nefs.begin(), nefs.end(), [&accumulator, &part_nef](const CGAL::Nef_polyhedron_3<Kernel_>& storey_nef) {
-				auto poly = ifcopenshell::geometry::utils::create_polyhedron(part_nef * storey_nef);
+				auto poly = ifcopenshell::geom::utils::create_polyhedron(part_nef * storey_nef);
 				CGAL::Polygon_mesh_processing::triangulate_faces(poly);
 				*accumulator += CGAL::to_double(CGAL::Polygon_mesh_processing::volume(poly));
 				accumulator++;
@@ -198,7 +198,7 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 			auto s = geom_object->product()->get_value<std::string>("GlobalId");
 			auto s1 = ((IfcUtil::IfcBaseEntity*)storeys_sorted[calc_idx])->get_value<std::string>("GlobalId");
 			auto s2 = ((IfcUtil::IfcBaseEntity*)elem_to_storey[geom_object->product()])->get_value<std::string>("GlobalId");
-			logger.Error("VAL", 4, "Element " + s + " contained in " + s2 + " located on " + s1);
+			logger.error("VAL", 4, "Element " + s + " contained in " + s2 + " located on " + s1);
 		}
 
 		if (!no_progress) {
@@ -214,7 +214,7 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 					std::cerr << std::flush;
 			} else {
 				const int progress = context_iterator.progress() / 2;
-				if (old_progress != progress) logger.ProgressBar(progress);
+				if (old_progress != progress) logger.progress_bar(progress);
 				old_progress = progress;
 			}
 		}
@@ -230,7 +230,7 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 		if (stderr_progress)
 			std::cerr << std::flush;
 	} else {
-		logger.Status("\rDone fixing space boundaries for " + boost::lexical_cast<std::string>(num_created) +
+		logger.status("\rDone fixing space boundaries for " + boost::lexical_cast<std::string>(num_created) +
 			" objects                                ");
 	}
 }

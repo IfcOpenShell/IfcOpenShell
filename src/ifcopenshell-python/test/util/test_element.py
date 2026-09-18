@@ -38,7 +38,6 @@ import ifcopenshell.api.sequence
 import ifcopenshell.api.spatial
 import ifcopenshell.api.style
 import ifcopenshell.api.type
-import ifcopenshell.api.feature
 import ifcopenshell.guid
 import ifcopenshell.util.element as subject
 import test.bootstrap

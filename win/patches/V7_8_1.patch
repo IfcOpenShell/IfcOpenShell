@@ -2,12 +2,14 @@ diff --git a/CMakeLists.txt b/CMakeLists.txt
 index 86905287dc..5a3a0a4eeb 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -440,6 +440,10 @@ else()
+@@ -440,6 +440,12 @@ else()
    set (USE_D3D OFF)
  endif()
  
 +# IfcOpenShell begin
-+add_definitions(-DHAVE_NO_DLL)
++if (NOT BUILD_SHARED_LIBS)
++  add_definitions(-DHAVE_NO_DLL)
++endif()
 +# IfcOpenShell end
 +
  # Enable/Disable the floating point exceptions (FPE) during runtime.

@@ -74,7 +74,7 @@ import bonsai.core.style
 import bonsai.core.system
 import bonsai.core.tool
 import bonsai.tool as tool
-from bonsai.bim.ifc import IfcStore, get_cache_or_detect_lock
+from bonsai.bim.ifc import get_cache_or_detect_lock
 
 if TYPE_CHECKING:
     from bonsai.bim.module.geometry.prop import (
@@ -111,8 +111,18 @@ class Geometry(bonsai.core.tool.Geometry):
         old_data.user_remap(new_data)
 
     @classmethod
-    def get_cache(cls) -> Union[ifcopenshell.geom.serializers.hdf5, None]:
-        return IfcStore.get_cache()
+    def has_axis_representation(cls, element: ifcopenshell.entity_instance) -> bool:
+        """True if the element carries a shape representation whose
+        RepresentationIdentifier is 'Axis'. Elements without one cannot be
+        projected to an unambiguous 1D path; callers that draw schematic axis
+        overlays must skip them rather than fall back to mesh-derived geometry."""
+        product_rep = getattr(element, "Representation", None)
+        if product_rep is None:
+            return False
+        for rep in product_rep.Representations:
+            if getattr(rep, "RepresentationIdentifier", None) == "Axis":
+                return True
+        return False
 
     @classmethod
     def clear_cache(cls, element: ifcopenshell.entity_instance) -> None:
@@ -140,7 +150,7 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     @contextmanager
-    def batch_host_recut(cls) -> Generator[None, None, None]:
+    def batch_host_recut(cls) -> Generator[None]:
         """Coalesce host body work — `recut_host` and `update_host_representation`
         calls inside the with-block enqueue by voided element id. On the outermost
         exit: every host's `update_representation` runs first (writes Blender mesh
@@ -1100,7 +1110,6 @@ class Geometry(bonsai.core.tool.Geometry):
             if not cls.has_data_users(old_data):
                 cls.delete_data(old_data)
             cls.clear_modifiers(obj)
-            cls.clear_cache(element)
 
         # Import swept disk solids as Blender curves if possible.
         elements_without_openings = {e for e in elements if not getattr(e, "HasOpenings", False)}
@@ -1178,7 +1187,7 @@ class Geometry(bonsai.core.tool.Geometry):
         if iterator and iterator.initialize():
             while True:
                 shape = iterator.get()
-                assert isinstance(shape, W.TriangulationElement)
+                assert isinstance(shape, W.triangulation_element)
                 element = tool.Ifc.get().by_id(shape.id)
                 if obj := tool.Ifc.get_object(element):
                     # It's possible that there will be multiple shapes for the same context,
@@ -1907,11 +1916,11 @@ class Geometry(bonsai.core.tool.Geometry):
                     previous_shape_aspect = inverse.OfShapeAspect[0]
                 else:
                     base_representation = inverse
-        assert base_representation
 
         # remove item from previous shape aspect
         if previous_shape_aspect:
             cls.remove_representation_items_from_shape_aspect(representation_items, previous_shape_aspect)
+        assert base_representation
         shape_aspect_representation = cls.get_shape_aspect_representation(
             shape_aspect, base_representation, create_new=True
         )
@@ -2084,7 +2093,7 @@ class Geometry(bonsai.core.tool.Geometry):
         return use_immediate_repr
 
     @classmethod
-    def get_openings(cls, element: ifcopenshell.entity_instance) -> Generator[ifcopenshell.entity_instance, None, None]:
+    def get_openings(cls, element: ifcopenshell.entity_instance) -> Generator[ifcopenshell.entity_instance]:
         """Get element openings as IfcRelVoidsElements.
 
         Use `.RelatedOpeningElement` to get the opening element.
@@ -2170,7 +2179,7 @@ class Geometry(bonsai.core.tool.Geometry):
         item = tool.Ifc.get().by_id(props.ifc_definition_id)
         allowed_attributes = [
             a.name()
-            for a in item.wrapped_data.declaration().as_entity().all_attributes()
+            for a in item.declaration.as_entity().all_attributes()
             if a.type_of_attribute()._is("IfcLengthMeasure")
         ]
 

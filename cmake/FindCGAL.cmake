@@ -1,12 +1,11 @@
 #
 # Input variables:
 # - `CGAL_INCLUDE_DIR`
-# - `CGAL_LIBRARY_DIR`
 # - `GMP_INCLUDE_DIR`
 # - `GMP_LIBRARY_DIR`
 # - `MPFR_INCLUDE_DIR`
 # - `MPFR_LIBRARY_DIR`
-# If input variables are not specified, try to find HDF5 config.
+# If input variables are not specified, try to find CGAL config.
 # Input variables could also be provided as environment variables.
 #
 # Output targets:
@@ -18,7 +17,6 @@ if(TARGET IFCOPENSHELL_CGAL)
 endif()
 
 UNIFY_ENVVARS_AND_CACHE(CGAL_INCLUDE_DIR)
-UNIFY_ENVVARS_AND_CACHE(CGAL_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(GMP_INCLUDE_DIR)
 UNIFY_ENVVARS_AND_CACHE(GMP_LIBRARY_DIR)
 UNIFY_ENVVARS_AND_CACHE(MPFR_INCLUDE_DIR)
@@ -27,12 +25,16 @@ UNIFY_ENVVARS_AND_CACHE(MPFR_LIBRARY_DIR)
 if(CGAL_INCLUDE_DIR)
     find_library(libGMP NAMES gmp mpir PATHS ${GMP_LIBRARY_DIR} NO_DEFAULT_PATH)
     find_library(libMPFR NAMES mpfr PATHS ${MPFR_LIBRARY_DIR} NO_DEFAULT_PATH)
-    if(NOT libGMP)
-        message(FATAL_ERROR "Unable to find GMP library files, aborting")
-    endif()
-    if(NOT libMPFR)
-        message(FATAL_ERROR "Unable to find MPFR library files, aborting")
-    endif()
+
+    file(STRINGS "${CGAL_INCLUDE_DIR}/CGAL/version.h" CGAL_VERSION_LINE REGEX "^#define CGAL_VERSION ")
+    string(REGEX REPLACE "^#define CGAL_VERSION ([0-9.]+)$" "\\1" CGAL_VERSION "${CGAL_VERSION_LINE}")
+
+    include(FindPackageHandleStandardArgs)
+    find_package_handle_standard_args(
+        CGAL
+        REQUIRED_VARS CGAL_INCLUDE_DIR libGMP libMPFR
+        VERSION_VAR CGAL_VERSION
+    )
 
     add_library(CGAL::CGAL INTERFACE IMPORTED)
     target_include_directories(CGAL::CGAL INTERFACE "${CGAL_INCLUDE_DIR}")
@@ -64,5 +66,4 @@ endif()
 add_library(IFCOPENSHELL_CGAL INTERFACE)
 target_link_libraries(IFCOPENSHELL_CGAL INTERFACE CGAL::CGAL)
 target_compile_definitions(IFCOPENSHELL_CGAL INTERFACE IFOPSH_WITH_CGAL)
-set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_CGAL)
 install(TARGETS IFCOPENSHELL_CGAL EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
