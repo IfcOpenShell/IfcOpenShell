@@ -1180,12 +1180,45 @@ IfcUtil::IfcBaseClass::set_attribute_value(size_t i, const T& t) {
     }
     {
         void* const storage = file_ ? std::visit([](const auto& m) { return (void*)&m; }, file_->storage_) : nullptr;
+        // #414 #486 Propagate ownership of instances not yet owned by this file
+        // through the idempotent IfcFile::addEntity: unowned instances are
+        // registered in place, instances from another file are copied, and a
+        // schema mismatch throws instead of storing a dangling reference.
+        auto adopt_if_not_owned = [](IfcParse::IfcFile* file, IfcUtil::IfcBaseClass* instance) -> IfcUtil::IfcBaseClass* {
+            if (instance != nullptr && file != nullptr && instance->file_ != file) {
+                return file->addEntity(instance);
+            }
+            return instance;
+        };
         if constexpr (std::is_pointer_v<T>) {
-            if (t) {
-                data_.set_attribute_value(storage, &declaration(), id() ? id() : identity(), i, t);
+            IfcUtil::IfcBaseClass* to_write = adopt_if_not_owned(file_, t);
+            if (to_write) {
+                data_.set_attribute_value(storage, &declaration(), id() ? id() : identity(), i, to_write);
             } else {
                 data_.set_attribute_value(storage, &declaration(), id() ? id() : identity(), i, Blank{});
             }
+        } else if constexpr (std::is_same_v<T, aggregate_of_instance::ptr>) {
+            aggregate_of_instance::ptr to_write(new aggregate_of_instance);
+            if (t) {
+                to_write->reserve(t->size());
+                for (auto* instance : *t) {
+                    to_write->push(adopt_if_not_owned(file_, instance));
+                }
+            }
+            data_.set_attribute_value(storage, &declaration(), id() ? id() : identity(), i, to_write);
+        } else if constexpr (std::is_same_v<T, aggregate_of_aggregate_of_instance::ptr>) {
+            aggregate_of_aggregate_of_instance::ptr to_write(new aggregate_of_aggregate_of_instance);
+            if (t) {
+                for (auto outer = t->begin(); outer != t->end(); ++outer) {
+                    std::vector<IfcUtil::IfcBaseClass*> inner;
+                    inner.reserve(outer->size());
+                    for (auto* instance : *outer) {
+                        inner.push_back(adopt_if_not_owned(file_, instance));
+                    }
+                    to_write->push(inner);
+                }
+            }
+            data_.set_attribute_value(storage, &declaration(), id() ? id() : identity(), i, to_write);
         } else {
             data_.set_attribute_value(storage, &declaration(), id() ? id() : identity(),i, t);
         }
