@@ -1400,7 +1400,8 @@ class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
         name="Query",
         description=(
             "Custom selector query to use to load element from a linked model. E.g. 'IfcElement'.\n\n"
-            "Default query - IfcElement, but excluding IfcProxy, IfcSpatialStructureElement, IfcSpatialElement, IfcFeatureElement."
+            "Default query - IfcElement plus IfcProxy and spatial elements, "
+            "excluding IfcFeatureElement and IfcSpace (spaces cannot be hidden in a linked model)."
         ),
     )
 
@@ -1713,7 +1714,8 @@ class ReloadLink(bpy.types.Operator):
         name="Query",
         description=(
             "Custom selector query to use to load element from a linked model. E.g. 'IfcElement'.\n\n"
-            "Default query - IfcElement, but excluding IfcProxy, IfcSpatialStructureElement, IfcSpatialElement, IfcFeatureElement."
+            "Default query - IfcElement plus IfcProxy and spatial elements, "
+            "excluding IfcFeatureElement and IfcSpace (spaces cannot be hidden in a linked model)."
         ),
     )
 
@@ -2357,6 +2359,7 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
             else:
                 self.elements |= set(self.file.by_type("IfcSpatialElement"))
             self.elements -= set(self.file.by_type("IfcFeatureElement"))
+            self.elements -= set(self.file.by_type("IfcSpace"))
 
         if tool.Loader.settings.false_origin_mode == "MANUAL" and tool.Loader.settings.false_origin:
             tool.Loader.set_manual_blender_offset(self.file)

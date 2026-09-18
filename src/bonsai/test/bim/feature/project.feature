@@ -685,6 +685,12 @@ Scenario: Link IFC - from an empty IFC project
     And the object "Chunk" exists
     And the object "Chunk" is placed in the collection "IfcProject/basic.ifc"
 
+Scenario: Link IFC - default query excludes IfcSpace so linked spaces are not shown
+    Given an empty IFC project
+    When I press "bim.link_ifc(filepath='{cwd}/test/files/decomposition.ifc', use_cache=False)"
+    Then the object "Chunk" exists
+    And "blend_data.objects['Chunk']['guids']" is "['1KiE3gs9z1sfj9c0spBIGv']"
+
 Scenario: Link IFC - from an empty IFC project - automatic false origin mode (0,0,0 will be the false origin)
     Given an empty IFC project
     # Not currently possible via UI
