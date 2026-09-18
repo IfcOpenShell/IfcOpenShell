@@ -1267,15 +1267,17 @@ class SelectGlobalId(Operator):
 
 
 class SelectIfcClass(Operator):
-    """Click to select all objects that match with the given IFC class\nSHIFT + Click to also match Predefined Type"""
+    """Click to select all objects that match with the given IFC class\nSHIFT + Click to also match Predefined Type\nALT + Click to also unhide hidden objects (viewport and local hide)"""
 
     bl_idname = "bim.select_ifc_class"
     bl_label = "Select IFC Class"
     bl_options = {"REGISTER", "UNDO"}
     should_filter_predefined_type: BoolProperty(default=False)
+    should_unhide: BoolProperty(default=False)
 
     def invoke(self, context, event):
         self.should_filter_predefined_type = event.shift
+        self.should_unhide = event.alt
         return self.execute(context)
 
     def execute(self, context):
@@ -1286,7 +1288,6 @@ class SelectIfcClass(Operator):
             if element := tool.Ifc.get_entity(obj):
                 classes.add(element.is_a())
                 predefined_types.add(ifcopenshell.util.element.get_predefined_type(element))
-        result = ""
         for cls in classes:
             for element in tool.Ifc.get().by_type(cls):
                 if (
@@ -1295,15 +1296,15 @@ class SelectIfcClass(Operator):
                 ):
                     continue
                 if obj := tool.Ifc.get_object(element):
+                    if self.should_unhide:
+                        obj.hide_viewport = False
+                        obj.hide_set(False)
                     tool.Blender.select_object(obj)
 
-            # copy selection query to clipboard
-            if not result:
-                result = f"{cls}"
-            else:
-                result += f", {cls}"
-            bpy.context.window_manager.clipboard = result
-            self.report({"INFO"}, f"({result}) was copied to the clipboard.")
+        # copy selection query to clipboard
+        result = " + ".join(classes)
+        bpy.context.window_manager.clipboard = result
+        self.report({"INFO"}, f"({result}) was copied to the clipboard.")
 
         return {"FINISHED"}
 
@@ -1454,10 +1455,11 @@ class SelectSimilar(Operator):
     )
     calculated_sum: bpy.props.FloatProperty(name="Calculated Sum", default=0.0)
     remove_from_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
     @classmethod
     def description(cls, context, properties):
-        base = "Select objects with a similar value\n\n" "SHIFT+CLICK remove from selection set."
+        base = "Select objects with a similar value\n\nSHIFT+CLICK remove from selection set.\nALT+CLICK also unhide hidden objects (viewport and local hide)."
 
         key = getattr(properties, "key", None)
         active = context.active_object
@@ -1484,6 +1486,7 @@ class SelectSimilar(Operator):
     def invoke(self, context, event):
         self.calculate_sum = event.ctrl and event.type == "LEFTMOUSE"
         self.remove_from_selection = event.shift and event.type == "LEFTMOUSE"
+        self.should_unhide = event.alt
         return self.execute(context)
 
     def execute(self, context):
@@ -1515,7 +1518,7 @@ class SelectSimilar(Operator):
                     f"{verb} all objects that share the same ({self.key}) value(s) from {len(reference_values)} reference object(s).",
                 )
 
-            self._generate_clipboard_query(reference_values[0] if reference_values else None, key)
+            self._generate_clipboard_query(reference_values, key)
 
         return {"FINISHED"}
 
@@ -1541,11 +1544,15 @@ class SelectSimilar(Operator):
 
     def _select_objects(self, context, key, reference_values, tolerance):
         count = 0
-        for obj in context.visible_objects:
+        objects = context.scene.objects if self.should_unhide else context.visible_objects
+        for obj in objects:
             obj_value = self._get_value(obj, key)
             if obj_value is None:
                 continue
             if any(self._compare_values(obj_value, ref_value, tolerance) for ref_value in reference_values):
+                if self.should_unhide:
+                    obj.hide_viewport = False
+                    obj.hide_set(False)
                 obj.select_set(not self.remove_from_selection)
                 count += 1
         return count
@@ -1560,17 +1567,22 @@ class SelectSimilar(Operator):
         bpy.context.window_manager.clipboard = str(total)
         self.report({"INFO"}, f"({total}) was copied to the clipboard.")
 
-    def _generate_clipboard_query(self, value, key):
+    def _generate_clipboard_query(self, values, key):
         key = "PredefinedType" if key == "predefined_type" else key
-        if value is True:
-            value = "TRUE"
-        elif value is False:
-            value = "FALSE"
+        if not values:
+            return
 
-        if isinstance(value, list) and value:
-            result = ", ".join(f'{key} = "{item}"' for item in value)
-        else:
-            result = f'{key} = "{value}"'
+        def format_value(value):
+            if value is True:
+                return f'{key} = "TRUE"'
+            elif value is False:
+                return f'{key} = "FALSE"'
+            elif isinstance(value, list) and value:
+                return ", ".join(f'{key} = "{item}"' for item in value)
+            else:
+                return f'{key} = "{value}"'
+
+        result = " + ".join(format_value(v) for v in values)
 
         bpy.context.window_manager.clipboard = result
         self.report({"INFO"}, f"({result}) was copied to the clipboard.")
