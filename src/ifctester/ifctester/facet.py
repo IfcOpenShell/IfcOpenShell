@@ -204,27 +204,31 @@ class Entity(Facet):
         if isinstance(elements, (list, tuple)):
             return super().filter(ifc_file, elements)
 
-        if isinstance(self.name, str):
-            try:
-                results = ifc_file.by_type(self.name, include_subtypes=False)
-            except:
-                # If the user has specified a class that doesn't exist in the version
-                results = []
-                if not self.name.endswith("TYPE"):
-                    try:
-                        for element_type in ifc_file.by_type(f"{self.name}Type"):
-                            results.extend(ifcopenshell.util.element.get_types(element_type))
-                    except:
-                        pass
-        else:
+        if ifc_file.schema == "IFC2X3":
             results = []
-            ifc_classes = [t for t in ifc_file.types() if t.upper() == self.name]
-            for ifc_class in ifc_classes:
-                try:
+            for ifc_class in ifc_file.types():
+                ifc_class = ifc_class.upper()
+                if ifc_class == self.name:
                     results.extend(ifc_file.by_type(ifc_class, include_subtypes=False))
+            for element_type in ifc_file.by_type("IfcTypeProduct"):
+                derived_occurrence_class = element_type.is_a().upper().removesuffix("TYPE").removesuffix("STYLE")
+                if derived_occurrence_class == self.name:
+                    results.extend(ifcopenshell.util.element.get_types(element_type))
+            results = list(set(results))
+        else:
+            if isinstance(self.name, str):
+                try:
+                    results = ifc_file.by_type(self.name, include_subtypes=False)
                 except:
-                    # If the user has specified a class that doesn't exist in the version
-                    continue
+                    results = []  # If the user has specified a class that doesn't exist in the version
+            else:
+                results = []
+                ifc_classes = [t for t in ifc_file.types() if t.upper() == self.name]
+                for ifc_class in ifc_classes:
+                    try:
+                        results.extend(ifc_file.by_type(ifc_class, include_subtypes=False))
+                    except:
+                        continue  # If the user has specified a class that doesn't exist in the version
         if self.predefinedType:
             return [r for r in results if self(r)]
         return results
@@ -236,11 +240,12 @@ class Entity(Facet):
         if (
             not is_pass
             and inst.file.schema == "IFC2X3"
-            and not self.name.endswith("TYPE")
             and (element_type := ifcopenshell.util.element.get_type(inst))
+            and element_type != inst
         ):
-            is_pass = element_type.is_a().upper() == f"{self.name}TYPE"
-            reason = {"type": "NAME", "actual": element_type.is_a().upper()[:-4]}
+            derived_occurrence_class = element_type.is_a().upper().removesuffix("TYPE").removesuffix("STYLE")
+            is_pass = derived_occurrence_class == self.name
+            reason = {"type": "NAME", "actual": derived_occurrence_class}
         elif not is_pass:
             reason = {"type": "NAME", "actual": inst.is_a().upper()}
 
