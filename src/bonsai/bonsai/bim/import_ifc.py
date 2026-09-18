@@ -1282,8 +1282,8 @@ class IfcImportSettings:
         self.should_load_geometry = True
         self.should_clean_mesh = False
         self.should_cache = True
-        self.deflection_tolerance = 0.05  # Default is 0.001, but I find this to be more practical
-        self.angular_tolerance = 0.5
+        self.deflection_tolerance = 0.01  # 0.05 is IMO too course. 0.01 is a compromise between that and 0.001.
+        self.angular_tolerance = 0.5236  # Results in a nice round/even min of 12 sides per circle.
         self.void_limit = 30
         self.style_limit = 300
         # Locations greater than 1km are not considered "small sites" according to the georeferencing guide
