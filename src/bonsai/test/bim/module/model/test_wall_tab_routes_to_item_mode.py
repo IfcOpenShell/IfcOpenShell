@@ -20,10 +20,16 @@
 
 """Pins TAB-key dispatch on a LAYER2 wall through ``Modifier.try_applying_edit_mode``.
 
-Three behavioural legs of the TAB toggle:
+Regression guard for issue #8330: TAB on a wall must reach item mode (to add
+representation items such as a Half Space Solid), not get hijacked into wall
+parametric edit. Parametric edit is entered from the pen icon on the wall
+gizmo instead.
 
-* Fresh LAYER2 wall → enters parametric edit via ``bim.enable_editing_wall``.
-* LAYER2 wall already in parametric edit → finishes (toggle close).
+Three behavioural legs of the TAB dispatch:
+
+* Fresh LAYER2 wall → returns False, so the caller routes TAB to item mode.
+* LAYER2 wall already in parametric edit → finishes (closes the edit), so TAB
+  still exits an edit that was opened from the pen icon.
 * Wall without ``IfcMaterialLayerSetUsage`` → dispatch returns False so the
   caller routes the TAB to item mode."""
 
@@ -56,16 +62,20 @@ def _add_layer2_wall_occurrence():
     return wall, obj
 
 
-class TestTabOnLayer2WallEntersParametricEdit(NewFile):
-    def test_dispatch_enables_wall_edit(self):
+class TestTabOnFreshLayer2WallRoutesToItemMode(NewFile):
+    def test_dispatch_falls_through_for_fresh_layer2_wall(self):
+        """A fresh LAYER2 wall is a parametric-edit target, but TAB must not
+        enter parametric edit (issue #8330). The dispatch returns False so the
+        caller routes the TAB to item mode; parametric edit is reached from the
+        pen icon on the wall gizmo instead."""
         wall, obj = _add_layer2_wall_occurrence()
         assert tool.Parametric.is_wall(wall) is True
         assert obj.BIMWallProperties.is_editing is False
 
         result = tool.Blender.Modifier.try_applying_edit_mode(obj, wall)
 
-        assert result is True
-        assert obj.BIMWallProperties.is_editing is True
+        assert result is False
+        assert obj.BIMWallProperties.is_editing is False
 
 
 class TestTabOnLayer2WallAlreadyEditingFinishes(NewFile):
