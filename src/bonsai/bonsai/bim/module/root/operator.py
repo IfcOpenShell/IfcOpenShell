@@ -668,8 +668,7 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             )
             layer_set = rel.RelatingMaterial
             layer = ifcopenshell.api.material.add_layer(tool.Ifc.get(), layer_set=layer_set, material=material)
-            thickness = 0.1  # Arbitrary metric thickness for now
-            layer.LayerThickness = thickness / unit_scale
+            layer.LayerThickness = props.thickness / unit_scale
             pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=element, name="EPset_Parametric")
             if representation_template == "LAYERSET_AXIS2":
                 axis = "AXIS2"
@@ -869,5 +868,8 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
         elif props.representation_template == "PROFILESET":
             row = self.layout.row()
             prop_with_search(self.layout, props, "profile", text="Profile", should_click_ok=True)
+        elif props.representation_template in ("LAYERSET_AXIS2", "LAYERSET_AXIS3"):
+            row = self.layout.row()
+            row.prop(props, "thickness")
         if props.representation_template != "EMPTY":
             prop_with_search(self.layout, props, "contexts", should_click_ok=True)
