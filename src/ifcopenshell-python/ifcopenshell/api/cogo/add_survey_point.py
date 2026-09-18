@@ -47,7 +47,7 @@ def add_survey_point(
     representation = file.createIfcProductDefinitionShape(Representations=[shape_representation])
     annotation = file.createIfcAnnotation(
         ifcopenshell.guid.new(),
-        ObjectPlacement=context.WorldCoordinateSystem,
+        ObjectPlacement=file.createIfcLocalPlacement(RelativePlacement=context.WorldCoordinateSystem),
         Representation=representation,
         PredefinedType="SURVEY",
     )
