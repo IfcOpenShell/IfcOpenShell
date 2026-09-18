@@ -320,14 +320,17 @@ def get_cost_schedule_types(file: ifcopenshell.file) -> list[dict[str, str]]:
 
 
 def get_product_quantity_names(elements: list[ifcopenshell.entity_instance]) -> list[str]:
-    names = set()
+    names: Optional[set[str]] = None
     for element in elements or []:
         potential_names = set()
         qtos = get_psets(element, qtos_only=True)
         for qset, quantities in qtos.items():
             potential_names.update(quantities.keys())
-        names = names.intersection(potential_names) if names else potential_names
-    return [n for n in names if n != "id"]
+        # `names is None` marks "not yet initialised", distinct from an
+        # empty set, which means the intersection has already excluded
+        # every quantity name and must stay empty.
+        names = potential_names if names is None else names.intersection(potential_names)
+    return [n for n in (names or set()) if n != "id"]
 
 
 def get_cost_schedule(cost_item: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
