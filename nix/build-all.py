@@ -134,7 +134,7 @@ import time
 from collections.abc import Generator, Sequence
 from datetime import date, datetime
 from pathlib import Path
-from typing import Literal, NamedTuple, TypeAlias
+from typing import IO, Literal, NamedTuple, TypeAlias
 from urllib.request import urlretrieve
 
 from common import (
@@ -410,7 +410,7 @@ YELLOW = "\033[33m"
 MAGENTA = "\033[35m"
 
 
-def cecho(message, color=NO_COLOR):
+def cecho(message: str, color: str = NO_COLOR) -> None:
     """Logs message `message` in color `color`."""
     logger.info(f"{color}{message}\033[0m")
 
@@ -707,7 +707,7 @@ def run(cmds: Sequence[str], cwd: str | None = None, can_fail: bool = False, env
     def timestamp() -> str:
         return datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]  # same format as logging
 
-    def stream_reader(pipe, collector: list[str], log_file) -> None:
+    def stream_reader(pipe: IO[str], collector: list[str], log_file: IO[str]) -> None:
         for line in iter(pipe.readline, ""):
             log_file.write(f"{timestamp()} {line}")
             log_file.flush()
@@ -782,7 +782,7 @@ def run_autoconf(dependency_name: str, configure_args: list[str], cwd: str) -> N
 
 
 def run_cmake(
-    name,
+    name: str,
     cmake_args: list[str],
     cmake_dir: str | None = None,
     cwd: str | None = None,
@@ -873,7 +873,7 @@ def build_dependency(
     revision: str | None = None,
     patch: list[str] | None = None,
     pre_compile_subs: Sequence[tuple[str, str, str]] = (),
-    cmake_dir=None,
+    cmake_dir: str | None = None,
     cmake_native: bool = False,
 ) -> None:
     """Handles building of dependencies with different tools (which are
