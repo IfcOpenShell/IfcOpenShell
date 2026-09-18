@@ -2754,6 +2754,74 @@ class RotateWall90(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
+class AlignLocalXToLength(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.align_local_x_to_length"
+    bl_label = "Align Local X To Length"
+    bl_description = (
+        "Rotate the selected element's local axes 90° about Z so its longer horizontal "
+        "footprint side lies along local +X, without changing its world position or "
+        "appearance.\n\n"
+        "Window/door snapping and material layer offsets assume local +X carries the "
+        "wall length. Run this on a mesh you converted to a wall whose long side ended "
+        "up on local Y, so those tools use the correct axis. Only freeform (non-parametric) "
+        "elements are affected; a square footprint has no unambiguous long side and is left "
+        "as-is."
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Model.has_selected_ifc_objects():
+            cls.poll_message_set("No IFC objects selected.")
+            return False
+        return True
+
+    def _execute(self, context: bpy.types.Context) -> set[str]:
+        aligned = 0
+        skipped = 0
+        for obj in tool.Blender.get_selected_objects():
+            element = tool.Ifc.get_entity(obj)
+            if element is None or not isinstance(obj.data, bpy.types.Mesh):
+                continue
+            # Parametric elements (LAYER2/LAYER3/PROFILE) are regenerated from the IFC
+            # axis, where local +X is guaranteed to be the length. Never rewrite their
+            # mesh; there is nothing to fix and doing so would fight the parametric engine.
+            if tool.Model.get_usage_type(element) is not None:
+                skipped += 1
+                continue
+            if obj.data.users > 1:
+                self.report(
+                    {"WARNING"},
+                    f"Object '{obj.name}' shares its mesh with other objects; "
+                    "make it single-user before aligning its local axes.",
+                )
+                skipped += 1
+                continue
+            x_extent, y_extent = tool.Model.get_local_horizontal_extents(obj)
+            if y_extent <= x_extent * (1.0 + 1e-4):
+                # Already aligned (long side on X) or an ambiguous square footprint.
+                skipped += 1
+                continue
+
+            # Rotate the mesh data so local +Y maps onto local +X, then compensate the
+            # object matrix by the inverse so the wall keeps its exact world placement
+            # and appearance. This is an explicit, user-invoked re-framing of the local
+            # axes, not an automatic override of the user's modelling.
+            rotation = Matrix.Rotation(math.radians(-90.0), 4, "Z")
+            obj.data.transform(rotation)
+            obj.matrix_world = obj.matrix_world @ rotation.inverted()
+            context.view_layer.update()
+            with context.temp_override(active_object=obj, selected_objects=[obj]):
+                bpy.ops.bim.update_representation(obj=obj.name)
+            aligned += 1
+
+        if aligned:
+            self.report({"INFO"}, f"Aligned local X to length on {aligned} element(s).")
+        else:
+            self.report({"INFO"}, "No elements needed aligning (long side already on local X, or square).")
+        return {"FINISHED"}
+
+
 def _wall_axis_world_segment_from_geom(obj: bpy.types.Object, geom: dict) -> tuple[Vector, Vector]:
     """Compose the world-space axis segment from an already-read ``geom`` dict.
     Used by the billboarding gizmo groups so a single cached IFC read drives both
