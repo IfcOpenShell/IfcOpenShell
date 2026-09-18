@@ -37,6 +37,16 @@ Most nodes have a help description, and input tooltips, that show show up when h
 ### IfcSverchok panel
 IfcSverchok creates a "IfcSverchok" tab in the Nodes panel. It includes a "Re-run all nodes" button that creates a fresh IFC File and a "Write File" button. It's recommended to re-run all nodes before saving the file either through the panel or the "Write File" node.
 
+### Working with an existing IFC file
+Nodes such as "IFC By Type", "IFC By Id", "IFC By Guid" and "IFC Read Entity" do not have a "file" input socket. They always operate on a single active IFC model tracked internally (`SvIfcStore`), not on a file object passed through the node tree. By default that active model is an empty, freshly generated demo project.
+
+To query an existing IFC file with these nodes:
+
+1. Open the file in Bonsai first (`File > Open`, or `File > Import > IFC`).
+2. In the Sverchok Node Editor's "IfcSverchok" tab (N-panel), click "Use Bonsai IFC File". This points `SvIfcStore` at the file currently open in Bonsai for the duration of that graph update, so nodes like "IFC By Type" will return real elements from it.
+
+There is no supported way to feed a file loaded via the "IFC Read File" node (or created via "IFC Create File"/"IFC Create Project") into "IFC By Type" and similar nodes. Those are two separate, non-interchangeable node families: a small set of low-level nodes that pass `ifcopenshell.file` objects through sockets, and the higher-level nodes listed above that always read from the active Bonsai/`SvIfcStore` file. Mixing the two is not currently possible.
+
 ## Examples
 ### Parametric Facade
 The sverchok model was kindly provided by Erindale Woodford [https://twitter.com/erindale_xyz](https://twitter.com/erindale_xyz). Check out the sverchok script and the resulting IFC model in the example_files folder.
