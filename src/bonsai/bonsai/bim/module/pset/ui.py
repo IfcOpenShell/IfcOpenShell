@@ -50,6 +50,8 @@ def draw_property(prop: IfcProperty, layout: bpy.types.UILayout, copy_operator: 
         draw_single_property(prop, layout, copy_operator)
     elif prop.value_type == "IfcPropertyEnumeratedValue":
         draw_enumerated_property(prop, layout, copy_operator)
+    elif prop.value_type == "IfcPropertyBoundedValue":
+        draw_bounded_property(prop, layout, copy_operator)
     else:
         assert_never(prop.value_type)
 
@@ -86,6 +88,25 @@ def draw_enumerated_property(
         grid = layout.column_flow(columns=3)
         for e in prop.enumerated_value.enumerated_values:
             grid.prop(e, "is_selected", text=str(e[value_name]))
+    if copy_operator:
+        op = layout.operator(f"{copy_operator}", text="", icon="COPYDOWN")
+        op.name = prop.metadata.name
+
+
+def draw_bounded_property(prop: IfcProperty, layout: bpy.types.UILayout, copy_operator: Optional[str] = None) -> None:
+    layout.label(text=prop.metadata.name)
+    grid = layout.column_flow(columns=3)
+    for attr, label in (
+        (prop.bounded_value.lower_bound_value, "Lower"),
+        (prop.bounded_value.upper_bound_value, "Upper"),
+        (prop.bounded_value.set_point_value, "Set Point"),
+    ):
+        value_name = attr.get_value_name(display_only=True)
+        if not value_name:
+            continue
+        row = grid.row(align=True)
+        row.prop(attr, value_name, text=label)
+        row.prop(attr, "is_null", icon="RADIOBUT_OFF" if attr.is_null else "RADIOBUT_ON", text="")
     if copy_operator:
         op = layout.operator(f"{copy_operator}", text="", icon="COPYDOWN")
         op.name = prop.metadata.name
