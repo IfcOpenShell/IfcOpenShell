@@ -330,6 +330,14 @@ class BIMModelProperties(PropertyGroup):
     rl2: bpy.props.FloatProperty(name="RL", default=1, subtype="DISTANCE", description="Z offset for windows")
     # Used for plan calculation points such as in room generation
     rl3: bpy.props.FloatProperty(name="RL", default=1, subtype="DISTANCE", description="Z offset for space calculation")
+    space_follow_ceiling: bpy.props.BoolProperty(
+        name="Follow Slopes",
+        default=False,
+        description=(
+            "Shape generated space tops to follow sloping roofs or slabs found above the footprint. "
+            "Where nothing is found above, the flat space height is used"
+        ),
+    )
     type_page: bpy.props.IntProperty(name="Type Page", default=1, min=1, update=update_type_page)
     x_angle: bpy.props.FloatProperty(
         name="X Angle",
@@ -419,6 +427,7 @@ class BIMModelProperties(PropertyGroup):
         rl1: float
         rl2: float
         rl3: float
+        space_follow_ceiling: bool
         type_page: int
         x_angle: float
         type_name: str
