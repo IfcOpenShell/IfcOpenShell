@@ -166,6 +166,105 @@ class TestGetActiveRepresentation(NewFile):
         assert subject.get_active_representation(obj) is None
 
 
+class TestGetHostRecutRepresentation(NewFile):
+    @staticmethod
+    def create_wall_with_axis_and_body(ifc, context):
+        wall = ifc.createIfcWall()
+        axis = ifc.createIfcShapeRepresentation(ContextOfItems=context, RepresentationIdentifier="Axis")
+        body = ifc.createIfcShapeRepresentation(ContextOfItems=context, RepresentationIdentifier="Body")
+        wall.Representation = ifc.createIfcProductDefinitionShape(Representations=[axis, body])
+        return wall, axis, body
+
+    def test_prefers_the_representation_the_object_displays(self):
+        """Exports that place Axis, BoundingBox and Body in a single context made
+        the openings recut fall back to Axis and blank the host mesh."""
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        context = ifc.createIfcGeometricRepresentationContext(ContextType="Model")
+        wall, axis, body = self.create_wall_with_axis_and_body(ifc, context)
+        mesh = bpy.data.meshes.new("Mesh")
+        obj = bpy.data.objects.new("Object", mesh)
+        tool.Geometry.get_mesh_props(mesh).ifc_definition_id = body.id()
+        assert subject.get_host_recut_representation(obj, wall) == body
+
+    def test_falls_back_to_the_body_representation_in_the_active_context(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        parent = ifc.createIfcGeometricRepresentationContext(ContextType="Model")
+        context = ifc.createIfcGeometricRepresentationSubContext(
+            ContextType="Model",
+            ContextIdentifier="Body",
+            TargetView="MODEL_VIEW",
+            ParentContext=parent,
+        )
+        wall, axis, body = self.create_wall_with_axis_and_body(ifc, context)
+        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
+        assert subject.get_host_recut_representation(obj, wall) == body
+
+    def test_returns_none_when_the_element_has_no_representation(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifc.createIfcGeometricRepresentationSubContext(
+            ContextType="Model",
+            ContextIdentifier="Body",
+            TargetView="MODEL_VIEW",
+            ParentContext=ifc.createIfcGeometricRepresentationContext(ContextType="Model"),
+        )
+        wall = ifc.createIfcWall()
+        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
+        assert subject.get_host_recut_representation(obj, wall) is None
+
+
+class TestGetOpeningContextIds(NewFile):
+    @staticmethod
+    def void_wall(ifc, wall, context):
+        opening = ifc.createIfcOpeningElement()
+        representation = ifc.createIfcShapeRepresentation(ContextOfItems=context, RepresentationIdentifier="Body")
+        opening.Representation = ifc.createIfcProductDefinitionShape(Representations=[representation])
+        ifc.createIfcRelVoidsElement(RelatingBuildingElement=wall, RelatedOpeningElement=opening)
+        return opening
+
+    def test_reports_contexts_the_host_context_does_not_cover(self):
+        """A context-ids filter without them makes the kernel skip the
+        subtraction and the door leaves the host uncut."""
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        host_context = ifc.createIfcGeometricRepresentationContext(ContextType="Model")
+        opening_context = ifc.createIfcGeometricRepresentationSubContext(
+            ContextType="Model",
+            ContextIdentifier="Body",
+            TargetView="MODEL_VIEW",
+            ParentContext=host_context,
+        )
+        wall = ifc.createIfcWall()
+        self.void_wall(ifc, wall, opening_context)
+        assert subject.get_opening_context_ids([wall], host_context) == [opening_context.id()]
+
+    def test_ignores_openings_sharing_the_host_context(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        host_context = ifc.createIfcGeometricRepresentationContext(ContextType="Model")
+        wall = ifc.createIfcWall()
+        self.void_wall(ifc, wall, host_context)
+        assert subject.get_opening_context_ids([wall], host_context) == []
+
+    def test_deduplicates_and_skips_elements_that_cannot_be_voided(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        host_context = ifc.createIfcGeometricRepresentationContext(ContextType="Model")
+        opening_context = ifc.createIfcGeometricRepresentationSubContext(
+            ContextType="Model",
+            ContextIdentifier="Body",
+            TargetView="MODEL_VIEW",
+            ParentContext=host_context,
+        )
+        wall = ifc.createIfcWall()
+        self.void_wall(ifc, wall, opening_context)
+        self.void_wall(ifc, wall, opening_context)
+        annotation = ifc.createIfcAnnotation()
+        assert subject.get_opening_context_ids([wall, annotation], host_context) == [opening_context.id()]
+
+
 class TestGetRepresentationId(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()

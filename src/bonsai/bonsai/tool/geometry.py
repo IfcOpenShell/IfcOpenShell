@@ -899,6 +899,43 @@ class Geometry(bonsai.core.tool.Geometry):
         return ifcopenshell.util.representation.get_representation(element, context)
 
     @classmethod
+    def get_opening_context_ids(
+        cls, elements: Iterable[ifcopenshell.entity_instance], context: ifcopenshell.entity_instance
+    ) -> list[int]:
+        """Contexts, other than ``context``, holding the geometry of the openings
+        voiding ``elements``. A ``context-ids`` filter that omits them makes the
+        kernel silently skip those subtractions."""
+        context_ids: list[int] = []
+        for element in elements:
+            for rel in getattr(element, "HasOpenings", None) or ():
+                for representation in cls.get_representations_iter(rel.RelatedOpeningElement):
+                    context_id = representation.ContextOfItems.id()
+                    if context_id != context.id() and context_id not in context_ids:
+                        context_ids.append(context_id)
+        return context_ids
+
+    @classmethod
+    def get_host_recut_representation(
+        cls, obj: bpy.types.Object, element: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        """The representation a voided host must be re-tessellated from after its
+        openings change: the one ``obj`` currently displays, else the ``Body``
+        representation sharing that context, else the first one in it."""
+        representation = cls.get_active_representation(obj)
+        if representation is not None and representation.is_a("IfcShapeRepresentation"):
+            return representation
+        context = cls.get_active_representation_context(obj)
+        fallback = None
+        for candidate in cls.get_representations_iter(element):
+            if candidate.ContextOfItems != context:
+                continue
+            if candidate.RepresentationIdentifier == "Body":
+                return candidate
+            if fallback is None:
+                fallback = candidate
+        return fallback
+
+    @classmethod
     def get_cartesian_point_offset(cls, obj: bpy.types.Object) -> npt.NDArray[np.float64] | None:
         props = tool.Blender.get_object_bim_props(obj)
         if props.blender_offset_type == "CARTESIAN_POINT" and props.cartesian_point_offset:
@@ -1158,7 +1195,10 @@ class Geometry(bonsai.core.tool.Geometry):
         ifc_importer = bonsai.bim.import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = tool.Ifc.get()
 
-        settings.set("context-ids", [context.id()])
+        context_ids = [context.id()]
+        if apply_openings:
+            context_ids.extend(cls.get_opening_context_ids(elements, context))
+        settings.set("context-ids", context_ids)
         if not apply_openings:
             settings.set("disable-opening-subtractions", True)
 
