@@ -1271,10 +1271,14 @@ class Loader(bonsai.core.tool.Loader):
         item_styles: list[Union[bpy.types.Material, None]] = []
         for item_data in rep_items:
             item = item_data["item"]
-            item_style = tool.Style.get_representation_item_style(item) or material_style
+            # Only surface styles map to Blender materials. Items may carry
+            # other style kinds too (DDScad writes an IfcCurveStyle before the
+            # IfcSurfaceStyle on swept disk items), so ask for the surface
+            # style explicitly and degrade to no material instead of asserting.
+            item_style = tool.Style.get_representation_item_style(item, ifc_class="IfcSurfaceStyle") or material_style
             if item_style is not None:
-                item_style = tool.Ifc.get_object(item_style)
-                assert isinstance(item_style, bpy.types.Material)
+                blender_material = tool.Ifc.get_object(item_style)
+                item_style = blender_material if isinstance(blender_material, bpy.types.Material) else None
             item_styles.append(item_style)
         item_styles_unique = list(set(item_styles))
         for item_style in item_styles_unique:
