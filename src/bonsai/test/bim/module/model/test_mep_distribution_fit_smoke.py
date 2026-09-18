@@ -190,6 +190,45 @@ def test_fit_flow_segments_refuses_mixed_pipe_and_duct():
     transition.assert_not_called()
 
 
+def test_mep_add_junction_is_registered():
+    """``MEPAddJunction`` is the 3+ segment junction entry point (tee,
+    wye, cross). Pin the registration contract so the operator stays
+    callable from the workspace tool and ``FitFlowSegments``."""
+    from bonsai.bim.module.model import mep
+
+    assert mep.MEPAddJunction.bl_idname == "bim.mep_add_junction"
+    assert mep.MEPAddJunction.bl_label == "Add Junction"
+    assert mep.MEPAddJunction.bl_options == {"REGISTER", "UNDO"}
+
+
+def test_fit_flow_segments_with_three_segments_dispatches_junction():
+    """Three same-class, same-profile IfcFlowSegments → JUNCTION fitting
+    type, delegates to ``bim.mep_add_junction`` which validates the
+    common-point geometry and reports its own errors."""
+    from bonsai.bim.module.model import mep
+
+    objs = [MagicMock(), MagicMock(), MagicMock()]
+    entities = {id(o): _segment("IfcDuctSegment") for o in objs}
+    profile = MagicMock()
+
+    context = MagicMock()
+    context.selected_objects = objs
+
+    op = _make_op()
+    with patch.object(mep.tool.Ifc, "get_entity", side_effect=lambda o: entities[id(o)]), patch.object(
+        mep.tool.Model, "get_flow_segment_profile", return_value=profile
+    ), patch.object(mep.MEPAddJunction, "_execute", return_value=None) as junction, patch.object(
+        mep.MEPAddObstruction, "_execute", return_value=None
+    ) as obstruction, patch.object(
+        mep.MEPAddBend, "_execute", return_value=None
+    ) as bend:
+        mep.FitFlowSegments._execute(op, context=context)
+
+    assert junction.call_count == 1
+    obstruction.assert_not_called()
+    bend.assert_not_called()
+
+
 # ---------------------------------------------------------------------------
 # RegenerateDistributionElement
 # ---------------------------------------------------------------------------
