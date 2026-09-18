@@ -92,6 +92,23 @@ build_example(IfcParseExamples ${schema})
 if(WITH_OPENCASCADE)
     build_example(IfcOpenHouse ${schema} geometry_serializer)
     build_example(IfcAdvancedHouse ${schema} geometry_serializer)
+
+    # IfcOpenHouse and IfcAdvancedHouse include OpenCASCADE headers directly
+    # (TColgp_Array2OfPnt.hxx, Geom_BSplineSurface.hxx, ...). Transitive
+    # propagation of the OCC include directories through geometry_serializer is
+    # not reliable on every generator (see issue #7822 on MSVC x64), so add them
+    # explicitly. FindOpenCASCADE sets OCC_INCLUDE_DIR when the include/library
+    # dirs are provided, or OpenCASCADE_INCLUDE_DIR when discovered via config.
+    if(OCC_INCLUDE_DIR)
+        set(_occ_example_includes ${OCC_INCLUDE_DIR})
+    else()
+        set(_occ_example_includes ${OpenCASCADE_INCLUDE_DIR})
+    endif()
+    if(_occ_example_includes)
+        target_include_directories(IfcOpenHouse PRIVATE ${_occ_example_includes})
+        target_include_directories(IfcAdvancedHouse PRIVATE ${_occ_example_includes})
+    endif()
+    unset(_occ_example_includes)
 endif()
 
 if("4x3_add2" IN_LIST SCHEMA_VERSIONS)
