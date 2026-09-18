@@ -25,10 +25,12 @@ import ifcopenshell
 import ifcopenshell.api.feature
 import ifcopenshell.api.geometry
 import ifcopenshell.api.root
+import ifcopenshell.api.structural
 import ifcopenshell.api.style
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+from mathutils import Vector
 
 import bonsai.core.aggregate
 import bonsai.core.geometry
@@ -427,6 +429,34 @@ class Root(bonsai.core.tool.Root):
             ifc_representation_class=ifc_representation_class,
             profile_set_usage=profile_set_usage,
         )
+
+    @classmethod
+    def set_default_structural_axis(cls, element: ifcopenshell.entity_instance, obj: bpy.types.Object) -> None:
+        """Populate the mandatory Axis attribute of a structural curve item.
+
+        ``IfcStructuralCurveMember.Axis`` and ``IfcStructuralCurveConnection.Axis``
+        are mandatory ``IfcDirection`` attributes representing the local Z
+        axis, used together with the curve's own tangent to orient the
+        cross section. It must not be parallel to the curve's tangent, or
+        the local coordinate system is undefined.
+
+        If the object's mesh is the simple two-vertex line that Bonsai
+        creates for these classes, derive an axis that is guaranteed not to
+        be parallel to the member's own direction: global Z, unless the
+        member itself runs (near) vertically, in which case fall back to
+        global X. For anything else (e.g. a more complex mesh), fall back
+        to the same arbitrary-but-schema-valid placeholder so the file
+        remains valid; the user can always correct it via "Edit Axis".
+        """
+        axis = (0.0, 0.0, 1.0)
+        mesh = obj.data
+        if isinstance(mesh, bpy.types.Mesh) and len(mesh.vertices) == 2:
+            tangent = mesh.vertices[1].co - mesh.vertices[0].co
+            if tangent.length_squared > 0:
+                tangent.normalize()
+                if abs(tangent.dot(Vector((0.0, 0.0, 1.0)))) > 0.9:
+                    axis = (1.0, 0.0, 0.0)
+        ifcopenshell.api.structural.edit_structural_item_axis(tool.Ifc.get(), structural_item=element, axis=axis)
 
     @classmethod
     def set_object_name(cls, obj: bpy.types.Object, element: ifcopenshell.entity_instance) -> None:
