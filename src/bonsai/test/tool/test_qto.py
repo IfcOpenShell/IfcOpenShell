@@ -181,6 +181,79 @@ class TestGetCalculatedObjectQuantities(test.bim.bootstrap.NewFile):
         assert quantities["NetVolume"] == 282.517
 
 
+class TestGetCalculatedObjectQuantitiesNonManifold(test.bim.bootstrap.NewFile):
+    """Regression test for #6125: a non-manifold mesh must not produce a bogus volume."""
+
+    def test_run(self):
+        import bmesh
+        import ifc5d.qto
+
+        import bonsai.core.root
+
+        self.ifc = ifcopenshell.file()
+        tool.Ifc.set(self.ifc)
+        ifcopenshell.api.root.create_entity(self.ifc, ifc_class="IfcProject", name="My Project")
+        import logging
+
+        import bonsai.bim.import_ifc as import_ifc
+
+        ifc_import_settings = import_ifc.IfcImportSettings.factory(
+            bpy.context, tool.Ifc.get_path(), logging.getLogger("ImportIFC")
+        )
+        ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
+        ifc_importer.file = self.ifc
+        ifc_importer.create_project()
+
+        context = ifcopenshell.api.context.add_context(self.ifc, context_type="Model")
+
+        bpy.ops.mesh.primitive_cube_add(location=(0.0, 0.0, 0.0), size=2)
+        obj = bpy.context.active_object
+        element = bonsai.core.root.assign_class(
+            tool.Ifc,
+            tool.Collector,
+            tool.Root,
+            obj=obj,
+            ifc_class="IfcWall",
+            predefined_type="ELEMENTEDWALL",
+            context=context,
+        )
+
+        # Corrupt the mesh into an open (non-watertight) shape after the IFC
+        # representation is assigned, simulating a badly authored import
+        # rather than something Bonsai's own authoring tools would produce.
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+        bm.faces.ensure_lookup_table()
+        bmesh.ops.delete(bm, geom=[bm.faces[0]], context="FACES")
+        bm.to_mesh(obj.data)
+        bm.free()
+
+        rules = {
+            "calculators": {
+                "Blender": {
+                    "IfcWall": {
+                        "Qto_WallBaseQuantities": {
+                            "GrossFootprintArea": "get_gross_footprint_area",
+                            "GrossVolume": "get_gross_volume",
+                            "NetVolume": "get_net_volume",
+                        }
+                    },
+                }
+            }
+        }
+
+        ifc_file = tool.Ifc.get()
+        results = ifc5d.qto.quantify(ifc_file, {element}, rules)
+        quantities = results[element]["Qto_WallBaseQuantities"]
+
+        # Topology-independent quantities are unaffected.
+        assert quantities["GrossFootprintArea"] == 4
+        # Volume is undefined for a non-manifold mesh, so it is skipped rather
+        # than reporting a wrong number.
+        assert "GrossVolume" not in quantities
+        assert "NetVolume" not in quantities
+
+
 class TestGetBaseQto(test.bim.bootstrap.NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
