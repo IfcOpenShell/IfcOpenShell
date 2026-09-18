@@ -2421,7 +2421,14 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
         props = tool.Geometry.get_geometry_props()
         props.is_changing_mode = True
         if props.mode != "EDIT":
-            props.mode = "EDIT"
+            try:
+                props.mode = "EDIT"
+            except TypeError:
+                # The mode enum is built dynamically (ViewportData.mode) and
+                # does not offer EDIT for every element, so syncing the UI
+                # mode can fail even though Blender's edit mode toggled fine.
+                # Keep the current mode instead of crashing TAB (#8066).
+                pass
         props.is_changing_mode = False
 
     def has_aggregates(self, objs):
@@ -2723,7 +2730,14 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
         props = tool.Geometry.get_geometry_props()
         props.is_changing_mode = True
         if props.mode != "EDIT":
-            props.mode = "EDIT"
+            try:
+                props.mode = "EDIT"
+            except TypeError:
+                # The mode enum is built dynamically (ViewportData.mode) and
+                # does not offer EDIT for every element, so syncing the UI
+                # mode can fail even though Blender's edit mode toggled fine.
+                # Keep the current mode instead of crashing TAB (#8066).
+                pass
         props.is_changing_mode = False
 
     def _is_annotation_object(self, element: ifcopenshell.entity_instance) -> bool:
