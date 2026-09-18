@@ -41,9 +41,9 @@ class TestCsv2Ifc:
         return ifc_file
 
     @staticmethod
-    def get_items_rows_from_csv(csv_filepath: Path) -> list[list[str]]:
+    def get_items_rows_from_csv(csv_filepath: Path, delimiter: str = ",") -> list[list[str]]:
         with csv_filepath.open("r", encoding="utf-8") as csv_file:
-            reader = csv.reader(csv_file)
+            reader = csv.reader(csv_file, delimiter=delimiter)
             rows = list(reader)
         rows = rows[1:]  # Skip header.
         rows = filter(lambda l: l[0], rows)  # Skip empty rows.
@@ -76,6 +76,49 @@ class TestCsv2Ifc:
         csv2ifc.execute()
 
         self.validate_ifc_file_against_csv(ifc_file, csv_filepath)
+
+    def test_import_semicolon_delimited(self):
+        # Regression test for #7048. Locales that use a comma as the decimal separator
+        # use a semicolon as the field delimiter, which was previously unreadable.
+        csv_filepath = Path(__file__).parent.parent / "sample_cost_schedule_house_FR.csv"
+        rows = self.get_items_rows_from_csv(csv_filepath)
+
+        with csv_filepath.open("r", encoding="utf-8") as csv_file:
+            all_rows = list(csv.reader(csv_file))
+
+        with tempfile.TemporaryDirectory("w") as temp_dir:
+            semicolon_filepath = Path(temp_dir) / "semicolon.csv"
+            with semicolon_filepath.open("w", newline="", encoding="utf-8") as csv_file:
+                csv.writer(csv_file, delimiter=";").writerows(all_rows)
+
+            # The comma reader must not silently treat the whole line as one column.
+            assert len(self.get_items_rows_from_csv(semicolon_filepath, delimiter=";")) == len(rows)
+
+            ifc_file = self.setup_ifc_file()
+            csv2ifc = ifc5d.csv2ifc.Csv2Ifc(str(semicolon_filepath), ifc_file, delimiter=";")
+            csv2ifc.execute()
+
+            assert len(ifc_file.by_type("IfcCostSchedule")) == 1
+            assert len(ifc_file.by_type("IfcCostItem")) == len(rows)
+
+    def test_export_semicolon_delimited(self):
+        ifc_file = self.setup_ifc_file()
+        csv_filepath = Path(__file__).parent.parent / "sample_cost_schedule_house_FR.csv"
+        ifc5d.csv2ifc.Csv2Ifc(str(csv_filepath), ifc_file).execute()
+
+        with tempfile.TemporaryDirectory("w") as temp_csv_dir:
+            writer = ifc5d.ifc5Dspreadsheet.Ifc5DCsvWriter(ifc_file, temp_csv_dir)
+            writer.delimiter = ";"
+            writer.write()
+
+            exported = next(Path(temp_csv_dir).glob("*.csv"))
+            n_rows = len(self.get_items_rows_from_csv(csv_filepath))
+            assert len(self.get_items_rows_from_csv(exported, delimiter=";")) == n_rows
+
+            # Round trip it back through the semicolon reader.
+            new_ifc_file = self.setup_ifc_file()
+            ifc5d.csv2ifc.Csv2Ifc(str(exported), new_ifc_file, delimiter=";").execute()
+            assert len(new_ifc_file.by_type("IfcCostItem")) == n_rows
 
     def test_export_import_test(self):
         ifc_file = self.setup_ifc_file()
