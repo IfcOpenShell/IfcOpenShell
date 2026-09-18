@@ -70,6 +70,10 @@ class QuickFavoriteProperty(PropertyGroup):
     )
 
     def set_value(self, value: Any) -> None:
+        if self.value_prop == "enum_value" and not isinstance(value, str):
+            # Enum items store identifiers as strings, but some operators
+            # declare integer enum values (#7773).
+            value = str(value)
         setattr(self, self.value_prop, value)
 
     def set_enum_items(self, items: list[tuple[str, str, str]]) -> None:
