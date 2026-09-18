@@ -84,8 +84,10 @@ class MaterialCreator:
         if element.is_a("IfcTypeProduct"):
             self.parse_element_type_material_styles(element)
         self.parsed_meshes.add(self.mesh.name)
-        if self.ifc_import_settings.load_indexed_maps:
-            self.load_texture_maps(shape_has_openings)
+        # Texture UV maps are always loaded: they only cost something when a
+        # texture style is actually present and textures render wrong without them.
+        # Indexed colour maps stay behind the load_indexed_maps setting.
+        self.load_texture_maps(shape_has_openings)
         self.assign_material_slots_to_faces()
         tool.Geometry.record_object_materials(obj)
         del self.mesh["ios_materials"]

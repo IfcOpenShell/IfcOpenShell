@@ -431,8 +431,8 @@ class BIMProjectProperties(PropertyGroup):
     element_offset: IntProperty(name="Element Offset", default=0)
     element_limit: IntProperty(name="Element Offset", default=30000)
     load_indexed_maps: BoolProperty(
-        name="Load Indexed Maps",
-        description="Load indexed maps (UV and color maps)",
+        name="Load Indexed Colour Maps",
+        description="Load indexed colour maps (vertex colours). Texture UV maps are always loaded",
         default=False,  # Very slow and hackishly implemented
     )
     links: CollectionProperty(name="Links", type=Link)
