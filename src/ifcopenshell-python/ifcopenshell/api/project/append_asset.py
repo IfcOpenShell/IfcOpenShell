@@ -133,6 +133,21 @@ def append_asset(
             )
 
     """
+    # Entities cannot be added across schemas, so the library and the project
+    # must share a schema. Callers appending from a library in a different
+    # schema (e.g. a default IFC4 library into an IFC4X3 project, or between
+    # IFC4X3 sub-versions) must migrate the library to the project schema first,
+    # e.g. via the "Migrate" ifcpatch recipe or ifcopenshell.util.schema.Migrator.
+    # Migrating here per element would be wasteful when appending many assets
+    # from the same library. See issue #4766.
+    if library.schema_identifier != file.schema_identifier:
+        raise ValueError(
+            f"Cannot append an asset from a library in schema {library.schema_identifier} "
+            f"into a project in schema {file.schema_identifier}. "
+            f"Migrate the library to the project schema first "
+            f"(e.g. the 'Migrate' ifcpatch recipe or ifcopenshell.util.schema.Migrator)."
+        )
+
     usecase = Usecase()
     usecase.file: ifcopenshell.file = file
     usecase.settings = {
