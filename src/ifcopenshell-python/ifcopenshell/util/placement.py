@@ -77,8 +77,11 @@ def get_axis2placement(placement: ifcopenshell.entity_instance) -> MatrixType:
     elif ifc_class == "IfcAxis2Placement2D":
         z = np.array((0, 0, 1))
         if placement.RefDirection:
-            x = np.array(placement.RefDirection.DirectionRatios)
-            x.resize(3)
+            # Pad the 2D direction to 3D by construction. An in-place
+            # ndarray.resize raises "cannot resize an array that references or is
+            # referenced" when DirectionRatios is a view of ifcopenshell-owned
+            # data, which crashed editing 2D-placed items. See #6256.
+            x = np.array((*placement.RefDirection.DirectionRatios, 0.0, 0.0))[:3]
         else:
             x = np.array((1, 0, 0))
         o = (*placement.Location.Coordinates, 0.0)
