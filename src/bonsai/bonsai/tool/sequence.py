@@ -1873,7 +1873,7 @@ class Sequence(bonsai.core.tool.Sequence):
             element = tool.Ifc.get_entity(obj)
             if not element or not element.is_a("IfcProduct"):
                 continue
-            obj.hide_set(element not in visible_elements)
+            tool.Blender.set_object_status_visibility(obj, element not in visible_elements)
 
     @classmethod
     def copy_work_schedule(cls, work_schedule: ifcopenshell.entity_instance) -> None:
