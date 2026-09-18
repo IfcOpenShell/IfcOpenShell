@@ -138,7 +138,9 @@ class Pset(bonsai.core.tool.Pset):
         return name
 
     @classmethod
-    def is_pset_applicable(cls, element: ifcopenshell.entity_instance, pset_name: str) -> bool:
+    def is_pset_applicable(
+        cls, element: ifcopenshell.entity_instance, pset_name: str, pset_type: PSET_TYPE = "PSET"
+    ) -> bool:
         if element.is_a("IfcMaterialDefinition"):
             predefined_type = getattr(element, "Category", None)
         else:
@@ -146,7 +148,11 @@ class Pset(bonsai.core.tool.Pset):
         return bool(
             pset_name
             in bonsai.bim.schema.ifc.psetqto.get_applicable_names(
-                element.is_a(), predefined_type, pset_only=True, schema=tool.Ifc.get_schema()
+                element.is_a(),
+                predefined_type,
+                pset_only=pset_type == "PSET",
+                qto_only=pset_type == "QTO",
+                schema=tool.Ifc.get_schema(),
             )
         )
 

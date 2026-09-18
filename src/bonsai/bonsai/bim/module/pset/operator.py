@@ -18,7 +18,7 @@
 
 import json
 from collections import defaultdict
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import bpy
 import ifcopenshell.api
@@ -104,18 +104,6 @@ class EditPset(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get().by_id(ifc_definition_id)
         properties = {}
 
-        pset_id = self.pset_id or props.active_pset_id
-        if pset_id:
-            pset = self.file.by_id(pset_id)
-        elif props.active_pset_type == "PSET":
-            pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name=props.active_pset_name)
-            props.active_pset_id = pset.id()
-        elif props.active_pset_type == "QTO":
-            pset = ifcopenshell.api.pset.add_qto(self.file, product=element, name=props.active_pset_name)
-            props.active_pset_id = pset.id()
-        else:
-            assert False
-
         if self.properties:
             properties = json.loads(self.properties)
         else:
@@ -128,32 +116,94 @@ class EditPset(bpy.types.Operator, tool.Ifc.Operator):
                         e[value_name] for e in prop.enumerated_value.enumerated_values if e.is_selected
                     ]
 
+        pset_id = self.pset_id or props.active_pset_id
+        is_new_pset = not pset_id
+        pset = self.apply_pset(element, pset_id, props.active_pset_type, props.active_pset_name, properties)
+        if is_new_pset:
+            props.active_pset_id = pset.id()
+
+        # A brand new pset is only proposed for the active object, so apply it to
+        # the rest of the current selection too, matching bim.assign_type's behaviour.
+        # Editing an already existing pset (pset_id truthy) is left untouched: if
+        # that pset is shared between elements, editing it already updates all of them.
+        if is_new_pset and self.obj_type == "Object":
+            self.apply_new_pset_to_selection(element, props.active_pset_type, props.active_pset_name, properties)
+
+        bpy.ops.bim.disable_pset_editing(obj=self.obj, obj_type=self.obj_type)
+        tool.Blender.update_viewport()
+
+    def apply_pset(
+        self,
+        element: ifcopenshell.entity_instance,
+        pset_id: int,
+        pset_type: str,
+        pset_name: str,
+        properties: dict[str, Any],
+    ) -> ifcopenshell.entity_instance:
+        if pset_id:
+            pset = self.file.by_id(pset_id)
+        elif pset_type == "PSET":
+            pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name=pset_name)
+        elif pset_type == "QTO":
+            pset = ifcopenshell.api.pset.add_qto(self.file, product=element, name=pset_name)
+        else:
+            assert False
+
         if pset.is_a() in ("IfcPropertySet", "IfcMaterialProperties", "IfcProfileProperties"):
             ifcopenshell.api.pset.edit_pset(
                 self.file,
                 pset=pset,
-                name=props.active_pset_name,
+                name=pset_name,
                 properties=properties,
-                pset_template=bonsai.bim.schema.ifc.psetqto.get_by_name(props.active_pset_name),
+                pset_template=bonsai.bim.schema.ifc.psetqto.get_by_name(pset_name),
             )
         else:
-            for key, value in properties.items():
+            qto_properties = dict(properties)
+            for key, value in qto_properties.items():
                 if value is None:
                     continue
                 if isinstance(value, float):
-                    properties[key] = round(value, 4)
+                    qto_properties[key] = round(value, 4)
                 elif not isinstance(value, int):
-                    properties[key] = 0
+                    qto_properties[key] = 0
             ifcopenshell.api.pset.edit_qto(
                 self.file,
                 qto=pset,
-                name=props.active_pset_name,
-                properties=properties,
+                name=pset_name,
+                properties=qto_properties,
             )
             if tool.Cost.has_schedules():
                 tool.Cost.update_cost_items(pset=pset)
-        bpy.ops.bim.disable_pset_editing(obj=self.obj, obj_type=self.obj_type)
-        tool.Blender.update_viewport()
+        return pset
+
+    def apply_new_pset_to_selection(
+        self,
+        active_element: ifcopenshell.entity_instance,
+        pset_type: str,
+        pset_name: str,
+        properties: dict[str, Any],
+    ) -> None:
+        elements_changed = 0
+        for obj in tool.Blender.get_selected_objects():
+            if obj.name == self.obj:
+                continue
+            other_element = tool.Ifc.get_entity(obj)
+            if not other_element or other_element == active_element:
+                continue
+            if not tool.Pset.is_pset_applicable(other_element, pset_name, pset_type):
+                continue
+            existing = ifcopenshell.util.element.get_psets(
+                other_element,
+                psets_only=pset_type == "PSET",
+                qtos_only=pset_type == "QTO",
+                should_inherit=False,
+            )
+            if pset_name in existing:
+                continue
+            self.apply_pset(other_element, 0, pset_type, pset_name, properties)
+            elements_changed += 1
+        if elements_changed:
+            self.report({"INFO"}, f"Added '{pset_name}' to {elements_changed} other selected object(s).")
 
 
 class RemovePset(bpy.types.Operator, tool.Ifc.Operator):
