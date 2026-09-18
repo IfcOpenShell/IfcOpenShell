@@ -652,6 +652,29 @@ class TestAttribute:
         facet = Attribute(name="IsMilestone", value="1")
         run("Booleans can be specified as a 0 or 1 2/2", facet=facet, inst=element, expected=False)
 
+        ifc = ifcopenshell.file()
+        element = ifc.createIfcTask(IsMilestone=True)
+        for value in ("False", "FALSE", "no", "off"):
+            facet = Attribute(name="IsMilestone", value=value)
+            run(
+                f"A boolean spelled as {value} never matches a true attribute",
+                facet=facet,
+                inst=element,
+                expected=False,
+            )
+        for value in ("True", "TRUE", "yes", "on"):
+            facet = Attribute(name="IsMilestone", value=value)
+            run(
+                f"A boolean spelled as {value} never matches a true attribute",
+                facet=facet,
+                inst=element,
+                expected=False,
+            )
+        facet = Attribute(name="IsMilestone", value="true")
+        run("A lowercase true matches a true attribute", facet=facet, inst=element, expected=True)
+        facet = Attribute(name="IsMilestone", value="false")
+        run("A lowercase false does not match a true attribute", facet=facet, inst=element, expected=False)
+
         facet = Attribute(name="EditionDate", value="2022-01-01")
         ifc = ifcopenshell.file()
         run(
@@ -1089,6 +1112,20 @@ class TestProperty:
         run("Booleans can be specified as as a 0 or 1 1/2", facet=facet, inst=element, expected=True)
         facet = Property(propertySet="Foo_Bar", baseName="Foo", value="1", dataType="IFCBOOLEAN")
         run("Booleans can be specified as as a 0 or 1 2/2", facet=facet, inst=element, expected=False)
+
+        ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"Foo": ifc.createIfcBoolean(True)})
+        for value in ("False", "FALSE", "no", "off", "True", "TRUE", "yes", "on"):
+            facet = Property(propertySet="Foo_Bar", baseName="Foo", value=value, dataType="IFCBOOLEAN")
+            run(
+                f"A boolean spelled as {value} never matches a true property",
+                facet=facet,
+                inst=element,
+                expected=False,
+            )
+        facet = Property(propertySet="Foo_Bar", baseName="Foo", value="true", dataType="IFCBOOLEAN")
+        run("A lowercase true matches a true property", facet=facet, inst=element, expected=True)
+        facet = Property(propertySet="Foo_Bar", baseName="Foo", value="false", dataType="IFCBOOLEAN")
+        run("A lowercase false does not match a true property", facet=facet, inst=element, expected=False)
 
         facet = Property(propertySet="Foo_Bar", baseName="Foo", value="2022-01-01", dataType="IFCDATE")
         ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"Foo": ifc.createIfcDate("2022-01-01")})
@@ -1696,6 +1733,18 @@ class TestRestriction:
         assert restriction == "bar"
         assert restriction != "Foo"
         assert restriction != "baz"
+
+    def test_boolean_enumeration(self):
+        restriction = Restriction(options={"enumeration": ["true"]})
+        assert restriction == True
+        assert restriction != False
+        restriction = Restriction(options={"enumeration": ["false"]})
+        assert restriction == False
+        assert restriction != True
+        for option in ("True", "TRUE", "False", "FALSE", "yes", "no"):
+            restriction = Restriction(options={"enumeration": [option]})
+            assert restriction != True
+            assert restriction != False
 
     def test_bounds(self):
         restriction = Restriction(options={"minInclusive": 0, "maxExclusive": 10}, base="integer")
