@@ -59,11 +59,10 @@ class DumbProfileGenerator:
         self.insertion_type = insertion_type
         self.file = tool.Ifc.get()
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        material = ifcopenshell.util.element.get_material(self.relating_type)
-        if material and material.is_a("IfcMaterialProfileSet"):
-            self.profile_set = material
-        else:
+        profile_set = tool.Model.get_material_profile_set(self.relating_type)
+        if not profile_set:
             return
+        self.profile_set = profile_set
 
         self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
         self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Axis", "GRAPH_VIEW")
@@ -1151,7 +1150,11 @@ class DrawPolylineProfile(bpy.types.Operator, PolylineOperator, tool.Ifc.Operato
 
         model_props = tool.Model.get_model_props()
 
-        profiles, is_polyline_closed = DumbProfileGenerator(self.relating_type).generate("POLYLINE")
+        result = DumbProfileGenerator(self.relating_type).generate("POLYLINE")
+        if result is None:
+            self.report({"WARNING"}, "The selected type has no profile to draw with.")
+            return {"CANCELLED"}
+        profiles, is_polyline_closed = result
         if profiles:
             if is_polyline_closed:
                 for profile1, profile2 in zip(profiles, profiles[1:] + [profiles[0]]):
