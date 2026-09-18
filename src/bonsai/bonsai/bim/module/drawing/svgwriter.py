@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import base64
 import math
 import os
 import shutil
@@ -277,6 +278,7 @@ class SvgWriter:
         self.height = self.raw_height * self.svg_scale
 
     def add_stylesheet(self):
+        self.embed_fonts()
         paths = self.resource_paths["Stylesheet"]
         if not paths:
             return
@@ -287,6 +289,31 @@ class SvgWriter:
                 continue
             with open(path, "r") as stylesheet:
                 self.svg.defs.add(self.svg.style(stylesheet.read()))
+
+    def embed_fonts(self) -> None:
+        """Embed Bonsai's bundled fonts as base64 encoded @font-face rules.
+
+        Drawing stylesheets (e.g. default.css) reference fonts such as "OpenGost Type
+        B TT" by family name only. Without embedding the actual font data, the text in
+        an exported SVG only renders with the intended typeface if that font happens to
+        also be installed at the OS level of whoever opens the file, silently falling
+        back to a generic font otherwise. See #5433.
+        """
+        font_faces = []
+        formats = (("ttf", "truetype", "font/ttf"), ("otf", "opentype", "font/otf"))
+        for extension, font_format, mime in formats:
+            for font_path in tool.Blender.get_data_dir_paths("fonts", f"*.{extension}"):
+                try:
+                    font_data = base64.b64encode(font_path.read_bytes()).decode("ascii")
+                except OSError:
+                    print(f"WARNING. Couldn't read bundled font for embedding: {font_path}")
+                    continue
+                font_faces.append(
+                    f"@font-face {{ font-family: '{font_path.stem}'; "
+                    f"src: url(data:{mime};base64,{font_data}) format('{font_format}'); }}"
+                )
+        if font_faces:
+            self.svg.defs.add(self.svg.style("\n".join(font_faces)))
 
     def add_markers(self):
         path = self.resource_paths["Markers"]
