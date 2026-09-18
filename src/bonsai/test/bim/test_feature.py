@@ -35,7 +35,9 @@ from typing import Any, Union, cast
 import bpy
 import ifcopenshell
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.util.unit
 import numpy as np
 import pytest
 from mathutils import Vector
@@ -1715,6 +1717,18 @@ def the_object_name_bottom_left_corner_is_at_location(name, location):
     assert (
         obj_corner - Vector([float(co) for co in location.split(",")])
     ).length < 0.05, f"Object has bottom left corner {obj_corner} instead of {location}"
+
+
+@then(parsers.parse('the object "{name}" filling opening is in sync'))
+def the_object_name_filling_opening_is_in_sync(name):
+    obj = the_object_name_exists(name)
+    opening = ifcopenshell.util.element.get_filled_void(tool.Ifc.get_entity(obj))
+    assert opening, f'Object "{name}" does not fill any opening'
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+    placement = ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement)
+    opening_co = Vector(placement[:3, 3].tolist()) * unit_scale
+    delta = (opening_co - obj.matrix_world.translation).length
+    assert delta < 1e-4, f'Object "{name}"\'s opening drifted from its filling by {delta}'
 
 
 @then(parsers.parse('the object "{name}" is contained in "{container_name}"'))
