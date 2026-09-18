@@ -15,7 +15,8 @@ def test_create_clash_set_bcf() -> None:
     assert len(topic.viewpoints) == 1
     guid, vi_handler = next((k, v) for k, v in topic.viewpoints.items())
     v_info = vi_handler.visualization_info
-    assert f"{v_info.guid}.bcfv" == guid
+    # BCF 2.1 requires the primary viewpoint to be named "viewpoint.bcfv" (see issue #7152).
+    assert guid == "viewpoint.bcfv"
     components = v_info.components.selection.component
     assert {c.ifc_guid for c in components} == {"firstId", "secondId"}
     camera = v_info.perspective_camera
