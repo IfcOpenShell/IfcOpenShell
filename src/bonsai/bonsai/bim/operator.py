@@ -290,9 +290,12 @@ for collection in list(bpy.data.collections):
     if collection.name.startswith('IfcProject'):
         bpy.data.collections.remove(collection, do_unlink=True)
 
-# 4.1 Remove all collections from linked libraries (they will be recreated by bonsai)
+# 4.1 Remove Bonsai linked-model collections (they will be recreated by bonsai on load).
+# These always carry "IfcProject" in their name (see LinkIfc.link_blend). User collections
+# linked via File > Link have no IFC record, so removing them here would strip the instance
+# and leave a bare empty on reload; they must be preserved.
 for collection in list(bpy.data.collections):
-    if collection.library:
+    if collection.library and 'IfcProject' in collection.name:
         bpy.data.collections.remove(collection, do_unlink=True)
 
 # 4.2. Remove all empty objects that are collection instances for linked models
