@@ -84,7 +84,10 @@ def disable_editing_materials(material: type[tool.Material]) -> None:
 def select_by_material(
     material_tool: type[tool.Material], spatial: type[tool.Spatial], material: ifcopenshell.entity_instance
 ) -> None:
-    spatial.select_products(material_tool.get_elements_by_material(material))
+    # `unhide=True` so that objects whose only remaining reference is on a type
+    # (or another collection hidden from the viewport by default) are actually
+    # revealed and selected, instead of silently doing nothing. See #4050.
+    spatial.select_products(material_tool.get_elements_by_material(material), unhide=True)
 
 
 def enable_editing_material(material_tool: type[tool.Material], material: ifcopenshell.entity_instance) -> None:
