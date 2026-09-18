@@ -837,7 +837,7 @@ echo Build ended at %END_TIME%. Time elapsed %hh%:%mm%:%ss%.%cc%.
 :BuildTimeSkipped
 set PATH=%ORIGINAL_PATH%
 cd "%~dp0"
-exit %IFCOS_SCRIPT_RET%
+exit /b %IFCOS_SCRIPT_RET%
 
 ::::::::::::::::::::::::::::::::::::: Subroutines :::::::::::::::::::::::::::::::::::::
 
