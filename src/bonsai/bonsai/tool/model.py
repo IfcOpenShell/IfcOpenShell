@@ -1454,7 +1454,7 @@ class Model(bonsai.core.tool.Model):
             ifcopenshell.api.geometry.edit_object_placement(
                 ifc_file,
                 product=new_opening,
-                matrix=np.array(child_obj.matrix_world),
+                matrix=tool.Surveyor.get_absolute_matrix(child_obj),
                 is_si=True,
             )
             mapped_representation = ifcopenshell.api.geometry.map_representation(
@@ -3215,7 +3215,7 @@ class Model(bonsai.core.tool.Model):
                         continue
                     bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=filling_obj)
                     ifcopenshell.api.geometry.edit_object_placement(
-                        tool.Ifc.get(), product=opening, matrix=filling_obj.matrix_world
+                        tool.Ifc.get(), product=opening, matrix=tool.Surveyor.get_absolute_matrix(filling_obj)
                     )
 
         for element, wall in queue:
