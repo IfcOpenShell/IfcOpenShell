@@ -21,6 +21,8 @@
 #include <BRepPrimAPI_MakePrism.hxx>
 #include <BOPAlgo_PaveFiller.hxx>
 #include <BOPAlgo_Alerts.hxx>
+#include <BOPAlgo_MakerVolume.hxx>
+#include <BOPTools_AlgoTools.hxx>
 #include <ShapeFix_Shape.hxx>
 #include <BRepCheck_Analyzer.hxx>
 #include <BRepCheck.hxx>
@@ -832,6 +834,56 @@ bool IfcGeom::util::points_on_planar_face_generator::operator()(gp_Pnt& p) {
 }
 
 
+#if OCC_VERSION_HEX >= 0x70400
+namespace {
+	// A subtraction operand can only be trusted when it is unambiguously a volume:
+	// uniformly 3-dimensional, valid and with positive volume. Open shells cause
+	// BOPAlgo to refuse the entire operation, inverted or otherwise invalid solids
+	// have been observed to classify the complete first operand as interior. #2320
+	bool is_valid_cut_tool(const TopoDS_Shape& s) {
+		Standard_Integer dim_min, dim_max;
+		BOPTools_AlgoTools::Dimensions(s, dim_min, dim_max);
+		if (dim_min != 3) {
+			return false;
+		}
+		try {
+			BRepCheck_Analyzer analyzer(s);
+			if (!analyzer.IsValid()) {
+				return false;
+			}
+			return IfcGeom::util::shape_volume(s) > 0.;
+		} catch (...) {
+			return false;
+		}
+	}
+
+	bool reconstruct_volume(const TopoDS_Shape& s, double fuzziness, TopoDS_Shape& result) {
+		try {
+			NCollection_List<TopoDS_Shape> faces;
+			for (TopExp_Explorer exp(s, TopAbs_FACE); exp.More(); exp.Next()) {
+				faces.Append(exp.Current());
+			}
+			if (faces.IsEmpty()) {
+				return false;
+			}
+			BOPAlgo_MakerVolume mv;
+			mv.SetArguments(faces);
+			mv.SetRunParallel(false);
+			mv.SetIntersect(true);
+			mv.SetFuzzyValue(fuzziness);
+			mv.Perform();
+			if (mv.HasErrors() || mv.Shape().IsNull() || !is_valid_cut_tool(mv.Shape())) {
+				return false;
+			}
+			result = mv.Shape();
+			return true;
+		} catch (...) {
+			return false;
+		}
+	}
+}
+#endif
+
 bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const TopoDS_Shape& a_input, const NCollection_List<TopoDS_Shape>& b_input, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
 	using namespace std::string_literals;
 
@@ -1399,9 +1451,61 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 #if OCC_VERSION_HEX >= 0x70200
 
 		if (builder->HasError(STANDARD_TYPE(BOPAlgo_AlertBOPNotAllowed))) {
-			settings.log().Error("GEO", 152, "Invalid operands. Using first operand");
-			result = a;
-			success = true;
+#if OCC_VERSION_HEX >= 0x70400
+			if (op == BOPAlgo_CUT) {
+				// The operation is refused e.g. when a subtraction operand is not a
+				// closed volume. Retry with only the trustworthy volume operands so
+				// that one defective operand does not void all subtractions. #2320
+				NCollection_List<TopoDS_Shape> b_trusted, b_with_repaired;
+				int num_repaired = 0, num_dropped = 0;
+				for (NCollection_List<TopoDS_Shape>::Iterator it(b); it.More(); it.Next()) {
+					if (is_valid_cut_tool(it.Value())) {
+						b_trusted.Append(it.Value());
+						b_with_repaired.Append(it.Value());
+					} else {
+						TopoDS_Shape repaired;
+						if (reconstruct_volume(it.Value(), fuzz, repaired) ||
+							reconstruct_volume(it.Value(), settings.precision, repaired) ||
+							reconstruct_volume(it.Value(), settings.precision * 10., repaired))
+						{
+							b_with_repaired.Append(repaired);
+							++num_repaired;
+						} else {
+							++num_dropped;
+						}
+					}
+				}
+				auto attempt_subset = [&](const NCollection_List<TopoDS_Shape>& ops) {
+					TopoDS_Shape r;
+					if (!boolean_operation(settings, a, ops, op, r, fuzziness)) {
+						return false;
+					}
+					// A subtraction can never gain volume, reject reconstruction artifacts.
+					const double va = shape_volume(a), vr = shape_volume(r);
+					if (!(vr > 0.) || (va > 0. && vr > va * (1. + 1.e-6))) {
+						settings.log().Notice("GEO", 408, "Retried subtraction rejected by volume check");
+						return false;
+					}
+					result = r;
+					return true;
+				};
+				if ((num_repaired + num_dropped) && b_with_repaired.Extent()) {
+					settings.log().Warning("GEO", 406, "Invalid operands, retrying with " +
+						std::to_string(b_with_repaired.Extent()) + "/" + std::to_string(b.Extent()) +
+						" operands, of which " + std::to_string(num_repaired) + " reconstructed");
+					success = attempt_subset(b_with_repaired);
+					if (!success && num_repaired && b_trusted.Extent()) {
+						settings.log().Notice("GEO", 407, "Retrying without reconstructed operands");
+						success = attempt_subset(b_trusted);
+					}
+				}
+			}
+#endif
+			if (!success) {
+				settings.log().Error("GEO", 152, "Invalid operands. Using first operand");
+				result = a;
+				success = true;
+			}
 		}
 #endif
 
