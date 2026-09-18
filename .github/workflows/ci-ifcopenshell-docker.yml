@@ -116,6 +116,6 @@ jobs:
         repository: aecgeeks/ifcopenshell
         # Since the dispatch is set to `tag`, `github.ref_name` should evaluate to the pushed tag
         # On a workflow dispatch, `ref_name` will take on the value from the dispatch payload
-        tags: aecgeeks/ifcopenshell:${{ github.ref_name }}${{ github.ref_name == github.event.repository.default_branch && ',aecgeeks/ifcopenshell:22.04' }}
+        tags: aecgeeks/ifcopenshell:${{ github.ref_name }},aecgeeks/ifcopenshell:latest${{ github.ref_name == github.event.repository.default_branch && ',aecgeeks/ifcopenshell:22.04' || '' }}
         file: ./Dockerfile
         push: true
