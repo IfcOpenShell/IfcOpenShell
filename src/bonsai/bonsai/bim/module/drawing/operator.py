@@ -882,16 +882,20 @@ class CreateDrawing(bpy.types.Operator):
             context.view_layer.freestyle_settings.crease_angle = radians(140)
             context.view_layer.freestyle_settings.use_culling = True
             lineset = linesets[0]
-            lineset.edge_type_negation = "EXCLUSIVE"
-            lineset.select_silhouette = False
-            lineset.select_crease = False
-            lineset.select_border = False
-            lineset.select_edge_mark = False
-            lineset.select_contour = False
-            lineset.select_external_contour = False
-            lineset.select_material_boundary = False
-            lineset.select_suggestive_contour = True
-            lineset.select_ridge_valley = True
+            # Positively select the wanted edge types instead of excluding the two unwanted
+            # ones. On Blender 5.x the classifier also tags our extruded edge ribbons as
+            # ridge/valley and suggestive contour, so an EXCLUSIVE negation of those types
+            # dropped every line and produced empty stroke sets on Blender 5.1.
+            lineset.edge_type_negation = "INCLUSIVE"
+            lineset.select_silhouette = True
+            lineset.select_crease = True
+            lineset.select_border = True
+            lineset.select_edge_mark = True
+            lineset.select_contour = True
+            lineset.select_external_contour = True
+            lineset.select_material_boundary = True
+            lineset.select_suggestive_contour = False
+            lineset.select_ridge_valley = False
 
         edge_mesh = bpy.data.meshes.new("Temp Merged Edges")
         edge_obj = bpy.data.objects.new("Temp Merged Edges", edge_mesh)
