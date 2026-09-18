@@ -971,10 +971,14 @@ class Loader(bonsai.core.tool.Loader):
 
     @classmethod
     def guess_false_origin(cls, ifc_file: ifcopenshell.file) -> None:
-        if ifc_file.schema == "IFC2X3":
-            project = ifc_file.by_type("IfcProject")[0]
-        else:
-            project = ifc_file.by_type("IfcContext")[0]
+        project_class = "IfcProject" if ifc_file.schema == "IFC2X3" else "IfcContext"
+        projects = ifc_file.by_type(project_class)
+        if not projects:
+            # A file without a project/context is malformed, but the loader
+            # should still open it rather than crash with an IndexError. There
+            # is no spatial tree to walk, so guess purely from element geometry.
+            return cls.guess_false_origin_from_elements(ifc_file)
+        project = projects[0]
         site = cls.find_decomposed_ifc_class(project, "IfcSite")
         if site and cls.is_element_far_away(site):
             return cls.guess_false_origin_and_project_north(ifc_file, site)
