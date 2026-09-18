@@ -461,7 +461,8 @@ private:
 	}
 
 	AttributeValue get_argument(const std::string& a) {
-		auto i = $self->declaration().as_entity()->attribute_index(a);
+		auto entity_decl = $self->declaration().as_entity();
+		auto i = entity_decl ? entity_decl->attribute_index(a) : -1;
 		if (i == -1) {
 			throw std::runtime_error("Attribute '" + a + "' not found on entity named " + $self->declaration().name());
 		}
@@ -523,7 +524,7 @@ private:
 	}
 
 	void setArgumentAsNull(unsigned int i) {
-		bool is_optional = $self->declaration().as_entity()->attribute_by_index(i)->optional();
+		bool is_optional = $self->declaration().as_entity() && $self->declaration().as_entity()->attribute_by_index(i)->optional();
 		if (is_optional) {
 			self->set_attribute_value(i, Blank{});
 		} else {
@@ -574,8 +575,26 @@ private:
 		if (arg_type == IfcUtil::Argument_STRING) {
 			self->set_attribute_value(i, a);	
 		} else if (arg_type == IfcUtil::Argument_ENUMERATION) {
-			const IfcParse::enumeration_type* enum_type = $self->declaration().schema()->declaration_by_name($self->declaration().type())->as_entity()->
-			attribute_by_index(i)->type_of_attribute()->as_named_type()->declared_type()->as_enumeration_type();
+			const IfcParse::declaration* decl = $self->declaration().schema()->declaration_by_name($self->declaration().type());
+			const IfcParse::parameter_type* pt = 0;
+			if (const IfcParse::entity* value_entity = decl->as_entity()) {
+				pt = value_entity->attribute_by_index(i)->type_of_attribute();
+			} else if (i == 0) {
+				// A defined type can wrap an enumeration, so resolve through its
+				// declared type as well. No such case is reachable in any schema
+				// currently built; this guard is defensive.
+				if (const IfcParse::type_declaration* td = decl->as_type_declaration()) {
+					pt = td->declared_type();
+				}
+			}
+			const IfcParse::named_type* nt = pt ? pt->as_named_type() : 0;
+			const IfcParse::enumeration_type* enum_type = nt ? nt->declared_type()->as_enumeration_type() : 0;
+			if (!enum_type && i == 0) {
+				enum_type = decl->as_enumeration_type();
+			}
+			if (!enum_type) {
+				throw IfcParse::IfcException("Attribute not set");
+			}
 			self->set_attribute_value(i, EnumerationReference(enum_type, enum_type->lookup_enum_offset(a)));
 		} else if (arg_type == IfcUtil::Argument_BINARY) {
 			if (IfcUtil::valid_binary_string(a)) {
