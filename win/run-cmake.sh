@@ -26,6 +26,14 @@ BUILD_DIR=../build-msys
 
 CMAKE_INSTALL_PREFIX=../installed-msys
 
+# Keep this in sync with build-deps.sh: when COLLADA_SUPPORT=0 OpenCOLLADA is not
+# built, so configure IfcOpenShell without it (IfcConvert still supports glTF).
+COLLADA_SUPPORT="${COLLADA_SUPPORT:-1}"
+COLLADA_CMAKE_ARGS=""
+if [ "$COLLADA_SUPPORT" = "0" ] || [ "$COLLADA_SUPPORT" = "OFF" ] || [ "$COLLADA_SUPPORT" = "off" ]; then
+    COLLADA_CMAKE_ARGS="-DCOLLADA_SUPPORT=OFF"
+fi
+
 pushd $BUILD_DIR
 
 # PYTHON_INCLUDE_DIR=/mingw64/include/python2.7 \
@@ -35,6 +43,6 @@ OCC_LIBRARY_DIR=`pwd`/../deps-msys-installed/oce/Win64/lib/ \
 OPENCOLLADA_INCLUDE_DIR=`pwd`/../deps-msys-installed/OpenCOLLADA/include/opencollada/ \
 OPENCOLLADA_LIBRARY_DIR=`pwd`/../deps-msys-installed/OpenCOLLADA/lib/opencollada/ \
 cmake -G "MSYS Makefiles" ../cmake -DSWIG_DIR=/usr/bin -DCMAKE_INSTALL_PREFIX=$CMAKE_INSTALL_PREFIX \
-    -DCMAKE_MAKE_PROGRAM=/mingw64/bin/mingw32-make.exe $@
+    -DCMAKE_MAKE_PROGRAM=/mingw64/bin/mingw32-make.exe $COLLADA_CMAKE_ARGS $@
 
 popd
