@@ -159,15 +159,26 @@ class Alignment:
         # Create geometric representation (curves) for the alignment
         _create_geometric_representation(ifc_file, alignment)
 
+        # Zero-length terminal segment (semantic + geometric) -- must come before
+        # add_stationing_referent() below: add_stationing_referent() only gives the
+        # referent an IfcLinearPlacement (tracking the curve) when the curve already
+        # has at least one segment; otherwise it falls back to a plain IfcLocalPlacement
+        # at the origin, which then never gets "restated" onto the curve later, because
+        # create_representation() (called after every real draw/Apply) only does that
+        # restating once, guarded by "if alignment.Representation: return" -- and
+        # _create_geometric_representation() above already set alignment.Representation,
+        # making that restate unreachable for good. align_api.create() (the other
+        # alignment-creation path, used by the Alignments tab's own Add Alignment
+        # button) avoids this by adding its zero-length segments before returning, i.e.
+        # before any caller can add a stationing referent -- mirror that ordering here.
+        _add_zero_length_segment(ifc_file, h_layout)
+
         # Stationing referent (required by the segment-creation API), using
         # the upstream "<alignment name> <station>" naming convention.
         start_station = 0.0
         station_string = ifcopenshell.util.alignment.station_as_string(ifc_file, start_station)
         referent_name = f"{alignment.Name or 'Alignment'} {station_string}"
         align_api.add_stationing_referent(ifc_file, referent_name, alignment, 0.0, start_station)
-
-        # Zero-length terminal segment (semantic + geometric)
-        _add_zero_length_segment(ifc_file, h_layout)
 
         # IFC 4.1.4.1.1 Alignment Aggregation To Project
         project = next(iter(ifc_file.by_type("IfcProject")), None)
@@ -796,14 +807,11 @@ class Alignment:
             from yet.
         """
         obj = tool.Ifc.get_object(alignment)
-        if obj is not None and obj.type == "MESH":
-            tool.Geometry.reload_representation(obj)
-            return obj
-
-        # No object yet, or it's a bare Empty from before any geometry
-        # existed (Object.type can't be changed in place) — replace it.
-        if obj is not None:
+        if obj is not None and obj.type != "MESH":
+            # A bare Empty from before any geometry existed (Object.type
+            # can't be changed in place) — replace it.
             cls._remove_blender_object(obj)
+            obj = None
 
         logger = logging.getLogger("ImportIFC")
         ifc_import_settings = bonsai.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
@@ -813,7 +821,7 @@ class Alignment:
         tool.Loader.load_settings()
         geometry = tool.Loader.create_generic_shape(alignment)
         if geometry is None:
-            return None
+            return obj
 
         # Force the same "recenter mesh vertices around the first vertex, and
         # carry that as the object's own matrix_world offset" treatment
@@ -830,32 +838,57 @@ class Alignment:
         # instead: visibly correct in the viewport, but the object's own
         # origin stays stuck at (0, 0, 0) regardless of where the alignment
         # actually starts.
+        #
+        # Recomputed on *every* call, not just when the object is first
+        # created (per the user, 2026-09-17: "the dot is annoying and we
+        # didn't have it before" — the object-origin dot silently fell behind
+        # the curve's real start after a later PI edit). The offset gets
+        # baked into a persisted `cartesian_point_offset` mesh property, and
+        # tool.Geometry.reload_representation()'s generic reload path (used
+        # here previously) reuses that *stored* value rather than
+        # recomputing it — correct for rendering (mesh verts and matrix_world
+        # both still use the same, if stale, anchor consistently) but it
+        # means the object's own origin stays wherever the curve's start was
+        # on the last full rebuild, silently drifting from the curve as PIs
+        # get edited afterward. Rebuilding the mesh fresh here every time
+        # (rather than reloading) keeps the origin — and the click-to-select
+        # dot — anchored to the curve's *current* start point on every Apply,
+        # not just the first draw.
         inner_geometry = geometry.geometry if hasattr(geometry, "geometry") else geometry
         verts = ifcopenshell.util.shape.get_vertices(inner_geometry)
         cartesian_point_offset = verts[0] if verts.size else False
 
         mesh = ifc_importer.create_mesh(alignment, geometry, cartesian_point_offset=cartesian_point_offset)
-        if mesh is not None:
-            # Without this, the mesh has no record of which IfcRepresentation
-            # it came from, so a later reload_representation() (the branch
-            # above, once this object already exists) silently finds nothing
-            # to update — the IFC segments are correct (the segment listing
-            # panel reads them directly) but the viewport mesh never changes.
-            tool.Loader.link_mesh(geometry, mesh)
-        name = f"IfcAlignment/{alignment.Name or 'Unnamed'}"
-        new_obj = bpy.data.objects.new(name, mesh)
+        if mesh is None:
+            return obj
+        # Without this, the mesh has no record of which IfcRepresentation it
+        # came from, so a later reload_representation() elsewhere silently
+        # finds nothing to update — the IFC segments are correct (the segment
+        # listing panel reads them directly) but the viewport mesh never changes.
+        tool.Loader.link_mesh(geometry, mesh)
 
         if hasattr(geometry, "transformation_buffer"):
             mat = ifcopenshell.util.shape.get_shape_matrix(geometry)
         else:
             mat = np.eye(4)
-        new_obj.matrix_world = tool.Loader.apply_blender_offset_to_matrix_world(new_obj, mat)
-        tool.Geometry.record_object_position(new_obj)
 
-        tool.Ifc.link(alignment, new_obj)
-        tool.Collector.assign(new_obj)
+        if obj is not None:
+            old_mesh = obj.data
+            obj.data = mesh
+            if old_mesh and old_mesh.users == 0:
+                bpy.data.meshes.remove(old_mesh)
+        else:
+            name = f"IfcAlignment/{alignment.Name or 'Unnamed'}"
+            obj = bpy.data.objects.new(name, mesh)
+            tool.Ifc.link(alignment, obj)
+            tool.Collector.assign(obj)
 
-        return new_obj
+        # apply_blender_offset_to_matrix_world reads the offset back off
+        # obj.data — must run after obj.data is reassigned above.
+        obj.matrix_world = tool.Loader.apply_blender_offset_to_matrix_world(obj, mat)
+        tool.Geometry.record_object_position(obj)
+
+        return obj
 
     @classmethod
     def get_alignment_start_end_points(
