@@ -340,6 +340,25 @@ class Usecase:
                 return None
             return next((e for e in self.file.by_type(element.is_a()) if e.Name == name), None)
 
+        # Not really an asset, but a single classification system is shared by
+        # the IfcClassificationReferences of many assets. If we don't reuse an
+        # existing one, every appended asset that points at the same
+        # classification spawns a duplicate IfcClassification (see #7150).
+        elif element.is_a("IfcClassification"):
+            name = element.Name
+            if name is None:
+                return None
+            return next(
+                (
+                    e
+                    for e in self.file.by_type("IfcClassification")
+                    if e.Name == name
+                    and e.Source == element.Source
+                    and e.Edition == element.Edition
+                ),
+                None,
+            )
+
         # Not really assets but if we don't check them here,
         # their subgraph entities may be appended twice.
         elif (ifc_class := element.is_a()) == "IfcOrganization":
@@ -739,6 +758,21 @@ class Usecase:
                 if existing_style is not None:
                     reuse_identities[element_identity] = existing_style
                     return existing_style
+
+        elif element.is_a("IfcClassification"):
+            name = element.Name
+            if name is not None:
+                existing_classification = next(
+                    (
+                        e
+                        for e in ifc_file.by_type("IfcClassification")
+                        if e.Name == name and e.Source == element.Source and e.Edition == element.Edition
+                    ),
+                    None,
+                )
+                if existing_classification is not None:
+                    reuse_identities[element_identity] = existing_classification
+                    return existing_classification
 
         elif ifc_class == "IfcApplication":
             app_id = element.ApplicationIdentifier

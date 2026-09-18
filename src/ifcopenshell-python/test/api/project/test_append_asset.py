@@ -171,6 +171,30 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         assert ifcopenshell.util.element.get_material(new2).MaterialLayers[0].Material == material
         assert ifcopenshell.util.element.get_material(new2).MaterialLayers[1].Material == material
 
+    def test_append_two_type_products_sharing_the_same_classification(self):
+        ifcopenshell.api.root.create_entity(self.file, "IfcProject")
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        ifcopenshell.api.root.create_entity(library, "IfcProject")
+        element1 = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWallType")
+        element2 = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWallType")
+        classification = ifcopenshell.api.classification.add_classification(library, classification="MyClassification")
+        ifcopenshell.api.classification.add_reference(
+            library, products=[element1], identification="Code_1", classification=classification
+        )
+        ifcopenshell.api.classification.add_reference(
+            library, products=[element2], identification="Code_2", classification=classification
+        )
+
+        new1 = ifcopenshell.api.project.append_asset(self.file, library=library, element=element1)
+        new2 = ifcopenshell.api.project.append_asset(self.file, library=library, element=element2)
+
+        # The shared classification system must be reused, not duplicated (#7150).
+        classifications = self.file.by_type("IfcClassification")
+        assert len(classifications) == 1
+        references = self.file.by_type("IfcClassificationReference")
+        assert len(references) == 2
+        assert all(reference.ReferencedSource == classifications[0] for reference in references)
+
     def test_append_a_type_product_with_its_styles(self):
         library = ifcopenshell.api.project.create_file(version=self.file.schema)
         element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWallType")
