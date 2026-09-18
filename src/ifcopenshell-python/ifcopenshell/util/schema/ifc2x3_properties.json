@@ -75,7 +75,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcBuildingControlsDomain/Pset_ActuatorTypeHydraulicActuator.xml"
     },
     "Pset_ActuatorTypeLinearActuation": {
-        "description": "Characteristics of linear actuation of an actuator History: Replaces Pset_LinearActuator",
+        "description": "Characteristics of linear actuation of an actuator",
         "properties": {
             "Force": {
                 "description": "Indicates the maximum close-off force for the actuator."
@@ -99,7 +99,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcBuildingControlsDomain/Pset_ActuatorTypePneumaticActuator.xml"
     },
     "Pset_ActuatorTypeRotationalActuation": {
-        "description": "Characteristics of rotational actuation of an actuator History: Replaces Pset_RotationalActuator",
+        "description": "Characteristics of rotational actuation of an actuator",
         "properties": {
             "RangeAngle": {
                 "description": "Indicates the maximum rotation the actuator must traverse."
@@ -288,7 +288,7 @@
                 "description": "Identifies the way the core of the AirTerminal is constructed."
             },
             "DischargeDirection": {
-                "description": "Discharge direction of the air terminal. Parallel: discharges parallel to mounting surface designed so that flow attaches to the surface. Perpendicular:  discharges away from mounting surface. Adjustable: both parallel and perpendicular discharge."
+                "description": "Discharge direction of the air terminal. Parallel: discharges parallel to mounting surface designed so that flow attaches to the surface. Perpendicular: discharges away from mounting surface. Adjustable: both parallel and perpendicular discharge."
             },
             "EffectiveArea": {
                 "description": "Effective discharge area of the air terminal."
@@ -691,7 +691,7 @@
                 "description": "A unique identifier assigned to a building. A temporary identifier is initially assigned at the time of making a planning application. This temporary identifier is changed to a permanent identifier when the building is registered into a statutory buildings and properties database."
             },
             "GrossPlannedArea": {
-                "description": "Total planned area for the building  Used for programming the building."
+                "description": "Total planned area for the building Used for programming the building."
             },
             "IsLandmarked": {
                 "description": "This builing is listed as a historic building (TRUE), or not (FALSE), or unknown."
@@ -976,7 +976,7 @@
         "description": "Chiller performance history attributes.",
         "properties": {
             "Capacity": {
-                "description": "The product of the  ideal capacity and the overall volumetric efficiency of the compressor."
+                "description": "The product of the ideal capacity and the overall volumetric efficiency of the compressor."
             },
             "CapacityCurve": {
                 "description": "Chiller cooling capacity is a function of condensing temperature and evaporating temperature, data is in table form, Capacity = f (TempCon, TempEvp), capacity = a1+b1*Tei+c1*Tei\\^2+d1*Tci+e1*Tci\\^2+f1*Tei*Tci."
@@ -985,7 +985,7 @@
                 "description": "Coefficient of performance (COP)."
             },
             "CoefficientOfPerformanceCurve": {
-                "description": "Chiller coefficient of performance (COP) is function of condensing temperature and evaporating temperature, data is in table form,  COP= f (TempCon, TempEvp),  COP = a2+b2*Tei+c2*Tei\\^2+d2*Tci+e2*Tci\\^2+f2*Tei*Tci"
+                "description": "Chiller coefficient of performance (COP) is function of condensing temperature and evaporating temperature, data is in table form, COP= f (TempCon, TempEvp), COP = a2+b2*Tei+c2*Tei\\^2+d2*Tci+e2*Tci\\^2+f2*Tei*Tci"
             },
             "EnergyEfficiencyRatio": {
                 "description": "Energy efficiency ratio (EER)."
@@ -1138,7 +1138,7 @@
                 "description": "Ratio of the work required for isentropic compression of the gas to the work delivered to the gas within the compression volume (as obtained by measurement)."
             },
             "CompressorCapacity": {
-                "description": "The product of the  ideal capacity and the overall volumetric efficiency of the compressor."
+                "description": "The product of the ideal capacity and the overall volumetric efficiency of the compressor."
             },
             "CompressorTotalEfficiency": {
                 "description": "Ratio of the thermal cooling capacity to electrical input."
@@ -1498,7 +1498,7 @@
                 "description": "Electrical heat power of sump heater."
             },
             "UACurve": {
-                "description": "UA value as a  function of fan speed at certain water flow rate, UA = f ( fan speed)."
+                "description": "UA value as a function of fan speed at certain water flow rate, UA = f ( fan speed)."
             }
         },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_CoolingTowerPHistory.xml"
@@ -1594,7 +1594,7 @@
                 "description": "Flammability Rating for this object. It is given according to the national building code that governs the rating of flammability for materials."
             },
             "FragilityRating": {
-                "description": "Indication on the fragility of the covering (e.g., under fire conditions).  It is given according to the national building code that might provide a classification for fragility."
+                "description": "Indication on the fragility of the covering (e.g., under fire conditions). It is given according to the national building code that might provide a classification for fragility."
             },
             "Material": {
                 "description": "Main material of the covering, it should only be given, if no IfcMaterial class is assigned to the IfcCovering instance."
@@ -2224,7 +2224,7 @@
         "description": "Common properties of all occurrences of IfcDistributionFlowElement and their subtypes.",
         "properties": {
             "Reference": {
-                "description": "Reference ID for this specific instance (e.g.  'WWS/VS1/400/001', which indicates the occurrence belongs to system WWS, subsystems VSI/400, and has the component number 001)"
+                "description": "Reference ID for this specific instance (e.g. 'WWS/VS1/400/001', which indicates the occurrence belongs to system WWS, subsystems VSI/400, and has the component number 001)"
             }
         },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_DistributionFlowElementCommon.xml"
@@ -2233,7 +2233,7 @@
         "description": "Duct port occurrence attributes attached to an instance of IfcDistributionPort.",
         "properties": {
             "ConnectionType": {
-                "description": "The end-style treatment of the duct port: BEADEDSLEEVE: Beaded Sleeve.  COMPRESSION: Compression.  CRIMP: Crimp.  DRAWBAND: Drawband.  DRIVESLIP: Drive slip.  FLANGED: Flanged.  OUTSIDESLEEVE: Outside Sleeve.  SLIPON: Slipon.  SOLDERED: Soldered.  SSLIP: S-Slip.  STANDINGSEAM: Standing seam.  SWEDGE: Swedge.  WELDED: Welded.  OTHER: Another type of end-style has been applied. NONE: No end-style has been applied."
+                "description": "The end-style treatment of the duct port: BEADEDSLEEVE: Beaded Sleeve. COMPRESSION: Compression. CRIMP: Crimp. DRAWBAND: Drawband. DRIVESLIP: Drive slip. FLANGED: Flanged. OUTSIDESLEEVE: Outside Sleeve. SLIPON: Slipon. SOLDERED: Soldered. SSLIP: S-Slip. STANDINGSEAM: Standing seam. SWEDGE: Swedge. WELDED: Welded. OTHER: Another type of end-style has been applied. NONE: No end-style has been applied."
             },
             "PortNumber": {
                 "description": "The index of the port as it relates to the related object. Each index must be unique for any given related object."
@@ -2245,7 +2245,7 @@
         "description": "Pipe port occurrence attributes attached to an instance of IfcDistributionPort.",
         "properties": {
             "ConnectionType": {
-                "description": "The end-style treatment of the pipe port: BRAZED: Brazed.  COMPRESSION: Compression.  FLANGED: Flanged.  GROOVED: Grooved.  OUTSIDESLEEVE: Outside Sleeve.  SOLDERED: Soldered.  SWEDGE: Swedge.  THREADED: Threaded.  WELDED: Welded.  OTHER: Another type of end-style has been applied. NONE: No end-style has been applied. USERDEFINED: User-defined port connection type.  NOTDEFINED: Undefined port connection type."
+                "description": "The end-style treatment of the pipe port: BRAZED: Brazed. COMPRESSION: Compression. FLANGED: Flanged. GROOVED: Grooved. OUTSIDESLEEVE: Outside Sleeve. SOLDERED: Soldered. SWEDGE: Swedge. THREADED: Threaded. WELDED: Welded. OTHER: Another type of end-style has been applied. NONE: No end-style has been applied. USERDEFINED: User-defined port connection type. NOTDEFINED: Undefined port connection type."
             },
             "PortNumber": {
                 "description": "The index of the port as it relates to the related object. Each index must be unique for any given related object."
@@ -2266,10 +2266,10 @@
                 "description": "Fire rating for this object. It is given according to the national fire safety classification."
             },
             "GlazingAreaFraction": {
-                "description": "Fraction of the glazing area relative to the total area of the filling element.  It shall be used, if the glazing area is not given separately for all panels within the filling element."
+                "description": "Fraction of the glazing area relative to the total area of the filling element. It shall be used, if the glazing area is not given separately for all panels within the filling element."
             },
             "HandicapAccessible": {
-                "description": "Indication that this object is designed to be accessible by the handicapped.  It is giving according to the requirements of the national building code."
+                "description": "Indication that this object is designed to be accessible by the handicapped. It is giving according to the requirements of the national building code."
             },
             "Infiltration": {
                 "description": "Infiltration flowrate of outside air for the filler object based on the area of the filler object at a pressure level of 50 Pascals. It shall be used, if the length of all joints is unknown."
@@ -2430,7 +2430,7 @@
         "description": "This property set is used to define the various types of duct connections. It is applied to occurrences of duct segments and fittings.",
         "properties": {
             "ConnectionType": {
-                "description": "The connection type between duct segments or fittings and other segments or fittings. If the list contains only one value, then this connection type value applies to all ports. For more than one value in the list, the connection type value applies to the port that corresponds to the list index.The following suggested items should be utilized whenever possible for correlation with port enumerations: ANGLE: Angle.  BEADEDSLEEVE: Beaded Sleeve.  BRAZED: Brazed.  COMPRESSION: Compression.  CRIMP: Crimp.  DRAWBAND: Drawband.  DRIVESLIP: Drive slip.  FLANGED: Flanged.  OUTSIDESLEEVE: Outside Sleeve.  SLIPON: Slipon.  SOLDERED: Soldered.  SSLIP: S-Slip.  STANDINGSEAM: Standing seam.  SWEDGE: Swedge.  WELDED: Welded.  NONE: No connection type. NOTDEFINED: Undefined connection type."
+                "description": "The connection type between duct segments or fittings and other segments or fittings. If the list contains only one value, then this connection type value applies to all ports. For more than one value in the list, the connection type value applies to the port that corresponds to the list index.The following suggested items should be utilized whenever possible for correlation with port enumerations: ANGLE: Angle. BEADEDSLEEVE: Beaded Sleeve. BRAZED: Brazed. COMPRESSION: Compression. CRIMP: Crimp. DRAWBAND: Drawband. DRIVESLIP: Drive slip. FLANGED: Flanged. OUTSIDESLEEVE: Outside Sleeve. SLIPON: Slipon. SOLDERED: Soldered. SSLIP: S-Slip. STANDINGSEAM: Standing seam. SWEDGE: Swedge. WELDED: Welded. NONE: No connection type. NOTDEFINED: Undefined connection type."
             }
         },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_DuctConnection.xml"
@@ -2493,7 +2493,7 @@
         "description": "Duct fitting type common attributes.",
         "properties": {
             "EndStyleTreatment": {
-                "description": "The end-style treatment of the duct fitting manufactured. If the list contains only one value, then this end-style applies to all ports. For more than one value in the list, the end-style value applies to the port that corresponds to the list index.The following suggested items should be utilized whenever possible for correlation with port enumerations: ANGLE: Angle.  BEADEDSLEEVE: Beaded Sleeve.  BRAZED: Brazed.  COMPRESSION: Compression.  CRIMP: Crimp.  DRAWBAND: Drawband.  DRIVESLIP: Drive slip.  FLANGED: Flanged.  OUTSIDESLEEVE: Outside Sleeve.  SLIPON: Slipon.  SOLDERED: Soldered.  SSLIP: S-Slip.  STANDINGSEAM: Standing seam.  SWEDGE: Swedge.  WELDED: Welded.  NONE: No end-style treatment has been applied. NOTDEFINED: Undefined end-style type."
+                "description": "The end-style treatment of the duct fitting manufactured. If the list contains only one value, then this end-style applies to all ports. For more than one value in the list, the end-style value applies to the port that corresponds to the list index.The following suggested items should be utilized whenever possible for correlation with port enumerations: ANGLE: Angle. BEADEDSLEEVE: Beaded Sleeve. BRAZED: Brazed. COMPRESSION: Compression. CRIMP: Crimp. DRAWBAND: Drawband. DRIVESLIP: Drive slip. FLANGED: Flanged. OUTSIDESLEEVE: Outside Sleeve. SLIPON: Slipon. SOLDERED: Soldered. SSLIP: S-Slip. STANDINGSEAM: Standing seam. SWEDGE: Swedge. WELDED: Welded. NONE: No end-style treatment has been applied. NOTDEFINED: Undefined end-style type."
             },
             "Material": {
                 "description": "The duct fitting material."
@@ -2547,7 +2547,7 @@
         "description": "Duct segment type common attributes.",
         "properties": {
             "EndStyleTreatment": {
-                "description": "The end-style treatment of the duct segment manufactured. If the list contains only one value, then this end-style applies to all ports. For more than one value in the list, the end-style value applies to the port that corresponds to the list index.The following suggested items should be utilized whenever possible for correlation with port enumerations: ANGLE: Angle.  BEADEDSLEEVE: Beaded Sleeve.  BRAZED: Brazed.  COMPRESSION: Compression.  CRIMP: Crimp.  DRAWBAND: Drawband.  DRIVESLIP: Drive slip.  FLANGED: Flanged.  OUTSIDESLEEVE: Outside Sleeve.  SLIPON: Slipon.  SOLDERED: Soldered.  SSLIP: S-Slip.  STANDINGSEAM: Standing seam.  SWEDGE: Swedge.  WELDED: Welded.  NONE: No end-style treatment has been applied. NOTDEFINED: Undefined end-style type."
+                "description": "The end-style treatment of the duct segment manufactured. If the list contains only one value, then this end-style applies to all ports. For more than one value in the list, the end-style value applies to the port that corresponds to the list index.The following suggested items should be utilized whenever possible for correlation with port enumerations: ANGLE: Angle. BEADEDSLEEVE: Beaded Sleeve. BRAZED: Brazed. COMPRESSION: Compression. CRIMP: Crimp. DRAWBAND: Drawband. DRIVESLIP: Drive slip. FLANGED: Flanged. OUTSIDESLEEVE: Outside Sleeve. SLIPON: Slipon. SOLDERED: Soldered. SSLIP: S-Slip. STANDINGSEAM: Standing seam. SWEDGE: Swedge. WELDED: Welded. NONE: No end-style treatment has been applied. NOTDEFINED: Undefined end-style type."
             },
             "Length": {
                 "description": "Length of the duct segment. If a Length attribute is provided in the occurrence property set, it supersedes this value."
@@ -2628,7 +2628,7 @@
                 "description": "The weight of the silencer."
             },
             "WorkingPressureRange": {
-                "description": "Allowable minimum and maximum  working pressure (relative to ambient pressure)."
+                "description": "Allowable minimum and maximum working pressure (relative to ambient pressure)."
             }
         },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_DuctSilencerTypeCommon.xml"
@@ -2763,13 +2763,13 @@
                 "description": "Overall or average ratio of the visible spectral flux transmitted through a body to that incident upon it."
             },
             "Azimuth": {
-                "description": "Azimuth of the element as derived from the placement of the element shape, by convention: North = 0' and measurement is done clockwise (I.e. east = 90', if unit is grad). The calculation procedure will be specific for each type of element.  In cases of inconsistency between the geometric parameters and the azimuth property, provided in the attached property set, the geometric parameters take precedence."
+                "description": "Azimuth of the element as derived from the placement of the element shape, by convention: North = 0' and measurement is done clockwise (I.e. east = 90', if unit is grad). The calculation procedure will be specific for each type of element. In cases of inconsistency between the geometric parameters and the azimuth property, provided in the attached property set, the geometric parameters take precedence."
             },
             "Color": {
                 "description": "The color of the surface."
             },
             "Inclination": {
-                "description": "Inclination of the element as derived from the placement of the element shape, by convention: Vertical = 0', horizontal = 90', if unit is grad). The calculation procedure will be specific for each type of element.  In cases of inconsistency between the geometric parameters and the azimuth property, provided in the attached property set, the geometric parameters take precedence."
+                "description": "Inclination of the element as derived from the placement of the element shape, by convention: Vertical = 0', horizontal = 90', if unit is grad). The calculation procedure will be specific for each type of element. In cases of inconsistency between the geometric parameters and the azimuth property, provided in the attached property set, the geometric parameters take precedence."
             },
             "Reflectance": {
                 "description": "The ratio of reflected power to incident power."
@@ -3042,13 +3042,13 @@
         "description": "Fan type common attributes.",
         "properties": {
             "CapacityControlType": {
-                "description": "InletVane: Control by adjusting inlet vane VariableSpeedDrive: Control by variable speed drive  BladePitchAngle: Control by adjusting blade pitch angle TwoSpeed: Control by switch between high and low speed DischargeDamper: Control by modulating discharge damper"
+                "description": "InletVane: Control by adjusting inlet vane VariableSpeedDrive: Control by variable speed drive BladePitchAngle: Control by adjusting blade pitch angle TwoSpeed: Control by switch between high and low speed DischargeDamper: Control by modulating discharge damper"
             },
             "HousingMaterial": {
                 "description": "The material used to construct the fan housing."
             },
             "MotorDriveType": {
-                "description": "Motor drive type: DIRECTDRIVE: Direct drive.  BELTDRIVE: Belt drive.  COUPLING: Coupling.  OTHER: Other type of motor drive.  NOTKNOWN: Unknown motor drive type. UNSET: Unspecified motor drive type."
+                "description": "Motor drive type: DIRECTDRIVE: Direct drive. BELTDRIVE: Belt drive. COUPLING: Coupling. OTHER: Other type of motor drive. NOTKNOWN: Unknown motor drive type. UNSET: Unspecified motor drive type."
             },
             "NominalAirFlowRate": {
                 "description": "Nominal air flow rate."
@@ -3234,19 +3234,19 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_FireSuppressionTerminalTypeBreechingInlet.xml"
     },
     "Pset_FireSuppressionTerminalTypeFireHydrant": {
-        "description": "Device, fitted to a pipe, through which a temporary supply of water may be provided (BS6100 330 6107)",
+        "description": "Device, fitted to a pipe, through which a temporary supply of water may be provided (BS6100 330 6107) For further details on fire hydrants, see www.firehydrant.org",
         "properties": {
             "BodyColor": {
-                "description": "Color of the body of the hydrant."
+                "description": "Color of the body of the hydrant. Note: Consult local fire regulations for statutory colors that may be required for hydrant bodies in particular circumstances."
             },
             "CapColor": {
-                "description": "Color of the caps of the hydrant."
+                "description": "Color of the caps of the hydrant. Note: Consult local fire regulations for statutory colors that may be required for hydrant caps in particular circumstances."
             },
             "DischargeFlowRate": {
                 "description": "The volumetric rate of fluid discharge."
             },
             "FireHydrantType": {
-                "description": "Defines the range of hydrant types from which the required type can be selected where:"
+                "description": "Defines the range of hydrant types from which the required type can be selected where: DryBarrel = A hydrant that has isolating valves fitted below ground and that may be used where the possibility of water freezing is a consideration. WetBarrel = A hydrant that has isolating valves fitted above ground and that may be used where there is no possibility of water freezing."
             },
             "FlowClass": {
                 "description": "Alphanumeric indication of the flow class of a hydrant (may be used in connection with or instead of the FlowRate property)"
@@ -3270,7 +3270,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_FireSuppressionTerminalTypeFireHydrant.xml"
     },
     "Pset_FireSuppressionTerminalTypeHoseReel": {
-        "description": "A supporting framework on which a hose may be wound (BS6100 155 8201).",
+        "description": "A supporting framework on which a hose may be wound (BS6100 155 8201). Note that the service provided by the hose (water/foam) is determined by the context of the system onto which the hose reel is connected.",
         "properties": {
             "ClassOfService": {
                 "description": "A classification of usage of the hose reel that may be applied."
@@ -3342,7 +3342,7 @@
                 "description": "Identifies the predefined methods of sprinkler response from which that required may be set."
             },
             "SprinklerType": {
-                "description": "Identifies the predefined types of sprinkler  from which the type required may be set."
+                "description": "Identifies the predefined types of sprinkler from which the type required may be set."
             }
         },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_FireSuppressionTerminalTypeSprinkler.xml"
@@ -3351,7 +3351,7 @@
         "description": "Damper occurrence attributes attached to an instance of IfcFlowController.",
         "properties": {
             "SizingMethod": {
-                "description": "Identifies whether the damper is sized nominally or with exact measurements: NOMINAL: Nominal sizing method.  EXACT: Exact sizing method."
+                "description": "Identifies whether the damper is sized nominally or with exact measurements: NOMINAL: Nominal sizing method. EXACT: Exact sizing method."
             }
         },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_FlowControllerDamper.xml"
@@ -3372,7 +3372,7 @@
                 "description": "The absolute roughness factor of the duct fitting."
             },
             "Color": {
-                "description": "The color of the duct fitting."
+                "description": "The color of the duct fitting. Note: This is typically used for any duct fittings with a painted surface which is not otherwise specified as a covering."
             },
             "HasLiner": {
                 "description": "TRUE if the fitting has interior duct insulating lining, FALSE if it does not."
@@ -3384,7 +3384,7 @@
         "description": "Pipe fitting occurrence attributes attached to an instance of IfcFlowFitting.",
         "properties": {
             "Color": {
-                "description": "The color of the pipe fitting."
+                "description": "The color of the pipe fitting. Note: This is typically used only for plastic pipe fittings. However, it may be used for any pipe fittings with a painted surface which is not otherwise specified as a covering."
             },
             "InteriorRoughnessCoefficient": {
                 "description": "The interior roughness of the pipe fitting material."
@@ -3504,7 +3504,7 @@
         "description": "Fan occurrence attributes attached to an instance of IfcFlowMovingDevice.",
         "properties": {
             "ApplicationOfFan": {
-                "description": "The functional application of the fan: SUPPLYAIR: Supply air fan.  RETURNAIR: Return air fan.  EXHAUSTAIR: Exhaust air fan.  OTHER: Other type of application not defined above."
+                "description": "The functional application of the fan: SUPPLYAIR: Supply air fan. RETURNAIR: Return air fan. EXHAUSTAIR: Exhaust air fan. OTHER: Other type of application not defined above."
             },
             "CoilPosition": {
                 "description": "Defines the relationship between a fan and a coil. DrawThrough: Fan located downstream of the coil. BlowThrough: Fan located upstream of the coil."
@@ -3531,13 +3531,13 @@
         "description": "Centrifugal fan occurrence attributes attached to an instance of IfcFlowMovingDevice.",
         "properties": {
             "Arrangement": {
-                "description": "Defines the fan and motor drive arrangement as defined by AMCA: ARRANGEMENT1: Arrangement 1.  ARRANGEMENT2: Arrangement 2.  ARRANGEMENT3: Arrangement 3.  ARRANGEMENT4: Arrangement 4.  ARRANGEMENT7: Arrangement 7.  ARRANGEMENT8: Arrangement 8.  ARRANGEMENT9: Arrangement 9.  ARRANGEMENT10: Arrangement 10.  OTHER: Other type of fan drive arrangement."
+                "description": "Defines the fan and motor drive arrangement as defined by AMCA: ARRANGEMENT1: Arrangement 1. ARRANGEMENT2: Arrangement 2. ARRANGEMENT3: Arrangement 3. ARRANGEMENT4: Arrangement 4. ARRANGEMENT7: Arrangement 7. ARRANGEMENT8: Arrangement 8. ARRANGEMENT9: Arrangement 9. ARRANGEMENT10: Arrangement 10. OTHER: Other type of fan drive arrangement."
             },
             "DirectionOfRotation": {
-                "description": "The direction of the centrifugal fan wheel rotation when viewed from the drive side of the fan: CLOCKWISE: Clockwise.  COUNTERCLOCKWISE: Counter-clockwise.  OTHER: Other type of fan rotation."
+                "description": "The direction of the centrifugal fan wheel rotation when viewed from the drive side of the fan: CLOCKWISE: Clockwise. COUNTERCLOCKWISE: Counter-clockwise. OTHER: Other type of fan rotation."
             },
             "DischargePosition": {
-                "description": "Centrifugal fan discharge position: TOPHORIZONTAL: Top horizontal discharge.  TOPANGULARDOWN: Top angular down discharge.  DOWNBLAST: Downblast discharge.  BOTTOMANGULARDOWN: Bottom angular down discharge.  BOTTOMHORIZONTAL: Bottom horizontal discharge.  BOTTOMANGULARUP: Bottom angular up discharge.  UPBLAST: Upblast discharge.  TOPANGULARUP: Top angular up discharge.  OTHER: Other type of fan arrangement."
+                "description": "Centrifugal fan discharge position: TOPHORIZONTAL: Top horizontal discharge. TOPANGULARDOWN: Top angular down discharge. DOWNBLAST: Downblast discharge. BOTTOMANGULARDOWN: Bottom angular down discharge. BOTTOMHORIZONTAL: Bottom horizontal discharge. BOTTOMANGULARUP: Bottom angular up discharge. UPBLAST: Upblast discharge. TOPANGULARUP: Top angular up discharge. OTHER: Other type of fan arrangement."
             }
         },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_FlowMovingDeviceFanCentrifugal.xml"
@@ -3546,10 +3546,10 @@
         "description": "Pump occurrence attributes attached to an instance of IfcFlowMovingDevice.",
         "properties": {
             "BaseType": {
-                "description": "Defines general types of pump bases: FRAME: Frame.  BASE: Base.  NONE: There is no pump base, such as an inline pump.  OTHER: Other type of pump base."
+                "description": "Defines general types of pump bases: FRAME: Frame. BASE: Base. NONE: There is no pump base, such as an inline pump. OTHER: Other type of pump base."
             },
             "DriveConnectionType": {
-                "description": "The way the pump drive mechanism is connected to the pump: DIRECTDRIVE: Direct drive.  BELTDRIVE: Belt drive.  COUPLING: Coupling.  OTHER: Other type of drive connection."
+                "description": "The way the pump drive mechanism is connected to the pump: DIRECTDRIVE: Direct drive. BELTDRIVE: Belt drive. COUPLING: Coupling. OTHER: Other type of drive connection."
             },
             "ImpellerDiameter": {
                 "description": "Diameter of pump impeller - used to scale performance of geometrically similar pumps."
@@ -3561,7 +3561,7 @@
         "description": "Duct segment occurrence attributes attached to an instance of IfcFlowSegment.",
         "properties": {
             "Color": {
-                "description": "The color of the duct segment."
+                "description": "The color of the duct segment. Note: This is typically used for any duct segments with a painted surface which is not otherwise specified as a covering."
             },
             "HasLiner": {
                 "description": "TRUE if the fitting has interior duct insulating lining, FALSE if it does not."
@@ -3582,7 +3582,7 @@
         "description": "Pipe segment occurrence attributes attached to an instance of IfcFlowSegment.",
         "properties": {
             "Color": {
-                "description": "The color of the pipe segment."
+                "description": "The color of the pipe segment. Note: This is typically used only for plastic pipe segments. However, it may be used for any pipe segments with a painted surface which is not otherwise specified as a covering."
             },
             "Gradient": {
                 "description": "The gradient of the pipe segment."
@@ -3603,13 +3603,13 @@
         "description": "Properties that relate to an instance of a flow storage device that is typed as a tank. Note that a partial tank may be considered as a compartment within a compartmentalized tank.",
         "properties": {
             "HasLadder": {
-                "description": "Indication of whether the tank is provided with a ladder (set TRUE) for access to the top. If no ladder is provided then value is set FALSE."
+                "description": "Indication of whether the tank is provided with a ladder (set TRUE) for access to the top. If no ladder is provided then value is set FALSE. Note: No indication is given of the type of ladder (gooseneck etc.)"
             },
             "HasVisualIndicator": {
                 "description": "Indication of whether the tank is provided with a visual indicator (set TRUE) that shows the water level in the tank. If no visual indicator is provided then value is set FALSE."
             },
             "TankComposition": {
-                "description": "Defines the level of element composition where:"
+                "description": "Defines the level of element composition where: COMPLEX = A set of elementary units aggregated together to fulfill the overall required purpose. ELEMENT = A single elementary unit that may exist of itself or as an aggregation of partial units.. PARTIAL"
             }
         },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_FlowStorageDeviceTank.xml"
@@ -3621,7 +3621,7 @@
                 "description": "Enumeration defining the functional type of air flow through the terminal."
             },
             "Location": {
-                "description": "Location  (a single type of diffuser can be used for multiple locations); high means close to ceiling."
+                "description": "Location (a single type of diffuser can be used for multiple locations); high means close to ceiling."
             }
         },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgServiceElements/Pset_FlowTerminalAirTerminal.xml"
@@ -3705,10 +3705,10 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_GasTerminalPHistory.xml"
     },
     "Pset_GasTerminalTypeCommon": {
-        "description": "Common attributes of gas terminal types.  GasProperties attribute deleted in IFC2x2 Pset Addendum: Use IfcFuelProperties instead.",
+        "description": "Common attributes of gas terminal types. GasProperties attribute deleted in IFC2x2 Pset Addendum: Use IfcFuelProperties instead.",
         "properties": {
             "GasFlowRateRange": {
-                "description": "Gas volumetric flowrate within which the gas  terminal is designed to operate."
+                "description": "Gas volumetric flowrate within which the gas terminal is designed to operate."
             }
         },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_GasTerminalTypeCommon.xml"
@@ -3717,7 +3717,7 @@
         "description": "Piece of equipment for occupants use that is connected to a gas installation (definition is a modification from that found in BS6100).",
         "properties": {
             "FlueType": {
-                "description": "Defines the types of flue that may be specified for connection to gas appliances where:"
+                "description": "Defines the types of flue that may be specified for connection to gas appliances where: BalancedFlue = Room sealed appliance that has its inlet for combustion air and its outlet for products of combustion in adjacent external positions, disposed so that wind effects are substantially balanced between them. Flued = Gas burning appliance designed for connection to a flue system Flueless = Gas burning appliance designed for use without connection to a flue system OpenFlued = Gas burning appliance designed to be connected to an open flue system, combustion air being drawn from a room or internal space in which the gas burning appliance is installed RoomSealed = Gas burning appliance that has its combustion system, including air inlet and products outlet, isolated from a room or internal space in which the gas burning appliance is installed"
             },
             "GasApplianceType": {
                 "description": "Selection of the type of gas appliance from the enumerated list of types."
@@ -3738,7 +3738,7 @@
         "description": "Heat exchanger type common attributes.",
         "properties": {
             "Arrangement": {
-                "description": "Defines the basic flow arrangements for the heat exchanger: COUNTERFLOW: Counterflow heat exchanger arrangement.  CROSSFLOW: Crossflow heat exchanger arrangement.  PARALLELFLOW: Parallel flow heat exchanger arrangement.  MULTIPASS: Multipass flow heat exchanger arrangement.  OTHER: Other type of heat exchanger flow arrangement not defined above."
+                "description": "Defines the basic flow arrangements for the heat exchanger: COUNTERFLOW: Counterflow heat exchanger arrangement. CROSSFLOW: Crossflow heat exchanger arrangement. PARALLELFLOW: Parallel flow heat exchanger arrangement. MULTIPASS: Multipass flow heat exchanger arrangement. OTHER: Other type of heat exchanger flow arrangement not defined above."
             },
             "ShellMaterial": {
                 "description": "Material used to construct the shell of the heat exchanger."
@@ -3813,7 +3813,7 @@
                 "description": "Luminous flux is a photometric measure of radiant flux, i.e. the volume of light emitted from a light source. Luminous flux is measured either for the interior as a whole or for a part of the interior (partial luminous flux for a solid angle). All other photometric parameters are derivatives of luminous flux. Luminous flux is measured in lumens (lm). The luminous flux is given as a nominal value for each lamp."
             },
             "LampBallastType": {
-                "description": "The type of ballast used to stabilise gas discharge by limiting the current during operation and to deliver the necessary striking voltage for starting. Ballasts are needed to operate Discharge Lamps such as Fluorescent, Compact Fluorescent, High-pressure Mercury, Metal Halide and High-pressure Sodium Lamps.  Magnetic ballasts are chokes which limit the current passing through a lamp connected in series on the principle of self-induction. The resultant current and power are decisive for the efficient operation of the lamp. A specially designed ballast is required for every type of lamp to comply with lamp rating in terms of Luminous Flux, Color Appearance and service life. The two types of magnetic ballasts for fluorescent lamps are KVG Conventional   (EC-A series) and VVG Low-loss ballasts (EC-B series). Low-loss ballasts have a higher efficiency, which means reduced ballast losses and a lower thermal load. Electronic ballasts are used to run fluorescent lamps at high frequencies (approx. 35 - 40 kHz)."
+                "description": "The type of ballast used to stabilise gas discharge by limiting the current during operation and to deliver the necessary striking voltage for starting. Ballasts are needed to operate Discharge Lamps such as Fluorescent, Compact Fluorescent, High-pressure Mercury, Metal Halide and High-pressure Sodium Lamps. Magnetic ballasts are chokes which limit the current passing through a lamp connected in series on the principle of self-induction. The resultant current and power are decisive for the efficient operation of the lamp. A specially designed ballast is required for every type of lamp to comply with lamp rating in terms of Luminous Flux, Color Appearance and service life. The two types of magnetic ballasts for fluorescent lamps are KVG Conventional (EC-A series) and VVG Low-loss ballasts (EC-B series). Low-loss ballasts have a higher efficiency, which means reduced ballast losses and a lower thermal load. Electronic ballasts are used to run fluorescent lamps at high frequencies (approx. 35 - 40 kHz)."
             },
             "LampCompensationType": {
                 "description": "Identifies the form of compensation used for power factor correction and radio suppression."
@@ -3912,7 +3912,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedFacilitiesElements/Pset_ManufacturerOccurrence.xml"
     },
     "Pset_ManufacturerTypeInformation": {
-        "description": "Defines characteristics of manufactured products that may be given by the manufacturer. Note that the term 'manufactured' may also be used to refer to products that are supplied and identified by the supplier or that are assembled off site by a third party provider.  This property set replaces the entity IfcManufacturerInformation from previous IFC releases.",
+        "description": "Defines characteristics of manufactured products that may be given by the manufacturer. Note that the term 'manufactured' may also be used to refer to products that are supplied and identified by the supplier or that are assembled off site by a third party provider. This property set replaces the entity IfcManufacturerInformation from previous IFC releases.",
         "properties": {
             "ArticleNumber": {
                 "description": "Article number or reference that may be applied to a product according to a standard scheme for article number definition (e.g. UN, EAN)"
@@ -4035,7 +4035,7 @@
                 "description": "The thermal exposure expected by the building based on surrounding site conditions."
             },
             "CoolingDesignDay": {
-                "description": "The month, day  and time that has been selected for the cooling design calculations."
+                "description": "The month, day and time that has been selected for the cooling design calculations."
             },
             "CoolingDryBulb": {
                 "description": "Outside dry bulb temperature for cooling design"
@@ -4074,7 +4074,7 @@
                 "description": "Special requirements for material used to contain an artefact."
             },
             "PackingCareType": {
-                "description": "Identifies the predefined types of care that may be required when handling the artefact during a move where:"
+                "description": "Identifies the predefined types of care that may be required when handling the artefact during a move where: Fragile = artefact may be broken during a move through careless handling. HandleWithCare = artefact may be damaged during a move through careless handling."
             },
             "SpecialInstructions": {
                 "description": "Special instructions for packing."
@@ -4092,16 +4092,16 @@
                 "description": "End time."
             },
             "EscortRequirement": {
-                "description": "Indicates whether or not an escort is required to accompany persons carrying out a work order at or to/from the place of work (= TRUE) or not (= FALSE)."
+                "description": "Indicates whether or not an escort is required to accompany persons carrying out a work order at or to/from the place of work (= TRUE) or not (= FALSE). NOTE - There are many instances where escorting is required, particularly in a facility that has a high security rating. Escorting may require that persons are escorted to and from the place of work. Alternatively, it may involve the escort remaining at the place of work at all times."
             },
             "PermitDuration": {
                 "description": "Permit duration."
             },
             "PermitType": {
-                "description": "Identifies the predefined types of permits that can be granted where:"
+                "description": "Identifies the predefined types of permits that can be granted where: Access = enables access to an identified area, Work = enables work to be carried out in an identified area"
             },
             "SpecialRequirements": {
-                "description": "Any additional special requirements that need to be included in the permit to work."
+                "description": "Any additional special requirements that need to be included in the permit to work. NOTE - Additional permit requirements may be imposed according to the nature of the facility at which the work is carried out. For instance, in clean areas, special clothing may be required whilst in corrective institutions, it may be necessary to check in and check out tools that will be used for work as a safety precaution."
             },
             "StartDate": {
                 "description": "Start date."
@@ -4116,7 +4116,7 @@
         "description": "This property set is used to define the various types of pipe connections. It is applied to occurrences of pipe segments and fittings.",
         "properties": {
             "ConnectionType": {
-                "description": "The connection type between pipe segments or fittings and other segments or fittings. If the list contains only one value, then this connection type value applies to all ports. For more than one value in the list, the connection type value applies to the port that corresponds to the list index.The following suggested items should be utilized whenever possible for correlation with port enumerations: BRAZED: Brazed connection type.  COMPRESSION: Compression connection type.  FLANGED: Flanged connection type including bolts and gasket.  GLANDJOINT: Gland-joint  connection type.  FLEXIBLEBOLTEDGLANDJOINT: Flexible bolted gland-joint  connection type.  FLEXIBLEBOLTEDGLANDJOINTWITHANODEENDCAP: Flexible bolted gland-joint with anode end-cap connection type. GROOVED: Grooved connection type.  SOLDERED: Soldered connection type.  SOLDERED_FEMALE: Female-soldered connection type.  SOLDERED_MALE: Male-soldered connection type.  SWEDGE: Swedge connection type. THREADED: Threaded connection type.  THREADED_FEMALE: Female-threaded connection type.  THREADED_MALE: Male-threaded connection type.  WELDED: Welded connection type.  WELDED_BUTT: Butt-welded connection type.  WELDED_BRANCH: Branch-welded connection type.  WELDED_FLANGE: Flange-welded connection type.  NONE: There is no connection. NOTDEFINED: Undefined connection type."
+                "description": "The connection type between pipe segments or fittings and other segments or fittings. If the list contains only one value, then this connection type value applies to all ports. For more than one value in the list, the connection type value applies to the port that corresponds to the list index.The following suggested items should be utilized whenever possible for correlation with port enumerations: BRAZED: Brazed connection type. COMPRESSION: Compression connection type. FLANGED: Flanged connection type including bolts and gasket. GLANDJOINT: Gland-joint connection type. FLEXIBLEBOLTEDGLANDJOINT: Flexible bolted gland-joint connection type. FLEXIBLEBOLTEDGLANDJOINTWITHANODEENDCAP: Flexible bolted gland-joint with anode end-cap connection type. GROOVED: Grooved connection type. SOLDERED: Soldered connection type. SOLDERED_FEMALE: Female-soldered connection type. SOLDERED_MALE: Male-soldered connection type. SWEDGE: Swedge connection type. THREADED: Threaded connection type. THREADED_FEMALE: Female-threaded connection type. THREADED_MALE: Male-threaded connection type. WELDED: Welded connection type. WELDED_BUTT: Butt-welded connection type. WELDED_BRANCH: Branch-welded connection type. WELDED_FLANGE: Flange-welded connection type. NONE: There is no connection. NOTDEFINED: Undefined connection type."
             }
         },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_PipeConnection.xml"
@@ -4170,7 +4170,7 @@
         "description": "Pipe fitting type common attributes.",
         "properties": {
             "EndStyleTreatment": {
-                "description": "The end-style treatment of the pipe fitting as made available from the manufacturer. If the list contains only one value, then this end-style applies to all ports. For more than one value in the list, the end-style value applies to the port that corresponds to the list index.The following suggested items should be utilized whenever possible for correlation with port enumerations: FLANGED: Flanged.  GROOVED: Grooved.  THREADED: Threaded.  NONE: No end-style has been applied. NOTDEFINED: Undefined end-style type."
+                "description": "The end-style treatment of the pipe fitting as made available from the manufacturer. If the list contains only one value, then this end-style applies to all ports. For more than one value in the list, the end-style value applies to the port that corresponds to the list index.The following suggested items should be utilized whenever possible for correlation with port enumerations: FLANGED: Flanged. GROOVED: Grooved. THREADED: Threaded. NONE: No end-style has been applied. NOTDEFINED: Undefined end-style type."
             },
             "FittingLossFactor": {
                 "description": "A factor that determines the pressure loss due to friction through the fitting."
@@ -4194,7 +4194,7 @@
                 "description": "Allowable maximum and minimum working pressure (relative to ambient pressure)."
             },
             "SubType": {
-                "description": "Subtype of the pipe fitting..The following suggested items should be utilized whenever possible for consistency across applications: BEND_15DEGREE: Changes the direction of flow through 15 degrees.  BEND_22_5DEGREE: Changes the direction of flow through 22.5 degrees.  BEND_25DEGREE: Changes the direction of flow through 25 degrees.  BEND_30DEGREE: Changes the direction of flow through 30 degrees.  BEND_45DEGREE: Changes the direction of flow through 45 degrees.  BEND_67DEGREE: Changes the direction of flow through 67 degrees.  BEND_76DEGREE: Changes the direction of flow through 76 degrees.  BEND_87_5DEGREE: Changes the direction of flow through 87.5 degrees.  BEND_90DEGREE: Changes the direction of flow through 90 degrees.  BEND_135DEGREE: Changes the direction of flow through 135 degrees.  BEND_180DEGREE: Changes the direction of flow through 180 degrees.  JUNCTION_CROSS_SQUARE: Branch fitting with two opposing branches that are swept in the direction of the main flow.  JUNCTION_CROSS_SWEEP: Branch fitting with two swept opposing branches at right angles to the main flow.  JUNCTION_TEE_SQUARE: Branch fitting in which the branch is at an angle of 90 degrees to the main pipe.  JUNCTION_TEE_SWEEP: Branch fitting in which the branch is curved through 90 degrees to join a main pipe tangentially.  JUNCTION_TEE_TWINBEND: Symmetrical pipe fitting in which two short radius bends curve through 90 degree to form a single pipe.  +I1JUNCTION_TEE_TWINELBOW: Symmetrical pipe fitting in which two elbows curve through 90 degree to form a single pipe.  JUNCTION_TEE_Y: Branch fitting in the shape of a letter Y.  OBSTRUCTION_CAP: Device fixed onto the end of a pipe or pipe fitting to close it.  OBSTRUCTION_PLUG: Device fixed into the end of a pipe or pipe fitting to close it.  OTHER: Other fitting subtype. NOTDEFINED: The fitting subtype is not defined."
+                "description": "Subtype of the pipe fitting..The following suggested items should be utilized whenever possible for consistency across applications: BEND_15DEGREE: Changes the direction of flow through 15 degrees. BEND_22_5DEGREE: Changes the direction of flow through 22.5 degrees. BEND_25DEGREE: Changes the direction of flow through 25 degrees. BEND_30DEGREE: Changes the direction of flow through 30 degrees. BEND_45DEGREE: Changes the direction of flow through 45 degrees. BEND_67DEGREE: Changes the direction of flow through 67 degrees. BEND_76DEGREE: Changes the direction of flow through 76 degrees. BEND_87_5DEGREE: Changes the direction of flow through 87.5 degrees. BEND_90DEGREE: Changes the direction of flow through 90 degrees. BEND_135DEGREE: Changes the direction of flow through 135 degrees. BEND_180DEGREE: Changes the direction of flow through 180 degrees. JUNCTION_CROSS_SQUARE: Branch fitting with two opposing branches that are swept in the direction of the main flow. JUNCTION_CROSS_SWEEP: Branch fitting with two swept opposing branches at right angles to the main flow. JUNCTION_TEE_SQUARE: Branch fitting in which the branch is at an angle of 90 degrees to the main pipe. JUNCTION_TEE_SWEEP: Branch fitting in which the branch is curved through 90 degrees to join a main pipe tangentially. JUNCTION_TEE_TWINBEND: Symmetrical pipe fitting in which two short radius bends curve through 90 degree to form a single pipe. +I1JUNCTION_TEE_TWINELBOW: Symmetrical pipe fitting in which two elbows curve through 90 degree to form a single pipe. JUNCTION_TEE_Y: Branch fitting in the shape of a letter Y. OBSTRUCTION_CAP: Device fixed onto the end of a pipe or pipe fitting to close it. OBSTRUCTION_PLUG: Device fixed into the end of a pipe or pipe fitting to close it. OTHER: Other fitting subtype. NOTDEFINED: The fitting subtype is not defined."
             },
             "TemperatureRange": {
                 "description": "Allowable maximum and minimum temperature."
@@ -4221,7 +4221,7 @@
         "description": "Pipe segment type common attributes.",
         "properties": {
             "EndStyleTreatment": {
-                "description": "The end-style treatment of the pipe segment as made available from the manufacturer. If the list contains only one value, then this end-style applies to all ports. For more than one value in the list, the end-style value applies to the port that corresponds to the list index.The following suggested items should be utilized whenever possible for correlation with port enumerations: FLANGED: Flanged.  GROOVED: Grooved.  THREADED: Threaded.  NONE: No end-style has been applied. NOTDEFINED: Undefined end-style type."
+                "description": "The end-style treatment of the pipe segment as made available from the manufacturer. If the list contains only one value, then this end-style applies to all ports. For more than one value in the list, the end-style value applies to the port that corresponds to the list index.The following suggested items should be utilized whenever possible for correlation with port enumerations: FLANGED: Flanged. GROOVED: Grooved. THREADED: Threaded. NONE: No end-style has been applied. NOTDEFINED: Undefined end-style type."
             },
             "InnerDiameter": {
                 "description": "The actual inner diameter of the pipe. Refer to NominalDiameter for comments about interpretation of multiple items in the list."
@@ -4332,7 +4332,7 @@
                 "description": "The type of construction action the project deals with, e.g. new construction, renovation, refurbishment, etc."
             },
             "GrossAreaPlanned": {
-                "description": "Total planned area for the project.  Used for programming the project"
+                "description": "Total planned area for the project. Used for programming the project"
             }
         },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcKernel/Pset_ProjectCommon.xml"
@@ -4359,19 +4359,19 @@
                 "description": "The contractual type of the work."
             },
             "FaultPriorityType": {
-                "description": "Identifies the predefined types of priority that can be assigned from which the type may be set where:"
+                "description": "Identifies the predefined types of priority that can be assigned from which the type may be set where: High = action is required urgently. Medium = action can occur within a reasonable period of time. Low = action can occur when convenient."
             },
             "IfNotAccomplished": {
                 "description": "Comments if the job is not accomplished."
             },
             "LocationPriorityType": {
-                "description": "Identifies the predefined types of priority that can be assigned from which the type may be set where:"
+                "description": "Identifies the predefined types of priority that can be assigned from which the type may be set where: High = action is required urgently. Medium = action can occur within a reasonable period of time. Low = action can occur when convenient."
             },
             "LongJobDescription": {
                 "description": "Description of the job requested."
             },
             "MaintenaceType": {
-                "description": "Identifies the predefined types of maintenance that can be done from which the type that generates the maintenance work order may be set where:"
+                "description": "Identifies the predefined types of maintenance that can be done from which the type that generates the maintenance work order may be set where: ConditionBased = generated as a result of the condition of an asset or artefact being less than a determined value. Corrective = generated as a result of an immediate and urgent need for maintenance action. PlannedCorrective = generated as a result of immediate corrective action being needed but with sufficient time available for the work order to be included in maintenance planning. Scheduled = generated as a result of a fixed, periodic maintenance requirement."
             },
             "ProductDescription": {
                 "description": "A textual description of the products that require the work."
@@ -4449,7 +4449,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_ProjectionElementShadingDevicePHistory.xml"
     },
     "Pset_PropertyAgreement": {
-        "description": "A property agreement is an agreement that enables the occupation of a property for a period of time.",
+        "description": "A property agreement is an agreement that enables the occupation of a property for a period of time. The objective is to capture the information within an agreement that is relevant to a facilities manager. Design and construction information associated with the property is not considered. A property agreement may be applied to an instance of IfcSpatialStructureElement including to compositions defined through the IfcSpatialStructureElement.Element.CompositionEnum. Note that the associated actors are captured by the IfcOccupant class.",
         "properties": {
             "AgreementType": {
                 "description": "Identifies the predefined types of property agreement from which the type required may be set."
@@ -4476,7 +4476,7 @@
                 "description": "Addressing details of the property as stated within the agreement"
             },
             "Restrictions": {
-                "description": "Restrictions that may be placed by a  competent authority"
+                "description": "Restrictions that may be placed by a competent authority"
             },
             "TerminationDate": {
                 "description": "Date on which the agreement terminates"
@@ -4494,7 +4494,7 @@
         "description": "Definition from IEC 441-14-20: A circuit breaker is a mechanical switching device capable of making, carrying, and breaking currents under normal circuit conditions and also making, carrying for a specified time and breaking, current under specified abnormal circuit conditions such as those of short circuit.",
         "properties": {
             "CircuitBreakerType": {
-                "description": "A list of the available types of circuit breaker from which that required may be selected where:"
+                "description": "A list of the available types of circuit breaker from which that required may be selected where: ACB - Air Circuit Breaker; MCB - Miniature Circuit Breaker (up to 125A); MCCB - Moulded Case Circuit Breaker (40A - 1600A); Vacuum - Generally used for high voltage (> 1000V) but may be used for installations close to/up to 1000V."
             }
         },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_ProtectiveDeviceTypeCircuitBreaker.xml"
@@ -4533,7 +4533,7 @@
         "description": "An earth failure device acts to protect people and equipment from the effects of current leakage.",
         "properties": {
             "EarthFailureDeviceType": {
-                "description": "A list of the available types of circuit breaker from which that required may be selected where:"
+                "description": "A list of the available types of circuit breaker from which that required may be selected where: Standard - Device that operates without a time delay; TimeDelayed - Device that operates after a time delay."
             },
             "Sensitivity": {
                 "description": "Current leakage to an unwanted leading path during normal operation (IEC 151-14-49)"
@@ -4545,7 +4545,7 @@
         "description": "A device that will electrically open the circuit after a period of prolonged, abnormal current flow.",
         "properties": {
             "FuseDisconnectorType": {
-                "description": "A list of the available types of fuse disconnector from which that required may be selected where:"
+                "description": "A list of the available types of fuse disconnector from which that required may be selected where: EngineProtectionDevice - A fuse whose characteristic is specifically designed for the protection of a motor or generator. FuseSwitchDisconnector - A switch disconnector in which a fuse link or a fuse carrier with fuse link forms the moving contact, HRC - A standard fuse (High Rupturing Capacity) OverloadProtectionDevice - A device that disconnects the supply when the operating conditions in an electrically undamaged circuit causes an overcurrent, SemiconductorFuse - A fuse whose characteristic is specifically designed for the protection of sem-conductor devices. SwitchDisconnectorFuse - A switch disconnector in which one or more poles have a fuse in series in a composite unit."
             }
         },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_ProtectiveDeviceTypeFuseDisconnector.xml"
@@ -4572,7 +4572,7 @@
         "description": "A high voltage surge protection device.",
         "properties": {
             "VaristorType": {
-                "description": "A list of the available types of varistor  from which that required may be selected."
+                "description": "A list of the available types of varistor from which that required may be selected."
             }
         },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_ProtectiveDeviceTypeVaristor.xml"
@@ -4646,7 +4646,7 @@
                         "description": "Indication of the material layer (e.g. of a wall or slab) to which the quantity information belongs to)"
                     }
                 },
-                "description": "Quantity take-off information specific to a single layer of the element,  if multiple layer information is passed, then the property shall be indexed, e.g. LayerQuantity1, ayerQuantity2, \u2026"
+                "description": "Quantity take-off information specific to a single layer of the element, if multiple layer information is passed, then the property shall be indexed, e.g. LayerQuantity1, ayerQuantity2, \u2026"
             },
             "LocalContext": {
                 "description": "Local context information for the take-off quantity, if multiple information items are passed, then the property shall be indexed, e.g. LocalContext1, LocalContext2, \u2026"
@@ -4685,7 +4685,7 @@
                 "description": "Fire rating for this object. It is given according to the national fire safety classification."
             },
             "HandicapAccessible": {
-                "description": "Indication that this object is designed to be accessible by the handicapped.  Set to (TRUE) if this ramp is rated as handicap accessible  according the local building codes, otherwise (FALSE)."
+                "description": "Indication that this object is designed to be accessible by the handicapped. Set to (TRUE) if this ramp is rated as handicap accessible according the local building codes, otherwise (FALSE)."
             },
             "HasNonSkidSurface": {
                 "description": "Indication whether the surface finish is designed to prevent slippery (TRUE) or not (FALSE)."
@@ -4700,7 +4700,7 @@
                 "description": "Required headroom clearance for the passageway according to the applicable building code or additional requirements."
             },
             "RequiredSlope": {
-                "description": "Required sloping angle of the object  - relative to horizontal (0.0 degrees). Required maximum slope for the passageway according to the applicable building code or additional requirements"
+                "description": "Required sloping angle of the object - relative to horizontal (0.0 degrees). Required maximum slope for the passageway according to the applicable building code or additional requirements"
             }
         },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgElements/Pset_RampCommon.xml"
@@ -4709,19 +4709,19 @@
         "description": "Properties common to the definition of all occurrences of IfcRampFlight.",
         "properties": {
             "Headroom": {
-                "description": "Actual headroom clearance for the passageway according to the current design.  The shape information is provided in addition to the shape representation and the geometric parameters used within. In cases of inconsistency between the geometric parameters and the shape properties, provided in the attached property, the geometric parameters take precedence."
+                "description": "Actual headroom clearance for the passageway according to the current design. The shape information is provided in addition to the shape representation and the geometric parameters used within. In cases of inconsistency between the geometric parameters and the shape properties, provided in the attached property, the geometric parameters take precedence."
             },
             "Reference": {
                 "description": "Reference ID for this specified type in this project (e.g. type 'A-1')"
             },
             "Slope": {
-                "description": "Sloping angle of the object  - relative to horizontal (0.0 degrees).  Actual maximum slope for the passageway according to the current design. The shape information is provided in addition to the shape representation and the geometric parameters used within. In cases of inconsistency between the geometric parameters and the shape properties, provided in the attached property, the geometric parameters take precedence."
+                "description": "Sloping angle of the object - relative to horizontal (0.0 degrees). Actual maximum slope for the passageway according to the current design. The shape information is provided in addition to the shape representation and the geometric parameters used within. In cases of inconsistency between the geometric parameters and the shape properties, provided in the attached property, the geometric parameters take precedence."
             }
         },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgElements/Pset_RampFlightCommon.xml"
     },
     "Pset_ReinforcementBarCountOfIndependentFooting": {
-        "description": "Reinforcement Concrete parameter [ST-2]: The amount number information of reinforcement  bar with the independent footing. The X and Y direction are based on the local coordinate system of building storey. The X and Y direction of the reinforcement bar are parallel to the X and Y axis of the IfcBuildingStorey's local coordinate system, respectively.",
+        "description": "Reinforcement Concrete parameter [ST-2]: The amount number information of reinforcement bar with the independent footing. The X and Y direction are based on the local coordinate system of building storey. The X and Y direction of the reinforcement bar are parallel to the X and Y axis of the IfcBuildingStorey's local coordinate system, respectively.",
         "properties": {
             "Description": {
                 "description": "Description of the reinforcement."
@@ -4745,7 +4745,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcStructuralElementsDomain/Pset_ReinforcementBarCountOfIndependentFooting.xml"
     },
     "Pset_ReinforcementBarPitchOfBeam": {
-        "description": "The ptich length information of reinforcement  bar with the beam.",
+        "description": "The ptich length information of reinforcement bar with the beam.",
         "properties": {
             "Description": {
                 "description": "Description of the reinforcement."
@@ -4763,7 +4763,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcStructuralElementsDomain/Pset_ReinforcementBarPitchOfBeam.xml"
     },
     "Pset_ReinforcementBarPitchOfColumn": {
-        "description": "The pitch length information of reinforcement  bar with the column. The X and Y direction are based on the local coordinate system of building storey. The X and Y direction of the reinforcement bar are parallel to the X and Y axis of the IfcBuildingStorey's local coordinate system, respectively.",
+        "description": "The pitch length information of reinforcement bar with the column. The X and Y direction are based on the local coordinate system of building storey. The X and Y direction of the reinforcement bar are parallel to the X and Y axis of the IfcBuildingStorey's local coordinate system, respectively.",
         "properties": {
             "Description": {
                 "description": "Description of the reinforcement."
@@ -4793,7 +4793,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcStructuralElementsDomain/Pset_ReinforcementBarPitchOfColumn.xml"
     },
     "Pset_ReinforcementBarPitchOfContinuousFooting": {
-        "description": "Reinforcement Concrete parameter [ST-2]: The pitch length information of reinforcement  bar with the continuous footing.",
+        "description": "Reinforcement Concrete parameter [ST-2]: The pitch length information of reinforcement bar with the continuous footing.",
         "properties": {
             "CrossingLowerBarPitch": {
                 "description": "The pitch length of the crossing lower bar."
@@ -4811,7 +4811,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcStructuralElementsDomain/Pset_ReinforcementBarPitchOfContinuousFooting.xml"
     },
     "Pset_ReinforcementBarPitchOfSlab": {
-        "description": "The pitch length information of reinforcement  bar with the slab.",
+        "description": "The pitch length information of reinforcement bar with the slab.",
         "properties": {
             "Description": {
                 "description": "Description of the reinforcement."
@@ -4859,7 +4859,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcStructuralElementsDomain/Pset_ReinforcementBarPitchOfSlab.xml"
     },
     "Pset_ReinforcementBarPitchOfWall": {
-        "description": "The pitch length information of reinforcement  bar with the wall.",
+        "description": "The pitch length information of reinforcement bar with the wall.",
         "properties": {
             "BarAllocationType": {
                 "description": "Defines the type of the reinforcement bar allocation."
@@ -5009,7 +5009,7 @@
         "description": "Properties expressing the bending information of non-prestressed reinforcing bars. The properties in this Pset are largely defined according to ISO/CD 3766 with some minor changes in how the hooks are defined (explicit angle measures instead of coded parameters). It is presumed that a single standard for defining the bar bending is used throughout the project and that this standard is referenced from the IfcProject object through the IfcDocumentReference mechanism. Note: This standard is still under development and the Pset will be changed accordingly if so required.",
         "properties": {
             "ISOCD3766BendingEndHook": {
-                "description": "The angle of the hook at end of the bar. If the property is not included  the bar has no end hook. Note: this differs from how ISO/CD 3766 handles end hooks."
+                "description": "The angle of the hook at end of the bar. If the property is not included the bar has no end hook. Note: this differs from how ISO/CD 3766 handles end hooks."
             },
             "ISOCD3766BendingStartHook": {
                 "description": "The angle of the hook at start of the bar. If the property is not included the bar has no start hook. Note: this differs from how ISO/CD 3766 handles end hooks."
@@ -5051,13 +5051,13 @@
         "description": "An indication of exposure to mischance, peril, menace, hazard or loss.",
         "properties": {
             "AffectsSurroundings": {
-                "description": "Indicates wether the risk affects only to the person assigned to that task (FALSE) or if it can also affect to the people in the surroundings (TRUE)."
+                "description": "Indicates wether the risk affects only to the person assigned to that task (FALSE) or if it can also affect to the people in the surroundings (TRUE). For example, the process of painting would affect all the people in the vicinity of the process"
             },
             "AssessmentOfRisk": {
-                "description": "Likelihood of risk event occurring."
+                "description": "Likelihood of risk event occurring. Note that assessment of risk may frequently be associated with the physical location of the object for which the risk is assessed."
             },
             "NatureOfRisk": {
-                "description": "An indication of the generic nature of the risk that might be encountered. "
+                "description": "An indication of the generic nature of the risk that might be encountered. NOTE: It is anticipated that there will be a local agreement that constrains the values that might be assigned to this property. An example might be 'Fall' or 'Fall of grille unit' causing injury and damage to person and property"
             },
             "PreventiveMeassures": {
                 "description": "Identifies preventive measures to be taken to mitigate risk"
@@ -5078,7 +5078,7 @@
                 "description": "Identifies the predefined types of risk from which the type required may be set."
             },
             "SubNatureOfRisk1": {
-                "description": "A first subsidiary value that might be assigned to designate a more specific type of risk."
+                "description": "A first subsidiary value that might be assigned to designate a more specific type of risk. NOTE: Nature of risk may be identified in various ways depending upon the place where risk assessment takes place and according to local agreement. This property set allows for a generic nature of risk and up to two subsidiary natures. An example might be 'causing injury and damage'"
             },
             "SubNatureOfRisk2": {
                 "description": "A second subsidiary value that might be assigned to designate a more specific type of risk. An example might be 'o person and property'"
@@ -5111,7 +5111,7 @@
         "description": "Sanitary appliance for immersion of the human body or parts of it (BS6100).",
         "properties": {
             "BathType": {
-                "description": "The property enumeration defines the types of bath that may be specified within the property set where:"
+                "description": "The property enumeration defines the types of bath that may be specified within the property set where: Domestic = Bath, for one person at a time, into which the whole body can be easily immersed. DomesticCorner = Bath, for one person at a time, into which the whole body can be easily immersed and in which the immersion trough is at an angle. Foot = Shallow bath for washing the feet. Jacuzzi = Whirlpool bath for more than one person Plunge = Bath, usually for more than one person at a time, into which the whole body can be easily immersed. Sitz = Bath in which a bather sits as in a chair. Treatment = Bath used for hydrotherapy purposes. Whirlpool = Bath in which an integrated device agitates the water by pumped circulation or induction of water and/or air."
             },
             "Color": {
                 "description": "Principal color of the object."
@@ -5144,7 +5144,7 @@
         "description": "Waste water appliance for washing the excretory organs while sitting astride the bowl (BS6100)",
         "properties": {
             "BidetMounting": {
-                "description": "The property enumeration Pset_SanitaryMountingEnum defines the forms of mounting or fixing of the sanitary terminal that may be specified within property sets used to define sanitary terminals (WC\u2019s, basins, sinks, etc.) where:-"
+                "description": "The property enumeration Pset_SanitaryMountingEnum defines the forms of mounting or fixing of the sanitary terminal that may be specified within property sets used to define sanitary terminals (WC\u2019s, basins, sinks, etc.) where:- BackToWall = A pedestal mounted sanitary terminal that fits flush to the wall at the rear to cover its service connections Pedestal = A floor mounted sanitary terminal that has an integral base CounterTop = A sanitary terminal that is installed into a horizontal surface that is installed into a horizontal surface. Note: When applied to a wash hand basin, the term more normally used is \u2018vanity\u2019. See also Wash Hand Basin Type specification. WallHung = A sanitary terminal cantilevered clear of the floor"
             },
             "Color": {
                 "description": "Color selection for this object"
@@ -5189,7 +5189,7 @@
                 "description": "The minimum and maximum volume of water used at each flush. Where a single flush is used, the value of upper bound and lower bound should be equal. For a dual flush toilet, the lower bound should be used for the lesser flush rate and the upper bound for the greater flush rate. Where flush is achieved using mains pressure water through a flush valve, the value of upper and lower bound should be equal and should be the same as the flush rate property of the flush valve (see relevant valve property set). Alternatively, in this case, do not assert the flush rate property; refer to the flush rate of the flush valve."
             },
             "FlushType": {
-                "description": "The property enumeration Pset_FlushTypeEnum defines the types of flushing mechanism that may be specified for cisterns and sanitary terminals where:-"
+                "description": "The property enumeration Pset_FlushTypeEnum defines the types of flushing mechanism that may be specified for cisterns and sanitary terminals where:- Lever = Flushing is achieved by twisting a lever that causes a predetermined flow of water to be passed from a cistern to the sanitary terminal. Pull = Flushing is achieved by pulling a handle or knob vertically upwards that causes a predetermined flow of water to be passed from a cistern to the sanitary terminal. Push = Flushing is achieved by pushing a button or plate that causes a predetermined flow of water to be passed from a cistern to the sanitary terminal. Sensor = Flush is activated through an automatic sensing mechanism."
             },
             "IsAutomaticFlush": {
                 "description": "Boolean value that determines if the cistern is flushed automatically either after each use or periodically (TRUE) or whether manual flushing is required (FALSE)"
@@ -5210,13 +5210,13 @@
                 "description": "The size of the drain outlet connection from the object"
             },
             "FountainType": {
-                "description": "Selection of the type of fountain from the enumerated list of types where:-"
+                "description": "Selection of the type of fountain from the enumerated list of types where:- DrinkingWater = Sanitary appliance that provides a low pressure jet of drinking water. Eyewash = Waste water appliance, usually installed in work places where there is a risk of injury to eyes by solid particles or dangerous liquids, with which the user can wash the eyes without touching them."
             },
             "Material": {
                 "description": "Material from which the object is constructed"
             },
             "Mounting": {
-                "description": "Selection of the form of mounting of the fountain from the enumerated list of mountings where:-"
+                "description": "Selection of the form of mounting of the fountain from the enumerated list of mountings where:- BackToWall = A pedestal mounted sanitary terminal that fits flush to the wall at the rear to cover its service connections Pedestal = A floor mounted sanitary terminal that has an integral base CounterTop = A sanitary terminal that is installed into a horizontal surface that is installed into a horizontal surface. Note: When applied to a wash hand basin, the term more normally used is \u2018vanity\u2019. See also Wash Hand Basin Type specification. WallHung = A sanitary terminal cantilevered clear of the floor"
             },
             "NominalDepth": {
                 "description": "Nominal or quoted depth of the object."
@@ -5261,7 +5261,7 @@
                 "description": "A description of the shower head(s) that emit the spray of water"
             },
             "ShowerType": {
-                "description": "Selection of the type of shower from the enumerated list of types where:-"
+                "description": "Selection of the type of shower from the enumerated list of types where:- Drench = Shower that rapidly gives a thorough soaking in an emergency Individual = Shower unit that is typically enclosed and is for the use of one person at a time Tunnel = Shower that has a succession of shower heads or spreaders that operate simultaneously along its length"
             }
         },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_SanitaryTerminalTypeShower.xml"
@@ -5288,10 +5288,10 @@
                 "description": "Nominal or quoted width of the object."
             },
             "SinkMounting": {
-                "description": "Selection of the form of mounting of the sink from the enumerated list of mountings where:-"
+                "description": "Selection of the form of mounting of the sink from the enumerated list of mountings where:- BackToWall = A pedestal mounted sanitary terminal that fits flush to the wall at the rear to cover its service connections Pedestal = A floor mounted sanitary terminal that has an integral base CounterTop = A sanitary terminal that is installed into a horizontal surface that is installed into a horizontal surface. Note: When applied to a wash hand basin, the term more normally used is \u2018vanity\u2019. See also Wash Hand Basin Type specification. WallHung = A sanitary terminal cantilevered clear of the floor"
             },
             "SinkType": {
-                "description": "Selection of the type of sink from the enumerated list of types where:-"
+                "description": "Selection of the type of sink from the enumerated list of types where:- Belfast = Deep sink that has a plain edge and a weir overflow . Bucket = Sink at low level, with protected front edge, that facilitates filling and emptying buckets, usually with a hinged grid on which to stand them. Cleaners = Sink, usually fixed at normal height (900mm), with protected front edge. Combination_Left = Sink with integral drainer on left hand side . Combination_Right = Sink with integral drainer on right hand side . Combination_Double = Sink with integral drainer on both sides . Drip = Small sink that catches drips or flow from a faucet . Laboratory = Sink, of acid resisting material, with a top edge shaped to facilitate fixing to the underside of a desktop . London = Deep sink that has a plain edge and no overflow . Plaster = Sink with sediment receiver to prevent waste plaster passing into drains . Pot = Large metal sink, with a standing waste, for washing cooking utensils . Rinsing = Metal sink in which water can be heated and culinary utensils and tableware immersed at high temperature that destroys most harmful bacteria and allows subsequent self drying. . Shelf = Ceramic sink with an integral back shelf through which water fittings are mounted . VegetablePreparation = Large metal sink, with a standing waste, for washing and preparing vegetables ."
             }
         },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_SanitaryTerminalTypeSink.xml"
@@ -5315,16 +5315,16 @@
                 "description": "Material from which the object is constructed"
             },
             "PanMounting": {
-                "description": "The property enumeration Pset_SanitaryMountingEnum defines the forms of mounting or fixing of the sanitary terminal that may be specified within property sets used to define sanitary terminals (WC\u2019s, basins, sinks, etc.) where:-"
+                "description": "The property enumeration Pset_SanitaryMountingEnum defines the forms of mounting or fixing of the sanitary terminal that may be specified within property sets used to define sanitary terminals (WC\u2019s, basins, sinks, etc.) where:- BackToWall = A pedestal mounted sanitary terminal that fits flush to the wall at the rear to cover its service connections Pedestal = A floor mounted sanitary terminal that has an integral base CounterTop = A sanitary terminal that is installed into a horizontal surface that is installed into a horizontal surface. Note: When applied to a wash hand basin, the term more normally used is \u2018vanity\u2019. See also Wash Hand Basin Type specification. WallHung = A sanitary terminal cantilevered clear of the floor"
             },
             "SpilloverLevel": {
                 "description": "The level at which water spills out of the terminal."
             },
             "ToiletPanType": {
-                "description": "The property enumeration Pset_ToiletPanTypeEnum defines the types of toilet pan that may be specified within the property set Pset_Toilet:-"
+                "description": "The property enumeration Pset_ToiletPanTypeEnum defines the types of toilet pan that may be specified within the property set Pset_Toilet:- Siphonic = Toilet pan in which excrement is removed by siphonage induced by the flushing water. Squat = Toilet pan with an elongated bowl installed with its top edge at or near floor level, so that the user has to squat. WashDown = Toilet pan in which excrement is removed by the momentum of the flushing water. WashOut = A washdown toilet pan in which excrement falls first into a shallow water filled bowl."
             },
             "ToiletType": {
-                "description": "Enumeration that defines the types of toilet (water closet) arrangements that may be specified where:-"
+                "description": "Enumeration that defines the types of toilet (water closet) arrangements that may be specified where:- BedPanWasher = Enclosed soil appliance in which bedpans and urinal bottles are emptied and cleansed Chemical = Portable receptacle or soil appliance that receives and retains excrement in either an integral or a separate container, in which it is chemically treated and from which it has to be emptied periodically. CloseCoupled = Toilet suite in which a flushing cistern is connected directly to the water closet pan. LooseCoupled = Toilet arrangement in which a flushing cistern is connected to the water closet pan through a flushing pipe. SlopHopper = Hopper shaped soil appliance with a flushing rim and outlet similar to those of a toilet pan, into which human excrement is emptied for disposal"
             }
         },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_SanitaryTerminalTypeToiletPan.xml"
@@ -5351,7 +5351,7 @@
                 "description": "Material from which the object is constructed"
             },
             "UrinalType": {
-                "description": "Selection of the type of urinal from the enumerated list of types where:-"
+                "description": "Selection of the type of urinal from the enumerated list of types where:- Bowl = Individual wall mounted urinal Slab = Urinal that consists of a slab or sheet fixed to a wall and down which urinal flows into a floor channel Stall = Floor mounted urinal that consists of an elliptically shaped sanitary stall fixed to a wall and down which urine flows into a floor channel Trough = Wall mounted urinal of elongated rectangular shape on plan, that can be used by more than one person at a time."
             }
         },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_SanitaryTerminalTypeUrinal.xml"
@@ -5369,7 +5369,7 @@
                 "description": "Material from which the object is constructed"
             },
             "SeatType": {
-                "description": "The property enumeration Pset_ToiletSeatTypeEnum defines the types of seat that may be attached to the toilet pan and specified within the property set Pset_Toilet where:-"
+                "description": "The property enumeration Pset_ToiletSeatTypeEnum defines the types of seat that may be attached to the toilet pan and specified within the property set Pset_Toilet where:- Extension = WC seat that is attached at the back, by means of side or top hinges, to a flat piece of material secured to the water closet pan Inset = Seat that consists of pads of impervious material fixed to the top of a water closet pan OpenFrontSeat = Hinged WC seat shaped like a horseshoe with the gap at the front RingSeat = WC seat in the shape of a ring SelfRaising = WC seat with balanced weights or springs to raise it when not in use None = There is no seat attached to the water closet pan"
             }
         },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_SanitaryTerminalTypeWCSeat.xml"
@@ -5396,10 +5396,10 @@
                 "description": "Nominal or quoted width of the object."
             },
             "WashHandBasinMounting": {
-                "description": "Selection of the form of mounting from the enumerated list of mountings where:-"
+                "description": "Selection of the form of mounting from the enumerated list of mountings where:- BackToWall = A pedestal mounted sanitary terminal that fits flush to the wall at the rear to cover its service connections Pedestal = A floor mounted sanitary terminal that has an integral base CounterTop = A sanitary terminal that is installed into a horizontal surface that is installed into a horizontal surface. Note: When applied to a wash hand basin, the term more normally used is \u2018vanity\u2019. See also Wash Hand Basin Type specification. WallHung = A sanitary terminal cantilevered clear of the floor"
             },
             "WashHandBasinType": {
-                "description": "Defines the types of wash hand basin that may be specified where:  DentalCuspidor = Waste water appliance that receives and flushes away mouth washings HandRinse = Wall mounted wash hand basin that has an overall width of 500mm or less Hospital = Wash hand basin that has a smooth easy clean surface without tapholes or overflow slot for use where hygiene is of prime importance.  Tipup = Wash hand basin mounted on pivots so that it can be emptied by tilting  Vanity = Wash hand basin for installation into a horizontal surface  Washfountain = Wash hand basin that is circular, semi-circular or polygonal on plan, at which more than one person can wash at the same time.  WashingTrough = Wash hand basin of elongated rectangular shape in plan, at which more than one person can wash at the same time."
+                "description": "Defines the types of wash hand basin that may be specified where: DentalCuspidor = Waste water appliance that receives and flushes away mouth washings HandRinse = Wall mounted wash hand basin that has an overall width of 500mm or less Hospital = Wash hand basin that has a smooth easy clean surface without tapholes or overflow slot for use where hygiene is of prime importance. Tipup = Wash hand basin mounted on pivots so that it can be emptied by tilting Vanity = Wash hand basin for installation into a horizontal surface Washfountain = Wash hand basin that is circular, semi-circular or polygonal on plan, at which more than one person can wash at the same time. WashingTrough = Wash hand basin of elongated rectangular shape in plan, at which more than one person can wash at the same time."
             }
         },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcPlumbingFireProtectionDomain/Pset_SanitaryTerminalTypeWashHandBasin.xml"
@@ -5618,7 +5618,7 @@
         "description": "Properties common to the definition of all occurrences of IfcSite. Please note that several site attributes are handled directly at the IfcSite instance, the site number (or short name) by IfcSite.Name, the site name (or long name) by IfcSite.LongName, and the description (or comments) by IfcSite.Description. The land title number is also given as an explicit attribute IfcSite.LandTitleNumber. Actual site quantities, like site perimeter, site area and site volume are provided by IfcElementQuantities, and site classification according to national building code by IfcClassificationReference. The global positioning of the site in terms of Northing and Easting and height above sea level datum is given by IfcSite.RefLongitude, IfcSite.RefLatitude, IfcSite.RefElevation and the postal address by IfcSite.SiteAddress.",
         "properties": {
             "BuildableArea": {
-                "description": "The area of utilization expressed as a minimum value and a maximum value  - according to local building codes."
+                "description": "The area of utilization expressed as a minimum value and a maximum value - according to local building codes."
             },
             "BuildingHeightLimit": {
                 "description": "Calculated maximum height of buildings on this site - according to local building codes."
@@ -5823,7 +5823,7 @@
         "description": "Properties related to the lighting requirements that apply to the occurrences of IfcSpace or IfcZone. This includes the required artificial lighting, illuminance, etc.",
         "properties": {
             "ArtificialLighting": {
-                "description": "Indication whether this space  requires artificial lighting (as natural lighting would be not sufficient). (TRUE) indicates yes (FALSE) otherwise."
+                "description": "Indication whether this space requires artificial lighting (as natural lighting would be not sufficient). (TRUE) indicates yes (FALSE) otherwise."
             },
             "Illuminance": {
                 "description": "Required average illuminance value for this space."
@@ -5862,7 +5862,7 @@
         "description": "Properties common to the definition of all occurrences of IfcSpace which have an attribute value for ObjectType = 'Parking'. NOTE: Modified in IFC 2x3, properties ParkingUse and ParkingUnits added.",
         "properties": {
             "HandicapAccessible": {
-                "description": "Indication that this object is designed to be accessible by the handicapped.  It is giving according to the requirements of the national building code."
+                "description": "Indication that this object is designed to be accessible by the handicapped. It is giving according to the requirements of the national building code."
             },
             "ParkingUnits": {
                 "description": "Indicates the number of transporation units of the type specified by the property ParkingUse that may be accommodated within the space. Generally, this value should default to 1 unit. However, where the parking space is for motorcycles or bicycles, provision may be made for more than one unit in the space."
@@ -5886,7 +5886,7 @@
         "description": "Properties common to the definition of all instances of IfcSpaceProgram",
         "properties": {
             "EmployeeType": {
-                "description": "General description of the employee type that will occupy the space (e.g.  manager, programmer, secretary, etc.). The type classification depends on the company based terms for employee types."
+                "description": "General description of the employee type that will occupy the space (e.g. manager, programmer, secretary, etc.). The type classification depends on the company based terms for employee types."
             },
             "FFETypeRequirement": {
                 "description": "General description of the Furniture, Fixtures and Equipment requirement for this space."
@@ -5985,13 +5985,13 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_SpaceThermalPHistory.xml"
     },
     "Pset_SpaceThermalRequirements": {
-        "description": "Properties related to the comfort requirements for thermal and other  thermal related performances of spaces that apply to the occurrences of IfcSpace or IfcZone. This includes the required design temperature, humidity, and air conditioning.",
+        "description": "Properties related to the comfort requirements for thermal and other thermal related performances of spaces that apply to the occurrences of IfcSpace or IfcZone. This includes the required design temperature, humidity, and air conditioning.",
         "properties": {
             "AirConditioning": {
                 "description": "Indication whether this space requires air conditioning provided (TRUE) or not (FALSE)."
             },
             "AirConditioningCentral": {
-                "description": "Indication whether the space  requires a central air conditioning provided (TRUE) or not (FALSE). It should only be given, if the property \"AirConditioning\" is set to TRUE."
+                "description": "Indication whether the space requires a central air conditioning provided (TRUE) or not (FALSE). It should only be given, if the property \"AirConditioning\" is set to TRUE."
             },
             "DiscontinuedHeating": {
                 "description": "Indication whether discontinued heating is required/desirable from user/designer view point. (TRUE) if yes, (FALSE) otherwise."
@@ -6006,7 +6006,7 @@
                 "description": "Indication of the requirement of a particular natural air ventilation rate, given in air changes per hour."
             },
             "SpaceHumidity": {
-                "description": "Humidity of the space or zone that is required from user/designer view point.  If no summer or winter space humidity requirements are given, it applies all year, otherwise for the intermediate period."
+                "description": "Humidity of the space or zone that is required from user/designer view point. If no summer or winter space humidity requirements are given, it applies all year, otherwise for the intermediate period."
             },
             "SpaceHumiditySummer": {
                 "description": "Humidity of the space or zone for the hot (summer) period, that is required from user/designer view point."
@@ -6015,7 +6015,7 @@
                 "description": "Humidity of the space or zone for the cold (winter) period that is required from user/designer view point."
             },
             "SpaceTemperatureMax": {
-                "description": "Temperature of the space or zone, that is required from user/designer view point.  If no summer or winter space temperature requirements are given, it applies all year, otherwise for the intermediate period."
+                "description": "Temperature of the space or zone, that is required from user/designer view point. If no summer or winter space temperature requirements are given, it applies all year, otherwise for the intermediate period."
             },
             "SpaceTemperatureMin": {
                 "description": "Minimal temperature of the space or zone, that is required from user/designer view point. If no summer or winter space temperature requirements are given, it applies all year, otherwise for the intermediate period."
@@ -6045,7 +6045,7 @@
                 "description": "Fire rating for this object. It is given according to the national fire safety classification."
             },
             "HandicapAccessible": {
-                "description": "Indication that this object is designed to be accessible by the handicapped.  Set to (TRUE) if this stair is rated as handicap accessible  according the local building codes, otherwise (FALSE). Accessibility maybe provided by additional means."
+                "description": "Indication that this object is designed to be accessible by the handicapped. Set to (TRUE) if this stair is rated as handicap accessible according the local building codes, otherwise (FALSE). Accessibility maybe provided by additional means."
             },
             "HasNonSkidSurface": {
                 "description": "Indication whether the surface finish is designed to prevent slippery (TRUE) or not (FALSE)."
@@ -6066,10 +6066,10 @@
                 "description": "Required headroom clearance for the passageway according to the applicable building code or additional requirements"
             },
             "RiserHeight": {
-                "description": "Vertical distance from tread to tread.  The riser height is supposed to be equal for all steps of a stair or stair flight."
+                "description": "Vertical distance from tread to tread. The riser height is supposed to be equal for all steps of a stair or stair flight."
             },
             "TreadLength": {
-                "description": "Horizontal distance from the front of the thread to the front of the next tread.  The tread length is supposed to be equal for all steps of the stair or stair flight at the walking line."
+                "description": "Horizontal distance from the front of the thread to the front of the next tread. The tread length is supposed to be equal for all steps of the stair or stair flight at the walking line."
             }
         },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgElements/Pset_StairCommon.xml"
@@ -6078,7 +6078,7 @@
         "description": "Properties common to the definition of all occurrences of IfcStairFlight.",
         "properties": {
             "Headroom": {
-                "description": "Actual headroom clearance for the passageway according to the current design.  The shape information is provided in addition to the shape representation and the geometric parameters used within. In cases of inconsistency between the geometric parameters and the shape properties, provided in the attached property, the geometric parameters take precedence."
+                "description": "Actual headroom clearance for the passageway according to the current design. The shape information is provided in addition to the shape representation and the geometric parameters used within. In cases of inconsistency between the geometric parameters and the shape properties, provided in the attached property, the geometric parameters take precedence."
             },
             "NosingLength": {
                 "description": "Horizontal distance from the front of the tread to the riser underneath. It is the overhang of the tread."
@@ -6093,13 +6093,13 @@
                 "description": "Reference ID for this specified type in this project (e.g. type 'A-1')"
             },
             "RiserHeight": {
-                "description": "Vertical distance from tread to tread.  The riser height is supposed to be equal for all steps of a stair or stair flight."
+                "description": "Vertical distance from tread to tread. The riser height is supposed to be equal for all steps of a stair or stair flight."
             },
             "TreadLength": {
-                "description": "Horizontal distance from the front of the thread to the front of the next tread.  The tread length is supposed to be equal for all steps of the stair or stair flight at the walking line."
+                "description": "Horizontal distance from the front of the thread to the front of the next tread. The tread length is supposed to be equal for all steps of the stair or stair flight at the walking line."
             },
             "TreadLengthAtInnerSide": {
-                "description": "Minimum length of treads at the inner side of the winder.  Only relevant in case of winding flights, for straight flights it is identical with IfcStairFlight.TreadLength. It is a pre-calculated value, in case of inconsistencies, the value derived from the shape representation shall take precedence."
+                "description": "Minimum length of treads at the inner side of the winder. Only relevant in case of winding flights, for straight flights it is identical with IfcStairFlight.TreadLength. It is a pre-calculated value, in case of inconsistencies, the value derived from the shape representation shall take precedence."
             },
             "TreadLengthAtOffset": {
                 "description": "Length of treads at a given offset. Walking line position is given by the 'WalkingLineOffset'. The resulting value should normally be identical with TreadLength, it may be given in addition, if the walking line offset for building code calculations is different from that used in design."
@@ -6108,7 +6108,7 @@
                 "description": "Minimum thickness of the stair flight, measured perpendicular to the slope of the flight to the inner corner of riser and tread. It is a pre-calculated value, in case of inconsistencies, the value derived from the shape representation shall take precedence."
             },
             "WalkingLineOffset": {
-                "description": "Offset of the walking line from the inner side of the flight.  Note: the walking line may have a own shape representation (in case of inconsistencies, the value derived from the shape representation shall take precedence)."
+                "description": "Offset of the walking line from the inner side of the flight. Note: the walking line may have a own shape representation (in case of inconsistencies, the value derived from the shape representation shall take precedence)."
             }
         },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcSharedBldgElements/Pset_StairFlightCommon.xml"
@@ -6132,7 +6132,7 @@
         "description": "An electrical device used to control the flow of power in a circuit on or off.",
         "properties": {
             "ContactorType": {
-                "description": "A list of the available types of contactor from which that required may be selected where:"
+                "description": "A list of the available types of contactor from which that required may be selected where: CapacitorSwitching - for switching 3 phase single or multi-step capacitor banks LowCurrent - requires the use of low resistance contacts MagneticLatching - enables the contactor to remain in the on position when the coil is no longer energized MechanicalLatching - requires that the contactor is mechanically retained in the on position Modular - are totally enclosed and self contained Reversing - has a double set of contactors that are prewired Standard - is a generic device that controls the flow of power in a circuit on or off"
             }
         },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_SwitchingDeviceTypeContactor.xml"
@@ -6150,7 +6150,7 @@
         "description": "A starter is a switch which in the closed position controls the application of power to an electrical device.",
         "properties": {
             "StarterType": {
-                "description": "A list of the available types of starter from which that required may be selected where:"
+                "description": "A list of the available types of starter from which that required may be selected where: AutoTransformer - A starter for an induction motor which uses for starting one or more reduced voltages derived from an auto transformer. (IEC 441-14-45) Manual - A starter in which the force for closing the main contacts is provided exclusively by manual energy. (IEC 441-14-39) DirectOnLine - A starter which connects the line voltage across the motor terminals in one step. (IEC 441-14-40) Frequency - A starter in which the frequency of the power supply is progressively increased until the normal operation frequency is attained. nStep - A starter in which there are (n-1) intermediate accelerating positions between the off and full on positions. (IEC 441-14-41) Rheostatic - A starter using one or several resistors for obtaining, during starting, stated motor torque characteristics and for limiting the current. (IEC 441-14-425) StarDelta - A starter for a 3 phase induction motor such that in the starting position the stator windings are connected in star and in the final running position they are connected in delta. (IEC 441-14-44)"
             }
         },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_SwitchingDeviceTypeStarter.xml"
@@ -6165,7 +6165,7 @@
                 "description": "A list of the available types of load disconnection from which that required may be selected."
             },
             "SwitchDisconnectorType": {
-                "description": "A list of the available types of switch disconnector from which that required may be selected where:"
+                "description": "A list of the available types of switch disconnector from which that required may be selected where: CenterBreak - A disconnector in which both contacts of each pole are movable and engage at a point substantially midway between their supports. (IEC 441-14-08) DividedSupport - A disconnector in which the fixed and moving contacts of each pole are not supported by a common base or frame. (IEC 441-14-06) DoubleBreak - A disconnector that opens a circuit at two points. (IEC 441-14-09) EarthingSwitch - A disconnector in which the fixed and moving contacts of each pole are not supported by a common base or frame. (IEC 441-14-07) Isolator - A disconnector which in the open position satisfies isolating requirements. (IEC 441-14-12)"
             }
         },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcElectricalDomain/Pset_SwitchingDeviceTypeSwitchDisconnector.xml"
@@ -6252,7 +6252,7 @@
         "description": "Common attributes of a tank type.",
         "properties": {
             "AccessType": {
-                "description": "Defines the types of access (or cover) to a tank that may be specified."
+                "description": "Defines the types of access (or cover) to a tank that may be specified. Note that covers are generally specified for rectangular tanks. For cylindrical tanks, access will normally be via a manhole."
             },
             "EffectiveCapacity": {
                 "description": "The effective or actual volumetric capacity of the tank."
@@ -6267,19 +6267,19 @@
                 "description": "The nominal or design volumetric capacity of the tank."
             },
             "NominalDepth": {
-                "description": "The nominal depth of the tank."
+                "description": "The nominal depth of the tank. Note: Not required for a horizontal cylindrical tank."
             },
             "NominalLengthOrDiameter": {
                 "description": "The nominal length or, in the case of a vertical cylindrical tank, the nominal diameter of the tank"
             },
             "NominalWidthOrDiameter": {
-                "description": "The nominal width or, in the case of a horizontal cylindrical tank, the nominal diameter of the tank."
+                "description": "The nominal width or, in the case of a horizontal cylindrical tank, the nominal diameter of the tank. Note: Not required for a vertical cylindrical tank."
             },
             "OperatingWeight": {
                 "description": "Operating weight of the tank including all of its contents."
             },
             "Type": {
-                "description": "Defines the types of tank that may be specified where: "
+                "description": "Defines the types of tank that may be specified where: BreakPressure = Tank that breaks the hydraulic pressure in a distribution system Expansion = Tank, connected to the primary circuit of a hot water system that accommodates increase in volume of the water when heated FeedAndExpansion = Tank that supplies cold water to a hot water system and also accommodates increase in volume of the water when heated GasStorage_Butane = Main tank to which commercial butane is delivered and from which it is supplied to a gas distribution system. GasStorage_LPG = Main tank to which liquefied petroleum gas is delivered and from which it is supplied to a gas distribution system. GasStorage_Propane = Main tank to which commercial propane is delivered and from which it is supplied to a gas distribution system. OilService = Secondary tank from which oil fuel is fed to a single oil fuel burning appliance OilStorage = Main tank to which oil fuel is delivered and from which it is supplied to an oil fuel burning appliance or oil service tank. PressureVessel = Tank that stores fluid under pressure. WaterStorage_General = Tank that stores water sufficient to meet general requirements for a designated period of time and supplies it to points of outlet WaterStorage_Potable = Tank that stores water sufficient to meet potable water requirements for a designated period of time and supplies it to points of outlet WaterStorage_Process = Tank that stores water sufficient to meet process and/or production requirements for a designated period of time and supplies it to points of outlet WaterStorage_CoolingTowerMakeup = Tank that stores water sufficient to meet cooling tower make up water requirements for a designated period of time and supplies it to points of outlet"
             }
         },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_TankTypeCommon.xml"
@@ -6300,7 +6300,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_TankTypeExpansion.xml"
     },
     "Pset_TankTypePreformed": {
-        "description": "Fixed vessel manufactured as a single unit with one or more compartments for storing a liquid.",
+        "description": "Fixed vessel manufactured as a single unit with one or more compartments for storing a liquid. Pset renamed from Pset_TankTypePreformedTank to Pset_TankTypePreformed in IFC2x2 Pset Addendum.",
         "properties": {
             "EndShapeType": {
                 "description": "Defines the types of end shapes that can be used for preformed tanks. The convention for reading these enumerated values is that for a vertical cylinder, the first value is the base and the second is the top; for a horizontal cylinder, the order of reading should be left to right. For a speherical tank, the value UNSET should be used."
@@ -6333,10 +6333,10 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_TankTypePressureVessel.xml"
     },
     "Pset_TankTypeSectional": {
-        "description": "Fixed vessel constructed from sectional parts with one or more compartments for storing a liquid.",
+        "description": "Fixed vessel constructed from sectional parts with one or more compartments for storing a liquid. Note (1): All sectional construction tanks are considered to be rectangular by default. Note (2): Generally, it is not expected that sectional construction tanks will be used for the purposes of gas storage. Pset renamed from Pset_TankTypeSectionalTank to Pset_TankTypeSectional in IFC2x2 Pset Addendum.",
         "properties": {
             "NumberOfSections": {
-                "description": "Number of sections used in the construction of the tank"
+                "description": "Number of sections used in the construction of the tank Note: All sections assumed to be the same size."
             },
             "SectionLength": {
                 "description": "The length of a section used in the construction of the tank"
@@ -6450,13 +6450,13 @@
         "description": "Properties common to the definition of all occurrences of IfcTransportElement with the predefined type =\"ELEVATOR\"",
         "properties": {
             "ClearDepth": {
-                "description": "Clear depth of the object (elevator). It indicates the distance from the inner surface of the elevator door to the opposite surface of the elevator car.  The shape information is provided in addition to the shape representation and the geometric parameters used within. In cases of inconsistency between the geometric parameters and the shape properties, provided in the attached property, the geometric parameters take precedence."
+                "description": "Clear depth of the object (elevator). It indicates the distance from the inner surface of the elevator door to the opposite surface of the elevator car. The shape information is provided in addition to the shape representation and the geometric parameters used within. In cases of inconsistency between the geometric parameters and the shape properties, provided in the attached property, the geometric parameters take precedence."
             },
             "ClearHeight": {
                 "description": "Clear height of the object (elevator). The shape information is provided in addition to the shape representation and the geometric parameters used within. In cases of inconsistency between the geometric parameters and the shape properties, provided in the attached property, the geometric parameters take precedence."
             },
             "ClearWidth": {
-                "description": "Clear width of the object (elevator). It indicates the distance from the inner surfaces of the elevator car left and right from the elevator door.  The shape information is provided in addition to the shape representation and the geometric parameters used within. In cases of inconsistency between the geometric parameters and the shape properties, provided in the attached property, the geometric parameters take precedence."
+                "description": "Clear width of the object (elevator). It indicates the distance from the inner surfaces of the elevator car left and right from the elevator door. The shape information is provided in addition to the shape representation and the geometric parameters used within. In cases of inconsistency between the geometric parameters and the shape properties, provided in the attached property, the geometric parameters take precedence."
             }
         },
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcProductExtension/Pset_TransportElementElevator.xml"
@@ -6630,7 +6630,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_ValvePHistory.xml"
     },
     "Pset_ValveTypeAirRelease": {
-        "description": "Valve used to release air from a pipe or fitting.  Note that an air release valve is constrained to have a single port pattern",
+        "description": "Valve used to release air from a pipe or fitting. Note that an air release valve is constrained to have a single port pattern",
         "properties": {
             "IsAutomatic": {
                 "description": "Indication of whether the valve is automatically operated (TRUE) or manually operated (FALSE)"
@@ -6660,13 +6660,13 @@
                 "description": "The maximum pressure to which the valve has been subjected under test"
             },
             "ValveMechanism": {
-                "description": "The mechanism by which the valve function is achieved where:"
+                "description": "The mechanism by which the valve function is achieved where: BALL Valve that has a ported ball that can be turned relative to the body seat ports BUTTERFLY Valve in which a streamlined disc pivots about a diametric axis CONFIGUREDGATE Screwdown valve in which the closing gate is shaped in a configured manner to have a more precise control of pressure and flow change across the valve. GLAND Valve with a tapered seating, in which a rotatable plug is retained by means of a gland and gland packing GLOBE Screwdown valve that has a spherical body LUBRICATEDPLUG Plug valve in which a lubricant is injected under pressure between the plug face and the body NEEDLE Valve for regulating the flow in or from a pipe, in which a slender cone moves along the axis of flow to close against a fixed conical seat PARALLELSLIDE Screwdown valve that has a machined plate that slides in formed grooves to form a seal PLUG Valve that has a ported plug that can be turned relative to the body seat ports WEDGEGATE Screwdown valve that has a wedge shaped plate fitting into tapered guides to form a seal"
             },
             "ValveOperation": {
-                "description": "The method of valve operation where:"
+                "description": "The method of valve operation where: DROPWEIGHT = A valve that is closed by the action of a weighted lever being released, the weight normally being prevented from dropping by being held by a wire, the closure normally being made by the action of heat on a fusible link in the wire FLOAT = A valve that is opened and closed by the action of a float that rises and falls with water level. The float may be a ball attached to a lever or other mechanism HYDRAULIC = A valve that is opened and closed by hydraulic actuation LEVER = A valve that is opened and closed by the action of a lever rotating the gate within the valve. LOCKSHIELD = A valve that requires the use of a special lockshield key for opening and closing, the operating mechanism being protected by a shroud during normal operation. MOTORIZED = A valve that is opened and closed by the action of an electric motor on an actuator PNEUMATIC = A valve that is opened and closed by pneumatic actuation SOLENOID = A valve that is normally held open by a magnetic field in a coil acting on the gate but that is closed immediately if the electrical current generating the magnetic field is removed. SPRING = A valve that is normally held in position by the pressure of a spring on a plate but that may be caused to open if the pressure of the fluid is sufficient to overcome the spring pressure. THERMOSTATIC = A valve in which the ports are opened or closed to maintain a required predetermined temperature. WHEEL = A valve that is opened and closed by the action of a wheel moving the gate within the valve."
             },
             "ValvePattern": {
-                "description": "The configuration of the ports of a valve according to either the linear route taken by a fluid flowing through the valve or by the number of ports where:"
+                "description": "The configuration of the ports of a valve according to either the linear route taken by a fluid flowing through the valve or by the number of ports where: SINGLEPORT = Valve that has a single entry port from the system that it serves, the exit port being to the surrounding environment. ANGLED_2_PORT = Valve in which the direction of flow is changed through 90 degrees STRAIGHT_2_PORT = Valve in which the flow is straight through STRAIGHT_3_PORT = Valve with three separate ports CROSSOVER_4_PORT = Valve with 4 separate ports"
             },
             "WorkingPressure": {
                 "description": "The normally expected maximum working pressure of the valve"
@@ -6690,13 +6690,13 @@
                 "description": "Defines the operating temperature of a faucet that may be specified."
             },
             "FaucetOperation": {
-                "description": "Defines the range of ways in which a faucet can be operated that may be specified where:"
+                "description": "Defines the range of ways in which a faucet can be operated that may be specified where: CeramicDisc = Quick action faucet with a ceramic seal to open or close the orifice LeverHandle = Quick action faucet that is operated by a lever handle NonConcussiveSelfClosing = Self closing faucet that does not induce surge pressure QuarterTurn = Quick action faucet that can be fully opened or shut by turning the operating mechanism through 90 degrees. QuickAction = Faucet that can be opened or closed fully with a single small movement of the operating mechanism ScrewDown = Faucet in which a plate or disc is moved, by the rotation of a screwed spindle, to close or open the orifice. SelfClosing = Faucet that is opened by pressure of the top of an operating spindle and is closed under the action of a spring or weight when the pressure is released TimedSelfClosing = Self closing faucet that discharges for a predetermined period of time"
             },
             "FaucetTopDescription": {
                 "description": "Description of the operating mechanism/top of the faucet"
             },
             "FaucetType": {
-                "description": "Defines the range of faucet types that may be specified where:"
+                "description": "Defines the range of faucet types that may be specified where: Bib = Faucet with a horizontal inlet and a nozzle that discharges downwards. Globe = Faucet fitted through the end of a bath, with a horizontal inlet, a partially spherical body and a vertical nozzle. Diverter = Combination faucet assembly with a valve to enable the flow of mixed water to be transferred to a showerhead. DividedFlowCombination = Combination faucet assembly in which hot and cold water are kept separate until emerging from a common nozzle Pillar = Faucet that has a vertical inlet and a nozzle that discharges downwards SingleOutletCombination = Combination faucet assembly in which hot and cold water mix before emerging from a common nozzle Spray = Faucet with a spray outlet SprayMixing = Spray faucet connected to hot and cold water supplies that delivers water at a temperature determined during use."
             },
             "Finish": {
                 "description": "Description of the finish applied to the faucet"
@@ -6705,7 +6705,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_ValveTypeFaucet.xml"
     },
     "Pset_ValveTypeFlushing": {
-        "description": "Valve that flushes a predetermined quantity of water to cleanse a WC, urinal or slop hopper. Note that a flushing valve is constrained to have a 2 port  pattern.",
+        "description": "Valve that flushes a predetermined quantity of water to cleanse a WC, urinal or slop hopper. Note that a flushing valve is constrained to have a 2 port pattern.",
         "properties": {
             "FlushingRate": {
                 "description": "The predetermined quantity of water to be flushed"
@@ -6729,7 +6729,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_ValveTypeGasTap.xml"
     },
     "Pset_ValveTypeIsolating": {
-        "description": "Valve that is used to isolate system components. Note that an isolating valve is constrained to have a 2 port  pattern.",
+        "description": "Valve that is used to isolate system components. Note that an isolating valve is constrained to have a 2 port pattern.",
         "properties": {
             "IsNormallyOpen": {
                 "description": "If TRUE, the valve is normally open. If FALSE is is normally closed."
@@ -6753,7 +6753,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/psd/IfcHvacDomain/Pset_ValveTypeMixing.xml"
     },
     "Pset_ValveTypePressureReducing": {
-        "description": "Valve that reduces the pressure of a fluid immediately downstream of its position in a pipeline to a preselected value or by a predetermined ratio. Note that a pressure reducing valve is constrained to have a 2 port  pattern.",
+        "description": "Valve that reduces the pressure of a fluid immediately downstream of its position in a pipeline to a preselected value or by a predetermined ratio. Note that a pressure reducing valve is constrained to have a 2 port pattern.",
         "properties": {
             "DownstreamPressure": {
                 "description": "The operating pressure of the fluid downstream of the pressure reducing valve"
@@ -6846,22 +6846,22 @@
                 "description": "Material from which the cover or grating is constructed."
             },
             "CoverWidth": {
-                "description": "The length measured along the y-axis in the local coordinate system of the cover of the  trap."
+                "description": "The length measured along the y-axis in the local coordinate system of the cover of the trap."
             },
             "HasStrainer": {
                 "description": "Indicates whether the gully trap has a strainer (= TRUE) or not (= FALSE)"
             },
             "InletConnectionSize": {
-                "description": "Size of the inlet connection(s), where used, of the inlet connections."
+                "description": "Size of the inlet connection(s), where used, of the inlet connections. Note that all inlet connections are assumed to be the same size."
             },
             "InletPatternType": {
-                "description": "Identifies the pattern of inlet connections to a trap."
+                "description": "Identifies the pattern of inlet connections to a trap. A trap may have 0,1,2,3 or 4 inlet connections and the pattern of their arrangement may vary. The enumeration makes the convention that an outlet is either vertical or is placed at the bottom (south side) of the trap (when viewed in plan). Position 1 is to the left (west), position 2 is to the top (north), position 3 is to the right (east) and position 4 is to the bottom (south)."
             },
             "IsForSullageWater": {
                 "description": "Indicates if the purpose of the floor trap is to receive sullage water, or if that is amongst its purposes (= TRUE), or not (= FALSE). Note that if TRUE, it is expected that an upstand or kerb will be placed around the floor trap to prevent the ingress of surface water runoff; the provision of the upstand or kerb is not dealt with in this property set."
             },
             "NominalBodyDepth": {
-                "description": "Nominal or quoted length measured along the z-axis in the local coordinate system of the chamber of the  trap."
+                "description": "Nominal or quoted length measured along the z-axis in the local coordinate system of the chamber of the trap."
             },
             "NominalBodyLength": {
                 "description": "Nominal or quoted length measured along the x-axis in the local coordinate system or the radius (in the case of a circular shape in plan) of the chamber of the trap."
@@ -6894,7 +6894,7 @@
                 "description": "Material from which the cover or grating is constructed."
             },
             "CoverWidth": {
-                "description": "The length measured along the y-axis in the local coordinate system of the cover of the  waste."
+                "description": "The length measured along the y-axis in the local coordinate system of the cover of the waste."
             },
             "NominalBodyDepth": {
                 "description": "Nominal or quoted length measured along the z-axis in the local coordinate system of the waste."
@@ -6957,7 +6957,7 @@
         "description": "Pipe fitting or assembly of fittings to receive surface water or waste water, fitted with a grating or sealed cover.",
         "properties": {
             "BackInletPatternType": {
-                "description": "Identifies the pattern of inlet connections to a gully trap."
+                "description": "Identifies the pattern of inlet connections to a gully trap. A gulley trap may have 0,1,2,3 or 4 inlet connections and the pattern of their arrangement may vary. The enumeration makes the convention that an outlet is either vertical or is placed at the bottom (south side) of the gully trap (when viewed in plan). Position 1 is to the left (west), position 2 is to the top (north), position 3 is to the right (east) and position 4 is to the bottom (south). ! | 1-| |-3 ! |"
             },
             "CoverLength": {
                 "description": "The length measured along the x-axis in the local coordinate system or the radius (in the case of a circular shape in plan) of the cover of the gully trap."
@@ -6972,7 +6972,7 @@
                 "description": "Identifies the predefined types of gully from which the type required may be set."
             },
             "InletConnectionSize": {
-                "description": "Size of the inlet connection(s), where used, of the inlet connections."
+                "description": "Size of the inlet connection(s), where used, of the inlet connections. Note that all inlet connections are assumed to be the same size."
             },
             "NominalSumpDepth": {
                 "description": "Nominal or quoted length measured along the z-axis in the local coordinate system of the sump."
@@ -6999,7 +6999,7 @@
         "description": "Pipe fitting or assembly of fittings to receive surface water or waste water, fitted with a grating or sealed cover and discharging through a trap (BS6100 330 3504 modified)",
         "properties": {
             "BackInletPatternType": {
-                "description": "Identifies the pattern of inlet connections to a gully trap."
+                "description": "Identifies the pattern of inlet connections to a gully trap. A gulley trap may have 0,1,2,3 or 4 inlet connections and the pattern of their arrangement may vary. The enumeration makes the convention that an outlet is either vertical or is placed at the bottom (south side) of the gully trap (when viewed in plan). Position 1 is to the left (west), position 2 is to the top (north), position 3 is to the right (east) and position 4 is to the bottom (south)."
             },
             "BodyMaterial": {
                 "description": "The primary material used to construct the object"
@@ -7020,7 +7020,7 @@
                 "description": "Indicates whether the gully trap has a strainer (= TRUE) or not (= FALSE)"
             },
             "InletConnectionSize": {
-                "description": "Size of the inlet connection(s), where used, of the inlet connections."
+                "description": "Size of the inlet connection(s), where used, of the inlet connections. Note that all inlet connections are assumed to be the same size."
             },
             "NominalBodyDepth": {
                 "description": "Nominal or quoted length measured along the z-axis in the local coordinate system of the chamber of the gully trap."
@@ -7122,7 +7122,7 @@
                 "description": "Material from which the cover or grating is constructed."
             },
             "CoverWidth": {
-                "description": "The length measured along the y-axis in the local coordinate system of the cover of the  drain."
+                "description": "The length measured along the y-axis in the local coordinate system of the cover of the drain."
             },
             "NominalBodyDepth": {
                 "description": "Nominal or quoted length measured along the z-axis in the local coordinate system of the drain."
@@ -7158,7 +7158,7 @@
         "description": "Pipe fitting, set adjacent to a sanitary terminal, that retains liquid to prevent the passage of foul air.",
         "properties": {
             "InletConnectionSize": {
-                "description": "Size of the inlet connection(s), where used, of the inlet connections."
+                "description": "Size of the inlet connection(s), where used, of the inlet connections. Note that all inlet connections are assumed to be the same size."
             },
             "OutletConnectionSize": {
                 "description": "Size of the outlet connection from the object"
@@ -7179,7 +7179,7 @@
                 "description": "Fire rating for this object. It is given according to the national fire safety classification."
             },
             "GlazingAreaFraction": {
-                "description": "Fraction of the glazing area relative to the total area of the filling element.  It shall be used, if the glazing area is not given separately for all panels within the filling element."
+                "description": "Fraction of the glazing area relative to the total area of the filling element. It shall be used, if the glazing area is not given separately for all panels within the filling element."
             },
             "Infiltration": {
                 "description": "Infiltration flowrate of outside air for the filler object based on the area of the filler object at a pressure level of 50 Pascals. It shall be used, if the length of all joints is unknown."

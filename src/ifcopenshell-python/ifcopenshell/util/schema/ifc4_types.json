@@ -1,10 +1,10 @@
 {
     "IfcAbsorbedDoseMeasure": {
-        "description": "IfcAbsorbedDoseMeasure is a measure of the absorbed radioactivity dose.",
+        "description": "IfcAbsorbedDoseMeasure is a measure of the absorbed radioactivity dose. Usually measured in Gray (Gy, J/kg). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcabsorbeddosemeasure.htm"
     },
     "IfcAccelerationMeasure": {
-        "description": "IfcAccelerationMeasure is a measure of acceleration.",
+        "description": "IfcAccelerationMeasure is a measure of acceleration. Usually measured in m/s2. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcaccelerationmeasure.htm"
     },
     "IfcActionRequestTypeEnum": {
@@ -48,7 +48,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcbuildingcontrolsdomain/lexical/ifcalarmtypeenum.htm"
     },
     "IfcAmountOfSubstanceMeasure": {
-        "description": "An amount of substance measure is the value for the quantity of a substance when compared with the number of atoms in 0.012 kg of carbon 12.",
+        "description": "An amount of substance measure is the value for the quantity of a substance when compared with the number of atoms in 0.012 kg of carbon 12. Usually measure in mole (mol). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcamountofsubstancemeasure.htm"
     },
     "IfcAnalysisModelTypeEnum": {
@@ -60,23 +60,23 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcstructuralanalysisdomain/lexical/ifcanalysistheorytypeenum.htm"
     },
     "IfcAngularVelocityMeasure": {
-        "description": "IfcAngularVelocityMeasure is a measure of the velocity of a body measured in terms of angle subtended per unit time.",
+        "description": "IfcAngularVelocityMeasure is a measure of the velocity of a body measured in terms of angle subtended per unit time. Usually measured in radians/s. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcangularvelocitymeasure.htm"
     },
     "IfcAppliedValueSelect": {
-        "description": "IfcAppliedValueSelect defines a value to be calculated within a formula.",
+        "description": "IfcAppliedValueSelect defines a value to be calculated within a formula. Types are used as follows: - IfcValue: A constant value using project default units. - IfcMeasureWithUnit: A constant value using specified units. - IfcReference: A value referenced on an object attribute. For cost values, the following guidance applies: - IfcMeasureWithUnit allows the specification of both the actual figure for the value together with the currency in which the value is represented. - Selecting IfcMonetaryMeasure allows the specification only of the value, the currency being as set by the global context. - Selecting IfcRatioMeasure assumes that the amount is a percentage or other REAL number. Note that if the amount is normally specified as -20%, then this figure will need to be converted to a multiplier of 0.8",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifccostresource/lexical/ifcappliedvalueselect.htm"
     },
     "IfcArcIndex": {
-        "description": "The IfcArcIndex describes a single circular arc segment within a poly curve by providing a list on indices. The first index is the start point of the circular arc, the second index is a point on arc, the third index is the end point of the circular arc. The three points shall not be co-linear.",
+        "description": "The IfcArcIndex describes a single circular arc segment within a poly curve by providing a list on indices. The first index is the start point of the circular arc, the second index is a point on arc, the third index is the end point of the circular arc. The three points shall not be co-linear. Informal Propositions: - The second index, resolving to a point on arc, shall resolve into a Cartesian point that has approximately the same distance to the start point and the end point of the circular arc. This is due to avoid numeric instability, if the point on arc is too close to either the start or the end point.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcgeometryresource/lexical/ifcarcindex.htm"
     },
     "IfcAreaDensityMeasure": {
-        "description": "IfcAreaDensityMeasure is a measure of the density of a two-dimensional object and is calculated as the mass per unit area.",
+        "description": "IfcAreaDensityMeasure is a measure of the density of a two-dimensional object and is calculated as the mass per unit area. Usually measured in kg/m2. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcareadensitymeasure.htm"
     },
     "IfcAreaMeasure": {
-        "description": "An area measure is the value of the extent of a surface.",
+        "description": "An area measure is the value of the extent of a surface. Usually measured in square metre (m2). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcareameasure.htm"
     },
     "IfcArithmeticOperatorEnum": {
@@ -124,7 +124,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/lexical/ifcboilertypeenum.htm"
     },
     "IfcBoolean": {
-        "description": "IfcBoolean is a defined data type of simple data type Boolean. It is required since a select type (IfcSimpleValue) cannot directly include simple types in its select list. A Boolean type can have value TRUE or FALSE.",
+        "description": "IfcBoolean is a defined data type of simple data type Boolean. It is required since a select type (IfcSimpleValue) cannot directly include simple types in its select list. A Boolean type can have value TRUE or FALSE. Type: BOOLEAN",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcboolean.htm"
     },
     "IfcBooleanOperand": {
@@ -136,7 +136,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcgeometricmodelresource/lexical/ifcbooleanoperator.htm"
     },
     "IfcBoxAlignment": {
-        "description": "The box alignment specifies the alignment of the text box relative to its position. The following string values shall be used:",
+        "description": "The box alignment specifies the alignment of the text box relative to its position. The following string values shall be used: - top-left - top-middle - top-right - middle-left - center - middle-right - bottom-left - bottom-middle - bottom-right Figure 1 illustrates alignment values. Figure 2 illustrates use of alignment values together with the placement and planar extent.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcpresentationdefinitionresource/lexical/ifcboxalignment.htm"
     },
     "IfcBuildingElementPartTypeEnum": {
@@ -172,11 +172,11 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/lexical/ifccablesegmenttypeenum.htm"
     },
     "IfcCardinalPointReference": {
-        "description": "An IfcCardinalPointReference is an index reference to significant points of a section profile. This index is used to describe the spatial relationship between the section of a member and a reference axis of the same member.",
+        "description": "An IfcCardinalPointReference is an index reference to significant points of a section profile. This index is used to describe the spatial relationship between the section of a member and a reference axis of the same member. Indexes 1...9 refer to points at the bounding box of a profile. Indexes 10...19 refer to points defined by geometric centroid (usually centre of gravity) and shear centre, and their combinations with bounding box coordinates. In particular, the following index values are specified in this specification: - bottom left - bottom centre - bottom right - mid-depth left - mid-depth centre - mid-depth right - top left - top centre - top right - geometric centroid - bottom in line with the geometric centroid - left in line with the geometric centroid - right in line with the geometric centroid - top in line with the geometric centroid - shear centre - bottom in line with the shear centre - left in line with the shear centre - right in line with the shear centre - top in line with the shear centre Other index values are possible but outside the scope of this specification. Figure 1 illustrates cardinal point values. Figure 2 illustrates an example extrusion shape with arbitrary profile (IfcArbitraryClosedProfileDef), aligned \"mid-depth right\" on the member axis. The line of sight follows the extrusion direction Z which points into the drawing plane of above illustration. Hence, \"left\" is in the positive X direction of the IfcProfileDef. \"Top\" is in the positive Y direction of the IfcProfileDef.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmaterialresource/lexical/ifccardinalpointreference.htm"
     },
     "IfcChangeActionEnum": {
-        "description": "IfcChangeActionEnum identifies the type of change that might have occurred to the object during the last session (for example, added, modified, deleted). This information is required in a partial model exchange scenario so that an application or model server will know how an object might have been affected by the previous application. Valid enumerations are:",
+        "description": "IfcChangeActionEnum identifies the type of change that might have occurred to the object during the last session (for example, added, modified, deleted). This information is required in a partial model exchange scenario so that an application or model server will know how an object might have been affected by the previous application. Valid enumerations are: Consider Application A will create an IFC dataset that it wants to publish to others for modification and have the ability to subsequently merge these changes back into the original model. Before publication, it may want to set the IfcChangeActionEnum to NOCHANGE to establish a baseline so that other application changes can be easily identified. Application B then receives this IFC dataset and adds a new object and sets IfcChangeActionEnum to ADDED with Application B defined as the OwningApplication. Application B then modifies an existing object and (re)defines the LastModifiedDate to the time of the modification, LastModifyingUser to the IfcPersonAndOrganization making the change, and sets the LastModifyingApplication to Application B. When Application A receives this modified dataset, it can determine which objects have been added and modified by Application B and either merge or reject these changes as necessary. Consequently, the intent is that an application only modifies the value of IfcChangeActionEnum when it does something to the object, with the further intent that a model server is responsible for clearing the IfcChangeActionEnum back to NOCHANGE when it is ready to be republished.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcutilityresource/lexical/ifcchangeactionenum.htm"
     },
     "IfcChillerTypeEnum": {
@@ -216,7 +216,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/lexical/ifccommunicationsappliancetypeenum.htm"
     },
     "IfcComplexNumber": {
-        "description": "IfcComplexNumber is a representation of a complex number expressed as an array with two elements. The first element (index 1) denotes the real component which is the numerical component of a complex number whose square roots can be calculated explicitly. The second element (index 2) denotes the imaginary component which is the numerical component of a complex number whose square roots cannot be determined other than through the provision of the square of the imaginary number j where j\\^2 = -1. Note that the imaginary component may be referred to as i in certain references.",
+        "description": "IfcComplexNumber is a representation of a complex number expressed as an array with two elements. The first element (index 1) denotes the real component which is the numerical component of a complex number whose square roots can be calculated explicitly. The second element (index 2) denotes the imaginary component which is the numerical component of a complex number whose square roots cannot be determined other than through the provision of the square of the imaginary number j where j\\^2 = -1. Note that the imaginary component may be referred to as i in certain references. Type: ARRAY [1:2] OF REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifccomplexnumber.htm"
     },
     "IfcComplexPropertyTemplateTypeEnum": {
@@ -224,7 +224,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifckernel/lexical/ifccomplexpropertytemplatetypeenum.htm"
     },
     "IfcCompoundPlaneAngleMeasure": {
-        "description": "IfcCompoundPlaneAngleMeasure is a compound measure of plane angle in degrees, minutes, seconds, and optionally millionth-seconds of arc.",
+        "description": "IfcCompoundPlaneAngleMeasure is a compound measure of plane angle in degrees, minutes, seconds, and optionally millionth-seconds of arc. Type: LIST [3:4] OF INTEGER Value restrictions - The first integer measure is the number of degrees and is generally not range-restricted. However, when IfcCompoundPlaneAngleMeasure is used to express geographic coordinates, only latitudes of [-90, 90] and longitudes of [-180, 180] are used in practice. - The second integer measure is the number of minutes and shall be in the range (-60, 60). - The third integer measure is the number of seconds and shall be in the range (-60, 60). - The optional fourth integer measure is the number of millionth-seconds and shall be in the range (-1 000 000, 1 000 000). Signedness All measure components have the same sign (positive or negative). It is therefore trivial to convert between floating point representation (decimal degrees) and compound representation regardless whether the angle is greater or smaller than zero. Example: Use in string representations When a compound plane angle measure is formatted for display or printout, the signs of the fractional components will usually be discarded because, to a human reader, the sign of the first component alone already indicates the sense of the angle: Another often encountered display format of latitudes and longitudes is to omit the signs and print N, S, E, W indicators instead, for example, 50&deg;58'33\"S . When stored as IfcCompoundPlaneAngleMeasure however, a compound plane angle measure is always signed, with same sign of all components.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifccompoundplaneanglemeasure.htm"
     },
     "IfcCompressorTypeEnum": {
@@ -236,7 +236,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/lexical/ifccondensertypeenum.htm"
     },
     "IfcConnectionTypeEnum": {
-        "description": "This enumeration defines the different ways how path based elements (such as IfcWallStandardCase) can connect, as shown in Figure 1.",
+        "description": "This enumeration defines the different ways how path based elements (such as IfcWallStandardCase) can connect, as shown in Figure 1. The enumerated items shall be used in the following combinations:",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/lexical/ifcconnectiontypeenum.htm"
     },
     "IfcConstraintEnum": {
@@ -256,7 +256,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcconstructionmgmtdomain/lexical/ifcconstructionproductresourcetypeenum.htm"
     },
     "IfcContextDependentMeasure": {
-        "description": "The value of a physical quantity as defined within the exchange context.",
+        "description": "The value of a physical quantity as defined within the exchange context. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifccontextdependentmeasure.htm"
     },
     "IfcControllerTypeEnum": {
@@ -284,7 +284,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedmgmtelements/lexical/ifccostscheduletypeenum.htm"
     },
     "IfcCountMeasure": {
-        "description": "A count measure is the value of a count of items.",
+        "description": "A count measure is the value of a count of items. Type: NUMBER",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifccountmeasure.htm"
     },
     "IfcCoveringTypeEnum": {
@@ -304,7 +304,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/lexical/ifccurtainwalltypeenum.htm"
     },
     "IfcCurvatureMeasure": {
-        "description": "IfcCurvatureMeasure is a measure for curvature, which is defined as the change of slope per length. This is typically a computed value in structural analysis. It is usually measured in rad/m.",
+        "description": "IfcCurvatureMeasure is a measure for curvature, which is defined as the change of slope per length. This is typically a computed value in structural analysis. It is usually measured in rad/m. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifccurvaturemeasure.htm"
     },
     "IfcCurveFontOrScaledCurveFontSelect": {
@@ -336,19 +336,19 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcdatetimeresource/lexical/ifcdataoriginenum.htm"
     },
     "IfcDate": {
-        "description": "The IfcData identifies a particular calender day, expressed by year, calender month and day in month. It is expressed by a string value following a particular lexical representation.",
+        "description": "The IfcData identifies a particular calender day, expressed by year, calender month and day in month. It is expressed by a string value following a particular lexical representation. The lexical representation for IfcDate is the YYYY-MM-DD, where YYYY represents the calendar year, MM the ordinal number of the calendar month, and DD the ordinal number of the day within the calendar month. No left truncation is allowed. An optional following time zone qualifier is allowed. To accommodate year values outside the range from 0001 to 9999, additional digits can be added to the left of this representation and a preceding \"-\" sign is allowed.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcdatetimeresource/lexical/ifcdate.htm"
     },
     "IfcDateTime": {
-        "description": "The IfcDataTime identifies a particular point in time, expressed by hours, minutes and optional seconds elapsed within a calender day, expressed by year, calender month and day in month. It is expressed by a string value following a particular lexical representation.",
+        "description": "The IfcDataTime identifies a particular point in time, expressed by hours, minutes and optional seconds elapsed within a calender day, expressed by year, calender month and day in month. It is expressed by a string value following a particular lexical representation. This lexical representation for IfcDataTime is YYYY-MM-DDThh:mm:ss where \"YYYY\" represent the year, \"MM\" the month and \"DD\" the day, preceded by an optional leading \"-\" sign to indicate a negative year number. If the sign is omitted, \"+\" is assumed. The letter \"T\" is the date/time separator and \"hh\", \"mm\", \"ss\" represent hour, minute and second respectively. Additional digits can be used to increase the precision of fractional seconds if desired i.e the format ss.ss... with any number of digits after the decimal point is supported. The fractional seconds part is optional; other parts of the lexical form are not optional. To accommodate year values greater than 9999 additional digits can be added to the left of this representation. Leading zeros are required if the year value would otherwise have fewer than four digits; otherwise they are forbidden. The year 0000 is prohibited.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcdatetimeresource/lexical/ifcdatetime.htm"
     },
     "IfcDayInMonthNumber": {
-        "description": "IfcDayInMonthNumber is an integer that defines the position of the specified day in a month.",
+        "description": "IfcDayInMonthNumber is an integer that defines the position of the specified day in a month. Type: INTEGER",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcdatetimeresource/lexical/ifcdayinmonthnumber.htm"
     },
     "IfcDayInWeekNumber": {
-        "description": "The IfcDayInWeekNumber is an integer that defines the position of the specified day in a week. The positions have the following meaning that assigns the ordinal day number in the week to the Calendar day name.",
+        "description": "The IfcDayInWeekNumber is an integer that defines the position of the specified day in a week. The positions have the following meaning that assigns the ordinal day number in the week to the Calendar day name. Ordinal day numbers map to calendar days as follows: - 1: Monday - 2: Tuesday - 3: Wednesday - 4: Thursday - 5: Friday - 6: Saturday - 7: Sunday",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcdatetimeresource/lexical/ifcdayinweeknumber.htm"
     },
     "IfcDefinitionSelect": {
@@ -356,7 +356,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifckernel/lexical/ifcdefinitionselect.htm"
     },
     "IfcDerivedMeasureValue": {
-        "description": "IfcDerivedMeasureValue is a select type for selecting between derived measure types.",
+        "description": "IfcDerivedMeasureValue is a select type for selecting between derived measure types. SELECT - IfcAbsorbedDoseMeasure - IfcAccelerationMeasure - IfcAngularVelocityMeasure - IfcAreaDensityMeasure - IfcCompoundPlaneAngleMeasure - IfcCurvatureMeasure - IfcDoseEquivalentMeasure - IfcDynamicViscosityMeasure - IfcElectricCapacitanceMeasure - IfcElectricChargeMeasure - IfcElectricConductanceMeasure - IfcElectricResistanceMeasure - IfcElectricVoltageMeasure - IfcEnergyMeasure - IfcForceMeasure - IfcFrequencyMeasure - IfcHeatFluxDensityMeasure - IfcHeatingValueMeasure - IfcIlluminanceMeasure - IfcInductanceMeasure - IfcIntegerCountRateMeasure - IfcIonConcentrationMeasure - IfcIsothermalMoistureCapacityMeasure - IfcKinematicViscosityMeasure - IfcLinearForceMeasure - IfcLinearMomentMeasure - IfcLinearStiffnessMeasure - IfcLinearVelocityMeasure - IfcLuminousFluxMeasure - IfcLuminousIntensityDistributionMeasure - IfcMagneticFluxDensityMeasure - IfcMagneticFluxMeasure - IfcMassDensityMeasure - IfcMassFlowRateMeasure - IfcMassPerLengthMeasure - IfcModulusOfElasticityMeasure - IfcModulusOfLinearSubgradeReactionMeasure - IfcModulusOfRotationalSubgradeReactionMeasure - IfcModulusOfSubgradeReactionMeasure - IfcMoistureDiffusivityMeasure - IfcMolecularWeightMeasure - IfcMomentOfInertiaMeasure - IfcMonetaryMeasure - IfcPHMeasure - IfcPlanarForceMeasure - IfcPowerMeasure - IfcPressureMeasure - IfcRadioActivityMeasure - IfcRotationalFrequencyMeasure - IfcRotationalMassMeasure - IfcRotationalStiffnessMeasure - IfcSectionModulusMeasure - IfcSectionalAreaIntegralMeasure - IfcShearModulusMeasure - IfcSoundPowerLevelMeasure - IfcSoundPowerMeasure - IfcSoundPressureLevelMeasure - IfcSoundPressureMeasure - IfcSpecificHeatCapacityMeasure - IfcTemperatureGradientMeasure - IfcTemperatureRateOfChangeMeasure - IfcThermalAdmittanceMeasure - IfcThermalConductivityMeasure - IfcThermalExpansionCoefficientMeasure - IfcThermalResistanceMeasure - IfcThermalTransmittanceMeasure - IfcTorqueMeasure - IfcVaporPermeabilityMeasure - IfcVolumetricFlowRateMeasure - IfcWarpingConstantMeasure - IfcWarpingMomentMeasure",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcderivedmeasurevalue.htm"
     },
     "IfcDerivedUnitEnum": {
@@ -364,7 +364,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcderivedunitenum.htm"
     },
     "IfcDescriptiveMeasure": {
-        "description": "A descriptive measure is a human interpretable definition of a quantifiable value. The mode of interpretation has to be established for the exchange context.",
+        "description": "A descriptive measure is a human interpretable definition of a quantifiable value. The mode of interpretation has to be established for the exchange context. Type: STRING",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcdescriptivemeasure.htm"
     },
     "IfcDimensionCount": {
@@ -388,7 +388,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgserviceelements/lexical/ifcdistributionporttypeenum.htm"
     },
     "IfcDistributionSystemEnum": {
-        "description": "This enumeration identifies different types of distribution systems. It is used to designate systems by their function as well as ports of devices within such systems to restrict connectivity to compatible connections.",
+        "description": "This enumeration identifies different types of distribution systems. It is used to designate systems by their function as well as ports of devices within such systems to restrict connectivity to compatible connections. Ports for cable carriers may be connected using IfcCableCarrierSegment and IfcCableCarrierFitting. Type objects for cable carrier segments and fittings (IfcCableCarrierSegmentType and IfcCableCarrierFittingType that are not specific to a particular system type may have ports with PredefinedType of NOTDEFINED which indicates that occurrences of such objects may connect to ports of any other cable-carrier based port. Valid enumerations for cable carriers are the same as that for cables, and may be asserted if ports of the contained cables are all of the same type.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgserviceelements/lexical/ifcdistributionsystemenum.htm"
     },
     "IfcDocumentConfidentialityEnum": {
@@ -404,11 +404,11 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcexternalreferenceresource/lexical/ifcdocumentstatusenum.htm"
     },
     "IfcDoorPanelOperationEnum": {
-        "description": "This enumeration defines the basic ways how individual door panels operate as shown in Figure 1.",
+        "description": "This enumeration defines the basic ways how individual door panels operate as shown in Figure 1. The opening direction of the door panels is given by the local placement of the IfcDoor. The positive y-axis determines the direction as shown in Figure 2.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcarchitecturedomain/lexical/ifcdoorpaneloperationenum.htm"
     },
     "IfcDoorPanelPositionEnum": {
-        "description": "This enumeration defines the basic ways to describe the location of a door panel within a door lining.",
+        "description": "This enumeration defines the basic ways to describe the location of a door panel within a door lining. Figure 1 shows the designation of a door panel with PanelPosition = LEFT and a door panel with PanelPosition = RIGHT within a door style with OperationType = DOUBLE_DOOR_SINGLE_SWING. The position is given as shown in the XZ plane of the local placement, looking into the direction of the positive Y axis. !(../../../../../../figures/ifcdoorpanelpositionenum-fig01.gif \"Figure 1 \u2014 Door panel positions\")",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcarchitecturedomain/lexical/ifcdoorpanelpositionenum.htm"
     },
     "IfcDoorStyleConstructionEnum": {
@@ -416,7 +416,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcarchitecturedomain/lexical/ifcdoorstyleconstructionenum.htm"
     },
     "IfcDoorStyleOperationEnum": {
-        "description": "This enumeration defines the basic ways to describe how doors operate as shown in Figure 1.",
+        "description": "This enumeration defines the basic ways to describe how doors operate as shown in Figure 1. NOTE - Figures are shown in the ground view. - Figures (symbolic representation) depend on the national building code. - These figures are only shown as illustrations, the actual representation in the ground view might differ. - Open to the outside is declared as open into the direction of the positive y-axis, determined by the ObjectPlacement at IfcDoor - The location of the panel relative to the wall thickness is defined by the ObjectPlacement at IfcDoor, and the IfcDoorLiningProperties.LiningOffset parameter.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcarchitecturedomain/lexical/ifcdoorstyleoperationenum.htm"
     },
     "IfcDoorTypeEnum": {
@@ -424,15 +424,15 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/lexical/ifcdoortypeenum.htm"
     },
     "IfcDoorTypeOperationEnum": {
-        "description": "This enumeration defines the basic ways to describe how doors operate, as shown in Figure 1. It combines the partitioning of the door into a single or multiple door panels and the operation types of that panels.",
+        "description": "This enumeration defines the basic ways to describe how doors operate, as shown in Figure 1. It combines the partitioning of the door into a single or multiple door panels and the operation types of that panels. In the most common case of swinging doors the IfcDoorTypeOperationEnum defined the hinge side (left hing or right hung) and the opening direction (opening to the left, opening to the right). Whether the door opens inwards or outwards is determined by the local coordinate system of the IfcDoor, or IfcDoorStandardCase. NOTE - Figures are shown in the ground view. - Figures (symbolic representation) depend on the national building code. - These figures are only shown as illustrations, the actual representation in the ground view might differ. - Open to the outside is declared as open into the direction of the positive y-axis, determined by the ObjectPlacement at IfcDoor - The location of the panel relative to the wall thickness is defined by the ObjectPlacement at IfcDoor, and the IfcDoorLiningProperties.LiningOffset parameter.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/lexical/ifcdoortypeoperationenum.htm"
     },
     "IfcDoseEquivalentMeasure": {
-        "description": "IfcDoseEquivalentMeasure is a measure of the radioactive dose equivalent.",
+        "description": "IfcDoseEquivalentMeasure is a measure of the radioactive dose equivalent. Usually measured in Sievert (Sv, J/kg). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcdoseequivalentmeasure.htm"
     },
     "IfcDuctFittingTypeEnum": {
-        "description": "This enumeration is used to identify the primary purpose of a duct fitting. This is a very basic categorization mechanism to generically identify the duct fitting type. Subcategories of duct fittings are not enumerated.",
+        "description": "This enumeration is used to identify the primary purpose of a duct fitting. This is a very basic categorization mechanism to generically identify the duct fitting type. Subcategories of duct fittings are not enumerated. Enumerated Item Definitions: - BEND: A fitting with typically two ports used to change the direction of flow between connected elements. - CONNECTOR: Connector fitting, typically used to join two ports together within a flow distribution system (e.g., a coupling used to join two duct segments). - ENTRY: Entry fitting, typically unconnected at one port and connected to a flow distribution system at the other (e.g., an outside air duct system intake opening). - EXIT: Exit fitting, typically unconnected at one port and connected to a flow distribution system at the other (e.g., an exhaust air discharge opening). - JUNCTION: A fitting with typically more than two ports used to redistribute flow among the ports and/or to change the direction of flow between connected elements (e.g, tee, cross, wye, etc.). - OBSTRUCTION: A fitting with typically two ports used to obstruct or restrict flow between the connected elements (e.g., screen, perforated plate, etc.). - TRANSITION: A fitting with typically two ports having different shapes or sizes. Can also be used to change the direction of flow between connected elements. - USERDEFINED: User-defined fitting. - NOTDEFINED: Undefined fitting.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/lexical/ifcductfittingtypeenum.htm"
     },
     "IfcDuctSegmentTypeEnum": {
@@ -444,11 +444,11 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/lexical/ifcductsilencertypeenum.htm"
     },
     "IfcDuration": {
-        "description": "The IfcDuration identifies a quantity of time (or a \"lenght\" of an event occurring in time).",
+        "description": "The IfcDuration identifies a quantity of time (or a \"lenght\" of an event occurring in time). This lexical representation for IfcDataTime is PnYnMnDTnHnMnS, where nY represents the number of years, nM the number of months, nD the number of days, 'T' is the date/time separator, nH the number of hours, nM the number of minutes and nS the number of seconds. The number of seconds can include decimal digits to arbitrary precision.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcdatetimeresource/lexical/ifcduration.htm"
     },
     "IfcDynamicViscosityMeasure": {
-        "description": "IfcDynamicViscosityMeasure is a measure of the viscous resistance of a medium.",
+        "description": "IfcDynamicViscosityMeasure is a measure of the viscous resistance of a medium. Usually measured in Pascal second (Pa s). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcdynamicviscositymeasure.htm"
     },
     "IfcElectricApplianceTypeEnum": {
@@ -456,19 +456,19 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/lexical/ifcelectricappliancetypeenum.htm"
     },
     "IfcElectricCapacitanceMeasure": {
-        "description": "IfcElectricCapacitanceMeasure is a measure of the electric capacitance.",
+        "description": "IfcElectricCapacitanceMeasure is a measure of the electric capacitance. Usually measured in Farad (F, C/V = A s/V). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcelectriccapacitancemeasure.htm"
     },
     "IfcElectricChargeMeasure": {
-        "description": "IfcElectricChargeMeasure is a measure of the electric charge.",
+        "description": "IfcElectricChargeMeasure is a measure of the electric charge. Usually measured in Coulomb (C, A s). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcelectricchargemeasure.htm"
     },
     "IfcElectricConductanceMeasure": {
-        "description": "IfcElectricConductanceMeasure is a measure of the electric conductance.",
+        "description": "IfcElectricConductanceMeasure is a measure of the electric conductance. Usually measured in Siemens (S, 1/Ohm = A/V). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcelectricconductancemeasure.htm"
     },
     "IfcElectricCurrentMeasure": {
-        "description": "The value for the movement of electrically charged particles.",
+        "description": "The value for the movement of electrically charged particles. Usually measured in Ampere (A). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcelectriccurrentmeasure.htm"
     },
     "IfcElectricDistributionBoardTypeEnum": {
@@ -488,7 +488,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/lexical/ifcelectricmotortypeenum.htm"
     },
     "IfcElectricResistanceMeasure": {
-        "description": "IfcElectricResistanceMeasure is a measure of the electric resistance.",
+        "description": "IfcElectricResistanceMeasure is a measure of the electric resistance. Usually measured in Ohm (V/A). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcelectricresistancemeasure.htm"
     },
     "IfcElectricTimeControlTypeEnum": {
@@ -496,7 +496,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/lexical/ifcelectrictimecontroltypeenum.htm"
     },
     "IfcElectricVoltageMeasure": {
-        "description": "IfcElectricVoltageMeasure is a measure of electromotive force.",
+        "description": "IfcElectricVoltageMeasure is a measure of electromotive force. Usually measured in Volts (V, W/A). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcelectricvoltagemeasure.htm"
     },
     "IfcElementAssemblyTypeEnum": {
@@ -508,7 +508,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcproductextension/lexical/ifcelementcompositionenum.htm"
     },
     "IfcEnergyMeasure": {
-        "description": "IfcEnergyMeasure is a measure of energy required or used.",
+        "description": "IfcEnergyMeasure is a measure of energy required or used. Usually measured in Joules, (J, Nm). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcenergymeasure.htm"
     },
     "IfcEngineTypeEnum": {
@@ -556,7 +556,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcplumbingfireprotectiondomain/lexical/ifcfiresuppressionterminaltypeenum.htm"
     },
     "IfcFlowDirectionEnum": {
-        "description": "This enumeration defines the flow direction at a distribution port.",
+        "description": "This enumeration defines the flow direction at a distribution port. - For pipe-based ports, the direction is the physical flow direction. - For duct-based ports, the direction is the physical flow direction.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgserviceelements/lexical/ifcflowdirectionenum.htm"
     },
     "IfcFlowInstrumentTypeEnum": {
@@ -568,15 +568,15 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/lexical/ifcflowmetertypeenum.htm"
     },
     "IfcFontStyle": {
-        "description": "The IfcFontStyle type defines whether the normal, the italic or the oblique faces within a font family shall be used. Values are:",
+        "description": "The IfcFontStyle type defines whether the normal, the italic or the oblique faces within a font family shall be used. Values are: - normal - italic - oblique",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcpresentationappearanceresource/lexical/ifcfontstyle.htm"
     },
     "IfcFontVariant": {
-        "description": "The IfcFontVariant type defines whether the normal or the small-caps faces within a font family shall be used. Values are:",
+        "description": "The IfcFontVariant type defines whether the normal or the small-caps faces within a font family shall be used. Values are: - normal - small-caps",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcpresentationappearanceresource/lexical/ifcfontvariant.htm"
     },
     "IfcFontWeight": {
-        "description": "The IfcFontWeight type defines the weight of the font. Values are:",
+        "description": "The IfcFontWeight type defines the weight of the font. Values are: - normal - bold - 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcpresentationappearanceresource/lexical/ifcfontweight.htm"
     },
     "IfcFootingTypeEnum": {
@@ -584,11 +584,11 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcstructuralelementsdomain/lexical/ifcfootingtypeenum.htm"
     },
     "IfcForceMeasure": {
-        "description": "IfcForceMeasure is a measure of the force.",
+        "description": "IfcForceMeasure is a measure of the force. Usually measured in Newton (N, kg m/s2). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcforcemeasure.htm"
     },
     "IfcFrequencyMeasure": {
-        "description": "IfcFrequencyMeasure is a measure of the number of times that an item vibrates in unit time.",
+        "description": "IfcFrequencyMeasure is a measure of the number of times that an item vibrates in unit time. Usually measured in cycles/s or Hertz (Hz). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcfrequencymeasure.htm"
     },
     "IfcFurnitureTypeEnum": {
@@ -612,7 +612,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcrepresentationresource/lexical/ifcglobalorlocalenum.htm"
     },
     "IfcGloballyUniqueId": {
-        "description": "An IfcGloballyUniqueId holds an encoded string identifier that is used to uniquely identify an IFC object. An IfcGloballyUniqueId is a Globally Unique Identifier (GUID) which is an auto-generated 128-bit number. Since this identifier is required for all IFC object instances, it is desirable to compress it to reduce overhead. The encoding of the base 64 character set is shown below:",
+        "description": "An IfcGloballyUniqueId holds an encoded string identifier that is used to uniquely identify an IFC object. An IfcGloballyUniqueId is a Globally Unique Identifier (GUID) which is an auto-generated 128-bit number. Since this identifier is required for all IFC object instances, it is desirable to compress it to reduce overhead. The encoding of the base 64 character set is shown below: The resulting string is a fixed 22 character length string to be exchanged within the IFC exchange file structure.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcutilityresource/lexical/ifcgloballyuniqueid.htm"
     },
     "IfcGridPlacementDirectionSelect": {
@@ -624,7 +624,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcproductextension/lexical/ifcgridtypeenum.htm"
     },
     "IfcHatchLineDistanceSelect": {
-        "description": "The IfcHatchLineDistanceSelect is a selection between different ways to determine the distance and optionally the start point of hatch lines, either by an offset distance measure or by a vector.",
+        "description": "The IfcHatchLineDistanceSelect is a selection between different ways to determine the distance and optionally the start point of hatch lines, either by an offset distance measure or by a vector. The vector, if selected, acts as a one time repeat factor in the fill area style hatching for determining the origin of the repeated hatch line relative to the origin of the previous hatch line, Given the initial position of any hatch line, the one direction repeat factor determines two new positions according to the equation:",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcpresentationappearanceresource/lexical/ifchatchlinedistanceselect.htm"
     },
     "IfcHeatExchangerTypeEnum": {
@@ -632,7 +632,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/lexical/ifcheatexchangertypeenum.htm"
     },
     "IfcHeatFluxDensityMeasure": {
-        "description": "IfcHeatFluxDensityMeasure is a measure of the density of heat flux within a body.",
+        "description": "IfcHeatFluxDensityMeasure is a measure of the density of heat flux within a body. Usually measured in W/m2 (J/s m2). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcheatfluxdensitymeasure.htm"
     },
     "IfcHeatingValueMeasure": {
@@ -644,23 +644,23 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/lexical/ifchumidifiertypeenum.htm"
     },
     "IfcIdentifier": {
-        "description": "An identifier is an alphanumeric string which allows an individual thing to be identified. It may not provide natural-language meaning.",
+        "description": "An identifier is an alphanumeric string which allows an individual thing to be identified. It may not provide natural-language meaning. Type: STRING of up to 255 characters Value restrictions As a merely machine-readable string for identification purposes, an identifier is usually machine-generated and locale-independent (in contrast to human-readable labels, IfcLabel).",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcidentifier.htm"
     },
     "IfcIlluminanceMeasure": {
-        "description": "IfcIlluminanceMeasure is a measure of the illuminance.",
+        "description": "IfcIlluminanceMeasure is a measure of the illuminance. Usually measured in Lux (lx, Lumen/m2 = Candela Steradian/m2). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcilluminancemeasure.htm"
     },
     "IfcInductanceMeasure": {
-        "description": "IfcInductanceMeasure is a measure of the inductance.",
+        "description": "IfcInductanceMeasure is a measure of the inductance. Usually measure in Henry (H, Weber/A = V s/A). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcinductancemeasure.htm"
     },
     "IfcInteger": {
-        "description": "IfcInteger is a defined type of simple data type Integer. It is required since a select type (IfcSimpleValue) cannot include directly simple types in its select list.",
+        "description": "IfcInteger is a defined type of simple data type Integer. It is required since a select type (IfcSimpleValue) cannot include directly simple types in its select list. In principle, the domain of IfcInteger (being an Integer) is all integer numbers. Here the number of bits used for the IfcInteger representation is unconstrained, but in practice it is implementation specific. Type: INTEGER",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcinteger.htm"
     },
     "IfcIntegerCountRateMeasure": {
-        "description": "IfcIntegerCountRateMeasure is a measure of the integer number of units flowing per unit time.",
+        "description": "IfcIntegerCountRateMeasure is a measure of the integer number of units flowing per unit time. Type: INTEGER",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcintegercountratemeasure.htm"
     },
     "IfcInterceptorTypeEnum": {
@@ -680,7 +680,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcionconcentrationmeasure.htm"
     },
     "IfcIsothermalMoistureCapacityMeasure": {
-        "description": "IfcIsothermalMoistureCapacityMeasure is a measure of isothermal moisture capacity.",
+        "description": "IfcIsothermalMoistureCapacityMeasure is a measure of isothermal moisture capacity. Usually measured in m3/kg. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcisothermalmoisturecapacitymeasure.htm"
     },
     "IfcJunctionBoxTypeEnum": {
@@ -688,7 +688,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/lexical/ifcjunctionboxtypeenum.htm"
     },
     "IfcKinematicViscosityMeasure": {
-        "description": "IfcKinematicViscosityMeasure is a measure of the viscous resistance of a medium to a moving body.",
+        "description": "IfcKinematicViscosityMeasure is a measure of the viscous resistance of a medium to a moving body. Usually measured in m2/s. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifckinematicviscositymeasure.htm"
     },
     "IfcKnotType": {
@@ -696,7 +696,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcgeometryresource/lexical/ifcknottype.htm"
     },
     "IfcLabel": {
-        "description": "A label is the term by which something may be referred to. It is a string which represents the human-interpretable name of something and shall have a natural-language meaning.",
+        "description": "A label is the term by which something may be referred to. It is a string which represents the human-interpretable name of something and shall have a natural-language meaning. Type: STRING of up to 255 characters Value restrictions As a human-readable string for naming purposes, a label is usually human-specified and locale-dependent (in contrast to purely machine-readable identifiers, IfcIdentifier).",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifclabel.htm"
     },
     "IfcLaborResourceTypeEnum": {
@@ -708,7 +708,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/lexical/ifclamptypeenum.htm"
     },
     "IfcLanguageId": {
-        "description": "The IfcLanguageId identifies the language in which a natural language text is expressed. It uses a language tag to identify the language.",
+        "description": "The IfcLanguageId identifies the language in which a natural language text is expressed. It uses a language tag to identify the language. Type: IfcIdentifier",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcexternalreferenceresource/lexical/ifclanguageid.htm"
     },
     "IfcLayerSetDirectionEnum": {
@@ -720,7 +720,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcpresentationorganizationresource/lexical/ifclayereditem.htm"
     },
     "IfcLengthMeasure": {
-        "description": "An IfcLengthMeasure is the value of a distance.",
+        "description": "An IfcLengthMeasure is the value of a distance. Usually measured in millimeters (mm). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifclengthmeasure.htm"
     },
     "IfcLibrarySelect": {
@@ -732,7 +732,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcpresentationorganizationresource/lexical/ifclightdistributioncurveenum.htm"
     },
     "IfcLightDistributionDataSourceSelect": {
-        "description": "A goniometric light gets its intensity distribution function (how much light goes in any one direction) from one of two sources: (i) an industry-standard file, (ii) from distribution data passed directly via the IfcLightIntensityDistribution.",
+        "description": "A goniometric light gets its intensity distribution function (how much light goes in any one direction) from one of two sources: (i) an industry-standard file, (ii) from distribution data passed directly via the IfcLightIntensityDistribution. The light distribution provides the luminous intensity distribution according to some standardized light distribution curves. SELECT",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcpresentationorganizationresource/lexical/ifclightdistributiondatasourceselect.htm"
     },
     "IfcLightEmissionSourceEnum": {
@@ -748,19 +748,19 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcgeometryresource/lexical/ifclineindex.htm"
     },
     "IfcLinearForceMeasure": {
-        "description": "IfcLinearForceMeasure is a measure of linear force.",
+        "description": "IfcLinearForceMeasure is a measure of linear force. Usually measured in N/m. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifclinearforcemeasure.htm"
     },
     "IfcLinearMomentMeasure": {
-        "description": "IfcLinearMomentMeasure is a measure of linear moment.",
+        "description": "IfcLinearMomentMeasure is a measure of linear moment. Usually measured in Nm/m. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifclinearmomentmeasure.htm"
     },
     "IfcLinearStiffnessMeasure": {
-        "description": "IfcLinearStiffnessMeasure is a measure of linear stiffness.",
+        "description": "IfcLinearStiffnessMeasure is a measure of linear stiffness. Usually measured in N/m. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifclinearstiffnessmeasure.htm"
     },
     "IfcLinearVelocityMeasure": {
-        "description": "IfcLinearVelocityMeasure is a measure of the velocity of a body measured in terms of distance moved per unit time.",
+        "description": "IfcLinearVelocityMeasure is a measure of the velocity of a body measured in terms of distance moved per unit time. Usually measured in m/s. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifclinearvelocitymeasure.htm"
     },
     "IfcLoadGroupTypeEnum": {
@@ -768,51 +768,51 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcstructuralanalysisdomain/lexical/ifcloadgrouptypeenum.htm"
     },
     "IfcLogical": {
-        "description": "IfcLogical_IfcSimpleValue) cannot directly include simple types in its select list). Logical datatype can have values TRUE, FALSE or UNKNOWN._",
+        "description": "IfcLogical_IfcSimpleValue) cannot directly include simple types in its select list). Logical datatype can have values TRUE, FALSE or UNKNOWN._ Type: LOGICAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifclogical.htm"
     },
     "IfcLogicalOperatorEnum": {
-        "description": "IfcLogicalOperatorEnum is an enumeration that defines the logical operators that may be applied for the satisfaction of one or more operands (IfcConstraint) at a time.",
+        "description": "IfcLogicalOperatorEnum is an enumeration that defines the logical operators that may be applied for the satisfaction of one or more operands (IfcConstraint) at a time. Table 1 illustrates application of IfcLogicalOperatorEnum in a case of three operands, A, B and C, for each operator.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcconstraintresource/lexical/ifclogicaloperatorenum.htm"
     },
     "IfcLuminousFluxMeasure": {
-        "description": "IfcLuminousFluxMeasure is a measure of the luminous flux.",
+        "description": "IfcLuminousFluxMeasure is a measure of the luminous flux. Usually measured in Lumen (lm, Candela Steradian). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcluminousfluxmeasure.htm"
     },
     "IfcLuminousIntensityDistributionMeasure": {
-        "description": "IfcLuminousIntensityDistributionMeasure is a measure of the luminous intensity of a light source that changes according to the direction of the ray. It is normally based on some standardized distribution light distribution curves.",
+        "description": "IfcLuminousIntensityDistributionMeasure is a measure of the luminous intensity of a light source that changes according to the direction of the ray. It is normally based on some standardized distribution light distribution curves. Usually measured in Candela/Lumen (cd/lm) or (cd/klm). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcluminousintensitydistributionmeasure.htm"
     },
     "IfcLuminousIntensityMeasure": {
-        "description": "An IfcLuminousIntensityMeasure is the value for the brightness of a body.",
+        "description": "An IfcLuminousIntensityMeasure is the value for the brightness of a body. Usually measured in candela (cd). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcluminousintensitymeasure.htm"
     },
     "IfcMagneticFluxDensityMeasure": {
-        "description": "IfcMagneticFluxDensityMeasure is a measure of the magnetic flux density.",
+        "description": "IfcMagneticFluxDensityMeasure is a measure of the magnetic flux density. Usually measured in Tesla (T, Weber/m2 = V s/m2). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcmagneticfluxdensitymeasure.htm"
     },
     "IfcMagneticFluxMeasure": {
-        "description": "IfcMagneticFluxMeasure is a measure of the magnetic flux.",
+        "description": "IfcMagneticFluxMeasure is a measure of the magnetic flux. Usually measured in Weber (Wb, V s). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcmagneticfluxmeasure.htm"
     },
     "IfcMassDensityMeasure": {
-        "description": "IfcMassDensityMeasure is a measure of the density of a medium.",
+        "description": "IfcMassDensityMeasure is a measure of the density of a medium. Usually measured in kg/m3. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcmassdensitymeasure.htm"
     },
     "IfcMassFlowRateMeasure": {
-        "description": "IfcMassFlowRateMeasure is a measure of the mass of a medium flowing per unit time.",
+        "description": "IfcMassFlowRateMeasure is a measure of the mass of a medium flowing per unit time. Usually measured in kg/s. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcmassflowratemeasure.htm"
     },
     "IfcMassMeasure": {
-        "description": "An IfcMassMeasure is the value of the amount of matter that a body contains.",
+        "description": "An IfcMassMeasure is the value of the amount of matter that a body contains. Usually measured in kilograms (kg) or grams (g). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcmassmeasure.htm"
     },
     "IfcMassPerLengthMeasure": {
-        "description": "IfcMassPerLengthMeasure is a measure for mass per length. For example for rolled steel profiles the weight of an imaginary beam is usually expressed by kg/m length for cost calculation and structural analysis purposes.",
+        "description": "IfcMassPerLengthMeasure is a measure for mass per length. For example for rolled steel profiles the weight of an imaginary beam is usually expressed by kg/m length for cost calculation and structural analysis purposes. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcmassperlengthmeasure.htm"
     },
     "IfcMaterialSelect": {
-        "description": "IfcMaterialSelect provides selection of either a material definition or a material usage definition that can be assigned to an element, a resource or another entity within this specification.",
+        "description": "IfcMaterialSelect provides selection of either a material definition or a material usage definition that can be assigned to an element, a resource or another entity within this specification. - IfcMaterialDefinition IfcMaterial IfcMaterialLayer IfcMaterialLayerSet IfcMaterialProfile IfcMaterialProfileSet IfcMaterialConstituent IfcMaterialConstituentSet - IfcMaterialUsageDefinition IfcMaterialLayerSetUsage IfcMaterialProfileSetUsage - IfcMaterialList",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmaterialresource/lexical/ifcmaterialselect.htm"
     },
     "IfcMeasureValue": {
@@ -832,19 +832,19 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/lexical/ifcmembertypeenum.htm"
     },
     "IfcMetricValueSelect": {
-        "description": "IfcMetricValueSelect is a select type that enables selection of the data type for the value component of an IfcMetric.",
+        "description": "IfcMetricValueSelect is a select type that enables selection of the data type for the value component of an IfcMetric. Types are used as follows: - IfcValue: A constant value using project default units. - IfcMeasureWithUnit: A constant value using specified units. - IfcAppliedValue: A value calculated from a formula. - IfcTable: A value retrieved from a table. - IfcTimeSeries: A value that varies over time. - IfcReference: A value referenced on an object attribute.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcconstraintresource/lexical/ifcmetricvalueselect.htm"
     },
     "IfcModulusOfElasticityMeasure": {
-        "description": "IfcModulusOfElasticityMeasure is a measure of modulus of elasticity.",
+        "description": "IfcModulusOfElasticityMeasure is a measure of modulus of elasticity. Usually measured in N/m2. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcmodulusofelasticitymeasure.htm"
     },
     "IfcModulusOfLinearSubgradeReactionMeasure": {
-        "description": "IfcModulusOfLinearSubgradeReactionMeasure is a measure for modulus of linear subgrade reaction, which expresses the elastic bedding of a linear structural element per length, such as for a beam. It is typically measured in N/m\\^2.",
+        "description": "IfcModulusOfLinearSubgradeReactionMeasure is a measure for modulus of linear subgrade reaction, which expresses the elastic bedding of a linear structural element per length, such as for a beam. It is typically measured in N/m\\^2. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcmodulusoflinearsubgradereactionmeasure.htm"
     },
     "IfcModulusOfRotationalSubgradeReactionMeasure": {
-        "description": "IfcModulusOfRotationalSubgradeReactionMeasure is a measure for modulus of rotational subgrade reaction, which expresses the rotational elastic bedding of a linear structural element per length, such as for a beam. It is typically measured in Nm/(m*rad).",
+        "description": "IfcModulusOfRotationalSubgradeReactionMeasure is a measure for modulus of rotational subgrade reaction, which expresses the rotational elastic bedding of a linear structural element per length, such as for a beam. It is typically measured in Nm/(m*rad). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcmodulusofrotationalsubgradereactionmeasure.htm"
     },
     "IfcModulusOfRotationalSubgradeReactionSelect": {
@@ -852,7 +852,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcstructuralloadresource/lexical/ifcmodulusofrotationalsubgradereactionselect.htm"
     },
     "IfcModulusOfSubgradeReactionMeasure": {
-        "description": "IfcModulusOfSubgradeReactionMeasure is a geotechnical measure describing interaction between foundation structures and the soil. May also be known as bedding measure.",
+        "description": "IfcModulusOfSubgradeReactionMeasure is a geotechnical measure describing interaction between foundation structures and the soil. May also be known as bedding measure. Usually measured in N/m3. Type: REAL Figure 1 illustrates elastic support of a planar member. !(../../../../../../figures/ifcmodulusofsubgradereactionmeasure.gif \"Figure 1 \u2014 Modulus of subgrade reaction measure\")",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcmodulusofsubgradereactionmeasure.htm"
     },
     "IfcModulusOfSubgradeReactionSelect": {
@@ -864,23 +864,23 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcstructuralloadresource/lexical/ifcmodulusoftranslationalsubgradereactionselect.htm"
     },
     "IfcMoistureDiffusivityMeasure": {
-        "description": "IfcMoistureDiffusivityMeasure is a measure of moisture diffusivity.",
+        "description": "IfcMoistureDiffusivityMeasure is a measure of moisture diffusivity. Usually measured in m3/s. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcmoisturediffusivitymeasure.htm"
     },
     "IfcMolecularWeightMeasure": {
-        "description": "IfcMolecularWeightMeasure is a measure of molecular weight of material (typically gas).",
+        "description": "IfcMolecularWeightMeasure is a measure of molecular weight of material (typically gas). Usually measured in g/mole. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcmolecularweightmeasure.htm"
     },
     "IfcMomentOfInertiaMeasure": {
-        "description": "IfcMomentOfInertiaMeasure is a measure of moment of inertia.",
+        "description": "IfcMomentOfInertiaMeasure is a measure of moment of inertia. Usually measured in m4. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcmomentofinertiameasure.htm"
     },
     "IfcMonetaryMeasure": {
-        "description": "A monetary measure is the value of an amount of money without regard to its currency.",
+        "description": "A monetary measure is the value of an amount of money without regard to its currency. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcmonetarymeasure.htm"
     },
     "IfcMonthInYearNumber": {
-        "description": "IfcMonthInYearNumber is an integer that defines the position of the specified month in a year.",
+        "description": "IfcMonthInYearNumber is an integer that defines the position of the specified month in a year. Calendar month numbers map to calendar month names as follows: - 1: January - 2: February - 3: March - 4: April - 5: May - 6: June - 7: July - 8: August - 9: September - 10: October - 11: November - 12: December Type: INTEGER",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcdatetimeresource/lexical/ifcmonthinyearnumber.htm"
     },
     "IfcMotorConnectionTypeEnum": {
@@ -888,11 +888,11 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/lexical/ifcmotorconnectiontypeenum.htm"
     },
     "IfcNonNegativeLengthMeasure": {
-        "description": "A non-negative length measure is a length measure that is greater than or equal to zero.",
+        "description": "A non-negative length measure is a length measure that is greater than or equal to zero. Type: IfcLengthMeasure",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcnonnegativelengthmeasure.htm"
     },
     "IfcNormalisedRatioMeasure": {
-        "description": "IfcNormalisedRatioMeasure is a dimensionless measure to express ratio values ranging from 0.0 to 1.0.",
+        "description": "IfcNormalisedRatioMeasure is a dimensionless measure to express ratio values ranging from 0.0 to 1.0. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcnormalisedratiomeasure.htm"
     },
     "IfcNullStyle": {
@@ -900,7 +900,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcpresentationappearanceresource/lexical/ifcnullstyle.htm"
     },
     "IfcNumericMeasure": {
-        "description": "An IfcNumericMeasure is the numeric value of a physical quantity.",
+        "description": "An IfcNumericMeasure is the numeric value of a physical quantity. Type: NUMBER",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcnumericmeasure.htm"
     },
     "IfcObjectReferenceSelect": {
@@ -932,11 +932,11 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcphmeasure.htm"
     },
     "IfcParameterValue": {
-        "description": "An IfcParameterValue is the value which specifies the amount of a parameter in some parameter space.",
+        "description": "An IfcParameterValue is the value which specifies the amount of a parameter in some parameter space. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcparametervalue.htm"
     },
     "IfcPerformanceHistoryTypeEnum": {
-        "description": "This enumeration is used to identify the primary purpose of performance history. The IfcPerformanceHistoryTypeEnum contains the following:",
+        "description": "This enumeration is used to identify the primary purpose of performance history. The IfcPerformanceHistoryTypeEnum contains the following: - USERDEFINED: User-defined. - NOTDEFINED: Undefined.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifccontrolextension/lexical/ifcperformancehistorytypeenum.htm"
     },
     "IfcPermeableCoveringOperationEnum": {
@@ -968,11 +968,11 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/lexical/ifcpipesegmenttypeenum.htm"
     },
     "IfcPlanarForceMeasure": {
-        "description": "IfcPlanarForceMeasure is a measure of force on an area.",
+        "description": "IfcPlanarForceMeasure is a measure of force on an area. Usually measured in N/m2. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcplanarforcemeasure.htm"
     },
     "IfcPlaneAngleMeasure": {
-        "description": "An IfcPlaneAngleMeasure is the value of an angle in a plane.",
+        "description": "An IfcPlaneAngleMeasure is the value of an angle in a plane. Usually measured in radian (rad, m/m = 1), but also grads may be used. The grad unit has to be declared as a conversion based unit based on radian unit. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcplaneanglemeasure.htm"
     },
     "IfcPlateTypeEnum": {
@@ -984,23 +984,23 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcgeometricconstraintresource/lexical/ifcpointorvertexpoint.htm"
     },
     "IfcPositiveInteger": {
-        "description": "IfcPositiveInteger is a defined type based on simple data type Integer with the additional restriction to positive integers (excluding zero).",
+        "description": "IfcPositiveInteger is a defined type based on simple data type Integer with the additional restriction to positive integers (excluding zero). In principle, the domain of IfcInteger is all integer numbers larger than zero. Here the number of bits used for the IfcInteger representation is unconstrained, but in practice it is implementation specific. Type: INTEGER",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcpositiveinteger.htm"
     },
     "IfcPositiveLengthMeasure": {
-        "description": "An IfcPositiveLengthMeasure is a length measure that is greater than zero.",
+        "description": "An IfcPositiveLengthMeasure is a length measure that is greater than zero. Type: IfcLengthMeasure",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcpositivelengthmeasure.htm"
     },
     "IfcPositivePlaneAngleMeasure": {
-        "description": "An IfcPositivePlaneAngleMeasure is a plane angle measure that is greater than zero.",
+        "description": "An IfcPositivePlaneAngleMeasure is a plane angle measure that is greater than zero. Type: IfcPlaneAngleMeasure",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcpositiveplaneanglemeasure.htm"
     },
     "IfcPositiveRatioMeasure": {
-        "description": "An IfcPositiveRatioMeasure is a ratio measure that is greater than zero.",
+        "description": "An IfcPositiveRatioMeasure is a ratio measure that is greater than zero. Type: IfcRatioMeasure",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcpositiveratiomeasure.htm"
     },
     "IfcPowerMeasure": {
-        "description": "IfcPowerMeasure is a measure of power required or used.",
+        "description": "IfcPowerMeasure is a measure of power required or used. Usually measured in Watts (W, J/s). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcpowermeasure.htm"
     },
     "IfcPreferredSurfaceCurveRepresentation": {
@@ -1016,7 +1016,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcpresentationappearanceresource/lexical/ifcpresentationstyleselect.htm"
     },
     "IfcPressureMeasure": {
-        "description": "IfcPressureMeasure is a measure of the quantity of a medium acting on a unit area.",
+        "description": "IfcPressureMeasure is a measure of the quantity of a medium acting on a unit area. Usually measured in Pascals (Pa, N/m2). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcpressuremeasure.htm"
     },
     "IfcProcedureTypeEnum": {
@@ -1044,7 +1044,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedmgmtelements/lexical/ifcprojectordertypeenum.htm"
     },
     "IfcProjectedOrTrueLengthEnum": {
-        "description": "This enumeration type is needed for load definition and is only considered if the load values are given as global actions and if they define linear or planar loads (that is, one- or two-dimensionally distributed loads).",
+        "description": "This enumeration type is needed for load definition and is only considered if the load values are given as global actions and if they define linear or planar loads (that is, one- or two-dimensionally distributed loads). Figure 1 illustrates the interpretation of a load definition depending on the enumeration types IfcGlobalOrLocalEnum and IfcProjectedOrTrueLengthEnum.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcstructuralanalysisdomain/lexical/ifcprojectedortruelengthenum.htm"
     },
     "IfcProjectionElementTypeEnum": {
@@ -1076,7 +1076,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/lexical/ifcpumptypeenum.htm"
     },
     "IfcRadioActivityMeasure": {
-        "description": "IfcRadioActivityMeasure is a measure of activity of radionuclide.",
+        "description": "IfcRadioActivityMeasure is a measure of activity of radionuclide. Usually measured in Becquerel (Bq, 1/s). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcradioactivitymeasure.htm"
     },
     "IfcRailingTypeEnum": {
@@ -1088,15 +1088,15 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/lexical/ifcrampflighttypeenum.htm"
     },
     "IfcRampTypeEnum": {
-        "description": "This enumeration defines the basic configuration of the ramp type in terms of the number and shape of ramp flights, as shown in Figure 1. The type also distinguished turns by landings. In addition the subdivision of the straight and changing direction ramps is included. The ramp configurations are given for ramps without and with one and two landings.",
+        "description": "This enumeration defines the basic configuration of the ramp type in terms of the number and shape of ramp flights, as shown in Figure 1. The type also distinguished turns by landings. In addition the subdivision of the straight and changing direction ramps is included. The ramp configurations are given for ramps without and with one and two landings. Ramps which are subdivided into more than two landings, or ramps with non-regular shapes are to be defined with type being USERDEFINED or NOTDEFINED.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/lexical/ifcramptypeenum.htm"
     },
     "IfcRatioMeasure": {
-        "description": "An IfcRatioMeasure is the value of the relation between two physical quantities that are of the same kind.",
+        "description": "An IfcRatioMeasure is the value of the relation between two physical quantities that are of the same kind. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcratiomeasure.htm"
     },
     "IfcReal": {
-        "description": "IfcReal is a defined type of simple data type REAL. It is required since a select type (IfcSimpleValue), cannot directly include simple types in its select list.",
+        "description": "IfcReal is a defined type of simple data type REAL. It is required since a select type (IfcSimpleValue), cannot directly include simple types in its select list. In principle, the domain of IfcReal (being a Real) is all rational, irrational and scientific real numbers. Here the precision is unconstrained, but in practice it is implementation specific. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcreal.htm"
     },
     "IfcRecurrenceTypeEnum": {
@@ -1136,19 +1136,19 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcactorresource/lexical/ifcroleenum.htm"
     },
     "IfcRoofTypeEnum": {
-        "description": "This enumeration defines the basic configuration of the roof in terms of the different roof shapes, as illustrated in Figure 1.",
+        "description": "This enumeration defines the basic configuration of the roof in terms of the different roof shapes, as illustrated in Figure 1. Roofs which are subdivided into more than these basic shapes or roofs with non-regular shapes (free form roofs) have the type FREEFORM.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/lexical/ifcrooftypeenum.htm"
     },
     "IfcRotationalFrequencyMeasure": {
-        "description": "IfcRotationalFrequencyMeasure is a measure of the number of cycles that an item revolves in unit time.",
+        "description": "IfcRotationalFrequencyMeasure is a measure of the number of cycles that an item revolves in unit time. Usually measured in cycles/s. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcrotationalfrequencymeasure.htm"
     },
     "IfcRotationalMassMeasure": {
-        "description": "The rotational mass measure denotes the inertia of a body with respect to angular acceleration.",
+        "description": "The rotational mass measure denotes the inertia of a body with respect to angular acceleration. It is usually measured in kg*m\\^2. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcrotationalmassmeasure.htm"
     },
     "IfcRotationalStiffnessMeasure": {
-        "description": "IfcRotationalStiffnessMeasure is a measure of rotational stiffness.",
+        "description": "IfcRotationalStiffnessMeasure is a measure of rotational stiffness. Usually measured in Nm/rad. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcrotationalstiffnessmeasure.htm"
     },
     "IfcRotationalStiffnessSelect": {
@@ -1168,7 +1168,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcplumbingfireprotectiondomain/lexical/ifcsanitaryterminaltypeenum.htm"
     },
     "IfcSectionModulusMeasure": {
-        "description": "IfcSectionModulusMeasure is a measure for the resistance of a cross section against bending or torsional moment. It is usually measured in m\\^3.",
+        "description": "IfcSectionModulusMeasure is a measure for the resistance of a cross section against bending or torsional moment. It is usually measured in m\\^3. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcsectionmodulusmeasure.htm"
     },
     "IfcSectionTypeEnum": {
@@ -1176,7 +1176,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcprofileresource/lexical/ifcsectiontypeenum.htm"
     },
     "IfcSectionalAreaIntegralMeasure": {
-        "description": "The sectional area integral measure is typically used in torsional analysis. It is usually measured in m\\^5.",
+        "description": "The sectional area integral measure is typically used in torsional analysis. It is usually measured in m\\^5. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcsectionalareaintegralmeasure.htm"
     },
     "IfcSegmentIndexSelect": {
@@ -1196,7 +1196,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/lexical/ifcshadingdevicetypeenum.htm"
     },
     "IfcShearModulusMeasure": {
-        "description": "IfcShearModulusMeasure is a measure of shear modulus.",
+        "description": "IfcShearModulusMeasure is a measure of shear modulus. Usually measured in N/m2. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcshearmodulusmeasure.htm"
     },
     "IfcShell": {
@@ -1208,7 +1208,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifckernel/lexical/ifcsimplepropertytemplatetypeenum.htm"
     },
     "IfcSimpleValue": {
-        "description": "IfcSimpleValue is a select type for selecting between simple value types.",
+        "description": "IfcSimpleValue is a select type for selecting between simple value types. SELECT - IfcInteger: Defined type of simple type INTEGER. - IfcReal: Defined type of simple type REAL. - IfcBoolean: Defined type of simple type BOOLEAN. - IfcLogical: Defined type of simple type LOGICAL. - IfcIdentifier: Defined type of simple type STRING for identification purposes. - IfcLabel: Defined type of simple type STRING for naming purposes. - IfcText: Defined type of simple type STRING for descriptive purposes. - IfcDateTime: Defined type of simple type STRING to represent a date and time. - IfcDate: Defined type of simple type STRING to represent a date. - IfcTime: Defined type of simple type STRING to represent a time. - IfcDuration: Defined type of simple type STRING to represent a duration. - IfcTimeStamp: Defined type of simple type INTEGER to represent a point in time by seconds elapsed since 1970.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcsimplevalue.htm"
     },
     "IfcSizeSelect": {
@@ -1224,7 +1224,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/lexical/ifcsolardevicetypeenum.htm"
     },
     "IfcSolidAngleMeasure": {
-        "description": "An IfcSolidAngleMeasure is the value of an angle in a solid.",
+        "description": "An IfcSolidAngleMeasure is the value of an angle in a solid. Usually measured in Steradians, (sr, m2/m2). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcsolidanglemeasure.htm"
     },
     "IfcSolidOrShell": {
@@ -1232,23 +1232,23 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcgeometricconstraintresource/lexical/ifcsolidorshell.htm"
     },
     "IfcSoundPowerLevelMeasure": {
-        "description": "A sound power level measure is a measure of total radiated noise with units of decibels with a reference value of picowatts.",
+        "description": "A sound power level measure is a measure of total radiated noise with units of decibels with a reference value of picowatts. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcsoundpowerlevelmeasure.htm"
     },
     "IfcSoundPowerMeasure": {
-        "description": "A sound power measure is a measure of total radiated noise with units of watts (sonic energy per time unit).",
+        "description": "A sound power measure is a measure of total radiated noise with units of watts (sonic energy per time unit). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcsoundpowermeasure.htm"
     },
     "IfcSoundPressureLevelMeasure": {
-        "description": "A sound pressure level measure is a measure of the pressure fluctuations superimposed over the ambient pressure level with units of decibels with a reference value of micropascals.",
+        "description": "A sound pressure level measure is a measure of the pressure fluctuations superimposed over the ambient pressure level with units of decibels with a reference value of micropascals. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcsoundpressurelevelmeasure.htm"
     },
     "IfcSoundPressureMeasure": {
-        "description": "A sound pressure measure is a measure of the pressure fluctuations superimposed over the ambient pressure level with units of pascals.",
+        "description": "A sound pressure measure is a measure of the pressure fluctuations superimposed over the ambient pressure level with units of pascals. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcsoundpressuremeasure.htm"
     },
     "IfcSpaceBoundarySelect": {
-        "description": "The IfcSpaceBoundarySelect selects either an internal space for internal or external space boundaries, or an external spatial element for external space boundaries at the outer envelop of the building.",
+        "description": "The IfcSpaceBoundarySelect selects either an internal space for internal or external space boundaries, or an external spatial element for external space boundaries at the outer envelop of the building. SELECT - IfcSpace, - IfcExternalSpatialElement",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcproductextension/lexical/ifcspaceboundaryselect.htm"
     },
     "IfcSpaceHeaterTypeEnum": {
@@ -1264,11 +1264,11 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcproductextension/lexical/ifcspatialzonetypeenum.htm"
     },
     "IfcSpecificHeatCapacityMeasure": {
-        "description": "IfcSpecificHeatCapacityMeasure defines the specific heat of material: The heat energy absorbed per temperature unit.",
+        "description": "IfcSpecificHeatCapacityMeasure defines the specific heat of material: The heat energy absorbed per temperature unit. Usually measured in J / kg Kelvin. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcspecificheatcapacitymeasure.htm"
     },
     "IfcSpecularExponent": {
-        "description": "The IfcSpecularExponent defines the datatype for exponent determining the sharpness of the 'reflection'. The reflection is made sharper with large values of the exponent, such as 10.0. Small values, such as 1.0, decrease the specular fall-off.",
+        "description": "The IfcSpecularExponent defines the datatype for exponent determining the sharpness of the 'reflection'. The reflection is made sharper with large values of the exponent, such as 10.0. Small values, such as 1.0, decrease the specular fall-off. IfcSpecularExponent is of type REAL.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcpresentationappearanceresource/lexical/ifcspecularexponent.htm"
     },
     "IfcSpecularHighlightSelect": {
@@ -1276,7 +1276,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcpresentationappearanceresource/lexical/ifcspecularhighlightselect.htm"
     },
     "IfcSpecularRoughness": {
-        "description": "The IfcSpecularRoughness defines the datatype for the reflection resulting from the roughness of a surface through the height of surface impurities where the specular highlight is made sharper with small values for the roughness, such as 0.1. Applies to \"glass\", \"metal\", \"mirror\" and \"plastic\" reflection models. Larger values, close to 1.0 decrease the specular fall-off.",
+        "description": "The IfcSpecularRoughness defines the datatype for the reflection resulting from the roughness of a surface through the height of surface impurities where the specular highlight is made sharper with small values for the roughness, such as 0.1. Applies to \"glass\", \"metal\", \"mirror\" and \"plastic\" reflection models. Larger values, close to 1.0 decrease the specular fall-off. IfcSpecularRoughness is of type REAL. It is constraint to values between (and including) 0 and 1.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcpresentationappearanceresource/lexical/ifcspecularroughness.htm"
     },
     "IfcStackTerminalTypeEnum": {
@@ -1288,11 +1288,11 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/lexical/ifcstairflighttypeenum.htm"
     },
     "IfcStairTypeEnum": {
-        "description": "This enumeration defines the basic configuration of the stair type in terms of the number of stair flights and the number of landings, as illustrated in Figure 1. The type also distinguished turns by windings or by landings. In addition the subdivision of the straight and changing direction stairs is included. The stair configurations are given for stairs without and with one, two or three landings.",
+        "description": "This enumeration defines the basic configuration of the stair type in terms of the number of stair flights and the number of landings, as illustrated in Figure 1. The type also distinguished turns by windings or by landings. In addition the subdivision of the straight and changing direction stairs is included. The stair configurations are given for stairs without and with one, two or three landings. Stairs which are subdivided into more than three landings, or stairs with non-regular shapes are to be defined with type being USERDEFINED or NOTDEFINED.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/lexical/ifcstairtypeenum.htm"
     },
     "IfcStateEnum": {
-        "description": "The IfcStateEnum enumeration identifies the state or accessibility of the object (for example, read/write, locked).",
+        "description": "The IfcStateEnum enumeration identifies the state or accessibility of the object (for example, read/write, locked). Valid enumerations are:",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcutilityresource/lexical/ifcstateenum.htm"
     },
     "IfcStructuralActivityAssignmentSelect": {
@@ -1316,7 +1316,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcstructuralanalysisdomain/lexical/ifcstructuralsurfacemembertypeenum.htm"
     },
     "IfcStyleAssignmentSelect": {
-        "description": "The style assignment select is a selection of two wasy of assigning presentation styles to an IfcStyledItem.",
+        "description": "The style assignment select is a selection of two wasy of assigning presentation styles to an IfcStyledItem. - by directly assigning presentation styles as subtypes of IfcPresentationStyle - by assigning presentation stypes via an intermediate collection entity IfcPresentationStyleAssignment",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcpresentationappearanceresource/lexical/ifcstyleassignmentselect.htm"
     },
     "IfcSubContractResourceTypeEnum": {
@@ -1360,11 +1360,11 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcprocessextension/lexical/ifctasktypeenum.htm"
     },
     "IfcTemperatureGradientMeasure": {
-        "description": "The temperature gradient measures the difference of a temperature per length, as for instance used in an external wall or its layers. It is usually measured in K/m.",
+        "description": "The temperature gradient measures the difference of a temperature per length, as for instance used in an external wall or its layers. It is usually measured in K/m. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifctemperaturegradientmeasure.htm"
     },
     "IfcTemperatureRateOfChangeMeasure": {
-        "description": "The temperature rate of change measures the difference of a temperature per time (positive: rise, negative: fall), as for instance used with heat sensors. It is for example measured in K/s (Kelvin per second).",
+        "description": "The temperature rate of change measures the difference of a temperature per time (positive: rise, negative: fall), as for instance used with heat sensors. It is for example measured in K/s (Kelvin per second). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifctemperaturerateofchangemeasure.htm"
     },
     "IfcTendonAnchorTypeEnum": {
@@ -1376,15 +1376,15 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcstructuralelementsdomain/lexical/ifctendontypeenum.htm"
     },
     "IfcText": {
-        "description": "An IfcText is an alphanumeric string of characters which is intended to be read and understood by a human being. It is for information purposes only.",
+        "description": "An IfcText is an alphanumeric string of characters which is intended to be read and understood by a human being. It is for information purposes only. Type: STRING",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifctext.htm"
     },
     "IfcTextAlignment": {
-        "description": "The IfcTextAlignment describes how text is aligned within the element. Values are:",
+        "description": "The IfcTextAlignment describes how text is aligned within the element. Values are: - left - right - center - justify",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcpresentationappearanceresource/lexical/ifctextalignment.htm"
     },
     "IfcTextDecoration": {
-        "description": "The IfcTextDecoration describes decorations that are added to the text of an element. Values are:",
+        "description": "The IfcTextDecoration describes decorations that are added to the text of an element. Values are: - none - underline - overline - line-through",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcpresentationappearanceresource/lexical/ifctextdecoration.htm"
     },
     "IfcTextFontName": {
@@ -1400,39 +1400,39 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcpresentationdefinitionresource/lexical/ifctextpath.htm"
     },
     "IfcTextTransformation": {
-        "description": "The IfcTextTransformation describes how the cases of characters are handled. Values are:",
+        "description": "The IfcTextTransformation describes how the cases of characters are handled. Values are: - capitalize: uppercases the first character of each word - uppercase: uppercases all letters of the element - lowercase: lowercases all letters of the element - none",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcpresentationappearanceresource/lexical/ifctexttransformation.htm"
     },
     "IfcThermalAdmittanceMeasure": {
-        "description": "IfcThermalAdmittanceMeasure is the measure of the ability of a surface to smooth out temperature variations.",
+        "description": "IfcThermalAdmittanceMeasure is the measure of the ability of a surface to smooth out temperature variations. Usually measured in Watt / m2 Kelvin. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcthermaladmittancemeasure.htm"
     },
     "IfcThermalConductivityMeasure": {
-        "description": "IfcThermalConductivityMeasure is a measure of thermal conductivity.",
+        "description": "IfcThermalConductivityMeasure is a measure of thermal conductivity. Usually measured in Watt / m Kelvin. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcthermalconductivitymeasure.htm"
     },
     "IfcThermalExpansionCoefficientMeasure": {
-        "description": "IfcThermalExpansionCoeffientMeasure is a measure of the thermal expansion coefficient of a material, which expresses its elongation (as a ratio) per temperature difference. It is usually measured in 1/K. A positive elongation per (positive) rise of temperature is expressed by a positive value.",
+        "description": "IfcThermalExpansionCoeffientMeasure is a measure of the thermal expansion coefficient of a material, which expresses its elongation (as a ratio) per temperature difference. It is usually measured in 1/K. A positive elongation per (positive) rise of temperature is expressed by a positive value. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcthermalexpansioncoefficientmeasure.htm"
     },
     "IfcThermalResistanceMeasure": {
-        "description": "IfcThermalResistanceMeasure is a measure of the resistance offered by a body to the flow of energy.",
+        "description": "IfcThermalResistanceMeasure is a measure of the resistance offered by a body to the flow of energy. Usually measured in m2 Kelvin/Watt.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcthermalresistancemeasure.htm"
     },
     "IfcThermalTransmittanceMeasure": {
-        "description": "IfcThermalTransmittanceMeasure is a measure of the rate at which energy is transmitted through a body.",
+        "description": "IfcThermalTransmittanceMeasure is a measure of the rate at which energy is transmitted through a body. Usually measured in Watts/m2 Kelvin. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcthermaltransmittancemeasure.htm"
     },
     "IfcThermodynamicTemperatureMeasure": {
-        "description": "A thermodynamic temperature measure is the value for the degree of heat of a body.",
+        "description": "A thermodynamic temperature measure is the value for the degree of heat of a body. Usually measured in degrees Kelvin (K). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcthermodynamictemperaturemeasure.htm"
     },
     "IfcTime": {
-        "description": "The IfcTime identifies a time within a day, expressed by hours, minutes and second. It is expressed by a string value following a particular lexical representation.",
+        "description": "The IfcTime identifies a time within a day, expressed by hours, minutes and second. It is expressed by a string value following a particular lexical representation. The lexical representation for IfcTime is: hh:mm:ss where where hh represents hours, mm minutes and ss seconds. Additional digits can be used to increase the precision of fractional seconds if desired i.e the format ss.ss... A time zone indicator may be provided by a representation of the different to the Coordinated Universal Time. It is appended with a sign [+/-] followed by hh and optionally :mm.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcdatetimeresource/lexical/ifctime.htm"
     },
     "IfcTimeMeasure": {
-        "description": "An IfcTimeMeasure is the value of the duration of periods.",
+        "description": "An IfcTimeMeasure is the value of the duration of periods. Measured in seconds (s) or days (d) or other units of time. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifctimemeasure.htm"
     },
     "IfcTimeOrRatioSelect": {
@@ -1444,11 +1444,11 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcdatetimeresource/lexical/ifctimeseriesdatatypeenum.htm"
     },
     "IfcTimeStamp": {
-        "description": "IfcTimeStamp is an indication of date and time by measuring the number of seconds which have elapsed since 1 January 1970, 00:00:00 UTC.",
+        "description": "IfcTimeStamp is an indication of date and time by measuring the number of seconds which have elapsed since 1 January 1970, 00:00:00 UTC. Type: INTEGER",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcdatetimeresource/lexical/ifctimestamp.htm"
     },
     "IfcTorqueMeasure": {
-        "description": "IfcTorqueMeasure is a measure of the torque or moment of a couple.",
+        "description": "IfcTorqueMeasure is a measure of the torque or moment of a couple. Usually measured in N m. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifctorquemeasure.htm"
     },
     "IfcTransformerTypeEnum": {
@@ -1456,7 +1456,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcelectricaldomain/lexical/ifctransformertypeenum.htm"
     },
     "IfcTransitionCode": {
-        "description": "The IfcTransitionCode indicated the continuity between consecutive segments of a curve or surface.",
+        "description": "The IfcTransitionCode indicated the continuity between consecutive segments of a curve or surface. Figure 1 illustrates transition types",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcgeometryresource/lexical/ifctransitioncode.htm"
     },
     "IfcTranslationalStiffnessSelect": {
@@ -1480,11 +1480,11 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/lexical/ifctubebundletypeenum.htm"
     },
     "IfcURIReference": {
-        "description": "The IfcURIReference provides for identifying a Uniform Resource Identifier (URI). A URI can be classified as a locator or a name or both, that is it may comprise a Uniform Resource Locator (URL) and/or a Uniform Resource Name (URN).",
+        "description": "The IfcURIReference provides for identifying a Uniform Resource Identifier (URI). A URI can be classified as a locator or a name or both, that is it may comprise a Uniform Resource Locator (URL) and/or a Uniform Resource Name (URN). - A Uniform Resource Locator, URL, is a string conforming to a standardized format, which refers to a resource on the internet (such as a document or an image) by its location. - A Uniform Resource Name, URN, is intended to serve as persistent, location-independent resource identifier and is designed to make it easy to map other namespaces (that share the properties of URNs) into URN-space.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcexternalreferenceresource/lexical/ifcurireference.htm"
     },
     "IfcUnit": {
-        "description": "A unit is a physical quantity, with a value of one, which is used as a standard in terms of which other quantities are expressed.",
+        "description": "SELECT - IfcNamedUnit: A unit which is identified by a name. - IfcDerivedUnit: A unit which is derived from an expression of units. - IfcMonetaryUnit: A unit for defining currencies.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcunit.htm"
     },
     "IfcUnitEnum": {
@@ -1500,7 +1500,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/lexical/ifcunitaryequipmenttypeenum.htm"
     },
     "IfcValue": {
-        "description": "IfcValue is a select type for selecting between more specialised select types IfcSimpleValue, IfcMeasureValue and IfcDerivedMeasureValue.",
+        "description": "IfcValue is a select type for selecting between more specialised select types IfcSimpleValue, IfcMeasureValue and IfcDerivedMeasureValue. SELECT - IfcSimpleValue A select type for basic defined types of simple data type. - IfcMeasureValue A select type for basic measure types of ISO 10303-41. - IfcDerivedMeasureValue A select type for derived measure types.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcvalue.htm"
     },
     "IfcValveTypeEnum": {
@@ -1508,7 +1508,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifchvacdomain/lexical/ifcvalvetypeenum.htm"
     },
     "IfcVaporPermeabilityMeasure": {
-        "description": "IfcVaporPermeabilityMeasure is a measure of vapor permeability.",
+        "description": "IfcVaporPermeabilityMeasure is a measure of vapor permeability. Usually measured in kg / s m Pascal. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcvaporpermeabilitymeasure.htm"
     },
     "IfcVectorOrDirection": {
@@ -1524,11 +1524,11 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcstructuralelementsdomain/lexical/ifcvoidingfeaturetypeenum.htm"
     },
     "IfcVolumeMeasure": {
-        "description": "An IfcVolumeMeasure is the value of the solid content of a body.",
+        "description": "An IfcVolumeMeasure is the value of the solid content of a body. Usually measured in cubic metre (m3). Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcvolumemeasure.htm"
     },
     "IfcVolumetricFlowRateMeasure": {
-        "description": "IfcVolumetricFlowRateMeasure is a measure of the volume of a medium flowing per unit time.",
+        "description": "IfcVolumetricFlowRateMeasure is a measure of the volume of a medium flowing per unit time. Usually measured in m3/s. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcvolumetricflowratemeasure.htm"
     },
     "IfcWallTypeEnum": {
@@ -1536,11 +1536,11 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/lexical/ifcwalltypeenum.htm"
     },
     "IfcWarpingConstantMeasure": {
-        "description": "IfcWarpingConstantMeasure is a measure for the warping constant or warping resistance of a cross section under torsional loading. It is usually measured in m\\^6.",
+        "description": "IfcWarpingConstantMeasure is a measure for the warping constant or warping resistance of a cross section under torsional loading. It is usually measured in m\\^6. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcwarpingconstantmeasure.htm"
     },
     "IfcWarpingMomentMeasure": {
-        "description": "The warping moment measure is a measure for the warping moment, which occurs in warping torsional analysis. It is usually measured in kN*m\\^2.",
+        "description": "The warping moment measure is a measure for the warping moment, which occurs in warping torsional analysis. It is usually measured in kN*m\\^2. Type: REAL",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmeasureresource/lexical/ifcwarpingmomentmeasure.htm"
     },
     "IfcWarpingStiffnessSelect": {
@@ -1552,11 +1552,11 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcplumbingfireprotectiondomain/lexical/ifcwasteterminaltypeenum.htm"
     },
     "IfcWindowPanelOperationEnum": {
-        "description": "This enumeration defines the basic ways to describe how window panels operate, as shown in Figure 2.",
+        "description": "This enumeration defines the basic ways to describe how window panels operate, as shown in Figure 2. The opening direction of the window panels is given by the local placement of the IfcWindow. The positive y-axis determines the direction as shown in Figure 2. NOTE - Figures are shown as viewed from the outside (in direction of the positive y-axis). - Figures (symbolic representation) depend on the national building code - These figures are only shown as illustrations",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcarchitecturedomain/lexical/ifcwindowpaneloperationenum.htm"
     },
     "IfcWindowPanelPositionEnum": {
-        "description": "This enumeration defines the basic configuration of the window type in terms of the location of window panels. The window configurations are given for windows with one, two or three panels (including fixed panels) as shown in Figure 1. It corresponds to the OperationType of the IfcWindowStyle definition, which references the IfcWindowPanelProperties.",
+        "description": "This enumeration defines the basic configuration of the window type in terms of the location of window panels. The window configurations are given for windows with one, two or three panels (including fixed panels) as shown in Figure 1. It corresponds to the OperationType of the IfcWindowStyle definition, which references the IfcWindowPanelProperties. Windows which are subdivided into more than three panels have to be defined by the geometry only. The type of such windows is given by an IfcWindowType.OperationType = USERDEFINED or NOTDEFINED (see IfcWindowStyleOperationEnum for details). NOTE - The figures are shown as elevations in the XZ plane of the local placement of the window, looking into the direction of the positive Y axis. - These figures are only shown as illustrations.",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcarchitecturedomain/lexical/ifcwindowpanelpositionenum.htm"
     },
     "IfcWindowStyleConstructionEnum": {
@@ -1564,7 +1564,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcarchitecturedomain/lexical/ifcwindowstyleconstructionenum.htm"
     },
     "IfcWindowStyleOperationEnum": {
-        "description": "This enumeration defines the basic configuration of the window type in terms of the number of window panels and the subdivision of the total window. The window configurations are given for windows with one, two or three panels (including fixed panels) as shown in Figure 1.",
+        "description": "This enumeration defines the basic configuration of the window type in terms of the number of window panels and the subdivision of the total window. The window configurations are given for windows with one, two or three panels (including fixed panels) as shown in Figure 1. Windows which are subdivided into more than three panels have to be defined by the geometry only. The type of such windows is USERDEFINED. NOTE - The way how each panel operates is defined at the IfcWindowPanelProperties.OperationType. - The reference from the window panel to the location of that panel in the window style configuration is handled by the IfcWindowPanelProperties.PanelPosition. - The figures are shown as elevations in the XZ plane of the local placement of the window, looking into the direction of the positive Y axis. - These figures are only shown as illustrations",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcarchitecturedomain/lexical/ifcwindowstyleoperationenum.htm"
     },
     "IfcWindowTypeEnum": {
@@ -1572,7 +1572,7 @@
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/lexical/ifcwindowtypeenum.htm"
     },
     "IfcWindowTypePartitioningEnum": {
-        "description": "This enumeration defines the basic configuration of the window type in terms of the number of window panels and the subdivision of the total window as shown in Figure 1. The window configurations are given for windows with one, two or three panels (including fixed panels).",
+        "description": "This enumeration defines the basic configuration of the window type in terms of the number of window panels and the subdivision of the total window as shown in Figure 1. The window configurations are given for windows with one, two or three panels (including fixed panels). Windows which are subdivided into more than three panels have to be defined by the geometry only. The type of such windows is USERDEFINED. NOTE - The way how each panel operates is defined at the IfcWindowPanelProperties.OperationType. - The reference from the window panel to the location of that panel in the window style configuration is handled by the IfcWindowPanelProperties.PanelPosition. - The figures are shown as elevations in the XZ plane of the local placement of the window, looking into the direction of the positive Y axis. - These figures are only shown as illustrations",
         "spec_url": "https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcsharedbldgelements/lexical/ifcwindowtypepartitioningenum.htm"
     },
     "IfcWorkCalendarTypeEnum": {
