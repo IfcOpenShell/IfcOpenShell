@@ -18,6 +18,14 @@
 
 
 class Patcher:
+    # IfcClassificationItem and IfcClassificationItemRelationship are IFC2X3
+    # only, IfcExternalReference covers IfcClassificationReference everywhere.
+    DEPENDENT_CLASSES = (
+        "IfcExternalReference",
+        "IfcClassificationItem",
+        "IfcClassificationItemRelationship",
+    )
+
     def __init__(self, file, logger):
         """Removes the built-in Revit Uniformat classification.
 
@@ -45,15 +53,26 @@ class Patcher:
             for rel in self.file.by_type("IfcRelAssociatesClassification"):
                 if not rel.RelatingClassification:
                     self.file.remove(rel)
+            if self.file.schema == "IFC2X3":
+                continue
             for rel in self.file.by_type("IfcExternalReferenceRelationship"):
                 if not rel.RelatingReference:
                     self.file.remove(rel)
 
     def get_references(self, classification):
+        # IFC2X3 has no HasReferences inverse on IfcClassification or
+        # IfcClassificationReference, so the dependents are resolved through the
+        # inverse index instead of a schema specific inverse attribute.
         results = []
-        if not classification.HasReferences:
-            return results
-        for reference in classification.HasReferences:
-            results.append(reference)
-            results.extend(self.get_references(reference))
+        seen = set()
+        queue = [classification]
+        while queue:
+            for inverse in self.file.get_inverse(queue.pop()):
+                if inverse.id() in seen:
+                    continue
+                if not any(inverse.is_a(c) for c in self.DEPENDENT_CLASSES):
+                    continue
+                seen.add(inverse.id())
+                results.append(inverse)
+                queue.append(inverse)
         return results
