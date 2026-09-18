@@ -62,6 +62,16 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 			m(2, 0), m(2, 1), m(2, 2)
 		);
 	}
+
+	// A mirror (negative determinant) placement reverses the handedness of the
+	// transformed vertex coordinates. The explicit vertex normals below are
+	// rotated by this same 3x3 and therefore stay outward, but the emitted
+	// triangle winding is derived purely from the topological face orientation
+	// and does not know about the mirror. After a mirror the winding would end
+	// up wound opposite to the (correct) normals, which consumers that shade
+	// from winding see as inverted normals (see #806). Reverse the winding in
+	// that case so winding and normals remain consistent.
+	const bool flip_winding = rotation_matrix && rotation_matrix->Determinant() < 0;
 	
 	// When welding vertices, vertex coords will be shared among faces so we need to per-shape set
 	// to keep track of which edges were already emitted.
@@ -171,6 +181,10 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 				if (face.Orientation() == TopAbs_REVERSED)
 					triangles(i).Get(n3, n2, n1);
 				else triangles(i).Get(n1, n2, n3);
+
+				if (flip_winding) {
+					std::swap(n1, n3);
+				}
 
 				if (dict[n1] == dict[n2] || dict[n2] == dict[n3] || dict[n3] == dict[n1]) {
 					logger.Warning("GEO", 185, "Mesher generated a degenerate triangle, ignoring");
