@@ -186,7 +186,7 @@ dev-setup.sequence = [
     {cmd = "uv pip install -e ./src/ifcpatch/"},
     {cmd = "uv pip install -e ./src/ifcquery/"},
     {cmd = "uv pip install -e './src/ifcmcp/[mcp]'"},
-    {cmd = "uv pip install -r src/bonsai/requirements-dev.txt"},
+    {cmd = "uv pip install --group src/bonsai/pyproject.toml:dev"},
 ]
 dev-setup.help = "Install repo packages in editable mode"
 
@@ -204,12 +204,12 @@ ty-venv.sequence = ["bonsai-deps", "ty-venv-bonsai", "ty-venv-ios"]
 
 ty-venv-bonsai.sequence = [
     {cmd = "uv venv src/bonsai/.venv --python=3.11 --allow-existing"},
-    {cmd = "uv pip install -r src/bonsai/type-check-requirements.txt --python=src/bonsai/.venv"},
+    {cmd = "uv pip install --group src/bonsai/pyproject.toml:type-check --python=src/bonsai/.venv"},
 ]
 
 ty-venv-ios.sequence = [
     {cmd = "uv venv src/ifcopenshell-python/.venv --python=3.10 --allow-existing"},
-    {cmd = "uv pip install -r src/ifcopenshell-python/type-check-requirements.txt --python=src/ifcopenshell-python/.venv"},
+    {cmd = "uv pip install --group src/ifcopenshell-python/pyproject.toml:type-check --python=src/ifcopenshell-python/.venv"},
 ]
 
 format.sequence = ["black", "ruff"]
