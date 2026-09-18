@@ -45,7 +45,13 @@ def copy_class(
     new = ifc.run("root.copy_class", product=element)
     ifc.link(new, obj)
     relating_type = root.get_element_type(new)
-    if relating_type and root.does_type_have_representations(relating_type):
+    # Re-mapping the type only reproduces occurrences that are identity instances of it.
+    # An occurrence that transforms what it maps must be copied instead (issue #7996).
+    if (
+        relating_type
+        and root.does_type_have_representations(relating_type)
+        and not root.has_transformed_mapped_representation(element)
+    ):
         ifc.run("type.map_type_representations", related_object=new, relating_type=relating_type)
         root.link_object_data(ifc.get_object(relating_type), obj)
     elif representation:
@@ -55,8 +61,9 @@ def copy_class(
             geometry.copy_data_links(data, copied_entities)
             geometry.change_object_data(obj, data, is_global=True)
             geometry.rename_object(data, geometry.get_representation_name(ifc.get_entity(data)))
-        # Only assign styles if element doesn't get them from material
-        if not root.has_material_styles(new):
+        # Only assign styles if element doesn't get them from material, and never
+        # through a mapped representation, whose items belong to the type.
+        if not root.has_material_styles(new) and not root.has_mapped_representation(new):
             root.assign_body_styles(new, obj)
     collector.assign(obj)
     return new

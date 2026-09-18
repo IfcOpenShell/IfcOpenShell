@@ -29,6 +29,7 @@ import ifcopenshell.api.style
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import numpy as np
 
 import bonsai.core.aggregate
 import bonsai.core.geometry
@@ -98,7 +99,8 @@ class Root(bonsai.core.tool.Root):
             dest.Representation = ifcopenshell.util.element.copy_deep(
                 tool.Ifc.get(),
                 source.Representation,
-                exclude=["IfcGeometricRepresentationContext"],
+                # An occurrence never owns the IfcRepresentationMap it maps, its type does.
+                exclude=["IfcGeometricRepresentationContext", "IfcRepresentationMap"],
                 exclude_callback=exclude_callback,
                 copied_entities=copied_entities,
             )
@@ -120,6 +122,53 @@ class Root(bonsai.core.tool.Root):
     @classmethod
     def does_type_have_representations(cls, element: ifcopenshell.entity_instance) -> bool:
         return bool(element.RepresentationMaps)
+
+    @classmethod
+    def get_mapped_items(cls, element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+        """All ``IfcMappedItem``\\ s used by an occurrence's representations."""
+        items = []
+        representation = getattr(element, "Representation", None)
+        if not representation:
+            return items
+        for rep in representation.Representations:
+            items.extend(i for i in rep.Items if i.is_a("IfcMappedItem"))
+        return items
+
+    @classmethod
+    def has_mapped_representation(cls, element: ifcopenshell.entity_instance) -> bool:
+        """``True`` if any of the element's representations maps geometry that
+        it shares with its type. Such geometry is owned by the type's
+        ``IfcRepresentationMap`` and must never be styled or edited through the
+        occurrence, or every sibling occurrence changes with it."""
+        return bool(cls.get_mapped_items(element))
+
+    @classmethod
+    def has_transformed_mapped_representation(cls, element: ifcopenshell.entity_instance) -> bool:
+        """``True`` if the element applies its own transform to the geometry it
+        maps from its type, so it is not an identity instance of that type.
+
+        Exporters such as AutoCAD Architecture map one unit-sized shape and
+        give each occurrence an ``IfcCartesianTransformationOperator3DnonUniform``
+        that scales it to length. Re-mapping the type instead of copying such
+        an occurrence discards that transform (issue #7996)."""
+        return any(not cls.is_identity_mapping_target(i.MappingTarget) for i in cls.get_mapped_items(element))
+
+    @classmethod
+    def is_identity_mapping_target(cls, target: ifcopenshell.entity_instance) -> bool:
+        """``True`` if an ``IfcMappedItem``'s ``MappingTarget`` leaves the
+        mapped geometry untouched."""
+        if target.is_a("IfcCartesianTransformationOperator3D"):
+            matrix = ifcopenshell.util.placement.get_cartesiantransformationoperator3d(target)
+            return bool(np.allclose(matrix, np.eye(4)))
+        # 2D operators, conservatively treated as transformed unless plainly identity.
+        if any(coordinate != 0.0 for coordinate in target.LocalOrigin.Coordinates):
+            return False
+        scales = [target.Scale]
+        if target.is_a("IfcCartesianTransformationOperator2DnonUniform"):
+            scales.append(target.Scale2)
+        if any(scale is not None and scale != 1.0 for scale in scales):
+            return False
+        return target.Axis1 is None and target.Axis2 is None
 
     @classmethod
     def get_decomposition_relationships(
