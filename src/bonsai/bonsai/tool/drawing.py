@@ -707,7 +707,19 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def get_body_context(cls) -> ifcopenshell.entity_instance:
-        return ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+        context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+        if context:
+            return context
+        parent = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model")
+        if not parent:
+            parent = ifcopenshell.api.context.add_context(tool.Ifc.get(), context_type="Model")
+        return ifcopenshell.api.context.add_context(
+            tool.Ifc.get(),
+            context_type="Model",
+            context_identifier="Body",
+            target_view="MODEL_VIEW",
+            parent=parent,
+        )
 
     @classmethod
     def get_document_uri(
