@@ -288,6 +288,56 @@ class Model(bonsai.core.tool.Model):
             return tool.Ifc.get().add(result["profile_def"])
 
     @classmethod
+    def get_profile_region(cls, profile: ifcopenshell.entity_instance) -> Union[shapely.Geometry, None]:
+        """Return the 2D area enclosed by a profile def as a Shapely geometry, or None.
+
+        Holes are honoured with the same odd even nesting used by auto_detect_profiles so a
+        hollow profile is never mistaken for its solid outline.
+        """
+        settings = ifcopenshell.geom.settings()
+        settings.set("dimensionality", W.CURVES_SURFACES_AND_SOLIDS)
+        try:
+            shape = ifcopenshell.geom.create_shape(settings, profile)
+        except RuntimeError:
+            return None
+        vertices = np.round(ifcopenshell.util.shape.get_vertices(shape, is_2d=True), 4)
+        lines = [shapely.LineString([vertices[a], vertices[b]]) for a, b in ifcopenshell.util.shape.get_edges(shape)]
+        if not lines:
+            return None
+        merged = shapely.union_all(lines)
+        faces = list(shapely.polygonize(list(getattr(merged, "geoms", [merged]))).geoms)
+        if not faces:
+            return None
+        shells = [shapely.Polygon(face.exterior) for face in faces]
+        region = None
+        for i, face in enumerate(faces):
+            depth = sum(1 for j, shell in enumerate(shells) if j != i and shell.contains_properly(face.representative_point()))
+            if depth % 2:
+                continue
+            region = face if region is None else region.union(face)
+        return region
+
+    @classmethod
+    def profile_shape_is_unchanged(
+        cls, old_profile: ifcopenshell.entity_instance, new_profile: ifcopenshell.entity_instance
+    ) -> bool:
+        """True when new_profile encloses the same area as an existing parametric old_profile.
+
+        export_profile always rebuilds an edited cross section as an arbitrary profile, so a
+        parametric type such as IfcRectangleProfileDef is dropped on every edit mode round trip
+        even when nothing moved (see #6481). Callers use this to keep the parametric old_profile
+        whenever the outline still matches, and to fall back to new_profile for genuine edits.
+        """
+        if old_profile.is_a("IfcArbitraryClosedProfileDef") or old_profile.is_a("IfcCompositeProfileDef"):
+            return False
+        old_region = cls.get_profile_region(old_profile)
+        new_region = cls.get_profile_region(new_profile)
+        if old_region is None or new_region is None:
+            return False
+        # A tiny area threshold ignores sub 0.1mm vertex rounding while still catching real edits.
+        return old_region.symmetric_difference(new_region).area < 1e-6
+
+    @classmethod
     def export_curves(
         cls, obj: bpy.types.Object, position: Optional[Matrix] = None
     ) -> list[ifcopenshell.entity_instance] | None:
