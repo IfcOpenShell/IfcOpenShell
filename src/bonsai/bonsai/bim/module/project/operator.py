@@ -1141,8 +1141,18 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
             if not self.is_advanced and not self.should_start_fresh_session:
                 bpy.ops.bim.convert_to_blender()
 
+            # #8611: In Advanced mode the picked file is parsed here only to populate the
+            # preview/filter UI (element counts, decomposition tree, class/type lists).
+            # tool.Ifc.set_path() also rebinds the Save target (bim_props.ifc_file) to it,
+            # which must NOT happen until the user actually commits by clicking
+            # "Load Project Elements". Remember the current Save target so it can be
+            # restored below for the (uncommitted) Advanced preview.
+            bim_props = tool.Blender.get_bim_props()
+            previous_ifc_file = bim_props.ifc_file
             tool.Ifc.set_path(filepath)
             if not tool.Ifc.get():
+                # Preview parse failed: leave the Save target as it was.
+                bim_props.ifc_file = previous_ifc_file
                 self.report(
                     {"ERROR"},
                     f"Error loading IFC file from filepath '{filepath}'. See logs above in the system console for the details.",
@@ -1155,9 +1165,13 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
                     "load it via Project Setup → Project Library → Select Library File instead.",
                 )
                 IfcStore.purge()
+                # Load aborted: don't leave the Save target rebound to this file.
+                bim_props.ifc_file = previous_ifc_file
                 return {"CANCELLED"}
             props = tool.Project.get_project_props()
             props.is_loading = True
+            # Clear any stale pending-preview path from an earlier, abandoned Advanced load.
+            props.advanced_load_filepath = ""
             props.total_elements = len(tool.Ifc.get().by_type("IfcElement"))
             props.use_relative_project_path = self.use_relative_path
 
@@ -1169,7 +1183,12 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
                 tool.Project.add_recent_ifc_project(self.get_filepath_abs())
 
             if self.is_advanced:
-                pass
+                # #8611: This is only a preview so the filter UI can be reviewed. Roll back
+                # the Save-target rebind done by set_path() above and stash the file path;
+                # LoadProjectElements commits the Save target for real once the user clicks
+                # "Load Project Elements".
+                bim_props.ifc_file = previous_ifc_file
+                props.advanced_load_filepath = str(filepath)
             elif len(tool.Ifc.get().by_type("IfcElement")) > 30000:
                 self.report({"WARNING"}, "Warning: large model. Please review advanced settings to continue.")
             else:
@@ -1249,7 +1268,16 @@ class LoadProjectElements(bpy.types.Operator):
             level=logging.DEBUG,
         )
         props = tool.Blender.get_bim_props()
-        settings = import_ifc.IfcImportSettings.factory(context, props.ifc_file, logger)
+        # #8611: Advanced import defers binding the Save target until this real commit
+        # point. If a preview is pending, bind the Save target to the previewed file now
+        # (clicking "Load Project Elements" is the user's explicit commitment) and use it
+        # as the import source. For every other caller advanced_load_filepath is empty and
+        # the already-bound props.ifc_file is used, exactly as before.
+        pending_filepath = self.props.advanced_load_filepath
+        if pending_filepath:
+            self.props.advanced_load_filepath = ""
+            tool.Ifc.set_path(pending_filepath)
+        settings = import_ifc.IfcImportSettings.factory(context, pending_filepath or props.ifc_file, logger)
         settings.has_filter = self.props.filter_mode != "NONE"
         settings.should_filter_spatial_elements = self.props.should_filter_spatial_elements
         if self.props.filter_mode == "DECOMPOSITION":
