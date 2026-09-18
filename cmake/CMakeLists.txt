@@ -276,7 +276,11 @@ if(WITH_CGAL)
 endif()
 
 if(BUILD_IFCGEOM AND WITH_OPENCASCADE)
+    # 7.5.1 is the version shipped with Ubuntu 22.04.
+    set(OPENCASCADE_MIN_VERSION 7.5.1)
     find_package(OpenCASCADE REQUIRED)
+    # OpenCASCADEConfigVersion.cmake only accepts an exact version match.
+    check_min_version(OpenCASCADE "${OpenCASCADE_VERSION}" "${OPENCASCADE_MIN_VERSION}")
     # Map OpenCASCADE_LIBRARIES variable from OpenCASCADEConfig.cmake to OpenCASCADE_LIBRARIES used by kernel generic cmake file
     set(OpenCASCADE_LIBRARIES ${OpenCASCADE_LIBRARIES})
     set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_OPENCASCADE)
