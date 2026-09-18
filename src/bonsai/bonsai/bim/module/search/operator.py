@@ -39,6 +39,7 @@ from natsort import natsorted
 import bonsai.core.search as core
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.search.data import ColourByPropertyData
 from bonsai.bim.prop import StrProperty
 
 if TYPE_CHECKING:
@@ -1189,7 +1190,8 @@ class SaveColourscheme(Operator, tool.Ifc.Operator):
             return
 
         props = tool.Search.get_search_props()
-        query = props.colourscheme_query
+        colourscheme_key = props.colourscheme_key
+        query = props.colourscheme_query if colourscheme_key == "QUERY" else colourscheme_key
 
         group = [g for g in tool.Ifc.get().by_type("IfcGroup") if g.Name == self.name]
         colourscheme = {cs.name: {"colour": cs.colour[0:3], "total": cs.total} for cs in props.colourscheme}
@@ -1198,9 +1200,17 @@ class SaveColourscheme(Operator, tool.Ifc.Operator):
             description = json.loads(group.Description)
             description["colourscheme"] = colourscheme
             description["colourscheme_query"] = query
+            description["colourscheme_key"] = colourscheme_key
             group.Description = json.dumps(description)
         else:
-            description = json.dumps({"type": "BBIM_Search", "colourscheme": colourscheme, "colourscheme_query": query})
+            description = json.dumps(
+                {
+                    "type": "BBIM_Search",
+                    "colourscheme": colourscheme,
+                    "colourscheme_query": query,
+                    "colourscheme_key": colourscheme_key,
+                }
+            )
             group = ifcopenshell.api.group.add_group(tool.Ifc.get(), name=self.name, description=description)
 
     def invoke(self, context, event):
@@ -1218,6 +1228,20 @@ class LoadColourscheme(Operator, tool.Ifc.Operator):
         group = tool.Ifc.get().by_id(int(props.saved_colourschemes))
         description = json.loads(group.Description)
         props.colourscheme_query = description.get("colourscheme_query")
+
+        # colourscheme_key is a dynamic enum scoped to the active object's Psets
+        # (see ColourByPropertyData.colourscheme_key), so a previously saved key
+        # is only a valid choice if the current active object still exposes it.
+        # Otherwise fall back to "QUERY" so the saved query string (restored
+        # above) is used as a custom query instead of silently dropping the
+        # colour-by-property selection.
+        colourscheme_key = description.get("colourscheme_key")
+        valid_keys = {item[0] for item in ColourByPropertyData.colourscheme_key() if item is not None}
+        if colourscheme_key and colourscheme_key in valid_keys:
+            props.colourscheme_key = colourscheme_key
+        else:
+            props.colourscheme_key = "QUERY"
+
         props.colourscheme.clear()
         for name, data in description.get("colourscheme", {}).items():
             new = props.colourscheme.add()
