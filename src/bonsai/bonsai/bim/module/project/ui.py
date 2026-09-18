@@ -522,8 +522,10 @@ class BIM_PT_links(Panel):
                 row.label(text="No Object Queried with Explore Tool", icon="QUESTION")
             return
 
+        self.layout.separator()
         row = self.layout.row(align=True)
-        row.label(text="")
+        # Distinguishes the Explore Tool query results from the link list above.
+        row.label(text="Queried Element", icon="VIEWZOOM")
         row.operator("bim.append_inspected_linked_element", icon="APPEND_BLEND", text="")
 
         for name, value in LinksData.linked_data["attributes"].items():
