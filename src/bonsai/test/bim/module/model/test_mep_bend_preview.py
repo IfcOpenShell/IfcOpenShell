@@ -216,6 +216,70 @@ def test_intersection_past_near(intersection, near, far, expected):
     assert _intersection_past_near(Vector(intersection), Vector(near), Vector(far)) is expected
 
 
+def test_intersection_past_near_tolerance_admits_miter_overhang():
+    """A mitred run segment's mesh overhangs the axis intersection by up to
+    the miter apex length, putting ``near`` slightly PAST the intersection.
+    ``tolerance`` admits that bounded overshoot without opening the door to
+    genuinely in-segment intersections (issue #7030)."""
+    from mathutils import Vector
+
+    from bonsai.bim.module.model.mep import _intersection_past_near
+
+    intersection = Vector((5, 0, 0))
+    near = Vector((5.2, 0, 0))  # 0.2 overhang past the intersection
+    far = Vector((0, 0, 0))
+
+    assert _intersection_past_near(intersection, near, far) is False
+    assert _intersection_past_near(intersection, near, far, tolerance=0.25) is True
+    assert _intersection_past_near(intersection, near, far, tolerance=0.1) is False
+    # A genuinely in-segment intersection stays rejected.
+    assert _intersection_past_near(Vector((2.5, 0, 0)), near, far, tolerance=0.25) is False
+
+
+def test_compute_bend_preview_polylines_mitred_overhang_within_tolerance():
+    """Mitred L-run reproduction of issue #7030: the start segment's mesh
+    overhangs the corner by half the profile width and the end segment's
+    origin is pulled back behind it. ``near_tolerance`` must admit the
+    configuration, and the leg directions must come from the FAR endpoints
+    so the arc bulges into the actual corner instead of mirroring outward."""
+    from math import isclose
+
+    from mathutils import Vector
+
+    from bonsai import tool
+    from bonsai.bim.module.model.mep import compute_bend_preview_polylines
+
+    # Seg1 runs +X and overhangs the corner at (5,0,0) by 0.2; Seg2 runs +Y
+    # with its mitred origin pulled back to (5,-0.2,0).
+    start_obj, start_pair = _mock_obj_with_axis((0, 0, 0), (5.2, 0, 0))
+    end_obj, end_pair = _mock_obj_with_axis((5, -0.2, 0), (5, 5, 0))
+    intersection = (Vector((5, 0, 0)), Vector((5, 0, 0)))
+
+    def by_distance(p, axis):
+        return tuple(sorted(axis, key=lambda v: (v - p).length))
+
+    with _with_axis_patches(start_pair, end_pair):
+        with patch.object(tool.Cad, "intersect_edges", return_value=intersection):
+            with patch.object(tool.Cad, "closest_and_furthest_vectors", side_effect=by_distance):
+                rejected = compute_bend_preview_polylines(start_obj, end_obj, 0.5, 0.5, 0.2)
+                result = compute_bend_preview_polylines(start_obj, end_obj, 0.5, 0.5, 0.2, near_tolerance=0.21)
+
+    assert rejected["valid"] is False
+    assert rejected["reason"] == "intersection_inside_start"
+
+    assert result["valid"] is True
+    _leg_a_far, leg_a_endpoint = result["leg_a"]
+    _leg_b_far, leg_b_endpoint = result["leg_b"]
+    # tangent_offset = radius * tan(90deg / 2) = 0.2; legs are 0.5 long.
+    assert isclose(leg_a_endpoint.x, 5 - 0.7, abs_tol=1e-6)
+    assert isclose(leg_a_endpoint.y, 0.0, abs_tol=1e-6)
+    assert isclose(leg_b_endpoint.x, 5.0, abs_tol=1e-6)
+    assert isclose(leg_b_endpoint.y, 0.7, abs_tol=1e-6)
+    arc = result["arc"]
+    assert isclose((arc[0] - Vector((4.8, 0, 0))).length, 0.0, abs_tol=1e-6)
+    assert isclose((arc[-1] - Vector((5, 0.2, 0))).length, 0.0, abs_tol=1e-6)
+
+
 # ---------------------------------------------------------------------------
 # Registration probes
 # ---------------------------------------------------------------------------
