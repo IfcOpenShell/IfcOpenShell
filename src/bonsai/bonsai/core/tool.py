@@ -513,6 +513,7 @@ class Georeference:
     def export_coordinate_operation(cls): pass
     def export_projected_crs(cls): pass
     def export_wcs(cls): pass
+    def get_blendergis_map_conversion(cls): pass
     def get_coordinates(cls, io): pass
     def get_cursor_location(cls): pass
     def get_true_north_attributes(cls): pass

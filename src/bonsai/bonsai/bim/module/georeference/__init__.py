@@ -32,6 +32,7 @@ classes = (
     operator.EnableEditingTrueNorth,
     operator.EnableEditingWCS,
     operator.GetCursorLocation,
+    operator.ImportGeoreferencingFromBlenderGIS,
     operator.ImportPlot,
     operator.RemoveGeoreferencing,
     operator.RemoveTrueNorth,

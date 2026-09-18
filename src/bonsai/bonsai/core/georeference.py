@@ -18,7 +18,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
 
@@ -27,6 +27,22 @@ if TYPE_CHECKING:
 
 def add_georeferencing(georeference: type[tool.Georeference]) -> None:
     georeference.add_georeferencing()
+    georeference.set_model_origin()
+
+
+def import_georeferencing_from_blendergis(
+    ifc: type[tool.Ifc], georeference: type[tool.Georeference]
+) -> Union[str, None]:
+    result = georeference.get_blendergis_map_conversion()
+    if result is None:
+        return "No BlenderGIS georeferencing data was found on the active scene."
+    projected_crs, coordinate_operation = result
+    ifc.run("georeference.add_georeferencing")
+    ifc.run(
+        "georeference.edit_georeferencing",
+        projected_crs=projected_crs,
+        coordinate_operation=coordinate_operation,
+    )
     georeference.set_model_origin()
 
 

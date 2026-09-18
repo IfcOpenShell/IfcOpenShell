@@ -271,6 +271,74 @@ class TestXyz2Enh(NewFile):
         assert subject.xyz2enh((0.0, 0.0, 0.0)) == (1.0, 1.0, 0.0)
 
 
+class TestGetBlenderGISMapConversion(NewFile):
+    def test_returning_none_without_blendergis_data(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        assert subject.get_blendergis_map_conversion() is None
+
+    def test_reading_a_blendergis_scene(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        scene = bpy.context.scene
+        scene["SRID"] = "2154"
+        scene["crs x"] = 500000.0
+        scene["crs y"] = 6500000.0
+        projected_crs, coordinate_operation = subject.get_blendergis_map_conversion()
+        assert projected_crs == {"Name": "EPSG:2154"}
+        assert coordinate_operation == {
+            "Eastings": 500000.0,
+            "Northings": 6500000.0,
+            "OrthogonalHeight": 0.0,
+            "XAxisAbscissa": 1.0,
+            "XAxisOrdinate": 0.0,
+            "Scale": 1.0,
+        }
+
+    def test_reading_a_blendergis_scene_with_an_existing_blender_offset(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        scene = bpy.context.scene
+        scene["SRID"] = "EPSG:2154"
+        scene["crs x"] = 500000.0
+        scene["crs y"] = 6500000.0
+        props = tool.Georeference.get_georeference_props()
+        props.has_blender_offset = True
+        props.blender_offset_x = "100.0"
+        props.blender_offset_y = "200.0"
+        projected_crs, coordinate_operation = subject.get_blendergis_map_conversion()
+        assert projected_crs == {"Name": "EPSG:2154"}
+        assert coordinate_operation["Eastings"] == 499900.0
+        assert coordinate_operation["Northings"] == 6499800.0
+
+    def test_importing_the_result_via_ifcopenshell_api(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        scene = bpy.context.scene
+        scene["SRID"] = "2154"
+        scene["crs x"] = 500000.0
+        scene["crs y"] = 6500000.0
+        projected_crs, coordinate_operation = subject.get_blendergis_map_conversion()
+        ifcopenshell.api.georeference.add_georeferencing(ifc)
+        ifcopenshell.api.georeference.edit_georeferencing(
+            ifc, projected_crs=projected_crs, coordinate_operation=coordinate_operation
+        )
+        crs = ifc.by_type("IfcProjectedCRS")[0]
+        assert crs.Name == "EPSG:2154"
+        map_conversion = ifc.by_type("IfcMapConversion")[0]
+        assert map_conversion.Eastings == 500000.0
+        assert map_conversion.Northings == 6500000.0
+        assert subject.xyz2enh((0.0, 0.0, 0.0)) == (500000.0, 6500000.0, 0.0)
+
+
 class TestEnh2Xyz(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
