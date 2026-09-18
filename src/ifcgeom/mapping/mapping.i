@@ -161,6 +161,12 @@ BIND(IfcCartesianPoint);
 #ifdef SCHEMA_HAS_IfcPointByDistanceExpression
 BIND(IfcPointByDistanceExpression)
 #endif
+// IfcVertexPoint as a top-level "Vertex" representation item, see #134.
+BIND(IfcVertexPoint);
+#ifdef SCHEMA_HAS_IfcCartesianPointList3D
+// IfcCartesianPointList3D as a top-level "PointCloud" item, see #5218.
+BIND(IfcCartesianPointList3D);
+#endif
 BIND(IfcDirection);
 #ifdef SCHEMA_HAS_IfcAxis2PlacementLinear
 BIND(IfcAxis2PlacementLinear)

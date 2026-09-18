@@ -182,7 +182,9 @@ size_t write_accessor(json& j, std::ofstream& ofs, It begin, It end, int bufferV
 }
 
 void GltfSerializer::write(const IfcGeom::TriangulationElement* o) {
-	if (o->geometry().material_ids().empty()) {
+	// material_ids() covers faces/edges only; points (#134/#1409/#5218) have
+	// their own points_material_ids().
+	if (o->geometry().material_ids().empty() && o->geometry().points_material_ids().empty()) {
 		return;
 	}
 
@@ -297,21 +299,37 @@ void GltfSerializer::write(const IfcGeom::TriangulationElement* o) {
 	auto it = meshes_.find(o->geometry().id());
 	if (it == meshes_.end()) {
 
-		auto mid1 = o->geometry().material_ids().begin();
-		auto mid0 = mid1;
-
 		std::vector<int>::const_iterator fid0;
 		int stride;
 		int primitive_type;
+		// Points have their own material id array, since material_ids() is a
+		// single running sequence shared between faces and edges only.
+		const std::vector<int>& material_ids = !o->geometry().faces().empty() || !o->geometry().edges().empty()
+			? o->geometry().material_ids()
+			: o->geometry().points_material_ids();
+
+		auto mid1 = material_ids.begin();
+		auto mid0 = mid1;
+
+		if (mid0 == material_ids.end()) {
+			// No faces, edges or points at all, nothing to write.
+			return;
+		}
 
 		if (!o->geometry().faces().empty()) {
 			stride = 3;
 			fid0 = o->geometry().faces().begin();
 			primitive_type = PRIM_TRIANGLES;
-		} else {
+		} else if (!o->geometry().edges().empty()) {
 			stride = 2;
 			fid0 = o->geometry().edges().begin();
 			primitive_type = PRIM_LINES;
+		} else {
+			// Vertex/Point/PointCloud representation with no owning face or
+			// edge, see #134/#1409/#5218.
+			stride = 1;
+			fid0 = o->geometry().points().begin();
+			primitive_type = PRIM_POINTS;
 		}
 
 		json mesh;
@@ -327,7 +345,7 @@ void GltfSerializer::write(const IfcGeom::TriangulationElement* o) {
 			// material.
 			mid1++;
 
-			if ((mid1 == o->geometry().material_ids().end()) || (*mid1 != *mid0)) {
+			if ((mid1 == material_ids.end()) || (*mid1 != *mid0)) {
 				auto n = std::distance(mid0, mid1);
 				auto fid1 = fid0 + n * stride;
 
@@ -362,7 +380,7 @@ void GltfSerializer::write(const IfcGeom::TriangulationElement* o) {
 				
 				mesh["primitives"].push_back(primitive);
 
-				if (mid1 == o->geometry().material_ids().end()) {
+				if (mid1 == material_ids.end()) {
 					break;
 				}
 

@@ -135,6 +135,76 @@ class TestTriangulationAttributes(test.bootstrap.IFC4):
         assert len(edges_item_ids) == len(edges)
 
 
+class TestPointAndVertexRepresentations:
+    """Prototype kernel-level support for point/vertex-only representations.
+
+    See https://github.com/IfcOpenShell/IfcOpenShell/issues/134,
+    https://github.com/IfcOpenShell/IfcOpenShell/issues/1409 and
+    https://github.com/IfcOpenShell/IfcOpenShell/issues/5218.
+    """
+
+    def make_context(self):
+        ifc_file = ifcopenshell.file()
+        ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcProject", name="Test")
+        context = ifcopenshell.api.context.add_context(ifc_file, context_type="Model")
+        return ifc_file, context
+
+    def test_vertex_representation(self):
+        ifc_file, context = self.make_context()
+        point = ifc_file.createIfcCartesianPoint((1.0, 2.0, 3.0))
+        vertex_point = ifc_file.createIfcVertexPoint(point)
+        representation = ifc_file.createIfcTopologyRepresentation(context, "Body", "Vertex", [vertex_point])
+
+        settings = ifcopenshell.geom.settings()
+        shape = ifcopenshell.geom.create_shape(settings, representation)
+        verts = ifcopenshell.util.shape.get_vertices(shape)
+        assert len(verts) == 1
+        assert tuple(verts[0]) == (1.0, 2.0, 3.0)
+
+    def test_point_representation(self):
+        ifc_file, context = self.make_context()
+        point = ifc_file.createIfcCartesianPoint((4.0, 5.0, 6.0))
+        representation = ifc_file.createIfcShapeRepresentation(context, "Body", "Point", [point])
+
+        settings = ifcopenshell.geom.settings()
+        shape = ifcopenshell.geom.create_shape(settings, representation)
+        verts = ifcopenshell.util.shape.get_vertices(shape)
+        assert len(verts) == 1
+        assert tuple(verts[0]) == (4.0, 5.0, 6.0)
+
+    def test_point_cloud_representation(self):
+        ifc_file, context = self.make_context()
+        coords = [(1.0, 1.0, 1.0), (2.0, 2.0, 2.0), (3.0, 3.0, 3.0), (-1.0, 0.5, 9.0)]
+        point_list = ifc_file.createIfcCartesianPointList3D(coords)
+        representation = ifc_file.createIfcShapeRepresentation(context, "Body", "PointCloud", [point_list])
+
+        settings = ifcopenshell.geom.settings()
+        shape = ifcopenshell.geom.create_shape(settings, representation)
+        verts = ifcopenshell.util.shape.get_vertices(shape)
+        assert {tuple(v) for v in verts} == set(coords)
+
+    def test_point_cloud_of_1000_points_round_trips_and_is_linear_time(self):
+        import random
+        import time
+
+        ifc_file, context = self.make_context()
+        random.seed(1)
+        coords = [(random.random(), random.random(), random.random()) for _ in range(1000)]
+        point_list = ifc_file.createIfcCartesianPointList3D(coords)
+        representation = ifc_file.createIfcShapeRepresentation(context, "Body", "PointCloud", [point_list])
+
+        settings = ifcopenshell.geom.settings()
+        t0 = time.perf_counter()
+        shape = ifcopenshell.geom.create_shape(settings, representation)
+        dt = time.perf_counter() - t0
+
+        verts = ifcopenshell.util.shape.get_vertices(shape)
+        assert {tuple(v) for v in verts} == set(coords)
+        # Generous ceiling: on a slow CI box a thousand-point cloud should
+        # still take well under a second (see the #5218 overhead discussion).
+        assert dt < 5.0
+
+
 class TestAssignObject:
     def test_no_welding_on_distinct_items(self):
         self.file = ifcopenshell.api.project.create_file()

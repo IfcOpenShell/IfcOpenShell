@@ -637,8 +637,9 @@ typedef item const* ptr;
 			};
 
 			// @todo make 4d for easier multiplication
+			// geom_item base (not item) so point3 can be a collection child in its own right, see #134.
 			template <size_t N>
-			struct IFC_GEOM_API cartesian_base : public item, public eigen_base<Eigen::Vector3d> {
+			struct IFC_GEOM_API cartesian_base : public geom_item, public eigen_base<Eigen::Vector3d> {
 				cartesian_base() : eigen_base() {}
 				cartesian_base(const Eigen::Vector3d& c) : eigen_base(c) {}
 				cartesian_base(double x, double y, double z = 0.) : eigen_base(Eigen::Vector3d(x, y, z)) {}

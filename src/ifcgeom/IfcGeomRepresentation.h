@@ -112,12 +112,20 @@ namespace IfcGeom {
 			std::vector<std::vector<std::vector<int>>> polyhedral_faces_with_holes_;
 			
 			std::vector<int> edges_;
+			// Vertices that stand alone as a representation item in their own
+			// right (Vertex/Point/PointCloud, see #134/#1409/#5218), each
+			// entry an index into verts_, analogous to edges_/faces_.
+			std::vector<int> points_;
 			std::vector<double> normals_;
 			std::vector<double> uvs_;
 			std::vector<int> material_ids_;
 			std::vector<ifcopenshell::geometry::taxonomy::style::ptr> materials_;
 			std::vector<int> item_ids_;
 			std::vector<int> edges_item_ids_;
+			std::vector<int> points_item_ids_;
+			// Own array rather than material_ids_, to avoid desyncing the
+			// shared faces/edges running sequence when items are interleaved.
+			std::vector<int> points_material_ids_;
 			size_t weld_offset_;
 			VertexKeyMap welds;
 
@@ -132,6 +140,7 @@ namespace IfcGeom {
 			const std::vector<std::vector<int>>& polyhedral_faces_without_holes() const { return polyhedral_faces_without_holes_; }
 			const std::vector<std::vector<std::vector<int>>>& polyhedral_faces_with_holes() const { return polyhedral_faces_with_holes_; }
 			const std::vector<int>& edges() const { return edges_; }
+			const std::vector<int>& points() const { return points_; }
 			const std::vector<double>& normals() const { return normals_; }
 			const std::vector<double>& uvs() const { return uvs_; }
 			std::vector<double>& uvs_ref() { return uvs_; }
@@ -139,6 +148,8 @@ namespace IfcGeom {
 			const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& materials() const { return materials_; }
 			const std::vector<int>& item_ids() const { return item_ids_; }
 			const std::vector<int>& edges_item_ids() const { return edges_item_ids_; }
+			const std::vector<int>& points_item_ids() const { return points_item_ids_; }
+			const std::vector<int>& points_material_ids() const { return points_material_ids_; }
 
 			Triangulation(const BRep& shape_model);
 
@@ -220,6 +231,12 @@ namespace IfcGeom {
 				edges_.push_back(i0);
 				edges_.push_back(i1);
 				edges_item_ids_.push_back(item_id);
+			}
+
+			void addPoint(int item_id, int style, int vertex_index) {
+				points_.push_back(vertex_index);
+				points_item_ids_.push_back(item_id);
+				points_material_ids_.push_back(style);
 			}
 
 			void registerEdgeCount(int n1, int n2, std::map<std::pair<int, int>, int>& edgecount);

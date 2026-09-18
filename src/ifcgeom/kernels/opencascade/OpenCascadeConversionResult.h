@@ -99,6 +99,7 @@ namespace ifcopenshell {
 			virtual ConversionResultShape* subtract(ConversionResultShape*);
 			virtual ConversionResultShape* intersect(ConversionResultShape*);
 			virtual ConversionResultShape* concat(ConversionResultShape*);
+			virtual ConversionResultShape* concat_many(const std::vector<ConversionResultShape*>& others);
 
 			virtual std::size_t map(OpaqueCoordinate<4>& from, OpaqueCoordinate<4>& to);
 			virtual std::size_t map(const std::vector<OpaqueCoordinate<4>>& from, const std::vector<OpaqueCoordinate<4>>& to);
