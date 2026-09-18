@@ -19,6 +19,10 @@
 PACKAGE_NAME:=ifcfm
 include ../common.mk
 
+.PHONY: test
+test:
+	pytest -p no:pytest-blender test.py
+
 .PHONY: qa
 qa:
 	black .
