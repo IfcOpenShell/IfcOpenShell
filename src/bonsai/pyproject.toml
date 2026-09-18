@@ -23,6 +23,60 @@ Homepage = "http://bonsaibim.org"
 Documentation = "https://docs.bonsaibim.org"
 Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
 
+[dependency-groups]
+# Test tooling for `make test-*` (pytest runs inside Blender for tool/bim).
+dev = [
+  "pytest",
+  "pytest-blender",
+  "pytest-bdd",
+  "fake-bpy-module-latest",
+  "brickschema[persistence]",
+]
+# Everything the type checker needs to resolve; see `poe ty-venv` in the repo root.
+type-check = [
+  "aiohttp",
+  "beautifulsoup4",
+  "boto3",
+  "botocore",
+  "brickschema",
+  "cjio>=0.8,<0.10",
+  "debugpy",
+  "ezdxf",
+  "fake-bpy-module-latest",
+  "bpypolyskel @ git+https://github.com/prochitecture/bpypolyskel",
+  "ifcjson @ git+https://github.com/Andrej730/IFC2JSON_python.git@pyproject_toml",
+  "gitpython",
+  "isodate",
+  "lark",
+  "lxml",
+  "lxml-stubs",
+  "markdown-it-py",
+  "natsort",
+  "numpy",
+  "odfpy",
+  "openpyxl",
+  "pandas",
+  "pillow",
+  "platformdirs",
+  "pygments",
+  "pyradiance",
+  "pystache",
+  "pytest",
+  "pytest_bdd",
+  "pytest_blender",
+  "python-dateutil",
+  "python-socketio",
+  "pytz",
+  "rdflib",
+  "requests",
+  "shapely",
+  "svgwrite",
+  "typing-extensions",
+  "typst",
+  "tzfpy",
+  "xsdata",
+]
+
 [tool.setuptools.packages.find]
 include = ["bonsai*"]
 exclude = ["test*"]
