@@ -1074,6 +1074,19 @@ typedef item const* ptr;
 				virtual loft* clone_() const { return new loft(*this); }
 				virtual kinds kind() const { return LOFT; }
 
+				// Kernel-agnostic faceted lofting (Eigen only). Mirrors the polyhedral
+				// branch of the opencascade loft, i.e. the path after the non_polygonal
+				// guard that does NOT use BRepOffsetAPI_ThruSections. Consecutive
+				// polygonal profile sections are stitched into a triangulated tube; for
+				// closed (face) sections begin/end caps are added and for open (loop)
+				// sections with availability tags a tag-driven triangulation is used.
+				// The result is a plain taxonomy::shell of planar faces in the loft-local
+				// coordinate system (the loft matrix is applied by the caller), so any
+				// kernel (opencascade as well as the lighter cgal) can consume it.
+				// Returns nullptr when a profile edge is non-linear, in which case the
+				// caller should fall back to the kernel's native (ThruSections) lofting.
+				shell::ptr as_shell() const;
+
 				virtual void print_impl(std::ostream& o, int indent) const {
                if (axis) {
                   o << std::string(indent, ' ') << "axis" << std::endl;
@@ -1247,6 +1260,17 @@ typedef item const* ptr;
 
 			    // New constructor for fixed reference swept area solid
 			    sweep_along_curve(matrix4::ptr m, face::ptr profile, item::ptr directrix, direction3::ptr ref) : sweep(m, profile), surface(nullptr), curve(directrix), direction(ref) { }
+
+				// Kernel-agnostic approximation of the swept solid as a tessellated
+				// shell, computed purely with Eigen. The directrix (line + arc segments)
+				// is tessellated, a rotation-minimizing frame is propagated along it and
+				// the profile face is instanced at every station into a watertight tube
+				// with end caps. The result is a plain taxonomy::shell of planar faces, so
+				// any kernel (opencascade as well as cgal) can consume it. Returns nullptr
+				// when the input cannot be approximated (e.g. a reference surface is
+				// present or the directrix is not a polyline/arc loop), in which case the
+				// caller should fall back to the kernel's native handling.
+				shell::ptr as_shell(int circle_segments = 16, double deflection = 0.001) const;
 
 				virtual size_t calc_hash() const {
 					auto v = std::make_tuple(static_cast<size_t>(SWEEP_ALONG_CURVE), matrix->hash_components(), basis->calc_hash(), surface->calc_hash(), curve->calc_hash());

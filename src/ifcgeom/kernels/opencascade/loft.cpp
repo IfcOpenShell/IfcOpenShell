@@ -156,7 +156,19 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 
 		return true;
 	}
-	
+
+	// The remaining (polygonal) branch builds a purely faceted loft. That logic is
+	// kernel-agnostic and now lives on taxonomy::loft::as_shell(), so the lighter
+	// kernels can consume it too. Consume the taxonomy shell here instead of
+	// duplicating the stitching. Only fall back to the native code below when the
+	// approximation declines (returns nullptr), which keeps opencascade as the
+	// safety net.
+	if (auto approx = loft->as_shell()) {
+		if (convert(approx, result)) {
+			return true;
+		}
+	}
+
 	NCollection_List<TopoDS_Shape> faces;
 	TopoDS_Compound comp;
 	BRep_Builder BB;
