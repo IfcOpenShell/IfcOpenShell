@@ -776,9 +776,10 @@ def set_element_value(
                         elif data_type == "integer":
                             value = int(value)
                         elif data_type == "boolean":
-                            if value in ("True", "true", "TRUE", "Yes", "1"):
+                            normalised_value = value.lower() if isinstance(value, str) else value
+                            if normalised_value in ("true", "yes", "1"):
                                 value = True
-                            elif value in ("False", "false", "FALSE", "No", "0"):
+                            elif normalised_value in ("false", "no", "0"):
                                 value = False
                             else:
                                 value = bool(value)
