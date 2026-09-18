@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  lint-formatting:
+  lint:
     runs-on: ubuntu-latest
     env:
       MIN_IOS_PY_VERSION: "3.10"

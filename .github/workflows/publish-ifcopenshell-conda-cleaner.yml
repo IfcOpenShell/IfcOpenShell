@@ -16,7 +16,7 @@ env:
   NUM_SUPPORTED_VERSIONS: 5
 
 jobs:
-  activate:
+  clean:
     runs-on: ubuntu-latest
     if: |
       github.repository == 'IfcOpenShell/IfcOpenShell'

@@ -9,7 +9,7 @@ on:
       - src/ifctester/**
 
 jobs:
-  publish_ifctester_org:
+  publish:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v7

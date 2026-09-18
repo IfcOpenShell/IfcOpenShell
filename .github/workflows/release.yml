@@ -7,13 +7,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  activate:
+  upstream-only:
     if: github.repository == 'IfcOpenShell/IfcOpenShell'
     runs-on: ubuntu-22.04
     steps:
     - run: echo ok go
-  build:
-    needs: activate
+  release:
+    needs: upstream-only
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout

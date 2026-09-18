@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  activate:
+  upstream-only:
     runs-on: ubuntu-latest
     if: |
       github.repository == 'IfcOpenShell/IfcOpenShell'
@@ -12,8 +12,8 @@ jobs:
     - name: Set env
       run: echo ok go
 
-  build:
-    needs: activate
+  publish:
+    needs: upstream-only
     name: ifcsverchok
     runs-on: ubuntu-latest
     strategy:
