@@ -2,6 +2,9 @@
 
 #include "base_utils.h"
 
+#include <BRepCheck_Analyzer.hxx>
+#include <ShapeFix_Shape.hxx>
+
 using namespace ifcopenshell::geometry;
 using namespace ifcopenshell::geometry::kernels;
 using namespace IfcGeom;
@@ -101,6 +104,35 @@ bool OpenCascadeKernel::convert(const taxonomy::shell::ptr l, TopoDS_Shape& shap
 			builder.Add(compound, face_iterator.Value());
 		}
 		shape = compound;
+	}
+
+	// Heal the assembled faceset when it is not topologically sound. Tessellated
+	// input such as an open terrain mesh from a digital elevation model routinely
+	// yields self-intersecting boundary wires and unorientable faces (BRepCheck
+	// reports SelfIntersectingWire and UnorientableShape). Left unhealed these are
+	// carried into downstream operations. In particular the SVG section cut runs a
+	// boolean against such wires and produces broken 2D output, and drawing
+	// pipelines that validate geometry beforehand discard the element altogether
+	// (issues #4029 and #6581). A ShapeFix pass makes the shape sound while
+	// preserving its open compound / shell topology, it does not force a closed
+	// solid. The pass is gated on invalidity and only adopted when it actually
+	// restores validity, so a well formed faceset is left untouched.
+	if (!shape.IsNull() && !BRepCheck_Analyzer(shape).IsValid()) {
+		try {
+			ShapeFix_Shape sfs(shape);
+			sfs.Perform();
+			if (!sfs.Shape().IsNull() && BRepCheck_Analyzer(sfs.Shape()).IsValid()) {
+				shape = sfs.Shape();
+			}
+		} catch (const Standard_Failure& e) {
+			if (e.GetMessageString() && strlen(e.GetMessageString())) {
+				Logger::Root().Error("GEO", 402, e.GetMessageString());
+			} else {
+				Logger::Root().Error("GEO", 403, "Unknown error healing faceset");
+			}
+		} catch (...) {
+			Logger::Root().Error("GEO", 404, "Unknown error healing faceset");
+		}
 	}
 
 	return true;
