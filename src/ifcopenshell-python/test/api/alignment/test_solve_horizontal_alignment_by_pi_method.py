@@ -169,14 +169,44 @@ def test_solve_errors():
         ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(hpoints, [(500.0, 50.0)])
     with pytest.raises(ValueError):  # spiral lengths without a radius
         ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(hpoints, [(0.0, 50.0, 50.0)])
-    with pytest.raises(ValueError):  # spirals deflect more than the PI deflection angle
+    # Both of these name the offending PI (1-based, matching the "PI n" labels used
+    # elsewhere in Bonsai's alignment UI) so a caller can report a specific, actionable
+    # error rather than a generic failure -- see bim/module/alignment/operator.py's
+    # _generate_alignment_segments(), which catches this ValueError to report exactly
+    # that instead of letting it crash the operator.
+    with pytest.raises(ValueError, match=r"^PI 1: .*too long"):  # spirals deflect more than the PI deflection angle
         ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(hpoints, [(500.0, 5000.0, 5000.0)])
-    with pytest.raises(ValueError):  # zero deflection angle
+    with pytest.raises(ValueError, match=r"^PI 1: .*deflection angle is zero"):  # zero deflection angle
         ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(
             [(0.0, 0.0), (1000.0, 0.0), (2000.0, 0.0)], [(500.0, 50.0, 50.0)]
         )
     with pytest.raises(ValueError):  # unsupported spiral family
         ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(hpoints, [(500.0, 50.0, 50.0, "NOT_A_FAMILY")])
+
+
+def test_solve_errors_when_tangent_run_goes_negative():
+    """A curve/spiral whose own deflection fits fine, but whose required tangent length exceeds
+    the actual straight-line distance available to it, used to be silently accepted: tangent_run
+    only gated whether a LINE segment was worth emitting (`1.0e-03 < tangent_run`), never checked
+    for being negative. That produced overlapping/self-intersecting geometry with no error at all
+    -- the "PIs too close together for the requested curve" case, distinct from (and more common
+    in ordinary use than) the "spiral deflection exceeds PI deflection" case test_solve_errors
+    already covers, since tightening a curve's radius without checking neighboring PIs never
+    changes the PI's own deflection angle.
+    """
+    # A 90-degree PI with only a 100-unit leg on the back side -- a big-enough circular curve
+    # needs more tangent length than that leg provides, but the deflection is 90 degrees, more
+    # than enough room for the curve's own turn.
+    hpoints = [(0.0, 0.0), (100.0, 0.0), (100.0, 200.0)]
+    with pytest.raises(ValueError, match=r"^PI 1: .*too large for the distance between PIs"):
+        ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(hpoints, [150.0])
+    # A smaller radius on the same PI fits fine.
+    ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(hpoints, [80.0])
+
+    with pytest.raises(ValueError, match=r"^PI 1: .*too long for the distance between PIs"):
+        ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(hpoints, [(80.0, 60.0, 60.0)])
+    # Shorter spirals on the same PI fit fine.
+    ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(hpoints, [(80.0, 20.0, 20.0)])
 
 
 @pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
