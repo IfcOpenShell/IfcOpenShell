@@ -23,6 +23,7 @@ import ifcopenshell.util.element
 
 import bonsai.bim.helper
 import bonsai.bim.module.model.profile as model_profile
+import bonsai.core.drawing as core_drawing
 import bonsai.tool as tool
 from bonsai.bim.module.geometry.helper import Helper
 from bonsai.bim.module.model.decorator import ProfileDecorator
@@ -225,6 +226,79 @@ class DuplicateProfileDef(bpy.types.Operator, tool.Ifc.Operator):
         profile = ifc_file.by_id(profile_item.ifc_definition_id)
         tool.Profile.duplicate_profile(profile)
         bpy.ops.bim.load_profiles()
+
+
+class CreateFillAreaFromProfile(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.create_fill_area_from_profile"
+    bl_label = "Create Fill Area From Profile"
+    bl_description = "Add a hatch fill area annotation to the active drawing, shaped like the active profile"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Profile.get_active_profile_ui():
+            cls.poll_message_set("No profile selected.")
+            return False
+        if not context.scene.camera:
+            cls.poll_message_set("No active drawing.")
+            return False
+        return True
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        profile_item = tool.Profile.get_active_profile_ui()
+        assert profile_item
+        profile = ifc_file.by_id(profile_item.ifc_definition_id)
+
+        # Profiles with voids or more than one boundary curve cannot be
+        # converted yet: the outer/inner curve detection they need relies on
+        # a containment check that currently mishandles closed polylines,
+        # so it never rebuilds a proper void relationship. Fail early with a
+        # clear message instead of silently producing the wrong shape.
+        if profile.is_a("IfcArbitraryProfileDefWithVoids") or (
+            profile.is_a("IfcCompositeProfileDef") and len(profile.Profiles) > 1
+        ):
+            self.report(
+                {"ERROR"},
+                "Profiles with holes or multiple boundaries are not yet supported for fill area conversion.",
+            )
+            return {"CANCELLED"}
+
+        dprops = tool.Drawing.get_document_props()
+        drawing = dprops.get_active_drawing()
+        if not drawing:
+            self.report({"WARNING"}, "No active drawing.")
+            return {"CANCELLED"}
+
+        obj = core_drawing.add_annotation(
+            tool.Ifc,
+            tool.Collector,
+            tool.Drawing,
+            drawing=drawing,
+            object_type="FILL_AREA",
+            relating_type=None,
+            enable_editing=False,
+        )
+
+        element = tool.Ifc.get_entity(obj)
+        assert element
+        representation = element.Representation.Representations[0]
+        old_item = representation.Items[0]
+
+        tool.Model.import_profile(profile, obj=obj)
+
+        new_item = tool.Model.export_annotation_fill_area(obj)
+        if not new_item:
+            self.report({"ERROR"}, "Selected profile could not be converted to a fill area.")
+            return {"CANCELLED"}
+
+        for inverse in ifc_file.get_inverse(old_item):
+            ifcopenshell.util.element.replace_attribute(inverse, old_item, new_item)
+        ifcopenshell.util.element.remove_deep2(ifc_file, old_item)
+
+        tool.Drawing.reload_representation(obj, representation)
+        tool.Blender.select_and_activate_single_object(context, obj)
+        return {"FINISHED"}
 
 
 class EnableEditingArbitraryProfile(bpy.types.Operator):

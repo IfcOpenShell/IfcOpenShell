@@ -116,6 +116,7 @@ class BIM_PT_profiles(Panel):
                 row.operator("bim.disable_editing_arbitrary_profile", text="", icon="CANCEL")
             else:
                 row.operator("bim.duplicate_profile_def", icon="DUPLICATE", text="")
+                row.operator("bim.create_fill_area_from_profile", icon="NODE_TEXTURE", text="")
                 row.operator("bim.select_by_profile", icon="RESTRICT_SELECT_OFF", text="")
                 if is_editable:
                     row.operator("bim.enable_editing_arbitrary_profile", text="", icon="ITALIC")
