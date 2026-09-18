@@ -71,6 +71,9 @@ class SvIfcQuickProjectSetup(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
         )
 
     def process(self):
+        if not any(socket.is_linked for socket in self.outputs):
+            return
+
         self.sv_input_names = [i.name for i in self.inputs]
         super().process()
 

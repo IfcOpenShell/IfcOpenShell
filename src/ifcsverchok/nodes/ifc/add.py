@@ -56,6 +56,9 @@ class SvIfcAdd(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCor
         )
 
     def process(self):
+        if not any(socket.is_linked for socket in self.outputs):
+            return
+
         self.sv_input_names = ["file", "entity"]
         self.file_out: list[ifcopenshell.file] = []
         self.entity_out: list[ifcopenshell.entity_instance] = []
