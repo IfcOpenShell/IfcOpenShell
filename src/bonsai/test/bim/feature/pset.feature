@@ -232,6 +232,20 @@ Scenario: Edit qto - object
     And I press "bim.edit_pset(obj='IfcWall/Cube', obj_type='Object')"
     Then nothing happens
 
+Scenario: Edit pset - predefined property set is not editable
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcDoorType"
+    And I press "bim.assign_class"
+    And the variable "panel_pset" is "{ifc}.create_entity('IfcDoorPanelProperties', GlobalId=ifcopenshell.guid.new(), Name='IfcDoorPanelProperties', PanelOperation='NOTDEFINED', PanelPosition='NOTDEFINED').id()"
+    And the variable "_" is "ifcopenshell.api.pset.assign_pset({ifc}, products=[{ifc}.by_type('IfcDoorType')[-1]], pset={ifc}.by_id({panel_pset}))"
+    When I press "bim.edit_pset(pset_id={panel_pset}, obj='IfcDoorType/Cube', obj_type='Object')"
+    Then nothing happens
+    And the variable "panel_pset_attributes" is "{ifc}.by_id({panel_pset}).PanelOperation"
+    And the variable "panel_pset_attributes" equals "'NOTDEFINED'"
+
 Scenario: Edit pset - material
     Given an empty IFC project
     And I press "bim.add_material()"

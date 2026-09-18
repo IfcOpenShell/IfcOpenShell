@@ -52,3 +52,18 @@ class TestIsPsetEmpty(NewFile):
         assert subject.is_pset_empty(pset) is False
         ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"Foo": None})
         assert subject.is_pset_empty(pset) is True
+
+
+class TestIsEditable(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        element = ifc.createIfcWall()
+        pset = ifcopenshell.api.pset.add_pset(ifc, product=element, name="Foo")
+        assert subject.is_editable(pset) is True
+        qto = ifcopenshell.api.pset.add_qto(ifc, product=element, name="Bar")
+        assert subject.is_editable(qto) is True
+        panel_pset = ifc.createIfcDoorPanelProperties(
+            GlobalId=ifcopenshell.guid.new(), Name="IfcDoorPanelProperties", PanelOperation="NOTDEFINED"
+        )
+        assert subject.is_editable(panel_pset) is False

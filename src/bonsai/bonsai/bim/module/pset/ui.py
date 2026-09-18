@@ -139,10 +139,11 @@ def draw_psetqto_ui(
             op.obj = obj_name
             op.obj_type = obj_type
 
-        op = row.operator("bim.enable_pset_editing", icon="GREASEPENCIL", text="")
-        op.pset_id = pset_id
-        op.obj = obj_name
-        op.obj_type = obj_type
+        if pset["is_editable"]:
+            op = row.operator("bim.enable_pset_editing", icon="GREASEPENCIL", text="")
+            op.pset_id = pset_id
+            op.obj = obj_name
+            op.obj_type = obj_type
         if pset["has_template"]:
             row.label(text="", icon="ASSET_MANAGER")
             op = row.operator("bim.pset_templates_ui_select", text="", icon="ZOOM_SELECTED")
