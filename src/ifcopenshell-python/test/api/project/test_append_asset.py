@@ -800,6 +800,25 @@ class TestAppendAssetIFC4(test.bootstrap.IFC4, TestAppendAssetIFC2X3):
         styles = self.file.by_type("IfcSurfaceStyle")
         assert len(styles) == 2 and all(s.Name == "TestStyle" for s in styles)
 
+    def test_a_products_type_is_appended_without_assuming_asset_uniqueness_by_name(self):
+        # The type is appended through a recursive `append_asset()` call, which must
+        # forward `assume_asset_uniqueness_by_name` instead of silently defaulting to True.
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject")
+        element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWallType")
+        ifcopenshell.api.type.assign_type(library, related_objects=[element], relating_type=element_type)
+        library_material = ifcopenshell.api.material.add_material(library, name="TestMaterial")
+        ifcopenshell.api.material.assign_material(library, products=[element_type], material=library_material)
+
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.material.add_material(self.file, name="TestMaterial")
+        ifcopenshell.api.project.append_asset(
+            self.file, library=library, element=element, assume_asset_uniqueness_by_name=False
+        )
+        materials = self.file.by_type("IfcMaterial")
+        assert len(materials) == 2 and all(m.Name == "TestMaterial" for m in materials)
+
     def test_not_duplicate_material_sets_based_on_name(self):
         # Setup library.
         library = ifcopenshell.api.project.create_file(version=self.file.schema)
