@@ -313,6 +313,13 @@ if(USD_SUPPORT)
 endif(USD_SUPPORT)
 
 if (WITH_ROCKSDB)
+    # 1.5.5 is the version shipped with Ubuntu 24.04.
+    # Not referencing the zstd/RocksDB versions from 22.04 as they lack CMake configs.
+    set(ZSTD_MIN_VERSION 1.5.5)
+
+    # 8.9.1 is the version shipped with Ubuntu 24.04.
+    set(ROCKSDB_MIN_VERSION 8.9.1)
+
     # Temporaily mess with CMAKE_FIND_PACKAGE_PREFER_CONFIG to help RocksDB
     # find it's zstd dependency on Windows.
     # Only do it on Windows, otherwise it might create problems as
@@ -325,8 +332,9 @@ if (WITH_ROCKSDB)
     if(WIN32)
         set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ${TEMP})
     endif()
-
     message(STATUS "RocksDB: found at '${RocksDB_DIR}'.")
+    # RocksDBConfigVersion.cmake only accepts a compatible version within the same major version.
+    check_min_version(RocksDB "${RocksDB_VERSION}" "${ROCKSDB_MIN_VERSION}")
     add_library(IFCOPENSHELL_RocksDB INTERFACE)
     set(IFCOPENSHELL_ROCKSDB_TARGET IFCOPENSHELL_RocksDB)
     set(ROCKSDB_LIBRARIES "IFCOPENSHELL_RocksDB")
@@ -347,8 +355,10 @@ if (WITH_ROCKSDB)
         # @todo do we actually need the zstd include dir or rather just pass
         # the libzstd.a along with the rocksdb library when needed and feature
         # detect based on rocksdb API?
+        # Same exact-major-version caveat as RocksDB above.
         find_package(zstd CONFIG REQUIRED)
         message(STATUS "zstd: found at '${zstd_DIR}'.")
+        check_min_version(zstd "${zstd_VERSION}" "${ZSTD_MIN_VERSION}")
     endif()
 
     install(TARGETS IFCOPENSHELL_RocksDB EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
