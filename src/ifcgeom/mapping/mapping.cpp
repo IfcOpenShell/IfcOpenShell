@@ -831,7 +831,12 @@ void mapping::initialize_units_() {
     IfcSchema::IfcUnitAssignment* unit_assignment = nullptr;
     if (projects->size() == 1) {
         auto* project = *projects->begin();
-        unit_assignment = project->UnitsInContext();
+        try {
+            // UnitsInContext is mandatory per schema, but lenient parsing may leave it unset on malformed files.
+            unit_assignment = project->UnitsInContext();
+        } catch (const IfcParse::IfcException& ex) {
+            logger_.Warning("GEO", 308, std::string("Invalid UnitsInContext: ") + ex.what());
+        }
     } else {
         logger_.Warning("GEO", 308, "Not a single project or context in file");
     }
