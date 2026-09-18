@@ -24,7 +24,7 @@ class TestAssignType:
     def test_assigning_and_switching_to_an_existing_type_data(self, ifc, model, type):
         type.record_material_usage_attributes("element").should_be_called().will_return(None)
         ifc.run("type.assign_type", related_objects=["element"], relating_type="type").should_be_called()
-        model.get_usage_type("type").should_be_called(2).will_return(None)
+        model.get_usage_type("type").should_be_called().will_return(None)
         ifc.get_object("type").should_be_called().will_return("type_obj")
         type.get_object_data("type_obj").should_be_called().will_return("type_obj_data")
         type.change_object_data("obj", "type_obj_data", is_global=False).should_be_called()
@@ -35,10 +35,29 @@ class TestAssignType:
     def test_assigning_and_not_changing_data_if_the_type_has_no_data(self, ifc, model, type):
         type.record_material_usage_attributes("element").should_be_called().will_return(None)
         ifc.run("type.assign_type", related_objects=["element"], relating_type="type").should_be_called()
-        model.get_usage_type("type").should_be_called(2).will_return(None)
+        model.get_usage_type("type").should_be_called().will_return(None)
         ifc.get_object("type").should_be_called().will_return("type_obj")
         type.get_object_data("type_obj").should_be_called().will_return(None)
         ifc.get_object("element").should_be_called().will_return("obj")
+        type.disable_editing("obj").should_be_called()
+        subject.assign_type(ifc, model, type, element="element", type="type")
+
+    def test_restoring_recorded_material_usage_attributes_when_the_type_has_no_recognized_usage(
+        self, ifc, model, type
+    ):
+        # Regression test for #6676: changing the type of an element carrying a
+        # material usage (e.g. an IfcCovering with LayerSetDirection AXIS2)
+        # recreates the usage with a class-default direction. The recorded usage
+        # attributes must be restored even when get_usage_type() does not
+        # recognize the new type's class (returns None), so the direction is
+        # preserved instead of flattening (AXIS2 -> AXIS3).
+        type.record_material_usage_attributes("element").should_be_called().will_return({"type": "usage"})
+        ifc.run("type.assign_type", related_objects=["element"], relating_type="type").should_be_called()
+        ifc.get_object("element").should_be_called().will_return("obj")
+        type.restore_material_usage_attributes("element", {"type": "usage"}).should_be_called()
+        model.get_usage_type("type").should_be_called().will_return(None)
+        ifc.get_object("type").should_be_called().will_return("type_obj")
+        type.get_object_data("type_obj").should_be_called().will_return(None)
         type.disable_editing("obj").should_be_called()
         subject.assign_type(ifc, model, type, element="element", type="type")
 
