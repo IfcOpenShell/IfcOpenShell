@@ -219,6 +219,37 @@ class TestStairCalculatedParams(NewFile):
         calculated_data["Length"] += 0.1 * pset_data["number_of_treads"]
         self.compare_data(pset_data, calculated_data)
 
+        # Independent first/last locks (#7484): only the first tread is
+        # customized (locked=False), the last tread stays locked to the
+        # default tread_run even though a leftover custom value is present.
+        pset_data = pset_data_base.copy()
+        calculated_data = calculated_data_base.copy()
+        pset_data["custom_first_last_tread_run"] = (0.1, 0.4)
+        pset_data["custom_first_tread_lock"] = False
+        pset_data["custom_last_tread_lock"] = True
+        calculated_data["Length"] = 0.1 + 0.3 * 3  # first=0.1 custom, 3 default treads at 0.3
+        self.compare_data(pset_data, calculated_data)
+
+        # Same custom values, but this time only the last tread is
+        # customized and the first stays locked.
+        pset_data = pset_data_base.copy()
+        calculated_data = calculated_data_base.copy()
+        pset_data["custom_first_last_tread_run"] = (0.1, 0.4)
+        pset_data["custom_first_tread_lock"] = True
+        pset_data["custom_last_tread_lock"] = False
+        calculated_data["Length"] = 0.4 + 0.3 * 3  # last=0.4 custom, 3 default treads at 0.3
+        self.compare_data(pset_data, calculated_data)
+
+        # Both independently unlocked/customized (equivalent to the old
+        # combined-unlock behaviour, exercised through the new per-side keys).
+        pset_data = pset_data_base.copy()
+        calculated_data = calculated_data_base.copy()
+        pset_data["custom_first_last_tread_run"] = (0.1, 0.4)
+        pset_data["custom_first_tread_lock"] = False
+        pset_data["custom_last_tread_lock"] = False
+        calculated_data["Length"] = 0.1 + 0.4 + 0.3 * 2
+        self.compare_data(pset_data, calculated_data)
+
 
 class TestGenerateStair2DProfile(NewFile):
     def compare_data(self, generated_profile, expected_profile):

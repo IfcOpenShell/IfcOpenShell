@@ -211,7 +211,7 @@ class AddStair(bpy.types.Operator, tool.Ifc.Operator):
 
         tool.Blender.get_addon_preferences().default_parameters.stair.copy_to(props)
 
-        # Use the special method that includes custom_tread_lock for IFC storage
+        # Use the special method that includes the first/last tread locks for IFC storage
         stair_data = props.get_props_kwargs_for_ifc_export(convert_to_project_units=True)
         pset = tool.Pset.get_element_pset(element, "BBIM_Stair")
         if not pset:
@@ -268,7 +268,7 @@ class FinishEditingStair(bpy.types.Operator, tool.Ifc.Operator):
         assert element
         props = tool.Model.get_stair_props(obj)
 
-        # Use the special method that includes custom_tread_lock for IFC storage
+        # Use the special method that includes the first/last tread locks for IFC storage
         data = props.get_props_kwargs_for_ifc_export(convert_to_project_units=True)
         regenerate_stair_mesh(obj)
         tool.Model.add_body_representation(obj)
@@ -336,7 +336,16 @@ class ToggleStairProperty(bpy.types.Operator):
     # Map property names to their descriptions
     PROPERTY_DESCRIPTIONS: dict[str, str] = {
         "total_length_lock": "Lock/unlock total stair length. When locked, changing treads adjusts tread depth",
-        "custom_tread_lock": "Lock/unlock first and last tread dimensions. When unlocked, they can differ from other treads",
+        "custom_first_tread_lock": (
+            "Lock/unlock the first tread's run independently of the last tread. "
+            "When unlocked, it can be set to a custom value that stays fixed while "
+            "Total Length Target adjusts the other treads"
+        ),
+        "custom_last_tread_lock": (
+            "Lock/unlock the last tread's run independently of the first tread. "
+            "When unlocked, it can be set to a custom value that stays fixed while "
+            "Total Length Target adjusts the other treads"
+        ),
     }
 
     @classmethod
@@ -483,7 +492,7 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
     bl_options = {"3D", "PERSISTENT"}
 
     # === Stair-Specific Icon Layout ===
-    # Row order: [Validate] [Cancel] [Cycle] [TreadLock] [xN] [Plus] [Minus]
+    # Row order: [Validate] [Cancel] [Cycle] [FirstTreadLock] [LastTreadLock] [xN] [Plus] [Minus]
     # The base class assigns X positions from ``feature_slots`` tuple order —
     # adding an icon is a one-line append, no hardcoded X constant.
     ICON_PLUS_MINUS_SCALE = 0.24  # Scale for plus/minus icons (slightly larger)
@@ -493,12 +502,20 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
 
     feature_slots: ClassVar[tuple[IconSlot, ...]] = (
         IconSlot(
-            name="tread_lock",
+            name="first_tread_lock",
             gizmo_idname="VIEW3D_GT_lock",
             variants=("open", "closed"),
             operator="bim.toggle_stair_property",
             color=(1.0, 1.0, 1.0),
-            operator_props=(("property_name", "custom_tread_lock"),),
+            operator_props=(("property_name", "custom_first_tread_lock"),),
+        ),
+        IconSlot(
+            name="last_tread_lock",
+            gizmo_idname="VIEW3D_GT_lock",
+            variants=("open", "closed"),
+            operator="bim.toggle_stair_property",
+            color=(1.0, 1.0, 1.0),
+            operator_props=(("property_name", "custom_last_tread_lock"),),
         ),
         IconSlot(name="tread_count_label", placeholder=True),
         IconSlot(
@@ -561,9 +578,9 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             min_value=0.01,
             visibility_condition=lambda p: p.has_tread_run_gizmo(),
             matrix_position=lambda p: V_(
-                0 if p.custom_tread_lock else p.custom_first_last_tread_run[0],
+                0 if p.custom_first_tread_lock else p.custom_first_last_tread_run[0],
                 0,
-                p.get_riser_height() if p.custom_tread_lock else p.get_riser_height() * 2,
+                p.get_riser_height() if p.custom_first_tread_lock else p.get_riser_height() * 2,
             ),
         ),
         DimensionGizmoConfig(
@@ -571,7 +588,7 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             axis=(1, 0, 0),
             prop_name="First Tread",
             min_value=0.01,
-            visibility_condition=lambda p: p.has_custom_treads(),
+            visibility_condition=lambda p: p.has_custom_first_tread(),
             compute_value=_tread_run_accessors[0][0],
             apply_value=_tread_run_accessors[0][1],
             matrix_position=lambda p: V_(0, 0, p.get_riser_height()),
@@ -581,7 +598,7 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             axis=(1, 0, 0),
             prop_name="Last Tread",
             min_value=0.01,
-            visibility_condition=lambda p: p.has_custom_treads(),
+            visibility_condition=lambda p: p.has_custom_last_tread(),
             compute_value=_tread_run_accessors[1][0],
             apply_value=_tread_run_accessors[1][1],
             matrix_position=lambda p: V_(p.get_total_run() - p.custom_first_last_tread_run[1], 0, p.height),
@@ -664,7 +681,8 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         """Update stair-specific lock and tread count gizmos. Lock positioning is
         handled per-frame in the dimension-positioning hook."""
         self.update_lock_gizmo(props)
-        self.update_tread_lock_gizmo(props)
+        self.update_first_tread_lock_gizmo(props)
+        self.update_last_tread_lock_gizmo(props)
         self.update_tread_count_gizmos(props)
 
     def update_lock_gizmo(self, props: "BIMStairProperties") -> None:
@@ -680,20 +698,35 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         self.total_length_lock_open_gizmo.hide = props.total_length_lock
         self.total_length_lock_closed_gizmo.hide = not props.total_length_lock
 
-    def update_tread_lock_gizmo(self, props: "BIMStairProperties") -> None:
-        """Show the open/closed lock variant matching ``props.custom_tread_lock``.
+    def update_first_tread_lock_gizmo(self, props: "BIMStairProperties") -> None:
+        """Show the open/closed lock variant matching ``props.custom_first_tread_lock``.
 
         Both pair members share an X position (set by the base's slot
         positioning); this picks which one is visible per frame so a state
         flip can't reveal both at once."""
-        if not hasattr(self, "tread_lock_open_gizmo"):
+        if not hasattr(self, "first_tread_lock_open_gizmo"):
             return
         if not props.is_editing:
-            self.tread_lock_open_gizmo.hide = True
-            self.tread_lock_closed_gizmo.hide = True
+            self.first_tread_lock_open_gizmo.hide = True
+            self.first_tread_lock_closed_gizmo.hide = True
             return
-        self.tread_lock_open_gizmo.hide = props.custom_tread_lock
-        self.tread_lock_closed_gizmo.hide = not props.custom_tread_lock
+        self.first_tread_lock_open_gizmo.hide = props.custom_first_tread_lock
+        self.first_tread_lock_closed_gizmo.hide = not props.custom_first_tread_lock
+
+    def update_last_tread_lock_gizmo(self, props: "BIMStairProperties") -> None:
+        """Show the open/closed lock variant matching ``props.custom_last_tread_lock``.
+
+        Both pair members share an X position (set by the base's slot
+        positioning); this picks which one is visible per frame so a state
+        flip can't reveal both at once."""
+        if not hasattr(self, "last_tread_lock_open_gizmo"):
+            return
+        if not props.is_editing:
+            self.last_tread_lock_open_gizmo.hide = True
+            self.last_tread_lock_closed_gizmo.hide = True
+            return
+        self.last_tread_lock_open_gizmo.hide = props.custom_last_tread_lock
+        self.last_tread_lock_closed_gizmo.hide = not props.custom_last_tread_lock
 
     def update_tread_count_gizmos(self, props: "BIMStairProperties") -> None:
         """Update visibility of the +/- tread count gizmos and the ``xN``
@@ -748,8 +781,8 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         """Update tread-related dimension gizmos (tread_run, custom first/last tread)."""
         y_pos = self.get_y_position_for_view(props, viewing_from_negative_y, use_offset=False)
 
-        # tread_run position depends on custom_tread_lock state
-        if props.custom_tread_lock:
+        # tread_run position depends on custom_first_tread_lock state
+        if props.custom_first_tread_lock:
             tread_x, tread_z = 0, riser_height
         else:
             tread_x = props.custom_first_last_tread_run[0]
@@ -817,10 +850,20 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             "cycle_gizmo", mw, self.ICON_CYCLE_X, y_pos, icon_z, billboard_rot, scale=self.ICON_CYCLE_SCALE
         )
         self.set_icon_gizmo_pair_position(
-            "tread_lock_open_gizmo",
-            "tread_lock_closed_gizmo",
+            "first_tread_lock_open_gizmo",
+            "first_tread_lock_closed_gizmo",
             mw,
-            slot_x["tread_lock"],
+            slot_x["first_tread_lock"],
+            y_pos,
+            icon_z - self.EDITING_ICON_SCALE / 2,
+            billboard_rot,
+            scale=self.EDITING_ICON_SCALE,
+        )
+        self.set_icon_gizmo_pair_position(
+            "last_tread_lock_open_gizmo",
+            "last_tread_lock_closed_gizmo",
+            mw,
+            slot_x["last_tread_lock"],
             y_pos,
             icon_z - self.EDITING_ICON_SCALE / 2,
             billboard_rot,
