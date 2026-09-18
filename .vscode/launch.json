@@ -18,7 +18,8 @@
                     "localRoot": "${config:bonsai.localRoot}",
                     "remoteRoot": "${config:bonsai.remoteRoot}"
                 }
-            ]
+            ],
+            "justMyCode": false
         }
     ]
 }
