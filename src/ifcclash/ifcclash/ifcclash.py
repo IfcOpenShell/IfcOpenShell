@@ -262,7 +262,13 @@ class Clasher:
     def smart_group_clashes(self, clash_sets: list[ClashSet], max_clustering_distance: float):
         from collections import defaultdict
 
-        from sklearn.cluster import OPTICS
+        try:
+            from sklearn.cluster import OPTICS
+        except ImportError as e:
+            raise ImportError(
+                "Smart clash grouping requires scikit-learn (and its dependencies scipy, numpy, "
+                "joblib, threadpoolctl). Install it with `pip install scikit-learn` to use this feature."
+            ) from e
 
         count_of_input_clashes = 0
         count_of_clash_sets = 0
