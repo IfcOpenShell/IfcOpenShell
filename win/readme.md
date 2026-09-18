@@ -119,3 +119,22 @@ Directory Structure
 \---patches                         - Contains patches for the dependencies
 \---utils                           - Contains various utilities for the build scripts
 ```
+
+Troubleshooting
+---------------
+
+### fatal error LNK1248: image size exceeds maximum
+
+Building `IfcGeom` with many schemas can exceed the 4GB image size limit of
+MSVC's librarian in two situations, both tracked in issue 7461:
+
+- **Debug or RelWithDebInfo builds with ccache enabled.** ccache requires the
+  embedded `/Z7` debug information format, which bloats object files compared
+  to the default `/Zi` PDB format. Configure with `-DUSE_CCACHE=OFF` (added to
+  `run-cmake.bat` arguments) to restore the PDB format, or reduce the number
+  of schemas with `-DSCHEMA_VERSIONS`.
+- **Release builds with `ENABLE_BUILD_OPTIMIZATIONS`.** The `/GL` whole-program
+  optimization flag makes the per-schema mapping objects very large. The build
+  now automatically compiles each schema mapping as a separate static library
+  on MSVC in this configuration, which avoids the limit; no action is needed on
+  a current checkout.
