@@ -237,3 +237,20 @@ class TestGetObjectFromGuidMissing(NewFile):
         bpy.ops.bim.create_project()
         assert tool.Ifc.get() is not None
         assert subject.get_object_from_guid("3iyt7r$Hf4_hQYNhBIDJI4") is None
+
+
+class TestGetAddonPreferences(NewFile):
+    """``get_addon_preferences`` looks up Bonsai's own cached registration name in
+    ``bpy.context.preferences.addons``. If Bonsai's install ends up in an
+    inconsistent state (e.g. moved to a different extension repository without
+    restarting Blender), that cached name stops matching any enabled addon. This
+    must fail with an actionable ``RuntimeError``, not the bare ``KeyError`` a raw
+    dict-style lookup would raise."""
+
+    def test_returns_preferences_for_the_currently_registered_addon(self):
+        assert subject.get_addon_preferences() is not None
+
+    def test_raises_actionable_error_when_registered_name_is_stale(self, monkeypatch):
+        monkeypatch.setattr(bonsai, "REGISTERED_BBIM_PACKAGE", "bl_ext.some_other_repo.bonsai")
+        with pytest.raises(RuntimeError, match="bl_ext.some_other_repo.bonsai"):
+            subject.get_addon_preferences()
