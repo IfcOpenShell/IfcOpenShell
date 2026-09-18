@@ -98,7 +98,8 @@ ENDIF()
 # - Unix - Python_INCLUDE_DIR
 # Unfortunately all paths must be always provided explicitly, not by prefixing PATH.
 # Otherwise FindPython will break on newer Python versions (list of supported versions is hardcoded).
-find_package(Python COMPONENTS Development.Module)
+set(PYTHON_MIN_VERSION 3.10)
+find_package(Python ${PYTHON_MIN_VERSION} COMPONENTS Development.Module)
 IF(NOT Python_Development.Module_FOUND)
 	MESSAGE(FATAL_ERROR "BUILD_IFCPYTHON enabled, but unable to find Python lib or header. Disable BUILD_IFCPYTHON or fix Python paths to proceed.")
 ENDIF()
