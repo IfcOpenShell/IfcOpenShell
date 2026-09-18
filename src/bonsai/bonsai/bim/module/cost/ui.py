@@ -465,6 +465,12 @@ class BIM_PT_cost_item_quantities(Panel):
         op = row2.operator("bim.select_cost_item_products", icon="RESTRICT_SELECT_OFF", text="")
         op.cost_item = cost_item.ifc_definition_id
 
+        row2 = col.row(align=True)
+        row2.prop(self.props, "cost_item_products_query", text="", icon="VIEWZOOM")
+        op = row2.operator("bim.select_query_elements", text="", icon="RESTRICT_SELECT_OFF")
+        op.query = self.props.cost_item_products_query
+        op.clear_previous_selection = True
+
         if context.selected_objects:
             if has_quantity_names:
                 op = row2.operator("bim.assign_cost_item_quantity", text="", icon="PROPERTIES")
