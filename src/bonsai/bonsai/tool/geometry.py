@@ -1009,7 +1009,10 @@ class Geometry(bonsai.core.tool.Geometry):
         cls, obj: bpy.types.Object, only_assigned_to_faces: bool = False
     ) -> list[Union[ifcopenshell.entity_instance, None]]:
         styles = [tool.Ifc.get_entity(s.material) for s in obj.material_slots if s.material]
-        if not only_assigned_to_faces:
+        # Face-usage filtering only makes sense for meshes. Curve-based representations
+        # (e.g. IfcSweptDiskSolid directrices, see #3496) have no polygons to inspect,
+        # so fall back to returning every assigned style.
+        if not only_assigned_to_faces or not isinstance(obj.data, bpy.types.Mesh):
             return styles
 
         usage_count = [0] * len(obj.material_slots)
