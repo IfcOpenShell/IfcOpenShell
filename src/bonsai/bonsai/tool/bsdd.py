@@ -266,6 +266,15 @@ class Bsdd(bonsai.core.tool.Bsdd):
         return bsdd_class
 
     @classmethod
+    def get_bsdd_class_properties(cls, uri: str) -> list[ClassPropertyContractV1]:
+        # Only the class properties are needed here. get_class also pulls class
+        # relations and child class references, a heavier request that pressures
+        # the bSDD rate limit and made every class report "No bSDD Props Found"
+        # once a 429 came back (#7985). Class/Properties/v1 asks for just what we use.
+        class_properties = cls.client.get_class_properties(uri)
+        return class_properties.get("classProperties", []) or []
+
+    @classmethod
     def get_bsdd_property(cls, uri: str) -> dict:
         if not (bsdd_property := cls.bsdd_properties.get(uri, {})):
             # Cache miss occurs for keyword search mode, for classes cache is prepopulated.
@@ -314,9 +323,7 @@ class Bsdd(bonsai.core.tool.Bsdd):
         props.properties.clear()
         if not (active_class := props.active_class):
             return
-        if not (bsdd_class := cls.get_bsdd_class(active_class.uri)):
-            return
-        for bsdd_prop in bsdd_class.get("classProperties", []):
+        for bsdd_prop in cls.get_bsdd_class_properties(active_class.uri):
             if not bsdd_prop.get("propertySet", None):
                 continue
             cls.bsdd_properties[bsdd_prop["uri"]] = bsdd_prop
