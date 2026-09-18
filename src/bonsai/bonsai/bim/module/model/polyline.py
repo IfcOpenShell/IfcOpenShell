@@ -221,6 +221,14 @@ class PolylineOperator:
 
     def handle_keyboard_input(self, context: bpy.types.Context, event: bpy.types.Event) -> None:
 
+        # The numpad decimal key emits ',' on some OS layouts (e.g. German), which
+        # is not in ``number_options`` and was silently dropped, turning ``9,8``
+        # into ``98``. Blender's native fields insert a decimal point for that
+        # physical key, so mirror that behaviour. See issue #8262.
+        input_char = (
+            "." if (event.value == "PRESS" and event.type in {"NUMPAD_PERIOD", "NUMPAD_COMMA"}) else event.ascii
+        )
+
         if self.tool_state.is_input_on and event.value == "PRESS" and event.type == "TAB":
             self.recalculate_inputs(context)
             index = self.input_options.index(self.input_type)
@@ -250,7 +258,7 @@ class PolylineOperator:
             PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
             tool.Blender.update_viewport()
 
-        if not self.tool_state.is_input_on and event.ascii in self.number_options:
+        if not self.tool_state.is_input_on and input_char in self.number_options:
             self.recalculate_inputs(context)
             self.tool_state.mode = "Edit"
             self.tool_state.is_input_on = True
@@ -270,8 +278,8 @@ class PolylineOperator:
             tool.Blender.update_viewport()
 
         if self.input_type in self.input_options:
-            if (event.ascii in self.number_options) or (event.value == "RELEASE" and event.type == "BACK_SPACE"):
-                if not self.tool_state.mode == "Edit" and not (event.ascii == "=" or event.type == "BACK_SPACE"):
+            if (input_char in self.number_options) or (event.value == "RELEASE" and event.type == "BACK_SPACE"):
+                if not self.tool_state.mode == "Edit" and not (input_char == "=" or event.type == "BACK_SPACE"):
                     self.number_input = []
 
                 if event.type == "BACK_SPACE":
@@ -279,13 +287,13 @@ class PolylineOperator:
                         self.number_input = []
                     else:
                         self.number_input.pop(-1)
-                elif event.ascii == "=":
+                elif input_char == "=":
                     if self.number_input and self.number_input[0] == "=":
                         self.number_input.pop(0)
                     else:
                         self.number_input.insert(0, "=")
                 else:
-                    self.number_input.append(event.ascii)
+                    self.number_input.append(input_char)
 
                 if not self.number_input:
                     self.number_output = "0"

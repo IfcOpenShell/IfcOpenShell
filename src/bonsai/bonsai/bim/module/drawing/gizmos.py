@@ -169,6 +169,29 @@ _SPECIAL = {"=", " "}  # Formula prefix, spaces
 
 NUMERIC_INPUT_CHARS = _DIGITS | _OPERATORS | _METRIC_UNITS | _IMPERIAL_UNITS | _SPECIAL
 
+# The numpad decimal key emits ',' rather than '.' on some OS keyboard layouts
+# (e.g. German/QWERTZ). Blender's native number fields still insert a decimal
+# point for that physical key, so we mirror that here. See issue #8262.
+_NUMPAD_DECIMAL_TYPES = {"NUMPAD_PERIOD", "NUMPAD_COMMA"}
+
+
+def resolve_numeric_input_char(event: bpy.types.Event) -> str | None:
+    """Return the character a keystroke contributes to a numeric input field,
+    or ``None`` if the key is not numeric input.
+
+    The numpad decimal key always contributes ``.`` regardless of the OS
+    character it emits, matching Blender's native field behaviour. This keeps
+    Bonsai's custom modal input consistent with the rest of Blender instead of
+    silently dropping a comma (which turned ``9,8`` into ``98``). See #8262.
+    """
+    if event.value != "PRESS":
+        return None
+    if event.type in _NUMPAD_DECIMAL_TYPES:
+        return "."
+    if event.ascii and event.ascii.lower() in NUMERIC_INPUT_CHARS:
+        return event.ascii
+    return None
+
 
 def _is_transform_modal_active(context) -> bool:
     """Module-local alias for ``tool.Blender.is_transform_modal_active``.
@@ -2719,8 +2742,9 @@ class BIM_OT_gizmo_value_input(bpy.types.Operator):
     def modal(self, context, event):
         kb = self._keyboard_input
 
-        if event.value == "PRESS" and event.ascii and event.ascii.lower() in NUMERIC_INPUT_CHARS:
-            kb.characters.append(event.ascii)
+        input_char = resolve_numeric_input_char(event)
+        if input_char is not None:
+            kb.characters.append(input_char)
             kb.is_active = True
             kb.parse()
             self._apply_value()
@@ -3087,8 +3111,9 @@ class GizmoMovable(bpy.types.Gizmo):
         """Handle keyboard numeric input."""
         kb = self.keyboard_input
 
-        if event.value == "PRESS" and event.ascii and event.ascii.lower() in NUMERIC_INPUT_CHARS:
-            kb.characters.append(event.ascii)
+        input_char = resolve_numeric_input_char(event)
+        if input_char is not None:
+            kb.characters.append(input_char)
             kb.is_active = True
             kb.parse()
             self._apply_keyboard_value()
