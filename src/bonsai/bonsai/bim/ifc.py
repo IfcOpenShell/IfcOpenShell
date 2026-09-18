@@ -119,6 +119,10 @@ class IfcStore:
     pset_template_file: Optional[ifcopenshell.file] = None
     classification_path: str = ""
     classification_file: Optional[ifcopenshell.file] = None
+    classification_files: dict[str, ifcopenshell.file] = {}
+    """Every classification library loaded this session, keyed by filepath. Unlike ``classification_file``,
+    which is overwritten on each ``bim.load_classification_library`` call, this accumulates so a previously
+    loaded library stays selectable without reloading it from disk."""
     library_path: str = ""
     library_file: Optional[ifcopenshell.file] = None
     current_transaction = ""
@@ -140,6 +144,9 @@ class IfcStore:
         IfcStore.edited_objs = set()
         IfcStore.pset_template_path = ""
         IfcStore.pset_template_file = None
+        IfcStore.classification_path = ""
+        IfcStore.classification_file = None
+        IfcStore.classification_files = {}
         IfcStore.library_path = ""
         IfcStore.library_file = None
         IfcStore.last_transaction = ""

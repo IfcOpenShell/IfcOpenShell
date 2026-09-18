@@ -29,9 +29,11 @@ from bpy.props import (
 from bpy.types import PropertyGroup
 
 import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.classification.data import (
     ClassificationsData,
     ObjectClassificationsData,
+    refresh,
 )
 from bonsai.bim.prop import Attribute
 
@@ -42,6 +44,22 @@ def get_available_classifications(
     if not ClassificationsData.is_loaded:
         ClassificationsData.load()
     return ClassificationsData.data["available_classifications"]
+
+
+def get_loaded_classification_libraries(
+    self: "BIMClassificationProperties", context: bpy.types.Context
+) -> tool.Blender.BLENDER_ENUM_ITEMS:
+    if not ClassificationsData.is_loaded:
+        ClassificationsData.load()
+    return ClassificationsData.data["loaded_classification_libraries"]
+
+
+def update_loaded_classification_library(self: "BIMClassificationProperties", context: bpy.types.Context) -> None:
+    file = IfcStore.classification_files.get(self.loaded_classification_library)
+    if file is None:
+        return
+    IfcStore.classification_file = file
+    refresh()
 
 
 def get_classifications(self, context):
@@ -75,6 +93,11 @@ class BIMClassificationProperties(PropertyGroup):
     is_adding: BoolProperty(name="Is Adding", default=False)
     classification_source: EnumProperty(items=get_classification_source, name="Classification Source")
     available_classifications: EnumProperty(items=get_available_classifications, name="Available Classifications")
+    loaded_classification_library: EnumProperty(
+        items=get_loaded_classification_libraries,
+        name="Loaded Classification Library",
+        update=update_loaded_classification_library,
+    )
     classification_attributes: CollectionProperty(name="Classification Attributes", type=Attribute)
     active_classification_id: IntProperty(name="Active Classification Id")
     available_library_references: CollectionProperty(name="Available Library References", type=ClassificationReference)
@@ -85,6 +108,7 @@ class BIMClassificationProperties(PropertyGroup):
         is_adding: bool
         classification_source: str
         available_classifications: str
+        loaded_classification_library: str
         classification_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
         active_classification_id: int
         available_library_references: bpy.types.bpy_prop_collection_idprop[ClassificationReference]
