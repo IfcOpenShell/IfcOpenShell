@@ -542,6 +542,10 @@ class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
 
         tool.Blender.get_addon_preferences().default_parameters.door.copy_to(props)
 
+        # Load material constituents from the element's type if available.
+        for prop_name, value in tool.Model.get_constituents_props_data(element).items():
+            setattr(props, prop_name, value)
+
         door_data = props.get_general_kwargs(convert_to_project_units=True)
         lining_props = props.get_lining_kwargs(convert_to_project_units=True)
         panel_props = props.get_panel_kwargs(convert_to_project_units=True)
