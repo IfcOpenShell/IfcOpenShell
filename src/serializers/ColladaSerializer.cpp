@@ -33,6 +33,8 @@
 
 #include <string>
 #include <cmath>
+#include <map>
+#include <tuple>
 
 #include "../ifcparse/utils.h"
 
@@ -70,15 +72,67 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::write(
     const std::vector<double>& uvs, const std::vector<std::string>& material_references)
 {
 	openMesh(mesh_id);
-	
+
 	// The normals vector can be empty for example when the WELD_VERTICES setting is used.
 	// IfcOpenShell does not provide them with multiple face normals collapsed into a single vertex.
 	const bool has_normals = !normals.empty();
     const bool has_uvs = !uvs.empty();
-	
-	addFloatSource(mesh_id, COLLADASW::LibraryGeometries::POSITIONS_SOURCE_ID_SUFFIX, positions);
+
+	// When vertices are not welded (the common case when normals are requested), 'positions'
+	// and 'normals' hold one entry per triangle corner, so identical position/normal values are
+	// repeated many times. COLLADA <source> streams can be indexed independently (VERTEX and
+	// NORMAL inputs each carry their own offset), so positions and normals are deduplicated here
+	// on their own terms and referenced through separate index streams below, rather than being
+	// forced to share a single combined index as before.
+	std::vector<double> dedup_positions;
+	std::vector<double> dedup_normals;
+	std::vector<int> pos_index;
+	std::vector<int> norm_index;
+
 	if (has_normals) {
-		addFloatSource(mesh_id, COLLADASW::LibraryGeometries::NORMALS_SOURCE_ID_SUFFIX, normals);
+		typedef std::tuple<double, double, double> Triplet;
+		std::map<Triplet, int> pos_map;
+		std::map<Triplet, int> norm_map;
+		const size_t n = positions.size() / 3;
+		pos_index.reserve(n);
+		norm_index.reserve(n);
+		for (size_t i = 0; i < n; ++i) {
+			const Triplet pk(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]);
+			auto pit = pos_map.find(pk);
+			if (pit == pos_map.end()) {
+				const int pidx = (int)(dedup_positions.size() / 3);
+				pos_map.emplace(pk, pidx);
+				dedup_positions.push_back(std::get<0>(pk));
+				dedup_positions.push_back(std::get<1>(pk));
+				dedup_positions.push_back(std::get<2>(pk));
+				pos_index.push_back(pidx);
+			} else {
+				pos_index.push_back(pit->second);
+			}
+
+			const Triplet nk(normals[i * 3], normals[i * 3 + 1], normals[i * 3 + 2]);
+			auto nit = norm_map.find(nk);
+			if (nit == norm_map.end()) {
+				const int nidx = (int)(dedup_normals.size() / 3);
+				norm_map.emplace(nk, nidx);
+				dedup_normals.push_back(std::get<0>(nk));
+				dedup_normals.push_back(std::get<1>(nk));
+				dedup_normals.push_back(std::get<2>(nk));
+				norm_index.push_back(nidx);
+			} else {
+				norm_index.push_back(nit->second);
+			}
+		}
+	}
+
+	// Positions referenced by VERTEX inputs (both triangles and lines below) are remapped
+	// through pos_index when deduplication above ran; otherwise (no normals) the incoming
+	// positions are already unique per WeldVertices and are used as-is.
+	auto vertex_index = [&](int idx) { return has_normals ? pos_index[idx] : idx; };
+
+	addFloatSource(mesh_id, COLLADASW::LibraryGeometries::POSITIONS_SOURCE_ID_SUFFIX, has_normals ? dedup_positions : positions);
+	if (has_normals) {
+		addFloatSource(mesh_id, COLLADASW::LibraryGeometries::NORMALS_SOURCE_ID_SUFFIX, dedup_normals);
         if (has_uvs) {
             addFloatSource(mesh_id, COLLADASW::LibraryGeometries::TEXCOORDS_SOURCE_ID_SUFFIX, uvs, "UV");
         }
@@ -120,9 +174,12 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::write(
 			for (std::vector<int>::const_iterator jt = index_range_start; jt != it; ++jt) {
 				const int idx = *jt;
                 if (has_normals && has_uvs) {
-                    triangles.appendValues(idx, idx, idx);
+                    // UV index is left as the original per-corner index (not deduplicated): a UV
+                    // is a function of both position and normal (box projection), so it cannot be
+                    // safely indexed through either the position or the normal dedup map alone.
+                    triangles.appendValues(pos_index[idx], norm_index[idx], idx);
                 } else if(has_normals) {
-					triangles.appendValues(idx, idx);
+					triangles.appendValues(pos_index[idx], norm_index[idx]);
 				} else {
 					triangles.appendValues(idx);
 				}
@@ -154,8 +211,8 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::write(
 			linelist.resize(linelist.size() + 1);
 		}
 
-		linelist.rbegin()->second.push_back(i1);
-		linelist.rbegin()->second.push_back(i2);
+		linelist.rbegin()->second.push_back(vertex_index(i1));
+		linelist.rbegin()->second.push_back(vertex_index(i2));
 	}
 
 	for (linelist_t::const_iterator it = linelist.begin(); it != linelist.end(); ++it) {
