@@ -26,6 +26,7 @@ import traceback
 import uuid
 import zipfile
 from collections.abc import Callable
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Literal, NotRequired, Optional, TypedDict, Union
 
@@ -670,3 +671,41 @@ class IfcStore:
             for transaction in event["operations"]:
                 transaction["commit"](transaction["data"])
             IfcStore.history.append(event)
+
+    @classmethod
+    @contextmanager
+    def track_transaction_outside_operator(cls, name: str):
+        """Make an IFC edit performed outside of a Bonsai operator undoable.
+
+        Edits done in msgbus or property update callbacks (e.g. renaming an
+        object or a material) run outside ``execute_ifc_operator``, so they are
+        never recorded in a transaction and Blender's undo cannot roll them back
+        (issue #5633). Bracketing such an edit in this context manager records it
+        in an IFC transaction, registers rollback/commit callbacks in the undo
+        history and advances ``last_transaction``, so the Blender undo step for
+        the rename reverts the IFC change together with the Blender-side change.
+        """
+        ifc_file = cls.get_file()
+        # No file, or we are already inside an operator transaction (nested edit):
+        # let the edit join the ongoing transaction rather than open a standalone one.
+        if ifc_file is None or ifc_file.transaction is not None:
+            yield
+            return
+        key = str(uuid.uuid4()) + name
+        props = tool.Blender.get_bim_props()
+        props.last_transaction = key
+        cls.last_transaction = key
+        ifc_file.begin_transaction()
+        cls.history.append(TransactionStep(key=key, operations=[]))
+        cls.future = []
+        try:
+            yield
+        finally:
+            ifc_file.end_transaction()
+            cls.history[-1]["operations"].append(
+                Operation(
+                    rollback=cls.get_ifc_file_undo_callback("UNDO"),
+                    commit=cls.get_ifc_file_undo_callback("REDO"),
+                    data=None,
+                )
+            )
