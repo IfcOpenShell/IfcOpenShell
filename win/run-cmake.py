@@ -92,6 +92,8 @@ class Deps:
         ),
         # TODO: drop this TRANSITION check once everyone has re-run build-deps.py with manifold support.
         "manifold": Dep("MANIFOLD_INSTALL_PATH", None, required=False),
+        # TODO: drop this TRANSITION check once everyone has re-run build-deps.py with proj support.
+        "proj": Dep("PROJ_INSTALL_DIR", None, required=False),
         "pythonhome": Dep("PYTHONHOME", None, cmake_prefix=False),
     }
 

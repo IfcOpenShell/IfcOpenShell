@@ -366,7 +366,7 @@ def main() -> None:
 
     nuget_exe = install_nuget(vs_cfg_vars.deps_dir)
     install_ccache(vs_cfg_vars.deps_dir, nuget_exe, build_deps_cache)
-    install_proj(vs_cfg_vars, ARGS.build_type, ARGS.build_cfg, MSBUILD_MULTIPROC)
+    install_proj(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.build_cfg, MSBUILD_MULTIPROC)
     install_mpir(vs_cfg_vars, vs_cfg_vars.deps_dir, vs_cfg_vars.install_dir, ARGS.build_cfg)
     install_mpfr(
         vs_cfg_vars, vs_cfg_vars.deps_dir, vs_cfg_vars.install_dir, ARGS.build_cfg, ARGS.build_type, MSBUILD_CMD

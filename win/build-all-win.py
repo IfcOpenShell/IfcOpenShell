@@ -223,6 +223,7 @@ def build() -> None:
                 "--",
                 "-DENABLE_BUILD_OPTIMIZATIONS=ON",
                 "-DGLTF_SUPPORT=ON",
+                "-DWITH_PROJ=ON",
                 "-DBUILD_EXAMPLES=OFF",
                 "-DBUILD_BONSAIVIEWER=ON",
                 "-DUSE_CCACHE=ON",
