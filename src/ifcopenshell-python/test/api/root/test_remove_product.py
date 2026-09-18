@@ -464,6 +464,80 @@ class TestRemoveProduct(test.bootstrap.IFC4):
         ifcopenshell.api.root.remove_product(self.file, product=flow_element)
         assert not self.file.by_type("IfcRelFlowControlElements")
 
+    def test_removing_orphaned_classification_associations(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcMechanicalFastener")
+        classification = self.file.create_entity("IfcClassification", Name="Uniclass")
+        reference = self.file.create_entity(
+            "IfcClassificationReference", ReferencedSource=classification, Identification="Pr_20"
+        )
+        self.file.create_entity(
+            "IfcRelAssociatesClassification",
+            GlobalId=ifcopenshell.guid.new(),
+            RelatedObjects=[element],
+            RelatingClassification=reference,
+        )
+        ifcopenshell.api.root.remove_product(self.file, product=element)
+        assert not self.file.by_type("IfcRelAssociatesClassification")
+
+    def test_keeping_shared_classification_associations(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcMechanicalFastener")
+        other = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        classification = self.file.create_entity("IfcClassification", Name="Uniclass")
+        reference = self.file.create_entity(
+            "IfcClassificationReference", ReferencedSource=classification, Identification="Pr_20"
+        )
+        self.file.create_entity(
+            "IfcRelAssociatesClassification",
+            GlobalId=ifcopenshell.guid.new(),
+            RelatedObjects=[element, other],
+            RelatingClassification=reference,
+        )
+        ifcopenshell.api.root.remove_product(self.file, product=element)
+        assert len(self.file.by_type("IfcRelAssociatesClassification")) == 1
+        assert self.file.by_type("IfcRelAssociatesClassification")[0].RelatedObjects == (other,)
+
+    def test_removing_orphaned_process_assignments(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcMechanicalFastener")
+        task = self.file.create_entity("IfcTask", GlobalId=ifcopenshell.guid.new())
+        self.file.create_entity(
+            "IfcRelAssignsToProcess",
+            GlobalId=ifcopenshell.guid.new(),
+            RelatedObjects=[element],
+            RelatingProcess=task,
+        )
+        ifcopenshell.api.root.remove_product(self.file, product=element)
+        assert not self.file.by_type("IfcRelAssignsToProcess")
+
+    def test_removing_referenced_spatial_structure_relationships(self):
+        # IfcRelReferencedInSpatialStructure was introduced in IFC4.
+        if self.file.schema == "IFC2X3":
+            return
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcMechanicalFastener")
+        storey = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
+        self.file.create_entity(
+            "IfcRelReferencedInSpatialStructure",
+            GlobalId=ifcopenshell.guid.new(),
+            RelatedElements=[element],
+            RelatingStructure=storey,
+        )
+        ifcopenshell.api.root.remove_product(self.file, product=element)
+        assert not self.file.by_type("IfcRelReferencedInSpatialStructure")
+
+    def test_removing_interference_relationships(self):
+        # IfcRelInterferesElements was introduced in IFC4.
+        if self.file.schema == "IFC2X3":
+            return
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcMechanicalFastener")
+        other = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBeam")
+        self.file.create_entity(
+            "IfcRelInterferesElements",
+            GlobalId=ifcopenshell.guid.new(),
+            RelatingElement=element,
+            RelatedElement=other,
+        )
+        ifcopenshell.api.root.remove_product(self.file, product=element)
+        assert not self.file.by_type("IfcRelInterferesElements")
+
 
 class TestRemoveProductIFC2X3(TestRemoveProduct, test.bootstrap.IFC2X3):
     pass
