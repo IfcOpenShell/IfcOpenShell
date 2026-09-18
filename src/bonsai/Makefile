@@ -211,9 +211,9 @@ endif
 	cd build/bonsai/bim/data/gantt/ && wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js
 	cd build/bonsai/bim/data/gantt/ && wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css
 
-	# Provides IFCJSON functionality
-	# TODO: Use official repo, once https://github.com/IFCJSON-Team/IFC2JSON_python/pull/8 is merged.
-	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m pip wheel "git+https://github.com/Andrej730/IFC2JSON_python.git@pyproject_toml" --no-deps -w wheels/
+	# Provides IFCJSON functionality. Upstream (IFCJSON-Team) is dormant and has no wheel
+	# packaging, so we maintain our own fork under the IfcOpenShell organisation.
+	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m pip wheel "git+https://github.com/IfcOpenShell/IFC2JSON_python.git@main" --no-deps -w wheels/
 
 	# Brickschema requires pkg_resources which is provided by Blender.
 	# Provides Brickschema functionality
