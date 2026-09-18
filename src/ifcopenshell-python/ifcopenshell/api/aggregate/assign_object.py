@@ -88,6 +88,24 @@ def assign_object(
         return
 
     products_set = set(products)
+
+    # Guard against creating a cyclic aggregation. Aggregating a product under
+    # relating_object makes the product an ancestor of relating_object, so if a
+    # product is relating_object itself or already an ancestor of it, the
+    # relationship would form a loop. Such a cycle later causes infinite
+    # recursion (e.g. RecursionError) when placements or the decomposition tree
+    # are traversed, so refuse it up front. See issue #7154.
+    ancestor = relating_object
+    ancestors: set[ifcopenshell.entity_instance] = set()
+    while ancestor is not None and ancestor not in ancestors:
+        ancestors.add(ancestor)
+        ancestor = ifcopenshell.util.element.get_aggregate(ancestor)
+    cycling = products_set & ancestors
+    if cycling:
+        raise ValueError(
+            "Cannot aggregate an object under itself or one of its descendants "
+            f"(would create a cyclic aggregation): {cycling}"
+        )
     is_decomposed_by = next((i for i in relating_object.IsDecomposedBy if i.is_a("IfcRelAggregates")), None)
 
     previous_aggregates_rels: set[ifcopenshell.entity_instance] = set()
@@ -143,7 +161,7 @@ def assign_object(
                 "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
                 "RelatedObjects": list(products_set),
                 "RelatingObject": relating_object,
-            }
+            },
         )
 
     # localize placement relative to a new aggregate for affected products
