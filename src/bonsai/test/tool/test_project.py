@@ -31,6 +31,7 @@ import ifcopenshell.api.root
 import ifcopenshell.api.unit
 import ifcpatch
 import numpy as np
+import pytest
 from ifcpatch.recipes import Ifc2Sql
 
 import bonsai.core.tool
@@ -463,41 +464,110 @@ class TestLoadingIfcSqlite(NewFile):
                 assert not bpy.data.objects[element_name].data
 
 
+# A linked model object is one mesh holding every element's polygons back to back.
+# `guids` names the elements in order and `guid_ids[i]` is the polygon index just past
+# element i's last polygon, so in LINKED_OBJ "aaa" owns polygons 0-4, "bbb" 5-9, "ccc" 10-14.
+# Hiding an element masks its polygons with a modifier, so `obj.data` keeps all 15
+# polygons at their original indices while the evaluated mesh, which is what raycasts
+# hit, no longer contains them and numbers the rest from 0.
+LINKED_OBJ = {
+    "guids": ["aaa", "bbb", "ccc"],
+    "guid_ids": [5, 10, 15],
+}
+
+
+def linked_obj(hidden_indices: list[int] | None = None) -> bpy.types.Object:
+    obj = dict(LINKED_OBJ)
+    if hidden_indices is not None:
+        obj["hidden_indices"] = hidden_indices
+    return cast(bpy.types.Object, obj)
+
+
+class TestGettingLinkedElementGuidIds:
+    """`skip_hidden=False` describes `obj.data`, `skip_hidden=True` the evaluated mesh."""
+
+    def test_without_hidden_elements_both_views_are_the_stored_ids(self):
+        obj = linked_obj()
+        assert subject.Link.get_linked_element_guid_ids(obj, skip_hidden=False).tolist() == [5, 10, 15]
+        assert subject.Link.get_linked_element_guid_ids(obj, skip_hidden=True).tolist() == [5, 10, 15]
+
+    def test_not_skipping_ignores_hidden_elements(self):
+        obj = linked_obj(hidden_indices=[0])
+        assert subject.Link.get_linked_element_guid_ids(obj, skip_hidden=False).tolist() == [5, 10, 15]
+
+    def test_skipping_removes_a_hidden_first_element_and_shifts_the_rest(self):
+        obj = linked_obj(hidden_indices=[0])
+        assert subject.Link.get_linked_element_guid_ids(obj, skip_hidden=True).tolist() == [0, 5, 10]
+
+    def test_skipping_removes_a_hidden_middle_element_and_shifts_only_later_ones(self):
+        obj = linked_obj(hidden_indices=[1])
+        assert subject.Link.get_linked_element_guid_ids(obj, skip_hidden=True).tolist() == [5, 5, 10]
+
+    def test_skipping_handles_several_hidden_elements(self):
+        obj = linked_obj(hidden_indices=[0, 2])
+        assert subject.Link.get_linked_element_guid_ids(obj, skip_hidden=True).tolist() == [0, 5, 5]
+
+    def test_skipping_does_not_modify_the_stored_ids(self):
+        obj = linked_obj(hidden_indices=[0])
+        subject.Link.get_linked_element_guid_ids(obj, skip_hidden=True)
+        assert list(obj["guid_ids"]) == [5, 10, 15]
+
+
 class TestGettingLinkedElementGeomSlice:
-    TEST_OBJ = {
-        "guids": ["aaa", "bbb", "ccc"],
-        "guid_ids": [5, 10, 15],
-    }
+    """Slices index `obj.data.polygons`, where hidden elements keep their polygons."""
 
     def test_get_first_element(self):
-        obj = TestGettingLinkedElementGeomSlice.TEST_OBJ
-        obj = cast(bpy.types.Object, obj)
-        slice_ = subject.Link.get_linked_element_geom_slice(obj, "aaa")
+        slice_ = subject.Link.get_linked_element_geom_slice(linked_obj(), "aaa")
         assert range(15)[slice_] == range(5)
 
     def test_get_middle_element(self):
-        obj = TestGettingLinkedElementGeomSlice.TEST_OBJ
-        obj = cast(bpy.types.Object, obj)
-        slice_ = subject.Link.get_linked_element_geom_slice(obj, "bbb")
+        slice_ = subject.Link.get_linked_element_geom_slice(linked_obj(), "bbb")
         assert range(15)[slice_] == range(5, 10)
 
-    def test_skip_hidden_first_element(self):
-        obj = TestGettingLinkedElementGeomSlice.TEST_OBJ
-        obj = obj | {"hidden_indices": [0]}
-        obj = cast(bpy.types.Object, obj)
-        slice_ = subject.Link.get_linked_element_geom_slice(obj, "bbb")
-        assert range(15)[slice_] == range(5)
+    def test_get_last_element(self):
+        slice_ = subject.Link.get_linked_element_geom_slice(linked_obj(), "ccc")
+        assert range(15)[slice_] == range(10, 15)
 
-    def test_skip_hidden_middle_element(self):
-        obj = TestGettingLinkedElementGeomSlice.TEST_OBJ
-        obj = obj | {"hidden_indices": [1]}
-        obj = cast(bpy.types.Object, obj)
-        slice_ = subject.Link.get_linked_element_geom_slice(obj, "ccc")
+    def test_hidden_first_element_does_not_shift_later_slices(self):
+        slice_ = subject.Link.get_linked_element_geom_slice(linked_obj(hidden_indices=[0]), "bbb")
         assert range(15)[slice_] == range(5, 10)
 
-    def test_handle_hidden_non_first_element(self):
-        obj = TestGettingLinkedElementGeomSlice.TEST_OBJ
-        obj = obj | {"hidden_indices": [1]}
-        obj = cast(bpy.types.Object, obj)
-        slice_ = subject.Link.get_linked_element_geom_slice(obj, "aaa")
+    def test_hidden_middle_element_does_not_shift_later_slices(self):
+        slice_ = subject.Link.get_linked_element_geom_slice(linked_obj(hidden_indices=[1]), "ccc")
+        assert range(15)[slice_] == range(10, 15)
+
+    def test_hidden_later_element_does_not_affect_earlier_slices(self):
+        slice_ = subject.Link.get_linked_element_geom_slice(linked_obj(hidden_indices=[1]), "aaa")
         assert range(15)[slice_] == range(5)
+
+    def test_asking_for_a_hidden_element_is_an_error(self):
+        with pytest.raises(AssertionError):
+            subject.Link.get_linked_element_geom_slice(linked_obj(hidden_indices=[1]), "bbb")
+
+
+class TestGettingGuidByFaceIndex:
+    """Face indices come from the evaluated mesh, which numbers only the visible polygons."""
+
+    def test_without_hidden_elements_faces_map_to_their_owner(self):
+        obj = linked_obj()
+        assert subject.Link.get_guid_by_face_index(obj, 0) == "aaa"
+        assert subject.Link.get_guid_by_face_index(obj, 4) == "aaa"
+        assert subject.Link.get_guid_by_face_index(obj, 5) == "bbb"
+        assert subject.Link.get_guid_by_face_index(obj, 14) == "ccc"
+
+    def test_face_index_past_the_mesh_maps_to_nothing(self):
+        assert subject.Link.get_guid_by_face_index(linked_obj(), 15) is None
+
+    def test_hidden_first_element_shifts_visible_faces_down(self):
+        obj = linked_obj(hidden_indices=[0])
+        assert subject.Link.get_guid_by_face_index(obj, 0) == "bbb"
+        assert subject.Link.get_guid_by_face_index(obj, 4) == "bbb"
+        assert subject.Link.get_guid_by_face_index(obj, 5) == "ccc"
+        assert subject.Link.get_guid_by_face_index(obj, 10) is None
+
+    def test_hidden_middle_element_is_never_hit(self):
+        obj = linked_obj(hidden_indices=[1])
+        assert subject.Link.get_guid_by_face_index(obj, 4) == "aaa"
+        assert subject.Link.get_guid_by_face_index(obj, 5) == "ccc"
+        assert subject.Link.get_guid_by_face_index(obj, 9) == "ccc"
+        assert subject.Link.get_guid_by_face_index(obj, 10) is None
