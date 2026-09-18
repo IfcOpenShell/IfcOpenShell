@@ -2,6 +2,7 @@ name: ci
 
 on:
   push:
+    branches: [v0.9.0]
     paths: &ci_paths
       - 'src/bcf/**'
       - 'src/bsdd/**'
