@@ -101,6 +101,37 @@ int IfcGeom::util::surface_genus(const TopoDS_Shape& s) {
 }
 
 bool IfcGeom::util::is_manifold(const TopoDS_Shape& a) {
+	if (a.ShapeType() == TopAbs_COMPOUND && is_compound_of_faces(a)) {
+		// With reorient-shells disabled a faceset is emitted as a loose compound
+		// of faces without an enclosing shell. Recursing into that compound would
+		// evaluate every face in isolation (one ancestor face per edge) and always
+		// report non-manifold. The manifoldness check however is only meaningful
+		// for a boolean operand, which must be a properly oriented shell whose
+		// shared edges pair up. So, independent of the reorient-shells setting,
+		// gather the faces into a shell, orient them, and test that shell instead
+		// of accepting the loose faces as-is.
+		NCollection_List<TopoDS_Shape> faces;
+		shape_to_face_list(a, faces);
+
+		BRep_Builder builder;
+		TopoDS_Shell shell;
+		builder.MakeShell(shell);
+		for (NCollection_List<TopoDS_Shape>::Iterator fit(faces); fit.More(); fit.Next()) {
+			builder.Add(shell, fit.Value());
+		}
+
+		ShapeFix_Shell fix;
+		fix.FixFaceOrientation(shell);
+		const TopoDS_Shape oriented = fix.Shape();
+
+		// Guard against the degenerate case where nothing was assembled into a
+		// shell; there is no manifold shell to speak of then.
+		if (is_compound_of_faces(oriented) || util::count(oriented, TopAbs_SHELL) == 0) {
+			return false;
+		}
+		return is_manifold(oriented);
+	}
+
 	if (a.ShapeType() == TopAbs_COMPOUND || a.ShapeType() == TopAbs_SOLID) {
 		TopoDS_Iterator it(a);
 		for (; it.More(); it.Next()) {
