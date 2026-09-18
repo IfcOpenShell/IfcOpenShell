@@ -331,8 +331,13 @@ def resolve_items(
     for item in representation.Items or []:  # Be forgiving of invalid IFCs because Revit :(
         if item.is_a("IfcMappedItem"):
             rep_matrix = ifcopenshell.util.placement.get_mappeditem_transformation(item)
-            if not np.allclose(rep_matrix, np.eye(4)):
-                rep_matrix = rep_matrix @ matrix.copy()
+            # ``matrix`` maps this representation into the top space, and
+            # ``rep_matrix`` maps the mapped geometry into this one, so the
+            # accumulated transform is M_outer @ M_inner (see #3019). Always
+            # compose, even when ``rep_matrix`` is the identity: skipping the
+            # composition in that case would drop the accumulated ``matrix``
+            # instead of carrying it through unchanged.
+            rep_matrix = matrix.copy() @ rep_matrix
             results.extend(resolve_items(item.MappingSource.MappedRepresentation, rep_matrix))
         else:
             results.append(ResolvedItemDict(matrix=matrix.copy(), item=item))
