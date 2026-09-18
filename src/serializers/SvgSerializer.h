@@ -539,9 +539,18 @@ namespace {
 			size_t n_included = 0;
 			for (auto it = items_.begin(); it != items_.end(); ++it) {
 				if (!use_prefiltering_ || !is_obscured_(&it->second)) {
-					hlr_writer vis(it->second);
-					boost::apply_visitor(vis, engine_);
-					n_included++;
+					// Meshing (poly) and Load/Add can throw on degenerate or
+					// topologically invalid shapes. Skip the offending element
+					// with a warning rather than aborting the whole drawing.
+					try {
+						hlr_writer vis(it->second);
+						boost::apply_visitor(vis, engine_);
+						n_included++;
+					} catch (const std::exception& e) {
+						logger_.Error("SER", 36, std::string("Skipped element in hidden line removal: ") + e.what(), it->first);
+					} catch (...) {
+						logger_.Error("SER", 36, "Skipped element in hidden line removal", it->first);
+					}
 				}
 			}
 			if (use_prefiltering_) {
@@ -553,7 +562,17 @@ namespace {
 				vis.set_product_shape(&items_);
 			}
 			vis.set_classified_shapes(&classified_items_);
-			return boost::apply_visitor(vis, engine_);
+			// The combined hidden line removal projection can still throw on
+			// invalid topology that survived per-element loading. Degrade to an
+			// empty projection layer for this drawing instead of aborting.
+			try {
+				return boost::apply_visitor(vis, engine_);
+			} catch (const std::exception& e) {
+				logger_.Error("SER", 37, std::string("Hidden line removal failed for drawing: ") + e.what());
+			} catch (...) {
+				logger_.Error("SER", 37, "Hidden line removal failed for drawing");
+			}
+			return {};
 		}
 	};
 }
