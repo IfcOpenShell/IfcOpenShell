@@ -2,6 +2,8 @@
 
 #include "../ifcgeom/IfcGeomElement.h"
 
+#include <memory>
+
 using namespace ifcopenshell::geometry;
 
 ifcopenshell::geometry::Converter::Converter(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, IfcParse::IfcFile* file, ifcopenshell::geometry::Settings& s, Logger& logger)
@@ -18,19 +20,27 @@ ifcopenshell::geometry::Converter::~Converter() {
 }
 
 namespace {
-	void substitute_with_box_based_on_density(Logger& logger, IfcGeom::ConversionResults& items, double& density) {
-		int nv = 0;
-		void* box = nullptr;
-		double volume = 0.;
-		for (auto& i : items) {
-			nv += i.Shape()->num_vertices();
-			volume = i.Shape()->bounding_box(box);
-		}
-		density = nv / volume;
-		if (density > 1e5) {
-			items[0].Shape()->set_box(box);
-			items.erase(items.begin() + 1, items.end());
-			logger.Notice("GEO", 30, "Substituted element with " + boost::lexical_cast<std::string>(density) + " vertices / m3 with a bounding box");
+	void substitute_with_box_based_on_density(Logger& logger, IfcGeom::ConversionResults& items, double threshold) {
+		for (auto& item : items) {
+			int nv = item.Shape()->num_vertices();
+			if (nv <= 8) {
+				// substitution would not reduce complexity
+				continue;
+			}
+			void* box = nullptr;
+			double volume = item.Shape()->bounding_box(box);
+			if (box == nullptr) {
+				continue;
+			}
+			std::unique_ptr<double[]> box_owner(static_cast<double*>(box));
+			if (!(volume > 0.)) {
+				continue;
+			}
+			double density = nv / volume;
+			if (density > threshold) {
+				item.Shape()->set_box(box);
+				logger.Notice("GEO", 30, "Substituted item with " + boost::lexical_cast<std::string>(density) + " vertices / m3 with a bounding box");
+			}
 		}
 	}
 }
@@ -47,6 +57,10 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 
 	if (!kernel_->convert(representation_node, shapes)) {
 		return 0;
+	}
+
+	if (settings_.get<ifcopenshell::geometry::settings::BboxSubstitutionThreshold>().has()) {
+		substitute_with_box_based_on_density(logger_, shapes, settings_.get<ifcopenshell::geometry::settings::BboxSubstitutionThreshold>().get());
 	}
 
 	if (settings_.get<ifcopenshell::geometry::settings::ApplyLayerSets>().get()) {

@@ -9,6 +9,10 @@
 #include <BRepTools_WireExplorer.hxx>
 #include <TopoDS_Compound.hxx>
 #include <BRep_Builder.hxx>
+#include <Bnd_Box.hxx>
+#include <BRepBndLib.hxx>
+#include <BRepPrimAPI_MakeBox.hxx>
+#include <Precision.hxx>
 
 #include "OpenCascadeConversionResult.h"
 
@@ -24,6 +28,7 @@
 #include <unordered_map>
 #include <tuple>
 #include <algorithm>
+#include <limits>
 
 #if OCC_VERSION_HEX >= 0x70600
 #include <TopTools_FormatVersion.hxx>
@@ -372,6 +377,42 @@ bool ifcopenshell::geometry::OpenCascadeShape::is_manifold() const {
 int ifcopenshell::geometry::OpenCascadeShape::num_vertices() const
 {
 	return IfcGeom::util::count(shape_, TopAbs_VERTEX);
+}
+
+double ifcopenshell::geometry::OpenCascadeShape::bounding_box(void*& b) const
+{
+	static const double inf = std::numeric_limits<double>::infinity();
+	if (b == nullptr) {
+		b = new double[6]{ +inf, +inf, +inf, -inf, -inf, -inf };
+	}
+	double* box = static_cast<double*>(b);
+	Bnd_Box bnd;
+	BRepBndLib::Add(shape_, bnd, false);
+	if (!bnd.IsVoid()) {
+		double x1, y1, z1, x2, y2, z2;
+		bnd.Get(x1, y1, z1, x2, y2, z2);
+		box[0] = std::min(box[0], x1);
+		box[1] = std::min(box[1], y1);
+		box[2] = std::min(box[2], z1);
+		box[3] = std::max(box[3], x2);
+		box[4] = std::max(box[4], y2);
+		box[5] = std::max(box[5], z2);
+	}
+	if (box[0] > box[3] || box[1] > box[4] || box[2] > box[5]) {
+		return 0.;
+	}
+	return (box[3] - box[0]) * (box[4] - box[1]) * (box[5] - box[2]);
+}
+
+void ifcopenshell::geometry::OpenCascadeShape::set_box(void* b)
+{
+	const double* box = static_cast<const double*>(b);
+	double dims[3];
+	for (int i = 0; i < 3; ++i) {
+		// guard against degenerate extents which BRepPrimAPI_MakeBox does not accept
+		dims[i] = std::max(box[3 + i] - box[i], ::Precision::Confusion() * 2);
+	}
+	shape_ = BRepPrimAPI_MakeBox(gp_Pnt(box[0], box[1], box[2]), dims[0], dims[1], dims[2]).Solid();
 }
 
 int ifcopenshell::geometry::OpenCascadeShape::num_edges() const

@@ -148,6 +148,7 @@
 %ignore CircleSegments;
 %ignore CgalSmoothAngleDegrees;
 %ignore KeepBoundingBoxes;
+%ignore BboxSubstitutionThreshold;
 %ignore SurfaceColour;
 %ignore ComputeCurvature;
 %ignore FunctionStepType;
