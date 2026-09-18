@@ -244,7 +244,7 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 		}
 	}
 
-	shape = new IfcGeom::Representation::BRep(settings_, product_type, representation_id_builder.str(), shapes);
+	shape = new IfcGeom::Representation::BRep(settings_, product_type, representation_id_builder.str(), shapes, &product->declaration());
 
 	std::string context_string = "";
 

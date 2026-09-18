@@ -1,4 +1,5 @@
 #include "../ifcgeom/IfcGeomRenderStyles.h"
+#include "../ifcparse/IfcSchema.h"
 
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -112,15 +113,35 @@ void IfcGeom::set_default_style_file(const std::string& json_file) {
 	}
 }
 
-const ifcopenshell::geometry::taxonomy::style::ptr& IfcGeom::get_default_style(const std::string& s) {
+const ifcopenshell::geometry::taxonomy::style::ptr& IfcGeom::get_default_style(const std::string& s, const IfcParse::declaration* decl) {
 	static std::mutex m;
 	std::lock_guard<std::mutex> lk(m);
 
 	if (!default_materials_initialized) InitDefaultMaterials();
 	auto it = default_materials.find(s);
+	if (it == default_materials.end() && decl != nullptr) {
+		// No style registered for this exact type. Walk up the schema's supertype
+		// chain (e.g. IfcSlabStandardCase -> IfcSlab) so a style registered for a
+		// supertype is inherited by its subtypes, rather than always falling back
+		// to the generic default style.
+		const IfcParse::entity* entity = decl->as_entity();
+		const IfcParse::entity* super = entity ? entity->supertype() : nullptr;
+		while (super != nullptr) {
+			auto super_it = default_materials.find(super->name());
+			if (super_it != default_materials.end()) {
+				it = super_it;
+				break;
+			}
+			super = super->supertype();
+		}
+	}
 	if (it == default_materials.end()) {
 		default_materials.insert(std::make_pair(s, default_material));
 		it = default_materials.find(s);
+	} else if (it->first != s) {
+		// Cache the resolved (inherited) style under the leaf type name too, so
+		// repeated lookups for this exact type are O(1) afterwards.
+		default_materials.insert(std::make_pair(s, it->second));
 	}
 	return it->second;
 }
