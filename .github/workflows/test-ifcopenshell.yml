@@ -218,6 +218,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
             -DENABLE_TIFF=OFF \
             -DENABLE_CURL=OFF \
             -DBUILD_APPS=OFF \
