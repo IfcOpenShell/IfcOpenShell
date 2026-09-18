@@ -293,6 +293,19 @@ function(avoid_debug_imported_config_fallback)
     endforeach()
 endfunction()
 
+# Fail the configure if FOUND_VERSION is older than MIN_VERSION.
+#
+# Useful when a package's CMake config can't express minimum-version semantics via
+# find_package()'s own version argument:
+# - it requires an exact full-version or exact-major-version match
+# - the config is missing a -version.cmake file
+function(check_min_version PACKAGE_NAME FOUND_VERSION MIN_VERSION)
+    if("${FOUND_VERSION}" VERSION_LESS "${MIN_VERSION}")
+        message(FATAL_ERROR "${PACKAGE_NAME} ${MIN_VERSION} or newer is required, found ${FOUND_VERSION}.")
+    endif()
+    message(STATUS "${PACKAGE_NAME}: found version ${FOUND_VERSION} (minimum required is ${MIN_VERSION}).")
+endfunction()
+
 function(files_for_ifc_version IFC_VERSION RESULT_NAME)
     set(IFC_PARSE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../src/ifcparse)
     set(${RESULT_NAME}

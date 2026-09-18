@@ -25,6 +25,9 @@ if((NOT LIBXML2_INCLUDE_DIR AND NOT LIBXML2_LIBRARIES))
         find_package(LibXml2 REQUIRED)
     else()
         message(STATUS "Found LibXml2 config: ${LibXml2_DIR}")
+        # libxml2-config.cmake only sets LIBXML2_VERSION_STRING, not LibXml2_VERSION
+        # (unlike CMake's builtin FindLibXml2 module), so mirror it for consistency.
+        set(LibXml2_VERSION "${LIBXML2_VERSION_STRING}")
     endif()
 else()
     find_package(LibXml2 REQUIRED)
