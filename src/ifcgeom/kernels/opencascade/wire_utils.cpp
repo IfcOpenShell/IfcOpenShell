@@ -379,6 +379,30 @@ namespace {
 }
 
 bool IfcGeom::util::wire_intersections(const TopoDS_Wire& wire, NCollection_List<TopoDS_Shape>& wires, const wire_tolerance_settings& settings) {
+	// #622: this function recurses once for every self-intersection loop that it
+	// splits off (see the self-call further down). On a degenerate or pathological
+	// boundary that recursion can run unbounded and overflow the stack. Cap the
+	// depth with a thread_local counter (thread_local because the geometry iterator
+	// may run several kernels concurrently) and bail out gracefully once the cap is
+	// reached, appending the wire unmodified instead of crashing. The RAII guard
+	// keeps the counter correct across every return path, including the throw below.
+	static thread_local int recursion_depth = 0;
+	struct recursion_guard {
+		int& depth;
+		recursion_guard(int& d) : depth(d) { ++depth; }
+		~recursion_guard() { --depth; }
+	} guard(recursion_depth);
+
+	// A single legitimate boundary only needs a handful of splits; the original
+	// report overflowed around the 80th nested call, so a cap well below that keeps
+	// valid input working while preventing the crash.
+	static const int max_recursion_depth = 32;
+	if (recursion_depth > max_recursion_depth) {
+		Logger::Root().Warning("GEO", 328, "Wire intersection resolution exceeded maximum recursion depth; leaving boundary unmodified");
+		wires.Append(wire);
+		return false;
+	}
+
 	double eps = get_wire_intersection_tolerance(settings, wire);
 	double eps_real = settings.precision;
 	
