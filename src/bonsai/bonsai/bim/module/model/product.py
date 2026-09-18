@@ -565,7 +565,35 @@ class SetActiveType(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = tool.Model.get_model_props()
-        props.relating_type_id = str(self.relating_type)
+
+        # The button bakes in an id from AuthoringData's cache at draw time, so
+        # resolve it against the live model instead of trusting it (#8850).
+        ifc_file = tool.Ifc.get()
+        try:
+            relating_type = ifc_file.by_id(self.relating_type)
+        except RuntimeError:
+            self.report({"WARNING"}, "This type no longer exists. It may have been deleted.")
+            return
+
+        ifc_class = relating_type.is_a()
+        if props.ifc_class != ifc_class:
+            # Assigning triggers update_ifc_class, which refreshes
+            # AuthoringData (incl. relating_type_id) for the new class.
+            try:
+                props.ifc_class = ifc_class
+            except TypeError:
+                self.report({"WARNING"}, f"'{ifc_class}' is not available as a type here.")
+                return
+        else:
+            # Blender skips an EnumProperty's update callback when the value
+            # doesn't change, so same-class staleness needs an explicit refresh.
+            AuthoringData.refresh_relating_type_id()
+
+        try:
+            props.relating_type_id = str(relating_type.id())
+        except TypeError:
+            name = relating_type.Name or "Unnamed"
+            self.report({"WARNING"}, f"'{name}' is no longer available as a type here.")
 
 
 # TODO: not exposed to UI.
