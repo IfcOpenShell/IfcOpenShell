@@ -234,10 +234,10 @@
             },
             "IfcDoor + IfcDoorType": {
                 "Qto_DoorBaseQuantities": {
-                    "Area": "get_net_side_area",
-                    "Height": "get_height",
-                    "Perimeter": "get_rectangular_perimeter",
-                    "Width": "get_x"
+                    "Area": "get_lining_area",
+                    "Height": "get_overall_height",
+                    "Perimeter": "get_lining_perimeter",
+                    "Width": "get_overall_width"
                 }
             },
             "IfcDuctFitting + IfcDuctFittingType": {
@@ -789,10 +789,10 @@
             },
             "IfcWindow + IfcWindowType": {
                 "Qto_WindowBaseQuantities": {
-                    "Area": "get_net_side_area",
-                    "Height": "get_height",
-                    "Perimeter": "get_rectangular_perimeter",
-                    "Width": "get_length"
+                    "Area": "get_lining_area",
+                    "Height": "get_overall_height",
+                    "Perimeter": "get_lining_perimeter",
+                    "Width": "get_overall_width"
                 }
             }
         }
