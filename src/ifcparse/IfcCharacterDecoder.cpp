@@ -98,6 +98,7 @@ namespace {
         int codepage = 1;
         unsigned int hex = 0;
         unsigned int hex_count = 0;
+        unsigned int high_surrogate = 0;
 
         while ((current_char = stream_.peek()) != 0) {
             if (EXPECTS_CHARACTER(parse_state)) {
@@ -111,7 +112,7 @@ namespace {
                 if (((parse_state & ALPHABET_DEFINITION) != 0U) ||
                     ((parse_state & IGNORED_DIRECTIVE) != 0U) ||
                     ((parse_state & ENDEXTENDED_0) != 0U)) {
-                    parse_state = hex = hex_count = 0;
+                    parse_state = hex = hex_count = high_surrogate = 0;
                 } else if ((parse_state & ENCOUNTERED_HEX) != 0U) {
                     parse_state += THIRD_SOLIDUS;
                     parse_state -= ENCOUNTERED_HEX;
@@ -149,7 +150,23 @@ namespace {
                 if ((hex_count == 2 && ((parse_state & EXTENDED2) == 0U)) ||
                     (hex_count == 4 && ((parse_state & EXTENDED4) == 0U)) ||
                     (hex_count == 8)) {
-                    builder_.push_back(hex);
+                    // \X2\ carries UTF-16 code units, so surrogate pairs form a single codepoint.
+                    bool awaiting_low_surrogate = false;
+                    auto codepoint = static_cast<std::u32string::value_type>(hex);
+                    if (hex_count == 4) {
+                        if (hex >= 0xd800 && hex <= 0xdbff) {
+                            high_surrogate = hex;
+                            awaiting_low_surrogate = true;
+                        } else if ((high_surrogate != 0U) && hex >= 0xdc00 && hex <= 0xdfff) {
+                            codepoint = 0x10000 + ((high_surrogate - 0xd800) << 10) + (hex - 0xdc00);
+                            high_surrogate = 0;
+                        } else {
+                            high_surrogate = 0;
+                        }
+                    }
+                    if (!awaiting_low_surrogate) {
+                        builder_.push_back(codepoint);
+                    }
                     if (hex_count == 2) {
                         parse_state = 0;
                     } else {
