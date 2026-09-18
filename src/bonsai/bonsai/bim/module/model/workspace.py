@@ -1069,7 +1069,10 @@ class EditObjectUI:
         row.separator()
         row.label(text="Mode") if ui_context != "TOOL_HEADER" else row
 
-        if AuthoringData.data["active_material_usage"] == "LAYER3":
+        if AuthoringData.data["active_material_usage"] == "LAYER3" or (
+            AuthoringData.data["active_material_usage"] is None
+            and tool.Model.is_layer3_capable_class(AuthoringData.data["active_class"])
+        ):
             if len(context.selected_objects) == 1 and AuthoringData.data["has_extrusion"]:
                 row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
                 add_layout_hotkey_operator(row, "Edit Profile", "S_E", "", ui_context)
@@ -1242,7 +1245,9 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             if bpy.context.selected_objects[0] != active_object:
                 return
 
-            if self.active_material_usage == "LAYER3":
+            if self.active_material_usage == "LAYER3" or (
+                self.active_material_usage is None and tool.Model.is_layer3_capable_class(self.active_class)
+            ):
                 # Edit LAYER3 profile
                 if (
                     active_object.mode == "OBJECT"

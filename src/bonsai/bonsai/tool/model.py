@@ -288,6 +288,60 @@ class Model(bonsai.core.tool.Model):
             return tool.Ifc.get().add(result["profile_def"])
 
     @classmethod
+    def realign_to_triangle_profile(cls, obj: bpy.types.Object, position: Matrix) -> bool:
+        """Realign `obj` when a 3 point profile was edited out of plane.
+
+        Any 3 non collinear points define a plane, so instead of flattening the
+        edit back onto the old extrusion plane (losing the user's 3D node
+        positions), rotate the object so the extrusion plane matches the new
+        triangle, keeping all 3 nodes at their edited world positions.
+
+        `position` is the profile position matrix the mesh was imported with
+        (identity for representation item objects). Returns True if the object
+        was realigned; the caller is responsible for persisting the new
+        placement to IFC.
+        """
+        from bonsai.tool.cad import WELD_TOLERANCE
+
+        assert isinstance(obj.data, bpy.types.Mesh)
+        mesh = obj.data
+        if len(mesh.vertices) != 3 or len(mesh.edges) != 3:
+            return False
+        edge_keys = {frozenset(e.vertices) for e in mesh.edges}
+        if len(edge_keys) != 3 or any(len(k) != 2 for k in edge_keys):
+            return False
+        if any(v.groups for v in mesh.vertices):  # Arcs and circles keep the flattening behaviour.
+            return False
+        points = [v.co.copy() for v in mesh.vertices]
+        if any((points[i] - points[j]).length <= WELD_TOLERANCE for i, j in ((0, 1), (0, 2), (1, 2))):
+            return False  # Would weld into a degenerate profile, keep the legacy failure path.
+        position_i = position.inverted()
+        # 0.1mm, matching the profile rounding tolerance in auto_detect_profiles.
+        if max(abs((position_i @ p).z) for p in points) <= 1e-4:
+            return False
+        normal = (points[1] - points[0]).cross(points[2] - points[0])
+        if normal.length < 1e-8:
+            return False  # Degenerate triangle, existing profile validation will report it.
+        normal.normalize()
+        if normal.dot(position.col[2].to_3d()) < 0:
+            normal.negate()  # Keep the extrusion on the same side as before.
+        x_axis = position.col[0].to_3d()
+        x_axis -= normal * x_axis.dot(normal)
+        if x_axis.length < 1e-6:
+            x_axis = points[1] - points[0]
+        x_axis.normalize()
+        y_axis = normal.cross(x_axis)
+        origin = position.translation - normal * normal.dot(position.translation - points[0])
+        plane = Matrix([x_axis, y_axis, normal, origin]).to_4x4().transposed()
+        plane_i = plane.inverted()
+        for vert in mesh.vertices:
+            local = plane_i @ vert.co
+            vert.co = position @ Vector((local.x, local.y, 0.0))
+        obj.matrix_world = obj.matrix_world @ plane @ position_i
+        bpy.context.view_layer.update()
+        return True
+
+    @classmethod
     def export_curves(
         cls, obj: bpy.types.Object, position: Optional[Matrix] = None
     ) -> list[ifcopenshell.entity_instance] | None:
@@ -618,7 +672,7 @@ class Model(bonsai.core.tool.Model):
 
             cls.edges.extend([(i, i + 1) for i in range(offset, len(cls.vertices) - 1)])
             if is_closed:
-                cls.edges[-1] = (len(cls.vertices) - 1, offset)  # Close the loop
+                cls.edges.append((len(cls.vertices) - 1, offset))  # Close the loop
 
         elif curve.is_a("IfcCompositeCurve"):
             # This is a first pass incomplete implementation only for simple polylines, and misses many details.
@@ -1081,6 +1135,11 @@ class Model(bonsai.core.tool.Model):
                 return "PROFILE"
             elif material.is_a("IfcMaterialProfileSet"):
                 return "PROFILE"
+
+    @classmethod
+    def is_layer3_capable_class(cls, ifc_class: str) -> bool:
+        """Classes whose single-extrusion body is edited as a LAYER3 profile."""
+        return ifc_class in ("IfcSlab", "IfcRoof", "IfcRamp", "IfcPlate")
 
     @classmethod
     def get_wall_axis(
