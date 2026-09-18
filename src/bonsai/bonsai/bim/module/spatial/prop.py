@@ -78,7 +78,9 @@ def update_elevation(self: "BIMContainer", context: bpy.types.Context) -> None:
             elevation = float(self.elevation)
         except Exception as e:
             print(f"Elevation parsing failed for '{self.elevation}': {e}")
-            elevation = 0
+            # Don't silently move the storey to Z=0 on unparseable input — leave the
+            # existing placement untouched instead of corrupting it. See #8545.
+            return
 
     # Update the object's position in the 3D scene
     if ifc_definition_id := self.ifc_definition_id:
