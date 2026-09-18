@@ -389,6 +389,15 @@ if IN_BLENDER:
                         box.label(text="installation from Blender extensions platform")
                         box.label(text="is not supported and you need to download")
                         box.label(text="and install Bonsai from the link below.")
+                elif "No module named 'ifcopenshell'" in (last_error or ""):
+                    box.separator()
+                    # Blender extracts bundled wheels into a site-packages folder shared by every
+                    # extension and only re-syncs it when an extension is enabled or disabled.
+                    box.label(text="Bonsai's Python dependencies are missing.")
+                    box.label(text="Blender only reinstalls them when an")
+                    box.label(text="extension is enabled or disabled.")
+                    box.label(text="To restore them, DISABLE Bonsai in")
+                    box.label(text="Preferences > Add-ons, then ENABLE it again.")
 
                 layout.operator("bim.copy_debug_information", text="Copy Error Message To Clipboard")
                 op = layout.operator("bim.open_uri", text="How Can I Fix This?")
