@@ -746,8 +746,37 @@ class IfcImporter:
             if shape:
                 assert isinstance(shape, W.TriangulationElement)
                 product = self.file.by_id(shape.id)
+                stale_obj = None
+                if product in results:
+                    # Some models attach Axis/BoundingBox/Body representations
+                    # directly to the same IfcGeometricRepresentationContext
+                    # instead of using dedicated sub-contexts (e.g. non-compliant
+                    # exporters). In that case a single context-ids filter can't
+                    # tell them apart, and the iterator yields more than one
+                    # representation for the same product in this pass. Keep
+                    # the Body representation and ignore other (non-solid)
+                    # duplicates for the same product, otherwise whichever
+                    # representation happens to be processed last would
+                    # silently replace the mesh already created for it,
+                    # sometimes leaving the product with an empty Axis/Box
+                    # mesh instead of its actual body geometry. See #8026.
+                    rep_id = int(shape.geometry.id.split("-", 1)[0])
+                    rep = self.file.by_id(rep_id)
+                    if getattr(rep, "RepresentationIdentifier", None) != "Body":
+                        if not iterator.next():
+                            break
+                        continue
+                    # The Body representation is superseding a duplicate
+                    # (non-Body) object created earlier for this same product.
+                    # Remember it so we can clean up the now-orphaned data.
+                    stale_obj = tool.Ifc.get_object(product)
                 self.create_product(product, shape)
                 results.add(product)
+                if stale_obj is not None and stale_obj != tool.Ifc.get_object(product):
+                    stale_mesh = stale_obj.data if isinstance(stale_obj.data, bpy.types.Mesh) else None
+                    bpy.data.objects.remove(stale_obj, do_unlink=True)
+                    if stale_mesh is not None and stale_mesh.users == 0:
+                        bpy.data.meshes.remove(stale_mesh)
             if not iterator.next():
                 break
         print("Done creating geometry")
