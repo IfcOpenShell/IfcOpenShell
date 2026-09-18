@@ -30,6 +30,10 @@
 #include <BRepOffsetAPI_Sewing.hxx>
 #include <ShapeFix_Solid.hxx>
 #include <ShapeFix_ShapeTolerance.hxx>
+#include <Geom_Line.hxx>
+#include <ElCLib.hxx>
+#include <gp_Lin.hxx>
+#include <gp_Vec.hxx>
 
 #include <boost/range/irange.hpp>
 #include <boost/range/algorithm_ext/push_back.hpp>
@@ -376,6 +380,50 @@ namespace {
 			return 0.;
 		}
 	}
+
+	// Detects overlapping (not just crossing) collinear edges, which
+	// GeomAPI_ExtremaCurveCurve does not report as a single extremum.
+	bool collinear_overlap_point(const Handle(Geom_Curve)& c1, double u11, double u12,
+	                              const Handle(Geom_Curve)& c2, double u21, double u22,
+	                              double eps, double& U1, double& U2) {
+		if (c1->DynamicType() != STANDARD_TYPE(Geom_Line) || c2->DynamicType() != STANDARD_TYPE(Geom_Line)) {
+			return false;
+		}
+
+		const gp_Lin& l1 = Handle(Geom_Line)::DownCast(c1)->Lin();
+		const gp_Lin& l2 = Handle(Geom_Line)::DownCast(c2)->Lin();
+
+		if (gp_Vec(l1.Direction()).Crossed(gp_Vec(l2.Direction())).Magnitude() > eps) {
+			return false;
+		}
+		if (l1.Distance(l2.Location()) > eps) {
+			return false;
+		}
+
+		if (u11 > u12) { std::swap(u11, u12); }
+		if (u21 > u22) { std::swap(u21, u22); }
+
+		for (double u : { u21, u22 }) {
+			const gp_Pnt p = c2->Value(u);
+			const double t = ElCLib::Parameter(l1, p);
+			if (t > u11 + eps && t < u12 - eps) {
+				U1 = t;
+				U2 = u;
+				return true;
+			}
+		}
+		for (double u : { u11, u12 }) {
+			const gp_Pnt p = c1->Value(u);
+			const double t = ElCLib::Parameter(l2, p);
+			if (t > u21 + eps && t < u22 - eps) {
+				U1 = u;
+				U2 = t;
+				return true;
+			}
+		}
+
+		return false;
+	}
 }
 
 bool IfcGeom::util::wire_intersections(const TopoDS_Wire& wire, NCollection_List<TopoDS_Shape>& wires, const wire_tolerance_settings& settings) {
@@ -453,16 +501,22 @@ bool IfcGeom::util::wire_intersections(const TopoDS_Wire& wire, NCollection_List
 			if (i == n - 1 && j == 0) continue;
 
 			double u11, u12, u21, u22, U1, U2;
-			GeomAPI_ExtremaCurveCurve ecc(
-				BRep_Tool::Curve(wd->Edge(i + 1), u11, u12),
-				BRep_Tool::Curve(wd->Edge(j + 1), u21, u22)
-			);
+			Handle(Geom_Curve) crv1 = BRep_Tool::Curve(wd->Edge(i + 1), u11, u12);
+			Handle(Geom_Curve) crv2 = BRep_Tool::Curve(wd->Edge(j + 1), u21, u22);
+			GeomAPI_ExtremaCurveCurve ecc(crv1, crv2);
 
 			// @todo: extend this to work in case of multiple extrema and curved segments.
-			const bool unbounded_intersects = (!ecc.Extrema().IsParallel() && ecc.NbExtrema() == 1 && ecc.Distance(1) < eps);
+			bool unbounded_intersects = (!ecc.Extrema().IsParallel() && ecc.NbExtrema() == 1 && ecc.Distance(1) < eps);
 			if (unbounded_intersects) {
 				ecc.Parameters(1, U1, U2);
+			} else {
+				// Edges parallel/collinear with each other are never reported by
+				// GeomAPI_ExtremaCurveCurve as a single crossing extremum, so an
+				// overlapping shared line segment falls through undetected above.
+				unbounded_intersects = collinear_overlap_point(crv1, u11, u12, crv2, u21, u22, eps, U1, U2);
+			}
 
+			if (unbounded_intersects) {
 				if (u11 > u12) {
 					std::swap(u11, u12);
 				}
@@ -486,6 +540,9 @@ bool IfcGeom::util::wire_intersections(const TopoDS_Wire& wire, NCollection_List
 
 					intersected = true;
 
+					const gp_Pnt split_point_1 = crv1->Value(U1);
+					const gp_Pnt split_point_2 = crv2->Value(U2);
+
 					// Explore a forward and backward cycle from the intersection point
 					for (int fb = 0; fb <= 1; ++fb) {
 						const bool forward = fb == 0;
@@ -505,9 +562,7 @@ bool IfcGeom::util::wire_intersections(const TopoDS_Wire& wire, NCollection_List
 								// gp_Pnt p2 = points3d.Value(1);
 
 								gp_Pnt p1 = BRep_Tool::Pnt(*v);
-								gp_Pnt pp1, pp2;
-								ecc.Points(1, pp1, pp2);
-								const gp_Pnt& p2 = k == i ? pp1 : pp2;
+								const gp_Pnt& p2 = k == i ? split_point_1 : split_point_2;
 
 								// Substitute with a new edge from/to the intersection point
 								if (p1.Distance(p2) > eps_real * 2) {

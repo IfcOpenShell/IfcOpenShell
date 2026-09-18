@@ -54,6 +54,8 @@
 #include <Geom_SurfaceOfRevolution.hxx>
 #include <BRepPrimAPI_MakeRevol.hxx>
 
+#include <vector>
+
 #if OCC_VERSION_HEX < 0x70600
 #include <BRepAdaptor_HCompCurve.hxx>
 #endif
@@ -343,6 +345,41 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 			NCollection_List<TopoDS_Shape> results;
 			if (settings.use_wire_intersection_check && util::wire_intersections(wire, results, settings)) {
 				Logger::Root().Warning("GEO", 161, "Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
+
+				if (num_bounds == 1 && results.Extent() > 1) {
+					// No holes to reconcile against, so every sufficiently large
+					// cycle becomes its own outer wire instead of just the largest.
+					fd.all_outer() = true;
+
+					double max_area = 0.;
+					std::vector<TopoDS_Wire> cycles;
+					std::vector<double> areas;
+					for (NCollection_List<TopoDS_Shape>::Iterator it(results); it.More(); it.Next()) {
+						const TopoDS_Wire& w = TopoDS::Wire(it.Value());
+						BRepBuilderAPI_MakeFace mf(w, false);
+						if (!mf.IsDone()) {
+							continue;
+						}
+						const double area = face_area(mf.Face());
+						cycles.push_back(w);
+						areas.push_back(area);
+						if (area > max_area) {
+							max_area = area;
+						}
+					}
+
+					for (size_t idx = 0; idx < cycles.size(); ++idx) {
+						if (areas[idx] < max_area / 10.) {
+							Logger::Root().Warning("GEO", 328, "Ignoring self-intersection loop with area " + boost::lexical_cast<std::string>(areas[idx]), face->instance);
+							continue;
+						}
+						wire_senses.Bind(cycles[idx].Oriented(TopAbs_FORWARD), same_sense ? TopAbs_FORWARD : TopAbs_REVERSED);
+						fd.wires().emplace_back(cycles[idx]);
+					}
+
+					continue;
+				}
+
 				util::select_largest(results, wire);
 			}
 
