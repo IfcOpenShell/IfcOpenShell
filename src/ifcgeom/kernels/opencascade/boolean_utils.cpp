@@ -832,7 +832,14 @@ bool IfcGeom::util::points_on_planar_face_generator::operator()(gp_Pnt& p) {
 }
 
 
-bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const TopoDS_Shape& a_input, const NCollection_List<TopoDS_Shape>& b_input, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
+namespace IfcGeom { namespace util {
+	// Internal worker for boolean_operation(). When allow_nonmanifold is true a
+	// BRepCheck-valid but non-manifold CUT result is accepted as a last resort
+	// (see #620 / #616) instead of discarding the subtraction.
+	bool boolean_operation_impl(const boolean_settings& settings, const TopoDS_Shape& a_input, const NCollection_List<TopoDS_Shape>& b_input, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness, bool allow_nonmanifold);
+} }
+
+bool IfcGeom::util::boolean_operation_impl(const boolean_settings& settings, const TopoDS_Shape& a_input, const NCollection_List<TopoDS_Shape>& b_input, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness, bool allow_nonmanifold) {
 	using namespace std::string_literals;
 
 	const bool do_unify = true;
@@ -1284,6 +1291,21 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 						}
 					}
 					success = operands_nonmanifold;
+
+					if (!success && allow_nonmanifold && op == BOPAlgo_CUT) {
+						// #620 / #616: OCCT performed the subtraction and produced a
+						// BRepCheck-valid solid, but it is non-manifold (e.g. an opening
+						// edge coincides with a clip/face seam). Rather than discarding
+						// the whole subtraction, accept the valid result as a gated last
+						// resort, provided it actually removed meaningful volume (guard
+						// against no-op cuts that should instead escalate fuzziness, cf. #5630).
+						const double va = shape_volume(a);
+						const double vr = shape_volume(r);
+						if (va > 1.e-9 && (va - vr) > va * 1.e-4) {
+							success = true;
+							Logger::Root().Notice("GEO", 157, "Accepting valid but non-manifold boolean CUT result as last resort");
+						}
+					}
 				}
 
 				if (success) {
@@ -1417,12 +1439,54 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 	}
 	if (!success) {
 		if (allow_retry) {
-			return boolean_operation(settings, a, b, op, result, new_fuzziness);
+			return boolean_operation_impl(settings, a, b, op, result, new_fuzziness, allow_nonmanifold);
 		} else {
 			settings.log().Notice("GEO", 154, "No longer attempting boolean operation with higher fuzziness");
 		}
 	}
 	return success && !result.IsNull();
+}
+
+bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const TopoDS_Shape& a, const NCollection_List<TopoDS_Shape>& b, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
+	// First attempt with the strict (manifold-required) behaviour so that
+	// currently-working cuts are completely unaffected.
+	if (boolean_operation_impl(settings, a, b, op, result, fuzziness, /*allow_nonmanifold=*/false)) {
+		return true;
+	}
+
+	// Last-resort recovery for subtractions only (#620 / #616). Two failure modes
+	// are handled, both gated behind the strict attempt having already failed:
+	//  1) OCCT performs the cut but the valid result is non-manifold -> accept it.
+	//  2) A simultaneous multi-tool cut fails outright, yet applying the tools
+	//     one-by-one succeeds -> fall back to sequential application.
+	if (op != BOPAlgo_CUT) {
+		return false;
+	}
+
+	if (b.Extent() > 1) {
+		TopoDS_Shape current = a;
+		bool any_applied = false;
+		for (NCollection_List<TopoDS_Shape>::Iterator it(b); it.More(); it.Next()) {
+			NCollection_List<TopoDS_Shape> single;
+			single.Append(it.Value());
+			TopoDS_Shape part;
+			if (boolean_operation_impl(settings, current, single, op, part, fuzziness, /*allow_nonmanifold=*/true) && !part.IsNull()) {
+				current = part;
+				any_applied = true;
+			}
+			// If a single tool cannot be applied it is skipped; keeping the
+			// partially-subtracted solid is preferable to dropping every opening.
+		}
+		if (any_applied) {
+			Logger::Root().Notice("GEO", 158, "Applied subtraction operands sequentially as last resort");
+			result = current;
+			return true;
+		}
+		return false;
+	}
+
+	// Single tool: retry allowing a valid non-manifold result.
+	return boolean_operation_impl(settings, a, b, op, result, fuzziness, /*allow_nonmanifold=*/true);
 }
 
 bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const TopoDS_Shape& a, const TopoDS_Shape& b, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
