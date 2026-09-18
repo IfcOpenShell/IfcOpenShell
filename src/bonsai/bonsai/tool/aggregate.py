@@ -202,6 +202,7 @@ class Aggregate(bonsai.core.tool.Aggregate):
                     editing_obj = props.editing_objects.add()
                     editing_obj.obj = obj.original
 
+        props.was_in_local_view = bool(context.space_data and context.space_data.local_view)
         props.in_aggregate_mode = True
         return {"FINISHED"}
 
@@ -240,8 +241,9 @@ class Aggregate(bonsai.core.tool.Aggregate):
             if not element:
                 continue
 
-        if context.space_data.local_view:
+        if context.space_data.local_view and not props.was_in_local_view:
             bpy.ops.view3d.localview()
+        props.was_in_local_view = False
 
         props.in_aggregate_mode = False
         props.not_editing_objects.clear()
