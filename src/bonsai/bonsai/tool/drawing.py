@@ -774,6 +774,32 @@ class Drawing(bonsai.core.tool.Drawing):
                 return rel.RelatingDocument
 
     @classmethod
+    def get_drawing_for_sheet_reference(
+        cls, reference: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        """Find the IfcAnnotation drawing that a sheet's "DRAWING" reference item represents.
+
+        A sheet's document reference is a standalone copy created by
+        `bim.add_drawing_to_sheet` (see `AddDrawingToSheet`): it only shares
+        the drawing's `Location` (the on-disk SVG path) and has no direct IFC
+        relationship back to the originating `IfcAnnotation`. Match on that
+        `Location` instead of re-deriving the drawing's name from the
+        (filesystem-sanitised) filename, which silently fails to match
+        whenever the drawing's `Name` contains characters stripped by
+        `sanitise_filename()` (e.g. parentheses, colons, quotes).
+        """
+        location = getattr(reference, "Location", None)
+        if not location:
+            return None
+        for drawing in tool.Ifc.get().by_type("IfcAnnotation"):
+            if drawing.ObjectType != "DRAWING":
+                continue
+            drawing_reference = cls.get_drawing_document(drawing)
+            if drawing_reference and drawing_reference.Location == location:
+                return drawing
+        return None
+
+    @classmethod
     def get_drawing_references(cls, drawing: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
         results: set[ifcopenshell.entity_instance] = set()
         for inverse in tool.Ifc.get().get_inverse(drawing):
