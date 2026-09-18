@@ -113,6 +113,7 @@ jobs:
           libtbb-dev nlohmann-json3-dev \
           libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev libocct-ocaf-dev libocct-visualization-dev libocct-data-exchange-dev \
           ${OCCT_CMAKE_DEPS} \
+          libsqlite3-dev sqlite3 \
           libcgal-dev libeigen3-dev
 
       - name: ccache
@@ -207,6 +208,24 @@ jobs:
             -DMANIFOLD_DOWNLOADS=OFF
           sudo cmake --build . --target install -j $(nproc)
 
+      # Build PROJ to test the earth-centered/earth-fixed glTF output support.
+      - name: Build PROJ
+        run: |
+          git clone https://github.com/OSGeo/PROJ --branch 9.4.1 --depth 1
+          cd PROJ
+          mkdir build && cd build
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DENABLE_TIFF=OFF \
+            -DENABLE_CURL=OFF \
+            -DBUILD_APPS=OFF \
+            -DBUILD_PROJSYNC=OFF \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DBUILD_TESTING=OFF
+          sudo cmake --build . --target install -j $(nproc)
+
       # Ubuntu has `swig` package, but we build it to match the version we use in the main build.
       # To avoid failing tests when checking stub generation.
       - name: build swig
@@ -241,6 +260,7 @@ jobs:
                -DGLTF_SUPPORT=On \
                -DWITH_ROCKSDB=On \
                -DWITH_MANIFOLD=ON \
+               -DWITH_PROJ=ON \
                -DBUILD_EXAMPLES=ON \
              ../cmake
           sudo make -j $(nproc)
