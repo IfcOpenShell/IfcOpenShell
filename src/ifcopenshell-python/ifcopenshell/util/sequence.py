@@ -115,13 +115,28 @@ def get_start_or_finish_date(
     calendar: ifcopenshell.entity_instance,
     date_type: Literal["START", "FINISH"] = "FINISH",
 ):
-    if not duration.days:
+    seconds = int(getattr(duration, "seconds", 0))
+    if not duration.days and not seconds:
         # Typically a milestone will have zero duration, so the start == finish
         return start
     # We minus 1 because the start day itself is counted as a day
     months = int(getattr(duration, "months", 0))
     years = int(getattr(duration, "years", 0))
     total_duration = duration.days + months * 30 + years * 12 * 30
+
+    if not total_duration:
+        # Pure sub-day (intraday) duration such as PT5H or PT10H30M. Preserve the
+        # anchor's clock time and offset by the exact hours/minutes/seconds, so a
+        # PT5H task from a 09:00 start finishes at 14:00, and an overnight PT8H
+        # from 22:00 finishes at 06:00 the next day, instead of collapsing to a
+        # milestone or occupying a whole day. See #8245.
+        if isinstance(start, datetime.datetime):
+            anchor = start
+        else:
+            anchor = datetime.datetime.combine(start, datetime.time(9 if date_type == "FINISH" else 17))
+        delta = datetime.timedelta(seconds=seconds)
+        return anchor + delta if date_type == "FINISH" else anchor - delta
+
     duration = datetime.timedelta(days=total_duration - 1)
 
     if date_type == "START":
