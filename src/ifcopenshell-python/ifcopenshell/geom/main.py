@@ -378,6 +378,17 @@ CLASH_TYPE_ITEMS = ("protrusion", "pierce", "collision", "clearance")
 
 
 class tree(ifcopenshell_wrapper.tree):
+    @staticmethod
+    def _wrap(e: ifcopenshell_wrapper.entity_instance) -> entity_instance:
+        inst = entity_instance(e)
+        # #3189 attach the owning file so that equality and hashing of
+        # selected instances use the fast step-id based path instead of
+        # falling back to a slow recursive attribute comparison.
+        ptr = e.file_pointer()
+        if ptr:
+            inst.wrapped_data.file = file.from_pointer(ptr)
+        return inst
+
     def __init__(self, file: Optional[file] = None, settings: Optional[settings] = None):
         args = [self]
         if file is not None:
@@ -420,7 +431,7 @@ class tree(ifcopenshell_wrapper.tree):
                 args.append(kwargs.get("completely_within", False))
                 if "extend" in kwargs:
                     args.append(kwargs["extend"])
-        return [entity_instance(e) for e in ifcopenshell_wrapper.tree.select(*args)]
+        return [self._wrap(e) for e in ifcopenshell_wrapper.tree.select(*args)]
 
     def select_box(self, value, **kwargs) -> list[entity_instance]:
         def unwrap(value):
@@ -435,7 +446,7 @@ class tree(ifcopenshell_wrapper.tree):
             args.append(kwargs.get("completely_within", False))
         if "extend" in kwargs:
             args.append(kwargs.get("extend", -1.0e-5))
-        return [entity_instance(e) for e in ifcopenshell_wrapper.tree.select_box(*args)]
+        return [self._wrap(e) for e in ifcopenshell_wrapper.tree.select_box(*args)]
 
     def clash_intersection_many(
         self,
