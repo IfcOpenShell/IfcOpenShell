@@ -541,9 +541,22 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 				);
 				welds.insert({ pn, vidx });
 
-				auto nx = CGAL::to_double(face_normals_map[face].cartesian(0));
-				auto ny = CGAL::to_double(face_normals_map[face].cartesian(1));
-				auto nz = CGAL::to_double(face_normals_map[face].cartesian(2));
+				// Emit the per-vertex normal that was used as the weld key (this is the
+				// smoothed normal when CgalSmoothAngleDegrees is set, otherwise the flat
+				// facet normal). Previously the raw facet normal was emitted here, which
+				// made the smoothing subsystem a no-op and produced only flat/faceted
+				// shading. addNormal() does not normalize, and CGAL's compute_face_normals
+				// does not guarantee unit-length vectors under the exact (Epeck) kernel, so
+				// we normalize to unit length here to match the OpenCascade kernel output.
+				auto nx = CGAL::to_double(vertex_norm.cartesian(0));
+				auto ny = CGAL::to_double(vertex_norm.cartesian(1));
+				auto nz = CGAL::to_double(vertex_norm.cartesian(2));
+				const double nlen = std::sqrt(nx * nx + ny * ny + nz * nz);
+				if (nlen > 0) {
+					nx /= nlen;
+					ny /= nlen;
+					nz /= nlen;
+				}
 
 				t->addNormal(nx, ny, nz);
 			} else {
