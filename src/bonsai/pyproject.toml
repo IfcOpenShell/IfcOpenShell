@@ -44,7 +44,7 @@ type-check = [
   "ezdxf",
   "fake-bpy-module-latest",
   "bpypolyskel @ git+https://github.com/prochitecture/bpypolyskel",
-  "ifcjson @ git+https://github.com/Andrej730/IFC2JSON_python.git@pyproject_toml",
+  "ifcjson @ git+https://github.com/IfcOpenShell/IFC2JSON_python.git@main",
   "gitpython",
   "isodate",
   "lark",
