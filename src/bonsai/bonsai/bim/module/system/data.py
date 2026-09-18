@@ -221,6 +221,8 @@ class SystemDecorationData:
         Port data includes:
             - local port position in SI units
             - port flow direction
+            - the port entity itself (e.g. so the decorator can look up its
+              neighbour to infer a tangent direction for curved fittings)
 
         """
         if element not in cls.elements_ports_positions:
@@ -232,6 +234,7 @@ class SystemDecorationData:
                 port_data = {
                     "position": position,
                     "flow_direction": port.FlowDirection,
+                    "port": port,
                 }
                 ports_data.append(port_data)
             cls.elements_ports_positions[element] = ports_data

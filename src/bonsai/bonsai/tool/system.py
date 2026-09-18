@@ -51,6 +51,130 @@ _DIRECTION_FROM_FLOW_PAIR: dict[tuple[str, str], str] = {
     ("SOURCEANDSINK", "SOURCEANDSINK"): "SOURCEANDSINK",
 }
 
+# Cubic-bezier control-point offset, as a fraction of the distance from each
+# port to the tangent lines' intersection ("corner") point. 0.5523 is the
+# standard constant for approximating a 90 degree circular arc with a single
+# cubic bezier; it's a reasonable single approximation for other bend angles
+# too since decoration is illustrative, not a precise arc reconstruction.
+BEND_CURVE_KAPPA = 0.5523
+# Points sampled along the bezier to build the polyline actually drawn.
+BEND_CURVE_SAMPLES = 12
+# If a "curved" fit deviates from the straight chord by less than this
+# (in SI units), treat the ports as collinear and fall back to a straight line.
+BEND_CURVE_MIN_SAGITTA = 1e-4
+
+
+def _rays_closest_point_distances(
+    pos_a: Vector, axis_a: Vector, pos_b: Vector, axis_b: Vector
+) -> Union[tuple[float, float], None]:
+    """Distances ``(s, t)`` along ``axis_a`` from ``pos_a`` and along ``axis_b``
+    from ``pos_b`` to the closest approach between the two rays. Used to find
+    where a port's tangent line would meet the other port's tangent line (the
+    corner a bend's two straight legs would meet at if extended).
+
+    Returns ``None`` when the axes are (near) parallel, i.e. no well-defined
+    corner exists - the caller should fall back to a straight line."""
+    w0 = pos_a - pos_b
+    b = axis_a.dot(axis_b)
+    denom = 1 - b * b
+    if abs(denom) < 1e-6:
+        return None
+    d = axis_a.dot(w0)
+    e = axis_b.dot(w0)
+    s = (b * e - d) / denom
+    t = (e - b * d) / denom
+    return s, t
+
+
+def _sample_cubic_bezier(p0: Vector, p1: Vector, p2: Vector, p3: Vector, n: int) -> list[Vector]:
+    points = []
+    for i in range(n + 1):
+        t = i / n
+        mt = 1 - t
+        point = p0 * (mt**3) + p1 * (3 * mt**2 * t) + p2 * (3 * mt * t**2) + p3 * (t**3)
+        points.append(point)
+    return points
+
+
+def _curve_length_table(points: list[Vector]) -> tuple[list[float], float]:
+    """Cumulative arc-length at each sample point, and the total length."""
+    cumulative = [0.0]
+    for i in range(len(points) - 1):
+        cumulative.append(cumulative[-1] + (points[i + 1] - points[i]).length)
+    return cumulative, cumulative[-1]
+
+
+def _point_and_tangent_at_length(
+    points: list[Vector], cumulative: list[float], target_length: float, fallback_tangent: Vector
+) -> tuple[Vector, Vector]:
+    """Position and unit tangent at arc-length ``target_length`` along the
+    polyline ``points`` (with precomputed cumulative lengths)."""
+    total = cumulative[-1]
+    s = max(0.0, min(total, target_length))
+    for i in range(len(points) - 1):
+        seg_start, seg_end = cumulative[i], cumulative[i + 1]
+        if s <= seg_end or i == len(points) - 2:
+            seg_length = seg_end - seg_start
+            local_t = 0.0 if seg_length < 1e-9 else (s - seg_start) / seg_length
+            position = points[i].lerp(points[i + 1], local_t)
+            segment = points[i + 1] - points[i]
+            tangent = segment.normalized() if segment.length > 1e-9 else fallback_tangent
+            return position, tangent
+    return points[-1], fallback_tangent
+
+
+def bend_curve_points(
+    pos_a: Vector, axis_a: Union[Vector, None], pos_b: Vector, axis_b: Union[Vector, None]
+) -> Union[list[Vector], None]:
+    """Sampled points of a cubic bezier that leaves ``pos_a`` tangent to
+    ``axis_a`` and arrives at ``pos_b`` tangent to ``axis_b``, approximating
+    a bend fitting's curved centerline instead of the straight port-to-port
+    chord.
+
+    ``axis_a``/``axis_b`` are unit vectors pointing "into" the fitting from
+    each port (i.e. the direction the connected straight run was already
+    heading as it reaches that port - see ``System.get_port_neighbour_axis``).
+
+    Returns ``None`` - meaning "just draw the straight chord" - whenever the
+    axes are missing, degenerate, or the resulting curve would be
+    indistinguishable from a straight line (collinear ports)."""
+    if axis_a is None or axis_b is None:
+        return None
+    if axis_a.length < 1e-6 or axis_b.length < 1e-6:
+        return None
+    axis_a = axis_a.normalized()
+    axis_b = axis_b.normalized()
+
+    chord = pos_b - pos_a
+    chord_length = chord.length
+    if chord_length < 1e-9:
+        return None
+    chord_dir = chord / chord_length
+
+    corner = _rays_closest_point_distances(pos_a, axis_a, pos_b, axis_b)
+    if corner is None:
+        return None
+    s, t = corner
+    # Tangent lines meeting "behind" a port (non-convex), or so far ahead that
+    # the axes are nearly parallel (an extreme, near-180-degree turn), aren't
+    # a shape this single-bezier approximation handles well - fall back.
+    if s <= 1e-6 or t <= 1e-6 or s > 3 * chord_length or t > 3 * chord_length:
+        return None
+
+    control_a = pos_a + axis_a * (s * BEND_CURVE_KAPPA)
+    control_b = pos_b + axis_b * (t * BEND_CURVE_KAPPA)
+
+    points = _sample_cubic_bezier(pos_a, control_a, control_b, pos_b, BEND_CURVE_SAMPLES)
+    max_sagitta = 0.0
+    for point in points:
+        offset = point - pos_a
+        lateral = offset - chord_dir * offset.dot(chord_dir)
+        max_sagitta = max(max_sagitta, lateral.length)
+    if max_sagitta < BEND_CURVE_MIN_SAGITTA:
+        return None
+
+    return points
+
 
 def direction_from_port_pair(port_a: ifcopenshell.entity_instance, port_b: ifcopenshell.entity_instance) -> str:
     """Derive the ``direction`` arg for ``ifcopenshell.api.system.connect_port``
@@ -187,6 +311,44 @@ class System(bonsai.core.tool.System):
             return rel.RelatedElement if rel else None
         rel = port.Nests[0] if port.Nests else None
         return rel.RelatingObject if rel else None
+
+    @classmethod
+    def get_port_neighbour_axis(cls, port: ifcopenshell.entity_instance) -> Union[Vector, None]:
+        """World-space unit vector giving the pipe axis direction at ``port``,
+        pointing from the connected neighbour's far end towards ``port`` (i.e.
+        the direction the neighbour's straight run was already heading as it
+        reaches this connection).
+
+        A bend fitting's own two ports share the same local rotation in
+        Bonsai's authored geometry (only their positions differ), so the
+        port's own placement can't tell you which way it turns. The
+        neighbouring segment's own two ports can: as long as that neighbour
+        is a simple two-port run, its own axis at the shared connection point
+        equals this port's true tangent, by physical continuity.
+
+        Returns ``None`` when a tangent can't be determined unambiguously:
+        no connection, the neighbour has other than exactly one other port,
+        or no Blender object backs the neighbour."""
+        connected_port = cls.get_connected_port(port)
+        if connected_port is None:
+            return None
+        neighbour = cls.get_port_relating_element(connected_port)
+        if neighbour is None:
+            return None
+        far_ports = [p for p in cls.get_ports(neighbour) if p.id() != connected_port.id()]
+        if len(far_ports) != 1:
+            return None
+        neighbour_obj = tool.Ifc.get_object(neighbour)
+        if neighbour_obj is None:
+            return None
+        near_pos = tool.Model.get_element_matrix(connected_port, keep_local=True).translation
+        far_pos = tool.Model.get_element_matrix(far_ports[0], keep_local=True).translation
+        near_world = neighbour_obj.matrix_world @ near_pos
+        far_world = neighbour_obj.matrix_world @ far_pos
+        direction = near_world - far_world
+        if direction.length < 1e-6:
+            return None
+        return direction.normalized()
 
     @classmethod
     def get_port_predefined_type(cls, mep_element: ifcopenshell.entity_instance) -> str:
@@ -373,6 +535,30 @@ class System(bonsai.core.tool.System):
             verts = range(start_vert_i, start_vert_i + len(port_data))
             edges = [(i, i + 1) for i in range(start_vert_i, start_vert_i + len(port_data) - 1)]
 
+            # A bend (or other 2-port) fitting's ports sit at the true curved
+            # centerline's endpoints, but a straight port-to-port edge cuts the
+            # corner instead of following the bend. Where each port's true
+            # tangent can be recovered from its neighbouring straight run,
+            # replace the chord with a bezier that leaves/arrives tangent to
+            # those axes. Segments, terminals, and fittings whose tangent
+            # can't be determined (or whose ports are collinear anyway) keep
+            # the original straight edge untouched.
+            curve_points = None
+            if len(port_data) == 2 and element.is_a("IfcFlowFitting"):
+                axis_a = cls.get_port_neighbour_axis(port_data[0]["port"])
+                axis_b = cls.get_port_neighbour_axis(port_data[1]["port"])
+                curve_points = bend_curve_points(verts_pos[0], axis_a, verts_pos[1], axis_b)
+                if curve_points is not None:
+                    curve_interior = curve_points[1:-1]
+                    interior_start = start_vert_i + len(verts_pos)
+                    chain = (
+                        [start_vert_i]
+                        + list(range(interior_start, interior_start + len(curve_interior)))
+                        + [start_vert_i + 1]
+                    )
+                    edges = [(chain[i], chain[i + 1]) for i in range(len(chain) - 1)]
+                    verts_pos.extend(curve_interior)
+
             def get_flow_direction(port_data):
                 # diagram - https://i.imgur.com/ioYL7bZ.png
                 flow_dirs = [p["flow_direction"] for p in port_data]
@@ -396,11 +582,14 @@ class System(bonsai.core.tool.System):
                 and selected_element
                 and (flow_direction := get_flow_direction(port_data)) != FlowDirection.AMBIGUOUS
             ):
-                edge_verts = verts_pos.copy()
+                edge_verts = verts_pos[:2]
+                arrow_curve_points = curve_points
 
                 both_directions = flow_direction == FlowDirection.BOTH
                 if not both_directions:
                     edge_verts = edge_verts[:: flow_direction.value]
+                    if arrow_curve_points is not None and flow_direction.value == -1:
+                        arrow_curve_points = list(reversed(arrow_curve_points))
 
                 # create direction lines
                 direction_lines_offset = 0.4
@@ -417,37 +606,78 @@ class System(bonsai.core.tool.System):
 
                 # for now it's hardcoded to local Y axis to avoid using viewport data
                 # for performance reasons
-                for j in range(2):
-                    edge_ortho = obj.matrix_world.col[j].to_3d().normalized()
-                    second_ortho = edge_dir.cross(edge_ortho)
-                    edge_ortho = second_ortho.cross(edge_dir)
 
-                    # direction lines should be around the edge center
-                    n_direction_lines, start_offset = divmod(edge_length, direction_lines_offset)
-                    n_direction_lines = int(n_direction_lines) + 1
-                    start_offset /= 2
-                    start_offset = edge_dir * start_offset + base_vert
+                if arrow_curve_points is not None:
+                    curve_cumulative, curve_length = _curve_length_table(arrow_curve_points)
+                    verts_before_arrows = len(verts_pos)
 
-                    if both_directions:
-                        cur_vert_index = start_vert_i + len(port_data) + j * 2 * n_direction_lines
-                    else:
-                        cur_vert_index = start_vert_i + len(port_data) + j * 3 * n_direction_lines
+                    for j in range(2):
+                        ortho_axis = obj.matrix_world.col[j].to_3d().normalized()
 
-                    for i in range(n_direction_lines):
-                        cur_offset = start_offset + edge_dir * i * direction_lines_offset
+                        n_direction_lines, start_offset = divmod(curve_length, direction_lines_offset)
+                        n_direction_lines = int(n_direction_lines) + 1
+                        start_offset /= 2
+
                         if both_directions:
-                            verts_pos.append(cur_offset + edge_ortho * direction_lines_width)
-                            verts_pos.append(cur_offset - edge_ortho * direction_lines_width)
-                            edges.append((cur_vert_index, cur_vert_index + 1))
-                            cur_vert_index += 2
+                            cur_vert_index = start_vert_i + verts_before_arrows + j * 2 * n_direction_lines
                         else:
-                            arrow_base = cur_offset - edge_dir * direction_lines_width
-                            verts_pos.append(arrow_base + edge_ortho * direction_lines_width)
-                            verts_pos.append(cur_offset)
-                            verts_pos.append(arrow_base - edge_ortho * direction_lines_width)
-                            edges.append((cur_vert_index, cur_vert_index + 1))
-                            edges.append((cur_vert_index + 1, cur_vert_index + 2))
-                            cur_vert_index += 3
+                            cur_vert_index = start_vert_i + verts_before_arrows + j * 3 * n_direction_lines
+
+                        for i in range(n_direction_lines):
+                            arc_length = start_offset + i * direction_lines_offset
+                            cur_offset, local_dir = _point_and_tangent_at_length(
+                                arrow_curve_points, curve_cumulative, arc_length, edge_dir
+                            )
+                            second_ortho = local_dir.cross(ortho_axis)
+                            edge_ortho = second_ortho.cross(local_dir)
+                            if edge_ortho.length < 1e-9:
+                                edge_ortho = ortho_axis
+
+                            if both_directions:
+                                verts_pos.append(cur_offset + edge_ortho * direction_lines_width)
+                                verts_pos.append(cur_offset - edge_ortho * direction_lines_width)
+                                edges.append((cur_vert_index, cur_vert_index + 1))
+                                cur_vert_index += 2
+                            else:
+                                arrow_base = cur_offset - local_dir * direction_lines_width
+                                verts_pos.append(arrow_base + edge_ortho * direction_lines_width)
+                                verts_pos.append(cur_offset)
+                                verts_pos.append(arrow_base - edge_ortho * direction_lines_width)
+                                edges.append((cur_vert_index, cur_vert_index + 1))
+                                edges.append((cur_vert_index + 1, cur_vert_index + 2))
+                                cur_vert_index += 3
+                else:
+                    for j in range(2):
+                        edge_ortho = obj.matrix_world.col[j].to_3d().normalized()
+                        second_ortho = edge_dir.cross(edge_ortho)
+                        edge_ortho = second_ortho.cross(edge_dir)
+
+                        # direction lines should be around the edge center
+                        n_direction_lines, start_offset = divmod(edge_length, direction_lines_offset)
+                        n_direction_lines = int(n_direction_lines) + 1
+                        start_offset /= 2
+                        start_offset = edge_dir * start_offset + base_vert
+
+                        if both_directions:
+                            cur_vert_index = start_vert_i + len(port_data) + j * 2 * n_direction_lines
+                        else:
+                            cur_vert_index = start_vert_i + len(port_data) + j * 3 * n_direction_lines
+
+                        for i in range(n_direction_lines):
+                            cur_offset = start_offset + edge_dir * i * direction_lines_offset
+                            if both_directions:
+                                verts_pos.append(cur_offset + edge_ortho * direction_lines_width)
+                                verts_pos.append(cur_offset - edge_ortho * direction_lines_width)
+                                edges.append((cur_vert_index, cur_vert_index + 1))
+                                cur_vert_index += 2
+                            else:
+                                arrow_base = cur_offset - edge_dir * direction_lines_width
+                                verts_pos.append(arrow_base + edge_ortho * direction_lines_width)
+                                verts_pos.append(cur_offset)
+                                verts_pos.append(arrow_base - edge_ortho * direction_lines_width)
+                                edges.append((cur_vert_index, cur_vert_index + 1))
+                                edges.append((cur_vert_index + 1, cur_vert_index + 2))
+                                cur_vert_index += 3
 
             all_vertices.extend(verts_pos)
 
