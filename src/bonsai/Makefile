@@ -308,6 +308,16 @@ ifneq ($(PLATFORM), linux)
 	fi
 endif
 
+	# Safeguard: pyradiance ships its binaries with the exec bit set inside the
+	# wheel. Blender's own wheel installer drops that bit on extraction, which the
+	# light module restores at registration, but a permission-preserving install
+	# path (eg. a distro/AUR package on a read-only filesystem) relies on the
+	# bundled wheel already being correct. Fail the build if upstream ever regresses
+	# it. See #7156.
+ifneq ($(PLATFORM), win)
+	$(PYTHON) scripts/check_pyradiance_exec_bits.py build/bonsai/wheels
+endif
+
 	$(PYTHON) scripts/get_wheels.py build/bonsai/wheels build/bonsai/blender_manifest.toml
 	rm -rf build/bonsai/bim/
 	rm -rf build/bonsai/core/
