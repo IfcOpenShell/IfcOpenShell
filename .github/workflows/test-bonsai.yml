@@ -2,22 +2,6 @@ name: Test Bonsai
 
 on:
   pull_request:
-    paths:
-      - '.github/workflows/test-bonsai.yml'
-      # Bonsai itself, then every package whose wheel `make dist` bundles into it.
-      - 'src/bonsai/**'
-      - 'src/ifcopenshell-python/**'
-      - 'src/bcf/**'
-      - 'src/bsdd/**'
-      - 'src/ifc4d/**'
-      - 'src/ifc5d/**'
-      - 'src/ifccityjson/**'
-      - 'src/ifcclash/**'
-      - 'src/ifccsv/**'
-      - 'src/ifcdiff/**'
-      - 'src/ifcfm/**'
-      - 'src/ifcpatch/**'
-      - 'src/ifctester/**'
   workflow_dispatch:
 
 # A new push to the same pull request cancels the run still going for its previous commit.
@@ -30,8 +14,39 @@ env:
   PYVERSION: py313
 
 jobs:
-  bonsai-tests:
+  detect-bonsai-changes:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read  # paths-filter lists the PR's files through the API, no checkout needed
+    outputs:
+      should_run: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.bonsai == 'true' }}
+    steps:
+      - uses: dorny/paths-filter@v4
+        id: filter
+        if: github.event_name != 'workflow_dispatch'
+        with:
+          filters: |
+            bonsai:
+              - '.github/workflows/test-bonsai.yml'
+              # Bonsai itself, then every package whose wheel `make dist` bundles into it.
+              - 'src/bonsai/**'
+              - 'src/ifcopenshell-python/**'
+              - 'src/bcf/**'
+              - 'src/bsdd/**'
+              - 'src/ifc4d/**'
+              - 'src/ifc5d/**'
+              - 'src/ifccityjson/**'
+              - 'src/ifcclash/**'
+              - 'src/ifccsv/**'
+              - 'src/ifcdiff/**'
+              - 'src/ifcfm/**'
+              - 'src/ifcpatch/**'
+              - 'src/ifctester/**'
+
+  test-bonsai:
+    runs-on: ubuntu-latest
+    needs: detect-bonsai-changes
+    if: needs.detect-bonsai-changes.outputs.should_run == 'true'
     steps:
       - uses: actions/checkout@v7
         with:
