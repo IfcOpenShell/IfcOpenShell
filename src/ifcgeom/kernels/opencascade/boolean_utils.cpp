@@ -832,7 +832,7 @@ bool IfcGeom::util::points_on_planar_face_generator::operator()(gp_Pnt& p) {
 }
 
 
-bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const TopoDS_Shape& a_input, const NCollection_List<TopoDS_Shape>& b_input, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
+bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const TopoDS_Shape& a_input, const NCollection_List<TopoDS_Shape>& b_input, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness, bool retry_sequentially_on_failure) {
 	using namespace std::string_literals;
 
 	const bool do_unify = true;
@@ -1417,7 +1417,37 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 	}
 	if (!success) {
 		if (allow_retry) {
-			return boolean_operation(settings, a, b, op, result, new_fuzziness);
+			return boolean_operation(settings, a, b, op, result, new_fuzziness, retry_sequentially_on_failure);
+		} else if (op == BOPAlgo_CUT && retry_sequentially_on_failure && b.Extent() > 1) {
+			// #487: a batched cut with multiple simultaneous tool operands (see
+			// OpenCascadeKernel::convert_openings, which groups openings by
+			// similar edge length) can fail every fuzziness attempt above even
+			// when each tool cuts the operand individually without issue. Retry
+			// by applying the tools one at a time instead, feeding the result of
+			// each cut into the next. b.Extent() > 1 both gates this to genuine
+			// multi-tool batches and guards against re-entering this branch,
+			// since every sequential sub-cut below has exactly one tool operand.
+			settings.log().Notice("GEO", 403, "Retrying cut with " + std::to_string(b.Extent()) + " operands applied sequentially");
+
+			TopoDS_Shape sequential_result = a;
+			bool sequential_ok = true;
+			NCollection_List<TopoDS_Shape>::Iterator it(b);
+			for (; it.More(); it.Next()) {
+				TopoDS_Shape step_result;
+				if (!boolean_operation(settings, sequential_result, it.Value(), op, step_result)) {
+					sequential_ok = false;
+					break;
+				}
+				sequential_result = step_result;
+			}
+
+			if (sequential_ok) {
+				settings.log().Notice("GEO", 404, "Sequential opening subtraction fallback succeeded");
+				result = sequential_result;
+				return true;
+			}
+
+			settings.log().Notice("GEO", 154, "No longer attempting boolean operation with higher fuzziness");
 		} else {
 			settings.log().Notice("GEO", 154, "No longer attempting boolean operation with higher fuzziness");
 		}
