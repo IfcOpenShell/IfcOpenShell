@@ -33,6 +33,10 @@ namespace IfcGeom {
 
 		IFC_GEOMLIBRARY_API bool is_manifold(const TopoDS_Shape& a);
 
+		// Detects distinct edges that spatially coincide and together carry
+		// more than 2 faces, which is_manifold() does not catch per-edge.
+		IFC_GEOMLIBRARY_API bool has_coincident_edges(const TopoDS_Shape& a, double tol);
+
 		// For axis placements detect equality early in order for the
 		// relatively computionaly expensive gp_Trsf calculation to be skipped
 		IFC_GEOMLIBRARY_API bool axis_equal(const gp_Ax3& a, const gp_Ax3& b, double tolerance);

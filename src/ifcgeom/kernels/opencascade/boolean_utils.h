@@ -108,6 +108,11 @@ namespace IfcGeom {
 
 		bool boolean_operation(const boolean_settings& settings, const TopoDS_Shape&, const TopoDS_Shape&, BOPAlgo_Operation, TopoDS_Shape&, double fuzziness = -1.);
 
+		// The log code emitted (into settings.log(), see boolean_settings above) when a
+		// boolean result has coincident faces at possibly non-manifold locations.
+		extern const char coincident_faces_warning_code[];
+		bool has_coincident_faces_warning(const Logger& logger);
+
 		TopoDS_Shape ensure_fit_for_subtraction(const TopoDS_Shape& shape, double tol);
 	}
 }
