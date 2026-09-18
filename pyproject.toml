@@ -6,10 +6,6 @@ version = "0.0.0"
 
 [tool.black]
 line-length = 120
-include = '''
-    src/.*.pyi?$
-    |nix/.*.pyi?$
-'''
 extend-exclude = '''
     src/ifcopenshell-python/ifcopenshell/express/rules/*
     |src/ifcopenshell-python/ifcopenshell/express/express_parser.py
@@ -18,6 +14,15 @@ extend-exclude = '''
     |src/ifc2ca/templates/*
     |src/svgfill
     |src/exterior-shell-extractor
+    |choco/bonsai/tools/enable_blenderbim_addon.py
+    |choco/bonsai/tools/disable_blenderbim_addon.py
+    |docs/conf.py
+    |docs/generate_docs.py
+    |aws/lambda/example_handler/__init__.py
+    |conda/update_version_init.py
+    |test/bpy.py
+    |test/tests.py
+    |test/run.py
 '''
 
 [tool.pyright]
@@ -62,20 +67,30 @@ select = [
     #
     "FA",          # future annotations
     "UP",          # pyupgrade
-    "RUF015",      # next() > list_comprehension[0]
-    "RUF022",      # sort __all__
+    "unnecessary-iterable-allocation-for-first-element",
+    "unsorted-dunder-all",
     "I",           # import sorting
+    "unused-noqa",
+    "rule-codes-in-selectors",
+    "noqa-comments",
+    "rule-codes-in-suppression-comments",
+    # General util rules.
+    "invalid-rule-code",
+    "redirected-noqa",
+    "invalid-pyproject-toml",
+    "invalid-suppression-comment",
 ]
 ignore = [
-    "FA100", # Conflicts with Blender using annotations for props definitions.
+    # Conflicts with Blender using annotations for props definitions.
+    "future-rewritable-type-annotation",
     # Maybe will enable later:
-    "UP007", # Optional to X | Y
-    "UP045", # Optional to X | None
-    "UP015", # Unnecessary mode argument
-    "UP028", # yield for -> yield from
-    "UP030", # implicit references for positional format fields
-    "UP031", # Replace % with .format
-    "UP032", # Replace .format with f-string
+    "non-pep604-annotation-union", # Union[X,Y] to X | Y
+    "non-pep604-annotation-optional", # Optional to X | None
+    "redundant-open-modes", # Unnecessary mode argument
+    "yield-in-for-loop", # yield for -> yield from
+    "format-literals", # implicit references for positional format fields
+    "printf-string-formatting", # Replace % with .format
+    "f-string", # Replace .format with f-string
 ]
 
 [tool.ty.rules]
@@ -98,10 +113,13 @@ unresolved-attribute = "ignore"
 invalid-argument-type = "ignore"
 invalid-method-override = "ignore"
 invalid-assignment = "ignore"
+unsound-assignment = "ignore"
 invalid-parameter-default = "ignore"
 missing-override-decorator = "ignore"
 invalid-yield = "ignore"
+unsound-yield = "ignore"
 invalid-return-type = "ignore"
+unsound-return-statement = "ignore"
 non-callable-init-subclass = "ignore"
 not-iterable = "ignore"
 possibly-missing-attribute = "ignore"
@@ -109,6 +127,10 @@ no-matching-overload = "ignore"
 not-subscriptable = "ignore"
 unsupported-dynamic-base = "ignore"
 unsupported-operator = "ignore"
+redundant-condition = "ignore"
+redundant-condition-strict = "ignore"
+# `@persistent` is incorrectly annotated as `Any` in fake-bpy, needs to be resolved upstream.
+dynamic-function-decorator-return = "ignore"
 
 [tool.ty.environment]
 extra-paths = [
@@ -164,11 +186,13 @@ dev-setup.sequence = [
     {cmd = "uv pip install -e ./src/ifcpatch/"},
     {cmd = "uv pip install -e ./src/ifcquery/"},
     {cmd = "uv pip install -e './src/ifcmcp/[mcp]'"},
-    {cmd = "uv pip install -r src/bonsai/requirements-dev.txt"},
+    {cmd = "uv pip install --group src/bonsai/pyproject.toml:dev"},
 ]
 dev-setup.help = "Install repo packages in editable mode"
 
 ruff = "ruff check"
+
+check-whitespace = "uv run .github/scripts/check-whitespace.py"
 
 black = "black ."
 
@@ -180,12 +204,12 @@ ty-venv.sequence = ["bonsai-deps", "ty-venv-bonsai", "ty-venv-ios"]
 
 ty-venv-bonsai.sequence = [
     {cmd = "uv venv src/bonsai/.venv --python=3.11 --allow-existing"},
-    {cmd = "uv pip install -r src/bonsai/type-check-requirements.txt --python=src/bonsai/.venv"},
+    {cmd = "uv pip install --group src/bonsai/pyproject.toml:type-check --python=src/bonsai/.venv"},
 ]
 
 ty-venv-ios.sequence = [
     {cmd = "uv venv src/ifcopenshell-python/.venv --python=3.10 --allow-existing"},
-    {cmd = "uv pip install -r src/ifcopenshell-python/type-check-requirements.txt --python=src/ifcopenshell-python/.venv"},
+    {cmd = "uv pip install --group src/ifcopenshell-python/pyproject.toml:type-check --python=src/ifcopenshell-python/.venv"},
 ]
 
 format.sequence = ["black", "ruff"]
@@ -195,7 +219,9 @@ cmake-format = "gersemi . --in-place"
 [tool.poe.tasks.ty-ios]
 cmd = """
     ty check
+    conda/
     nix/
+    win/
     src/bcf
     src/bsdd
     src/ifc2ca

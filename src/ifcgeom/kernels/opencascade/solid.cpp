@@ -17,7 +17,7 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "OpenCascadeKernel.h"
+#include "opencascade_kernel.h"
 
 #include <BRepPrimAPI_MakeHalfSpace.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
@@ -26,15 +26,14 @@
 #include <ShapeFix_Solid.hxx>
 #include <BRepPrimAPI_MakeSphere.hxx>
 
-using namespace ifcopenshell::geometry;
-using namespace ifcopenshell::geometry::kernels;
-using namespace IfcGeom;
-using namespace IfcGeom::util;
+using namespace ifcopenshell::geom;
+using namespace ifcopenshell::geom::kernels;
+using namespace ifcopenshell::geom::util;
 
-bool OpenCascadeKernel::convert(const taxonomy::solid::ptr solid, TopoDS_Shape& result) {
+bool open_cascade_kernel::convert(const taxonomy::solid::ptr solid, TopoDS_Shape& result) {
 	TopoDS_Shape S;
 
-	if (solid->instance->declaration().is("IfcHalfSpaceSolid")) {
+	if (solid->instance.declaration().is("IfcHalfSpaceSolid")) {
 		// halfspace
 		if (solid->children.size() != 1) {
 			throw std::runtime_error("Unexpected number of children on solid");
@@ -44,7 +43,7 @@ bool OpenCascadeKernel::convert(const taxonomy::solid::ptr solid, TopoDS_Shape& 
 
 		const auto& m = taxonomy::cast<taxonomy::plane>(face->basis)->matrix->ccomponents();
 		gp_Pln pln(convert_xyz2<gp_Pnt>(m.col(3)), convert_xyz2<gp_Dir>(m.col(2)));
-		const gp_Pnt pnt = pln.Location().Translated(face->orientation.get_value_or(false) ? pln.Axis().Direction() : -pln.Axis().Direction());
+		const gp_Pnt pnt = pln.Location().Translated(face->orientation.value_or(false) ? pln.Axis().Direction() : -pln.Axis().Direction());
 		TopoDS_Shape halfspace = BRepPrimAPI_MakeHalfSpace(BRepBuilderAPI_MakeFace(pln), pnt).Solid();
 
 		if (!face->children.empty()) {
@@ -65,8 +64,8 @@ bool OpenCascadeKernel::convert(const taxonomy::solid::ptr solid, TopoDS_Shape& 
 
 		result = halfspace;
 		return true;
-	} else if (solid->children.size() == 1 
-		&& solid->children[0]->children.size() == 1 
+	} else if (solid->children.size() == 1
+		&& solid->children[0]->children.size() == 1
 		&& solid->children[0]->children[0]->basis
 		&& solid->children[0]->children[0]->basis->kind() == taxonomy::SPHERE)
 	{
@@ -92,7 +91,7 @@ bool OpenCascadeKernel::convert(const taxonomy::solid::ptr solid, TopoDS_Shape& 
 				throw std::runtime_error("Unexpected configuration of subshapes");
 			}
 		} else {
-			Logger::Root().Warning("GEO", 201, "Ignored shell", s->instance);
+			logger_.warning("GEO", 201, "Ignored shell", s->instance);
 		}
 	}
 	if (!S.IsNull()) {
@@ -101,17 +100,17 @@ bool OpenCascadeKernel::convert(const taxonomy::solid::ptr solid, TopoDS_Shape& 
 	return !result.IsNull();
 }
 
-bool OpenCascadeKernel::convert_impl(const taxonomy::solid::ptr solid, IfcGeom::ConversionResults& results) {
+bool open_cascade_kernel::convert_impl(const taxonomy::solid::ptr solid, std::vector<ifcopenshell::geom::conversion_result>& results) {
     return handle_occt_exception([&]() -> bool {
 
 	TopoDS_Shape shape;
 	if (!convert(solid, shape)) {
 		return false;
 	}
-	results.emplace_back(ConversionResult(
-		solid->instance->as<IfcUtil::IfcBaseEntity>()->id(),
+	results.emplace_back(conversion_result(
+		solid->instance.id(),
 		solid->matrix,
-		new OpenCascadeShape(shape),
+		new open_cascade_shape(shape),
 		solid->surface_style
 	));
 	return true;

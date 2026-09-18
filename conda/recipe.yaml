@@ -33,7 +33,6 @@ requirements:
     - occt
     - libxml2
     - cgal-cpp
-    - hdf5
     - eigen
     - mpfr
     - nlohmann_json
@@ -76,19 +75,19 @@ about:
   description: |
     IfcOpenShell
     ============
-    
+
     IfcOpenShell is an open source ([LGPL]) software library for working with Industry Foundation Classes ([IFC]). Complete
     parsing support is provided for [IFC2x3 TC1], [IFC4 Add2 TC1], IFC4x1, IFC4x3, and IFC4x3. Extensive geometric support
     is implemented for the IFC releases [IFC2x3 TC1] and [IFC4 Add2 TC1]. Extending with support for arbitrary IFC schemas
     is possible at compile-time when using C++ and at run-time when using Python.
-    
+
     In addition to a C++ and Python API, IfcOpenShell comes with an ecosystem of tools, notably including IfcConvert (an
     application to convert IFC models to
     other formats), the BlenderBIM Add-on (an add-on to Blender providing a graphical IFC authoring platform), and many
     other libraries, CLI apps, and more. Support is also provided for auxiliary standards such as BCF and IDS.
-    
+
     For more information, see:
-    
+
     * [IfcOpenShell Website](http://ifcopenshell.org)
     * [IfcOpenShell Documentation](http://bonsaibim.org/docs-python)
     * [IfcOpenShell C++ Installation](https://bonsaibim.org/docs-python/ifcopenshell/installation.html)
@@ -98,7 +97,7 @@ about:
     * [Bonsai Documentation](http://bonsaibim.org/docs)
     * [Add-on Installation](https://bonsaibim.org/docs/users/installation.html)
     * [Exploring an IFC model](https://bonsaibim.org/docs/users/exploring_an_ifc_model.html)
-    
+
     <table>
       <thead>
         <tr>
@@ -139,12 +138,12 @@ about:
           <td>Docker hub</td>
           <td><a href="https://hub.docker.com/r/aecgeeks/ifcopenshell"><img src="https://img.shields.io/docker/pulls/aecgeeks/ifcopenshell" alt="Docker Pulls"></a></td>
         </tr>
-    
+
       </tbody>
     </table>
     Contents
     --------
-    
+
     Those marked with an asterisk are part of IfcOpenShell.
     <table>
       <thead>
@@ -236,17 +235,7 @@ about:
       <td>LGPL-3.0-or-later*</td>
     </tr>
     <tr>
-      <td>ifcgeom_schema_agnostic</td>
-      <td>Internal library for IfcOpenShell</td>
-      <td>LGPL-3.0-or-later*</td>
-    </tr>
-    <tr>
       <td>ifcgeomserver</td>
-      <td>Internal library for IfcOpenShell</td>
-      <td>LGPL-3.0-or-later*</td>
-    </tr>
-    <tr>
-      <td>ifcjni</td>
       <td>Internal library for IfcOpenShell</td>
       <td>LGPL-3.0-or-later*</td>
     </tr>
@@ -286,27 +275,17 @@ about:
       <td>LGPL-3.0-or-later*</td>
     </tr>
     <tr>
-      <td>qtviewer</td>
-      <td>Internal library for IfcOpenShell</td>
-      <td>LGPL-3.0-or-later*</td>
-    </tr>
-    <tr>
       <td>serializers</td>
       <td>Internal library for IfcOpenShell</td>
       <td>LGPL-3.0-or-later*</td>
     </tr>
     </tbody>
     </table>
-    
+
     [LGPL]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/COPYING.LESSER "LGPL-3.0-or-later"
     [IFC]: https://technical.buildingsmart.org/standards/ifc/ "IFC"
     [IFC2x3 TC1]: https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ "IFC2x3 TC1"
     [IFC4 Add2 TC1]: https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/ "IFC4 Add2 TC1"
-    [Visual Studio]: https://www.visualstudio.com/ "Visual Studio"
-    [Visual C++ Build Tools]: http://landinghub.visualstudio.com/visual-cpp-build-tools "Visual C++ Build Tools"
-    [MSYS2]: https://msys2.github.io/ "MSYS2"
-    [win/readme.md]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/win/readme.md "win/readme.md"
-    [nix/build-all.py]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/nix/build-all.py "nix/build-all.py"
   homepage: https://ifcopenshell.org
   repository: https://github.com/IfcOpenShell/IfcOpenShell
   documentation: https://ifcopenshell.org/

@@ -588,9 +588,6 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
                 )
             return
 
-        if not product.is_a("IfcGridAxis"):
-            tool.Geometry.clear_cache(product)
-
         if product.is_a("IfcGridAxis"):
             # Grid geometry does not follow the "representation" paradigm and needs to be treated specially
             tool.Model.create_axis_curve(obj, product)
@@ -802,7 +799,7 @@ def lock_error_message(name: str) -> str:
 
 
 def calc_delete_is_batch(ifc_file: ifcopenshell.file, context: bpy.types.Context) -> bool:
-    total_elements = len(tool.Ifc.get().wrapped_data.entity_names())
+    total_elements = len(tool.Ifc.get().entity_names())
     total_polygons = sum([len(o.data.polygons) for o in context.selected_objects if o.type == "MESH"])
     # These numbers are a bit arbitrary, but basically batching is only
     # really necessary on large models and large geometry removals.
@@ -3534,11 +3531,10 @@ class EditRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Operator):
                 for representation_map in element.RepresentationMaps:
                     if representation_map.MappedRepresentation == active_representation:
                         product_shape = representation_map
-            assert product_shape is not None
-
             previous_shape_aspect_id = props.active_item.shape_aspect_id
             # will be None if item didn't had a shape aspect
             previous_shape_aspect = tool.Ifc.get_entity_by_id(previous_shape_aspect_id)
+            assert product_shape is not None
             shape_aspect = tool.Geometry.create_shape_aspect(
                 product_shape, active_representation, [representation_item], previous_shape_aspect
             )

@@ -258,5 +258,5 @@ if __name__ == "__main__":
     for output in sys.argv[2:]:
         mdl = importlib.import_module(output)
         mdl.Generator(m).emit()
-    sys.stdout.write(m.schema.name)
+    print(m.schema.name)
 """ % ("\n        ".join(statements)))

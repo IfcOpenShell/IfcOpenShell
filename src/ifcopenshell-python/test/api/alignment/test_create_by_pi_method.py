@@ -17,13 +17,22 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import pytest
+
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 import ifcopenshell.api.unit
 
+try:
+    ifcopenshell.file(schema="IFC4X3_ADD2")
+    IFC4X3_AVAILABLE = True
+except RuntimeError:
+    IFC4X3_AVAILABLE = False
 
+
+@pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
 def test_create_by_pi_method():
-    file = ifcopenshell.file(schema="IFC4X3")
+    file = ifcopenshell.file(schema="IFC4X3_ADD2")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
     length = ifcopenshell.api.unit.add_conversion_based_unit(file, name="foot")
     ifcopenshell.api.unit.assign_unit(file, units=[length])
@@ -42,7 +51,7 @@ def test_create_by_pi_method():
     lengths = [(1600.0), (1200.0), (2000.0), (800.0)]
 
     alignment = ifcopenshell.api.alignment.create_by_pi_method(
-        file, "TestAlignment", coordinates, radii, vpoints, lengths
+        file, "TestAlignment", coordinates, radii, vpoints, lengths, start_station=10000.0
     )
 
     assert len(alignment.IsDecomposedBy) == 0  # no child alignments
@@ -51,8 +60,8 @@ def test_create_by_pi_method():
     layout_nest = ifcopenshell.api.alignment.get_alignment_layout_nest(alignment)
     assert len(layout_nest.RelatedObjects) == 2
 
-    referent_nest = ifcopenshell.api.alignment.get_referent_nest(file, alignment)
-    assert len(referent_nest.RelatedObjects) == 1
+    stationing_nest = ifcopenshell.api.alignment.get_stationing_nest(file, alignment)
+    assert len(stationing_nest.RelatedObjects) == 1
 
     horizontal_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
     horizontal_segment_nest = ifcopenshell.api.alignment.get_alignment_segment_nest(horizontal_layout)
@@ -61,6 +70,3 @@ def test_create_by_pi_method():
     vertical_layout = ifcopenshell.api.alignment.get_vertical_layout(alignment)
     vertical_segment_nest = ifcopenshell.api.alignment.get_alignment_segment_nest(vertical_layout)
     assert len(vertical_segment_nest.RelatedObjects) == 10
-
-
-test_create_by_pi_method()

@@ -25,10 +25,10 @@ async function ensurePyodide() {
         await pyodide.loadPackage("numpy");
         await pyodide.loadPackage("shapely");
         await pyodide.loadPackage("typing-extensions");
-        
+
         const micropip = pyodide.pyimport("micropip");
         micropip.install("python-dateutil")
-        
+
         const wheelUrl = "https://ifcopenshell.github.io/wasm-wheels/ifcopenshell-0.8.5-cp313-cp313-pyodide_2025_0_wasm32.whl";
 
         await micropip.install(wheelUrl);

@@ -45,10 +45,10 @@ for dep in dependencies:
     subprocess.check_call(command + [dep])
 
 try:
-    import pygments  # noqa: F401
-    import pytest  # noqa: F401
-    import pytest_bdd  # noqa: F401
-    import pytest_blender  # noqa: F401
+    import pygments  # ruff: ignore[unused-import]
+    import pytest  # ruff: ignore[unused-import]
+    import pytest_bdd  # ruff: ignore[unused-import]
+    import pytest_blender  # ruff: ignore[unused-import]
 
     print("Test dependency installation was successful!")
 except Exception as e:

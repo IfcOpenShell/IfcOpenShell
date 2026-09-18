@@ -170,12 +170,7 @@ class ifc5D2json:
                 data["UnitSymbol"] = ifcopenshell.util.unit.get_unit_symbol(unit)
             if quantity.is_a("IfcPhysicalSimpleQuantity"):
                 measure_class = (
-                    quantity.wrapped_data.declaration()
-                    .as_entity()
-                    .attribute_by_index(3)
-                    .type_of_attribute()
-                    .declared_type()
-                    .name()
+                    quantity.declaration.as_entity().attribute_by_index(3).type_of_attribute().declared_type().name()
                 )
                 if "Count" in measure_class:
                     data["UnitSymbol"] = "U"

@@ -201,7 +201,7 @@ class Entity(Facet):
     def filter(
         self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]] = None
     ) -> list[ifcopenshell.entity_instance]:
-        if isinstance(elements, list):
+        if isinstance(elements, (list, tuple)):
             return super().filter(ifc_file, elements)
 
         if isinstance(self.name, str):
@@ -218,7 +218,7 @@ class Entity(Facet):
                         pass
         else:
             results = []
-            ifc_classes = [t for t in ifc_file.wrapped_data.types() if t.upper() == self.name]
+            ifc_classes = [t for t in ifc_file.types() if t.upper() == self.name]
             for ifc_class in ifc_classes:
                 try:
                     results.extend(ifc_file.by_type(ifc_class, include_subtypes=False))
@@ -280,7 +280,7 @@ class Attribute(Facet):
     def filter(
         self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]]
     ) -> list[ifcopenshell.entity_instance]:
-        if isinstance(elements, list):
+        if isinstance(elements, (list, tuple)):
             return super().filter(ifc_file, elements)
 
         results = []
@@ -308,7 +308,7 @@ class Attribute(Facet):
     def __call__(self, inst: ifcopenshell.entity_instance, logger: Optional[Logger] = None) -> AttributeResult:
         if isinstance(self.name, str):
             names = [self.name]
-            attribute_type = inst.wrapped_data.get_attribute_category(self.name)
+            attribute_type = inst.get_attribute_category(self.name)
             if attribute_type == 1:  # Forward attribute
                 values = [getattr(inst, self.name, None)]
             else:
@@ -319,7 +319,7 @@ class Attribute(Facet):
             values = []
             for k, v in info.items():
                 if k == self.name:
-                    attribute_type = inst.wrapped_data.get_attribute_category(k)
+                    attribute_type = inst.get_attribute_category(k)
                     if attribute_type == 1:  # Forward attribute
                         names.append(k)
                         values.append(v)
@@ -343,13 +343,13 @@ class Attribute(Facet):
                 elif value == tuple():
                     is_empty = True
                 else:
-                    argument_index = inst.wrapped_data.get_argument_index(names[i])
+                    argument_index = inst.get_argument_index(names[i])
                     try:
                         attribute_type = inst.attribute_type(argument_index)
                         if attribute_type == "LOGICAL" and value == "UNKNOWN":
                             is_empty = True
                     except:
-                        if names[i] in inst.wrapped_data.get_inverse_attribute_names():
+                        if names[i] in inst.get_inverse_attribute_names():
                             is_empty = True
                 if not is_empty:
                     non_empty_values.append(value)
@@ -415,7 +415,7 @@ class Classification(Facet):
     def filter(
         self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]]
     ) -> list[ifcopenshell.entity_instance]:
-        if isinstance(elements, list):
+        if isinstance(elements, (list, tuple)):
             return super().filter(ifc_file, elements)
         return ifc_file.by_type("IfcObjectDefinition")
 
@@ -480,7 +480,7 @@ class PartOf(Facet):
     def filter(
         self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]]
     ) -> list[ifcopenshell.entity_instance]:
-        if isinstance(elements, list):
+        if isinstance(elements, (list, tuple)):
             return super().filter(ifc_file, elements)
         return list(ifc_file)  # Lazy
 
@@ -673,7 +673,7 @@ class Property(Facet):
     def filter(
         self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]]
     ) -> list[ifcopenshell.entity_instance]:
-        if isinstance(elements, list):
+        if isinstance(elements, (list, tuple)):
             return super().filter(ifc_file, elements)
         if ifc_file.schema == "IFC2X3":
             return ifc_file.by_type("IfcObjectDefinition")
@@ -706,9 +706,7 @@ class Property(Facet):
                 if isinstance(self.baseName, str):
                     prop = pset_props.get(self.baseName)
                     if prop == "UNKNOWN" and next(
-                        p
-                        for p in self.get_properties(inst.wrapped_data.file.by_id(pset_props["id"]))
-                        if p.Name == self.baseName
+                        p for p in self.get_properties(inst.file.by_id(pset_props["id"])) if p.Name == self.baseName
                     ).NominalValue.is_a("IfcLogical"):
                         pass
                     elif prop is not None and prop != "":
@@ -725,7 +723,7 @@ class Property(Facet):
                     reason = {"type": "NOVALUE"}
                     break
 
-                pset_entity = inst.wrapped_data.file.by_id(pset_props["id"])
+                pset_entity = inst.file.by_id(pset_props["id"])
 
                 is_property_supported_class = True
                 for prop_entity in self.get_properties(pset_entity):
@@ -742,7 +740,7 @@ class Property(Facet):
                             reason = {"type": "DATATYPE", "actual": data_type, "dataType": self.dataType}
                             break
 
-                        unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
+                        unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.file)
                         if unit and getattr(unit, "Name", None):
                             # TODO support unnamed derived units
                             output_prefix = "KILO" if unit.UnitType == "MASSUNIT" else None
@@ -754,7 +752,7 @@ class Property(Facet):
                                 ifcopenshell.util.unit.si_type_names[unit.UnitType],
                             )
                     elif prop_entity.is_a("IfcPhysicalSimpleQuantity"):
-                        prop_schema = prop_entity.wrapped_data.declaration().as_entity()
+                        prop_schema = prop_entity.declaration.as_entity()
                         data_type = prop_schema.attribute_by_index(3).type_of_attribute().declared_type().name()
 
                         if self.dataType and data_type.lower() != self.dataType.lower():
@@ -762,7 +760,7 @@ class Property(Facet):
                             reason = {"type": "DATATYPE", "actual": data_type, "dataType": self.dataType}
                             break
 
-                        unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
+                        unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.file)
                         if unit:
                             props[pset_name][prop_entity.Name] = ifcopenshell.util.unit.convert(
                                 prop_entity[3],
@@ -791,7 +789,7 @@ class Property(Facet):
                             is_pass = False
                             reason = {"type": "DATATYPE", "actual": data_type, "dataType": self.dataType}
                             break
-                        unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
+                        unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.file)
                         if unit:
                             props[pset_name][prop_entity.Name] = [
                                 ifcopenshell.util.unit.convert(
@@ -816,7 +814,7 @@ class Property(Facet):
                             is_pass = False
                             reason = {"type": "DATATYPE", "actual": data_type, "dataType": self.dataType}
                             break
-                        unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
+                        unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.file)
                         if unit:
                             values = [
                                 ifcopenshell.util.unit.convert(
@@ -831,7 +829,7 @@ class Property(Facet):
                         props[pset_name][prop_entity.Name] = values
                     elif prop_entity.is_a("IfcPropertyTableValue"):
                         values = []
-                        units = ifcopenshell.util.unit.get_property_table_unit(prop_entity, inst.wrapped_data.file)
+                        units = ifcopenshell.util.unit.get_property_table_unit(prop_entity, inst.file)
                         data_type = None
                         for attribute in ["Defining", "Defined"]:
                             column_values = props[pset_name][prop_entity.Name][f"{attribute}Values"]
@@ -948,7 +946,7 @@ class Material(Facet):
     def filter(
         self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]]
     ) -> list[ifcopenshell.entity_instance]:
-        if isinstance(elements, list):
+        if isinstance(elements, (list, tuple)):
             return super().filter(ifc_file, elements)
         return ifc_file.by_type("IfcObjectDefinition")
 

@@ -26,6 +26,7 @@ import ifcopenshell
 import ifcopenshell.api.pset
 import ifcopenshell.util.attribute
 import ifcopenshell.util.element
+import ifcopenshell.util.unit
 
 import bonsai.bim.helper
 import bonsai.bim.schema
@@ -168,42 +169,144 @@ class Pset(bonsai.core.tool.Pset):
             pset_id=0, pset_name=cls.get_pset_name(obj, obj_type), pset_type="PSET", obj=obj, obj_type=obj_type
         )
 
+    # Templates for quantities can specify their kind via TemplateType (e.g.
+    # "Q_LENGTH") instead of PrimaryMeasureType. IfcQuantityCount has no
+    # associated measure/unit, so it is intentionally absent here.
+    QUANTITY_TEMPLATE_TYPE_TO_SPECIAL_TYPE = {
+        "Q_LENGTH": "LENGTH",
+        "Q_AREA": "AREA",
+        "Q_VOLUME": "VOLUME",
+        "Q_WEIGHT": "MASS",
+        "Q_TIME": "TIME",
+    }
+
     @classmethod
-    def get_special_type_for_prop(
-        cls, prop_or_prop_template: ifcopenshell.entity_instance
-    ) -> Literal["LENGTH"] | Literal["AREA"] | Literal["VOLUME"] | Literal["URI"] | Literal[""]:
-        special_type = ""
+    def get_special_type_for_measure_class(cls, measure_class: str) -> str:
+        """Get the ``special_type`` (an IfcUnitEnum value with "UNIT" stripped) for an IFC measure class.
+
+        :param measure_class: An IFC measure class name, e.g. "IfcLengthMeasure".
+        :return: E.g. "LENGTH", or "" if the class has no associated unit type.
+        """
+        if not measure_class.endswith("Measure"):
+            return ""
+        unit_type = ifcopenshell.util.unit.get_measure_unit_type(measure_class)
+        return unit_type[: -len("UNIT")] if unit_type.endswith("UNIT") else ""
+
+    @classmethod
+    def get_special_type_for_unit(cls, unit: ifcopenshell.entity_instance) -> str:
+        """Get the ``special_type`` (an IfcUnitEnum value with "UNIT" stripped) directly from
+        a Unit entity, for properties whose NominalValue is a generic numeric type (e.g.
+        IfcReal) rather than a proper measure class, but which still carry a real Unit.
+        """
+        unit_type = getattr(unit, "UnitType", None)
+        if unit_type and unit_type != "USERDEFINED":
+            return unit_type[: -len("UNIT")] if unit_type.endswith("UNIT") else ""
+        dimension_type = ifcopenshell.util.unit.identify_unit_dimensions(unit)
+        return dimension_type[: -len("UNIT")] if dimension_type else ""
+
+    @classmethod
+    def get_special_type_for_prop(cls, prop_or_prop_template: ifcopenshell.entity_instance) -> str:
+        """Classify a property/quantity/template by its measure type.
+
+        :return: An IfcUnitEnum value with the "UNIT" suffix stripped (e.g.
+            "LENGTH", "PRESSURE"), "URI" for IfcURIReference, or "" if the
+            value has no associated unit type.
+        """
         if prop_or_prop_template.is_a("IfcPropertyTemplate"):
             primary_measure_type = prop_or_prop_template.PrimaryMeasureType
-            template_type = prop_or_prop_template.TemplateType
-            if primary_measure_type in ("IfcPositiveLengthMeasure", "IfcLengthMeasure") or template_type == "Q_LENGTH":
-                special_type = "LENGTH"
-            elif primary_measure_type == "IfcAreaMeasure" or template_type == "Q_AREA":
-                special_type = "AREA"
-            elif primary_measure_type == "IfcVolumeMeasure" or template_type == "Q_VOLUME":
-                special_type = "VOLUME"
-            elif primary_measure_type == "IfcURIReference":
-                special_type = "URI"
-        else:
-            if prop_or_prop_template.is_a("IfcPropertySingleValue"):
-                value = prop_or_prop_template.NominalValue
-                if value is not None:
-                    value_type = value.is_a()
-                    if value_type in ("IfcLengthMeasure", "IfcPositiveLengthMeasure"):
-                        special_type = "LENGTH"
-                    elif value_type == "IfcAreaMeasure":
-                        special_type = "AREA"
-                    elif value_type == "IfcVolumeMeasure":
-                        special_type = "VOLUME"
-            elif prop_or_prop_template.is_a("IfcPhysicalSimpleQuantity"):
-                prop_class = prop_or_prop_template.is_a()
-                if prop_class == "IfcQuantityArea":
-                    special_type = "AREA"
-                elif prop_class == "IfcQuantityVolume":
-                    special_type = "VOLUME"
-                elif prop_class == "IfcQuantityLength":
-                    special_type = "LENGTH"
-        return special_type
+            if primary_measure_type == "IfcURIReference":
+                return "URI"
+            if primary_measure_type:
+                return cls.get_special_type_for_measure_class(primary_measure_type)
+            return cls.QUANTITY_TEMPLATE_TYPE_TO_SPECIAL_TYPE.get(prop_or_prop_template.TemplateType, "")
+        elif prop_or_prop_template.is_a("IfcPropertySingleValue"):
+            value = prop_or_prop_template.NominalValue
+            if value is not None:
+                special_type = cls.get_special_type_for_measure_class(value.is_a())
+                if special_type:
+                    return special_type
+                # Some property sets declare a generic numeric type (e.g. IfcReal) rather
+                # than a proper measure class, relying on an explicit Unit attribute alone to
+                # convey the dimension. Still measurable -- derive special_type from the Unit
+                # itself rather than (fruitlessly) from NominalValue's declared type.
+                if value.is_a() in ("IfcReal", "IfcInteger"):
+                    if unit := getattr(prop_or_prop_template, "Unit", None):
+                        return cls.get_special_type_for_unit(unit)
+        elif prop_or_prop_template.is_a("IfcPhysicalSimpleQuantity"):
+            entity = prop_or_prop_template.declaration.as_entity()
+            measure_class = entity.attribute_by_index(3).type_of_attribute().declared_type().name()
+            return cls.get_special_type_for_measure_class(measure_class)
+        return ""
+
+    @classmethod
+    def get_unit_symbol_for_special_type(cls, special_type: str, ifc_file: ifcopenshell.file) -> str:
+        """Get the project's default unit symbol for a `special_type` (see `get_special_type_for_prop`).
+
+        Used where there's no property instance to check for a `Unit` override
+        (e.g. a template, or a native IFC entity attribute, neither of which
+        can carry one).
+        """
+        if not special_type or special_type == "URI":
+            return ""
+        unit = ifcopenshell.util.unit.get_project_unit(ifc_file, f"{special_type}UNIT")
+        return ifcopenshell.util.unit.get_unit_symbol(unit) if unit else ""
+
+    @classmethod
+    def get_unit_symbol_for_prop(cls, prop: ifcopenshell.entity_instance, ifc_file: ifcopenshell.file) -> str:
+        """Get the unit symbol for an existing property/quantity, respecting its own `Unit` override.
+
+        Gated on the property being classified as measurable (see `get_special_type_for_prop`,
+        which already accounts for a Unit attached to a generic numeric value) -- this only
+        excludes a Unit attached to a property whose value has no numeric/measure semantics at
+        all (e.g. text), where a stray Unit shouldn't be surfaced as a resolved unit.
+        """
+        if not cls.is_measurable_special_type(cls.get_special_type_for_prop(prop)):
+            return ""
+        unit = ifcopenshell.util.unit.get_property_unit(prop, ifc_file)
+        return ifcopenshell.util.unit.get_unit_symbol(unit) if unit else ""
+
+    # special_type values that don't denote a real unit-bearing measure (see get_special_type_for_prop).
+    NON_MEASURABLE_SPECIAL_TYPES = frozenset({"", "DATE", "DATETIME", "LOGICAL", "URI", "DURATION"})
+
+    @classmethod
+    def is_measurable_special_type(cls, special_type: str) -> bool:
+        """True if `special_type` (see `get_special_type_for_prop`) denotes a real unit-bearing measure."""
+        return special_type not in cls.NON_MEASURABLE_SPECIAL_TYPES
+
+    @classmethod
+    def get_candidate_units_for_special_type(
+        cls, special_type: str, ifc_file: ifcopenshell.file
+    ) -> list[ifcopenshell.entity_instance]:
+        """All units in the file usable as an override for a `special_type` (see `get_special_type_for_prop`)."""
+        if not cls.is_measurable_special_type(special_type):
+            return []
+        return ifcopenshell.util.unit.get_candidate_units(ifc_file, f"{special_type}UNIT")
+
+    @classmethod
+    def resolve_effective_unit(
+        cls, special_type: str, unit_id: int, ifc_file: ifcopenshell.file
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        """The unit a value is currently expressed in: its own override (`unit_id`, a STEP id,
+        0 meaning "no override"), or the project default for `special_type` otherwise."""
+        if unit_id:
+            return ifc_file.by_id(unit_id)
+        return ifcopenshell.util.unit.get_project_unit(ifc_file, f"{special_type}UNIT")
+
+    @classmethod
+    def convert_attribute_unit(cls, metadata: Attribute, new_unit_id: int, ifc_file: ifcopenshell.file) -> None:
+        """Rescale `metadata.float_value` in place so its physical quantity is preserved when
+        switching from its current effective unit to the unit named by `new_unit_id` (0 = project
+        default). No-op for non-measurable attributes or when old and new resolve to the same unit.
+        """
+        if not cls.is_measurable_special_type(metadata.special_type):
+            return
+        old_unit = cls.resolve_effective_unit(metadata.special_type, metadata.unit_id, ifc_file)
+        new_unit = cls.resolve_effective_unit(metadata.special_type, new_unit_id, ifc_file)
+        if old_unit is None or new_unit is None or old_unit == new_unit:
+            return
+        old_scale = ifcopenshell.util.unit.get_unit_scale(old_unit)
+        new_scale = ifcopenshell.util.unit.get_unit_scale(new_unit)
+        metadata.float_value = metadata.float_value * old_scale / new_scale
 
     @classmethod
     def import_pset_from_existing(
@@ -222,6 +325,18 @@ class Pset(bonsai.core.tool.Pset):
             pset_props = pset.HasProperties
         elif pset.is_a("IfcMaterialProperties") or pset.is_a("IfcProfileProperties"):
             pset_props = pset.Properties
+
+        # If this Pset's owning element is classified against a bSDD class that defines
+        # this Pset, recognise properties matching bSDD property codes as picklists,
+        # even though the Pset wasn't necessarily created through the bSDD add-property UI.
+        bsdd_allowed_values: dict[str, list[str]] = {}
+        if pset.is_a("IfcPropertySet"):
+            elements = ifcopenshell.util.element.get_elements_by_pset(pset)
+            if elements:
+                try:
+                    bsdd_allowed_values = tool.Bsdd.get_bsdd_pset_property_values(next(iter(elements)), pset.Name)
+                except Exception:
+                    pass
 
         prop_templates: dict[str, ifcopenshell.entity_instance] = {}
         if pset_template:
@@ -283,8 +398,30 @@ class Pset(bonsai.core.tool.Pset):
                 metadata.is_null = value is None
                 metadata.is_optional = True
                 metadata.special_type = cls.get_special_type_for_prop(prop)
+                # The prop's OWN Unit override only -- metadata.unit_symbol is computed fresh from
+                # special_type/unit_id on every access (see Attribute.get_unit_symbol), so it
+                # already accounts for the project-default fallback once unit_id is set below.
+                # Some real-world files (e.g. certain exporters) set Unit on properties that
+                # aren't actually measures -- ignore it there, since we only ever treat Unit as
+                # meaningful for measurable special_types (matching the UI picker's own gating).
+                own_unit = (
+                    getattr(prop, "Unit", None) if cls.is_measurable_special_type(metadata.special_type) else None
+                )
+                metadata.unit_id = own_unit.id() if own_unit else 0
+                metadata.unit_id_enum = str(metadata.unit_id)
                 metadata.set_value(metadata.get_value_default() if metadata.is_null else value)
                 process_prop_description(metadata)
+
+                if prop.is_a("IfcPropertySingleValue") and (possible_values := bsdd_allowed_values.get(prop.Name)):
+                    str_value = None if value is None else str(value)
+                    if str_value is not None and str_value not in possible_values:
+                        # Preserve a legacy/imported value that doesn't match the current
+                        # bSDD enumeration instead of silently dropping it.
+                        possible_values = [*possible_values, str_value]
+                    metadata.enum_items = json.dumps(possible_values)
+                    metadata.data_type = "enum"
+                    if str_value is not None:
+                        metadata.enum_value = str_value
 
     @classmethod
     def get_prop_template_primitive_type(cls, prop_template: ifcopenshell.entity_instance) -> str:
@@ -409,6 +546,8 @@ class Pset(bonsai.core.tool.Pset):
                 cls.import_single_value_from_template(pset_template, prop_template, simplified_data, props)
 
             elif prop_template.TemplateType.startswith("Q_"):
+                if prop_data:
+                    continue  # Existing quantity will be added later by import_pset_from_existing.
                 cls.import_single_value_from_template(pset_template, prop_template, simplified_data, props)
 
             elif prop_template.TemplateType == "P_ENUMERATEDVALUE":

@@ -484,8 +484,8 @@ class MEPGenerator:
                 if tool.Cad.is_x(port_local_position.length, 0.0):
                     start_port = port
                     break
-            assert start_port is not None
 
+            assert start_port is not None
             connected_port = tool.System.get_connected_port(start_port)
             connected_element = tool.System.get_port_relating_element(connected_port)
             element_type = ifcopenshell.util.element.get_type(connected_element)

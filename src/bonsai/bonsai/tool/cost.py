@@ -562,7 +562,7 @@ class Cost(bonsai.core.tool.Cost):
     @classmethod
     def get_schedule_cost_items(
         cls, cost_schedule: ifcopenshell.entity_instance
-    ) -> Generator[ifcopenshell.entity_instance, None, None]:
+    ) -> Generator[ifcopenshell.entity_instance]:
         return ifcopenshell.util.cost.get_schedule_cost_items(cost_schedule)
 
     @classmethod

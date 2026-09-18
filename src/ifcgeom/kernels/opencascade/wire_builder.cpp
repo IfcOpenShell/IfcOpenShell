@@ -1,7 +1,7 @@
 #include "wire_builder.h"
 
-#include "../../../ifcparse/IfcLogger.h"
-#include "../../../ifcgeom/ConversionSettings.h"
+#include "../../../ifcparse/logger.h"
+#include "../../../ifcgeom/conversion_settings.h"
 
 #include <TopExp.hxx>
 #include <TopoDS.hxx>
@@ -15,7 +15,7 @@
 #include <GeomAdaptor_Curve.hxx>
 
 // Returns the first edge of a wire
-TopoDS_Edge IfcGeom::util::first_edge(const TopoDS_Wire & w) {
+TopoDS_Edge ifcopenshell::geom::util::first_edge(const TopoDS_Wire & w) {
 	TopoDS_Vertex v1, v2;
 	TopExp::Vertices(w, v1, v2);
     NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> wm;
@@ -24,7 +24,7 @@ TopoDS_Edge IfcGeom::util::first_edge(const TopoDS_Wire & w) {
 }
 
 // Returns new wire with the edge replaced by a linear edge with the vertex v moved to p
-TopoDS_Wire IfcGeom::util::adjust(const TopoDS_Wire & w, const TopoDS_Vertex & v, const gp_Pnt & p) {
+TopoDS_Wire ifcopenshell::geom::util::adjust(const TopoDS_Wire & w, const TopoDS_Vertex & v, const gp_Pnt & p) {
 	NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> map;
 	TopExp::MapShapesAndAncestors(w, TopAbs_VERTEX, TopAbs_EDGE, map);
 
@@ -66,7 +66,7 @@ TopoDS_Wire IfcGeom::util::adjust(const TopoDS_Wire & w, const TopoDS_Vertex & v
 
 		GC_MakeCircle mc(p1, p2, p3);
 		if (!mc.IsDone()) {
-			throw IfcGeom::geometry_exception("Failed to adjust circle");
+			throw ifcopenshell::geom::geometry_exception("Failed to adjust circle");
 		}
 
 		TopoDS_Edge edge = BRepBuilderAPI_MakeEdge(mc.Value(), p1, p3).Edge();
@@ -74,15 +74,15 @@ TopoDS_Wire IfcGeom::util::adjust(const TopoDS_Wire & w, const TopoDS_Vertex & v
 		builder.Add(edge);
 		return builder.Wire();
 	} else {
-		throw IfcGeom::geometry_exception("Unexpected wire to adjust");
+		throw ifcopenshell::geom::geometry_exception("Unexpected wire to adjust");
 	}
 }
 
-double IfcGeom::util::deflection_for_approximating_circle(double radius, double param) {
+double ifcopenshell::geom::util::deflection_for_approximating_circle(double radius, double param) {
 	return -radius * std::cos(1. / 2. * param) * std::cos(param) - radius * std::sin(1. / 2. * param) * std::sin(param) + radius;
 }
 
-bool IfcGeom::util::create_edge_over_curve_with_log_messages(const opencascade::handle<Geom_Curve>& crv, const double eps, const gp_Pnt& p1, const gp_Pnt& p2, TopoDS_Edge& result) {
+bool ifcopenshell::geom::util::create_edge_over_curve_with_log_messages(const opencascade::handle<Geom_Curve>& crv, const double eps, const gp_Pnt& p1, const gp_Pnt& p2, TopoDS_Edge& result) {
 	if (crv->IsClosed() && p1.Distance(p2) <= eps) {
 		BRepBuilderAPI_MakeEdge me(crv);
 		if (me.IsDone()) {
@@ -117,12 +117,12 @@ bool IfcGeom::util::create_edge_over_curve_with_log_messages(const opencascade::
 						}
 					}
 					if (dmin == std::numeric_limits<double>::infinity()) {
-						Logger::Root().Error("GEO", 205, "No extrema for point");
+						ifcopenshell::logger::root().error("GEO", 205, "No extrema for point");
 					} else if (dmin > eps2) {
-						Logger::Root().Error("GEO", 206, "Distance of " + boost::lexical_cast<std::string>(std::sqrt(dmin)) + " exceeds tolerance");
+						ifcopenshell::logger::root().error("GEO", 206, "Distance of " + boost::lexical_cast<std::string>(std::sqrt(dmin)) + " exceeds tolerance");
 					}
 				} else {
-					Logger::Root().Error("GEO", 207, "Failed to calculate extrema for point");
+					ifcopenshell::logger::root().error("GEO", 207, "Failed to calculate extrema for point");
 				}
 			}
 		}
@@ -132,7 +132,7 @@ bool IfcGeom::util::create_edge_over_curve_with_log_messages(const opencascade::
 	return true;
 }
 
-void IfcGeom::util::wire_builder::operator()(const TopoDS_Shape& a) {
+void ifcopenshell::geom::util::wire_builder::operator()(const TopoDS_Shape& a) {
 	const TopoDS_Wire& w = TopoDS::Wire(a);
 	if (override_next_) {
 		override_next_ = false;
@@ -143,7 +143,7 @@ void IfcGeom::util::wire_builder::operator()(const TopoDS_Shape& a) {
 	}
 }
 
-void IfcGeom::util::wire_builder::operator()(const TopoDS_Shape& a, const TopoDS_Shape& b, bool last) {
+void ifcopenshell::geom::util::wire_builder::operator()(const TopoDS_Shape& a, const TopoDS_Shape& b, bool last) {
 	TopoDS_Wire w1 = TopoDS::Wire(a);
 	const TopoDS_Wire& w2 = TopoDS::Wire(b);
 
@@ -172,7 +172,7 @@ void IfcGeom::util::wire_builder::operator()(const TopoDS_Shape& a, const TopoDS
 	if (dist > 1000. * p_) {
 		mw_.Add(w1);
 		mw_.Add(BRepBuilderAPI_MakeEdge(p1, p2));
-		Logger::Root().Warning("GEO", 208, "Added additional segment to close gap with length " + boost::lexical_cast<std::string>(dist) + " to:", inst_);
+		ifcopenshell::logger::root().warning("GEO", 208, "Added additional segment to close gap with length " + boost::lexical_cast<std::string>(dist) + " to:", inst_);
 		goto check;
 	}
 
@@ -200,28 +200,28 @@ void IfcGeom::util::wire_builder::operator()(const TopoDS_Shape& a, const TopoDS
 			// Preferably adjust the segment that is linear
 			if (is_line1 || (is_circle1 && !is_line2)) {
 				mw_.Add(adjust(w1, w12, p2));
-				Logger::Root().Notice("GEO", 209, "Adjusted edge end-point with distance " + boost::lexical_cast<std::string>(dist) + " on:", inst_);
+				ifcopenshell::logger::root().notice("GEO", 209, "Adjusted edge end-point with distance " + boost::lexical_cast<std::string>(dist) + " on:", inst_);
 			} else if ((is_line2 || is_circle2) && !last) {
 				mw_.Add(w1);
 				override_next_ = true;
 				next_override_ = p1;
-				Logger::Root().Notice("GEO", 210, "Adjusted edge end-point with distance " + boost::lexical_cast<std::string>(dist) + " on:", inst_);
+				ifcopenshell::logger::root().notice("GEO", 210, "Adjusted edge end-point with distance " + boost::lexical_cast<std::string>(dist) + " on:", inst_);
 			} else {
 				// In all other cases an edge is added
 				mw_.Add(w1);
 				mw_.Add(BRepBuilderAPI_MakeEdge(p1, p2));
-				Logger::Root().Warning("GEO", 211, "Added additional segment to close gap with length " + boost::lexical_cast<std::string>(dist) + " to:", inst_);
+				ifcopenshell::logger::root().warning("GEO", 211, "Added additional segment to close gap with length " + boost::lexical_cast<std::string>(dist) + " to:", inst_);
 			}
 		} else {
-			Logger::Root().Error("GEO", 212, "Internal error, inconsistent wire segments", inst_);
+			ifcopenshell::logger::root().error("GEO", 212, "Internal error, inconsistent wire segments", inst_);
 			mw_.Add(w1);
 		}
 	}
 
 check:
 	if (mw_.Error() == BRepBuilderAPI_NonManifoldWire) {
-		Logger::Root().Error("GEO", 213, "Non-manifold curve segments:", inst_);
+		ifcopenshell::logger::root().error("GEO", 213, "Non-manifold curve segments:", inst_);
 	} else if (mw_.Error() == BRepBuilderAPI_DisconnectedWire) {
-		Logger::Root().Error("GEO", 214, "Failed to join curve segments:", inst_);
+		ifcopenshell::logger::root().error("GEO", 214, "Failed to join curve segments:", inst_);
 	}
 }

@@ -19,11 +19,14 @@
 
 from __future__ import annotations
 import sys
-import nodes
-import templates
-import schema
+from typing import TYPE_CHECKING
 
-from header import USE_VIRTUAL_INHERITANCE
+if TYPE_CHECKING:
+    from . import nodes, schema, templates
+else:
+    import nodes
+    import schema
+    import templates
 
 
 class Mapping:
@@ -31,11 +34,20 @@ class Mapping:
     express_to_cpp_typemapping = {
         "boolean": "bool",
         "logical": "boost::logic::tribool",
-        "integer": "int",
+        "integer": "int64_t",
         "real": "double",
         "number": "double",
         "string": "std::string",
         "binary": "boost::dynamic_bitset<>",
+    }
+
+    cpp_to_argument_types = {
+        "boolean": "BOOL",
+        "logical": "LOGICAL",
+        "integer": "INT",
+        "real": "DOUBLE",
+        "number": "DOUBLE",
+        "string": "STRING",
     }
 
     supported_argument_types = set(
@@ -119,8 +131,8 @@ class Mapping:
         else:
             return "Type::%s" % type
 
-    def make_argument_type(self, attr):
-        def _make_argument_type(type):
+    def make_argument_type(self, attr: nodes.Node | str) -> str:
+        def _make_argument_type(type: nodes.Node | str) -> str:
             if isinstance(type, nodes.SimpleType):
                 type = type.type
             if self.schema.is_entity(type) or isinstance(type, nodes.SelectType):
@@ -136,8 +148,8 @@ class Mapping:
                 if ty == "UNKNOWN":
                     return "UNKNOWN"
                 return "AGGREGATE_OF_" + ty
-            elif str(type) in self.express_to_cpp_typemapping:
-                return self.express_to_cpp_typemapping.get(str(type), type).split("::")[-1].upper()
+            elif (ty := self.cpp_to_argument_types.get(str(type))) is not None:
+                return ty
             elif self.schema.is_type(type):
                 return _make_argument_type(self.schema.types[type].type)
             else:
@@ -153,7 +165,7 @@ class Mapping:
             pdb.set_trace()
             print("Attribute %r mapped as 'unknown'" % (attr), file=sys.stderr)
             ty = "UNKNOWN"
-        return "IfcUtil::Argument_%s" % ty
+        return "ifcopenshell::Argument_%s" % ty
 
     def get_type_dep(self, type):
         if isinstance(type, str):
@@ -178,15 +190,8 @@ class Mapping:
         elif isinstance(type_str, nodes.AggregationType):
             is_nested_list = isinstance(attr_type.type, nodes.AggregationType)
             ty = self.get_parameter_type(attr_type.type if is_nested_list else attr_type)
-            # We do not use pointers in aggregate_of<T>. aggregate_of has member vector<T*>
-            ty = ty.replace("*", "")
 
-            # https://github.com/IfcOpenShell/IfcOpenShell/issues/2805
-            # We do support statically typed select types as aggregates when USE_VIRTUAL_INHERITANCE=True
-
-            if not USE_VIRTUAL_INHERITANCE and self.schema.is_select(attr_type.type):
-                type_str = templates.untyped_list
-            elif self.schema.is_simpletype(ty) or str(ty) in self.express_to_cpp_typemapping.values():
+            if self.schema.is_simpletype(ty) or str(ty) in self.express_to_cpp_typemapping.values():
                 tmpl = templates.nested_array_type if is_nested_list else templates.array_type
                 bounds = (attr_type.bounds.lower, attr_type.bounds.upper) if attr_type.bounds else (-1, -1)
                 type_str = tmpl % {"instance_type": ty, "lower": bounds[0], "upper": bounds[1]}
@@ -194,11 +199,11 @@ class Mapping:
                 tmpl = templates.list_list_type if is_nested_list else templates.list_type
                 type_str = tmpl % {"instance_type": ty}
         elif self.schema.is_entity(type_str) or self.schema.is_select(type_str):
-            type_str = "::%s::%s*" % (self.schema.name.capitalize(), attr_type)
+            type_str = "::%s::%s" % (self.schema.name.capitalize(), attr_type)
             is_ptr = True
         if allow_optional and attr.optional and not is_ptr:
             # pointers are still handled with nullptr for the time being
-            type_str = "boost::optional< %s >" % type_str
+            type_str = "std::optional< %s >" % type_str
         return type_str
 
     def argument_count(self, t):
@@ -225,8 +230,6 @@ class Mapping:
                 isinstance(v, nodes.SimpleType) and isinstance(v.type, nodes.StringType)
             ):
                 return "string"
-            if not USE_VIRTUAL_INHERITANCE and self.schema.is_select(v):
-                return "IfcUtil::IfcBaseClass"
             if str(v) in self.schema.types or str(v) in self.schema.entities:
                 return "::%s::%s" % (self.schema.name.capitalize(), v)
             else:
@@ -255,8 +258,8 @@ class Mapping:
         arr = self.is_array(attr_type)
         simple = self.schema.is_simpletype(ty)
         express = self.flatten_type_string(ty) in self.express_to_cpp_typemapping
-        select = ty == "IfcUtil::IfcBaseClass"
-        return arr and not simple and not express and not select
+        # select = ty == "ifcopenshell::IfcBaseClass"
+        return arr and not simple and not express
 
     def get_assignable_arguments(self, t, include_derived=False):
         count = self.argument_count(t)
@@ -264,10 +267,10 @@ class Mapping:
         derived = set(self.derived_in_supertype(t))
         attrs = enumerate(self.arguments(t))
 
-        def include(attr):
+        def include(attr: nodes.Node) -> bool:
             not_derived = include_derived or (attr.name not in derived)
-            supported = self.make_argument_type(attr) != "IfcUtil::Argument_UNKNOWN"
-            return not_derived and supported
+            supported = self.make_argument_type(attr) != "ifcopenshell::Argument_UNKNOWN"
+            return bool(not_derived and supported)
 
         return [
             {

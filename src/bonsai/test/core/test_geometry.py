@@ -24,7 +24,6 @@ from test.core.bootstrap import geometry, ifc, style, surveyor
 class TestEditObjectPlacement:
     def predict(self, ifc, geometry, surveyor):
         ifc.get_entity("obj").should_be_called().will_return("element")
-        geometry.clear_cache("element").should_be_called()
         geometry.clear_scale("obj").should_be_called()
         geometry.get_blender_offset_type("obj").should_be_called()
         surveyor.get_absolute_matrix("obj").should_be_called().will_return("matrix")
@@ -197,7 +196,6 @@ class TestSwitchRepresentation:
     def test_switching_to_a_representation(self, ifc, geometry):
         geometry.get_object_data("obj").should_be_called().will_return("current_obj_data")
         ifc.get_entity("obj").should_be_called().will_return("element")
-        geometry.clear_cache("element").should_be_called()
         geometry.reimport_element_representations("obj", "mapped_rep", apply_openings=True).should_be_called()
         subject.switch_representation(
             ifc,

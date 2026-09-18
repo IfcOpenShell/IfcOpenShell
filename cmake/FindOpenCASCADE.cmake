@@ -59,6 +59,31 @@ if(NOT OCC_INCLUDE_DIR AND NOT OCC_LIBRARY_DIR)
         list(APPEND OpenCASCADE_LIBRARIES WSOCK32.lib)
     endif()
 
+    if(UNIX AND NOT WASM_BUILD)
+        # OpenCASCADE_LIBRARIES is OCCT's complete toolkit list, Visualization
+        # included (TKV3d, TKService, TKOpenGl). Against a static OCCT an
+        # unreferenced toolkit contributes nothing. Against a shared OCCT every
+        # entry becomes a hard load-time dependency, and TKV3d pulls in
+        # libGL/libEGL, so `import ifcopenshell` fails on any headless machine
+        # even though IfcOpenShell never opens a window. Record only the
+        # toolkits whose symbols are actually referenced.
+        #
+        # On GNU ld this is deliberately not closed with --no-as-needed: CMake
+        # emits the imported targets' INTERFACE_LINK_LIBRARIES (where OCCT lists
+        # libGL/libEGL) after this item, so closing the bracket would switch
+        # recording back on for exactly the libraries this exists to exclude.
+        # The flag is a no-op for static archives, so it is safe for both link
+        # types; wasm is excluded only because wasm-ld has no shared OCCT to
+        # trim and need not see the GNU ld spelling at all.
+        #
+        # Windows / MSVC doesn't have this option and behaves like --as-needed by default.
+        if(APPLE)
+            set(OpenCASCADE_LIBRARIES "-Wl,-dead_strip_dylibs" "${OpenCASCADE_LIBRARIES}")
+        else()
+            set(OpenCASCADE_LIBRARIES "-Wl,--as-needed" "${OpenCASCADE_LIBRARIES}")
+        endif()
+    endif()
+
     return()
 endif()
 
@@ -69,14 +94,14 @@ if(OCC_INCLUDE_DIR AND OCC_LIBRARY_DIR)
         "Using provided OCC_INCLUDE_DIR ('${OCC_INCLUDE_DIR}') "
         "and OCC_LIBRARY_DIR ('${OCC_LIBRARY_DIR}')."
     )
-    # Parse OCC_VERSION_STRING.
+    # Parse OpenCASCADE_VERSION.
     file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MAJOR REGEX "#define OCC_VERSION_MAJOR.*")
     string(REGEX MATCH "[0-9]+" OCC_MAJOR ${OCC_MAJOR})
     file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MINOR REGEX "#define OCC_VERSION_MINOR.*")
     string(REGEX MATCH "[0-9]+" OCC_MINOR ${OCC_MINOR})
     file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MAINT REGEX "#define OCC_VERSION_MAINTENANCE.*")
     string(REGEX MATCH "[0-9]+" OCC_MAINT ${OCC_MAINT})
-    set(OCC_VERSION_STRING "${OCC_MAJOR}.${OCC_MINOR}.${OCC_MAINT}")
+    set(OpenCASCADE_VERSION "${OCC_MAJOR}.${OCC_MINOR}.${OCC_MAINT}")
 else()
     message(
         FATAL_ERROR
@@ -110,7 +135,7 @@ set(OpenCASCADE_LIBRARIES
     TKBin
 )
 
-if(OCC_VERSION_STRING VERSION_LESS 7.8.0)
+if(OpenCASCADE_VERSION VERSION_LESS 7.8.0)
     list(
         APPEND OpenCASCADE_LIBRARIES
         TKIGES
@@ -119,17 +144,17 @@ if(OCC_VERSION_STRING VERSION_LESS 7.8.0)
         TKSTEP209
         TKSTEP
     )
-else(OCC_VERSION_STRING VERSION_LESS 7.8.0)
+else(OpenCASCADE_VERSION VERSION_LESS 7.8.0)
     list(APPEND OpenCASCADE_LIBRARIES TKDESTEP TKDEIGES)
-endif(OCC_VERSION_STRING VERSION_LESS 7.8.0)
+endif(OpenCASCADE_VERSION VERSION_LESS 7.8.0)
 
 find_library(libTKernel NAMES TKernel TKerneld PATHS ${OCC_LIBRARY_DIR} NO_DEFAULT_PATH)
 
-if(libTKernel)
-    message(STATUS "Required Open Cascade Library files found")
-else()
-    message(FATAL_ERROR "Unable to find Open Cascade library files in OCC_LIBRARY_DIR ('${OCC_LIBRARY_DIR}'), aborting")
-endif()
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(OpenCASCADE
+    REQUIRED_VARS libTKernel
+    VERSION_VAR OpenCASCADE_VERSION
+)
 
 if(MSVC)
     add_definitions(-DHAVE_NO_DLL)

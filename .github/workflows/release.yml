@@ -7,13 +7,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  activate:
+  upstream-only:
     if: github.repository == 'IfcOpenShell/IfcOpenShell'
     runs-on: ubuntu-22.04
     steps:
     - run: echo ok go
-  build:
-    needs: activate
+  release:
+    needs: upstream-only
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
@@ -25,19 +25,15 @@ jobs:
           sudo apt update
           sudo apt-get install --no-install-recommends \
           git cmake gcc g++ \
-          libboost-date-time-dev \
-          libboost-filesystem-dev \
           libboost-iostreams-dev \
           libboost-program-options-dev \
           libboost-regex-dev \
-          libboost-system-dev \
-          libboost-thread-dev \
           python3-all-dev python3-pip \
           swig libpcre3-dev libxml2-dev \
           libtbb-dev nlohmann-json3-dev \
           libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev libocct-ocaf-dev libocct-visualization-dev libocct-data-exchange-dev \
-          libhdf5-dev libcgal-dev opencollada-dev
-          
+          libcgal-dev opencollada-dev
+
       - name: Build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -64,7 +60,6 @@ jobs:
            -DMPFR_INCLUDE_DIR=/usr/include \
            -DGMP_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
            -DMPFR_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
-           -DHDF5_INCLUDE_DIR=/usr/include/hdf5/serial \
            -DOPENCOLLADA_INCLUDE_DIR=/usr/include/opencollada \
            -DOPENCOLLADA_LIBRARY_DIR=/usr/lib/opencollada/ \
            ../cmake
@@ -78,7 +73,7 @@ jobs:
           echo ::set-output name=deb::$( ls assets/*.deb | head -n 1 | xargs basename )
         working-directory: build
         env:
-          CHANGELOG_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}          
+          CHANGELOG_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Release
         id: release
         uses: actions/create-release@v1
@@ -102,7 +97,7 @@ jobs:
         env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          upload_url: ${{ steps.release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
           asset_path: build/assets/${{ steps.package.outputs.tgz }}
           asset_name: ${{ steps.package.outputs.tgz }}
           asset_content_type: application/x-gzip
@@ -112,7 +107,7 @@ jobs:
         env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          upload_url: ${{ steps.release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
           asset_path: build/assets/${{ steps.package.outputs.deb }}
           asset_name: ${{ steps.package.outputs.deb }}
           asset_content_type: application/vnd.debian.binary-package

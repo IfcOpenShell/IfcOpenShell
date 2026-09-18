@@ -1,0 +1,826 @@
+/********************************************************************************
+ *                                                                              *
+ * This file is part of IfcOpenShell.                                           *
+ *                                                                              *
+ * IfcOpenShell is free software: you can redistribute it and/or modify         *
+ * it under the terms of the Lesser GNU General Public License as published by  *
+ * the Free Software Foundation, either version 3.0 of the License, or          *
+ * (at your option) any later version.                                          *
+ *                                                                              *
+ * IfcOpenShell is distributed in the hope that it will be useful,              *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of               *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                 *
+ * Lesser GNU General Public License for more details.                          *
+ *                                                                              *
+ * You should have received a copy of the Lesser GNU General Public License     *
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.         *
+ *                                                                              *
+ ********************************************************************************/
+
+#include "Federation.h"
+#include "geolocation.h"
+#include "unit.h"
+
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
+#include <QSaveFile>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonValue>
+#include <QUuid>
+
+#include <algorithm>
+#include <cmath>
+#include <functional>
+
+namespace {
+constexpr const char* kSchema = "ifcfed/1";
+
+QString resolvePath(const QString& fed_dir, const QString& stored) {
+    if (stored.isEmpty()) return stored;
+    QFileInfo fi(stored);
+    if (fi.isAbsolute()) return QDir::cleanPath(stored);
+    return QDir::cleanPath(QDir(fed_dir).absoluteFilePath(stored));
+}
+
+// Returns abs_path relative to fed_dir if abs_path lives under fed_dir,
+// otherwise returns abs_path unchanged.
+QString relativizePath(const QString& fed_dir, const QString& abs_path) {
+    QString fed_canon = QDir::cleanPath(fed_dir);
+    QString abs_canon = QDir::cleanPath(abs_path);
+    if (!fed_canon.endsWith('/')) fed_canon += '/';
+    if (abs_canon.startsWith(fed_canon)) {
+        return QDir(fed_canon).relativeFilePath(abs_canon);
+    }
+    return abs_canon;
+}
+}  // namespace
+
+// === Stage-3/4 compose helpers ===
+
+ModelGeoref computeModelGeoref(ifcopenshell::file* ifc_file) {
+    ModelGeoref out;
+    if (!ifc_file) return out;
+
+    out.units.project_length_to_meters =
+        calculate_unit_scale(ifc_file, "LENGTHUNIT");
+
+    auto params = get_helmert_transformation_parameters(ifc_file);
+    const double scale = (params && params->scale != 0.0) ? params->scale : 1.0;
+    out.units.map_unit_to_meters = out.units.project_length_to_meters / scale;
+    if (!params) return out;
+
+    Eigen::Matrix4d helmert =
+        helmert_meters_from_parameters(*params, out.units.map_unit_to_meters);
+
+    if (auto wcs = get_wcs(ifc_file)) {
+        // get_wcs returns the WCS in project units (translation in project
+        // length units).  Convert translation to metres before inverting.
+        Eigen::Matrix4d wcs_m = *wcs;
+        wcs_m(0, 3) *= out.units.project_length_to_meters;
+        wcs_m(1, 3) *= out.units.project_length_to_meters;
+        wcs_m(2, 3) *= out.units.project_length_to_meters;
+        out.coordinate_operation_meters = helmert * wcs_m.inverse();
+    } else {
+        out.coordinate_operation_meters = helmert;
+    }
+    out.has_coordinate_operation = true;
+    return out;
+}
+
+// === Federation class ===
+
+Federation::Federation(QObject* parent) : QObject(parent) {}
+
+QString Federation::generateId() {
+    return QUuid::createUuid().toString(QUuid::WithoutBraces);
+}
+
+bool Federation::isFederationPath(const QString& path) {
+    return path.endsWith(".ifcfed", Qt::CaseInsensitive);
+}
+
+void Federation::clear() {
+    file_path_.clear();
+    name_.clear();
+    created_ = QDateTime();
+    modified_ = QDateTime();
+    models_.clear();
+    root_groups_.clear();
+    config_                 = FederationConfig{};
+    federated_false_origin_ = FederatedFalseOrigin{};
+    has_home_view_ = false;
+    home_view_ = HomeView{};
+    has_manifest_ = false;
+    manifest_ = QJsonObject{};
+    setDirty(false);
+}
+
+void Federation::setConfig(const FederationConfig& c) {
+    if (config_.unit_name == c.unit_name && config_.unit_prefix == c.unit_prefix)
+        return;
+    config_ = c;
+    setDirty(true);
+    emit configChanged();
+}
+
+void Federation::setFederatedFalseOrigin(const FederatedFalseOrigin& o) {
+    if (federated_false_origin_.xyz == o.xyz &&
+        federated_false_origin_.rz_deg == o.rz_deg) return;
+    federated_false_origin_ = o;
+    setDirty(true);
+    emit federatedFalseOriginChanged();
+}
+
+void Federation::setModelTransformation(const QString& model_id,
+                                        const ModelTransformation& xf) {
+    for (auto& model : models_) {
+        if (model.id != model_id) continue;
+        model.model_transformation = xf;
+        setDirty(true);
+        emit modelTransformationChanged(model_id);
+        return;
+    }
+}
+
+void Federation::setModelVisible(const QString& model_id, bool visible) {
+    for (auto& model : models_) {
+        if (model.id != model_id) continue;
+        if (model.visible == visible) return;
+        model.visible = visible;
+        setDirty(true);
+        emit modelVisibilityChanged(model_id, visible);
+        return;
+    }
+}
+
+void Federation::setModelGroup(const QString& model_id, const QString& group_id) {
+    if (!group_id.isEmpty() && findGroupById(group_id) == nullptr) return;
+    for (auto& model : models_) {
+        if (model.id != model_id) continue;
+        if (model.group_id == group_id) return;
+        model.group_id = group_id;
+        setDirty(true);
+        emit modelGroupChanged(model_id, group_id);
+        return;
+    }
+}
+
+void Federation::setModelDisplayName(const QString& model_id, const QString& display_name) {
+    if (display_name.isEmpty()) return;
+    for (auto& model : models_) {
+        if (model.id != model_id) continue;
+        if (model.display_name == display_name) return;
+        model.display_name = display_name;
+        setDirty(true);
+        emit modelChanged(model_id);
+        return;
+    }
+}
+
+void Federation::setModelSource(const QString& model_id,
+                                const QString& connector_id,
+                                const QJsonObject& source_data) {
+    if (connector_id.isEmpty()) return;
+    for (auto& model : models_) {
+        if (model.id != model_id) continue;
+        model.source_connector = connector_id;
+        model.source_data = source_data;
+        model.source_data.remove("connector");
+        if (connector_id == "local") {
+            // Round-trip the path through source_data when caller chooses
+            // to encode it there; otherwise leave model.source_path untouched.
+            const QString path_field = source_data.value("path").toString();
+            if (!path_field.isEmpty()) {
+                model.source_path = QDir::cleanPath(QFileInfo(path_field).absoluteFilePath());
+                model.source_data.remove("path");
+            }
+        } else {
+            // Cloud sources don't track a source_path — local file lives in
+            // the connector's cache, looked up via SceneLoader.
+            model.source_path.clear();
+        }
+        setDirty(true);
+        emit modelChanged(model_id);
+        return;
+    }
+}
+
+QString Federation::addGroup(const QString& display_name,
+                              const QString& parent_id) {
+    Group* parent = nullptr;
+    if (!parent_id.isEmpty()) {
+        parent = findGroupByIdMutable(parent_id);
+        if (!parent) return {};
+    }
+
+    auto group = std::make_unique<Group>();
+    group->id = generateId();
+    group->display_name = display_name.isEmpty() ? QString("Group") : display_name;
+    group->parent = parent;
+    const QString new_id = group->id;
+
+    if (parent) parent->children.push_back(std::move(group));
+    else        root_groups_.push_back(std::move(group));
+
+    setDirty(true);
+    emit groupAdded(new_id);
+    return new_id;
+}
+
+void Federation::removeGroup(const QString& group_id) {
+    Group* group = findGroupByIdMutable(group_id);
+    if (!group) return;
+
+    Group* new_parent = group->parent;
+    const QString new_parent_id = new_parent ? new_parent->id : QString();
+    auto& target_children = new_parent ? new_parent->children : root_groups_;
+
+    // Move out of the to-be-removed group.  Splice into target_children
+    // *before* the removed group's slot when possible to keep stable
+    // visual order.  We don't bother with the precise position — append
+    // is fine and simpler.
+    std::vector<QString> moved_child_ids;
+    moved_child_ids.reserve(group->children.size());
+    for (auto& child : group->children) {
+        moved_child_ids.push_back(child->id);
+        child->parent = new_parent;
+        target_children.push_back(std::move(child));
+    }
+    group->children.clear();
+
+    // Reparent direct child models up one level.
+    std::vector<QString> moved_model_ids;
+    for (auto& model : models_) {
+        if (model.group_id == group_id) {
+            model.group_id = new_parent_id;
+            moved_model_ids.push_back(model.id);
+        }
+    }
+
+    // Detach + drop the now-empty group.
+    auto owned = detachGroup(group);
+    owned.reset();
+
+    setDirty(true);
+    for (const auto& cid : moved_child_ids) emit groupChanged(cid);
+    for (const auto& model_id : moved_model_ids) emit modelGroupChanged(model_id, new_parent_id);
+    emit groupRemoved(group_id);
+}
+
+void Federation::setGroupName(const QString& group_id,
+                              const QString& display_name) {
+    Group* group = findGroupByIdMutable(group_id);
+    if (!group) return;
+    if (group->display_name == display_name) return;
+    group->display_name = display_name;
+    setDirty(true);
+    emit groupChanged(group_id);
+}
+
+void Federation::setGroupParent(const QString& group_id,
+                                 const QString& parent_id) {
+    if (group_id.isEmpty()) return;
+    if (parent_id == group_id) return;
+
+    Group* group = findGroupByIdMutable(group_id);
+    if (!group) return;
+
+    Group* new_parent = nullptr;
+    if (!parent_id.isEmpty()) {
+        new_parent = findGroupByIdMutable(parent_id);
+        if (!new_parent) return;
+        if (isDescendantOrSelf(group, new_parent)) return;
+    }
+
+    if (group->parent == new_parent) return;
+
+    auto owned = detachGroup(group);
+    if (!owned) return;
+    owned->parent = new_parent;
+    if (new_parent) new_parent->children.push_back(std::move(owned));
+    else            root_groups_.push_back(std::move(owned));
+
+    setDirty(true);
+    emit groupChanged(group_id);
+}
+
+void Federation::setGroupVisible(const QString& group_id, bool visible) {
+    Group* group = findGroupByIdMutable(group_id);
+    if (!group) return;
+    if (group->visible == visible) return;
+    group->visible = visible;
+    setDirty(true);
+    emit groupVisibilityChanged(group_id, visible);
+}
+
+const Federation::Group* Federation::findGroupById(const QString& group_id) const {
+    return const_cast<Federation*>(this)->findGroupByIdMutable(group_id);
+}
+
+Federation::Group* Federation::findGroupByIdMutable(const QString& group_id) {
+    if (group_id.isEmpty()) return nullptr;
+    std::vector<Group*> stack;
+    for (auto& group : root_groups_) stack.push_back(group.get());
+    while (!stack.empty()) {
+        Group* group = stack.back();
+        stack.pop_back();
+        if (group->id == group_id) return group;
+        for (auto& c : group->children) stack.push_back(c.get());
+    }
+    return nullptr;
+}
+
+std::vector<const Federation::Group*> Federation::allGroups() const {
+    std::vector<const Group*> out;
+    for (const auto& group : root_groups_) appendDfs(group.get(), out);
+    return out;
+}
+
+void Federation::appendDfs(const Group* group, std::vector<const Group*>& out) {
+    if (!group) return;
+    out.push_back(group);
+    for (const auto& c : group->children) appendDfs(c.get(), out);
+}
+
+std::unique_ptr<Federation::Group> Federation::detachGroup(Group* group) {
+    if (!group) return nullptr;
+    auto& siblings = group->parent ? group->parent->children : root_groups_;
+    auto it = std::find_if(siblings.begin(), siblings.end(),
+        [group](const std::unique_ptr<Group>& up) { return up.get() == group; });
+    if (it == siblings.end()) return nullptr;
+    std::unique_ptr<Group> owned = std::move(*it);
+    siblings.erase(it);
+    return owned;
+}
+
+bool Federation::isDescendantOrSelf(const Group* group,
+                                     const Group* candidate_descendant) {
+    if (!group || !candidate_descendant) return false;
+    if (group == candidate_descendant) return true;
+    for (const auto& c : group->children) {
+        if (isDescendantOrSelf(c.get(), candidate_descendant)) return true;
+    }
+    return false;
+}
+
+bool Federation::isGroupChainVisible(const QString& group_id) const {
+    if (group_id.isEmpty()) return true;
+    const Group* group = findGroupById(group_id);
+    while (group != nullptr) {
+        if (!group->visible) return false;
+        group = group->parent;
+    }
+    return true;
+}
+
+bool Federation::isModelEffectivelyVisible(const QString& model_id) const {
+    const Model* model = findById(model_id);
+    if (!model) return false;
+    if (!model->visible) return false;
+    return isGroupChainVisible(model->group_id);
+}
+
+void Federation::markClean() {
+    setDirty(false);
+}
+
+void Federation::setDirty(bool d) {
+    if (dirty_ == d) return;
+    dirty_ = d;
+    emit dirtyChanged(d);
+}
+
+const Federation::Model* Federation::findById(const QString& model_id) const {
+    for (const auto& model : models_) {
+        if (model.id == model_id) return &model;
+    }
+    return nullptr;
+}
+
+QString Federation::addModel(const QString& source_path,
+                              const QString& display_name) {
+    if (source_path.isEmpty()) return {};
+    if (isFederationPath(source_path)) return {};  // no nested federations
+
+    Model model;
+    model.id = generateId();
+    model.display_name = display_name;
+    model.source_connector = "local";
+    model.source_path = QDir::cleanPath(QFileInfo(source_path).absoluteFilePath());
+    models_.push_back(std::move(model));
+    const QString new_id = models_.back().id;
+    setDirty(true);
+    emit modelAdded(new_id);
+    return new_id;
+}
+
+QString Federation::addCloudModel(const QString& display_name,
+                                  const QString& connector_id,
+                                  const QJsonObject& source_data) {
+    if (connector_id.isEmpty() || connector_id == "local") return {};
+
+    Model model;
+    model.id = generateId();
+    model.display_name = display_name.isEmpty() ? model.id : display_name;
+    model.source_connector = connector_id;
+    model.source_data = source_data;
+    model.source_data.remove("connector");  // canonicalize: never duplicated
+    models_.push_back(std::move(model));
+    const QString new_id = models_.back().id;
+    setDirty(true);
+    emit modelAdded(new_id);
+    return new_id;
+}
+
+void Federation::removeModel(const QString& model_id) {
+    for (auto it = models_.begin(); it != models_.end(); ++it) {
+        if (it->id == model_id) {
+            models_.erase(it);
+            setDirty(true);
+            emit modelRemoved(model_id);
+            return;
+        }
+    }
+}
+
+void Federation::setHomeView(const HomeView& hv) {
+    home_view_ = hv;
+    has_home_view_ = true;
+    setDirty(true);
+}
+
+void Federation::clearHomeView() {
+    if (!has_home_view_) return;
+    has_home_view_ = false;
+    home_view_ = HomeView{};
+    setDirty(true);
+}
+
+bool Federation::load(const QString& path,
+                      QStringList* warnings,
+                      QString* err) {
+    QFile f(path);
+    if (!f.open(QIODevice::ReadOnly)) {
+        if (err) *err = QString("Cannot open %1: %2").arg(path, f.errorString());
+        return false;
+    }
+    QByteArray bytes = f.readAll();
+    f.close();
+
+    QJsonParseError pe;
+    QJsonDocument doc = QJsonDocument::fromJson(bytes, &pe);
+    if (doc.isNull() || !doc.isObject()) {
+        if (err) *err = QString("Parse error in %1: %2").arg(path, pe.errorString());
+        return false;
+    }
+    QJsonObject root = doc.object();
+
+    clear();
+    file_path_ = QDir::cleanPath(QFileInfo(path).absoluteFilePath());
+    QString fed_dir = QFileInfo(file_path_).absolutePath();
+
+    QString schema = root.value("schema").toString();
+    if (schema != kSchema && warnings) {
+        *warnings << QString("Unknown schema '%1' (expected '%2'); attempting to load anyway.")
+                         .arg(schema, kSchema);
+    }
+
+    name_ = root.value("name").toString();
+    created_ = QDateTime::fromString(root.value("created").toString(), Qt::ISODate);
+    modified_ = QDateTime::fromString(root.value("modified").toString(), Qt::ISODate);
+
+    if (QJsonValue cv = root.value("config"); cv.isObject()) {
+        QJsonObject co = cv.toObject();
+        QJsonObject uo = co.value("unit").toObject();
+        config_.unit_name   = uo.value("name").toString("METRE").toStdString();
+        config_.unit_prefix = uo.value("prefix").toString("").toStdString();
+    }
+
+    if (QJsonValue ov = root.value("federated_false_origin"); ov.isObject()) {
+        QJsonObject oo = ov.toObject();
+        QJsonArray xyz = oo.value("xyz").toArray();
+        if (xyz.size() == 3) {
+            federated_false_origin_.xyz = Eigen::Vector3d(
+                xyz[0].toDouble(), xyz[1].toDouble(), xyz[2].toDouble());
+        }
+        federated_false_origin_.rz_deg = oo.value("rz_deg").toDouble(0.0);
+    }
+
+    // Groups load before models so model.group_id can be validated.
+    {
+        // Recursive descend over the nested "groups" array.  Each entry is
+        // {id, display_name, visible?, groups?: [...]}.  Children inherit
+        // their parent pointer at construction time.
+        std::function<void(const QJsonArray&,
+                           std::vector<std::unique_ptr<Group>>&,
+                           Group*)> load_groups;
+        load_groups = [&](const QJsonArray& arr,
+                          std::vector<std::unique_ptr<Group>>& sink,
+                          Group* parent) {
+            for (int i = 0; i < arr.size(); ++i) {
+                if (!arr[i].isObject()) {
+                    if (warnings)
+                        *warnings << QString("groups: entry %1 is not an object; skipping.").arg(i);
+                    continue;
+                }
+                QJsonObject go = arr[i].toObject();
+                auto group = std::make_unique<Group>();
+                group->id = go.value("id").toString();
+                if (group->id.isEmpty()) group->id = generateId();
+                group->display_name = go.value("display_name").toString();
+                if (QJsonValue vv = go.value("visible"); vv.isBool())
+                    group->visible = vv.toBool();
+                group->parent = parent;
+
+                if (QJsonValue cv = go.value("groups"); cv.isArray()) {
+                    load_groups(cv.toArray(), group->children, group.get());
+                }
+                sink.push_back(std::move(group));
+            }
+        };
+        load_groups(root.value("groups").toArray(), root_groups_, nullptr);
+    }
+
+    QJsonArray arr = root.value("models").toArray();
+    for (int i = 0; i < arr.size(); ++i) {
+        if (!arr[i].isObject()) {
+            if (warnings) *warnings << QString("models[%1] is not an object; skipping.").arg(i);
+            continue;
+        }
+        QJsonObject mo = arr[i].toObject();
+
+        Model model;
+        model.id = mo.value("id").toString();
+        if (model.id.isEmpty()) model.id = generateId();
+        model.display_name = mo.value("display_name").toString();
+
+        QJsonObject so = mo.value("source").toObject();
+        model.source_connector = so.value("connector").toString("local");
+        if (model.source_connector == "local") {
+            QString stored = so.value("path").toString();
+            if (stored.isEmpty()) {
+                if (warnings) *warnings << QString("models[%1]: missing source.path; skipping.").arg(i);
+                continue;
+            }
+            model.source_path = resolvePath(fed_dir, stored);
+            if (model.display_name.isEmpty())
+                model.display_name = QFileInfo(model.source_path).fileName();
+        } else {
+            // Cloud source: keep every key except "connector" itself; the
+            // connector resolves these to a local path on demand.
+            QJsonObject data = so;
+            data.remove("connector");
+            model.source_data = data;
+            if (model.display_name.isEmpty())
+                model.display_name = model.id;
+        }
+
+        if (QJsonValue tv = mo.value("model_transformation"); tv.isObject()) {
+            QJsonObject to = tv.toObject();
+            const QString af = to.value("a_frame").toString("ModelGlobal");
+            model.model_transformation.a_frame =
+                (af == "ModelLocal") ? AFrame::ModelLocal : AFrame::ModelGlobal;
+            auto readVec3 = [](QJsonArray ja) {
+                if (ja.size() != 3) return Eigen::Vector3d::Zero().eval();
+                return Eigen::Vector3d(
+                    ja[0].toDouble(), ja[1].toDouble(), ja[2].toDouble());
+            };
+            model.model_transformation.a        = readVec3(to.value("a").toArray());
+            model.model_transformation.b        = readVec3(to.value("b").toArray());
+            model.model_transformation.rxyz_deg = readVec3(to.value("rxyz_deg").toArray());
+            model.model_transformation.pivot    = readVec3(to.value("pivot").toArray());
+        }
+
+        QJsonValue vv = mo.value("visible");
+        if (vv.isBool()) model.visible = vv.toBool();
+
+        model.group_id = mo.value("group_id").toString();
+        if (!model.group_id.isEmpty() && findGroupById(model.group_id) == nullptr) {
+            if (warnings)
+                *warnings << QString("models[%1]: unknown group_id '%2'; moved to root.")
+                                 .arg(i).arg(model.group_id);
+            model.group_id.clear();
+        }
+
+        models_.push_back(std::move(model));
+    }
+
+    QJsonValue hv = root.value("home_view");
+    if (hv.isObject()) {
+        QJsonObject ho = hv.toObject();
+        QJsonArray ta = ho.value("target").toArray();
+        HomeView v;
+        if (ta.size() == 3) {
+            v.target = Eigen::Vector3f(float(ta[0].toDouble()),
+                                       float(ta[1].toDouble()),
+                                       float(ta[2].toDouble()));
+        }
+        v.distance = float(ho.value("distance").toDouble(50.0));
+        v.yaw      = float(ho.value("yaw").toDouble(45.0));
+        v.pitch    = float(ho.value("pitch").toDouble(30.0));
+        home_view_ = v;
+        has_home_view_ = true;
+    }
+
+    // Best-effort manifest read. Missing file is not a warning — most
+    // .ifcfed files are local-only and never have a manifest. A malformed
+    // manifest is logged as a warning but does not fail the load.
+    {
+        const QString manifest_path = file_path_ + ".manifest";
+        QFile mf(manifest_path);
+        if (mf.open(QIODevice::ReadOnly)) {
+            QJsonParseError mpe{};
+            const QJsonDocument mdoc = QJsonDocument::fromJson(mf.readAll(), &mpe);
+            if (mdoc.isObject()) {
+                manifest_ = mdoc.object();
+                has_manifest_ = true;
+            } else if (warnings) {
+                *warnings << QString("Ignoring malformed manifest %1: %2")
+                                 .arg(manifest_path, mpe.errorString());
+            }
+        }
+    }
+
+    setDirty(false);
+    return true;
+}
+
+void Federation::setManifest(const QJsonObject& manifest) {
+    manifest_ = manifest;
+    has_manifest_ = !manifest_.isEmpty();
+}
+
+void Federation::clearManifest() {
+    manifest_ = QJsonObject{};
+    has_manifest_ = false;
+}
+
+QString Federation::manifestConnectorId() const {
+    return manifest_.value("connector").toString();
+}
+
+bool Federation::save(const QString& path, QString* err) {
+    QString abs_path = QDir::cleanPath(QFileInfo(path).absoluteFilePath());
+    const QDateTime created_now =
+        created_.isValid() ? created_ : QDateTime::currentDateTimeUtc();
+    const QDateTime modified_now = QDateTime::currentDateTimeUtc();
+    if (!writeJsonAt(abs_path, created_now, modified_now, err)) return false;
+    created_ = created_now;
+    modified_ = modified_now;
+    file_path_ = abs_path;
+    setDirty(false);
+    return true;
+}
+
+bool Federation::writeCopyTo(const QString& path, QString* err) const {
+    const QString abs_path = QDir::cleanPath(QFileInfo(path).absoluteFilePath());
+    const QDateTime created_to_emit =
+        created_.isValid() ? created_ : QDateTime::currentDateTimeUtc();
+    const QDateTime modified_to_emit = QDateTime::currentDateTimeUtc();
+    return writeJsonAt(abs_path, created_to_emit, modified_to_emit, err);
+}
+
+void Federation::repointTo(const QString& new_path, QStringList* warnings) {
+    file_path_ = QDir::cleanPath(QFileInfo(new_path).absoluteFilePath());
+    has_manifest_ = false;
+    manifest_ = QJsonObject{};
+    QFile mf(file_path_ + ".manifest");
+    if (mf.open(QIODevice::ReadOnly)) {
+        QJsonParseError mpe{};
+        const QJsonDocument mdoc = QJsonDocument::fromJson(mf.readAll(), &mpe);
+        if (mdoc.isObject()) {
+            manifest_ = mdoc.object();
+            has_manifest_ = true;
+        } else if (warnings) {
+            *warnings << QString("Ignoring malformed manifest %1: %2")
+                             .arg(file_path_ + ".manifest", mpe.errorString());
+        }
+    }
+    setDirty(false);
+}
+
+bool Federation::writeJsonAt(const QString& abs_path,
+                             const QDateTime& created_to_emit,
+                             const QDateTime& modified_to_emit,
+                             QString* err) const {
+    QString fed_dir = QFileInfo(abs_path).absolutePath();
+
+    QJsonObject root;
+    root["schema"] = kSchema;
+    if (!name_.isEmpty()) root["name"] = name_;
+
+    root["created"]  = created_to_emit.toUTC().toString(Qt::ISODate);
+    root["modified"] = modified_to_emit.toUTC().toString(Qt::ISODate);
+
+    {
+        QJsonObject co, uo;
+        uo["name"]   = QString::fromStdString(config_.unit_name);
+        uo["prefix"] = QString::fromStdString(config_.unit_prefix);
+        co["unit"]   = uo;
+        root["config"] = co;
+    }
+    {
+        QJsonObject oo;
+        QJsonArray xyz;
+        xyz.append(federated_false_origin_.xyz.x());
+        xyz.append(federated_false_origin_.xyz.y());
+        xyz.append(federated_false_origin_.xyz.z());
+        oo["xyz"]    = xyz;
+        oo["rz_deg"] = federated_false_origin_.rz_deg;
+        root["federated_false_origin"] = oo;
+    }
+
+    if (!root_groups_.empty()) {
+        std::function<QJsonArray(const std::vector<std::unique_ptr<Group>>&)> dump;
+        dump = [&](const std::vector<std::unique_ptr<Group>>& src) {
+            QJsonArray out;
+            for (const auto& group : src) {
+                QJsonObject go;
+                go["id"]           = group->id;
+                go["display_name"] = group->display_name;
+                if (!group->visible)   go["visible"] = false;
+                if (!group->children.empty()) go["groups"] = dump(group->children);
+                out.append(go);
+            }
+            return out;
+        };
+        root["groups"] = dump(root_groups_);
+    }
+
+    QJsonArray arr;
+    for (const auto& model : models_) {
+        QJsonObject mo;
+        mo["id"] = model.id;
+        mo["display_name"] = model.display_name;
+
+        QJsonObject so;
+        so["connector"] = model.source_connector;
+        if (model.source_connector == "local") {
+            so["path"] = relativizePath(fed_dir, model.source_path);
+        } else {
+            // Round-trip connector-specific keys verbatim.
+            for (auto it = model.source_data.begin(); it != model.source_data.end(); ++it) {
+                so[it.key()] = it.value();
+            }
+        }
+        mo["source"] = so;
+
+        // Skip model_transformation when it's at defaults (identity placement).
+        const ModelTransformation def;
+        const ModelTransformation& xf = model.model_transformation;
+        const bool xf_is_default =
+            xf.a_frame == def.a_frame && xf.a == def.a && xf.b == def.b &&
+            xf.rxyz_deg == def.rxyz_deg && xf.pivot == def.pivot;
+        if (!xf_is_default) {
+            QJsonObject to;
+            to["a_frame"] = (xf.a_frame == AFrame::ModelLocal)
+                ? "ModelLocal" : "ModelGlobal";
+            auto writeVec3 = [](const Eigen::Vector3d& v) {
+                QJsonArray a;
+                a.append(v.x()); a.append(v.y()); a.append(v.z());
+                return a;
+            };
+            to["a"]        = writeVec3(xf.a);
+            to["b"]        = writeVec3(xf.b);
+            to["rxyz_deg"] = writeVec3(xf.rxyz_deg);
+            to["pivot"]    = writeVec3(xf.pivot);
+            mo["model_transformation"] = to;
+        }
+
+        if (!model.visible) mo["visible"] = false;
+        if (!model.group_id.isEmpty()) mo["group_id"] = model.group_id;
+
+        arr.append(mo);
+    }
+    root["models"] = arr;
+
+    if (has_home_view_) {
+        QJsonObject ho;
+        QJsonArray ta;
+        ta.append(double(home_view_.target.x()));
+        ta.append(double(home_view_.target.y()));
+        ta.append(double(home_view_.target.z()));
+        ho["target"]   = ta;
+        ho["distance"] = double(home_view_.distance);
+        ho["yaw"]      = double(home_view_.yaw);
+        ho["pitch"]    = double(home_view_.pitch);
+        root["home_view"] = ho;
+    } else {
+        root["home_view"] = QJsonValue();  // null
+    }
+
+    QSaveFile f(abs_path);
+    if (!f.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        if (err) *err = QString("Cannot write %1: %2").arg(abs_path, f.errorString());
+        return false;
+    }
+    f.write(QJsonDocument(root).toJson(QJsonDocument::Indented));
+    if (!f.commit()) {
+        if (err) *err = QString("Failed to commit %1: %2").arg(abs_path, f.errorString());
+        return false;
+    }
+    return true;
+}

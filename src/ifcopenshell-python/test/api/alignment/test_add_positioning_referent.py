@@ -24,7 +24,7 @@ import ifcopenshell.util.element
 
 
 def test_add_positioning_referent():
-    file = ifcopenshell.file(schema="IFC4X3")
+    file = ifcopenshell.file(schema="IFC4X3_ADD2")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
     length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
     ifcopenshell.api.unit.assign_unit(file, units=[length])
@@ -37,7 +37,7 @@ def test_add_positioning_referent():
         parent=geometric_representation_context,
     )
 
-    alignment = ifcopenshell.api.alignment.create(file, "TestAlignment", start_station=2000.0)
+    alignment = ifcopenshell.api.alignment.create(file, "TestAlignment")
 
     horizontal_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
     segment = ifcopenshell.api.alignment.get_layout_segments(horizontal_layout)[0]
@@ -61,7 +61,7 @@ def test_add_positioning_referent():
 
 
 def test_add_positioning_referent_creates_separate_referent_per_call():
-    file = ifcopenshell.file(schema="IFC4X3")
+    file = ifcopenshell.file(schema="IFC4X3_ADD2")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
     length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
     ifcopenshell.api.unit.assign_unit(file, units=[length])
@@ -74,7 +74,7 @@ def test_add_positioning_referent_creates_separate_referent_per_call():
         parent=geometric_representation_context,
     )
 
-    alignment = ifcopenshell.api.alignment.create(file, "TestAlignment", start_station=2000.0)
+    alignment = ifcopenshell.api.alignment.create(file, "TestAlignment")
 
     horizontal_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
     segment = ifcopenshell.api.alignment.get_layout_segments(horizontal_layout)[0]
