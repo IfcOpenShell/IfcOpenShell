@@ -21,6 +21,7 @@ import os
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.feature
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 
@@ -71,3 +72,64 @@ class TestAssignStatus(NewFile):
 
         bpy.ops.bim.assign_status(status="EXISTING", should_unassign_status=True)
         assert subject.get_element_status(element) == set()
+
+
+class TestApplyVisibilityToVoids(NewFile):
+    def create_wall_with_opening(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        wall = ifcopenshell.api.root.create_entity(ifc, "IfcWall")
+        opening = ifcopenshell.api.root.create_entity(ifc, "IfcOpeningElement")
+        opening.Representation = ifc.createIfcProductDefinitionShape()
+        ifcopenshell.api.feature.add_feature(ifc, feature=opening, element=wall)
+        return wall, opening
+
+    def test_hiding_a_voiding_opening_nulls_its_representation_and_restores_it(self):
+        wall, opening = self.create_wall_with_opening()
+        rep = opening.Representation
+        subject.apply_visibility_to_voids(set())
+        assert opening.Representation is None
+        subject.apply_visibility_to_voids({wall, opening})
+        assert opening.Representation == rep
+
+    def test_openings_that_void_nothing_are_untouched(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        opening = ifcopenshell.api.root.create_entity(ifc, "IfcOpeningElement")
+        rep = ifc.createIfcProductDefinitionShape()
+        opening.Representation = rep
+        subject.apply_visibility_to_voids(set())
+        assert opening.Representation == rep
+
+    def test_already_hidden_openings_are_not_restashed(self):
+        wall, opening = self.create_wall_with_opening()
+        rep = opening.Representation
+        subject.apply_visibility_to_voids(set())
+        subject.apply_visibility_to_voids(set())
+        subject.apply_visibility_to_voids({wall, opening})
+        assert opening.Representation == rep
+
+
+class TestOpeningRepresentationsRestored(NewFile):
+    def test_representations_are_restored_during_the_context_and_renulled_after(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        wall = ifcopenshell.api.root.create_entity(ifc, "IfcWall")
+        opening = ifcopenshell.api.root.create_entity(ifc, "IfcOpeningElement")
+        rep = ifc.createIfcProductDefinitionShape()
+        opening.Representation = rep
+        ifcopenshell.api.feature.add_feature(ifc, feature=opening, element=wall)
+
+        subject.apply_visibility_to_voids(set())
+        assert opening.Representation is None
+        with subject.opening_representations_restored():
+            assert opening.Representation == rep
+        assert opening.Representation is None
+
+        subject.apply_visibility_to_voids({wall, opening})
+        assert opening.Representation == rep
+
+    def test_no_stashed_representations_is_a_noop(self):
+        bpy.ops.bim.create_project()
+        with subject.opening_representations_restored():
+            pass

@@ -46,6 +46,10 @@ class IfcExporter:
         IfcStore.update_cache()
         self.sync_all_objects()
         extension = self.ifc_export_settings.output_file.split(".")[-1].lower()
+        with tool.Sequence.opening_representations_restored():
+            self.write_file(extension)
+
+    def write_file(self, extension: str) -> None:
         if extension == "ifczip":
             with tempfile.TemporaryDirectory() as unzipped_path:
                 filename, ext = os.path.splitext(os.path.basename(self.ifc_export_settings.output_file))
