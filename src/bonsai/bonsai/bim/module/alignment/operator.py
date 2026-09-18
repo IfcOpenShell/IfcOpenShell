@@ -192,6 +192,12 @@ class ALIGN_OT_add_alignment(Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     alignment_name: StringProperty(name="Name", default="Alignment")
+    define_stationing: BoolProperty(
+        name="Define Start Station",
+        description="Give the alignment a starting station now. Off leaves stationing "
+        "undefined for now -- it can still be set later via Set Start Station",
+        default=True,
+    )
     start_station: StringProperty(
         name="Start Station",
         description="Station value at the start of the alignment (distance along 0). "
@@ -204,24 +210,42 @@ class ALIGN_OT_add_alignment(Operator, tool.Ifc.Operator):
         return poll_ifc4x3(cls, context)
 
     def invoke(self, context, event):
+        # Pre-fill with the project's own stationing notation (e.g. "0+000.000" for a
+        # metric project, "0+00.00" for an imperial one -- station_as_string derives the
+        # digit grouping from the project's LENGTHUNIT) rather than a bare "0", so the
+        # field already shows the format the user is expected to type in.
+        self.start_station = tool.Alignment.format_station(0.0)
         return context.window_manager.invoke_props_dialog(self)
 
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, "alignment_name")
+        layout.prop(self, "define_stationing")
+        row = layout.row()
+        row.enabled = self.define_stationing
+        row.prop(self, "start_station")
+
     def _execute(self, context):
-        try:
-            start_station = tool.Alignment.parse_station(self.start_station)
-        except ValueError as e:
-            self.report({"ERROR"}, f"Invalid start station: {e}")
-            return {"CANCELLED"}
+        start_station = 0.0
+        if self.define_stationing:
+            try:
+                start_station = tool.Alignment.parse_station(self.start_station)
+            except ValueError as e:
+                self.report({"ERROR"}, f"Invalid start station: {e}")
+                return {"CANCELLED"}
 
         try:
-            alignment = core.create_alignment(tool.Ifc, tool.Alignment, self.alignment_name, start_station)
+            alignment = core.create_alignment(
+                tool.Ifc, tool.Alignment, self.alignment_name, start_station, self.define_stationing
+            )
         except ValueError as e:
             self.report({"ERROR"}, str(e))
             return {"CANCELLED"}
 
         # A viewport object for the start-station referent create_alignment()
         # added — matches what loading a file gives you; interactive creation
-        # used to leave the referent with no object at all.
+        # used to leave the referent with no object at all. No-ops cleanly
+        # when define_stationing was False (no referent exists to find).
         start_referent = tool.Alignment.find_stationing_referent_at(alignment, 0.0)
         if start_referent:
             tool.Alignment.create_object_for_referent(start_referent)
@@ -671,6 +695,24 @@ def _generate_alignment_segments(context, alignment, hpoints, radii):
     if not tool.Ifc.get_object(alignment):
         tool.Alignment.create_object_for_alignment(alignment)
 
+    # Validate the new layout *before* touching anything the alignment already has.
+    # solve_horizontal_alignment_by_pi_method() is a plain, pure, side-effect-free function (no
+    # generator, no IFC writes -- it builds and returns its whole segment list, or raises, before
+    # layout_horizontal_alignment_by_pi_method()'s own write loop ever starts). Calling it here
+    # first, against the exact same hpoints/radii safe_layout_horizontal_by_pi_method will use
+    # below, means a rejected Apply (a compound/reverse curve that doesn't close, a deflection
+    # that's zero, spiral transitions too long, or any of this module's other solver-side
+    # validations) is caught before clear_layout_segments ever runs -- leaving the alignment's
+    # existing, working segments completely untouched rather than wiped out with nothing to show
+    # for it. Previously a single failed Apply (easy to hit while dialing in a join_next radius by
+    # hand, since nothing computes it automatically) could leave an alignment with zero real
+    # segments, which made Edit PIs / Edit PIs (Table) go straight from "editing this alignment" to
+    # both greyed out with no way back short of redrawing from scratch.
+    try:
+        ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(hpoints, radii)
+    except ValueError as e:
+        return False, f"Could not lay out alignment: {e}"
+
     # Drop any layout/segment objects a previous draw on this alignment left
     # behind (e.g. from before this single-mesh approach existed) so the
     # scene collection converges on exactly one object for the alignment —
@@ -682,14 +724,15 @@ def _generate_alignment_segments(context, alignment, hpoints, radii):
     try:
         tool.Alignment.safe_layout_horizontal_by_pi_method(ifc, h_layout, hpoints, radii)
     except ValueError as e:
-        # solve_horizontal_alignment_by_pi_method() is a streaming generator that
-        # layout_horizontal_alignment_by_pi_method() writes to IFC segment-by-segment as it goes
-        # (e.g. entry+exit spiral deflection exceeding the PI's own deflection angle, raised only
-        # once it reaches that PI) -- so by the time this raises, earlier PIs' segments may already
-        # be written. Clear them rather than leaving a half-built, broken layout sitting in IFC:
-        # this keeps the same clean (ok, message) contract every caller here already handles
-        # (see the VIENNESEBEND check above) instead of the generic "partially completed" recovery
-        # path tool.Ifc.Operator falls back to for an uncaught exception.
+        # Solving the exact same hpoints/radii already succeeded above, so reaching here means the
+        # *write* step itself failed for some unrelated reason (e.g. a geometry-kernel mapping
+        # error for a specific segment type), not a validation rejection -- there's no equivalent
+        # "nothing written yet" guarantee for the write phase itself, so clear whatever partial
+        # segments it may have already created before hitting the failure, rather than leaving a
+        # half-built, broken layout sitting in IFC. Keeps the same clean (ok, message) contract
+        # every caller here already handles (see the VIENNESEBEND check above) instead of the
+        # generic "partially completed" recovery path tool.Ifc.Operator falls back to for an
+        # uncaught exception.
         tool.Alignment.clear_layout_segments(h_layout)
         return False, f"Could not lay out alignment: {e}"
     ifcopenshell.api.alignment.create_representation(ifc, alignment)
@@ -904,35 +947,163 @@ def _cant_lookup_for_pi_markers(alignment, n):
     return lookup[:n]
 
 
+def _pi_deflection(hpoints, k):
+    """Deflection angle at hpoints[k] (an interior PI, 1 <= k <= len(hpoints) - 2), radians --
+    the raw (un-normalized) angleFT - angleBT quantity solve_horizontal_alignment_by_pi_method
+    itself computes for each PI; its callees (curve_tangent_out/solve_join_next_radius) normalize
+    it themselves, same as the main solver's own spiral branch does, so this doesn't need to.
+    """
+    bx, by = hpoints[k][0] - hpoints[k - 1][0], hpoints[k][1] - hpoints[k - 1][1]
+    fx, fy = hpoints[k + 1][0] - hpoints[k][0], hpoints[k + 1][1] - hpoints[k][1]
+    return math.atan2(fy, fx) - math.atan2(by, bx)
+
+
+def _apply_join_next_radii(items, hpoints, cant_lookup):
+    """Auto-computes and writes back the radius (and curve type / mirrored spiral) of any PI whose
+    *previous* PI has join_next=True, so a compound (PCC) or reverse (PRC) curve junction closes
+    without the user guessing a radius by hand first.
+
+    Per the user: "Working with the first PI, set the curve type and radius. Check to Join to Next
+    box and Click Apply Curve. This should compute the required radius of the curve at the next PI
+    in order to have the join happen. The section curve type should match the first, except
+    Spiral-Circular should be Circular-Spiral at the next PI."
+
+    Only CIRCULAR and SPIRAL_CIRCULAR are ever offered the "Join to Next PI" toggle (see ui.py --
+    the joining side can't carry an exit spiral, so these are the only two curve types eligible).
+    The mapping onto the joined-into PI is exactly what's asked above: CIRCULAR -> CIRCULAR,
+    SPIRAL_CIRCULAR -> CIRCULAR_SPIRAL. For the spiral case, the joining PI's entry spiral (its own
+    outer, non-joined side) mirrors onto the joined-into PI's exit spiral (also its own outer,
+    non-joined side) -- same family, same length, a symmetric default rather than an arbitrary one.
+    The joined-into PI's own entry side (spiral_in_length) is always forced to 0.0, matching the
+    join_next constraint the solver itself enforces (the joined side is never spiraled).
+
+    Walks ``items`` left to right, so a chain of 3+ joined curves (join_next set on more than one
+    PI in a row) closes pairwise down the chain: PI 2's auto-computed radius (from closing against
+    PI 1) is what PI 3 closes against next, if PI 2 is also join_next, not whatever radius PI 2 had
+    before this Apply.
+
+    Reuses ifcopenshell.api.alignment.curve_tangent_out/solve_join_next_radius -- the exact same
+    tangent-length math solve_horizontal_alignment_by_pi_method's own main loop uses to build the
+    real segments -- never an independent re-derivation, so a radius this computes is guaranteed to
+    close when the real Apply runs immediately afterward.
+
+    :param items: interior PI properties in order -- either PICurveMarkerProperties (viewport
+        markers) or HorizontalPIMarker (table rows); both expose the same fields, the same duck
+        type _pi_curve_radii_entry already relies on
+    :param hpoints: [start, *interior PI positions, end], local IFC coords -- the same list the
+        caller is about to hand to _generate_alignment_segments
+    :param cant_lookup: (cant, rail_head_distance) per PI, same list _pi_curve_radii_entry already
+        takes -- only meaningful for a VIENNESEBEND spiral_family
+    :return: (ok, message) -- message is empty on success (nothing needed computing, or everything
+        closed); otherwise an explanation of which PI pair couldn't close, in the same style
+        _generate_alignment_segments' own solver-error messages already use
+    """
+    for j in range(len(items) - 1):
+        joining = items[j]
+        if not getattr(joining, "join_next", False):
+            continue
+        joined = items[j + 1]
+
+        joining_pi_number = j + 1  # 1-based, matching this module's "PI n" labelling elsewhere
+        joined_pi_number = j + 2
+
+        delta_joining = _pi_deflection(hpoints, joining_pi_number)
+        delta_joined = _pi_deflection(hpoints, joined_pi_number)
+        pi_a = hpoints[joining_pi_number]
+        pi_b = hpoints[joined_pi_number]
+        pi_to_pi_distance = math.hypot(pi_b[0] - pi_a[0], pi_b[1] - pi_a[1])
+
+        joining_entry_length = joining.spiral_in_length if joining.curve_type == "SPIRAL_CIRCULAR" else 0.0
+        joining_vb_params = None
+        if joining.spiral_family == "VIENNESEBEND":
+            cant, rail_head_distance = cant_lookup[j]
+            joining_vb_params = (joining.gravity_centerline_height, cant, rail_head_distance)
+
+        try:
+            tangent_out = ifcopenshell.api.alignment.curve_tangent_out(
+                delta_joining,
+                joining.radius,
+                entry_length=joining_entry_length,
+                exit_length=0.0,
+                family=joining.spiral_family,
+                vb_params=joining_vb_params,
+                pi_number=joining_pi_number,
+            )
+        except ValueError as e:
+            return False, f"Could not compute the join at PI {joining_pi_number}-{joined_pi_number}: {e}"
+
+        target_tangent_in = pi_to_pi_distance - tangent_out
+
+        if joining.curve_type == "SPIRAL_CIRCULAR":
+            joined_curve_type = "CIRCULAR_SPIRAL"
+            joined_exit_length = joining.spiral_in_length
+        else:
+            joined_curve_type = "CIRCULAR"
+            joined_exit_length = 0.0
+        joined_family = joining.spiral_family
+
+        joined_vb_params = None
+        if joined_family == "VIENNESEBEND":
+            cant, rail_head_distance = cant_lookup[j + 1]
+            joined_vb_params = (joined.gravity_centerline_height, cant, rail_head_distance)
+
+        try:
+            radius = ifcopenshell.api.alignment.solve_join_next_radius(
+                delta_joined,
+                target_tangent_in,
+                exit_length=joined_exit_length,
+                family=joined_family,
+                vb_params=joined_vb_params,
+            )
+        except ValueError as e:
+            return False, f"Could not close the compound/reverse curve at PI {joining_pi_number}-{joined_pi_number}: {e}"
+
+        joined.curve_type = joined_curve_type
+        joined.radius = radius
+        joined.spiral_in_length = 0.0
+        joined.spiral_out_length = joined_exit_length
+        joined.spiral_family = joined_family
+
+    return True, ""
+
+
 def _pi_curve_radii_entry(marker, cant_and_rail_head_distance=(0.0, 1.0)):
     """One radii[] element (see solve_horizontal_alignment_by_pi_method) for a PI marker.
 
-    TANGENT stays a plain 0.0 (no curve). CIRCULAR stays a plain radius float
-    for backward compatibility. The three spiral curve types become a
-    (radius, entry_length, exit_length, spiral_family, vb_params) tuple with
-    whichever length(s) don't apply left at 0.0 -- entry and exit always
-    share one family per PI (marker.spiral_family). vb_params is None unless
-    spiral_family is VIENNESEBEND, in which case it's (marker.
-    gravity_centerline_height, cant, rail_head_distance) -- see
-    _cant_lookup_for_pi_markers for where cant/rail_head_distance come from.
+    TANGENT stays a plain 0.0 (no curve) -- join_next is meaningless with no curve to join, and
+    the UI never offers the toggle for a TANGENT marker (see ALIGN_PT_alignment_authoring). Every
+    other curve type becomes a (radius, entry_length, exit_length, spiral_family, vb_params,
+    join_next) 6-tuple (CIRCULAR's own entry/exit lengths are just 0.0) -- entry and exit spirals
+    always share one family per PI (marker.spiral_family). vb_params is None unless spiral_family
+    is VIENNESEBEND, in which case it's (marker.gravity_centerline_height, cant,
+    rail_head_distance) -- see _cant_lookup_for_pi_markers for where cant/rail_head_distance come
+    from. join_next is marker.join_next verbatim -- the solver enforces every other constraint
+    (no spiral on the joined side, not the last PI, tangency closure) itself.
     """
     curve_type = marker.curve_type
     if curve_type == "TANGENT":
         return 0.0
-    if curve_type == "CIRCULAR":
-        return marker.radius
 
     vb_params = None
     if marker.spiral_family == "VIENNESEBEND":
         cant, rail_head_distance = cant_and_rail_head_distance
         vb_params = (marker.gravity_centerline_height, cant, rail_head_distance)
 
+    if curve_type == "CIRCULAR":
+        return (marker.radius, 0.0, 0.0, marker.spiral_family, vb_params, marker.join_next)
     if curve_type == "SPIRAL_CIRCULAR":
-        return (marker.radius, marker.spiral_in_length, 0.0, marker.spiral_family, vb_params)
+        return (marker.radius, marker.spiral_in_length, 0.0, marker.spiral_family, vb_params, marker.join_next)
     if curve_type == "CIRCULAR_SPIRAL":
-        return (marker.radius, 0.0, marker.spiral_out_length, marker.spiral_family, vb_params)
+        return (marker.radius, 0.0, marker.spiral_out_length, marker.spiral_family, vb_params, marker.join_next)
     # SPIRAL_CIRCULAR_SPIRAL
-    return (marker.radius, marker.spiral_in_length, marker.spiral_out_length, marker.spiral_family, vb_params)
+    return (
+        marker.radius,
+        marker.spiral_in_length,
+        marker.spiral_out_length,
+        marker.spiral_family,
+        vb_params,
+        marker.join_next,
+    )
 
 
 def _pi_curve_marker_label(marker) -> str:
@@ -940,17 +1111,24 @@ def _pi_curve_marker_label(marker) -> str:
     curve_type = marker.curve_type
     if curve_type == "TANGENT":
         return "tangent"
+
+    # join_next is only meaningful (and only ever set) on a curve, never TANGENT.
+    join_suffix = " -> joins next" if getattr(marker, "join_next", False) else ""
+
     if curve_type == "CIRCULAR":
-        return f"R={marker.radius:.2f}"
+        return f"R={marker.radius:.2f}{join_suffix}"
     # the three spiral shapes all carry a family; only name it when it isn't the default, so a
     # plain clothoid PI's label doesn't grow noisier than it already was
     family_suffix = "" if marker.spiral_family == "CLOTHOID" else f" [{marker.spiral_family}]"
     if curve_type == "SPIRAL_CIRCULAR":
-        return f"R={marker.radius:.2f}, Lin={marker.spiral_in_length:.2f}{family_suffix}"
+        return f"R={marker.radius:.2f}, Lin={marker.spiral_in_length:.2f}{family_suffix}{join_suffix}"
     if curve_type == "CIRCULAR_SPIRAL":
-        return f"R={marker.radius:.2f}, Lout={marker.spiral_out_length:.2f}{family_suffix}"
+        return f"R={marker.radius:.2f}, Lout={marker.spiral_out_length:.2f}{family_suffix}{join_suffix}"
     # SPIRAL_CIRCULAR_SPIRAL
-    return f"R={marker.radius:.2f}, Lin={marker.spiral_in_length:.2f}, Lout={marker.spiral_out_length:.2f}{family_suffix}"
+    return (
+        f"R={marker.radius:.2f}, Lin={marker.spiral_in_length:.2f}, Lout={marker.spiral_out_length:.2f}"
+        f"{family_suffix}{join_suffix}"
+    )
 
 
 def _local_ifc_to_world_point(ifc, unit_scale, xy):
@@ -980,22 +1158,29 @@ def _tangent_line_intersection(dp_a, dp_b):
 def _reconstruct_horizontal_pis(h_layout):
     """Classify every interior PI of h_layout's current real segments.
 
-    Only the five shapes PICurveMarkerProperties.curve_type already supports
-    are recognized: a sharp corner between two LINEs (TANGENT), a lone
-    CIRCULARARC (CIRCULAR), or a CIRCULARARC with a spiral (any one family in
-    prop.PI_METHOD_SPIRAL_TYPES) on one or both sides (SPIRAL_CIRCULAR /
-    CIRCULAR_SPIRAL / SPIRAL_CIRCULAR_SPIRAL) -- matching what
+    The five shapes PICurveMarkerProperties.curve_type already supports are
+    recognized between a single PI's bounding tangents: a sharp corner
+    between two LINEs (TANGENT), a lone CIRCULARARC (CIRCULAR), or a
+    CIRCULARARC with a spiral (any one family in prop.PI_METHOD_SPIRAL_TYPES)
+    on one or both sides (SPIRAL_CIRCULAR / CIRCULAR_SPIRAL /
+    SPIRAL_CIRCULAR_SPIRAL) -- matching what
     solve_horizontal_alignment_by_pi_method can (re)generate. A two-spiral PI
     whose entry and exit families differ is reported as skipped: entry and
     exit always share one family per PI (see PICurveMarkerProperties.
     spiral_family), so there's no marker shape to reconstruct it into.
 
+    A chain of N >= 2 directly-joined compound (PCC) / reverse (PRC) curves
+    -- consecutive CIRCULARARCs with no intervening LINE, optionally with one
+    outer/non-joined spiral at either end of the whole chain -- is also
+    recognized and maps to N PI specs (join_next=True on every one but the
+    last), not one; see the join_next branch below.
+
     Returns (specs, skipped). ``specs`` is a list of dicts with pi_local
     (x, y) plus curve_type/radius/spiral_in_length/spiral_out_length/
-    spiral_family/gravity_centerline_height, one per interior PI, in order.
-    ``skipped`` is a list of (segment, reason) for any segment that isn't
-    part of one of those five shapes -- callers should refuse to create
-    markers at all when this is non-empty (regenerating from a partial
+    spiral_family/gravity_centerline_height/join_next, one per interior PI,
+    in order. ``skipped`` is a list of (segment, reason) for any segment that
+    isn't part of one of those recognized shapes -- callers should refuse to
+    create markers at all when this is non-empty (regenerating from a partial
     marker list would silently drop whatever those segments were).
     """
     segments = tool.Alignment.get_real_layout_segments(h_layout)
@@ -1028,6 +1213,86 @@ def _reconstruct_horizontal_pis(h_layout):
         between = segments[a_idx + 1 : b_idx]
         types = [s.DesignParameters.PredefinedType for s in between]
         family = "CLOTHOID"  # unused (no spiral), but every spec needs the key
+
+        # A chain of N >= 2 directly-joined compound (PCC) / reverse (PRC) curves: consecutive
+        # CIRCULARARCs each sharing a tangency point with the next, no intervening LINE, optionally
+        # with one outer/non-joined spiral before the first arc and/or after the last arc
+        # (join_next -- see solve_horizontal_alignment_by_pi_method; spirals are never allowed on a
+        # joined side, only the outer ends of the whole chain). Recognized here so a
+        # previously-authored PCC/PRC chain can be reopened for editing, not just newly created
+        # ones. Unlike every other shape below, this maps to N PI specs, not one -- each curve
+        # keeps its own PI location, found by intersecting its own bounding tangent line against
+        # its neighbor's shared tangent line at each junction (an arc's own
+        # StartPoint/StartDirection doubles as the "line" _tangent_line_intersection needs, since a
+        # junction has no separate LINE segment of its own to read that from). N == 2 is the
+        # original, most common case (a single PCC/PRC pair); N > 2 (three or more curves chained
+        # directly) generalizes the same construction with no special-casing needed.
+        arc_positions = [idx for idx, t in enumerate(types) if t == "CIRCULARARC"]
+        is_contiguous_arc_run = bool(arc_positions) and arc_positions == list(
+            range(arc_positions[0], arc_positions[0] + len(arc_positions))
+        )
+        if len(arc_positions) >= 2 and is_contiguous_arc_run:
+            arcs = [between[idx] for idx in arc_positions]
+            n = len(arcs)
+            prefix, suffix = types[: arc_positions[0]], types[arc_positions[-1] + 1 :]
+            prefix_ok = len(prefix) <= 1 and all(t in prop.PI_METHOD_SPIRAL_TYPES for t in prefix)
+            suffix_ok = len(suffix) <= 1 and all(t in prop.PI_METHOD_SPIRAL_TYPES for t in suffix)
+            if prefix_ok and suffix_ok:
+                spiral_in_first = between[0] if prefix else None
+                spiral_out_last = between[-1] if suffix else None
+                family_first = prefix[0] if prefix else "CLOTHOID"
+                family_last = suffix[0] if suffix else "CLOTHOID"
+
+                pi_locals = []
+                for k in range(n):
+                    incoming_dp = line_a.DesignParameters if k == 0 else arcs[k].DesignParameters
+                    outgoing_dp = line_b.DesignParameters if k == n - 1 else arcs[k + 1].DesignParameters
+                    pi_locals.append(_tangent_line_intersection(incoming_dp, outgoing_dp))
+                if any(p is None for p in pi_locals):
+                    skipped.extend(
+                        (s, "tangents are parallel at a compound/reverse curve junction") for s in between
+                    )
+                    continue
+
+                junction_specs = []
+                for k, (arc, pi_local) in enumerate(zip(arcs, pi_locals)):
+                    spiral_in = spiral_in_first if k == 0 else None
+                    spiral_out = spiral_out_last if k == n - 1 else None
+                    if spiral_in:
+                        curve_type, family = "SPIRAL_CIRCULAR", family_first
+                    elif spiral_out:
+                        curve_type, family = "CIRCULAR_SPIRAL", family_last
+                    else:
+                        curve_type, family = "CIRCULAR", "CLOTHOID"
+
+                    gch = 0.0
+                    if spiral_in:
+                        gch = spiral_in.DesignParameters.GravityCenterLineHeight or 0.0
+                    elif spiral_out:
+                        gch = spiral_out.DesignParameters.GravityCenterLineHeight or 0.0
+
+                    cant = 0.0
+                    if cant_matches_positionally:
+                        arc_pos = a_idx + 1 + between.index(arc)
+                        cant_dp = cant_segments[arc_pos].DesignParameters
+                        cant = max(abs(cant_dp.StartCantLeft or 0.0), abs(cant_dp.StartCantRight or 0.0))
+
+                    junction_specs.append(
+                        {
+                            "pi_local": pi_local,
+                            "curve_type": curve_type,
+                            "radius": abs(arc.DesignParameters.StartRadiusOfCurvature or 0.0),
+                            "spiral_in_length": (spiral_in.DesignParameters.SegmentLength or 0.0) if spiral_in else 0.0,
+                            "spiral_out_length": (spiral_out.DesignParameters.SegmentLength or 0.0) if spiral_out else 0.0,
+                            "spiral_family": family,
+                            "gravity_centerline_height": gch,
+                            "cant": cant,
+                            "rail_head_distance": rail_head_distance,
+                            "join_next": k < n - 1,
+                        }
+                    )
+                specs.extend(junction_specs)
+                continue
 
         if types == []:
             curve_type, arc, spiral_in, spiral_out = "TANGENT", None, None, None
@@ -1095,6 +1360,7 @@ def _reconstruct_horizontal_pis(h_layout):
                 "gravity_centerline_height": gravity_centerline_height,
                 "cant": cant,
                 "rail_head_distance": rail_head_distance,
+                "join_next": False,
             }
         )
 
@@ -1186,6 +1452,7 @@ class ALIGN_OT_edit_horizontal_pis(Operator, tool.Ifc.Operator):
             marker.spiral_out_length = spec["spiral_out_length"] or 100.0
             marker.spiral_family = spec["spiral_family"]
             marker.gravity_centerline_height = spec["gravity_centerline_height"]
+            marker.join_next = spec["join_next"]
             empty.name = f"PI {i} ({_pi_curve_marker_label(marker)})"
             context.collection.objects.link(empty)
 
@@ -1258,6 +1525,21 @@ class ALIGN_OT_apply_pi_curve(Operator, tool.Ifc.Operator):
             + [end]
         )
         cant_lookup = _cant_lookup_for_pi_markers(alignment, len(interior_markers))
+
+        # Compute (and write back onto the markers) any join_next PI's next-PI radius/curve type
+        # before building radii, so "Join to Next PI" doesn't require the user to already know a
+        # closing radius -- see _apply_join_next_radii. A failure here (an unsatisfiable geometry,
+        # not a user-fixable typo) is reported the same clean way as every other solver rejection in
+        # this module, and aborts before touching the alignment's existing segments at all.
+        join_ok, join_message = _apply_join_next_radii(
+            [m.bonsai_pi_curve_marker for m in interior_markers], hpoints, cant_lookup
+        )
+        if not join_ok:
+            tool.Blender.update_viewport()
+            self.report({"WARNING"}, join_message)
+            _refresh_pi_marker_visuals(context, alignment_id)
+            return {"FINISHED"}
+
         radii = [
             _pi_curve_radii_entry(m.bonsai_pi_curve_marker, cant_lookup[i]) for i, m in enumerate(interior_markers)
         ]
@@ -1409,6 +1691,7 @@ class ALIGN_OT_load_horizontal_pi_table(Operator, tool.Ifc.Operator):
             item.spiral_out_length = spec["spiral_out_length"] or 100.0
             item.spiral_family = spec["spiral_family"]
             item.gravity_centerline_height = spec["gravity_centerline_height"]
+            item.join_next = spec["join_next"]
         props.editing_horizontal_pi_alignment_id = alignment.id()
 
         self.report({"INFO"}, f"Loaded {len(specs)} PI(s)")
@@ -1460,6 +1743,16 @@ class ALIGN_OT_apply_horizontal_pi_table(Operator, tool.Ifc.Operator):
         rows = list(props.horizontal_pi_rows)
         hpoints = [start] + [(row.x, row.y) for row in rows] + [end]
         cant_lookup = _cant_lookup_for_pi_markers(alignment, len(rows))
+
+        # See ALIGN_OT_apply_pi_curve's own call to this -- same auto-compute, same reasoning,
+        # duplicated here rather than shared only because the two operators build hpoints/radii
+        # from different sources (viewport markers vs. table rows) before this common point.
+        join_ok, join_message = _apply_join_next_radii(rows, hpoints, cant_lookup)
+        if not join_ok:
+            tool.Blender.update_viewport()
+            self.report({"WARNING"}, join_message)
+            return {"FINISHED"}
+
         radii = [_pi_curve_radii_entry(row, cant_lookup[i]) for i, row in enumerate(rows)]
 
         ok, message = _generate_alignment_segments(context, alignment, hpoints, radii)
