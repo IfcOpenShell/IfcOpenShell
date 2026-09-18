@@ -169,11 +169,13 @@ def get_debug_info(*, bonsai_failed_to_load: bool = False) -> dict[str, Any]:
 
 
 def format_debug_info(info: dict[str, Any]) -> str:
+    import ifcopenshell.api
+
     last_actions = ""
     for action in info["last_actions"]:
         last_actions += f"\n# {action['type']}: {action['name']}"
         if settings := action.get("settings"):
-            last_actions += f"\n>>> {settings}"
+            last_actions += f"\n>>> {ifcopenshell.api.serialise_settings(settings)}"
     info["last_actions"] = last_actions
     text = "\n".join(f"{k}: {v}" for k, v in info.items())
     return text.strip()
@@ -278,11 +280,12 @@ if IN_BLENDER:
         import ifcopenshell.api
 
         def log_api(usecase_path, ifc_file, settings):
+            # Defer serialise_settings() to format_debug_info() (#8945).
             last_actions.append(
                 {
                     "type": "ifcopenshell.api",
                     "name": usecase_path,
-                    "settings": ifcopenshell.api.serialise_settings(settings),
+                    "settings": dict(settings),
                 }
             )
 
