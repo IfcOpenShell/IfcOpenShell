@@ -200,6 +200,9 @@ class SvgWriter:
     metadata: list[str]
     resource_paths: dict[tool.Drawing.ResourceType, Union[str, None]]
 
+    # Gap between a leader line's end and its text, in mm on the printed sheet.
+    LEADER_TEXT_GAP_MM = 1.5
+
     def __init__(
         self,
         *,
@@ -805,9 +808,23 @@ class SvgWriter:
         spline_points = spline.bezier_points if spline.bezier_points else spline.points
         if spline_points:
             position = obj.matrix_world @ spline_points[0].co.xyz
+            if len(spline_points) > 1:
+                position += self.get_leader_text_gap_offset(obj, spline_points)
         else:
             position = Vector((0, 0, 0))
         self.draw_text_annotation(obj, position)
+
+    def get_leader_text_gap_offset(self, obj: bpy.types.Object, spline_points) -> Vector:
+        """World-space offset pushing the leader text away from the line end by
+        `LEADER_TEXT_GAP_MM`, converted from sheet mm using the drawing scale.
+        """
+        p0 = obj.matrix_world @ spline_points[0].co.xyz
+        p1 = obj.matrix_world @ spline_points[1].co.xyz
+        direction = p0 - p1
+        if direction.length_squared == 0:
+            return Vector((0, 0, 0))
+        gap_world = (self.LEADER_TEXT_GAP_MM / 1000) / self.scale
+        return direction.normalized() * gap_world
 
     def draw_section_annotation(self, obj: bpy.types.Object) -> None:
         x_offset = self.raw_width / 2
