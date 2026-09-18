@@ -1080,6 +1080,11 @@ class FacetTransformer(lark.Transformer):
                     getattr(reference, "Identification", getattr(reference, "ItemReference", None)), comparison, value
                 ):
                     result = True
+                classification = ifcopenshell.util.classification.get_classification(reference)
+                if classification is not None and self.compare(
+                    getattr(classification, "Name", None), comparison, value
+                ):
+                    result = True
             if result is not None:
                 return result if comparison == "=" else not result
             return self.compare(None, comparison, value)

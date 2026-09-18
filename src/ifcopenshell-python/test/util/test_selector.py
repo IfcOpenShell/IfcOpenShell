@@ -29,6 +29,7 @@ import ifcopenshell.api.root
 import ifcopenshell.api.spatial
 import ifcopenshell.api.type
 import ifcopenshell.api.unit
+import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.selector as subject
@@ -348,6 +349,37 @@ class TestFilterElements(test.bootstrap.IFC4):
         assert subject.filter_elements(self.file, "IfcWall, classification=X") == {element}
         assert subject.filter_elements(self.file, "IfcWall, classification=Foobar") == {element}
         assert subject.filter_elements(self.file, "IfcWall, classification!=X") == {element2}
+
+    def test_selecting_by_classification_system(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        uniclass = ifcopenshell.api.classification.add_classification(self.file, classification="Uniclass 2015")
+        cci = ifcopenshell.api.classification.add_classification(self.file, classification="CCI")
+        # Both systems share the same identification, so only the system name can disambiguate.
+        # Built directly (rather than via the add_reference API) since that API deduplicates
+        # references purely by identification, which would collapse these two into one.
+        reference1 = self.file.createIfcClassificationReference(
+            Identification="03 31 19", Name="Cast in situ concrete", ReferencedSource=uniclass
+        )
+        reference2 = self.file.createIfcClassificationReference(
+            Identification="03 31 19", Name="Cast in situ concrete", ReferencedSource=cci
+        )
+        self.file.createIfcRelAssociatesClassification(
+            GlobalId=ifcopenshell.guid.new(), RelatedObjects=[element], RelatingClassification=reference1
+        )
+        self.file.createIfcRelAssociatesClassification(
+            GlobalId=ifcopenshell.guid.new(), RelatedObjects=[element2], RelatingClassification=reference2
+        )
+        # System name is part of the classification search scope.
+        assert subject.filter_elements(self.file, "IfcWall, classification=CCI") == {element2}
+        assert subject.filter_elements(self.file, 'IfcWall, classification="Uniclass 2015"') == {element}
+        # Identification and reference name still match as before, without the system name.
+        assert subject.filter_elements(self.file, 'IfcWall, classification="03 31 19"') == {element, element2}
+        assert subject.filter_elements(self.file, 'IfcWall, classification="Cast in situ concrete"') == {
+            element,
+            element2,
+        }
 
     def test_selecting_by_location(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")

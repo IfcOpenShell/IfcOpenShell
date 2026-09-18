@@ -157,6 +157,11 @@ class ReferenceUI:
         if not self.data.data["references"]:
             row = self.layout.row(align=True)
             row.label(text="No References")
+        else:
+            row = self.layout.row(align=True)
+            row.label(text="Classification")
+            row.label(text="Identification")
+            row.label(text="Name")
 
         def get_classification_name(reference):
             classification_entity = ifcopenshell.util.classification.get_classification(
@@ -263,6 +268,7 @@ class ReferenceUI:
         row.operator("bim.edit_classification_reference", text="Save changes", icon="CHECKMARK")
         row.operator("bim.disable_editing_classification_reference", text="", icon="CANCEL")
         row = self.layout.row()
+        row.enabled = False
         row.prop(self.props, "classification_system_name", text="Classification System Name")
 
         bonsai.bim.helper.draw_attributes(self.props.reference_attributes, self.layout)
