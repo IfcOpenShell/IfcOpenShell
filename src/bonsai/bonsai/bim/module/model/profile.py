@@ -24,6 +24,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.api.geometry
 import ifcopenshell.api.pset
+import ifcopenshell.api.style
 import ifcopenshell.api.type
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
@@ -156,13 +157,25 @@ class DumbProfileGenerator:
                 tool.Ifc.get(), product=element, representation=representation
             )
 
-        representation = ifcopenshell.api.geometry.add_profile_representation(
-            tool.Ifc.get(),
-            context=self.body_context,
-            profile=self.profile_set.CompositeProfile or self.profile_set.MaterialProfiles[0].Profile,
-            cardinal_point=self.cardinal_point,
-            depth=self.depth,
-        )
+        material_profiles = list(self.profile_set.MaterialProfiles or [])
+        # A composite profile is an explicit, authored silhouette (e.g. for structural
+        # analysis) and always takes priority when present, matching prior behaviour.
+        # Only when there's no composite profile AND more than one material profile do
+        # we split the occurrence into one item per material profile, so each keeps its
+        # own material instead of collapsing to the first one.
+        is_multi_material = not self.profile_set.CompositeProfile and len(material_profiles) > 1
+
+        if is_multi_material:
+            representation, items = self.create_multi_material_profile_items(material_profiles)
+        else:
+            representation = ifcopenshell.api.geometry.add_profile_representation(
+                tool.Ifc.get(),
+                context=self.body_context,
+                profile=self.profile_set.CompositeProfile or self.profile_set.MaterialProfiles[0].Profile,
+                cardinal_point=self.cardinal_point,
+                depth=self.depth,
+            )
+
         ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), product=element, representation=representation)
         bonsai.core.geometry.switch_representation(
             tool.Ifc,
@@ -171,12 +184,82 @@ class DumbProfileGenerator:
             representation=representation,
         )
 
+        if is_multi_material:
+            self.tag_material_profile_items(element, representation, items, material_profiles)
+
         pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Engine": "Bonsai.DumbProfile"})
 
         tool.Blender.select_object(obj)
 
         return obj
+
+    def create_multi_material_profile_items(
+        self, material_profiles: list[ifcopenshell.entity_instance]
+    ) -> tuple[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]:
+        """Builds a single Body representation with one extruded item per `IfcMaterialProfile`.
+
+        All items share the same placement (derived from the first material profile's
+        cardinal point / bounding box), mirroring how door/window representations combine
+        multiple items in a single coordinate frame: each `IfcProfileDef` in a material
+        profile set is expected to already be positioned relative to that shared origin
+        (e.g. a cladding profile authored with its own offset `Position`), so reusing one
+        placement for every item preserves the intended nesting between profiles.
+        """
+        file = tool.Ifc.get()
+        reference_representation = ifcopenshell.api.geometry.add_profile_representation(
+            file,
+            context=self.body_context,
+            profile=material_profiles[0].Profile,
+            cardinal_point=self.cardinal_point,
+            depth=self.depth,
+        )
+        reference_item = reference_representation.Items[0]
+        items = [reference_item]
+        for material_profile in material_profiles[1:]:
+            items.append(
+                file.create_entity(
+                    "IfcExtrudedAreaSolid",
+                    material_profile.Profile,
+                    reference_item.Position,
+                    reference_item.ExtrudedDirection,
+                    reference_item.Depth,
+                )
+            )
+        reference_representation.Items = items
+        return reference_representation, items
+
+    def tag_material_profile_items(
+        self,
+        element: ifcopenshell.entity_instance,
+        representation: ifcopenshell.entity_instance,
+        items: list[ifcopenshell.entity_instance],
+        material_profiles: list[ifcopenshell.entity_instance],
+    ) -> None:
+        """Tags each item with an `IfcShapeAspect` named after its `IfcMaterialProfile`,
+        and applies that material's style (if any) directly to the item, following the
+        same item-level tagging pattern used by the door/window representation generators.
+
+        The element's own material assignment is left untouched (it keeps referencing the
+        type's `IfcMaterialProfileSetUsage`), since that's what carries the per-profile
+        material information; the shape aspect only correlates geometry items back to it.
+        """
+        file = tool.Ifc.get()
+        part_of_product = ifcopenshell.util.representation.get_part_of_product(element, self.body_context)
+        if not part_of_product:
+            return
+        for index, (item, material_profile) in enumerate(zip(items, material_profiles)):
+            material = material_profile.Material
+            aspect_name = material_profile.Name or (material and material.Name) or f"Profile {index + 1}"
+            ifcopenshell.api.geometry.add_shape_aspect(
+                file,
+                aspect_name,
+                items=[item],
+                representation=representation,
+                part_of_product=part_of_product,
+            )
+            if material and (style := ifcopenshell.util.representation.get_material_style(material, self.body_context)):
+                ifcopenshell.api.style.assign_item_style(file, item=item, style=style)
 
     def create_profile_from_2_points(
         self, coords: tuple[Vector, Vector], should_round: bool = False
