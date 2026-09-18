@@ -19,7 +19,7 @@
 
 import collections.abc
 import json
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 import bmesh
 import bpy
@@ -156,6 +156,14 @@ def update_door_modifier_representation(obj: bpy.types.Object) -> None:
     # type attributes
     if tool.Ifc.get_schema() != "IFC2X3":
         element.OperationType = props.door_type
+        element_type = ifcopenshell.util.element.get_type(element)
+        if (
+            element_type is not None
+            and element_type != element
+            and (element_type.is_a("IfcDoorType") or element_type.is_a("IfcDoorStyle"))
+            and ifcopenshell.util.element.get_pset(element_type, "BBIM_Door")
+        ):
+            element_type.OperationType = props.door_type
 
     # occurrences attributes
     occurrences = tool.Ifc.get_all_element_occurrences(element)
@@ -666,8 +674,27 @@ class ToggleDoorSwing(bpy.types.Operator, tool.Ifc.Operator):
             )
         return "Move the door hinge to the opposite side"
 
+    @staticmethod
+    def is_external_door(element: Union[ifcopenshell.entity_instance, None]) -> bool:
+        """External doors are usually factory-handed, so a flip implies a
+        different product and asks for confirmation first."""
+        if element is None:
+            return False
+        return bool(ifcopenshell.util.element.get_pset(element, "Pset_DoorCommon", "IsExternal"))
+
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> set[str]:
         self.skip_direction_change = event.shift
+        obj = tool.Blender.get_active_object()
+        element = tool.Ifc.get_entity(obj) if obj else None
+        if self.is_external_door(element):
+            return context.window_manager.invoke_confirm(
+                self,
+                event,
+                title="Flip External Door",
+                message="This door is external (Pset_DoorCommon.IsExternal). The flipped door is a different product.",
+                confirm_text="Flip",
+                icon="WARNING",
+            )
         return self.execute(context)
 
     def _toggle_swing_direction(self, obj: bpy.types.Object) -> bool:
