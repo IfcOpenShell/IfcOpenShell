@@ -477,6 +477,8 @@ def _get_element_value(element: ifcopenshell.entity_instance, keys: list[str]) -
             value = ifcopenshell.util.classification.get_references(value)
         elif key == "group":
             value = ifcopenshell.util.element.get_groups(value)
+        elif key == "referenced_structures":
+            value = ifcopenshell.util.element.get_referenced_structures(value)
         elif key == "system":
             value = ifcopenshell.util.system.get_element_systems(value)
         elif key == "zone":

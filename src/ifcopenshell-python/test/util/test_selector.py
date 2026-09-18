@@ -162,6 +162,15 @@ class TestGetElementValue(test.bootstrap.IFC4):
         # Provide shortform for convenience
         assert subject.get_element_value(element, "mat.i.Name") == ["L1", "L2"]
 
+    def test_selecting_referenced_structures(self):
+        # Structures referenced via IfcRelReferencedInSpatialStructure (#7806).
+        storey = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey", name="L1")
+        space = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSpace", name="Kitchen")
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDoor")
+        ifcopenshell.api.spatial.reference_structure(self.file, products=[element], relating_structure=storey)
+        ifcopenshell.api.spatial.reference_structure(self.file, products=[element], relating_structure=space)
+        assert subject.get_element_value(element, "referenced_structures.Name") == ["L1", "Kitchen"]
+
     def test_selecting_a_query_that_fails_silently(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         assert subject.get_element_value(element, "material.item.Name.0") is None
