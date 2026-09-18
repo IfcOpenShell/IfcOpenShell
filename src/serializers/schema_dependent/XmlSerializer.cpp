@@ -358,6 +358,13 @@ ptree* descend(Logger& logger, ifcopenshell::geometry::abstract_mapping* mapping
 				ptree node;
 				node.put("<xmlattr>.xlink:href", "#" + qualify_unrooted_instance(mat));
 				format_entity_instance(logger, mapping, mat->as<IfcUtil::IfcBaseEntity>(), node, child, true);
+			} else if ((*it)->as<IfcSchema::IfcRelAssociatesClassification>()) {
+				IfcUtil::IfcBaseInterface* classification = (*it)->as<IfcSchema::IfcRelAssociatesClassification>()->RelatingClassification();
+				if (classification) {
+					ptree node;
+					node.put("<xmlattr>.xlink:href", "#" + qualify_unrooted_instance(classification));
+					format_entity_instance(logger, mapping, classification->as<IfcUtil::IfcBaseEntity>(), node, child, true);
+				}
 			}
 		}
     }
@@ -557,7 +564,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 	}
 	IfcSchema::IfcProject* project = *projects->begin();
 
-	ptree root, header, units, decomposition, properties, quantities, types, layers, materials, work, calendars, connections, groups;
+	ptree root, header, units, decomposition, properties, quantities, types, layers, materials, classifications, work, calendars, connections, groups;
 
 	auto catch_exceptions = [this](const auto& fn) {
 		try {
@@ -838,6 +845,19 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 		}
 	}
 
+	IfcSchema::IfcRelAssociatesClassification::list::ptr classification_associations = file->instances_by_type<IfcSchema::IfcRelAssociatesClassification>();
+	std::set<IfcUtil::IfcBaseInterface*> emitted_classifications;
+	for (IfcSchema::IfcRelAssociatesClassification::list::it it = classification_associations->begin(); it != classification_associations->end(); ++it) {
+		IfcUtil::IfcBaseInterface* classification = (**it).RelatingClassification();
+		while (classification && emitted_classifications.insert(classification).second) {
+			ptree node;
+			node.put("<xmlattr>.id", qualify_unrooted_instance(classification));
+			format_entity_instance(logger_, mapping_, classification->as<IfcUtil::IfcBaseEntity>(), node, classifications);
+			IfcSchema::IfcClassificationReference* reference = classification->as<IfcSchema::IfcClassificationReference>();
+			classification = reference ? reference->ReferencedSource() : nullptr;
+		}
+	}
+
 	root.add_child("ifc.header",        header);
 	root.add_child("ifc.units",         units);
 	root.add_child("ifc.connections",   connections);
@@ -849,6 +869,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 	root.add_child("ifc.layers",        layers);
     root.add_child("ifc.groups",        groups);
 	root.add_child("ifc.materials",     materials);
+	root.add_child("ifc.classifications", classifications);
 	root.add_child("ifc.decomposition", decomposition);
 
 	root.put("ifc.<xmlattr>.xmlns:xlink", "http://www.w3.org/1999/xlink");
