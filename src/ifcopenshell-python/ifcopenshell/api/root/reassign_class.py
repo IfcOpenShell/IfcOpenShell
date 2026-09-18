@@ -49,10 +49,15 @@ def reassign_class(
     If you are reassigning a type, the occurrence classes are also
     reassigned to maintain validity.
 
-    Vice versa, if you are reassigning an occurrence, the type is also
-    reassigned in IFC4 and up. In IFC2X3, this may not occur if the type
-    cannot be unambiguously derived, so you are required to manually check
-    this.
+    Vice versa, if you are reassigning an occurrence which is the only
+    occurrence of its type, the type is also reassigned in IFC4 and up.
+    In IFC2X3, this may not occur if the type cannot be unambiguously
+    derived, so you are required to manually check this.
+
+    If the occurrence's type has other occurrences, neither the type nor
+    the other occurrences are modified. Instead, the reassigned occurrence
+    is unassigned from the type (a mismatched type is invalid in IFC4 and
+    up), leaving it untyped. Assign a new type manually if needed.
 
     Reassigning type class to occurrence (and vice versa) is supported.
 
@@ -208,13 +213,15 @@ class Usecase:
         else:
             element_type = ifcopenshell.util.element.get_type(element)
             if element_type:
-                ifc_class_ = next(iter(ifcopenshell.util.type.get_applicable_types(ifc_class, self.file.schema)))
-                element_type = self.reassign_class(element_type, ifc_class_, predefined_type)
-                ifc_class = element.is_a()
-                for occurrence in ifcopenshell.util.element.get_types(element_type):
-                    if occurrence == element:
-                        continue
-                    self.reassign_class(occurrence, ifc_class, predefined_type)
+                occurrences = ifcopenshell.util.element.get_types(element_type)
+                if any(occurrence != element for occurrence in occurrences):
+                    # The type is shared with other occurrences, so reassigning it
+                    # (or them) is not allowed - the caller asked to change only this
+                    # element. Detach the element from the now-mismatched type instead.
+                    ifcopenshell.api.type.unassign_type(self.file, [element])
+                else:
+                    ifc_class_ = next(iter(ifcopenshell.util.type.get_applicable_types(ifc_class, self.file.schema)))
+                    self.reassign_class(element_type, ifc_class_, predefined_type)
         return element
 
     def reassign_class(
