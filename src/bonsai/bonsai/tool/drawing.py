@@ -1366,6 +1366,25 @@ class Drawing(bonsai.core.tool.Drawing):
         )
 
     @classmethod
+    def setup_annotation_object_type(cls, element: ifcopenshell.entity_instance, object_type: str) -> None:
+        """Store the Bonsai annotation kind in ObjectType and keep it schema consistent.
+
+        Bonsai identifies annotation kinds (TEXT, SYMBOL, DIMENSION, ...) through
+        ``IfcAnnotation.ObjectType``. In IFC4X3, ``IfcAnnotation`` gained a
+        ``PredefinedType`` (``IfcAnnotationTypeEnum``) whose members ``TEXT``,
+        ``SYMBOL`` and ``DIMENSION`` collide with those object types, so
+        ``root.create_entity`` stores the kind in ``PredefinedType`` and leaves
+        ``ObjectType`` empty. That breaks every downstream lookup keyed on
+        ``ObjectType``. Normalise so ``ObjectType`` always carries the kind and,
+        when the schema has a ``PredefinedType``, set it to ``USERDEFINED`` so the
+        schema WHERE rule (ObjectType present iff USERDEFINED) stays satisfied.
+        """
+        if element.ObjectType != object_type:
+            element.ObjectType = object_type
+        if hasattr(element, "PredefinedType") and element.PredefinedType != "USERDEFINED":
+            element.PredefinedType = "USERDEFINED"
+
+    @classmethod
     def run_type_assign_type(cls, element: ifcopenshell.entity_instance, relating_type: ifcopenshell.entity_instance):
         return bonsai.core.type.assign_type(tool.Ifc, tool.Model, tool.Type, element=element, type=relating_type)
 
