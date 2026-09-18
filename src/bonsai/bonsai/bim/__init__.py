@@ -187,6 +187,8 @@ classes = [
     # Drawings and documents
     ui.BIM_PT_tab_sheets,
     ui.BIM_PT_tab_drawings,
+    ui.BIM_PT_section_plane,
+    ui.BIM_PT_section_with_cappings,
     ui.BIM_PT_tab_schedules,
     ui.BIM_PT_tab_references,
     # Services and systems
@@ -210,9 +212,6 @@ classes = [
     ui.BIM_PT_tab_clash_detection,
     ui.BIM_PT_tab_collaboration,
     ui.BIM_PT_tab_sandbox,
-    # TODO: move this somewhere else and clean it up
-    ui.BIM_PT_section_plane,
-    ui.BIM_PT_section_with_cappings,
     ui.BIM_PT_decorators_overlay,
     ui.BIM_PT_snappping,
 ]
