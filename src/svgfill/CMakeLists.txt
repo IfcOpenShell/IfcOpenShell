@@ -31,7 +31,13 @@ endif()
 
 find_package(Boost)
 message(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
+
+# 2.6.32 is the version bundled by OpenCOLLADA (Externals/LibXML).
+set(LIBXML2_MIN_VERSION 2.6.32)
 find_package(LibXml2 REQUIRED)
+# libxml2's CMake config has no -version.cmake file, so a versioned find_package() always rejects it.
+check_min_version(LibXml2 "${LibXml2_VERSION}" "${LIBXML2_MIN_VERSION}")
+
 find_package(CGAL REQUIRED)
 
 set(SVGPP_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/svgpp/include")
