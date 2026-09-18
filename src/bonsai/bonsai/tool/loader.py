@@ -1295,7 +1295,6 @@ class Loader(bonsai.core.tool.Loader):
         for item_data, item_style in zip(rep_items, item_styles):
             item = item_data["item"]
 
-            polyline = new_polyline(item_style)
             matrix = item_data["matrix"]
             matrix[0][3] *= unit_scale
             matrix[1][3] *= unit_scale
@@ -1304,12 +1303,18 @@ class Loader(bonsai.core.tool.Loader):
             # TODO: start param, and end param
             geometry = tool.Loader.create_generic_shape(item.Directrix)
             if not geometry:
+                # Still contribute a (stub) spline so every item ends up represented.
+                new_polyline(item_style)
                 continue
             e = geometry.edges
             v = geometry.verts
             vertices = [list(matrix @ [v[i], v[i + 1], v[i + 2], 1]) for i in range(0, len(v), 3)]
             edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
+            if not edges:
+                new_polyline(item_style)
+                continue
             v2 = None
+            polyline = None
             for edge in edges:
                 v1 = vertices[edge[0]]
                 if v1 != v2:
