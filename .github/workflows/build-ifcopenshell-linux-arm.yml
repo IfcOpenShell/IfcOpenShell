@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build_ifcopenshell:
+  build:
     runs-on: ubuntu-22.04-arm
     # Rocky 10 (glibc 2.39) — aqt's official Qt6 ARM binaries are built
     # against glibc 2.38, which Rocky 9 (glibc 2.34) can't run (moc fails to

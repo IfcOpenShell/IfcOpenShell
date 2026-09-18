@@ -8,7 +8,7 @@ on:
 
 jobs:
 
-  activate:
+  upstream-only:
     runs-on: ubuntu-22.04
     if: |
       github.repository == 'IfcOpenShell/IfcOpenShell' &&
@@ -19,7 +19,7 @@ jobs:
 
   build:
     runs-on: ubuntu-22.04
-    needs: activate
+    needs: upstream-only
     steps:
     - uses: actions/checkout@v7
       with:
@@ -80,7 +80,7 @@ jobs:
         # Directory containing files to upload
         path: build/assets/Ifc*
 
-  deliver:
+  publish:
     runs-on: ubuntu-22.04
     needs: build
     name: Docker Build, Tag, Push

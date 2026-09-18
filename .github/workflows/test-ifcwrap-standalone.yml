@@ -22,7 +22,7 @@ env:
   IFCOPENSHELL_PREFIX: ${{ github.workspace }}/ifcopenshell-install
 
 jobs:
-  build-ifcopenshell:
+  test-ifcwrap-standalone:
     runs-on: ubuntu-22.04
 
     steps:

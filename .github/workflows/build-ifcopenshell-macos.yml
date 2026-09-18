@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build_ifcopenshell:
+  build:
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false

@@ -15,7 +15,7 @@ on:
     paths: *ci_paths
 
 jobs:
-  test:
+  test-bonsaiviewer:
     name: cargo-test
     runs-on: ubuntu-latest
 

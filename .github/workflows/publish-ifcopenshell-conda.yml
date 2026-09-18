@@ -12,7 +12,7 @@ on:
   - cron: "49 23 * * *" # 11min before utc midnight every day
 
 jobs:
-  activate:
+  resolve-version:
     runs-on: ubuntu-latest
     if: |
       github.repository == 'IfcOpenShell/IfcOpenShell'
@@ -40,9 +40,9 @@ jobs:
         run: echo "verdate=${{ steps.version.outputs.version }}alpha${{ steps.date.outputs.date }}" >> $GITHUB_OUTPUT
 
 
-  test:
+  publish:
     name: ${{ matrix.platform.distver }}-${{ matrix.pyver.name }}
-    needs: activate
+    needs: resolve-version
     runs-on: ${{ matrix.platform.distver }}
     defaults:
       run:
@@ -102,7 +102,7 @@ jobs:
         run: |
           rattler-build  build -r conda/recipe.yaml --output-dir '${{ env.ARTIFACTS_DIR }}'
         env:
-          VERSION_OVERRIDE: ${{ needs.activate.outputs.verdate }}
+          VERSION_OVERRIDE: ${{ needs.resolve-version.outputs.verdate }}
 
       - name: upload to anaconda
         if: ${{ matrix.platform.name == 'win' }}

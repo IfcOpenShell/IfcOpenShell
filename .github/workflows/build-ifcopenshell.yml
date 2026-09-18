@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  trigger-workflows:
+  dispatch:
     runs-on: ubuntu-latest
     strategy:
       matrix:
