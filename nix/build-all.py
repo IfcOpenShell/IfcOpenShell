@@ -1051,18 +1051,23 @@ def install_qt6() -> str:
 
     os.makedirs(qt_install_root, exist_ok=True)
 
-    if importlib.util.find_spec("aqt") is None:
+    # Prefer uv when available: uvx runs aqtinstall in an ephemeral env, avoiding polluting
+    # any Python installation (isolated or global) with aqtinstall and its dependencies.
+    if uv_path := shutil.which("uv"):
+        logger.info(f"Using uv ('{uv_path}') to run aqtinstall in an ephemeral env.")
+        AQT_CMD = ["uvx", "--from", "aqtinstall", "aqt"]
+    elif importlib.util.find_spec("aqt") is not None:
+        AQT_CMD = [sys.executable, "-m", "aqt"]
+    else:
         logger.error(
             "Could not find an existing Qt6 install, so aqtinstall is needed to fetch it automatically. "
-            "Install the `aqtinstall` PyPI package or set QT_DIR."
+            "Install `uv`, install the `aqtinstall` PyPI package, or set QT_DIR."
         )
         exit(1)
 
     run(
-        [
-            sys.executable,
-            "-m",
-            "aqt",
+        AQT_CMD
+        + [
             "install-qt",
             host,
             "desktop",
