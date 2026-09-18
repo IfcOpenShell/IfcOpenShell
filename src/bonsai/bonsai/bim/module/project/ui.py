@@ -140,6 +140,7 @@ def file_menu(self, context):
     op.should_save_as = False
     op = self.layout.operator("bim.save_project", text="Save IFC Project As...")
     op.should_save_as = True
+    self.layout.operator("bim.export_selected_elements", icon="EXPORT")
     self.layout.separator()
     self.layout.operator("bim.revert_project")
     self.layout.separator()

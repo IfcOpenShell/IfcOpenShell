@@ -48,6 +48,7 @@ import ifcopenshell.util.selector
 import ifcopenshell.util.shape
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
+import ifcpatch
 import numpy as np
 from bpy.app.handlers import persistent
 from bpy_extras.io_utils import ExportHelper, ImportHelper
@@ -2166,6 +2167,61 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         if properties.should_save_as:
             return "Save the IFC file under a new name, or relocate file"
         return "Save the IFC file.  Will save both .IFC/.BLEND files if synced together"
+
+
+class ExportSelectedElements(bpy.types.Operator, ExportHelper):
+    bl_idname = "bim.export_selected_elements"
+    bl_label = "Save Selected Elements As..."
+    bl_description = (
+        "Save the selected elements to a new IFC file, keeping their spatial "
+        "containment and decomposition parents. Runs the ifcpatch 'Extract "
+        "Elements' recipe (Quality Control > Patch has the same recipe with "
+        "more query options). Large models may take a while, Blender will "
+        "show a wait cursor while it works."
+    )
+    bl_options = {"REGISTER"}
+    filename_ext = ".ifc"
+    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip", options={"HIDDEN"})
+
+    if TYPE_CHECKING:
+        filter_glob: str
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC project is loaded.")
+            return False
+        for obj in tool.Blender.get_selected_objects():
+            if tool.Ifc.get_entity(obj):
+                return True
+        cls.poll_message_set("Select one or more IFC elements first.")
+        return False
+
+    def invoke(self, context, event):
+        props = tool.Blender.get_bim_props()
+        stem = Path(props.ifc_file).stem if props.ifc_file else "selected"
+        self.filepath = f"{stem}-selected.ifc"
+        return ExportHelper.invoke(self, context, event)
+
+    def execute(self, context):
+        query = tool.Search.get_query_for_selected_elements()
+        text_name = None
+        if query.startswith("bpy.data.texts['"):
+            text_name = query.split("bpy.data.texts")[1][2:-2]
+        query = tool.Patch.post_process_patch_arguments("ExtractElements", [query])[0]
+
+        context.window.cursor_modal_set("WAIT")
+        try:
+            output = ifcpatch.execute({"file": tool.Ifc.get(), "recipe": "ExtractElements", "arguments": [query]})
+            ifcpatch.write(output, self.filepath)
+        finally:
+            context.window.cursor_modal_restore()
+            if text_name and (text_block := bpy.data.texts.get(text_name)):
+                bpy.data.texts.remove(text_block)
+
+        element_count = query.count(",") + 1 if query else 0
+        self.report({"INFO"}, f"Saved {element_count} selected element(s) to {os.path.basename(self.filepath)}")
+        return {"FINISHED"}
 
 
 class LoadAutosavedRecoveryPopup(bpy.types.Operator):
