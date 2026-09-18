@@ -249,6 +249,25 @@ def is_filling_supported(element) -> bool:
     return element is not None and element.is_a() in ("IfcDoor", "IfcWindow")
 
 
+FILLING_HOST_CLASSES = ("IfcWall", "IfcWallStandardCase", "IfcCovering", "IfcElementAssembly")
+
+
+def get_filling_host(
+    element: Union[ifcopenshell.entity_instance, None],
+) -> Union[ifcopenshell.entity_instance, None]:
+    """The element a filling should be hosted in, resolved from whatever was picked.
+
+    A pick can land on something the host decomposes into rather than on the host
+    itself, so the decomposition is walked upwards until a host class is found."""
+    seen = set()
+    while element is not None and element.id() not in seen:
+        if element.is_a() in FILLING_HOST_CLASSES:
+            return element
+        seen.add(element.id())
+        element = ifcopenshell.util.element.get_aggregate(element)
+    return None
+
+
 class FilledOpeningGenerator:
     def generate(
         self,

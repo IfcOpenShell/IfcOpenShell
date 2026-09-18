@@ -49,7 +49,9 @@ from bonsai.bim.module.model.data import AuthoringData
 from bonsai.bim.module.model.decorator import PolylineDecorator, ProductDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
 
-from . import mep, profile, slab, wall
+from . import mep, opening, profile, slab, wall
+
+FILLING_CLASSES = ("IfcDoor", "IfcWindow")
 
 
 class AddEmptyType(bpy.types.Operator, AddObjectHelper):
@@ -330,6 +332,19 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
             building_obj = context.active_object
             building_element = tool.Ifc.get_entity(building_obj)
 
+        relating_type = tool.Ifc.get().by_id(int(relating_type_id))
+        ifc_class = relating_type.is_a()
+        instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, tool.Ifc.get().schema)[0]
+        material = ifcopenshell.util.element.get_material(relating_type)
+
+        if instance_class in FILLING_CLASSES and building_element:
+            # The pick can land on something the wall decomposes into rather than on
+            # the wall, and the filling belongs in the wall either way.
+            if (host_element := opening.get_filling_host(building_element)) and (
+                host_obj := tool.Ifc.get_object(host_element)
+            ):
+                building_element, building_obj = host_element, host_obj
+
         self.container = None
         self.container_obj = None
         if (
@@ -342,11 +357,6 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
         elif container := tool.Root.get_default_container():
             self.container = container
             self.container_obj = tool.Ifc.get_object(container)
-
-        relating_type = tool.Ifc.get().by_id(int(relating_type_id))
-        ifc_class = relating_type.is_a()
-        instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, tool.Ifc.get().schema)[0]
-        material = ifcopenshell.util.element.get_material(relating_type)
 
         existing_context = None
         for existing_occurrence in ifcopenshell.util.element.get_types(relating_type):
@@ -486,7 +496,13 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
             and instance_class in ["IfcWindow", "IfcDoor"]
         ):
             # TODO For now we are hardcoding windows and doors as a prototype
-            tool.Model.add_filled_opening(building_obj, obj)
+            if error := tool.Model.add_filled_opening(building_obj, obj):
+                # An unhosted filling is never valid output, so leave nothing behind.
+                tool.Geometry.delete_ifc_object(obj)
+                self.report(
+                    {"ERROR"}, f"Could not host the {instance_class[3:].lower()} in {building_obj.name}: {error}"
+                )
+                return {"CANCELLED"}
         else:
             if self.container_obj:
                 bonsai.core.spatial.assign_container(
