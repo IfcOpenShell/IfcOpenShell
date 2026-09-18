@@ -1861,19 +1861,16 @@ class Sequence(bonsai.core.tool.Sequence):
     @classmethod
     def set_visibility_by_status(cls, visible_statuses: set[str]) -> None:
         assert bpy.context.view_layer
-        query = []
-        for name in visible_statuses:
-            q = cls.get_status_query(name)
-            query.append(q)
-        query = " + ".join(query)
-
-        visible_elements = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query)
+        show_no_status = "No Status" in visible_statuses
+        visible_element_statuses = visible_statuses - {"No Status"}
 
         for obj in bpy.context.view_layer.objects:
             element = tool.Ifc.get_entity(obj)
             if not element or not element.is_a("IfcProduct"):
                 continue
-            obj.hide_set(element not in visible_elements)
+            element_statuses = cls.get_element_status(element)
+            is_visible = (not element_statuses and show_no_status) or bool(element_statuses & visible_element_statuses)
+            obj.hide_set(not is_visible)
 
     @classmethod
     def copy_work_schedule(cls, work_schedule: ifcopenshell.entity_instance) -> None:
