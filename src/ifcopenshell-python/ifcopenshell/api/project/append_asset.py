@@ -50,6 +50,7 @@ def append_asset(
     element: ifcopenshell.entity_instance,
     reuse_identities: Optional[dict[int, ifcopenshell.entity_instance]] = None,
     assume_asset_uniqueness_by_name: bool = True,
+    deferred_relationship_members: Optional[dict[int, tuple[ifcopenshell.entity_instance, dict[int, list]]]] = None,
 ) -> ifcopenshell.entity_instance:
     """Appends an asset from a library into the active project
 
@@ -140,8 +141,43 @@ def append_asset(
         "element": element,
         "reuse_identities": {} if reuse_identities is None else reuse_identities,
         "assume_asset_uniqueness_by_name": assume_asset_uniqueness_by_name,
+        "deferred_relationship_members": deferred_relationship_members,
     }
     return usecase.execute()
+
+
+def flush_deferred_relationship_members(
+    deferred_relationship_members: dict[int, tuple[ifcopenshell.entity_instance, ifcopenshell.entity_instance]],
+    appended_elements: dict[int, ifcopenshell.entity_instance],
+) -> None:
+    """Assign relationship member lists deferred by ``append_asset``.
+
+    When ``append_asset`` is called with a shared ``deferred_relationship_members``
+    dict, relationships reached through whitelisted inverses (e.g.
+    ``IfcRelAssociatesMaterial``, ``IfcRelDefinesByProperties``) do not have their
+    list-valued member attributes re-scanned and re-assigned on every element
+    append. Doing that per element is O(n^2) because the member list grows.
+
+    Instead, this maps each relationship's source members to their appended
+    counterparts a single time. ``appended_elements`` maps a source element's step
+    id to the entity it was appended as (the caller collects the value returned by
+    each ``append_asset`` call). Members whose source was not appended (i.e. not
+    part of the extracted subset) are skipped. Call this once after all appends.
+    """
+    for source_rel, new_rel in deferred_relationship_members.values():
+        for index, attribute in enumerate(source_rel):
+            if not (
+                isinstance(attribute, tuple) and attribute and isinstance(attribute[0], ifcopenshell.entity_instance)
+            ):
+                continue
+            members: list[ifcopenshell.entity_instance] = []
+            seen: set[int] = set()
+            for member in attribute:
+                mapped = appended_elements.get(member.id())
+                if mapped is not None and mapped.id() not in seen:
+                    seen.add(mapped.id())
+                    members.append(mapped)
+            new_rel[index] = members
 
 
 class SafeRemovalContext:
@@ -217,6 +253,7 @@ class Usecase:
         self.whitelisted_inverse_attributes = {}
         self.base_material_class = "IfcMaterial" if self.file.schema == "IFC2X3" else "IfcMaterialDefinition"
         self.assume_asset_uniqueness_by_name = self.settings["assume_asset_uniqueness_by_name"]
+        self.deferred_relationship_members = self.settings["deferred_relationship_members"]
 
         if self.settings["element"].is_a("IfcTypeProduct"):
             self.target_class = "IfcTypeProduct"
@@ -529,6 +566,18 @@ class Usecase:
             new = self.file.create_entity(element.is_a())
             self.reuse_identities[element_identity] = new
 
+        # When a shared accumulator is provided, defer the list-valued member
+        # attributes of relationships (e.g. IfcRelAssociatesMaterial.RelatedObjects)
+        # instead of re-scanning and re-assigning the growing list on every element
+        # append (O(n^2)). flush_deferred_relationship_members assigns them once.
+        defer_member_lists = False
+        if self.deferred_relationship_members is not None and new.is_a("IfcRelationship"):
+            if new.id() in self.deferred_relationship_members:
+                # Non-member attributes were set the first time; members deferred.
+                return
+            self.deferred_relationship_members[new.id()] = (element, new)
+            defer_member_lists = True
+
         for i, attribute in enumerate(element):
             new_attribute = None
             if isinstance(attribute, ifcopenshell.entity_instance):
@@ -544,6 +593,8 @@ class Usecase:
                 ):
                     new_attribute = self.add_element(attribute)
             elif isinstance(attribute, tuple) and attribute and isinstance(attribute[0], ifcopenshell.entity_instance):
+                if defer_member_lists:
+                    continue
                 new_attribute = []
                 for item in attribute:
                     if self.is_another_asset(item):

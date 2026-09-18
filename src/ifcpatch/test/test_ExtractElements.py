@@ -23,6 +23,7 @@ import ifcopenshell.api.aggregate
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
 import ifcopenshell.api.georeference
+import ifcopenshell.api.material
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
 import ifcopenshell.util.element
@@ -41,6 +42,23 @@ class TestExtractElements(test.bootstrap.IFC4):
 
         assert output.by_type("IfcProject")[0].GlobalId == project.GlobalId
         assert output.by_type("IfcWall")[0].GlobalId == wall.GlobalId
+
+    def test_shared_relationship_members_are_preserved(self):
+        # Regression test: a relationship shared by many extracted elements
+        # (e.g. one IfcRelAssociatesMaterial linking every product) must keep all
+        # of its members. The deferred member-list assignment used to avoid the
+        # O(n^2) cost of re-assigning a growing list per element must not drop any.
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.context.add_context(self.file, context_type="Model")
+        material = ifcopenshell.api.material.add_material(self.file, name="Steel")
+        walls = [ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall") for _ in range(3)]
+        ifcopenshell.api.material.assign_material(self.file, products=walls, material=material)
+
+        output = ifcpatch.execute({"file": self.file, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
+
+        rels = output.by_type("IfcRelAssociatesMaterial")
+        assert len(rels) == 1
+        assert {w.GlobalId for w in rels[0].RelatedObjects} == {w.GlobalId for w in walls}
 
     def test_keep_spatial_structure(self):
         project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")

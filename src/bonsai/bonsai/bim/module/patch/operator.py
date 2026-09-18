@@ -128,7 +128,9 @@ class ExecuteIfcPatch(bpy.types.Operator):
         # Store this in case the patch recipe resets the Blender session, such as by loading a new project.
         ifc_patch_output = props.ifc_patch_output or props.ifc_patch_input
 
-        output = ifcpatch.execute(args)
+        self.report({"INFO"}, f"Running {recipe_name}. Large models can take a while, watch the console for progress.")
+        with tool.Patch.report_progress(context):
+            output = ifcpatch.execute(args)
         if tool.Patch.does_patch_has_output(recipe_name):
             ifcpatch.write(output, ifc_patch_output)
         self.report({"INFO"}, f"{recipe_name} patch executed successfully")
