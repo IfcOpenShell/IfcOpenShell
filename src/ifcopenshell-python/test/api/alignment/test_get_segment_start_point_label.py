@@ -50,4 +50,43 @@ def test_vertical_constant_gradient_to_constant_gradient_label_has_trailing_peri
     assert _get_segment_start_point_label(prev_segment, segment) == "P.V.I."
 
 
+def _make_horizontal_arc(file, radius):
+    dp = file.createIfcAlignmentHorizontalSegment(
+        StartPoint=file.createIfcCartesianPoint((0.0, 0.0)),
+        StartDirection=0.0,
+        StartRadiusOfCurvature=radius,
+        EndRadiusOfCurvature=radius,
+        SegmentLength=100.0,
+        PredefinedType="CIRCULARARC",
+    )
+    return file.createIfcAlignmentSegment(GlobalId=ifcopenshell.guid.new(), DesignParameters=dp)
+
+
+def test_circulararc_to_circulararc_same_direction_is_pcc():
+    # Two arcs turning the same way (StartRadiusOfCurvature same sign: +left/-right) with no
+    # intervening LINE is a compound curve (a join_next junction, see
+    # solve_horizontal_alignment_by_pi_method) -- Point of Compound Curvature.
+    file = ifcopenshell.file(schema="IFC4X3")
+    left1 = _make_horizontal_arc(file, 500.0)
+    left2 = _make_horizontal_arc(file, 300.0)
+    assert _get_segment_start_point_label(left1, left2) == "P.C.C."
+
+    right1 = _make_horizontal_arc(file, -500.0)
+    right2 = _make_horizontal_arc(file, -300.0)
+    assert _get_segment_start_point_label(right1, right2) == "P.C.C."
+
+
+def test_circulararc_to_circulararc_opposite_direction_is_prc():
+    # Two arcs turning opposite ways with no intervening LINE is a reverse curve -- Point of
+    # Reverse Curvature. Was previously mislabeled "P.C.C." regardless of direction (the lookup
+    # table had one static entry for any CIRCULARARC -> CIRCULARARC transition).
+    file = ifcopenshell.file(schema="IFC4X3")
+    left = _make_horizontal_arc(file, 500.0)
+    right = _make_horizontal_arc(file, -300.0)
+    assert _get_segment_start_point_label(left, right) == "P.R.C."
+    assert _get_segment_start_point_label(right, left) == "P.R.C."
+
+
 test_vertical_constant_gradient_to_constant_gradient_label_has_trailing_period()
+test_circulararc_to_circulararc_same_direction_is_pcc()
+test_circulararc_to_circulararc_opposite_direction_is_prc()
