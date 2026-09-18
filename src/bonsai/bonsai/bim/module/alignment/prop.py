@@ -593,7 +593,9 @@ class CivilAlignmentProperties(PropertyGroup):
 class PICurveMarkerProperties(PropertyGroup):
     """Tags a transient Empty object placed at an interior PI while its
     smoothing curve is being defined (ALIGN_OT_draw_horizontal_alignment /
-    align.set_pi_curve). Registered as Object.bonsai_pi_curve_marker.
+    align.set_pi_curve), or at the alignment's Start/End point while it's
+    being repositioned (role == "START"/"END" — see _create_endpoint_marker).
+    Registered as Object.bonsai_pi_curve_marker.
 
     Deliberately edited via plain panel widgets bound directly to this
     PropertyGroup (see ALIGN_PT_alignment_authoring), not a popup dialog —
@@ -606,6 +608,16 @@ class PICurveMarkerProperties(PropertyGroup):
     """
 
     is_pi_marker: BoolProperty(default=False)
+    role: EnumProperty(
+        name="Role",
+        description="What this marker represents -- only an interior PI has a smoothing curve",
+        items=[
+            ("PI", "Interior PI", "An interior PI, optionally with a smoothing curve"),
+            ("START", "Start Point", "The alignment's start point"),
+            ("END", "End Point", "The alignment's end point"),
+        ],
+        default="PI",
+    )
     alignment_id: IntProperty(
         name="Alignment ID", description="IFC ID of the IfcAlignment this PI belongs to", default=0
     )
