@@ -189,6 +189,7 @@ class AuthoringData:
             "description": element.Description or "No Description",
             "predefined_type": predefined_type,
             "icon_id": cls.type_thumbnails.get(element.id(), 0),
+            "usage": tool.Model.get_usage_type(element),
         }
         return data
 
