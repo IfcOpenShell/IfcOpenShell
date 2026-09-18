@@ -50,9 +50,16 @@ class TypeData:
     @classmethod
     def relating_type_classes(cls):
         results = []
+        # bpy.context.active_object can be None in contexts where
+        # tool.Blender.get_active_object() (used by BIM_PT_type.poll()) still
+        # resolves an object through the view_layer fallback (see its
+        # docstring on "stripped operator contexts"). This feeds an
+        # EnumProperty items callback (type/prop.py get_relating_type_class),
+        # which must always return a list, so fall back to [] like the
+        # sibling check below instead of implicitly returning None.
         obj = bpy.context.active_object
         if not obj:
-            return
+            return []
         element = tool.Ifc.get_entity(obj)
         if not element:
             return []
