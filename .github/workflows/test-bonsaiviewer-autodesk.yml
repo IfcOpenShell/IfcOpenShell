@@ -1,0 +1,63 @@
+# Lint/test gate for the bonsaiviewer-autodesk crate — nothing here ships.
+# The connector binary that reaches users is built by the platform pipelines
+# (build_rocky.yml, build_rocky_arm.yml, build_win.yml, build_osx.yml), each
+# of which runs packaging/build.py itself and bundles dist/autodesk/ into the
+# Bonsai Viewer archive.
+name: Test Bonsai Viewer Autodesk
+
+on:
+  workflow_dispatch:
+  push:
+    paths: &ci_paths
+      - 'src/bonsaiviewer-autodesk/**'
+      - '.github/workflows/test-bonsaiviewer-autodesk.yml'
+  pull_request:
+    paths: *ci_paths
+
+jobs:
+  test:
+    name: cargo-test
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: src/bonsaiviewer-autodesk
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install system dependencies
+        run: |
+          pkgs=(
+            libdbus-1-dev
+            libx11-dev
+            libxext-dev
+            libxinerama-dev
+            libxcursor-dev
+            libxrender-dev
+            libxfixes-dev
+            libxft-dev
+            libfontconfig1-dev
+            libpango1.0-dev
+            libcairo2-dev
+            libgl1-mesa-dev
+          )
+          sudo apt-get update
+          sudo apt-get install -y "${pkgs[@]}"
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      # cargo-target reuse across runs. Massive cold-build speedup,
+      # cheap on the GitHub Actions cache budget.
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src/bonsaiviewer-autodesk
+
+      - name: cargo fmt --check
+        run: cargo fmt --all -- --check
+
+      - name: cargo clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: cargo test
+        run: cargo test --all-features

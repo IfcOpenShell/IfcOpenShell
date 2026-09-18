@@ -1,6 +1,6 @@
 # This file was generated with the assistance of an AI coding tool.
 
-name: Publish C++ API documentation
+name: Publish C++ API Docs
 
 on:
   push:

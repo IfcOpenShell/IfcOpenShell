@@ -1,0 +1,164 @@
+name: Build IfcOpenShell macOS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_ifcopenshell:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # x64 (Intel cross-compile) dropped while wgpu Qt is required:
+          # the runner is arm64 so `brew --prefix qt` returns the arm64
+          # prefix; we'd need a separate x86_64 Qt install under
+          # /usr/local to cross-build BonsaiViewer. Revisit if Intel-Mac
+          # demand resurfaces.
+          - os: macos
+            # macos-14 no longer receives Homebrew bottles, so `brew install qt`
+            # compiles Qt (and QtWebEngine) from source there and fails.
+            runner: macos-15
+            arch: arm64
+            oldarch: m1
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Checkout Build Repository
+        uses: actions/checkout@v7
+        with:
+          repository: IfcOpenShell/build-outputs
+          path: ./build
+          ref: ${{ matrix.os }}-${{ matrix.arch }}
+          lfs: true
+          token: ${{ secrets.BUILD_REPO_TOKEN }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+
+      - name: Install Dependencies
+        run: |
+          brew update
+          # preinstalled: xz, cmake
+          brew install git bison autoconf automake libffi findutils
+          # qt brings in Qt6 + Svg; nix/build-all.py honours pre-set
+          # QT_DIR so BonsaiViewer doesn't try to aqtinstall (which is
+          # Linux-only).
+          brew install qt
+          echo "$(brew --prefix findutils)/libexec/gnubin" >> $GITHUB_PATH
+          # Mac is using bison 2.5 by default, but we need 3.5+ for swig.
+          echo "$(brew --prefix bison)/bin" >> $GITHUB_PATH
+
+      # The bonsaiviewer-autodesk connector is a Rust crate; the "Package
+      # .zip archives" step below runs `cargo build --release` via
+      # packaging/build.py. Match the dedicated connector workflow's stable
+      # toolchain, rather than whatever Rust the runner image happens to ship.
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install aws cli
+        run: |
+          python -m pip install awscli
+
+      - name: Unpack Dependencies
+        run: |
+          cd build
+          uv run ../nix/cache_dependencies.py unpack
+
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2.24
+        with:
+          key: mac-${{ matrix.arch }}
+
+      - name: Run Build Script
+        shell: bash
+        run: |
+          if [ "${{ matrix.os }}" == "macos" ]; then
+            DARWIN_C_SOURCE=-D_DARWIN_C_SOURCE
+          fi
+          if [ "${{ matrix.arch }}" == "x64" ]; then
+            arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+            MAC_INTEL=-mac-cross-compile-intel
+            # We don't use gmpcxx, but it comes preinstalled on macos runner as arm64 bottle
+            # and CGAL detects it and breaks cross compilation.
+            brew uninstall --ignore-dependencies gmp
+            # Otherwise Python will fallback to use arm64 `pkg-config`,
+            # will pick up arm64 libraries ('zstd' in particular),
+            # and break the build.
+            /usr/local/bin/brew install pkg-config
+            # Required by Python.
+            /usr/local/bin/brew install gettext openssl
+          fi
+          set -o pipefail
+          export QT_DIR="$(brew --prefix qt)"
+          # --ifcopenshell-shared mirrors build_rocky.yml after 27249770e: builds
+          # IfcOpenShell as shared libs so each plug-in dylib references
+          # libIfcParse / libIfcGeom via @rpath instead of statically
+          # embedding them — the dominant size win for BonsaiViewer.app
+          # (per-plugin libs go from ~30-50 MB to a few MB).
+          #
+          # IfcOpenShell-Python is back on after the ifcwrap rpath fix:
+          # INSTALL_RPATH "$ORIGIN" is a Linux-ism that macOS dyld bakes
+          # in as a literal string, so `@rpath/ifcopenshell.document.rdb
+          # .dylib` failed to resolve at import time. ifcwrap now sets
+          # INSTALL_RPATH to "@loader_path" on Apple.
+          CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" \
+            QT_DIR="${QT_DIR}" \
+            uv run ./nix/build-all.py \
+              -v \
+              --diskcleanup \
+              --ifcopenshell-shared \
+              --add-commit-sha \
+              --build-cfg Release \
+              ${MAC_INTEL} \
+            | tee build.log
+
+      - name: Upload Build Logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-logs-osx-${{ matrix.arch }}
+          path: |
+            build.log
+            build/*/*/*/logs/*.log
+            build/*/*/*/build/ifcopenshell/**/CMakeCache.txt
+          retention-days: 30
+
+      - name: Pack Dependencies
+        run: |
+          cd build
+          uv run ../nix/cache_dependencies.py pack
+
+      - name: Commit and Push Changes to Build Repository
+        run: |
+          cd build
+          git config user.name "IfcOpenBot"
+          git config user.email "ifcopenbot@ifcopenshell.org"
+          git add "$(find . -maxdepth 4 -name install)/*.tar.gz"
+          git commit -m "Update build artifacts [skip ci]" || echo "No changes to commit"
+          git push || true
+
+      - name: Package .zip archives
+        run: |
+          uv run nix/package-zip-archives.py "macos${{ matrix.oldarch }}64"
+
+      - name: Test packaged Python wrapper
+        # Imports the *packaged* wrapper and exercises the cross-plug-in hand-offs
+        # (kernel -> tree, kernel -> SVG serializer) that a duplicated OCCT breaks.
+        run: |
+          uv run --no-project --python 3.13 --with pytest --with typing_extensions --with numpy \
+            test/package/run_against_package.py "$HOME/output/ifcopenshell-python-313-*-macos${{ matrix.oldarch }}64.zip"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-access-key-id: ${{ secrets.AWS_UPLOAD_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_UPLOAD_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Upload .zip archives to S3
+        run: |
+          aws s3 cp ~/output s3://ifcopenshell-builds/ --recursive
