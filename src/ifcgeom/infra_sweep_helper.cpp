@@ -33,6 +33,37 @@ bool has_intersection(const std::set<T, Cmp>& A,
     return false;
 }
 
+// A loop is polygonal when every edge is a straight line segment whose
+// endpoints are stored as explicit points. Curved edges (arcs, circles,
+// b-splines) carry a non-line basis and may store their trims as curve
+// parameters rather than point3 vertices, so they cannot be decomposed into
+// a vertex list without dropping their curvature (and boost::get<point3>
+// would throw boost::bad_get on a parameter-valued trim).
+bool loop_is_polygonal(const taxonomy::loop::ptr& loop) {
+	for (const auto& e : loop->children) {
+		if (e->basis != nullptr && e->basis->kind() != taxonomy::LINE) {
+			return false;
+		}
+		if (boost::get<taxonomy::point3::ptr>(&e->start) == nullptr ||
+			boost::get<taxonomy::point3::ptr>(&e->end) == nullptr) {
+			return false;
+		}
+	}
+	return true;
+}
+
+bool profile_is_polygonal(const taxonomy::geom_item::ptr& profile) {
+	if (profile->kind() == taxonomy::FACE) {
+		for (const auto& child : std::static_pointer_cast<taxonomy::face>(profile)->children) {
+			if (!loop_is_polygonal(child)) {
+				return false;
+			}
+		}
+		return true;
+	}
+	return loop_is_polygonal(std::static_pointer_cast<taxonomy::loop>(profile));
+}
+
 }
 
 taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_, const IfcUtil::IfcBaseClass* inst, const taxonomy::function_item::ptr& fn, std::vector<cross_section>& cross_sections, Logger& logger)
@@ -99,6 +130,10 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
 				(relative_dist_along >= 1.e-9 || offset_a.cwiseAbs().maxCoeff() > 0. || rotation_a);
 
 			boost::optional<Eigen::Matrix3d> interpolated_rotation;
+			// Lateral offset to bake into the placement when a curved (non
+			// polygonal) constant section is passed through instead of being
+			// vertex-interpolated.
+			boost::optional<Eigen::Vector3d> passthrough_offset;
 
 			if (should_interpolate) {
 				taxonomy::geom_item::ptr profile_b;
@@ -120,6 +155,41 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
 					(offset_a.cwiseAbs().maxCoeff() > 0. || offset_b.cwiseAbs().maxCoeff() > 0. || rotation_b);
 
 				if (should_interpolate2) {
+
+				// Vertex-wise interpolation is only meaningful for polygonal
+				// loops. If either section is curved we cannot decompose it into
+				// a point list. When the section shape is constant along this
+				// segment (same profile instance) we pass the profile through so
+				// it is placed rigidly along the directrix (rotation and offset
+				// handled below); a genuine morph between two different curved
+				// sections is not supported yet and is reported rather than
+				// crashing with boost::bad_get.
+				const bool curved_sections = !profile_is_polygonal(profile_a) || !profile_is_polygonal(profile_b);
+				// A constant section (same shape at both ends) only changes
+				// placement along the directrix, which is applied below; the
+				// curvature is preserved by passing the profile through. A
+				// genuine morph between two differently shaped curved sections
+				// cannot be expressed this way and is reported instead of
+				// crashing.
+				const bool same_section_shape =
+					(profile_a->instance == profile_b->instance) ||
+					(profile_a->hash() == profile_b->hash());
+				if (curved_sections && !same_section_shape) {
+					logger.Error("GEO", 50, "Interpolation between differing curved (non-polygonal) cross sections is not supported", inst);
+					return nullptr;
+				}
+
+				if (curved_sections) {
+					// Constant curved section: bake the interpolated lateral
+					// offset into the placement and let the clone path below emit
+					// profile_a. 'interpolated' stays null.
+					passthrough_offset = lerp(offset_a, offset_b, relative_dist_along);
+					if (rotation_a.has_value() && rotation_b.has_value()) {
+						interpolated_rotation = lerp(*rotation_a, *rotation_b, relative_dist_along);
+					} else if (rotation_a != rotation_b) {
+						logger.Error("GEO", 42, "Direction vectors on cross section placements only supported when used consistently");
+					}
+				} else {
 
 					std::vector<taxonomy::loop::ptr> loops_a, loops_b;
 
@@ -392,6 +462,7 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
 						}
 					}
 				}
+				}
 			}
 
 			auto m4 = evaluator.evaluate(dist_along);
@@ -427,6 +498,15 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
 			if (!loft->children.back()->matrix) {
 				// @todo should this not be initialized by default? matrix4 already has a 'lazy identity' mechanism.
 				loft->children.back()->matrix = taxonomy::make<taxonomy::matrix4>();
+			}
+			if (passthrough_offset && passthrough_offset->cwiseAbs().maxCoeff() > 0.) {
+				// Constant curved section that was passed through instead of
+				// vertex-interpolated: apply the lateral offset in the profile's
+				// local frame (matching where the offset is added on the
+				// polygonal point-interpolation path).
+				Eigen::Matrix4d t = Eigen::Matrix4d::Identity();
+				t.col(3).head<3>() = *passthrough_offset;
+				loft->children.back()->matrix->components() = (loft->children.back()->matrix->ccomponents() * t).eval();
 			}
 			auto m = (m4b * loft->children.back()->matrix->ccomponents()).eval();
 			loft->children.back()->matrix->components() = m;
