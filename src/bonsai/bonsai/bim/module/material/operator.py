@@ -358,12 +358,18 @@ class AddProfile(bpy.types.Operator, tool.Ifc.Operator):
         self.file = tool.Ifc.get()
         props = tool.Material.get_material_props()
         omprops = tool.Material.get_object_material_props(obj)
+        profile_set = self.file.by_id(self.profile_set)
         ifcopenshell.api.material.add_profile(
             self.file,
-            profile_set=self.file.by_id(self.profile_set),
+            profile_set=profile_set,
             material=self.file.by_id(int(omprops.material)),
             profile=self.file.by_id(int(props.profiles)),
         )
+        if len(profile_set.MaterialProfiles) > 1 and not profile_set.CompositeProfile:
+            self.report(
+                {"WARNING"},
+                "Multiple profiles require a Composite Profile to be rendered. Only the first profile will be shown in the 3D view.",
+            )
 
 
 class RemoveProfile(bpy.types.Operator, tool.Ifc.Operator):
