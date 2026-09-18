@@ -93,6 +93,9 @@ class BIM_PT_camera(Panel):
                 else:
                     panel.label(text="No IFC projects linked and loaded.")
 
+        row = col.row(align=True)
+        row.prop(dprops, "should_use_hlr_poly")
+
         row = self.layout.row(align=True)
         row.prop(props, "target_view")
 
