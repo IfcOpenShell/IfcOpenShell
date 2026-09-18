@@ -855,12 +855,86 @@ class DumbProfileJoiner:
     def create_matrix(self, p: Vector, x: Vector, y: Vector, z: Vector) -> Matrix:
         return Matrix([x, y, z, p]).to_4x4().transposed()
 
+    def split(self, profile1: bpy.types.Object, target: Vector) -> None:
+        element1 = tool.Ifc.get_entity(profile1)
+        if not element1:
+            return
+
+        if tool.Ifc.is_moved(profile1):
+            bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=profile1)
+
+        axis1 = self.get_profile_axis(profile1)
+        intersect, cut_percentage = mathutils.geometry.intersect_point_line(target, *axis1)
+        if cut_percentage < 0 or cut_percentage > 1 or tool.Cad.is_x(cut_percentage, (0, 1)):
+            return
+
+        # Duplicate the profile element
+        profile2 = profile1.copy()
+        profile2.data = profile2.data.copy()
+        for collection in profile1.users_collection:
+            collection.objects.link(profile2)
+        bonsai.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=profile2)
+        element2 = tool.Ifc.get_entity(profile2)
+
+        # Transfer ATEND connection from element1 to element2
+        relating_element = None
+        relating_connection = None
+        description = None
+        for conn in list(element1.ConnectedTo):
+            if conn.is_a("IfcRelConnectsPathElements") and conn.RelatingConnectionType == "ATEND":
+                relating_element = conn.RelatedElement
+                relating_connection = conn.RelatedConnectionType
+                description = conn.Description
+                bonsai.core.geometry.remove_connection(tool.Geometry, connection=conn)
+        for conn in list(element1.ConnectedFrom):
+            if conn.is_a("IfcRelConnectsPathElements") and conn.RelatedConnectionType == "ATEND":
+                relating_element = conn.RelatingElement
+                relating_connection = conn.RelatingConnectionType
+                description = conn.Description
+                bonsai.core.geometry.remove_connection(tool.Geometry, connection=conn)
+        if relating_element:
+            ifcopenshell.api.geometry.connect_path(
+                tool.Ifc.get(),
+                relating_element=relating_element,
+                related_element=element2,
+                relating_connection=relating_connection,
+                related_connection="ATEND",
+                description=description,
+            )
+
+        # Recreate both profiles with split axes
+        self.recreate_profile(element1, profile1, [axis1[0], intersect], [axis1[0], intersect])
+        self.recreate_profile(element2, profile2, [intersect, axis1[1]], [intersect, axis1[1]])
+
     def get_profile_axis(self, obj: bpy.types.Object) -> list[Vector]:
         z_values = [v[2] for v in obj.bound_box]
         return [
             (obj.matrix_world @ Vector((0.0, 0.0, min(z_values)))),
             (obj.matrix_world @ Vector((0.0, 0.0, max(z_values)))),
         ]
+
+
+class SplitProfile(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.split_profile"
+    bl_label = "Split Profile"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = (
+        "Split selected profile element into two elements at the Blender cursor location. "
+        "The cursor must be positioned on the element's axis."
+    )
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Model.has_selected_ifc_objects():
+            cls.poll_message_set("No IFC objects selected.")
+            return False
+        return True
+
+    def _execute(self, context):
+        selected_objs = tool.Model.get_selected_mesh_objects()
+        for obj in selected_objs:
+            DumbProfileJoiner().split(obj, context.scene.cursor.location)
+        return {"FINISHED"}
 
 
 class RecalculateProfile(bpy.types.Operator, tool.Ifc.Operator):
