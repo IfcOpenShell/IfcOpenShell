@@ -1335,6 +1335,9 @@ class Sequence(bonsai.core.tool.Sequence):
     @classmethod
     def get_animation_product_frames(cls, work_schedule: ifcopenshell.entity_instance, settings: dict[str, Any]):
         def preprocess_task(task):
+            if task.id() in contracted_tasks and ifcopenshell.util.sequence.get_nested_tasks(task):
+                preprocess_aggregated_task(task)
+                return
             for subtask in ifcopenshell.util.sequence.get_nested_tasks(task):
                 preprocess_task(subtask)
             start = ifcopenshell.util.sequence.derive_date(task, "ScheduleStart", is_earliest=True)
@@ -1345,6 +1348,19 @@ class Sequence(bonsai.core.tool.Sequence):
                 add_product_frame(output.id(), task.PredefinedType, start, finish, "output")
             for input in cls.get_task_inputs(task):
                 add_product_frame(input.id(), task.PredefinedType, start, finish, "input")
+
+        def preprocess_aggregated_task(task):
+            # A collapsed task animates as a single unit: all products of its
+            # nested tasks use the collapsed task's derived date range.
+            start = ifcopenshell.util.sequence.derive_date(task, "ScheduleStart", is_earliest=True)
+            finish = ifcopenshell.util.sequence.derive_date(task, "ScheduleFinish", is_latest=True)
+            if not start or not finish:
+                return
+            for subtask in [task, *ifcopenshell.util.sequence.get_all_nested_tasks(task)]:
+                for output in ifcopenshell.util.sequence.get_task_outputs(subtask):
+                    add_product_frame(output.id(), subtask.PredefinedType, start, finish, "output")
+                for input in ifcopenshell.util.sequence.get_task_inputs(subtask):
+                    add_product_frame(input.id(), subtask.PredefinedType, start, finish, "input")
 
         def add_product_frame(product_id, type, product_start, product_finish, relationship):
             product_frames.setdefault(product_id, []).append(
@@ -1363,6 +1379,10 @@ class Sequence(bonsai.core.tool.Sequence):
             )
 
         product_frames = {}
+        contracted_tasks: set[int] = set()
+        props = cls.get_work_schedule_props()
+        if props.should_aggregate_contracted_tasks:
+            contracted_tasks = set(json.loads(props.contracted_tasks))
         for root_task in ifcopenshell.util.sequence.get_root_tasks(work_schedule):
             preprocess_task(root_task)
         return product_frames

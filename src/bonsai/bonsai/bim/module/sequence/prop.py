@@ -542,6 +542,12 @@ class BIMWorkScheduleProperties(PropertyGroup):
     should_auto_select: BoolProperty(
         name="Auto Select", description="Auto select elements when task is selected", default=False
     )
+    should_aggregate_contracted_tasks: BoolProperty(
+        name="Aggregate Collapsed Tasks",
+        description="Animate tasks collapsed in the task tree as single units, "
+        "using the collapsed task's derived date range for all products of its nested tasks",
+        default=False,
+    )
 
     if TYPE_CHECKING:
         work_schedule_predefined_types: str
@@ -602,6 +608,8 @@ class BIMWorkScheduleProperties(PropertyGroup):
         show_task_operators: bool
         should_show_schedule_baseline_ui: bool
         filter_by_active_schedule: bool
+        should_auto_select: bool
+        should_aggregate_contracted_tasks: bool
 
 
 class BIMTaskTreeProperties(PropertyGroup):

@@ -585,6 +585,9 @@ class BIM_PT_animation_tools(Panel):
         row.label(text="Display Settings")
         row = self.layout.row()
         row.alignment = "RIGHT"
+        row.prop(self.props, "should_aggregate_contracted_tasks", icon="COLLAPSEMENU")
+        row = self.layout.row()
+        row.alignment = "RIGHT"
         row.prop(self.animation_props, "should_show_task_bar_options", text="Task Bars", icon="NLA_PUSHDOWN")
         if self.animation_props.should_show_task_bar_options:
             row = self.layout.row()
