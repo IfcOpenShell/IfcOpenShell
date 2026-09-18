@@ -1785,6 +1785,7 @@ class Geometry(bonsai.core.tool.Geometry):
         [consider_inverses.append(texture := t) for t in getattr(representation_item, "HasTextures", [])]
 
         representation = None
+        geometric_set = None
         boolean_results_to_remove: set[ifcopenshell.entity_instance] = set()
         for inverse in ifc_file.get_inverse(representation_item):
             if inverse.is_a("IfcShapeRepresentation"):
@@ -1792,6 +1793,10 @@ class Geometry(bonsai.core.tool.Geometry):
                     shape_aspects.append(inverse.OfShapeAspect[0])
                 else:
                     representation = inverse
+            elif inverse.is_a("IfcGeometricSet"):
+                # E.g. a dimension segment (curve) nested inside an
+                # IfcGeometricCurveSet of an annotation representation.
+                geometric_set = inverse
             elif inverse.is_a("IfcBooleanResult"):
                 if inverse.SecondOperand == representation_item:
                     other_operand = inverse.FirstOperand
@@ -1823,6 +1828,15 @@ class Geometry(bonsai.core.tool.Geometry):
         for shape_aspect in shape_aspects:
             cls.remove_representation_items_from_shape_aspect([representation_item], shape_aspect)
 
+        if geometric_set:
+            new_elements = tuple(e for e in geometric_set.Elements if e != representation_item)
+            if not new_elements:
+                # An IfcGeometricSet must keep at least one element, so
+                # removing the set's last element removes the set itself
+                # (which purges the element together with the set's subgraph).
+                cls.remove_representation_item(geometric_set, element)
+                return
+            geometric_set.Elements = new_elements
         if representation:
             new_items = tuple(set(representation.Items) - {representation_item})
             if not new_items:
