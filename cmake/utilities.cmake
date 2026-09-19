@@ -385,7 +385,7 @@ endfunction()
 # Two flavours sit alongside each other in <prefix>/lib/ after install:
 #
 #   1. Linked core libs (lib*.dylib) — IfcParse, IfcGeom (output-named
-#      libifcopenshell.geometry.dylib), IfcViewer, plug-in / mapping /
+#      libifcopenshell_geometry.dylib), IfcViewer, plug-in / mapping /
 #      kernel shared libs. With --shared these are runtime @rpath deps
 #      of the app executable. macdeployqt is *supposed* to follow them
 #      but in practice misses non-Qt @rpath deps when the source lib
@@ -402,7 +402,7 @@ endfunction()
 # inside the bundle), so plug-ins and core libs both find each other
 # on the first probe.
 #
-# The geometry-writer filter drops libifcopenshell.geometry.writer.dylib
+# The geometry-writer filter drops libifcopenshell_geometry_writer.dylib
 # and the per-schema ifcopenshell_geometry_writer_*.dylib plug-ins
 # (OCCT -> IFC serialization, unused by the apps), and all document
 # serializers except rdb (json/xml are only used by IfcConvert). Mirrors
@@ -436,7 +436,7 @@ function(ifcopenshell_stage_app_bundle_dylibs APP_NAME)
     install(CODE [[
         set(_fw "${CMAKE_INSTALL_PREFIX}/${_app}/Contents/Frameworks")
         file(GLOB _ifc_dylibs "${CMAKE_INSTALL_PREFIX}/lib/*.dylib")
-        list(FILTER _ifc_dylibs EXCLUDE REGEX "ifcopenshell[._]geometry[._]writer")
+        list(FILTER _ifc_dylibs EXCLUDE REGEX "ifcopenshell_geometry_writer")
         # Geometry serializers (obj, svg, glb, ...) and svgfill are only used by IfcConvert and Python.
         list(FILTER _ifc_dylibs EXCLUDE REGEX "ifcopenshell_geometry_[A-Za-z]+\\.dylib$")
         # Geometry trees are only used by Python (`ifcopenshell.geom.tree`).
