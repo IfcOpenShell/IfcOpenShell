@@ -632,7 +632,7 @@ def process_case_statement(context):
 
 def process_aggregate_initializer(context):
     if context.element.repetition:
-        return "([%s] * %s)" % (context.element.expression, context.element.repetition)
+        return "([%s] * (%s))" % (context.element.expression, context.element.repetition)
     else:
         return "[%s]" % ",".join(map(str, context.element.branches() if context.element else ()))
 
