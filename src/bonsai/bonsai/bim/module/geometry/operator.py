@@ -3144,81 +3144,7 @@ class EnableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         for obj in tool.Geometry.get_selected_objects_with_representations():
-            self.process_obj(obj)
-
-    def process_obj(self, obj: bpy.types.Object) -> None:
-        props = tool.Geometry.get_object_geometry_props(obj)
-        props.is_editing = True
-
-        props.items.clear()
-
-        def add_tag(item, tag: str) -> None:
-            if item.tags:
-                item.tags += ","
-            item.tags += tag
-
-        if tool.Geometry.has_mesh_properties(data := obj.data):
-            representation = tool.Geometry.get_data_representation(data)
-            assert representation
-
-            # Shape aspects must be considered from the PartOfProductDefinitionShape level
-            element = tool.Ifc.get_entity(obj)
-            assert element
-            product_reps = []
-            if element.is_a("IfcProduct"):
-                product_reps = [element.Representation]
-                if element_type := ifcopenshell.util.element.get_type(element):
-                    product_reps.extend(element_type.RepresentationMaps or [])
-            elif element.is_a("IfcTypeProduct"):
-                product_reps = element.RepresentationMaps
-            item_aspect = {}
-            for product_rep in product_reps:
-                for aspect in getattr(product_rep, "HasShapeAspects", ()):
-                    for aspect_rep in aspect.ShapeRepresentations:
-                        if aspect_rep.ContextOfItems != representation.ContextOfItems:
-                            continue
-                        for item in aspect_rep.Items:
-                            item_aspect[item] = aspect
-
-            # IfcShapeRepresentation or IfcTopologyRepresentation.
-            if not representation.is_a("IfcShapeModel"):
-                return
-            queue = list(representation.Items)
-            while queue:
-                item = queue.pop()
-                if item.is_a("IfcMappedItem"):
-                    queue.extend(item.MappingSource.MappedRepresentation.Items)
-                else:
-                    new = props.items.add()
-                    new.name = item.is_a()
-                    new.ifc_definition_id = item.id()
-
-                    styles = []
-                    for inverse in tool.Ifc.get().get_inverse(item):
-                        if inverse.is_a("IfcStyledItem"):
-                            styles = inverse.Styles
-                            if styles and styles[0].is_a("IfcPresentationStyleAssignment"):
-                                styles = styles[0].Styles
-                            for style in styles:
-                                if style.is_a("IfcSurfaceStyle"):
-                                    new.surface_style = style.Name or "Unnamed"
-                                    new.surface_style_id = style.id()
-                        elif inverse.is_a("IfcPresentationLayerAssignment"):
-                            new.layer = inverse.Name or "Unnamed"
-                            new.layer_id = inverse.id()
-                        elif inverse.is_a("IfcIndexedTextureMap"):
-                            add_tag(new, "UV")
-                        elif inverse.is_a("IfcIndexedColourMap"):
-                            add_tag(new, "Colour")
-
-                    if aspect := item_aspect.get(item, None):
-                        new.shape_aspect = aspect.Name
-                        new.shape_aspect_id = aspect.id()
-
-            # sort created items
-            sorted_items = sorted(props.items[:], key=lambda i: (not i.shape_aspect, i.shape_aspect))
-            for i, item in enumerate(sorted_items[:-1]):  # last item is sorted automatically
-                props.items.move(props.items[:].index(item), i)
+            tool.Geometry.enable_editing_representation_items(obj)
 
 
 class DisableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
@@ -3229,8 +3155,7 @@ class DisableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         for obj in tool.Geometry.get_selected_objects_with_representations():
-            props = tool.Geometry.get_object_geometry_props(obj)
-            props.is_editing = False
+            tool.Geometry.disable_editing_representation_items(obj)
 
 
 class RemoveRepresentationItem(bpy.types.Operator, tool.Ifc.Operator):
