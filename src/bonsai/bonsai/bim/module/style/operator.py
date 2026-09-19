@@ -1408,8 +1408,6 @@ class AssignStyleToSelected(bpy.types.Operator, tool.Ifc.Operator):
         if has_items:
             gprops = tool.Geometry.get_geometry_props()
             tool.Geometry.reload_representation(gprops.representation_obj)
-            bpy.ops.bim.disable_editing_representation_items()
-            bpy.ops.bim.enable_editing_representation_items()
 
         for representation in representations:
             ifcopenshell.api.style.assign_representation_styles(

@@ -1675,9 +1675,23 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     def enable_editing_representation_items(cls, obj: bpy.types.Object) -> None:
+        element_id = tool.Ifc.get_entity(obj).id()
+        tool.Ifc.subscribe(
+            ("representation_items", element_id),
+            (
+                "IfcRepresentationItem",
+                "IfcRepresentation",
+                "IfcRepresentationMap",
+                "IfcProductRepresentation",
+                "IfcShapeAspect",
+                "IfcPresentationItem",
+                "IfcPresentationStyle",
+                "IfcPresentationLayerAssignment",
+            ),
+            lambda: cls.refresh_representation_items(element_id),
+        )
         props = cls.get_object_geometry_props(obj)
         props.is_editing = True
-
         props.items.clear()
 
         def add_tag(item, tag: str) -> None:
@@ -1749,7 +1763,24 @@ class Geometry(bonsai.core.tool.Geometry):
                 props.items.move(props.items[:].index(item), i)
 
     @classmethod
+    def refresh_representation_items(cls, element_id: int) -> bool:
+        """Rebuild the items list of this element's object; False once it no longer has one open."""
+        try:
+            element = tool.Ifc.get().by_id(element_id)
+        except RuntimeError:
+            return False
+        obj = tool.Ifc.get_object(element)
+        if not (obj and cls.get_object_geometry_props(obj).is_editing):
+            return False
+        if not cls.get_data_representation(obj.data):
+            cls.disable_editing_representation_items(obj)
+            return False
+        cls.enable_editing_representation_items(obj)
+        return True
+
+    @classmethod
     def disable_editing_representation_items(cls, obj: bpy.types.Object) -> None:
+        tool.Ifc.unsubscribe(("representation_items", tool.Ifc.get_entity(obj).id()))
         cls.get_object_geometry_props(obj).is_editing = False
 
     @classmethod

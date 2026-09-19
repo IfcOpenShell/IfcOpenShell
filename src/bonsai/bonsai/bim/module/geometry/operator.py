@@ -3187,10 +3187,6 @@ class RemoveRepresentationItem(bpy.types.Operator, tool.Ifc.Operator):
         tool.Geometry.remove_representation_item(representation_item, element)
         tool.Geometry.reload_representation(obj)
 
-        # reload items ui
-        bpy.ops.bim.disable_editing_representation_items()
-        bpy.ops.bim.enable_editing_representation_items()
-
 
 class SelectRepresentationItem(bpy.types.Operator):
     bl_idname = "bim.select_representation_item"
@@ -3308,9 +3304,6 @@ class EditRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator):
 
         tool.Style.assign_style_to_representation_item(representation_item, surface_style)
         tool.Geometry.reload_representation(obj)
-        # reload items ui
-        bpy.ops.bim.disable_editing_representation_items()
-        bpy.ops.bim.enable_editing_representation_items()
 
 
 class DisableEditingRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator):
@@ -3392,10 +3385,6 @@ class UnassignRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator):
                         tool.Geometry.reload_representation(obj)
                         break  # No need to check further if one matching style is found
 
-        # Reload UI items
-        bpy.ops.bim.disable_editing_representation_items()
-        bpy.ops.bim.enable_editing_representation_items()
-
 
 class EnableEditingRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_representation_item_shape_aspect"
@@ -3472,10 +3461,6 @@ class EditRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Operator):
         )
         tool.Geometry.reload_representation(obj)
 
-        # reload items ui
-        bpy.ops.bim.disable_editing_representation_items()
-        bpy.ops.bim.enable_editing_representation_items()
-
 
 class DisableEditingRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_representation_item_shape_aspect"
@@ -3514,10 +3499,6 @@ class RemoveRepresentationItemFromShapeAspect(bpy.types.Operator, tool.Ifc.Opera
             tool.Geometry.reload_representation(obj)
 
         tool.Geometry.remove_representation_items_from_shape_aspect([representation_item], shape_aspect)
-
-        # reload items ui
-        bpy.ops.bim.disable_editing_representation_items()
-        bpy.ops.bim.enable_editing_representation_items()
 
     def remove_styles_from_item(self, representation_item, styles):
         ifc_file = tool.Ifc.get()
@@ -4121,7 +4102,6 @@ class EditRepresentationItemLayer(bpy.types.Operator, tool.Ifc.Operator):
 
         ifcopenshell.api.layer.assign_layer(ifc_file, [item], new_layer)
         props.is_editing_item_layer = False
-        bpy.ops.bim.enable_editing_representation_items()
         return {"FINISHED"}
 
 
@@ -4139,7 +4119,6 @@ class UnassignRepresentationItemLayer(bpy.types.Operator, tool.Ifc.Operator):
         item = ifc_file.by_id(props.active_item.ifc_definition_id)
         layer = item.LayerAssignment[0]  # If there is no layer, then button is not visible in UI.
         ifcopenshell.api.layer.unassign_layer(ifc_file, [item], layer)
-        bpy.ops.bim.enable_editing_representation_items()
         return {"FINISHED"}
 
 
