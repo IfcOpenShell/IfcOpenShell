@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import builtins
 import re
+from collections.abc import Sequence
 from functools import cache, lru_cache
 from logging import Logger
 from typing import TYPE_CHECKING, Any, Literal, Optional, TypedDict, Union
@@ -116,8 +117,8 @@ class Facet:
         return self
 
     def filter(
-        self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]]
-    ) -> list[ifcopenshell.entity_instance]:
+        self, ifc_file: ifcopenshell.file, elements: Optional[Sequence[ifcopenshell.entity_instance]]
+    ) -> Sequence[ifcopenshell.entity_instance]:
         if not elements:
             return []
         return [e for e in elements if self(e)]
@@ -201,9 +202,9 @@ class Entity(Facet):
         super().__init__(name, predefinedType, instructions)
 
     def filter(
-        self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]] = None
-    ) -> list[ifcopenshell.entity_instance]:
-        if isinstance(elements, (list, tuple)):
+        self, ifc_file: ifcopenshell.file, elements: Optional[Sequence[ifcopenshell.entity_instance]] = None
+    ) -> Sequence[ifcopenshell.entity_instance]:
+        if elements is not None:
             return super().filter(ifc_file, elements)
 
         if ifc_file.schema == "IFC2X3":
@@ -285,9 +286,9 @@ class Attribute(Facet):
         super().__init__(name, value, cardinality, instructions)
 
     def filter(
-        self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]]
-    ) -> list[ifcopenshell.entity_instance]:
-        if isinstance(elements, (list, tuple)):
+        self, ifc_file: ifcopenshell.file, elements: Optional[Sequence[ifcopenshell.entity_instance]]
+    ) -> Sequence[ifcopenshell.entity_instance]:
+        if elements is not None:
             return super().filter(ifc_file, elements)
 
         results = []
@@ -420,9 +421,9 @@ class Classification(Facet):
         super().__init__(value, system, uri, cardinality, instructions)
 
     def filter(
-        self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]]
-    ) -> list[ifcopenshell.entity_instance]:
-        if isinstance(elements, (list, tuple)):
+        self, ifc_file: ifcopenshell.file, elements: Optional[Sequence[ifcopenshell.entity_instance]]
+    ) -> Sequence[ifcopenshell.entity_instance]:
+        if elements is not None:
             return super().filter(ifc_file, elements)
         return ifc_file.by_type("IfcObjectDefinition")
 
@@ -485,9 +486,9 @@ class PartOf(Facet):
         super().__init__(name, predefinedType, relation, cardinality, instructions)
 
     def filter(
-        self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]]
-    ) -> list[ifcopenshell.entity_instance]:
-        if isinstance(elements, (list, tuple)):
+        self, ifc_file: ifcopenshell.file, elements: Optional[Sequence[ifcopenshell.entity_instance]]
+    ) -> Sequence[ifcopenshell.entity_instance]:
+        if elements is not None:
             return super().filter(ifc_file, elements)
         return list(ifc_file)  # Lazy
 
@@ -678,9 +679,9 @@ class Property(Facet):
         super().__init__(propertySet, baseName, value, dataType, uri, cardinality, instructions)
 
     def filter(
-        self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]]
-    ) -> list[ifcopenshell.entity_instance]:
-        if isinstance(elements, (list, tuple)):
+        self, ifc_file: ifcopenshell.file, elements: Optional[Sequence[ifcopenshell.entity_instance]]
+    ) -> Sequence[ifcopenshell.entity_instance]:
+        if elements is not None:
             return super().filter(ifc_file, elements)
         if ifc_file.schema == "IFC2X3":
             return ifc_file.by_type("IfcObjectDefinition")
@@ -951,9 +952,9 @@ class Material(Facet):
         super().__init__(value, uri, cardinality, instructions)
 
     def filter(
-        self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]]
-    ) -> list[ifcopenshell.entity_instance]:
-        if isinstance(elements, (list, tuple)):
+        self, ifc_file: ifcopenshell.file, elements: Optional[Sequence[ifcopenshell.entity_instance]]
+    ) -> Sequence[ifcopenshell.entity_instance]:
+        if elements is not None:
             return super().filter(ifc_file, elements)
         return ifc_file.by_type("IfcObjectDefinition")
 
