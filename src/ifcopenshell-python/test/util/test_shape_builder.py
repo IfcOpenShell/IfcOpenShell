@@ -22,6 +22,10 @@ from typing import Any, Union
 import numpy as np
 import pytest
 
+import ifcopenshell.api.context
+import ifcopenshell.api.material
+import ifcopenshell.api.root
+import ifcopenshell.api.unit
 import ifcopenshell.geom
 import ifcopenshell.util.shape
 import test.bootstrap
@@ -396,6 +400,41 @@ class TestCalculateTransitions(test.bootstrap.IFC4):
         # method C
         params["offset"][0] = 10.0
         self.calculate_and_test(params, None)
+
+
+class TestMepTransitionShape(test.bootstrap.IFC4):
+    def create_segment(self, radius: float) -> ifcopenshell.entity_instance:
+        segment = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcPipeSegment")
+        profile = self.file.create_entity("IfcCircleProfileDef", ProfileType="AREA", Radius=radius)
+        profile_set = ifcopenshell.api.material.add_material_set(
+            self.file, name="set", set_type="IfcMaterialProfileSet"
+        )
+        material = ifcopenshell.api.material.add_material(self.file, name="mat")
+        ifcopenshell.api.material.add_profile(self.file, profile_set=profile_set, material=material, profile=profile)
+        ifcopenshell.api.material.assign_material(self.file, products=[segment], material=profile_set)
+        return segment
+
+    def test_representation_type_is_spec_valid(self):
+        """Regression test: the transition representation was typed "Tesselation"."""
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        unit = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT")
+        ifcopenshell.api.unit.assign_unit(self.file, units=[unit])
+        model = ifcopenshell.api.context.add_context(self.file, context_type="Model")
+        ifcopenshell.api.context.add_context(
+            self.file,
+            context_type="Model",
+            context_identifier="Body",
+            target_view="MODEL_VIEW",
+            parent=model,
+        )
+        self.builder = ShapeBuilder(self.file)
+
+        representation, _ = self.builder.mep_transition_shape(
+            self.create_segment(0.3), self.create_segment(0.2), 0.1, 0.1, angle=30.0
+        )
+
+        assert representation is not None
+        assert representation.RepresentationType == "Tessellation"
 
 
 class TestFaceset(test.bootstrap.IFC4):
