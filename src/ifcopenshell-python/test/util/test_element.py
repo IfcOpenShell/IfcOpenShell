@@ -1392,3 +1392,47 @@ class TestCopyDeepIFC4(test.bootstrap.IFC4):
         element2 = subject.copy_deep(self.file, element)
         assert element2.Segments[0][0] == (1, 2)
         assert element2.Segments[1][0] == (3, 4)
+
+
+class TestIterTopConnections(test.bootstrap.IFC4):
+    def test_yields_top_connected_element(self):
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        slab = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSlab")
+        rel = self.file.createIfcRelConnectsElements(
+            GlobalId=ifcopenshell.guid.new(),
+            RelatingElement=slab,
+            RelatedElement=wall,
+            Description="TOP",
+        )
+        results = list(subject.iter_top_connections(wall))
+        assert len(results) == 1
+        assert results[0][0] == slab
+        assert results[0][1] == rel
+
+    def test_returns_empty_when_no_connections(self):
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        assert list(subject.iter_top_connections(wall)) == []
+
+    def test_filters_non_top_description(self):
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        slab = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSlab")
+        self.file.createIfcRelConnectsElements(
+            GlobalId=ifcopenshell.guid.new(),
+            RelatingElement=slab,
+            RelatedElement=wall,
+            Description="BOTTOM",
+        )
+        assert list(subject.iter_top_connections(wall)) == []
+
+    def test_filters_non_rel_connects_elements(self):
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        slab = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSlab")
+        self.file.createIfcRelConnectsPathElements(
+            GlobalId=ifcopenshell.guid.new(),
+            RelatingElement=slab,
+            RelatedElement=wall,
+            Description="ATPATH",
+            RelatingConnectionType="ATPATH",
+            RelatedConnectionType="ATPATH",
+        )
+        assert list(subject.iter_top_connections(wall)) == []

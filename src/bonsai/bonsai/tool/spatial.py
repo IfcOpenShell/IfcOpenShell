@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 import json
+import multiprocessing
 from collections import defaultdict
 from collections.abc import Generator, Iterable
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union
@@ -34,7 +35,9 @@ import ifcopenshell.util.classification
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.util.shape
 import ifcopenshell.util.shape_builder
+import ifcopenshell.util.space
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
 import numpy as np
@@ -58,8 +61,52 @@ if TYPE_CHECKING:
         BIMSpatialDecompositionProperties,
     )
 
+_GEOM_CACHE_TOKEN = 0
+
+
+@bpy.app.handlers.persistent
+def _bump_geom_cache_token(*args) -> None:
+    global _GEOM_CACHE_TOKEN
+    if len(args) >= 2:
+        depsgraph = args[1]
+        if depsgraph is not None and hasattr(depsgraph, "updates"):
+            if not any(
+                (getattr(u, "is_updated_geometry", False) or getattr(u, "is_updated_transform", False))
+                and hasattr(u, "id")
+                and isinstance(u.id, bpy.types.Object)
+                for u in depsgraph.updates
+            ):
+                return
+    _GEOM_CACHE_TOKEN += 1
+
+
+def install_geom_cache_handlers() -> None:
+    for hook in (
+        bpy.app.handlers.depsgraph_update_post,
+        bpy.app.handlers.undo_post,
+        bpy.app.handlers.redo_post,
+        bpy.app.handlers.load_post,
+    ):
+        if _bump_geom_cache_token not in hook:
+            hook.append(_bump_geom_cache_token)
+
+
+def uninstall_geom_cache_handlers() -> None:
+    for hook in (
+        bpy.app.handlers.depsgraph_update_post,
+        bpy.app.handlers.undo_post,
+        bpy.app.handlers.redo_post,
+        bpy.app.handlers.load_post,
+    ):
+        try:
+            hook.remove(_bump_geom_cache_token)
+        except ValueError:
+            pass
+
 
 class Spatial(bonsai.core.tool.Spatial):
+    _geom_cache: dict = {}
+
     @classmethod
     def get_spatial_props(cls) -> BIMSpatialDecompositionProperties:
         return bpy.context.scene.BIMSpatialDecompositionProperties
@@ -756,28 +803,113 @@ class Spatial(bonsai.core.tool.Spatial):
     # HERE STARTS SPATIAL TOOL
 
     @classmethod
+    def get_or_build_geom_cache(cls) -> dict:
+        """Build or return a cached dict of IFC element shapes for space generation.
+
+        The cache is keyed on ``_GEOM_CACHE_TOKEN`` which is bumped by a
+        ``depsgraph_update_post`` handler when any Object geometry or transform
+        changes, and on undo/redo/load. This means the cache survives space
+        generations (which don't change Object geometry) but is correctly
+        invalidated when a user moves or edits a wall, slab, etc.
+
+        :return: ``{"shapes": {id: {"verts": ndarray, "faces": ndarray, "bottom_z": float, "top_z": float}}, "token": int}``
+        """
+        global _GEOM_CACHE_TOKEN
+        cached = cls._geom_cache.get("current")
+        if cached and cached["token"] == _GEOM_CACHE_TOKEN:
+            return cached
+
+        ifc_file = tool.Ifc.get()
+        include = []
+        for ifc_class in ifcopenshell.util.space.BOUNDING_CLASSES + ifcopenshell.util.space.HEIGHT_DETECTION_CLASSES:
+            include.extend(ifc_file.by_type(ifc_class))
+
+        settings = ifcopenshell.geom.settings()
+        settings.set("disable-opening-subtractions", True)
+        settings.set("use-world-coords", True)
+
+        shapes = {}
+        iterator = ifcopenshell.geom.iterator(settings, ifc_file, multiprocessing.cpu_count(), include=include)
+        if iterator.initialize():
+            while True:
+                shape = iterator.get()
+                verts = ifcopenshell.util.shape.get_shape_vertices(shape, shape.geometry)
+                faces = ifcopenshell.util.shape.get_faces(shape.geometry)
+                zs = verts[:, 2]
+                shapes[shape.id] = {
+                    "verts": verts,
+                    "faces": faces,
+                    "bottom_z": float(zs.min()),
+                    "top_z": float(zs.max()),
+                }
+                if not iterator.next():
+                    break
+
+        cache = {"shapes": shapes, "token": _GEOM_CACHE_TOKEN}
+        cls._geom_cache["current"] = cache
+        return cache
+
+    @classmethod
     def is_bounding_class(cls, visible_element: ifcopenshell.entity_instance) -> bool:
-        for ifc_class in ["IfcWall", "IfcColumn", "IfcMember", "IfcVirtualElement", "IfcPlate"]:
+        for ifc_class in ifcopenshell.util.space.BOUNDING_CLASSES:
             if visible_element.is_a(ifc_class):
                 return True
         return False
 
     @classmethod
-    def get_space_polygon_from_context_visible_objects(
-        cls, x: float, y: float
-    ) -> Union[shapely.Polygon, Literal["NO POLYGONS FOUND", "NO POLYGON FOR POINT"]]:
-        boundary_lines = cls.get_boundary_lines_from_context_visible_objects()
-        unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
-        closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
-        if not closed_polygons:
-            return "NO POLYGONS FOUND"
-        space_polygon = None
-        for polygon in closed_polygons.geoms:
-            if shapely.contains_xy(polygon, x, y):
-                space_polygon = shapely.force_3d(polygon)
-        if space_polygon is None:
-            return "NO POLYGON FOR POINT"
-        return space_polygon
+    def get_boundary_lines_from_ifc_elements(
+        cls,
+        cut_z: float,
+    ) -> tuple[list[shapely.LineString], list[ifcopenshell.entity_instance]]:
+        """Generate boundary lines by bisecting IFC element geometry with a horizontal plane.
+
+        Uses the class-level geometry cache (parallel iterator) instead of
+        iterating Blender visible objects. Works without any Blender objects
+        being loaded.
+
+        :param cut_z: Z elevation of the cutting plane in world coordinates.
+        :return: (boundary_lines, bounding_elements)
+        """
+        cache = cls.get_or_build_geom_cache()
+        return ifcopenshell.util.space.get_boundary_lines(tool.Ifc.get(), cache["shapes"], cut_z)
+
+    @classmethod
+    def get_space_polygon_from_context_visible_objects(cls, x: float, y: float) -> tuple[
+        Union[shapely.Polygon, Literal["NO POLYGONS FOUND", "NO POLYGON FOR POINT"]],
+        list[ifcopenshell.entity_instance],
+    ]:
+        props = tool.Model.get_model_props()
+        calculation_rl = props.rl3
+        container = tool.Root.get_default_container()
+        container_obj = tool.Ifc.get_object(container)
+        cut_z = container_obj.matrix_world.translation.z + calculation_rl
+
+        boundary_lines, bounding_elements = cls.get_boundary_lines_from_ifc_elements(cut_z)
+        polygon, _ = ifcopenshell.util.space.get_space_polygon(boundary_lines, x, y)
+        if isinstance(polygon, str):
+            return polygon, []
+        return polygon, bounding_elements
+
+    @classmethod
+    def get_auto_space_height(
+        cls,
+        space_polygon: shapely.Polygon,
+        base_z: float,
+        bounding_walls: list[ifcopenshell.entity_instance],
+    ) -> Optional[float]:
+        """Auto-detect space height from elements above using IFC geometry.
+
+        Delegates to :func:`ifcopenshell.util.space.get_auto_space_height`.
+
+        :param space_polygon: The space footprint polygon in world XY.
+        :param base_z: The space's base Z in world coordinates.
+        :param bounding_walls: List of IFC wall elements bounding the space.
+        :return: Detected height in SI (meters), or None if nothing found.
+        """
+        cache = cls.get_or_build_geom_cache()
+        return ifcopenshell.util.space.get_auto_space_height(
+            tool.Ifc.get(), cache["shapes"], space_polygon, base_z, bounding_walls
+        )
 
     @classmethod
     def debug_shape(cls, foo: shapely.Polygon) -> None:
@@ -810,7 +942,9 @@ class Spatial(bonsai.core.tool.Spatial):
         bpy.context.view_layer.update()
 
     @classmethod
-    def get_boundary_lines_from_context_visible_objects(cls) -> list[shapely.LineString]:
+    def get_boundary_lines_from_context_visible_objects(
+        cls,
+    ) -> tuple[list[shapely.LineString], list[ifcopenshell.entity_instance]]:
         props = tool.Model.get_model_props()
         calculation_rl = props.rl3
         container = tool.Root.get_default_container()
@@ -818,6 +952,7 @@ class Spatial(bonsai.core.tool.Spatial):
         cut_point = container_obj.matrix_world.translation.copy() + Vector((0, 0, calculation_rl))
         cut_normal = Vector((0, 0, 1))
         boundary_lines = []
+        bounding_elements = []
 
         for obj in bpy.context.visible_objects:
             visible_element = tool.Ifc.get_entity(obj)
@@ -831,6 +966,7 @@ class Spatial(bonsai.core.tool.Spatial):
             ):
                 continue
 
+            bounding_elements.append(visible_element)
             old_mesh = obj.data
             assert isinstance(old_mesh, bpy.types.Mesh)
             if visible_element.HasOpenings:
@@ -870,7 +1006,7 @@ class Spatial(bonsai.core.tool.Spatial):
                 start, end = tool.Drawing.extend_line(start, end, 0.05)
                 boundary_lines.append(shapely.LineString([start, end]))
 
-        return boundary_lines
+        return boundary_lines, bounding_elements
 
     @classmethod
     def get_gross_mesh_from_element(cls, visible_element: ifcopenshell.entity_instance) -> bpy.types.Mesh:

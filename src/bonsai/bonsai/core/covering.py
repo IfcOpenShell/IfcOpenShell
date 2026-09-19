@@ -46,7 +46,7 @@ def add_instance_flooring_covering_from_cursor(
     else:
         x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_cursor()
 
-    space_polygon = spatial.get_space_polygon_from_context_visible_objects(x, y)
+    space_polygon, _ = spatial.get_space_polygon_from_context_visible_objects(x, y)
 
     if isinstance(space_polygon, str):
         return
@@ -81,7 +81,7 @@ def add_instance_ceiling_covering_from_cursor(
         x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_cursor()
         ceiling_height = covering.get_z_from_ceiling_height()
 
-    space_polygon = spatial.get_space_polygon_from_context_visible_objects(x, y)
+    space_polygon, _ = spatial.get_space_polygon_from_context_visible_objects(x, y)
 
     if isinstance(space_polygon, str):
         return
@@ -106,7 +106,7 @@ def regen_selected_covering_object(root: type[tool.Root], spatial: type[tool.Spa
     else:
         assert False, "Object has to be active and selected."
 
-    space_polygon = spatial.get_space_polygon_from_context_visible_objects(x, y)
+    space_polygon, _ = spatial.get_space_polygon_from_context_visible_objects(x, y)
 
     if isinstance(space_polygon, str):
         return
