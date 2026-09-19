@@ -2528,20 +2528,6 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 else:
                     bpy.ops.bim.edit_extrusion_profile()
                 return self.execute(context)
-            elif representation := tool.Geometry.get_active_representation(obj):
-                if not tool.Geometry.is_geometric_data(obj.data):
-                    self.is_valid = False
-                    self.should_save = False
-                assert tool.Geometry.has_mesh_properties(obj.data)
-                mesh_props = tool.Geometry.get_mesh_props(obj.data)
-                if tool.Geometry.is_meshlike(
-                    representation
-                ) and mesh_props.mesh_checksum != tool.Geometry.get_mesh_checksum(obj.data):
-                    self.edited_objs.append(obj)
-                elif getattr(element, "HasOpenings", None):
-                    self.unchanged_objs_with_openings.append(obj)
-                else:
-                    tool.Ifc.finish_edit(obj)
             elif element.is_a("IfcGridAxis"):
                 if not tool.Geometry.is_geometric_data(obj.data):
                     self.is_valid = False
