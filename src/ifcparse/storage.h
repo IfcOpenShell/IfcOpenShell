@@ -26,7 +26,10 @@ namespace rocksdb {
 #include "file_open_status.h"
 #include "logger.h"
 
+#include <array>
 #include <functional>
+#include <string_view>
+#include <unordered_map>
 #include <variant>
 #include <algorithm>
 #include <cstdint>
@@ -142,74 +145,6 @@ namespace ifcopenshell {
     class file;
     template <typename Reader>
     class spf_lexer;
-
-    struct IFC_PARSE_API token {
-        enum token_type {
-            Token_NONE,
-            Token_STRING,
-            Token_IDENTIFIER,
-            Token_OPERATOR,
-            Token_ENUMERATION,
-            Token_KEYWORD,
-            Token_INT,
-            Token_BOOL,
-            Token_FLOAT,
-            Token_BINARY
-        };
-
-        size_t start_pos;
-        token_type type;
-
-        union {
-            char value_char;     //types: OPERATOR
-            int64_t value_int;   //types: INT, IDENTIFIER
-            double value_double; //types: FLOAT
-            const std::string* value_string;  //types: STR, ENUM, KEYWORD; lifetime managed by spf_lexer::string_pool_
-        };
-
-        token() : start_pos(0),
-                  type(Token_NONE) {}
-
-        token(size_t start_position, token_type token_kind, const std::string& string_value)
-            : start_pos(start_position), type(token_kind), value_string(&string_value) {}
-
-        token(size_t start_position, token_type token_kind, int64_t integer_value)
-            : start_pos(start_position), type(token_kind), value_int(integer_value) {}
-
-        token(size_t start_position, double floating_value)
-            : start_pos(start_position), type(Token_FLOAT), value_double(floating_value) {}
-
-        token(size_t start_position, char operator_character)
-            : start_pos(start_position), type(Token_OPERATOR), value_char(operator_character) {}
-
-        token(size_t start_position, token_type token_kind, char character_value)
-            : start_pos(start_position), type(token_kind), value_char(character_value) {}
-
-        bool is_string();
-        bool is_identifier();
-        bool is_operator();
-        bool is_operator(char character);
-        bool is_enumeration();
-        bool is_keyword();
-        bool is_int();
-        bool is_bool();
-        bool is_logical();
-        bool is_float();
-        bool is_binary();
-
-        int64_t as_int();
-        unsigned as_identifier();
-        bool as_bool();
-        boost::logic::tribool as_logical();
-        double as_float();
-        const std::string& as_string();
-        boost::dynamic_bitset<> as_binary();
-        std::string to_string();
-
-        operator bool() const {
-            return type != Token_NONE;
-        }
-    };
 
     namespace impl {
         struct inverse_record {
@@ -445,7 +380,113 @@ namespace ifcopenshell {
             }
 
             // Finalizes bulk loading. Subsequent add() calls go to the delta.
+            // Takes over another index's records, e.g. one built by a parser
+            // worker. Both must still be in bulk-load mode (no delta).
+            // Takes over several indexes whose records are each already
+            // sorted (e.g. by their parser workers) by merging them pairwise,
+            // O(n log k), so no sort() follows. Both sides must be in bulk-load
+            // mode (no delta).
+            void merge_sorted(std::vector<inverse_index*> runs) {
+                std::vector<std::vector<inverse_record>> parts;
+                if (!base_.empty()) {
+                    sort();
+                    parts.push_back(std::move(base_));
+                    base_.clear();
+                }
+                for (auto* run : runs) {
+                    run->sort();
+                    parts.push_back(std::move(run->base_));
+                    run->clear();
+                }
+                while (parts.size() > 1) {
+                    std::vector<std::vector<inverse_record>> next;
+                    for (size_t i = 0; i + 1 < parts.size(); i += 2) {
+                        std::vector<inverse_record> merged;
+                        merged.reserve(parts[i].size() + parts[i + 1].size());
+                        std::merge(parts[i].begin(), parts[i].end(), parts[i + 1].begin(), parts[i + 1].end(), std::back_inserter(merged), record_less);
+                        next.push_back(std::move(merged));
+                    }
+                    if (parts.size() % 2 == 1) {
+                        next.push_back(std::move(parts.back()));
+                    }
+                    parts.swap(next);
+                }
+                if (!parts.empty()) {
+                    base_ = std::move(parts.front());
+                }
+                sorted_ = true;
+                invalidate_materialized();
+            }
+
+            void append(inverse_index&& other) {
+                if (base_.empty()) {
+                    base_ = std::move(other.base_);
+                } else {
+                    base_.insert(base_.end(), other.base_.begin(), other.base_.end());
+                }
+                sorted_ = false;
+                other.clear();
+                invalidate_materialized();
+            }
+
+            // Sorts records into record_less order. Large inputs go through a
+            // stable LSD radix sort on referenced_id (11 bits per pass, as many
+            // passes as the largest id needs) followed by record_less within
+            // each run of equal ids, which is the same order std::sort gives
+            // and several times faster on millions of records.
+            static void sort_records(std::vector<inverse_record>& records) {
+                if (records.size() < 4096) {
+                    std::sort(records.begin(), records.end(), record_less);
+                    return;
+                }
+                uint32_t max_id = 0;
+                for (const auto& r : records) {
+                    max_id = (std::max)(max_id, r.referenced_id);
+                }
+                std::vector<inverse_record> buffer(records.size());
+                constexpr unsigned bits = 11;
+                std::vector<size_t> counts((size_t)1 << bits);
+                for (unsigned shift = 0; shift < 32 && (max_id >> shift) != 0; shift += bits) {
+                    std::fill(counts.begin(), counts.end(), 0);
+                    for (const auto& r : records) {
+                        ++counts[(r.referenced_id >> shift) & ((1u << bits) - 1)];
+                    }
+                    size_t sum = 0;
+                    for (auto& c : counts) {
+                        const size_t n = c;
+                        c = sum;
+                        sum += n;
+                    }
+                    for (const auto& r : records) {
+                        buffer[counts[(r.referenced_id >> shift) & ((1u << bits) - 1)]++] = r;
+                    }
+                    records.swap(buffer);
+                }
+                for (auto run = records.begin(); run != records.end();) {
+                    auto end = run + 1;
+                    while (end != records.end() && end->referenced_id == run->referenced_id) {
+                        ++end;
+                    }
+                    if (end - run > 1) {
+                        std::sort(run, end, record_less);
+                    }
+                    run = end;
+                }
+            }
+
             void sort() const {
+                if (!sorted_) {
+                    sort_records(base_);
+                    base_.shrink_to_fit();
+                    sorted_ = true;
+                    invalidate_materialized();
+                }
+            }
+
+            // For a worker's run that merge_sorted() copies anyway: no radix buffer
+            // (it would be allocated on the worker's arena and stay there) and no
+            // shrink.
+            void sort_in_place() const {
                 if (!sorted_) {
                     std::sort(base_.begin(), base_.end(), record_less);
                     sorted_ = true;
@@ -587,12 +628,67 @@ namespace ifcopenshell {
             const ifcopenshell::schema_definition* schema;
 
             unresolved_references* references_to_resolve = nullptr;
+            // When set, a reference read into an instance's attribute stays
+            // in the attribute slot as the instance_reference (or the
+            // reference_or_simple_type aggregate) the tokenizer produced,
+            // instead of being copied into references_to_resolve, and
+            // resolve_instance_references() replaces it with the instance
+            // once every instance has been read. read_from_stream() turns it
+            // on; streaming consumers of references() leave it off.
+            bool resolve_references_in_place = false;
+
+            // Lazy loading (index_lazily): the file was read once through the
+            // tokenizer's index policy to build the instance shells, the
+            // inverse index, the GlobalId map and the by-type lists, and each
+            // instance's attributes are parsed from the retained paged source
+            // the first time they are accessed (instance_data::ensure_loaded).
+            // The offset of each instance's attribute list lives here, not in
+            // the instance, so a full parse pays nothing for it. Inverses were
+            // registered by the index, so materialisation must not register
+            // them again. Materialising from several threads at once is not
+            // safe.
+            struct lazy_source;
+            bool lazy_ = false;
+            bool register_inverses_ = true;
+            std::unique_ptr<lazy_source, void (*)(lazy_source*)> lazy_source_{nullptr, nullptr};
+            std::vector<unsigned> lazy_bypassed_;
+            std::vector<std::pair<uint32_t, uint64_t>> lazy_offsets_;
+            bool index_lazily(const std::string& path, const ifcopenshell::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& types_to_bypass);
+
+            // Number of threads read_from_stream() may use to parse instances;
+            // 1 parses serially. Set by file::initialize().
+            unsigned parse_threads = 1;
+
+            // Parses the DATA section with `threads` workers, each running the
+            // same per-instance reader over its own chunk, and merges the
+            // results in file order. Returns false, without side effects, when
+            // the file is too small to be worth it or no split points were
+            // found; the caller then parses serially.
+            template <typename Reader>
+            bool read_instances_parallel(Reader* stream, const ifcopenshell::schema_definition* schema, const std::set<std::string>& types_to_bypass, unsigned int& max_id, unsigned threads, std::vector<unsigned>& bypassed, unresolved_references& mixed_references, std::vector<shared_pointer_type>& instances);
+            void materialize(instance_data* data);
 
             typedef std::map<const ifcopenshell::declaration*, std::vector<express::base>> entities_by_type;
             typedef std::unordered_map<uint32_t, shared_pointer_type> entity_instance_by_name_storage;
             typedef map_transformer<entity_instance_by_name_storage, std::function<express::base(shared_pointer_type)>> entity_instance_by_name;
             typedef std::unordered_map<uint32_t, shared_pointer_type> type_instance_by_name;
-            typedef std::map<std::string, express::base> entity_instance_by_guid;
+            // The GlobalId index, keyed by the 22 characters of a GlobalId held
+            // inline so a lookup allocates nothing. Only a 22-character key can
+            // be stored or found; guid_key() says whether a string is one, and
+            // variant_map converts from std::string at the file's interface.
+            struct guid_key_hash {
+                size_t operator()(const std::array<char, 22>& key) const {
+                    return std::hash<std::string_view>()(std::string_view(key.data(), key.size()));
+                }
+            };
+            typedef std::unordered_map<std::array<char, 22>, express::base, guid_key_hash> entity_instance_by_guid;
+            static bool guid_key(const std::string& text, std::array<char, 22>& key) {
+                if (text.size() != key.size()) {
+                    return false;
+                }
+                std::memcpy(key.data(), text.data(), key.size());
+                return true;
+            }
             typedef inverse_index entities_by_ref;
             typedef entity_instance_by_name::iterator iterator;
 
@@ -643,8 +739,18 @@ namespace ifcopenshell {
 
             template <typename Reader>
             shared_pointer_type load(ifcopenshell::spf_lexer<Reader>* tokens, std::optional<size_t> entity_instance_name, const ifcopenshell::declaration* declaration, const ifcopenshell::entity* entity, int attribute_index = -1, bool coerce_attribute_count = true);
-            template <typename Reader>
-            void try_read_semicolon(ifcopenshell::spf_lexer<Reader>* tokens) const;
+            // The attribute-reading half of load(): the tokens after the
+            // opening parenthesis into a fresh attribute array. Storage is
+            // always in_memory_attribute_storage; it is a template parameter
+            // only because that type is defined in a header that includes
+            // this one.
+            template <typename Reader, typename Storage>
+            Storage load_attributes(ifcopenshell::spf_lexer<Reader>* tokens, std::optional<size_t> entity_instance_name, const ifcopenshell::declaration* declaration, const ifcopenshell::entity* entity, int attribute_index = -1);
+            // Replaces the names left in `data`'s attribute slots by in-place
+            // reference storage with the instances they name; a name that is
+            // missing or bypassed becomes null in a scalar and is dropped
+            // from an aggregate.
+            void resolve_instance_references(const shared_pointer_type& data, const std::vector<unsigned>& bypassed);
 
             void register_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, int instance_id, int attribute_index);
             void unregister_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, const express::base& entity, int attribute_index);

@@ -32,7 +32,6 @@
 #include <boost/multi_index/random_access_index.hpp>
 #include <boost/multi_index/sequenced_index.hpp>
 #include <boost/multi_index_container.hpp>
-#include <boost/circular_buffer.hpp>
 #include <iterator>
 #include <map>
 #include <memory>
@@ -98,7 +97,6 @@ private:
     std::unique_ptr<spf_lexer<Reader>> lexer_;
     std::unique_ptr<spf_header> owned_header_;
     ifcopenshell::file* owner_;
-    boost::circular_buffer<token> token_stream_;
     const ifcopenshell::schema_definition* schema_;
     ifcopenshell::impl::in_memory_file_storage storage_;
     ifcopenshell::file_open_status good_ = ifcopenshell::file_open_status::SUCCESS;
@@ -166,6 +164,9 @@ private:
     instance_streamer(Reader* stream, ifcopenshell::file* owner_file = nullptr, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
     void bypass_types(const std::set<std::string>& type_names);
+    void resolve_references_in_place(bool value) {
+        storage_.resolve_references_in_place = value;
+    }
 
     void yield_header_instances(bool enabled) { yield_header_instances_ = enabled; }
 
@@ -210,6 +211,9 @@ public:
     std::set<std::string> types_to_bypass_loading_;
 
   private:
+    bool lazy_loading_ = false;
+    unsigned parse_threads_ = 0;
+    bool paged_reading_ = false;
     file_open_status good_ = file_open_status::SUCCESS;
     std::reference_wrapper<ifcopenshell::logger> logger_;
 
@@ -280,6 +284,24 @@ public:
     file(const uninitialized_tag& tag, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
     bool initialize(const std::string& path, filetype type = FT_AUTODETECT, bool read_only = false);
+    // Index the file with one pass and parse each instance's attributes on
+    // first access instead of parsing everything up front. Set before
+    // initialize(). Falls back to the full parse if the index pass finds
+    // anything it does not handle.
+    void lazy_loading(bool value) { lazy_loading_ = value; }
+    bool lazy_loading() const { return lazy_loading_; }
+    // Threads used to parse instances; 0 (the default) picks one per core,
+    // capped at 16, or honours IFCOPENSHELL_PARSE_THREADS. Set before
+    // initialize().
+    void parse_threads(unsigned value) { parse_threads_ = value; }
+    unsigned parse_threads() const { return parse_threads_; }
+    unsigned effective_parse_threads() const;
+    // Read the file through the paged reader (64 KB pages, 4 MB cache)
+    // instead of loading it into memory as a whole. Set before
+    // initialize(). Applies to the full parse; lazy loading always reads
+    // in pages.
+    void paged_reading(bool value) { paged_reading_ = value; }
+    bool paged_reading() const { return paged_reading_; }
 #ifdef USE_MMAP
     bool initialize(const std::string& path, bool use_mmap);
 #endif

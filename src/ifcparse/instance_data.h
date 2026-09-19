@@ -43,6 +43,7 @@
 
 #include <boost/optional.hpp>
 #include <memory>
+#include <optional>
 #include <boost/logic/tribool.hpp>
 #include <boost/dynamic_bitset.hpp>
 
@@ -87,6 +88,21 @@ namespace impl {
     template <>
     struct variant_type_name<ifcopenshell::derived> {
         static std::string get() { return "derived"; }
+    };
+
+    template <>
+    struct variant_type_name<ifcopenshell::instance_reference> {
+        static std::string get() { return "unresolved reference"; }
+    };
+
+    template <>
+    struct variant_type_name<std::vector<ifcopenshell::reference_or_simple_type>> {
+        static std::string get() { return "unresolved reference aggregate"; }
+    };
+
+    template <>
+    struct variant_type_name<std::vector<std::vector<ifcopenshell::reference_or_simple_type>>> {
+        static std::string get() { return "unresolved reference aggregate of aggregates"; }
     };
 
     template <>
@@ -214,7 +230,15 @@ typedef parameter_pack <
     // An aggregate of an aggregate of floats. E.g. ((1., 2.3), (4.))
     std::vector<std::vector<double>>,
     // An aggregate of an aggregate of entities. E.g. ((#1, #2), (#3))
-    std::vector<std::vector<express::base>>>
+    std::vector<std::vector<express::base>>,
+    // PARSE-TIME ONLY: a reference, or an aggregate mixing references and
+    // inline typed values, exactly as the tokenizer produced it, held in
+    // the slot until every instance has been read and then replaced by the
+    // three forms above. Never present once a file is loaded. Their indices
+    // match the Argument_UNRESOLVED_* members of argument_type.
+    instance_reference,
+    std::vector<reference_or_simple_type>,
+    std::vector<std::vector<reference_or_simple_type>>>
 type_variant_parameter_pack;
 
 template<typename Pack>
@@ -528,8 +552,21 @@ class IFC_PARSE_API instance_data {
     void populate_derived_();
 
   public:
-      // Since rocks_db_attribute_storage has no members this is not a variant<in_memory, rocks> but in_memory*, where nullptr means a rocks_db_attribute_storage is constructed on the fly given the context from instance data.
-      in_memory_attribute_storage* storage_;
+      // Since rocks_db_attribute_storage has no members this is not a variant<in_memory, rocks> but an optional in_memory storage, where an empty optional means a rocks_db_attribute_storage is constructed on the fly given the context from instance data.
+      mutable std::optional<in_memory_attribute_storage> storage_;
+
+      // Lazy loading: parses the attributes from the file's retained source
+      // if this instance was indexed lazily and has not been accessed yet.
+      // No-op otherwise (loaded, created, or RocksDB-backed).
+      void ensure_loaded() const;
+      // A lazily indexed instance: the attributes, including the derived
+      // markers, are filled in by the file storage on first access.
+      struct lazy_tag {};
+      instance_data(ifcopenshell::file* file, const ifcopenshell::declaration* declaration, uint32_t id, lazy_tag)
+          : file_(file), declaration_(declaration), identity_(counter_++), id_(id), storage_(std::nullopt)
+      {
+      }
+      friend struct ifcopenshell::impl::in_memory_file_storage;
 
       const ifcopenshell::declaration* declaration() const {
           return declaration_;
@@ -548,13 +585,13 @@ class IFC_PARSE_API instance_data {
       }
 
       instance_data(ifcopenshell::file* file, const ifcopenshell::declaration* declaration, uint32_t id, in_memory_attribute_storage&& storage)
-          : file_(file), declaration_(declaration), identity_(counter_++), id_(id), storage_(new in_memory_attribute_storage(std::move(storage)))
+          : file_(file), declaration_(declaration), identity_(counter_++), id_(id), storage_(std::move(storage))
       {
             populate_derived_();
       }
 
       instance_data(ifcopenshell::file* file, const ifcopenshell::declaration* declaration, uint32_t id, rocks_db_attribute_storage&& storage)
-          : file_(file), declaration_(declaration), identity_(counter_++), id_(id), storage_(nullptr)
+          : file_(file), declaration_(declaration), identity_(counter_++), id_(id), storage_(std::nullopt)
       {
           static_cast<void>(storage);
           populate_derived_();
@@ -563,7 +600,7 @@ class IFC_PARSE_API instance_data {
       /*
       // now that there are referenced as shared_ptr there is no move constructor anymore
       instance_data(instance_data&& other) noexcept
-          : file_(other.file_), id_(other.id_), declaration_(other.declaration_), storage_(std::exchange(other.storage_, nullptr))
+          : file_(other.file_), id_(other.id_), declaration_(other.declaration_), storage_(std::move(other.storage_))
       {}
       */
 
@@ -577,21 +614,22 @@ class IFC_PARSE_API instance_data {
       // same
       instance_data& operator=(instance_data&& other) noexcept {
           if (this != &other) {
-              delete storage_;
-              storage_ = std::exchange(other.storage_, nullptr);
+              storage_ = std::move(other.storage_);
+              other.storage_.reset();
           }
           return *this;
       }
       */
 
       ~instance_data() {
-          delete storage_;
+          storage_.reset();
       }
 
     attribute_value get_attribute_value(size_t attribute_index) const;
 
     template<typename T>
     void set_attribute_value(std::size_t attribute_index, T&& value) {
+        ensure_loaded();
         if (storage_) {
             storage_->set(attribute_index, value);
             return;
@@ -607,6 +645,7 @@ class IFC_PARSE_API instance_data {
 
     template<typename T>
     bool has_attribute_value(std::size_t attribute_index) const {
+        ensure_loaded();
         if (storage_) {
             return storage_->has<T>(attribute_index);
         }
