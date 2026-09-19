@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Callable, Hashable
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union, final
 
@@ -131,6 +132,53 @@ class Ifc(bonsai.core.tool.Ifc):
         if angle_rad > 0.0017453292519943296:  # 0.1 degrees
             return True
         return False
+
+    last_notified_transaction: Optional[ifcopenshell.file.Transaction] = None
+    listeners: dict[Hashable, tuple[tuple[str, ...], Callable[[], bool]]] = {}
+
+    @classmethod
+    def subscribe(cls, key: Hashable, ifc_classes: tuple[str, ...], callback: Callable[[], bool]) -> None:
+        """Call back after any transaction that touches one of these classes or their subtypes.
+
+        The callback returns False to unsubscribe itself. It is also called when the
+        change set is unknown (file load, undo).
+        """
+        cls.listeners[key] = (ifc_classes, callback)
+
+    @classmethod
+    def unsubscribe(cls, key: Hashable) -> None:
+        cls.listeners.pop(key, None)
+
+    @classmethod
+    def notify_listeners(cls) -> None:
+        changed_classes = cls.get_changed_classes()
+        for key, (ifc_classes, callback) in list(cls.listeners.items()):
+            if changed_classes is None or any(
+                ifcopenshell.util.schema.is_a(cls.schema().declaration_by_name(changed), base)
+                for changed in changed_classes
+                for base in ifc_classes
+            ):
+                if not callback():
+                    cls.listeners.pop(key, None)
+
+    @classmethod
+    def get_changed_classes(cls) -> Optional[set[str]]:
+        """IFC classes touched by the transaction that ended since the last call, or None when unknown."""
+        ifc_file = cls.get()
+        transaction = ifc_file.history[-1] if ifc_file and ifc_file.history else None
+        if transaction is None or transaction is cls.last_notified_transaction:
+            return None
+        cls.last_notified_transaction = transaction
+        classes = set()
+        for operation in transaction.operations:
+            if "type" in (operation.get("value") or {}):
+                classes.add(operation["value"]["type"])
+            elif operation["action"] == "edit":
+                try:
+                    classes.add(ifc_file.by_id(operation["id"]).is_a())
+                except RuntimeError:
+                    pass
+        return classes
 
     @classmethod
     def schema(cls) -> ifcopenshell_wrapper.schema_definition:
