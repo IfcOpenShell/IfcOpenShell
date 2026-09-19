@@ -179,6 +179,7 @@ const express::base& logger::current_product() const {
 }
 
 void logger::current_product(const express::base& product) {
+    std::lock_guard<std::mutex> lock(mutex_);
     current_product_ = product;
 }
 
