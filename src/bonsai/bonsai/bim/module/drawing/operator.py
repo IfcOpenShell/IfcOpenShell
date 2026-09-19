@@ -1472,6 +1472,72 @@ class CreateDrawing(bpy.types.Operator):
 
         return classes
 
+    # Join criteria may key on the material of the cut itself, which is not the same thing as
+    # the element's material - see get_cut_material. Deliberately its own word rather than a reuse
+    # of the selector's "material": which material a cut carries depends on which layer is being
+    # drawn, so it is drawing state that no query over the element alone can express. Keeping it
+    # separate also leaves "material.Name" meaning the same thing here as everywhere else.
+    CUT_MATERIAL_QUERY_HEAD = "cut_material"
+
+    def get_cut_material(self, element, layer):
+        """Get the single material which identifies a cut, if there is one.
+
+        For a cut which is one layer of a layer set, that is the layer's own material, not the
+        layer set. Otherwise it is the element's material, but only where it is unambiguous: an
+        element with several materials and unlayered geometry isn't identified by any one of them.
+        """
+        if layer:
+            return layer.Material  # Optional, as a layer may represent an air gap.
+        materials = ifcopenshell.util.element.get_materials(element)
+        return materials[0] if len(materials) == 1 else None
+
+    def get_join_keys(self, element, layer, join_criteria: list[str]) -> list:
+        """Build the key deciding which cut linework may be merged together.
+
+        A "cut_material" query is resolved against the material of the cut, so that the same
+        material keys the same way whether or not it arrived as a layer. This lets a layer join a
+        non-layered element of the same material - e.g. a slab's concrete layer merging into a
+        concrete footing - which is impossible if the layer's values are merely appended to the
+        element's, as the two key tuples can then never even be the same length. Every other query
+        is resolved against the element, as a layer carries no status of its own.
+        """
+        keys = []
+        material = self.get_cut_material(element, layer)
+        has_material_query = False
+        has_material_value = False
+
+        for query in join_criteria:
+            head, _, tail = query.partition(".")
+            if is_material_query := head == self.CUT_MATERIAL_QUERY_HEAD:
+                has_material_query = True
+                if material is None:
+                    key = None
+                elif tail:
+                    key = ifcopenshell.util.selector.get_element_value(material, tail)
+                else:
+                    # A bare "cut_material" keys on the material itself: the same entity, rather
+                    # than merely the same name.
+                    key = material
+            else:
+                key = ifcopenshell.util.selector.get_element_value(element, query)
+
+            if isinstance(key, (list, tuple)):
+                keys.extend(key)
+                values = key
+            else:
+                keys.append(key)
+                values = (key,)
+
+            if is_material_query and any(v is not None for v in values):
+                has_material_value = True
+
+        if has_material_query and not has_material_value:
+            # Nothing identified this cut's material, so every unidentified cut would otherwise
+            # share a key and merge on contact. Fall back to the class to keep them apart.
+            keys.append(element.is_a())
+
+        return keys
+
     def is_manifold(self, obj) -> bool:
         result = self.is_manifold_cache.get(obj.data.name, None)
         if result is not None:
@@ -1533,16 +1599,19 @@ class CreateDrawing(bpy.types.Operator):
     def merge_linework_and_add_metadata(self, root):
         join_criteria = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing", "JoinCriteria")
         if join_criteria:
-            join_criteria = join_criteria.split(",")
+            # Strip, as JoinClasses does: a stray space would stop a query being recognised
+            # as a cut_material query and silently disable the layer-aware key.
+            join_criteria = [q.strip() for q in join_criteria.split(",") if q.strip()]
         else:
             # Drawing convention states that same objects classes with the same material are merged when cut.
+            # Drop "class" (per-drawing, via EPset_Drawing.JoinCriteria) to also merge across classes, e.g.
+            # to let a slab's concrete layer read continuous into a concrete footing.
             join_criteria = [
                 "class",
-                "material.Name",
+                "cut_material.Name",
                 "/Pset_.*Common/.Status",
                 "EPset_Status.Status",
                 "EPset_Status.UserDefinedStatus",
-                "Material.Name",
             ]
 
         join_classes = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing", "JoinClasses")
@@ -1658,23 +1727,7 @@ class CreateDrawing(bpy.types.Operator):
             if not any(element.is_a(c) for c in join_classes):
                 continue
 
-            keys = []
-            for query in join_criteria:
-                key = ifcopenshell.util.selector.get_element_value(element, query)
-                if isinstance(key, (list, tuple)):
-                    keys.extend(key)
-                else:
-                    keys.append(key)
-
-            if layer:
-                for query in join_criteria:
-                    key = ifcopenshell.util.selector.get_element_value(layer, query)
-                    if isinstance(key, (list, tuple)):
-                        keys.extend(key)
-                    else:
-                        keys.append(key)
-
-            hash_keys = hash(tuple(keys))
+            hash_keys = hash(tuple(self.get_join_keys(element, layer, join_criteria)))
 
             if el.findall("{http://www.w3.org/2000/svg}path"):
                 joined_paths.setdefault(hash_keys, []).append(el)
