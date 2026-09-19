@@ -251,6 +251,31 @@ class TestIds:
         assert spec.requirements[0].failures[0]["element"] == wall
         assert spec2.requirements[0].failures[0]["element"] == wall
 
+    def test_a_population_from_a_previous_facet_is_narrowed_not_rescanned(self):
+        specs = ids.Ids(title="Title")
+        spec = ids.Specification(name="Name")
+        spec.applicability.append(ids.Entity(name="IFCMATERIAL"))
+        spec.applicability.append(ids.Attribute(name="Name", value="Foo"))
+        specs.specifications.append(spec)
+
+        model = ifcopenshell.file()
+        material = model.createIfcMaterial(Name="Foo")
+        model.createIfcWall(Name="Foo")
+        specs.validate(model)
+        assert spec.applicable_entities == [material]
+
+    def test_an_empty_population_from_a_previous_facet_is_not_rescanned(self):
+        specs = ids.Ids(title="Title")
+        spec = ids.Specification(name="Name")
+        spec.applicability.append(ids.Entity(name="IFCSLAB"))
+        spec.applicability.append(ids.Attribute(name="Name", value="Foo"))
+        specs.specifications.append(spec)
+
+        model = ifcopenshell.file()
+        model.createIfcWall(Name="Foo")
+        specs.validate(model)
+        assert spec.applicable_entities == []
+
     def test_parsing_entities_with_no_attributes(self):
         model = ifcopenshell.file()
         wall1 = model.createIfcWall(Name="Waldo")
