@@ -47,7 +47,7 @@ endif()
 
 # macOS install-time rpath — same as BonsaiViewer.app: dyld looks in
 # IfcViewerMinimal.app/Contents/Frameworks for @rpath/* link deps
-# (libwgpu_native.dylib, libIfcParse.dylib, libifcopenshell.geometry.dylib,
+# (libwgpu_native.dylib, libIfcParse.dylib, libifcopenshell_geometry.dylib,
 # …). The actual files get staged below via install(CODE).
 if(APPLE)
     set_target_properties(IfcViewerMinimal PROPERTIES
@@ -70,7 +70,7 @@ ifcopenshell_deploy_qt_runtime(IfcViewerMinimal)
 # Mirror BonsaiViewer.app's bundle staging on macOS — see
 # src/bonsaiviewer/CMakeLists.txt for the long-form rationale (macdeployqt
 # doesn't follow non-Qt @rpath deps, the lib-prefixed core libs vs
-# ifcopenshell.* plug-in naming split, the geometry-writer EXCLUDE filter
+# unprefixed ifcopenshell_* plug-in naming split, the geometry-writer EXCLUDE filter
 # that keeps the bundle small).
 if(APPLE)
     # libwgpu_native.dylib lives in WGPU_NATIVE_LIB_DIR (set by
@@ -84,7 +84,7 @@ if(APPLE)
     install(CODE [[
         set(_fw "${CMAKE_INSTALL_PREFIX}/IfcViewerMinimal.app/Contents/Frameworks")
         file(GLOB _ifc_dylibs "${CMAKE_INSTALL_PREFIX}/lib/*.dylib")
-        list(FILTER _ifc_dylibs EXCLUDE REGEX "ifcopenshell\\.geometry\\.writer\\.")
+        list(FILTER _ifc_dylibs EXCLUDE REGEX "ifcopenshell_geometry_writer\\.")
         if(_ifc_dylibs)
             message(STATUS "Staging IfcOpenShell dylibs (linked core + plug-ins) into IfcViewerMinimal.app/Contents/Frameworks")
             file(COPY ${_ifc_dylibs} DESTINATION "${_fw}")

@@ -12,7 +12,7 @@ set(SCHEMA_AGNOSTIC_FILES ${SCHEMA_AGNOSTIC_H_FILES} ${SCHEMA_AGNOSTIC_CPP_FILES
 
 add_library(IfcGeom ${SCHEMA_AGNOSTIC_FILES})
 set_target_properties(IfcGeom PROPERTIES
-        OUTPUT_NAME "ifcopenshell.geometry"
+        OUTPUT_NAME "ifcopenshell_geometry"
 )
 target_include_directories(IfcGeom PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>

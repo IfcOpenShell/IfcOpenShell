@@ -160,7 +160,7 @@ ifcopenshell_deploy_qt_runtime(BonsaiViewer)
 # Two flavours sit alongside each other in <prefix>/lib/ after install:
 #
 #   1. Linked core libs (lib*.dylib) — IfcParse, IfcGeom (output-named
-#      libifcopenshell.geometry.dylib), IfcViewer, plug-in / mapping /
+#      libifcopenshell_geometry.dylib), IfcViewer, plug-in / mapping /
 #      kernel shared libs. With --shared these are runtime @rpath deps
 #      of BonsaiViewer.exe. macdeployqt is *supposed* to follow them
 #      but in practice misses non-Qt @rpath deps when the source lib

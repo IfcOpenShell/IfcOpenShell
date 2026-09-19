@@ -134,6 +134,20 @@ namespace {
 		return {decorated_basename(basename)};
 	}
 
+	// The core shared libraries share the ifcopenshell_ prefix with the plugins and are
+	// installed next to them, but they are linked rather than loaded by name and export no
+	// plugin entry points. Where libraries have no platform prefix (Windows) a prefix scan
+	// such as "geometry_" would otherwise match ifcopenshell_geometry_writer and try to
+	// load it as a plugin. Keep in sync with the OUTPUT_NAME of the core library targets.
+	bool is_core_library(const std::string& basename) {
+		for (const char* name : {"ifcopenshell_parse", "ifcopenshell_geometry", "ifcopenshell_geometry_writer", "ifcopenshell_plugin"}) {
+			if (boost::algorithm::iequals(basename, name)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 #ifdef _WIN32
 	struct dll_error_mode_guard {
 		DWORD previous_ = 0;
@@ -240,6 +254,9 @@ std::vector<std::filesystem::path> ifcopenshell::plugin::manager::discover(const
 			}
 
 			const auto basename = filename.substr(0, filename.size() - suffix.size());
+			if (is_core_library(basename)) {
+				continue;
+			}
 			if (!std::any_of(basename_prefixes.begin(), basename_prefixes.end(), [&basename](const std::string& prefix) {
 				return boost::algorithm::istarts_with(basename, prefix);
 			})) {
