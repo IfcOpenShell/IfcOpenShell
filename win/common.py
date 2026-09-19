@@ -212,11 +212,9 @@ def validate_cmake_version() -> None:
 def is_geometry_writer(path: Path) -> bool:
     # Geometry writers are left out of the packages: only `geom::serialise` and `geom::tesselate`
     # load them, and neither the executables nor the Python bindings currently use those.
-    prefixes = (
-        "ifcopenshell.geometry.writer.",  # Core library, `lib`-prefixed on Unix.
-        "ifcopenshell_geometry_writer_",  # Per-schema plugins.
-    )
-    return path.name.removeprefix("lib").startswith(prefixes)
+    # No trailing separator, so this matches both the core library (`lib`-prefixed on Unix)
+    # and the per-schema `ifcopenshell_geometry_writer_ifc<schema>` plugins.
+    return path.name.removeprefix("lib").startswith("ifcopenshell_geometry_writer")
 
 
 def is_json_or_xml_document_serializer(path: Path) -> bool:
