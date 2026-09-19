@@ -56,16 +56,17 @@ QT_DEPLOYMENT_DLLS = {
     "vulkan-1.dll",
 }
 QT_CONF = "[Paths]\nPrefix = .\n"
-# Runtime plugins are canonically prefixed with 'ifcopenshell_' (see
-# decorated_basename() in src/plugin/plugin.cpp and the OUTPUT_NAME properties of
-# the plugin targets, e.g. 'ifcopenshell_parse_schema_ifc${schema}'), while the
-# core shared libraries keep the dotted 'ifcopenshell.' names. Match both so the
-# load-by-name plugins are not silently dropped from the archives.
-IFC_RUNTIME_PLUGIN_PREFIXES = ("ifcopenshell.", "ifcopenshell_")
-# Per-schema geometry writers ship with the Python package only, not next to the
-# executables. 'ifcopenshell.geometry.writer.' covers the core library, the
-# underscore form covers the per-schema plugins.
-IFC_GEOMETRY_WRITER_PREFIXES = ("ifcopenshell.geometry.writer.", "ifcopenshell_geometry_writer_")
+# Everything IfcOpenShell builds is prefixed with 'ifcopenshell_': the runtime
+# plugins (see decorated_basename() in src/plugin/plugin.cpp and the OUTPUT_NAME
+# properties of the plugin targets, e.g. 'ifcopenshell_parse_schema_ifc${schema}')
+# and the core shared libraries ('ifcopenshell_parse', 'ifcopenshell_geometry',
+# 'ifcopenshell_geometry_writer', 'ifcopenshell_plugin'). The plugins are loaded by
+# name, so they must be matched here or they are silently dropped from the archives.
+IFC_RUNTIME_PLUGIN_PREFIXES = ("ifcopenshell_",)
+# Geometry writers ship with the Python package only, not next to the executables.
+# No trailing separator, so this matches both the core 'ifcopenshell_geometry_writer'
+# library and the per-schema 'ifcopenshell_geometry_writer_ifc<schema>' plugins.
+IFC_GEOMETRY_WRITER_PREFIXES = ("ifcopenshell_geometry_writer",)
 
 
 def run(command: list[str]) -> None:
