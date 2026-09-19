@@ -130,6 +130,7 @@ class IfcStore:
 
     @staticmethod
     def purge():
+        tool.Ifc.listeners.clear()
         IfcStore.path = ""
         IfcStore.file = None
         IfcStore.schema = None
