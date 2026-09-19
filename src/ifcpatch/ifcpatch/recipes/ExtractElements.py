@@ -22,9 +22,23 @@ from typing import Union
 import ifcopenshell
 import ifcopenshell.api.project
 import ifcopenshell.guid
+import ifcopenshell.util.element
 import ifcopenshell.util.selector
 
 import ifcpatch
+
+# IFC2X3 has no IfcMapConversion / IfcProjectedCRS. Georeferencing is instead
+# stored as extension property sets, historically attached to IfcProject or
+# IfcSite depending on the authoring tool. See
+# https://github.com/buildingSMART/validate/issues/310#issuecomment-5076630963
+# for the complete set of names accepted across IFC2X3, IFC4 and IFC4X3_ADD2.
+IFC2X3_GEOREFERENCING_PSETS = (
+    "ePSet_GeographicCRS",
+    "ePSet_MapConversion",
+    "ePSet_MapConversionScaled",
+    "ePSet_ProjectedCRS",
+    "ePSet_RigidOperation",
+)
 
 
 class Patcher(ifcpatch.BasePatcher):
@@ -87,12 +101,32 @@ class Patcher(ifcpatch.BasePatcher):
         self.new = ifcopenshell.file(schema_version=self.file.schema_version)
         self.owner_history = None
         self.reuse_identities: dict[int, ifcopenshell.entity_instance] = {}
+        # Relationships reached via shared inverses (material, type, property sets)
+        # are deferred here and their member lists assigned once, avoiding the
+        # O(n^2) cost of re-assigning a growing list on every element append.
+        self.deferred_relationship_members: dict[
+            int, tuple[ifcopenshell.entity_instance, ifcopenshell.entity_instance]
+        ] = {}
+        # A presentation layer is shared by every element drawn on it, so its item
+        # set is collected here and written once instead of on every element append.
+        self.deferred_layer_items: dict[
+            int, tuple[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]
+        ] = {}
+        self.ifc2x3_georeferenced_sites: dict[
+            int, tuple[ifcopenshell.entity_instance, ifcopenshell.entity_instance]
+        ] = {}
         for owner_history in self.file.by_type("IfcOwnerHistory"):
             self.owner_history = self.new.add(owner_history)
             break
         self.add_element(self.file.by_type("IfcProject")[0])
         for element in ifcopenshell.util.selector.filter_elements(self.file, self.query):
             self.add_element(element)
+        ifcopenshell.api.project.flush_deferred_relationship_members(
+            self.new, self.deferred_relationship_members, self.reuse_identities
+        )
+        for source_site, new_site in self.ifc2x3_georeferenced_sites.values():
+            self.copy_ifc2x3_georeferencing_psets(source_site, new_site)
+        ifcopenshell.api.project.flush_deferred_layer_items(self.deferred_layer_items)
         self.create_spatial_tree()
         self.file = self.new
 
@@ -105,22 +139,54 @@ class Patcher(ifcpatch.BasePatcher):
 
     def append_asset(self, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         try:
-            return self.new.by_guid(element.GlobalId)
-        except:
+            existing = self.new.by_guid(element.GlobalId)
+            if existing.is_a(element.is_a()):
+                return existing
+        except RuntimeError:
             pass
         if element.is_a("IfcProject"):
             proj = self.new.add(element)
             for ctx in element.RepresentationContexts or ():
                 for coop in getattr(ctx, "HasCoordinateOperation", ()):
                     self.new.add(coop)
+            if self.file.schema == "IFC2X3":
+                self.copy_ifc2x3_georeferencing_psets(element, proj)
             return proj
-        return ifcopenshell.api.project.append_asset(
+        new_element = ifcopenshell.api.project.append_asset(
             self.new,
             library=self.file,
             element=element,
             reuse_identities=self.reuse_identities,
             assume_asset_uniqueness_by_name=self.assume_asset_uniqueness_by_name,
+            deferred_relationship_members=self.deferred_relationship_members,
+            deferred_layer_items=self.deferred_layer_items,
         )
+        if self.file.schema == "IFC2X3" and element.is_a("IfcSite") and new_element:
+            self.ifc2x3_georeferenced_sites[element.id()] = (element, new_element)
+        return new_element
+
+    def copy_ifc2x3_georeferencing_psets(
+        self, element: ifcopenshell.entity_instance, new_element: ifcopenshell.entity_instance
+    ) -> None:
+        """Relink IFC2X3 georeferencing property sets missed by forward-attribute-only copies.
+
+        IfcProject is copied with self.new.add(), a forward-attribute-only deep
+        copy, so any pset reached only via the inverse IsDefinedBy is dropped.
+        IfcSite is copied through ifcopenshell.api.project.append_asset(), which
+        already carries IsDefinedBy psets, so this is a no-op safety net there.
+        """
+        for rel in element.IsDefinedBy:
+            pset = rel.RelatingPropertyDefinition
+            if (
+                pset is not None
+                and pset.is_a("IfcPropertySet")
+                and pset.Name in IFC2X3_GEOREFERENCING_PSETS
+                and not ifcopenshell.util.element.get_pset(new_element, pset.Name)
+            ):
+                new_pset = self.new.add(pset)
+                self.new.createIfcRelDefinesByProperties(
+                    ifcopenshell.guid.new(), self.owner_history, None, None, [new_element], new_pset
+                )
 
     def add_spatial_structures(
         self, element: ifcopenshell.entity_instance, new_element: ifcopenshell.entity_instance
