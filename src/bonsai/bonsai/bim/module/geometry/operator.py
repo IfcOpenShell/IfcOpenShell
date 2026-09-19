@@ -2809,8 +2809,13 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
         if tool.Geometry.is_representation_item(obj):
             return self.exit_item_edit_mode(context, obj)
 
-        # Check if we're editing an element-level profile or axis
         element = tool.Ifc.get_entity(obj)
+
+        # Parametric roof footprint editing
+        if tool.Parametric.is_roof(element) and tool.Model.get_roof_props(obj).is_editing_path:
+            return bpy.ops.bim.finish_editing_roof_path()
+
+        # Check if we're editing an element-level profile or axis
         if element and tool.Geometry.has_mesh_properties(obj.data):
             return self.exit_element_edit_mode(context, obj, element)
 
@@ -2984,6 +2989,13 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
         if not element:
             self.report({"INFO"}, "Active object is not an IFC element")
             return {"CANCELLED"}
+
+        # Parametric roof: edit its footprint path
+        if tool.Parametric.is_roof(element):
+            if tool.Model.get_roof_props(obj).is_editing:
+                self.report({"INFO"}, "Finish editing the roof parameters before editing its footprint")
+                return {"CANCELLED"}
+            return bpy.ops.bim.enable_editing_roof_path()
 
         # Check if this is a LAYER2 element (wall, railing, etc.)
         try:
