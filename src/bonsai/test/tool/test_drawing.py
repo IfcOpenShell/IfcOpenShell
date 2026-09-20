@@ -1126,3 +1126,205 @@ class TestIsDrawingActive(NewFile):
         # addresses, so this assertion documents that assumption.
         assert bpy.app.background is True
         assert subject.is_drawing_active() is True
+
+
+class SheetOnDisk:
+    """A sheet, its layout and its drawings, as files and as a model.
+
+    The code under test decides which file on disk belongs to which sheet, so
+    the files have to be real. Locations are absolute, which is what Bonsai
+    writes for a project whose IFC has been saved.
+    """
+
+    def __init__(self, tmp_path, identification="A01", name="PLANS"):
+        self.ifc = ifcopenshell.file()
+        tool.Ifc.set(self.ifc)
+        self.layouts = tmp_path / "layouts"
+        self.drawings = tmp_path / "drawings"
+        self.layouts.mkdir(exist_ok=True)
+        self.drawings.mkdir(exist_ok=True)
+        self.sheet = self.ifc.createIfcDocumentInformation(
+            Identification=identification, Name=name, Scope="SHEET"
+        )
+        self.layout_path = str(self.layouts / f"{identification} - {name}.svg")
+        self.ifc.createIfcDocumentReference(
+            Location=self.layout_path, Description="LAYOUT", ReferencedDocument=self.sheet
+        )
+
+    def add_drawing(self, name: str, guid: str) -> str:
+        """A drawing on this sheet, with its SVG. Returns the file's path."""
+        path = str(self.drawings / f"{name}.svg")
+        drawing = self.ifc.createIfcAnnotation(GlobalId=guid, ObjectType="DRAWING", Name=name)
+        reference = self.ifc.createIfcDocumentReference(Location=path)
+        self.ifc.createIfcRelAssociatesDocument(
+            GlobalId=ifcopenshell.guid.new(), RelatedObjects=[drawing], RelatingDocument=reference
+        )
+        self.ifc.createIfcDocumentReference(
+            Location=path, Description="DRAWING", ReferencedDocument=self.sheet
+        )
+        Path(path).write_text('<svg xmlns="http://www.w3.org/2000/svg"/>')
+        return path
+
+    def write_layout(self, path: str, places: "list[tuple[str, str]]") -> str:
+        """A layout file placing (guid, drawing file) pairs, as Bonsai writes one."""
+        groups = "".join(
+            f'<g data-type="drawing" data-drawing="{guid}">'
+            f'<image data-type="foreground" xlink:href="{os.path.relpath(file, os.path.dirname(path))}"/>'
+            f"</g>"
+            for guid, file in places
+        )
+        Path(path).write_text(
+            '<svg xmlns="http://www.w3.org/2000/svg" '
+            f'xmlns:xlink="http://www.w3.org/1999/xlink">{groups}</svg>'
+        )
+        return path
+
+
+class TestFindMovedSheetFile(NewFile):
+    def test_nothing_to_find_when_the_file_is_where_the_model_says(self, tmp_path):
+        model = SheetOnDisk(tmp_path)
+        drawing = model.add_drawing("PLAN", "0aaa")
+        model.write_layout(model.layout_path, [("0aaa", drawing)])
+        assert subject.find_moved_sheet_file(model.sheet, "LAYOUT") is None
+
+    def test_finds_a_layout_renamed_in_a_session_that_was_not_saved(self, tmp_path):
+        # The rename moved the file at once; the model was never saved, so it
+        # still names the old one. The file that places this sheet's drawings
+        # and belongs to no sheet is it.
+        model = SheetOnDisk(tmp_path)
+        drawing = model.add_drawing("PLAN", "0aaa")
+        moved = model.write_layout(str(model.layouts / "A99 - RENAMED.svg"), [("0aaa", drawing)])
+        assert subject.find_moved_sheet_file(model.sheet, "LAYOUT") == moved
+
+    def test_never_takes_a_file_another_sheet_refers_to(self, tmp_path):
+        model = SheetOnDisk(tmp_path)
+        drawing = model.add_drawing("PLAN", "0aaa")
+        other = model.ifc.createIfcDocumentInformation(Identification="A02", Name="DETAILS", Scope="SHEET")
+        taken = model.write_layout(str(model.layouts / "A02 - DETAILS.svg"), [("0aaa", drawing)])
+        model.ifc.createIfcDocumentReference(Location=taken, Description="LAYOUT", ReferencedDocument=other)
+        assert subject.find_moved_sheet_file(model.sheet, "LAYOUT") is None
+
+    def test_matches_on_number_and_a_shared_drawing_when_the_sheet_was_edited_too(self, tmp_path):
+        # A sheet renamed and then changed does not place exactly what the model
+        # says any more, so the number plus one drawing in common carries it.
+        model = SheetOnDisk(tmp_path)
+        first = model.add_drawing("PLAN", "0aaa")
+        model.add_drawing("SECTION", "0bbb")
+        moved = model.write_layout(str(model.layouts / "A01 - PLANS AND MORE.svg"), [("0aaa", first)])
+        assert subject.find_moved_sheet_file(model.sheet, "LAYOUT") == moved
+
+    def test_matches_a_sheet_with_no_drawings_by_its_number(self, tmp_path):
+        model = SheetOnDisk(tmp_path)
+        moved = model.write_layout(str(model.layouts / "A01 - RENAMED.svg"), [])
+        assert subject.find_moved_sheet_file(model.sheet, "LAYOUT") == moved
+
+    def test_takes_neither_of_two_candidates(self, tmp_path):
+        # Moving a file is not undoable in any useful sense, so a guess is worse
+        # than leaving it for the person to sort out.
+        model = SheetOnDisk(tmp_path)
+        drawing = model.add_drawing("PLAN", "0aaa")
+        model.write_layout(str(model.layouts / "A01 - ONE.svg"), [("0aaa", drawing)])
+        model.write_layout(str(model.layouts / "A01 - TWO.svg"), [("0aaa", drawing)])
+        assert subject.find_moved_sheet_file(model.sheet, "LAYOUT") is None
+
+    def test_ignores_a_file_that_shares_no_drawing_and_no_number(self, tmp_path):
+        model = SheetOnDisk(tmp_path)
+        model.add_drawing("PLAN", "0aaa")
+        other = model.add_drawing("SECTION", "0bbb")
+        model.write_layout(str(model.layouts / "Z99 - SOMETHING ELSE.svg"), [("0bbb", other)])
+        assert subject.find_moved_sheet_file(model.sheet, "LAYOUT") is None
+
+
+class TestRestoreMovedSheetFiles(NewFile):
+    def test_moves_the_layout_back_and_says_so(self, tmp_path):
+        model = SheetOnDisk(tmp_path)
+        drawing = model.add_drawing("PLAN", "0aaa")
+        moved = model.write_layout(str(model.layouts / "A99 - RENAMED.svg"), [("0aaa", drawing)])
+
+        changes = subject.restore_moved_sheet_files(model.sheet)
+
+        assert os.path.exists(model.layout_path)
+        assert not os.path.exists(moved)
+        assert len(changes) == 1
+        assert "A99 - RENAMED.svg" in changes[0] and "A01 - PLANS.svg" in changes[0]
+
+    def test_does_nothing_when_the_files_are_in_place(self, tmp_path):
+        model = SheetOnDisk(tmp_path)
+        drawing = model.add_drawing("PLAN", "0aaa")
+        model.write_layout(model.layout_path, [("0aaa", drawing)])
+        assert subject.restore_moved_sheet_files(model.sheet) == []
+
+
+class TestRestoreMovedDrawingFiles(NewFile):
+    def test_moves_a_renamed_drawing_back_and_repoints_the_layout(self, tmp_path):
+        # Renaming a drawing moves its SVG and rewrites the href in every layout
+        # placing it. The layout is what still ties the GlobalId to the file.
+        model = SheetOnDisk(tmp_path)
+        expected = model.add_drawing("PLAN", "0aaa")
+        moved = str(model.drawings / "PLAN - RENAMED.svg")
+        os.rename(expected, moved)
+        model.write_layout(model.layout_path, [("0aaa", moved)])
+
+        changes = subject.restore_moved_drawing_files(model.sheet)
+
+        assert os.path.exists(expected)
+        assert not os.path.exists(moved)
+        assert len(changes) == 1
+        href = ET.parse(model.layout_path).getroot().find(
+            './/{http://www.w3.org/2000/svg}image[@data-type="foreground"]'
+        )
+        assert href.get("{http://www.w3.org/1999/xlink}href").endswith("PLAN.svg")
+
+    def test_never_takes_a_file_another_drawing_expects(self, tmp_path):
+        model = SheetOnDisk(tmp_path)
+        expected = model.add_drawing("PLAN", "0aaa")
+        other = model.add_drawing("SECTION", "0bbb")
+        os.remove(expected)
+        # The layout points this drawing at a file the model gives to another.
+        model.write_layout(model.layout_path, [("0aaa", other)])
+
+        assert subject.restore_moved_drawing_files(model.sheet) == []
+        assert os.path.exists(other)
+        assert not os.path.exists(expected)
+
+    def test_a_raster_underlay_moves_with_its_drawing(self, tmp_path):
+        model = SheetOnDisk(tmp_path)
+        expected = model.add_drawing("PLAN", "0aaa")
+        moved = str(model.drawings / "PLAN - RENAMED.svg")
+        os.rename(expected, moved)
+        Path(moved[0:-4] + "-underlay.png").write_bytes(b"not really a png")
+        model.write_layout(model.layout_path, [("0aaa", moved)])
+
+        subject.restore_moved_drawing_files(model.sheet)
+
+        assert os.path.exists(expected[0:-4] + "-underlay.png")
+
+    def test_does_nothing_when_the_layout_already_agrees(self, tmp_path):
+        model = SheetOnDisk(tmp_path)
+        drawing = model.add_drawing("PLAN", "0aaa")
+        model.write_layout(model.layout_path, [("0aaa", drawing)])
+        assert subject.restore_moved_drawing_files(model.sheet) == []
+
+
+class TestRestoreAllMovedFiles(NewFile):
+    def test_every_sheet_is_checked_and_named(self, tmp_path):
+        # One unsaved session can have renamed several sheets, and the operator
+        # that prompts this is only ever about one of them.
+        model = SheetOnDisk(tmp_path)
+        drawing = model.add_drawing("PLAN", "0aaa")
+        model.write_layout(str(model.layouts / "A99 - RENAMED.svg"), [("0aaa", drawing)])
+
+        second = model.ifc.createIfcDocumentInformation(Identification="A02", Name="DETAILS", Scope="SHEET")
+        second_layout = str(model.layouts / "A02 - DETAILS.svg")
+        model.ifc.createIfcDocumentReference(
+            Location=second_layout, Description="LAYOUT", ReferencedDocument=second
+        )
+        model.write_layout(str(model.layouts / "A02 - ALSO RENAMED.svg"), [])
+
+        changes = subject.restore_all_moved_files()
+
+        assert os.path.exists(model.layout_path)
+        assert os.path.exists(second_layout)
+        assert len(changes) == 2
+        assert any(line.startswith("A01: ") for line in changes)
+        assert any(line.startswith("A02: ") for line in changes)
