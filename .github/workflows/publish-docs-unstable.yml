@@ -1,13 +1,32 @@
 name: Publish Docs Unstable
 
+# Publishes into subdirectories of docs.bonsaibim.org. The stable docs and the
+# landing page in the same repository are published by the bonsai-docs
+# workflow of https://github.com/IfcOpenShell/website on release.
+
 on:
   push:
     branches:
       - v0.9.0
+    paths:
+      - 'src/bonsai/docs/**'
+      - 'src/bonsaiviewer/docs/**'
+      - '.github/workflows/publish-docs-unstable.yml'
+  workflow_dispatch:
 
 jobs:
   publish:
+    name: ${{ matrix.destination }}
     runs-on: ubuntu-latest
+    strategy:
+      # Both jobs push to the same repository.
+      max-parallel: 1
+      matrix:
+        include:
+          - docs: src/bonsai/docs
+            destination: studio-unstable
+          - docs: src/bonsaiviewer/docs
+            destination: viewer-unstable
 
     steps:
       - name: Checkout repository
@@ -19,20 +38,18 @@ jobs:
           python-version: '3.x'
 
       - name: Install dependencies
-        run: |
-          cd src/bonsai/docs  # Navigate to the docs directory
-          pip install -r requirements.txt  # Install dependencies from requirements.txt
+        run: pip install -r ${{ matrix.docs }}/requirements.txt
 
       - name: Build documentation
-        run: |
-          cd src/bonsai/docs  # Navigate to the docs directory
-          make html  # Build the documentation
+        run: make -C ${{ matrix.docs }} html
 
       - name: Deploy to GitHub Pages (Unstable)
         uses: peaceiris/actions-gh-pages@v4
         with:
-          deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}  # SSH key for deployment
-          external_repository: IfcOpenShell/bonsaibim_org_docs_unstable  # Target repository
-          publish_branch: main  # Branch to deploy to
-          cname: docs-unstable.bonsaibim.org  # Custom domain for unstable docs
-          publish_dir: src/bonsai/docs/_build/html  # Directory containing built docs
+          # IfcOpenBot's token, which also publishes the stable docs and Bonsai unstable.
+          personal_token: ${{ secrets.IFCOPENBOT_TOKEN }}
+          external_repository: IfcOpenShell/bonsaibim_org_docs
+          publish_branch: main
+          publish_dir: ${{ matrix.docs }}/_build/html
+          # Only this subdirectory is replaced.
+          destination_dir: ${{ matrix.destination }}
