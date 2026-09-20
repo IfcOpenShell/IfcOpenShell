@@ -10,7 +10,7 @@ using a separate add-on built for this purpose.
    <https://github.com/IfcOpenShell/bonsai-translations>`_ repository. This
    repository holds all the core translation strings in ``.po`` format.
 2. Download the `bonsai-translations add-on
-   <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.8.0/src/bonsai/scripts/bbim_translations.py>`_
+   <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.9.0/src/bonsai/scripts/bonsai_translations.py>`_
    and install it as a Blender add-on. This add-on lets you convert translation
    data to and from the ``.po`` files for Bonsai.
 3. In the **Render Properties** tab, find the **Bonsai Translations**
