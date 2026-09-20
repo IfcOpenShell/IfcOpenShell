@@ -1,9 +1,6 @@
 Installation
 ============
 
-Bonsai Viewer is a standalone desktop application. It does not require
-Blender, Bonsai, or Python to be installed.
-
 1. **Download Bonsai Viewer** |release| for your operating system.
 
 .. container:: download-buttons
