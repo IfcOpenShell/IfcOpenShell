@@ -238,10 +238,16 @@ class BlenderNamespace(socketio.AsyncNamespace):
         await sio.emit("classification", {"blenderId": sid, "data": data}, namespace="/web")
 
     async def on_sheet_template_values(self, sid, data):
-        # Answers a "sheets" getTemplateValues request - for tools, such as
-        # SketchSpace, that show sheets without building them. Not cached: callers
-        # ask again, and the values change with every edit.
+        # Answers a "sheets" getTemplateValues request - for tools that show
+        # sheets without building them. Not cached: callers ask again, and the
+        # values change with every edit.
         await sio.emit("sheet_template_values", {"blenderId": sid, "data": data}, namespace="/web")
+
+    async def on_sheet_edit_result(self, sid, data):
+        # Answers a "sheets" getEditableFields or setTemplateValue request, and
+        # carries that request's id: unlike the other messages here this is a
+        # reply to one caller, not a broadcast of state.
+        await sio.emit("sheet_edit_result", {"blenderId": sid, "data": data}, namespace="/web")
 
     async def on_message(self, sid, data):
         print(f"Error from Blender client {sid}")
