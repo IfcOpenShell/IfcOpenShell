@@ -1,19 +1,23 @@
-file(GLOB SERIALIZERS_S_H_FILES *.h)
-file(GLOB SERIALIZERS_S_CPP_FILES *.cpp)
-set(SERIALIZERS_S_FILES ${SERIALIZERS_S_H_FILES} ${SERIALIZERS_S_CPP_FILES})
-
 foreach(schema ${SCHEMA_VERSIONS})
-    add_library(Serializers_ifc${schema} OBJECT ${SERIALIZERS_S_FILES})
-    set(SERIALIZER_SCHEMA_LIBRARIES ${SERIALIZER_SCHEMA_LIBRARIES} Serializers_ifc${schema})
-    set_target_properties(
-        Serializers_ifc${schema}
-        PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema}"
-    )
-    target_link_libraries(Serializers_ifc${schema} IfcGeom ${HDF5_LIBRARIES} ${GLTF_LIBRARIES})
     if(NOT WASM_BUILD)
-        target_link_libraries(Serializers_ifc${schema} ${OpenCASCADE_LIBRARIES})
+        set(schema_plugin_library parse_schema_ifc${schema})
+    else()
+        set(schema_plugin_library)
     endif()
-    install(TARGETS Serializers_ifc${schema} EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
+
+    add_document_serializer_plugin(document_serializer_xml_ifc${schema} "document.xml.ifc${schema}" SOURCES xml_serializer.cpp xml_plugin.cpp LIBRARIES ${schema_plugin_library})
+    target_compile_definitions(document_serializer_xml_ifc${schema} PRIVATE IfcSchema=Ifc${schema})
+    if(WASM_BUILD)
+        target_link_options(document_serializer_xml_ifc${schema} PRIVATE "SHELL:-s ERROR_ON_UNDEFINED_SYMBOLS=0")
+    endif()
+
+    if(GLTF_SUPPORT)
+        add_document_serializer_plugin(document_serializer_json_ifc${schema} "document.json.ifc${schema}" SOURCES json_serializer.cpp json_plugin.cpp LIBRARIES nlohmann_json::nlohmann_json ${schema_plugin_library} DEFINITIONS WITH_GLTF)
+        target_compile_definitions(document_serializer_json_ifc${schema} PRIVATE IfcSchema=Ifc${schema})
+        if(WASM_BUILD)
+            target_link_options(document_serializer_json_ifc${schema} PRIVATE "SHELL:-s ERROR_ON_UNDEFINED_SYMBOLS=0")
+        endif()
+    endif()
 endforeach()
 
-set(SERIALIZER_SCHEMA_LIBRARIES ${SERIALIZER_SCHEMA_LIBRARIES} PARENT_SCOPE)
+set(document_serializer_libraries ${document_serializer_libraries} PARENT_SCOPE)

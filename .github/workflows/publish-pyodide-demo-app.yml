@@ -1,4 +1,4 @@
-name: Deploy Pyodide Demo App to static page repo
+name: Publish Pyodide Demo App
 
 permissions:
   id-token: write
@@ -14,16 +14,16 @@ on:
   workflow_dispatch:
 
 jobs:
-  activate:
+  upstream-only:
     runs-on: ubuntu-latest
     if: |
       github.repository == 'IfcOpenShell/IfcOpenShell'
     steps:
     - name: Set env
       run: echo ok go
-      
-  build:
-    needs: activate
+
+  publish:
+    needs: upstream-only
     runs-on: ubuntu-latest
     steps:
       - name: Checkout (recursive)

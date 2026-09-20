@@ -6,7 +6,7 @@
 #include <TopoDS_Iterator.hxx>
 
 /* Returns whether wire conforms to a polyhedron, i.e. only edges with linear curves*/
-bool IfcGeom::util::is_polyhedron(const TopoDS_Wire & wire) {
+bool ifcopenshell::geom::util::is_polyhedron(const TopoDS_Wire & wire) {
 	double a, b;
 	TopLoc_Location l;
 

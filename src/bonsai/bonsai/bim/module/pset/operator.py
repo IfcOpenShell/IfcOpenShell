@@ -120,13 +120,20 @@ class EditPset(bpy.types.Operator, tool.Ifc.Operator):
             properties = json.loads(self.properties)
         else:
             for prop in props.properties:
+                metadata = prop.metadata
                 if prop.value_type == "IfcPropertySingleValue":
-                    properties[prop.metadata.name] = prop.metadata.get_value()
+                    value = metadata.get_value()
                 elif prop.value_type == "IfcPropertyEnumeratedValue":
-                    value_name = prop.metadata.get_value_name()
-                    properties[prop.metadata.name] = [
-                        e[value_name] for e in prop.enumerated_value.enumerated_values if e.is_selected
-                    ]
+                    value_name = metadata.get_value_name()
+                    value = [e[value_name] for e in prop.enumerated_value.enumerated_values if e.is_selected]
+                else:
+                    continue
+                # None (a purge/skip-creation signal, handled by edit_pset/edit_qto before any
+                # unit wrapping is unpacked) must stay bare -- only wrap real values.
+                if value is not None and tool.Pset.is_measurable_special_type(metadata.special_type):
+                    unit = self.file.by_id(metadata.unit_id) if metadata.unit_id else None
+                    value = {"NominalValue": value, "Unit": unit}
+                properties[metadata.name] = value
 
         if pset.is_a() in ("IfcPropertySet", "IfcMaterialProperties", "IfcProfileProperties"):
             ifcopenshell.api.pset.edit_pset(
@@ -140,10 +147,18 @@ class EditPset(bpy.types.Operator, tool.Ifc.Operator):
             for key, value in properties.items():
                 if value is None:
                     continue
-                if isinstance(value, float):
-                    properties[key] = round(value, 4)
-                elif not isinstance(value, int):
-                    properties[key] = 0
+                is_wrapped = isinstance(value, dict) and "Unit" in value
+                raw = value["NominalValue"] if is_wrapped else value
+                if raw is None:
+                    continue
+                if isinstance(raw, float):
+                    raw = round(raw, 4)
+                elif not isinstance(raw, int):
+                    raw = 0
+                if is_wrapped:
+                    value["NominalValue"] = raw
+                else:
+                    properties[key] = raw
             ifcopenshell.api.pset.edit_qto(
                 self.file,
                 qto=pset,

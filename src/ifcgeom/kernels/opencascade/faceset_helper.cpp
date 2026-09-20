@@ -1,10 +1,10 @@
-#include "OpenCascadeKernel.h"
+#include "opencascade_kernel.h"
 
-#include "IfcGeomTree.h"
+#include "tree.h"
 #include "wire_utils.h"
 
 namespace {
-	void find_neighbours(IfcGeom::impl::tree<int>& tree, std::vector<std::unique_ptr<gp_Pnt>>& pnts, std::set<int>& visited, int p, double eps) {
+	void find_neighbours(ifcopenshell::geom::impl::tree<int>& tree, std::vector<std::unique_ptr<gp_Pnt>>& pnts, std::set<int>& visited, int p, double eps) {
 		visited.insert(p);
 
 		Bnd_Box b;
@@ -25,16 +25,16 @@ namespace {
 	}
 }
 
-IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
-	OpenCascadeKernel* kernel,
-	const ifcopenshell::geometry::taxonomy::shell::ptr shell
+ifcopenshell::geom::open_cascade_kernel::faceset_helper::faceset_helper(
+	open_cascade_kernel* kernel,
+	const ifcopenshell::geom::taxonomy::shell::ptr shell
 )
 	: kernel_(kernel)
 	, non_manifold_(false)
 {
 	// @todo use pointers?
-	std::vector<ifcopenshell::geometry::taxonomy::point3::ptr> points;
-	std::vector<ifcopenshell::geometry::taxonomy::loop::ptr> loops;
+	std::vector<ifcopenshell::geom::taxonomy::point3::ptr> points;
+	std::vector<ifcopenshell::geom::taxonomy::loop::ptr> loops;
 	std::set<uint32_t> point_identities_visited;
 
 	for (auto& f : shell->children) {
@@ -43,7 +43,7 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 			for (auto& e : l->children) {
 				for (size_t i = 0; i < 2; ++i) {
 					// @todo make sure only cartesian points are provided here
-					auto& p = boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(i == 0 ? e->start : e->end);
+					auto& p = std::get<ifcopenshell::geom::taxonomy::point3::ptr>(i == 0 ? e->start : e->end);
 					if (point_identities_visited.find(p->identity()) == point_identities_visited.end()) {
 						point_identities_visited.insert(p->identity());
 						points.push_back(p);
@@ -56,7 +56,7 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 	std::vector<std::unique_ptr<gp_Pnt>> pnts(points.size());
 	std::vector<TopoDS_Vertex> vertices(pnts.size());
 
-	IfcGeom::impl::tree<int> tree;
+	ifcopenshell::geom::impl::tree<int> tree;
 
 	BRep_Builder B;
 
@@ -64,8 +64,8 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 	for (size_t i = 0; i < points.size(); ++i) {
 		gp_Pnt* p = new gp_Pnt(convert_xyz<gp_Pnt>(*points[i]));
 		pnts[i].reset(p);
-		B.MakeVertex(vertices[i], *p, Precision::Confusion());
-		tree.add(i, vertices[i]);
+		B.MakeVertex(vertices[i], *p, ::Precision::Confusion());
+		tree.add(static_cast<int>(i), vertices[i]);
 		box.Add(*p);
 	}
 
@@ -86,12 +86,12 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 	double bdiff = std::numeric_limits<double>::infinity();
 	for (size_t i = 0; i < 3; ++i) {
 		const double d = bmax[i] - bmin[i];
-		if (d > kernel->settings().get<ifcopenshell::geometry::settings::Precision>().get() * 10. && d < bdiff) {
+		if (d > kernel->settings().get<ifcopenshell::geom::settings::Precision>().get() * 10. && d < bdiff) {
 			bdiff = d;
 		}
 	}
 
-	eps_ = kernel->settings().get<ifcopenshell::geometry::settings::Precision>().get() * 10. * (std::min)(1.0, bdiff);
+	eps_ = kernel->settings().get<ifcopenshell::geom::settings::Precision>().get() * 10. * (std::min)(1.0, bdiff);
 
 	size_t loops_removed, non_manifold, duplicate_faces;
 
@@ -108,13 +108,14 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 
 		vertex_mapping_.clear();
 		duplicates_.clear();
+		duplicate_identities_built_.clear();
 
 		edge_use.clear();
 
-		if (eps_ < Precision::Confusion()) {
+		if (eps_ < ::Precision::Confusion()) {
 			// occt uses some hard coded precision values, don't go smaller than that.
 			// @todo, can be reset though with BRepLib::Precision(double)
-			eps_ = Precision::Confusion();
+			eps_ = ::Precision::Confusion();
 		}
 
 		std::vector<bool> retained(pnts.size());
@@ -148,8 +149,8 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 
 		auto num_retained = std::count(retained.begin(), retained.end(), true);
 
-		if (unique.size() != num_retained) {
-			Logger::Root().Notice("GEO", 168, "Collapsed vertices from " + std::to_string(pnts.size()) + " (" + std::to_string(unique.size()) + " unique) to " + std::to_string(num_retained));
+		if (unique.size() != static_cast<size_t>(num_retained)) {
+			ifcopenshell::logger::root().notice("GEO", 168, "Collapsed vertices from " + std::to_string(pnts.size()) + " (" + std::to_string(unique.size()) + " unique) to " + std::to_string(num_retained));
 		}
 
 		typedef std::array<int, 2> edge_t;
@@ -171,12 +172,13 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 				segments.push_back(std::make_pair(C, D));
 			});
 
-			if (edge_sets.find({loop->external.get_value_or(false), segment_set}) != edge_sets.end()) {
+			const auto edge_set_key = std::make_pair(loop->external.value_or(false), segment_set);
+			if (edge_sets.find(edge_set_key) != edge_sets.end()) {
 				duplicate_faces++;
 				duplicates_.insert(loop->identity());
 				continue;
 			}
-            edge_sets.insert({loop->external.get_value_or(false), segment_set});
+            edge_sets.insert(edge_set_key);
 
 			if (segments.size() >= 3) {
 				for (auto& p : segments) {
@@ -204,25 +206,25 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 		}
 	}
 
-	if (duplicates_.size() || loops_removed || (non_manifold && shell->closed.get_value_or(false))) {
-		Logger::Root().Warning("GEO", 169, boost::lexical_cast<std::string>(duplicate_faces) + " duplicate faces removed, " + boost::lexical_cast<std::string>(loops_removed) + " degenerate loops eliminated and " + boost::lexical_cast<std::string>(non_manifold) + " non-manifold edges");
+	if (duplicates_.size() || loops_removed || (non_manifold && shell->closed.value_or(false))) {
+		ifcopenshell::logger::root().warning("GEO", 169, boost::lexical_cast<std::string>(duplicate_faces) + " duplicate faces removed, " + boost::lexical_cast<std::string>(loops_removed) + " degenerate loops eliminated and " + boost::lexical_cast<std::string>(non_manifold) + " non-manifold edges");
 	}
 }
 
-void IfcGeom::OpenCascadeKernel::faceset_helper::loop_(const ifcopenshell::geometry::taxonomy::loop::ptr ps, const std::function<void(int, int, bool)>& callback) {
+void ifcopenshell::geom::open_cascade_kernel::faceset_helper::loop_(const ifcopenshell::geom::taxonomy::loop::ptr ps, const std::function<void(int, int, bool)>& callback) {
 	if (ps->children.size() < 3) {
 		return;
 	}
 
 	for (auto& edge : ps->children) {
-		auto A = boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(edge->start)->identity();
-		auto B = boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(edge->end)->identity();
+		auto A = std::get<ifcopenshell::geom::taxonomy::point3::ptr>(edge->start)->identity();
+		auto B = std::get<ifcopenshell::geom::taxonomy::point3::ptr>(edge->end)->identity();
 		auto C = vertex_mapping_[A], D = vertex_mapping_[B];
 		bool fwd = C < D;
 		if (!fwd) {
 			std::swap(C, D);
 		}
-		if (!edge->orientation.get_value_or(true)) {
+		if (!edge->orientation.value_or(true)) {
 			fwd = !fwd;
 		}
 		if (C != D) {
@@ -231,7 +233,7 @@ void IfcGeom::OpenCascadeKernel::faceset_helper::loop_(const ifcopenshell::geome
 	}
 }
 
-bool IfcGeom::OpenCascadeKernel::faceset_helper::edge(int A, int B, TopoDS_Edge& e) {
+bool ifcopenshell::geom::open_cascade_kernel::faceset_helper::edge(int A, int B, TopoDS_Edge& e) {
 	auto it = edges_.find({ A, B });
 	if (it == edges_.end()) {
 		return false;
@@ -240,7 +242,7 @@ bool IfcGeom::OpenCascadeKernel::faceset_helper::edge(int A, int B, TopoDS_Edge&
 	return true;
 }
 
-bool IfcGeom::OpenCascadeKernel::faceset_helper::wire(const ifcopenshell::geometry::taxonomy::loop::ptr loop, TopoDS_Wire& w) {
+bool ifcopenshell::geom::open_cascade_kernel::faceset_helper::wire(const ifcopenshell::geom::taxonomy::loop::ptr loop, TopoDS_Wire& w) {
     NCollection_List<TopoDS_Shape> ws;
 	if (!wires(loop, ws)) {
 		return false;
@@ -249,9 +251,14 @@ bool IfcGeom::OpenCascadeKernel::faceset_helper::wire(const ifcopenshell::geomet
 	return true;
 }
 
-bool IfcGeom::OpenCascadeKernel::faceset_helper::wires(const ifcopenshell::geometry::taxonomy::loop::ptr loop, NCollection_List<TopoDS_Shape>& wires) {
+bool ifcopenshell::geom::open_cascade_kernel::faceset_helper::wires(const ifcopenshell::geom::taxonomy::loop::ptr loop, NCollection_List<TopoDS_Shape>& wires) {
+	// A loop whose edge set duplicates another's is skipped. When the duplicates
+	// share one identity (the same IfcFace listed repeatedly, #418), set semantics
+	// keep exactly one copy: the first occurrence builds, the rest are skipped.
 	if (duplicates_.find(loop->identity()) != duplicates_.end()) {
-		return false;
+		if (!duplicate_identities_built_.insert(loop->identity()).second) {
+			return false;
+		}
 	}
 	TopoDS_Wire wire;
 	BRep_Builder builder;
@@ -271,12 +278,12 @@ bool IfcGeom::OpenCascadeKernel::faceset_helper::wires(const ifcopenshell::geome
 		wire.Closed(true);
 
 		NCollection_List<TopoDS_Shape> results;
-		if (!kernel_->settings().get<ifcopenshell::geometry::settings::NoWireIntersectionCheck>().get() && util::wire_intersections(wire, results, {
-			!kernel_->settings().get<ifcopenshell::geometry::settings::NoWireIntersectionCheck>().get(),
-			!kernel_->settings().get<ifcopenshell::geometry::settings::NoWireIntersectionTolerance>().get(), 0.,
-			kernel_->settings().get<ifcopenshell::geometry::settings::Precision>().get()}))
+		if (!kernel_->settings().get<ifcopenshell::geom::settings::NoWireIntersectionCheck>().get() && util::wire_intersections(wire, results, {
+			!kernel_->settings().get<ifcopenshell::geom::settings::NoWireIntersectionCheck>().get(),
+			!kernel_->settings().get<ifcopenshell::geom::settings::NoWireIntersectionTolerance>().get(), 0.,
+			kernel_->settings().get<ifcopenshell::geom::settings::Precision>().get()}))
 		{
-			Logger::Root().Warning("GEO", 170, "Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
+			ifcopenshell::logger::root().warning("GEO", 170, "Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
 			non_manifold_ = true;
 			wires = results;
 		} else {
@@ -289,7 +296,7 @@ bool IfcGeom::OpenCascadeKernel::faceset_helper::wires(const ifcopenshell::geome
 	}
 }
 
-IfcGeom::OpenCascadeKernel::faceset_helper::~faceset_helper() {
+ifcopenshell::geom::open_cascade_kernel::faceset_helper::~faceset_helper() {
 	// @todo this is super ugly, but how else can we be notified that the unique_ptr goes out of scope?
 	// Perhaps just supply a custom std::deleter?
 	kernel_->faceset_helper_ = nullptr;

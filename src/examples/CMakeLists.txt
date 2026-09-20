@@ -74,27 +74,29 @@ macro(build_example exe_name)
     install(TARGETS ${exe_name})
 endmacro()
 
+macro(build_schema_example exe_name schema)
+    build_example(${exe_name} ${schema} ${ARGN})
+    if(STANDALONE_PROJECT)
+        target_link_libraries(${exe_name} IfcOpenShell::parse_schema_ifc${schema})
+        target_compile_definitions(
+            ${exe_name}
+            PRIVATE IFCOPENSHELL_EXAMPLE_PLUGIN_PATH="$<TARGET_FILE_DIR:IfcOpenShell::parse_schema_ifc${schema}>"
+        )
+    else()
+        target_link_libraries(${exe_name} parse_schema_ifc${schema})
+    endif()
+endmacro()
+
 if(SCHEMA_VERSIONS)
     list(GET SCHEMA_VERSIONS -1 schema)
-endif()
-
-build_example(arbitrary_open_profile_def ${schema})
-build_example(triangulated_faceset ${schema})
-
-build_example(composite_profile_def ${schema})
-build_example(csg_primitive ${schema})
-build_example(ellipse_pies ${schema})
-build_example(faces ${schema})
-build_example(ifc_curve_rebar ${schema})
-build_example(profiles ${schema})
-build_example(IfcParseExamples ${schema})
-
-if(WITH_OPENCASCADE)
-    build_example(IfcOpenHouse ${schema} geometry_serializer)
-    build_example(IfcAdvancedHouse ${schema} geometry_serializer)
+    build_schema_example(IfcParseExamples ${schema})
+    if(WITH_OPENCASCADE)
+        build_schema_example(IfcOpenHouse ${schema} geometry_serializer)
+        build_schema_example(IfcAdvancedHouse ${schema} geometry_serializer)
+    endif()
 endif()
 
 if("4x3_add2" IN_LIST SCHEMA_VERSIONS)
-    build_example(IfcAlignment)
-    build_example(IfcSimplifiedAlignment)
+    build_schema_example(IfcAlignment 4x3_add2)
+    build_schema_example(IfcSimplifiedAlignment 4x3_add2)
 endif()

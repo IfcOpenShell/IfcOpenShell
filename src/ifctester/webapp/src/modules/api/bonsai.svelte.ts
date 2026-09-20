@@ -59,33 +59,33 @@ export const connect = () => new Promise<void>((resolve, reject) => {
         resolve();
         return;
     }
-    
+
     try {
         Bonsai.socket = io(`ws://127.0.0.1:${Bonsai.port}/ifctester`, {
             transports: ['websocket'],
             reconnection: false,
             timeout: 5000
         });
-        
+
         Bonsai.socket.on('connect', () => {
             Bonsai.connected = true;
             success('Connected to Bonsai');
             resolve();
         });
-        
+
         Bonsai.socket.on('disconnect', () => {
             Bonsai.connected = false;
         });
-        
+
         Bonsai.socket.on('connect_error', (err: Error) => {
             Bonsai.connected = false;
             error(`Failed to connect to Bonsai: ${err.message}`);
             reject(err);
         });
-        
+
         Bonsai.socket.on('audit_result', handleAuditResult);
         Bonsai.socket.on('error', handleAuditError);
-        
+
     } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         error(`Failed to connect to Bonsai: ${message}`);
@@ -113,35 +113,35 @@ export const runAudit = async () => {
     if (!Bonsai.socket || !Bonsai.connected || !IDS.Module.activeDocument) {
         return null;
     }
-    
+
     try {
         Bonsai.auditing = true;
-        
+
         const activeDoc = IDS.Module.documents[IDS.Module.activeDocument];
         if (!activeDoc) throw new Error('No active IDS document');
-        
+
         // Convert IDS document to XML string
         const idsXml = await IDS.exportActiveDocument();
         if (!idsXml) {
             throw new Error('Failed to export IDS document');
         }
-        
+
         const requestId = id();
         const socket = Bonsai.socket;
         if (!socket) {
             throw new Error('Bonsai socket not connected');
         }
-        
+
         return new Promise<string | null>((resolve, reject) => {
             // Store request with resolve/reject functions
             pendingAudits.set(requestId, { resolve, reject });
-            
+
             socket.emit('audit_ids', {
                 id: requestId,
                 ids: idsXml
             });
         });
-        
+
     } catch (err) {
         Bonsai.auditing = false;
         const message = err instanceof Error ? err.message : String(err);
@@ -156,19 +156,19 @@ export const runAudit = async () => {
  */
 const handleAuditResult = (data: AuditResultPayload) => {
     if (!data.id || !data.json_report) return;
-    
+
     const pendingAudit = pendingAudits.get(data.id);
     if (!pendingAudit) {
         console.warn('[Bonsai] Received response for unknown audit ID:', data.id);
         return;
     }
-    
+
     pendingAudits.delete(data.id);
     const { resolve } = pendingAudit;
-    
+
     try {
         const reportData = JSON.parse(data.json_report) as AuditReportData;
-        
+
         const auditReport: AuditReport = {
             id: data.id,
             modelId: `bonsai:${data.id}`,
@@ -178,16 +178,16 @@ const handleAuditResult = (data: AuditResultPayload) => {
             data: reportData,
             htmlReport: data.html_report
         };
-        
+
         // Store audit report
         IFCModels.audits.unshift(auditReport);
-        
+
         Bonsai.auditing = false;
         success('Audit completed (Bonsai)');
-        
+
         // Resolve promise with audit ID
         resolve(data.id);
-        
+
     } catch (err) {
         Bonsai.auditing = false;
         const message = err instanceof Error ? err.message : String(err);
@@ -202,16 +202,16 @@ const handleAuditResult = (data: AuditResultPayload) => {
  */
 const handleAuditError = (data: AuditErrorPayload) => {
     if (!data.id) return;
-    
+
     const pendingAudit = pendingAudits.get(data.id);
     if (!pendingAudit) {
         console.warn('[Bonsai] Received error for unknown audit ID:', data.id);
         return;
     }
-    
+
     pendingAudits.delete(data.id);
     const { resolve } = pendingAudit;
-    
+
     Bonsai.auditing = false;
     error(`Audit failed (Bonsai): ${data.error ?? "Unknown error"}`);
     resolve(null);

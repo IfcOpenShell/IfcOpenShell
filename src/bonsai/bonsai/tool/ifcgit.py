@@ -548,7 +548,9 @@ class IfcGit(bonsai.core.tool.IfcGit):
     @classmethod
     def config_push(cls, repo: git.Repo) -> None:
         """Set push.autoSetupRemote"""
-        config_reader = repo.config_reader()
+        # Repository level only - a global push.* setting must not stop us
+        # configuring this repo.
+        config_reader = repo.config_reader("repository")
         if not config_reader.has_section("push"):
             with repo.config_writer() as config_writer:
                 config_writer.set_value("push", "default", "current")

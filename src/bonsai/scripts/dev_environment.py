@@ -3,10 +3,10 @@
 
 Script links existing Bonsai installation to the provided IfcOpenShell repository.
 
-If you're on Windows/Mac, using Blender 4.5, Bonsai is installed from unstable repo (raw_githubusercontent_com)
-and this script is already part of IfcOpenShell repo you want to link, then you can just run it and it will just work.
+If Bonsai is installed from unstable repo (raw_githubusercontent_com) and this script is already part
+of IfcOpenShell repo you want to link, then you can just run it and it will just work.
 
-Otherwise, see the SETTINGS section below to validate script settings to ensure it fits your evnironment.
+Otherwise, see the SETTINGS section below to validate script settings to ensure it fits your environment.
 
 Example usage:
 
@@ -15,29 +15,16 @@ Example usage:
 
 """
 
-import argparse
 import shutil
 import subprocess
 import sys
 import urllib.request
 from pathlib import Path
-from typing import Union
 
 available_platforms = ("win32", "darwin", "linux")
 if sys.platform not in available_platforms:
     print(f"Currently only available on {', '.join(available_platforms)}. Not available on {sys.platform}.")
     exit(1)
-
-parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument(
-    "--skip-binaries",
-    action="store_true",
-    help=(
-        "Skip copying compiled dependencies (e.g. ifcopenshell_wrapper) to the repo. "
-        "Useful if you already have the latest binaries in the repo and don't want them to be overridden."
-    ),
-)
-args = parser.parse_args()
 
 # ---------------------------
 # SETTINGS.
@@ -74,7 +61,7 @@ BONSAI_PATH_CANDIDATES = (
 
 
 # Determine BONSAI_PATH from existing options.
-def find_bonsai_path() -> Union[Path, None]:
+def find_bonsai_path() -> Path | None:
     for path in BONSAI_PATH_CANDIDATES:
         if path.exists():
             return path
@@ -86,6 +73,12 @@ def find_bonsai_path() -> Union[Path, None]:
 # Should be changed by user only if their installation path doesn't match any of the defaults
 # or if they need different paths priority order.
 BONSAI_PATH = find_bonsai_path()
+
+
+print("Where do the compiled IfcOpenShell binaries (e.g. ifcopenshell_wrapper) come from?")
+print("1. From the installed Bonsai. They will be copied to the repo, replacing the ones already there.")
+print("2. I compile IfcOpenShell myself. The binaries in the repo will be used as they are.")
+should_copy_binaries = input("Enter 1 or 2: ").strip() == "1"
 
 
 # ---------------------------
@@ -137,20 +130,28 @@ def main() -> None:
         path.unlink()
     subprocess.check_call(("git", "checkout", "--", symlinks_glob), cwd=REPO_PATH)
 
-    if args.skip_binaries:
-        print("Skipping copying compiled dependencies to the repo...")
-    else:
+    package_path = PACKAGE_PATH / "ifcopenshell"
+    repo_package_path = REPO_PATH / "src" / "ifcopenshell-python" / "ifcopenshell"
+    if not should_copy_binaries:
+        assert any(repo_package_path.glob("_ifcopenshell_wrapper*")), (
+            f"Couldn't find compiled ifcopenshell_wrapper in '{repo_package_path}'. "
+            "Compile IfcOpenShell first or let the script copy the binaries from the installed Bonsai."
+        )
+    # There is nothing to copy if the package is already linked to the repo.
+    elif not package_path.is_symlink():
         print("Copying compiled dependencies to the repo...")
-        dest = REPO_PATH / "src" / "ifcopenshell-python" / "ifcopenshell"
-        for path in PACKAGE_PATH.glob("ifcopenshell/*_wrapper*"):
-            if path.suffix.lower() == ".pyi":
+        # Anything the installed package has on top of the tracked Python code is a binary.
+        output = subprocess.check_output(("git", "ls-files"), cwd=repo_package_path, text=True)
+        tracked = {line.split("/")[0] for line in output.splitlines()}
+        for path in package_path.iterdir():
+            if path.name in tracked or path.name == "__pycache__":
                 continue
-            dest_ = dest / path.name
-            print(f"Copying {path} -> {dest_}")
-            try:
-                shutil.copy(path, dest_)
-            except shutil.SameFileError:
-                pass
+            dest = repo_package_path / path.name
+            print(f"Copying {path} -> {dest}")
+            # Never write through a symlink, as it may lead to binaries compiled locally.
+            if dest.is_symlink():
+                dest.unlink()
+            shutil.copy(path, dest)
 
     print("Symlinking extension to the git repo...")
     # fmt: off
@@ -174,16 +175,11 @@ def main() -> None:
 
     for path, dest in symlinks:
         print(f"Linking {path} -> {dest}.")
-        if path.is_dir():
-            if path.is_symlink():
-                path.unlink()
-            else:
-                shutil.rmtree(path)
-        # Check `is_symlink` in case if it's a broken symlink.
-        elif path.is_file() or path.is_symlink():
+        # Check `is_symlink` first, as it could be a symlink to a directory or a broken symlink.
+        if path.is_symlink() or path.is_file():
             path.unlink()
-        else:
-            pass
+        elif path.is_dir():
+            shutil.rmtree(path)
         path.symlink_to(dest, dest.is_dir())
 
     print("Download third party dependencies...")

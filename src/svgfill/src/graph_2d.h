@@ -7,6 +7,8 @@
 #endif
 #endif
 
+#include <optional>
+
 template <typename Kernel>
 class Graph2D {
 public:
@@ -56,8 +58,8 @@ public:
         return adjacency_list.find(p);
     }
 
-    boost::optional< CGAL::Segment_2<Kernel> > query(const Point_2& p, typename Kernel::FT eps) {
-        boost::optional< CGAL::Segment_2<Kernel> > closest_segment;
+    std::optional< CGAL::Segment_2<Kernel> > query(const Point_2& p, typename Kernel::FT eps) {
+        std::optional< CGAL::Segment_2<Kernel> > closest_segment;
         typename Kernel::FT closest_distance = std::numeric_limits<double>::infinity();
         for (auto& p1 : adjacency_list) {
             for (auto& p2 : p1.second) {
@@ -343,7 +345,7 @@ public:
     void to_arrangement(T& arr) {
         if (is_valid() && arr.is_empty()) {
             std::vector<CGAL::Segment_2<Kernel>> edges;
-            
+
             for (auto it = edges_begin(); it != edges_end(); ++it) {
                 edges.emplace_back(it->first, it->second);
             }
@@ -355,7 +357,7 @@ public:
                 }
                 CGAL::insert(arr, CGAL::Segment_2<Kernel>(it->first, it->second));
             }
-        }        
+        }
     }
 
     template <typename T>

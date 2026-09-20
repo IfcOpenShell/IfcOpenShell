@@ -12,7 +12,9 @@ Let's learn IfcOpenShell!
    ifcopenshell
    ifcopenshell-python
    ifcconvert
+   ifcviewer
    bonsai
+   bonsai-viewer
 
 .. toctree::
    :hidden:
@@ -21,7 +23,6 @@ Let's learn IfcOpenShell!
 
    bcf
    bimserver-plugin
-   bimtester
    bsdd
    ifc2ca
    ifc4d

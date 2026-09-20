@@ -370,21 +370,20 @@ class Project(bonsai.core.tool.Project):
         props = cls.get_project_props()
         active_library_breadcrumb = props.get_active_library_breadcrumb()
         change_back = False
-        breadcrumb = None
+        name = breadcrumb_type = library_id = None
         if active_library_breadcrumb:
             name = active_library_breadcrumb.name
             breadcrumb_type = active_library_breadcrumb.breadcrumb_type
             library_id = active_library_breadcrumb.library_id
-            breadcrumb = (name, breadcrumb_type, library_id)
             change_back = True
 
         bpy.ops.bim.rewind_library()
         if change_back:
-            assert breadcrumb
+            assert name is not None and breadcrumb_type is not None and library_id is not None
             bpy.ops.bim.change_library_element(
-                element_name=breadcrumb[0],
-                breadcrumb_type=breadcrumb[1],
-                library_id=breadcrumb[2],
+                element_name=name,
+                breadcrumb_type=breadcrumb_type,
+                library_id=library_id,
             )
 
     @classmethod

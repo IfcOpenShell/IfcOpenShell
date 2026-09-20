@@ -1,6 +1,14 @@
 import ifcopenshell
 
 
+def test_spf_strings_can_be_encoded_and_decoded():
+    decoded = "Café's \\"
+    encoded = r"'Caf\X2\00E9\X0\''s \\'"
+
+    assert ifcopenshell.encode_spf_string(decoded) == encoded
+    assert ifcopenshell.decode_spf_string(encoded) == decoded
+
+
 def test_skip_over_non_entity_instance():
     data = """
 ISO-10303-21;
