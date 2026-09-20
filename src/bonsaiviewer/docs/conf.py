@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 
 from docutils import nodes
+from sphinx.util.nodes import split_explicit_title
 
 project = "Bonsai Viewer"
 copyright = f"2020-{datetime.now().year} IfcOpenShell Contributors"
@@ -15,8 +16,10 @@ with open(os.path.join(cwd, "..", "..", "..", "VERSION"), "r") as f:
 
 
 def bonsaiviewer_url(name, rawtext, text, lineno, inliner, options={}, content=[]):
-    url = f"https://github.com/IfcOpenShell/IfcOpenShell/releases/download/bonsaiviewer-{release}/bonsaiviewer-{release}-{text}.zip"
-    node = nodes.reference(rawtext, text, refuri=url, **options)
+    """Link to a release zip, e.g. :bonsaiviewer_url:`win64` or :bonsaiviewer_url:`Windows <win64>`."""
+    _, title, platform = split_explicit_title(text)
+    url = f"https://github.com/IfcOpenShell/IfcOpenShell/releases/download/bonsaiviewer-{release}/bonsaiviewer-{release}-{platform}.zip"
+    node = nodes.reference(rawtext, title, refuri=url, **options)
     return [node], []
 
 

@@ -9,6 +9,19 @@ the rest of IfcOpenShell. It is not a Blender add-on, so — unlike Bonsai —
 there is no "live development" symlink workflow: you rebuild the binary after
 changing the code.
 
+Unstable builds
+---------------
+
+If you want the latest changes without compiling anything, every build of
+IfcOpenShell also builds Bonsai Viewer. Open the `IfcOpenShell Build Service
+<https://builds.ifcopenshell.org>`__, find the ``BonsaiViewer`` row of the most
+recent build, and download the zip for your platform. Install it the same way
+as a release, see :doc:`installation`.
+
+The builds are made on demand rather than on a schedule, so the newest build
+may be a few days old. Not every build covers every platform, so you may need
+to look at an older build for yours.
+
 System requirements
 -------------------
 
