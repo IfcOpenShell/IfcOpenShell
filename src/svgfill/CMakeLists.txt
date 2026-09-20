@@ -12,10 +12,8 @@ endif()
 
 if(WIN32 AND NOT DEFINED ENV{CONDA_BUILD})
     set(Boost_USE_STATIC_LIBS ON)
+    set(Boost_USE_STATIC_RUNTIME OFF)
     set(Boost_USE_MULTITHREADED ON)
-    if(USE_STATIC_MSVC_RUNTIME)
-        set(Boost_USE_STATIC_RUNTIME ON)
-    endif()
 else()
     # Disable Boost's autolinking as the libraries to be linked to are supplied
     # already by CMake, and it's going to conflict if there are multiple, as is
@@ -33,8 +31,14 @@ endif()
 
 find_package(Boost)
 message(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
+
+# 2.6.32 is the version bundled by OpenCOLLADA (Externals/LibXML).
+set(LIBXML2_MIN_VERSION 2.6.32)
 find_package(LibXml2 REQUIRED)
-find_package(CGAL REQUIRED)
+# libxml2's CMake config has no -version.cmake file, so a versioned find_package() always rejects it.
+check_min_version(LibXml2 "${LibXml2_VERSION}" "${LIBXML2_MIN_VERSION}")
+
+find_package(CGAL ${CGAL_MIN_VERSION} REQUIRED)
 
 set(SVGPP_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/svgpp/include")
 if(NOT EXISTS ${SVGPP_INCLUDE})
@@ -46,11 +50,22 @@ endif()
 include_directories(${Boost_INCLUDE_DIRS} ${SVGPP_INCLUDE})
 
 file(GLOB LIB_H_FILES src/*.h)
-file(GLOB LIB_CPP_FILES src/svgfill.cpp src/arrange_polygons.cpp)
+set(LIB_CPP_FILES src/svgfill.cpp src/arrange_polygons.cpp src/svgfill_plugin.cpp)
 set(LIB_SRC_FILES ${LIB_H_FILES} ${LIB_CPP_FILES})
-add_library(svgfill ${LIB_SRC_FILES})
-target_link_libraries(svgfill ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES} LibXml2::LibXml2 IFCOPENSHELL_CGAL IfcParse)
+add_library(svgfill SHARED ${LIB_SRC_FILES})
+target_compile_definitions(svgfill PRIVATE BOOST_DLL_USE_STD_FS)
+if(NOT WASM_BUILD)
+    target_link_libraries(svgfill PRIVATE plugin)
+endif()
+target_link_libraries(svgfill PRIVATE ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES} LibXml2::LibXml2 IFCOPENSHELL_CGAL IfcParse)
+# `IFC_SHARED_BUILD` definition only exists since we have part of svgfill
+# compiled directly inside `ifcwrap` (linework_processing_facade.cpp).
+# It needs to be able to compile those symbols without dllimport attributes,
+# which is achieved by omitting `IFC_SHARED_BUILD`.
+target_compile_definitions(svgfill PUBLIC IFC_SHARED_BUILD)
 set_target_properties(svgfill PROPERTIES PUBLIC_HEADER "${LIB_H_FILES}")
+set_target_properties(svgfill PROPERTIES OUTPUT_NAME "ifcopenshell_geometry_svgfill")
+ifcopenshell_wasm_plugin_link_options(svgfill ifcopenshell_register_linework_processing_plugin_v1)
 
 add_executable(svgfill_exe src/main.cpp)
 target_link_libraries(svgfill_exe svgfill)
@@ -65,6 +80,8 @@ if(WIN32)
     # conflict occurs.
     target_link_options(svgfill_exe PRIVATE "/NOIMPLIB")
 endif()
+
+set(linework_processing_libraries svgfill PARENT_SCOPE)
 
 install(
     TARGETS svgfill_exe svgfill

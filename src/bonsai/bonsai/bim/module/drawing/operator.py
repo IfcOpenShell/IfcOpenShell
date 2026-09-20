@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import hashlib
 import json
 import logging
 import multiprocessing
@@ -808,6 +807,7 @@ class CreateDrawing(bpy.types.Operator):
             bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.000001)
             bmesh.ops.triangle_fill(bm, use_dissolve=True, edges=bm.edges)
 
+            prev_co = None
             if not usage:
                 sense_factor = 1  # Assume the extrusion vector points in the direction sense
                 no = tool.Drawing.get_extrusion_vector(element).normalized()
@@ -1003,10 +1003,7 @@ class CreateDrawing(bpy.types.Operator):
                 # All very hackish whilst prototyping
                 exporter = bonsai.bim.export_ifc.IfcExporter(None)
                 exporter.file = tool.Ifc.get()
-                invalidated_elements = exporter.sync_all_objects()
-                invalidated_guids = [e.GlobalId for e in invalidated_elements if hasattr(e, "GlobalId")]
-                if cache := IfcStore.get_cache():
-                    [cache.remove(guid) for guid in invalidated_guids]
+                exporter.sync_all_objects()
 
         # If we have already calculated it in the SVG in the past, don't recalculate
         edited_guids = set()
@@ -1050,10 +1047,6 @@ class CreateDrawing(bpy.types.Operator):
 
         for ifc_path, (ifc, link_matrix) in files.items():
             # Don't use draw.main() just whilst we're prototyping and experimenting
-            # TODO: hash paths are never used
-            ifc_hash = hashlib.md5(ifc_path.encode("utf-8")).hexdigest()
-            ifc_cache_path = os.path.join(prefs.cache_dir, f"{ifc_hash}.h5")
-
             self.serialiser.setFile(ifc)
             drawing_elements = tool.Drawing.get_drawing_elements(self.camera_element, ifc_file=ifc)
 
@@ -1413,31 +1406,28 @@ class CreateDrawing(bpy.types.Operator):
             # Backwards compatibility with older ifcopenshell builds that don't expose these keys.
             pass
         self.svg_buffer = ifcopenshell.geom.serializers.buffer()
-        self.serialiser_settings = ifcopenshell.geom.serializer_settings()
-        self.serialiser = ifcopenshell.geom.serializers.svg(
-            self.svg_buffer, self.svg_settings, self.serialiser_settings
-        )
-        self.serialiser.setWithoutStoreys(True)
-        self.serialiser.setPolygonal(True)
-        self.serialiser.setUseHlrPoly(True)
+        self.svg_settings.set("svg-without-storeys", True)
+        self.svg_settings.set("svg-write-poly", True)
+        self.svg_settings.set("svg-poly", True)
         # Objects with more than these edges are rendered as wireframe instead of HLR for optimisation
-        self.serialiser.setProfileThreshold(10000)
-        self.serialiser.setUseNamespace(True)
-        self.serialiser.setAlwaysProject(True)
-        self.serialiser.setAutoElevation(False)
-        self.serialiser.setAutoSection(False)
-        self.serialiser.setPrintSpaceNames(False)
-        self.serialiser.setPrintSpaceAreas(False)
-        self.serialiser.setDrawDoorArcs(False)
-        self.serialiser.setNoCSS(True)
-        self.serialiser.setElevationRefGuid(self.camera_element.GlobalId)
-        self.serialiser.setScale(self.scale)
-        self.serialiser.setSubtractionSettings(ifcopenshell.ifcopenshell_wrapper.ALWAYS)
-        self.serialiser.setUsePrefiltering(True)  # See #3359
-        self.serialiser.setUnifyInputs(True)
-        self.serialiser.setSegmentProjection(True)
+        self.svg_settings.set("profile-threshold", 10000)
+        self.svg_settings.set("svg-xmlns", True)
+        self.svg_settings.set("svg-project", True)
+        self.svg_settings.set("auto-elevation", False)
+        self.svg_settings.set("auto-section", False)
+        self.svg_settings.set("print-space-names", False)
+        self.svg_settings.set("print-space-areas", False)
+        self.svg_settings.set("door-arcs", False)
+        self.svg_settings.set("svg-no-css", True)
+        self.svg_settings.set("elevation-ref-guid", self.camera_element.GlobalId)
+        self.svg_settings.set("scale", str(self.scale))
+        self.svg_settings.set("svg-subtract-before", "always")
+        self.svg_settings.set("svg-prefilter", True)  # See #3359
+        self.svg_settings.set("svg-unify-inputs", True)
+        self.svg_settings.set("svg-segment-projection", True)
         if target_view == "REFLECTED_PLAN_VIEW":
-            self.serialiser.setMirrorY(True)
+            self.svg_settings.set("svg-mirror-y", True)
+        self.serialiser = ifcopenshell.geom.serializers.svg(self.svg_buffer, self.svg_settings)
         # tree = ifcopenshell.geom.tree()
         # This instructs the tree to explode BReps into faces and return
         # the style of the face when running tree.select_ray()
@@ -2274,7 +2264,7 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
                 # [["inkscape", "svg", "-o", "eps"], ["pstoedit", "-dt", "-f", "dxf:-polyaslines -mm", "eps", "dxf", "-psarg", "-dNOSAFER"]]
                 commands = json.loads(svg2dxf_command)
                 for command in commands:
-                    command[0] = shutil.which(command[0]) or command[0]
+                    command[0] = shutil.which(str(command[0])) or command[0]
                     subprocess.run([replacements.get(c, c) for c in command])
 
             if self.open_viewer:

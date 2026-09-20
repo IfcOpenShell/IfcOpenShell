@@ -22,9 +22,6 @@ props = tool.Georeference.get_georeference_props()
 
 props = tool.Project.get_project_props()
 
-# Generally recommended to disable caching for stability right now
-props.should_cache = False
-
 # If you are not authoring, it is recommended to enable this.
 # When enabled, types, openings, and non geometric elements are not loaded.
 props.is_coordinating = True

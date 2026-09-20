@@ -1,6 +1,6 @@
 #include "boolean_utils.h"
 
-#include "IfcGeomTree.h"
+#include "tree.h"
 #include "base_utils.h"
 
 #include <BRepBuilderAPI_Copy.hxx>
@@ -30,7 +30,7 @@
 #include <vector>
 #include <thread>
 
-void IfcGeom::util::copy_operand(const NCollection_List<TopoDS_Shape>& l, NCollection_List<TopoDS_Shape>& r) {
+void ifcopenshell::geom::util::copy_operand(const NCollection_List<TopoDS_Shape>& l, NCollection_List<TopoDS_Shape>& r) {
 #if OCC_VERSION_HEX < 0x70000
 	r.Clear();
 	TopTools_ListIteratorOfListOfShape it(l);
@@ -45,7 +45,7 @@ void IfcGeom::util::copy_operand(const NCollection_List<TopoDS_Shape>& l, NColle
 #endif
 }
 
-TopoDS_Shape IfcGeom::util::copy_operand(const TopoDS_Shape & s) {
+TopoDS_Shape ifcopenshell::geom::util::copy_operand(const TopoDS_Shape & s) {
 #if OCC_VERSION_HEX < 0x70000
 	return BRepBuilderAPI_Copy(s);
 #else
@@ -53,12 +53,12 @@ TopoDS_Shape IfcGeom::util::copy_operand(const TopoDS_Shape & s) {
 #endif
 }
 
-double IfcGeom::util::min_edge_length(const TopoDS_Shape & a) {
+double ifcopenshell::geom::util::min_edge_length(const TopoDS_Shape & a) {
 	double min_edge_len = std::numeric_limits<double>::infinity();
 	TopExp_Explorer exp(a, TopAbs_EDGE);
 	for (; exp.More(); exp.Next()) {
 		const TopoDS_Edge& e = TopoDS::Edge(exp.Current());
-		
+
 		TopoDS_Vertex v0, v1;
 		TopExp::Vertices(e, v0, v1);
 		if (!v0.IsNull() && !v1.IsNull() && v0.IsSame(v1)) {
@@ -77,7 +77,7 @@ double IfcGeom::util::min_edge_length(const TopoDS_Shape & a) {
 	return min_edge_len;
 }
 
-double IfcGeom::util::min_vertex_edge_distance(const TopoDS_Shape & a, double min_search, double max_search) {
+double ifcopenshell::geom::util::min_vertex_edge_distance(const TopoDS_Shape & a, double min_search, double max_search) {
 	double M = std::numeric_limits<double>::infinity();
 
 	NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> vertices, edges;
@@ -85,7 +85,7 @@ double IfcGeom::util::min_vertex_edge_distance(const TopoDS_Shape & a, double mi
 	TopExp::MapShapes(a, TopAbs_VERTEX, vertices);
 	TopExp::MapShapes(a, TopAbs_EDGE, edges);
 
-	IfcGeom::impl::tree<int> tree;
+	ifcopenshell::geom::impl::tree<int> tree;
 
 	// Add edges to tree
 	for (int i = 1; i <= edges.Extent(); ++i) {
@@ -129,7 +129,7 @@ double IfcGeom::util::min_vertex_edge_distance(const TopoDS_Shape & a, double mi
 	return M;
 }
 
-bool IfcGeom::util::faces_overlap(const TopoDS_Face & f, const TopoDS_Face & g) {
+bool ifcopenshell::geom::util::faces_overlap(const TopoDS_Face & f, const TopoDS_Face & g) {
 	points_on_planar_face_generator pgen(f);
 
 	BRep_Builder B;
@@ -141,7 +141,7 @@ bool IfcGeom::util::faces_overlap(const TopoDS_Face & f, const TopoDS_Face & g) 
 
 	while (pgen(test)) {
 		TopoDS_Vertex V;
-		B.MakeVertex(V, test, Precision::Confusion());
+		B.MakeVertex(V, test, ::Precision::Confusion());
 		x.LoadS2(V);
 		x.Perform();
 		if (x.IsDone() && x.NbSolution() == 1) {
@@ -154,7 +154,7 @@ bool IfcGeom::util::faces_overlap(const TopoDS_Face & f, const TopoDS_Face & g) 
 	return true;
 }
 
-double IfcGeom::util::min_face_face_distance(const TopoDS_Shape & a, double max_search) {
+double ifcopenshell::geom::util::min_face_face_distance(const TopoDS_Shape & a, double max_search) {
 	/*
 	NB: This is currently only implemented for planar surfaces.
 	*/
@@ -164,7 +164,7 @@ double IfcGeom::util::min_face_face_distance(const TopoDS_Shape & a, double max_
 
 	TopExp::MapShapes(a, TopAbs_FACE, faces);
 
-	IfcGeom::impl::tree<int> tree;
+	ifcopenshell::geom::impl::tree<int> tree;
 
 	// Add faces to tree
 	for (int i = 1; i <= faces.Extent(); ++i) {
@@ -229,7 +229,7 @@ double IfcGeom::util::min_face_face_distance(const TopoDS_Shape & a, double max_
 	return M;
 }
 
-int IfcGeom::util::bounding_box_overlap(double p, const TopoDS_Shape & a, const NCollection_List<TopoDS_Shape> & b, NCollection_List<TopoDS_Shape> & c) {
+int ifcopenshell::geom::util::bounding_box_overlap(double p, const TopoDS_Shape & a, const NCollection_List<TopoDS_Shape> & b, NCollection_List<TopoDS_Shape> & c) {
 	int N = 0;
 
 	Bnd_Box A;
@@ -258,7 +258,7 @@ int IfcGeom::util::bounding_box_overlap(double p, const TopoDS_Shape & a, const 
 	return N;
 }
 
-bool IfcGeom::util::get_edge_axis(const TopoDS_Edge & e, gp_Ax1 & ax) {
+bool ifcopenshell::geom::util::get_edge_axis(const TopoDS_Edge & e, gp_Ax1 & ax) {
 	double _, __;
 
 	auto crv = BRep_Tool::Curve(e, _, __);
@@ -279,7 +279,7 @@ bool IfcGeom::util::get_edge_axis(const TopoDS_Edge & e, gp_Ax1 & ax) {
 	return false;
 }
 
-bool IfcGeom::util::is_subset(const NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher>& lhs, const NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher>& rhs) {
+bool ifcopenshell::geom::util::is_subset(const NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher>& lhs, const NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher>& rhs) {
 	if (rhs.Extent() < lhs.Extent()) {
 		return false;
 	}
@@ -292,7 +292,7 @@ bool IfcGeom::util::is_subset(const NCollection_IndexedMap<TopoDS_Shape, TopTool
 	return true;
 }
 
-bool IfcGeom::util::is_extrusion(const gp_Vec & v, const TopoDS_Shape & s, TopoDS_Face & base, std::pair<double, double>& interval) {
+bool ifcopenshell::geom::util::is_extrusion(const gp_Vec & v, const TopoDS_Shape & s, TopoDS_Face & base, std::pair<double, double>& interval) {
 	// This assumes UnifySameDomain has been processed on s, so that
 	// the extrusion top and bottom are a single face.
 
@@ -310,13 +310,13 @@ bool IfcGeom::util::is_extrusion(const gp_Vec & v, const TopoDS_Shape & s, TopoD
 	// top face. When neither of these categories the shape is not a extrusion
 	// or the extrusion direction is not orthogonal to its basis.
 	for (int i = 1; i < mapping.Extent(); ++i) {
-		auto& s = mapping.FindKey(i);
-		if (s.ShapeType() != TopAbs_EDGE) {
+		auto& shape = mapping.FindKey(i);
+		if (shape.ShapeType() != TopAbs_EDGE) {
 			continue;
 		}
 
 		// @todo use a linear tolernace and the face extrimities, see #2218
-		const TopoDS_Edge& e = TopoDS::Edge(s);
+		const TopoDS_Edge& e = TopoDS::Edge(shape);
 		if (!get_edge_axis(e, ax)) {
 			// curved
 			curved_orthogonal.Add(e);
@@ -405,7 +405,7 @@ bool IfcGeom::util::is_extrusion(const gp_Vec & v, const TopoDS_Shape & s, TopoD
 	return true;
 }
 
-int IfcGeom::util::eliminate_narrow_operands(double prec, const NCollection_List<TopoDS_Shape>& bs, NCollection_List<TopoDS_Shape> & c, Logger& logger) {
+int ifcopenshell::geom::util::eliminate_narrow_operands(double prec, const NCollection_List<TopoDS_Shape>& bs, NCollection_List<TopoDS_Shape> & c, ifcopenshell::logger& logger) {
 	int N = 0;
 	NCollection_List<TopoDS_Shape>::Iterator it(bs);
 	for (; it.More(); it.Next()) {
@@ -418,7 +418,7 @@ int IfcGeom::util::eliminate_narrow_operands(double prec, const NCollection_List
 
 		bool is_narrow = min_dimension < prec;
 
-		logger.Notice("GEO", 122, "Min OBB dimension of operand = " + std::to_string(min_dimension));
+		logger.notice("GEO", 122, "Min OBB dimension of operand = " + std::to_string(min_dimension));
 
 		if (!is_narrow) {
 			c.Append(it.Value());
@@ -429,7 +429,7 @@ int IfcGeom::util::eliminate_narrow_operands(double prec, const NCollection_List
 	return N;
 }
 
-int IfcGeom::util::eliminate_touching_operands(double prec, const TopoDS_Shape & a, const NCollection_List<TopoDS_Shape> & bs, NCollection_List<TopoDS_Shape> & c) {
+int ifcopenshell::geom::util::eliminate_touching_operands(double prec, const TopoDS_Shape & a, const NCollection_List<TopoDS_Shape> & bs, NCollection_List<TopoDS_Shape> & c) {
     NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> a_faces;
 	TopExp::MapShapes(a, TopAbs_FACE, a_faces);
 
@@ -445,7 +445,7 @@ int IfcGeom::util::eliminate_touching_operands(double prec, const TopoDS_Shape &
 	NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> a_vertices;
 	TopExp::MapShapes(a, TopAbs_VERTEX, a_vertices);
 
-	IfcGeom::impl::tree<int> tree;
+	ifcopenshell::geom::impl::tree<int> tree;
 
 	// Add faces to tree
 	for (int i = 1; i <= a_faces.Extent(); ++i) {
@@ -573,8 +573,8 @@ int IfcGeom::util::eliminate_touching_operands(double prec, const TopoDS_Shape &
 	return N;
 }
 
-bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_input, const NCollection_List<TopoDS_Shape> & b_input, TopoDS_Shape & result, double eps, Logger& logger) {
-	IfcGeom::impl::tree<int> edge_tree;
+bool ifcopenshell::geom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_input, const NCollection_List<TopoDS_Shape> & b_input, TopoDS_Shape & result, double eps, ifcopenshell::logger& logger) {
+	ifcopenshell::geom::impl::tree<int> edge_tree;
 
 	NCollection_List<TopoDS_Shape> ab_input = b_input;
 	ab_input.Prepend(a_input);
@@ -585,7 +585,7 @@ bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_
 	std::map<int, int> edge_index_to_shape_index;
 
 	std::vector<TopoDS_Shape> shapes;
-	std::vector<std::pair<size_t, TopoDS_Edge>> edges;
+	std::vector<std::pair<int, TopoDS_Edge>> edges;
 	// First is the outer wire
 	std::vector<TopoDS_Wire> wires;
 
@@ -646,19 +646,19 @@ bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_
 			BRepBndLib::Add(exp.Current(), b);
 			b.Enlarge(eps);
 
-			for (auto& i : edge_tree.select_box(b)) {
-				if (i == edge_index) {
+			for (auto& candidate_index : edge_tree.select_box(b)) {
+				if (candidate_index == edge_index) {
 					// Skip self-selection
 					continue;
 				}
 
-				if (edges[i].first == shape_index) {
+				if (edges[candidate_index].first == shape_index) {
 					// Skip edges of the same operand
 					continue;
 				}
 
 				const TopoDS_Edge& e0 = TopoDS::Edge(exp.Current());
-				const TopoDS_Edge& e1 = edges[i].second;
+				const TopoDS_Edge& e1 = edges[candidate_index].second;
 
 				double u11, u12, u21, u22, U1, U2;
 
@@ -670,9 +670,9 @@ bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_
 				if (!ecc.Extrema().IsParallel() && ecc.NbExtrema() >= 1) {
 					// @todo: extend this to work in case of multiple extrema and curved segments.
 
-					for (int i = 1; i <= ecc.NbExtrema(); ++i) {
+					for (int extrema_index = 1; extrema_index <= ecc.NbExtrema(); ++extrema_index) {
 						gp_Pnt p1, p2;
-						ecc.Points(i, p1, p2);
+						ecc.Points(extrema_index, p1, p2);
 
 						// #3616 Only take into account orthogonal distance between closest points on curve
 						// to see whether inside tolerance. Current DY is hardcoded. The sensible default
@@ -685,7 +685,7 @@ bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_
 
 						const bool unbounded_intersects = ortho_distance < eps;
 						if (unbounded_intersects) {
-							ecc.Parameters(i, U1, U2);
+							ecc.Parameters(extrema_index, U1, U2);
 
 							if (u11 > u12) {
 								std::swap(u11, u12);
@@ -703,7 +703,7 @@ bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_
 							if (u11 < U1 && U1 < u12 && u21 < U2 && U2 < u22) {
 								// Edge curves belonging to different operands intersect, don't process
 								// using builder.
-								logger.Notice("GEO", 123, "Intersecting boundaries");
+								logger.notice("GEO", 123, "Intersecting boundaries");
 								return false;
 							}
 						}
@@ -734,10 +734,10 @@ bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_
 	}
 
 	// First check for containment in outer wire
-	for (auto it = ++wires.begin(); it != wires.end(); ++it) {
+	for (auto wire_it = ++wires.begin(); wire_it != wires.end(); ++wire_it) {
 		// Considering a single vertex is sufficient because we have already
 		// guaranteed that the edges of different operands do not cross.
-		TopoDS_Iterator it_ed(*it);
+		TopoDS_Iterator it_ed(*wire_it);
 		auto& ed = it_ed.Value();
 
 		TopoDS_Iterator it_v(ed);
@@ -749,16 +749,16 @@ bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_
 			// A wire is not contained in the outer wire, it's a subtraction without
 			// any effect and marked as redundant. Feeding it to the builder algo
 			// will likely cause problems.
-			redundant[std::distance(wires.begin(), it)] = true;
-			logger.Notice("GEO", 124, "Subtraction operand outside of outer bound");
+		redundant[std::distance(wires.begin(), wire_it)] = true;
+			logger.notice("GEO", 124, "Subtraction operand outside of outer bound");
 		}
 	}
 
 	// Now build a tree to find inner wires contained in other inner wires
 	// NB first wire is *not* in this tree
-	IfcGeom::impl::tree<int> wire_tree;
+	ifcopenshell::geom::impl::tree<int> wire_tree;
 	for (size_t wire_index = 1; wire_index < wires.size(); ++wire_index) {
-		wire_tree.add(wire_index, wires[wire_index]);
+		wire_tree.add(static_cast<int>(wire_index), wires[wire_index]);
 	}
 
 	for (size_t wire_index = 1; wire_index < wires.size(); ++wire_index) {
@@ -775,7 +775,7 @@ bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_
 		// than the second element.
 		for (auto& other_index : wire_tree.select_box(b, true)) {
 			// other_index is fully contained in wire_index
-			if (wire_index == other_index) {
+			if (wire_index == static_cast<size_t>(other_index)) {
 				continue;
 			}
 
@@ -790,7 +790,7 @@ bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_
 			if (wire_clss[wire_index]->Perform(p2d) == TopAbs_IN) {
 				// A wire is contained within another operand
 				redundant[other_index] = true;
-				logger.Notice("GEO", 125, "Subtraction operand contained in other");
+				logger.notice("GEO", 125, "Subtraction operand contained in other");
 			}
 		}
 	}
@@ -806,11 +806,11 @@ bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_
 	return true;
 }
 
-void IfcGeom::util::points_on_planar_face_generator::reset() {
+void ifcopenshell::geom::util::points_on_planar_face_generator::reset() {
 	i = j = (int)inset_;
 }
 
-bool IfcGeom::util::points_on_planar_face_generator::operator()(gp_Pnt& p) {
+bool ifcopenshell::geom::util::points_on_planar_face_generator::operator()(gp_Pnt& p) {
 	while (j < N) {
 		double u = u0 + (u1 - u0) * i / N;
 		double v = v0 + (v1 - v0) * j / N;
@@ -832,7 +832,7 @@ bool IfcGeom::util::points_on_planar_face_generator::operator()(gp_Pnt& p) {
 }
 
 
-bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const TopoDS_Shape& a_input, const NCollection_List<TopoDS_Shape>& b_input, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
+bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& settings, const TopoDS_Shape& a_input, const NCollection_List<TopoDS_Shape>& b_input, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
 	using namespace std::string_literals;
 
 	const bool do_unify = true;
@@ -844,11 +844,11 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 
 	std::string debug_identifier;
 	if (debug) {
-		static my_thread_local size_t operation_counter_ = 0;
+		static thread_local size_t operation_counter_ = 0;
 		std::stringstream ss;
 		ss << "bool-" << std::this_thread::get_id() << "-" << (operation_counter_++);
 		debug_identifier = ss.str();
-		settings.log().Notice("GEO", 126, "Boolean debug identifier: " + debug_identifier);
+		settings.log().notice("GEO", 126, "Boolean debug identifier: " + debug_identifier);
 	}
 
 	if (fuzziness < 0.) {
@@ -884,8 +884,8 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 
 		a = unify(a_input, fuzziness * 1000.);
 
-		settings.log().Message(
-			Logger::LOG_DEBUG, "GEO", 127,
+		settings.log().message(
+			ifcopenshell::logger::LOG_DEBUG, "GEO", 127,
 			"Simplified operand A from "s +
 			std::to_string(count(a_input, TopAbs_FACE)) +
 			" to "s +
@@ -896,8 +896,8 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 			NCollection_List<TopoDS_Shape>::Iterator it(b_input);
 			for (; it.More(); it.Next()) {
 				b.Append(unify(it.Value(), fuzziness));
-				settings.log().Message(
-					Logger::LOG_DEBUG, "GEO", 128,
+				settings.log().message(
+					ifcopenshell::logger::LOG_DEBUG, "GEO", 128,
 					"Simplified operand B from "s +
 					std::to_string(count(it.Value(), TopAbs_FACE)) +
 					" to "s +
@@ -924,7 +924,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 
 			auto N = bounding_box_overlap(fuzziness, a, b, b_tmp);
 			if (N) {
-				settings.log().Notice("GEO", 129, "Eliminated " + std::to_string(N) + " disjoint operands");
+				settings.log().notice("GEO", 129, "Eliminated " + std::to_string(N) + " disjoint operands");
 				std::swap(b, b_tmp);
 			}
 		}
@@ -935,7 +935,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 			b_tmp.Clear();
 			auto N = eliminate_touching_operands(fuzziness, a, b, b_tmp);
 			if (N) {
-				settings.log().Notice("GEO", 130, "Eliminated " + std::to_string(N) + " touching operands");
+				settings.log().notice("GEO", 130, "Eliminated " + std::to_string(N) + " touching operands");
 				std::swap(b, b_tmp);
 			}
 		}
@@ -946,7 +946,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 			b_tmp.Clear();
 			auto N = eliminate_narrow_operands(fuzziness, b, b_tmp, settings.log());
 			if (N) {
-				settings.log().Notice("GEO", 131, "Eliminated " + std::to_string(N) + " narrow operands");
+				settings.log().notice("GEO", 131, "Eliminated " + std::to_string(N) + " narrow operands");
 				std::swap(b, b_tmp);
 			}
 		}
@@ -960,21 +960,21 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 	}
 
 	if (b.Extent() == 0) {
-		settings.log().Warning("GEO", 132, "No other operands remaining, using first operand");
+		settings.log().warning("GEO", 132, "No other operands remaining, using first operand");
 		result = a;
 		return true;
 	}
 
-	if (!is_2d && Logger::LOG_NOTICE >= settings.log().Verbosity()) {
+	if (!is_2d && ifcopenshell::logger::LOG_NOTICE >= settings.log().verbosity()) {
 		PERF("preliminary manifoldness check");
 
 		if (!a.IsNull()) {
-			settings.log().Notice("GEO", 133, "Operand A is " + (is_manifold(a) ? ""s : "non-"s) + "manifold");
+			settings.log().notice("GEO", 133, "Operand A is " + (is_manifold(a) ? ""s : "non-"s) + "manifold");
 		}
 
 		NCollection_List<TopoDS_Shape>::Iterator it(b);
 		for (int i = 0; it.More(); it.Next(), ++i) {
-			settings.log().Notice("GEO", 134, "Operand B " + std::to_string(i) + " is " + (is_manifold(it.Value()) ? ""s : "non-"s) + "manifold");
+			settings.log().notice("GEO", 134, "Operand B " + std::to_string(i) + " is " + (is_manifold(it.Value()) ? ""s : "non-"s) + "manifold");
 		}
 	}
 
@@ -1014,7 +1014,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 
 	const double fuzz = (std::min)(min_length_orig / 3., fuzziness);
 
-	settings.log().Notice("GEO", 135, "Used fuzziness: " + std::to_string(fuzz));
+	settings.log().notice("GEO", 135, "Used fuzziness: " + std::to_string(fuzz));
 
 	const double new_fuzziness = fuzziness * 10.;
 	const bool allow_retry = new_fuzziness - 1e-15 <= settings.precision * 10000. && new_fuzziness < min_length_orig;
@@ -1048,7 +1048,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 		}
 
 		if (is_extrusion_a) {
-			settings.log().Notice("GEO", 136, "Operand A 1/1 is an extrusion");
+			settings.log().notice("GEO", 136, "Operand A 1/1 is an extrusion");
 
 			NCollection_List<TopoDS_Shape>::Iterator it(b);
 			for (int nb = 1; it.More(); it.Next(), ++nb) {
@@ -1064,10 +1064,10 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 				}
 
 				if (is_extrusion_b) {
-					settings.log().Notice("GEO", 137, "Operand B " + std::to_string(nb) + "/" + std::to_string(b.Extent()) + " is an extrusion");
+					settings.log().notice("GEO", 137, "Operand B " + std::to_string(nb) + "/" + std::to_string(b.Extent()) + " is an extrusion");
 
 					if (b_interval.first < a_interval.first + (fuzz * 100.) && b_interval.second > a_interval.second - (fuzz * 100.)) {
-						settings.log().Notice("GEO", 138, "Operand B creates a through hole");
+						settings.log().notice("GEO", 138, "Operand B creates a through hole");
 
 						// Align b with a operand
 						gp_Trsf trsf;
@@ -1107,23 +1107,23 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 					BRepPrimAPI_MakePrism mp(face_result, gp_Vec(gp::DY()) * (a_interval.second - a_interval.first));
 					if (mp.IsDone()) {
 						if (b_remainder_3d.Extent()) {
-							settings.log().Notice("GEO", 139, std::to_string(b_remainder_3d.Extent()) + " operands remaining to process in 3D");
+							settings.log().notice("GEO", 139, std::to_string(b_remainder_3d.Extent()) + " operands remaining to process in 3D");
 							b = b_remainder_3d;
 							s1s.Clear();
 							s1s.Append(mp.Shape());
 						} else {
-							settings.log().Notice("GEO", 140, "Processed fully in 2D");
+							settings.log().notice("GEO", 140, "Processed fully in 2D");
 							result = mp.Shape();
 							return true;
 						}
 					} else {
-						settings.log().Notice("GEO", 141, "Failed to extrude 2D boolean result. Retrying in 3D.");
+						settings.log().notice("GEO", 141, "Failed to extrude 2D boolean result. Retrying in 3D.");
 					}
 				} else {
-					settings.log().Notice("GEO", 142, "Failed to perform 2D boolean operation. Retrying in 3D.");
+					settings.log().notice("GEO", 142, "Failed to perform 2D boolean operation. Retrying in 3D.");
 				}
 			} else {
-				settings.log().Notice("GEO", 143, "No second operands can be processed as 2D inner bounds. Retrying in 3D.");
+				settings.log().notice("GEO", 143, "No second operands can be processed as 2D inner bounds. Retrying in 3D.");
 			}
 		}
 	}
@@ -1144,22 +1144,8 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 		builder->Build();
 	}
 	if (builder->IsDone()) {
-		if (false && builder->DSFiller()->HasWarning(STANDARD_TYPE(BOPAlgo_AlertAcquiredSelfIntersection))) {
-			settings.log().Notice("GEO", 144, "Builder reports self-intersection in output");
-			success = false;
-
-			/*
-			const auto& ws = builder->DSFiller()->GetReport()->GetAlerts(Message_Warning);
-			for (const auto& w : ws) {
-				if (w->DynamicType() == STANDARD_TYPE(BOPAlgo_AlertAcquiredSelfIntersection)) {
-					const auto& x = Handle(BOPAlgo_AlertAcquiredSelfIntersection)::DownCast(w)->GetShape();
-					BRepTools::Write(x, "debug_x.brep");
-					BRepTools::Write(*builder, "debug_r.brep");
-				}
-			}
-			*/
-		} else if(builder->DSFiller()->HasWarning(STANDARD_TYPE(BOPAlgo_AlertBadPositioning)) && !TopoDS_Iterator(*builder).More()) {
-			settings.log().Notice("GEO", 145, "Builder reports bad positioning and result is empty");
+		if (builder->DSFiller()->HasWarning(STANDARD_TYPE(BOPAlgo_AlertBadPositioning)) && !TopoDS_Iterator(*builder).More()) {
+			settings.log().notice("GEO", 145, "Builder reports bad positioning and result is empty");
 			success = false;
 		} else {
 			TopoDS_Shape r = *builder;
@@ -1173,7 +1159,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 					fix.Perform();
 					r = fix.Shape();
 				} catch (...) {
-					settings.log().Error("GEO", 146, "Shape healing failed on boolean result");
+					settings.log().error("GEO", 146, "Shape healing failed on boolean result");
 				}
 			}
 
@@ -1184,7 +1170,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 				success = ana.IsValid() != 0;
 
 				if (!success) {
-					settings.log().Notice("GEO", 147, "Boolean operation yields invalid result");
+					settings.log().notice("GEO", 147, "Boolean operation yields invalid result");
 
 					std::stringstream str;
 					bool any_emitted = false;
@@ -1214,7 +1200,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 
 					dump(r);
 
-					settings.log().Notice("GEO", 148, str.str());
+					settings.log().notice("GEO", 148, str.str());
 				}
 			}
 
@@ -1239,7 +1225,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 							TopExp::MapShapes(bb, TopAbs_EDGE, edges);
 							TopExp::MapShapesAndAncestors(bb, TopAbs_EDGE, TopAbs_FACE, map);
 						}
-						IfcGeom::impl::tree<int> tree;
+						ifcopenshell::geom::impl::tree<int> tree;
 						for (int i = 1; i <= edges.Extent(); ++i) {
 							tree.add(i, edges.FindKey(i));
 						}
@@ -1334,7 +1320,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 
 					if (op == BOPAlgo_CUT && has_open_shells && all_faces_included_in_result && result_n_faces > first_op_n_faces) {
 						success = false;
-						settings.log().Notice("GEO", 149, "Boolean result discarded because subtractions results in only the addition of faces");
+						settings.log().notice("GEO", 149, "Boolean result discarded because subtractions results in only the addition of faces");
 					} else {
 						// when there are edges or vertex-edge distances close to the used fuzziness, the
 						// output is not trusted and the operation is attempted with a higher fuzziness.
@@ -1380,7 +1366,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 							static const char* const reason_strings[] = { "edge length", "vertex-edge", "face-face" };
 							std::stringstream str;
 							str << "Boolean operation result failing " << reason_strings[reason] << " interference check, with fuzziness " << fuzziness << " with length " << v;
-							settings.log().Notice("GEO", 150, str.str());
+							settings.log().notice("GEO", 150, str.str());
 						}
 					}
 
@@ -1389,7 +1375,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 					}
 
 				} else {
-					settings.log().Notice("GEO", 151, "Boolean operation yields non-manifold result");
+					settings.log().notice("GEO", 151, "Boolean operation yields non-manifold result");
 				}
 			}
 		}
@@ -1399,7 +1385,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 #if OCC_VERSION_HEX >= 0x70200
 
 		if (builder->HasError(STANDARD_TYPE(BOPAlgo_AlertBOPNotAllowed))) {
-			settings.log().Error("GEO", 152, "Invalid operands. Using first operand");
+			settings.log().error("GEO", 152, "Invalid operands. Using first operand");
 			result = a;
 			success = true;
 		}
@@ -1412,26 +1398,26 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 #endif
 		std::string str_str = str.str();
 		if (str_str.size()) {
-			settings.log().Notice("GEO", 153, str_str);
+			settings.log().notice("GEO", 153, str_str);
 		}
 	}
 	if (!success) {
 		if (allow_retry) {
 			return boolean_operation(settings, a, b, op, result, new_fuzziness);
 		} else {
-			settings.log().Notice("GEO", 154, "No longer attempting boolean operation with higher fuzziness");
+			settings.log().notice("GEO", 154, "No longer attempting boolean operation with higher fuzziness");
 		}
 	}
 	return success && !result.IsNull();
 }
 
-bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const TopoDS_Shape& a, const TopoDS_Shape& b, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
+bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& settings, const TopoDS_Shape& a, const TopoDS_Shape& b, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
 	NCollection_List<TopoDS_Shape> bs;
 	bs.Append(b);
 	return boolean_operation(settings, a, bs, op, result, fuzziness);
 }
 
-TopoDS_Shape IfcGeom::util::ensure_fit_for_subtraction(const TopoDS_Shape& shape, double tol) {
+TopoDS_Shape ifcopenshell::geom::util::ensure_fit_for_subtraction(const TopoDS_Shape& shape, double tol) {
 	const bool is_comp = is_compound_of_faces(shape);
 	if (!is_comp) {
 		return shape;

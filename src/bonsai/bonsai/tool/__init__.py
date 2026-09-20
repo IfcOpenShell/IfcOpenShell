@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 #
 # Ignore unused imports.
-# ruff: noqa: F401
+# ruff: file-ignore[unused-import]
 
 from bonsai.tool.aggregate import Aggregate
 from bonsai.tool.array import Array

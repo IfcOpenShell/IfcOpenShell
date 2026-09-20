@@ -15,8 +15,10 @@
 /src/examples/out/
 /src/ifcmax/out/
 /src/ifcwrap/out/
-/src/qtviewer/out/
 /src/ifctester/webapp/public/pyodide/
+# pyodide wheels
+/dist/
+/dist-modular/
 
 /win/BuildDepsCache*.txt
 
@@ -104,8 +106,10 @@ src/bonsai/bonsai/bim/data/gantt/jsgantt.css
 src/bonsai/bonsai/bim/data/webui/static/js/jquery.min.js
 src/bonsai/bonsai/bim/data/webui/running_pid.json
 
-# ifcopenshell swig and compiled files
-src/ifcopenshell-python/ifcopenshell/_ifcopenshell_wrapper*.so
+# ifcopenshell swig, compiled files, plugins, shared dependencies
+src/ifcopenshell-python/ifcopenshell/*.so*
+src/ifcopenshell-python/ifcopenshell/*.dylib*
+src/ifcopenshell-python/ifcopenshell/*.dll
 src/ifcopenshell-python/ifcopenshell/ifcopenshell_wrapper.py
 
 # apple
@@ -115,12 +119,12 @@ src/ifcopenshell-python/ifcopenshell/ifcopenshell_wrapper.py
 .clangd
 # clangd cache
 .cache
+# Useful for symlinking json compilation database from cmake,
+# allowing clang commands without `-p path/to/build`.
+/compile_commands.json
 
 # Brickschema
 src/bonsai/bonsai/bim/schema/Brick.ttl
-
-bonsaiDecoratorForLoads.code-workspace
-dev_environment.bat
 
 .pixi/
 
@@ -134,3 +138,6 @@ CLAUDE.local.md
 *.py.tmp*
 *.json.tmp*
 
+# bonsaiviewer-autodesk connector build artifacts
+/src/bonsaiviewer-autodesk/build/
+/src/bonsaiviewer-autodesk/dist/

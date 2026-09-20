@@ -169,12 +169,12 @@ Note that this only links Python code to the Git repository. If there are any
 major changes such as new dependencies or newly compiled C++ code, you will
 need to make the updates manually. This is relatively rare. Reviewing the
 `Makefile history
-<https://github.com/IfcOpenShell/IfcOpenShell/commits/v0.8.0/src/bonsai/Makefile>`__,
+<https://github.com/IfcOpenShell/IfcOpenShell/commits/v0.9.0/src/bonsai/Makefile>`__,
 is one quick way to see if a dependency has changed.
 
-If there are changes to the IfcOpenShell binaries, you may replace the two
-``*ifcopenshell_wrapper*`` files with new ones downloaded from the automated
-`IfcOpenShell builds directory <https://builds.ifcopenshell.org/>`__.
+If there are changes to the IfcOpenShell binaries, you may replace them with new
+ones downloaded from the automated `IfcOpenShell builds directory
+<https://builds.ifcopenshell.org/>`__.
 
 If you wish to run the IfcTester webapp, you will also need to have ``npm`` and
 setup IfcTester:
@@ -221,7 +221,7 @@ conventions. Within this folder, you'll find the following file structure:
     __init__.py
 
 This corresponds to the structure found in the source code `here
-<https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/bonsai/bonsai>`__.
+<https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.9.0/src/bonsai/bonsai>`__.
 
 Bonsai is complex, and requires many dependencies, including Python modules,
 binaries, and static assets. When packaged for users, these dependencies are
@@ -230,7 +230,7 @@ bundled with the add-on for convenience.
 If you choose to install Bonsai and use your own system dependencies, the
 source of truth for how dependencies are bundled are found in
 the `Makefile
-<https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.8.0/src/bonsai/Makefile>`__
+<https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.9.0/src/bonsai/Makefile>`__
 in the ``dist`` target.
 
 

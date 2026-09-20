@@ -118,7 +118,7 @@ def is_representation_of_context(
 
 def get_representations_iter(
     element: ifcopenshell.entity_instance,
-) -> Generator[ifcopenshell.entity_instance, None, None]:
+) -> Generator[ifcopenshell.entity_instance]:
     """Get an iterator with element's IfcShapeRepresentations.
 
     :param element: An IfcProduct or IfcTypeProduct
@@ -341,7 +341,7 @@ def resolve_items(
 
 def resolve_base_items(
     representation: ifcopenshell.entity_instance,
-) -> Generator[ifcopenshell.entity_instance, None, None]:
+) -> Generator[ifcopenshell.entity_instance]:
     """Resolve representation to it's base items resolving mapped items and boolean results to it's operands."""
     queue: list[ifcopenshell.entity_instance] = list(representation.Items)
     while queue:

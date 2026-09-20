@@ -66,8 +66,10 @@ filter_elements_grammar = lark.Lark("""start: filter_group
     attribute_name: /[A-Z]\\w+/
     ifc_class: /Ifc\\w+/
 
-    value: special | quoted_string | regex_string | unquoted_string
+    value: special | quoted_string | regex_string | decimal_string | unquoted_string
     unquoted_string: /[^,.=><*!\\s]+/
+    decimal_string: SIGNED_DECIMAL
+    SIGNED_DECIMAL: ["+"|"-"] (INT "." INT | "." INT)
     regex_string: "/" /[^\\/]+/ "/"
     quoted_string: ESCAPED_STRING
 
@@ -488,7 +490,7 @@ def _get_element_value(element: ifcopenshell.entity_instance, keys: list[str]) -
                 if key in ("x", "y", "z"):
                     value = xyz["xyz".index(key)]
                 else:
-                    enh = ifcopenshell.util.geolocation.auto_xyz2enh(element.wrapped_data.file, *xyz)
+                    enh = ifcopenshell.util.geolocation.auto_xyz2enh(element.file, *xyz)
                     value = enh[("easting", "northing", "elevation").index(key)]
             else:
                 value = None
@@ -685,8 +687,8 @@ def set_element_value(
                 element: ifcopenshell.entity_instance, value: Union[str, None], *, is_type: bool
             ) -> None:
                 predefined_type = element.PredefinedType
-                declaration = element.wrapped_data.declaration()
-                entity = declaration.as_entity()
+                declaration = element.declaration
+                entity = declaration
                 enum_attr = next(attr for attr in entity.attributes() if attr.name() == "PredefinedType")
                 enum_items = ifcopenshell.util.attribute.get_enum_items(enum_attr)
 
@@ -765,9 +767,7 @@ def set_element_value(
                     except:
                         # Try to cast
                         data_type = ifcopenshell.util.attribute.get_primitive_type(
-                            element.wrapped_data.declaration()
-                            .as_entity()
-                            .attribute_by_index(element.wrapped_data.get_argument_index(key))
+                            element.declaration.attribute_by_index(element.get_argument_index(key))
                         )
                         if data_type == "string":
                             value = str(value)
@@ -1234,6 +1234,8 @@ class FacetTransformer(lark.Transformer):
 
     def value(self, args):
         if args[0].data == "unquoted_string":
+            return args[0].children[0].value
+        elif args[0].data == "decimal_string":
             return args[0].children[0].value
         elif args[0].data == "quoted_string":
             return args[0].children[0].value[1:-1].replace('\\"', '"')

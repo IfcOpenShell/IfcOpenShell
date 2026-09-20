@@ -59,7 +59,17 @@ def _build_spatial_node(element: ifcopenshell.entity_instance) -> dict[str, Any]
 
 
 def tree(model: ifcopenshell.file) -> dict[str, Any] | list[dict[str, Any]]:
-    """Return the spatial hierarchy tree starting from IfcProject."""
+    """Return the spatial hierarchy of the model as a nested tree.
+
+    Starts at ``IfcProject`` and descends through decomposition (site,
+    building, storeys) and containment (the elements placed in each storey).
+    Every node carries ``id``, ``type`` and ``name``; ``children`` holds
+    decomposed sub-spaces and ``elements`` holds contained elements, and
+    either key is omitted when empty. Returns a list when the file contains
+    several projects, or an ``error`` key when it contains none.
+
+    :param model: The in-memory IFC model.
+    """
     projects = model.by_type("IfcProject")
     if not projects:
         return {"error": "No IfcProject found in model"}

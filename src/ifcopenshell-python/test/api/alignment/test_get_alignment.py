@@ -17,13 +17,22 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import pytest
+
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 import ifcopenshell.api.unit
 
+try:
+    ifcopenshell.file(schema="IFC4X3")
+    IFC4X3_AVAILABLE = True
+except RuntimeError:
+    IFC4X3_AVAILABLE = False
 
+
+@pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
 def test_get_alignment():
-    file = ifcopenshell.file(schema="IFC4X3_ADD2")
+    file = ifcopenshell.file(schema="IFC4X3")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
     length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
     ifcopenshell.api.unit.assign_unit(file, units=[length])

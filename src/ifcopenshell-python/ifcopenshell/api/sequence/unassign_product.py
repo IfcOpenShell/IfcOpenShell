@@ -51,10 +51,10 @@ def unassign_product(
         wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
 
         # Let's construct that wall!
-        ifcopenshell.api.sequence.assign_product(relating_product=wall, related_object=task)
+        ifcopenshell.api.sequence.assign_product(model, relating_product=wall, related_object=task)
 
         # Change our mind.
-        ifcopenshell.api.sequence.unassign_product(relating_product=wall, related_object=task)
+        ifcopenshell.api.sequence.unassign_product(model, relating_product=wall, related_object=task)
     """
     for rel in related_object.HasAssignments or []:
         if not rel.is_a("IfcRelAssignsToProduct") or rel.RelatingProduct != relating_product:
