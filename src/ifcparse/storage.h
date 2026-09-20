@@ -1,6 +1,10 @@
 #ifndef STORAGE_H
 #define STORAGE_H
 
+// Avoid conflicts with OpenCascade HANDLE type and RocksDB Handle
+#pragma push_macro("Handle")
+#undef Handle
+
 #ifndef IFOPSH_WITH_ROCKSDB
 
 namespace rocksdb {
@@ -9,7 +13,7 @@ namespace rocksdb {
     class WriteOptions {};
     class ReadOptions {};
     class Iterator {};
-    class Status {};
+    class status {};
 }
 
 #endif
@@ -20,20 +24,25 @@ namespace rocksdb {
 #include "map_transformer.h"
 #include "set_to_map_transformer.h"
 #include "file_open_status.h"
-#include "IfcLogger.h"
-
-#include <boost/unordered_map.hpp>
+#include "logger.h"
 
 #include <functional>
 #include <variant>
-#include <iterator>
+#include <algorithm>
 #include <cstdint>
+#include <iterator>
+#include <limits>
+#include <map>
+#include <memory>
 #include <cstring>
 #include <type_traits>
 #include <iostream>
+#include <deque>
 #include <vector>
 #include <list>
-#include <memory>
+#include <mutex>
+#include <set>
+#include <unordered_map>
 
 #ifndef SWIG
 
@@ -57,7 +66,7 @@ public:
 
     // Construct from any one of the underlying iterator types.
     template <typename Iterator>
-    variant_iterator(Iterator it) : it_(it) {}
+    variant_iterator(Iterator iterator) : it_(iterator) {}
 
     // Dereference operator.
     decltype(auto) operator*() const {
@@ -115,9 +124,11 @@ private:
 
 #endif
 
-namespace IfcParse {
+namespace ifcopenshell {
 
-    struct InstanceReference {
+    class mutable_attribute_value;
+
+    struct IFC_PARSE_API instance_reference {
         int v;
         size_t file_offset;
         operator int() const {
@@ -125,132 +136,494 @@ namespace IfcParse {
         }
     };
 
-    typedef std::variant<InstanceReference, IfcUtil::IfcBaseClass*> reference_or_simple_type;
-    typedef std::list<std::pair<MutableAttributeValue, std::variant<reference_or_simple_type, std::vector<reference_or_simple_type>, std::vector<std::vector<reference_or_simple_type>>>>> unresolved_references;
+    typedef std::variant<instance_reference, express::base> reference_or_simple_type;
+    typedef std::vector<std::pair<mutable_attribute_value, std::variant<reference_or_simple_type, std::vector<reference_or_simple_type>, std::vector<std::vector<reference_or_simple_type>>>>> unresolved_references;
 
-    class IfcFile;
-    class IfcSpfLexer;
-    class FileReader;
+    class file;
+    template <typename Reader>
+    class spf_lexer;
 
-    enum TokenType {
-        Token_NONE,
-        Token_STRING,
-        Token_IDENTIFIER,
-        Token_OPERATOR,
-        Token_ENUMERATION,
-        Token_KEYWORD,
-        Token_INT,
-        Token_BOOL,
-        Token_FLOAT,
-        Token_BINARY
-    };
-
-    struct Token {
-        IfcSpfLexer* lexer; //TODO: remove it from here
-        size_t startPos;
-        TokenType type;
-        union {
-            char value_char;     //types: OPERATOR
-            int value_int;       //types: INT, IDENTIFIER
-            double value_double; //types: FLOAT
+    struct IFC_PARSE_API token {
+        enum token_type {
+            Token_NONE,
+            Token_STRING,
+            Token_IDENTIFIER,
+            Token_OPERATOR,
+            Token_ENUMERATION,
+            Token_KEYWORD,
+            Token_INT,
+            Token_BOOL,
+            Token_FLOAT,
+            Token_BINARY
         };
 
-        Token() : lexer(0),
-            startPos(0),
-            type(Token_NONE) {
+        size_t start_pos;
+        token_type type;
+
+        union {
+            char value_char;     //types: OPERATOR
+            int64_t value_int;   //types: INT, IDENTIFIER
+            double value_double; //types: FLOAT
+            const std::string* value_string;  //types: STR, ENUM, KEYWORD; lifetime managed by spf_lexer::string_pool_
+        };
+
+        token() : start_pos(0),
+                  type(Token_NONE) {}
+
+        token(size_t start_position, token_type token_kind, const std::string& string_value)
+            : start_pos(start_position), type(token_kind), value_string(&string_value) {}
+
+        token(size_t start_position, token_type token_kind, int64_t integer_value)
+            : start_pos(start_position), type(token_kind), value_int(integer_value) {}
+
+        token(size_t start_position, double floating_value)
+            : start_pos(start_position), type(Token_FLOAT), value_double(floating_value) {}
+
+        token(size_t start_position, char operator_character)
+            : start_pos(start_position), type(Token_OPERATOR), value_char(operator_character) {}
+
+        token(size_t start_position, token_type token_kind, char character_value)
+            : start_pos(start_position), type(token_kind), value_char(character_value) {}
+
+        bool is_string();
+        bool is_identifier();
+        bool is_operator();
+        bool is_operator(char character);
+        bool is_enumeration();
+        bool is_keyword();
+        bool is_int();
+        bool is_bool();
+        bool is_logical();
+        bool is_float();
+        bool is_binary();
+
+        int64_t as_int();
+        unsigned as_identifier();
+        bool as_bool();
+        boost::logic::tribool as_logical();
+        double as_float();
+        const std::string& as_string();
+        boost::dynamic_bitset<> as_binary();
+        std::string to_string();
+
+        operator bool() const {
+            return type != Token_NONE;
         }
-        Token(IfcSpfLexer* _lexer, size_t _startPos, TokenType _type)
-            : lexer(_lexer),
-            startPos(_startPos),
-            type(_type) {
-        }
-    };
-
-    struct parse_context {
-        std::list<
-            std::variant<
-            IfcUtil::IfcBaseClass*,
-            Token,
-            parse_context*
-            >> tokens_;
-
-        parse_context() {};
-        ~parse_context();
-
-        parse_context(const parse_context&) = delete;
-        parse_context& operator=(const parse_context&) = delete;
-
-        parse_context(parse_context&&) = default;
-        parse_context& operator=(parse_context&&) = default;
-
-        parse_context& push();
-
-        void push(Token t);
-
-        void push(IfcUtil::IfcBaseClass* inst);
-
-        IfcEntityInstanceData construct(boost::optional<size_t> name, unresolved_references& references_to_resolve, const IfcParse::declaration* decl, boost::optional<size_t> expected_size, int resolve_reference_index, Logger& logger, bool coerce_attribute_count=true);
     };
 
     namespace impl {
+        struct inverse_record {
+            uint32_t referenced_id;
+            uint32_t source_id;
+            uint16_t source_entity;
+            int16_t attribute_index;
+        };
+
+        // Which instances reference a given instance, and through which
+        // attribute. One index serves the whole file.
+        //
+        // Two tiers keep every operation cheap without giving up the compact
+        // flat layout that parsing relies on:
+        //
+        // - base_: one flat vector. Bulk loading appends to it unsorted and
+        //   sort() finalizes it once; lookups then binary-search it. Removing
+        //   a record tombstones it in place (attribute_index set to
+        //   dead_attribute) rather than erasing, so removal doesn't shift the
+        //   vector.
+        // - delta_: records added after sort(), bucketed by referenced_id.
+        //   A lookup reads the base range and then the bucket.
+        //
+        // compact() folds the delta into the base and drops tombstones. add()
+        // and the removal methods run it once the delta or the tombstones
+        // outgrow the live base (capped by delta_fold_limit), so folding is
+        // amortised O(1) per mutation and the delta's memory stays bounded.
+        //
+        // Before the split every lookup re-sorted the entire vector if
+        // anything had been added since the previous lookup, so a loop that
+        // creates an instance and then reads an inverse cost O(R log R) per
+        // iteration on a file with R references.
+        class inverse_index {
+        public:
+            typedef std::map<std::tuple<short, short>, std::vector<uint32_t>> legacy_bucket;
+            typedef std::unordered_map<int, legacy_bucket> legacy_map;
+            typedef legacy_map::key_type key_type;
+            typedef legacy_map::mapped_type mapped_type;
+            typedef legacy_map::value_type value_type;
+            typedef legacy_map::iterator iterator;
+            typedef legacy_map::const_iterator const_iterator;
+
+        private:
+            typedef std::vector<inverse_record>::const_iterator base_iterator;
+
+            // Attribute indices are small and non-negative, so the minimum
+            // value can't collide with a live record.
+            static constexpr int16_t dead_attribute = std::numeric_limits<int16_t>::min();
+            static constexpr size_t delta_fold_limit = size_t(1) << 20;
+
+            // Lookups on a const index still need to finalize bulk loading.
+            mutable std::vector<inverse_record> base_;
+            mutable bool sorted_ = false;
+            size_t dead_ = 0;
+            std::unordered_map<uint32_t, std::vector<inverse_record>> delta_;
+            size_t delta_size_ = 0;
+            mutable std::unique_ptr<legacy_map> materialized_;
+
+            static bool record_less(const inverse_record& a, const inverse_record& b) {
+                if (a.referenced_id != b.referenced_id) {
+                    return a.referenced_id < b.referenced_id;
+                }
+                if (a.source_entity != b.source_entity) {
+                    return a.source_entity < b.source_entity;
+                }
+                if (a.attribute_index != b.attribute_index) {
+                    return a.attribute_index < b.attribute_index;
+                }
+                return a.source_id < b.source_id;
+            }
+
+            struct referenced_id_less {
+                bool operator()(const inverse_record& a, uint32_t referenced_id) const {
+                    return a.referenced_id < referenced_id;
+                }
+                bool operator()(uint32_t referenced_id, const inverse_record& a) const {
+                    return referenced_id < a.referenced_id;
+                }
+            };
+
+            static bool same_record(const inverse_record& a, const inverse_record& b) {
+                return a.referenced_id == b.referenced_id &&
+                    a.source_id == b.source_id &&
+                    a.source_entity == b.source_entity &&
+                    a.attribute_index == b.attribute_index;
+            }
+
+            static bool is_dead(const inverse_record& record) {
+                return record.attribute_index == dead_attribute;
+            }
+
+            void kill(inverse_record& record) {
+                record.attribute_index = dead_attribute;
+                ++dead_;
+            }
+
+            size_t live_base_size() const {
+                return base_.size() - dead_;
+            }
+
+            std::pair<base_iterator, base_iterator> base_range(uint32_t referenced_id) const {
+                sort();
+                return std::equal_range(base_.cbegin(), base_.cend(), referenced_id, referenced_id_less{});
+            }
+
+            std::pair<std::vector<inverse_record>::iterator, std::vector<inverse_record>::iterator> mutable_base_range(uint32_t referenced_id) {
+                sort();
+                return std::equal_range(base_.begin(), base_.end(), referenced_id, referenced_id_less{});
+            }
+
+            void compact() {
+                sort();
+                if (dead_ != 0) {
+                    base_.erase(std::remove_if(base_.begin(), base_.end(), is_dead), base_.end());
+                    dead_ = 0;
+                }
+                const auto base_end = (std::ptrdiff_t)base_.size();
+                base_.reserve(base_.size() + delta_size_);
+                for (const auto& bucket : delta_) {
+                    base_.insert(base_.end(), bucket.second.begin(), bucket.second.end());
+                }
+                delta_.clear();
+                delta_size_ = 0;
+                std::sort(base_.begin() + base_end, base_.end(), record_less);
+                std::inplace_merge(base_.begin(), base_.begin() + base_end, base_.end(), record_less);
+                invalidate_materialized();
+            }
+
+            void compact_if_tombstones_dominate() {
+                if (dead_ > live_base_size()) {
+                    compact();
+                }
+            }
+
+            void invalidate_materialized() const {
+                materialized_.reset();
+            }
+
+            legacy_map& materialize() const {
+                if (!materialized_) {
+                    materialized_ = std::make_unique<legacy_map>();
+                    materialized_->reserve(size());
+                    const auto insert = [this](const inverse_record& record) {
+                        (*materialized_)[(int)record.referenced_id][{(short)record.source_entity, (short)record.attribute_index}].push_back(record.source_id);
+                    };
+                    sort();
+                    for (const auto& record : base_) {
+                        if (!is_dead(record)) {
+                            insert(record);
+                        }
+                    }
+                    for (const auto& bucket : delta_) {
+                        for (const auto& record : bucket.second) {
+                            insert(record);
+                        }
+                    }
+                }
+                return *materialized_;
+            }
+
+        public:
+            inverse_index() = default;
+
+            inverse_index(const inverse_index& other)
+                : base_(other.base_)
+                , sorted_(other.sorted_)
+                , dead_(other.dead_)
+                , delta_(other.delta_)
+                , delta_size_(other.delta_size_)
+            {}
+
+            inverse_index& operator=(const inverse_index& other) {
+                if (this != &other) {
+                    base_ = other.base_;
+                    sorted_ = other.sorted_;
+                    dead_ = other.dead_;
+                    delta_ = other.delta_;
+                    delta_size_ = other.delta_size_;
+                    materialized_.reset();
+                }
+                return *this;
+            }
+
+            inverse_index(inverse_index&&) noexcept = default;
+            inverse_index& operator=(inverse_index&&) noexcept = default;
+
+            void reserve(size_t size) {
+                base_.reserve(size);
+            }
+
+            void add(uint32_t referenced_id, uint32_t source_id, uint16_t source_entity, int attribute_index) {
+                const inverse_record record{referenced_id, source_id, source_entity, (int16_t)attribute_index};
+                if (sorted_) {
+                    delta_[referenced_id].push_back(record);
+                    ++delta_size_;
+                    if (delta_size_ > std::min(live_base_size(), delta_fold_limit)) {
+                        compact();
+                    }
+                } else {
+                    base_.push_back(record);
+                }
+                invalidate_materialized();
+            }
+
+            bool remove(uint32_t referenced_id, uint32_t source_id, uint16_t source_entity, int attribute_index) {
+                const inverse_record needle{referenced_id, source_id, source_entity, (int16_t)attribute_index};
+                const auto matches = [&needle](const inverse_record& record) {
+                    return same_record(record, needle);
+                };
+                auto bucket = delta_.find(referenced_id);
+                if (bucket != delta_.end()) {
+                    auto& records = bucket->second;
+                    auto it = std::find_if(records.begin(), records.end(), matches);
+                    if (it != records.end()) {
+                        records.erase(it);
+                        --delta_size_;
+                        if (records.empty()) {
+                            delta_.erase(bucket);
+                        }
+                        invalidate_materialized();
+                        return true;
+                    }
+                }
+                auto range = mutable_base_range(referenced_id);
+                auto it = std::find_if(range.first, range.second, matches);
+                if (it == range.second) {
+                    return false;
+                }
+                kill(*it);
+                compact_if_tombstones_dominate();
+                invalidate_materialized();
+                return true;
+            }
+
+            // Finalizes bulk loading. Subsequent add() calls go to the delta.
+            void sort() const {
+                if (!sorted_) {
+                    std::sort(base_.begin(), base_.end(), record_less);
+                    sorted_ = true;
+                    invalidate_materialized();
+                }
+            }
+
+            // Visits every live record referencing referenced_id: the base
+            // records in record_less order, then the delta in insertion order.
+            template <typename Fn>
+            void for_each(uint32_t referenced_id, Fn&& fn) const {
+                auto range = base_range(referenced_id);
+                for (auto it = range.first; it != range.second; ++it) {
+                    if (!is_dead(*it)) {
+                        fn(*it);
+                    }
+                }
+                auto bucket = delta_.find(referenced_id);
+                if (bucket != delta_.end()) {
+                    for (const auto& record : bucket->second) {
+                        fn(record);
+                    }
+                }
+            }
+
+            size_t count(uint32_t referenced_id) const {
+                size_t n = 0;
+                for_each(referenced_id, [&n](const inverse_record&) { ++n; });
+                return n;
+            }
+
+            // True iff pred accepts the source of every live record
+            // referencing referenced_id. Stops at the first rejection.
+            template <typename Pred>
+            bool all_sources(uint32_t referenced_id, Pred&& pred) const {
+                auto range = base_range(referenced_id);
+                for (auto it = range.first; it != range.second; ++it) {
+                    if (!is_dead(*it) && !pred(it->source_id)) {
+                        return false;
+                    }
+                }
+                auto bucket = delta_.find(referenced_id);
+                if (bucket != delta_.end()) {
+                    for (const auto& record : bucket->second) {
+                        if (!pred(record.source_id)) {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
+
+            bool empty() const {
+                return size() == 0;
+            }
+
+            size_t size() const {
+                return live_base_size() + delta_size_;
+            }
+
+            void clear() {
+                base_.clear();
+                sorted_ = false;
+                dead_ = 0;
+                delta_.clear();
+                delta_size_ = 0;
+                materialized_.reset();
+            }
+
+            iterator begin() {
+                return materialize().begin();
+            }
+
+            iterator end() {
+                return materialize().end();
+            }
+
+            const_iterator begin() const {
+                return materialize().begin();
+            }
+
+            const_iterator end() const {
+                return materialize().end();
+            }
+
+            iterator find(const key_type& key) {
+                return materialize().find(key);
+            }
+
+            const_iterator find(const key_type& key) const {
+                return materialize().find(key);
+            }
+
+            // Removes every record referencing key.
+            size_t erase(const key_type& key) {
+                const auto referenced_id = (uint32_t)key;
+                size_t removed = 0;
+                auto range = mutable_base_range(referenced_id);
+                for (auto it = range.first; it != range.second; ++it) {
+                    if (!is_dead(*it)) {
+                        kill(*it);
+                        ++removed;
+                    }
+                }
+                auto bucket = delta_.find(referenced_id);
+                if (bucket != delta_.end()) {
+                    removed += bucket->second.size();
+                    delta_size_ -= bucket->second.size();
+                    delta_.erase(bucket);
+                }
+                compact_if_tombstones_dominate();
+                invalidate_materialized();
+                return removed;
+            }
+
+            std::pair<iterator, bool> insert(const value_type& value) {
+                for (const auto& bucket : value.second) {
+                    for (auto source_id : bucket.second) {
+                        add((uint32_t)value.first, source_id, (uint16_t)std::get<0>(bucket.first), std::get<1>(bucket.first));
+                    }
+                }
+                auto it = find(value.first);
+                return {it, true};
+            }
+        };
+
         struct IFC_PARSE_API in_memory_file_storage {
-            std::vector<std::unique_ptr<IfcUtil::IfcBaseClass>> read_simple_type_instances;
-            std::vector<std::unique_ptr<IfcUtil::IfcBaseClass>> steal_instances() {
+
+            std::vector<shared_pointer_type> read_simple_type_instances;
+            std::vector<shared_pointer_type> steal_instances() {
                 return std::move(read_simple_type_instances);
             }
 
-            IfcParse::IfcSpfLexer* tokens;
-            std::reference_wrapper<Logger> logger_;
+            std::reference_wrapper<ifcopenshell::logger> logger_;
             // IfcParse::FileReader* stream;
 
             // Either one of these needs to be set
-            IfcParse::IfcFile* file;
-            const IfcParse::schema_definition* schema;
+            ifcopenshell::file* file;
+            const ifcopenshell::schema_definition* schema;
 
             unresolved_references* references_to_resolve = nullptr;
 
-            typedef std::map<const IfcParse::declaration*, aggregate_of_instance::ptr> entities_by_type_t;
-            typedef boost::unordered_map<uint32_t, IfcUtil::IfcBaseClass*> entity_instance_by_name_t;
-            typedef boost::unordered_map<uint32_t, IfcUtil::IfcBaseClass*> type_instance_by_name_t;
-            typedef std::map<std::string, IfcUtil::IfcBaseClass*> entity_instance_by_guid_t;
-            typedef std::tuple<int, short, short> inverse_attr_record;
-            enum INVERSE_ATTR {
-                INSTANCE_ID,
-                INSTANCE_TYPE,
-                ATTRIBUTE_INDEX
-            };
-            typedef std::map<inverse_attr_record, std::vector<uint32_t>> entities_by_ref_t;
-            typedef entity_instance_by_name_t::iterator iterator;
+            typedef std::map<const ifcopenshell::declaration*, std::vector<express::base>> entities_by_type;
+            typedef std::unordered_map<uint32_t, shared_pointer_type> entity_instance_by_name_storage;
+            typedef map_transformer<entity_instance_by_name_storage, std::function<express::base(shared_pointer_type)>> entity_instance_by_name;
+            typedef std::unordered_map<uint32_t, shared_pointer_type> type_instance_by_name;
+            typedef std::map<std::string, express::base> entity_instance_by_guid;
+            typedef inverse_index entities_by_ref;
+            typedef entity_instance_by_name::iterator iterator;
 
-            in_memory_file_storage(IfcParse::IfcFile* f = nullptr, Logger& logger = Logger::Root()) : tokens(nullptr), logger_(logger), file(f), schema(nullptr) {}
-            in_memory_file_storage(const in_memory_file_storage&) = delete;
-            in_memory_file_storage(const in_memory_file_storage&&) = delete;
-            Logger& logger() const { return logger_.get(); }
+            in_memory_file_storage(ifcopenshell::file* owner_file = nullptr, ifcopenshell::logger& logger = ifcopenshell::logger::root()) : logger_(logger), file(owner_file), schema(nullptr), byid_read_(&byid_, [this](const shared_pointer_type& data) { return express::base(data); }) {};
+            in_memory_file_storage(const in_memory_file_storage& other) = delete;
+            in_memory_file_storage(const in_memory_file_storage&& other) = delete;
 
 
-            class type_iterator : public entities_by_type_t::const_iterator {
+            class type_iterator : public entities_by_type::const_iterator {
             public:
                 using iterator_category = std::forward_iterator_tag;
-                using value_type = entities_by_type_t::key_type;
-                using difference_type = typename entities_by_type_t::const_iterator::difference_type;
+                using value_type = entities_by_type::key_type;
+                using difference_type = typename entities_by_type::const_iterator::difference_type;
                 using pointer = value_type const*;
                 using reference = value_type const&;
 
-                type_iterator() : entities_by_type_t::const_iterator() {};
+                type_iterator() : entities_by_type::const_iterator() {};
 
-                type_iterator(const entities_by_type_t::const_iterator& iter)
-                    : entities_by_type_t::const_iterator(iter) {};
+                type_iterator(const entities_by_type::const_iterator& iterator)
+                    : entities_by_type::const_iterator(iterator) {};
 
-                entities_by_type_t::key_type const* operator->() const {
-                    return &entities_by_type_t::const_iterator::operator->()->first;
+                entities_by_type::key_type const* operator->() const {
+                    return &entities_by_type::const_iterator::operator->()->first;
                 }
 
-                entities_by_type_t::key_type const& operator*() const {
-                    return entities_by_type_t::const_iterator::operator*().first;
+                entities_by_type::key_type const& operator*() const {
+                    return entities_by_type::const_iterator::operator*().first;
                 }
 
                 type_iterator& operator++() {
-                    entities_by_type_t::const_iterator::operator++();
+                    entities_by_type::const_iterator::operator++();
                     return *this;
                 }
 
@@ -261,54 +634,51 @@ namespace IfcParse {
                 }
             };
 
-            entity_instance_by_name_t byid_;
-            type_instance_by_name_t tbyid_;
-            entities_by_type_t bytype_excl_;
-            entities_by_ref_t byref_excl_;
-            entity_instance_by_guid_t byguid_;
+            entity_instance_by_name_storage byid_;
+            type_instance_by_name tbyid_;
+            entities_by_type bytype_excl_;
+            entities_by_ref byref_excl_;
+            entity_instance_by_guid byguid_;
+            entity_instance_by_name byid_read_;
 
-            void load(boost::optional<size_t> entity_instance_name, const IfcParse::entity* entity, parse_context&, int attribute_index = -1);
-            void try_read_semicolon() const;
+            template <typename Reader>
+            shared_pointer_type load(ifcopenshell::spf_lexer<Reader>* tokens, std::optional<size_t> entity_instance_name, const ifcopenshell::declaration* declaration, const ifcopenshell::entity* entity, int attribute_index = -1, bool coerce_attribute_count = true);
+            template <typename Reader>
+            void try_read_semicolon(ifcopenshell::spf_lexer<Reader>* tokens) const;
 
-            void register_inverse(unsigned, const IfcParse::entity* from_entity, int inst_id, int attribute_index);
-            void unregister_inverse(unsigned, const IfcParse::entity* from_entity, IfcUtil::IfcBaseClass*, int attribute_index);
+            void register_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, int instance_id, int attribute_index);
+            void unregister_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, const express::base& entity, int attribute_index);
 
-            // @todo is this still used
-            IfcEntityInstanceData read(unsigned int index);
-            void read_from_stream(IfcParse::FileReader* stream, const IfcParse::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& typed_to_bypass);
+            template <typename Reader>
+            void read_from_stream(Reader* stream, const ifcopenshell::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& types_to_bypass);
 
             file_open_status good_ = file_open_status::SUCCESS;
 
-            IfcUtil::IfcBaseClass* instance_by_id(int id);
+            express::base instance_by_id(int instance_id);
 
-            void add_type_ref(IfcUtil::IfcBaseClass* new_entity) {
-                auto ty = new_entity->declaration().as_entity();
-                if (ty) {
-                    if (bytype_excl_.find(ty) == bytype_excl_.end()) {
-                        bytype_excl_[ty].reset(new aggregate_of_instance());
-                    }
-                    bytype_excl_[ty]->push(new_entity);
+            void add_type_ref(const express::base& new_entity) {
+                if (auto* ty = new_entity.declaration().as_entity()) {
+                    bytype_excl_[ty].push_back(new_entity);
                 }
             }
-            void remove_type_ref(IfcUtil::IfcBaseClass* new_entity) {
-                auto ty = new_entity->declaration().as_entity();
-                if (ty) {
+            void remove_type_ref(const express::base& new_entity) {
+                if (auto* ty = new_entity.declaration().as_entity()) {
                     auto it = bytype_excl_.find(ty);
                     if (it != bytype_excl_.end()) {
-                        it->second->remove(new_entity);
-                        if (it->second->size() == 0) {
+                        it->second.erase(std::remove(it->second.begin(), it->second.end(), new_entity), it->second.end());
+                        if (it->second.empty()) {
                             bytype_excl_.erase(ty);
                         }
                     }
                 }
             }
 
-            void process_deletion_inverse(IfcUtil::IfcBaseClass* inst);
+            void process_deletion_inverse(const express::base& entity);
 
             template <typename T>
-            T* create();
+            T create(int instance_id = -1);
 
-            IfcUtil::IfcBaseClass* create(const IfcParse::declaration* decl);
+            express::base create(const ifcopenshell::declaration* declaration, int instance_id = -1);
         };
 
         class IFC_PARSE_API rocks_db_file_storage {
@@ -316,7 +686,7 @@ namespace IfcParse {
             std::unique_ptr<rocksdb::DB> db;
             rocksdb::WriteOptions wopts;
             rocksdb::ReadOptions ropts;
-            IfcParse::IfcFile* file;
+            ifcopenshell::file* file;
 
             enum instance_ref {
                 typedecl_ref,
@@ -325,35 +695,43 @@ namespace IfcParse {
 
             // to make sure that instance pointer are constant during file lifetime
             // cache instances because we want stable pointers
-            // @todo this is silly, but we cannot have the same type, this should be just a pointer then on the IfcFile side?
-            typedef std::map<uint32_t, IfcUtil::IfcBaseClass*> entity_by_iden_cache_t;
-            entity_by_iden_cache_t instance_cache_, type_instance_cache_;
+            // @todo this is silly, but we cannot have the same type, this should be just a pointer then on the file side?
+            typedef std::map<uint32_t, shared_pointer_type> entity_by_iden_cache;
+            entity_by_iden_cache instance_cache_, type_instance_cache_;
+            std::mutex instance_cache_mutex_;
+            // Opening a database doesn't visit every instance, so the file's
+            // id counter is recalculated on the first create().
+            bool id_counter_recalculated_ = false;
+
+            // Deletes every key of the given instances and drops their cached
+            // handles, in one write and under one lock.
+            void erase_instances(const std::vector<uint32_t>& ids);
 
             // @todo all these size_ts should probably be uint32_t for consistency with in-mem storage
 
             // lookup id->identity
-            // typedef rocksdb_map_adapter<size_t, size_t> identity_by_id_t;
-            // identity_by_id_t byid_;
-            typedef rocksdb_set_view<size_t> instance_name_view_t;
-            instance_name_view_t instance_ids_;
-            typedef set_to_map_transformer<instance_name_view_t, std::function<IfcUtil::IfcBaseClass* (size_t)>> entity_instance_by_name_t;
-            entity_instance_by_name_t instance_by_name_;
+            // typedef rocksdb_map_adapter<size_t, size_t> identity_by_id;
+            // identity_by_id byid_;
+            typedef rocksdb_set_view<size_t> instance_name_view;
+            instance_name_view instance_ids_;
+            typedef set_to_map_transformer<instance_name_view, std::function<express::base(size_t)>> entity_instance_by_name;
+            entity_instance_by_name instance_by_name_;
 
-            // typedef map_transformer<rocksdb_map_adapter<size_t, size_t>, std::function<IfcUtil::IfcBaseClass*(size_t)>, std::function<size_t(IfcUtil::IfcBaseClass*)>> entity_by_id_t;
+            // typedef map_transformer<rocksdb_map_adapter<size_t, size_t>, std::function<ifcopenshell::IfcBaseClass*(size_t)>, std::function<size_t(ifcopenshell::IfcBaseClass*)>> entity_by_id;
             // storage is now Instance name -> Identity -> Pointer (cached)
-            // entity_by_id_t byidentity_;
+            // entity_by_id byidentity_;
 
             // index in schema to binary serialized ids
-            typedef rocksdb_map_adapter<size_t, std::string> instance_id_str_by_type_t;
-            instance_id_str_by_type_t bytype_;
+            typedef rocksdb_map_adapter<size_t, std::string> instance_id_str_by_type;
+            instance_id_str_by_type bytype_;
 
             // guid -> id
-            typedef rocksdb_map_adapter<std::string, size_t> instance_id_by_guid_str_t;
-            instance_id_by_guid_str_t byguid_internal_;
+            typedef rocksdb_map_adapter<std::string, size_t> instance_id_by_guid_str;
+            instance_id_by_guid_str byguid_internal_;
 
             // guid -> id -> instance
-            typedef map_transformer<rocksdb_map_adapter<std::string, size_t>, std::function<IfcUtil::IfcBaseClass* (size_t)>, std::function< size_t(IfcUtil::IfcBaseClass*)>> entity_instance_by_guid_t;
-            entity_instance_by_guid_t byguid_;
+            typedef map_transformer<rocksdb_map_adapter<std::string, size_t>, std::function<express::base(size_t)>, std::function<size_t(const express::base&)>> entity_instance_by_guid;
+            entity_instance_by_guid byguid_;
 
             typedef std::tuple<int, int, int> inverse_attr_record;
             enum INVERSE_ATTR {
@@ -361,92 +739,18 @@ namespace IfcParse {
                 INSTANCE_TYPE,
                 ATTRIBUTE_INDEX
             };
-            typedef rocksdb_map_adapter<inverse_attr_record, std::vector<uint32_t>> entities_by_ref_t;
-            entities_by_ref_t byref_excl_;
+            typedef rocksdb_map_adapter<inverse_attr_record, std::vector<uint32_t>> entities_by_ref;
+            entities_by_ref byref_excl_;
+
+            bool read_only_ = false;
 
             // @todo naming
-            rocks_db_file_storage(const std::string& filepath, IfcParse::IfcFile* file, bool readonly=false);
+            rocks_db_file_storage(const std::string& path, ifcopenshell::file* owner_file, bool read_only = false);
             ~rocks_db_file_storage();
 
-            bool read_schema(const IfcParse::schema_definition*& schema);
+            bool read_schema(const ifcopenshell::schema_definition*& schema);
 
-            IfcUtil::IfcBaseClass* assert_existance(size_t instanceId, instance_ref r);
-
-            // @todo this could be another map_adapter?
-            /*
-            class rocksdb_instance_iterator {
-            private:
-                rocksdb::Iterator* state_;
-                rocks_db_file_storage* storage_;
-
-                static constexpr char prefix_[] = "i|";
-
-                boost::optional<size_t> read_id_() const {
-                    auto sv = state_->key().ToStringView();
-                    auto ii = sv.find("|", 2);
-                    if (ii != decltype(sv)::npos) {
-                        char* pEnd;
-                        long result = strtol(sv.data() + 2, &pEnd, 10);
-                        if (*pEnd == '|') {
-                            return (size_t)result;
-                        }
-                    }
-                    return boost::none;
-                }
-            public:
-                rocksdb_instance_iterator()
-                    : state_(nullptr)
-                    , storage_(nullptr)
-                {}
-                rocksdb_instance_iterator(rocks_db_file_storage* fs)
-                    : storage_(fs)
-                {
-                    state_ = fs->db->NewIterator(rocksdb::ReadOptions());
-                    state_->Seek(prefix_);
-                    if (!state_->Valid() || !state_->key().starts_with(prefix_)) {
-                        delete state_;
-                        state_ = nullptr;
-                    }
-                }
-                rocksdb_instance_iterator& operator++() {
-                    if (!state_) {
-                        return *this;
-                    }
-                    auto last_id = read_id_();
-                    while (state_->Valid()) {
-                        state_->Next();
-                        // Stop if we've left the prefix range.
-                        if (!state_->Valid() || !state_->key().starts_with(prefix_)) {
-                            delete state_;
-                            state_ = nullptr;
-                            break;
-                        }
-                        if (read_id_() != last_id) {
-                            break;
-                        }
-                    }
-                    return *this;
-                }
-                rocksdb_instance_iterator operator++(int) {
-                    rocksdb_instance_iterator temp = *this;
-                    ++(*this);
-                    return temp;
-                }
-                bool operator==(const rocksdb_instance_iterator& other) const {
-                    if (state_ == nullptr && other.state_ == nullptr) {
-                        return true;
-                    } else {
-                        return read_id_() == other.read_id_();
-                    }
-                }
-
-                bool operator!=(const rocksdb_instance_iterator& other) const {
-                    return !(*this == other);
-                }
-
-                IfcUtil::IfcBaseClass* operator*() const;
-            };
-            */
+            express::base assert_existance(size_t instance_id, instance_ref reference_type);
 
             // @todo merge iterators (template?)
             class IFC_PARSE_API rocksdb_types_iterator {
@@ -456,7 +760,7 @@ namespace IfcParse {
 
                 static constexpr char prefix_[] = "t|";
 
-                boost::optional<size_t> read_id_() const {
+                std::optional<size_t> read_id_() const {
 #ifdef IFOPSH_WITH_ROCKSDB
                     auto sv = state_->key().ToStringView();
                     auto ii = sv.find("|", 2);
@@ -468,11 +772,11 @@ namespace IfcParse {
                         }
                     }
 #endif
-                    return boost::none;
+                    return std::nullopt;
                 }
             public:
                 using iterator_category = std::forward_iterator_tag;
-                using value_type = const IfcParse::declaration*;
+                using value_type = const ifcopenshell::declaration*;
                 // @todo ?
                 using difference_type = ptrdiff_t;
                 using pointer = value_type const*;
@@ -484,11 +788,11 @@ namespace IfcParse {
                 {
                 }
 
-                rocksdb_types_iterator(const rocks_db_file_storage* fs)
-                    : storage_(fs)
+                rocksdb_types_iterator(const rocks_db_file_storage* storage)
+                    : storage_(storage)
                 {
 #ifdef IFOPSH_WITH_ROCKSDB
-                    state_ = fs->db->NewIterator(rocksdb::ReadOptions());
+                    state_ = storage->db->NewIterator(rocksdb::ReadOptions());
                     state_->Seek(prefix_);
                     if (!state_->Valid() || !state_->key().starts_with(prefix_)) {
                         delete state_;
@@ -545,25 +849,28 @@ namespace IfcParse {
             };
 
             // @todo rocksdb_instance_iterator?
-            using const_iterator = entity_instance_by_name_t::iterator;
+            using const_iterator = entity_instance_by_name::iterator;
 
-            void register_inverse(unsigned, const IfcParse::entity* from_entity, int inst_id, int attribute_index);
-            void unregister_inverse(unsigned, const IfcParse::entity* from_entity, IfcUtil::IfcBaseClass*, int attribute_index);
+            void register_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, int instance_id, int attribute_index);
+            void unregister_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, const express::base& entity, int attribute_index);
 
             // @todo a bit hard as a map because of value_type being an aggregate
-            void add_type_ref(IfcUtil::IfcBaseClass* new_entity);
-            void remove_type_ref(IfcUtil::IfcBaseClass* new_entity);
+            void add_type_ref(const express::base& new_entity);
+            void remove_type_ref(const express::base& new_entity);
 
-            IfcUtil::IfcBaseClass* instance_by_id(int id);
+            express::base instance_by_id(int instance_id);
 
-            void process_deletion_inverse(IfcUtil::IfcBaseClass* inst);
+            void process_deletion_inverse(const express::base& entity);
 
             template <typename T>
-            T* create();
+            T create(int instance_id = -1);
 
-            IfcUtil::IfcBaseClass* create(const IfcParse::declaration* decl);
+            express::base create(const ifcopenshell::declaration* declaration, int instance_id = -1);
         };
     }
 }
+
+// redefine Handle macro.
+#pragma pop_macro("Handle")
 
 #endif // STORAGE_H

@@ -620,10 +620,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         default="PROMPT",
     )
     should_stream: BoolProperty(name="Stream Data From IFC-SPF (Only for advanced users)", default=False)
-    should_always_cache: BoolProperty(
-        name="Always Cache Geometry",
-        description="Whether to always cache geometry regardless of 'Cache' setting during Advanced Project Load.",
-    )
     occurrence_name_style: bpy.props.EnumProperty(
         items=[("CLASS", "By Class", ""), ("TYPE", "By Type", ""), ("CUSTOM", "Custom", "")],
         name="Occurrence Name Style",
@@ -735,7 +731,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         autosave_interval_minutes: int
         autosave_mode: Literal["PROMPT", "BACKUP"]
         should_stream: bool
-        should_always_cache: bool
         occurrence_name_style: Literal["CLASS", "TYPE", "CUSTOM"]
         occurrence_name_function: str
         gizmos: GizmoPreferences
@@ -889,7 +884,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
             layout.prop(self, "autosave_interval_minutes")
             layout.prop(self, "autosave_mode")
         layout.prop(self, "should_stream")
-        layout.prop(self, "should_always_cache")
         layout.label(text="bSDD:")
         layout.prop(self, "bsdd_load_preview_dictionaries")
         layout.prop(self, "bsdd_load_inactive_dictionaries")
@@ -2071,3 +2065,6 @@ class BIM_PT_snappping(Panel):
         row.prop(groups, "object", toggle=True)
         row.prop(groups, "polyline", toggle=True)
         row.prop(groups, "measure", toggle=True)
+        layout.separator()
+        row = layout.row(align=True)
+        row.prop(prop, "use_gpu_snapping", toggle=True)

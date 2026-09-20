@@ -110,8 +110,6 @@ class IfcStore:
     """Should be set only using ``tool.Ifc.set``."""
 
     schema: Optional[ifcopenshell.ifcopenshell_wrapper.schema_definition] = None
-    cache: Optional[ifcopenshell.ifcopenshell_wrapper.HdfSerializer] = None
-    cache_path: Optional[str] = None
     id_map: dict[int, IFC_CONNECTED_TYPE] = {}
     guid_map: dict[str, IFC_CONNECTED_TYPE] = {}
     edited_objs: set[bpy.types.Object] = set()
@@ -127,14 +125,15 @@ class IfcStore:
     future: list[TransactionStep] = []
     schema_identifiers = ["IFC4", "IFC2X3", "IFC4X3_ADD2"]
     session_files: dict[str, ifcopenshell.file] = {}
+    cache: Optional[ifcopenshell.geom.serializers.hdf5] = None
+    cache_path: str = ""
 
     @staticmethod
     def purge():
+        tool.Ifc.listeners.clear()
         IfcStore.path = ""
         IfcStore.file = None
         IfcStore.schema = None
-        IfcStore.cache = None
-        IfcStore.cache_path = None
         IfcStore.id_map = {}
         IfcStore.guid_map = {}
         IfcStore.edited_objs = set()
@@ -147,6 +146,8 @@ class IfcStore:
         IfcStore.future = []
         IfcStore.schema_identifiers = ["IFC4", "IFC2X3", "IFC4X3_ADD2"]
         IfcStore.session_files = {}
+        IfcStore.cache = None
+        IfcStore.cache_path = ""
 
     @staticmethod
     def get_file() -> ifcopenshell.file | None:
@@ -189,13 +190,10 @@ class IfcStore:
             os.makedirs(os.path.dirname(cache_path), exist_ok=True)
             IfcStore.cache_path = cache_path
             cache_path = Path(IfcStore.cache_path)
-            cache_settings = ifcopenshell.geom.settings()
-            serializer_settings = ifcopenshell.geom.serializer_settings()
+            settings = ifcopenshell.geom.settings()
             cache_preexists = cache_path.exists()
             try:
-                IfcStore.cache = ifcopenshell.geom.serializers.hdf5(
-                    IfcStore.cache_path, cache_settings, serializer_settings
-                )
+                IfcStore.cache = ifcopenshell.geom.serializers.hdf5(IfcStore.cache_path, settings)
                 if cache_preexists:
                     print(f"Successfully loaded existing cache: {cache_path.name}.")
                 else:
@@ -210,9 +208,7 @@ class IfcStore:
 
                 os.remove(IfcStore.cache_path)
                 try:
-                    IfcStore.cache = ifcopenshell.geom.serializers.hdf5(
-                        IfcStore.cache_path, cache_settings, serializer_settings
-                    )
+                    IfcStore.cache = ifcopenshell.geom.serializers.hdf5(IfcStore.cache_path, settings)
                     print("New cache was created.")
                 except Exception as e:
                     print(f"Failed to create a cache: {str(e)}.")
@@ -250,7 +246,7 @@ class IfcStore:
                     IfcStore.file = ifcopenshell.open(filename)
                     return
         elif extension.lower() == "ifcxml":
-            IfcStore.file = ifcopenshell.file(ifcopenshell.ifcopenshell_wrapper.parse_ifcxml(path))
+            raise NotImplementedError("Reading .ifcXML files is not currently supported.")
         elif prefs.should_stream:
             IfcStore.file = ifcopenshell.open(path, should_stream=True)
         else:

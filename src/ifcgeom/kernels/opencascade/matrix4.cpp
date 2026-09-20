@@ -1,11 +1,10 @@
-#include "OpenCascadeKernel.h"
+#include "opencascade_kernel.h"
 
-using namespace ifcopenshell::geometry;
-using namespace ifcopenshell::geometry::kernels;
-using namespace IfcGeom;
-using namespace IfcGeom::util;
+using namespace ifcopenshell::geom;
+using namespace ifcopenshell::geom::kernels;
+using namespace ifcopenshell::geom::util;
 
-bool OpenCascadeKernel::convert(const taxonomy::matrix4::ptr matrix, gp_GTrsf& trsf) {
+bool open_cascade_kernel::convert(const taxonomy::matrix4::ptr matrix, gp_GTrsf& trsf) {
 	// @todo check
 	const auto& m = matrix->ccomponents();
 	gp_Mat mat(
@@ -14,7 +13,7 @@ bool OpenCascadeKernel::convert(const taxonomy::matrix4::ptr matrix, gp_GTrsf& t
 		m(2, 0), m(2, 1), m(2, 2)
 	);
 
-	if (matrix->instance && matrix->instance->declaration().name() == "IfcCartesianTransformationOperator3DnonUniform") {
+	if (matrix->instance && matrix->instance.declaration().name() == "IfcCartesianTransformationOperator3DnonUniform") {
 		// std::wcout << "non uniform" << std::endl;
 	}
 

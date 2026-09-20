@@ -14,10 +14,21 @@ def list_rules() -> list[dict[str, str]]:
 
 
 def run_quantify(model: ifcopenshell.file, rule: str, selector: str | None = None) -> dict[str, Any]:
-    """Run quantity take-off on the model using the named rule.
+    """Compute base quantities for elements and write them into the model.
 
-    Modifies the model in-place by adding/updating IfcElementQuantity psets.
-    Returns a summary dict with ok, rule, and elements_quantified.
+    This is a write operation: it derives lengths, areas and volumes from
+    element geometry and adds or updates their ``IfcElementQuantity`` sets.
+    It does not report a schedule — see ``ifcquery.schedule()`` for the
+    construction programme and ``ifcquery.cost()`` for cost schedules. An
+    unrecognised ``rule`` is reported as an error listing the rules that are
+    available.
+
+    :param model: The in-memory IFC model. Modified in-place.
+    :param rule: Quantity take-off rule set, for example
+        ``'IFC4QtoBaseQuantities'`` or ``'IFC4X3QtoBaseQuantities'``.
+    :param selector: ifcopenshell selector restricting which elements are
+        measured, e.g. ``'IfcWall'``. Omit to measure every ``IfcElement`` and
+        ``IfcSpace``.
     """
     from ifc5d.qto import edit_qtos, quantify
     from ifc5d.qto import rules as rule_sets

@@ -1,13 +1,14 @@
 #include "profile_helper.h"
 
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
-taxonomy::loop::ptr ifcopenshell::geometry::fillet_loop(taxonomy::loop::ptr loop, double radius) {
+taxonomy::loop::ptr ifcopenshell::geom::fillet_loop(taxonomy::loop::ptr loop, double radius) {
 	std::vector<profile_point_with_edges_3d> pps(loop->children.size());
-	for (int b = 0; b < loop->children.size(); ++b) {
-		int c = (b - 1) % loop->children.size();
-		pps[b] = { 
-			boost::get<taxonomy::point3::ptr>(loop->children[c]->start)->ccomponents(), 
+	const auto child_count = static_cast<int>(loop->children.size());
+	for (int b = 0; b < child_count; ++b) {
+		int c = (b + child_count - 1) % child_count;
+		pps[b] = {
+			std::get<taxonomy::point3::ptr>(loop->children[c]->start)->ccomponents(),
 			radius, loop->children[c], loop->children[b]
 		};
 	}
@@ -16,10 +17,10 @@ taxonomy::loop::ptr ifcopenshell::geometry::fillet_loop(taxonomy::loop::ptr loop
 		const auto& p = pps[i];
 		if (p.radius && *p.radius > 0.) {
 
-			auto p0 = boost::get<taxonomy::point3::ptr>(p.previous->start)->ccomponents();
-			auto p1a = boost::get<taxonomy::point3::ptr>(p.previous->end)->ccomponents();
-			auto p2 = boost::get<taxonomy::point3::ptr>(p.next->end)->ccomponents();
-			auto p1b = boost::get<taxonomy::point3::ptr>(p.next->start)->ccomponents();
+			auto p0 = std::get<taxonomy::point3::ptr>(p.previous->start)->ccomponents();
+			auto p1a = std::get<taxonomy::point3::ptr>(p.previous->end)->ccomponents();
+			auto p2 = std::get<taxonomy::point3::ptr>(p.next->end)->ccomponents();
+			auto p1b = std::get<taxonomy::point3::ptr>(p.next->start)->ccomponents();
 
 			auto ba_ = p0 - p1a;
 			auto bc_ = p2 - p1b;
@@ -30,8 +31,8 @@ taxonomy::loop::ptr ifcopenshell::geometry::fillet_loop(taxonomy::loop::ptr loop
 			const double angle = std::acos(ba.dot(bc));
 			const double inset = *p.radius / std::tan(angle / 2.);
 
-			boost::get<taxonomy::point3::ptr>(p.previous->end)->components() += ba * inset;
-			boost::get<taxonomy::point3::ptr>(p.next->start)->components() += bc * inset;
+			std::get<taxonomy::point3::ptr>(p.previous->end)->components() += ba * inset;
+			std::get<taxonomy::point3::ptr>(p.next->start)->components() += bc * inset;
 
 			auto e = taxonomy::make<taxonomy::edge>();
 			e->start = p.previous->end;
@@ -41,7 +42,7 @@ taxonomy::loop::ptr ifcopenshell::geometry::fillet_loop(taxonomy::loop::ptr loop
 
 			auto ab = ba.cross(bc);
 
-			auto O = boost::get<taxonomy::point3::ptr>(p.previous->end)->ccomponents().head<3>() + ab * *p.radius;
+			auto O = std::get<taxonomy::point3::ptr>(p.previous->end)->ccomponents().head<3>() + ab * *p.radius;
 
 			auto c = taxonomy::make<taxonomy::circle>();
 			c->matrix = taxonomy::make<taxonomy::matrix4>(O, ab);
@@ -54,12 +55,12 @@ taxonomy::loop::ptr ifcopenshell::geometry::fillet_loop(taxonomy::loop::ptr loop
 	return loop;
 }
 
-void ifcopenshell::geometry::remove_duplicate_points_from_loop(std::vector<taxonomy::point3::ptr>& polygon, bool closed, double tol) {
+void ifcopenshell::geom::remove_duplicate_points_from_loop(std::vector<taxonomy::point3::ptr>& polygon, bool closed, double tol) {
 	tol *= tol;
 
 	for (;;) {
 		bool removed = false;
-		int n = polygon.size() - (closed ? 0 : 1);
+		const std::size_t n = polygon.size() - (closed ? 0u : 1u);
 		for (size_t i = 0; i < n; ++i) {
 			// wrap around to the first point in case of a closed loop
 			auto j = (i + 1) % polygon.size();
@@ -80,7 +81,7 @@ void ifcopenshell::geometry::remove_duplicate_points_from_loop(std::vector<taxon
 	}
 }
 
-taxonomy::loop::ptr ifcopenshell::geometry::polygon_from_points(const std::vector<taxonomy::point3::ptr>& ps, bool external) {
+taxonomy::loop::ptr ifcopenshell::geom::polygon_from_points(const std::vector<taxonomy::point3::ptr>& ps, bool external) {
 	auto loop = taxonomy::make<taxonomy::loop>();
 	loop->external = external;
 	taxonomy::point3::ptr previous;
@@ -96,7 +97,7 @@ taxonomy::loop::ptr ifcopenshell::geometry::polygon_from_points(const std::vecto
 	return loop;
 }
 
-taxonomy::loop::ptr ifcopenshell::geometry::profile_helper(const taxonomy::matrix4::ptr& m4, const std::vector<profile_point>& points) {
+taxonomy::loop::ptr ifcopenshell::geom::profile_helper(const taxonomy::matrix4::ptr& m4, const std::vector<profile_point>& points) {
 
 	/* TopoDS_Vertex* vertices = new TopoDS_Vertex[numVerts];
 	for (int i = 0; i < numVerts; i++) {
@@ -120,7 +121,7 @@ taxonomy::loop::ptr ifcopenshell::geometry::profile_helper(const taxonomy::matri
 		if (fillet.IsDone()) {
 			face = TopoDS::Face(fillet.Shape());
 		} else {
-			Logger::Error("Failed to process profile fillets");
+			ifcopenshell::logger::root().error("Failed to process profile fillets");
 		}
 	}
 	*/
@@ -149,12 +150,13 @@ taxonomy::loop::ptr ifcopenshell::geometry::profile_helper(const taxonomy::matri
 		// instances of the points, but when doing fillets we assume we can split and create an intermediate
 		// circular edge.
 		// @todo only deduplicate when there is a fillet radius on that point
-		e->end = taxonomy::make<taxonomy::point3>(*boost::get<taxonomy::point3::ptr>(e->end)->components_);
+		e->end = taxonomy::make<taxonomy::point3>(*std::get<taxonomy::point3::ptr>(e->end)->components_);
 	}
 
 	std::vector<profile_point_with_edges> pps(points.size());
-	for (int b = 0; b < points.size(); ++b) {
-		int c = (b + points.size() - 1) % points.size();
+	const auto point_count = static_cast<int>(points.size());
+	for (int b = 0; b < point_count; ++b) {
+		int c = (b + point_count - 1) % point_count;
 		pps[b] = { Eigen::Vector2d(points[b].xy[0], points[b].xy[1]), points[b].radius, loop->children[c], loop->children[b] };
 	}
 
@@ -163,10 +165,10 @@ taxonomy::loop::ptr ifcopenshell::geometry::profile_helper(const taxonomy::matri
 		const auto& p = pps[i];
 		if (p.radius && *p.radius > 0.) {
 			// Position is a IfcAxis2Placement2D, so should remain 2d points
-			auto p0 = boost::get<taxonomy::point3::ptr>(p.previous->start)->components_->head<2>();
-			auto p1a = boost::get<taxonomy::point3::ptr>(p.previous->end)->components_->head<2>();
-			auto p2 = boost::get<taxonomy::point3::ptr>(p.next->end)->components_->head<2>();
-			auto p1b = boost::get<taxonomy::point3::ptr>(p.next->start)->components_->head<2>();
+			auto p0 = std::get<taxonomy::point3::ptr>(p.previous->start)->components_->head<2>();
+			auto p1a = std::get<taxonomy::point3::ptr>(p.previous->end)->components_->head<2>();
+			auto p2 = std::get<taxonomy::point3::ptr>(p.next->end)->components_->head<2>();
+			auto p1b = std::get<taxonomy::point3::ptr>(p.next->start)->components_->head<2>();
 
 			auto ba_ = p0 - p1a;
 			auto bc_ = p2 - p1b;
@@ -177,8 +179,8 @@ taxonomy::loop::ptr ifcopenshell::geometry::profile_helper(const taxonomy::matri
 			const double angle = std::acos(ba.dot(bc));
 			const double inset = *p.radius / std::tan(angle / 2.);
 
-			boost::get<taxonomy::point3::ptr>(p.previous->end)->components_->head<2>() += ba * inset;
-			boost::get<taxonomy::point3::ptr>(p.next->start)->components_->head<2>() += bc * inset;
+			std::get<taxonomy::point3::ptr>(p.previous->end)->components_->head<2>() += ba * inset;
+			std::get<taxonomy::point3::ptr>(p.next->start)->components_->head<2>() += bc * inset;
 
 			auto e = taxonomy::make<taxonomy::edge>();
 			e->start = p.previous->end;
@@ -188,17 +190,65 @@ taxonomy::loop::ptr ifcopenshell::geometry::profile_helper(const taxonomy::matri
 
 			double sign = ab.head<2>().dot(bc) > 0 ? 1. : -1.;
 
-			auto O = boost::get<taxonomy::point3::ptr>(p.previous->end)->ccomponents().head<3>() + ab * *p.radius * sign;
+			auto O = std::get<taxonomy::point3::ptr>(p.previous->end)->ccomponents().head<3>() + ab * *p.radius * sign;
 
 			auto c = taxonomy::make<taxonomy::circle>();
 			c->matrix = taxonomy::make<taxonomy::matrix4>(Eigen::Matrix4d(Eigen::Affine3d(Eigen::Translation3d(O)).matrix()));
 			c->radius = *p.radius;
 			e->basis = c;
-			e->curve_sense.reset(sign == -1.);
+			e->curve_sense.emplace(sign == -1.);
 
 			loop->children.insert(std::find(loop->children.begin(), loop->children.end(), p.next), e);
 		}
 	};
 
 	return loop;
+}
+
+std::pair<std::vector<taxonomy::point3::ptr>, std::vector<std::set<std::string>>> remove_duplicate_points_from_loop(const std::vector<taxonomy::point3::ptr>& polygon_, const std::vector<std::string>& tags) {
+    const bool closed = false;
+
+	auto polygon = polygon_;
+	std::vector<std::set<std::string>> point_tags;
+	point_tags.resize(polygon.size());
+	for (size_t i = 0; i < tags.size(); ++i) {
+		point_tags[i % polygon.size()].insert(tags[i]);
+    }
+
+	for (;;) {
+        bool removed = false;
+		const std::size_t n = polygon.size() - (closed ? 0u : 1u);
+        for (size_t i = 0; i < n; ++i) {
+            // wrap around to the first point in case of a closed loop
+            auto j = (i + 1) % polygon.size();
+            // double dist = (polygon[i]->ccomponents() - polygon[j]->ccomponents()).squaredNorm();
+            // if (dist < tol) {
+            const bool equal = polygon[i]->ccomponents() == polygon[j]->ccomponents();
+			if (equal) {
+                // do not remove the first or last point to
+                // maintain connectivity with other wires
+
+				/*
+				// Only removing direct equality so does not impact connectivity
+                if ((closed && j == 0) || (!closed && j == (n - 1))) {
+                    polygon.erase(polygon.begin() + i);
+                } else {
+                    polygon.erase(polygon.begin() + j);
+                }
+				*/
+
+				polygon.erase(polygon.begin() + i);
+                point_tags[i].insert(point_tags[j].begin(), point_tags[j].end());
+                point_tags.erase(point_tags.begin() + j);
+
+                removed = true;
+                break;
+            }
+        }
+        if (!removed) {
+            break;
+        }
+    }
+
+	return {polygon, point_tags};
 }

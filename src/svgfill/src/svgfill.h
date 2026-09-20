@@ -21,26 +21,29 @@
 #ifndef SVGFILL_H
 #define SVGFILL_H
 
-#ifdef IFC_SHARED_BUILD
-#ifdef _WIN32
-#ifdef svgfill_EXPORTS
-#define SVGFILL_API __declspec(dllexport)
+#ifdef SWIG
+  #define SVGFILL_API
+#elif defined(IFC_SHARED_BUILD)
+  #ifdef _WIN32
+    #ifdef svgfill_EXPORTS
+      #define SVGFILL_API __declspec(dllexport)
+    #else
+      #define SVGFILL_API __declspec(dllimport)
+    #endif
+  #else // *nix + GCC-like compiler
+    #define SVGFILL_API __attribute__((visibility("default")))
+  #endif
 #else
-#define SVGFILL_API __declspec(dllimport)
-#endif
-#else // simply assume *nix + GCC-like compiler
-#define SVGFILL_API __attribute__((visibility("default")))
-#endif
-#else
-#define SVGFILL_API
-#endif
-
-#include <boost/optional.hpp>
+  #define SVGFILL_API
+#endif // SWIG
 
 #include <array>
+#include <string>
 #include <vector>
+#include <optional>
+#include <functional>
 
-class Logger;
+namespace ifcopenshell { class logger; }
 
 namespace svgfill {
 	typedef std::array<double, 2> point_2;
@@ -106,17 +109,15 @@ namespace svgfill {
 		size_t num_faces() { return arr_->num_faces(); }
         size_t delete_same_facet_edge_pairs() { return arr_->delete_same_facet_edge_pairs(); }
 
-		~context() {
-			delete arr_;
-		}
+		~context();
 	};
 
-	SVGFILL_API bool svg_to_line_segments(const std::string& data, const boost::optional<std::string>& class_name, std::vector<std::vector<line_segment_2>>& segments);
+	SVGFILL_API bool svg_to_line_segments(const std::string& data, const std::optional<std::string>& class_name, std::vector<std::vector<line_segment_2>>& segments);
 	SVGFILL_API bool line_segments_to_polygons(solver s, double eps, const std::vector<std::vector<line_segment_2>>& segments, std::vector<std::vector<polygon_2>>& polygons);
 	SVGFILL_API bool line_segments_to_polygons(solver s, double eps, const std::vector<std::vector<line_segment_2>>& segments, std::vector<std::vector<polygon_2>>& polygons, std::function<void(float)>& progress);
 	SVGFILL_API std::string polygons_to_svg(const std::vector<std::vector<polygon_2>>& polygons, bool random_color=false);
 	SVGFILL_API std::string polygons_to_svg(const std::vector<polygon_2>& polygons, bool random_color = false);
-	SVGFILL_API bool svg_to_polygons(const std::string& data, const boost::optional<std::string>& class_name, std::vector<polygon_2>& polygons);
+    SVGFILL_API bool svg_to_polygons(const std::string& data, const std::optional<std::string>& class_name, std::vector<polygon_2>& polygons);
 
 	struct SVGFILL_API arrange_polygon_settings {
         bool debug_output = false;
@@ -135,7 +136,7 @@ namespace svgfill {
         double subdivision_factor = 16.;
     };
 
-	SVGFILL_API bool arrange_polygons(arrange_polygon_settings settings, const std::vector<polygon_2>& polygons, std::vector<polygon_2>& arranged, Logger& logger);
+	SVGFILL_API bool arrange_polygons(arrange_polygon_settings settings, const std::vector<polygon_2>& polygons, std::vector<polygon_2>& arranged, ifcopenshell::logger& logger);
     }
 
 #endif

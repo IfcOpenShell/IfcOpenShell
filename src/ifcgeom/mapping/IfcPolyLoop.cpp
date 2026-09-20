@@ -19,24 +19,24 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 #include "../profile_helper.h"
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolyLoop* inst) {
-	IfcSchema::IfcCartesianPoint::list::ptr points = inst->Polygon();
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolyLoop& inst) {
+	std::vector<IfcSchema::IfcCartesianPoint> points = inst.Polygon();
 
 	// Parse and store the points in a sequence
 	std::vector<taxonomy::point3::ptr> polygon;
-	polygon.reserve(points->size());
-	std::transform(points->begin(), points->end(), std::back_inserter(polygon), [this](const IfcSchema::IfcCartesianPoint* p) {
+	polygon.reserve(points.size());
+	std::transform(points.begin(), points.end(), std::back_inserter(polygon), [this](const IfcSchema::IfcCartesianPoint& p) {
 		return taxonomy::cast<taxonomy::point3>(map(p));
 	});
 
 	// A loop should consist of at least three vertices
 	int original_count = polygon.size();
 	if (original_count < 3) {
-		logger_.Message(Logger::LOG_WARNING, "GEO", 278, "Not enough edges for:", inst);
+		logger_.message(ifcopenshell::logger::LOG_WARNING, "GEO", 278, "Not enough edges for:", inst);
 		return nullptr;
 	}
 
@@ -45,17 +45,17 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolyLoop* inst) {
 	auto previous_size = polygon.size();
 	remove_duplicate_points_from_loop(polygon, true, eps);
 	if (polygon.size() != previous_size) {
-		logger_.Warning("GEO", 279, "Removed " + std::to_string(previous_size - polygon.size()) + " (near) duplicate points from:", inst);
+		logger_.warning("GEO", 279, "Removed " + std::to_string(previous_size - polygon.size()) + " (near) duplicate points from:", inst);
 	}
 
 	int count = polygon.size();
 	if (original_count - count != 0) {
-		std::stringstream ss; ss << (original_count - count) << " edges removed for:"; 
-		logger_.Message(Logger::LOG_WARNING, "GEO", 280, ss.str(), inst);
+		std::stringstream ss; ss << (original_count - count) << " edges removed for:";
+		logger_.message(ifcopenshell::logger::LOG_WARNING, "GEO", 280, ss.str(), inst);
 	}
 
 	if (count < 3) {
-		logger_.Message(Logger::LOG_WARNING, "GEO", 281, "Not enough edges for:", inst);
+		logger_.message(ifcopenshell::logger::LOG_WARNING, "GEO", 281, "Not enough edges for:", inst);
 		return nullptr;
 	}
 

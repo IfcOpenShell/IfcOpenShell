@@ -1,8 +1,8 @@
 #ifdef IFOPSH_WITH_CGAL
 
-#include "../ifcgeom/kernels/cgal/CgalKernel.h"
-#include "../ifcgeom/IfcGeomFilter.h"
-#include "../ifcgeom/Iterator.h"
+#include "../ifcgeom/kernels/cgal/cgal_kernel.h"
+#include "../ifcgeom/filter.h"
+#include "../ifcgeom/iterator.h"
 #include "../ifcgeom/hybrid_kernel.h"
 
 #include <CGAL/box_intersection_d.h>
@@ -39,7 +39,7 @@ T enlarge(const T& t, double d = 1.e-5) {
 
 template <class HDS>
 struct Build_Offset : public CGAL::Modifier_base<HDS> {
-	std::list<cgal_shape_t::Facet_handle> input;
+	std::list<cgal_polyhedron::Facet_handle> input;
 
 	void operator()(HDS& hds) {
 		// Postcondition: hds is a valid polyhedral surface.
@@ -81,12 +81,12 @@ struct Build_Offset : public CGAL::Modifier_base<HDS> {
 };
 
 template <typename Ts>
-std::list<cgal_shape_t::Facet_handle> connected_faces(cgal_shape_t::Facet_handle f, const Ts& excluded) {
-	std::set<cgal_shape_t::Facet_handle> fs = { f };
+std::list<cgal_polyhedron::Facet_handle> connected_faces(cgal_polyhedron::Facet_handle f, const Ts& excluded) {
+	std::set<cgal_polyhedron::Facet_handle> fs = { f };
 
-	std::function<void(cgal_shape_t::Facet_handle& f)> process;
-	process = [&fs, &process, &excluded](cgal_shape_t::Facet_handle& f) {
-		cgal_shape_t::Halfedge_around_facet_circulator circ = f->facet_begin(), end(circ);
+	std::function<void(cgal_polyhedron::Facet_handle& f)> process;
+	process = [&fs, &process, &excluded](cgal_polyhedron::Facet_handle& f) {
+		cgal_polyhedron::Halfedge_around_facet_circulator circ = f->facet_begin(), end(circ);
 		do {
 			auto ff = circ->opposite()->facet();
 			if (excluded.find(ff) == excluded.end()) {
@@ -99,12 +99,12 @@ std::list<cgal_shape_t::Facet_handle> connected_faces(cgal_shape_t::Facet_handle
 	};
 
 	process(f);
-	return std::list<cgal_shape_t::Facet_handle>(fs.begin(), fs.end());
+	return std::list<cgal_polyhedron::Facet_handle>(fs.begin(), fs.end());
 }
 
 template <class HDS>
 struct Builder_With_Map : public CGAL::Modifier_base<HDS> {
-	std::list<cgal_shape_t::Facet_handle> input;
+	std::list<cgal_polyhedron::Facet_handle> input;
 	std::map<Kernel_::Point_3, Kernel_::Point_3> mapping;
 
 	void operator()(HDS& hds) {
@@ -114,7 +114,7 @@ struct Builder_With_Map : public CGAL::Modifier_base<HDS> {
 		std::set<Kernel_::Point_3> used_points;
 
 		for (auto& f : input) {
-			cgal_shape_t::Halfedge_around_facet_circulator circ = f->facet_begin(), end(circ);
+			cgal_polyhedron::Halfedge_around_facet_circulator circ = f->facet_begin(), end(circ);
 			do {
 				auto P = circ->vertex()->point();
 				auto it = mapping.find(P);
@@ -135,7 +135,7 @@ struct Builder_With_Map : public CGAL::Modifier_base<HDS> {
 
 		for (auto& f : input) {
 			B.begin_facet();
-			cgal_shape_t::Halfedge_around_facet_circulator circ = f->facet_begin(), end(circ);
+			cgal_polyhedron::Halfedge_around_facet_circulator circ = f->facet_begin(), end(circ);
 			do {
 				auto P = circ->vertex()->point();
 				auto it = mapping.find(P);
@@ -161,9 +161,9 @@ struct Builder_With_Map : public CGAL::Modifier_base<HDS> {
 	}
 };
 
-double facet_area(const cgal_shape_t::Facet_handle& f);
+double facet_area(const cgal_polyhedron::Facet_handle& f);
 
-void dump_facet(const cgal_shape_t::Facet_handle& f);
+void dump_facet(const cgal_polyhedron::Facet_handle& f);
 
 struct remove_thickness {
 	typedef Kernel_::Point_3 Point;
@@ -182,17 +182,17 @@ struct remove_thickness {
 	typedef CGAL::AABB_tree<AAbbTraits> Tree;
 	typedef boost::optional<Tree::Intersection_and_primitive_id<Ray>::Type> Ray_intersection;
 
-	cgal_shape_t polyhedron, polyhedron2, flattened;
+	cgal_polyhedron polyhedron, polyhedron2, flattened;
 
-	remove_thickness(const cgal_shape_t& p)
+	remove_thickness(const cgal_polyhedron& p)
 		// edge_collapse(p) still does not work :(
 		: polyhedron(p)
 		, polyhedron2(p) {
 		CGAL::Polygon_mesh_processing::triangulate_faces(polyhedron);
 		CGAL::Polygon_mesh_processing::triangulate_faces(polyhedron2);
 
-		std::list<cgal_shape_t::Facet_handle> non_degenerate, degenerate, longitudinal;
-		std::set<cgal_shape_t::Facet_iterator> thin_sides;
+		std::list<cgal_polyhedron::Facet_handle> non_degenerate, degenerate, longitudinal;
+		std::set<cgal_polyhedron::Facet_iterator> thin_sides;
 
 		std::wcout << "ALL FACES:" << std::endl;
 
@@ -211,8 +211,8 @@ struct remove_thickness {
 			dump_facet(f);
 		}
 
-		cgal_shape_t enlarged_non_degenerate_triangles;
-		Build_Offset<cgal_shape_t::HDS> bo;
+		cgal_polyhedron enlarged_non_degenerate_triangles;
+		Build_Offset<cgal_polyhedron::HDS> bo;
 		bo.input = non_degenerate;
 		enlarged_non_degenerate_triangles.delegate(bo);
 
@@ -220,8 +220,8 @@ struct remove_thickness {
 
 		Tree tree(faces(enlarged_non_degenerate_triangles).first, faces(enlarged_non_degenerate_triangles).second, enlarged_non_degenerate_triangles);
 
-		std::map<cgal_face_descriptor_t, Kernel_::Vector_3> face_normals;
-		boost::associative_property_map<std::map<cgal_face_descriptor_t, Kernel_::Vector_3>> face_normals_map(face_normals);
+		std::map<cgal_face_descriptor, Kernel_::Vector_3> face_normals;
+		boost::associative_property_map<std::map<cgal_face_descriptor, Kernel_::Vector_3>> face_normals_map(face_normals);
 		CGAL::Polygon_mesh_processing::compute_face_normals(polyhedron, face_normals_map);
 
 		for (auto& f : non_degenerate) {
@@ -269,8 +269,8 @@ struct remove_thickness {
 
 		std::wcout << "faces " << faces(polyhedron).size() << "long " << longitudinal.size() << "thin " << thin_sides.size() << "non-degen " << non_degenerate.size() << std::endl;
 
-		cgal_shape_t enlarged_indiv_triangles;
-		Build_Offset<cgal_shape_t::HDS> bo2;
+		cgal_polyhedron enlarged_indiv_triangles;
+		Build_Offset<cgal_polyhedron::HDS> bo2;
 		bo2.input = longitudinal;
 		enlarged_indiv_triangles.delegate(bo2);
 
@@ -301,9 +301,9 @@ struct remove_thickness {
 			Kernel_::Vector_3 norm;
 			Kernel_::Vector_3 accum;
 			int count = 0;
-			CGAL::Face_around_target_circulator<cgal_shape_t> it(v->halfedge(), polyhedron), end(it);
+			CGAL::Face_around_target_circulator<cgal_polyhedron> it(v->halfedge(), polyhedron), end(it);
 			do {
-				cgal_shape_t::Facet_handle fh = (*it)->halfedge()->facet();
+				cgal_polyhedron::Facet_handle fh = (*it)->halfedge()->facet();
 
 				auto jt = std::find(non_degenerate.begin(), non_degenerate.end(), fh);
 				std::wcout << "non degen: " << (jt != non_degenerate.end()) << std::endl;
@@ -408,8 +408,8 @@ struct remove_thickness {
 			if (std::find(connected.begin(), connected.end(), f) == connected.end()) {
 				connected_opposing = connected_faces(f, thin_sides_degenerate);
 
-				std::set<cgal_shape_t::Facet_handle> longi(longitudinal.begin(), longitudinal.end());
-				std::set<cgal_shape_t::Facet_handle> both_sides(connected.begin(), connected.end());
+				std::set<cgal_polyhedron::Facet_handle> longi(longitudinal.begin(), longitudinal.end());
+				std::set<cgal_polyhedron::Facet_handle> both_sides(connected.begin(), connected.end());
 				both_sides.insert(connected_opposing.begin(), connected_opposing.end());
 
 				if (longi == both_sides) {
@@ -422,7 +422,7 @@ struct remove_thickness {
 			}
 		}
 
-		Builder_With_Map<cgal_shape_t::HDS> b2;
+		Builder_With_Map<cgal_polyhedron::HDS> b2;
 		b2.input = connected;
 		b2.mapping = new_points;
 
@@ -432,11 +432,11 @@ struct remove_thickness {
 
 
 struct intersection_validator {
-	typedef std::list<std::pair<const IfcUtil::IfcBaseEntity*, CGAL::Nef_polyhedron_3<Kernel_>> > nefs_t;
-	typedef CGAL::Box_intersection_d::Box_with_handle_d<double, 3, nefs_t::value_type*> Box;
+	typedef std::list<std::pair<const ifcopenshell::IfcBaseEntity*, CGAL::Nef_polyhedron_3<Kernel_>> > nef_list;
+	typedef CGAL::Box_intersection_d::Box_with_handle_d<double, 3, nef_list::value_type*> Box;
 
 	std::vector<Box> boxes;
-	nefs_t nefs;
+	nef_list nefs;
 
 	double total_map_time = 0.;
 	double total_geom_time = 0.;
@@ -444,30 +444,30 @@ struct intersection_validator {
 	double total_minkowsky_time = 0.;
 	double total_box_time = 0.;
 
-	std::set<const IfcUtil::IfcBaseEntity*> successfully_processed;
+	std::set<const ifcopenshell::IfcBaseEntity*> successfully_processed;
 
-	intersection_validator(IfcParse::IfcFile& f, std::initializer_list<std::string> entities, double eps, bool no_progress, bool quiet, bool stderr_progress, Logger& logger = Logger::Root()) {
+	intersection_validator(ifcopenshell::file& f, std::initializer_list<std::string> entities, double eps, bool no_progress, bool quiet, bool stderr_progress, ifcopenshell::logger& logger = ifcopenshell::logger::root()) {
 
-		ifcopenshell::geometry::Settings settings;
-		settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = false;
-		settings.get<ifcopenshell::geometry::settings::WeldVertices>().value = false;
-		settings.get<ifcopenshell::geometry::settings::ReorientShells>().value = true;
-		settings.get<ifcopenshell::geometry::settings::ConvertBackUnits>().value = true;
-		settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
-		settings.get<ifcopenshell::geometry::settings::DisableOpeningSubtractions>().value = true;
+		ifcopenshell::geom::settings settings;
+		settings.get<ifcopenshell::geom::settings::UseWorldCoords>().value = false;
+		settings.get<ifcopenshell::geom::settings::WeldVertices>().value = false;
+		settings.get<ifcopenshell::geom::settings::ReorientShells>().value = true;
+		settings.get<ifcopenshell::geom::settings::ConvertBackUnits>().value = true;
+		settings.get<ifcopenshell::geom::settings::IteratorOutput>().value = ifcopenshell::geom::settings::NATIVE;
+		settings.get<ifcopenshell::geom::settings::DisableOpeningSubtractions>().value = true;
 
-		std::vector<ifcopenshell::geometry::filter_t> spaces_and_walls = {
-			IfcGeom::entity_filter(true, false, entities)
+		std::vector<ifcopenshell::geom::filter_function> spaces_and_walls = {
+			ifcopenshell::geom::entity_filter(true, false, entities)
 		};
 
-		IfcGeom::Iterator context_iterator(ifcopenshell::geometry::kernels::construct(&f, "cgal", settings, logger), settings, &f, spaces_and_walls, 1, logger);
+		ifcopenshell::geom::iterator context_iterator(ifcopenshell::geom::kernels::construct(&f, "cgal", settings, logger), settings, &f, spaces_and_walls, 1, logger);
 
 		if (!context_iterator.initialize()) {
 			return;
 		}
 
-		auto polycube = ifcopenshell::geometry::utils::create_cube(eps);
-		auto cube = ifcopenshell::geometry::utils::create_nef_polyhedron(polycube);
+		auto polycube = ifcopenshell::geom::utils::create_cube(eps);
+		auto cube = ifcopenshell::geom::utils::create_nef_polyhedron(polycube);
 
 		size_t num_created = 0;
 		int old_progress = quiet ? 0 : -1;
@@ -477,7 +477,7 @@ struct intersection_validator {
 			if (num_created) {
 				has_more = context_iterator.next();
 			}
-			IfcGeom::BRepElement* geom_object = nullptr;
+			std::unique_ptr<ifcopenshell::geom::native_element> geom_object;
 			if (has_more) {
 				geom_object = context_iterator.get_native();
 			}
@@ -486,21 +486,21 @@ struct intersection_validator {
 			}
 
 			std::stringstream ss;
-			geom_object->product()->toString(ss);
+			geom_object->product()->to_string(ss);
 			auto sss = ss.str();
 			std::wcout << sss.c_str() << std::endl;
 
 			for (auto& g : geom_object->geometry()) {
-				cgal_shape_t s = *std::static_pointer_cast<ifcopenshell::geometry::CgalShape>(g.Shape());
-				const auto& m = g.Placement()->ccomponents();
+				cgal_polyhedron s = *std::static_pointer_cast<ifcopenshell::geom::cgal_shape>(g.shape());
+				const auto& m = g.placement()->ccomponents();
 				const auto& n = geom_object->transformation().data()->ccomponents();
 
-				const cgal_placement_t trsf(
+				const cgal_placement trsf(
 					m(0, 0), m(0, 1), m(0, 2), m(0, 3),
 					m(1, 0), m(1, 1), m(1, 2), m(1, 3),
 					m(2, 0), m(2, 1), m(2, 2), m(2, 3));
 
-				const cgal_placement_t trsf2(
+				const cgal_placement trsf2(
 					n(0, 0), n(0, 1), n(0, 2), n(0, 3),
 					n(1, 0), n(1, 1), n(1, 2), n(1, 3),
 					n(2, 0), n(2, 1), n(2, 2), n(2, 3));
@@ -511,7 +511,7 @@ struct intersection_validator {
 				}
 
 				std::clock_t nef_begin = std::clock();
-				CGAL::Nef_polyhedron_3<Kernel_> nef = ifcopenshell::geometry::utils::create_nef_polyhedron(s);
+				CGAL::Nef_polyhedron_3<Kernel_> nef = ifcopenshell::geom::utils::create_nef_polyhedron(s);
 				std::clock_t nef_end = std::clock();
 				total_nef_time += (nef_end - nef_begin) / (double) CLOCKS_PER_SEC;
 				if (nef.is_empty()) {
@@ -544,7 +544,7 @@ struct intersection_validator {
 
 				/*
 				std::ostringstream ss;
-				ss << geom_object->product()->data().toString() << std::endl << b.min_coord(0) << " - " << b.max_coord(0) << std::endl;
+				ss << geom_object->product()->data().to_string() << std::endl << b.min_coord(0) << " - " << b.max_coord(0) << std::endl;
 				auto sss = ss.str();
 				std::wcout << sss.c_str();
 				*/
@@ -563,7 +563,7 @@ struct intersection_validator {
 						std::cerr << std::flush;
 				} else {
 					const int progress = context_iterator.progress() / 2;
-					if (old_progress != progress) logger.ProgressBar(progress);
+					if (old_progress != progress) logger.progress_bar(progress);
 					old_progress = progress;
 				}
 			}
@@ -579,7 +579,7 @@ struct intersection_validator {
 			if (stderr_progress)
 				std::cerr << std::flush;
 		} else {
-			logger.Status("\rDone fixing space boundaries for " + boost::lexical_cast<std::string>(num_created) +
+			logger.status("\rDone fixing space boundaries for " + boost::lexical_cast<std::string>(num_created) +
 				" objects                                ");
 		}
 

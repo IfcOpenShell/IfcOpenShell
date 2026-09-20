@@ -308,6 +308,8 @@ def refresh_ui_data():
         except AttributeError:
             pass
 
+    tool.Ifc.notify_listeners()
+
     if isinstance(ifc_file := tool.Ifc.get(), ifcopenshell.sqlite):
         ifc_file.clear_cache()
 

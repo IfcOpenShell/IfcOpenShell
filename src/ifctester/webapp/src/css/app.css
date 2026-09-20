@@ -130,7 +130,7 @@
         align-items: center;
         font-size: 0.9rem;
     }
-    
+
     .app-ribbon .status-indicator {
         display: flex;
         align-items: center;
@@ -138,15 +138,15 @@
         font-size: 14px;
         color: #e0e0e0;
     }
-    
+
     .app-ribbon .status-indicator.ready {
         color: #4caf50;
     }
-    
+
     .app-ribbon .status-indicator.error {
         color: #f44336;
     }
-    
+
     .app-ribbon .spinner {
         width: 14px;
         height: 14px;
@@ -155,21 +155,21 @@
         border-radius: 50%;
         animation: app-ribbon-spin 1s linear infinite;
     }
-    
+
     .app-ribbon .status-dot {
         width: 8px;
         height: 8px;
         border-radius: 50%;
         background: #4caf50;
     }
-    
+
     .app-ribbon .error-dot {
         width: 8px;
         height: 8px;
         border-radius: 50%;
         background: #f44336;
     }
-    
+
     @keyframes app-ribbon-spin {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
@@ -200,7 +200,7 @@ html, body {
         border-bottom: 1px solid #ffffff1c;
         padding: 0px 15px;
         gap: 15px;
-    
+
         .logo {
             background: url(/logo.svg);
             height: 25px;
@@ -371,7 +371,7 @@ html, body {
             opacity: 0;
             transition: all 0.2s;
         }
-        
+
         .tab-close:hover {
             background: #ffffff1f;
             color: #e0e0e0;
@@ -445,7 +445,7 @@ html, body {
             .cta-btn svg {
                 margin-right: 5px;
             }
-            
+
             .cta-btn:hover {
                 background: #ffffff17;
                 color: #e0e0e0;
@@ -469,7 +469,7 @@ html, body {
                 .spec-icon {
                     font-size: 16px;
                 }
-                
+
                 .spec-name {
                     flex: 1;
                     font-size: 15px;
@@ -545,7 +545,7 @@ html, body {
             opacity: 0.8;
         }
     }
-    
+
     .ids-md-header {
         margin-bottom: 24px;
     }
@@ -553,7 +553,7 @@ html, body {
     .specification-editor {
         max-width: 800px;
     }
-    
+
     .ids-info h2, .specification-editor h2 {
         margin: 0 0 0px 0;
         font-size: 24px;
@@ -564,14 +564,14 @@ html, body {
         white-space: nowrap;
         overflow: hidden;
     }
-    
+
     .form-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 16px;
         max-width: 800px;
     }
-    
+
     .form-group {
         display: flex;
         flex-direction: column;
@@ -637,7 +637,7 @@ html, body {
         gap: 16px;
         margin-top: 4px;
     }
-    
+
     .radio-label {
         display: flex;
         align-items: center;
@@ -645,18 +645,18 @@ html, body {
         font-size: 14px;
         cursor: pointer;
     }
-    
+
     .radio-label input[type="radio"] {
         margin: 0;
     }
-    
+
     .spec-header {
         display: flex;
         align-items: center;
         margin-bottom: 24px;
         gap: 15px;
     }
-    
+
     .spec-tabs {
         display: inline-flex;
         gap: 4px;
@@ -664,7 +664,7 @@ html, body {
         border-radius: 6px;
         border: 1px solid #ffffff1c;
     }
-    
+
     .tab-btn {
         cursor: pointer;
         background-color: transparent;
@@ -683,11 +683,11 @@ html, body {
         background: #ffffff21;
         color: white;
     }
-    
+
     .restrictions-panel {
         max-width: 800px;
     }
-    
+
     .restrictions-header {
         display: flex;
         align-items: center;
@@ -699,20 +699,20 @@ html, body {
             border: 1px solid #ffffff36;
         }
     }
-    
+
     .restrictions-header h3 {
         margin: 0;
         font-size: 16px;
         color: #b1b1b1;
         text-transform: uppercase;
     }
-    
+
     .restriction-buttons {
         display: flex;
         gap: 8px;
         flex-wrap: wrap;
     }
-    
+
     .btn-small {
         padding: 6px 12px;
         background: #3d3d3d87;
@@ -723,24 +723,24 @@ html, body {
         transition: all 0.2s;
         color: #e0e0e0;
     }
-    
+
     .btn-small:hover {
         background: #555555;
     }
-    
+
     .restrictions-list {
         display: flex;
         flex-direction: column;
         gap: 16px;
     }
-    
+
     .restriction-item {
         background: #ffffff05;
         border: 1px solid #5555556e;
         border-radius: 12px;
         padding: 16px;
     }
-    
+
     .restriction-header {
         display: flex;
         align-items: center;
@@ -756,7 +756,7 @@ html, body {
             font-weight: 600;
             color: #e0e0e0;
         }
-        
+
         .restriction-name {
             flex: 1;
             font-weight: 400;
@@ -787,17 +787,17 @@ html, body {
             background: #ffffff12;
         }
     }
-    
+
     .restriction-form {
         display: grid;
         /* grid-template-columns: 1fr 1fr; */
         gap: 12px;
     }
-    
+
     .restriction-form .form-group {
         margin-bottom: 0;
     }
-    
+
     .restriction-form .form-group.full-width {
         grid-column: 1 / -1;
     }

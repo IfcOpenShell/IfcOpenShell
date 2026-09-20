@@ -19,6 +19,7 @@
 import tempfile
 from pathlib import Path
 
+import pytest
 from ifcpatch.recipes import Ifc2Sql
 
 import ifcopenshell
@@ -62,6 +63,12 @@ class TestEntity:
         ifc_sqlite = get_ifc_sqlite()
         assert (element := ifc_sqlite.by_id(1))
         assert element.Name == "My Project"
+
+    def test_getattr_derive(self):
+        ifc_sqlite = get_ifc_sqlite()
+        assert (units := ifc_sqlite.by_type("IfcSIUnit"))
+        with pytest.raises(RuntimeError):
+            units[0].Dimensions
 
     def test_setattr(self):
         ifc_sqlite = get_ifc_sqlite()

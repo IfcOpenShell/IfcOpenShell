@@ -298,6 +298,7 @@ class DocExtractor:
         with open(BASE_MODULE_PATH / "schema/ifc2x3_property_sets_site_domains.json", "w", encoding="utf-8") as fo:
             print(f"{len(property_sets_domains)} property sets domains were parsed from the website")
             json.dump(property_sets_domains, fo, sort_keys=True, indent=4)
+            fo.write("\n")
 
     def setup_ifc2x3_reference_lookup(self):
         # setup references look up tables to convert property hrefs to actual data paths
@@ -414,6 +415,7 @@ class DocExtractor:
         with open(BASE_MODULE_PATH / "schema/ifc2x3_entities.json", "w", encoding="utf-8") as fo:
             print(f"{len(entities_dict)} entities parsed")
             json.dump(entities_dict, fo, sort_keys=True, indent=4)
+            fo.write("\n")
 
     def extract_ifc2x3_property_sets(self):
         property_sets_dict = dict()
@@ -534,6 +536,7 @@ class DocExtractor:
         with open(BASE_MODULE_PATH / "schema/ifc2x3_properties.json", "w", encoding="utf-8") as fo:
             print(f"{len(property_sets_dict)} property sets parsed")
             json.dump(property_sets_dict, fo, sort_keys=True, indent=4)
+            fo.write("\n")
 
     def extract_ifc2x3_types(self):
         types_dict = dict()
@@ -573,6 +576,7 @@ class DocExtractor:
         with open(BASE_MODULE_PATH / "schema/ifc2x3_types.json", "w", encoding="utf-8") as fo:
             print(f"{len(types_dict)} ifc types parsed")
             json.dump(types_dict, fo, sort_keys=True, indent=4)
+            fo.write("\n")
 
     def extract_ifc4(self):
         print("Parsing data for Ifc4.0.2.1")
@@ -623,6 +627,7 @@ class DocExtractor:
         with open(BASE_MODULE_PATH / "schema/ifc4_property_sets_site_domains.json", "w", encoding="utf-8") as fo:
             print(f"{len(property_sets_domains)} property sets domains were parsed from the website")
             json.dump(property_sets_domains, fo, sort_keys=True, indent=4)
+            fo.write("\n")
 
     def setup_ifc4_reference_lookup(self):
         references_paths_lookup = dict()
@@ -735,6 +740,7 @@ class DocExtractor:
         with open(BASE_MODULE_PATH / "schema/ifc4_entities.json", "w", encoding="utf-8") as fo:
             print(f"{len(entities_dict)} entities parsed")
             json.dump(entities_dict, fo, sort_keys=True, indent=4)
+            fo.write("\n")
 
     def extract_ifc4_property_sets(self):
         # function parses both property and quantity sets
@@ -872,6 +878,7 @@ class DocExtractor:
         with open(BASE_MODULE_PATH / "schema/ifc4_properties.json", "w", encoding="utf-8") as fo:
             print(f"{len(property_sets_dict)} property sets parsed")
             json.dump(property_sets_dict, fo, sort_keys=True, indent=4)
+            fo.write("\n")
 
     def extract_ifc4_types(self):
         types_dict = dict()
@@ -912,6 +919,7 @@ class DocExtractor:
         with open(BASE_MODULE_PATH / "schema/ifc4_types.json", "w", encoding="utf-8") as fo:
             print(f"{len(types_dict)} ifc types parsed")
             json.dump(types_dict, fo, sort_keys=True, indent=4)
+            fo.write("\n")
 
     def extract_ifc4x3(self):
         print("Parsing data for Ifc4.3.0.1")
@@ -1029,11 +1037,13 @@ class DocExtractor:
         with open(BASE_MODULE_PATH / "schema/ifc4x3_entities.json", "w", encoding="utf-8") as fo:
             print(f"{len(entities_dict)} entities parsed")
             json.dump(entities_dict, fo, sort_keys=True, indent=4)
+            fo.write("\n")
 
         # export entities data
         with open(BASE_MODULE_PATH / "schema/ifc4x3_types.json", "w", encoding="utf-8") as fo:
             print(f"{len(types_dict)} ifc types parsed")
             json.dump(types_dict, fo, sort_keys=True, indent=4)
+            fo.write("\n")
 
     def extract_ifc4x3_property_sets(self):
         pset_data_zip = IFC4x3_HTML_LOCATION / "IFC/RELEASE/IFC4x3/HTML/annex-a-psd.zip"
@@ -1078,6 +1088,7 @@ class DocExtractor:
         with open(BASE_MODULE_PATH / "schema/ifc4x3_properties.json", "w", encoding="utf-8") as fo:
             print(f"{len(property_sets_dict)} property sets parsed")
             json.dump(property_sets_dict, fo, sort_keys=True, indent=4)
+            fo.write("\n")
 
         shutil.rmtree(pset_data_location)
 

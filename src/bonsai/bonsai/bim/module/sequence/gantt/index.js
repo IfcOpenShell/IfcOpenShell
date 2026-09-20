@@ -75,7 +75,7 @@ function setupPage(workScheduleData){
         g.setTotalHeight("");
         g.Draw();
         var values = document.getElementById("print_page_size").value.split(",")
-        let css = 
+        let css =
             "@media print {\n        @page {\n          size: " + values[0] + "mm " + values[1] + "mm;\n        }\n";
         g.printChart(values[0], values[1], css);
         g.setTotalHeight(900);

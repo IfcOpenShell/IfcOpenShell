@@ -37,10 +37,20 @@ def _task_to_dict(task: ifcopenshell.entity_instance, max_depth: int | None, dep
 
 
 def schedule(model: ifcopenshell.file, max_depth: int | None = None) -> list[dict[str, Any]]:
-    """Return a list of IfcWorkSchedule entries with nested task trees.
+    """List the construction programme: work schedules and their task trees.
 
-    max_depth limits how many levels of subtasks are expanded (None = unlimited).
-    At the cutoff level, subtasks is replaced with {"truncated": True, "count": N}.
+    Covers ``IfcWorkSchedule`` only — this is the time dimension of the
+    model; see ``cost()`` in this module for the money dimension. Each
+    schedule lists its tasks recursively, and each task carries its scheduled
+    ``start`` and ``finish``, an ``is_milestone`` flag, the products it
+    ``outputs`` and its ``subtasks``. Returns an empty list when the model has
+    no work schedules.
+
+    :param model: The in-memory IFC model.
+    :param max_depth: Levels of subtask nesting to expand, counting root tasks
+        as level 1. Past the cutoff ``subtasks`` is replaced by a
+        ``{"truncated": True, "count": N}`` marker giving the number of tasks
+        not expanded. ``None`` (default) expands to unlimited depth.
     """
     result = []
     for work_schedule in model.by_type("IfcWorkSchedule"):

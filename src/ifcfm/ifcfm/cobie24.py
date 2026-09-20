@@ -879,7 +879,7 @@ def get_coordinate_elements(ifc_file: ifcopenshell.file) -> list[dict[str, Any]]
     return results
 
 
-def get_coordinate_data_(element: ifcopenshell.entity_instance) -> Generator[dict[str, Any], None, None]:
+def get_coordinate_data_(element: ifcopenshell.entity_instance) -> Generator[dict[str, Any]]:
     M_TRANSLATION = (slice(0, 3), 3)
     element_name = val(element.Name)
     element_class = element.is_a()

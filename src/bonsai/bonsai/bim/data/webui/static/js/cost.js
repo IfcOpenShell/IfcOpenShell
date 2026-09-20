@@ -268,7 +268,7 @@ function toggleClientList() {
       const clientNumbers = $("<div>")
         .addClass("client-detail")
         .text(
-          `${allDrawings[client.ifc_file].drawings.length} Drawing(s), 
+          `${allDrawings[client.ifc_file].drawings.length} Drawing(s),
           ${allDrawings[client.ifc_file].sheets.length} Sheet(s)`
         );
       clientDetailsDiv.append(clientNumbers);

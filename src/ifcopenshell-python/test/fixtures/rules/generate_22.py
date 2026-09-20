@@ -1,5 +1,7 @@
 import ifcopenshell
 
+from ...fixture_generate import normalize_header, pass_if, write_fixture
+
 for cnt in range(0, 3):
     f = ifcopenshell.file(schema="IFC4")
     elem = f.createIfcWall(ifcopenshell.guid.new())
@@ -18,7 +20,8 @@ for cnt in range(0, 3):
                 [f.createIfcPropertySingleValue("LoadBearing", None, f.createIfcBoolean(True))],
             ),
         )
-    f.write(f"{'pass' if cnt < 2 else 'fail'}-wall-{cnt}-same-psets.ifc")
+    normalize_header(f)
+    write_fixture(f, __file__, pass_if(cnt < 2), f"wall-{cnt}-same-psets")
 
 
 f = ifcopenshell.file(schema="IFC4")
@@ -51,4 +54,5 @@ f.createIfcRelDefinesByProperties(
         [f.createIfcPropertySingleValue("IsBeautiful", None, f.createIfcBoolean(True))],
     ),
 )
-f.write(f"pass-wall-different-psets.ifc")
+normalize_header(f)
+write_fixture(f, __file__, "pass", "wall-different-psets")

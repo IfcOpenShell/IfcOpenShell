@@ -26,8 +26,6 @@ c_stdlib_version:
   - 2.17    # [linux]
   - 10.13   # [osx and x86_64]
   - 11.0    # [osx and arm64]
-hdf5:
-- 1.14.6
 libboost_devel:
 - '1.86'
 libxml2:

@@ -25,7 +25,7 @@ import ifcopenshell.util.unit
 UNITS_FIXTURE_DIR = pathlib.Path(__file__).parent.parent / "fixtures" / "units"
 
 
-@pytest.mark.parametrize("ifc_file", UNITS_FIXTURE_DIR.glob("*.ifc"))
+@pytest.mark.parametrize("ifc_file", tuple(UNITS_FIXTURE_DIR.glob("*.ifc")))
 def test_file_units_length_convert(ifc_file: str):
     f = ifcopenshell.open(ifc_file)
 
