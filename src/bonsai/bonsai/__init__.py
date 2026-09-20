@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
 import sys
 
 # Ensure we don't try to import bpy or bonsai.bim
@@ -37,7 +36,6 @@ import re
 import traceback
 import webbrowser
 from collections import deque
-from collections.abc import Generator
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Union
 
@@ -179,45 +177,6 @@ def format_debug_info(info: dict[str, Any]) -> str:
     return text.strip()
 
 
-def get_binaries(path: Path) -> Generator[Path]:
-    yield from path.glob("**/*.pyd")
-    yield from path.glob("**/*.dll")
-    # pyradiance is using .so files on windows for some reason.
-    yield from path.glob("**/*.so")
-
-
-# TODO: remove before 0.8.6 release.
-# On Windows issues with removing extensions were resolved in Blender 4.3,
-# but we removed our workaround that was producing some junk only in 0.8.5 release.
-# So we're temporarily keeping the part that's cleaning up outputs from previous releases.
-def clean_up_dlls_safe_links() -> None:
-    import bpy
-
-    ext_path = Path(bpy.utils.user_resource("EXTENSIONS"))
-    temp_path = ext_path / ".local_temp"
-    if not temp_path.exists():
-        return
-
-    for filepath in get_binaries(temp_path):
-        try:
-            os.unlink(filepath)
-        except PermissionError:
-            pass
-
-    def is_empty_directory(directory: Path) -> bool:
-        return not any(directory.iterdir())
-
-    def remove_empty_folders(folder: Path) -> None:
-        for subfolder in folder.iterdir():
-            if subfolder.is_dir():
-                remove_empty_folders(subfolder)
-
-        if is_empty_directory(folder):
-            folder.rmdir()
-
-    remove_empty_folders(temp_path)
-
-
 if IN_BLENDER:
     import bpy
 
@@ -295,9 +254,6 @@ if IN_BLENDER:
             tool.Blender.get_bonsai_version.cache_clear()
 
         def register():
-            if platform.system() == "Windows":
-                clean_up_dlls_safe_links()
-
             import bonsai
 
             bonsai.REGISTERED_BBIM_PACKAGE = __package__
