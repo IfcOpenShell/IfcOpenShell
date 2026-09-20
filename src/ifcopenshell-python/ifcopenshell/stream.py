@@ -28,9 +28,7 @@ try:
     import ifcopenshell.util.attribute
     import ifcopenshell.util.schema
 
-    from . import ifcopenshell_wrapper
-    from .entity_instance import entity_instance
-    from .file import file
+    from . import file, ifcopenshell_wrapper
 
     class StreamTransformer(Transformer):
         file: file
@@ -89,6 +87,13 @@ try:
 
     class stream(file):
         def __init__(self, filepath: str):
+            # See ifcopenshell.file.file_mixin.post_init()
+            # history, future and transaction are stored in a list so that they
+            # can easily be shared among file instances that are the same C++
+            # object but have different python identities. We just have to conform
+            # here to that storage assumption:
+            self.state = [[], [], None]
+
             self.history_size = 64
             self.history = []
             self.future = []
@@ -179,9 +184,22 @@ try:
                     for ifc_class in exclude_classes:
                         declaration = self.ifc_schema.declaration_by_name(ifc_class)
                         exclude.update([st.name().upper() for st in ifcopenshell.util.schema.get_subtypes(declaration)])
+
+                    # For creating C++ instances so that some of the calls here work
+                    self.shadow_file = ifcopenshell.file(schema=self.schema)
+                    # But we only create them once per type because we basically only need access to 'semi-static' such as get_attribute_category()
+                    self.instance_map: dict[str, ifcopenshell.entity_instance] = {}
+
                 offset += len(line) + newline_character
 
             self.preprocess_schema()
+
+        def _create_entity(self, type: str) -> ifcopenshell.entity_instance:
+            if inst := self.instance_map.get(type):
+                return inst
+            else:
+                inst = self.instance_map[type] = self.shadow_file.create_entity(type)
+                return inst
 
         def preprocess_schema(self) -> None:
             self.ifc_class_names = {}
@@ -308,17 +326,17 @@ try:
             # The best option we've got for mimicing `file.schema_identifier`.
             return self._schema
 
-    class stream_entity(entity_instance):
+    class stream_entity:
         stream_wrapper: stream_wrapper
+        wrapped_data: ifcopenshell.entity_instance
 
         def __init__(self, id: int, ifc_class: str, file: stream = None):
             if not ifc_class:
                 print(id, ifc_class, file)
                 assert False
-            e = ifcopenshell_wrapper.new_IfcBaseClass(file.schema, ifc_class)
             s = stream_wrapper(id, ifc_class, file)
-            super(entity_instance, self).__setattr__("wrapped_data", e)
-            super(entity_instance, self).__setattr__("stream_wrapper", s)
+            object.__setattr__(self, "wrapped_data", file._create_entity(ifc_class))
+            object.__setattr__(self, "stream_wrapper", s)
 
         def id(self) -> int:
             return self.stream_wrapper.id
@@ -331,6 +349,9 @@ try:
         def __del__(self) -> None:
             pass
 
+        def __bool__(self):
+            return True
+
         def __getitem__(self, key: int) -> Any:
             return self.__getattr__(list(self.stream_wrapper.attributes.keys())[key])
 
@@ -339,8 +360,12 @@ try:
             assert False, "Not supported during streaming."
 
         def __getattr__(self, name: str) -> Any:
-            INVALID, FORWARD, INVERSE = range(3)
+            INVALID, FORWARD, INVERSE, DERIVED = range(4)
             attr_cat = self.wrapped_data.get_attribute_category(name)
+            if attr_cat == DERIVED:
+                raise RuntimeError(
+                    f"Derived attributes (e.g. '{name}') are not supported for {type(self).__name__} entities."
+                )
             if attr_cat == FORWARD:
                 if self.stream_wrapper.attribute_cache:
                     return self.stream_wrapper.attribute_cache[name]
@@ -388,9 +413,7 @@ try:
                 self.stream_wrapper.inverse_attribute_cache[name] = tuple(results)
                 return self.stream_wrapper.inverse_attribute_cache[name]
 
-            raise AttributeError(
-                "entity instance of type '%s' has no attribute '%s'" % (self.wrapped_data.is_a(True), name)
-            )
+            raise AttributeError("entity instance of type '%s' has no attribute '%s'" % (self.is_a(True), name))
 
         def __eq__(self, other: stream_entity) -> bool:
             if not isinstance(self, type(other)):

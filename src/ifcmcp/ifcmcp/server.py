@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import base64
+import inspect
 from typing import Any
 
 from ifcmcp.core import IfcSession
@@ -9,7 +10,7 @@ from ifcmcp.core import IfcSession
 try:
     from mcp.server.fastmcp import FastMCP  # type: ignore
     from mcp.types import ImageContent  # type: ignore
-except Exception:  # pragma: no cover
+except ImportError:  # pragma: no cover
     FastMCP = None  # type: ignore
     ImageContent = None  # type: ignore
 
@@ -23,6 +24,11 @@ def build_server() -> Any:
 
     session = IfcSession()
 
+    def _tool(fn):
+        """Register a tool, taking its MCP description from the identically-named
+        IfcSession method rather than duplicating it here."""
+        return server.tool(description=inspect.getdoc(getattr(IfcSession, fn.__name__)))(fn)
+
     server = FastMCP(
         name="ifc-mcp",
         instructions=(
@@ -33,44 +39,44 @@ def build_server() -> Any:
     )
 
     # ---- Lifecycle ----
-    @server.tool()
+    @_tool
     def ifc_new(schema: str = "IFC4") -> dict[str, Any]:
         return session.ifc_new(schema=schema)
 
-    @server.tool()
+    @_tool
     def ifc_load(path: str) -> str:
         return session.ifc_load(path)
 
-    @server.tool()
+    @_tool
     def ifc_save(path: str = "") -> str:
         return session.ifc_save(path)
 
-    @server.tool()
+    @_tool
     def ifc_reset() -> dict[str, Any]:
         return session.ifc_reset()
 
     # ---- Query ----
-    @server.tool()
+    @_tool
     def ifc_summary() -> dict[str, Any]:
         return session.ifc_summary()
 
-    @server.tool()
+    @_tool
     def ifc_tree() -> dict[str, Any] | list[dict[str, Any]]:
         return session.ifc_tree()
 
-    @server.tool()
+    @_tool
     def ifc_info(element_id: int) -> dict[str, Any]:
         return session.ifc_info(element_id)
 
-    @server.tool()
+    @_tool
     def ifc_select(query: str) -> list[dict[str, Any]]:
         return session.ifc_select(query)
 
-    @server.tool()
+    @_tool
     def ifc_relations(element_id: int, traverse: str = "") -> dict[str, Any] | list[dict[str, Any]]:
         return session.ifc_relations(element_id, traverse=traverse)
 
-    @server.tool()
+    @_tool
     def ifc_clash(
         element_id: int,
         clearance: float = 0.0,
@@ -84,58 +90,58 @@ def build_server() -> Any:
             scope=scope,
         )
 
-    @server.tool()
+    @_tool
     def ifc_contexts() -> list[dict[str, Any]]:
         return session.ifc_contexts()
 
-    @server.tool()
+    @_tool
     def ifc_materials() -> list[dict[str, Any]]:
         return session.ifc_materials()
 
     # ---- Edit ----
-    @server.tool()
+    @_tool
     def ifc_list(module: str = "") -> list[dict]:
         return session.ifc_list(module=module)
 
-    @server.tool()
+    @_tool
     def ifc_docs(function_path: str) -> dict:
         return session.ifc_docs(function_path=function_path)
 
-    @server.tool()
+    @_tool
     def ifc_edit(function_path: str, params: str = "{}") -> dict:
         return session.ifc_edit(function_path=function_path, params=params)
 
     # ---- Extended query + edit ----
-    @server.tool()
+    @_tool
     def ifc_validate(express_rules: bool = False) -> dict[str, Any]:
         return session.ifc_validate(express_rules=express_rules)
 
-    @server.tool()
+    @_tool
     def ifc_schedule(max_depth: int | None = None) -> list[dict[str, Any]]:
         return session.ifc_schedule(max_depth=max_depth)
 
-    @server.tool()
+    @_tool
     def ifc_cost(max_depth: int | None = None) -> list[dict[str, Any]]:
         return session.ifc_cost(max_depth=max_depth)
 
-    @server.tool()
+    @_tool
     def ifc_schema(entity_type: str) -> dict[str, Any]:
         return session.ifc_schema(entity_type=entity_type)
 
-    @server.tool()
+    @_tool
     def ifc_quantify(rule: str, selector: str = "") -> dict[str, Any]:
         return session.ifc_quantify(rule=rule, selector=selector)
 
     # ---- Shape builder ----
-    @server.tool()
+    @_tool
     def ifc_shape_list() -> list[dict]:
         return session.ifc_shape_list()
 
-    @server.tool()
+    @_tool
     def ifc_shape_docs(method: str) -> dict:
         return session.ifc_shape_docs(method=method)
 
-    @server.tool()
+    @_tool
     def ifc_shape(method: str, params: str = "{}") -> dict:
         return session.ifc_shape(method=method, params=params)
 

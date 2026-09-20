@@ -7,7 +7,7 @@ body:
     label: Bug Description
     placeholder: |
       Describe what problem occurred and what you expected to happen instead.
-  
+
       1. To reproduce this, open file '...'
       2. Click on '....'
       3. See error

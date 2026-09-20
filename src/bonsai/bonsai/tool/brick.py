@@ -48,6 +48,7 @@ except:
 
 if TYPE_CHECKING:
     import brickschema
+    from brickschema.persistent import Changeset
     from rdflib import BNode, Literal, Namespace, URIRef
 
     from bonsai.bim.module.brick.prop import BIMBrickProperties
@@ -580,7 +581,7 @@ class BrickStore:
 
     @classmethod
     @contextmanager
-    def new_changeset(cls) -> Generator[Any, None, None]:
+    def new_changeset(cls) -> Generator[Changeset]:
         cls.current_changesets += 1
         with BrickStore.graph.new_changeset("PROJECT") as cs:
             yield cs

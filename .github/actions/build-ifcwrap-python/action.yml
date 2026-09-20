@@ -1,0 +1,53 @@
+name: Build and install standalone IfcPython
+description: Configure, build and smoke-test src/ifcwrap against an already-installed IfcOpenShell for a given Python version.
+
+inputs:
+  python-version:
+    description: Python version to build the wrapper for (e.g. "3.11")
+    required: true
+  ifcopenshell-prefix:
+    description: CMAKE_PREFIX_PATH entry pointing at the installed IfcOpenShell
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python ${{ inputs.python-version }}
+      uses: actions/setup-python@v7
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install Python import dependencies
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install numpy typing_extensions
+
+    - name: Configure standalone IfcPython
+      shell: bash
+      run: |
+        PYTHON_EXECUTABLE="$(python -c 'import sys; print(sys.executable)')"
+        PYTHON_INCLUDE_DIR="$(python -c 'import sysconfig; print(sysconfig.get_path("include"))')"
+
+        cmake -S src/ifcwrap -B "build-ifcwrap-${{ inputs.python-version }}" \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_PREFIX_PATH="${{ inputs.ifcopenshell-prefix }};/usr" \
+          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+          -DPython_EXECUTABLE:FILEPATH="${PYTHON_EXECUTABLE}" \
+          -DPython_INCLUDE_DIR:PATH="${PYTHON_INCLUDE_DIR}" \
+          -DPYTHON_EXECUTABLE:FILEPATH="${PYTHON_EXECUTABLE}" \
+          -DPYTHON_INCLUDE_DIR:PATH="${PYTHON_INCLUDE_DIR}"
+
+    - name: Build and install standalone IfcPython
+      shell: bash
+      run: |
+        cmake --build "build-ifcwrap-${{ inputs.python-version }}" --target install -j "$(nproc)"
+
+    - name: Import installed IfcPython
+      shell: bash
+      run: |
+        PYTHONPATH="${RUNNER_TEMP}/ifcopenshell-python" python - <<'PY'
+        import ifcopenshell
+
+        print("IfcOpenShell import ok:", ifcopenshell.version)
+        PY

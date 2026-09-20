@@ -1,75 +1,58 @@
-%typemap(out) aggregate_of_instance::ptr {
-	const unsigned size = $1 ? $1->size() : 0;
-	$result = PyTuple_New(size);
-	for (unsigned i = 0; i < size; ++i) {
-		PyTuple_SetItem($result, i, pythonize((*$1)[i]));
-	}
+%typemap(out) ifcopenshell::argument_type {
+	$result = PyUnicode_FromString(ifcopenshell::argument_type_to_string($1));
 }
 
-%typemap(out) aggregate_of_aggregate_of_instance::ptr {
-	const unsigned size = $1 ? $1->size() : 0;
-	$result = PyTuple_New(size);
-	for (unsigned i = 0; i < size; ++i) {
-		const auto& r_i = *(result->begin() + i);
-		PyTuple_SetItem($result, i, pythonize_vector(r_i));
-	}
-}
-
-
-%typemap(out) IfcUtil::ArgumentType {
-	$result = SWIG_Python_str_FromChar(IfcUtil::ArgumentTypeToString($1));
-}
-
-%typemap(out) IfcParse::declaration* {
+%typemap(out) ifcopenshell::declaration* {
 	$result = SWIG_NewPointerObj(SWIG_as_voidptr($1), declaration_type_to_swig($1), 0);
 }
 
-%typemap(out) IfcParse::parameter_type* {
+%typemap(out) const ifcopenshell::declaration& {
+	$result = SWIG_NewPointerObj(SWIG_as_voidptr($1), declaration_type_to_swig($1), 0);
+}
+
+%typemap(out) ifcopenshell::parameter_type* {
 	if ($1->as_named_type()) {
-		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_named_type()), SWIGTYPE_p_IfcParse__named_type, 0);
+		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_named_type()), SWIGTYPE_p_ifcopenshell__named_type, 0);
 	} else if ($1->as_simple_type()) {
-		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_simple_type()), SWIGTYPE_p_IfcParse__simple_type, 0);
+		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_simple_type()), SWIGTYPE_p_ifcopenshell__simple_type, 0);
 	} else if ($1->as_aggregation_type()) {
-		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_aggregation_type()), SWIGTYPE_p_IfcParse__aggregation_type, 0);
+		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_aggregation_type()), SWIGTYPE_p_ifcopenshell__aggregation_type, 0);
 	} else {
 		$result = SWIG_Py_Void();
 	}
 }
 
-%typemap(out) IfcParse::simple_type::data_type {
+%typemap(out) ifcopenshell::simple_type::data_type {
 	static const char* const data_type_strings[] = {"binary", "boolean", "integer", "logical", "number", "real", "string"};
-	$result = SWIG_Python_str_FromChar(data_type_strings[(int)$1]);
+	$result = PyUnicode_FromString(data_type_strings[(int)$1]);
 }
 
-%typemap(out) AttributeValue {
+%typemap(out) attribute_value {
 	// The SWIG %exception directive does not take care
 	// of our typemap. So the attribute conversion block
 	// is wrapped in a try-catch block manually.
 	try {
 		$result = $1.apply_visitor([](const auto& v){
-			using U = std::decay_t<decltype(v)>;
-            if constexpr (is_std_vector_v<U>) {
+			using u = std::decay_t<decltype(v)>;
+            if constexpr (is_std_vector_v<u>) {
 				return pythonize_vector(v);
-            } else if constexpr (std::is_same_v<U, EnumerationReference>) {
+            } else if constexpr (std::is_same_v<u, ifcopenshell::enumeration_reference>) {
                 return pythonize(std::string(v.value()));
-			} else if constexpr (std::is_same_v<U, Derived>) {
+			} else if constexpr (std::is_same_v<u, ifcopenshell::derived>) {
 				if (feature_use_attribute_value_derived) {
 					return SWIG_NewPointerObj(new attribute_value_derived, SWIGTYPE_p_attribute_value_derived, SWIG_POINTER_OWN);
 				} else {
 					Py_INCREF(Py_None);
-					return static_cast<PyObject*>(Py_None); 
+					return static_cast<PyObject*>(Py_None);
 				}
-            } else if constexpr (std::is_same_v<U, empty_aggregate_t> || std::is_same_v<U, empty_aggregate_of_aggregate_t> || std::is_same_v<U, Blank>) {
+            } else if constexpr (std::is_same_v<u, ifcopenshell::empty_aggregate> || std::is_same_v<u, ifcopenshell::empty_aggregate_of_aggregate> || std::is_same_v<u, ifcopenshell::blank>) {
                 Py_INCREF(Py_None);
-				return static_cast<PyObject*>(Py_None); 
-            } else if constexpr (std::is_same_v<U, empty_aggregate_t> || std::is_same_v<U, empty_aggregate_of_aggregate_t> || std::is_same_v<U, Derived> || std::is_same_v<U, Blank>) {
-                Py_INCREF(Py_None);
-				return static_cast<PyObject*>(Py_None); 
+				return static_cast<PyObject*>(Py_None);
             } else {
 				return pythonize(v);
 			}
 		});
-	} catch(IfcParse::IfcException& e) {
+	} catch(ifcopenshell::exception& e) {
 		SWIG_exception(SWIG_RuntimeError, e.what());
 	} catch(...) {
 		SWIG_exception(SWIG_RuntimeError, "An unknown error occurred");
@@ -97,27 +80,23 @@
 	}
 %enddef
 
+CREATE_VECTOR_TYPEMAP_OUT(express::base)
 CREATE_VECTOR_TYPEMAP_OUT(bool)
 CREATE_VECTOR_TYPEMAP_OUT(int)
 CREATE_VECTOR_TYPEMAP_OUT(unsigned int)
 CREATE_VECTOR_TYPEMAP_OUT(double)
 CREATE_VECTOR_TYPEMAP_OUT(std::string)
-// CREATE_VECTOR_TYPEMAP_OUT(IfcGeom::Material)
-CREATE_VECTOR_TYPEMAP_OUT(IfcParse::attribute const *)
-CREATE_VECTOR_TYPEMAP_OUT(IfcParse::inverse_attribute const *)
-CREATE_VECTOR_TYPEMAP_OUT(IfcParse::entity const *)
-CREATE_VECTOR_TYPEMAP_OUT(IfcParse::declaration const *)
-CREATE_VECTOR_TYPEMAP_OUT(IfcGeom::ConversionResultShape *)
-CREATE_VECTOR_TYPEMAP_OUT(log_message)
+// CREATE_VECTOR_TYPEMAP_OUT(ifcopenshell::geom::Material)
+CREATE_VECTOR_TYPEMAP_OUT(ifcopenshell::attribute const *)
+CREATE_VECTOR_TYPEMAP_OUT(ifcopenshell::inverse_attribute const *)
+CREATE_VECTOR_TYPEMAP_OUT(ifcopenshell::entity const *)
+CREATE_VECTOR_TYPEMAP_OUT(ifcopenshell::declaration const *)
+CREATE_VECTOR_TYPEMAP_OUT(ifcopenshell::geom::conversion_result_shape *)
+CREATE_VECTOR_TYPEMAP_OUT(ifcopenshell::log_message)
 
-%typemap(out) ifcopenshell::geometry::Settings::value_variant_t {
+%typemap(out) ifcopenshell::geom::settings::value_variant_t {
 	pythonizing_visitor vis;
-	$result = $1.apply_visitor(vis);
-}
-
-%typemap(out) ifcopenshell::geometry::SerializerSettings::value_variant_t {
-	pythonizing_visitor vis;
-	$result = $1.apply_visitor(vis);
+	$result = std::visit(vis, $1);
 }
 
 %typemap(out) std::pair<const char*, size_t> {
@@ -147,33 +126,33 @@ CREATE_VECTOR_TYPEMAP_OUT(log_message)
 
 %enddef
 
-vector_of_item(ifcopenshell::geometry::taxonomy::item)
-vector_of_item(ifcopenshell::geometry::taxonomy::boolean_result)
-vector_of_item(ifcopenshell::geometry::taxonomy::bspline_curve)
-vector_of_item(ifcopenshell::geometry::taxonomy::bspline_surface)
-vector_of_item(ifcopenshell::geometry::taxonomy::circle)
-vector_of_item(ifcopenshell::geometry::taxonomy::collection)
-vector_of_item(ifcopenshell::geometry::taxonomy::colour)
-vector_of_item(ifcopenshell::geometry::taxonomy::cylinder)
-vector_of_item(ifcopenshell::geometry::taxonomy::direction3)
-vector_of_item(ifcopenshell::geometry::taxonomy::edge)
-vector_of_item(ifcopenshell::geometry::taxonomy::ellipse)
-vector_of_item(ifcopenshell::geometry::taxonomy::extrusion)
-vector_of_item(ifcopenshell::geometry::taxonomy::face)
-vector_of_item(ifcopenshell::geometry::taxonomy::line)
-vector_of_item(ifcopenshell::geometry::taxonomy::loft)
-vector_of_item(ifcopenshell::geometry::taxonomy::loop)
-vector_of_item(ifcopenshell::geometry::taxonomy::matrix4)
-vector_of_item(ifcopenshell::geometry::taxonomy::node)
-vector_of_item(ifcopenshell::geometry::taxonomy::offset_curve)
-vector_of_item(ifcopenshell::geometry::taxonomy::piecewise_function)
-vector_of_item(ifcopenshell::geometry::taxonomy::plane)
-vector_of_item(ifcopenshell::geometry::taxonomy::point3)
-vector_of_item(ifcopenshell::geometry::taxonomy::revolve)
-vector_of_item(ifcopenshell::geometry::taxonomy::shell)
-vector_of_item(ifcopenshell::geometry::taxonomy::solid)
-vector_of_item(ifcopenshell::geometry::taxonomy::sphere)
-vector_of_item(ifcopenshell::geometry::taxonomy::torus)
-vector_of_item(ifcopenshell::geometry::taxonomy::style)
-vector_of_item(ifcopenshell::geometry::taxonomy::sweep_along_curve)
-vector_of_item(ifcopenshell::geometry::taxonomy::geom_item)
+vector_of_item(ifcopenshell::geom::taxonomy::item)
+vector_of_item(ifcopenshell::geom::taxonomy::boolean_result)
+vector_of_item(ifcopenshell::geom::taxonomy::bspline_curve)
+vector_of_item(ifcopenshell::geom::taxonomy::bspline_surface)
+vector_of_item(ifcopenshell::geom::taxonomy::circle)
+vector_of_item(ifcopenshell::geom::taxonomy::collection)
+vector_of_item(ifcopenshell::geom::taxonomy::colour)
+vector_of_item(ifcopenshell::geom::taxonomy::cylinder)
+vector_of_item(ifcopenshell::geom::taxonomy::direction3)
+vector_of_item(ifcopenshell::geom::taxonomy::edge)
+vector_of_item(ifcopenshell::geom::taxonomy::ellipse)
+vector_of_item(ifcopenshell::geom::taxonomy::extrusion)
+vector_of_item(ifcopenshell::geom::taxonomy::face)
+vector_of_item(ifcopenshell::geom::taxonomy::line)
+vector_of_item(ifcopenshell::geom::taxonomy::loft)
+vector_of_item(ifcopenshell::geom::taxonomy::loop)
+vector_of_item(ifcopenshell::geom::taxonomy::matrix4)
+vector_of_item(ifcopenshell::geom::taxonomy::node)
+vector_of_item(ifcopenshell::geom::taxonomy::offset_curve)
+vector_of_item(ifcopenshell::geom::taxonomy::piecewise_function)
+vector_of_item(ifcopenshell::geom::taxonomy::plane)
+vector_of_item(ifcopenshell::geom::taxonomy::point3)
+vector_of_item(ifcopenshell::geom::taxonomy::revolve)
+vector_of_item(ifcopenshell::geom::taxonomy::shell)
+vector_of_item(ifcopenshell::geom::taxonomy::solid)
+vector_of_item(ifcopenshell::geom::taxonomy::sphere)
+vector_of_item(ifcopenshell::geom::taxonomy::torus)
+vector_of_item(ifcopenshell::geom::taxonomy::style)
+vector_of_item(ifcopenshell::geom::taxonomy::sweep_along_curve)
+vector_of_item(ifcopenshell::geom::taxonomy::geom_item)

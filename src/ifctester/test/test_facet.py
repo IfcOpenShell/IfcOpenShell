@@ -33,6 +33,8 @@ import ifcopenshell.api.type
 import ifcopenshell.api.unit
 import ifcopenshell.guid
 import ifcopenshell.util.pset
+import pytest
+from elementpath.regex import RegexError
 
 import ifctester.facet
 import ifctester.ids
@@ -232,13 +234,13 @@ class TestEntity:
         facet = Entity(name="IFCWALL", predefinedType=restriction)
         ifc = ifcopenshell.file()
         wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall", predefined_type="FOOBAR")
-        run("Restrictions an be specified for the predefined type 1/3", facet=facet, inst=wall, expected=True)
+        run("Restrictions can be specified for the predefined type 1/3", facet=facet, inst=wall, expected=True)
         ifc = ifcopenshell.file()
         wall2 = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall", predefined_type="FOOBAZ")
-        run("Restrictions an be specified for the predefined type 2/3", facet=facet, inst=wall2, expected=True)
+        run("Restrictions can be specified for the predefined type 2/3", facet=facet, inst=wall2, expected=True)
         ifc = ifcopenshell.file()
         wall3 = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall", predefined_type="BAZFOO")
-        run("Restrictions an be specified for the predefined type 3/3", facet=facet, inst=wall3, expected=False)
+        run("Restrictions can be specified for the predefined type 3/3", facet=facet, inst=wall3, expected=False)
 
     def test_ifc2x3_occurrence_type_mapping(self):
         set_facet("entity")
@@ -260,11 +262,54 @@ class TestEntity:
         ifcopenshell.api.type.assign_type(ifc, related_objects=[element], relating_type=element_type)
         facet = Entity(name="IFCAIRTERMINAL")
         assert facet.filter(ifc) == [element]
-        run("In IFC2X3 the type class is checked instead 1/2", facet=facet, inst=element, expected=True)
+        run("In IFC2X3 the type class is checked instead 1/4", facet=facet, inst=element, expected=True)
 
         facet = Entity(name="IFCELECTRICAPPLIANCE")
         assert facet.filter(ifc) == []
-        run("In IFC2X3 the type class is checked instead 2/2", facet=facet, inst=element, expected=False)
+        run("In IFC2X3 the type class is checked instead 2/4", facet=facet, inst=element, expected=False)
+
+        restriction = Restriction(options={"enumeration": ["IFCAIRTERMINAL", "IFCELECTRICAPPLIANCE"]})
+        facet = Entity(name=restriction)
+        assert facet.filter(ifc) == [element]
+        run("In IFC2X3 the type class is checked instead 3/4", facet=facet, inst=element, expected=True)
+
+        restriction = Restriction(options={"enumeration": ["IFCBEAM", "IFCELECTRICAPPLIANCE"]})
+        facet = Entity(name=restriction)
+        assert facet.filter(ifc) == []
+        run("In IFC2X3 the type class is checked instead 4/4", facet=facet, inst=element, expected=False)
+
+        wall_type = ifcopenshell.api.root.create_entity(ifc, "IfcWallType")
+        wall = ifcopenshell.api.root.create_entity(ifc, "IfcWall")
+        standard_case = ifcopenshell.api.root.create_entity(ifc, "IfcWallStandardCase")
+        ifcopenshell.api.type.assign_type(ifc, related_objects=[wall, standard_case], relating_type=wall_type)
+        facet = Entity(name="IFCWALL")
+        assert sorted(facet.filter(ifc), key=lambda e: e.id()) == [wall, standard_case]
+        run("Typed occurrences are matched once 1/3", facet=facet, inst=wall, expected=True)
+        run("Typed occurrences are matched once 2/3", facet=facet, inst=standard_case, expected=True)
+        run("Typed occurrences are matched once 3/3", facet=facet, inst=wall_type, expected=False)
+        facet = Entity(name="IFCWALLSTANDARDCASE")
+        assert facet.filter(ifc) == [standard_case]
+        facet = Entity(name="IFCBUILDINGELEMENT")
+        assert facet.filter(ifc) == []
+
+        column = ifcopenshell.api.root.create_entity(ifc, "IfcColumn")
+        facet = Entity(name=Restriction(options={"enumeration": ["IFCCOLUMN"]}))
+        assert facet.filter(ifc) == [column]
+        run("Restrictions work on untyped elements 1/2", facet=facet, inst=column, expected=True)
+        facet = Entity(name=Restriction(options={"enumeration": ["IFCWALL"]}))
+        run("Restrictions work on untyped elements 2/2", facet=facet, inst=column, expected=False)
+        assert facet(column).reason == {"type": "NAME", "actual": "IFCCOLUMN"}
+
+        door_style = ifcopenshell.api.root.create_entity(ifc, "IfcDoorStyle")
+        door = ifcopenshell.api.root.create_entity(ifc, "IfcDoor")
+        ifcopenshell.api.type.assign_type(ifc, related_objects=[door], relating_type=door_style)
+        facet = Entity(name="IFCDOOR")
+        assert facet.filter(ifc) == [door]
+        run("Style types map to occurrences 1/2", facet=facet, inst=door, expected=True)
+        facet = Entity(name="IFCWINDOW")
+        assert facet.filter(ifc) == []
+        run("Style types map to occurrences 2/2", facet=facet, inst=door, expected=False)
+        assert facet(door).reason == {"type": "NAME", "actual": "IFCDOOR"}
 
     def test_to_string_required_applicability(self):
         spec = ifctester.ids.Specification(name="Foo", minOccurs=1, maxOccurs="unbounded")
@@ -1709,6 +1754,21 @@ class TestRestriction:
         assert restriction == "AB01"
         assert restriction != "AB"
         assert restriction != "01"
+
+    def test_pattern_treats_anchors_as_literal_characters(self):
+        restriction = Restriction(options={"pattern": "^.{1,5}$"})
+        assert restriction != "AB"
+        assert restriction == "^AB$"
+
+    def test_pattern_is_implicitly_anchored(self):
+        restriction = Restriction(options={"pattern": ".{1,5}"})
+        assert restriction == "abc"
+        assert restriction != "abcdef"
+
+    def test_pattern_rejects_regex_features_outside_xsd(self):
+        for pattern in ("(a)\\1", "a+?"):
+            with pytest.raises(RegexError):
+                Restriction(options={"pattern": pattern}) == "aa"
 
     def test_filtering_using_restrictions(self):
         set_facet("restriction")

@@ -1,5 +1,7 @@
 import ifcopenshell
 
+from ...fixture_generate import fail_if, normalize_header, write_fixture
+
 create_none = lambda f: None
 create_polyline = lambda f: f.createIfcPolyline(
     (f.createIfcCartesianPoint((0.0, 0.0)), f.createIfcCartesianPoint((1.0, 0.0)))
@@ -11,6 +13,10 @@ for i, make_item in enumerate((create_none, create_polyline, create_point)):
     inst = f.createIfcAnnotationCurveOccurrence(
         make_item(f), [f.createIfcPresentationStyleAssignment([f.createIfcCurveStyle()])]
     )
-    f.write(
-        f"{'fail' if i == 2 else 'pass'}-annotation-curve-occurence-{'None' if inst.Item is None else inst.Item.is_a()}-ifc2x3.ifc"
+    normalize_header(f)
+    write_fixture(
+        f,
+        __file__,
+        fail_if(i == 2),
+        f"annotation-curve-occurence-{'None' if inst.Item is None else inst.Item.is_a()}-ifc2x3",
     )

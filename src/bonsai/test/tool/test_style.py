@@ -393,6 +393,19 @@ class TestGetUVMaps(NewFile):
         assert subject.get_uv_maps(representation) == [uv_map]
 
 
+class TestGetStyleElements(NewFile):
+    def test_style_with_null_styles(self):
+        style = ifcopenshell.file().create_entity("IfcSurfaceStyle", "Name", "BOTH", None)
+        assert subject.get_style_elements(style) == {}
+
+    def test_material_with_null_styles(self):
+        tool.Ifc.set(ifc := ifcopenshell.file())
+        style = ifc.create_entity("IfcSurfaceStyle", "Name", "BOTH", None)
+        material = bpy.data.materials.new("Material")
+        tool.Ifc.link(style, material)
+        assert subject.get_style_elements(material) == {}
+
+
 class TestImportSurfaceAttributes(NewFile):
     def test_run(self):
         tool.Ifc.set(ifc := ifcopenshell.file())

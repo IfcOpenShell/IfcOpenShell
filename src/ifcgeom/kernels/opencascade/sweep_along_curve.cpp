@@ -17,7 +17,7 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "OpenCascadeKernel.h"
+#include "opencascade_kernel.h"
 #include "base_utils.h"
 #include "wire_utils.h"
 
@@ -31,10 +31,9 @@
 #include <Geom_Circle.hxx>
 #include <BRepBuilderAPI_MakeSolid.hxx>
 
-using namespace ifcopenshell::geometry;
-using namespace ifcopenshell::geometry::kernels;
-using namespace IfcGeom;
-using namespace IfcGeom::util;
+using namespace ifcopenshell::geom;
+using namespace ifcopenshell::geom::kernels;
+using namespace ifcopenshell::geom::util;
 
 namespace {
 	bool wire_is_c1_continuous(const TopoDS_Wire& w, double tol) {
@@ -83,8 +82,8 @@ namespace {
 	}
 }
 
-bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, TopoDS_Shape& result) {
-    using namespace ifcopenshell::geometry;
+bool open_cascade_kernel::convert(const taxonomy::sweep_along_curve::ptr scs, TopoDS_Shape& result) {
+    using namespace ifcopenshell::geom;
 
 	bool applied_temporary_offset = false;
 	Eigen::Vector3d mean;
@@ -113,8 +112,8 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
             applied_temporary_offset = true;
             std::set<taxonomy::point3::ptr> unique_points;
             for (auto& e : std::dynamic_pointer_cast<taxonomy::loop>(curve)->children) {
-                auto* a = boost::get<taxonomy::point3::ptr>(&e->start);
-                auto* b = boost::get<taxonomy::point3::ptr>(&e->end);
+                auto* a = std::get_if<taxonomy::point3::ptr>(&e->start);
+                auto* b = std::get_if<taxonomy::point3::ptr>(&e->end);
                 if (a) {
                     unique_points.insert(*a);
                 }
@@ -127,15 +126,15 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
             }
         }
     }
-	
+
 	// Build the wire from curve, which is the directrix offset toward the origin
 	// when applied_temporary_offset is set. Using scs->curve here left the wire
 	// far from the origin yet still translated the result back by +mean, which
 	// misplaced sweeps far from the origin (#4848). When no offset is applied
 	// curve aliases scs->curve, so near-origin geometry is unaffected.
 	auto w = convert_curve(curve);
-	if (w.which() != 2) {
-		Logger::Root().Error("UNS", 9, "Unsupported directrix");
+	if (w.index() != 2) {
+		logger_.error("UNS", 9, "Unsupported directrix");
 		return false;
 	}
 	TopoDS_Shape face_;
@@ -150,20 +149,20 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 			0.,
 			settings_.get<settings::Precision>().get()
 		};
-		if (!IfcGeom::util::convert_wire_to_face(TopoDS::Wire(face_), face, settings)) {
+		if (!ifcopenshell::geom::util::convert_wire_to_face(TopoDS::Wire(face_), face, settings)) {
 			return false;
 		}
 	} else {
 		return false;
 	}
-	
+
 	Handle(Geom_Surface) surface;
 	if (scs->surface) {
 		surface = convert_surface(scs->surface);
-	}	
+	}
 
 	gp_Trsf directrix;
-	TopoDS_Wire wire = boost::get<TopoDS_Wire>(w);
+	TopoDS_Wire wire = std::get<TopoDS_Wire>(w);
 
 	const bool is_plane = surface && surface->DynamicType() == STANDARD_TYPE(Geom_Plane);
 
@@ -183,7 +182,7 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 			for (TopExp_Explorer exp(wire, TopAbs_VERTEX); exp.More(); exp.Next()) {
 				if (pln.Distance(BRep_Tool::Pnt(TopoDS::Vertex(exp.Current()))) > ALMOST_ZERO) {
 					directrix_on_plane = false;
-					Logger::Root().Message(Logger::LOG_WARNING, "GEO", 202, "The Directrix does not lie on the ReferenceSurface", scs->instance);
+					logger_.message(ifcopenshell::logger::LOG_WARNING, "GEO", 202, "The Directrix does not lie on the ReferenceSurface", scs->instance);
 					break;
 				}
 			}
@@ -316,7 +315,7 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 	return true;
 }
 
-bool OpenCascadeKernel::convert_impl(const taxonomy::sweep_along_curve::ptr scs, IfcGeom::ConversionResults& results) {
+bool open_cascade_kernel::convert_impl(const taxonomy::sweep_along_curve::ptr scs, std::vector<ifcopenshell::geom::conversion_result>& results) {
     return handle_occt_exception([&]() -> bool {
 
 	TopoDS_Shape shape;
@@ -356,10 +355,10 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::sweep_along_curve::ptr scs,
 	} else {
 		m = scs->matrix;
 	}
-	results.emplace_back(ConversionResult(
-		scs->instance->as<IfcUtil::IfcBaseEntity>()->id(),
+	results.emplace_back(conversion_result(
+        scs->instance.id(),
 		m,
-		new OpenCascadeShape(shape),
+		new open_cascade_shape(shape),
 		scs->surface_style
 	));
 	return true;

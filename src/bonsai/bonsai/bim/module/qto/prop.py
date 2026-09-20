@@ -27,9 +27,27 @@ from bpy.props import (
 )
 from bpy.types import PropertyGroup
 
+import bonsai.bim.prop
 import bonsai.tool as tool
 
 CALCULATOR_FUNCTION_ENUM_ITEMS: list[Union[tuple[str, str, str], None]] = []
+
+# Measure class (matching ifc5d.qto's Function.measure / SI2ProjectUnitConverter.project_units'
+# keys) -> (BIMQtoProperties field name, tool.Pset special_type, UI label).
+MEASURE_TO_TARGET_UNIT_FIELD: dict[str, tuple[str, str, str]] = {
+    "IfcLengthMeasure": ("target_unit_length", "LENGTH", "Length"),
+    "IfcAreaMeasure": ("target_unit_area", "AREA", "Area"),
+    "IfcVolumeMeasure": ("target_unit_volume", "VOLUME", "Volume"),
+    "IfcMassMeasure": ("target_unit_mass", "MASS", "Mass"),
+    "IfcTimeMeasure": ("target_unit_time", "TIME", "Time"),
+}
+
+
+def _target_unit_items(special_type: str):
+    def getter(self: "BIMQtoProperties", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
+        return bonsai.bim.prop.get_unit_enum_items_for_special_type(special_type, tool.Ifc.get())
+
+    return getter
 
 
 def get_qto_rule(self: "BIMQtoProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
@@ -92,6 +110,11 @@ class BIMQtoProperties(PropertyGroup):
         ),
         default=False,
     )
+    target_unit_length: EnumProperty(items=_target_unit_items("LENGTH"), name="Length Unit")
+    target_unit_area: EnumProperty(items=_target_unit_items("AREA"), name="Area Unit")
+    target_unit_volume: EnumProperty(items=_target_unit_items("VOLUME"), name="Volume Unit")
+    target_unit_mass: EnumProperty(items=_target_unit_items("MASS"), name="Mass Unit")
+    target_unit_time: EnumProperty(items=_target_unit_items("TIME"), name="Time Unit")
 
     if TYPE_CHECKING:
         qto_rule: str
@@ -101,3 +124,8 @@ class BIMQtoProperties(PropertyGroup):
         qto_name: str
         prop_name: str
         fallback: bool
+        target_unit_length: str
+        target_unit_area: str
+        target_unit_volume: str
+        target_unit_mass: str
+        target_unit_time: str

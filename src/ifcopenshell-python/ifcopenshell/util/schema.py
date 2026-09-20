@@ -50,21 +50,6 @@ def get_fallback_schema(version: str) -> IFC_SCHEMA:
     return version
 
 
-def get_schema_identifier(schema: IFC_SCHEMA) -> str:
-    """Resolve a general schema name to the specific identifier used internally
-    (as in ``file.schema_identifier``).
-
-    E.g. ``IFC4X3`` -> ``IFC4X3_ADD2``.
-    """
-    return {"IFC4X3": "IFC4X3_ADD2"}.get(schema, schema)
-
-
-def get_schema_name_from_version(schema_version: tuple[int, ...]) -> str:
-    """Build a schema name from a version tuple, e.g. (4, 3, 0, 1) -> "IFC4X3_TC1"."""
-    prefixes = ("IFC", "X", "_ADD", "_TC")
-    return "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, schema_version))
-
-
 def get_declaration(element: ifcopenshell.entity_instance):
     """Get the schema declaration of an actively used entity instance
 
@@ -87,7 +72,7 @@ def get_declaration(element: ifcopenshell.entity_instance):
         print(declaration.is_abstract()) # False
         print(declaration.supertype().name()) # IfcBuildingElement
     """
-    return element.wrapped_data.declaration().as_entity()
+    return element.declaration
 
 
 def is_a(declaration: ifcopenshell.ifcopenshell_wrapper.declaration, ifc_class: str) -> bool:
@@ -121,7 +106,7 @@ def get_supertypes(
     .. code:: python
 
         wall = model.createIfcWall()
-        results = ifcopenshell.util.schema.get_supertypes(wall.wrapped_data.declaration().as_entity())
+        results = ifcopenshell.util.schema.get_supertypes(wall.declaration.as_entity())
         # [<entity IfcBuildingElement>, <entity IfcElement>, ..., <entity IfcRoot>]
     """
     results = []
@@ -254,7 +239,7 @@ def reassign_class(
     for attribute in declaration.all_attributes():
         name = attribute.name()
         old_attribute = info.get(name, None)
-        if old_attribute:
+        if old_attribute is not None:
             if ifcopenshell.util.attribute.get_primitive_type(attribute) == "enum":
                 if old_attribute in ifcopenshell.util.attribute.get_enum_items(attribute):
                     new_attributes[name] = old_attribute
@@ -502,13 +487,13 @@ class Migrator:
         # IFC2X3 stand-in; non-element IFC4-only classes (rels, geometry items,
         # materials, times) still raise below.
         if not equivalent and new_file.schema == "IFC2X3" and self.fallback_element_to_proxy:
-            if self._is_subclass_of(ifc_class, "IfcElement", element.wrapped_data.file):
+            if self._is_subclass_of(ifc_class, "IfcElement", element.file):
                 equivalent = "IfcBuildingElementProxy"
-            elif self._is_subclass_of(ifc_class, "IfcElementType", element.wrapped_data.file):
+            elif self._is_subclass_of(ifc_class, "IfcElementType", element.file):
                 equivalent = "IfcBuildingElementProxyType"
 
         if not equivalent:
-            inverses = element.wrapped_data.file.get_inverse(element)
+            inverses = element.file.get_inverse(element)
             inverse_hint = ", ".join(f"#{i.id()}={i.is_a()}" for i in list(inverses)[:3])
             if len(inverses) > 3:
                 inverse_hint += f", … (+{len(inverses) - 3} more)"
@@ -583,7 +568,7 @@ class Migrator:
     ) -> None:
         # NOTE: `attribute` is an attribute in new file schema
         # print("Migrating attribute", element, new_element, attribute.name())
-        old_file = element.wrapped_data.file
+        old_file = element.file
         value = ...
         if hasattr(element, attribute.name()):
             value = getattr(element, attribute.name())

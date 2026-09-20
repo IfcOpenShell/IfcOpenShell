@@ -59,3 +59,9 @@ class TestUnassignObject:
         collector.assign("relating_obj").should_be_called()
         collector.assign("related_obj").should_be_called()
         subject.unassign_object(ifc, aggregate, collector, relating_obj="relating_obj", related_obj="related_obj")
+
+    def test_run_without_relating_obj_when_no_aggregate_is_found(self, ifc, aggregate, collector):
+        ifc.get_entity("related_obj").should_be_called().will_return("element")
+        aggregate.get_container("element").should_be_called().will_return(None)
+        aggregate.get_relating_object("element").should_be_called().will_return(None)
+        subject.unassign_object(ifc, aggregate, collector, related_obj="related_obj")

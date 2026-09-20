@@ -1,12 +1,11 @@
-find_package(Eigen3 REQUIRED)
+find_package(Eigen3 ${EIGEN_MIN_VERSION} REQUIRED)
 
-# When using `ENABLE_BUILD_OPTIMIZATIONS``/GL` compilation flags makes resulting mapping libs huge (e.g. 1.5GB each)
-# and combining them together to a single IfcGeom won't be possible due to 4GB file size limit.
-# So in this case we have to ensure each mapping is built as separate libs instead of .obj files to be linked together.
-if(ENABLE_BUILD_OPTIMIZATIONS AND MSVC)
-    set(mapping_library_type "STATIC")
-else()
-    set(mapping_library_type "OBJECT")
+set(mapping_plugin_runtime_dir "$<TARGET_FILE_DIR:IfcGeom>")
+
+if (NOT WASM_BUILD)
+# wasm-ld (?) trips up on multiple defined symbols. IfcParse already brings
+# in plugin so we skip it here.
+set(plugin_when_not_wasm plugin)
 endif()
 
 foreach(schema ${SCHEMA_VERSIONS})
@@ -15,14 +14,29 @@ foreach(schema ${SCHEMA_VERSIONS})
     file(GLOB IFCGEOM_CPP_FILES *.cpp)
     set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES} ${IFCGEOM_I_FILES})
 
-    add_library(geometry_mapping_ifc${schema} ${mapping_library_type} ${IFCGEOM_FILES})
-    set_target_properties(
-        geometry_mapping_ifc${schema}
-        PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema}"
+    add_library(geometry_mapping_ifc${schema} SHARED ${IFCGEOM_FILES})
+    set_target_properties(geometry_mapping_ifc${schema} PROPERTIES
+        COMPILE_FLAGS "-DIfcSchema=Ifc${schema}"
+        OUTPUT_NAME "ifcopenshell_geometry_mapping_ifc${schema}"
+        RUNTIME_OUTPUT_DIRECTORY "${mapping_plugin_runtime_dir}"
+        LIBRARY_OUTPUT_DIRECTORY "${mapping_plugin_runtime_dir}"
     )
-    target_link_libraries(geometry_mapping_ifc${schema} IfcParse Eigen3::Eigen)
+
+    ifcopenshell_wasm_plugin_link_options(geometry_mapping_ifc${schema} ifcopenshell_register_mapping_plugin_v1)
+    if(WASM_BUILD)
+        target_link_options(geometry_mapping_ifc${schema} PRIVATE "SHELL:-s ERROR_ON_UNDEFINED_SYMBOLS=0")
+    endif()
+
+    if(NOT WASM_BUILD)
+        set(schema_plugin_library parse_schema_ifc${schema})
+    else()
+        set(schema_plugin_library)
+    endif()
+
+    target_link_libraries(geometry_mapping_ifc${schema} PRIVATE ${plugin_when_not_wasm} IfcGeom IfcParse ${schema_plugin_library} Eigen3::Eigen)
 
     list(APPEND mapping_libraries geometry_mapping_ifc${schema})
+
     install(TARGETS geometry_mapping_ifc${schema} EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
 endforeach()
 

@@ -765,7 +765,7 @@ class GizmoRoofEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
     def is_element_type(cls, element: ifcopenshell.entity_instance) -> bool:
         return tool.Parametric.is_roof(element)
 
-    def _update_dimension_gizmo_positions(self, context: bpy.types.Context, mw, props) -> None:  # noqa: ARG002
+    def _update_dimension_gizmo_positions(self, context: bpy.types.Context, mw, props) -> None:
         """Anchor every dimension gizmo at the object origin. Each gizmo's
         declared axis (height/slope along +Z, thickness along -Z) separates
         them in 3D so they don't visually collide despite sharing a
@@ -776,7 +776,7 @@ class GizmoRoofEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         self.set_dimension_gizmo_position("angle", mw, origin, (0, 0, 1))
         self.set_dimension_gizmo_position("roof_thickness", mw, origin, (0, 0, -1))
 
-    def get_element_height(self, props) -> float:  # noqa: ARG002
+    def get_element_height(self, props) -> float:
         """Object-local Z of the mesh's topmost vertex, so the pen / validate /
         cancel / cycle row anchors visibly above sloped or stepped roof
         bodies rather than at the parametric ``props.height`` which may not

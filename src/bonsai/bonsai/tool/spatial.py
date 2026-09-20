@@ -258,14 +258,14 @@ class Spatial(bonsai.core.tool.Spatial):
         ]
 
     @classmethod
-    def get_selected_products(cls) -> Generator[ifcopenshell.entity_instance, None, None]:
+    def get_selected_products(cls) -> Generator[ifcopenshell.entity_instance]:
         for obj in bpy.context.selected_objects:
             entity = tool.Ifc.get_entity(obj)
             if entity and entity.is_a("IfcProduct"):
                 yield entity
 
     @classmethod
-    def get_selected_product_types(cls) -> Generator[ifcopenshell.entity_instance, None, None]:
+    def get_selected_product_types(cls) -> Generator[ifcopenshell.entity_instance]:
         for obj in tool.Blender.get_selected_objects():
             entity = tool.Ifc.get_entity(obj)
             if entity and entity.is_a("IfcTypeProduct"):
@@ -979,25 +979,24 @@ class Spatial(bonsai.core.tool.Spatial):
     def get_purged_inner_holes_poly(cls, union_geom: Polygon, min_area: float) -> Polygon:
         interiors_list = []
 
+        new_poly = None
+        poly = None
         if union_geom.geom_type == "MultiPolygon":
-            poly = None
             for poly in union_geom.geoms:
                 interiors_list = cls.get_poly_valid_interior_list(
                     poly=poly, min_area=min_area, interiors_list=interiors_list
                 )
 
-            assert poly
+            assert poly is not None
             new_poly = Polygon(poly.exterior.coords, holes=interiors_list)
 
-        elif union_geom.geom_type == "Polygon":
+        if union_geom.geom_type == "Polygon":
             interiors_list = cls.get_poly_valid_interior_list(
                 poly=union_geom, min_area=min_area, interiors_list=interiors_list
             )
             new_poly = Polygon(union_geom.exterior.coords, holes=interiors_list)
 
-        else:
-            assert False, union_geom.geom_type
-
+        assert new_poly is not None
         return new_poly
 
     @classmethod

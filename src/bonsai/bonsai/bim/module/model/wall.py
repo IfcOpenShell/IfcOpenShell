@@ -623,10 +623,7 @@ class ExtendWallsToPolylinePoint(bpy.types.Operator, PolylineOperator, tool.Ifc.
                     self.connection,
                 )
 
-            tool.Polyline.clear_polyline()
-            context.workspace.status_text_set(text=None)
-            PolylineDecorator.uninstall()
-            tool.Blender.update_viewport()
+            self.cleanup(context)
             return {"FINISHED"}
 
         self.handle_keyboard_input(context, event)
@@ -1070,8 +1067,7 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
     def _modal(self, context, event):
         if not self.relating_type:
             self.report({"WARNING"}, "You need to select a wall type.")
-            PolylineDecorator.uninstall()
-            tool.Blender.update_viewport()
+            self.cleanup(context)
             return {"FINISHED"}
 
         PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
@@ -1119,12 +1115,8 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
             and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}
         ):
             self.create_walls_from_polyline(context)
-            context.workspace.status_text_set(text=None)
             self.tool_state.plane_method = None
-            ProductDecorator.uninstall()
-            PolylineDecorator.uninstall()
-            tool.Polyline.clear_polyline()
-            tool.Blender.update_viewport()
+            self.cleanup(context)
             return {"FINISHED"}
 
         self.handle_keyboard_input(context, event)
@@ -1132,7 +1124,6 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
 
         cancel = self.handle_cancelation(context, event)
         if cancel is not None:
-            ProductDecorator.uninstall()
             return cancel
 
         return {"RUNNING_MODAL"}
@@ -2174,7 +2165,7 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         return (far, near)
 
     def _update_dimension_gizmo_positions(
-        self, context: bpy.types.Context, mw: Matrix, props: "BIMWallProperties"  # noqa: ARG002
+        self, context: bpy.types.Context, mw: Matrix, props: "BIMWallProperties"
     ) -> None:
         """Re-position length / height / height_end dimensions to the camera-facing
         Y-side of the wall every frame. Mirrors the door & stair pattern: when the
@@ -2530,7 +2521,7 @@ def _perpendicular_wall_params(
     return clamped_x, abs(cursor_local_y), side_sign
 
 
-def _commit_pending_wall_edits_for_selection(context: bpy.types.Context) -> None:  # noqa: ARG001
+def _commit_pending_wall_edits_for_selection(context: bpy.types.Context) -> None:
     """Thin wall-scoped alias for ``tool.Parametric.commit_pending_edits_for_selection``.
 
     Encapsulates the ``names=("wall",)`` filter so the registry name is

@@ -80,6 +80,7 @@ def test_memusage_partial_open():
     import sys
 
     script = f"""
+import sys; sys.path.remove('')
 import psutil
 import ifcopenshell
 
@@ -110,11 +111,18 @@ def test_rocks():
         assert f[139].RelatingPropertyDefinition.is_a("IfcPropertySetDefinitionSet")
         assert {x.id() for x in f[139].RelatingPropertyDefinition[0]} == {136, 138}
 
-        b = f.wrapped_data.key_value_store_query("i|139|5")[2:]
+        # Numeric key segments are fixed-width hex: i|<id>|<attribute>,
+        # t|<identity>|<attribute>. See rocksdb_map_adapter.h.
+        b = f.key_value_store_query(f"i|{139:016x}|{5:016x}")[2:]
         iden = struct.unpack("Q", b)[0]
-        b = f.wrapped_data.key_value_store_query(f"t|{iden}|0")[1:]
+        b = f.key_value_store_query(f"t|{iden:016x}|{0:016x}")[1:]
         assert set(struct.unpack("Q", b[i : i + 8])[0] for i in range(1, len(b), 9)) == {136, 138}
 
+        g = ifcopenshell.open(fn)
+        for inst in g.by_type("IfcRoot"):
+            assert f.by_guid(inst.GlobalId).id() == inst.id()
+
+        del g
         del f
         gc.collect()
 

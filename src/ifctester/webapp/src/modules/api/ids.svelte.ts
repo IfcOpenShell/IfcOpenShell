@@ -55,7 +55,7 @@ export async function createDocument() {
 export async function deleteDocument(id: string) {
     // Clear any audit reports generated using this IDS document
     clearIdsAuditReports(id);
-    
+
     delete Module.documents[id];
     delete Module.states[id];
 
@@ -73,18 +73,18 @@ export async function deleteDocument(id: string) {
 // We need this because the backend exports with xs: prefix, yet expects a dict without prefixes.
 function normalizeIdsDict(obj: unknown): unknown {
     if (typeof obj !== 'object' || obj === null) return obj;
-    
+
     if (Array.isArray(obj)) {
         return obj.map(normalizeIdsDict);
     }
-    
+
     const result: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj)) {
         if (key === 'xs:restriction' && Array.isArray(value) && value.length > 0) {
             // Convert xs:restriction array to restriction object
             const restriction = value[0] as Record<string, unknown>;
             const newRestriction: Record<string, unknown> = {};
-            
+
             for (const [restrictionKey, restrictionValue] of Object.entries(restriction)) {
                 if (restrictionKey.startsWith('xs:')) {
                     // Remove xs: prefix from keys
@@ -94,13 +94,13 @@ function normalizeIdsDict(obj: unknown): unknown {
                     newRestriction[restrictionKey] = restrictionValue;
                 }
             }
-            
+
             result.restriction = newRestriction;
         } else {
             result[key] = normalizeIdsDict(value);
         }
     }
-    
+
     return result;
 }
 
@@ -111,7 +111,7 @@ export async function openDocument() {
         };
         fileInput.type = 'file';
         fileInput.accept = '.ids,.xml';
-        
+
         fileInput.onchange = async (event) => {
             const target = event.target as HTMLInputElement | null;
             const file = target?.files?.[0];
@@ -119,7 +119,7 @@ export async function openDocument() {
                 reject(new Error('No file selected'));
                 return;
             }
-            
+
             try {
                 const reader = new FileReader();
                 reader.onload = async (e) => {
@@ -130,10 +130,10 @@ export async function openDocument() {
 
                         // Add document to list and set as active
                         Module.documents[docId] = doc;
-                        
+
                         // Initialize document state and switch to viewer mode
                         setDocumentState(docId, { viewMode: 'viewer' });
-                        
+
                         Module.activeDocument = docId;
 
                         resolve();
@@ -147,11 +147,11 @@ export async function openDocument() {
                 reject(error);
             }
         };
-        
+
         fileInput.oncancel = () => {
             reject(new Error('File selection cancelled'));
         };
-        
+
         // Trigger the file dialog
         fileInput.click();
     });
@@ -175,7 +175,7 @@ export async function exportDocument(docId: string) {
     }
 
     const xmlString = await wasm.exportIDS(doc as Record<string, unknown>) as string;
-    
+
     // Create and download file
     const blob = new Blob([xmlString], { type: 'application/xml' });
     const url = URL.createObjectURL(blob);
@@ -290,7 +290,7 @@ export function stringifyFacet(
 
     const usage = getSpecUsage(spec);
     const descriptions: string[] = [];
-    
+
     // Entity facet
     if (facetType === "entity") {
         if (clauseType === "applicability") {
@@ -377,13 +377,13 @@ export function stringifyFacet(
     if (clauseType === "requirements" && "@cardinality" in facet && facet["@cardinality"] === "prohibited") {
         isProhibited = !isProhibited;
     }
-    
+
     if (isProhibited)
         combined = combined.replace("Shall", "Shall not").replace("shall", "shall not");
 
     if (clauseType === "requirements" && "@cardinality" in facet && facet["@cardinality"] === "optional")
         combined = combined.replace("Shall", "May").replace("shall", "may");
-    
+
     return renderFacetString(combined);
 }
 
@@ -398,27 +398,27 @@ function stringifyValue(value?: FacetValue) {
 // Converts restriction objects to human-readable strings
 function stringifyRestriction(restriction: Restriction) {
     if (!restriction) return "";
-    
+
     // Handle enumeration
     if (restriction.enumeration && Array.isArray(restriction.enumeration)) {
         const values = restriction.enumeration.map(item => `**${item['@value']}**` || '').filter(v => v);
         return values.length > 0 ? `is one of ${values.join(", ")}` : "has enumeration restriction";
     }
-    
+
     // Handle pattern
     if (restriction.pattern && Array.isArray(restriction.pattern) && restriction.pattern.length > 0) {
         const pattern = `\`${restriction.pattern[0]['@value']}\`` || '';
         return pattern ? `matches pattern ${pattern}` : "has pattern restriction";
     }
-    
+
     // Handle length restrictions
     if (restriction.length && Array.isArray(restriction.length) && restriction.length.length > 0) {
         const length = `**${restriction.length[0]['@value']}**` || '';
         return length ? `has length ${length}` : "has length restriction";
     }
-    
+
     // Handle range restrictions
-    if (restriction.minInclusive || restriction.maxInclusive || 
+    if (restriction.minInclusive || restriction.maxInclusive ||
         restriction.minExclusive || restriction.maxExclusive) {
         const parts = [];
         if (restriction.minInclusive && restriction.minInclusive.length > 0) {
@@ -435,7 +435,7 @@ function stringifyRestriction(restriction: Restriction) {
         }
         return parts.length > 0 ? `is in range ${parts.join(", ")}` : "has range restriction";
     }
-    
+
     // Handle length range restrictions
     if (restriction.minLength || restriction.maxLength) {
         const parts = [];
@@ -447,16 +447,16 @@ function stringifyRestriction(restriction: Restriction) {
         }
         return parts.length > 0 ? `has ${parts.join(", ")}` : "has length range restriction";
     }
-    
+
     return "has complex restriction";
 }
 
 function renderFacetString(text: string): string {
     // Convert **text** to <strong>text</strong>
     const withStrong = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    
+
     // Convert `text` to <code>text</code>
     const withCode = withStrong.replace(/`([^`]+)`/g, '<code>$1</code>');
-    
+
     return withCode;
 }
