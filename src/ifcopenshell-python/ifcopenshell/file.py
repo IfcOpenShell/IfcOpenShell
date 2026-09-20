@@ -257,9 +257,11 @@ binary_deserializers = (
     lambda __, val: struct.unpack("@d", val)[0],
     lambda __, val: val.decode("utf-8"),
     lambda __, val: val.decode("utf-8"),
-    lambda storage, val: ifcopenshell_wrapper.schema_by_name(storage.schema_identifier)
-    .declarations()[struct.unpack("@q", val[:8])[0]]
-    .enumeration_items()[struct.unpack("@q", val[8:])[0]],
+    lambda storage, val: (
+        ifcopenshell_wrapper.schema_by_name(storage.schema_identifier)
+        .declarations()[struct.unpack("@q", val[:8])[0]]
+        .enumeration_items()[struct.unpack("@q", val[8:])[0]]
+    ),
     lambda storage, val: storage.by_id((val[0] == 105, struct.unpack("@q", val[1:])[0])),
     lambda __, _: (),
     lambda __, val: struct.unpack("@" + "i" * (len(val) // 4), val),
@@ -380,13 +382,13 @@ class rocksdb_lazy_instance:
                 else:
                     return repr(val)
             elif isinstance(val, (tuple, list)):
-                return f'({",".join(map(val_repr, val))})'
+                return f"({','.join(map(val_repr, val))})"
             elif val is None:
                 return "$"
             else:
                 return repr(val)
 
-        return f'{pre}{self.is_a()}({",".join(map(val_repr, self))})'
+        return f"{pre}{self.is_a()}({','.join(map(val_repr, self))})"
 
     def id(self):
         if self.name.startswith("i|"):
@@ -427,7 +429,7 @@ class rocksdb_file_storage:
 
     def by_id(self, name):
         if isinstance(name, tuple):
-            inst = rocksdb_lazy_instance(self, f'{"i" if name[0] else "t"}|{name[1]}')
+            inst = rocksdb_lazy_instance(self, f"{'i' if name[0] else 't'}|{name[1]}")
         else:
             inst = rocksdb_lazy_instance(self, f"i|{name}")
         if not inst:

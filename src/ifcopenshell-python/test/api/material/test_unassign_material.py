@@ -139,7 +139,6 @@ class TestUnassignMaterialIFC2X3(test.bootstrap.IFC2X3):
 
 
 class TestUnassignMaterialIFC4(test.bootstrap.IFC4, TestUnassignMaterialIFC2X3):
-
     def test_unassign_material_profile_set_from_type(self):
         element1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
         ifcopenshell.api.material.assign_material(self.file, products=[element1], type="IfcMaterialProfileSet")

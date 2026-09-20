@@ -125,9 +125,11 @@ def patched_tool_and_ifc():
     mock_ifc_util_rep, mock_core_geometry)`` so tests can configure return
     values and assert call args."""
     target = "bonsai.bim.parametric_lifecycle"
-    with mock.patch(f"{target}.tool") as mock_tool, mock.patch(f"{target}.ifcopenshell") as mock_ifc, mock.patch(
-        f"{target}.bonsai"
-    ) as mock_bonsai:
+    with (
+        mock.patch(f"{target}.tool") as mock_tool,
+        mock.patch(f"{target}.ifcopenshell") as mock_ifc,
+        mock.patch(f"{target}.bonsai") as mock_bonsai,
+    ):
         # Element returned by tool.Ifc.get_entity is reused across mocks.
         element = mock.Mock(name="entity")
         mock_tool.Ifc.get_entity.return_value = element

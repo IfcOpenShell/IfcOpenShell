@@ -594,9 +594,9 @@ def install_proj(
             vs_cfg_vars,
             build_type,
             f"-DCMAKE_INSTALL_PREFIX={dependency_install_dir}",
-            f'-DCMAKE_PREFIX_PATH={install_dir / "sqlite3"}',
-            f'-DSQLite3_INCLUDE_DIR={install_dir / "sqlite3" / "include"}',
-            f'-DSQLite3_LIBRARY={install_dir / "sqlite3" / "lib" / "sqlite3.lib"}',
+            f"-DCMAKE_PREFIX_PATH={install_dir / 'sqlite3'}",
+            f"-DSQLite3_INCLUDE_DIR={install_dir / 'sqlite3' / 'include'}",
+            f"-DSQLite3_LIBRARY={install_dir / 'sqlite3' / 'lib' / 'sqlite3.lib'}",
             "-DENABLE_TIFF=OFF",
             "-DENABLE_CURL=OFF",
             "-DBUILD_APPS=OFF",
@@ -797,8 +797,7 @@ def install_qt6(
         QT6_HOST_INSTALL_SUFFIX = f"msvc{QT6_MSVC_YEAR}_64"
     else:
         logger.error(
-            f"Automatic Qt6 installation is only supported for x64 and arm64 builds, "
-            f"got '{vs_cfg_vars.vs_platform}'."
+            f"Automatic Qt6 installation is only supported for x64 and arm64 builds, got '{vs_cfg_vars.vs_platform}'."
         )
         sys.exit(1)
 

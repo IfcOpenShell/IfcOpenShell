@@ -820,7 +820,7 @@ class Ifc2CA:
             self.folder_path.mkdir()
 
         template = self.env.get_template("salome/scriptSalome.py")
-        mesh_name = f'Model_{model_id}_v{parameters["mesh_size"]}'
+        mesh_name = f"Model_{model_id}_v{parameters['mesh_size']}"
 
         med_path = self.folder_path / f"{mesh_name}.med"
         json_path = self.folder_path / f"Model_{model_id}.json"
@@ -835,7 +835,7 @@ class Ifc2CA:
         )
 
         # Write the rendered script to the new location
-        script_path = self.folder_path / f'ScriptSalome_Model_{model_id}_v{parameters["mesh_size"]}.py'
+        script_path = self.folder_path / f"ScriptSalome_Model_{model_id}_v{parameters['mesh_size']}.py"
         with open(script_path, "w") as f:
             f.write(rendered_script)
 
@@ -879,7 +879,7 @@ class Ifc2CA:
         cases = self.get_run_case_labels(data, target)
         run_label = "_".join(cases)
 
-        comm_path = self.folder_path / f'{mesh["name"]}_{run_label}.comm'
+        comm_path = self.folder_path / f"{mesh['name']}_{run_label}.comm"
 
         constructor = CommandFileConstructor(data)
         constructor.create_comm(comm_path, cases=cases)

@@ -229,7 +229,7 @@ class Clasher:
         for i, clash_set in enumerate(self.clash_sets):
             bcfxml = BcfXml.create_new(clash_set["name"])
             for clash in clash_set["clashes"].values():
-                title = f'{clash["a_ifc_class"]}/{clash["a_name"]} and {clash["b_ifc_class"]}/{clash["b_name"]}'
+                title = f"{clash['a_ifc_class']}/{clash['a_name']} and {clash['b_ifc_class']}/{clash['b_name']}"
                 topic = bcfxml.add_topic(title, title, "IfcClash")
                 viewpoint = topic.add_viewpoint_from_point_and_guids(
                     np.array(clash["p1"]),

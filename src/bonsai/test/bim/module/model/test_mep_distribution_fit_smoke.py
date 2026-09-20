@@ -112,9 +112,11 @@ def test_fit_flow_segments_with_no_selection_is_noop():
     context.selected_objects = []
 
     op = _make_op()
-    with patch.object(mep.MEPAddObstruction, "_execute", return_value=None) as obstruction, patch.object(
-        mep.MEPAddBend, "_execute", return_value=None
-    ) as bend, patch.object(mep.MEPAddTransition, "_execute", return_value=None) as transition:
+    with (
+        patch.object(mep.MEPAddObstruction, "_execute", return_value=None) as obstruction,
+        patch.object(mep.MEPAddBend, "_execute", return_value=None) as bend,
+        patch.object(mep.MEPAddTransition, "_execute", return_value=None) as transition,
+    ):
         mep.FitFlowSegments._execute(op, context=context)
 
     obstruction.assert_not_called()
@@ -142,13 +144,13 @@ def test_fit_flow_segments_with_single_segment_dispatches_obstruction():
     context.selected_objects = [segment_obj]
 
     op = _make_op()
-    with patch.object(mep.tool.Ifc, "get_entity", return_value=segment_entity), patch.object(
-        mep.tool.Model, "get_flow_segment_profile", return_value=segment_profile
-    ), patch.object(mep.MEPAddObstruction, "_execute", return_value=None) as obstruction, patch.object(
-        mep.MEPAddBend, "_execute", return_value=None
-    ) as bend, patch.object(
-        mep.MEPAddTransition, "_execute", return_value=None
-    ) as transition:
+    with (
+        patch.object(mep.tool.Ifc, "get_entity", return_value=segment_entity),
+        patch.object(mep.tool.Model, "get_flow_segment_profile", return_value=segment_profile),
+        patch.object(mep.MEPAddObstruction, "_execute", return_value=None) as obstruction,
+        patch.object(mep.MEPAddBend, "_execute", return_value=None) as bend,
+        patch.object(mep.MEPAddTransition, "_execute", return_value=None) as transition,
+    ):
         mep.FitFlowSegments._execute(op, context=context)
 
     assert obstruction.call_count == 1
@@ -176,13 +178,13 @@ def test_fit_flow_segments_refuses_mixed_pipe_and_duct():
         return pipe_entity if obj is pipe_obj else duct_entity
 
     op = _make_op()
-    with patch.object(mep.tool.Ifc, "get_entity", side_effect=fake_get_entity), patch.object(
-        mep.tool.Model, "get_flow_segment_profile", return_value=profile
-    ), patch.object(mep.MEPAddObstruction, "_execute", return_value=None) as obstruction, patch.object(
-        mep.MEPAddBend, "_execute", return_value=None
-    ) as bend, patch.object(
-        mep.MEPAddTransition, "_execute", return_value=None
-    ) as transition:
+    with (
+        patch.object(mep.tool.Ifc, "get_entity", side_effect=fake_get_entity),
+        patch.object(mep.tool.Model, "get_flow_segment_profile", return_value=profile),
+        patch.object(mep.MEPAddObstruction, "_execute", return_value=None) as obstruction,
+        patch.object(mep.MEPAddBend, "_execute", return_value=None) as bend,
+        patch.object(mep.MEPAddTransition, "_execute", return_value=None) as transition,
+    ):
         mep.FitFlowSegments._execute(op, context=context)
 
     obstruction.assert_not_called()
@@ -215,14 +217,13 @@ def test_regenerate_distribution_element_on_leaf_is_safe():
     fake_active.is_a = lambda c: False  # bpy.context.active_object stub
 
     op = _make_op()
-    with patch.object(mep.tool.Ifc, "get_entity", return_value=leaf_element), patch(
-        "ifcopenshell.util.system.get_connected_to", return_value=[]
-    ), patch("ifcopenshell.util.system.get_connected_from", return_value=[]), patch.object(
-        mep.tool.Ifc, "get", return_value=MagicMock()
-    ), patch(
-        "ifcopenshell.util.unit.calculate_unit_scale", return_value=1.0
-    ), patch.object(
-        bpy, "context", new=context
+    with (
+        patch.object(mep.tool.Ifc, "get_entity", return_value=leaf_element),
+        patch("ifcopenshell.util.system.get_connected_to", return_value=[]),
+        patch("ifcopenshell.util.system.get_connected_from", return_value=[]),
+        patch.object(mep.tool.Ifc, "get", return_value=MagicMock()),
+        patch("ifcopenshell.util.unit.calculate_unit_scale", return_value=1.0),
+        patch.object(bpy, "context", new=context),
     ):
         mep.RegenerateDistributionElement._execute(op, context=context)
 

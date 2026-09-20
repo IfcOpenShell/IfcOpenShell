@@ -747,7 +747,7 @@ class GizmoRailingSchematic(bpy.types.GizmoGroup, gizmo.BaseSchematicGizmoGroup)
             attr_name="support_spacing",
             axis=(1, 0, 0),
             min_value=0.05,
-            visibility_condition=lambda p: (p.railing_type == "WALL_MOUNTED_HANDRAIL" and not p.use_manual_supports),
+            visibility_condition=lambda p: p.railing_type == "WALL_MOUNTED_HANDRAIL" and not p.use_manual_supports,
             matrix_position=lambda p: Vector(
                 (
                     -GizmoRailingSchematic.SCHEMATIC_MESH_WIDTH_FRAC / 2

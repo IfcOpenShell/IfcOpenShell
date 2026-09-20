@@ -31,7 +31,6 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 
 if TYPE_CHECKING:
-
     import ifcopenshell.ifcopenshell_wrapper as W
     from ifcopenshell.geom import ShapeElementType
     from ifcopenshell.util.shape_builder import VectorType

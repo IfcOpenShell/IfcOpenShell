@@ -15,7 +15,6 @@ from py2neo import Graph
 
 
 class DOCDB(MyDB):
-
     # ---- GENERAL FUNCTIONS ----
 
     def document_node_to_model(self, document_node):
@@ -36,14 +35,17 @@ class DOCDB(MyDB):
             else:
                 version_index_criteria = "AND d.version_index = $version_index"
 
-            cypher = """
+            cypher = (
+                """
                 MATCH (d:Document)
                 WHERE d.document_id = $document_id
                 %s
                 RETURN d AS document
                 ORDER by d.version_index DESC
                 LIMIT 1
-            """ % version_index_criteria
+            """
+                % version_index_criteria
+            )
 
             result = tx.run(cypher, document_id=document_id, version_index=version_index)
 
@@ -176,7 +178,6 @@ class DOCDB(MyDB):
                 raise HTTPException(status_code=400, detail="Session or link node was not created.")
 
             for file in upload_documents.files:
-
                 cypher = """
                     MATCH (u:User)-[r1:HAS]->(us:Session:Upload)-[r2:HAS]->(l:Link)
                     WHERE u.username = $username
@@ -214,7 +215,6 @@ class DOCDB(MyDB):
                 file_type = ""
 
                 if hasattr(file_types, file_ending):
-
                     print("We have this file ending in dict: ", file_ending)
 
                     mime_type = file_types[file_ending]["mime_type"]
@@ -888,7 +888,8 @@ class DOCDB(MyDB):
             else:
                 version_index_criteria = ""
 
-            cypher = """
+            cypher = (
+                """
                 MATCH (u:User)-[r3:HAS_ACTIONS_ON]->(p:Project)-[r4:CONTAINS]->(d:Document)
                 WHERE u.username = $username
                 AND d.document_id = $document_id
@@ -896,7 +897,9 @@ class DOCDB(MyDB):
                 RETURN d AS document
                 ORDER by d.version_index DESC
                 LIMIT 1
-            """ % version_index_criteria
+            """
+                % version_index_criteria
+            )
 
             result = tx.run(
                 cypher, username=current_user.username, document_id=document_id, version_index=version_index
@@ -921,7 +924,8 @@ class DOCDB(MyDB):
             else:
                 version_index_criteria = ""
 
-            cypher = """
+            cypher = (
+                """
                 MATCH (u:User)-[r3:HAS_ACTIONS_ON]->(p:Project)-[r4:CONTAINS]->(d:Document)
                 WHERE u.username = $username
                 AND d.document_id = $document_id
@@ -929,7 +933,9 @@ class DOCDB(MyDB):
                 RETURN d AS document
                 ORDER by d.version_index DESC
                 LIMIT 1
-            """ % version_index_criteria
+            """
+                % version_index_criteria
+            )
 
             result = tx.run(
                 cypher, username=current_user.username, document_id=document_id, version_index=version_index

@@ -82,7 +82,7 @@ class Usecase:
             **{
                 "GlobalId": ifcopenshell.guid.new(),
                 "OwnerHistory": ifcopenshell.api.owner.create_owner_history(self.file),
-            }
+            },
         )
         element.Name = name or None
         if predefined_type:

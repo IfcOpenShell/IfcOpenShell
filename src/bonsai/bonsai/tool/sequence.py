@@ -55,7 +55,6 @@ if TYPE_CHECKING:
 
 
 class Sequence(bonsai.core.tool.Sequence):
-
     RELATED_OBJECT_TYPE = Literal["RESOURCE", "PRODUCT", "CONTROL"]
 
     @classmethod

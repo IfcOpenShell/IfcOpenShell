@@ -89,15 +89,11 @@ class NestDecorator(tool.Blender.ViewportDecorator):
         shader_info.push_constant("VEC4", "color")
 
         shader_info.vertex_source(
-            "void main()"
-            "{"
-            "  v_ArcLength = arcLength;"
-            "  gl_Position = u_ViewProjectionMatrix * vec4(position, 1.0f);"
-            "}"
+            "void main(){  v_ArcLength = arcLength;  gl_Position = u_ViewProjectionMatrix * vec4(position, 1.0f);}"
         )
 
         shader_info.fragment_source(
-            "void main()" "{" "  if (step(sin(v_ArcLength * u_Scale), 0.4) == 1) discard;" "  FragColor = color;" "}"
+            "void main(){  if (step(sin(v_ArcLength * u_Scale), 0.4) == 1) discard;  FragColor = color;}"
         )
 
         shader = gpu.shader.create_from_info(shader_info)

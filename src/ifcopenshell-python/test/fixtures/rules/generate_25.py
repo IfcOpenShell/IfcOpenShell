@@ -18,5 +18,5 @@ for schema in ("IFC4", "IFC4X3"):
             f,
             __file__,
             fail_if(i == 2),
-            f'poly-curve-{"no-segments" if s is None else "-".join(["-".join(map(str, x[0])) for x in s])}-{schema.lower()}',
+            f"poly-curve-{'no-segments' if s is None else '-'.join(['-'.join(map(str, x[0])) for x in s])}-{schema.lower()}",
         )

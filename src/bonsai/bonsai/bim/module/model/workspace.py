@@ -537,7 +537,6 @@ class CreateObjectUI:
         )
 
         if ui_context != "TOOL_HEADER":
-
             row = box.row(align=True)
             row.alignment = "CENTER"
             row.template_icon(icon_value=0, scale=3.3)

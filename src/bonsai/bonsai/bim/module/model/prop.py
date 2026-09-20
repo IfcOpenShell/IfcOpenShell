@@ -1261,7 +1261,7 @@ class BIMDoorProperties(PropertyGroup):
 
     transom_thickness: bpy.props.FloatProperty(
         name="Transom Thickness",
-        description="Set values > 0 to add a transom.\n" "`0.050 mm` is good as default value",
+        description="Set values > 0 to add a transom.\n`0.050 mm` is good as default value",
         default=0.000,
         min=0,
         subtype="DISTANCE",
@@ -1325,7 +1325,7 @@ class BIMDoorProperties(PropertyGroup):
     )
     panel_width_ratio: bpy.props.FloatProperty(
         name="Panel Width Ratio",
-        description="Width of this panel, given as ratio " "relative to the total clear opening width of the door",
+        description="Width of this panel, given as ratio relative to the total clear opening width of the door",
         default=1.0,
         soft_min=0,
         soft_max=1,

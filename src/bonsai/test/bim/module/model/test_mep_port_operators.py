@@ -79,13 +79,13 @@ def test_remove_terminal_dispatches_obstruction_via_remove_obstruction():
     ifc_file = MagicMock()
     ifc_file.by_id.return_value = segment
 
-    with patch.object(mep.tool.Ifc, "get", return_value=ifc_file), patch.object(
-        mep, "port_connection_state", return_value="TERMINAL"
-    ), patch.object(mep, "get_connected_element_at_segment_port", return_value=obstruction), patch.object(
-        mep, "MEPGenerator"
-    ) as gen_cls, patch.object(
-        mep.tool.Geometry, "delete_ifc_object"
-    ) as delete:
+    with (
+        patch.object(mep.tool.Ifc, "get", return_value=ifc_file),
+        patch.object(mep, "port_connection_state", return_value="TERMINAL"),
+        patch.object(mep, "get_connected_element_at_segment_port", return_value=obstruction),
+        patch.object(mep, "MEPGenerator") as gen_cls,
+        patch.object(mep.tool.Geometry, "delete_ifc_object") as delete,
+    ):
         gen_cls.return_value.remove_obstruction.return_value = (obstruction, None)
         result = mep.MEPRemoveTerminalFitting._execute(op, context=MagicMock())
 
@@ -107,13 +107,13 @@ def test_remove_terminal_dispatches_non_obstruction_via_delete():
     ifc_file = MagicMock()
     ifc_file.by_id.return_value = segment
 
-    with patch.object(mep.tool.Ifc, "get", return_value=ifc_file), patch.object(
-        mep.tool.Ifc, "get_object", return_value=fitting_obj
-    ), patch.object(mep, "port_connection_state", return_value="TERMINAL"), patch.object(
-        mep, "get_connected_element_at_segment_port", return_value=fitting
-    ), patch.object(
-        mep.tool.Geometry, "delete_ifc_object"
-    ) as delete:
+    with (
+        patch.object(mep.tool.Ifc, "get", return_value=ifc_file),
+        patch.object(mep.tool.Ifc, "get_object", return_value=fitting_obj),
+        patch.object(mep, "port_connection_state", return_value="TERMINAL"),
+        patch.object(mep, "get_connected_element_at_segment_port", return_value=fitting),
+        patch.object(mep.tool.Geometry, "delete_ifc_object") as delete,
+    ):
         result = mep.MEPRemoveTerminalFitting._execute(op, context=MagicMock())
 
     assert result == {"FINISHED"}
@@ -131,8 +131,9 @@ def test_remove_terminal_cancels_on_non_terminal_port():
     ifc_file = MagicMock()
     ifc_file.by_id.return_value = segment
 
-    with patch.object(mep.tool.Ifc, "get", return_value=ifc_file), patch.object(
-        mep, "port_connection_state", return_value="JOINED"
+    with (
+        patch.object(mep.tool.Ifc, "get", return_value=ifc_file),
+        patch.object(mep, "port_connection_state", return_value="JOINED"),
     ):
         result = mep.MEPRemoveTerminalFitting._execute(op, context=MagicMock())
 
@@ -162,10 +163,11 @@ def test_select_path_replaces_selection_with_walked_members():
 
     op = _make_op(mep.SelectMEPPathMembers)
 
-    with patch.object(mep.tool.Ifc, "get_entity", return_value=element), patch.object(
-        mep.tool.System, "walk_connected_mep_elements", return_value=member_elements
-    ), patch.object(mep.tool.Ifc, "get_object", side_effect=member_objs), patch.object(
-        mep.bpy.ops.object, "select_all"
+    with (
+        patch.object(mep.tool.Ifc, "get_entity", return_value=element),
+        patch.object(mep.tool.System, "walk_connected_mep_elements", return_value=member_elements),
+        patch.object(mep.tool.Ifc, "get_object", side_effect=member_objs),
+        patch.object(mep.bpy.ops.object, "select_all"),
     ):
         result = mep.SelectMEPPathMembers.execute(op, context)
 
@@ -188,8 +190,9 @@ def test_select_path_reports_when_walker_returns_empty():
 
     op = _make_op(mep.SelectMEPPathMembers)
 
-    with patch.object(mep.tool.Ifc, "get_entity", return_value=element), patch.object(
-        mep.tool.System, "walk_connected_mep_elements", return_value=[]
+    with (
+        patch.object(mep.tool.Ifc, "get_entity", return_value=element),
+        patch.object(mep.tool.System, "walk_connected_mep_elements", return_value=[]),
     ):
         result = mep.SelectMEPPathMembers.execute(op, context)
 
@@ -210,8 +213,9 @@ def test_select_path_handles_walker_exception():
 
     op = _make_op(mep.SelectMEPPathMembers)
 
-    with patch.object(mep.tool.Ifc, "get_entity", return_value=element), patch.object(
-        mep.tool.System, "walk_connected_mep_elements", side_effect=RuntimeError("malformed port graph")
+    with (
+        patch.object(mep.tool.Ifc, "get_entity", return_value=element),
+        patch.object(mep.tool.System, "walk_connected_mep_elements", side_effect=RuntimeError("malformed port graph")),
     ):
         result = mep.SelectMEPPathMembers.execute(op, context)
 

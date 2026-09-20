@@ -48,7 +48,7 @@ class Usecase:
                 "RepresentationIdentifier": representation.RepresentationIdentifier,
                 "RepresentationType": "MappedRepresentation",
                 "Items": [mapped_item],
-            }
+            },
         )
 
     def get_mapping_source(self) -> ifcopenshell.entity_instance:

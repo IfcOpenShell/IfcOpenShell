@@ -144,7 +144,7 @@ class Usecase:
                 "SweptArea": dummy_profile,
                 "ExtrudedDirection": self.dummy.createIfcDirection((0.0, 0.0, 1.0)),
                 "Depth": 1,
-            }
+            },
         )
         self.settings_2d = ifcopenshell.geom.settings()
         self.settings_2d.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
