@@ -3,10 +3,10 @@
 
 Script links existing Bonsai installation to the provided IfcOpenShell repository.
 
-If you're on Windows/Mac, using Blender 4.5, Bonsai is installed from unstable repo (raw_githubusercontent_com)
-and this script is already part of IfcOpenShell repo you want to link, then you can just run it and it will just work.
+If Bonsai is installed from unstable repo (raw_githubusercontent_com) and this script is already part
+of IfcOpenShell repo you want to link, then you can just run it and it will just work.
 
-Otherwise, see the SETTINGS section below to validate script settings to ensure it fits your evnironment.
+Otherwise, see the SETTINGS section below to validate script settings to ensure it fits your environment.
 
 Example usage:
 
@@ -20,7 +20,6 @@ import subprocess
 import sys
 import urllib.request
 from pathlib import Path
-from typing import Union
 
 available_platforms = ("win32", "darwin", "linux")
 if sys.platform not in available_platforms:
@@ -62,7 +61,7 @@ BONSAI_PATH_CANDIDATES = (
 
 
 # Determine BONSAI_PATH from existing options.
-def find_bonsai_path() -> Union[Path, None]:
+def find_bonsai_path() -> Path | None:
     for path in BONSAI_PATH_CANDIDATES:
         if path.exists():
             return path
