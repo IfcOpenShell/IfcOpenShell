@@ -615,8 +615,10 @@ def main() -> None:
             )
 
     if is_platform("MAC"):
-        for app_path in sorted(install_root.glob("*.app")):
-            package_app_bundle(app_path, install_root, github_sha, output_dir, autodesk_connector_dir, ARGS.arch_suffix)
+        for app_path in sorted(ifcopenshell_install_dir.glob("*.app")):
+            package_app_bundle(
+                app_path, ifcopenshell_install_dir, github_sha, output_dir, autodesk_connector_dir, ARGS.arch_suffix
+            )
 
     if ARGS.fail_on_missing_deps and HAS_MISSING_DEPENDENCIES:
         raise Exception("Runtime dependency check found issues; see warnings above.")
