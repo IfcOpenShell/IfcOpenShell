@@ -105,7 +105,7 @@ AI-generated, identify them.
 ### Python
 
 - **Line length**: 120 characters
-- **Formatter**: black
+- **Formatter**: ruff format
 - **Linter**: ruff
 - Configuration is in `pyproject.toml`
 

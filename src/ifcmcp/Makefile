@@ -7,4 +7,4 @@ test:
 
 .PHONY: qa
 qa:
-	black .
+	ruff format

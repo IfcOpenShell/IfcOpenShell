@@ -4,27 +4,6 @@ version = "0.0.0"
 # Don't provide requires-python explicitly
 # allowing pyprojects to set their own (e.g. bonsai and general ifcopenshell version differ).
 
-[tool.black]
-line-length = 120
-extend-exclude = '''
-    src/ifcopenshell-python/ifcopenshell/express/rules/*
-    |src/ifcopenshell-python/ifcopenshell/express/express_parser.py
-    |src/ifcopenshell-python/ifcopenshell/mvd/*
-    |src/ifcopenshell-python/ifcopenshell/simple_spf/*
-    |src/ifc2ca/templates/*
-    |src/svgfill
-    |src/exterior-shell-extractor
-    |choco/bonsai/tools/enable_blenderbim_addon.py
-    |choco/bonsai/tools/disable_blenderbim_addon.py
-    |docs/conf.py
-    |docs/generate_docs.py
-    |aws/lambda/example_handler/__init__.py
-    |conda/update_version_init.py
-    |test/bpy.py
-    |test/tests.py
-    |test/run.py
-'''
-
 [tool.pyright]
 reportInvalidTypeForm = false
 disableBytesTypePromotions = true
@@ -56,6 +35,28 @@ exclude = [
     # Incompatible with linter.
     "src/ifc2ca/templates",
 ]
+
+[tool.ruff.format]
+# Never formatted, unlike the linted files above.
+exclude = [
+    "src/ifcopenshell-python/ifcopenshell/express/rules",
+    "src/ifcopenshell-python/ifcopenshell/express/express_parser.py",
+    "src/ifcopenshell-python/ifcopenshell/mvd",
+    "src/ifcopenshell-python/ifcopenshell/simple_spf",
+    "src/ifc2ca/templates",
+    "src/svgfill",
+    "src/exterior-shell-extractor",
+    "choco/bonsai/tools/enable_blenderbim_addon.py",
+    "choco/bonsai/tools/disable_blenderbim_addon.py",
+    "docs/conf.py",
+    "docs/generate_docs.py",
+    "aws/lambda/example_handler/__init__.py",
+    "conda/update_version_init.py",
+    "test/bpy.py",
+    "test/tests.py",
+    "test/run.py",
+]
+
 [tool.ruff.lint]
 preview = true
 select = [
@@ -205,7 +206,7 @@ ruff = "ruff check"
 
 check-whitespace = "uv run .github/scripts/check-whitespace.py"
 
-black = "black ."
+ruff-format = "ruff format"
 
 ty.sequence = ["ty-bonsai", "ty-ios"]
 ty.help = "Run ty type checker. Requires ty-venv to be set up first."
@@ -223,7 +224,7 @@ ty-venv-ios.sequence = [
     {cmd = "uv pip install --group src/ifcopenshell-python/pyproject.toml:type-check --python=src/ifcopenshell-python/.venv"},
 ]
 
-format.sequence = ["black", "ruff"]
+format.sequence = ["ruff-format", "ruff"]
 
 cmake-format = "gersemi . --in-place"
 
