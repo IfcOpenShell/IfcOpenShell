@@ -1,0 +1,62 @@
+name: Publish Bonsai Viewer
+
+on:
+  workflow_dispatch:
+
+jobs:
+  upstream-only:
+    runs-on: ubuntu-latest
+    if: |
+      github.repository == 'IfcOpenShell/IfcOpenShell'
+    steps:
+    - name: Set env
+      run: echo ok go
+
+  publish:
+    needs: upstream-only
+    name: ${{ matrix.config.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - {
+            name: "Windows 64bit",
+            short_name: win64,
+          }
+          - {
+            name: "Windows ARM64",
+            short_name: win-arm64,
+          }
+          - {
+            name: "Linux 64bit",
+            short_name: linux64
+          }
+          - {
+            name: "Linux ARM64",
+            short_name: linuxarm64
+          }
+          - {
+            name: "MacOS Silicon 64bit",
+            short_name: macosm164
+          }
+    steps:
+      - uses: actions/checkout@v7
+      - name: Get current version
+        id: version
+        run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
+      # The binaries come from the platform build workflows, pinned by
+      # BUILD_COMMIT in the Makefile like IfcConvert and IfcOpenShell-Python.
+      - name: Fetch build
+        run: |
+          cd src/ifcopenshell-python &&
+          make zip-bonsaiviewer PLATFORM=${{ matrix.config.short_name }}
+      - name: Upload zip file to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: src/ifcopenshell-python/dist/bonsaiviewer-${{ steps.version.outputs.version }}-${{ matrix.config.short_name }}.zip
+          asset_name: bonsaiviewer-${{ steps.version.outputs.version }}-${{ matrix.config.short_name }}.zip
+          release_name: "bonsaiviewer-${{steps.version.outputs.version}}"
+          tag: "bonsaiviewer-${{steps.version.outputs.version}}"
+          overwrite: true

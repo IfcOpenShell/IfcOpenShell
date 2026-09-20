@@ -98,6 +98,7 @@ Things to update:
 
 - ``.github/workflows/publish-bcf-pypi.yml`` - release `bcf-client <https://pypi.org/project/bcf-client/>`_ to PyPI
 - ``.github/workflows/publish-bonsai.yml`` - release bonsai in GitHub releases
+- ``.github/workflows/publish-bonsaiviewer.yml`` - release Bonsai Viewer binaries in GitHub releases
 - ``.github/workflows/publish-bsdd-pypi.yml`` - release `bsdd <https://pypi.org/project/bsdd/>`_ to PyPI
 - ``.github/workflows/publish-ifc4d-pypi.yml`` - release `ifc4d <https://pypi.org/project/ifc4d/>`_ to PyPI
 - ``.github/workflows/publish-ifc5d-pypi.yml`` - release `ifc5d <https://pypi.org/project/ifc5d/>`_ to PyPI
