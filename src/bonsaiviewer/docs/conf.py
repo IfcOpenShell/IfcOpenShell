@@ -3,6 +3,8 @@
 import os
 from datetime import datetime
 
+from docutils import nodes
+
 project = "Bonsai Viewer"
 copyright = f"2020-{datetime.now().year} IfcOpenShell Contributors"
 author = "IfcOpenShell Contributors"
@@ -10,6 +12,16 @@ author = "IfcOpenShell Contributors"
 cwd = os.path.dirname(os.path.realpath(__file__))
 with open(os.path.join(cwd, "..", "..", "..", "VERSION"), "r") as f:
     release = f.read().strip()
+
+
+def bonsaiviewer_url(name, rawtext, text, lineno, inliner, options={}, content=[]):
+    url = f"https://github.com/IfcOpenShell/IfcOpenShell/releases/download/bonsaiviewer-{release}/bonsaiviewer-{release}-{text}.zip"
+    node = nodes.reference(rawtext, text, refuri=url, **options)
+    return [node], []
+
+
+def setup(app):
+    app.add_role("bonsaiviewer_url", bonsaiviewer_url)
 
 
 extensions = ["sphinx.ext.autodoc", "sphinx.ext.autosectionlabel", "sphinx_copybutton"]
