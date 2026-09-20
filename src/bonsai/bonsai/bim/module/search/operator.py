@@ -1457,7 +1457,7 @@ class SelectSimilar(Operator):
 
     @classmethod
     def description(cls, context, properties):
-        base = "Select objects with a similar value\n\n" "SHIFT+CLICK remove from selection set."
+        base = "Select objects with a similar value\n\nSHIFT+CLICK remove from selection set."
 
         key = getattr(properties, "key", None)
         active = context.active_object

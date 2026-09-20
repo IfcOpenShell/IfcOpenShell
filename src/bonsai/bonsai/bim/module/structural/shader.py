@@ -218,7 +218,7 @@ class DecorationShader:
         shader_info.fragment_out(0, "VEC4", "FragColor")
 
         shader_info.vertex_source(
-            "void main()" "{" "  gl_Position = viewProjectionMatrix * vec4(position, 1.0f);" "  co = coord;" "}"
+            "void main(){  gl_Position = viewProjectionMatrix * vec4(position, 1.0f);  co = coord;}"
         )
 
         if pattern == "SINGLE FORCE":
@@ -268,7 +268,7 @@ class DecorationShader:
         shader_info.fragment_out(0, "VEC4", "FragColor")
 
         shader_info.vertex_source(
-            "void main()" "{" "  gl_Position = viewProjectionMatrix * vec4(position, 1.0f);" "  co = coord;" "}"
+            "void main(){  gl_Position = viewProjectionMatrix * vec4(position, 1.0f);  co = coord;}"
         )
 
         shader_info.fragment_source(

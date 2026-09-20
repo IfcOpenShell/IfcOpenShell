@@ -1919,7 +1919,6 @@ class BoundingBoxDecorator(tool.Blender.ViewportDecorator):
                     and bounds1["bottom"] < bounds2["top"]
                     and bounds1["top"] > bounds2["bottom"]
                 ):
-
                     x_overlap = min(bounds1["right"], bounds2["right"]) - max(bounds1["left"], bounds2["left"])
                     y_overlap = min(bounds1["top"], bounds2["top"]) - max(bounds1["bottom"], bounds2["bottom"])
 

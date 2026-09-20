@@ -82,9 +82,9 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
         self.node_dict[hash(self)] = {}
 
     def draw_buttons(self, context, layout):
-        layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = (
-            "Create IFC Entity. Takes one or multiple inputs. \nIf 'Representation(s)' is given, that determines number of output entities. Otherwise, 'Names' is used."
-        )
+        layout.operator(
+            "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
+        ).tooltip = "Create IFC Entity. Takes one or multiple inputs. \nIf 'Representation(s)' is given, that determines number of output entities. Otherwise, 'Names' is used."
 
         row = layout.row(align=True)
         row.prop(self, "is_interactive", icon="SCENE_DATA", icon_only=True)
@@ -249,10 +249,10 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
         if input[0]:
             if flag:
                 return [
-                    [a] if not (s := sum(j == a for j in input[:i])) else [f"{a}-{s+1}"] for i, a in enumerate(input)
+                    [a] if not (s := sum(j == a for j in input[:i])) else [f"{a}-{s + 1}"] for i, a in enumerate(input)
                 ]
             input = [
-                a if not (s := sum(j == a for j in input[:i])) else f"{a}-{s+1}" for i, a in enumerate(input)
+                a if not (s := sum(j == a for j in input[:i])) else f"{a}-{s + 1}" for i, a in enumerate(input)
             ]  # add number to duplicates
         return input
 

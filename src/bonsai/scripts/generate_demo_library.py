@@ -129,9 +129,9 @@ class LibraryGenerator:
     def generate(self, schema: ifcopenshell.util.schema.IFC_SCHEMA) -> None:
         assert bpy.context.blend_data
         opened_blend_file = Path(bpy.context.blend_data.filepath)
-        assert (
-            opened_blend_file.name == "demo-library.blend"
-        ), "This script must be run from the demo-library.blend file as it's using Blender objects to create representations."
+        assert opened_blend_file.name == "demo-library.blend", (
+            "This script must be run from the demo-library.blend file as it's using Blender objects to create representations."
+        )
         libraries_path = opened_blend_file.parent.parent / "bonsai" / "bim" / "data" / "libraries"
 
         guid_source_filepath = libraries_path / f"{schema} {self.output_filename}"

@@ -861,9 +861,9 @@ class GizmoDoorEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         ),
         gizmo.SwingArcConfig(
             name="secondary",
-            visibility_condition=lambda p: p.is_editing
-            and "DOUBLE_DOOR" in p.door_type
-            and "SLIDING" not in p.door_type,
+            visibility_condition=lambda p: (
+                p.is_editing and "DOUBLE_DOOR" in p.door_type and "SLIDING" not in p.door_type
+            ),
             hinge_x=lambda p: p.overall_width,
             hinge_y=lambda p: p.lining_offset,
             panel_width=lambda p: p.overall_width / 2,

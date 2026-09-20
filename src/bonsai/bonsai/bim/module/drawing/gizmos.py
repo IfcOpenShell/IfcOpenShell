@@ -2535,9 +2535,12 @@ class ExtrusionGuidesGizmo(CustomGizmo, types.Gizmo):
         verts, edges = shader_wrapper.process_geometry(verts)
         if not tool.Blender.validate_shader_batch_data(verts, edges):
             verts, edges = [], []
-        self.custom_shape = shader_wrapper, shader_wrapper.batch(
-            pos=verts,
-            indices=edges,
+        self.custom_shape = (
+            shader_wrapper,
+            shader_wrapper.batch(
+                pos=verts,
+                indices=edges,
+            ),
         )
 
     def draw(self, ctx):

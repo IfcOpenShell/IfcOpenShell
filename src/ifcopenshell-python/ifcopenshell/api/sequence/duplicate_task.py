@@ -189,6 +189,6 @@ class Usecase:
                     "OwnerHistory": ifcopenshell.api.owner.create_owner_history(self.file),
                     "RelatedObjects": [related_object],
                     "RelatingObject": relating_object,
-                }
+                },
             )
         return referenced_by

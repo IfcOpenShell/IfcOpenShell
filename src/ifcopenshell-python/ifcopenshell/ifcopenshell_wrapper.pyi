@@ -761,7 +761,9 @@ class entity_instance(entity_instance_mixin):
     def get_argument(self, *args: int | str) -> Any: ...
     def get_argument_index(self, a: str) -> int: ...
     def attribute_name(self, i: int) -> str: ...
-    def attribute_type(self, *args: int | str) -> Literal[
+    def attribute_type(
+        self, *args: int | str
+    ) -> Literal[
         "NULL",
         "DERIVED",
         "INT",

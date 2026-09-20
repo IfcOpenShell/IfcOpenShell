@@ -74,4 +74,4 @@ if __name__ == "__main__":
     ):
         print(class_header)
         print(class_strings[class_header])
-    print(f"{len(filtered_classes)} classes printed ({len(class_strings)-len(filtered_classes)} skipped).")
+    print(f"{len(filtered_classes)} classes printed ({len(class_strings) - len(filtered_classes)} skipped).")

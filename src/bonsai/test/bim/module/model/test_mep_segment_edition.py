@@ -210,9 +210,9 @@ def test_gizmo_lifecycle_bindings_reference_registered_operators(gizmo_cls_name,
     # And the operators are actually registered.
     for op in (enable_op, finish_op, cancel_op):
         namespace, _, verb = op.partition(".")
-        assert hasattr(
-            getattr(bpy.ops, namespace), verb
-        ), f"{gizmo_cls_name} references {op!r} which is not a registered operator"
+        assert hasattr(getattr(bpy.ops, namespace), verb), (
+            f"{gizmo_cls_name} references {op!r} which is not a registered operator"
+        )
 
 
 @pytest.mark.parametrize("gizmo_cls_name", ["GizmoPipeSegmentEdition", "GizmoDuctSegmentEdition"])
@@ -275,9 +275,9 @@ def test_extend_operator_binding(gizmo_cls_name, extend_operator):
     cls = getattr(mep, gizmo_cls_name)
     assert cls._extend_operator == extend_operator
     namespace, _, verb = extend_operator.partition(".")
-    assert hasattr(
-        getattr(bpy.ops, namespace), verb
-    ), f"{gizmo_cls_name} references {extend_operator!r} which is not a registered operator"
+    assert hasattr(getattr(bpy.ops, namespace), verb), (
+        f"{gizmo_cls_name} references {extend_operator!r} which is not a registered operator"
+    )
 
 
 @pytest.mark.parametrize("feature_attr", ["pipe_segment", "duct_segment"])

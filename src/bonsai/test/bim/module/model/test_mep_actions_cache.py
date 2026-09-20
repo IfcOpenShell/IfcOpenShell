@@ -193,23 +193,19 @@ def test_generation_advance_invalidates_cache(_patched_visibility):
 
     gen_state = {"gen": 1}
 
-    with patch(
-        "bonsai.bim.module.model.mep.tool.Parametric.get_geom_generation", side_effect=lambda: gen_state["gen"]
-    ), patch("bonsai.bim.module.model.mep.tool.Blender.get_selected_objects", return_value=[active, other]), patch(
-        "bonsai.bim.module.model.mep.tool.Ifc.get_entity", return_value=element
-    ), patch(
-        "bonsai.bim.module.model.mep.tool.Model.get_flow_segment_axis",
-        return_value=(Vector((0, 0, 0)), Vector((1, 0, 0))),
-    ), patch(
-        "bonsai.bim.module.model.mep.port_connection_state", side_effect=counting_port_state
-    ), patch(
-        "bonsai.bim.module.model.mep.tool.System.find_bridging_fitting", side_effect=counting_find_fitting
-    ), patch(
-        "bonsai.bim.module.model.decorator.compute_mep_join_location", return_value=Vector((0, 0, 0))
-    ), patch(
-        "bonsai.bim.module.model.mep.gizmo.get_billboard_rotation", return_value=Mock()
-    ), patch(
-        "bonsai.bim.module.model.mep.gizmo.billboarded_at", return_value=Mock()
+    with (
+        patch("bonsai.bim.module.model.mep.tool.Parametric.get_geom_generation", side_effect=lambda: gen_state["gen"]),
+        patch("bonsai.bim.module.model.mep.tool.Blender.get_selected_objects", return_value=[active, other]),
+        patch("bonsai.bim.module.model.mep.tool.Ifc.get_entity", return_value=element),
+        patch(
+            "bonsai.bim.module.model.mep.tool.Model.get_flow_segment_axis",
+            return_value=(Vector((0, 0, 0)), Vector((1, 0, 0))),
+        ),
+        patch("bonsai.bim.module.model.mep.port_connection_state", side_effect=counting_port_state),
+        patch("bonsai.bim.module.model.mep.tool.System.find_bridging_fitting", side_effect=counting_find_fitting),
+        patch("bonsai.bim.module.model.decorator.compute_mep_join_location", return_value=Vector((0, 0, 0))),
+        patch("bonsai.bim.module.model.mep.gizmo.get_billboard_rotation", return_value=Mock()),
+        patch("bonsai.bim.module.model.mep.gizmo.billboarded_at", return_value=Mock()),
     ):
         inst.position_gizmos(context)
         first_port = port_call_count["n"]
@@ -242,21 +238,22 @@ def test_selection_change_invalidates_cache(_patched_visibility):
 
     selection_state = {"selected": [active, other_a]}
 
-    with patch("bonsai.bim.module.model.mep.tool.Parametric.get_geom_generation", return_value=1), patch(
-        "bonsai.bim.module.model.mep.tool.Blender.get_selected_objects", side_effect=lambda: selection_state["selected"]
-    ), patch("bonsai.bim.module.model.mep.tool.Ifc.get_entity", return_value=element), patch(
-        "bonsai.bim.module.model.mep.tool.Model.get_flow_segment_axis",
-        return_value=(Vector((0, 0, 0)), Vector((1, 0, 0))),
-    ), patch(
-        "bonsai.bim.module.model.mep.port_connection_state", return_value="FREE"
-    ), patch(
-        "bonsai.bim.module.model.mep.tool.System.find_bridging_fitting", side_effect=counting_find_fitting
-    ), patch(
-        "bonsai.bim.module.model.decorator.compute_mep_join_location", return_value=Vector((0, 0, 0))
-    ), patch(
-        "bonsai.bim.module.model.mep.gizmo.get_billboard_rotation", return_value=Mock()
-    ), patch(
-        "bonsai.bim.module.model.mep.gizmo.billboarded_at", return_value=Mock()
+    with (
+        patch("bonsai.bim.module.model.mep.tool.Parametric.get_geom_generation", return_value=1),
+        patch(
+            "bonsai.bim.module.model.mep.tool.Blender.get_selected_objects",
+            side_effect=lambda: selection_state["selected"],
+        ),
+        patch("bonsai.bim.module.model.mep.tool.Ifc.get_entity", return_value=element),
+        patch(
+            "bonsai.bim.module.model.mep.tool.Model.get_flow_segment_axis",
+            return_value=(Vector((0, 0, 0)), Vector((1, 0, 0))),
+        ),
+        patch("bonsai.bim.module.model.mep.port_connection_state", return_value="FREE"),
+        patch("bonsai.bim.module.model.mep.tool.System.find_bridging_fitting", side_effect=counting_find_fitting),
+        patch("bonsai.bim.module.model.decorator.compute_mep_join_location", return_value=Vector((0, 0, 0))),
+        patch("bonsai.bim.module.model.mep.gizmo.get_billboard_rotation", return_value=Mock()),
+        patch("bonsai.bim.module.model.mep.gizmo.billboarded_at", return_value=Mock()),
     ):
         inst.position_gizmos(context)
         first = fitting_call_count["n"]

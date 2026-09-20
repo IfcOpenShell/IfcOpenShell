@@ -287,7 +287,6 @@ element = AFFE_CARA_ELEM(
     COQUE = (""")
 
         for el in [el for el in elements if el["geometryType"] == "surface"]:
-
             template = """
         _F(
             GROUP_MA = '{groupName}',
@@ -310,7 +309,6 @@ element = AFFE_CARA_ELEM(
     ORIENTATION = (""")
 
         for el in [el for el in elements if el["geometryType"] == "line"]:
-
             template = """
         _F(
             GROUP_MA = '{groupName}',

@@ -14,7 +14,6 @@ options = {
 for ent in ("IfcPostalAddress", "IfcTelecomAddress"):
     for purpose in (None, "USERDEFINED", "HOME"):
         for ud in (None, "SomethingUserdefined"):
-
             f = ifcopenshell.file(schema="IFC2X3")
             f.create_entity(ent, purpose, None, ud, **options[ent][1])
 

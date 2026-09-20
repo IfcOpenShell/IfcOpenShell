@@ -933,9 +933,7 @@ def build_dependency(
         else:
             raise RuntimeError("fix source for new download type")
         # ty: false positive bug upstream.
-        download_tarfile = tarfile.open(
-            name=download_tarfile_path, mode=f"r:{compr}"
-        )  # ty:ignore[no-matching-overload]
+        download_tarfile = tarfile.open(name=download_tarfile_path, mode=f"r:{compr}")  # ty:ignore[no-matching-overload]
         # tarfile seriously doesn't have a function to retrieve the root directory more easily
         extract_dir_name = os.path.commonprefix([x for x in download_tarfile.getnames() if x != "."])
         # run([tar, "--exclude=\"*/*\"", "-tf", download_name], cwd=build_dir).strip() no longer works
@@ -1020,9 +1018,7 @@ def install_qt6() -> str:
         if preset_qt_config.exists():
             logger.info(f"Using pre-set QT_DIR={preset_qt_dir}, skipping aqt install")
             return preset_qt_dir
-        logger.warning(
-            f"QT_DIR={preset_qt_dir} is set but {preset_qt_config} not found; " f"falling through to aqtinstall"
-        )
+        logger.warning(f"QT_DIR={preset_qt_dir} is set but {preset_qt_config} not found; falling through to aqtinstall")
 
     host, qt_arch, install_suffix = get_qt6_aqt_config()
     Dependencies.register("qt6", f"{QT6_VERSION}-{install_suffix}", use_shared_suffix=False)

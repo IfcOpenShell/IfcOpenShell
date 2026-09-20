@@ -127,9 +127,9 @@ class TestBatchedRefreshUIDataCallCount(NewFile):
         obj, _ = _build_actuator()
         with patch("bonsai.bim.handler.refresh_ui_data") as refresh_mock:
             tool.Geometry.duplicate_ifc_object_n_times(obj, 8)
-        assert (
-            refresh_mock.call_count == 1
-        ), f"batched 8-way duplicate must call refresh_ui_data once, got {refresh_mock.call_count}"
+        assert refresh_mock.call_count == 1, (
+            f"batched 8-way duplicate must call refresh_ui_data once, got {refresh_mock.call_count}"
+        )
 
     def test_n_times_calls_reload_grid_decorator_once(self):
         obj, _ = _build_actuator()
@@ -159,9 +159,9 @@ class TestRegenerateArrayEndToEnd(NewFile):
         bpy.context.view_layer.objects.active = obj
         obj.select_set(True)
         tool.Model.regenerate_array(obj, parent_data)
-        assert (
-            obj in bpy.context.selected_objects
-        ), "regenerate_array must leave parent_obj selected on return (post-condition)"
+        assert obj in bpy.context.selected_objects, (
+            "regenerate_array must leave parent_obj selected on return (post-condition)"
+        )
 
     def test_regen_operator_leaves_only_parent_selected_and_active(self):
         """Post-condition parity between grow and shrink for the user-facing
@@ -185,9 +185,9 @@ class TestRegenerateArrayEndToEnd(NewFile):
         for child_guid in parent_data_after[0]["children"]:
             child_element = tool.Ifc.get().by_guid(child_guid)
             child_obj = tool.Ifc.get_object(child_element)
-            assert (
-                child_obj not in bpy.context.selected_objects
-            ), f"child {child_obj.name} must be deselected on regenerate_array return"
+            assert child_obj not in bpy.context.selected_objects, (
+                f"child {child_obj.name} must be deselected on regenerate_array return"
+            )
 
     def test_regen_operator_after_shrink_still_leaves_only_parent_selected(self):
         obj, element, parent_data = _build_actuator_with_array_pset(count=6)
@@ -221,9 +221,9 @@ class TestRegenerateArrayEndToEnd(NewFile):
             child_element = tool.Ifc.get().by_guid(child_guid)
             child_obj = tool.Ifc.get_object(child_element)
             expected_x = parent_x + 2.5 * i
-            assert child_obj.matrix_world.translation.x == pytest.approx(
-                expected_x
-            ), f"child {i}: expected x≈{expected_x}, got {child_obj.matrix_world.translation.x}"
+            assert child_obj.matrix_world.translation.x == pytest.approx(expected_x), (
+                f"child {i}: expected x≈{expected_x}, got {child_obj.matrix_world.translation.x}"
+            )
 
 
 class TestRegenerateArrayUIRefreshCoalesces(NewFile):
@@ -233,8 +233,7 @@ class TestRegenerateArrayUIRefreshCoalesces(NewFile):
         with patch("bonsai.bim.handler.refresh_ui_data") as refresh_mock:
             tool.Model.regenerate_array(obj, parent_data)
         assert refresh_mock.call_count == 1, (
-            "growing an array layer from 0 to 7 children must call refresh_ui_data once, "
-            f"got {refresh_mock.call_count}"
+            f"growing an array layer from 0 to 7 children must call refresh_ui_data once, got {refresh_mock.call_count}"
         )
 
     def test_n_children_grow_calls_reload_grid_decorator_once_per_layer(self):
@@ -263,21 +262,21 @@ class TestRecreateAggregateIteratesAllNew(NewFile):
 
         old_to_new = {old_assembly: new_assemblies, old_parent_aggregate: new_parent_aggregate}
 
-        with patch(
-            "ifcopenshell.util.element.get_aggregate",
-            side_effect=lambda e: old_parent_aggregate if e is old_assembly else None,
-        ), patch("bonsai.core.aggregate.assign_object") as assign_mock, patch(
-            "ifcopenshell.util.element.get_pset", return_value=None
-        ), patch.object(
-            tool.Ifc, "get_object", side_effect=lambda e: Mock(spec=bpy.types.Object)
-        ), patch.object(
-            tool.Blender, "select_and_activate_single_object"
+        with (
+            patch(
+                "ifcopenshell.util.element.get_aggregate",
+                side_effect=lambda e: old_parent_aggregate if e is old_assembly else None,
+            ),
+            patch("bonsai.core.aggregate.assign_object") as assign_mock,
+            patch("ifcopenshell.util.element.get_pset", return_value=None),
+            patch.object(tool.Ifc, "get_object", side_effect=lambda e: Mock(spec=bpy.types.Object)),
+            patch.object(tool.Blender, "select_and_activate_single_object"),
         ):
             tool.Root.recreate_aggregate(old_to_new)
 
-        assert (
-            assign_mock.call_count == 3
-        ), f"recreate_aggregate must assign each of N new entities (not just new[0]); got {assign_mock.call_count}"
+        assert assign_mock.call_count == 3, (
+            f"recreate_aggregate must assign each of N new entities (not just new[0]); got {assign_mock.call_count}"
+        )
 
     def test_iterates_unassign_object_per_new_entity_when_aggregate_missing(self):
         from unittest.mock import Mock
@@ -289,11 +288,13 @@ class TestRecreateAggregateIteratesAllNew(NewFile):
         new_assemblies = [Mock(), Mock(), Mock()]
         old_to_new = {old_assembly: new_assemblies}  # parent aggregate NOT in old_to_new
 
-        with patch(
-            "ifcopenshell.util.element.get_aggregate",
-            side_effect=lambda e: old_parent_aggregate if e is old_assembly else None,
-        ), patch("bonsai.core.aggregate.unassign_object") as unassign_mock, patch.object(
-            tool.Ifc, "get_object", side_effect=lambda e: Mock(spec=bpy.types.Object)
+        with (
+            patch(
+                "ifcopenshell.util.element.get_aggregate",
+                side_effect=lambda e: old_parent_aggregate if e is old_assembly else None,
+            ),
+            patch("bonsai.core.aggregate.unassign_object") as unassign_mock,
+            patch.object(tool.Ifc, "get_object", side_effect=lambda e: Mock(spec=bpy.types.Object)),
         ):
             tool.Root.recreate_aggregate(old_to_new)
 
@@ -337,9 +338,9 @@ class TestRecreateConnectionsZipsPairs(NewFile):
             tool.Duplicate.recreate_connections(relationship, old_to_new)
 
         connect_calls = [c for c in run_mock.call_args_list if c.args and c.args[0] == "geometry.connect_path"]
-        assert (
-            len(connect_calls) == 3
-        ), f"zip-pair must create 3 connect_path calls for 3-vs-3 batched duplicate; got {len(connect_calls)}"
+        assert len(connect_calls) == 3, (
+            f"zip-pair must create 3 connect_path calls for 3-vs-3 batched duplicate; got {len(connect_calls)}"
+        )
 
     def test_skips_when_other_side_not_duplicated(self):
         from unittest.mock import Mock
@@ -353,9 +354,9 @@ class TestRecreateConnectionsZipsPairs(NewFile):
             tool.Duplicate.recreate_connections(relationship, old_to_new)
 
         connect_calls = [c for c in run_mock.call_args_list if c.args and c.args[0] == "geometry.connect_path"]
-        assert (
-            connect_calls == []
-        ), "when only one side of a connection is in old_to_new, no connections should be recreated"
+        assert connect_calls == [], (
+            "when only one side of a connection is in old_to_new, no connections should be recreated"
+        )
 
     def test_single_pair_case_unchanged(self):
         """Pre-sweep behavior (1 source -> 1 new) must still work — zip with two 1-element lists."""
@@ -393,9 +394,10 @@ class TestRecalculateWallsWithNewConnections(NewFile):
         wall_obj = Mock(spec=bpy.types.Object)
         old_to_new = {Mock(): [wall_new]}
 
-        with patch.object(tool.Ifc, "get_object", return_value=wall_obj), patch.object(
-            tool.Model, "recalculate_walls"
-        ) as recalc_mock:
+        with (
+            patch.object(tool.Ifc, "get_object", return_value=wall_obj),
+            patch.object(tool.Model, "recalculate_walls") as recalc_mock,
+        ):
             tool.Geometry._recalculate_walls_with_new_connections(old_to_new)
 
         assert recalc_mock.call_count == 1
@@ -411,9 +413,10 @@ class TestRecalculateWallsWithNewConnections(NewFile):
 
         old_to_new = {Mock(): [wall_new]}
 
-        with patch.object(tool.Ifc, "get_object", return_value=Mock(spec=bpy.types.Object)), patch.object(
-            tool.Model, "recalculate_walls"
-        ) as recalc_mock:
+        with (
+            patch.object(tool.Ifc, "get_object", return_value=Mock(spec=bpy.types.Object)),
+            patch.object(tool.Model, "recalculate_walls") as recalc_mock,
+        ):
             tool.Geometry._recalculate_walls_with_new_connections(old_to_new)
 
         assert recalc_mock.call_count == 0, "walls with no new connections must not trigger a recalc pass"
@@ -427,9 +430,10 @@ class TestRecalculateWallsWithNewConnections(NewFile):
 
         old_to_new = {Mock(): [actuator_new]}
 
-        with patch.object(tool.Ifc, "get_object", return_value=Mock(spec=bpy.types.Object)), patch.object(
-            tool.Model, "recalculate_walls"
-        ) as recalc_mock:
+        with (
+            patch.object(tool.Ifc, "get_object", return_value=Mock(spec=bpy.types.Object)),
+            patch.object(tool.Model, "recalculate_walls") as recalc_mock,
+        ):
             tool.Geometry._recalculate_walls_with_new_connections(old_to_new)
 
         assert recalc_mock.call_count == 0
@@ -449,9 +453,10 @@ class TestRecalculateWallsWithNewConnections(NewFile):
         objs = {wall_a_new: Mock(spec=bpy.types.Object), wall_b_new: Mock(spec=bpy.types.Object)}
         old_to_new = {Mock(): [wall_a_new], Mock(): [wall_b_new]}
 
-        with patch.object(tool.Ifc, "get_object", side_effect=lambda e: objs.get(e)), patch.object(
-            tool.Model, "recalculate_walls"
-        ) as recalc_mock:
+        with (
+            patch.object(tool.Ifc, "get_object", side_effect=lambda e: objs.get(e)),
+            patch.object(tool.Model, "recalculate_walls") as recalc_mock,
+        ):
             tool.Geometry._recalculate_walls_with_new_connections(old_to_new)
 
         assert recalc_mock.call_count == 1
@@ -473,9 +478,11 @@ class TestMEPActionGuardsAgainstArrayChildren(NewFile):
         element = Mock()
         element.is_a = lambda c: c == "IfcFlowSegment"
 
-        with patch.object(tool.Ifc, "get_entity", return_value=element), patch.object(
-            tool.Array, "is_array_child", return_value=True
-        ), patch.object(tool.System, "has_parametric_body", return_value=True):
+        with (
+            patch.object(tool.Ifc, "get_entity", return_value=element),
+            patch.object(tool.Array, "is_array_child", return_value=True),
+            patch.object(tool.System, "has_parametric_body", return_value=True),
+        ):
             assert _active_is_flow_segment(obj) is False
 
     def test_active_is_flow_segment_true_for_non_array_parent(self):
@@ -487,9 +494,11 @@ class TestMEPActionGuardsAgainstArrayChildren(NewFile):
         element = Mock()
         element.is_a = lambda c: c == "IfcFlowSegment"
 
-        with patch.object(tool.Ifc, "get_entity", return_value=element), patch.object(
-            tool.Array, "is_array_child", return_value=False
-        ), patch.object(tool.System, "has_parametric_body", return_value=True):
+        with (
+            patch.object(tool.Ifc, "get_entity", return_value=element),
+            patch.object(tool.Array, "is_array_child", return_value=False),
+            patch.object(tool.System, "has_parametric_body", return_value=True),
+        ):
             assert _active_is_flow_segment(obj) is True
 
     def test_active_is_bend_fitting_returns_false_for_array_child(self):
@@ -500,9 +509,11 @@ class TestMEPActionGuardsAgainstArrayChildren(NewFile):
         obj = Mock(spec=bpy.types.Object)
         element = Mock()
 
-        with patch.object(tool.Ifc, "get_entity", return_value=element), patch(
-            "bonsai.bim.module.model.mep._is_bend_fitting", return_value=True
-        ), patch.object(tool.Array, "is_array_child", return_value=True):
+        with (
+            patch.object(tool.Ifc, "get_entity", return_value=element),
+            patch("bonsai.bim.module.model.mep._is_bend_fitting", return_value=True),
+            patch.object(tool.Array, "is_array_child", return_value=True),
+        ):
             assert _active_is_bend_fitting(obj) is False
 
     def test_n_mep_selected_returns_false_when_any_selected_is_array_child(self):
@@ -518,10 +529,11 @@ class TestMEPActionGuardsAgainstArrayChildren(NewFile):
         def is_array_child(el):
             return el is element_b
 
-        with patch.object(tool.Blender, "get_selected_objects", return_value=[obj_a, obj_b]), patch.object(
-            tool.Ifc, "get_entity", side_effect=lambda o: element_a if o is obj_a else element_b
-        ), patch.object(tool.System, "is_mep_element", return_value=True), patch.object(
-            tool.Array, "is_array_child", side_effect=is_array_child
+        with (
+            patch.object(tool.Blender, "get_selected_objects", return_value=[obj_a, obj_b]),
+            patch.object(tool.Ifc, "get_entity", side_effect=lambda o: element_a if o is obj_a else element_b),
+            patch.object(tool.System, "is_mep_element", return_value=True),
+            patch.object(tool.Array, "is_array_child", side_effect=is_array_child),
         ):
             assert _n_mep_selected(2) is False
 
@@ -600,9 +612,9 @@ class TestOrphanArrayChildPrune(NewFile):
 
         tool.Model.regenerate_array(obj, parent_data)
 
-        assert (
-            orphan_guid not in parent_data[0]["children"]
-        ), "orphan GUID must be pruned from array['children'] once its Blender object is dead"
+        assert orphan_guid not in parent_data[0]["children"], (
+            "orphan GUID must be pruned from array['children'] once its Blender object is dead"
+        )
         try:
             still_there = tool.Ifc.get().by_guid(orphan_guid)
         except RuntimeError:
@@ -667,15 +679,16 @@ class TestRecreatePortConnectionsZipsPairs(NewFile):
         }
 
         fake_ports = [Mock(), Mock()]
-        with patch.object(tool.System, "get_ports", return_value=fake_ports), patch.object(
-            tool.Ifc, "run", return_value=None
-        ) as run_mock:
+        with (
+            patch.object(tool.System, "get_ports", return_value=fake_ports),
+            patch.object(tool.Ifc, "run", return_value=None) as run_mock,
+        ):
             tool.Duplicate.recreate_port_connections(snapshot, old_to_new)
 
         connect_calls = [c for c in run_mock.call_args_list if c.args and c.args[0] == "system.connect_port"]
-        assert (
-            len(connect_calls) == 3
-        ), f"zip-pair must create 3 connect_port calls for 3-vs-3 batched MEP duplicate; got {len(connect_calls)}"
+        assert len(connect_calls) == 3, (
+            f"zip-pair must create 3 connect_port calls for 3-vs-3 batched MEP duplicate; got {len(connect_calls)}"
+        )
 
     def test_skips_when_other_side_not_duplicated(self):
         from unittest.mock import Mock
@@ -688,9 +701,10 @@ class TestRecreatePortConnectionsZipsPairs(NewFile):
         # Only relating side is in old_to_new.
         old_to_new = {relating_old: [Mock(), Mock(), Mock()]}
 
-        with patch.object(tool.System, "get_ports", return_value=[Mock()]), patch.object(
-            tool.Ifc, "run", return_value=None
-        ) as run_mock:
+        with (
+            patch.object(tool.System, "get_ports", return_value=[Mock()]),
+            patch.object(tool.Ifc, "run", return_value=None) as run_mock,
+        ):
             tool.Duplicate.recreate_port_connections(snapshot, old_to_new)
 
         connect_calls = [c for c in run_mock.call_args_list if c.args and c.args[0] == "system.connect_port"]
@@ -707,9 +721,10 @@ class TestRecreatePortConnectionsZipsPairs(NewFile):
 
         old_to_new = {relating_old: [Mock()], related_old: [Mock()]}
 
-        with patch.object(tool.System, "get_ports", return_value=[Mock()]), patch.object(
-            tool.Ifc, "run", return_value=None
-        ) as run_mock:
+        with (
+            patch.object(tool.System, "get_ports", return_value=[Mock()]),
+            patch.object(tool.Ifc, "run", return_value=None) as run_mock,
+        ):
             tool.Duplicate.recreate_port_connections(snapshot, old_to_new)
 
         connect_calls = [c for c in run_mock.call_args_list if c.args and c.args[0] == "system.connect_port"]

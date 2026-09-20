@@ -267,12 +267,13 @@ class TestBatchCoalescesUnderRealOps(NewFile):
             for _ in range(16):
                 tool.Geometry.recut_host(host_mock, rep_mock)
 
-        with patch(
-            "bonsai.core.geometry.switch_representation", side_effect=lambda *a, **kw: recut_calls.append(kw["obj"])
-        ), patch.object(tool.Ifc, "get_entity", side_effect=fake_get_entity), patch.object(
-            tool.Geometry, "get_active_representation", return_value=rep_mock
-        ), patch.object(
-            tool.Model, "mirror_parent_void_fillings_to_children", side_effect=stub_mirror
+        with (
+            patch(
+                "bonsai.core.geometry.switch_representation", side_effect=lambda *a, **kw: recut_calls.append(kw["obj"])
+            ),
+            patch.object(tool.Ifc, "get_entity", side_effect=fake_get_entity),
+            patch.object(tool.Geometry, "get_active_representation", return_value=rep_mock),
+            patch.object(tool.Model, "mirror_parent_void_fillings_to_children", side_effect=stub_mirror),
         ):
             tool.Model.regenerate_array(obj, parent_data)
 
@@ -284,5 +285,5 @@ class TestBatchCoalescesUnderRealOps(NewFile):
         # passes (0 calls), which proves the batch context wraps regenerate_array's
         # whole body, not just the per-child loop.
         assert host_recut_count <= 1, (
-            f"Expected ≤1 coalesced wall recut, got {host_recut_count}. " f"All recut targets: {recut_calls}"
+            f"Expected ≤1 coalesced wall recut, got {host_recut_count}. All recut targets: {recut_calls}"
         )

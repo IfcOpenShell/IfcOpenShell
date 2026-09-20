@@ -34,7 +34,6 @@ if TYPE_CHECKING:
 
 
 class Clash(bonsai.core.tool.Clash):
-
     @classmethod
     def get_clash_props(cls) -> BIMClashProperties:
         return bpy.context.scene.BIMClashProperties

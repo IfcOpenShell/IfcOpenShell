@@ -349,9 +349,9 @@ def the_object_name_has_number_vertices(name, number):
 
 def the_object_name_is_at_location(name, location):
     obj_location = the_object_name_exists(name).location
-    assert (
-        obj_location - Vector([float(co) for co in location.split(",")])
-    ).length < 0.1, f"Object is at {obj_location}"
+    assert (obj_location - Vector([float(co) for co in location.split(",")])).length < 0.1, (
+        f"Object is at {obj_location}"
+    )
 
 
 def the_variable_key_is_value(key, value):
