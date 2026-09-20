@@ -427,14 +427,79 @@ class Web(bonsai.core.tool.Web):
 
         `getTemplateValues` answers with what every sheet's view-titles and
         titleblock are filled with (`SheetBuilder.get_template_values`), from the
-        model in memory - so unsaved edits are included. SketchSpace uses it to
-        show sheets as a build would.
+        model in memory - so unsaved edits are included, and a tool can show
+        sheets as a build would.
+
+        `getEditableFields` and `setTemplateValue` are the other direction: a tool
+        showing those values lets them be edited, and the edit is applied here
+        rather than written into the IFC. Blender holds the model in memory, so a
+        write to the file would be invisible to it and lost on its next save -
+        and renaming a sheet or a drawing moves files and relinks layouts, which
+        only Bonsai does.
+
+        Both answer with `sheet_edit_result`, carrying the request's id. A failure
+        is reported rather than raised: the caller is a remote tool and has no
+        other way to learn why nothing happened.
 
         :param operator_data: A dictionary containing the operator data.
         """
-        if operator_data.get("type") == "getTemplateValues":
-            import bonsai.bim.module.drawing.sheeter as sheeter
+        import bonsai.bim.module.drawing.sheeter as sheeter
 
+        request_type = operator_data.get("type")
+
+        if request_type == "getTemplateValues":
+            values = sheeter.SheetBuilder().get_template_values()
+            values["requestId"] = operator_data.get("requestId")
+            cls.send_webui_data(
+                data=values,
+                data_key="template_values",
+                event="sheet_template_values",
+                use_web_data=False,
+            )
+            return
+
+        if request_type not in ("getEditableFields", "setTemplateValue"):
+            return
+
+        result = {"requestId": operator_data.get("requestId"), "ok": True}
+        try:
+            builder = sheeter.SheetBuilder()
+            if request_type == "getEditableFields":
+                result.update(
+                    builder.get_editable_fields(
+                        operator_data["layout"],
+                        operator_data.get("target") or {},
+                        operator_data.get("fields") or [],
+                    )
+                )
+            else:
+                result.update(
+                    builder.set_template_values(
+                        operator_data["layout"],
+                        operator_data.get("target") or {},
+                        operator_data.get("values") or {},
+                    )
+                )
+        except Exception as e:
+            import traceback
+
+            traceback.print_exc()
+            result = {"requestId": operator_data.get("requestId"), "ok": False, "error": str(e)}
+
+        cls.send_webui_data(
+            data=result,
+            data_key="edit_result",
+            event="sheet_edit_result",
+            use_web_data=False,
+        )
+
+        # An applied edit changes what every sheet shows - a renamed drawing
+        # appears on each sheet placing it - so the new values follow at once
+        # rather than at the caller's next poll. Blender is told to repaint for
+        # the same reason: this ran on a timer, not on an event, so its own
+        # panels would otherwise keep showing the names they last drew.
+        if request_type == "setTemplateValue" and result["ok"]:
+            tool.Blender.redraw_all_areas()
             values = sheeter.SheetBuilder().get_template_values()
             values["requestId"] = operator_data.get("requestId")
             cls.send_webui_data(

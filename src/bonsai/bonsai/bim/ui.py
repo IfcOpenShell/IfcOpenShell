@@ -591,7 +591,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         description=(
             "Stay connected to Bonsai's web server in the background whenever Blender runs - "
             "starting it if needed, without opening a browser, and reconnecting if it goes away. "
-            "For tools that read from Bonsai live, such as SketchSpace"
+            "For tools that read from Bonsai live"
         ),
         default=False,
         update=update_keep_web_connection,
