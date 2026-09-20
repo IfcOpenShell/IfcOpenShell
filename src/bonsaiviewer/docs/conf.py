@@ -43,8 +43,8 @@ html_css_files = ["custom.css"]
 pygments_style = "one-dark"
 pygments_dark_style = "one-dark"
 
-html_favicon = "https://ifcopenshell.org/assets/images/logo.png"
-html_logo = "https://ifcopenshell.org/assets/images/logo.png"
+html_favicon = "_static/bonsaiviewer.svg"
+html_logo = "_static/bonsaiviewer.svg"
 html_theme_options = {
     "source_repository": "https://github.com/IfcOpenShell/IfcOpenShell/",
     "source_branch": "v0.9.0",
