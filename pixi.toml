@@ -1,6 +1,6 @@
 [project]
 name = "IfcOpenShell"
-version = "0.8.4"
+version = "0.9.0"
 description = "IfcOpenShell is a library to support the IFC file format"
 channels = ["conda-forge"]
 platforms = ["win-64", "linux-64", "osx-64"]
