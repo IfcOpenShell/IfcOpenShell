@@ -61,6 +61,7 @@ BINARY_VERSION:=0.9.0alpha0
 BUILD_COMMIT:=8003d43
 IOS_URL:=https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v$(BINARY_VERSION)-$(BUILD_COMMIT)-$(PLATFORM).zip
 IFCCONVERT_URL:=https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v$(BINARY_VERSION)-$(BUILD_COMMIT)-$(PLATFORM).zip
+BONSAIVIEWER_URL:=https://s3.amazonaws.com/ifcopenshell-builds/BonsaiViewer-v$(BINARY_VERSION)-$(BUILD_COMMIT)-$(PLATFORM).zip
 
 .PHONY: build-urls
 build-urls:
@@ -102,6 +103,15 @@ endif
 	mkdir -p dist
 	cd dist && wget $(IFCCONVERT_URL)
 	cd dist && mv *.zip ifcconvert-$(VERSION)-$(PLATFORM).zip
+
+.PHONY: zip-bonsaiviewer
+zip-bonsaiviewer:
+ifndef PLATFORM
+	$(error PLATFORM is not set)
+endif
+	mkdir -p dist
+	cd dist && wget $(BONSAIVIEWER_URL)
+	cd dist && mv *.zip bonsaiviewer-$(VERSION)-$(PLATFORM).zip
 
 .PHONY: zip
 zip:
