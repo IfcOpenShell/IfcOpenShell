@@ -16,8 +16,8 @@ Source installation
 -------------------
 
 1. :doc:`Install IfcOpenShell <ifcopenshell-python/installation>`
-2. Optionally `install bcf <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/bcf>`_ (needed for BCF reports of results)
-3. `Clone the source code <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/ifcclash>`_.
+2. Optionally `install bcf <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.9.0/src/bcf>`_ (needed for BCF reports of results)
+3. `Clone the source code <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.9.0/src/ifcclash>`_.
 4. ``cd /path/to/IfcOpenShell/src/ifcclash``
 
 Here is a minimal example of how to use IfcClash as a Python module or CLI

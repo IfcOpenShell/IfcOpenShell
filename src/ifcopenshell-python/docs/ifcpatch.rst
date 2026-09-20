@@ -18,7 +18,7 @@ Source installation
 -------------------
 
 1. :doc:`Install IfcOpenShell <ifcopenshell-python/installation>`
-2. `Clone the source code <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/ifcpatch>`_.
+2. `Clone the source code <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.9.0/src/ifcpatch>`_.
 3. ``cd /path/to/src/ifcpatch``
 
 Here is a minimal example of how to use IfcPatch as a Python module or CLI

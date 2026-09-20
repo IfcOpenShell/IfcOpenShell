@@ -33,7 +33,7 @@ Syntax
 
 All documentation is written in ReStructured Text and is available in the
 `Bonsai docs directory
-<https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/bonsai/docs>`_.
+<https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.9.0/src/bonsai/docs>`_.
 You can press the edit button on the top right on any documentation page to
 quickly edit their content.
 
