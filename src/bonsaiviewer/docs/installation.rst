@@ -4,42 +4,35 @@ Installation
 Bonsai Viewer is a standalone desktop application. It does not require
 Blender, Bonsai, or Python to be installed.
 
-1. **Stable** is recommended for most users.
-2. **Unstable** is recommended for users wanting the latest features and
-   fixes, at the cost of occasional breakage.
-3. **Compiling from source** is for developers, see
-   :doc:`developer_installation`.
+1. **Download Bonsai Viewer** |release| for your operating system.
 
-Stable
-------
+.. container:: download-buttons
 
-1. Download the release for your operating system.
+   .. container:: blockbutton windows
 
-   +------------------------------+-------------------------------+-------------------------------+
-   | Windows                      | Linux                         | MacOS                         |
-   +==============================+===============================+===============================+
-   | :bonsaiviewer_url:`win64`    | :bonsaiviewer_url:`linux64`   | :bonsaiviewer_url:`macosm164` |
-   +------------------------------+-------------------------------+-------------------------------+
-   | :bonsaiviewer_url:`win-arm64`| :bonsaiviewer_url:`linuxarm64`|                               |
-   +------------------------------+-------------------------------+-------------------------------+
+      :bonsaiviewer_url:`Windows <win64>`
 
-   Only Apple Silicon Macs are supported.
+   .. container:: blockbutton macos
 
-2. Unzip the downloaded file anywhere.
+      :bonsaiviewer_url:`macOS <macosm164>`
+
+   .. container:: blockbutton linux
+
+      :bonsaiviewer_url:`Linux <linux64>`
+
+.. tip::
+
+   On an ARM device? Download :bonsaiviewer_url:`Windows ARM64 <win-arm64>` or
+   :bonsaiviewer_url:`Linux ARM64 <linuxarm64>` instead.
+
+2. Unzip the downloaded file anywhere you like.
+
 3. Run ``BonsaiViewer`` (``BonsaiViewer.exe`` on Windows, ``BonsaiViewer.app``
-   on MacOS).
+   on macOS). You're done!
 
-All releases are listed on the `GitHub releases page
-<https://github.com/IfcOpenShell/IfcOpenShell/releases?q=bonsaiviewer&expanded=true>`__.
+.. seealso::
 
-Unstable
---------
-
-Every build of IfcOpenShell also builds Bonsai Viewer. Open the `IfcOpenShell
-Build Service <https://builds.ifcopenshell.org>`__, find the ``BonsaiViewer``
-row of the most recent build, and download the zip for your platform. Install
-it the same way as a stable release.
-
-The builds are made on demand rather than on a schedule, so the newest build
-may be a few days old. Not every build covers every platform, so you may need
-to look at an older build for yours.
+   All releases, including previous versions, are on the `GitHub releases page
+   <https://github.com/IfcOpenShell/IfcOpenShell/releases?q=bonsaiviewer&expanded=true>`__.
+   Want the latest changes before they are released, or to compile Bonsai Viewer
+   yourself? See :doc:`developer_installation`.
