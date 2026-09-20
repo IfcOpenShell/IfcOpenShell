@@ -37,6 +37,32 @@ PyPI
 
     pip install bsdd
 
+Source installation
+-------------------
+
+.. code-block::
+
+    pip install git+https://git@github.com/ifcopenshell/ifcopenshell.git@v0.9.0#subdirectory=src/bsdd
+
+Check your installation:
+
+.. code-block:: pycon
+
+    >>> from bsdd import Client
+    >>> client = Client()
+    >>> [l["uri"] for l in client.get_dictionary()["dictionaries"] if "4.3" in l["uri"]][0]
+    'https://identifier.buildingsmart.org/uri/buildingsmart/ifc/4.3'
+
+Development
+-----------
+
+.. code-block:: bash
+
+    git clone git@github.com:<your-name>/IfcOpenShell.git
+    cd IfcOpenShell/src/bsdd
+    pip install -e . pytest
+    pytest
+
 Examples
 --------
 
