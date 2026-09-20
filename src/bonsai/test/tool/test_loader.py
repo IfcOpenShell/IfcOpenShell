@@ -398,9 +398,9 @@ class TestCreatingStyles(NewFile):
         assert image_node.outputs["Color"].links[0].to_socket.name == "Base Color"
         assert image_node.inputs["Vector"].links[0].from_socket.name == "Generated"
         assert image_node.image.filepath == ""
-        assert np.allclose(
-            image_node.image.pixels[:], expected_pixel_data, atol=0.01
-        ), f"Failed to match pixels for {n_components}.\nBlender pixel_data: {image_node.image.pixels[:]}.\nExpected data: {expected_pixel_data}"
+        assert np.allclose(image_node.image.pixels[:], expected_pixel_data, atol=0.01), (
+            f"Failed to match pixels for {n_components}.\nBlender pixel_data: {image_node.image.pixels[:]}.\nExpected data: {expected_pixel_data}"
+        )
 
 
 class TestLoadingIndexedMap(NewFile):

@@ -54,7 +54,9 @@ class Pset(bonsai.core.tool.Pset):
         return bpy.context.scene.GlobalPsetProperties
 
     @classmethod
-    def get_bulk_operation_collection(cls, operation_type: BulkOperationType) -> Union[
+    def get_bulk_operation_collection(
+        cls, operation_type: BulkOperationType
+    ) -> Union[
         bpy.types.bpy_prop_collection_idprop[AddEditPropertyEntry],
         bpy.types.bpy_prop_collection_idprop[RenamePropertyEntry],
         bpy.types.bpy_prop_collection_idprop[DeletePsetEntry],

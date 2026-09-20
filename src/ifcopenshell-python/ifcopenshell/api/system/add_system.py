@@ -54,5 +54,5 @@ def add_system(file: ifcopenshell.file, ifc_class: str = "IfcDistributionSystem"
             "GlobalId": ifcopenshell.guid.new(),
             "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
             "Name": "Unnamed",
-        }
+        },
     )

@@ -138,7 +138,7 @@ class TestComputePlanes(NewFile):
         margin_scaled = half_scaled - 100.0
 
         assert margin_scaled > margin_unit * 10, (
-            f"margin must scale with extent: unit={margin_unit:g}, " f"scale-100={margin_scaled:g}"
+            f"margin must scale with extent: unit={margin_unit:g}, scale-100={margin_scaled:g}"
         )
 
 

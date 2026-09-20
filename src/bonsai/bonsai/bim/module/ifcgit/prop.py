@@ -90,7 +90,6 @@ class IfcGitListItem(PropertyGroup):
 
 
 class IfcGitProperties(PropertyGroup):
-
     ifcgit_commits: CollectionProperty(type=IfcGitListItem, name="List of git items")
     commit_index: IntProperty(name="Index for my_list", default=0)
     commit_message: StringProperty(

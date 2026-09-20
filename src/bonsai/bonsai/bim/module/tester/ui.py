@@ -114,7 +114,7 @@ class BIM_PT_tester(Panel):
         assert self.layout
         row = self.layout.row()
         row.label(
-            text=f'Passed: {specification["total_checks_pass"]}/{specification["total_checks"]} ({specification["percent_checks_pass"]}%)'
+            text=f"Passed: {specification['total_checks_pass']}/{specification['total_checks']} ({specification['percent_checks_pass']}%)"
         )
         row = self.layout.row()
         if specification.get("instructions"):
@@ -145,7 +145,6 @@ class BIM_PT_tester(Panel):
             and props.n_entities > 0
             and len(props.failed_entities) > 0
         ):
-
             requirement = specification["requirements"][props.active_requirement_index]
             metadata = requirement.get("metadata")
             if metadata and metadata.get("@instructions"):

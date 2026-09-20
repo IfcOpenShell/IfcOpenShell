@@ -1287,7 +1287,9 @@ class Geometry(bonsai.core.tool.Geometry):
         return representation.ContextOfItems.ContextIdentifier == "Box"
 
     @classmethod
-    def is_data_supported_for_adding_representation(cls, data: Union[bpy.types.ID, None]) -> TypeIs[
+    def is_data_supported_for_adding_representation(
+        cls, data: Union[bpy.types.ID, None]
+    ) -> TypeIs[
         Union[
             bpy.types.Mesh,
             bpy.types.Curve,

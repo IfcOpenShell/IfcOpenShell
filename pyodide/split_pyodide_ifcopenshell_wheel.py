@@ -178,9 +178,10 @@ def build_wheel(
 
 
 def rewrite_main_wheel(source: Path, target: Path, split_paths: set[str]) -> None:
-    with zipfile.ZipFile(source) as zin, zipfile.ZipFile(
-        target, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9
-    ) as zout:
+    with (
+        zipfile.ZipFile(source) as zin,
+        zipfile.ZipFile(target, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zout,
+    ):
         _, _, record_name = read_original_metadata(zin)
         entries: dict[str, bytes | None] = {}
         for info in zin.infolist():

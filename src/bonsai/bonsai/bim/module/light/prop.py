@@ -224,7 +224,6 @@ class RadianceMaterial(PropertyGroup):
 
 
 class RadianceExporterProperties(PropertyGroup):
-
     def update_output_dir(self, context) -> None:
         if self.output_dir:
             self.output_dir = bpy.path.abspath(self.output_dir)

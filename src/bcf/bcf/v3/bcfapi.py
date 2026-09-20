@@ -171,7 +171,7 @@ class BcfClient:
                 return response.json()
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            print(f"message: {response.reason}'   '{response.status_code}'   '{ e }")
+            print(f"message: {response.reason}'   '{response.status_code}'   '{e}")
 
     def post(self, endpoint: str, data: Any = None, params: Any = None) -> tuple[int, str]:
         headers = {

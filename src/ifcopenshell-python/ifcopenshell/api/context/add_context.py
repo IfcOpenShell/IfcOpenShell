@@ -223,7 +223,7 @@ class Usecase:
                 "ParentContext": self.settings["parent"],
                 "TargetView": self.settings["target_view"],
                 "TargetScale": self.settings["target_scale"],
-            }
+            },
         )
 
     def create_3d_origin(self):

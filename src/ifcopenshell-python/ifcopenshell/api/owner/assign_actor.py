@@ -94,6 +94,6 @@ def assign_actor(
                 "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
                 "RelatedObjects": [related_object],
                 "RelatingActor": relating_actor,
-            }
+            },
         )
     return rel

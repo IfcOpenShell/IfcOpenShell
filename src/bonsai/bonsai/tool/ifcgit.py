@@ -233,7 +233,6 @@ class IfcGit(bonsai.core.tool.IfcGit):
             return len(commit.parents) > 1 and any(p in commits_relevant for p in commit.parents)
 
         for commit in commits:
-
             if props.ifcgit_filter == "tagged" and commit.hexsha not in lookup:
                 continue
             elif props.ifcgit_filter == "relevant" and not is_relevant(commit):

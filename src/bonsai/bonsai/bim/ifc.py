@@ -522,9 +522,9 @@ class IfcStore:
         if is_top_level_operator:
             IfcStore.begin_transaction(operator)
             if ifc_file := tool.Ifc.get():
-                assert (
-                    ifc_file.transaction is None
-                ), "Trying to override existing transaction, possible IFC undo data loss."
+                assert ifc_file.transaction is None, (
+                    "Trying to override existing transaction, possible IFC undo data loss."
+                )
                 ifc_file.begin_transaction()
             if BrickStore.graph is not None:  # `if BrickStore.graph` by itself takes ages.
                 BrickStore.begin_transaction()

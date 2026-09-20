@@ -737,7 +737,7 @@ class GizmoRoofEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             apply_value=lambda p, rise: setattr(
                 p, "angle", min(_ROOF_MAX_SLOPE_ANGLE, max(0.0, atan2(rise, _ROOF_SLOPE_REFERENCE_RUN)))
             ),
-            text_formatter=lambda p, rise: (f"{tool.Unit.format_distance(rise)} ({degrees(p.angle):.1f}°)"),
+            text_formatter=lambda p, rise: f"{tool.Unit.format_distance(rise)} ({degrees(p.angle):.1f}°)",
         ),
         DimensionGizmoConfig(
             attr_name="roof_thickness",

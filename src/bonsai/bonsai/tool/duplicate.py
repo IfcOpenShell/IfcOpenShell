@@ -68,7 +68,6 @@ class PortConnectionSnapshot:
 
 
 class Duplicate(bonsai.core.tool.Duplicate):
-
     _pending_warnings: list[str] = []
 
     @classmethod

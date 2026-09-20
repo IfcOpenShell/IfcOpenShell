@@ -486,9 +486,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     should_use_snap: BoolProperty(
         name="Enable Snapping on Startup",
         default=True,
-        description=(
-            "If enabled, snapping will be enabled on new sessions.\n" "It is recommended to keep this `Enabled`"
-        ),
+        description=("If enabled, snapping will be enabled on new sessions.\nIt is recommended to keep this `Enabled`"),
     )
     should_play_chaching_sound: BoolProperty(name="Play A Cha-Ching Sound When Project Costs Updates", default=False)
     tmp_dir: StringProperty(
@@ -1214,9 +1212,9 @@ class BIM_PT_tab_grouping_and_filtering(Panel):
         # Draws help button on the right
         row = self.layout.row(align=True)
         row.label(text="")  # empty text occupies the left of the row
-        row.operator("bim.open_uri", text="", icon="HELP").uri = (
-            "https://docs.ifcopenshell.org/ifcopenshell-python/selector_syntax.html"
-        )
+        row.operator(
+            "bim.open_uri", text="", icon="HELP"
+        ).uri = "https://docs.ifcopenshell.org/ifcopenshell-python/selector_syntax.html"
 
 
 class BIM_PT_tab_geometry(Panel):

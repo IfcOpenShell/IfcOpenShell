@@ -27,9 +27,9 @@ fn = os.path.join(os.path.dirname(__file__), "fixtures/ColumnPSetsOfSets.ifc")
 class TestGeomSettings:
     def test_settings(self):
         settings = ifcopenshell.geom.settings()
-        assert set(get_args(ifcopenshell.geom.SETTING)) == set(
-            settings.setting_names()
-        ), "Also need to update IfcPython.i, if new settings were added/removed."
+        assert set(get_args(ifcopenshell.geom.SETTING)) == set(settings.setting_names()), (
+            "Also need to update IfcPython.i, if new settings were added/removed."
+        )
 
         assert "use-python-opencascade" in settings.setting_names()
         assert settings.get(settings.USE_PYTHON_OPENCASCADE) is False

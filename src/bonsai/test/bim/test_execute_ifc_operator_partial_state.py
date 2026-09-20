@@ -78,16 +78,14 @@ def neutralised_framework():
     """Patch the side-effect-heavy helpers in ``IfcStore.execute_ifc_operator``
     so a bare unit test can drive it without a populated Scene / props /
     decorator handlers."""
-    with mock.patch("bonsai.bim.ifc.tool.Blender.get_bim_props") as get_props, mock.patch(
-        "bonsai.bim.handler.refresh_ui_data"
-    ), mock.patch("bonsai.bim.ifc.tool.Parametric.refresh_post_commit"), mock.patch(
-        "bonsai.bim.ifc.IfcStore.add_transaction_operation"
-    ), mock.patch(
-        "bonsai.bim.ifc.IfcStore.begin_transaction"
-    ), mock.patch(
-        "bonsai.bim.ifc.IfcStore.end_transaction"
-    ), mock.patch(
-        "bonsai.bim.ifc.IfcStore.get_ifc_file_undo_callback", return_value=lambda data: True
+    with (
+        mock.patch("bonsai.bim.ifc.tool.Blender.get_bim_props") as get_props,
+        mock.patch("bonsai.bim.handler.refresh_ui_data"),
+        mock.patch("bonsai.bim.ifc.tool.Parametric.refresh_post_commit"),
+        mock.patch("bonsai.bim.ifc.IfcStore.add_transaction_operation"),
+        mock.patch("bonsai.bim.ifc.IfcStore.begin_transaction"),
+        mock.patch("bonsai.bim.ifc.IfcStore.end_transaction"),
+        mock.patch("bonsai.bim.ifc.IfcStore.get_ifc_file_undo_callback", return_value=lambda data: True),
     ):
         get_props.return_value = mock.Mock(is_dirty=False)
         yield
@@ -189,9 +187,9 @@ def test_mutation_then_raise_emits_warning(fresh_ifc, neutralised_framework):
         for call in op.report.call_args_list
         if call.args and call.args[0] == {"WARNING"} and "Ctrl+Z" in call.args[1]
     ]
-    assert (
-        len(warning_calls) == 1
-    ), f"expected exactly one partial-state WARNING with Ctrl+Z guidance, got: {op.report.call_args_list}"
+    assert len(warning_calls) == 1, (
+        f"expected exactly one partial-state WARNING with Ctrl+Z guidance, got: {op.report.call_args_list}"
+    )
 
 
 def test_mutation_then_raise_pushes_blender_undo_step(fresh_ifc, neutralised_framework):

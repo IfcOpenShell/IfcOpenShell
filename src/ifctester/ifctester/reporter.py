@@ -872,7 +872,7 @@ class Bcf(Json):
                         if title_component:
                             title_components.append(title_component)
                     title = " - ".join(title_components)
-                    description = f'{specification["name"]} - {requirement["description"]}'
+                    description = f"{specification['name']} - {requirement['description']}"
                     topic = bcfxml.add_topic(title, description, "IfcTester")
                     if getattr(element, "ObjectPlacement", None):
                         placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)

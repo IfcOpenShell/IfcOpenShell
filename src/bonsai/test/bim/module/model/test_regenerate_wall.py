@@ -38,11 +38,12 @@ def test_regenerate_wall_rebuilds_body_and_reclips_when_connected():
     element = Mock()
     obj = Mock()
 
-    with patch("bonsai.tool.model.tool.Ifc.get_entity", return_value=element), patch.object(
-        tool.Model, "recreate_wall"
-    ) as recreate, patch.object(tool.Model, "has_underside_connection", return_value=True), patch(
-        "bonsai.tool.model.bonsai.core.model.regenerate_wall_to_underside"
-    ) as regen:
+    with (
+        patch("bonsai.tool.model.tool.Ifc.get_entity", return_value=element),
+        patch.object(tool.Model, "recreate_wall") as recreate,
+        patch.object(tool.Model, "has_underside_connection", return_value=True),
+        patch("bonsai.tool.model.bonsai.core.model.regenerate_wall_to_underside") as regen,
+    ):
         tool.Model.regenerate_wall(obj)
 
     recreate.assert_called_once_with(element, obj)
@@ -56,11 +57,12 @@ def test_regenerate_wall_skips_reclip_when_no_top_rel():
     element = Mock()
     obj = Mock()
 
-    with patch("bonsai.tool.model.tool.Ifc.get_entity", return_value=element), patch.object(
-        tool.Model, "recreate_wall"
-    ) as recreate, patch.object(tool.Model, "has_underside_connection", return_value=False), patch(
-        "bonsai.tool.model.bonsai.core.model.regenerate_wall_to_underside"
-    ) as regen:
+    with (
+        patch("bonsai.tool.model.tool.Ifc.get_entity", return_value=element),
+        patch.object(tool.Model, "recreate_wall") as recreate,
+        patch.object(tool.Model, "has_underside_connection", return_value=False),
+        patch("bonsai.tool.model.bonsai.core.model.regenerate_wall_to_underside") as regen,
+    ):
         tool.Model.regenerate_wall(obj)
 
     recreate.assert_called_once_with(element, obj)
@@ -73,11 +75,12 @@ def test_regenerate_wall_noops_when_obj_has_no_ifc_entity():
     the helper must return without touching the body or any rels."""
     obj = Mock()
 
-    with patch("bonsai.tool.model.tool.Ifc.get_entity", return_value=None), patch.object(
-        tool.Model, "recreate_wall"
-    ) as recreate, patch.object(tool.Model, "has_underside_connection") as has_top, patch(
-        "bonsai.tool.model.bonsai.core.model.regenerate_wall_to_underside"
-    ) as regen:
+    with (
+        patch("bonsai.tool.model.tool.Ifc.get_entity", return_value=None),
+        patch.object(tool.Model, "recreate_wall") as recreate,
+        patch.object(tool.Model, "has_underside_connection") as has_top,
+        patch("bonsai.tool.model.bonsai.core.model.regenerate_wall_to_underside") as regen,
+    ):
         tool.Model.regenerate_wall(obj)
 
     recreate.assert_not_called()
@@ -94,13 +97,13 @@ def test_recreate_wall_noops_when_wall_has_no_layer_set():
     element = Mock()
     obj = Mock()
 
-    with patch("bonsai.tool.model.tool.Parametric.is_fillet_corner_wall", return_value=False), patch(
-        "bonsai.tool.model.tool.Ifc.get", return_value=Mock()
-    ), patch("bonsai.tool.model.ifcopenshell.api.geometry.regenerate_wall_representation", return_value=None), patch(
-        "bonsai.tool.model.bonsai.core.geometry.switch_representation"
-    ) as switch, patch.object(
-        tool.Geometry, "record_object_materials"
-    ) as record:
+    with (
+        patch("bonsai.tool.model.tool.Parametric.is_fillet_corner_wall", return_value=False),
+        patch("bonsai.tool.model.tool.Ifc.get", return_value=Mock()),
+        patch("bonsai.tool.model.ifcopenshell.api.geometry.regenerate_wall_representation", return_value=None),
+        patch("bonsai.tool.model.bonsai.core.geometry.switch_representation") as switch,
+        patch.object(tool.Geometry, "record_object_materials") as record,
+    ):
         tool.Model.recreate_wall(element, obj)
 
     switch.assert_not_called()

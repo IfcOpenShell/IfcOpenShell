@@ -113,10 +113,10 @@ def main() -> None:
     assert REPO_PATH.exists(), f"Path '{REPO_PATH=!s}' doesn't exist, ensure variable is set correctly."
     assert BLENDER_PATH.exists(), f"Path '{BLENDER_PATH=!s}' doesn't exist, ensure variable is set correctly."
     assert PACKAGE_PATH.exists(), f"Path '{PACKAGE_PATH=!s}' doesn't exist, ensure variable is set correctly."
-    assert (
-        BONSAI_PATH is not None
-    ), "Couldn't find BONSAI_PATH in any of the paths candidates. Example paths: {}".format(
-        "\n".join(str(p) for p in BONSAI_PATH_CANDIDATES)
+    assert BONSAI_PATH is not None, (
+        "Couldn't find BONSAI_PATH in any of the paths candidates. Example paths: {}".format(
+            "\n".join(str(p) for p in BONSAI_PATH_CANDIDATES)
+        )
     )
 
     input("Confirm the settings above and press Enter to continue or Ctrl-C to cancel...")

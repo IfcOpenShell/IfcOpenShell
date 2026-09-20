@@ -82,9 +82,9 @@ def test_action_configs_icons_are_view3d_gt_types():
 
     for config in GizmoMEPActions.action_configs:
         assert config.icon, f"action_config {config.name!r} has empty icon bl_idname"
-        assert config.icon.startswith(
-            "VIEW3D_GT_"
-        ), f"action_config {config.name!r} icon {config.icon!r} is not a VIEW3D_GT_* gizmo type"
+        assert config.icon.startswith("VIEW3D_GT_"), (
+            f"action_config {config.name!r} icon {config.icon!r} is not a VIEW3D_GT_* gizmo type"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -126,8 +126,9 @@ def test_lock_open_icons_pass_position_and_mode_to_obstruction():
     from bonsai.bim.module.model.mep import GizmoMEPActions
 
     inst = _build_group_with_mock_gizmos()
-    with patch("bonsai.bim.module.model.mep.gizmo.get_warning_color_from_prefs", return_value=(1, 0, 0)), patch(
-        "bonsai.bim.module.model.mep.tool.Blender.get_addon_preferences", return_value=MagicMock()
+    with (
+        patch("bonsai.bim.module.model.mep.gizmo.get_warning_color_from_prefs", return_value=(1, 0, 0)),
+        patch("bonsai.bim.module.model.mep.tool.Blender.get_addon_preferences", return_value=MagicMock()),
     ):
         GizmoMEPActions._wire_anchored_icon_targets(inst)
 
@@ -145,8 +146,9 @@ def test_lock_closed_icons_pass_position_to_remove_terminal_fitting():
     from bonsai.bim.module.model.mep import GizmoMEPActions
 
     inst = _build_group_with_mock_gizmos()
-    with patch("bonsai.bim.module.model.mep.gizmo.get_warning_color_from_prefs", return_value=(1, 0, 0)), patch(
-        "bonsai.bim.module.model.mep.tool.Blender.get_addon_preferences", return_value=MagicMock()
+    with (
+        patch("bonsai.bim.module.model.mep.gizmo.get_warning_color_from_prefs", return_value=(1, 0, 0)),
+        patch("bonsai.bim.module.model.mep.tool.Blender.get_addon_preferences", return_value=MagicMock()),
     ):
         GizmoMEPActions._wire_anchored_icon_targets(inst)
 
@@ -227,8 +229,9 @@ def test_bind_unjoin_at_port_resolves_fitting_and_writes_guids():
     fitting.is_a = lambda c: c == "IfcFlowFitting"
     fitting.PredefinedType = "BEND"
 
-    with patch("bonsai.bim.module.model.mep.tool.Ifc.get_entity", return_value=segment), patch(
-        "bonsai.bim.module.model.mep.get_connected_element_at_segment_port", return_value=fitting
+    with (
+        patch("bonsai.bim.module.model.mep.tool.Ifc.get_entity", return_value=segment),
+        patch("bonsai.bim.module.model.mep.get_connected_element_at_segment_port", return_value=fitting),
     ):
         ok = GizmoMEPActions._bind_unjoin_at_port(inst, "unjoin_end", segment_obj, False)
 
@@ -252,8 +255,9 @@ def test_bind_unjoin_at_port_refuses_obstruction_partner():
     obstruction.is_a = lambda c: c == "IfcFlowFitting"
     obstruction.PredefinedType = "OBSTRUCTION"
 
-    with patch("bonsai.bim.module.model.mep.tool.Ifc.get_entity", return_value=segment), patch(
-        "bonsai.bim.module.model.mep.get_connected_element_at_segment_port", return_value=obstruction
+    with (
+        patch("bonsai.bim.module.model.mep.tool.Ifc.get_entity", return_value=segment),
+        patch("bonsai.bim.module.model.mep.get_connected_element_at_segment_port", return_value=obstruction),
     ):
         assert GizmoMEPActions._bind_unjoin_at_port(inst, "unjoin_end", Mock(), False) is False
 
@@ -278,11 +282,14 @@ def test_active_is_bend_fitting_accepts_tessellated_bend_with_bbim_pset():
     bend_type = Mock()
     bend_type.PredefinedType = "BEND"
 
-    with patch("bonsai.bim.module.model.mep.tool.Ifc.get_entity", return_value=bend_elem), patch(
-        "bonsai.bim.module.model.mep._is_bend_fitting", return_value=True
-    ), patch("bonsai.bim.module.model.mep.ifcopenshell.util.element.get_type", return_value=bend_type), patch(
-        "bonsai.bim.module.model.mep.ifcopenshell.util.element.get_pset",
-        return_value={"radius": 0.2, "start_length": 0.1, "end_length": 0.1},
+    with (
+        patch("bonsai.bim.module.model.mep.tool.Ifc.get_entity", return_value=bend_elem),
+        patch("bonsai.bim.module.model.mep._is_bend_fitting", return_value=True),
+        patch("bonsai.bim.module.model.mep.ifcopenshell.util.element.get_type", return_value=bend_type),
+        patch(
+            "bonsai.bim.module.model.mep.ifcopenshell.util.element.get_pset",
+            return_value={"radius": 0.2, "start_length": 0.1, "end_length": 0.1},
+        ),
     ):
         assert _active_is_bend_fitting(bend_obj) is True
 
@@ -300,10 +307,11 @@ def test_active_is_bend_fitting_rejects_bend_type_without_bbim_pset():
     bend_type = Mock()
     bend_type.PredefinedType = "BEND"
 
-    with patch("bonsai.bim.module.model.mep.tool.Ifc.get_entity", return_value=bend_elem), patch(
-        "bonsai.bim.module.model.mep._is_bend_fitting", return_value=True
-    ), patch("bonsai.bim.module.model.mep.ifcopenshell.util.element.get_type", return_value=bend_type), patch(
-        "bonsai.bim.module.model.mep.ifcopenshell.util.element.get_pset", return_value=None
+    with (
+        patch("bonsai.bim.module.model.mep.tool.Ifc.get_entity", return_value=bend_elem),
+        patch("bonsai.bim.module.model.mep._is_bend_fitting", return_value=True),
+        patch("bonsai.bim.module.model.mep.ifcopenshell.util.element.get_type", return_value=bend_type),
+        patch("bonsai.bim.module.model.mep.ifcopenshell.util.element.get_pset", return_value=None),
     ):
         assert _active_is_bend_fitting(bend_obj) is False
 
@@ -317,8 +325,9 @@ def test_active_is_bend_fitting_rejects_non_bend():
     bend_elem = Mock()
     bend_elem.is_a = lambda c: c == "IfcFlowFitting"
 
-    with patch("bonsai.bim.module.model.mep.tool.Ifc.get_entity", return_value=bend_elem), patch(
-        "bonsai.bim.module.model.mep._is_bend_fitting", return_value=False
+    with (
+        patch("bonsai.bim.module.model.mep.tool.Ifc.get_entity", return_value=bend_elem),
+        patch("bonsai.bim.module.model.mep._is_bend_fitting", return_value=False),
     ):
         assert _active_is_bend_fitting(bend_obj) is False
 
@@ -346,8 +355,9 @@ def test_active_is_flow_segment_classifies_segment_vs_fitting():
     fitting_elem.is_a = lambda c: c == "IfcFlowFitting"
 
     plain = Mock()
-    with patch("bonsai.bim.module.model.mep.tool.System.has_parametric_body", return_value=True), patch(
-        "bonsai.bim.module.model.mep.tool.Array.is_array_child", return_value=False
+    with (
+        patch("bonsai.bim.module.model.mep.tool.System.has_parametric_body", return_value=True),
+        patch("bonsai.bim.module.model.mep.tool.Array.is_array_child", return_value=False),
     ):
         with patch("bonsai.bim.module.model.mep.tool.Ifc.get_entity", return_value=segment_elem):
             assert _active_is_flow_segment(plain) is True
@@ -375,10 +385,11 @@ def test_active_mep_has_connected_neighbor_walks_ports():
     ports = [Mock(), Mock(), Mock()]
 
     plain = Mock()
-    with patch("bonsai.bim.module.model.mep.tool.Ifc.get_entity", return_value=element), patch(
-        "bonsai.bim.module.model.mep.tool.System.is_mep_element", return_value=True
-    ), patch("bonsai.bim.module.model.mep.tool.System.get_ports", return_value=ports), patch(
-        "bonsai.bim.module.model.mep.tool.System.get_connected_port", side_effect=[None, Mock(), None]
+    with (
+        patch("bonsai.bim.module.model.mep.tool.Ifc.get_entity", return_value=element),
+        patch("bonsai.bim.module.model.mep.tool.System.is_mep_element", return_value=True),
+        patch("bonsai.bim.module.model.mep.tool.System.get_ports", return_value=ports),
+        patch("bonsai.bim.module.model.mep.tool.System.get_connected_port", side_effect=[None, Mock(), None]),
     ):
         assert _active_mep_has_connected_neighbor(plain) is True
 

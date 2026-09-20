@@ -506,7 +506,6 @@ class InstallGit(bpy.types.Operator):
 
 
 class RunGitDiff(bpy.types.Operator):
-
     bl_label = "Git Diff"
     bl_idname = "ifcgit.git_diff"
     bl_description = (

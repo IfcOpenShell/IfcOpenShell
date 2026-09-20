@@ -22,7 +22,7 @@ class Generator:
                 "Description": "",
                 "Location": "https://vbis.com.au/",
                 "ReferenceTokens": ["-"],
-            }
+            },
         )
         # We assume all the Excel spreadsheets are re-exported in CSV format
         for filename in Path("./").glob("*.csv"):

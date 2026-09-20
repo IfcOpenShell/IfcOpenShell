@@ -48,9 +48,9 @@ def test_every_dispatch_target_lives_in_data_module():
     # against typos in the dispatch table that would otherwise only surface
     # at the first dialog open.
     for kind, fn in operator._SOURCE_ID_DISPATCH.items():
-        assert (
-            getattr(data, fn.__name__, None) is fn
-        ), f"Dispatch target for {kind} ({fn.__name__}) is not exported from data.py"
+        assert getattr(data, fn.__name__, None) is fn, (
+            f"Dispatch target for {kind} ({fn.__name__}) is not exported from data.py"
+        )
 
 
 def test_every_menu_entry_is_a_known_kind():

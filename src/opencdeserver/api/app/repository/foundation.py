@@ -14,7 +14,6 @@ secrets = get_secrets()
 
 
 class FoundationDB(MyDB):
-
     # implemented
     def create_authorization_code(self, username, authorization_code, scope) -> bool:
         def create_authorization_code_work(tx) -> bool:
