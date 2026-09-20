@@ -43,7 +43,6 @@ Contents
 | [ifc2ca](https://docs.ifcopenshell.org/ifc2ca.html)                    | Utility to convert IFC structural analysis models to Code_Aster       | LGPL-3.0-or-later   |
 | [ifc4d](https://docs.ifcopenshell.org/ifc4d.html)                     | Convert to and from IFC and project management software               | LGPL-3.0-or-later   | [![PyPI](https://img.shields.io/pypi/v/ifc4d?label=PyPI&color=006dad)](https://pypi.org/project/ifc4d/) |
 | [ifc5d](https://docs.ifcopenshell.org/ifc5d.html)                     | Report and optimise cost information from IFC                         | LGPL-3.0-or-later   | [![PyPI](https://img.shields.io/pypi/v/ifc5d?label=PyPI&color=006dad)](https://pypi.org/project/ifc5d/) |
-| [ifcbimtester](https://docs.ifcopenshell.org/bimtester.html)              | Wrapper for Gherkin based unit testing for IFC models                 | LGPL-3.0-or-later   |
 | ifcblender                | Historic Blender IFC import add-on                                    | LGPL-3.0-or-later\* |
 | [ifccityjson](https://docs.ifcopenshell.org/ifccityjson.html)               | Convert CityJSON to IFC                                               | LGPL-3.0-or-later   | [![PyPI](https://img.shields.io/pypi/v/ifccityjson?label=PyPI&color=006dad)](https://pypi.org/project/ifccityjson/) |
 | [ifcclash](https://docs.ifcopenshell.org/ifcclash.html)                  | Clash detection library and CLI app                                   | LGPL-3.0-or-later   | [![PyPI](https://img.shields.io/pypi/v/ifcclash?label=PyPI&color=006dad)](https://pypi.org/project/ifcclash/) |
@@ -65,12 +64,9 @@ The IfcOpenShell C++ codebase is split into multiple interal libraries:
 | Name                      | Description                                                           | License             |
 | ------------------------- | --------------------------------------------------------------------- | ------------------- |
 | ifcgeom                   | Internal library for IfcOpenShell                                     | LGPL-3.0-or-later\* |
-| ifcgeom\_schema\_agnostic | Internal library for IfcOpenShell                                     | LGPL-3.0-or-later\* |
 | ifcgeomserver             | Internal library for IfcOpenShell                                     | LGPL-3.0-or-later\* |
-| ifcjni                    | Internal library for IfcOpenShell                                     | LGPL-3.0-or-later\* |
 | ifcparse                  | Internal library for IfcOpenShell                                     | LGPL-3.0-or-later\* |
 | ifcwrap                   | Internal library for IfcOpenShell                                     | LGPL-3.0-or-later\* |
-| qtviewer                  | Internal library for IfcOpenShell                                     | LGPL-3.0-or-later\* |
 | serializers               | Internal library for IfcOpenShell                                     | LGPL-3.0-or-later\* |
 
 [LGPL]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/COPYING.LESSER "LGPL-3.0-or-later"
@@ -78,8 +74,3 @@ The IfcOpenShell C++ codebase is split into multiple interal libraries:
 [IFC2x3 TC1]: https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ "IFC2x3 TC1"
 [IFC4 Add2 TC1]: https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/ "IFC4 Add2 TC1"
 [IFC4x3 Add2]: https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/ "IFC4x3 Add2"
-[Visual Studio]: https://www.visualstudio.com/ "Visual Studio"
-[Visual C++ Build Tools]: http://landinghub.visualstudio.com/visual-cpp-build-tools "Visual C++ Build Tools"
-[MSYS2]: https://msys2.github.io/ "MSYS2"
-[win/readme.md]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/win/readme.md "win/readme.md"
-[nix/build-all.py]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/nix/build-all.py "nix/build-all.py"

@@ -45,7 +45,7 @@ class TestRemoveSurfaceStyleIFC2X3(test.bootstrap.IFC2X3):
         # See issue #2046, IfcOpenShell exhibits different behaviour - we can
         # remove entity_instances() without an ID if we create them afresh, but
         # will segfault if we load them stale.
-        g = ifcopenshell.file.from_string(self.file.wrapped_data.to_string())
+        g = ifcopenshell.file.from_string(self.file.to_string())
         ifcopenshell.api.style.remove_surface_style(g, style=g.by_type("IfcSurfaceStyleRendering")[0])
         assert len(list(g)) == 0
 

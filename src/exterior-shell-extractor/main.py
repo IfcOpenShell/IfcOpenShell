@@ -206,7 +206,7 @@ class context:
 
         Args:
             file (ifcopenshell.file): file containing elem
-            elem (TriangulationElement): triangulated geometry 
+            elem (triangulation_element): triangulated geometry
             min_thickness (float, optional): minimal thickness of the oriented bounding box to create around elem
 
         Returns:
@@ -457,7 +457,7 @@ class context:
 
         for f in self.fs:
             if kwargs.keys() == {'include'}:
-                kwargs2 = {'include': [e for e in kwargs['include'] if e.wrapped_data.file == f]}
+                kwargs2 = {'include': [e for e in kwargs['include'] if e.file == f]}
             else:
                 kwargs2 = kwargs
             it = ifcopenshell.geom.iterator(s, f, geometry_library="cgal", **kwargs2)
@@ -889,7 +889,7 @@ class context:
     def write_obj(ofn, *, elem=None, item=None):
         s = ifcopenshell.geom.settings(USE_WORLD_COORDS=True, WELD_VERTICES=False)
         if item:
-            geom = item.Triangulate(s)
+            geom = item.triangulate(s)
         else:
             geom = elem.geometry
 

@@ -42,7 +42,7 @@ WHITE = numpy.array((1.0, 1.0, 1.0))
 
 DO_NOTHING = lambda *args: None
 
-ARRANGE_POLYGON_SETTINGS = W.arrange_polygon_settings()
+ARRANGE_POLYGON_SETTINGS = W.arrange_polygon_settings() if hasattr(W, "arrange_polygon_settings") else None
 
 
 @dataclass
@@ -57,7 +57,6 @@ class draw_settings:
     space_areas: bool = False
     door_arcs: bool = False
     subtract_before_hlr: bool = False
-    cache: bool = False
     css: str = ""
     storey_heights: str = "none"
     storey_filter: str = ""
@@ -160,61 +159,51 @@ def main(
             )
         )
 
-        if settings.cache:
-            serializer_settings = ifcopenshell.geom.serializer_settings()
-            cache = ifcopenshell.geom.serializers.hdf5("cache.h5", geom_settings, serializer_settings)
-            for it in iterators:
-                it.set_cache(cache)
-
     # Initialize serializer
     buffer = ifcopenshell.geom.serializers.buffer()
-    serialiser_settings = ifcopenshell.geom.serializer_settings()
-    sr = ifcopenshell.geom.serializers.svg(buffer, geom_settings, serialiser_settings)
-
-    sr.setFile(files[0])
     if settings.auto_floorplan:
-        sr.setSectionHeightsFromStoreys()
+        geom_settings.set("section-height-from-storeys", True)
 
-    # setElevationRefGuid and setElevationRef are also mutually exclusive in C-code.
+    # elevation-ref-guid and elevation-ref are also mutually exclusive in C-code.
     # Note that guid or object type are not checked anywhere to be valid,
     # it's up to user to keep them valid for the provided projects.
     if settings.drawing_guid or settings.drawing_object_type:
         if settings.drawing_guid:
             if not by_guid(settings.drawing_guid):
                 raise ValueError(f"Unable to find guid {settings.drawing_guid!r}")
-            sr.setElevationRefGuid(settings.drawing_guid)
+            geom_settings.set("elevation-ref-guid", settings.drawing_guid)
         elif settings.drawing_object_type:
-            sr.setElevationRef(settings.drawing_object_type)
-        sr.setWithoutStoreys(True)
+            geom_settings.set("elevation-ref", settings.drawing_object_type)
+        geom_settings.set("svg-without-storeys", True)
 
     # required for svgfill
-    sr.setPolygonal(True)
-    sr.setUseNamespace(True)
+    geom_settings.set("svg-write-poly", True)
+    geom_settings.set("svg-xmlns", True)
 
-    sr.setAlwaysProject(settings.include_projection)
-
-    sr.setProfileThreshold(settings.profile_threshold)
-    sr.setBoundingRectangle(settings.width, settings.height)
-    sr.setScale(settings.scale)
-    sr.setAutoElevation(settings.auto_elevation)
-    sr.setAutoSection(settings.auto_section)
-    sr.setPrintSpaceNames(settings.space_names)
-    sr.setPrintSpaceAreas(settings.space_areas)
-    sr.setDrawDoorArcs(settings.door_arcs)
-    sr.setNoCSS(not not settings.css)
+    geom_settings.set("svg-project", settings.include_projection)
+    geom_settings.set("profile-threshold", settings.profile_threshold)
+    geom_settings.set("bounds", f"{settings.width}x{settings.height}")
+    geom_settings.set("scale", str(settings.scale))
+    geom_settings.set("auto-elevation", settings.auto_elevation)
+    geom_settings.set("auto-section", settings.auto_section)
+    geom_settings.set("print-space-names", settings.space_names)
+    geom_settings.set("print-space-areas", settings.space_areas)
+    geom_settings.set("door-arcs", settings.door_arcs)
+    geom_settings.set("svg-no-css", bool(settings.css))
     if settings.subtract_before_hlr:
-        sr.setSubtractionSettings(W.ALWAYS)
+        geom_settings.set("svg-subtract-before", "always")
 
-    sr.setUseHlrPoly(settings.hlr_poly)
-    sr.setUsePrefiltering(settings.prefilter)
-    sr.setUnifyInputs(settings.unify_inputs)
-    sr.setMirrorY(settings.mirror_y)
+    geom_settings.set("svg-poly", settings.hlr_poly)
+    geom_settings.set("svg-prefilter", settings.prefilter)
+    geom_settings.set("svg-unify-inputs", settings.unify_inputs)
+    geom_settings.set("svg-mirror-y", settings.mirror_y)
 
-    try:
-        sh = ["none", "full", "left"].index(settings.storey_heights)
-        sr.setDrawStoreyHeights(sh)
-    except:
+    if settings.storey_heights not in {"none", "full", "left"}:
         raise ValueError("storey_heights should be one of {'none', 'full', 'left'}")
+    geom_settings.set("draw-storey-heights", settings.storey_heights)
+
+    sr = ifcopenshell.geom.serializers.svg(buffer, geom_settings)
+    sr.setFile(files[0])
 
     """
     # It is also possible to add drawing planes manually
@@ -388,7 +377,7 @@ def main(
                     # Put the IFC element entity type on the path for CSS-based styling
                     p.setAttribute("class", elements[0].instance.is_a())
 
-                    # Obtain style (IfcOpenShell IfcGeom::Material)
+                    # Obtain style (IfcOpenShell ifcopenshell::geom::Material)
                     style = tree.styles()[elements[0].style_index]
 
                     # This is just a demonstration. We compose a factor of using:
@@ -420,10 +409,10 @@ def main(
                 p.setAttribute("style", "fill: " + svg_fill)
 
             if iteration != num_passes:
-                to_remove = []
-
                 assert pairs is not None
                 assert semantics is not None
+                to_remove = []
+
                 for he_idx in range(0, len(pairs), 2):
                     # @todo instead of ray_distance, better do (x.point - y.point).dot(x.normal)
                     # to see if they're coplanar, because ray-distance will be different in case
@@ -546,7 +535,12 @@ def main(
                     *(tup for i, tup in enumerate(zip(path_objects, section_polies, polies)) if has_relevant_zone(i))
                 )
 
-            arranged = W.arrange_polygons(ARRANGE_POLYGON_SETTINGS, polies, logger)
+            # ty can't bound the length of the unpacked iterables, so it over-counts the args.
+            arranged = W.arrange_polygons(
+                *filter(None, (ARRANGE_POLYGON_SETTINGS,)),
+                polies,  # ty:ignore[too-many-positional-arguments]
+                *ifcopenshell.optional_logger_args(logger),
+            )
             svg_data_3 = W.polygons_to_svg(arranged, False)
             dom3 = parseString(svg_data_3)
             svg3 = dom3.childNodes[0]

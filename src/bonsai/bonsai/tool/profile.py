@@ -53,7 +53,7 @@ class Profile(bonsai.core.tool.Profile):
         settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
         shape = ifcopenshell.geom.create_shape(settings, profile)
 
-        assert isinstance(shape, W.Triangulation)
+        assert isinstance(shape, W.triangulation)
         verts = ifcopenshell.util.shape.get_vertices(shape)
         if verts.size == 0:
             raise RuntimeError(f"Profile shape has no vertices, it probably is invalid: '{profile}'.")

@@ -20,7 +20,6 @@ from collections.abc import Sequence
 from logging import Logger
 from typing import Union
 
-import ifcpatch
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation

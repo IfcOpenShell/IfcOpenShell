@@ -16,9 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from math import cos, pi, radians, sin, tan
-from typing import Callable, Literal, Optional
+from typing import Literal, Optional
 
 import numpy as np
 

@@ -1,16 +1,15 @@
-#include "OpenCascadeKernel.h"
+#include "opencascade_kernel.h"
 
 #include <BRepPrimAPI_MakePrism.hxx>
 
-using namespace ifcopenshell::geometry;
-using namespace ifcopenshell::geometry::kernels;
-using namespace IfcGeom;
+using namespace ifcopenshell::geom;
+using namespace ifcopenshell::geom::kernels;
 
-bool OpenCascadeKernel::convert(const taxonomy::extrusion::ptr extrusion, TopoDS_Shape& shape) {
+bool open_cascade_kernel::convert(const taxonomy::extrusion::ptr extrusion, TopoDS_Shape& shape) {
 	const double& height = extrusion->depth;
 
 	if (height < settings_.get<settings::Precision>().get()) {
-		Logger::Root().Error("GEO", 89, "Non-positive extrusion height encountered for:", extrusion->instance);
+		ifcopenshell::logger::root().error("GEO", 89, "Non-positive extrusion height encountered for:", extrusion->instance);
 		return false;
 	}
 
@@ -24,7 +23,7 @@ bool OpenCascadeKernel::convert(const taxonomy::extrusion::ptr extrusion, TopoDS
 	// move the TopoDS_Shape, but obviously not both.
 	gp_GTrsf gtrsf;
 	if (!convert(&extrusion->matrix, gtrsf)) {
-		Logger::Error("Unable to move extrusion");
+		ifcopenshell::logger::root().error("Unable to move extrusion");
 	}
 	auto trsf = gtrsf.Trsf();
 	*/
@@ -36,7 +35,7 @@ bool OpenCascadeKernel::convert(const taxonomy::extrusion::ptr extrusion, TopoDS
 
 	if (face.ShapeType() == TopAbs_COMPOUND) {
 
-		// For compounds (most likely the result of a IfcCompositeProfileDef) 
+		// For compounds (most likely the result of a IfcCompositeProfileDef)
 		// create a compound solid shape.
 
 		TopExp_Explorer exp(face, TopAbs_FACE);
@@ -71,7 +70,7 @@ bool OpenCascadeKernel::convert(const taxonomy::extrusion::ptr extrusion, TopoDS
 	return !shape.IsNull();
 }
 
-bool OpenCascadeKernel::convert_impl(const taxonomy::extrusion::ptr extrusion, IfcGeom::ConversionResults& results) {
+bool open_cascade_kernel::convert_impl(const taxonomy::extrusion::ptr extrusion, std::vector<ifcopenshell::geom::conversion_result>& results) {
     return handle_occt_exception([&]() -> bool {
 
 	TopoDS_Shape shape;
@@ -79,10 +78,10 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::extrusion::ptr extrusion, I
 		return false;
 	}
 
-	results.emplace_back(ConversionResult(
-		extrusion->instance->as<IfcUtil::IfcBaseEntity>()->id(),
+	results.emplace_back(conversion_result(
+		extrusion->instance.id(),
 		extrusion->matrix,
-		new OpenCascadeShape(shape),
+		new open_cascade_shape(shape),
 		extrusion->surface_style
 	));
 	return true;

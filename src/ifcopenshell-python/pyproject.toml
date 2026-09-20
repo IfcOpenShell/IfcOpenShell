@@ -10,7 +10,7 @@ authors = [
 ]
 description = "Python bindings, utility functions, and high-level API for IfcOpenShell"
 readme = "README.md"
-requires-python = ">=3.10,<3.15"
+requires-python = ">=3.10,<3.16"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
@@ -36,6 +36,43 @@ dev = [
   "types-networkx",
 ]
 
+[dependency-groups]
+# Everything the type checker needs to resolve; see `poe ty-venv` in the repo root.
+type-check = [
+  "beautifulsoup4",
+  "cjio>=0.8,<0.10",
+  "deepdiff",
+  "docutils",
+  "flask",
+  "igraph",
+  "isodate",
+  "jinja2",
+  "lark",
+  "meshio",
+  "mysql-connector-python",
+  "networkx",
+  "numpy",
+  "odfpy",
+  "openpyxl",
+  "pandas",
+  "psutil",
+  "pydantic",
+  "PyP6Xer",
+  "pystache",
+  "pytest",
+  "python-dateutil",
+  "requests",
+  "scikit-learn",
+  "shapely",
+  "tabulate",
+  "toposort",
+  "typing-extensions",
+  "typst",
+  "xlsxwriter",
+  "xmlschema",
+  "xsdata",
+]
+
 [project.urls]
 "Homepage" = "http://ifcopenshell.org"
 "Bug Tracker" = "https://github.com/ifcopenshell/ifcopenshell/issues"
@@ -48,6 +85,6 @@ include = ["ifcopenshell*"]
 
 [tool.ruff]
 extend = "../../pyproject.toml"
-lint.select = [
-  "F401",  # unused imports
+lint.extend-select = [
+  "unused-import",
 ]

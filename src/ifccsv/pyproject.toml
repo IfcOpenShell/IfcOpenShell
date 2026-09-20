@@ -29,6 +29,6 @@ py-modules = ["ifccsv"]
 
 [tool.ruff]
 extend = "../../pyproject.toml"
-lint.select = [
-  "F401",  # unused imports
+lint.extend-select = [
+  "unused-import",
 ]

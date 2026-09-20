@@ -712,7 +712,7 @@ class Client:
         return self.get(f"api/Unit/{version}")
 
     def get_dictionary(
-        self, dictionary_uri: str = "", include_test_dictionaries: bool = "False", version: int = 1
+        self, dictionary_uri: str = "", include_test_dictionaries: bool = False, version: int = 1
     ) -> DictionaryResponseContractV1:
         """
         Get list of available Dictionaries
@@ -1026,7 +1026,7 @@ def apply_ifc_classification_properties(
     psets = ifcopenshell.util.element.get_psets(element)
     for prop in classificationProperties:
         predefinedValue = prop.get("predefinedValue")
-        if not predefinedValue or prop.get("propertyDomainName") != "IFC":
+        if not predefinedValue or predefinedValue == "None" or prop.get("propertyDomainName") != "IFC":
             continue
         pset = psets.get(prop["propertySet"])
         if pset:

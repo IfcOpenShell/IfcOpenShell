@@ -2874,3 +2874,54 @@ class WallSystemPathDecorator(_ConnectedNetworkPathDecorator):
             else:
                 result.append(point)
         return result
+
+
+class GpuSnapDecorator(tool.Blender.ViewportDecorator):
+    """Draw-handler that performs GPU snap detection once per viewport draw.
+
+    The detection work is injected via ``install(..., detection=...)`` so this
+    decorator has no knowledge of the raycast or snap subsystems. The modal
+    snapping code sets the current request via :meth:`set_request` and reads the
+    decoded result from :meth:`get_cache`.
+    """
+
+    draw_method = "draw"
+
+    request: dict[str, Any] = {"mouse_x": 0, "mouse_y": 0, "objs_to_raycast": []}
+    cache: tuple[list[dict], bpy.types.Object | None, list[dict]] | None = None
+    detection: Any = None
+    event: Any = None
+
+    @classmethod
+    def install(cls, context: bpy.types.Context, event=None, detection=None) -> None:
+        if detection is not None:
+            cls.detection = detection
+        cls.event = event
+        cls.request = {"mouse_x": 0, "mouse_y": 0, "objs_to_raycast": []}
+        cls.cache = None
+        super().install(context)
+
+    @classmethod
+    def uninstall(cls) -> None:
+        cls.cache = None
+        cls.event = None
+        super().uninstall()
+
+    @classmethod
+    def set_request(cls, event, objs_to_raycast: list[bpy.types.Object]) -> None:
+        cls.event = event
+        cls.request["mouse_x"] = int(event.mouse_region_x)
+        cls.request["mouse_y"] = int(event.mouse_region_y)
+        cls.request["objs_to_raycast"] = objs_to_raycast
+
+    @classmethod
+    def get_cache(cls) -> tuple[list[dict], bpy.types.Object | None, list[dict]] | None:
+        return cls.cache
+
+    def draw(self, context: bpy.types.Context) -> None:
+        cls = type(self)
+        if cls.detection is None or cls.event is None or not cls.request["objs_to_raycast"]:
+            cls.cache = None
+            return
+
+        cls.cache = cls.detection(context, cls.event, cls.request)

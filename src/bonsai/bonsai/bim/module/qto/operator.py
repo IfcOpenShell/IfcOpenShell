@@ -151,7 +151,7 @@ class CalculateSingleQuantity(bpy.types.Operator, tool.Ifc.Operator):
         ifc_file = tool.Ifc.get()
         with Profiler("Quantify function time:"):
             results = ifc5d.qto.quantify(ifc_file, elements, rules)
-        ifc5d.qto.edit_qtos(ifc_file, results)
+        ifc5d.qto.edit_qtos(ifc_file, results, target_units=tool.Qto.get_target_units(), rules=rules)
 
         not_quantified_elements = elements - set(results.keys())
         not_quantified_message = tool.Qto.get_not_quantified_elements_message(not_quantified_elements)
@@ -194,7 +194,7 @@ class PerformQuantityTakeOff(bpy.types.Operator, tool.Ifc.Operator):
             ifc_file = tool.Ifc.get()
             with Profiler("Quantify function time:"):
                 results = ifc5d.qto.quantify(ifc_file, elements, rules)
-            ifc5d.qto.edit_qtos(ifc_file, results)
+            ifc5d.qto.edit_qtos(ifc_file, results, target_units=tool.Qto.get_target_units(), rules=rules)
             not_quantified_elements = elements - set(results.keys())
             return not_quantified_elements
 

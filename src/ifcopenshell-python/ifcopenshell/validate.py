@@ -50,13 +50,16 @@ import functools
 import itertools
 import json
 import os
+import re
 import sys
 import types
-from collections import namedtuple
 from collections.abc import Iterator
 from logging import Handler, Logger
+from pathlib import Path
 from types import EllipsisType
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Literal, Optional, TypeAlias, Union
+
+from typing_extensions import NotRequired, TypedDict
 
 import ifcopenshell
 import ifcopenshell.express.rule_executor
@@ -85,15 +88,28 @@ class ValidationError(Exception):
         self.attribute = attribute
 
 
-log_entry_type = namedtuple("log_entry_type", ("level", "message", "instance", "attribute"))
-
-
 class json_logger:
+    statements: list[Statement]
+    state: State
+
+    StateItem: TypeAlias = Literal["attribute", "instance", "type"]
+
+    class StateBase(TypedDict):
+        type: NotRequired[str]
+        instance: NotRequired[Any]
+        attribute: NotRequired[str | None]
+
+    class State(StateBase, closed=True): ...
+
+    class Statement(StateBase, closed=True):
+        level: str
+        message: str
+
     def __init__(self):
         self.statements = []
         self.state = {}
 
-    def set_state(self, key: str, value: Any):
+    def set_state(self, key: StateItem, value: Any) -> None:
         self.state[key] = value
 
     def log(self, level, message, *args):
@@ -400,7 +416,7 @@ def get_entity_attributes(schema: schema_definition, entity: str) -> tuple[entit
     return entity_attrs
 
 
-def validate(f: Union[ifcopenshell.file, str], logger: Union[Logger, json_logger], express_rules=False) -> None:
+def validate(f: ifcopenshell.file | str | Path, logger: Logger | json_logger, express_rules: bool = False) -> None:
     """
     For an IFC population model `f` (or filepath to such a file) validate whether the entity attribute values are correctly supplied. As this
     is a function that is applied after a file has been parsed, certain types of errors in syntax, duplicate
@@ -765,17 +781,27 @@ def validate_ifc_applications(f: ifcopenshell.file, logger: Union[Logger, json_l
                 )
 
 
-class LogDetectionHandler(Handler):
-    message_logged = False
+COLOR_RED = "\033[1;91m"
+COLOR_CYAN = "\033[96m"
+COLOR_YELLOW = "\033[93m"
+COLOR_RESET = "\033[0m"
 
+INSTANCE_LINE_RE = re.compile(r"(?m)^(\s*#\d+=.*)$")
+CARET_LINE_RE = re.compile(r"(?m)^(\s*\^[\s\^]*)$")
+
+
+class LogDetectionHandler(Handler):
     def __init__(self):
         super().__init__()
-        self.default_handler = logging.StreamHandler()
+        self.count = 0
 
     def emit(self, record):
-        if not self.message_logged:
-            self.message_logged = True
-        self.default_handler.emit(record)
+        self.count += 1
+        print(f"{COLOR_RED}--- Error {self.count} ---{COLOR_RESET}", file=sys.stderr)
+        message = INSTANCE_LINE_RE.sub(rf"{COLOR_CYAN}\1{COLOR_RESET}", record.getMessage())
+        message = CARET_LINE_RE.sub(rf"{COLOR_YELLOW}\1{COLOR_RESET}", message)
+        print(message, file=sys.stderr)
+        print(file=sys.stderr)
 
 
 if __name__ == "__main__":
@@ -813,6 +839,7 @@ if __name__ == "__main__":
 
     filenames: list[str] = args.files
     some_file_is_invalid = False
+    total_errors = 0
 
     if args.recursion_limit > 0:
         sys.setrecursionlimit(args.recursion_limit)
@@ -846,16 +873,21 @@ if __name__ == "__main__":
             for x in logger.statements:
                 print(json.dumps(x, default=conv))
 
-        if handler:
+        if not args.json:
+            assert handler
             logger.removeHandler(handler)
-            invalid_ifc = handler.message_logged
-        else:  # json_logger.
+            invalid_ifc = bool(handler.count)
+            total_errors += handler.count
+        else:
             invalid_ifc = bool(logger.statements)
 
         if invalid_ifc:
             some_file_is_invalid = True
         else:
             print("No validation issues found.")
+
+    if not args.json:
+        print(f"{COLOR_RED}{total_errors} error(s) found.{COLOR_RESET}")
 
     if some_file_is_invalid:
         exit(1)

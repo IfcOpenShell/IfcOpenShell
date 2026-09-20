@@ -1,0 +1,5 @@
+# This file was generated with the assistance of an AI coding tool.
+
+Sphinx==8.1.3
+breathe==4.36.0
+exhale==0.3.7

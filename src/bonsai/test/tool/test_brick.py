@@ -148,10 +148,10 @@ class TestAddBrickifcReference(NewFile):
         project = URIRef(f"http://example.org/digitaltwin#{tool.Ifc.get().by_type('IfcProject')[0].GlobalId}")
         subject.add_brickifc_reference("http://example.org/digitaltwin#foo", element, project)
         brick = URIRef("http://example.org/digitaltwin#foo")
-        bnode = list(BrickStore.graph.triples((brick, A, REF.IFCReference)))
-        assert list(BrickStore.graph.triples((bnode, REF.hasIfcProjectReference, URIRef(project))))
-        assert list(BrickStore.graph.triples((bnode, REF.ifcGlobalID, Literal(element.GlobalId))))
-        assert list(BrickStore.graph.triples((bnode, REF.ifcName, Literal(element.Name))))
+        bnode = next(BrickStore.graph.triples((brick, REF.hasExternalReference, None)))[2]
+        assert len(list(BrickStore.graph.triples((bnode, REF.hasIfcProjectReference, URIRef(project))))) == 1
+        assert len(list(BrickStore.graph.triples((bnode, REF.ifcGlobalID, Literal(element.GlobalId))))) == 1
+        assert len(list(BrickStore.graph.triples((bnode, REF.ifcName, Literal(element.Name))))) == 1
 
 
 class TestAddRelation(NewFile):

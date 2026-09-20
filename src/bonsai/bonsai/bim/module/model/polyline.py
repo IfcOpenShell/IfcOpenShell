@@ -26,7 +26,7 @@ import ifcopenshell.util.unit
 from mathutils import Vector
 
 import bonsai.tool as tool
-from bonsai.bim.module.model.decorator import PolylineDecorator
+from bonsai.bim.module.model.decorator import GpuSnapDecorator, PolylineDecorator, ProductDecorator
 
 
 class PolylineOperator:
@@ -380,10 +380,7 @@ class PolylineOperator:
             if event.value == "RELEASE" and event.type in {"ESC"}:
                 self.tool_state.axis_method = None
                 self.tool_state.plane_method = None
-                context.workspace.status_text_set(text=None)
-                PolylineDecorator.uninstall()
-                tool.Polyline.clear_polyline()
-                tool.Blender.update_viewport()
+                self.cleanup(context)
                 return {"CANCELLED"}
 
     def handle_mouse_move(
@@ -424,6 +421,15 @@ class PolylineOperator:
                 tool.Blender.update_viewport()
             return {"RUNNING_MODAL"}
 
+    def cleanup(self, context: bpy.Types.Context):
+        context.workspace.status_text_set(text=None)
+        PolylineDecorator.uninstall()
+        GpuSnapDecorator.uninstall()
+        ProductDecorator.uninstall()
+        tool.Polyline.clear_polyline()
+        tool.Raycast.clear_cache()
+        tool.Blender.update_viewport()
+
     def set_offset(self, context: bpy.types.Context, relating_type: ifcopenshell.entity_instance) -> None:
         props = tool.Model.get_model_props()
         direction_sense = props.direction_sense
@@ -456,13 +462,13 @@ class PolylineOperator:
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> None:
         PolylineDecorator.install(context)
+        GpuSnapDecorator.install(context, event, detection=tool.Raycast.detect_gpu_snaps)
         tool.Snap.clear_snapping_point()
 
         self.tool_state.use_default_container = False
         self.tool_state.axis_method = None
         self.tool_state.plane_method = None
         self.tool_state.mode = "Mouse"
-        tool.Raycast.clear_snap_objs()
         self.visible_objs = tool.Raycast.get_visible_objects(context)
         for obj in self.visible_objs:
             if bbox_2d := tool.Raycast.get_on_screen_2d_bounding_boxes(context, obj):

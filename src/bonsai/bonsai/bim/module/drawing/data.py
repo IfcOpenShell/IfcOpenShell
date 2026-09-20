@@ -652,7 +652,7 @@ class DecoratorData:
                     try:
                         matrix = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
                         if matrix is not None:
-                            ifc_file = element.wrapped_data.file
+                            ifc_file = element.file
                             project = ifc_file.by_type("IfcProject")[0] if ifc_file.by_type("IfcProject") else None
 
                             if project:

@@ -20,7 +20,7 @@ import pytest
 from ifcquery.render import _make_profile_occurrence, _make_type_occurrence, render
 
 try:
-    import pyvista  # noqa: F401
+    import pyvista
 
     HAS_PYVISTA = True
 except ImportError:

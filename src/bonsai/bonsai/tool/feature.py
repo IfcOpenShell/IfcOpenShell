@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING
 
 import bpy
 import ifcopenshell.api.feature
+import ifcopenshell.util.representation
 
 import bonsai.core.geometry
 import bonsai.core.tool
@@ -44,12 +45,12 @@ class Feature(bonsai.core.tool.Feature):
         featured_element = tool.Ifc.get_entity(featured_obj)
 
         has_visible_openings = False
+        element_had_openings = None
         for opening in [r.RelatedOpeningElement for r in featured_element.HasOpenings]:
             if tool.Ifc.get_object(opening):
                 has_visible_openings = True
                 break
 
-        element_had_openings = None
         for feature_obj in feature_objs:
             feature_element = tool.Ifc.get_entity(feature_obj)
 
@@ -58,6 +59,7 @@ class Feature(bonsai.core.tool.Feature):
                 bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=featured_obj)
 
             element_had_openings = tool.Geometry.has_openings(featured_element)
+            body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body")
             ifcopenshell.api.feature.add_feature(tool.Ifc.get(), feature=feature_element, element=featured_element)
 
             if tool.Ifc.is_moved(feature_obj):

@@ -41,7 +41,7 @@ def evaluate_representation(shape_rep: entity_instance, dist_along: float) -> np
     # TODO: confirm point is not beyond limits of alignment
 
     s = ifcopenshell.geom.settings()
-    function_item = ifcopenshell_wrapper.map_shape(s, shape_rep.wrapped_data)
+    function_item = ifcopenshell_wrapper.map_shape(s, shape_rep)
     evaluator = ifcopenshell_wrapper.function_item_evaluator(s, function_item)
 
     trans_matrix = evaluator.evaluate(dist_along)
@@ -64,7 +64,7 @@ def evaluate_segment(segment: entity_instance, dist_along: float) -> np.ndarray:
         raise ValueError(f"Provided value {dist_along=} is beyond the end of the segment ({segment.SegmentLength}).")
 
     s = ifcopenshell.geom.settings()
-    function_item = ifcopenshell_wrapper.map_shape(s, segment.wrapped_data)
+    function_item = ifcopenshell_wrapper.map_shape(s, segment)
     evaluator = ifcopenshell_wrapper.function_item_evaluator(s, function_item)
 
     trans_matrix = evaluator.evaluate(dist_along)

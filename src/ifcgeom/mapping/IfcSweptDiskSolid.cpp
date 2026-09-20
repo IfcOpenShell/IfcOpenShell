@@ -19,7 +19,7 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 #include "../profile_helper.h"
 
@@ -49,39 +49,24 @@ namespace {
 }
 */
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSweptDiskSolid* inst) {
-	auto loop = taxonomy::cast<taxonomy::loop>(map(inst->Directrix()));
-
-	// Start- EndParam became optional in IFC4
-#ifdef SCHEMA_IfcSweptDiskSolid_StartParam_IS_OPTIONAL
-	auto sp = inst->StartParam();
-	auto ep = inst->EndParam();
-#else
-	boost::optional<double> sp, ep;
-	try {
-		sp = inst->StartParam();
-		ep = inst->EndParam();
-	} catch (const IfcParse::IfcException& e) {
-		logger_.Warning("GEO", 293, e);
-	}
-#endif
-
-	const double tol = settings_.get<settings::Precision>().get();
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSweptDiskSolid& inst) {
+	auto loop = taxonomy::cast<taxonomy::loop>(map(inst.Directrix()));
 
 #ifdef SCHEMA_HAS_IfcSweptDiskSolidPolygonal
-	if (inst->as<IfcSchema::IfcSweptDiskSolidPolygonal>()) {
-		auto fr = inst->as<IfcSchema::IfcSweptDiskSolidPolygonal>()->FilletRadius();
+	const double tol = settings_.get<settings::Precision>().get();
+	if (inst.as<IfcSchema::IfcSweptDiskSolidPolygonal>()) {
+		auto fr = inst.as<IfcSchema::IfcSweptDiskSolidPolygonal>().FilletRadius();
 		if (fr && *fr > tol) {
 			fillet_loop(loop, *fr);
 		}
 	}
 #endif
 
-	std::vector<double> radii = { inst->Radius() * length_unit_ };
+	std::vector<double> radii = { inst.Radius() * length_unit_ };
 
-	if (inst->InnerRadius()) {
+	if (inst.InnerRadius()) {
 		// Subtraction of pipes with small radii is unstable.
-		radii.push_back(*inst->InnerRadius() * length_unit_);
+		radii.push_back(*inst.InnerRadius() * length_unit_);
 	}
 
 	auto f = taxonomy::make<taxonomy::face>();
@@ -112,17 +97,17 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSweptDiskSolid* inst) {
 	return taxonomy::make<taxonomy::sweep_along_curve>(taxonomy::make<taxonomy::matrix4>(), f, nullptr, loop);
 
 
-	
+
 	/*
-	
+
 	TopoDS_Wire wire, section1, section2;
 
-	bool hasInnerRadius = !!inst->InnerRadius();
+	bool hasInnerRadius = !!inst.InnerRadius();
 
-	if (!convert_wire(inst->Directrix(), wire)) {
+	if (!convert_wire(inst.Directrix(), wire)) {
 		return false;
 	}
-	
+
 
 
 	if (util::count(wire, TopAbs_EDGE) == 1 && sp && ep) {
@@ -134,7 +119,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSweptDiskSolid* inst) {
 			double a, b;
 			auto crv = BRep_Tool::Curve(e, a, b);
 			if ((crv->DynamicType() == STANDARD_TYPE(Geom_Circle)) ||
-				(crv->DynamicType() == STANDARD_TYPE(Geom_Ellipse))) 
+				(crv->DynamicType() == STANDARD_TYPE(Geom_Ellipse)))
 			{
 				BRepBuilderAPI_MakeEdge me(crv, *sp, *ep);
 				if (me.IsDone()) {
@@ -151,8 +136,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSweptDiskSolid* inst) {
 	double fillet = 0.;
 
 #ifdef SCHEMA_HAS_IfcSweptDiskSolidPolygonal
-	if (inst->as<IfcSchema::IfcSweptDiskSolidPolygonal>()) {
-		auto fr = inst->as<IfcSchema::IfcSweptDiskSolidPolygonal>()->FilletRadius();
+	if (inst.as<IfcSchema::IfcSweptDiskSolidPolygonal>()) {
+		auto fr = inst.as<IfcSchema::IfcSweptDiskSolidPolygonal>()->FilletRadius();
 		if (fr) {
 			fillet = *fr;
 		}
@@ -241,19 +226,19 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSweptDiskSolid* inst) {
 								i += 1;
 								j += 1;
 							} else {
-								Logger::Error("Unexpected amount of fillet edges generated");
-							}					
+								ifcopenshell::logger::root().error("Unexpected amount of fillet edges generated");
+							}
 						} else {
-							Logger::Error("Unable to build fillet, probably edge too short");
+							ifcopenshell::logger::root().error("Unable to build fillet, probably edge too short");
 						}
 					} else {
-						Logger::Error("Colinear edges, not applying fillet");
+						ifcopenshell::logger::root().error("Colinear edges, not applying fillet");
 					}
 					i++;
 					j++;
 				}
 			} else {
-				Logger::Error("Not enough edges for applying fillet");
+				ifcopenshell::logger::root().error("Not enough edges for applying fillet");
 			}
 
 			TopoDS_Wire new_wire;
@@ -266,15 +251,15 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSweptDiskSolid* inst) {
 
 			wire = new_wire;
 		} else {
-			Logger::Error("Directrix is not polyhedral, ignoring FilletRadius");
+			ifcopenshell::logger::root().error("Directrix is not polyhedral, ignoring FilletRadius");
 		}
 	}
 
 	// NB: Note that StartParam and EndParam param are ignored and the assumption is
 	// made that the parametric range over which to be swept matches the IfcCurve in
 	// its entirety.
-	
-	util::process_sweep(wire, inst->Radius() * length_unit_, shape);
+
+	util::process_sweep(wire, inst.Radius() * length_unit_, shape);
 
 	if (shape.IsNull()) {
 		return false;
@@ -284,7 +269,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSweptDiskSolid* inst) {
 
 	if (hasInnerRadius) {
 		// Subtraction of pipes with small radii is unstable.
-		r2 = *inst->InnerRadius() * length_unit_;
+		r2 = *inst.InnerRadius() * length_unit_;
 	}
 
 	if (r2 > getValue(GV_PRECISION) * 10.) {
@@ -317,7 +302,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSweptDiskSolid* inst) {
 		}
 
 		if (!is_valid) {
-			Logger::Message(Logger::LOG_WARNING, "Failed to subtract inner radius void for:", l);
+			ifcopenshell::logger::root().message(ifcopenshell::logger::LOG_WARNING, "Failed to subtract inner radius void for:", l);
 		}
 	}
 
