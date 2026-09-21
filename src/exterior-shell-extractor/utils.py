@@ -1,11 +1,12 @@
-import time
-import operator
 import datetime
-import itertools
 import functools
+import itertools
+import operator
+import time
 from functools import reduce
 
 import ifcopenshell
+
 
 def get_mem():
     try:
@@ -50,7 +51,9 @@ def oc_len(tup):
     return int(type(tup).__name__.split("_")[-1])
 
 
-make_default = lambda pairs: dict((k, [v[1] for v in vs]) for k, vs in itertools.groupby(pairs, key=operator.itemgetter(0)))
+make_default = lambda pairs: dict(
+    (k, [v[1] for v in vs]) for k, vs in itertools.groupby(pairs, key=operator.itemgetter(0))
+)
 
 
 def dot(a, b):
@@ -81,6 +84,7 @@ def to_opaque(tup):
 create_epeck = ifcopenshell.ifcopenshell_wrapper.create_epeck
 epeck_cache = {}
 double_cache = {}
+
 
 def reserialize(v, to_double=False):
     """
@@ -113,4 +117,3 @@ def reserialize(v, to_double=False):
         ep = create_epeck(st)
         epeck_cache[st] = ep
         return ep
-
