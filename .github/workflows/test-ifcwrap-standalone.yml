@@ -68,7 +68,11 @@ jobs:
         run: |
           sudo apt-get remove --purge -y swig swig4.0
           git clone https://github.com/swig/swig --branch v4.2.1 --depth 1
-          cmake -S swig -B swig/build -DCMAKE_BUILD_TYPE=Release \
+          cmake \
+            -S swig \
+            -B swig/build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build swig/build -j "$(nproc)"
@@ -78,6 +82,7 @@ jobs:
       - name: Configure minimal IfcOpenShell
         run: |
           cmake -S cmake -B build-ifcopenshell \
+            -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX="${IFCOPENSHELL_PREFIX}" \
             -DCMAKE_PREFIX_PATH=/usr \

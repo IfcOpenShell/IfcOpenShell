@@ -40,7 +40,8 @@ jobs:
           CHANGELOG_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir build && cd build
-          cmake \
+          cmake ../cmake \
+           -G Ninja \
            -DCMAKE_INSTALL_PREFIX=$PWD/install/ \
            -DCMAKE_BUILD_TYPE=Release \
            -DCMAKE_PREFIX_PATH=/usr \
@@ -61,10 +62,8 @@ jobs:
            -DGMP_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
            -DMPFR_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
            -DOPENCOLLADA_INCLUDE_DIR=/usr/include/opencollada \
-           -DOPENCOLLADA_LIBRARY_DIR=/usr/lib/opencollada/ \
-           ../cmake
-          make -j $(nproc)
-          make install
+           -DOPENCOLLADA_LIBRARY_DIR=/usr/lib/opencollada/
+          cmake --build . --target install -j $(nproc)
       - name: Package
         id: package
         run: |

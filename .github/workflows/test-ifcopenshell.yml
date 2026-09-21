@@ -130,7 +130,9 @@ jobs:
           cd rocksdb
           mkdir build && cd build
           # rocksdb is using ccache automatically.
-          cmake -DFAIL_ON_WARNINGS=Off \
+          cmake .. \
+            -G Ninja \
+            -DFAIL_ON_WARNINGS=Off \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX=/usr/local \
             -DWITH_TESTS=OFF \
@@ -140,9 +142,8 @@ jobs:
             -DWITH_CORE_TOOLS=OFF \
             -DROCKSDB_BUILD_SHARED=Off \
             -DCMAKE_POSITION_INDEPENDENT_CODE=On \
-            -DUSE_RTTI=On \
-            ..
-          sudo make -j$(nproc) install
+            -DUSE_RTTI=On
+          sudo cmake --build . --target install -j $(nproc)
 
       # OpenCOLLADA is ancient, but we still have it in the main build.
       # So adding it to CI to catch any breakages.
@@ -155,12 +156,13 @@ jobs:
           patch -p1 --batch --forward -i ../nix/patches/opencollada/config_select_libs_by_use_shared.patch
           mkdir build && cd build
           cmake .. \
+            -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_FLAGS_INIT="-fPIC"
-          sudo make -j$(nproc) install
+          sudo cmake --build . --target install -j $(nproc)
 
       # We need zstd and libxml2 just for cmake config files to test the examples build.
       # zslibzstd-dev has cmake config only on Ubuntu 24.04+.
@@ -170,7 +172,9 @@ jobs:
           cd zstd
           # `build` already exists.
           mkdir build_ && cd build_
-          cmake ../build/cmake -DCMAKE_BUILD_TYPE=Release \
+          cmake ../build/cmake \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           sudo cmake --build . --target install -j $(nproc)
@@ -182,6 +186,7 @@ jobs:
           cd libxml2
           mkdir build && cd build
           cmake .. \
+            -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
@@ -195,6 +200,7 @@ jobs:
           cd manifold
           mkdir build && cd build
           cmake .. \
+            -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
@@ -215,6 +221,7 @@ jobs:
           cd PROJ
           mkdir build && cd build
           cmake .. \
+            -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
@@ -238,17 +245,19 @@ jobs:
           cd swig
           mkdir build && cd build
           cmake .. \
+            -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-          sudo make -j$(nproc) install
+          sudo cmake --build . --target install -j $(nproc)
 
       - name: Build ifcopenshell
         run: |
           which python
 
           mkdir build && cd build
-          cmake \
+          cmake ../cmake \
+               -G Ninja \
                -DCMAKE_BUILD_TYPE=Release \
                -DCMAKE_PREFIX_PATH=/usr \
                -DCMAKE_SYSTEM_PREFIX_PATH=/usr \
@@ -262,10 +271,8 @@ jobs:
                -DWITH_ROCKSDB=On \
                -DWITH_MANIFOLD=ON \
                -DWITH_PROJ=ON \
-               -DBUILD_EXAMPLES=ON \
-             ../cmake
-          sudo make -j $(nproc)
-          sudo make install
+               -DBUILD_EXAMPLES=ON
+          sudo cmake --build . --target install -j $(nproc)
 
       # - name: Run IfcConvert on Sample files
       #   run: |
@@ -290,10 +297,12 @@ jobs:
           set -x
           cd src/examples
           mkdir build && cd build
-          cmake .. -DCMAKE_BUILD_TYPE=Release \
+          cmake .. \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-          cmake --build .
+          cmake --build . -j $(nproc)
           ./IfcOpenHouse                && test -f IfcOpenHouse.ifc
           ./IfcParseExamples IfcOpenHouse.ifc
           ./IfcAdvancedHouse            && test -f IfcAdvancedHouse.ifc

@@ -30,6 +30,7 @@ runs:
         PYTHON_INCLUDE_DIR="$(python -c 'import sysconfig; print(sysconfig.get_path("include"))')"
 
         cmake -S src/ifcwrap -B "build-ifcwrap-${{ inputs.python-version }}" \
+          -G Ninja \
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_PREFIX_PATH="${{ inputs.ifcopenshell-prefix }};/usr" \
           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
