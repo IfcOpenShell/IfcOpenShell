@@ -27,7 +27,7 @@ if(CGAL_INCLUDE_DIR)
     find_library(libMPFR NAMES mpfr PATHS ${MPFR_LIBRARY_DIR} NO_DEFAULT_PATH)
 
     file(STRINGS "${CGAL_INCLUDE_DIR}/CGAL/version.h" CGAL_VERSION_LINE REGEX "^#define CGAL_VERSION ")
-    string(REGEX REPLACE "^#define CGAL_VERSION ([0-9.]+)$" "\\1" CGAL_VERSION "${CGAL_VERSION_LINE}")
+    string(REGEX REPLACE "^#define CGAL_VERSION ([0-9.]+).*$" "\\1" CGAL_VERSION "${CGAL_VERSION_LINE}")
 
     include(FindPackageHandleStandardArgs)
     find_package_handle_standard_args(
