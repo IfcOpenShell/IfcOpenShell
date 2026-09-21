@@ -22,11 +22,9 @@ from __future__ import annotations
 
 import os
 import pprint
-import shutil
 import traceback
 import types
 import webbrowser
-from collections.abc import Generator
 from inspect import signature
 from math import radians
 from pathlib import Path
@@ -38,7 +36,6 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import numpy as np
-import pytest
 from mathutils import Vector
 from pytest_bdd import given, parsers, scenarios, then, when
 

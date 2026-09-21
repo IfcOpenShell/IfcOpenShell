@@ -34,7 +34,6 @@ openings stay on both walls."""
 
 from unittest.mock import MagicMock, patch
 
-import bpy
 import pytest
 
 pytestmark = pytest.mark.wall

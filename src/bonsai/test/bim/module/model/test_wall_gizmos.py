@@ -28,7 +28,6 @@ LAYER3-active / LAYER2-other contract is caught by a dedicated assertion."""
 from types import SimpleNamespace
 from unittest.mock import patch
 
-import bpy
 import pytest
 
 pytestmark = pytest.mark.wall

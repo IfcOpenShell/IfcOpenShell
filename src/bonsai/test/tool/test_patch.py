@@ -18,11 +18,9 @@
 
 import os
 
-import bpy
 import ifcopenshell
 
 import bonsai.core.tool
-import bonsai.tool as tool
 from bonsai.tool.patch import Patch as subject
 from test.bim.bootstrap import NewFile
 

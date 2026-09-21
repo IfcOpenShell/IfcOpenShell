@@ -18,7 +18,6 @@
 
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.feature
 import ifcopenshell.api.nest

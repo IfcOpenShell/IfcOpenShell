@@ -20,7 +20,6 @@ from math import pi
 
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.root
 import ifcopenshell.api.system
 import ifcopenshell.util.representation

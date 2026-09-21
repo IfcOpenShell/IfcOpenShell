@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Any, Optional, Union
+from typing import Optional
 
 
 class bSDDClientStub:

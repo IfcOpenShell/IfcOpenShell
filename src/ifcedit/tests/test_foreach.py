@@ -1,10 +1,4 @@
 # Tests for ifcedit.foreach
-import ifcopenshell
-import ifcopenshell.api.owner.settings
-import ifcopenshell.api.project
-import ifcopenshell.api.root
-import ifcopenshell.api.spatial
-import ifcopenshell.api.unit
 import pytest
 
 from ifcedit.foreach import _substitute, run_foreach

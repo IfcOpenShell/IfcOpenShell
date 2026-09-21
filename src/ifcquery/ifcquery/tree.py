@@ -22,7 +22,6 @@ from __future__ import annotations
 from typing import Any
 
 import ifcopenshell
-import ifcopenshell.util.element
 
 
 def _element_summary(element: ifcopenshell.entity_instance) -> dict[str, Any]:

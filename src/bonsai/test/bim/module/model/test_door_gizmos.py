@@ -29,7 +29,6 @@ implementation."""
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
-import bpy
 import pytest
 from mathutils import Matrix, Vector
 

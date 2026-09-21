@@ -21,7 +21,6 @@ from pathlib import Path
 
 import bmesh
 import bpy
-import ifcopenshell
 import ifcopenshell.api.library
 import ifcopenshell.api.style
 import ifcopenshell.util.schema
@@ -189,7 +188,6 @@ class TestCreatingStyles(NewFile):
         )
 
         def get_png_raster_code():
-            import base64
             import struct
             import zlib
 

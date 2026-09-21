@@ -21,7 +21,6 @@ import os
 from datetime import datetime
 
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.context
 import ifcopenshell.api.project
 import ifcopenshell.api.pset

@@ -27,7 +27,6 @@ are deliberately refused by each entry point. Each test mocks the
 
 from unittest.mock import MagicMock, Mock, patch
 
-import bpy
 import pytest
 
 pytestmark = pytest.mark.model

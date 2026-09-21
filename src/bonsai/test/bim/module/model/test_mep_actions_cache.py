@@ -27,9 +27,8 @@ state, the bridging fitting between two selected segments, segment endpoints
 operator commits (which bumps ``tool.Parametric.get_geom_generation``).
 These tests pin that the per-frame redraw reuses the cached state."""
 
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
-import bpy
 import pytest
 from mathutils import Vector
 

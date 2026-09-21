@@ -20,8 +20,6 @@ import itertools
 import json
 from pathlib import Path
 
-import numpy as np
-
 flatten = itertools.chain.from_iterable
 
 ScaleFactor = 1.0

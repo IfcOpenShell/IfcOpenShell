@@ -24,7 +24,6 @@ import ifcopenshell.util.classification
 import ifcopenshell.util.date
 import ifcopenshell.util.element
 import ifcopenshell.util.fm
-import ifcopenshell.util.placement
 import ifcopenshell.util.system
 
 # The original BIMServer plugin has a function called ifcToCOBie:
