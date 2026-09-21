@@ -113,6 +113,7 @@ jobs:
               --ifcopenshell-shared \
               --add-commit-sha \
               --build-cfg Release \
+              --use-ninja \
               ${MAC_INTEL} \
             | tee build.log
 
