@@ -26,6 +26,9 @@ jobs:
     runs-on: ${{ matrix.runs_on }}
 
     steps:
+      - name: Set up uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+
       - name: Checkout Repository
         uses: actions/checkout@v7
         with:
@@ -63,11 +66,6 @@ jobs:
           # and with default 500MB some cache gets deleted, leading to misses.
           max-size: 5000MB
 
-      - name: Set up Python for connector build
-        uses: actions/setup-python@v7
-        with:
-          python-version: '3.12'
-
       # Build the Autodesk connector before the C++ build: build-all-win.py
       # bundles it next to BonsaiViewer.exe while archiving the executables.
       # bonsaiviewer-autodesk is a Rust connector; packaging/build.py runs
@@ -75,7 +73,7 @@ jobs:
       # dist/autodesk/.
       - name: Build Autodesk connector
         working-directory: src/bonsaiviewer-autodesk
-        run: python packaging/build.py
+        run: uv run packaging/build.py
 
       - name: Run Build Script And Pack .zip Archives
         shell: cmd
@@ -84,7 +82,7 @@ jobs:
         run: |
           call ${{ matrix.vcvars }}
           cd win
-          python build-all-win.py
+          uv run build-all-win.py
 
       - name: Pack Dependencies
         run: |
@@ -110,11 +108,12 @@ jobs:
       - name: Test packaged Python wrapper
         # Imports the *packaged* wrapper and exercises the cross-plug-in hand-offs
         # (kernel -> tree, kernel -> SVG serializer) that a duplicated OCCT breaks.
-        # Uses the 3.12 interpreter set up above, so it tests the 312 zip. Runs after
-        # the dependency cache is pushed, so a failing package never costs the cache.
+        # Tests the 312 zip. Runs after the dependency cache is pushed, so a
+        # failing package never costs the cache.
         run: |
-          python -m pip install pytest typing_extensions numpy
-          python test/package/run_against_package.py "$env:USERPROFILE\output\ifcopenshell-python-312-*-${{ matrix.zip_suffix }}.zip"
+          uv run `
+            --python 3.12 `
+            test/package/run_against_package.py "$env:USERPROFILE\output\ifcopenshell-python-312-*-${{ matrix.zip_suffix }}.zip"
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v6
