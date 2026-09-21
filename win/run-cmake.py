@@ -188,17 +188,12 @@ def parse_args() -> Args:
         default=argparse.SUPPRESS,
         help=HelpStrings.ADD_COMMIT_SHA,
     )
-    USE_NINJA_DEFAULT = False
     parser.add_argument(
         "--use-ninja",
         dest="use_ninja",
         action=argparse.BooleanOptionalAction,
-        default=argparse.SUPPRESS,
-        help=(
-            "Use the Ninja generator instead of the MSVC generator/platform. "
-            "Also can be specified by using USE_NINJA env variable. "
-            f"(default: {USE_NINJA_DEFAULT})"
-        ),
+        default=False,
+        help="Use the Ninja generator instead of the MSVC generator/platform.",
     )
     parser.add_argument(
         "--clean",
@@ -222,12 +217,10 @@ def parse_args() -> Args:
     add_commit_sha = resolve_cli_or_env(
         getattr(args, "add_commit_sha", None), "ADD_COMMIT_SHA", ADD_COMMIT_SHA_DEFAULT, arg_type="bool"
     )
-    use_ninja = resolve_cli_or_env(getattr(args, "use_ninja", None), "USE_NINJA", USE_NINJA_DEFAULT, arg_type="bool")
-
     return Args(
         generator=generator,
         add_commit_sha=add_commit_sha,
-        use_ninja=use_ninja,
+        use_ninja=args.use_ninja,
         clean=args.clean,
         extra_args=extra_args,
     )
