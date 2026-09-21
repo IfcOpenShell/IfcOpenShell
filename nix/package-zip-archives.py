@@ -531,6 +531,7 @@ class Args(NamedTuple):
     shared: bool
     no_zip: bool
     fail_on_missing_deps: bool
+    no_executables: bool
 
 
 ARGS: Args
@@ -560,6 +561,11 @@ def main() -> None:
         action="store_true",
         help="Exit with an error at the end if any packaged binary has missing runtime dependencies.",
     )
+    parser.add_argument(
+        "--no-executables",
+        action="store_true",
+        help="Skip packaging standalone executables; only Python wrappers get zipped.",
+    )
     args = parser.parse_args()
 
     global ARGS
@@ -570,6 +576,7 @@ def main() -> None:
         shared=args.shared,
         no_zip=args.no_zip,
         fail_on_missing_deps=args.fail_on_missing_deps,
+        no_executables=args.no_executables,
     )
     logger.setLevel(ARGS.log_level)
 
@@ -601,7 +608,7 @@ def main() -> None:
     # Iterate over all executables in `install/ifcopenshell/bin` and zip them.
     # Each zip bundles dynamic libs from `lib` and also qt libs.
     bin_dir = ifcopenshell_install_dir / "bin"
-    for exe_path in sorted(bin_dir.iterdir()):
+    for exe_path in [] if ARGS.no_executables else sorted(bin_dir.iterdir()):
         if is_packageable_executable(exe_path):
             package_executable(
                 exe_path,
@@ -614,7 +621,7 @@ def main() -> None:
                 ARGS.arch_suffix,
             )
 
-    if is_platform("MAC"):
+    if not ARGS.no_executables and is_platform("MAC"):
         for app_path in sorted(ifcopenshell_install_dir.glob("*.app")):
             package_app_bundle(
                 app_path, ifcopenshell_install_dir, github_sha, output_dir, autodesk_connector_dir, ARGS.arch_suffix
