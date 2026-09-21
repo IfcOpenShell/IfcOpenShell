@@ -1,0 +1,120 @@
+{
+  "emsdk": {
+    "url": "https://github.com/emscripten-core/emsdk.git",
+    "version": "5.0.7",
+    "ref": "5.0.7",
+    "archive_type": "git",
+    "sha256": null,
+    "patches": []
+  },
+  "boost": {
+    "url": "https://archives.boost.io/release/1.86.0/source/boost_1_86_0.tar.bz2",
+    "version": "1.86.0",
+    "archive_type": "tar.bz2",
+    "sha256": "1bed88e40401b2cb7a1f76d4bab499e352fa4d0c5f31c0dbae64e24d34d7513b",
+    "patches": []
+  },
+  "eigen": {
+    "url": "https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.bz2",
+    "version": "3.4.0",
+    "archive_type": "tar.bz2",
+    "sha256": "b4c198460eba6f28d34894e3a5710998818515104d6e74e5cc331ce31e46e626",
+    "patches": []
+  },
+  "nlohmann_json": {
+    "url": "https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz",
+    "version": "3.11.3",
+    "archive_type": "tar.xz",
+    "sha256": "d6c65aca6b1ed68e7a182f4757257b107ae403032760ed6ef121c9d55e81757d",
+    "patches": []
+  },
+  "occt": {
+    "url": "https://github.com/Open-Cascade-SAS/OCCT/archive/refs/tags/V7_8_1.tar.gz",
+    "version": "7.8.1",
+    "archive_type": "tar.gz",
+    "sha256": "7321af48c34dc253bf8aae3f0430e8cb10976961d534d8509e72516978aa82f5",
+    "patches": [
+      "occt/no_em_js.patch"
+    ]
+  },
+  "gmp": {
+    "url": "https://ftp.gnu.org/gnu/gmp/gmp-6.3.0.tar.bz2",
+    "version": "6.3.0",
+    "archive_type": "tar.bz2",
+    "sha256": "ac28211a7cfb609bae2e2c8d6058d66c8fe96434f740cf6fe2e47b000d1c20cb",
+    "patches": []
+  },
+  "mpfr": {
+    "url": "https://www.mpfr.org/mpfr-3.1.6/mpfr-3.1.6.tar.bz2",
+    "version": "3.1.6",
+    "archive_type": "tar.bz2",
+    "sha256": "cf4f4b2d80abb79e820e78c8077b6725bbbb4e8f41896783c899087be0e94068",
+    "patches": []
+  },
+  "cgal": {
+    "url": "https://github.com/CGAL/cgal/archive/refs/tags/v5.6.3.tar.gz",
+    "version": "5.6.3",
+    "archive_type": "tar.gz",
+    "sha256": "8f0f63d3acca48f1a2bf4f17c82700880952e6eb07c56fc2dd205942121dbdfa",
+    "patches": []
+  },
+  "manifold": {
+    "url": "https://github.com/elalish/manifold/archive/refs/tags/v3.2.1.tar.gz",
+    "version": "3.2.1",
+    "archive_type": "tar.gz",
+    "sha256": "c2fddb0f4b2289caff660b29677883f0324415a9901f8f2aed4c83851f994c13",
+    "patches": [
+      "manifold/install-metadata-for-emscripten.patch"
+    ]
+  },
+  "libxml2": {
+    "url": "https://download.gnome.org/sources/libxml2/2.13/libxml2-2.13.8.tar.xz",
+    "version": "2.13.8",
+    "archive_type": "tar.xz",
+    "sha256": "72014489b1b6e22ca47d3cb11af4becb706faa997ac7be1846c478f50214ca81",
+    "patches": []
+  },
+  "pcre": {
+    "url": "https://downloads.sourceforge.net/project/pcre/pcre/8.41/pcre-8.41.tar.bz2",
+    "version": "8.41",
+    "archive_type": "tar.bz2",
+    "sha256": "3e2ee79b3446a697cb66969f9469762dfd7e17e3e98b8740f3ccc7e731246f8a",
+    "patches": []
+  },
+  "opencollada": {
+    "url": "https://github.com/KhronosGroup/OpenCOLLADA.git",
+    "version": "v1.6.68",
+    "ref": "v1.6.68",
+    "archive_type": "git",
+    "sha256": null,
+    "patches": [
+      "opencollada/pr622_and_disable_subdirs.patch",
+      "opencollada/allow_static_libraries_config_on_unix.patch",
+      "opencollada/remove_tr1.patch"
+    ]
+  },
+  "swig": {
+    "url": "https://github.com/swig/swig.git",
+    "version": "4.2.1",
+    "ref": "v4.2.1",
+    "archive_type": "git",
+    "sha256": null,
+    "patches": []
+  },
+  "rocksdb": {
+    "url": "https://github.com/facebook/rocksdb",
+    "version": "9.11.2",
+    "ref": "v9.11.2",
+    "archive_type": "git",
+    "sha256": null,
+    "patches": []
+  },
+  "zstd": {
+    "url": "https://github.com/facebook/zstd",
+    "version": "1.5.7",
+    "ref": "v1.5.7",
+    "archive_type": "git",
+    "sha256": null,
+    "patches": []
+  }
+}

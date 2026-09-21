@@ -48,12 +48,19 @@ set(kernel_libraries ${kernel_libraries} PARENT_SCOPE)
 set(tree_libraries ${tree_libraries} PARENT_SCOPE)
 
 if(WASM_BUILD)
+    # IfcGeom links `plugin` instead of IfcParse on WASM because wasm-ld rejects
+    # duplicate symbols when both the static `plugin` archive and IfcParse appear
+    # in the same link unit as a SIDE_MODULE plugin target.
     target_link_libraries(IfcGeom plugin ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} "Eigen3::Eigen")
 else()
     target_link_libraries(IfcGeom plugin IfcParse ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} "Eigen3::Eigen")
 endif()
 
-if((BUILD_CONVERT OR BUILD_IFCPYTHON) AND WITH_OPENCASCADE)
+if(WASM_BUILD)
+    ifcopenshell_wasm_define_main_import_target(IfcGeom INTERFACE_LINK_LIBRARIES "Eigen3::Eigen")
+endif()
+
+if((BUILD_CONVERT OR BUILD_IFCPYTHON OR BUILD_IFCAPI) AND WITH_OPENCASCADE)
     add_subdirectory(serialization)
     set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} PARENT_SCOPE)
     set(geometry_serializer_libraries ${geometry_serializer_libraries} PARENT_SCOPE)
