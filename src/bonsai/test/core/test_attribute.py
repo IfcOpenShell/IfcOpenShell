@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bonsai.core.attribute as subject
-from test.core.bootstrap import blender, ifc, root, spatial
+from test.core.bootstrap import blender, ifc, root, spatial  # ruff: ignore[unused-import]
 
 
 class TestCopyAttributeToSelection:

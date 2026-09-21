@@ -18,7 +18,7 @@
 
 
 import bonsai.core.project as subject
-from test.core.bootstrap import georeference, ifc, project, spatial
+from test.core.bootstrap import georeference, ifc, project, spatial  # ruff: ignore[unused-import]
 
 
 class TestCreateProject:
