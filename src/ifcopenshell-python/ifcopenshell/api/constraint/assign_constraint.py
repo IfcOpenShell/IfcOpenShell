@@ -81,7 +81,7 @@ class Usecase:
                 "OwnerHistory": ifcopenshell.api.owner.create_owner_history(self.file),
                 "RelatingConstraint": constraint,
                 "RelatedObjects": list(products_to_assign),
-            }
+            },
         )
 
     def get_constraint_rels(self, constraint: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:

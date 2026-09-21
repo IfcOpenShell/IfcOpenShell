@@ -1,7 +1,5 @@
 # This file was generated with the assistance of an AI coding tool.
 import ifcopenshell
-import ifcopenshell.api.project
-import ifcopenshell.api.pset
 import ifcopenshell.api.root
 
 from ifcedit.run import run_api, serialize_result

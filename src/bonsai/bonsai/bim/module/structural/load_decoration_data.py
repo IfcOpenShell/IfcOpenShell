@@ -624,12 +624,16 @@ class ShaderInfo:
                 "my": (
                     z_axis
                     if is_local
-                    else Vector((-1, 0, 1)) if y_match else Vector((0, 1, 0)).cross(x_axis).normalized()
+                    else Vector((-1, 0, 1))
+                    if y_match
+                    else Vector((0, 1, 0)).cross(x_axis).normalized()
                 ),
                 "mz": (
                     y_axis
                     if is_local
-                    else Vector((-1, 1, 0)) if z_match else Vector((0, 0, 1)).cross(x_axis).normalized()
+                    else Vector((-1, 1, 0))
+                    if z_match
+                    else Vector((0, 0, 1)).cross(x_axis).normalized()
                 ),
             }
             match_dict = {"fx": x_match or is_local, "fy": y_match, "fz": z_match}
@@ -807,7 +811,6 @@ class ShaderInfo:
                 if any([sinus[component], quad[component], const[component]]) or any(
                     item for item in array[:, component + 1]
                 ):
-
                     for currentitem in final_list:
                         polyline.append([currentitem[0], currentitem[component + 1]])
                         max_load = max(

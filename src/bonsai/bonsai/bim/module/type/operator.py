@@ -80,7 +80,7 @@ class AssignType(bpy.types.Operator, tool.Ifc.Operator):
         if skipped_classes:
             self.report(
                 {"WARNING"},
-                f"Skipped {', '.join(sorted(skipped_classes))}: not a valid occurrence for " f"{relating_type.is_a()}.",
+                f"Skipped {', '.join(sorted(skipped_classes))}: not a valid occurrence for {relating_type.is_a()}.",
             )
 
         if not compatible:
@@ -520,7 +520,7 @@ class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
             if skipped_classes:
                 self.report(
                     {"WARNING"},
-                    f"Skipped {', '.join(sorted(skipped_classes))}: not a valid occurrence for " f"{new.is_a()}.",
+                    f"Skipped {', '.join(sorted(skipped_classes))}: not a valid occurrence for {new.is_a()}.",
                 )
 
         if obj in context.selectable_objects:

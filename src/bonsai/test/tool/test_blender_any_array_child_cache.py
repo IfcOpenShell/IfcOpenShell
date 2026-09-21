@@ -61,10 +61,11 @@ def test_repeat_call_within_generation_reuses_cache():
         is_array_child_calls["n"] += 1
         return False
 
-    with patch("bonsai.tool.blender.tool.Blender.get_selected_objects", return_value=[obj_a, obj_b]), patch(
-        "bonsai.tool.blender.tool.Parametric.get_geom_generation", return_value=5
-    ), patch("bonsai.tool.blender.tool.Ifc.get_entity", return_value=Mock()), patch.object(
-        tool.Blender.Modifier, "is_array_child", side_effect=counting_is_array_child
+    with (
+        patch("bonsai.tool.blender.tool.Blender.get_selected_objects", return_value=[obj_a, obj_b]),
+        patch("bonsai.tool.blender.tool.Parametric.get_geom_generation", return_value=5),
+        patch("bonsai.tool.blender.tool.Ifc.get_entity", return_value=Mock()),
+        patch.object(tool.Blender.Modifier, "is_array_child", side_effect=counting_is_array_child),
     ):
         first = tool.Blender.Modifier.any_selected_is_array_child()
         second = tool.Blender.Modifier.any_selected_is_array_child()
@@ -86,10 +87,11 @@ def test_generation_advance_invalidates_cache():
         call_count["n"] += 1
         return False
 
-    with patch("bonsai.tool.blender.tool.Blender.get_selected_objects", return_value=[obj]), patch(
-        "bonsai.tool.blender.tool.Parametric.get_geom_generation", side_effect=lambda: gen_state["gen"]
-    ), patch("bonsai.tool.blender.tool.Ifc.get_entity", return_value=Mock()), patch.object(
-        tool.Blender.Modifier, "is_array_child", side_effect=counting_is_array_child
+    with (
+        patch("bonsai.tool.blender.tool.Blender.get_selected_objects", return_value=[obj]),
+        patch("bonsai.tool.blender.tool.Parametric.get_geom_generation", side_effect=lambda: gen_state["gen"]),
+        patch("bonsai.tool.blender.tool.Ifc.get_entity", return_value=Mock()),
+        patch.object(tool.Blender.Modifier, "is_array_child", side_effect=counting_is_array_child),
     ):
         tool.Blender.Modifier.any_selected_is_array_child()
         first = call_count["n"]
@@ -112,10 +114,11 @@ def test_selection_change_invalidates_cache():
         call_count["n"] += 1
         return False
 
-    with patch("bonsai.tool.blender.tool.Blender.get_selected_objects", side_effect=lambda: selection["sel"]), patch(
-        "bonsai.tool.blender.tool.Parametric.get_geom_generation", return_value=1
-    ), patch("bonsai.tool.blender.tool.Ifc.get_entity", return_value=Mock()), patch.object(
-        tool.Blender.Modifier, "is_array_child", side_effect=counting_is_array_child
+    with (
+        patch("bonsai.tool.blender.tool.Blender.get_selected_objects", side_effect=lambda: selection["sel"]),
+        patch("bonsai.tool.blender.tool.Parametric.get_geom_generation", return_value=1),
+        patch("bonsai.tool.blender.tool.Ifc.get_entity", return_value=Mock()),
+        patch.object(tool.Blender.Modifier, "is_array_child", side_effect=counting_is_array_child),
     ):
         tool.Blender.Modifier.any_selected_is_array_child()
         first = call_count["n"]
@@ -141,10 +144,11 @@ def test_short_circuits_on_first_hit():
         call_count["n"] += 1
         return True
 
-    with patch("bonsai.tool.blender.tool.Blender.get_selected_objects", return_value=[obj_a, obj_b, obj_c]), patch(
-        "bonsai.tool.blender.tool.Parametric.get_geom_generation", return_value=1
-    ), patch("bonsai.tool.blender.tool.Ifc.get_entity", return_value=Mock()), patch.object(
-        tool.Blender.Modifier, "is_array_child", side_effect=counting_is_array_child
+    with (
+        patch("bonsai.tool.blender.tool.Blender.get_selected_objects", return_value=[obj_a, obj_b, obj_c]),
+        patch("bonsai.tool.blender.tool.Parametric.get_geom_generation", return_value=1),
+        patch("bonsai.tool.blender.tool.Ifc.get_entity", return_value=Mock()),
+        patch.object(tool.Blender.Modifier, "is_array_child", side_effect=counting_is_array_child),
     ):
         result = tool.Blender.Modifier.any_selected_is_array_child()
 

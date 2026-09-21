@@ -4,7 +4,6 @@ import subprocess
 import sys
 
 import ifcopenshell
-import pytest
 
 
 def run_ifcedit(*args, stdin=None):

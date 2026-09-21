@@ -34,7 +34,6 @@ openings stay on both walls."""
 
 from unittest.mock import MagicMock, patch
 
-import bpy
 import pytest
 
 pytestmark = pytest.mark.wall
@@ -167,9 +166,9 @@ def test_opening_axis_extent_offset_cursor_inside_extent_returns_straddling_rang
 
     # Cursor at world X=4.7 → t=0.47 (inside the opening, not centred on it).
     cut_percentage = 0.47
-    assert (
-        min_t < cut_percentage < max_t
-    ), f"opening [t={min_t}, t={max_t}] must straddle off-centre cursor at t={cut_percentage}"
+    assert min_t < cut_percentage < max_t, (
+        f"opening [t={min_t}, t={max_t}] must straddle off-centre cursor at t={cut_percentage}"
+    )
 
 
 def test_straddling_opening_is_kept_on_both_sides():

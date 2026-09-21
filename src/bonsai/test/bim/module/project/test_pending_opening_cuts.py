@@ -51,9 +51,12 @@ class TestApplyPendingOpeningCuts(NewIfc):
         element, obj = _make_linked_wall()
         _populate_pending(element.id())
 
-        with patch.object(tool.Geometry, "reimport_element_representations") as mock_reimport, patch(
-            "ifcopenshell.util.representation.get_representation",
-            return_value=object(),
+        with (
+            patch.object(tool.Geometry, "reimport_element_representations") as mock_reimport,
+            patch(
+                "ifcopenshell.util.representation.get_representation",
+                return_value=object(),
+            ),
         ):
             result = bpy.ops.bim.apply_pending_opening_cuts()
 

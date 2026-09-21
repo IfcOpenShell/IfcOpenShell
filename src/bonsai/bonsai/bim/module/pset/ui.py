@@ -132,7 +132,7 @@ def draw_psetqto_ui(
         op.obj = obj_name
         op.obj_type = obj_type
     elif not props.active_pset_id:
-        row.label(text=f'{pset["Name"]}', icon="COPY_ID")
+        row.label(text=f"{pset['Name']}", icon="COPY_ID")
 
         if (shared := pset["shared_pset_uses"]) > 1:
             unshare_pset_row = row.row(align=True)

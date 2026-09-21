@@ -18,9 +18,7 @@
 
 import json
 
-import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.document
 
 import bonsai.core.tool

@@ -27,7 +27,6 @@ cypher_file_path = "./db_config/init.cypher"
 
 
 class MyDB:
-
     def __init__(self, object_driver):
         self.driver = object_driver
         self.database = "neo4j"

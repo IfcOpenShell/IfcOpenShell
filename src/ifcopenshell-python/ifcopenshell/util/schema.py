@@ -400,9 +400,9 @@ class Migrator:
                 for inverse, attribute_index in old_file.get_inverse(
                     element, allow_duplicate=True, with_attribute_indices=True
                 ):
-                    self.attribute_overrides.setdefault(inverse.id(), {})[
-                        attribute_index
-                    ] = f"{element[2]}-{element[1]}-{element[0]}"
+                    self.attribute_overrides.setdefault(inverse.id(), {})[attribute_index] = (
+                        f"{element[2]}-{element[1]}-{element[0]}"
+                    )
                 to_delete.add(element)
 
         if old_file.schema == "IFC4" and new_file.schema == "IFC4X3":

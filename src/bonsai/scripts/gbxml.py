@@ -180,10 +180,13 @@ class GbxmlExporter:
             if len(tf.vertices) == 3:
                 tf_tris = ((me.vertices[tfv[0]], me.vertices[tfv[1]], me.vertices[tfv[2]]),)
             else:
-                tf_tris = (me.vertices[tfv[0]], me.vertices[tfv[1]], me.vertices[tfv[2]]), (
-                    me.vertices[tfv[2]],
-                    me.vertices[tfv[3]],
-                    me.vertices[tfv[0]],
+                tf_tris = (
+                    (me.vertices[tfv[0]], me.vertices[tfv[1]], me.vertices[tfv[2]]),
+                    (
+                        me.vertices[tfv[2]],
+                        me.vertices[tfv[3]],
+                        me.vertices[tfv[0]],
+                    ),
                 )
 
             for tf_iter in tf_tris:

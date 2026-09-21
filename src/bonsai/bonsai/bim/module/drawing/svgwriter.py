@@ -636,14 +636,14 @@ class SvgWriter:
             points = [start_svg + pattern_dir * segment_width * i for i in range(segments)]
             marker_id = f"batting-{element.GlobalId}"
             marker_end_id = f"batting-end-{element.GlobalId}"
-            path_data = f"""M 0 {0.2*thickness}
-                A {0.5*segment_width} {0.2*thickness} 0 0 1 {segment_width} {0.2*thickness}
-                L {0.5*segment_width} {0.8*thickness}
-                M 0 {0.2*thickness}
-                L {0.5*segment_width} {0.8*thickness}
-                A {0.5*segment_width} {0.2*thickness} 0 0 0 {segment_width} {1.0*thickness}
-                M {0.5*segment_width} {0.8*thickness}
-                A {0.5*segment_width} {0.2*thickness} 0 0 1 0 {1.0*thickness}
+            path_data = f"""M 0 {0.2 * thickness}
+                A {0.5 * segment_width} {0.2 * thickness} 0 0 1 {segment_width} {0.2 * thickness}
+                L {0.5 * segment_width} {0.8 * thickness}
+                M 0 {0.2 * thickness}
+                L {0.5 * segment_width} {0.8 * thickness}
+                A {0.5 * segment_width} {0.2 * thickness} 0 0 0 {segment_width} {1.0 * thickness}
+                M {0.5 * segment_width} {0.8 * thickness}
+                A {0.5 * segment_width} {0.2 * thickness} 0 0 1 0 {1.0 * thickness}
                 """
             path_data = " ".join(path_data.split())
 

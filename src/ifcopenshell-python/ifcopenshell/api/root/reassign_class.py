@@ -188,7 +188,6 @@ class Usecase:
         """
         element = self.reassign_class(element, ifc_class, predefined_type)
         if element.is_a("IfcTypeProduct"):
-
             if self.occurrence_class:
                 occurrence_class = self.occurrence_class
             else:
@@ -199,9 +198,9 @@ class Usecase:
                 occurrence_class = next(
                     iter(ifcopenshell.util.type.get_applicable_entities(ifc_class, self.file.schema))
                 )
-            assert not self.schema.declaration_by_name(occurrence_class)._is(
-                "IfcTypeProduct"
-            ), f"Unexpected occurrence_class: '{occurrence_class}' / '{self.occurrence_class}'."
+            assert not self.schema.declaration_by_name(occurrence_class)._is("IfcTypeProduct"), (
+                f"Unexpected occurrence_class: '{occurrence_class}' / '{self.occurrence_class}'."
+            )
 
             for occurrence in ifcopenshell.util.element.get_types(element):
                 self.reassign_class(occurrence, occurrence_class, predefined_type)

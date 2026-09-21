@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bonsai.core.type as subject
-from test.core.bootstrap import geometry, ifc, model, type
+from test.core.bootstrap import geometry, ifc, model, type  # ruff: ignore[unused-import]
 
 
 class TestAssignType:

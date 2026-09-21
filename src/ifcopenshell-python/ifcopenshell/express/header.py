@@ -17,21 +17,20 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import operator
 import itertools
+import operator
+from collections import defaultdict
 
 import codegen
-import templates
 import documentation
-
-from collections import defaultdict
+import templates
 
 
 class Header(codegen.Base):
     def __init__(self, mapping):
         declarations = []
 
-        case_lookup = lambda nm: [k for k in mapping.schema.keys if k.lower() == nm.lower()][0]
+        case_lookup = lambda nm: next(k for k in mapping.schema.keys if k.lower() == nm.lower())
         case_normalize = lambda nm: nm if nm.startswith("express::") else case_lookup(nm)
         create_supertype_statement = lambda nms: ", ".join(
             "public %s %s" % ("" if c.startswith("express::") else "", c) for c in nms
@@ -86,7 +85,6 @@ class Header(codegen.Base):
         emitted_simpletypes = set()
         while len(emitted_simpletypes) < len(mapping.schema.simpletypes):
             for name, type in mapping.schema.simpletypes.items():
-
                 if name.lower() in emitted_simpletypes:
                     continue
 
@@ -109,10 +107,8 @@ class Header(codegen.Base):
                 # is on the other side again, as it is in Express.
                 # superclasses.extend(get_select_super_types(name, bases=all_superclasses))
 
-                is_emitted = (
-                    lambda nm: nm == "express::declared_type"
-                    or nm in mapping.schema.selects
-                    or nm.lower() in emitted_simpletypes
+                is_emitted = lambda nm: (
+                    nm == "express::declared_type" or nm in mapping.schema.selects or nm.lower() in emitted_simpletypes
                 )
                 if not all(map(is_emitted, superclasses)):
                     continue

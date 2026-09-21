@@ -33,7 +33,6 @@ Two invariants:
 import types
 from unittest.mock import MagicMock, patch
 
-import bpy
 import pytest
 
 pytestmark = pytest.mark.wall

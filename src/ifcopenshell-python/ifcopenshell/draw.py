@@ -287,7 +287,6 @@ def main(
 
         g2 = None
         for iteration in range(num_passes + 1):
-
             # initialize empty group, note that in the current approach only one
             # group is stored
             ps = W.svg_groups_of_polygons()
@@ -349,7 +348,6 @@ def main(
 
             # Loop over the cell paths
             for pi, p in enumerate(g2.getElementsByTagName("path")):
-
                 progress_function("group", i, "pass", iteration, "path", pi)
 
                 d = p.getAttribute("d")

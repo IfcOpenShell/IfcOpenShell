@@ -17,10 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 # This file was generated with the assistance of an AI coding tool.
 
-import pytest
-
 import bonsai.core.ifcgit as subject
-from test.core.bootstrap import ifc, ifcgit
+from test.core.bootstrap import ifc, ifcgit  # ruff: ignore[unused-import]
 
 
 class MockOperator:

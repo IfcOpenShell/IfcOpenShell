@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bonsai.core.drawing as subject
-from test.core.bootstrap import Prophecy, blender, collector, drawing, geometry, ifc
+from test.core.bootstrap import Prophecy, blender, collector, drawing, geometry, ifc  # ruff: ignore[unused-import]
 
 
 class TestEnableEditingText:

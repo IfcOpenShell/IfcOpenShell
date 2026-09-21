@@ -17,7 +17,6 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import ifcopenshell
 import ifcopenshell.api.project
 import ifcopenshell.api.root
 import ifcopenshell.api.unit

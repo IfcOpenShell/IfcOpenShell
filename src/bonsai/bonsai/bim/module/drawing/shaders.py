@@ -337,9 +337,12 @@ class BaseLinesShader(BaseShader):
 
     TYPE = "LINES"
 
-    DEF_GLSL = BaseShader.DEF_GLSL + """
+    DEF_GLSL = (
+        BaseShader.DEF_GLSL
+        + """
     #define GAP_SIZE {gap_size}
     """
+    )
 
     GEOM_GLSL = """
     layout(lines) in;
@@ -397,10 +400,13 @@ class DotsGizmoShader(GizmoShader):
 
     TYPE = "POINTS"
 
-    DEF_GLSL = BaseShader.DEF_GLSL + """
+    DEF_GLSL = (
+        BaseShader.DEF_GLSL
+        + """
     #define CIRCLE_SEGMENTS 12
     #define CIRCLE_RADIUS 8
     """
+    )
 
     GEOM_GLSL = """
     layout(points) in;

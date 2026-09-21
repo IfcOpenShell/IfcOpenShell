@@ -86,6 +86,6 @@ def assign_product(
                 "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
                 "RelatedObjects": [related_object],
                 "RelatingProduct": relating_product,
-            }
+            },
         )
     return referenced_by

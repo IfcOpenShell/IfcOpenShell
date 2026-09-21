@@ -14,7 +14,6 @@ tests = { features = ["tests", "common"], no-default-feature = true }
 
 [feature.lint.dependencies]
 ruff = "*"
-black = "*"
 
 [feature.common.dependencies]
 # Build deps
@@ -77,7 +76,7 @@ install-test = { cmd = ["cmake", "--install", "build/win-test", "--config", "Rel
 test = { cmd = "pytest .", cwd="src/ifcopenshell-python/test", depends-on=["install-test"], env = {PYTHONPATH="$PIXI_PROJECT_ROOT/src/ifcpatch"}}
 
 [feature.lint.tasks]
-lint = { cmd = "ruff check && black --diff --check ."}
+lint = { cmd = "ruff check && ruff format --check"}
 
 [feature.common.target.win-64.activation]
 #scripts = ["cmake/activate.bat"]

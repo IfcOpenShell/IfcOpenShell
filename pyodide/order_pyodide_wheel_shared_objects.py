@@ -94,9 +94,10 @@ def rewrite_wheel(wheel: Path, ordered: list[zipfile.ZipInfo]) -> None:
     os.close(fd)
     temp_path = Path(temp_name)
     try:
-        with zipfile.ZipFile(wheel) as zin, zipfile.ZipFile(
-            temp_path, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9
-        ) as zout:
+        with (
+            zipfile.ZipFile(wheel) as zin,
+            zipfile.ZipFile(temp_path, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zout,
+        ):
             for info in ordered:
                 zout.writestr(zip_info_for_write(info), zin.read(info))
         os.replace(temp_path, wheel)

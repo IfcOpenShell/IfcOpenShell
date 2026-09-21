@@ -18,7 +18,7 @@
 
 
 import bonsai.core.owner as subject
-from test.core.bootstrap import Prophecy, ifc, owner
+from test.core.bootstrap import Prophecy, ifc, owner  # ruff: ignore[unused-import]
 
 
 class TestAddPerson:

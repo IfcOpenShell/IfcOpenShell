@@ -65,6 +65,3 @@ commands = pytest --cov --cov-report=term tests
 
 [tool.ruff]
 extend = "../../pyproject.toml"
-lint.extend-select = [
-  "unused-import",
-]

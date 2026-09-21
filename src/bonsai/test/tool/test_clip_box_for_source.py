@@ -25,7 +25,6 @@ import ifcopenshell
 import ifcopenshell.api.spatial
 import ifcopenshell.api.type
 import pytest
-from mathutils import Vector
 
 import bonsai.tool as tool
 from test.bim.bootstrap import NewFile

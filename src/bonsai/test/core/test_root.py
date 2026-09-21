@@ -17,8 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bonsai.core.root as subject
-import test.core.test_geometry
-from test.core.bootstrap import collector, geometry, ifc, root
+from test.core.bootstrap import collector, geometry, ifc, root  # ruff: ignore[unused-import]
 
 
 class TestCopyClass:

@@ -1124,9 +1124,9 @@ class Result:
 class EntityResult(Result):
     def to_string(self):
         if self.reason["type"] == "NAME":
-            return f"The entity class \"{self.reason['actual']}\" does not meet the required IFC class"
+            return f'The entity class "{self.reason["actual"]}" does not meet the required IFC class'
         elif self.reason["type"] == "PREDEFINEDTYPE":
-            return f"The predefined type \"{str(self.reason['actual'])}\" does not meet the required type"
+            return f'The predefined type "{str(self.reason["actual"])}" does not meet the required type'
 
 
 class AttributeResult(Result):
@@ -1134,11 +1134,11 @@ class AttributeResult(Result):
         if self.reason["type"] == "NOVALUE":
             return "The required attribute did not exist"
         elif self.reason["type"] == "FALSEY":
-            return f"The attribute value \"{str(self.reason['actual'])}\" is empty"
+            return f'The attribute value "{str(self.reason["actual"])}" is empty'
         elif self.reason["type"] == "INVALID":
             return "An invalid attribute name was specified in the IDS"
         elif self.reason["type"] == "VALUE":
-            return f"The attribute value \"{str(self.reason['actual'])}\" does not match the requirement"
+            return f'The attribute value "{str(self.reason["actual"])}" does not match the requirement'
         elif self.reason["type"] == "PROHIBITED":
             return "The attribute value should not have met the requirement"
 
@@ -1148,9 +1148,9 @@ class ClassificationResult(Result):
         if self.reason["type"] == "NOVALUE":
             return "The entity has no classification"
         elif self.reason["type"] == "VALUE":
-            return f"The references \"{str(self.reason['actual'])}\" do not match the requirements"
+            return f'The references "{str(self.reason["actual"])}" do not match the requirements'
         elif self.reason["type"] == "SYSTEM":
-            return f"The systems \"{str(self.reason['actual'])}\" do not match the requirements"
+            return f'The systems "{str(self.reason["actual"])}" do not match the requirements'
         elif self.reason["type"] == "PROHIBITED":
             return "The classification should not have met the requirement"
 
@@ -1160,9 +1160,9 @@ class PartOfResult(Result):
         if self.reason["type"] == "NOVALUE":
             return "The entity has no relationship"
         elif self.reason["type"] == "ENTITY":
-            return f"The entity has a relationship with incorrect entities: \"{str(self.reason['actual'])}\""
+            return f'The entity has a relationship with incorrect entities: "{str(self.reason["actual"])}"'
         elif self.reason["type"] == "PREDEFINEDTYPE":
-            return f"The entity has a relationship with incorrect predefined type: \"{str(self.reason['actual'])}\""
+            return f'The entity has a relationship with incorrect predefined type: "{str(self.reason["actual"])}"'
         elif self.reason["type"] == "PROHIBITED":
             return "The relationship should not have met the requirement"
 
@@ -1174,15 +1174,15 @@ class PropertyResult(Result):
         elif self.reason["type"] == "NOVALUE":
             return "The property set does not contain the required property"
         elif self.reason["type"] == "DATATYPE":
-            return f"The property's data type \"{str(self.reason['actual'])}\" does not match the required data type of \"{str(self.reason['dataType'])}\""
+            return f'The property\'s data type "{str(self.reason["actual"])}" does not match the required data type of "{str(self.reason["dataType"])}"'
         elif self.reason["type"] == "VALUE":
             if isinstance(self.reason["actual"], list):
                 if len(self.reason["actual"]) == 1:
-                    return f"The property value \"{str(self.reason['actual'][0])}\" does not match the requirements"
+                    return f'The property value "{str(self.reason["actual"][0])}" does not match the requirements'
                 else:
-                    return f"The property values \"{str(self.reason['actual'])}\" do not match the requirements"
+                    return f'The property values "{str(self.reason["actual"])}" do not match the requirements'
             else:
-                return f"The property value \"{str(self.reason['actual'])}\" does not match the requirements"
+                return f'The property value "{str(self.reason["actual"])}" does not match the requirements'
         elif self.reason["type"] == "PROHIBITED":
             return f"The property should not have met the requirement"
 
@@ -1192,8 +1192,6 @@ class MaterialResult(Result):
         if self.reason["type"] == "NOVALUE":
             return "The entity has no material"
         elif self.reason["type"] == "VALUE":
-            return (
-                f"The material names and categories of \"{str(self.reason['actual'])}\" does not match the requirement"
-            )
+            return f'The material names and categories of "{str(self.reason["actual"])}" does not match the requirement'
         elif self.reason["type"] == "PROHIBITED":
             return f"The material should not have met the requirement"

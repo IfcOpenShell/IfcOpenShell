@@ -4,27 +4,27 @@ Code style
 
 Python code formatters
 -------------------------------
-For Python code formatting, we use `Black code formatter <https://pypi.org/project/black/>`__, 
-black settings are stored in the repository's pyproject.toml.
+For Python code formatting, we use the `ruff formatter <https://docs.astral.sh/ruff/formatter/>`__,
+its settings are stored in the repository's pyproject.toml.
 
-We have GitHub workflow `ci-lint` to maintain black formatting across the repository.
+We have GitHub workflow `ci-lint` to maintain the formatting across the repository.
 
-``black`` can be installed using ``pip install black`` and files can be formatted with the following example command:
+``ruff`` can be installed using ``pip install ruff`` and files can be formatted with the following example command:
 
 .. code-block:: bash
 
    # Format the entire repository.
-   # Should be used in 99% cases as the entire repository is already formatted using black.
-   black .
+   # Should be used in 99% cases as the entire repository is already formatted.
+   ruff format
    # Format only some specific file.
-   black src/bonsai/bonsai/bim/module/qto/operator.py
+   ruff format src/bonsai/bonsai/bim/module/qto/operator.py
 
 
 There is also `ruff` with some basic linter rules (checked automatically by the same Github workflow).
 Which also helps maintaining consistency across the code base
 and ensure new Python syntax doesn't break code on older Python versions.
 
-``ruff`` can be installed using ``pip install ruff`` and files can be formatted with the following example commands:
+Files can be checked with the following example commands:
 
 .. code-block:: bash
    

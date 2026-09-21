@@ -79,7 +79,7 @@ class DereferenceStructure(bpy.types.Operator, tool.Ifc.Operator):
 class ReferenceFromProvidedStructure(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.reference_from_provided_structure"
     bl_label = "Reference from Provided Structure"
-    bl_description = "Reference selected objects from the provided structure.\n\n" "ALT + Click to dereference instead."
+    bl_description = "Reference selected objects from the provided structure.\n\nALT + Click to dereference instead."
     bl_options = {"REGISTER", "UNDO"}
 
     structure: bpy.props.IntProperty(options={"SKIP_SAVE"})

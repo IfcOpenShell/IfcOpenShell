@@ -31,7 +31,10 @@ def calculate_quantities(usecase_path, ifc_file: ifcopenshell.file, settings):
         return
     task = next(e for e in ifc_file.get_inverse(element) if e.is_a("IfcTask"))
     qto = ifcopenshell.api.pset.add_qto(
-        ifc_file, should_run_listeners=False, product=task, name="Qto_TaskBaseQuantities"  # ty:ignore[unknown-argument]
+        ifc_file,
+        should_run_listeners=False,  # ty:ignore[unknown-argument]
+        product=task,
+        name="Qto_TaskBaseQuantities",
     )
     ifcopenshell.api.pset.edit_qto(
         ifc_file,

@@ -18,7 +18,6 @@
 
 import os
 
-import bpy
 import ifcopenshell
 import ifcopenshell.api.style
 import ifcopenshell.util.schema

@@ -19,9 +19,7 @@
 from functools import cache
 from typing import Any
 
-import bpy
 import ifcopenshell
-import ifcopenshell.api.owner
 
 import bonsai.core.tool
 import bonsai.tool as tool

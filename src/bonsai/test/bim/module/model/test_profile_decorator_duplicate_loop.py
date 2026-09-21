@@ -32,7 +32,6 @@ Edit Mode). ``_connected_components`` splits each group's vertices back
 into their connected loops so a duplicate is drawn immediately, see #6944."""
 
 import bmesh
-import bpy
 import pytest
 
 from bonsai.bim.module.model.decorator import _connected_components

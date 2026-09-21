@@ -29,7 +29,6 @@ try:
 
     USE_OCCT_HANDLE = False
 except ImportError:
-
     USE_OCCT_HANDLE = True
 
 from collections import OrderedDict, defaultdict
@@ -48,7 +47,6 @@ from .code_editor_pane import code_edit
 try:
     from OCC.Display.pyqt5Display import qtViewer3d
 except BaseException:
-
     try:
         import OCC.Display.backend
     except BaseException:
@@ -139,7 +137,8 @@ class configuration:
             config.set(
                 "snippets",
                 "print all wall ids",
-                self.config_encode("""
+                self.config_encode(
+                    """
 ###########################################################################
 # A simple script that iterates over all walls in the current model       #
 # and prints their Globally unique IDs (GUIDS) to the console window      #
@@ -147,13 +146,15 @@ class configuration:
 
 for wall in model.by_type("IfcWall"):
     print ("wall with global id: "+str(wall.GlobalId))
-""".lstrip()),
+""".lstrip()
+                ),
             )
 
             config.set(
                 "snippets",
                 "print properties of current selection",
-                self.config_encode("""
+                self.config_encode(
+                    """
 ###########################################################################
 # A simple script that iterates over all IfcPropertySets of the currently #
 # selected object and prints them to the console                          #
@@ -171,7 +172,8 @@ if selection:
              for prop in relDefinesByProperties.RelatingPropertyDefinition.HasProperties:
                  print ("{:<20} :{}".format(prop.Name,prop.NominalValue.wrappedValue))
          print ("\\n")
-""".lstrip()),
+""".lstrip()
+                ),
             )
             with open(conf_file, "w") as configfile:
                 config.write(configfile)
@@ -422,7 +424,6 @@ class application(QtWidgets.QApplication):
             print("property set dictionary has {} entries".format(len(self.prop_dict)))
 
     class viewer(qtViewer3d):
-
         instanceSelected = QtCore.pyqtSignal([object])
 
         #         @staticmethod
@@ -568,7 +569,6 @@ class application(QtWidgets.QApplication):
                     self.instanceSelected.emit(inst)
 
     class window(QtWidgets.QMainWindow):
-
         TITLE = "IfcOpenShell IFC viewer"
 
         window_closed = QtCore.pyqtSignal([])

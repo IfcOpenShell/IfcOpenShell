@@ -50,7 +50,6 @@ class Obj2Ifc:
 
         self.scene = pywavefront.Wavefront(self.path, create_materials=True, collect_faces=True)
         for mesh in self.scene.mesh_list:
-
             faces = mesh.faces
             ifc_faces = np.zeros([len(faces)], dtype=object)
             for i, face in enumerate(faces):

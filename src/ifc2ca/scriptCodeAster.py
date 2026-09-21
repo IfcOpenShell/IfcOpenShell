@@ -17,7 +17,6 @@
 # along with Ifc2CA.  If not, see <http://www.gnu.org/licenses/>.
 
 import itertools
-import json
 from pathlib import Path
 
 import numpy as np
