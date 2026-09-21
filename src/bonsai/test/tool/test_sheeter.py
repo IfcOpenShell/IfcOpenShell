@@ -19,6 +19,8 @@
 import os
 
 import ifcopenshell
+import ifcopenshell.api.document
+import ifcopenshell.guid
 import pytest
 
 
@@ -277,3 +279,305 @@ class TestSetTemplateValues:
     def test_an_empty_edit_changes_nothing(self, sheet_model, calls):
         assert sheet_model.builder.set_template_values(sheet_model.layout, {"kind": "sheet"}, {}) == {"changed": []}
         assert calls == []
+
+
+class TestSheetSpatial:
+    """{{Site...}} and {{Building...}} fields: the site and building a sheet is about."""
+
+    def _guid(self):
+        return ifcopenshell.guid.new()
+
+    def _project(self, sheet_model):
+        projects = sheet_model.ifc.by_type("IfcProject")
+        return projects[0] if projects else sheet_model.ifc.createIfcProject(GlobalId=self._guid(), Name="P")
+
+    def _aggregate(self, sheet_model, parent, *parts):
+        sheet_model.ifc.createIfcRelAggregates(GlobalId=self._guid(), RelatingObject=parent, RelatedObjects=parts)
+
+    def _site(self, sheet_model, name=None, parent=None, **address):
+        site = sheet_model.ifc.createIfcSite(GlobalId=self._guid(), Name=name)
+        if address:
+            site.SiteAddress = sheet_model.ifc.createIfcPostalAddress(**address)
+        self._aggregate(sheet_model, parent or self._project(sheet_model), site)
+        return site
+
+    def _building(self, sheet_model, site, name=None, **address):
+        building = sheet_model.ifc.createIfcBuilding(GlobalId=self._guid(), Name=name)
+        if address:
+            building.BuildingAddress = sheet_model.ifc.createIfcPostalAddress(**address)
+        self._aggregate(sheet_model, site, building)
+        return building
+
+    def _link(self, sheet_model, *elements):
+        ifcopenshell.api.document.assign_document(sheet_model.ifc, products=list(elements), document=sheet_model.sheet)
+
+    def _data(self, sheet_model):
+        return sheet_model.builder.get_spatial_data(sheet_model.sheet)
+
+    def _set(self, sheet_model, values):
+        return sheet_model.builder.set_template_values(sheet_model.layout, {"kind": "sheet"}, values)
+
+    def _fields(self, sheet_model, names):
+        return sheet_model.builder.get_editable_fields(sheet_model.layout, {"kind": "sheet"}, names)["fields"]
+
+    # --- reading ---------------------------------------------------------
+
+    def test_a_single_site_and_building_need_no_link(self, sheet_model):
+        site = self._site(
+            sheet_model, "Lot 7", AddressLines=["123 Main St", "Suite 4"], Town="Madison", Region="WI", PostalCode="53703"
+        )
+        self._building(sheet_model, site, "Library", Town="Madison")
+        data = self._data(sheet_model)
+        assert data["SiteName"] == "Lot 7"
+        assert data["SiteAddressLines"] == "123 Main St, Suite 4"
+        assert data["SiteAddress"] == "123 Main St, Suite 4, Madison, WI 53703"
+        assert data["BuildingName"] == "Library"
+        assert data["BuildingTown"] == "Madison"
+
+    def test_a_building_and_its_site_each_show_their_own_address(self, sheet_model):
+        # A Revit export's address is on the building; it is not shown as the site's.
+        site = self._site(sheet_model, "Lot 7")
+        self._building(sheet_model, site, "Library", Town="Chicago")
+        data = self._data(sheet_model)
+        assert data["SiteTown"] == ""
+        assert data["BuildingTown"] == "Chicago"
+
+    def test_several_buildings_and_no_link_leave_the_building_blank(self, sheet_model):
+        # Guessing would put one building's address on another's sheet.
+        site = self._site(sheet_model, "Campus")
+        self._building(sheet_model, site, "North Hall", Town="Madison")
+        self._building(sheet_model, site, "South Hall", Town="Verona")
+        data = self._data(sheet_model)
+        assert data["SiteName"] == "Campus"
+        assert data["BuildingName"] == ""
+        assert data["BuildingTown"] == ""
+
+    def test_a_linked_building_is_shown_with_the_site_it_is_on(self, sheet_model):
+        north = self._site(sheet_model, "North Lot")
+        south = self._site(sheet_model, "South Lot")
+        self._building(sheet_model, north, "North Hall")
+        hall = self._building(sheet_model, south, "South Hall", Town="Verona")
+        self._link(sheet_model, hall)
+        data = self._data(sheet_model)
+        assert data["BuildingName"] == "South Hall"
+        assert data["BuildingTown"] == "Verona"
+        assert data["SiteName"] == "South Lot"
+
+    def test_a_linked_site_narrows_the_buildings_to_its_own(self, sheet_model):
+        north = self._site(sheet_model, "North Lot")
+        south = self._site(sheet_model, "South Lot")
+        self._building(sheet_model, north, "North Hall")
+        self._building(sheet_model, south, "South Hall")
+        self._link(sheet_model, south)
+        assert self._data(sheet_model)["BuildingName"] == "South Hall"
+
+    def test_the_lots_of_a_site_complex_do_not_make_it_ambiguous(self, sheet_model):
+        campus = self._site(sheet_model, "Campus")
+        self._site(sheet_model, "Lot A", parent=campus)
+        self._site(sheet_model, "Lot B", parent=campus)
+        assert self._data(sheet_model)["SiteName"] == "Campus"
+
+    def test_no_site_or_building_is_blank_not_the_word_None(self, sheet_model):
+        data = self._data(sheet_model)
+        assert data["SiteAddress"] == ""
+        assert data["BuildingName"] == ""
+
+    # --- the link, as a field ------------------------------------------------
+
+    def test_the_link_is_a_choice_labelled_with_what_automatic_gives(self, sheet_model):
+        site = self._site(sheet_model, "Campus")
+        self._building(sheet_model, site, "South Hall")
+        north = self._building(sheet_model, site, "North Hall")
+        building, = self._fields(sheet_model, ["Building"])
+        assert building["value"] == ""
+        assert building["editable"] is True
+        assert building["options"][0] == {"value": "", "label": "Automatic (none - more than one to choose from)"}
+        # Sorted by name, which is what a person reading the list can see.
+        assert [o["label"] for o in building["options"][1:]] == ["North Hall", "South Hall"]
+
+        self._link(sheet_model, north)
+        site_field, building = self._fields(sheet_model, ["Site", "Building"])
+        assert building["value"] == north.GlobalId
+        assert site_field["options"][0]["label"] == "Automatic (Campus)"
+
+    def test_two_with_the_same_name_are_told_apart(self, sheet_model):
+        a = self._site(sheet_model, "Lot")
+        self._site(sheet_model, "Lot")
+        site, = self._fields(sheet_model, ["Site"])
+        assert f"Lot ({a.GlobalId})" in [o["label"] for o in site["options"]]
+
+    # --- editing -------------------------------------------------------------
+
+    def test_linking_a_building_replaces_the_last_link(self, sheet_model):
+        site = self._site(sheet_model, "Campus")
+        north = self._building(sheet_model, site, "North Hall")
+        south = self._building(sheet_model, site, "South Hall")
+        self._set(sheet_model, {"Building": north.GlobalId})
+        self._set(sheet_model, {"Building": south.GlobalId})
+        assert sheet_model.builder.get_sheet_links(sheet_model.sheet)["Building"] == south
+        assert self._data(sheet_model)["BuildingName"] == "South Hall"
+        # The old link is gone, not merely outranked.
+        assert [e for r in sheet_model.sheet.DocumentInfoForObjects for e in r.RelatedObjects] == [south]
+
+    def test_an_empty_link_unlinks(self, sheet_model):
+        site = self._site(sheet_model, "Campus")
+        north = self._building(sheet_model, site, "North Hall")
+        self._building(sheet_model, site, "South Hall")
+        self._link(sheet_model, north)
+        self._set(sheet_model, {"Building": ""})
+        assert sheet_model.builder.get_sheet_links(sheet_model.sheet)["Building"] is None
+
+    def test_a_link_to_something_gone_is_refused(self, sheet_model):
+        self._site(sheet_model, "Campus")
+        with pytest.raises(ValueError, match="no longer in the model"):
+            self._set(sheet_model, {"Site": "0000000000000000000000"})
+
+    def test_a_link_to_the_wrong_kind_of_thing_is_refused(self, sheet_model):
+        site = self._site(sheet_model, "Campus")
+        with pytest.raises(ValueError, match="building is no longer"):
+            self._set(sheet_model, {"Building": site.GlobalId})
+
+    def test_an_edit_goes_to_the_linked_building(self, sheet_model):
+        site = self._site(sheet_model, "Campus")
+        north = self._building(sheet_model, site, "North Hall", Town="Madison")
+        south = self._building(sheet_model, site, "South Hall", Town="Verona")
+        self._link(sheet_model, south)
+        self._set(sheet_model, {"BuildingTown": "Fitchburg", "BuildingAddressLines": "1 Elm St, Unit 2"})
+        assert south.BuildingAddress.Town == "Fitchburg"
+        # One typed line stays one line; commas in it are not line breaks.
+        assert south.BuildingAddress.AddressLines == ("1 Elm St, Unit 2",)
+        assert north.BuildingAddress.Town == "Madison"
+
+    def test_linking_and_editing_at_once_edits_the_new_link(self, sheet_model):
+        site = self._site(sheet_model, "Campus")
+        self._building(sheet_model, site, "North Hall")
+        south = self._building(sheet_model, site, "South Hall")
+        self._set(sheet_model, {"Building": south.GlobalId, "BuildingDescription": "Classrooms"})
+        assert south.Description == "Classrooms"
+
+    def test_an_edit_with_no_building_to_go_to_says_to_pick_one(self, sheet_model):
+        site = self._site(sheet_model, "Campus")
+        self._building(sheet_model, site, "North Hall")
+        self._building(sheet_model, site, "South Hall")
+        with pytest.raises(ValueError, match="pick one in its Building list"):
+            self._set(sheet_model, {"BuildingTown": "Madison", "Revision": "C"})
+        # All or nothing: the sheet's own field was not written either.
+        assert sheet_model.sheet.Revision is None
+
+    def test_an_edit_in_a_model_without_a_site_says_so(self, sheet_model):
+        with pytest.raises(ValueError, match="no site"):
+            self._set(sheet_model, {"SiteName": "Lot 7"})
+
+    def test_an_element_without_an_address_gets_one(self, sheet_model):
+        site = self._site(sheet_model, "Lot 7")
+        building = self._building(sheet_model, site, "Library")
+        self._set(sheet_model, {"SiteTown": "Madison", "BuildingTown": "Madison"})
+        assert site.SiteAddress.Purpose == "SITE"
+        assert building.BuildingAddress.Town == "Madison"
+
+    def test_clearing_every_part_removes_the_address(self, sheet_model):
+        # An IfcPostalAddress with nothing in it breaks WR1.
+        site = self._site(sheet_model, "Lot 7", Town="Madison")
+        self._set(sheet_model, {"SiteTown": ""})
+        assert site.SiteAddress is None
+        assert not sheet_model.ifc.by_type("IfcPostalAddress")
+
+    def test_renaming_renames_the_object_and_the_spatial_tree(self, sheet_model, monkeypatch):
+        import bonsai.core.spatial
+        import bonsai.tool as tool
+
+        site = self._site(sheet_model, "Lot 7")
+        obj = object()
+        renamed, refreshed = [], []
+        monkeypatch.setattr(tool.Ifc, "get_object", classmethod(lambda cls, element: obj))
+        monkeypatch.setattr(tool.Root, "set_object_name", classmethod(lambda cls, o, e: renamed.append((o, e))))
+        monkeypatch.setattr(bonsai.core.spatial, "import_spatial_decomposition", lambda spatial: refreshed.append(1))
+
+        self._set(sheet_model, {"SiteName": "Lot 8", "SiteDescription": "South parcel"})
+        assert (site.Name, site.Description) == ("Lot 8", "South parcel")
+        assert renamed == [(obj, site)]
+        assert refreshed == [1]
+
+    def test_a_description_alone_leaves_the_object_name_alone(self, sheet_model, monkeypatch):
+        import bonsai.tool as tool
+
+        site = self._site(sheet_model, "Lot 7")
+        site.Description = "North parcel"
+        monkeypatch.setattr(tool.Ifc, "get_object", classmethod(lambda cls, element: pytest.fail("renamed")))
+        self._set(sheet_model, {"SiteDescription": ""})
+        assert site.Description is None
+
+    def test_the_whole_address_is_read_only_without_a_reason(self, sheet_model):
+        # It sits beside its editable parts; saying why would only be noise.
+        whole, = self._fields(sheet_model, ["BuildingAddress"])
+        assert whole["editable"] is False
+        assert "reason" not in whole
+
+    def test_two_linked_buildings_count_as_none(self, sheet_model):
+        # IFC keeps the links as a set; taking "the first" would be a guess.
+        site = self._site(sheet_model, "Campus")
+        north = self._building(sheet_model, site, "North Hall")
+        south = self._building(sheet_model, site, "South Hall")
+        self._link(sheet_model, north, south)
+        assert sheet_model.builder.get_sheet_links(sheet_model.sheet)["Building"] is None
+        assert self._data(sheet_model)["BuildingName"] == ""
+
+    def test_a_conflict_shows_as_the_current_value(self, sheet_model):
+        site = self._site(sheet_model, "Campus")
+        self._link(
+            sheet_model,
+            self._building(sheet_model, site, "North Hall"),
+            self._building(sheet_model, site, "South Hall"),
+        )
+        building, = self._fields(sheet_model, ["Building"])
+        assert building["value"] == "*"
+        assert building["options"][0] == {"value": "*", "label": "2 buildings linked - pick one"}
+
+    def test_picking_one_resolves_a_conflict(self, sheet_model):
+        site = self._site(sheet_model, "Campus")
+        north = self._building(sheet_model, site, "North Hall")
+        south = self._building(sheet_model, site, "South Hall")
+        self._link(sheet_model, north, south)
+        self._set(sheet_model, {"Building": south.GlobalId})
+        assert sheet_model.builder.get_all_sheet_links(sheet_model.sheet)["Building"] == [south]
+
+    def test_automatic_resolves_a_conflict_by_unlinking_both(self, sheet_model):
+        site = self._site(sheet_model, "Campus")
+        self._link(
+            sheet_model,
+            self._building(sheet_model, site, "North Hall"),
+            self._building(sheet_model, site, "South Hall"),
+        )
+        self._set(sheet_model, {"Building": ""})
+        assert sheet_model.builder.get_all_sheet_links(sheet_model.sheet)["Building"] == []
+
+    def test_saving_the_conflict_value_back_changes_nothing(self, sheet_model):
+        site = self._site(sheet_model, "Campus")
+        north = self._building(sheet_model, site, "North Hall")
+        south = self._building(sheet_model, site, "South Hall")
+        self._link(sheet_model, north, south)
+        self._set(sheet_model, {"Building": "*"})
+        assert len(sheet_model.builder.get_all_sheet_links(sheet_model.sheet)["Building"]) == 2
+
+    def test_checking_refuses_without_writing(self, sheet_model):
+        # The web handler checks before starting an undoable operator.
+        site = self._site(sheet_model, "Campus")
+        self._building(sheet_model, site, "North Hall")
+        self._building(sheet_model, site, "South Hall")
+        with pytest.raises(ValueError, match="pick one in its Building list"):
+            sheet_model.builder.check_template_values(
+                sheet_model.layout, {"kind": "sheet"}, {"Revision": "C", "BuildingTown": "Madison"}
+            )
+        assert sheet_model.sheet.Revision is None
+
+    def test_checking_accepts_and_returns_text(self, sheet_model):
+        self._site(sheet_model, "Campus")
+        values = sheet_model.builder.check_template_values(sheet_model.layout, {"kind": "sheet"}, {"SiteName": None})
+        assert values == {"SiteName": ""}
+
+    def test_removing_the_sheet_removes_its_links(self, sheet_model):
+        site = self._site(sheet_model, "Lot 7")
+        self._link(sheet_model, site)
+        ifcopenshell.api.document.remove_information(sheet_model.ifc, information=sheet_model.sheet)
+        assert not sheet_model.ifc.by_type("IfcRelAssociatesDocument")
+        assert site.HasAssociations == ()

@@ -473,13 +473,26 @@ class Web(bonsai.core.tool.Web):
                     )
                 )
             else:
-                result.update(
-                    builder.set_template_values(
-                        operator_data["layout"],
-                        operator_data.get("target") or {},
-                        operator_data.get("values") or {},
-                    )
-                )
+                # Checked here, applied as an operator: a refusal comes back as
+                # its reason and leaves no undo step, and an edit that is made
+                # is one - Ctrl+Z in Blender undoes it like any other.
+                layout = operator_data["layout"]
+                target = operator_data.get("target") or {}
+                values = builder.check_template_values(layout, target, operator_data.get("values") or {})
+                if values:
+                    import bonsai.bim.module.drawing.operator as drawing_operator
+
+                    try:
+                        bpy.ops.bim.edit_sheet_template_values(
+                            layout=layout, target=json.dumps(target), values=json.dumps(values)
+                        )
+                    except RuntimeError as e:
+                        # The operator's error arrives as its whole traceback; the
+                        # caller shows a message, which is the last line.
+                        raise RuntimeError(str(e).strip().splitlines()[-1]) from e
+                    result.update(drawing_operator.EditSheetTemplateValues.result)
+                else:
+                    result["changed"] = []
         except Exception as e:
             import traceback
 
@@ -497,7 +510,8 @@ class Web(bonsai.core.tool.Web):
         # appears on each sheet placing it - so the new values follow at once
         # rather than at the caller's next poll. Blender is told to repaint for
         # the same reason: this ran on a timer, not on an event, so its own
-        # panels would otherwise keep showing the names they last drew.
+        # panels would otherwise keep showing the names they last drew. (Their
+        # cached data is already fresh: the edit ran as an IFC operator.)
         if request_type == "setTemplateValue" and result["ok"]:
             tool.Blender.redraw_all_areas()
             values = sheeter.SheetBuilder().get_template_values()

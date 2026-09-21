@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import Union
 from xml.dom import minidom
 
+import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import pystache
 from mathutils import Vector
@@ -38,6 +39,22 @@ DRAWING_PADDING = 10
 DEFAULT_POSITION = Vector((30, 30))
 SVG = "{http://www.w3.org/2000/svg}"
 XLINK = "{http://www.w3.org/1999/xlink}"
+
+#: The spatial elements a sheet can be about, by the prefix of their titleblock
+#: fields - {{SiteName}}, {{BuildingTown}} - with the IFC class of each and the
+#: attribute holding its postal address. The prefix alone names the sheet's link
+#: to one: its value is that element's GlobalId.
+SPATIAL_ELEMENTS = {"Site": ("IfcSite", "SiteAddress"), "Building": ("IfcBuilding", "BuildingAddress")}
+#: What follows the prefix: the element's own attributes, then its address's.
+#: `<prefix>Address` is the whole address on one line.
+ELEMENT_ATTRIBUTES = ("Name", "Description")
+ADDRESS_ATTRIBUTES = ("AddressLines", "PostalBox", "Town", "Region", "PostalCode", "Country")
+#: {field: (prefix, attribute, is_address)} for every such field.
+SPATIAL_FIELDS = {
+    prefix + attribute: (prefix, attribute, attribute in ADDRESS_ATTRIBUTES)
+    for prefix in SPATIAL_ELEMENTS
+    for attribute in ELEMENT_ATTRIBUTES + ADDRESS_ATTRIBUTES
+}
 
 
 def as_template_data(value):
@@ -338,7 +355,256 @@ class SheetBuilder:
 
         Shared by `build_titleblock` and `get_template_values`.
         """
-        return sheet.get_info()
+        data = sheet.get_info()
+        data.update(self.get_spatial_data(sheet))
+        return data
+
+    def get_sheet_links(self, sheet: ifcopenshell.entity_instance) -> dict:
+        """The site and building a sheet names itself, as {"Site": ..., "Building": ...}.
+
+        A sheet names them by a document association - the IFC relationship for
+        "this document is about this object" - so the link is ordinary IFC that
+        survives a re-serialised model, and goes when the sheet does.
+
+        A sheet linked to two sites names neither. IFC keeps the links as a set,
+        so "the first" would be whichever the file happens to list first; that is
+        a guess, and the fields stay blank instead. Linking one replaces both.
+        """
+        return {prefix: self._only(elements) for prefix, elements in self.get_all_sheet_links(sheet).items()}
+
+    def get_all_sheet_links(self, sheet: ifcopenshell.entity_instance) -> dict:
+        """Everything a sheet is linked to, by prefix - more than one is a conflict to resolve."""
+        linked = {prefix: [] for prefix in SPATIAL_ELEMENTS}
+        for rel in self._sheet_associations(sheet):
+            for element in rel.RelatedObjects:
+                for prefix, (ifc_class, _) in SPATIAL_ELEMENTS.items():
+                    if element.is_a(ifc_class) and element not in linked[prefix]:
+                        linked[prefix].append(element)
+        return linked
+
+    def get_sheet_spatial(self, sheet: ifcopenshell.entity_instance, links: Union[dict, None] = None) -> dict:
+        """The site and building a sheet is about, as {"Site": ..., "Building": ...}.
+
+        What the sheet links to, or - for one it does not - whatever has a single
+        answer: a building's own site, the model's only top-level site, the site's
+        only building. With several to choose from it is None and its fields are
+        blank. A titleblock quietly showing one building's address on another
+        building's sheet would be worse than an empty box.
+
+        :param links: Links to use in place of the sheet's own, by prefix - to see
+            what an edit would resolve to before making it.
+        """
+        linked = self.get_sheet_links(sheet) | (links or {})
+        site, building = linked["Site"], linked["Building"]
+        if site is None and building is not None:
+            site = self._containing(building, "IfcSite")
+        if site is None:
+            site = self._only(self._top_level_sites(sheet.file))
+        if building is None:
+            building = self._only(self._buildings_in(sheet.file, site))
+        return {"Site": site, "Building": building}
+
+    def get_spatial_data(self, sheet: ifcopenshell.entity_instance) -> dict:
+        """The {{Site...}} and {{Building...}} fields of a sheet's titleblock.
+
+        Unset values are empty rather than "None": an address reading "None, None"
+        on a sheet looks broken where an unset revision code does not.
+        """
+
+        def get(entity, name):
+            return (getattr(entity, name, None) if entity else None) or ""
+
+        data = {}
+        for prefix, element in self.get_sheet_spatial(sheet).items():
+            address = get(element, SPATIAL_ELEMENTS[prefix][1]) or None
+            for name in ELEMENT_ATTRIBUTES:
+                data[prefix + name] = get(element, name)
+            for name in ADDRESS_ATTRIBUTES:
+                data[prefix + name] = get(address, name)
+            # Several lines are shown as one: a field is a single box of text.
+            data[prefix + "AddressLines"] = ", ".join(get(address, "AddressLines"))
+            region = " ".join(p for p in (data[prefix + "Region"], data[prefix + "PostalCode"]) if p)
+            parts = (
+                data[prefix + "AddressLines"],
+                data[prefix + "PostalBox"],
+                data[prefix + "Town"],
+                region,
+                data[prefix + "Country"],
+            )
+            data[prefix + "Address"] = ", ".join(p for p in parts if p)
+        return data
+
+    def get_link_field(self, sheet: ifcopenshell.entity_instance, prefix: str) -> dict:
+        """The Site or Building a sheet is linked to, as a field with a choice of values.
+
+        The first choice is to link nothing, labelled with what that resolves to,
+        so the list says what the sheet will show either way.
+        """
+        ifc_class = SPATIAL_ELEMENTS[prefix][0]
+        noun = ifc_class[3:].lower()
+        linked_all = self.get_all_sheet_links(sheet)[prefix]
+        linked = self._only(linked_all)
+        automatic = self.get_sheet_spatial(sheet, {prefix: None})[prefix]
+        candidates = sorted(tool.Ifc.get().by_type(ifc_class), key=lambda e: (e.Name or "", e.GlobalId))
+        names = [e.Name or f"Unnamed {noun}" for e in candidates]
+
+        if automatic is not None:
+            label = f"Automatic ({automatic.Name or f'Unnamed {noun}'})"
+        elif candidates:
+            label = "Automatic (none - more than one to choose from)"
+        else:
+            label = f"Automatic (none - this model has no {noun})"
+        options = [{"value": "", "label": label}]
+        if len(linked_all) > 1:
+            # Shown as the current value, so the conflict is visible and picking
+            # anything - Automatic included - replaces every link.
+            options.insert(0, {"value": self.CONFLICT, "label": f"{len(linked_all)} {noun}s linked - pick one"})
+        for element, name in zip(candidates, names):
+            # Two with the same name are told apart by their GlobalId.
+            options.append(
+                {"value": element.GlobalId, "label": name if names.count(name) == 1 else f"{name} ({element.GlobalId})"}
+            )
+        return {
+            "name": prefix,
+            "value": self.CONFLICT if len(linked_all) > 1 else (linked.GlobalId if linked else ""),
+            "editable": True,
+            "options": options,
+        }
+
+    #: The Site or Building value of a sheet linked to more than one.
+    CONFLICT = "*"
+
+    def set_sheet_links(self, sheet: ifcopenshell.entity_instance, links: dict) -> None:
+        """Link a sheet to a site or building, replacing what it linked to. None unlinks."""
+        for prefix, element in links.items():
+            ifc_class = SPATIAL_ELEMENTS[prefix][0]
+            for rel in self._sheet_associations(sheet):
+                for current in list(rel.RelatedObjects):
+                    if current.is_a(ifc_class) and current != element:
+                        tool.Ifc.run("document.unassign_document", products=[current], document=sheet)
+            if element is not None:
+                tool.Ifc.run("document.assign_document", products=[element], document=sheet)
+
+    def set_spatial_fields(self, elements: dict, values: dict) -> None:
+        """Write {{Site...}} and {{Building...}} fields to the elements they show."""
+        own, addresses = {}, {}
+        for field, value in values.items():
+            prefix, name, is_address = SPATIAL_FIELDS[field]
+            if is_address and name == "AddressLines":
+                # Typed as one line, kept as one: splitting on commas would break
+                # a line that has one of its own.
+                value = [value] if value else None
+            (addresses if is_address else own).setdefault(prefix, {})[name] = value or None
+        for prefix, attributes in own.items():
+            self._edit_spatial_element(elements[prefix], attributes)
+        for prefix, attributes in addresses.items():
+            self._edit_address(elements[prefix], SPATIAL_ELEMENTS[prefix][1], attributes)
+
+    def _parse_links(self, values: dict) -> dict:
+        """The elements Site and Building values name, by GlobalId; empty unlinks."""
+        links = {}
+        for prefix, (ifc_class, _) in SPATIAL_ELEMENTS.items():
+            if prefix not in values or values[prefix] == self.CONFLICT:
+                continue
+            if not values[prefix]:
+                links[prefix] = None
+                continue
+            try:
+                element = tool.Ifc.get().by_guid(values[prefix])
+            except RuntimeError:
+                element = None
+            if element is None or not element.is_a(ifc_class):
+                raise ValueError(f"That {ifc_class[3:].lower()} is no longer in the model.")
+            links[prefix] = element
+        return links
+
+    def _no_spatial_reason(self, prefix: str) -> str:
+        ifc_class = SPATIAL_ELEMENTS[prefix][0]
+        noun = ifc_class[3:].lower()
+        if not tool.Ifc.get().by_type(ifc_class):
+            return f"This model has no {noun} - add an {ifc_class} in Bonsai first."
+        return f"This sheet has no {noun} - pick one in its {prefix} list first."
+
+    def _edit_spatial_element(self, element: ifcopenshell.entity_instance, attributes: dict) -> None:
+        """Edit a site's or building's attributes, as Bonsai's attribute panel does.
+
+        Its name is also its Blender object's name and its label in the spatial
+        tree, so both are brought up to date with it.
+        """
+        tool.Ifc.run("attribute.edit_attributes", product=element, attributes=attributes)
+        if "Name" in attributes:
+            if obj := tool.Ifc.get_object(element):
+                tool.Root.set_object_name(obj, element)
+            import bonsai.core.spatial
+
+            bonsai.core.spatial.import_spatial_decomposition(tool.Spatial)
+
+    def _edit_address(self, element: ifcopenshell.entity_instance, attribute: str, attributes: dict) -> None:
+        """Edit an element's postal address, giving it one if it has none.
+
+        An address shared with another element - a site and its building often
+        share one - changes for both, which is what sharing it means.
+        """
+        ifc_file = tool.Ifc.get()
+        address = getattr(element, attribute)
+        if address is None:
+            if not any(attributes.values()):
+                return
+            address = ifc_file.createIfcPostalAddress(Purpose="SITE" if element.is_a("IfcSite") else None)
+            tool.Ifc.run("attribute.edit_attributes", product=element, attributes={attribute: address})
+
+        tool.Ifc.run("owner.edit_address", address=address, attributes=attributes)
+
+        # An address with nothing in it is invalid IFC (IfcPostalAddress.WR1), so
+        # clearing every part removes it rather than leaving it empty.
+        parts = ("InternalLocation", "AddressLines", "PostalBox", "PostalCode", "Town", "Region", "Country")
+        if not any(getattr(address, name, None) for name in parts):
+            for inverse in ifc_file.get_inverse(address):
+                for name in ("SiteAddress", "BuildingAddress"):
+                    if getattr(inverse, name, None) == address:
+                        tool.Ifc.run("attribute.edit_attributes", product=inverse, attributes={name: None})
+            if not ifc_file.get_total_inverses(address):
+                ifc_file.remove(address)
+
+    @staticmethod
+    def _sheet_associations(sheet: ifcopenshell.entity_instance) -> list:
+        if sheet.file.schema == "IFC2X3":
+            return [r for r in sheet.file.by_type("IfcRelAssociatesDocument") if r.RelatingDocument == sheet]
+        return list(sheet.DocumentInfoForObjects or [])
+
+    @staticmethod
+    def _only(elements: list) -> Union[ifcopenshell.entity_instance, None]:
+        return elements[0] if len(elements) == 1 else None
+
+    @staticmethod
+    def _containing(element: ifcopenshell.entity_instance, ifc_class: str) -> Union[ifcopenshell.entity_instance, None]:
+        """The nearest element of this class that `element` is part of."""
+        parent = ifcopenshell.util.element.get_aggregate(element)
+        while parent is not None and not parent.is_a(ifc_class):
+            parent = ifcopenshell.util.element.get_aggregate(parent)
+        return parent
+
+    def _top_level_sites(self, ifc_file: ifcopenshell.file) -> list:
+        """Sites directly under the project, or under nothing - not the lots of a site complex."""
+        sites = []
+        for site in ifc_file.by_type("IfcSite"):
+            parent = ifcopenshell.util.element.get_aggregate(site)
+            if parent is None or parent.is_a("IfcProject"):
+                sites.append(site)
+        return sites
+
+    def _buildings_in(self, ifc_file: ifcopenshell.file, site: Union[ifcopenshell.entity_instance, None]) -> list:
+        """The outermost buildings on a site, or in the model - not a building complex's parts."""
+        if site is None:
+            return [b for b in ifc_file.by_type("IfcBuilding") if not self._containing(b, "IfcBuilding")]
+        found, queue = [], [site]
+        while queue:
+            for part in ifcopenshell.util.element.get_parts(queue.pop()):
+                if part.is_a("IfcBuilding"):
+                    found.append(part)
+                elif part.is_a("IfcSite"):
+                    queue.append(part)
+        return found
 
     def build_titleblock(self, root: ET.Element, sheet: ifcopenshell.entity_instance) -> None:
         titleblock = root.findall(f'{SVG}g[@data-type="titleblock"]')[0]
@@ -669,6 +935,9 @@ class SheetBuilder:
 
         answer = []
         for name in fields:
+            if kind == "sheet" and name in SPATIAL_ELEMENTS:
+                answer.append(self.get_link_field(sheet, name))
+                continue
             # Unset reads as empty here, not as the "None" a build prints: this
             # value goes into a box someone types in, and saving it back would
             # otherwise set the attribute to the word.
@@ -678,9 +947,34 @@ class SheetBuilder:
                 field["editable"] = True
             else:
                 field["editable"] = False
-                field["reason"] = self._read_only_reason(kind, name)
+                if reason := self._read_only_reason(kind, name):
+                    field["reason"] = reason
             answer.append(field)
         return {"fields": answer, "kind": kind}
+
+    def check_template_values(self, layout: str, target: dict, values: dict) -> dict:
+        """Refuse what `set_template_values` would refuse, without writing anything.
+
+        A caller applying an edit as an undoable operator asks this first, so a
+        refusal comes back as its reason rather than as a failed operator, and
+        leaves nothing in the undo history. Returns the values as text.
+        """
+        sheet = self._require_sheet(layout)
+        kind, _, _ = self._find_target(sheet, target)
+        writable = self.WRITABLE_FIELDS[kind]
+        for name in values:
+            if name not in writable:
+                raise ValueError(f"{name} cannot be edited: {self._read_only_reason(kind, name)}")
+        values = {name: ("" if value is None else str(value)) for name, value in values.items()}
+        if kind == "sheet":
+            # Links first, then whether each field has an element to go to once
+            # they apply.
+            links = self._parse_links(values)
+            elements = self.get_sheet_spatial(sheet, links)
+            for prefix in {SPATIAL_FIELDS[field][0] for field in values if field in SPATIAL_FIELDS}:
+                if elements[prefix] is None:
+                    raise ValueError(self._no_spatial_reason(prefix))
+        return values
 
     def set_template_values(self, layout: str, target: dict, values: dict) -> dict:
         """Apply template values to the model in memory, through Bonsai.
@@ -692,23 +986,21 @@ class SheetBuilder:
         model naming files that are not there.
 
         Raises ValueError with a reason a person can read - the caller is a
-        remote tool, and the message is what it shows.
+        remote tool, and the message is what it shows. Everything that can be
+        refused is, before anything is written (`check_template_values`).
         """
         import bonsai.core.drawing as core
 
-        sheet = self._require_sheet(layout)
-        kind, reference, entity = self._find_target(sheet, target)
-        writable = self.WRITABLE_FIELDS[kind]
-
-        for name in values:
-            if name not in writable:
-                raise ValueError(f"{name} cannot be edited: {self._read_only_reason(kind, name)}")
-        values = {name: ("" if value is None else str(value)) for name, value in values.items()}
+        values = self.check_template_values(layout, target, values)
         if not values:
             return {"changed": []}
+        sheet = self._require_sheet(layout)
+        kind, reference, entity = self._find_target(sheet, target)
 
-        ifc_file = tool.Ifc.get()
         if kind == "sheet":
+            links = self._parse_links(values)
+            spatial = {k: v for k, v in values.items() if k in SPATIAL_FIELDS}
+            elements = self.get_sheet_spatial(sheet, links)
             # Identification and Name name the layout and sheet files together,
             # so they are renamed together, keeping whichever is not being set.
             if "Identification" in values or "Name" in values:
@@ -719,7 +1011,16 @@ class SheetBuilder:
                     identification=values.get("Identification", str(tool.Drawing.get_sheet_identification(sheet))),
                     name=values.get("Name", sheet.Name or ""),
                 )
-            attributes = {k: v for k, v in values.items() if k not in ("Identification", "Name")}
+            if links:
+                self.set_sheet_links(sheet, links)
+            # The site's and building's, not the sheet's: every sheet on them shows it.
+            if spatial:
+                self.set_spatial_fields(elements, spatial)
+            attributes = {
+                k: v
+                for k, v in values.items()
+                if k not in ("Identification", "Name") and k not in SPATIAL_FIELDS and k not in SPATIAL_ELEMENTS
+            }
             if attributes:
                 tool.Ifc.run("document.edit_information", information=sheet, attributes=attributes)
             tool.Drawing.import_sheets()
@@ -767,6 +1068,8 @@ class SheetBuilder:
             "LastRevisionTime",
             "ValidFrom",
             "ValidUntil",
+            *SPATIAL_ELEMENTS,
+            *SPATIAL_FIELDS,
         ),
         "drawing": ("Identification", "Name", "Description"),
         "document": ("Identification", "Name", "Description"),
@@ -785,6 +1088,10 @@ class SheetBuilder:
         "type": "This is the IFC class of the entity behind the view.",
         "GlobalId": "A GlobalId identifies the drawing; changing it would unlink it.",
         "OwnerHistory": "Ownership is recorded by IFC, not typed in.",
+        # The whole address on one line, beside its editable parts: plainly what
+        # it is, so nothing is said.
+        "SiteAddress": "",
+        "BuildingAddress": "",
     }
 
     def _read_only_reason(self, kind: str, name: str) -> str:
