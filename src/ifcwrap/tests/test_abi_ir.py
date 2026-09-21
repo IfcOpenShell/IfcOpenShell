@@ -66,9 +66,7 @@ def test_finalized_abi_derives_layouts_and_signatures() -> None:
             (
                 "file",
                 "by_type",
-                TypeSpec(
-                    kind="handle", handle="item", ownership="owned", sequence_depth=1
-                ),
+                TypeSpec(kind="handle", handle="item", ownership="owned", sequence_depth=1),
                 "type_name",
                 TypeSpec(kind="string"),
             ),
@@ -127,16 +125,10 @@ def test_finalized_abi_derives_layouts_and_signatures() -> None:
     assert metadata.handles["file"].destroy_function == "ifcopenshell_demo_file_destroy"
 
     assert metadata.value_types["string"].fields[0].name == "data"
-    assert (
-        metadata.value_types["string_list"].destroy_function
-        == "ifcopenshell_string_list_destroy"
-    )
+    assert metadata.value_types["string_list"].destroy_function == "ifcopenshell_string_list_destroy"
     assert metadata.value_types["double_list"].fields[0].c_type == "double*"
     assert metadata.value_types["int64_list"].fields[0].c_type == "int64_t*"
-    assert (
-        metadata.value_types["demo_item_list"].fields[0].c_type
-        == "ifcopenshell_demo_item_t**"
-    )
+    assert metadata.value_types["demo_item_list"].fields[0].c_type == "ifcopenshell_demo_item_t**"
     assert "demo_item_list_list" not in metadata.value_types
 
     create = metadata.functions["ifcopenshell_demo_create_file"]
@@ -199,9 +191,7 @@ def test_finalized_abi_preserves_result_field_docs() -> None:
         )
     )
 
-    result_fields = {
-        field.name: field for field in metadata.value_types["DemoResult"].fields
-    }
+    result_fields = {field.name: field for field in metadata.value_types["DemoResult"].fields}
     assert result_fields["value"].doc == "Result value in model units."
     assert result_fields["undocumented"].doc is None
 

@@ -27,7 +27,7 @@ from typing import Optional
 # Allow `python nix/deps.py` introspection and package import.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from nix import core  # noqa: E402
+from nix import core
 
 # Build root for intermediate build directories. Callers may override
 # (e.g. `build-all.py` sets this to its own `DEPS_DIR / "wasm-build"`).
@@ -203,9 +203,7 @@ def build_occt(src: Path, prefix: Path, env, *, build_type: str = "Release") -> 
     core.run(["cmake", "--install", str(build_dir), "--config", build_type], env=env)
 
 
-def build_manifold(
-    src: Path, prefix: Path, env, *, build_type: str = "MinSizeRel"
-) -> None:
+def build_manifold(src: Path, prefix: Path, env, *, build_type: str = "MinSizeRel") -> None:
     """Build Manifold for WASM."""
     if (prefix / "lib" / "cmake" / "manifold").exists():
         core.logger.info("Manifold already built at %s", prefix)
@@ -264,17 +262,13 @@ def build_gmp(src: Path, prefix: Path, env, *, host_cc_override: bool = False) -
     build_env = dict(env)
     if host_cc_override or platform.system() == "Darwin":
         try:
-            native_cc = subprocess.check_output(
-                ["xcrun", "--find", "clang"], text=True
-            ).strip()
+            native_cc = subprocess.check_output(["xcrun", "--find", "clang"], text=True).strip()
         except (subprocess.CalledProcessError, FileNotFoundError):
             native_cc = "clang"
         build_env["HOST_CC"] = native_cc
         build_env["CC_FOR_BUILD"] = native_cc
         try:
-            sdk_path = subprocess.check_output(
-                ["xcrun", "--show-sdk-path"], text=True
-            ).strip()
+            sdk_path = subprocess.check_output(["xcrun", "--show-sdk-path"], text=True).strip()
             build_env["CC_FOR_BUILD"] = f"{native_cc} -isysroot {sdk_path}"
         except (subprocess.CalledProcessError, FileNotFoundError):
             pass
@@ -369,13 +363,9 @@ def build_cgal(
     core.run(["cmake", "--build", str(build_dir), "--target", "install"], env=env)
 
 
-def build_libxml2(
-    src: Path, prefix: Path, env, *, static: bool = True, without_threads: bool = False
-) -> None:
+def build_libxml2(src: Path, prefix: Path, env, *, static: bool = True, without_threads: bool = False) -> None:
     """Build libxml2 for WASM via emconfigure autoconf."""
-    if (prefix / "lib" / "libxml2.a").exists() or (
-        prefix / "include" / "libxml2"
-    ).exists():
+    if (prefix / "lib" / "libxml2.a").exists() or (prefix / "include" / "libxml2").exists():
         core.logger.info("libxml2 already built at %s", prefix)
         return
 
@@ -424,9 +414,7 @@ def build_libxml2(
 
 def build_zstd(src: Path, prefix: Path, env) -> None:
     """Build zstd for WASM (cmake in build/cmake subdir)."""
-    if (prefix / "lib" / "libzstd.a").exists() or (
-        prefix / "include" / "zstd.h"
-    ).exists():
+    if (prefix / "lib" / "libzstd.a").exists() or (prefix / "include" / "zstd.h").exists():
         core.logger.info("zstd already built at %s", prefix)
         return
 
@@ -527,13 +515,9 @@ def build_pcre(src: Path, prefix: Path, env) -> None:
     core.run(["make", "install"], cwd=build_dir, env=env)
 
 
-def build_opencollada(
-    src: Path, prefix: Path, env, libxml2_prefix: Path, pcre_prefix: Path
-) -> None:
+def build_opencollada(src: Path, prefix: Path, env, libxml2_prefix: Path, pcre_prefix: Path) -> None:
     """Build OpenCOLLADA for WASM via emcmake cmake."""
-    if (prefix / "lib" / "libOpenCOLLADAFramework.a").exists() or (
-        prefix / "include" / "COLLADABaseUtils"
-    ).exists():
+    if (prefix / "lib" / "libOpenCOLLADAFramework.a").exists() or (prefix / "include" / "COLLADABaseUtils").exists():
         core.logger.info("OpenCOLLADA already built at %s", prefix)
         return
 

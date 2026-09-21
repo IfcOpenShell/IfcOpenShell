@@ -18,9 +18,7 @@ def _variant_return_types(spec: BindingIR) -> tuple[TypeSpec, ...]:
     return _used_variant_types(spec)
 
 
-def _variant_alternative_destroy(
-    alt: TypeSpec, field: str, spec: BindingIR
-) -> str | None:
+def _variant_alternative_destroy(alt: TypeSpec, field: str, spec: BindingIR) -> str | None:
     sequence_kind = _type_spec_sequence_kind(alt)
     if sequence_kind is not None:
         return f"{_sequence_destroy_name(sequence_kind)}(&value->{field});"
@@ -55,8 +53,7 @@ def _render_variant_destroy_impls(spec: BindingIR) -> str:
             body = f"        {destroy}\n" if destroy is not None else ""
             cases.append(f"    case {index}:\n{body}        break;")
         cases.append("    default:\n        break;")
-        impls.append(
-            f"""void {_variant_destroy_name(type_spec, spec)}({_variant_c_type(type_spec, spec)}* value) {{
+        impls.append(f"""void {_variant_destroy_name(type_spec, spec)}({_variant_c_type(type_spec, spec)}* value) {{
     if (value == nullptr) {{
         return;
     }}
@@ -64,8 +61,7 @@ def _render_variant_destroy_impls(spec: BindingIR) -> str:
 {chr(10).join(cases)}
     }}
     value->kind = -1;
-}}"""
-        )
+}}""")
     return "\n\n".join(impls)
 
 

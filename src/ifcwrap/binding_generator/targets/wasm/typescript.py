@@ -24,9 +24,7 @@ from .._shared import (
 _HIDDEN_FUNCTIONS = frozenset({"ifcopenshell_project_append_asset_cache_free"})
 
 
-def _render_error_declaration(
-    name: str, entries: tuple[ErrorCatalogEntryIR, ...]
-) -> list[str]:
+def _render_error_declaration(name: str, entries: tuple[ErrorCatalogEntryIR, ...]) -> list[str]:
     return [
         f"  export const {name}: {{",
         *(f"    readonly {entry.name}: {entry.value};" for entry in entries),
@@ -44,11 +42,7 @@ def _ts_type_from_c_type(c_type: str, metadata: BindingABI) -> str:
     normalized = " ".join(c_type.replace(" *", "*").split())
     normalized_base = normalized.removeprefix("const ").removesuffix("*").strip()
     handle_name = next(
-        (
-            name
-            for name, handle in metadata.handles.items()
-            if f"{handle.c_type}*" == normalized
-        ),
+        (name for name, handle in metadata.handles.items() if f"{handle.c_type}*" == normalized),
         None,
     )
     if handle_name is not None:
@@ -64,11 +58,7 @@ def _ts_type_from_c_type(c_type: str, metadata: BindingABI) -> str:
     if normalized.endswith("**"):
         pointee = normalized[:-2].strip()
         handle_name = next(
-            (
-                name
-                for name, handle in metadata.handles.items()
-                if handle.c_type == pointee
-            ),
+            (name for name, handle in metadata.handles.items() if handle.c_type == pointee),
             None,
         )
         if handle_name is not None:
@@ -99,8 +89,7 @@ def _sequence_ts_type(struct: CTypeIR, metadata: BindingABI) -> str:
                 _type_name(handle.c_type)
                 for handle in metadata.handles.values()
                 if struct.element_type is not None
-                and struct.element_type.removeprefix("const ").removesuffix("*").strip()
-                == handle.c_type
+                and struct.element_type.removeprefix("const ").removesuffix("*").strip() == handle.c_type
             ),
             "IfcOpenshellRawValue",
         )
@@ -115,11 +104,7 @@ def _sequence_ts_type(struct: CTypeIR, metadata: BindingABI) -> str:
             ),
             None,
         )
-        return (
-            f"{_interface_name(item.c_type)}[]"
-            if item is not None
-            else "IfcOpenshellRawValue[]"
-        )
+        return f"{_interface_name(item.c_type)}[]" if item is not None else "IfcOpenshellRawValue[]"
 
     elem = (struct.element_type or "").removeprefix("const ").removesuffix("*").strip()
     scalar = {
@@ -134,9 +119,7 @@ def _sequence_ts_type(struct: CTypeIR, metadata: BindingABI) -> str:
     if scalar is not None:
         return f"{scalar}[]"
 
-    nested = next(
-        (item for item in metadata.value_types.values() if item.c_type == elem), None
-    )
+    nested = next((item for item in metadata.value_types.values() if item.c_type == elem), None)
     if nested is not None and nested.kind in {
         "sequence",
         "handle_sequence",
@@ -170,20 +153,14 @@ def _ts_type(type_spec: TypeSpec, metadata: BindingABI) -> str:
             inner = type_spec.alias
             dimensions.pop()
         for length in reversed(dimensions):
-            inner = (
-                "[" + ", ".join(inner for _ in range(length)) + "]"
-                if length is not None
-                else f"{inner}[]"
-            )
+            inner = "[" + ", ".join(inner for _ in range(length)) + "]" if length is not None else f"{inner}[]"
         return f"{inner} | null" if type_spec.nullable else inner
     if type_spec.literal_value is not None:
         result = repr(type_spec.literal_value)
     elif type_spec.kind == "bool":
         result = "boolean"
     elif type_spec.enum_values:
-        result = type_spec.alias or " | ".join(
-            repr(value) for value in type_spec.enum_values
-        )
+        result = type_spec.alias or " | ".join(repr(value) for value in type_spec.enum_values)
     elif type_spec.kind in {"double", "int32", "uint32", "size", "uint8", "opaque_ptr"}:
         result = "number"
     elif type_spec.kind == "int64":
@@ -198,10 +175,7 @@ def _ts_type(type_spec: TypeSpec, metadata: BindingABI) -> str:
         struct = metadata.value_types[type_spec.struct]
         result = _interface_name(struct.c_type)
     elif type_spec.kind == "variant":
-        result = " | ".join(
-            _ts_type(alt, metadata).removesuffix(" | null")
-            for alt in type_spec.variants
-        )
+        result = " | ".join(_ts_type(alt, metadata).removesuffix(" | null") for alt in type_spec.variants)
     else:
         result = "IfcOpenshellRawValue"
     if type_spec.nullable and result != "void":
@@ -240,10 +214,7 @@ def _render_semantic_aliases(metadata: BindingABI, *, indent: str = "") -> str:
         previous = aliases.setdefault(type_spec.alias, declaration)
         if previous != declaration:
             raise ValueError(f"Conflicting semantic alias '{type_spec.alias}'")
-    return "\n".join(
-        f"{indent}export type {name} = {declaration};"
-        for name, declaration in sorted(aliases.items())
-    )
+    return "\n".join(f"{indent}export type {name} = {declaration};" for name, declaration in sorted(aliases.items()))
 
 
 def _render_struct_interfaces(metadata: BindingABI) -> str:
@@ -252,12 +223,9 @@ def _render_struct_interfaces(metadata: BindingABI) -> str:
         if struct.kind != "result_struct":
             continue
         fields = "\n".join(
-            f"    {field.name}: {_ts_type_from_c_type(field.c_type, metadata)};"
-            for field in struct.fields
+            f"    {field.name}: {_ts_type_from_c_type(field.c_type, metadata)};" for field in struct.fields
         )
-        chunks.append(
-            f"  export interface {_interface_name(struct.c_type)} {{\n{fields}\n  }}"
-        )
+        chunks.append(f"  export interface {_interface_name(struct.c_type)} {{\n{fields}\n  }}")
     return "\n\n".join(chunks)
 
 
@@ -271,21 +239,15 @@ def _render_handle_classes(metadata: BindingABI) -> str:
     chunks: list[str] = []
     for handle_name, handle in sorted(metadata.handles.items()):
         methods = ["    readonly ptr: number;", "    destroy(): void;"]
-        for function in sorted(
-            receiver_groups.get(handle_name, []), key=lambda item: item.c_name
-        ):
+        for function in sorted(receiver_groups.get(handle_name, []), key=lambda item: item.c_name):
             name = _public_name(function, metadata.c_prefix)
             methods.append(_render_function_signature(name, function, metadata))
         method_block = "\n".join(methods)
-        chunks.append(
-            f"  export class {_type_name(handle.c_type)} {{\n{method_block}\n  }}"
-        )
+        chunks.append(f"  export class {_type_name(handle.c_type)} {{\n{method_block}\n  }}")
     return "\n\n".join(chunks)
 
 
-def _render_function_signature(
-    name: str, function: CFunctionIR, metadata: BindingABI
-) -> str:
+def _render_function_signature(name: str, function: CFunctionIR, metadata: BindingABI) -> str:
     params = ", ".join(
         f"{param.name}{'?' if param.has_default else ''}: {_param_ts_type(param, metadata)}"
         for param in _public_params(function)
@@ -339,11 +301,7 @@ def _render_doc_comment(doc: str, indent: str) -> str:
 
 
 def _module_interface_name(module_name: str) -> str:
-    return (
-        "IfcOpenshell"
-        + "".join(part.capitalize() for part in module_name.split("_") if part)
-        + "Module"
-    )
+    return "IfcOpenshell" + "".join(part.capitalize() for part in module_name.split("_") if part) + "Module"
 
 
 def _collect_module_members(metadata: BindingABI) -> dict[str, list[str]]:
@@ -355,9 +313,7 @@ def _collect_module_members(metadata: BindingABI) -> dict[str, list[str]]:
             or function.c_name in _HIDDEN_FUNCTIONS
         ):
             continue
-        module_members_for_function = _public_module_members(
-            function, metadata.c_prefix
-        )
+        module_members_for_function = _public_module_members(function, metadata.c_prefix)
         if not module_members_for_function:
             continue
         for module_name, member_name in module_members_for_function:
@@ -377,17 +333,11 @@ def _collect_module_members(metadata: BindingABI) -> dict[str, list[str]]:
 def _render_nested_module_interfaces(metadata: BindingABI) -> str:
     chunks: list[str] = []
     for module_name, members in sorted(_collect_module_members(metadata).items()):
-        chunks.append(
-            f"  export interface {_module_interface_name(module_name)} {{\n"
-            + "\n".join(members)
-            + "\n  }"
-        )
+        chunks.append(f"  export interface {_module_interface_name(module_name)} {{\n" + "\n".join(members) + "\n  }")
     return "\n\n".join(chunks)
 
 
-def _render_module_interface(
-    metadata: BindingABI, module_members: dict[str, list[str]]
-) -> str:
+def _render_module_interface(metadata: BindingABI, module_members: dict[str, list[str]]) -> str:
     members: list[str] = []
     for handle in sorted(metadata.handles.values(), key=lambda item: item.c_type):
         type_name = _type_name(handle.c_type)
@@ -395,10 +345,7 @@ def _render_module_interface(
     for function in sorted(metadata.functions.values(), key=lambda item: item.c_name):
         if function.receiver is not None:
             continue
-        if (
-            function.c_name in _INTERNAL_C_FUNCTIONS
-            or function.c_name in _HIDDEN_FUNCTIONS
-        ):
+        if function.c_name in _INTERNAL_C_FUNCTIONS or function.c_name in _HIDDEN_FUNCTIONS:
             continue
         if _public_module_members(function, metadata.c_prefix):
             continue
@@ -415,9 +362,7 @@ def _render_module_interface(
     return "  export interface IfcOpenshellModule {\n" + "\n".join(members) + "\n  }"
 
 
-def render_typescript_declarations(
-    metadata: BindingABI, handles: dict[str, CTypeIR] | None = None
-) -> str:
+def render_typescript_declarations(metadata: BindingABI, handles: dict[str, CTypeIR] | None = None) -> str:
     del handles
     struct_interfaces = _render_struct_interfaces(metadata)
     semantic_aliases = _render_semantic_aliases(metadata, indent="  ")
@@ -429,13 +374,9 @@ def render_typescript_declarations(
         "",
         "declare module 'ifcopenshell-api' {",
         "  export type IfcOpenshellRawValue = null | boolean | number | bigint | string | object | IfcOpenshellRawValue[];",
-        *_render_error_declaration(
-            "IfcOpenShellErrorKind", metadata.error_catalog.kinds
-        ),
+        *_render_error_declaration("IfcOpenShellErrorKind", metadata.error_catalog.kinds),
         "  export type IfcOpenShellErrorKind = typeof IfcOpenShellErrorKind[keyof typeof IfcOpenShellErrorKind];",
-        *_render_error_declaration(
-            "IfcOpenShellErrorCode", metadata.error_catalog.codes
-        ),
+        *_render_error_declaration("IfcOpenShellErrorCode", metadata.error_catalog.codes),
         "  export type IfcOpenShellErrorCode = typeof IfcOpenShellErrorCode[keyof typeof IfcOpenShellErrorCode];",
         "  /** Kinds and codes are stable identifiers. Message is diagnostic only. */",
         "  export class IfcOpenShellError extends Error {",

@@ -19,9 +19,7 @@ def _render_result_record_list_helpers(spec: BindingIR) -> str:
         list_type = _result_record_list_c_type(struct)
         destroy = _result_record_list_destroy_name(struct)
         assignments = "\n".join(
-            _render_result_struct_field_assignments(
-                struct, spec, "values[i]", "items[i]", "            "
-            )
+            _render_result_struct_field_assignments(struct, spec, "values[i]", "items[i]", "            ")
         )
         blocks.append(
             f"""static {list_type} {_result_record_list_make_name(struct)}(std::vector<{struct.cpp_type}> values) {{
