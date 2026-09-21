@@ -40,7 +40,7 @@ from common import (
     resolve_cli_or_env,
     run_streamed,
 )
-from common_win import resolve_generator
+from common_win import msbuild_multiproc_args, resolve_generator
 from vs_cfg import vs_cfg
 
 
@@ -162,12 +162,6 @@ def main() -> None:
     logger.info(
         colorize(f"Building {vs_cfg_vars.vs_platform} {ARGS.build_cfg} {PROJECT_NAME}{target_suffix}", C.PURPLE)
     )
-    MSBUILD_MULTIPROC = (
-        "/m",
-        f"/p:CL_MPCount={ARGS.num_build_procs}",
-        "/p:UseMultiToolTask=true",
-        "/p:EnforceProcessCountAcrossBuilds=true",
-    )
     run_streamed(
         "cmake",
         "--build",
@@ -175,7 +169,7 @@ def main() -> None:
         *target_args,
         "--",
         "/nologo",
-        *MSBUILD_MULTIPROC,
+        *msbuild_multiproc_args(ARGS.num_build_procs),
         f"/p:Platform={vs_cfg_vars.vs_platform}",
         f"/p:Configuration={ARGS.build_cfg}",
         *ARGS.extra_args,
