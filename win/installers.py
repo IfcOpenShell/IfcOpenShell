@@ -480,10 +480,6 @@ def install_occt(
         )
         assert "IfcOpenShell" in cmake_lists_path.read_text()
 
-    # TODO: remove CMAKE_DEBUG_POSTFIX setting later.
-    # Temporarily explicitly set `CMAKE_DEBUG_POSTFIX` to empty to override it's previously being set to `d`.
-    # OCCT don't need it, since it's layout is separating debug and release build by different folders.
-    #
     # OCCT 7.8.1 we're using is becoming old and it was targeting cmake 3.1+.
     # To make it buildable on cmake 4, we override policy version, but it may have some quirks in the future
     # and we may consider version bump.
@@ -494,7 +490,6 @@ def install_occt(
         build_type,
         f"-DCMAKE_INSTALL_PREFIX={dependency_install_dir}",
         "-DBUILD_LIBRARY_TYPE=Shared",
-        "-DCMAKE_DEBUG_POSTFIX=",
         "-DBUILD_MODULE_Draw=0",
         "-DBUILD_RELEASE_DISABLE_EXCEPTIONS=OFF",
         "-DUSE_XLIB=OFF",
