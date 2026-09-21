@@ -41,7 +41,8 @@ jobs:
       name: Build ifcopenshell
       run: |
         mkdir build && cd build
-        cmake \
+        cmake ../cmake \
+         -G Ninja \
          -DCMAKE_INSTALL_PREFIX=$PWD/install/ \
          -DCMAKE_BUILD_TYPE=Release \
          -DUSE_CCACHE=ON \
@@ -63,10 +64,8 @@ jobs:
          -DMPFR_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
          -DGLTF_SUPPORT=On \
          -DJSON_INCLUDE_DIR=/usr/include \
-         -DEIGEN_DIR=/usr/include/eigen3 \
-         ../cmake
-        make -j $(nproc)
-        make install
+         -DEIGEN_DIR=/usr/include/eigen3
+        cmake --build . --target install -j $(nproc)
     -
       name: Package
       run: |
