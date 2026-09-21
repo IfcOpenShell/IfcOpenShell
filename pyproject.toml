@@ -29,6 +29,7 @@ exclude = [
     "src/ifcopenshell-python/ifcopenshell/mvd",
     "src/ifcopenshell-python/ifcopenshell/simple_spf",
     "src/svgfill",
+    "src/pyodide/demo-app/wheels",
     #
     # Unformatted.
     "src/exterior-shell-extractor",
