@@ -218,6 +218,7 @@ class Args(NamedTuple):
     schemas: str | None
     build_cfg: BuildCfg
     add_commit_sha: bool
+    use_ninja: bool
 
 
 class DynamicArgs(NamedTuple):
@@ -355,6 +356,15 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         default=argparse.SUPPRESS,
         help=HelpStrings.ADD_COMMIT_SHA,
     )
+    # TODO: can start to mean "require ninja" in the future
+    # and just use ninja by default if it's available from PATH.
+    arg_parser.add_argument(
+        "--use-ninja",
+        dest="use_ninja",
+        action="store_true",
+        default=False,
+        help="Use Ninja instead of Make to configure and build CMake-based targets.",
+    )
     namespace, unknown_flags = arg_parser.parse_known_args()
     num_build_procs = resolve_cli_or_env(
         getattr(namespace, "num_build_procs", None),
@@ -386,6 +396,7 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         schemas=schemas,
         build_cfg=build_cfg,
         add_commit_sha=add_commit_sha,
+        use_ninja=namespace.use_ninja,
     )
 
     dynamic_args = DynamicArgs.from_unknown_flags(unknown_flags, arg_parser)
@@ -657,6 +668,8 @@ if platform.system() == "Linux" and "BonsaiViewer" in targets:
     required_commands.append("patchelf")
 if "proj" in targets:
     required_commands.append("sqlite3")
+if ARGS.use_ninja:
+    required_commands.append("ninja")
 
 for cmd in required_commands:
     if shutil.which(cmd) is None:
@@ -797,6 +810,8 @@ def run_cmake(
         wasm.append("emcmake")
 
     cmake_flags: list[str] = []
+    if ARGS.use_ninja:
+        cmake_flags.extend(["-G", "Ninja"])
     if not native and (not WASM or not WASM_CMAKE_IS_USING_INIT_VARS):
         # For WASM we provide flags using just environment variables.
         # If we provide them using cmake vars, it will override emscripten toolchain flags.
@@ -832,6 +847,13 @@ def run_cmake(
         ],
         cwd=cwd,
     )
+
+
+def cmake_build(build_dir: str, targets: Sequence[str] = ()) -> None:
+    cmd = ["cmake", "--build", build_dir, "-j", str(IFCOS_NUM_BUILD_PROCS), "--verbose"]
+    for t in targets:
+        cmd.extend(["--target", t])
+    run(cmd)
 
 
 def git_clone_or_pull_repository(clone_url: str, target_dir: str, revision: str | None = None) -> None:
@@ -976,9 +998,16 @@ def build_dependency(
             with open(os.path.join(extract_dir, fn), "w") as f:
                 f.write(s)
         logger.info(f"\rBuilding {name}...   ")
-        run([make, f"-j{IFCOS_NUM_BUILD_PROCS}", "VERBOSE=1"], cwd=extract_build_dir)
-        logger.info(f"\rInstalling {name}... ")
-        run([make, "install"], cwd=extract_build_dir)
+        if mode == "cmake":
+            cmake_build(extract_build_dir)
+            logger.info(f"\rInstalling {name}... ")
+            cmake_build(extract_build_dir, ["install"])
+        elif mode == "autoconf":
+            run([make, f"-j{IFCOS_NUM_BUILD_PROCS}", "VERBOSE=1"], cwd=extract_build_dir)
+            logger.info(f"\rInstalling {name}... ")
+            run([make, "install"], cwd=extract_build_dir)
+        else:
+            assert_never(mode)
         logger.info(f"\rInstalled {name}     \n")
     else:  # bjam
         logger.info(f"\rConfiguring {name}...")
@@ -1889,8 +1918,8 @@ if not WASM and (
 
     logger.info("\rBuilding executables...   ")
 
-    run([make, f"-j{IFCOS_NUM_BUILD_PROCS}", "VERBOSE=1"], cwd=ifcos_build_dir)
-    run([make, "install/strip" if BUILD_CFG == "Release" else "install"], cwd=ifcos_build_dir)
+    cmake_build(ifcos_build_dir)
+    cmake_build(ifcos_build_dir, ["install/strip" if BUILD_CFG == "Release" else "install"])
 
     def test_examples() -> None:
         cecho("Running examples...", GREEN)
@@ -1986,8 +2015,11 @@ if "IfcOpenShell-Python" in targets:
 
         logger.info(f"\rBuilding python {python_version} wrapper...   ")
 
-        run([make, f"-j{IFCOS_NUM_BUILD_PROCS}", "ifcopenshell_wrapper", "VERBOSE=1"], cwd=ifcos_build_dir)
-        run([make, "install/local"], cwd=os.path.join(ifcos_build_dir, "ifcwrap"))
+        cmake_build(ifcos_build_dir, ["ifcopenshell_wrapper"])
+        if ARGS.use_ninja:
+            cmake_build(ifcos_build_dir, ["ifcwrap/install"])
+        else:
+            run([make, "install"], cwd=os.path.join(ifcos_build_dir, "ifcwrap"))
 
         if python_executable:
             run([python_executable, "-m", "ensurepip"])
