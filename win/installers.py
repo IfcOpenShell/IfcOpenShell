@@ -1268,6 +1268,7 @@ def install_rocksdb(
         "-DWITH_TOOLS=OFF",
         "-DWITH_BENCHMARK_TOOLS=OFF",
         "-DWITH_CORE_TOOLS=OFF",
+        "-DWITH_TRACE_TOOLS=OFF",
         "-DROCKSDB_BUILD_SHARED=OFF",
         "-DWITH_ZSTD=ON",
         "-DPORTABLE=1",

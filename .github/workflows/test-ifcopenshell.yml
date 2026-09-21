@@ -140,6 +140,7 @@ jobs:
             -DWITH_GFLAGS=OFF \
             -DWITH_BENCHMARK_TOOLS=OFF \
             -DWITH_CORE_TOOLS=OFF \
+            -DWITH_TRACE_TOOLS=OFF \
             -DROCKSDB_BUILD_SHARED=Off \
             -DCMAKE_POSITION_INDEPENDENT_CODE=On \
             -DUSE_RTTI=On
