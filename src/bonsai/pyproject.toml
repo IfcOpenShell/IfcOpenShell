@@ -86,9 +86,6 @@ exclude = ["test*"]
 
 [tool.ruff]
 extend = "../../pyproject.toml"
-lint.extend-select = [
-  "unused-import",
-]
 
 [tool.ruff.lint.isort]
 known-first-party = [
