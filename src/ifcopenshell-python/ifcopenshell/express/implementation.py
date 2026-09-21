@@ -19,7 +19,6 @@
 
 import codegen
 import templates
-
 from schema import OrderedCaseInsensitiveDict
 
 

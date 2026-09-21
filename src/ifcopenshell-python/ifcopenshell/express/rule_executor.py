@@ -1,11 +1,13 @@
-import os
-import re
 import ast
 import collections
-import ifcopenshell
-from logging import Logger
+import os
+import re
 from dataclasses import dataclass
+from logging import Logger
+
 from codegen import indent
+
+import ifcopenshell
 
 
 def reverse_compile(s):
@@ -100,9 +102,9 @@ def run(f: ifcopenshell.file, logger: Logger) -> None:
     try:
         source = open(fn, "r").read()
     except FileNotFoundError as e:
+        import subprocess
         import sys
         import time
-        import subprocess
 
         current_dir_files = {fn.lower(): fn for fn in os.listdir(".")}
         schema_name = str(f.schema_identifier).split(" ")[-1].lower()
@@ -282,9 +284,10 @@ def run(f: ifcopenshell.file, logger: Logger) -> None:
 
 
 if __name__ == "__main__":
-    import sys
     import json
     import logging
+    import sys
+
     import ifcopenshell
     from ifcopenshell.validate import json_logger
 
