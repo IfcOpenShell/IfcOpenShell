@@ -87,7 +87,7 @@ def parse_args() -> Args:
         nargs="?",
         default=argparse.SUPPRESS,
         choices=BUILD_CFGS,
-        help=HelpStrings.BUILD_CFG,
+        help=f"{HelpStrings.BUILD_CFG} Ignored for Ninja-configured build directories.",
     )
     parser.add_argument(
         "--build-cfg",
@@ -162,18 +162,27 @@ def main() -> None:
     logger.info(
         colorize(f"Building {vs_cfg_vars.vs_platform} {ARGS.build_cfg} {PROJECT_NAME}{target_suffix}", C.PURPLE)
     )
+    build_dir = REPO_ROOT / vs_cfg_vars.build_dir
+    build_ninja_path = build_dir / "build.ninja"
+    if build_ninja_path.exists():
+        logger.info(f"Found {build_ninja_path}, building with Ninja.")
+        build_tool_args = ("-j", str(ARGS.num_build_procs))
+        underlying_tool_args = ()
+    else:
+        build_tool_args = ("--config", ARGS.build_cfg)
+        underlying_tool_args = (
+            "/nologo",
+            *msbuild_multiproc_args(ARGS.num_build_procs),
+            f"/p:Platform={vs_cfg_vars.vs_platform}",
+        )
+    tool_args = (*underlying_tool_args, *ARGS.extra_args)
     run_streamed(
         "cmake",
         "--build",
-        str(REPO_ROOT / vs_cfg_vars.build_dir),
+        str(build_dir),
         *target_args,
-        "--config",
-        ARGS.build_cfg,
-        "--",
-        "/nologo",
-        *msbuild_multiproc_args(ARGS.num_build_procs),
-        f"/p:Platform={vs_cfg_vars.vs_platform}",
-        *ARGS.extra_args,
+        *build_tool_args,
+        *(("--", *tool_args) if tool_args else ()),
     )
 
     logger.info("")
