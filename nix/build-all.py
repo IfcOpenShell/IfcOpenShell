@@ -123,6 +123,8 @@ from urllib.request import urlretrieve
 
 from typing_extensions import assert_never
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "win"))
+
 from common import (
     ADD_COMMIT_SHA_DEFAULT,
     BUILD_CFG_DEFAULT,
