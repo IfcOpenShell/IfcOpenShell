@@ -1,4 +1,5 @@
 # This file was generated with the assistance of an AI coding tool.
+if("4" IN_LIST SCHEMA_VERSIONS) # @todo allow tests to run on other schemas as well
 
 add_executable(test_ifcopenshell_parse
     test_ifcopenshell_parse.cpp
@@ -15,3 +16,5 @@ catch_discover_tests(test_ifcopenshell_parse
         $<TARGET_FILE_DIR:IfcParse>
         $<TARGET_FILE_DIR:plugin>
 )
+
+endif()
