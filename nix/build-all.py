@@ -137,6 +137,8 @@ from pathlib import Path
 from typing import IO, Literal, NamedTuple, TypeAlias
 from urllib.request import urlretrieve
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "win"))
+
 from common import (
     ADD_COMMIT_SHA_DEFAULT,
     BUILD_CFG_DEFAULT,
