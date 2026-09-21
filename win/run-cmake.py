@@ -31,9 +31,12 @@ from typing import Literal, NamedTuple, NoReturn
 
 from common import (
     ADD_COMMIT_SHA_DEFAULT,
+    BUILD_CFG_DEFAULT,
+    BUILD_CFGS,
     OFF_ON,
     PROJECT_NAME,
     REPO_ROOT,
+    BuildCfg,
     C,
     HelpStrings,
     colorize,
@@ -150,6 +153,7 @@ class Args(NamedTuple):
     generator: str | None
     add_commit_sha: bool
     use_ninja: bool
+    build_cfg: BuildCfg
     clean: bool
     extra_args: list[str]
 
@@ -196,6 +200,16 @@ def parse_args() -> Args:
         help="Use the Ninja generator instead of the MSVC generator/platform.",
     )
     parser.add_argument(
+        "--build-cfg",
+        dest="build_cfg",
+        default=BUILD_CFG_DEFAULT,
+        choices=BUILD_CFGS,
+        help=(
+            f"{HelpStrings.BUILD_CFG} Only relevant with --use-ninja (sets CMAKE_BUILD_TYPE); "
+            "ignored for the (multi-config) MSVC generator."
+        ),
+    )
+    parser.add_argument(
         "--clean",
         dest="clean",
         action="store_true",
@@ -221,6 +235,7 @@ def parse_args() -> Args:
         generator=generator,
         add_commit_sha=add_commit_sha,
         use_ninja=args.use_ninja,
+        build_cfg=args.build_cfg,
         clean=args.clean,
         extra_args=extra_args,
     )
@@ -301,15 +316,18 @@ def main() -> None:
     if ARGS.use_ninja:
         cmake_generator = "Ninja"
         arch_option = ()
+        build_type_option = (f"-DCMAKE_BUILD_TYPE={ARGS.build_cfg}",)
     else:
         cmake_generator = vs_cfg_vars.generator.name
         arch_option = ("-A", vs_cfg_vars.vs_platform)
+        build_type_option = ()
 
     cmake_args = [
         str(cmakelists_dir),
         "-G",
         cmake_generator,
         *arch_option,
+        *build_type_option,
         f"-DCMAKE_INSTALL_PREFIX={cmake_install_prefix}",
         "-DWITH_ROCKSDB=ON",
         "-DWITH_ZSTD=ON",
