@@ -149,6 +149,8 @@ class HelpStrings:
         "Alternative way to specify the generator, instead of the positional argument. See above for accepted forms."
     )
 
+    USE_NINJA = "Use the Ninja generator instead of the MSVC generator/platform."
+
     BUILD_CFG = f"Build configuration type. (default: {BUILD_CFG_DEFAULT})"
     BUILD_CFG_FLAG = "Alternative way to specify the build configuration type, instead of the positional argument."
 
