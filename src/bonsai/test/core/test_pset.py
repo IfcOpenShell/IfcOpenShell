@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bonsai.core.pset as subject
-from test.core.bootstrap import ifc, pset
+from test.core.bootstrap import ifc, pset  # ruff: ignore[unused-import]
 
 
 class TestCopyPropertyToSelection:

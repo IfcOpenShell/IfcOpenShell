@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bonsai.core.qto as subject
-from test.core.bootstrap import qto
+from test.core.bootstrap import qto  # ruff: ignore[unused-import]
 
 
 class TestCalculateCircleRadius:
