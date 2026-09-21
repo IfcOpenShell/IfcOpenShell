@@ -167,11 +167,12 @@ def main() -> None:
         "--build",
         str(REPO_ROOT / vs_cfg_vars.build_dir),
         *target_args,
+        "--config",
+        ARGS.build_cfg,
         "--",
         "/nologo",
         *msbuild_multiproc_args(ARGS.num_build_procs),
         f"/p:Platform={vs_cfg_vars.vs_platform}",
-        f"/p:Configuration={ARGS.build_cfg}",
         *ARGS.extra_args,
     )
 
