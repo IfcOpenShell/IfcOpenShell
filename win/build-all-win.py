@@ -210,6 +210,7 @@ def build() -> None:
                 "Release",
                 "-y",
                 "--reuse-boost",
+                "--use-ninja",
                 "--python-version",
                 python_version,
             ]
@@ -220,6 +221,9 @@ def build() -> None:
                 str(REPO_WIN / "run-cmake.py"),
                 build_generator(),
                 "--add-commit-sha",
+                "--use-ninja",
+                "--build-cfg",
+                "Release",
                 "--",
                 "-DENABLE_BUILD_OPTIMIZATIONS=ON",
                 "-DGLTF_SUPPORT=ON",
