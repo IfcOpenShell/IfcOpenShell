@@ -30,20 +30,14 @@ def _compiler_output(compiler: str, *args: str) -> str:
         check=False,
     )
     if proc.returncode != 0:
-        raise RuntimeError(
-            proc.stderr.strip() or f"Unable to query compiler '{compiler}'"
-        )
+        raise RuntimeError(proc.stderr.strip() or f"Unable to query compiler '{compiler}'")
     return proc.stdout.strip()
 
 
 def _matching_libclang(compiler: str) -> Path | None:
     resource_dir_text = _compiler_output(compiler, "-print-resource-dir")
     resource_dir = Path(resource_dir_text)
-    library_dir = (
-        resource_dir.parents[1]
-        if len(resource_dir.parents) > 1
-        else resource_dir.parent
-    )
+    library_dir = resource_dir.parents[1] if len(resource_dir.parents) > 1 else resource_dir.parent
     names = ("libclang.dylib", "libclang.so", "libclang.dll")
     for directory in (library_dir, library_dir.parent / "bin"):
         for name in names:
@@ -52,10 +46,7 @@ def _matching_libclang(compiler: str) -> Path | None:
                 return candidate.resolve()
         versioned = sorted(
             directory.glob("libclang.so.*"),
-            key=lambda path: tuple(
-                int(part)
-                for part in re.findall(r"\d+", path.name.removeprefix("libclang.so."))
-            ),
+            key=lambda path: tuple(int(part) for part in re.findall(r"\d+", path.name.removeprefix("libclang.so."))),
             reverse=True,
         )
         if versioned:
@@ -70,15 +61,11 @@ def _configure_libclang(compiler: str):
     compiler = shutil.which(compiler) or compiler
     library = _matching_libclang(compiler)
     if library is None:
-        raise RuntimeError(
-            f"Unable to find a libclang library matching compiler '{compiler}'"
-        )
+        raise RuntimeError(f"Unable to find a libclang library matching compiler '{compiler}'")
     with _CONFIG_LOCK:
         if _CONFIGURED_LIBRARY is not None:
             if _CONFIGURED_LIBRARY != library:
-                raise RuntimeError(
-                    "One binding discovery process cannot use multiple Clang compilers"
-                )
+                raise RuntimeError("One binding discovery process cannot use multiple Clang compilers")
             return cindex
         cindex.Config.set_compatibility_check(False)
         cindex.Config.set_library_file(str(library))
@@ -95,9 +82,7 @@ def _system_include_args(compiler: str) -> tuple[str, ...]:
         check=False,
     )
     if proc.returncode != 0:
-        raise RuntimeError(
-            proc.stderr.strip() or f"Unable to query compiler '{compiler}'"
-        )
+        raise RuntimeError(proc.stderr.strip() or f"Unable to query compiler '{compiler}'")
     in_search = False
     args: list[str] = []
     for raw_line in proc.stderr.splitlines():
@@ -133,7 +118,7 @@ def _is_under(path: Path, root: Path) -> bool:
 
 
 def _kind_id(cursor) -> int:
-    return cursor._kind_id  # noqa: SLF001
+    return cursor._kind_id
 
 
 def _qualified_name(cursor, kinds) -> str:
@@ -190,8 +175,7 @@ def _type_info(cpp_type, current_scope: str = "") -> dict[str, str]:
         raw_arg_count is not None
         and canonical_arg_count is not None
         and canonical_arg_count > raw_arg_count
-        and raw_spelling.split("<", 1)[0].rsplit("::", 1)[-1]
-        == canonical.split("<", 1)[0].rsplit("::", 1)[-1]
+        and raw_spelling.split("<", 1)[0].rsplit("::", 1)[-1] == canonical.split("<", 1)[0].rsplit("::", 1)[-1]
     )
     if (
         canonical
@@ -265,9 +249,7 @@ def _record_node(cursor, kinds) -> dict:
             inner.append({"kind": "AccessSpecDecl", "access": access})
             active_access = access
         params = [
-            _param_node(item, current_scope)
-            for item in child.get_children()
-            if _kind_id(item) == kinds.PARM_DECL.value
+            _param_node(item, current_scope) for item in child.get_children() if _kind_id(item) == kinds.PARM_DECL.value
         ]
         if kind == kinds.CXX_METHOD.value:
             suffix = " const" if child.is_const_method() else ""
@@ -298,9 +280,7 @@ def _record_node(cursor, kinds) -> dict:
                 "name": child.spelling,
                 "type": _type_info(child.type, current_scope),
                 "doc": _clean_comment(child.raw_comment),
-                "hasInitializer": any(
-                    token in {"=", "{"} for token in tokens[name_index + 1 :]
-                ),
+                "hasInitializer": any(token in {"=", "{"} for token in tokens[name_index + 1 :]),
             }
         inner.append(node)
     return {
@@ -317,9 +297,7 @@ def _record_node(cursor, kinds) -> dict:
 def _function_node(cursor, kinds) -> dict:
     current_scope = _qualified_name(cursor.semantic_parent, kinds)
     params = [
-        _param_node(item, current_scope)
-        for item in cursor.get_children()
-        if _kind_id(item) == kinds.PARM_DECL.value
+        _param_node(item, current_scope) for item in cursor.get_children() if _kind_id(item) == kinds.PARM_DECL.value
     ]
     return {
         "kind": "FunctionDecl",
@@ -354,11 +332,7 @@ def parse_translation_unit(command) -> ParsedTranslationUnit:
         args=args,
         options=cindex.TranslationUnit.PARSE_SKIP_FUNCTION_BODIES,
     )
-    errors = [
-        str(item)
-        for item in translation_unit.diagnostics
-        if item.severity >= cindex.Diagnostic.Error
-    ]
+    errors = [str(item) for item in translation_unit.diagnostics if item.severity >= cindex.Diagnostic.Error]
     if errors:
         raise RuntimeError("\n".join(errors))
 
@@ -371,9 +345,7 @@ def parse_translation_unit(command) -> ParsedTranslationUnit:
     while stack:
         cursor = stack.pop()
         location_file = cursor.location.file
-        if location_file is None or not _is_under(
-            Path(str(location_file)), project_root
-        ):
+        if location_file is None or not _is_under(Path(str(location_file)), project_root):
             continue
         kind = _kind_id(cursor)
         if (
@@ -392,9 +364,7 @@ def parse_translation_unit(command) -> ParsedTranslationUnit:
                 {
                     "kind": "EnumDecl",
                     "name": cursor.spelling,
-                    "qualifiedName": "::".join(
-                        item for item in (parent_name, cursor.spelling) if item
-                    ),
+                    "qualifiedName": "::".join(item for item in (parent_name, cursor.spelling) if item),
                     "inner": [
                         {
                             "kind": "EnumConstantDecl",
@@ -415,9 +385,7 @@ def parse_translation_unit(command) -> ParsedTranslationUnit:
                     {
                         "kind": "EnumDecl",
                         "name": cursor.spelling,
-                        "qualifiedName": "::".join(
-                            item for item in (parent_name, cursor.spelling) if item
-                        ),
+                        "qualifiedName": "::".join(item for item in (parent_name, cursor.spelling) if item),
                     }
                 )
         elif kind == kinds.FUNCTION_DECL.value:

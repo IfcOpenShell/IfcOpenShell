@@ -22,9 +22,7 @@ def _value_type_by_c_type(metadata: BindingABI, c_type: str):
     )
 
 
-def _render_field_destroy(
-    field_c_type: str, field_expr: str, metadata: BindingABI
-) -> str | None:
+def _render_field_destroy(field_c_type: str, field_expr: str, metadata: BindingABI) -> str | None:
     base, pointer_depth = _normalized_pointer(field_c_type)
     if pointer_depth == 1:
         handle = next(
@@ -58,10 +56,7 @@ def _render_result_struct_destroy(value, metadata: BindingABI) -> str:
             else "    value->has_value = false;"
         )
     else:
-        fields = [
-            _render_field_destroy(field.c_type, f"value->{field.name}", metadata)
-            for field in value.fields
-        ]
+        fields = [_render_field_destroy(field.c_type, f"value->{field.name}", metadata) for field in value.fields]
         body = "\n".join(field for field in fields if field is not None)
         if not body:
             body = "    (void)value;"
@@ -77,25 +72,20 @@ def _compound_value_types(metadata: BindingABI):
     return tuple(
         value
         for value in metadata.value_types.values()
-        if value.kind in {"result_struct", "optional_result_struct"}
-        and value.destroy_function
+        if value.kind in {"result_struct", "optional_result_struct"} and value.destroy_function
     )
 
 
 def _render_result_struct_destroy_decls(metadata: BindingABI) -> str:
     return "\n".join(
-        f"void {value.destroy_function}({value.c_type}* value);"
-        for value in _compound_value_types(metadata)
+        f"void {value.destroy_function}({value.c_type}* value);" for value in _compound_value_types(metadata)
     )
 
 
 def _render_result_struct_destroy_impls(ir: BindingIR) -> str:
     if ir.abi is None:
         raise ValueError("C emission requires a finalized BindingIR")
-    return "\n\n".join(
-        _render_result_struct_destroy(value, ir.abi)
-        for value in _compound_value_types(ir.abi)
-    )
+    return "\n\n".join(_render_result_struct_destroy(value, ir.abi) for value in _compound_value_types(ir.abi))
 
 
 __all__ = [

@@ -93,23 +93,19 @@ def _generate_cpp_specs(
         header_out.name,
     )
     header_out.write_text(artifacts[header_out.name], encoding="utf-8")
-    cpp_out.write_text(
-        artifacts[header_out.name.removesuffix(".h") + ".cpp"], encoding="utf-8"
-    )
+    cpp_out.write_text(artifacts[header_out.name.removesuffix(".h") + ".cpp"], encoding="utf-8")
 
 
 def test_cpp_spec_frontend_rejects_mutable_void_pointer_params(tmp_path: Path) -> None:
     spec_path = tmp_path / "demo_spec.cpp"
     spec_path.write_text(
-        dedent(
-            """
+        dedent("""
             namespace ifcopenshell::capi_spec {
             inline int ifcopenshell_demo_set_box(void* data) {
                 return data ? 1 : 0;
             }
             }
-            """
-        ),
+            """),
         encoding="utf-8",
     )
 
@@ -119,17 +115,14 @@ def test_cpp_spec_frontend_rejects_mutable_void_pointer_params(tmp_path: Path) -
         "ifcopenshell::capi_spec",
     )
 
-    with pytest.raises(
-        ValueError, match="Unsupported discovered parameter type 'void \\*'"
-    ):
+    with pytest.raises(ValueError, match="Unsupported discovered parameter type 'void \\*'"):
         lower_cpp_spec_functions_to_calls(functions, {})
 
 
 def test_cpp_spec_frontend_discovers_selected_native_method(tmp_path: Path) -> None:
     spec_path = tmp_path / "demo_spec.hpp"
     spec_path.write_text(
-        dedent(
-            """
+        dedent("""
             #define IFCAPI_HANDLE(...)
             #define IFCAPI_DISCOVER_METHOD(...)
 
@@ -145,13 +138,10 @@ def test_cpp_spec_frontend_discovers_selected_native_method(tmp_path: Path) -> N
             IFCAPI_HANDLE(item, library::item, none)
             IFCAPI_DISCOVER_METHOD(item, value, value_by_name, const char*)
             IFCAPI_DISCOVER_METHOD(item, measure, measure, double&)
-            """
-        ),
+            """),
         encoding="utf-8",
     )
-    handles = lower_cpp_spec_handles_to_specs(
-        discover_cpp_spec_handles(spec_path, c_prefix="ifcopenshell")
-    )
+    handles = lower_cpp_spec_handles_to_specs(discover_cpp_spec_handles(spec_path, c_prefix="ifcopenshell"))
 
     calls = lower_cpp_spec_methods_to_calls(
         _environment(tmp_path),
@@ -173,8 +163,7 @@ def test_cpp_spec_frontend_generates_fixed_sequence_variant_parameters(
 ) -> None:
     spec_path = tmp_path / "demo_spec.cpp"
     spec_path.write_text(
-        dedent(
-            """
+        dedent("""
             #include <array>
             #include <variant>
             #include <vector>
@@ -192,8 +181,7 @@ def test_cpp_spec_frontend_generates_fixed_sequence_variant_parameters(
                 return {};
             }
             }
-            """
-        ),
+            """),
         encoding="utf-8",
     )
     environment = _environment(tmp_path)
@@ -231,8 +219,7 @@ def test_cpp_spec_frontend_generates_fixed_sequence_variant_parameters(
 def test_cpp_spec_result_field_docs_come_from_semantic_type(tmp_path: Path) -> None:
     spec_path = tmp_path / "demo_spec.cpp"
     spec_path.write_text(
-        dedent(
-            """
+        dedent("""
             #define IFCAPI_RESULT_STRUCT(...)
 
             namespace demo {
@@ -251,8 +238,7 @@ def test_cpp_spec_result_field_docs_come_from_semantic_type(tmp_path: Path) -> N
                 /// This mirror comment must not be used either.
                 double first;
             };
-            """
-        ),
+            """),
         encoding="utf-8",
     )
 
@@ -444,10 +430,7 @@ def test_c_abi_result_structs_destroy_nested_values_and_handle_envelopes() -> No
     header = _render_header(spec)
     cpp = _render_cpp(spec, "demo_api.h")
 
-    assert (
-        "void ifcopenshell_demo_result_destroy(ifcopenshell_demo_result_t* value);"
-        in header
-    )
+    assert "void ifcopenshell_demo_result_destroy(ifcopenshell_demo_result_t* value);" in header
     assert "ifcopenshell_demo_item_destroy(value->item);" in cpp
     assert "ifcopenshell_demo_item_list_destroy(&value->items);" in cpp
     assert "ifcopenshell_double_list_destroy(&value->values);" in cpp
@@ -456,14 +439,10 @@ def test_c_abi_result_structs_destroy_nested_values_and_handle_envelopes() -> No
     assert "ifcopenshell_demo_result_t result_value_c{};" in cpp
     assert "*out_result = result_value_c;" in cpp
     assert "ifcopenshell_demo_result_destroy(&result_value_c);" in cpp
-    assert header.index("ifcopenshell_demo_inner_t {") < header.index(
-        "ifcopenshell_demo_result_t {"
-    )
+    assert header.index("ifcopenshell_demo_inner_t {") < header.index("ifcopenshell_demo_result_t {")
     metadata = spec.abi
     assert metadata is not None
-    assert metadata.value_types["DemoResult"].destroy_function == (
-        "ifcopenshell_demo_result_destroy"
-    )
+    assert metadata.value_types["DemoResult"].destroy_function == ("ifcopenshell_demo_result_destroy")
 
 
 def test_c_abi_result_record_sequences_are_owned_and_dependency_ordered() -> None:
@@ -471,9 +450,7 @@ def test_c_abi_result_record_sequences_are_owned_and_dependency_ordered() -> Non
         name="Support",
         cpp_type="Demo::Support",
         c_type="ifcopenshell_demo_support_t",
-        fields=(
-            ResultStructFieldSpec("points", TypeSpec(kind="double", sequence_depth=2)),
-        ),
+        fields=(ResultStructFieldSpec("points", TypeSpec(kind="double", sequence_depth=2)),),
     )
     result = ResultStructSpec(
         name="Result",
@@ -613,22 +590,12 @@ def test_generated_compound_cleanup_runtime_preserves_transferred_handles(
     metadata = ir.abi
     assert metadata is not None
     result_type = metadata.value_types["DemoResult"]
-    list_type = next(
-        value
-        for value in metadata.value_types.values()
-        if value.kind == "handle_sequence"
-    )
-    variant_type = next(
-        value for value in metadata.value_types.values() if value.kind == "variant"
-    )
+    list_type = next(value for value in metadata.value_types.values() if value.kind == "handle_sequence")
+    variant_type = next(value for value in metadata.value_types.values() if value.kind == "variant")
 
     def struct_declaration(c_type: str) -> str:
-        value = next(
-            item for item in metadata.value_types.values() if item.c_type == c_type
-        )
-        fields = "\n".join(
-            f"    {field.c_type} {field.name};" for field in value.fields
-        )
+        value = next(item for item in metadata.value_types.values() if item.c_type == c_type)
+        fields = "\n".join(f"    {field.c_type} {field.name};" for field in value.fields)
         return f"struct {c_type} {{\n{fields}\n}};"
 
     handle_destroy = f"""void ifcopenshell_demo_item_destroy(ifcopenshell_demo_item_t* handle) {{
@@ -819,8 +786,7 @@ def test_cpp_spec_generation_lowers_standalone_optional_handle_and_string_params
 ) -> None:
     spec_path = tmp_path / "demo_spec.cpp"
     spec_path.write_text(
-        dedent(
-            """
+        dedent("""
             #include <optional>
             #include <string>
 
@@ -833,8 +799,7 @@ def test_cpp_spec_generation_lowers_standalone_optional_handle_and_string_params
                 return value.has_value() || name.has_value() ? 1 : 0;
             }
             }
-            """
-        ),
+            """),
         encoding="utf-8",
     )
     header_out = tmp_path / "demo_api.h"
@@ -857,10 +822,7 @@ def test_cpp_spec_generation_lowers_standalone_optional_handle_and_string_params
         in header
     )
     assert "std::optional<DemoValue> value_cpp;" in generated_cpp
-    assert (
-        "if (value != nullptr && value->ptr != nullptr) { value_cpp = *value->ptr; }"
-        in generated_cpp
-    )
+    assert "if (value != nullptr && value->ptr != nullptr) { value_cpp = *value->ptr; }" in generated_cpp
     assert "std::optional<std::string> name_cpp;" in generated_cpp
     assert "if (name != nullptr) { name_cpp = std::string(name); }" in generated_cpp
     assert "demo::update(value_cpp, name_cpp)" in generated_cpp
@@ -869,8 +831,7 @@ def test_cpp_spec_generation_lowers_standalone_optional_handle_and_string_params
 def test_cpp_spec_generation_tracks_default_parameters(tmp_path: Path) -> None:
     spec_path = tmp_path / "demo_spec.cpp"
     spec_path.write_text(
-        dedent(
-            """
+        dedent("""
             #include <optional>
             #include <string>
 
@@ -879,8 +840,7 @@ def test_cpp_spec_generation_tracks_default_parameters(tmp_path: Path) -> None:
                 return value.has_value() || suffix.has_value();
             }
             }
-            """
-        ),
+            """),
         encoding="utf-8",
     )
 
@@ -889,9 +849,7 @@ def test_cpp_spec_generation_tracks_default_parameters(tmp_path: Path) -> None:
         spec_path,
         "demo",
     )
-    calls = lower_cpp_spec_functions_to_calls(
-        functions, {}, c_prefix="ifcopenshell_demo"
-    )
+    calls = lower_cpp_spec_functions_to_calls(functions, {}, c_prefix="ifcopenshell_demo")
     ir = BindingIR(
         module="demo",
         c_prefix="ifcopenshell_demo",
@@ -926,8 +884,7 @@ def test_cpp_spec_generation_preserves_omittable_native_defaults(
 ) -> None:
     spec_path = tmp_path / "demo_spec.cpp"
     spec_path.write_text(
-        dedent(
-            """
+        dedent("""
             #include <optional>
             #include <string>
             #include <vector>
@@ -942,8 +899,7 @@ def test_cpp_spec_generation_preserves_omittable_native_defaults(
                 return tolerance || label || mode || offsets;
             }
             }
-            """
-        ),
+            """),
         encoding="utf-8",
     )
     header_out = tmp_path / "demo_api.h"
@@ -976,8 +932,7 @@ def test_cpp_spec_generation_lowers_optional_owned_handle_returns(
 ) -> None:
     spec_path = tmp_path / "demo_spec.cpp"
     spec_path.write_text(
-        dedent(
-            """
+        dedent("""
             #include <optional>
 
             struct DemoValue {};
@@ -990,8 +945,7 @@ def test_cpp_spec_generation_lowers_optional_owned_handle_returns(
                 return found ? std::optional<DemoValue*>(new DemoValue()) : std::nullopt;
             }
             }
-            """
-        ),
+            """),
         encoding="utf-8",
     )
     header_out = tmp_path / "demo_api.h"
@@ -1009,18 +963,12 @@ def test_cpp_spec_generation_lowers_optional_owned_handle_returns(
 
     header = header_out.read_text(encoding="utf-8")
     generated_cpp = cpp_out.read_text(encoding="utf-8")
-    assert (
-        "bool ifcopenshell_demo_find_value(bool found, ifcopenshell_demo_demo_value_t** out_result);"
-        in header
-    )
+    assert "bool ifcopenshell_demo_find_value(bool found, ifcopenshell_demo_demo_value_t** out_result);" in header
     assert "auto result_value = demo::find_value(found_cpp);" in generated_cpp
     assert "if (!result_value) {" in generated_cpp
     assert "*out_result = nullptr;" in generated_cpp
     assert "auto unwrapped_result = *result_value;" in generated_cpp
-    assert (
-        "*out_result = new ifcopenshell_demo_demo_value_t{unwrapped_result, true};"
-        in generated_cpp
-    )
+    assert "*out_result = new ifcopenshell_demo_demo_value_t{unwrapped_result, true};" in generated_cpp
 
 
 def test_cpp_spec_generation_lowers_nullable_owned_raw_handle_returns(
@@ -1028,8 +976,7 @@ def test_cpp_spec_generation_lowers_nullable_owned_raw_handle_returns(
 ) -> None:
     spec_path = tmp_path / "demo_spec.cpp"
     spec_path.write_text(
-        dedent(
-            """
+        dedent("""
             struct DemoValue {};
             #define IFCAPI_HANDLE(name, cpp_type, destructor)
             #define IFCAPI_OWNED
@@ -1040,8 +987,7 @@ def test_cpp_spec_generation_lowers_nullable_owned_raw_handle_returns(
                 return found ? new DemoValue() : nullptr;
             }
             }
-            """
-        ),
+            """),
         encoding="utf-8",
     )
     header_out = tmp_path / "demo_api.h"
@@ -1058,23 +1004,16 @@ def test_cpp_spec_generation_lowers_nullable_owned_raw_handle_returns(
     )
 
     generated_cpp = cpp_out.read_text(encoding="utf-8")
-    assert (
-        "auto result_value = std::unique_ptr<DemoValue>(demo::find_value(found_cpp));"
-        in generated_cpp
-    )
+    assert "auto result_value = std::unique_ptr<DemoValue>(demo::find_value(found_cpp));" in generated_cpp
     assert "if (!result_value) {" in generated_cpp
     assert "*out_result = nullptr;" in generated_cpp
-    assert (
-        "*out_result = new ifcopenshell_demo_demo_value_t{result_value.release(), true};"
-        in generated_cpp
-    )
+    assert "*out_result = new ifcopenshell_demo_demo_value_t{result_value.release(), true};" in generated_cpp
 
 
 def test_cpp_spec_frontend_rejects_overloaded_exports(tmp_path: Path) -> None:
     spec_path = tmp_path / "demo_spec.cpp"
     spec_path.write_text(
-        dedent(
-            """
+        dedent("""
             namespace ifcopenshell::capi_spec {
             inline int ifcopenshell_demo_value(int value) {
                 return value;
@@ -1083,8 +1022,7 @@ def test_cpp_spec_frontend_rejects_overloaded_exports(tmp_path: Path) -> None:
                 return static_cast<int>(value);
             }
             }
-            """
-        ),
+            """),
         encoding="utf-8",
     )
 
@@ -1101,8 +1039,7 @@ def test_cpp_spec_frontend_excludes_private_helpers(tmp_path: Path) -> None:
 
     spec_path = tmp_path / "demo_spec.cpp"
     spec_path.write_text(
-        dedent(
-            """
+        dedent("""
             namespace ifcopenshell::capi_spec {
             inline int ifcopenshell_demo_exported() {
                 return 42;
@@ -1111,8 +1048,7 @@ def test_cpp_spec_frontend_excludes_private_helpers(tmp_path: Path) -> None:
                 return 0;
             }
             }
-            """
-        ),
+            """),
         encoding="utf-8",
     )
 
@@ -1134,8 +1070,7 @@ def test_cpp_spec_frontend_excludes_private_helpers(tmp_path: Path) -> None:
 def test_cpp_spec_frontend_rejects_duplicate_handles(tmp_path: Path) -> None:
     spec_path = tmp_path / "demo_spec.cpp"
     spec_path.write_text(
-        dedent(
-            """
+        dedent("""
             #define IFCAPI_HANDLE(cpp_type, destructor)
 
             namespace ifcopenshell::capi_spec {
@@ -1145,8 +1080,7 @@ def test_cpp_spec_frontend_rejects_duplicate_handles(tmp_path: Path) -> None:
             IFCAPI_HANDLE(ifcopenshell::capi_spec::DemoFile, delete)
             struct ifcopenshell_demo_file_t;
             }
-            """
-        ),
+            """),
         encoding="utf-8",
     )
 
@@ -1157,8 +1091,7 @@ def test_cpp_spec_frontend_rejects_duplicate_handles(tmp_path: Path) -> None:
 def test_cpp_spec_frontend_discovers_receiver_operator_adapters(tmp_path: Path) -> None:
     spec_path = tmp_path / "demo_spec.cpp"
     spec_path.write_text(
-        dedent(
-            """
+        dedent("""
             #define IFCAPI_HANDLE(name, cpp_type, destructor)
             #define IFCAPI_OWNED
 
@@ -1175,17 +1108,13 @@ def test_cpp_spec_frontend_discovers_receiver_operator_adapters(tmp_path: Path) 
                 return self == other;
             }
             }
-            """
-        ),
+            """),
         encoding="utf-8",
     )
 
     functions = discover_cpp_spec_functions(_environment(tmp_path), spec_path, "demo")
     handles = lower_cpp_spec_handles_to_specs(discover_cpp_spec_handles(spec_path))
-    calls = {
-        call.c_name: call
-        for call in lower_cpp_spec_functions_to_calls(functions, handles)
-    }
+    calls = {call.c_name: call for call in lower_cpp_spec_functions_to_calls(functions, handles)}
 
     add = calls["ifcopenshell_demo_value_add"]
     assert add.receiver == "demo_value"

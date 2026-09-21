@@ -37,7 +37,7 @@ from typing import Any, Optional
 # `python -m nix.wasm_native`.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from nix import core, deps  # noqa: E402
+from nix import core, deps
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Constants
@@ -45,9 +45,7 @@ from nix import core, deps  # noqa: E402
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parent
-BUILD_ROOT = Path(
-    os.environ.get("WASM_NATIVE_BUILD_ROOT", REPO_ROOT / "build" / "wasm-native")
-)
+BUILD_ROOT = Path(os.environ.get("WASM_NATIVE_BUILD_ROOT", REPO_ROOT / "build" / "wasm-native"))
 BUILD_MARKER = ".ifcopenshell-wasm-build"
 CMAKE_DIR = REPO_ROOT / "cmake"
 
@@ -439,9 +437,7 @@ def cmd_test(args: argparse.Namespace) -> int:
     # Verify plugin .wasm files exist
     plugins_dir = wasm_dir / "plugins"
     if plugins_dir.exists():
-        expected_files = {
-            (wasm_dir / path).resolve() for path in _manifest_plugin_paths(manifest)
-        }
+        expected_files = {(wasm_dir / path).resolve() for path in _manifest_plugin_paths(manifest)}
         actual_files = {path.resolve() for path in plugins_dir.glob("*.wasm")}
         if actual_files != expected_files:
             for path in sorted(expected_files - actual_files):
@@ -486,13 +482,9 @@ def cmd_package(args: argparse.Namespace) -> int:
         if manifest_errors:
             raise ValueError("Plugin manifest mismatch: " + "; ".join(manifest_errors))
         plugin_paths = _manifest_plugin_paths(manifest)
-        missing.extend(
-            str(path) for path in plugin_paths if not (wasm_dir / path).is_file()
-        )
+        missing.extend(str(path) for path in plugin_paths if not (wasm_dir / path).is_file())
     if missing:
-        raise FileNotFoundError(
-            f"Cannot package incomplete WASM build; missing: {', '.join(missing)}"
-        )
+        raise FileNotFoundError(f"Cannot package incomplete WASM build; missing: {', '.join(missing)}")
 
     if out.exists():
         shutil.rmtree(out)

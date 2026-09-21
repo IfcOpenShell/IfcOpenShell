@@ -230,9 +230,7 @@ class BindingIR:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "handles", MappingProxyType(dict(self.handles)))
-        object.__setattr__(
-            self, "result_structs", MappingProxyType(dict(self.result_structs))
-        )
+        object.__setattr__(self, "result_structs", MappingProxyType(dict(self.result_structs)))
 
     @property
     def functions(self) -> tuple[CallIR, ...]:
@@ -270,8 +268,7 @@ def _lower_policy_operation(call: CallSpec, operation: object) -> OperationIR:
     if isinstance(operation, DirectFieldPolicyOp):
         return FieldGetOp(
             field_name=operation.field_name,
-            null_check=call.returns.kind == "handle"
-            and call.returns.sequence_depth == 0,
+            null_check=call.returns.kind == "handle" and call.returns.sequence_depth == 0,
             array_element_cpp_type=_array_element_cpp_type(call.returns.cpp_type),
         )
     if isinstance(operation, ValueHandleFieldPolicyOp):
@@ -291,9 +288,7 @@ def _lower_policy_operation(call: CallSpec, operation: object) -> OperationIR:
     if isinstance(operation, ChildrenAtPolicyOp):
         return ChildrenAtOp(field_name=operation.field_name)
     if isinstance(operation, ChildrenAddPolicyOp):
-        return ChildrenAddOp(
-            field_name=operation.field_name, cast_cpp_type=operation.cast_cpp_type
-        )
+        return ChildrenAddOp(field_name=operation.field_name, cast_cpp_type=operation.cast_cpp_type)
     if isinstance(operation, FieldSetterPolicyOp):
         return FieldSetterOp(field_name=operation.field_name)
     if isinstance(operation, MethodSizePolicyOp):
@@ -322,9 +317,7 @@ def _lower_policy_operation(call: CallSpec, operation: object) -> OperationIR:
     if isinstance(operation, AsItemCastPolicyOp):
         return StaticCastOp(expression="self->ptr")
     if isinstance(operation, CcomponentsAccessorPolicyOp):
-        return CcomponentsAccessorOp(
-            access_via=operation.access_via, dimensions=operation.dimensions
-        )
+        return CcomponentsAccessorOp(access_via=operation.access_via, dimensions=operation.dimensions)
     if isinstance(operation, VariantGetPolicyOp):
         return VariantGetOp(
             method_name=operation.method_name,

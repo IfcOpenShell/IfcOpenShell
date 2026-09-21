@@ -38,12 +38,8 @@ def _render_handle_destroy_decl(handle: HandleSpec) -> str:
     return f"void {_handle_destroy_name(handle)}({handle.c_type}* handle);"
 
 
-def _render_error_enum(
-    entries: tuple[ErrorCatalogEntryIR, ...], prefix: str, c_type: str
-) -> str:
-    values = ",\n".join(
-        f"    {prefix}{entry.name} = {entry.value}" for entry in entries
-    )
+def _render_error_enum(entries: tuple[ErrorCatalogEntryIR, ...], prefix: str, c_type: str) -> str:
+    values = ",\n".join(f"    {prefix}{entry.name} = {entry.value}" for entry in entries)
     return f"typedef enum {{\n{values}\n}} {c_type};"
 
 
@@ -53,10 +49,7 @@ def _render_header(spec: BindingIR) -> str:
         f"module={spec.module} handles={len(spec.handles)} functions={len(spec.functions)} methods={len(spec.methods)}",
     )
     guard = f"{spec.c_prefix.upper()}_API_H"
-    handle_forwards = "\n".join(
-        f"typedef struct {handle.c_type} {handle.c_type};"
-        for handle in spec.handles.values()
-    )
+    handle_forwards = "\n".join(f"typedef struct {handle.c_type} {handle.c_type};" for handle in spec.handles.values())
     handle_list_types = _used_handle_list_handles(spec)
     handle_list_list_types = _used_handle_list_list_handles(spec)
     handle_list_forwards = "\n".join(
@@ -73,9 +66,7 @@ def _render_header(spec: BindingIR) -> str:
         f"}} {_handle_list_list_c_type(handle)};"
         for handle in handle_list_list_types
     )
-    result_record_lists = {
-        struct.name: struct for struct in _used_result_record_lists(spec)
-    }
+    result_record_lists = {struct.name: struct for struct in _used_result_record_lists(spec)}
     result_decl_blocks = []
     for struct in _ordered_result_structs(spec):
         result_decl_blocks.append(_render_result_struct_decl(struct, spec))
@@ -90,9 +81,7 @@ def _render_header(spec: BindingIR) -> str:
         for call in spec.calls
         if call.returns.kind == "struct" and call.returns.nullable
     )
-    variant_decls = "\n\n".join(
-        _render_variant_decl(variant, spec) for variant in _used_variant_types(spec)
-    )
+    variant_decls = "\n\n".join(_render_variant_decl(variant, spec) for variant in _used_variant_types(spec))
     variant_list_decls = "\n\n".join(
         f"typedef struct {_variant_list_c_type(variant, spec)} {{\n"
         f"    {_variant_c_type(variant, spec)}* items;\n"
@@ -101,15 +90,10 @@ def _render_header(spec: BindingIR) -> str:
         for variant in _used_variant_types(spec)
         if variant.sequence_depth == 1
     )
-    destroy_decls = "\n".join(
-        _render_handle_destroy_decl(handle) for handle in spec.handles.values()
-    )
-    handle_list_destroy_decls = "\n".join(
-        _render_handle_list_destroy_decl(handle) for handle in handle_list_types
-    )
+    destroy_decls = "\n".join(_render_handle_destroy_decl(handle) for handle in spec.handles.values())
+    handle_list_destroy_decls = "\n".join(_render_handle_list_destroy_decl(handle) for handle in handle_list_types)
     handle_list_list_destroy_decls = "\n".join(
-        _render_handle_list_list_destroy_decl(handle)
-        for handle in handle_list_list_types
+        _render_handle_list_list_destroy_decl(handle) for handle in handle_list_list_types
     )
     variant_destroy_decls = _render_variant_destroy_decls(spec)
     result_struct_destroy_decls = _render_result_struct_destroy_decls(spec.abi)
@@ -194,7 +178,5 @@ int {spec.c_prefix}_last_error_code(void);
 
 #endif
 """
-    debug_log(
-        "c_backend.render_header.done", f"module={spec.module} bytes={len(rendered)}"
-    )
+    debug_log("c_backend.render_header.done", f"module={spec.module} bytes={len(rendered)}")
     return rendered

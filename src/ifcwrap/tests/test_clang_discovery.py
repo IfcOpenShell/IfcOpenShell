@@ -17,18 +17,14 @@ from src.ifcwrap.binding_generator.clang_discovery import (
 )
 
 
-def test_matching_libclang_uses_numeric_version_order(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_matching_libclang_uses_numeric_version_order(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     resource_dir = tmp_path / "llvm" / "lib" / "clang" / "18"
     resource_dir.mkdir(parents=True)
     older = resource_dir.parents[1] / "libclang.so.9"
     newer = resource_dir.parents[1] / "libclang.so.18"
     older.touch()
     newer.touch()
-    monkeypatch.setattr(
-        libclang_index, "_compiler_output", lambda compiler, *args: str(resource_dir)
-    )
+    monkeypatch.setattr(libclang_index, "_compiler_output", lambda compiler, *args: str(resource_dir))
 
     assert libclang_index._matching_libclang("clang++") == newer.resolve()
 
@@ -67,17 +63,14 @@ int walk(int steps);
 void hop(int count);
 void hop(const std::string& guid);
 }
-""".strip()
-        + "\n",
+""".strip() + "\n",
         encoding="utf-8",
     )
     source.write_text('#include "sample.h"\n', encoding="utf-8")
 
     methods = discover_public_methods(
         DiscoveryEnvironment(
-            compilation=CompilationConfig(
-                compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path
-            )
+            compilation=CompilationConfig(compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path)
         ),
         source,
         "Foo",
@@ -98,15 +91,11 @@ void hop(const std::string& guid);
     assert methods["baz"][0].params[0].cpp_type_ref.base_name == "std::string"
     assert len(methods["qux"]) == 2
     assert [param.cpp_type for param in methods["qux"][0].params] == ["int"]
-    assert [param.cpp_type for param in methods["qux"][1].params] == [
-        "const std::string &"
-    ]
+    assert [param.cpp_type for param in methods["qux"][1].params] == ["const std::string &"]
 
     qualified_methods = discover_public_methods(
         DiscoveryEnvironment(
-            compilation=CompilationConfig(
-                compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path
-            )
+            compilation=CompilationConfig(compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path)
         ),
         source,
         "Demo::Foo",
@@ -115,9 +104,7 @@ void hop(const std::string& guid);
 
     functions = discover_namespace_functions(
         DiscoveryEnvironment(
-            compilation=CompilationConfig(
-                compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path
-            )
+            compilation=CompilationConfig(compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path)
         ),
         source,
         "Demo",
@@ -129,9 +116,7 @@ void hop(const std::string& guid);
     assert len(functions["hop"]) == 2
 
 
-def test_translation_unit_is_parsed_once(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_translation_unit_is_parsed_once(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     compiler = shutil.which("clang++")
     if compiler is None:
         pytest.skip("clang++ is not available")
@@ -151,9 +136,7 @@ def test_translation_unit_is_parsed_once(
 
     monkeypatch.setattr(libclang_index, "parse_translation_unit", counting_parse)
     environment = DiscoveryEnvironment(
-        compilation=CompilationConfig(
-            compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path
-        )
+        compilation=CompilationConfig(compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path)
     )
 
     discover_public_methods(environment, source, "Demo::Item")
@@ -182,8 +165,7 @@ namespace bindings {
 int nested_count(const std::string& name);
 }
 }
-""".strip()
-        + "\n",
+""".strip() + "\n",
         encoding="utf-8",
     )
     source.write_text(
@@ -193,16 +175,13 @@ int nested_count(const std::string& name);
 namespace ifcapi::bindings {
 double qualified_scale(double value) { return value; }
 }
-""".strip()
-        + "\n",
+""".strip() + "\n",
         encoding="utf-8",
     )
 
     functions = discover_namespace_functions(
         DiscoveryEnvironment(
-            compilation=CompilationConfig(
-                compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path
-            )
+            compilation=CompilationConfig(compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path)
         ),
         source,
         "ifcapi::bindings",
@@ -232,8 +211,7 @@ def test_discover_namespace_functions_with_synthetic_contract_source(
 namespace ifcapi::bindings {
 int contract_count(const std::string& name);
 }
-""".strip()
-        + "\n",
+""".strip() + "\n",
         encoding="utf-8",
     )
     header_b.write_text(
@@ -241,17 +219,14 @@ int contract_count(const std::string& name);
 namespace ifcapi::bindings {
 double contract_scale(double value);
 }
-""".strip()
-        + "\n",
+""".strip() + "\n",
         encoding="utf-8",
     )
     source.write_text("int reference() { return 0; }\n", encoding="utf-8")
 
     functions = discover_namespace_functions_with_synthetic_source(
         DiscoveryEnvironment(
-            compilation=CompilationConfig(
-                compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path
-            )
+            compilation=CompilationConfig(compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path)
         ),
         f'#include "{header_a.as_posix()}"\n#include "{header_b.as_posix()}"\n',
         "ifcapi::bindings",
@@ -285,15 +260,12 @@ public:
 
 int walk(int steps);
 }
-""".strip()
-        + "\n",
+""".strip() + "\n",
         encoding="utf-8",
     )
     source.write_text('#include "sample.h"\n', encoding="utf-8")
     environment = DiscoveryEnvironment(
-        compilation=CompilationConfig(
-            compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path
-        )
+        compilation=CompilationConfig(compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path)
     )
 
     methods = discover_public_methods(environment, source, "Demo::Foo")
@@ -318,14 +290,11 @@ def test_synthetic_contract_discovery_uses_explicit_compilation(tmp_path: Path) 
 namespace ifcapi::bindings {
 int contract_count(const std::string& name);
 }
-""".strip()
-        + "\n",
+""".strip() + "\n",
         encoding="utf-8",
     )
     environment = DiscoveryEnvironment(
-        compilation=CompilationConfig(
-            compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path
-        )
+        compilation=CompilationConfig(compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path)
     )
 
     functions = discover_namespace_functions_with_synthetic_source(
@@ -376,35 +345,27 @@ public:
     int wrong;
 };
 }
-""".strip()
-        + "\n",
+""".strip() + "\n",
         encoding="utf-8",
     )
     source.write_text('#include "fields.h"\n', encoding="utf-8")
 
     own_fields = discover_public_fields(
         DiscoveryEnvironment(
-            compilation=CompilationConfig(
-                compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path
-            )
+            compilation=CompilationConfig(compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path)
         ),
         source,
         "Derived",
     )
     assert set(own_fields) == {"axis"}
     assert own_fields["axis"].cpp_type == "Node::ptr"
-    assert (
-        own_fields["axis"].cpp_type_ref.desugared_spelling
-        == "std::shared_ptr<Demo::Node>"
-    )
+    assert own_fields["axis"].cpp_type_ref.desugared_spelling == "std::shared_ptr<Demo::Node>"
     assert own_fields["axis"].cpp_type_ref.base_name == "std::shared_ptr"
     assert own_fields["axis"].cpp_type_ref.template_args[0].base_name == "Demo::Node"
 
     inherited_fields = discover_public_fields(
         DiscoveryEnvironment(
-            compilation=CompilationConfig(
-                compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path
-            )
+            compilation=CompilationConfig(compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path)
         ),
         source,
         "Derived",
@@ -416,9 +377,7 @@ public:
 
     qualified_inherited_fields = discover_public_fields(
         DiscoveryEnvironment(
-            compilation=CompilationConfig(
-                compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path
-            )
+            compilation=CompilationConfig(compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path)
         ),
         source,
         "Demo::Derived",
@@ -445,17 +404,14 @@ struct Widget {
     void set_mode(Mode value);
 };
 }
-""".strip()
-        + "\n",
+""".strip() + "\n",
         encoding="utf-8",
     )
     source.write_text('#include "enums.h"\n', encoding="utf-8")
 
     methods = discover_public_methods(
         DiscoveryEnvironment(
-            compilation=CompilationConfig(
-                compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path
-            )
+            compilation=CompilationConfig(compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path)
         ),
         source,
         "Demo::Widget",
@@ -487,27 +443,21 @@ struct SimpleType {
     data_type declared_type() const;
 };
 }
-""".strip()
-        + "\n",
+""".strip() + "\n",
         encoding="utf-8",
     )
     source.write_text('#include "typedef_enums.h"\n', encoding="utf-8")
 
     methods = discover_public_methods(
         DiscoveryEnvironment(
-            compilation=CompilationConfig(
-                compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path
-            )
+            compilation=CompilationConfig(compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path)
         ),
         source,
         "Demo::SimpleType",
     )
 
     assert methods["declared_type"][0].return_type_ref.is_enum
-    assert (
-        methods["declared_type"][0].return_type_ref.enum_qualified_name
-        == "Demo::SimpleType::data_type"
-    )
+    assert methods["declared_type"][0].return_type_ref.enum_qualified_name == "Demo::SimpleType::data_type"
 
 
 def test_discover_cpp_types_marks_enum_fields_under_skipped_root(
@@ -530,27 +480,21 @@ struct Widget {
 };
 }
 }
-""".strip()
-        + "\n",
+""".strip() + "\n",
         encoding="utf-8",
     )
     source.write_text('#include "enum_fields.h"\n', encoding="utf-8")
 
     fields = discover_public_fields(
         DiscoveryEnvironment(
-            compilation=CompilationConfig(
-                compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path
-            )
+            compilation=CompilationConfig(compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path)
         ),
         source,
         "ifcopenshell::demo::Widget",
     )
 
     assert fields["mode"].cpp_type_ref.is_enum
-    assert (
-        fields["mode"].cpp_type_ref.enum_qualified_name
-        == "ifcopenshell::demo::Widget::Mode"
-    )
+    assert fields["mode"].cpp_type_ref.enum_qualified_name == "ifcopenshell::demo::Widget::Mode"
 
 
 def test_discovery_resolves_scoped_and_standard_types(tmp_path: Path) -> None:
@@ -575,17 +519,14 @@ struct Container {
     const std::string& name() const;
 };
 }
-""".strip()
-        + "\n",
+""".strip() + "\n",
         encoding="utf-8",
     )
     source.write_text('#include "scoped.h"\n', encoding="utf-8")
 
     methods = discover_public_methods(
         DiscoveryEnvironment(
-            compilation=CompilationConfig(
-                compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path
-            )
+            compilation=CompilationConfig(compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path)
         ),
         source,
         "Demo::Container",
@@ -612,25 +553,20 @@ struct schema_definition {
     declaration declared() const;
 };
 }
-""".strip()
-        + "\n",
+""".strip() + "\n",
         encoding="utf-8",
     )
     source.write_text('#include "lowercase.h"\n', encoding="utf-8")
 
     methods = discover_public_methods(
         DiscoveryEnvironment(
-            compilation=CompilationConfig(
-                compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path
-            )
+            compilation=CompilationConfig(compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path)
         ),
         source,
         "Demo::schema_definition",
     )
 
-    assert (
-        methods["declared"][0].return_type_ref.storage_spelling == "Demo::declaration"
-    )
+    assert methods["declared"][0].return_type_ref.storage_spelling == "Demo::declaration"
 
 
 def test_discovery_resolves_bare_ptr_and_iterator_aliases(tmp_path: Path) -> None:
@@ -655,33 +591,25 @@ public:
     it index() const;
 };
 }
-""".strip()
-        + "\n",
+""".strip() + "\n",
         encoding="utf-8",
     )
     source.write_text('#include "aliases.h"\n', encoding="utf-8")
 
     fields = discover_public_fields(
         DiscoveryEnvironment(
-            compilation=CompilationConfig(
-                compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path
-            )
+            compilation=CompilationConfig(compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path)
         ),
         source,
         "Demo::Derived",
     )
     methods = discover_public_methods(
         DiscoveryEnvironment(
-            compilation=CompilationConfig(
-                compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path
-            )
+            compilation=CompilationConfig(compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path)
         ),
         source,
         "Demo::Derived",
     )
 
-    assert (
-        fields["axis"].cpp_type_ref.desugared_spelling
-        == "std::shared_ptr<Demo::Derived>"
-    )
+    assert fields["axis"].cpp_type_ref.desugared_spelling == "std::shared_ptr<Demo::Derived>"
     assert methods["index"][0].return_cpp_type == "it"

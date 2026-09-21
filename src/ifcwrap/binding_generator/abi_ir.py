@@ -108,13 +108,9 @@ class BindingABI:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "handles", MappingProxyType(dict(self.handles)))
-        object.__setattr__(
-            self, "value_types", MappingProxyType(dict(self.value_types))
-        )
+        object.__setattr__(self, "value_types", MappingProxyType(dict(self.value_types)))
         object.__setattr__(self, "functions", MappingProxyType(dict(self.functions)))
-        object.__setattr__(
-            self, "error_functions", MappingProxyType(dict(self.error_functions))
-        )
+        object.__setattr__(self, "error_functions", MappingProxyType(dict(self.error_functions)))
 
 
 _SCALAR_PARAM_TYPES = {
@@ -270,11 +266,7 @@ def _used_handle_sequence_depths(ir: BindingIR) -> dict[str, set[int]]:
     depths: dict[str, set[int]] = {}
 
     def add(type_spec: TypeSpec) -> None:
-        if (
-            type_spec.kind != "handle"
-            or type_spec.sequence_depth == 0
-            or type_spec.handle is None
-        ):
+        if type_spec.kind != "handle" or type_spec.sequence_depth == 0 or type_spec.handle is None:
             return
         depths.setdefault(type_spec.handle, set()).add(type_spec.sequence_depth)
 
@@ -351,10 +343,7 @@ def _param_c_type(type_spec: TypeSpec, ir: BindingIR) -> str:
 def _variant_alt_name(type_spec: TypeSpec, ir: BindingIR) -> str:
     sequence_kind = _type_spec_sequence_kind(type_spec)
     if sequence_kind is not None:
-        fixed_suffix = "_".join(
-            "any" if length is None else str(length)
-            for length in type_spec.fixed_lengths
-        )
+        fixed_suffix = "_".join("any" if length is None else str(length) for length in type_spec.fixed_lengths)
         return f"{sequence_kind}_{fixed_suffix}" if fixed_suffix else sequence_kind
     if type_spec.kind == "handle" and type_spec.handle is not None:
         return type_spec.handle
@@ -534,10 +523,7 @@ def _finalize_value_types(ir: BindingIR) -> dict[str, CTypeIR]:
         result[struct.name] = CTypeIR(
             c_type=struct.c_type,
             kind="result_struct",
-            fields=tuple(
-                CFieldIR(field.name, _field_c_type(field.type, ir), field.doc)
-                for field in struct.fields
-            ),
+            fields=tuple(CFieldIR(field.name, _field_c_type(field.type, ir), field.doc) for field in struct.fields),
             destroy_function=_value_destroy_name(struct.c_type),
             element_type=struct.cpp_type,
         )
@@ -562,10 +548,7 @@ def _finalize_value_types(ir: BindingIR) -> dict[str, CTypeIR]:
             kind="variant",
             fields=tuple(
                 [CFieldIR("kind", "int32_t")]
-                + [
-                    CFieldIR(f"value_{index}", _field_c_type(alt, ir))
-                    for index, alt in enumerate(variant.variants)
-                ]
+                + [CFieldIR(f"value_{index}", _field_c_type(alt, ir)) for index, alt in enumerate(variant.variants)]
             ),
             destroy_function=_variant_destroy_name(variant, ir),
             element_type=variant.cpp_type,
@@ -671,27 +654,19 @@ def _validate_type_reference(type_spec: TypeSpec, ir: BindingIR, context: str) -
         if not type_spec.variants:
             raise ValueError(f"{context}: variant has no alternatives")
         for index, alternative in enumerate(type_spec.variants):
-            _validate_type_reference(
-                alternative, ir, f"{context} variant alternative {index}"
-            )
+            _validate_type_reference(alternative, ir, f"{context} variant alternative {index}")
 
 
 def _validate_semantic_references(ir: BindingIR) -> None:
     for call in ir.calls:
         if call.receiver is not None and call.receiver not in ir.handles:
-            raise ValueError(
-                f"call {call.c_name}: unknown receiver handle '{call.receiver}'"
-            )
+            raise ValueError(f"call {call.c_name}: unknown receiver handle '{call.receiver}'")
         for param in call.params:
-            _validate_type_reference(
-                param.type, ir, f"call {call.c_name} parameter '{param.name}'"
-            )
+            _validate_type_reference(param.type, ir, f"call {call.c_name} parameter '{param.name}'")
         _validate_type_reference(call.returns, ir, f"call {call.c_name} return")
     for struct in ir.result_structs.values():
         for field in struct.fields:
-            _validate_type_reference(
-                field.type, ir, f"result struct {struct.name} field '{field.name}'"
-            )
+            _validate_type_reference(field.type, ir, f"result struct {struct.name} field '{field.name}'")
 
 
 def finalize_abi(ir: BindingIR) -> BindingABI:
@@ -724,38 +699,25 @@ def _validate_finalized_contract(ir: BindingIR, metadata: BindingABI) -> None:
     symbols = [call.c_name for call in calls]
     duplicates = sorted({symbol for symbol in symbols if symbols.count(symbol) > 1})
     if duplicates:
-        raise ValueError(
-            f"Duplicate C symbols in finalized BindingIR: {', '.join(duplicates)}"
-        )
+        raise ValueError(f"Duplicate C symbols in finalized BindingIR: {', '.join(duplicates)}")
     for call in calls:
         if call.receiver is not None and call.receiver not in ir.handles:
-            raise ValueError(
-                f"Unknown receiver '{call.receiver}' in call {call.c_name}"
-            )
+            raise ValueError(f"Unknown receiver '{call.receiver}' in call {call.c_name}")
         function = metadata.functions.get(call.c_name)
         if function is None:
             raise ValueError(f"Missing finalized ABI function for {call.c_name}")
         out_params = [param for param in function.params if param.role == "out_result"]
         expected = 0 if call.returns.kind == "void" else 1
         if len(out_params) != expected:
-            raise ValueError(
-                f"Call {call.c_name} has {len(out_params)} out-result parameters; expected {expected}"
-            )
+            raise ValueError(f"Call {call.c_name} has {len(out_params)} out-result parameters; expected {expected}")
     c_types = [value.c_type for value in metadata.value_types.values()]
-    duplicate_types = sorted(
-        {c_type for c_type in c_types if c_types.count(c_type) > 1}
-    )
+    duplicate_types = sorted({c_type for c_type in c_types if c_types.count(c_type) > 1})
     if duplicate_types:
-        raise ValueError(
-            f"Duplicate generated C type definitions: {', '.join(duplicate_types)}"
-        )
+        raise ValueError(f"Duplicate generated C type definitions: {', '.join(duplicate_types)}")
     missing_destroy = [
         value.c_type
         for value in (*metadata.handles.values(), *metadata.value_types.values())
-        if value.kind in {"handle", "string", "sequence", "handle_sequence", "variant"}
-        and not value.destroy_function
+        if value.kind in {"handle", "string", "sequence", "handle_sequence", "variant"} and not value.destroy_function
     ]
     if missing_destroy:
-        raise ValueError(
-            f"Missing destructor symbols for: {', '.join(missing_destroy)}"
-        )
+        raise ValueError(f"Missing destructor symbols for: {', '.join(missing_destroy)}")
