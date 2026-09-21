@@ -5,7 +5,6 @@ import subprocess
 import sys
 import tempfile
 
-import ifcopenshell
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry

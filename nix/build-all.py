@@ -123,7 +123,6 @@ import multiprocessing
 import os
 import platform
 import shutil
-import ssl
 import subprocess as sp
 import sys
 import sysconfig

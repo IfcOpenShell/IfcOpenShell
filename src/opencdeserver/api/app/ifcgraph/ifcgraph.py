@@ -20,9 +20,7 @@
 
 from uuid import uuid4
 
-import ifcopenshell
 import ifcopenshell.util.schema
-from py2neo import Graph
 from py2neo.data import Node, Relationship
 
 

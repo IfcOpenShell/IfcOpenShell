@@ -22,7 +22,6 @@ import re
 import webbrowser
 
 import bpy
-import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import pytest

@@ -32,7 +32,6 @@ Two layers:
 from types import SimpleNamespace
 from typing import get_args
 
-import bpy
 import pytest
 
 pytestmark = pytest.mark.model

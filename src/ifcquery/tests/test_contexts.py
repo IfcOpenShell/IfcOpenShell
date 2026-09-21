@@ -1,7 +1,4 @@
-import ifcopenshell.api.context
 import ifcopenshell.api.project
-import ifcopenshell.api.root
-import ifcopenshell.api.unit
 
 from ifcquery.contexts import contexts
 

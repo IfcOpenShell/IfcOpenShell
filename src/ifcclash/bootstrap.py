@@ -16,4 +16,4 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcClash.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcclash.__main__
+import ifcclash.__main__  # ruff: ignore[unused-import]

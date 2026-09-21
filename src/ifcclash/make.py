@@ -18,7 +18,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcClash.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
 import subprocess
 
 cmd = "pyinstaller ./bootstrap.py --name ifcclash --onefile --clean"

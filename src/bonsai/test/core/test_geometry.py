@@ -17,7 +17,6 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bonsai.core.geometry as subject
-import test.core.test_style
 from test.core.bootstrap import geometry, ifc, style, surveyor
 
 

@@ -1,5 +1,4 @@
 import ifcopenshell.api.material
-import ifcopenshell.api.project
 
 from ifcquery.materials import materials
 

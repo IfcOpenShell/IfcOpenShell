@@ -36,7 +36,6 @@ from common import (
     BUILD_TYPES,
     PROJECT_NAME,
     REPO_ROOT,
-    SCRIPT_DIR,
     BuildCfg,
     BuildType,
     C,

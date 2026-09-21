@@ -18,17 +18,13 @@
 
 import os
 
-import bpy
-import brickschema
 import brickschema.persistent
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.root
 import ifcopenshell.guid
 from brickschema.namespaces import REF, A
-from rdflib import Literal, Namespace, URIRef
-from rdflib.namespace import RDF
+from rdflib import Literal, URIRef
 
 import bonsai.core.tool
 import bonsai.tool as tool
