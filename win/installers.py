@@ -28,6 +28,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from typing import NamedTuple
 from urllib.request import urlretrieve
 
 from common import (
@@ -41,7 +42,7 @@ from common import (
     run,
     run_streamed,
 )
-from common_win import BuildDepsCache
+from common_win import BuildDepsCache, msbuild_multiproc_args
 from vs_cfg import CMAKE_GENERATORS, VS_TOOLSET_TO_VS_VER, VsCfgResult, get_vs_var
 
 
@@ -118,6 +119,11 @@ def git_clone_and_checkout_revision(
         run_streamed("git", "checkout", revision, cwd=dest_dir)
 
 
+class CMakeGenCfg(NamedTuple):
+    build_cfg: BuildCfg
+    use_ninja: bool
+
+
 def run_cmake(
     log_dependency_name: str,
     dependency_dir: Path,
@@ -125,51 +131,68 @@ def run_cmake(
     build_type: BuildType,
     *extra_args: str,
     env: dict[str, str] | None = None,
+    generator_cfg: CMakeGenCfg | None = None,
 ) -> None:
     logger.info(f"Running CMake for {log_dependency_name}.")
 
     build_path = dependency_dir / vs_cfg_vars.build_dir
     build_path.mkdir(parents=True, exist_ok=True)
 
+    if generator_cfg is not None and generator_cfg.use_ninja:
+        cmake_generator = "Ninja"
+        arch_option = ()
+        build_type_option = (f"-DCMAKE_BUILD_TYPE={generator_cfg.build_cfg}",)
+    else:
+        cmake_generator = vs_cfg_vars.generator.name
+        arch_option = ("-A", vs_cfg_vars.vs_platform)
+        build_type_option = ()
+
     # TODO make deleting cache a parameter for this subroutine? We probably want to delete the
     # cache always e.g. when we've had new changes in the repository.
     cmake_cache_path = build_path / "CMakeCache.txt"
-    if build_type == "Rebuild" and cmake_cache_path.exists():
+    if cmake_cache_path.exists() and (
+        build_type == "Rebuild" or f"CMAKE_GENERATOR:INTERNAL={cmake_generator}" not in cmake_cache_path.read_text()
+    ):
         cmake_cache_path.unlink()
 
     run_streamed(
         "cmake",
         "..",
         "-G",
-        vs_cfg_vars.generator.name,
-        "-A",
-        vs_cfg_vars.vs_platform,
+        cmake_generator,
+        *arch_option,
+        *build_type_option,
         *extra_args,
         cwd=build_path,
         env=env,
     )
 
 
-def build_cmake_project(
+def build_and_install_cmake_project(
     log_dependency_name: str,
     build_dir: Path,
-    build_cfg: BuildCfg,
-    msbuild_multiproc: tuple[str, ...],
+    num_build_procs: int,
+    generator_cfg: CMakeGenCfg,
 ) -> None:
+    build_cfg = generator_cfg.build_cfg
+    use_ninja = generator_cfg.use_ninja
     logger.info(f"Building {log_dependency_name}. Please be patient, this will take a while.")
 
-    run_streamed("cmake", "--build", ".", "--config", build_cfg, "--", *msbuild_multiproc, cwd=build_dir)
+    if use_ninja:
+        build_tool_args = ("-j", str(num_build_procs))
+    else:
+        build_tool_args = ("--config", build_cfg, "--", *msbuild_multiproc_args(num_build_procs))
+    run_streamed("cmake", "--build", ".", *build_tool_args, cwd=build_dir)
 
-
-def install_cmake_project(log_dependency_name: str, build_dir: Path, build_cfg: BuildCfg) -> None:
     logger.info(f"Installing {log_dependency_name} ({build_cfg}). Please be patient, this may take a while.")
 
-    run_streamed("cmake", "--install", ".", "--config", build_cfg, cwd=build_dir)
+    install_tool_args = () if use_ninja else ("--config", build_cfg)
+    run_streamed("cmake", "--install", ".", *install_tool_args, cwd=build_dir)
 
 
 def build_solution(
     log_dependency_name: str,
-    msbuild_cmd: tuple[str, ...],
+    num_build_procs: int,
     solution_path: Path,
     build_cfg: BuildCfg,
     vs_platform: str,
@@ -191,7 +214,14 @@ def build_solution(
     if compile_with_wpo:
         properties += ";WholeProgramOptimization=TRUE"
 
-    run_streamed(*msbuild_cmd, str(solution_path), f"/p:{properties}", f"/t:{msbuild_target}")
+    run_streamed(
+        "MSBuild.exe",
+        "/nologo",
+        *msbuild_multiproc_args(num_build_procs),
+        str(solution_path),
+        f"/p:{properties}",
+        f"/t:{msbuild_target}",
+    )
 
 
 def install_json(install_dir: Path) -> None:
@@ -338,9 +368,10 @@ def install_boost(
 def install_opencollada(
     vs_cfg_vars: VsCfgResult,
     build_type: BuildType,
-    build_cfg: BuildCfg,
-    msbuild_multiproc: tuple[str, ...],
+    num_build_procs: int,
+    generator_cfg: CMakeGenCfg,
 ) -> None:
+    build_cfg = generator_cfg.build_cfg
     deps_dir = vs_cfg_vars.deps_dir
     install_dir = vs_cfg_vars.install_dir
 
@@ -417,13 +448,19 @@ def install_opencollada(
         # OpenCOLLADA is ancient at this point and allows cmake 2.6+, which results in an error
         # in cmake 4, so we override the minimum cmake version.
         "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
+        generator_cfg=generator_cfg,
     )
 
-    # OpenCOLLADA's vcxproj files only define Debug/Release configurations (no RelWithDebInfo/MinSizeRel).
-    debug_or_release_cfg = debug_or_release(build_cfg)
+    # OpenCOLLADA overwrites `CMAKE_CONFIGURATION_TYPES` with "Debug;Release", so the MSBuild solution only has
+    # those two configs. `CMAKE_BUILD_TYPE` isn't limited, so Ninja is unaffected.
+    debug_or_release_cfg = build_cfg if generator_cfg.use_ninja else debug_or_release(build_cfg)
     build_path = dependency_dir / vs_cfg_vars.build_dir
-    build_cmake_project(DEPENDENCY_NAME, build_path, debug_or_release_cfg, msbuild_multiproc)
-    install_cmake_project(DEPENDENCY_NAME, build_path, debug_or_release_cfg)
+    build_and_install_cmake_project(
+        DEPENDENCY_NAME,
+        build_path,
+        num_build_procs=num_build_procs,
+        generator_cfg=generator_cfg._replace(build_cfg=debug_or_release_cfg),
+    )
 
     mark_installation(dependency_install_dir, build_cfg)
 
@@ -432,9 +469,10 @@ def install_occt(
     vs_cfg_vars: VsCfgResult,
     build_type: BuildType,
     build_deps_cache: BuildDepsCache,
-    build_cfg: BuildCfg,
-    msbuild_multiproc: tuple[str, ...],
+    num_build_procs: int,
+    generator_cfg: CMakeGenCfg,
 ) -> None:
+    build_cfg = generator_cfg.build_cfg
     deps_dir = vs_cfg_vars.deps_dir
     install_dir = vs_cfg_vars.install_dir
 
@@ -498,11 +536,13 @@ def install_occt(
         "-DUSE_GLES2=OFF",
         "-DBUILD_USE_PCH=ON",
         "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
+        generator_cfg=generator_cfg,
     )
 
     build_path = dependency_dir / vs_cfg_vars.build_dir
-    build_cmake_project(DEPENDENCY_NAME, build_path, build_cfg, msbuild_multiproc)
-    install_cmake_project(DEPENDENCY_NAME, build_path, build_cfg)
+    build_and_install_cmake_project(
+        DEPENDENCY_NAME, build_path, num_build_procs=num_build_procs, generator_cfg=generator_cfg
+    )
 
     # Fix upstream bug in cmake config file with unescaped quotes preventing configuration.
     # The issue is fixed in 7.9.0+.
@@ -517,9 +557,11 @@ def install_proj(
     vs_cfg_vars: VsCfgResult,
     build_type: BuildType,
     build_deps_cache: BuildDepsCache,
-    build_cfg: BuildCfg,
-    msbuild_multiproc: tuple[str, ...],
+    num_build_procs: int,
+    generator_cfg: CMakeGenCfg,
 ) -> None:
+    build_cfg = generator_cfg.build_cfg
+    use_ninja = generator_cfg.use_ninja
     deps_dir = vs_cfg_vars.deps_dir
     install_dir = vs_cfg_vars.install_dir
 
@@ -598,11 +640,13 @@ def install_proj(
             "-DBUILD_PROJSYNC=OFF",
             "-DBUILD_SHARED_LIBS=OFF",
             "-DBUILD_TESTING=OFF",
+            generator_cfg=generator_cfg,
         )
 
         build_path = dependency_dir / vs_cfg_vars.build_dir
-        build_cmake_project(DEPENDENCY_NAME, build_path, build_cfg, msbuild_multiproc)
-        install_cmake_project(DEPENDENCY_NAME, build_path, build_cfg)
+        build_and_install_cmake_project(
+            DEPENDENCY_NAME, build_path, num_build_procs=num_build_procs, generator_cfg=generator_cfg
+        )
 
     install_sqlite3()
     _install_proj()
@@ -657,6 +701,7 @@ def install_mpir(vs_cfg_vars: VsCfgResult, deps_dir: Path, install_dir: Path, bu
     msvc_dir = dependency_dir / "msvc" / f"vs{vs_ver_short}"
     # mpir's vcxproj files only define Debug/Release configurations (no RelWithDebInfo/MinSizeRel).
     debug_or_release_cfg = debug_or_release(build_cfg)
+    # TODO: msbuild.bat doesn't forward multiproc args, so this build isn't parallelized.
     run_streamed(
         str(msvc_dir / "msbuild.bat"), "gc", "LIB", vs_cfg_vars.vs_platform, debug_or_release_cfg, cwd=msvc_dir
     )
@@ -671,7 +716,7 @@ def install_mpfr(
     install_dir: Path,
     build_cfg: BuildCfg,
     build_type: BuildType,
-    msbuild_cmd: tuple[str, ...],
+    num_build_procs: int,
 ) -> None:
     DEPENDENCY_NAME = "mpfr"
     dependency_dir = deps_dir / "mpfr"
@@ -737,7 +782,7 @@ def install_mpfr(
     debug_or_release_cfg = debug_or_release(build_cfg)
     build_solution(
         DEPENDENCY_NAME,
-        msbuild_cmd,
+        num_build_procs,
         dependency_dir / mpfr_sln_dir / "lib_mpfr.sln",
         debug_or_release_cfg,
         vs_cfg_vars.vs_platform,
@@ -975,8 +1020,13 @@ def install_swig(
     vs_cfg_vars: VsCfgResult,
     build_type: BuildType,
     build_deps_cache: BuildDepsCache,
-    msbuild_multiproc: tuple[str, ...],
+    num_build_procs: int,
+    generator_cfg: CMakeGenCfg,
 ) -> None:
+    # SWIG is always built as Release, regardless of the overall build config.
+    generator_cfg = generator_cfg._replace(build_cfg="Release")
+    build_cfg = generator_cfg.build_cfg
+
     SWIG_VERSION = "4.4.1"
     DEPENDENCY_NAME = "SWIG"
     dependency_dir = vs_cfg_vars.deps_dir / f"swig-{SWIG_VERSION}"
@@ -1030,20 +1080,23 @@ def install_swig(
         f"-DCMAKE_INSTALL_PREFIX={dependency_install_dir}",
         "-DWITH_PCRE=OFF",
         f"-DBISON_EXECUTABLE={vs_cfg_vars.deps_dir / WIN_FLEX_BISON / 'win_bison.exe'}",
+        generator_cfg=generator_cfg,
     )
 
     build_path = dependency_dir / vs_cfg_vars.build_dir
-    build_cmake_project(DEPENDENCY_NAME, build_path, "Release", msbuild_multiproc)
-    install_cmake_project(DEPENDENCY_NAME, build_path, "Release")
+    build_and_install_cmake_project(
+        DEPENDENCY_NAME, build_path, num_build_procs=num_build_procs, generator_cfg=generator_cfg
+    )
 
 
 def install_cgal(
     vs_cfg_vars: VsCfgResult,
     build_type: BuildType,
     build_deps_cache: BuildDepsCache,
-    build_cfg: BuildCfg,
-    msbuild_multiproc: tuple[str, ...],
+    num_build_procs: int,
+    generator_cfg: CMakeGenCfg,
 ) -> None:
+    build_cfg = generator_cfg.build_cfg
     deps_dir = vs_cfg_vars.deps_dir
     install_dir = vs_cfg_vars.install_dir
 
@@ -1083,11 +1136,13 @@ def install_cgal(
         vs_cfg_vars,
         build_type,
         f"-DCMAKE_INSTALL_PREFIX={dependency_install_dir}",
+        generator_cfg=generator_cfg,
     )
 
     build_path = dependency_dir / vs_cfg_vars.build_dir
-    build_cmake_project(DEPENDENCY_NAME, build_path, build_cfg, msbuild_multiproc)
-    install_cmake_project(DEPENDENCY_NAME, build_path, build_cfg)
+    build_and_install_cmake_project(
+        DEPENDENCY_NAME, build_path, num_build_procs=num_build_procs, generator_cfg=generator_cfg
+    )
 
 
 def install_eigen(vs_cfg_vars: VsCfgResult) -> None:
@@ -1113,9 +1168,10 @@ def install_eigen(vs_cfg_vars: VsCfgResult) -> None:
 def install_zstd(
     vs_cfg_vars: VsCfgResult,
     build_type: BuildType,
-    build_cfg: BuildCfg,
-    msbuild_multiproc: tuple[str, ...],
+    num_build_procs: int,
+    generator_cfg: CMakeGenCfg,
 ) -> None:
+    build_cfg = generator_cfg.build_cfg
     deps_dir = vs_cfg_vars.deps_dir
     install_dir = vs_cfg_vars.install_dir
 
@@ -1151,19 +1207,22 @@ def install_zstd(
         f"-DCMAKE_INSTALL_PREFIX={dependency_install_dir}",
         "-DZSTD_BUILD_STATIC=ON",
         "-DZSTD_BUILD_SHARED=OFF",
+        generator_cfg=generator_cfg,
     )
 
     build_path = cmake_source_dir / vs_cfg_vars.build_dir
-    build_cmake_project(DEPENDENCY_NAME, build_path, build_cfg, msbuild_multiproc)
-    install_cmake_project(DEPENDENCY_NAME, build_path, build_cfg)
+    build_and_install_cmake_project(
+        DEPENDENCY_NAME, build_path, num_build_procs=num_build_procs, generator_cfg=generator_cfg
+    )
 
 
 def install_rocksdb(
     vs_cfg_vars: VsCfgResult,
     build_type: BuildType,
-    build_cfg: BuildCfg,
-    msbuild_multiproc: tuple[str, ...],
+    num_build_procs: int,
+    generator_cfg: CMakeGenCfg,
 ) -> None:
+    build_cfg = generator_cfg.build_cfg
     deps_dir = vs_cfg_vars.deps_dir
     install_dir = vs_cfg_vars.install_dir
 
@@ -1218,11 +1277,13 @@ def install_rocksdb(
             "ZSTD_LIB_DEBUG": str(zstd_lib),
             "ZSTD_LIB_RELEASE": str(zstd_lib),
         },
+        generator_cfg=generator_cfg,
     )
 
     build_path = dependency_dir / vs_cfg_vars.build_dir
-    build_cmake_project(DEPENDENCY_NAME, build_path, build_cfg, msbuild_multiproc)
-    install_cmake_project(DEPENDENCY_NAME, build_path, build_cfg)
+    build_and_install_cmake_project(
+        DEPENDENCY_NAME, build_path, num_build_procs=num_build_procs, generator_cfg=generator_cfg
+    )
     mark_installation(dependency_install_dir, build_cfg)
 
 
@@ -1230,9 +1291,10 @@ def install_manifold(
     vs_cfg_vars: VsCfgResult,
     build_type: BuildType,
     build_deps_cache: BuildDepsCache,
-    build_cfg: BuildCfg,
-    msbuild_multiproc: tuple[str, ...],
+    num_build_procs: int,
+    generator_cfg: CMakeGenCfg,
 ) -> None:
+    build_cfg = generator_cfg.build_cfg
     deps_dir = vs_cfg_vars.deps_dir
     install_dir = vs_cfg_vars.install_dir
 
@@ -1269,9 +1331,11 @@ def install_manifold(
         "-DMANIFOLD_EXPORT=OFF",
         "-DMANIFOLD_DOWNLOADS=OFF",
         "-DCMAKE_DEBUG_POSTFIX=_d",
+        generator_cfg=generator_cfg,
     )
 
     build_path = dependency_dir / vs_cfg_vars.build_dir
-    build_cmake_project(DEPENDENCY_NAME, build_path, build_cfg, msbuild_multiproc)
-    install_cmake_project(DEPENDENCY_NAME, build_path, build_cfg)
+    build_and_install_cmake_project(
+        DEPENDENCY_NAME, build_path, num_build_procs=num_build_procs, generator_cfg=generator_cfg
+    )
     mark_installation(dependency_install_dir, build_cfg)

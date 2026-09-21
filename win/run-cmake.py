@@ -197,7 +197,7 @@ def parse_args() -> Args:
         dest="use_ninja",
         action=argparse.BooleanOptionalAction,
         default=False,
-        help="Use the Ninja generator instead of the MSVC generator/platform.",
+        help=HelpStrings.USE_NINJA,
     )
     parser.add_argument(
         "--build-cfg",
