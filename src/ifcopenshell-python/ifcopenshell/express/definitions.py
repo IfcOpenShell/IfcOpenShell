@@ -19,10 +19,8 @@
 
 import operator
 
-import nodes
 import codegen
-
-from collections import defaultdict
+import nodes
 
 
 class Definitions(codegen.Base):

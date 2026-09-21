@@ -18,6 +18,7 @@
 
 
 from __future__ import annotations
+
 import sys
 from typing import TYPE_CHECKING
 
@@ -30,7 +31,6 @@ else:
 
 
 class Mapping:
-
     express_to_cpp_typemapping = {
         "boolean": "bool",
         "logical": "boost::logic::tribool",

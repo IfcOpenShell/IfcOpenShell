@@ -17,10 +17,10 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import io
-import string
-import operator
 import collections
+import io
+import operator
+
 import bootstrap
 
 
@@ -290,7 +290,7 @@ def to_tree(x, key=None):
                     yield y
                 else:
                     # lookup rule
-                    rule = [e for k, e in bootstrap.express if k == y][0]
+                    rule = next(e for k, e in bootstrap.express if k == y)
 
                     def is_synonym(rl):
                         if isinstance(rl, bootstrap.Term) and isinstance(rl.contents, bootstrap.Keyword):
@@ -426,11 +426,11 @@ def to_tree(x, key=None):
 
 class AggregationType(Node):
     aggregate_type = property(lambda self: self.flat[0])
-    bounds = property(lambda self: (list(self.tokens.values())[0][0].bound_spec or [None])[0])
-    unique = property(lambda self: list(self.tokens.values())[0][0].UNIQUE is not None)
+    bounds = property(lambda self: (next(iter(self.tokens.values()))[0].bound_spec or [None])[0])
+    unique = property(lambda self: next(iter(self.tokens.values()))[0].UNIQUE is not None)
 
     def get_type(self):
-        v = list(self.tokens.values())[0][0]
+        v = next(iter(self.tokens.values()))[0]
         if v.instantiable_type:
             try:
                 return v.instantiable_type.concrete_types.simple_id or v.instantiable_type.concrete_types.simple_types
@@ -470,14 +470,17 @@ class SuperTypeExpression(Node):
     abstract = property(lambda self: self.abstract_supertype_declaration is not None)
 
     def get_sub_types(self):
+        def supertype_term_of(expression):
+            return next(iter(next(iter(expression))))
+
         if self.abstract:
             constraint = self.abstract_supertype_declaration[0]
         else:
             constraint = self.supertype_rule[0]
-        return [
-            list(list(s)[0])[0].simple_id
-            for s in list(list(list(constraint.subtype_constraint[0].supertype_expression[0])[0])[0].one_of[0])[2::2]
-        ]
+        supertype_expression = constraint.subtype_constraint[0].supertype_expression[0]
+        supertype_term = supertype_term_of(supertype_expression)
+        one_of_tokens = list(supertype_term.one_of[0])
+        return [supertype_term_of(s).simple_id for s in one_of_tokens[2::2]]
 
     sub_types = property(get_sub_types)
 
@@ -573,7 +576,7 @@ class WidthSpec(Node):
     fixed = property(lambda self: self.FIXED is not None)
 
     def init(self):
-        self.width = int("".join(list(self.width)[0].flat))
+        self.width = int("".join(next(iter(self.width)).flat))
 
     def __repr__(self):
         return "(%d)%s" % (self.width, " fixed" if self.fixed else "")

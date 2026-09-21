@@ -18,15 +18,14 @@
 
 
 from __future__ import annotations
+
 import operator
 import re
-
-import nodes
-import codegen
-import templates
-import mapping
-
 from collections import defaultdict
+
+import codegen
+import mapping
+import nodes
 
 try:
     import ifcopenshell.ifcopenshell_wrapper as w
@@ -274,7 +273,10 @@ class EarlyBoundCodeWriter:
                 opposite1 = "%(schema_name)s_types[%(opposite_index_in_schema)d]" % locals()
                 opposite_index_in_schema = self.names.index(attribute_entity)
                 opposite2 = "%(schema_name)s_types[%(opposite_index_in_schema)d]" % locals()
-                yield "new inverse_attribute(%(attr_name_ref)s, inverse_attribute::%(aggr_type)s_type, %(bound1)d, %(bound2)d, ((entity*) %(opposite1)s), ((entity*) %(opposite2)s)->attributes()[%(attribute_entity_index)d])" % locals()
+                yield (
+                    "new inverse_attribute(%(attr_name_ref)s, inverse_attribute::%(aggr_type)s_type, %(bound1)d, %(bound2)d, ((entity*) %(opposite1)s), ((entity*) %(opposite2)s)->attributes()[%(attribute_entity_index)d])"
+                    % locals()
+                )
 
         attributes = ",".join(_())
         self.statements.append(
@@ -286,7 +288,7 @@ class EarlyBoundCodeWriter:
         schema_name = self.schema_name.upper()
         index_in_schema = self.names.index(name)
         subtypes = (
-            ",".join(map(lambda t: ("((entity*) %%(schema_name)s_types[%d])" % self.names.index(t)), tys)) % locals()
+            ",".join(map(lambda t: "((entity*) %%(schema_name)s_types[%d])" % self.names.index(t), tys)) % locals()
         )
         self.statements.append(
             "    ((entity*) %(schema_name)s_types[%(index_in_schema)d])->set_subtypes({%(subtypes)s});" % locals()
