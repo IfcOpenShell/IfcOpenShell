@@ -50,6 +50,15 @@ class BuildDepsCache:
         return entries
 
 
+def msbuild_multiproc_args(num_build_procs: int) -> tuple[str, ...]:
+    return (
+        "/m",
+        f"/p:CL_MPCount={num_build_procs}",
+        "/p:UseMultiToolTask=true",
+        "/p:EnforceProcessCountAcrossBuilds=true",
+    )
+
+
 def resolve_generator(generator: str | None) -> str:
     """Return `generator` as-is, or fall back to the GEN_SHORTHAND from the most recently modified
     BuildDepsCache-*.txt. Exits if neither is available.

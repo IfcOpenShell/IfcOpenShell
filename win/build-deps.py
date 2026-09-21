@@ -47,7 +47,7 @@ from common import (
     resolve_cli_or_env,
     validate_cmake_version,
 )
-from common_win import BuildDepsCache
+from common_win import BuildDepsCache, msbuild_multiproc_args
 from installers import (
     install_boost,
     install_ccache,
@@ -325,13 +325,7 @@ def main() -> None:
     vs_cfg_vars.install_dir.mkdir(parents=True, exist_ok=True)
 
     # Note BUILD_TYPE not passed, Clean e.g. wouldn't delete the installed files.
-    # TODO: consider inlining.
-    MSBUILD_MULTIPROC = (
-        "/m",
-        f"/p:CL_MPCount={ARGS.num_build_procs}",
-        "/p:UseMultiToolTask=true",
-        "/p:EnforceProcessCountAcrossBuilds=true",
-    )
+    MSBUILD_MULTIPROC = msbuild_multiproc_args(ARGS.num_build_procs)
     MSBUILD_CMD = ("MSBuild.exe", "/nologo", *MSBUILD_MULTIPROC)
 
     # Check that required tools are in PATH.
