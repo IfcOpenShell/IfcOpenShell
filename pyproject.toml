@@ -39,13 +39,7 @@ exclude = [
 [tool.ruff.format]
 # Never formatted, unlike the linted files above.
 exclude = [
-    "src/ifcopenshell-python/ifcopenshell/express/rules",
     "src/ifcopenshell-python/ifcopenshell/express/express_parser.py",
-    "src/ifcopenshell-python/ifcopenshell/mvd",
-    "src/ifcopenshell-python/ifcopenshell/simple_spf",
-    "src/ifc2ca/templates",
-    "src/svgfill",
-    "src/exterior-shell-extractor",
     "choco/bonsai/tools/enable_blenderbim_addon.py",
     "choco/bonsai/tools/disable_blenderbim_addon.py",
     "docs/conf.py",
