@@ -1,4 +1,5 @@
 # This file was generated with the assistance of an AI coding tool.
+import importlib.util
 import json
 import os
 import subprocess
@@ -19,12 +20,7 @@ import pytest
 
 from ifcquery.clash import clash
 
-try:
-    import ifcopenshell.geom
-
-    HAS_GEOM = True
-except ImportError:
-    HAS_GEOM = False
+HAS_GEOM = importlib.util.find_spec("ifcopenshell.geom") is not None
 
 pytestmark = pytest.mark.skipif(not HAS_GEOM, reason="ifcopenshell geometry engine not available")
 

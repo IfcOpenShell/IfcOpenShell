@@ -1,4 +1,5 @@
 # This file was generated with the assistance of an AI coding tool.
+import importlib.util
 import os
 import subprocess
 import sys
@@ -19,12 +20,7 @@ import pytest
 
 from ifcquery.render import _make_profile_occurrence, _make_type_occurrence, render
 
-try:
-    import pyvista
-
-    HAS_PYVISTA = True
-except ImportError:
-    HAS_PYVISTA = False
+HAS_PYVISTA = importlib.util.find_spec("pyvista") is not None
 
 pytestmark = pytest.mark.skipif(not HAS_PYVISTA, reason="pyvista not installed")
 
