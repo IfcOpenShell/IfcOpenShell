@@ -30,9 +30,6 @@ exclude = [
     "src/ifcopenshell-python/ifcopenshell/simple_spf",
     "src/svgfill",
     "src/pyodide/demo-app/wheels",
-    #
-    # Unformatted.
-    "src/exterior-shell-extractor",
     # Incompatible with linter.
     "src/ifc2ca/templates",
 ]
@@ -41,15 +38,6 @@ exclude = [
 # Never formatted, unlike the linted files above.
 exclude = [
     "src/ifcopenshell-python/ifcopenshell/express/express_parser.py",
-    "choco/bonsai/tools/enable_blenderbim_addon.py",
-    "choco/bonsai/tools/disable_blenderbim_addon.py",
-    "docs/conf.py",
-    "docs/generate_docs.py",
-    "aws/lambda/example_handler/__init__.py",
-    "conda/update_version_init.py",
-    "test/bpy.py",
-    "test/tests.py",
-    "test/run.py",
 ]
 
 [tool.ruff.lint]
