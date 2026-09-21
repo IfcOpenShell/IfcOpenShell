@@ -1222,6 +1222,9 @@ def install_rocksdb(
     num_build_procs: int,
     generator_cfg: CMakeGenCfg,
 ) -> None:
+    # TODO: for some reason cmake decides to reconfigure during `--build`,
+    # when all zstd env variables are lost and zstd libs/headers become unreachable.
+    generator_cfg = generator_cfg._replace(use_ninja=False)
     build_cfg = generator_cfg.build_cfg
     deps_dir = vs_cfg_vars.deps_dir
     install_dir = vs_cfg_vars.install_dir
