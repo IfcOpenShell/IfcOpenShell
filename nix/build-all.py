@@ -1736,6 +1736,7 @@ if "rocksdb" in targets:
             f"-DWITH_GFLAGS=OFF",
             f"-DWITH_BENCHMARK_TOOLS=OFF",
             f"-DWITH_CORE_TOOLS=OFF",
+            f"-DWITH_TRACE_TOOLS=OFF",
             f"-DROCKSDB_BUILD_SHARED=Off",
             f"-DCMAKE_POSITION_INDEPENDENT_CODE=On",
             f"-DUSE_RTTI=On",
