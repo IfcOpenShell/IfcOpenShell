@@ -46,6 +46,3 @@ py-modules = ["bsdd","bsdd_json","type_hints"]
 
 [tool.ruff]
 extend = "../../pyproject.toml"
-lint.extend-select = [
-  "unused-import",
-]

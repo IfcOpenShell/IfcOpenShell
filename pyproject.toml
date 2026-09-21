@@ -45,6 +45,7 @@ select = [
     "E9",          # io errors
     # "F",         # pyflakes
     #
+    "unused-import",
     "FA",          # future annotations
     "UP",          # pyupgrade
     "unnecessary-iterable-allocation-for-first-element",
