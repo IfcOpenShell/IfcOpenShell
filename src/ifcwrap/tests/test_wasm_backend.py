@@ -62,10 +62,7 @@ def test_wasm_glue_wraps_handles() -> None:
     assert "ifcopenshell_file_destroy" in javascript
     assert "class IfcOpenshellFile" in javascript
     assert "UTF8ToString" in javascript
-    assert (
-        "module.loadDynamicLibrary(path, { global: true, allowUndefined: true });"
-        in javascript
-    )
+    assert "module.loadDynamicLibrary(path, { global: true, allowUndefined: true });" in javascript
     assert "loadAsync" not in javascript
     assert "IfcOpenShellErrorKind.CANCELLED" in javascript
     assert "IfcOpenShellErrorCode.OPERATION_CANCELLED" in javascript

@@ -15,21 +15,14 @@ def _render_internal_header(spec: BindingIR, header_name: str) -> str:
     for handle in spec.handles.values():
         storage_type = _handle_storage_type(handle)
         if handle.ptr_type == "shared_ptr":
-            handle_structs.append(
-                f"struct {handle.c_type} {{\n    {storage_type} ptr;\n}};"
-            )
+            handle_structs.append(f"struct {handle.c_type} {{\n    {storage_type} ptr;\n}};")
         elif handle.ptr_type == "value":
-            handle_structs.append(
-                f"struct {handle.c_type} {{\n    {storage_type} value;\n}};"
-            )
+            handle_structs.append(f"struct {handle.c_type} {{\n    {storage_type} value;\n}};")
         else:
-            handle_structs.append(
-                f"struct {handle.c_type} {{\n    {storage_type} ptr;\n    bool owned;\n}};"
-            )
+            handle_structs.append(f"struct {handle.c_type} {{\n    {storage_type} ptr;\n    bool owned;\n}};")
     handle_structs_block = "\n\n".join(handle_structs)
     includes = "\n".join(
-        f"#include {header}" if header.startswith("<") else f'#include "{header}"'
-        for header in spec.public_headers
+        f"#include {header}" if header.startswith("<") else f'#include "{header}"' for header in spec.public_headers
     )
     guard = f"{spec.c_prefix.upper()}_API_INTERNAL_HPP"
     helper_block = ""

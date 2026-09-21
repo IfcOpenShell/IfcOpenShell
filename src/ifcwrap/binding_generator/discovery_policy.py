@@ -68,9 +68,7 @@ from .semantic_types import (
     semantic_sequence_lengths,
 )
 
-_SCALAR_SEQUENCE_FAMILIES = frozenset(
-    {"bool", "string", "int32", "int64", "uint8", "uint32", "double"}
-)
+_SCALAR_SEQUENCE_FAMILIES = frozenset({"bool", "string", "int32", "int64", "uint8", "uint32", "double"})
 
 
 class AmbiguousHandleMatchError(ValueError):
@@ -105,9 +103,7 @@ class VariantAccessorsSpec:
     get_method: str  # C++ method name for getter (e.g. "get")
     set_method: str  # C++ method name for setter (e.g. "set")
     variant_type: str  # full C++ variant type for constructing set values
-    types: dict[
-        str, VariantAccessorTypeSpec
-    ]  # expose_suffix -> getter/setter type policy
+    types: dict[str, VariantAccessorTypeSpec]  # expose_suffix -> getter/setter type policy
 
 
 @dataclass(frozen=True)
@@ -145,15 +141,9 @@ class DiscoveryClassSpec:
     field_setters: tuple[str, ...]  # field names to generate setters for
     method_sizes: dict[str, str]  # method_name -> expose_as (generates X().size())
     method_at_accessors: tuple[MethodAtAccessorSpec, ...]
-    array_pair_fields: dict[
-        str, str | None
-    ]  # field_name -> optional return_kind for std::array<T,2> split accessors
-    ccomponents_accessor: (
-        CcomponentsAccessorSpec | None
-    )  # generates Eigen ccomponents data extraction
-    variant_accessors: (
-        VariantAccessorsSpec | None
-    )  # generates typed get/set for variant methods
+    array_pair_fields: dict[str, str | None]  # field_name -> optional return_kind for std::array<T,2> split accessors
+    ccomponents_accessor: CcomponentsAccessorSpec | None  # generates Eigen ccomponents data extraction
+    variant_accessors: VariantAccessorsSpec | None  # generates typed get/set for variant methods
     compile_guard: str | None = None
 
 
@@ -241,24 +231,15 @@ def _handle_list_accessor_calls(
         ),
     )
     return (
-        _materialize_policy_call(
-            count_call, c_name=_make_c_name(receiver, count_call.expose_as)
-        ),
-        _materialize_policy_call(
-            at_call, c_name=_make_c_name(receiver, at_call.expose_as)
-        ),
+        _materialize_policy_call(count_call, c_name=_make_c_name(receiver, count_call.expose_as)),
+        _materialize_policy_call(at_call, c_name=_make_c_name(receiver, at_call.expose_as)),
     )
 
 
 def _normalize_cpp_type(cpp_type: str) -> str:
     cpp_type = re.sub(r"/\*.*?\*/", "", cpp_type)
     cpp_type = " ".join(cpp_type.replace(" &", "&").replace(" *", "*").split())
-    cpp_type = (
-        cpp_type.replace("< ", "<")
-        .replace(" >", ">")
-        .replace(", ", ", ")
-        .replace(" ,", ",")
-    )
+    cpp_type = cpp_type.replace("< ", "<").replace(" >", ">").replace(", ", ", ").replace(" ,", ",")
     cpp_type = cpp_type.replace("const ", "").strip()
     return cpp_type
 
@@ -274,12 +255,7 @@ def _cpp_type_contains_handle_item(cpp_type: str, handle_cpp_type: str) -> bool:
         simple = shared_ptr_match.group(1)
     simple = simple.removesuffix("::ptr").removesuffix("*").removesuffix("&").strip()
     simple = simple.split("::")[-1]
-    return bool(
-        simple
-        and re.search(
-            rf"(?<![A-Za-z0-9_]){re.escape(simple)}(?![A-Za-z0-9_])", normalized
-        )
-    )
+    return bool(simple and re.search(rf"(?<![A-Za-z0-9_]){re.escape(simple)}(?![A-Za-z0-9_])", normalized))
 
 
 def _cpp_type_variants(cpp_type: str | DiscoveredCppType) -> tuple[str, ...]:
@@ -309,9 +285,9 @@ def _cpp_type_variants(cpp_type: str | DiscoveredCppType) -> tuple[str, ...]:
 
 def _cpp_type_debug(cpp_type: str | DiscoveredCppType) -> str:
     if isinstance(cpp_type, DiscoveredCppType):
-        if cpp_type.desugared_spelling and _normalize_cpp_type(
-            cpp_type.desugared_spelling
-        ) != _normalize_cpp_type(cpp_type.spelling):
+        if cpp_type.desugared_spelling and _normalize_cpp_type(cpp_type.desugared_spelling) != _normalize_cpp_type(
+            cpp_type.spelling
+        ):
             return f"{cpp_type.spelling} -> {cpp_type.desugared_spelling}"
         return cpp_type.spelling
     return cpp_type
@@ -339,16 +315,10 @@ def _qualified_name_suffixes(name: str) -> tuple[str, ...]:
 def _cpp_type_names_match(candidate: str, target: str) -> bool:
     candidate_suffixes = set(_qualified_name_suffixes(candidate))
     target_suffixes = set(_qualified_name_suffixes(target))
-    return bool(
-        candidate_suffixes
-        and target_suffixes
-        and candidate_suffixes.intersection(target_suffixes)
-    )
+    return bool(candidate_suffixes and target_suffixes and candidate_suffixes.intersection(target_suffixes))
 
 
-def _find_handle_for_cpp_type(
-    cpp_type: str | DiscoveredCppType, handles: dict[str, HandleSpec]
-) -> str | None:
+def _find_handle_for_cpp_type(cpp_type: str | DiscoveredCppType, handles: dict[str, HandleSpec]) -> str | None:
     bases = [
         variant.removesuffix("&").removesuffix("*").strip().removeprefix("const ")
         for variant in _cpp_type_variants(cpp_type)
@@ -361,11 +331,7 @@ def _find_handle_for_cpp_type(
             ordered_bases.append(base)
     fallback_bases: tuple[str, ...] = ()
     if isinstance(cpp_type, DiscoveredCppType):
-        fallback_bases = tuple(
-            base
-            for base in cpp_type.base_record_names
-            if base and base not in seen_bases
-        )
+        fallback_bases = tuple(base for base in cpp_type.base_record_names if base and base not in seen_bases)
 
     matches: set[str] = set()
     for base in (*ordered_bases, *fallback_bases):
@@ -406,15 +372,12 @@ def _type_spec_from_record_semantic(
     for match_name in match_names:
         handle_name = _find_handle_for_cpp_type(match_name, handles)
         if handle_name is not None:
-            is_shared_ptr = (
-                semantic.pointer_wrapper == "shared_ptr"
-                or _normalize_cpp_type(semantic.cpp_type).endswith("::ptr")
+            is_shared_ptr = semantic.pointer_wrapper == "shared_ptr" or _normalize_cpp_type(semantic.cpp_type).endswith(
+                "::ptr"
             )
             normalized = _normalize_cpp_type(semantic.cpp_type)
             is_reference = normalized.endswith("&") or normalized.endswith("&&")
-            is_raw_pointer = semantic.pointer_wrapper is None and normalized.endswith(
-                "*"
-            )
+            is_raw_pointer = semantic.pointer_wrapper is None and normalized.endswith("*")
             is_nullable_pointer = semantic.pointer_wrapper == "unique_ptr"
             resolved_ownership = (
                 "owned"
@@ -440,9 +403,7 @@ def _type_spec_from_result_struct_semantic(
     for match_name in semantic_record_match_names(semantic):
         for struct_name, struct in result_structs.items():
             if _cpp_type_names_match(struct.cpp_type, match_name):
-                return TypeSpec(
-                    kind="struct", struct=struct_name, cpp_type=semantic.cpp_type
-                )
+                return TypeSpec(kind="struct", struct=struct_name, cpp_type=semantic.cpp_type)
     return None
 
 
@@ -477,9 +438,7 @@ def _lower_generic_sequence_type(
                 sequence_depth=depth,
                 **sequence_metadata,
             )
-        record_spec = _type_spec_from_record_semantic(
-            leaf, handles=handles, ownership=ownership, nullable=False
-        )
+        record_spec = _type_spec_from_record_semantic(leaf, handles=handles, ownership=ownership, nullable=False)
         if record_spec is None:
             reparsed_leaf = analyze_cpp_type(leaf.cpp_type)
             if isinstance(reparsed_leaf, RecordSemanticType):
@@ -536,16 +495,12 @@ def _infer_type(
         return TypeSpec(
             kind="int32",
             cpp_type=_cpp_type_storage(cpp_type),
-            alias=(semantic.enum_qualified_name or semantic.cpp_type).rsplit("::", 1)[
-                -1
-            ],
+            alias=(semantic.enum_qualified_name or semantic.cpp_type).rsplit("::", 1)[-1],
             enum_values=tuple(name for name, _ in semantic.values),
             enum_numeric_values=tuple(value for _, value in semantic.values),
         )
     if isinstance(semantic, StringSemanticType):
-        nullable = nullable_string_pointers and _normalize_cpp_type(
-            semantic.cpp_type
-        ).endswith("*")
+        nullable = nullable_string_pointers and _normalize_cpp_type(semantic.cpp_type).endswith("*")
         return TypeSpec(
             kind="string",
             ownership="copy",
@@ -618,8 +573,7 @@ def _infer_type(
             semantic,
             handles=handles,
             ownership=ownership,
-            nullable=nullable_pointers
-            and _normalize_cpp_type(semantic.cpp_type).endswith("*"),
+            nullable=nullable_pointers and _normalize_cpp_type(semantic.cpp_type).endswith("*"),
             own_shared_ptr=own_shared_ptr,
         )
         if record_spec is not None:
@@ -631,9 +585,7 @@ def _infer_type(
                 return TypeSpec(
                     kind="handle",
                     handle=handle_name,
-                    ownership="owned"
-                    if not normalized.endswith("&") and not normalized.endswith("*")
-                    else ownership,
+                    ownership="owned" if not normalized.endswith("&") and not normalized.endswith("*") else ownership,
                     cpp_type=_cpp_type_storage(cpp_type),
                 )
         sequence_spec = _lower_generic_sequence_type(
@@ -644,10 +596,7 @@ def _infer_type(
         )
         if sequence_spec is None:
             reparsed_sequence = analyze_cpp_type(semantic.cpp_type)
-            if (
-                isinstance(reparsed_sequence, SequenceSemanticType)
-                and reparsed_sequence != semantic
-            ):
+            if isinstance(reparsed_sequence, SequenceSemanticType) and reparsed_sequence != semantic:
                 sequence_spec = _lower_generic_sequence_type(
                     reparsed_sequence,
                     handles=handles,
@@ -664,8 +613,7 @@ def _infer_type(
         return TypeSpec(
             kind="opaque_ptr",
             cpp_type=_cpp_type_storage(cpp_type),
-            nullable=nullable_pointers
-            and _normalize_cpp_type(semantic.cpp_type).endswith("*"),
+            nullable=nullable_pointers and _normalize_cpp_type(semantic.cpp_type).endswith("*"),
         )
     msg = f"Unsupported discovered type '{_cpp_type_debug(cpp_type)}'"
     raise ValueError(msg)
@@ -686,15 +634,11 @@ def _infer_return_type(
             result_structs=result_structs,
         )
     except ValueError as exc:
-        msg = str(exc).replace(
-            "Unsupported discovered type", "Unsupported discovered return type"
-        )
+        msg = str(exc).replace("Unsupported discovered type", "Unsupported discovered return type")
         raise ValueError(msg) from exc
 
 
-def _infer_param_type(
-    cpp_type: str | DiscoveredCppType, handles: dict[str, HandleSpec]
-) -> TypeSpec:
+def _infer_param_type(cpp_type: str | DiscoveredCppType, handles: dict[str, HandleSpec]) -> TypeSpec:
     try:
         return _infer_type(
             cpp_type,
@@ -704,9 +648,7 @@ def _infer_param_type(
             nullable_string_pointers=True,
         )
     except ValueError as exc:
-        msg = str(exc).replace(
-            "Unsupported discovered type", "Unsupported discovered parameter type"
-        )
+        msg = str(exc).replace("Unsupported discovered type", "Unsupported discovered parameter type")
         raise ValueError(msg) from exc
 
 
@@ -718,26 +660,18 @@ def _bool_out_param_signature(
     discovered: DiscoveredMethod | DiscoveredFunction,
     handles: dict[str, HandleSpec],
 ) -> tuple[TypeSpec, tuple[ParamSpec, ...], BoolOutParamPolicyOp] | None:
-    if (
-        _normalize_cpp_type(discovered.return_cpp_type) != "bool"
-        or len(discovered.params) != 1
-    ):
+    if _normalize_cpp_type(discovered.return_cpp_type) != "bool" or len(discovered.params) != 1:
         return None
     out_param = discovered.params[0]
     if not _is_nonconst_lvalue_ref(out_param.cpp_type_ref):
         return None
     returns = _infer_param_type(out_param.cpp_type_ref, handles)
-    if (
-        returns.kind not in {"bool", "int32", "int64", "uint32", "size", "double"}
-        or returns.sequence_depth
-    ):
+    if returns.kind not in {"bool", "int32", "int64", "uint32", "size", "double"} or returns.sequence_depth:
         return None
     return (
         TypeSpec(kind=returns.kind, cpp_type=returns.cpp_type),
         tuple(),
-        BoolOutParamPolicyOp(
-            cpp_name=discovered.cpp_name, out_param_cpp_type=out_param.cpp_type
-        ),
+        BoolOutParamPolicyOp(cpp_name=discovered.cpp_name, out_param_cpp_type=out_param.cpp_type),
     )
 
 
@@ -788,29 +722,21 @@ def _simple_type_spec(kind_str: str) -> TypeSpec:
     return TypeSpec(kind=kind_str)
 
 
-def _infer_array_pair_element_type(
-    field: DiscoveredField, handles: dict[str, HandleSpec]
-) -> TypeSpec:
+def _infer_array_pair_element_type(field: DiscoveredField, handles: dict[str, HandleSpec]) -> TypeSpec:
     type_ref = field.cpp_type_ref
     if type_ref.template_name != "std::array" or len(type_ref.template_args) != 2:
         msg = f"array_pair_fields entry '{field.cpp_name}' must refer to std::array<T, 2>, got '{field.cpp_type}'"
         raise ValueError(msg)
-    size_arg = (
-        type_ref.template_args[1].storage_spelling or type_ref.template_args[1].spelling
-    )
+    size_arg = type_ref.template_args[1].storage_spelling or type_ref.template_args[1].spelling
     if size_arg.strip() != "2":
         msg = f"array_pair_fields entry '{field.cpp_name}' must refer to std::array<T, 2>, got '{field.cpp_type}'"
         raise ValueError(msg)
     return _infer_return_type(type_ref.template_args[0], handles)
 
 
-def _variant_accessor_type_spec(
-    cpp_type: str, handles: dict[str, HandleSpec]
-) -> TypeSpec | None:
+def _variant_accessor_type_spec(cpp_type: str, handles: dict[str, HandleSpec]) -> TypeSpec | None:
     try:
-        inferred = _infer_type(
-            cpp_type, handles, ownership="copy", nullable_pointers=False
-        )
+        inferred = _infer_type(cpp_type, handles, ownership="copy", nullable_pointers=False)
     except ValueError:
         return None
     if inferred.sequence_depth == 0:
@@ -818,9 +744,7 @@ def _variant_accessor_type_spec(
             return TypeSpec(kind=inferred.kind)
         return None
     if inferred.sequence_depth == 1 and inferred.kind in {"int32", "double", "string"}:
-        return TypeSpec(
-            kind=inferred.kind, ownership="copy", cpp_type=cpp_type, sequence_depth=1
-        )
+        return TypeSpec(kind=inferred.kind, ownership="copy", cpp_type=cpp_type, sequence_depth=1)
     return None
 
 
@@ -836,9 +760,7 @@ def _append_discovery_diagnostic(
     code: str,
     message: str,
 ) -> None:
-    diagnostics.append(
-        DiscoveryDiagnostic(owner=owner, member=member, code=code, message=message)
-    )
+    diagnostics.append(DiscoveryDiagnostic(owner=owner, member=member, code=code, message=message))
 
 
 def _register_generated_call(
@@ -932,9 +854,7 @@ def _select_overload(
 ):
     target_params = tuple(_normalize_cpp_type(param) for param in spec.params)
     for overload in overloads:
-        overload_params = tuple(
-            _normalize_cpp_type(param.cpp_type) for param in overload.params
-        )
+        overload_params = tuple(_normalize_cpp_type(param.cpp_type) for param in overload.params)
         if overload.cpp_name == spec.cpp_name and overload_params == target_params:
             return overload
     candidates = ", ".join(
@@ -953,10 +873,7 @@ def _extract_optional_inner_type(
 ) -> str | DiscoveredCppType | None:
     """Extract T from std::optional<T>. Returns None if not optional."""
     if isinstance(cpp_type, DiscoveredCppType):
-        if (
-            cpp_type.template_name == "std::optional"
-            and len(cpp_type.template_args) == 1
-        ):
+        if cpp_type.template_name == "std::optional" and len(cpp_type.template_args) == 1:
             return cpp_type.template_args[0]
         normalized = cpp_type.canonical_spelling
     else:
@@ -968,9 +885,7 @@ def _extract_optional_inner_type(
 
 
 def _constructor_signature_debug(constructor: DiscoveredConstructor) -> str:
-    params = ", ".join(
-        _cpp_type_debug(param.cpp_type_ref) for param in constructor.params
-    )
+    params = ", ".join(_cpp_type_debug(param.cpp_type_ref) for param in constructor.params)
     return f"{constructor.cpp_name}({params})"
 
 
@@ -992,9 +907,7 @@ def _children_stem(cpp_field: str, element_handle: str) -> str:
     return stem
 
 
-def _handle_from_child_type(
-    cpp_type: str | DiscoveredCppType, handles: dict[str, HandleSpec]
-) -> str | None:
+def _handle_from_child_type(cpp_type: str | DiscoveredCppType, handles: dict[str, HandleSpec]) -> str | None:
     try:
         inferred = _infer_return_type(cpp_type, handles)
     except AmbiguousHandleMatchError:
@@ -1015,16 +928,12 @@ def _collection_base_child_handle(
     include_dir: Path,
 ) -> str | None:
     translation_unit = (include_dir / item.translation_unit).resolve()
-    for base in discover_base_types(
-        discovery_environment, translation_unit, handle.cpp_type
-    ):
+    for base in discover_base_types(discovery_environment, translation_unit, handle.cpp_type):
         if _simple_cpp_name(base.cpp_type_ref.template_name or "") != "collection_base":
             continue
         if not base.cpp_type_ref.template_args:
             continue
-        child_handle = _handle_from_child_type(
-            base.cpp_type_ref.template_args[0], handles
-        )
+        child_handle = _handle_from_child_type(base.cpp_type_ref.template_args[0], handles)
         if child_handle is not None:
             return child_handle
     return None
@@ -1056,10 +965,7 @@ def _infer_children_element_handle(
         msg = f"discover_children field '{dc.cpp_field}' was not discovered on {item.handle}"
         raise ValueError(msg)
     type_ref = field.cpp_type_ref
-    if (
-        _simple_cpp_name(type_ref.template_name or "") != "vector"
-        or len(type_ref.template_args) != 1
-    ):
+    if _simple_cpp_name(type_ref.template_name or "") != "vector" or len(type_ref.template_args) != 1:
         msg = (
             f"discover_children field '{dc.cpp_field}' must be a vector-like child field, "
             f"got '{field.cpp_type}' (desugared '{type_ref.desugared_spelling}', "
@@ -1073,9 +979,7 @@ def _infer_children_element_handle(
     child_handle = _handle_from_child_type(element_type, handles)
     if child_handle is not None:
         return child_handle
-    if element_type.storage_spelling.endswith(
-        "T::ptr"
-    ) or element_type.spelling.endswith("T::ptr"):
+    if element_type.storage_spelling.endswith("T::ptr") or element_type.spelling.endswith("T::ptr"):
         child_handle = _collection_base_child_handle(
             item,
             handle,
@@ -1091,10 +995,7 @@ def _infer_children_element_handle(
 
 def _eigen_matrix_dimensions(cpp_type: str | DiscoveredCppType) -> int | None:
     if isinstance(cpp_type, DiscoveredCppType):
-        if (
-            _simple_cpp_name(cpp_type.template_name or "") == "Matrix"
-            and len(cpp_type.template_args) == 3
-        ):
+        if _simple_cpp_name(cpp_type.template_name or "") == "Matrix" and len(cpp_type.template_args) == 3:
             rows = cpp_type.template_args[1].storage_spelling
             cols = cpp_type.template_args[2].storage_spelling
             if rows.isdigit() and cols.isdigit():
@@ -1111,9 +1012,7 @@ def _eigen_matrix_dimensions(cpp_type: str | DiscoveredCppType) -> int | None:
     for candidate in candidates:
         if not candidate:
             continue
-        match = re.fullmatch(
-            r"Eigen::Matrix<\s*double\s*,\s*(\d+)\s*,\s*(\d+)\s*>", candidate
-        )
+        match = re.fullmatch(r"Eigen::Matrix<\s*double\s*,\s*(\d+)\s*,\s*(\d+)\s*>", candidate)
         if match is not None:
             return int(match.group(1)) * int(match.group(2))
     return None
@@ -1121,9 +1020,7 @@ def _eigen_matrix_dimensions(cpp_type: str | DiscoveredCppType) -> int | None:
 
 def _access_path_method_names(access_via: str) -> tuple[str, ...]:
     parts = re.split(r"(?:->|\.)", access_via.replace(" ", ""))
-    if not parts or any(
-        not re.fullmatch(r"[A-Za-z_]\w*(?:\(\))?", part) for part in parts
-    ):
+    if not parts or any(not re.fullmatch(r"[A-Za-z_]\w*(?:\(\))?", part) for part in parts):
         msg = f"Unable to infer ccomponents dimensions from access path '{access_via}'"
         raise ValueError(msg)
     return tuple(part.removesuffix("()") for part in parts)
@@ -1150,9 +1047,7 @@ def _infer_ccomponents_dimensions(
             include_inherited=True,
             selected_names=(member_name,),
         )
-        candidates = tuple(
-            method for method in methods.get(member_name, ()) if not method.params
-        )
+        candidates = tuple(method for method in methods.get(member_name, ()) if not method.params)
         if len(candidates) != 1:
             msg = (
                 f"Unable to infer ccomponents dimensions for {item.handle}: access path member "
@@ -1175,22 +1070,15 @@ def _infer_ccomponents_dimensions(
         if class_name in visited:
             continue
         visited.add(class_name)
-        for base in discover_base_types(
-            discovery_environment, translation_unit, class_name
-        ):
+        for base in discover_base_types(discovery_environment, translation_unit, class_name):
             if (
                 _simple_cpp_name(base.cpp_type_ref.template_name or "") == "eigen_base"
                 and base.cpp_type_ref.template_args
             ):
-                dimensions = _eigen_matrix_dimensions(
-                    base.cpp_type_ref.template_args[0]
-                )
+                dimensions = _eigen_matrix_dimensions(base.cpp_type_ref.template_args[0])
                 if dimensions is not None:
                     return dimensions
-            if (
-                base.cpp_type_ref.base_name
-                and base.cpp_type_ref.base_name not in visited
-            ):
+            if base.cpp_type_ref.base_name and base.cpp_type_ref.base_name not in visited:
                 queue.append(base.cpp_type_ref.base_name)
     msg = f"Unable to infer ccomponents dimensions for {item.handle}"
     raise ValueError(msg)
@@ -1291,9 +1179,7 @@ def _emit_children_calls(
     count_call = PolicyCallSpec(
         expose_as=count_as,
         receiver=item.handle,
-        returns=TypeSpec(
-            kind="size", handle=None, ownership=None, nullable=False, cpp_type=None
-        ),
+        returns=TypeSpec(kind="size", handle=None, ownership=None, nullable=False, cpp_type=None),
         params=(),
         operation=ChildrenCountPolicyOp(field_name=dc.cpp_field),
     )
@@ -1351,14 +1237,10 @@ def _emit_children_calls(
         params=(
             ParamSpec(
                 name="item",
-                type=TypeSpec(
-                    kind="handle", handle=element_handle, ownership="borrowed"
-                ),
+                type=TypeSpec(kind="handle", handle=element_handle, ownership="borrowed"),
             ),
         ),
-        operation=ChildrenAddPolicyOp(
-            field_name=dc.cpp_field, cast_cpp_type=dc.add_cast_cpp_type
-        ),
+        operation=ChildrenAddPolicyOp(field_name=dc.cpp_field, cast_cpp_type=dc.add_cast_cpp_type),
     )
     _register_policy_call(
         add_call,
@@ -1398,9 +1280,7 @@ def _emit_ccomponents_call(
         receiver=item.handle,
         returns=TypeSpec(kind="double", ownership="copy", sequence_depth=1),
         params=(),
-        operation=CcomponentsAccessorPolicyOp(
-            access_via=cc.access_via, dimensions=dimensions
-        ),
+        operation=CcomponentsAccessorPolicyOp(access_via=cc.access_via, dimensions=dimensions),
     )
     _register_policy_call(
         cc_call,
@@ -1504,9 +1384,7 @@ def _discover_method_calls(
     )
 
     for item_index, item in enumerate(discovery.classes, start=1):
-        if not _compile_guard_active(
-            item.compile_guard, discovery_environment.compilation.defines
-        ):
+        if not _compile_guard_active(item.compile_guard, discovery_environment.compilation.defines):
             continue
         handle = handles[item.handle]
         excluded = set(item.exclude)
@@ -1515,9 +1393,7 @@ def _discover_method_calls(
             f"{item_index}/{len(discovery.classes)} handle={item.handle} cpp={handle.cpp_type} tu={item.translation_unit}",
         )
 
-        method_names = frozenset(
-            accessor.method_name for accessor in item.method_at_accessors
-        )
+        method_names = frozenset(accessor.method_name for accessor in item.method_at_accessors)
         methods_by_name: dict[str, tuple[DiscoveredMethod, ...]] = {}
         if method_names:
             method_cache_key = (
@@ -1614,9 +1490,7 @@ def _discover_method_calls(
                             cpp_type=returns.cpp_type,
                         )
 
-                expose_as = item.rename.get(
-                    field_name, _snake_case_identifier(field_name)
-                )
+                expose_as = item.rename.get(field_name, _snake_case_identifier(field_name))
                 call = CallSpec(
                     expose_as=expose_as,
                     c_name=_make_c_name(handle, expose_as),
@@ -1643,11 +1517,7 @@ def _discover_method_calls(
                 calls.append(call)
 
                 # For nullable handle fields, optionally generate has_X
-                if (
-                    item.discover_has_fields
-                    and field_kind == "field"
-                    and returns.kind == "handle"
-                ):
+                if item.discover_has_fields and field_kind == "field" and returns.kind == "handle":
                     has_expose = f"has_{expose_as}"
                     has_call = PolicyCallSpec(
                         expose_as=has_expose,
@@ -1689,11 +1559,7 @@ def _discover_method_calls(
                 raise ValueError(msg)
 
             normalized = _normalize_cpp_type(cpp_type)
-            is_pointer = (
-                normalized.endswith("*")
-                or normalized.endswith("::ptr")
-                or "shared_ptr" in normalized
-            )
+            is_pointer = normalized.endswith("*") or normalized.endswith("::ptr") or "shared_ptr" in normalized
             field_kind = "field" if is_pointer else "value_handle_field"
             if field_kind == "value_handle_field" and returns.kind == "handle":
                 returns = TypeSpec(
@@ -1727,11 +1593,7 @@ def _discover_method_calls(
             )
 
             # Also generate has_X for nullable handle extra fields
-            if (
-                item.discover_has_fields
-                and field_kind == "field"
-                and returns.kind == "handle"
-            ):
+            if item.discover_has_fields and field_kind == "field" and returns.kind == "handle":
                 has_expose = f"has_{expose_as}"
                 has_call = PolicyCallSpec(
                     expose_as=has_expose,
@@ -1769,9 +1631,7 @@ def _discover_method_calls(
                 cached = class_cache.get(field_cache_key)
                 if cached and setter_field in cached:
                     try:
-                        param_type = _infer_return_type(
-                            cached[setter_field].cpp_type, handles
-                        )
+                        param_type = _infer_return_type(cached[setter_field].cpp_type, handles)
                     except ValueError:
                         pass
             if param_type is None:
@@ -1831,9 +1691,7 @@ def _discover_method_calls(
             if discovered.params:
                 msg = f"method_at_accessors entry '{accessor.method_name}' on {item.handle} must refer to a no-argument method"
                 raise ValueError(msg)
-            if not _cpp_type_contains_handle_item(
-                discovered.return_cpp_type, item_handle.cpp_type
-            ):
+            if not _cpp_type_contains_handle_item(discovered.return_cpp_type, item_handle.cpp_type):
                 msg = (
                     f"method_at_accessors entry '{accessor.method_name}' returns '{discovered.return_cpp_type}', "
                     f"which does not contain item handle type '{item_handle.cpp_type}'"
@@ -1910,9 +1768,7 @@ def _discover_method_calls(
                     receiver=item.handle,
                     returns=ret_type,
                     params=(),
-                    operation=ArrayElementFieldPolicyOp(
-                        expression=f"{field_name}[{index}]"
-                    ),
+                    operation=ArrayElementFieldPolicyOp(expression=f"{field_name}[{index}]"),
                 )
                 _register_policy_call(
                     ap_call,
@@ -1989,9 +1845,7 @@ def _select_constructor(
     context: str,
 ) -> DiscoveredConstructor:
     def param_matches(discovered: DiscoveredParam, target: str) -> bool:
-        discovered_type = _normalize_cpp_type(
-            discovered.cpp_type_ref.canonical_spelling
-        )
+        discovered_type = _normalize_cpp_type(discovered.cpp_type_ref.canonical_spelling)
         target_type = _normalize_cpp_type(target)
         if discovered_type == target_type:
             return True
@@ -2005,15 +1859,11 @@ def _select_constructor(
 
     if params is None:
         if not constructors:
-            msg = (
-                f"{context}: no public constructors are available for source inference"
-            )
+            msg = f"{context}: no public constructors are available for source inference"
             raise ValueError(msg)
         if len(constructors) == 1:
             return constructors[0]
-        available = ", ".join(
-            _constructor_signature_debug(constructor) for constructor in constructors
-        )
+        available = ", ".join(_constructor_signature_debug(constructor) for constructor in constructors)
         msg = f"{context}: constructor params are required when overloads are present; available: {available}"
         raise ValueError(msg)
 
@@ -2028,9 +1878,7 @@ def _select_constructor(
     ]
     if len(matches) == 1:
         return matches[0]
-    available = ", ".join(
-        _constructor_signature_debug(constructor) for constructor in constructors
-    )
+    available = ", ".join(_constructor_signature_debug(constructor) for constructor in constructors)
     if not matches:
         msg = f"{context}: unable to resolve constructor with params ({', '.join(params)}); available: {available}"
         raise ValueError(msg)
@@ -2052,9 +1900,7 @@ def _constructor_fallback_params(
         raise ValueError(msg)
     params: list[ParamSpec] = []
     for source_type, param_name in zip(item.params, item.param_names):
-        params.append(
-            ParamSpec(name=param_name, type=_infer_param_type(source_type, handles))
-        )
+        params.append(ParamSpec(name=param_name, type=_infer_param_type(source_type, handles)))
     return tuple(params)
 
 

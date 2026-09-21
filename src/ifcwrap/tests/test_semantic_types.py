@@ -72,16 +72,13 @@ struct Holder {
     Node::ptr axis;
 };
 }
-""".strip()
-        + "\n",
+""".strip() + "\n",
         encoding="utf-8",
     )
     source.write_text('#include "shared_ptr_alias.h"\n', encoding="utf-8")
 
     environment = DiscoveryEnvironment(
-        compilation=CompilationConfig(
-            compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path
-        )
+        compilation=CompilationConfig(compiler=compiler, include_dirs=(tmp_path,), working_directory=tmp_path)
     )
     fields = discover_public_fields(environment, source, "Demo::Holder")
     semantic = analyze_cpp_type(fields["axis"].cpp_type_ref)

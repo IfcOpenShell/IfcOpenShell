@@ -47,15 +47,9 @@ def _handle_for_c_type(c_type: str, metadata: BindingABI) -> CTypeIR | None:
 
 
 def _value_type_by_c_type(c_type: str, metadata: BindingABI) -> CTypeIR | None:
-    normalized = (
-        _normalize_c_type(c_type).removeprefix("const ").removesuffix("*").strip()
-    )
+    normalized = _normalize_c_type(c_type).removeprefix("const ").removesuffix("*").strip()
     return next(
-        (
-            value
-            for value in metadata.value_types.values()
-            if value.c_type == normalized
-        ),
+        (value for value in metadata.value_types.values() if value.c_type == normalized),
         None,
     )
 
@@ -73,10 +67,7 @@ def _enum_input_expr(name: str, type_spec: TypeSpec) -> str:
     if values is None:
         return name
     if type_spec.sequence_depth > 0:
-        return (
-            f"_mapEnumInput({name}, {json.dumps(values)}, "
-            f"{type_spec.sequence_depth}, {json.dumps(name)})"
-        )
+        return f"_mapEnumInput({name}, {json.dumps(values)}, " f"{type_spec.sequence_depth}, {json.dumps(name)})"
     return f"_enumInputValue({name}, {json.dumps(values)}, {json.dumps(name)})"
 
 
@@ -86,10 +77,7 @@ def _enum_output_expr(expression: str, type_spec: TypeSpec) -> str:
         return expression
     names = {value: name for name, value in values.items()}
     if type_spec.sequence_depth > 0:
-        return (
-            f"_mapEnumOutput({expression}, {json.dumps(names)}, "
-            f"{type_spec.sequence_depth}, 'result')"
-        )
+        return f"_mapEnumOutput({expression}, {json.dumps(names)}, " f"{type_spec.sequence_depth}, 'result')"
     return f"_enumOutputValue({expression}, {json.dumps(names)}, 'result')"
 
 
@@ -164,8 +152,7 @@ def _out_allocation(function: CFunctionIR, metadata: BindingABI) -> str | None:
             struct = next(
                 item
                 for item in metadata.value_types.values()
-                if item.kind == "optional_result_struct"
-                and item.element_type == returns.struct
+                if item.kind == "optional_result_struct" and item.element_type == returns.struct
             )
         else:
             struct = metadata.value_types[returns.struct]
@@ -180,23 +167,18 @@ def _out_allocation(function: CFunctionIR, metadata: BindingABI) -> str | None:
     return "POINTER_SIZE"
 
 
-def _read_value_type_expr(
-    type_spec: TypeSpec, metadata: BindingABI, ptr_expr: str
-) -> str:
+def _read_value_type_expr(type_spec: TypeSpec, metadata: BindingABI, ptr_expr: str) -> str:
     if type_spec.sequence_depth > 0:
         sequence = _sequence_value_type(type_spec, metadata)
         return f"_readValueType(module, {ptr_expr}, _VALUE_TYPES[{json.dumps(sequence.c_type)}])"
     if type_spec.kind == "string":
-        return (
-            f"_readValueType(module, {ptr_expr}, _VALUE_TYPES['ifcopenshell_string_t'])"
-        )
+        return f"_readValueType(module, {ptr_expr}, _VALUE_TYPES['ifcopenshell_string_t'])"
     if type_spec.kind == "struct" and type_spec.struct is not None:
         if type_spec.nullable:
             struct = next(
                 item
                 for item in metadata.value_types.values()
-                if item.kind == "optional_result_struct"
-                and item.element_type == type_spec.struct
+                if item.kind == "optional_result_struct" and item.element_type == type_spec.struct
             )
         else:
             struct = metadata.value_types[type_spec.struct]
@@ -233,9 +215,7 @@ def _return_expr(function: CFunctionIR, metadata: BindingABI) -> str:
     return _enum_output_expr(result, returns)
 
 
-def _out_result_destroy_function(
-    function: CFunctionIR, metadata: BindingABI
-) -> str | None:
+def _out_result_destroy_function(function: CFunctionIR, metadata: BindingABI) -> str | None:
     returns = function.returns
     if returns.sequence_depth > 0:
         destroy = _sequence_value_type(returns, metadata).destroy_function
@@ -253,8 +233,7 @@ def _out_result_destroy_function(
             destroy = next(
                 item.destroy_function
                 for item in metadata.value_types.values()
-                if item.kind == "optional_result_struct"
-                and any(field.c_type == payload for field in item.fields)
+                if item.kind == "optional_result_struct" and any(field.c_type == payload for field in item.fields)
             )
         else:
             destroy = metadata.value_types[returns.struct].destroy_function
@@ -270,9 +249,7 @@ def _destroy_out_result(function: CFunctionIR, metadata: BindingABI) -> str | No
     return f"    if (outResultPtr) module._{destroy}(outResultPtr);"
 
 
-def _js_arg_expr(
-    param: CParamIR, metadata: BindingABI
-) -> tuple[str, str | None, str | None]:
+def _js_arg_expr(param: CParamIR, metadata: BindingABI) -> tuple[str, str | None, str | None]:
     name = param.name
     enum_input = _enum_input_expr(name, param.type) if param.type is not None else name
     if param.nullable and param.type_kind in {
@@ -338,7 +315,9 @@ def _js_arg_expr(
                 if param.nullable
                 else f"    var {ptr_name} = _allocInputHandleSequence(module, {name}, {json.dumps(sequence.c_type)});"
             )
-            cleanup = f"    if ({ptr_name}) _freeInputHandleSequence(module, {ptr_name}, {json.dumps(sequence.c_type)});"
+            cleanup = (
+                f"    if ({ptr_name}) _freeInputHandleSequence(module, {ptr_name}, {json.dumps(sequence.c_type)});"
+            )
         else:
             alloc = (
                 f"    var {ptr_name} = {name} == null ? 0 : _allocInputSequence(module, {enum_input}, {json.dumps(sequence.c_type)});"
@@ -371,9 +350,7 @@ def _render_handle_classes(metadata: BindingABI) -> str:
     for handle_name, handle in sorted(metadata.handles.items()):
         type_name = _type_name(handle.c_type)
         method_groups: dict[str, list[tuple[CFunctionIR, list[str]]]] = {}
-        for function in sorted(
-            receiver_groups.get(handle_name, []), key=lambda item: item.c_name
-        ):
+        for function in sorted(receiver_groups.get(handle_name, []), key=lambda item: item.c_name):
             if function.c_name == handle.destroy_function:
                 continue
             method = _public_name(function, metadata.c_prefix)
@@ -381,15 +358,9 @@ def _render_handle_classes(metadata: BindingABI) -> str:
             if _typed_buffer_element(function, metadata) is not None:
                 param_names.append("arrayType")
             method_groups.setdefault(method, []).append((function, param_names))
-        methods = [
-            _render_handle_method(method, overloads)
-            for method, overloads in method_groups.items()
-        ]
+        methods = [_render_handle_method(method, overloads) for method, overloads in method_groups.items()]
         method_block = "\n\n".join(methods)
-        destroy = (
-            handle.destroy_function
-            or f"ifcopenshell_{_snake_name(handle.c_type)}_destroy"
-        )
+        destroy = handle.destroy_function or f"ifcopenshell_{_snake_name(handle.c_type)}_destroy"
         chunks.append(
             f"export class {type_name} {{\n"
             "    #ptr;\n"
@@ -417,9 +388,7 @@ def _render_handle_classes(metadata: BindingABI) -> str:
     return "\n\n".join(chunks)
 
 
-def _render_handle_method(
-    method: str, overloads: list[tuple[CFunctionIR, list[str]]]
-) -> str:
+def _render_handle_method(method: str, overloads: list[tuple[CFunctionIR, list[str]]]) -> str:
     if len(overloads) == 1:
         function, param_names = overloads[0]
         params = ", ".join(param_names)
@@ -456,15 +425,11 @@ def _render_handle_method(
 
 def _render_handle_wrapper_switch(metadata: BindingABI) -> str:
     handle_types = sorted(handle.c_type for handle in metadata.handles.values())
-    handle_type_set = (
-        "const _HANDLE_C_TYPES = new Set(" + json.dumps(handle_types) + ");\n\n"
-    )
+    handle_type_set = "const _HANDLE_C_TYPES = new Set(" + json.dumps(handle_types) + ");\n\n"
     cases = []
     for handle in sorted(metadata.handles.values(), key=lambda item: item.c_type):
         type_name = _type_name(handle.c_type)
-        cases.append(
-            f"        case {json.dumps(handle.c_type)}: return _wrap{type_name}(ptr, owned, module);"
-        )
+        cases.append(f"        case {json.dumps(handle.c_type)}: return _wrap{type_name}(ptr, owned, module);")
     body = "\n".join(cases) or "        default: return ptr || null;"
     if cases:
         body += "\n        default: return ptr || null;"
@@ -527,9 +492,7 @@ def _render_wrapper(function: CFunctionIR, metadata: BindingABI) -> str:
             )
         elif buffer_element is not None:
             return_expr = (
-                _read_value_type_expr(
-                    function.returns, metadata, "outResultPtr"
-                ).removesuffix(")")
+                _read_value_type_expr(function.returns, metadata, "outResultPtr").removesuffix(")")
                 + ", true, arrayType)"
             )
         else:
@@ -616,24 +579,16 @@ def _render_module_factory(metadata: BindingABI) -> str:
             param_names.append("arrayType")
         params = ", ".join(param_names)
         call = f"({params}) => invoke_{function.c_name}(module{', ' if params else ''}{params})"
-        module_members_for_function = _public_module_members(
-            function, metadata.c_prefix
-        )
+        module_members_for_function = _public_module_members(function, metadata.c_prefix)
         if module_members_for_function:
             for module_name, member_name in module_members_for_function:
-                module_members.setdefault(module_name, []).append(
-                    f"            {member_name}: {call},"
-                )
+                module_members.setdefault(module_name, []).append(f"            {member_name}: {call},")
         else:
             members.append(f"        {name}: {call},")
     if "ifcopenshell_parse_open" in metadata.functions:
         module_members.setdefault("parse", []).append("            openBytes,")
     for module_name, nested_members in sorted(module_members.items()):
-        members.append(
-            f"        {module_name}: Object.freeze({{\n"
-            + "\n".join(nested_members)
-            + "\n        }),"
-        )
+        members.append(f"        {module_name}: Object.freeze({{\n" + "\n".join(nested_members) + "\n        }),")
     joined = "\n".join(members)
     return (
         "export async function createIfcOpenshellModule(initModule, wasmUrl, options = {}) {\n"
@@ -785,12 +740,8 @@ def _render_value_type_metadata(metadata: BindingABI) -> str:
             "destroyFunction": value.destroy_function,
             "elementType": value.element_type,
             "sequenceDepth": value.sequence_depth,
-            "bufferMode": (
-                "snapshot" if value.kind in {"string", "sequence"} else None
-            ),
-            "fields": [
-                {"name": field.name, "cType": field.c_type} for field in value.fields
-            ],
+            "bufferMode": ("snapshot" if value.kind in {"string", "sequence"} else None),
+            "fields": [{"name": field.name, "cType": field.c_type} for field in value.fields],
         }
         for value in sorted(metadata.value_types.values(), key=lambda item: item.c_type)
     }
@@ -802,26 +753,18 @@ def _render_error_object(name: str, entries: tuple[ErrorCatalogEntryIR, ...]) ->
     return f"export const {name} = Object.freeze({{\n{values}\n}});"
 
 
-def render_js_glue(
-    metadata: BindingABI, handles: dict[str, CTypeIR] | None = None
-) -> str:
+def render_js_glue(metadata: BindingABI, handles: dict[str, CTypeIR] | None = None) -> str:
     del handles
     wrappers = "\n\n".join(
         _render_wrapper(function, metadata)
-        for function in sorted(
-            metadata.functions.values(), key=lambda item: item.c_name
-        )
+        for function in sorted(metadata.functions.values(), key=lambda item: item.c_name)
     )
     classes = _render_handle_classes(metadata)
     handle_switch = _render_handle_wrapper_switch(metadata)
     factory = _render_module_factory(metadata)
     value_types = _render_value_type_metadata(metadata)
-    error_kinds = _render_error_object(
-        "IfcOpenShellErrorKind", metadata.error_catalog.kinds
-    )
-    error_codes = _render_error_object(
-        "IfcOpenShellErrorCode", metadata.error_catalog.codes
-    )
+    error_kinds = _render_error_object("IfcOpenShellErrorKind", metadata.error_catalog.kinds)
+    error_codes = _render_error_object("IfcOpenShellErrorCode", metadata.error_catalog.codes)
     return "\n".join(
         [
             "",

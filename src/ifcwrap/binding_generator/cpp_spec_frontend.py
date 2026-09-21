@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field as dataclass_field, replace
+from dataclasses import dataclass, replace
+from dataclasses import field as dataclass_field
 from pathlib import Path
 
 from .binding_model import (
@@ -266,11 +267,7 @@ def discover_cpp_spec_handles(
                 re.DOTALL,
             )
             if c_prefix is not None:
-                c_type = (
-                    c_type_match.group("c_type")
-                    if c_type_match is not None
-                    else f"{c_prefix}_{handle_name}_t"
-                )
+                c_type = c_type_match.group("c_type") if c_type_match is not None else f"{c_prefix}_{handle_name}_t"
             elif c_type_match is not None:
                 c_type = c_type_match.group("c_type")
             else:
@@ -330,10 +327,7 @@ def discover_cpp_spec_methods(
         )
         key = (method.handle, method.expose_as, method.params)
         if key in seen:
-            msg = (
-                f"C++ spec method '{method.handle}.{method.expose_as}' "
-                "is declared more than once"
-            )
+            msg = f"C++ spec method '{method.handle}.{method.expose_as}' " "is declared more than once"
             raise ValueError(msg)
         seen.add(key)
         methods.append(method)
@@ -400,12 +394,8 @@ def discover_cpp_spec_selected_functions(
 def _cpp_policy_type_matches(discovered_type: str, requested_type: str) -> bool:
     discovered_type = _normalize_cpp_type(discovered_type)
     requested_type = _normalize_cpp_type(requested_type)
-    unqualified_discovered = re.sub(
-        r"\b(?:[A-Za-z_]\w*::)+", "", discovered_type
-    ).replace(" ", "")
-    unqualified_requested = re.sub(
-        r"\b(?:[A-Za-z_]\w*::)+", "", requested_type
-    ).replace(" ", "")
+    unqualified_discovered = re.sub(r"\b(?:[A-Za-z_]\w*::)+", "", discovered_type).replace(" ", "")
+    unqualified_requested = re.sub(r"\b(?:[A-Za-z_]\w*::)+", "", requested_type).replace(" ", "")
     if unqualified_discovered == unqualified_requested:
         return True
     discovered_suffix = "".join(char for char in discovered_type if char in "*&")
@@ -426,9 +416,7 @@ def lower_cpp_spec_methods_to_calls(
     """Discover selected native methods with Clang and lower their signatures."""
     method_cache: dict[str, dict[str, tuple[DiscoveredMethod, ...]]] = {}
     selected_names = {
-        handle: frozenset(
-            method.cpp_name for method in methods if method.handle == handle
-        )
+        handle: frozenset(method.cpp_name for method in methods if method.handle == handle)
         for handle in {method.handle for method in methods}
     }
     calls: list[CallSpec] = []
@@ -449,15 +437,10 @@ def lower_cpp_spec_methods_to_calls(
             method_cache[method.handle] = discovered_by_name
         overloads = discovered_by_name.get(method.cpp_name)
         if overloads is None:
-            msg = (
-                f"Unable to discover method '{method.cpp_name}' "
-                f"for handle '{method.handle}'"
-            )
+            msg = f"Unable to discover method '{method.cpp_name}' " f"for handle '{method.handle}'"
             raise ValueError(msg)
         requested_params = tuple(
-            param.removeprefix("IFCAPI_INT32(").removesuffix(")")
-            if param.startswith("IFCAPI_INT32(")
-            else param
+            param.removeprefix("IFCAPI_INT32(").removesuffix(")") if param.startswith("IFCAPI_INT32(") else param
             for param in method.params
         )
         overload_policy = DiscoveryOverloadSpec(
@@ -482,9 +465,7 @@ def lower_cpp_spec_methods_to_calls(
                             param.cpp_type_ref.canonical_spelling,
                         )
                     )
-                    for param, requested in zip(
-                        overload.params, requested_params, strict=True
-                    )
+                    for param, requested in zip(overload.params, requested_params, strict=True)
                 )
             )
             if len(candidates) != 1:
@@ -497,9 +478,11 @@ def lower_cpp_spec_methods_to_calls(
         policy_operation = _direct_method_policy_operation(selected, handles)
         if len(params) == len(method.params):
             params = tuple(
-                replace(param, type=replace(param.type, kind="int32"))
-                if requested.startswith("IFCAPI_INT32(")
-                else param
+                (
+                    replace(param, type=replace(param.type, kind="int32"))
+                    if requested.startswith("IFCAPI_INT32(")
+                    else param
+                )
                 for param, requested in zip(params, method.params, strict=True)
             )
         elif params or not isinstance(policy_operation, BoolOutParamPolicyOp):
@@ -652,21 +635,14 @@ def discover_cpp_spec_policy(
             policy.array_pair_fields.update((value, None) for value in values)
         elif operation == "ccomponents":
             if not 1 <= len(values) <= 3:
-                msg = (
-                    f"{marker} ccomponents expects an exposed name and optional "
-                    "access path and dimensions"
-                )
+                msg = f"{marker} ccomponents expects an exposed name and optional " "access path and dimensions"
                 raise ValueError(msg)
             access_via = (
                 _strip_string_literal(access)
                 if len(values) > 1 and (access := _policy_value(values[1]))
                 else "ccomponents"
             )
-            dimensions = (
-                int(value)
-                if len(values) > 2 and (value := _policy_value(values[2]))
-                else None
-            )
+            dimensions = int(value) if len(values) > 2 and (value := _policy_value(values[2])) else None
             policy.ccomponents_accessor = CcomponentsAccessorSpec(
                 expose_as=values[0],
                 dimensions=dimensions,
@@ -679,14 +655,9 @@ def discover_cpp_spec_policy(
             policy.compile_guard = values[0]
         elif operation == "variant":
             if len(values) < 5:
-                msg = (
-                    f"{marker} variant expects get method, set method, variant "
-                    "type, suffix, and C++ type"
-                )
+                msg = f"{marker} variant expects get method, set method, variant " "type, suffix, and C++ type"
                 raise ValueError(msg)
-            get_method, set_method, variant_type, suffix, cpp_type, *getter_types = (
-                values
-            )
+            get_method, set_method, variant_type, suffix, cpp_type, *getter_types = values
             if policy.variant_accessors is None:
                 policy.variant_accessors = VariantAccessorsSpec(
                     get_method=get_method,
@@ -715,10 +686,7 @@ def discover_cpp_spec_policy(
     for raw_args, _ in _find_macro_invocations(text, constructor_marker):
         args = _split_macro_args(raw_args)
         if len(args) != 6:
-            msg = (
-                f"{constructor_marker} expects handle, class, exposed name, "
-                "mode, guard, and message"
-            )
+            msg = f"{constructor_marker} expects handle, class, exposed name, " "mode, guard, and message"
             raise ValueError(msg)
         handle, cpp_class, expose_as, mode, guard, message = args
         if handle not in handles:
@@ -744,10 +712,7 @@ def discover_cpp_spec_policy(
     for raw_args, _ in _find_macro_invocations(text, param_marker):
         args = _split_macro_args(raw_args)
         if len(args) != 4:
-            msg = (
-                f"{param_marker} expects exposed name, source name, public name, "
-                "and C++ type"
-            )
+            msg = f"{param_marker} expects exposed name, source name, public name, " "and C++ type"
             raise ValueError(msg)
         expose_as, source_name, public_name, cpp_type = args
         constructor = constructors.get(expose_as)
@@ -766,9 +731,7 @@ def discover_cpp_spec_policy(
         DiscoverySpec(
             include_dir=Path("."),
             classes=tuple(policy.freeze() for policy in classes.values()),
-            constructors=tuple(
-                constructor.freeze() for constructor in constructors.values()
-            ),
+            constructors=tuple(constructor.freeze() for constructor in constructors.values()),
         )
         if classes or constructors
         else None
@@ -828,8 +791,7 @@ def discover_cpp_spec_result_structs(
     text = _strip_comments(translation_unit.read_text(encoding="utf-8"))
     marker_re = re.escape(marker)
     struct_re = re.compile(
-        rf"\b{marker_re}\s*\((?P<args>[^)]*)\)\s*"
-        r"struct\s+(?P<name>[A-Za-z_]\w*)\s*\{(?P<body>.*?)\}\s*;",
+        rf"\b{marker_re}\s*\((?P<args>[^)]*)\)\s*" r"struct\s+(?P<name>[A-Za-z_]\w*)\s*\{(?P<body>.*?)\}\s*;",
         re.DOTALL,
     )
     result_structs: list[CppSpecResultStruct] = []
@@ -861,15 +823,11 @@ def discover_cpp_spec_result_structs(
             field = raw_field.strip()
             if not field:
                 continue
-            field_match = re.match(
-                r"(?P<type>.+?)\s+(?P<name>[A-Za-z_]\w*)$", field, re.DOTALL
-            )
+            field_match = re.match(r"(?P<type>.+?)\s+(?P<name>[A-Za-z_]\w*)$", field, re.DOTALL)
             if field_match is None:
                 msg = f"Unable to parse result struct field declaration: {field!r}"
                 raise ValueError(msg)
-            fields.append(
-                (" ".join(field_match.group("type").split()), field_match.group("name"))
-            )
+            fields.append((" ".join(field_match.group("type").split()), field_match.group("name")))
         result_structs.append(
             CppSpecResultStruct(
                 name=name,
@@ -937,9 +895,7 @@ def _discover_spec_signatures(
             if _has_default(param):
                 param_defaults[_param_name(rest)] = True
         if first_param_name == "self":
-            if name in signatures and any(
-                item[3] == first_param_type for item in signatures[name]
-            ):
+            if name in signatures and any(item[3] == first_param_type for item in signatures[name]):
                 msg = f"C++ spec export '{name}' is declared more than once; exported spec functions must be unique"
                 raise ValueError(msg)
         else:
@@ -995,8 +951,7 @@ def discover_cpp_spec_functions(
                     overload
                     for overload in overloads
                     if overload.params
-                    and _canonical_cpp_type(overload.params[0].cpp_type_ref)
-                    == _canonical_cpp_type(first_param_type)
+                    and _canonical_cpp_type(overload.params[0].cpp_type_ref) == _canonical_cpp_type(first_param_type)
                 )
             if len(selected_overloads) != 1:
                 msg = f"C++ spec export '{name}' has {len(overloads)} overloads; exported spec functions must be unique"
@@ -1030,9 +985,7 @@ def _prefixed_c_name(name: str, c_prefix: str | None) -> str:
 def _canonical_cpp_type(cpp_type: object) -> str:
     if not isinstance(cpp_type, str):
         cpp_type = (
-            getattr(cpp_type, "normalized_spelling", None)
-            or getattr(cpp_type, "spelling", None)
-            or str(cpp_type)
+            getattr(cpp_type, "normalized_spelling", None) or getattr(cpp_type, "spelling", None) or str(cpp_type)
         )
     normalized = " ".join(cpp_type.replace(" *", "*").replace(" &", "&").split())
     while normalized.startswith("const "):
@@ -1041,9 +994,7 @@ def _canonical_cpp_type(cpp_type: object) -> str:
     return normalized.split("::")[-1]
 
 
-def _apply_type_annotations(
-    type_spec: TypeSpec, annotations: frozenset[str]
-) -> TypeSpec:
+def _apply_type_annotations(type_spec: TypeSpec, annotations: frozenset[str]) -> TypeSpec:
     ownership = type_spec.ownership
     if "IFCAPI_OWNED" in annotations:
         ownership = "owned"
@@ -1114,20 +1065,14 @@ def lower_cpp_spec_functions_to_calls(
                 and hasattr(return_type_ref, "pointer_depth")
                 and return_type_ref.pointer_depth > 0
             )
-            if (
-                returns.kind == "double"
-                and returns.sequence_depth == 1
-                and is_const_ref
-            ):
+            if returns.kind == "double" and returns.sequence_depth == 1 and is_const_ref:
                 returns = TypeSpec(
                     kind="double_buffer",
                     ownership=returns.ownership,
                     nullable=returns.nullable,
                     cpp_type=returns.cpp_type,
                 )
-            elif (
-                returns.kind == "int32" and returns.sequence_depth == 1 and is_const_ref
-            ):
+            elif returns.kind == "int32" and returns.sequence_depth == 1 and is_const_ref:
                 returns = TypeSpec(
                     kind="int32_buffer",
                     ownership=returns.ownership,
@@ -1135,9 +1080,7 @@ def lower_cpp_spec_functions_to_calls(
                     cpp_type=returns.cpp_type,
                 )
             elif is_const_ptr:
-                normalized = " ".join(
-                    returns.cpp_type.replace(" *", "*").replace(" &", "&").split()
-                )
+                normalized = " ".join(returns.cpp_type.replace(" *", "*").replace(" &", "&").split())
                 normalized = normalized.replace("const ", "").strip()
                 if normalized == "double*":
                     returns = TypeSpec(
@@ -1153,10 +1096,7 @@ def lower_cpp_spec_functions_to_calls(
                         nullable=returns.nullable,
                         cpp_type=returns.cpp_type,
                     )
-        if (
-            "IFCAPI_HANDLE_RESULT" not in function.return_annotations
-            and returns.kind == "handle"
-        ):
+        if "IFCAPI_HANDLE_RESULT" not in function.return_annotations and returns.kind == "handle":
             return_type_raw = discovered.return_type_ref
             cpp_norm = return_type_raw.normalized_spelling or return_type_raw.spelling
             cpp_norm = " ".join(cpp_norm.replace(" *", "*").replace(" &", "&").split())
@@ -1165,11 +1105,7 @@ def lower_cpp_spec_functions_to_calls(
                 stripped = cpp_norm.removesuffix("*").removesuffix("&").strip()
                 if stripped and stripped != cpp_norm:
                     for handle_name, handle in handles.items():
-                        handle_norm = " ".join(
-                            handle.cpp_type.replace(" *", "*")
-                            .replace(" &", "&")
-                            .split()
-                        )
+                        handle_norm = " ".join(handle.cpp_type.replace(" *", "*").replace(" &", "&").split())
                         handle_norm = re.sub(r"\bconst\b\s*", "", handle_norm).strip()
                         if handle_norm == stripped:
                             returns = TypeSpec(
@@ -1199,9 +1135,7 @@ def lower_cpp_spec_functions_to_calls(
                         f"that does not match any known handle"
                     )
                     raise ValueError(msg)
-                receiver_cpp_type = (
-                    first_type.normalized_spelling or first_type.spelling
-                )
+                receiver_cpp_type = first_type.normalized_spelling or first_type.spelling
                 discovered_params = discovered_params[1:]
         elif function.receiver is not None:
             if function.receiver not in handles:
@@ -1211,14 +1145,9 @@ def lower_cpp_spec_functions_to_calls(
                 msg = f"C++ spec method export '{function.name}' must declare an explicit receiver parameter"
                 raise ValueError(msg)
             receiver_param = discovered_params[0]
-            receiver_cpp_type = (
-                receiver_param.cpp_type_ref.normalized_spelling
-                or receiver_param.cpp_type_ref.spelling
-            )
+            receiver_cpp_type = receiver_param.cpp_type_ref.normalized_spelling or receiver_param.cpp_type_ref.spelling
             handle_cpp_type = handles[function.receiver].cpp_type
-            if _canonical_cpp_type(receiver_cpp_type) != _canonical_cpp_type(
-                handle_cpp_type
-            ):
+            if _canonical_cpp_type(receiver_cpp_type) != _canonical_cpp_type(handle_cpp_type):
                 msg = (
                     f"C++ spec method export '{function.name}' receiver parameter type "
                     f"'{receiver_cpp_type}' does not match handle '{function.receiver}' type '{handle_cpp_type}'"
@@ -1234,26 +1163,15 @@ def lower_cpp_spec_functions_to_calls(
                 handles,
             )
             if param_type.kind == "handle" and "IFCAPI_HANDLE_PARAM" not in param_ann:
-                cpp_type_raw = (
-                    param.cpp_type_ref.normalized_spelling
-                    or param.cpp_type_ref.spelling
-                )
-                cpp_norm = " ".join(
-                    cpp_type_raw.replace(" *", "*").replace(" &", "&").split()
-                )
+                cpp_type_raw = param.cpp_type_ref.normalized_spelling or param.cpp_type_ref.spelling
+                cpp_norm = " ".join(cpp_type_raw.replace(" *", "*").replace(" &", "&").split())
                 cpp_norm = re.sub(r"\bconst\b\s*", "", cpp_norm).strip()
                 if "*" in cpp_norm:
                     stripped = cpp_norm.removesuffix("*").removesuffix("&").strip()
                     if stripped and stripped != cpp_norm:
                         for handle_name, handle in handles.items():
-                            handle_norm = " ".join(
-                                handle.cpp_type.replace(" *", "*")
-                                .replace(" &", "&")
-                                .split()
-                            )
-                            handle_norm = re.sub(
-                                r"\bconst\b\s*", "", handle_norm
-                            ).strip()
+                            handle_norm = " ".join(handle.cpp_type.replace(" *", "*").replace(" &", "&").split())
+                            handle_norm = re.sub(r"\bconst\b\s*", "", handle_norm).strip()
                             if handle_norm == stripped:
                                 param_type = TypeSpec(
                                     kind="handle",
@@ -1283,9 +1201,7 @@ def lower_cpp_spec_functions_to_calls(
                 returns=returns,
                 params=tuple(params),
                 policy_operation=(
-                    SpecMethodFunctionPolicyOp(
-                        cpp_name=cpp_name, receiver_cpp_type=receiver_cpp_type
-                    )
+                    SpecMethodFunctionPolicyOp(cpp_name=cpp_name, receiver_cpp_type=receiver_cpp_type)
                     if receiver_cpp_type is not None
                     else DirectFunctionPolicyOp(cpp_name=cpp_name)
                 ),
@@ -1338,11 +1254,7 @@ def lower_cpp_spec_result_structs_to_specs(
                 name=field_name,
                 type=_infer_return_type(field_cpp_type, handles, result),
                 cpp_field=field_name,
-                doc=(
-                    semantic_fields[field_name].doc
-                    if field_name in semantic_fields
-                    else None
-                ),
+                doc=(semantic_fields[field_name].doc if field_name in semantic_fields else None),
             )
             for field_cpp_type, field_name in struct.fields
         )

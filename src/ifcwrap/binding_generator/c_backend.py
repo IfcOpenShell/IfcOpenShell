@@ -35,31 +35,20 @@ def _render_cpp(ir: BindingIR, header_name: str) -> str:
     for handle in ir.handles.values():
         storage_type = _handle_storage_type(handle)
         if handle.name in {"attribute_value", "instance_list"}:
-            handle_structs.append(
-                f"struct {handle.c_type} {{\n    {storage_type} value;\n}};"
-            )
+            handle_structs.append(f"struct {handle.c_type} {{\n    {storage_type} value;\n}};")
         elif handle.ptr_type == "shared_ptr":
-            handle_structs.append(
-                f"struct {handle.c_type} {{\n    {storage_type} ptr;\n}};"
-            )
+            handle_structs.append(f"struct {handle.c_type} {{\n    {storage_type} ptr;\n}};")
         elif handle.ptr_type == "value":
-            handle_structs.append(
-                f"struct {handle.c_type} {{\n    {storage_type} value;\n}};"
-            )
+            handle_structs.append(f"struct {handle.c_type} {{\n    {storage_type} value;\n}};")
         else:
-            handle_structs.append(
-                f"struct {handle.c_type} {{\n    {storage_type} ptr;\n    bool owned;\n}};"
-            )
+            handle_structs.append(f"struct {handle.c_type} {{\n    {storage_type} ptr;\n    bool owned;\n}};")
 
-    destroy_impls = [
-        f"""void ifcopenshell_{_snake_name(handle.c_type)}_destroy({handle.c_type}* handle) {{
+    destroy_impls = [f"""void ifcopenshell_{_snake_name(handle.c_type)}_destroy({handle.c_type}* handle) {{
     if (handle == nullptr) {{
         return;
     }}
     {_destroy_body(handle)}
-}}"""
-        for handle in ir.handles.values()
-    ]
+}}""" for handle in ir.handles.values()]
 
     rendered_calls: list[str] = []
     total_calls = len(ir.calls)
@@ -75,18 +64,13 @@ def _render_cpp(ir: BindingIR, header_name: str) -> str:
     handle_list_types = _used_handle_list_handles(ir)
     handle_list_list_types = _used_handle_list_list_handles(ir)
     sequence_kinds = _used_scalar_sequence_kinds(ir)
-    handle_list_helpers = "\n\n".join(
-        _render_handle_list_helpers(handle) for handle in handle_list_types
-    )
+    handle_list_helpers = "\n\n".join(_render_handle_list_helpers(handle) for handle in handle_list_types)
     handle_list_list_helpers = "\n\n".join(
         _render_handle_list_list_helpers(handle) for handle in handle_list_list_types
     )
-    handle_list_destroy_impls = "\n\n".join(
-        _render_handle_list_destroy_impl(handle) for handle in handle_list_types
-    )
+    handle_list_destroy_impls = "\n\n".join(_render_handle_list_destroy_impl(handle) for handle in handle_list_types)
     handle_list_list_destroy_impls = "\n\n".join(
-        _render_handle_list_list_destroy_impl(handle)
-        for handle in handle_list_list_types
+        _render_handle_list_list_destroy_impl(handle) for handle in handle_list_list_types
     )
     variant_destroy_impls = _render_variant_destroy_impls(ir)
     common_type_impls = _render_common_type_impls(sequence_kinds)
@@ -160,15 +144,11 @@ int {ir.c_prefix}_last_error_code(void) {{
     return rendered
 
 
-def render_c_abi(
-    ir: BindingIR, header_name: str = "ifcopenshell_api.h"
-) -> dict[str, str]:
+def render_c_abi(ir: BindingIR, header_name: str = "ifcopenshell_api.h") -> dict[str, str]:
     if ir.abi is None:
         raise ValueError("C emission requires a finalized BindingIR")
     return {
         header_name: _render_header(ir),
         header_name.removesuffix(".h") + ".cpp": _render_cpp(ir, header_name),
-        header_name.removesuffix(".h") + "_internal.hpp": _render_internal_header(
-            ir, header_name
-        ),
+        header_name.removesuffix(".h") + "_internal.hpp": _render_internal_header(ir, header_name),
     }

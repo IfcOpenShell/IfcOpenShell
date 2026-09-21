@@ -144,9 +144,7 @@ def apply_patch(patch_file: Path, target_dir: Path) -> None:
     if reverse.returncode == 0:
         logger.info("Patch already applied: %s", patch_file)
         return
-    raise RuntimeError(
-        f"Patch does not apply cleanly: {patch_file}\n{forward.stderr.strip()}"
-    )
+    raise RuntimeError(f"Patch does not apply cleanly: {patch_file}\n{forward.stderr.strip()}")
 
 
 def build_jobs() -> int:
@@ -181,9 +179,7 @@ def load_lockfile() -> dict[str, Any]:
         return json.load(f)
 
 
-def fetch_sources(
-    lock: dict[str, Any], deps: list[str], downloads_dir: Path
-) -> dict[str, str]:
+def fetch_sources(lock: dict[str, Any], deps: list[str], downloads_dir: Path) -> dict[str, str]:
     """Download + hash-verify all archives for the given dep list.
 
     Git-based deps are skipped (they are cloned on demand by `extract_source`).
@@ -221,8 +217,7 @@ def fetch_sources(
             actual_sha256 = sha256_file(dest)
             if actual_sha256 != expected_sha256:
                 raise RuntimeError(
-                    f"SHA256 mismatch for {dep_name}: expected {expected_sha256}, "
-                    f"got {actual_sha256}"
+                    f"SHA256 mismatch for {dep_name}: expected {expected_sha256}, " f"got {actual_sha256}"
                 )
             logger.info("SHA256 verified: %s", dep_name)
         else:
@@ -233,9 +228,7 @@ def fetch_sources(
     return results
 
 
-def extract_source(
-    dep_name: str, lock: dict[str, Any], src_dir: Path, downloads_dir: Path
-) -> Path:
+def extract_source(dep_name: str, lock: dict[str, Any], src_dir: Path, downloads_dir: Path) -> Path:
     """Extract (or clone) the source for `dep_name` and return its path.
 
     For archive-based deps, the archive must already be in `downloads_dir`
@@ -280,9 +273,7 @@ def _clone_git_source(dep_name: str, entry: dict[str, Any], src_dir: Path) -> Pa
     return target
 
 
-def apply_patches_from_lock(
-    dep_name: str, lock: dict[str, Any], src_dir: Path, patches_dir: Path
-) -> None:
+def apply_patches_from_lock(dep_name: str, lock: dict[str, Any], src_dir: Path, patches_dir: Path) -> None:
     """Apply all patches listed in the lockfile entry for `dep_name`.
 
     Patches are resolved relative to `patches_dir` (e.g. "occt/no_em_js.patch"
@@ -352,9 +343,7 @@ def emsdk_env(toolchain_dir: Path) -> dict[str, str]:
     """
     emsdk_env_file = toolchain_dir / "emsdk_env.sh"
     if not emsdk_env_file.exists():
-        raise RuntimeError(
-            f"emsdk not found at {toolchain_dir}. Run bootstrap-toolchain first."
-        )
+        raise RuntimeError(f"emsdk not found at {toolchain_dir}. Run bootstrap-toolchain first.")
 
     result = run(
         ["bash", "-c", f"source {emsdk_env_file} && env"],

@@ -6,13 +6,7 @@ from .clang_discovery import DiscoveredCppType
 
 
 def _normalize_cpp_type(text: str) -> str:
-    return " ".join(
-        text.replace(" &", "&")
-        .replace(" *", "*")
-        .replace("< ", "<")
-        .replace(" >", ">")
-        .split()
-    )
+    return " ".join(text.replace(" &", "&").replace(" *", "*").replace("< ", "<").replace(" >", ">").split())
 
 
 def _strip_qualifiers(text: str) -> str:
@@ -155,10 +149,7 @@ def _scalar_family_from_base(base_name: str, *, normalized: str) -> str | None:
 
 def _from_discovered(cpp_type: DiscoveredCppType) -> SemanticCppType:
     cpp_text = (
-        cpp_type.storage_spelling
-        or cpp_type.canonical_spelling
-        or cpp_type.normalized_spelling
-        or cpp_type.spelling
+        cpp_type.storage_spelling or cpp_type.canonical_spelling or cpp_type.normalized_spelling or cpp_type.spelling
     )
     normalized = _normalize_cpp_type(cpp_text)
 
@@ -169,10 +160,7 @@ def _from_discovered(cpp_type: DiscoveredCppType) -> SemanticCppType:
             values=cpp_type.enum_values,
         )
 
-    if (
-        cpp_type.template_name in {"std::vector", "std::set", "std::array"}
-        and cpp_type.template_args
-    ):
+    if cpp_type.template_name in {"std::vector", "std::set", "std::array"} and cpp_type.template_args:
         return SequenceSemanticType(
             cpp_type=cpp_text,
             container_kind=cpp_type.template_name,
@@ -187,8 +175,7 @@ def _from_discovered(cpp_type: DiscoveredCppType) -> SemanticCppType:
             alias=(
                 _strip_qualifiers(cpp_type.normalized_spelling)
                 if cpp_type.normalized_desugared_spelling
-                and cpp_type.normalized_spelling
-                != cpp_type.normalized_desugared_spelling
+                and cpp_type.normalized_spelling != cpp_type.normalized_desugared_spelling
                 and "<" not in _strip_qualifiers(cpp_type.normalized_spelling)
                 else None
             ),
@@ -206,28 +193,20 @@ def _from_discovered(cpp_type: DiscoveredCppType) -> SemanticCppType:
             alternatives=tuple(analyze_cpp_type(arg) for arg in cpp_type.template_args),
         )
 
-    if (
-        cpp_type.template_name
-        in {"std::shared_ptr", "boost::shared_ptr", "std::unique_ptr"}
-        and cpp_type.template_args
-    ):
+    if cpp_type.template_name in {"std::shared_ptr", "boost::shared_ptr", "std::unique_ptr"} and cpp_type.template_args:
         pointee = analyze_cpp_type(cpp_type.template_args[0])
         return RecordSemanticType(
             cpp_type=cpp_text,
             base_name=cpp_type.base_name,
             base_record_names=cpp_type.base_record_names,
             pointee=pointee,
-            pointer_wrapper="unique_ptr"
-            if cpp_type.template_name == "std::unique_ptr"
-            else "shared_ptr",
+            pointer_wrapper="unique_ptr" if cpp_type.template_name == "std::unique_ptr" else "shared_ptr",
         )
 
     family = _scalar_family_from_base(cpp_type.base_name, normalized=normalized)
     if family == "void":
         if normalized != "void":
-            return UnsupportedSemanticType(
-                cpp_type=cpp_text, reason="opaque void pointer/reference"
-            )
+            return UnsupportedSemanticType(cpp_type=cpp_text, reason="opaque void pointer/reference")
         return VoidSemanticType(cpp_type=cpp_text)
     if family == "string":
         return StringSemanticType(cpp_type=cpp_text)
@@ -251,11 +230,7 @@ def _from_string(cpp_type: str) -> SemanticCppType:
                 container_kind=template_name,
                 element=analyze_cpp_type(args[0]),
                 fixed_length=(
-                    int(args[1])
-                    if template_name == "std::array"
-                    and len(args) > 1
-                    and args[1].isdigit()
-                    else None
+                    int(args[1]) if template_name == "std::array" and len(args) > 1 and args[1].isdigit() else None
                 ),
             )
 
@@ -293,9 +268,7 @@ def _from_string(cpp_type: str) -> SemanticCppType:
     family = _scalar_family_from_base(core, normalized=normalized)
     if family == "void":
         if normalized != "void":
-            return UnsupportedSemanticType(
-                cpp_type=normalized, reason="opaque void pointer/reference"
-            )
+            return UnsupportedSemanticType(cpp_type=normalized, reason="opaque void pointer/reference")
         return VoidSemanticType(cpp_type=normalized)
     if family == "string":
         return StringSemanticType(cpp_type=normalized)

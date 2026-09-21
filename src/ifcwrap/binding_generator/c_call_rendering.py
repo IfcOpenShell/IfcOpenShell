@@ -79,24 +79,18 @@ def _scalar_result_assignment(call: CallIR, spec: BindingIR, expr: str) -> str:
     return f"*out_result = static_cast<{c_type}>({expr});"
 
 
-def _finalized_result_field_c_type(
-    spec: BindingIR, struct_name: str, field_name: str
-) -> str:
+def _finalized_result_field_c_type(spec: BindingIR, struct_name: str, field_name: str) -> str:
     if spec.abi is None:
         raise ValueError("C emission requires a finalized BindingIR")
     struct = spec.abi.value_types[struct_name]
     return next(field.c_type for field in struct.fields if field.name == field_name)
 
 
-def _finalized_variant_field_c_type(
-    spec: BindingIR, type_spec: TypeSpec, index: int
-) -> str:
+def _finalized_variant_field_c_type(spec: BindingIR, type_spec: TypeSpec, index: int) -> str:
     if spec.abi is None:
         raise ValueError("C emission requires a finalized BindingIR")
     variant = spec.abi.value_types[_snake_name(_variant_c_type(type_spec, spec))]
-    return next(
-        field.c_type for field in variant.fields if field.name == f"value_{index}"
-    )
+    return next(field.c_type for field in variant.fields if field.name == f"value_{index}")
 
 
 def _render_result_struct_field_assignments(
@@ -115,58 +109,35 @@ def _render_result_struct_field_assignments(
         field_type = field.type
         field_sequence_kind = _type_spec_sequence_kind(field_type)
         if field_sequence_kind is not None:
-            assignment = (
-                f"{_sequence_make_helper(field_sequence_kind)}(std::move({field_expr}))"
-            )
+            assignment = f"{_sequence_make_helper(field_sequence_kind)}(std::move({field_expr}))"
             assignments.append(f"{indent}{target_field} = {assignment};")
         elif field_type.kind in _SCALAR_PARAM_TYPES:
             c_type = _finalized_result_field_c_type(spec, struct.name, field.name)
-            assignments.append(
-                f"{indent}{target_field} = static_cast<{c_type}>({field_expr});"
-            )
+            assignments.append(f"{indent}{target_field} = static_cast<{c_type}>({field_expr});")
         elif field_type.kind == "string":
-            helper = (
-                "make_static_string"
-                if field_type.ownership == "static"
-                else "make_string"
-            )
-            value_expr = (
-                field_expr
-                if field_type.ownership == "static"
-                else f"std::move({field_expr})"
-            )
+            helper = "make_static_string" if field_type.ownership == "static" else "make_string"
+            value_expr = field_expr if field_type.ownership == "static" else f"std::move({field_expr})"
             assignments.append(f"{indent}{target_field} = {helper}({value_expr});")
         elif field_type.kind == "handle":
             if field_type.sequence_depth == 1:
-                assignment = (
-                    f"{_handle_list_helper_name(spec.handles[field_type.handle])}"
-                    f"({field_expr})"
-                )
+                assignment = f"{_handle_list_helper_name(spec.handles[field_type.handle])}" f"({field_expr})"
             elif field_type.sequence_depth == 2:
-                assignment = (
-                    f"{_handle_list_list_helper_name(spec.handles[field_type.handle])}"
-                    f"({field_expr})"
-                )
+                assignment = f"{_handle_list_list_helper_name(spec.handles[field_type.handle])}" f"({field_expr})"
             else:
                 assignment = _wrap_handle_expr(field_type, field_expr, spec)
             assignments.append(f"{indent}{target_field} = {assignment};")
         elif field_type.kind == "struct":
             if field_type.struct is None:
-                raise ValueError(
-                    f"Result struct field {field.name} is missing struct name"
-                )
+                raise ValueError(f"Result struct field {field.name} is missing struct name")
             nested = spec.result_structs[field_type.struct]
             if field_type.sequence_depth == 1:
                 assignments.append(
-                    f"{indent}{target_field} = "
-                    f"{_result_record_list_make_name(nested)}(std::move({field_expr}));"
+                    f"{indent}{target_field} = " f"{_result_record_list_make_name(nested)}(std::move({field_expr}));"
                 )
             else:
                 assignments.append(f"{indent}{target_field} = {{}};")
                 assignments.extend(
-                    _render_result_struct_field_assignments(
-                        nested, spec, field_expr, target_field, indent
-                    )
+                    _render_result_struct_field_assignments(nested, spec, field_expr, target_field, indent)
                 )
         else:
             raise ValueError(f"Unsupported result struct field kind: {field_type.kind}")
@@ -190,22 +161,16 @@ def _is_handle_cast(call: CallIR) -> bool:
     )
 
 
-def _handle_result_empty_expr(
-    call: CallIR, type_spec: TypeSpec, handle: object, value_expr: str
-) -> str:
+def _handle_result_empty_expr(call: CallIR, type_spec: TypeSpec, handle: object, value_expr: str) -> str:
     if handle.ptr_type == "value":
         return _value_handle_empty_expr(handle, value_expr)
     normalized_cpp_type = _normalize_cpp_type(type_spec.cpp_type)
-    if handle.ptr_type == "shared_ptr" or normalized_cpp_type.startswith(
-        "std::unique_ptr<"
-    ):
+    if handle.ptr_type == "shared_ptr" or normalized_cpp_type.startswith("std::unique_ptr<"):
         return f"!{value_expr}"
     return f"{value_expr} == nullptr"
 
 
-def _should_null_check_handle_result(
-    call: CallIR, type_spec: TypeSpec, handle: object
-) -> bool:
+def _should_null_check_handle_result(call: CallIR, type_spec: TypeSpec, handle: object) -> bool:
     if handle.ptr_type == "value":
         return type_spec.nullable or (getattr(handle, "empty_check", None) is not None)
     return type_spec.nullable or _is_handle_cast(call)
@@ -228,9 +193,7 @@ def _render_result_assignment(call: CallIR, spec: BindingIR, expr: str) -> str:
     if kind in _SCALAR_PARAM_TYPES:
         return _scalar_result_assignment(call, spec, expr)
     if kind == "string":
-        helper = (
-            "make_static_string" if type_spec.ownership == "static" else "make_string"
-        )
+        helper = "make_static_string" if type_spec.ownership == "static" else "make_string"
         if type_spec.nullable:
             return (
                 f"auto result_value = {expr};\n"
@@ -261,9 +224,7 @@ def _render_result_assignment(call: CallIR, spec: BindingIR, expr: str) -> str:
             return f"*out_result = {helper}({expr});"
         handle = spec.handles[type_spec.handle]
         if type_spec.nullable and _is_optional_cpp_type(type_spec):
-            inner_cpp_type = (
-                _extract_optional_inner_type(type_spec.cpp_type) or handle.cpp_type
-            )
+            inner_cpp_type = _extract_optional_inner_type(type_spec.cpp_type) or handle.cpp_type
             unwrapped_type = TypeSpec(
                 kind=type_spec.kind,
                 handle=type_spec.handle,
@@ -344,17 +305,9 @@ def _render_result_assignment(call: CallIR, spec: BindingIR, expr: str) -> str:
             return f"*out_result = {_result_record_list_make_name(struct)}({expr});"
         if spec.abi is None:
             raise ValueError("C emission requires a finalized BindingIR")
-        out_param = next(
-            param
-            for param in spec.abi.functions[call.c_name].params
-            if param.role == "out_result"
-        )
+        out_param = next(param for param in spec.abi.functions[call.c_name].params if param.role == "out_result")
         result_c_type = out_param.c_type.removesuffix("*").strip()
-        result_value_type = next(
-            value
-            for value in spec.abi.value_types.values()
-            if value.c_type == result_c_type
-        )
+        result_value_type = next(value for value in spec.abi.value_types.values() if value.c_type == result_c_type)
         if result_value_type.destroy_function is None:
             raise ValueError(f"{call.c_name} result struct has no destroy function")
         local_result = "result_value_c"
@@ -404,26 +357,18 @@ def _render_result_assignment(call: CallIR, spec: BindingIR, expr: str) -> str:
         for index, alt in enumerate(type_spec.variants):
             alt_cpp_type = alt.cpp_type
             if alt_cpp_type is None:
-                raise ValueError(
-                    f"{call.c_name} variant alternative is missing C++ type"
-                )
+                raise ValueError(f"{call.c_name} variant alternative is missing C++ type")
             alt_expr = f"std::get<{alt_cpp_type}>(result_value)"
             alt_sequence_kind = _type_spec_sequence_kind(alt)
             if alt_sequence_kind is not None:
-                assignment = (
-                    f"{_sequence_make_helper(alt_sequence_kind)}(std::move({alt_expr}))"
-                )
+                assignment = f"{_sequence_make_helper(alt_sequence_kind)}(std::move({alt_expr}))"
             elif alt.kind in _SCALAR_PARAM_TYPES:
                 c_type = _finalized_variant_field_c_type(spec, type_spec, index)
                 assignment = f"static_cast<{c_type}>({alt_expr})"
             elif alt.kind == "string":
-                helper = (
-                    "make_static_string" if alt.ownership == "static" else "make_string"
-                )
+                helper = "make_static_string" if alt.ownership == "static" else "make_string"
                 assignment = (
-                    f"{helper}({alt_expr})"
-                    if alt.ownership == "static"
-                    else f"{helper}(std::move({alt_expr}))"
+                    f"{helper}({alt_expr})" if alt.ownership == "static" else f"{helper}(std::move({alt_expr}))"
                 )
             elif alt.kind == "handle":
                 if alt.sequence_depth == 1:
@@ -443,9 +388,7 @@ def _render_result_assignment(call: CallIR, spec: BindingIR, expr: str) -> str:
                     "        }",
                 ]
             )
-        lines.append(
-            'else { throw std::runtime_error("Unsupported variant alternative"); }'
-        )
+        lines.append('else { throw std::runtime_error("Unsupported variant alternative"); }')
         return "\n        ".join(lines)
     msg = f"Unsupported return kind: {kind}"
     raise ValueError(msg)
@@ -505,9 +448,7 @@ def _render_param_prelude(param: ParamSpec, spec: BindingIR) -> str:
         if type_spec.nullable and _is_optional_cpp_type(type_spec):
             inner_type = _extract_optional_inner_type(type_spec.cpp_type)
             if inner_type is None:
-                raise ValueError(
-                    f'Sequence parameter "{param.name}" has invalid optional cpp_type'
-                )
+                raise ValueError(f'Sequence parameter "{param.name}" has invalid optional cpp_type')
             converted = _fixed_sequence_cpp_expr(type_spec, f"{to_cpp}({param.name})")
             return (
                 f"    std::optional<{inner_type}> {param.name}_cpp;\n"
@@ -521,10 +462,7 @@ def _render_param_prelude(param: ParamSpec, spec: BindingIR) -> str:
                 f"    std::set<{set_element}> {param.name}_cpp({param.name}_vec.begin(), {param.name}_vec.end());"
             )
         converted = _fixed_sequence_cpp_expr(type_spec, f"{to_cpp}({param.name})")
-        return (
-            f"{_null_check(param.name, 'Parameter')}\n"
-            f"    auto {param.name}_cpp = {converted};"
-        )
+        return f"{_null_check(param.name, 'Parameter')}\n" f"    auto {param.name}_cpp = {converted};"
     if kind == "variant":
         alternative_types = [alternative.cpp_type for alternative in type_spec.variants]
         if any(cpp_type is None for cpp_type in alternative_types):
@@ -534,19 +472,13 @@ def _render_param_prelude(param: ParamSpec, spec: BindingIR) -> str:
             _null_check(param.name, "Parameter"),
             f"    {variant_cpp_type} {param.name}_cpp;",
         ]
-        lines.extend(
-            _render_variant_assignment(
-                type_spec, param.name, f"{param.name}_cpp", spec, "    "
-            )
-        )
+        lines.extend(_render_variant_assignment(type_spec, param.name, f"{param.name}_cpp", spec, "    "))
         return "\n".join(lines)
     if kind in _SCALAR_PARAM_TYPES and type_spec.cpp_type is not None:
         if type_spec.nullable and _is_optional_cpp_type(type_spec):
             inner_type = _extract_optional_inner_type(type_spec.cpp_type)
             if inner_type is None:
-                raise ValueError(
-                    f'Scalar parameter "{param.name}" has invalid optional cpp_type'
-                )
+                raise ValueError(f'Scalar parameter "{param.name}" has invalid optional cpp_type')
             return (
                 f"    std::optional<{inner_type}> {param.name}_cpp;\n"
                 f"    if ({param.name} != nullptr) {{ {param.name}_cpp = static_cast<{inner_type}>(*{param.name}); }}"
@@ -562,10 +494,7 @@ def _render_param_prelude(param: ParamSpec, spec: BindingIR) -> str:
                     f"    if ({param.name} != nullptr) {{ {param.name}_cpp = std::string({param.name}); }}"
                 )
             return f"    const char* {param.name}_str = {param.name};"
-        return (
-            f"{_null_check(param.name, 'Parameter')}\n"
-            f"    std::string {param.name}_cpp({param.name});"
-        )
+        return f"{_null_check(param.name, 'Parameter')}\n" f"    std::string {param.name}_cpp({param.name});"
     if kind == "handle":
         if type_spec.sequence_depth == 1:
             handle = spec.handles[type_spec.handle]
@@ -579,21 +508,17 @@ def _render_param_prelude(param: ParamSpec, spec: BindingIR) -> str:
                     f"    std::set<{set_element}> {param.name}_cpp({param.name}_vec.begin(), {param.name}_vec.end());"
                 )
             return (
-                f"{_null_check(param.name, 'Parameter')}\n"
-                f"    auto {param.name}_cpp = {helper_name}({param.name});"
+                f"{_null_check(param.name, 'Parameter')}\n" f"    auto {param.name}_cpp = {helper_name}({param.name});"
             )
         if type_spec.sequence_depth == 2:
             handle = spec.handles[type_spec.handle]
             helper_name = f"to_cpp_{_snake_name(_handle_list_list_c_type(handle))}"
             return (
-                f"{_null_check(param.name, 'Parameter')}\n"
-                f"    auto {param.name}_cpp = {helper_name}({param.name});"
+                f"{_null_check(param.name, 'Parameter')}\n" f"    auto {param.name}_cpp = {helper_name}({param.name});"
             )
         handle = spec.handles[type_spec.handle]
         if type_spec.nullable and _is_optional_cpp_type(type_spec):
-            inner_type = (
-                _extract_optional_inner_type(type_spec.cpp_type) or handle.cpp_type
-            )
+            inner_type = _extract_optional_inner_type(type_spec.cpp_type) or handle.cpp_type
             if handle.ptr_type == "value":
                 return (
                     f"    std::optional<{inner_type}> {param.name}_cpp;\n"
@@ -615,8 +540,7 @@ def _render_param_prelude(param: ParamSpec, spec: BindingIR) -> str:
             )
         if handle.name == "attribute_value":
             return (
-                f"{_null_check(param.name, 'Handle parameter')}\n"
-                f"    auto {param.name}_cpp = {param.name}->value;"
+                f"{_null_check(param.name, 'Handle parameter')}\n" f"    auto {param.name}_cpp = {param.name}->value;"
             )
         if handle.ptr_type == "value":
             cpp_type = _normalize_cpp_type(type_spec.cpp_type)
@@ -640,17 +564,12 @@ def _render_param_prelude(param: ParamSpec, spec: BindingIR) -> str:
                     f"    {auto_kw} {param.name}_cpp = {param.name}->value;"
                 )
             return (
-                f"{_null_check(param.name, 'Handle parameter')}\n"
-                f"    auto {param.name}_cpp = {param.name}->value;"
+                f"{_null_check(param.name, 'Handle parameter')}\n" f"    auto {param.name}_cpp = {param.name}->value;"
             )
         cpp_type = _normalize_cpp_type(type_spec.cpp_type)
         is_shared = handle.ptr_type == "shared_ptr"
         # Check if cpp_type refers to the shared_ptr itself (e.g., "const T::ptr &")
-        refers_to_shared_ptr = (
-            is_shared
-            and cpp_type is not None
-            and ("::ptr" in cpp_type or "shared_ptr" in cpp_type)
-        )
+        refers_to_shared_ptr = is_shared and cpp_type is not None and ("::ptr" in cpp_type or "shared_ptr" in cpp_type)
         if type_spec.nullable and cpp_type.endswith("&") and not refers_to_shared_ptr:
             raise ValueError(
                 f'Handle parameter "{param.name}" cannot be nullable with reference cpp_type "{type_spec.cpp_type}"'
@@ -664,11 +583,7 @@ def _render_param_prelude(param: ParamSpec, spec: BindingIR) -> str:
                 # Reference to underlying object: dereference pointer
                 value_expr = f"*{param.name}->ptr"
                 auto_kw = "auto&"
-        elif (
-            type_spec.cpp_type is not None
-            and not cpp_type.endswith("*")
-            and not is_shared
-        ):
+        elif type_spec.cpp_type is not None and not cpp_type.endswith("*") and not is_shared:
             # Value parameter (discovered, raw-ptr handle): dereference to copy
             value_expr = f"*{param.name}->ptr"
             auto_kw = "auto"
@@ -747,9 +662,7 @@ def _constructor_arg(p: ParamSpec) -> str:
         if p.type.sequence_depth > 0:
             return f"{p.name}_cpp"
         if not _normalize_cpp_type(p.type.cpp_type):
-            raise ValueError(
-                f'Constructor handle parameter "{p.name}" requires cpp_type for source-derived passing'
-            )
+            raise ValueError(f'Constructor handle parameter "{p.name}" requires cpp_type for source-derived passing')
         return f"{p.name}_cpp"
     if _uses_cpp_arg_name(p.type):
         return f"{p.name}_cpp"
@@ -784,23 +697,15 @@ def _render_constructor(call: CallIR, op: ConstructorOp, spec: BindingIR) -> str
 
 
 def _call_expr_args(call: CallIR) -> str:
-    return ", ".join(
-        f"{p.name}_cpp" if _uses_cpp_arg_name(p.type) else p.name for p in call.params
-    )
+    return ", ".join(f"{p.name}_cpp" if _uses_cpp_arg_name(p.type) else p.name for p in call.params)
 
 
-def _render_bool_out_param_assignment(
-    call: CallIR, op: BoolOutParamCallOp, spec: BindingIR
-) -> str:
+def _render_bool_out_param_assignment(call: CallIR, op: BoolOutParamCallOp, spec: BindingIR) -> str:
     if call.returns.kind not in _SCALAR_PARAM_TYPES:
-        raise ValueError(
-            f"{call.c_name} bool out-param lowering only supports scalar return types"
-        )
+        raise ValueError(f"{call.c_name} bool out-param lowering only supports scalar return types")
     out_name = "result_value"
     cpp_type = op.out_param_cpp_type.rstrip("&").strip()
-    args = [
-        f"{p.name}_cpp" if _uses_cpp_arg_name(p.type) else p.name for p in call.params
-    ]
+    args = [f"{p.name}_cpp" if _uses_cpp_arg_name(p.type) else p.name for p in call.params]
     args.append(out_name)
     call_expr = (
         f"self_cpp->{op.cpp_name}({', '.join(args)})"
@@ -827,11 +732,7 @@ def _receiver_arg_expr(receiver_cpp_type: str, receiver_handle: object) -> str:
     while normalized.startswith("const "):
         normalized = normalized[len("const ") :].strip()
     if normalized.endswith("*"):
-        return (
-            "&self_cpp"
-            if getattr(receiver_handle, "name", None) == "attribute_value"
-            else "self_cpp"
-        )
+        return "&self_cpp" if getattr(receiver_handle, "name", None) == "attribute_value" else "self_cpp"
     if getattr(receiver_handle, "name", None) == "attribute_value":
         return "self_cpp"
     return "*self_cpp"
@@ -842,9 +743,7 @@ def _render_call_impl(call: CallIR, spec: BindingIR) -> str:
         raise ValueError("C emission requires a finalized BindingIR")
     abi = spec.abi.functions[call.c_name]
     params = [f"{param.c_type} {param.name}" for param in abi.params]
-    signature = (
-        f"{abi.restype} {call.c_name}({', '.join(params) if params else 'void'})"
-    )
+    signature = f"{abi.restype} {call.c_name}({', '.join(params) if params else 'void'})"
 
     prelude_lines = []
     needs_receiver_value = not isinstance(call.operation, StaticCastOp)
@@ -872,9 +771,7 @@ def _render_call_impl(call: CallIR, spec: BindingIR) -> str:
                 f'    if ({receiver_name} == nullptr) {{ throw std::runtime_error("Receiver handle is invalid"); }}'
             )
             if receiver_handle.empty_check:
-                empty_check = receiver_handle.empty_check.format(
-                    value=f"{receiver_name}->value"
-                )
+                empty_check = receiver_handle.empty_check.format(value=f"{receiver_name}->value")
                 # Methods that are defined to return a scalar zero / false for empty
                 # receiver values (e.g. instance id() and identity()) must not throw
                 # but instead return the zero value and true.
@@ -900,9 +797,7 @@ def _render_call_impl(call: CallIR, spec: BindingIR) -> str:
                 f'    if ({receiver_name} == nullptr || {receiver_name}->ptr == nullptr) {{ throw std::runtime_error("Receiver handle is invalid"); }}'
             )
             if needs_receiver_value:
-                prelude_lines.append(
-                    f"    auto* self_cpp = {receiver_name}->ptr.get();"
-                )
+                prelude_lines.append(f"    auto* self_cpp = {receiver_name}->ptr.get();")
         else:
             prelude_lines.append(
                 f'    if ({receiver_name} == nullptr || {receiver_name}->ptr == nullptr) {{ throw std::runtime_error("Receiver handle is invalid"); }}'
@@ -916,16 +811,12 @@ def _render_call_impl(call: CallIR, spec: BindingIR) -> str:
 
     op = call.operation
     if isinstance(op, DirectCallOp):
-        call_target = (
-            f"self_cpp->{op.cpp_name}" if call.receiver is not None else op.cpp_name
-        )
+        call_target = f"self_cpp->{op.cpp_name}" if call.receiver is not None else op.cpp_name
         expr = f"{call_target}({_call_expr_args(call)})"
         body_line = _render_result_assignment(call, spec, expr)
     elif isinstance(op, SpecMethodFunctionCallOp):
         if call.receiver is None:
-            raise ValueError(
-                f"{call.c_name} has a spec-method operation without a receiver"
-            )
+            raise ValueError(f"{call.c_name} has a spec-method operation without a receiver")
         args = [_receiver_arg_expr(op.receiver_cpp_type, spec.handles[call.receiver])]
         call_args = _call_expr_args(call)
         if call_args:
@@ -949,9 +840,7 @@ def _render_call_impl(call: CallIR, spec: BindingIR) -> str:
         if target_handle.ptr_type == "value":
             expr = f"self_cpp->{op.field_name}"
         else:
-            expr = (
-                f"std::make_shared<{target_handle.cpp_type}>(self_cpp->{op.field_name})"
-            )
+            expr = f"std::make_shared<{target_handle.cpp_type}>(self_cpp->{op.field_name})"
         body_line = _render_result_assignment(call, spec, expr)
     elif isinstance(op, PointerPresenceCheckOp):
         body_line = f"*out_result = (self_cpp->{op.field_name} != nullptr);"
@@ -983,9 +872,7 @@ def _render_call_impl(call: CallIR, spec: BindingIR) -> str:
             f"        {_render_result_assignment(call, spec, 'items[index]')}"
         )
     elif isinstance(op, ListCountOp):
-        body_line = (
-            f"(void)self_cpp;\n        *out_result = {op.list_param}_cpp->size();"
-        )
+        body_line = f"(void)self_cpp;\n        *out_result = {op.list_param}_cpp->size();"
     elif isinstance(op, ListAtOp):
         body_line = (
             f"(void)self_cpp;\n"
@@ -1002,9 +889,7 @@ def _render_call_impl(call: CallIR, spec: BindingIR) -> str:
             f"if (!self_cpp->{op.field_name}) "
             f'{{ throw std::runtime_error("{op.field_name} is not set"); }}\n        '
         )
-        body_line = null_guard + _render_result_assignment(
-            call, spec, f"*self_cpp->{op.field_name}"
-        )
+        body_line = null_guard + _render_result_assignment(call, spec, f"*self_cpp->{op.field_name}")
     elif isinstance(op, StaticCastOp):
         target_handle = spec.handles[call.returns.handle]
         body_line = _render_result_assignment(
@@ -1038,16 +923,11 @@ def _render_call_impl(call: CallIR, spec: BindingIR) -> str:
             getter_lines.append(
                 f"        if (auto* p = std::get_if<{getter_type}>(&val)) {{ {_render_result_assignment(call, spec, '*p')} matched = true; }}"
             )
-        getter_lines.append(
-            '        if (!matched) { throw std::runtime_error("Setting is not of expected type"); }'
-        )
+        getter_lines.append('        if (!matched) { throw std::runtime_error("Setting is not of expected type"); }')
         body_line = "\n".join(getter_lines)
     elif isinstance(op, VariantSetOp):
         value_param = call.params[1].type if len(call.params) > 1 else None
-        if (
-            value_param is not None
-            and _type_spec_sequence_kind(value_param) is not None
-        ):
+        if value_param is not None and _type_spec_sequence_kind(value_param) is not None:
             value_expr = f"{op.variant_type}(value_cpp)"
         elif op.cpp_type == "int64_t":
             value_expr = f"{op.variant_type}(static_cast<int64_t>(value))"
@@ -1069,9 +949,7 @@ def _render_call_impl(call: CallIR, spec: BindingIR) -> str:
         if call.returns.kind == "void":
             body_line = f"[&]() {{\n{body}\n        }}();"
         else:
-            body_line = (
-                "auto generated_result = [&]() {\n" + body + "\n        }();\n        "
-            )
+            body_line = "auto generated_result = [&]() {\n" + body + "\n        }();\n        "
             body_line += _render_result_assignment(call, spec, "generated_result")
 
     prelude = "\n".join(prelude_lines)

@@ -28,9 +28,7 @@ def _snake_name(c_type: str) -> str:
 
 
 def _type_name(c_type: str) -> str:
-    return "IfcOpenshell" + "".join(
-        part.capitalize() for part in _snake_name(c_type).split("_") if part
-    )
+    return "IfcOpenshell" + "".join(part.capitalize() for part in _snake_name(c_type).split("_") if part)
 
 
 def _method_name(c_name: str, c_prefix: str) -> str:
@@ -65,9 +63,7 @@ def _public_name(function: CFunctionIR, c_prefix: str) -> str:
     return _camel_name(name)
 
 
-def _public_module_member(
-    function: CFunctionIR, c_prefix: str
-) -> tuple[str, str] | None:
+def _public_module_member(function: CFunctionIR, c_prefix: str) -> tuple[str, str] | None:
     if function.receiver is not None:
         return None
     if function.c_name.startswith("ifcopenshell_parse_"):
@@ -82,9 +78,7 @@ def _public_module_member(
     return None
 
 
-def _public_module_members(
-    function: CFunctionIR, c_prefix: str
-) -> tuple[tuple[str, str], ...]:
+def _public_module_members(function: CFunctionIR, c_prefix: str) -> tuple[tuple[str, str], ...]:
     """Return the canonical module member and retained compatibility aliases."""
     member = _public_module_member(function, c_prefix)
     if member is None:
@@ -93,11 +87,7 @@ def _public_module_members(
     if c_prefix == "ifcopenshell" and function.c_name.startswith("ifcopenshell_"):
         rest = function.c_name.removeprefix("ifcopenshell_")
         legacy_module, separator, legacy_member = rest.partition("_")
-        legacy = (
-            (legacy_module, _camel_name(legacy_member))
-            if separator and legacy_module and legacy_member
-            else None
-        )
+        legacy = (legacy_module, _camel_name(legacy_member)) if separator and legacy_module and legacy_member else None
         if legacy is not None and legacy != member:
             result.append(legacy)
     return tuple(result)
@@ -120,14 +110,8 @@ def _typed_buffer_element(function: CFunctionIR, metadata: BindingABI) -> str | 
     sequence = metadata.value_types.get(f"{returns.kind}_list")
     if sequence is None:
         return None
-    element_type = " ".join(
-        (sequence.element_type or "").replace(" *", "*").split()
-    ).removeprefix("const ")
-    return (
-        element_type
-        if element_type in {"double", "int32_t", "uint32_t", "uint8_t"}
-        else None
-    )
+    element_type = " ".join((sequence.element_type or "").replace(" *", "*").split()).removeprefix("const ")
+    return element_type if element_type in {"double", "int32_t", "uint32_t", "uint8_t"} else None
 
 
 def _buffer_size_function(function: CFunctionIR, metadata: BindingABI) -> CFunctionIR:
@@ -135,19 +119,13 @@ def _buffer_size_function(function: CFunctionIR, metadata: BindingABI) -> CFunct
     try:
         size_function = metadata.functions[size_name]
     except KeyError as exc:
-        raise ValueError(
-            f"Typed buffer {function.c_name} requires companion {size_name}"
-        ) from exc
+        raise ValueError(f"Typed buffer {function.c_name} requires companion {size_name}") from exc
     if size_function.receiver != function.receiver:
-        raise ValueError(
-            f"Typed buffer {function.c_name} and {size_name} must use the same receiver"
-        )
+        raise ValueError(f"Typed buffer {function.c_name} and {size_name} must use the same receiver")
     if tuple(param.c_type for param in _public_params(size_function)) != tuple(
         param.c_type for param in _public_params(function)
     ) or size_function.returns.kind not in {"size", "uint32"}:
-        raise ValueError(
-            f"Typed buffer {size_name} must mirror the buffer parameters and return size"
-        )
+        raise ValueError(f"Typed buffer {size_name} must mirror the buffer parameters and return size")
     return size_function
 
 

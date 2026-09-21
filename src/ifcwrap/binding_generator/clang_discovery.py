@@ -65,9 +65,7 @@ def _has_skipped_qualified_root(text: str) -> bool:
     return text.split("::", 1)[0] in _SKIP_QUALIFIED_ROOTS
 
 
-def _should_skip_qualified_resolution(
-    index: TranslationUnitIndex | None, text: str
-) -> bool:
+def _should_skip_qualified_resolution(index: TranslationUnitIndex | None, text: str) -> bool:
     return index is None and _has_skipped_qualified_root(text)
 
 
@@ -173,9 +171,7 @@ class DiscoveryEnvironment:
     _translation_unit_indexes: dict[Path, TranslationUnitIndex] = field(
         default_factory=dict, init=False, repr=False, compare=False
     )
-    _cache_lock: threading.RLock = field(
-        default_factory=threading.RLock, init=False, repr=False, compare=False
-    )
+    _cache_lock: threading.RLock = field(default_factory=threading.RLock, init=False, repr=False, compare=False)
 
 
 @dataclass(frozen=True)
@@ -197,13 +193,9 @@ class TranslationUnitIndex:
     command: CompileCommand
     _parsed: bool = False
     _records_by_qualified: dict[str, IndexedRecord] = field(default_factory=dict)
-    _record_names_by_simple: dict[str, list[str]] = field(
-        default_factory=lambda: defaultdict(list)
-    )
+    _record_names_by_simple: dict[str, list[str]] = field(default_factory=lambda: defaultdict(list))
     _enums_by_qualified: dict[str, IndexedEnum] = field(default_factory=dict)
-    _enum_names_by_simple: dict[str, list[str]] = field(
-        default_factory=lambda: defaultdict(list)
-    )
+    _enum_names_by_simple: dict[str, list[str]] = field(default_factory=lambda: defaultdict(list))
     _namespace_function_cache: dict[
         tuple[str, tuple[str, ...] | None],
         dict[str, tuple[DiscoveredFunction, ...]],
@@ -226,9 +218,7 @@ class TranslationUnitIndex:
             f"tu={debug_path(self.command.file)} records={len(parsed.records)} enums={len(parsed.enums)} functions={sum(len(items) for items in parsed.functions.values())}",
         )
 
-    def resolve_record(
-        self, class_name: str, current_scope: str = ""
-    ) -> IndexedRecord | None:
+    def resolve_record(self, class_name: str, current_scope: str = "") -> IndexedRecord | None:
         lookup_name = _normalize_record_lookup_name(class_name)
         if not lookup_name:
             return None
@@ -243,9 +233,7 @@ class TranslationUnitIndex:
                 and "::" not in lookup_name
                 and candidate.startswith(f"{current_scope}::")
                 and candidate != lookup_name
-                and not self._record_declares_nested_name(
-                    current_scope, lookup_name, kinds=_RECORD_KINDS
-                )
+                and not self._record_declares_nested_name(current_scope, lookup_name, kinds=_RECORD_KINDS)
             ):
                 continue
             if "::" not in candidate:
@@ -256,9 +244,7 @@ class TranslationUnitIndex:
                 simple_candidates = [
                     name
                     for name in simple_candidates
-                    if name == candidate
-                    or name.endswith(f"::{candidate}")
-                    or candidate.endswith(f"::{name}")
+                    if name == candidate or name.endswith(f"::{candidate}") or candidate.endswith(f"::{name}")
                 ]
             if simple_candidates:
                 resolved = (
@@ -279,9 +265,7 @@ class TranslationUnitIndex:
                     )
 
         if "::" in lookup_name and not any(
-            name == lookup_name
-            or name.endswith(f"::{lookup_name}")
-            or lookup_name.endswith(f"::{name}")
+            name == lookup_name or name.endswith(f"::{lookup_name}") or lookup_name.endswith(f"::{name}")
             for name in self._record_names_by_simple.get(_simple_name(lookup_name), [])
         ):
             return None
@@ -292,9 +276,7 @@ class TranslationUnitIndex:
             simple=self._record_names_by_simple,
         )
 
-    def resolve_enum(
-        self, enum_name: str, current_scope: str = ""
-    ) -> IndexedEnum | None:
+    def resolve_enum(self, enum_name: str, current_scope: str = "") -> IndexedEnum | None:
         lookup_name = _normalize_record_lookup_name(enum_name)
         if not lookup_name:
             return None
@@ -309,9 +291,7 @@ class TranslationUnitIndex:
                 and "::" not in lookup_name
                 and candidate.startswith(f"{current_scope}::")
                 and candidate != lookup_name
-                and not self._record_declares_nested_name(
-                    current_scope, lookup_name, kinds={"EnumDecl"}
-                )
+                and not self._record_declares_nested_name(current_scope, lookup_name, kinds={"EnumDecl"})
             ):
                 continue
             if "::" in candidate:
@@ -321,9 +301,7 @@ class TranslationUnitIndex:
                     simple_candidates = [
                         name
                         for name in simple_candidates
-                        if name == candidate
-                        or name.endswith(f"::{candidate}")
-                        or candidate.endswith(f"::{name}")
+                        if name == candidate or name.endswith(f"::{candidate}") or candidate.endswith(f"::{name}")
                     ]
                 if simple_candidates:
                     resolved = (
@@ -343,9 +321,7 @@ class TranslationUnitIndex:
                             node=resolved.node,
                         )
         if "::" in lookup_name and not any(
-            name == lookup_name
-            or name.endswith(f"::{lookup_name}")
-            or lookup_name.endswith(f"::{name}")
+            name == lookup_name or name.endswith(f"::{lookup_name}") or lookup_name.endswith(f"::{name}")
             for name in self._enum_names_by_simple.get(_simple_name(lookup_name), [])
         ):
             return None
@@ -362,9 +338,7 @@ class TranslationUnitIndex:
         selected_names: Iterable[str] | None = None,
     ) -> dict[str, tuple[DiscoveredFunction, ...]]:
         with self._lock:
-            return self._discover_namespace_functions(
-                namespace_name, selected_names=selected_names
-            )
+            return self._discover_namespace_functions(namespace_name, selected_names=selected_names)
 
     def _discover_namespace_functions(
         self,
@@ -381,9 +355,7 @@ class TranslationUnitIndex:
         functions: dict[str, list[DiscoveredFunction]] = defaultdict(list)
         namespace_nodes = self._functions_by_namespace.get(namespace_name, ())
         if not namespace_nodes and "::" in namespace_name:
-            namespace_nodes = self._functions_by_namespace.get(
-                _simple_name(namespace_name), ()
-            )
+            namespace_nodes = self._functions_by_namespace.get(_simple_name(namespace_name), ())
         for node in namespace_nodes:
             for func_name, overloads in _extract_namespace_functions(
                 node, namespace_name, self, selected_names=selected_set
@@ -394,10 +366,7 @@ class TranslationUnitIndex:
             msg = f"Namespace '{namespace_name}' not found in AST for '{self.command.file}'"
             raise ValueError(msg)
 
-        result = {
-            func_name: _dedupe_discovered_functions(overloads)
-            for func_name, overloads in functions.items()
-        }
+        result = {func_name: _dedupe_discovered_functions(overloads) for func_name, overloads in functions.items()}
         self._namespace_function_cache[(namespace_name, selected_key)] = result
         return result
 
@@ -410,9 +379,7 @@ class TranslationUnitIndex:
             if kind == "NamespaceDecl":
                 next_scope = _qualified_name(current_scope, name)
             elif kind in _RECORD_KINDS and name and node.get("completeDefinition"):
-                qualified_name = node.get("qualifiedName") or _qualified_name(
-                    current_scope, name
-                )
+                qualified_name = node.get("qualifiedName") or _qualified_name(current_scope, name)
                 if qualified_name not in self._records_by_qualified:
                     self._records_by_qualified[qualified_name] = IndexedRecord(
                         qualified_name=qualified_name,
@@ -423,9 +390,7 @@ class TranslationUnitIndex:
                         self._record_names_by_simple[name].append(qualified_name)
                 next_scope = qualified_name
             elif kind == "EnumDecl" and name:
-                qualified_name = node.get("qualifiedName") or _qualified_name(
-                    current_scope, name
-                )
+                qualified_name = node.get("qualifiedName") or _qualified_name(current_scope, name)
                 if qualified_name not in self._enums_by_qualified:
                     self._enums_by_qualified[qualified_name] = IndexedEnum(
                         qualified_name=qualified_name,
@@ -436,11 +401,7 @@ class TranslationUnitIndex:
                         self._enum_names_by_simple[name].append(qualified_name)
             elif kind == "TypedefDecl" and name:
                 enum_child = next(
-                    (
-                        child
-                        for child in node.get("inner", [])
-                        if child.get("kind") == "EnumDecl"
-                    ),
+                    (child for child in node.get("inner", []) if child.get("kind") == "EnumDecl"),
                     None,
                 )
                 if enum_child is None:
@@ -492,9 +453,7 @@ class TranslationUnitIndex:
         candidates = simple.get(_simple_name(name), [])
         if not candidates:
             return None
-        return self._resolve_best_scoped_decl(
-            name, current_scope=current_scope, qualified=qualified, simple=simple
-        )
+        return self._resolve_best_scoped_decl(name, current_scope=current_scope, qualified=qualified, simple=simple)
 
     def _resolve_best_scoped_decl(
         self,
@@ -536,18 +495,14 @@ class TranslationUnitIndex:
             raise ValueError(msg)
         return qualified[best]
 
-    def _record_declares_nested_name(
-        self, record_name: str, nested_name: str, *, kinds: set[str]
-    ) -> bool:
+    def _record_declares_nested_name(self, record_name: str, nested_name: str, *, kinds: set[str]) -> bool:
         record = self._records_by_qualified.get(record_name)
         if record is None:
             return False
         for child in record.node.get("inner", []):
             if child.get("kind") not in kinds or child.get("name") != nested_name:
                 continue
-            if child.get("kind") in _RECORD_KINDS and not child.get(
-                "completeDefinition"
-            ):
+            if child.get("kind") in _RECORD_KINDS and not child.get("completeDefinition"):
                 continue
             return True
         return False
@@ -559,30 +514,22 @@ def _resolve_path(path: Path, base_dir: Path) -> Path:
     return (base_dir / path).resolve()
 
 
-def _compile_command_from_config(
-    config: CompilationConfig, translation_unit: Path
-) -> CompileCommand:
+def _compile_command_from_config(config: CompilationConfig, translation_unit: Path) -> CompileCommand:
     tu_resolved = translation_unit.resolve()
     directory = (config.working_directory or tu_resolved.parent).resolve()
     arguments: list[str] = [config.compiler]
     arguments.extend(config.clang_args)
-    arguments.extend(
-        f"-I{include_dir.resolve()}" for include_dir in config.include_dirs
-    )
+    arguments.extend(f"-I{include_dir.resolve()}" for include_dir in config.include_dirs)
     arguments.extend(f"-D{define}" for define in config.defines)
     arguments.extend(["-c", str(tu_resolved)])
-    return CompileCommand(
-        directory=directory, file=tu_resolved, arguments=tuple(arguments)
-    )
+    return CompileCommand(directory=directory, file=tu_resolved, arguments=tuple(arguments))
 
 
-def _translation_unit_index(
-    environment: DiscoveryEnvironment, translation_unit: Path
-) -> TranslationUnitIndex:
+def _translation_unit_index(environment: DiscoveryEnvironment, translation_unit: Path) -> TranslationUnitIndex:
     tu_resolved = translation_unit.resolve()
 
-    with environment._cache_lock:  # noqa: SLF001
-        cached = environment._translation_unit_indexes.get(tu_resolved)  # noqa: SLF001
+    with environment._cache_lock:
+        cached = environment._translation_unit_indexes.get(tu_resolved)
         if cached is not None:
             return cached
 
@@ -590,10 +537,8 @@ def _translation_unit_index(
         debug_context = "compilation_config"
 
         index = TranslationUnitIndex(command=command)
-        environment._translation_unit_indexes[tu_resolved] = index  # noqa: SLF001
-        debug_log(
-            "clang.tu_index.create", f"{debug_context} tu={debug_path(tu_resolved)}"
-        )
+        environment._translation_unit_indexes[tu_resolved] = index
+        debug_log("clang.tu_index.create", f"{debug_context} tu={debug_path(tu_resolved)}")
         return index
 
 
@@ -601,11 +546,7 @@ def _choose_reference_compile_command(
     environment: DiscoveryEnvironment,
     reference_source_root: Path | None,
 ) -> CompileCommand:
-    source_root = (
-        reference_source_root.resolve()
-        if reference_source_root is not None
-        else Path.cwd().resolve()
-    )
+    source_root = reference_source_root.resolve() if reference_source_root is not None else Path.cwd().resolve()
     return _compile_command_from_config(
         CompilationConfig(
             compiler=environment.compilation.compiler,
@@ -629,9 +570,7 @@ def _is_compile_source_token(token: str, command: CompileCommand) -> bool:
         return False
 
 
-def _synthetic_compile_arguments(
-    command: CompileCommand, synthetic_source: Path
-) -> tuple[str, ...]:
+def _synthetic_compile_arguments(command: CompileCommand, synthetic_source: Path) -> tuple[str, ...]:
     synthetic = str(synthetic_source)
     replaced = False
     arguments: list[str] = []
@@ -667,8 +606,7 @@ def _return_type_discovery_input(
     )
     return (
         type_info
-        if parsed.template_name
-        in {"std::array", "std::optional", "std::set", "std::variant", "std::vector"}
+        if parsed.template_name in {"std::array", "std::optional", "std::set", "std::variant", "std::vector"}
         else fallback
     )
 
@@ -703,14 +641,10 @@ def _extract_public_methods(
                 ),
             )
             for param_index, param in enumerate(
-                item
-                for item in child.get("inner", [])
-                if item.get("kind") == "ParmVarDecl"
+                item for item in child.get("inner", []) if item.get("kind") == "ParmVarDecl"
             )
         )
-        return_cpp_type = (
-            child.get("type", {}).get("qualType", "").rsplit("(", 1)[0].strip()
-        )
+        return_cpp_type = child.get("type", {}).get("qualType", "").rsplit("(", 1)[0].strip()
         return_type_info = _return_type_discovery_input(
             child,
             return_cpp_type,
@@ -722,9 +656,7 @@ def _extract_public_methods(
                 class_name=record.get("name", ""),
                 cpp_name=child["name"],
                 return_cpp_type=return_cpp_type,
-                return_type_ref=_parse_discovered_cpp_type(
-                    return_type_info, index=index, current_scope=current_scope
-                ),
+                return_type_ref=_parse_discovered_cpp_type(return_type_info, index=index, current_scope=current_scope),
                 params=params,
                 is_const=child.get("type", {}).get("qualType", "").endswith(" const"),
             )
@@ -732,12 +664,8 @@ def _extract_public_methods(
     return {name: tuple(overloads) for name, overloads in methods.items()}
 
 
-def _is_copy_or_move_constructor(
-    child: dict, record_name: str, current_scope: str
-) -> bool:
-    params = [
-        item for item in child.get("inner", []) if item.get("kind") == "ParmVarDecl"
-    ]
+def _is_copy_or_move_constructor(child: dict, record_name: str, current_scope: str) -> bool:
+    params = [item for item in child.get("inner", []) if item.get("kind") == "ParmVarDecl"]
     if len(params) != 1:
         return False
     param_type = params[0].get("type", {}).get("qualType", "")
@@ -760,31 +688,13 @@ def _comment_node_parts(node: dict) -> list[str]:
     if kind == "TextComment":
         return [node.get("text", "")]
     if kind == "InlineCommandComment":
-        return [
-            " ".join(
-                argument.get("text", "")
-                for argument in node.get("args", [])
-                if argument.get("text")
-            )
-        ]
+        return [" ".join(argument.get("text", "") for argument in node.get("args", []) if argument.get("text"))]
     if kind == "ParagraphComment":
-        return [
-            "\n".join(
-                part
-                for child in node.get("inner", [])
-                for part in _comment_node_parts(child)
-            )
-        ]
+        return ["\n".join(part for child in node.get("inner", []) for part in _comment_node_parts(child))]
     if kind == "FullComment":
-        return [
-            part
-            for child in node.get("inner", [])
-            for part in _comment_node_parts(child)
-        ]
+        return [part for child in node.get("inner", []) for part in _comment_node_parts(child)]
 
-    parts = [
-        part for child in node.get("inner", []) for part in _comment_node_parts(child)
-    ]
+    parts = [part for child in node.get("inner", []) for part in _comment_node_parts(child)]
     if parts:
         return ["\n".join(parts)]
     text = node.get("text")
@@ -848,9 +758,7 @@ def _extract_public_constructors(
                 ),
             )
             for param_index, param in enumerate(
-                item
-                for item in child.get("inner", [])
-                if item.get("kind") == "ParmVarDecl"
+                item for item in child.get("inner", []) if item.get("kind") == "ParmVarDecl"
             )
         )
         constructors.append(
@@ -861,17 +769,11 @@ def _extract_public_constructors(
             )
         )
     if not constructors and not saw_non_copy_move_constructor_decl:
-        constructors.append(
-            DiscoveredConstructor(
-                class_name=current_scope, cpp_name=current_scope, params=()
-            )
-        )
+        constructors.append(DiscoveredConstructor(class_name=current_scope, cpp_name=current_scope, params=()))
     return tuple(constructors)
 
 
-def _extract_public_fields(
-    record: dict, index: TranslationUnitIndex, current_scope: str
-) -> dict[str, DiscoveredField]:
+def _extract_public_fields(record: dict, index: TranslationUnitIndex, current_scope: str) -> dict[str, DiscoveredField]:
     fields: dict[str, DiscoveredField] = {}
     access = _default_access(record)
     for child in record.get("inner", []):
@@ -889,9 +791,7 @@ def _extract_public_fields(
             class_name=record.get("name", ""),
             cpp_name=name,
             cpp_type=child.get("type", {}).get("qualType", ""),
-            cpp_type_ref=_parse_discovered_cpp_type(
-                child.get("type", {}), index=index, current_scope=current_scope
-            ),
+            cpp_type_ref=_parse_discovered_cpp_type(child.get("type", {}), index=index, current_scope=current_scope),
             doc=_extract_documentation(child),
             has_initializer=bool(child.get("hasInitializer", False)),
         )
@@ -974,9 +874,7 @@ def _base_record_lookup_names(record: dict) -> list[str]:
     return base_names
 
 
-def _extract_bases(
-    record: dict, index: TranslationUnitIndex, current_scope: str
-) -> tuple[DiscoveredBase, ...]:
+def _extract_bases(record: dict, index: TranslationUnitIndex, current_scope: str) -> tuple[DiscoveredBase, ...]:
     bases: list[DiscoveredBase] = []
     for base in record.get("bases", []):
         type_info = base.get("type", {})
@@ -987,9 +885,7 @@ def _extract_bases(
             DiscoveredBase(
                 class_name=record.get("name", ""),
                 cpp_type=cpp_type,
-                cpp_type_ref=_parse_discovered_cpp_type(
-                    type_info, index=index, current_scope=current_scope
-                ),
+                cpp_type_ref=_parse_discovered_cpp_type(type_info, index=index, current_scope=current_scope),
             )
         )
     return tuple(bases)
@@ -1027,14 +923,10 @@ def _extract_namespace_functions(
                 ),
             )
             for param_index, param in enumerate(
-                item
-                for item in node.get("inner", [])
-                if item.get("kind") == "ParmVarDecl"
+                item for item in node.get("inner", []) if item.get("kind") == "ParmVarDecl"
             )
         )
-        return_cpp_type = (
-            node.get("type", {}).get("qualType", "").rsplit("(", 1)[0].strip()
-        )
+        return_cpp_type = node.get("type", {}).get("qualType", "").rsplit("(", 1)[0].strip()
         return_type_info = _return_type_discovery_input(
             node,
             return_cpp_type,
@@ -1067,9 +959,7 @@ def _extract_namespace_functions(
 def _namespace_matches(current_namespace: str, target_namespace: str) -> bool:
     if current_namespace == target_namespace:
         return True
-    return "::" in target_namespace and current_namespace == _simple_name(
-        target_namespace
-    )
+    return "::" in target_namespace and current_namespace == _simple_name(target_namespace)
 
 
 def _dedupe_discovered_functions(
@@ -1104,9 +994,7 @@ def discover_public_methods(
         raise ValueError(msg)
 
     selected_set = set(selected_names) if selected_names is not None else None
-    methods = _extract_public_methods(
-        record.node, index, record.qualified_name, selected_names=selected_set
-    )
+    methods = _extract_public_methods(record.node, index, record.qualified_name, selected_names=selected_set)
 
     if include_inherited:
         visited: set[str] = {record.qualified_name}
@@ -1167,9 +1055,7 @@ def discover_public_fields(
             if base_record is None or base_record.qualified_name in visited:
                 continue
             visited.add(base_record.qualified_name)
-            base_fields = _extract_public_fields(
-                base_record.node, index, base_record.qualified_name
-            )
+            base_fields = _extract_public_fields(base_record.node, index, base_record.qualified_name)
             for field_name, field_value in base_fields.items():
                 if field_name not in fields:
                     fields[field_name] = field_value
@@ -1198,9 +1084,7 @@ def discover_namespace_functions(
     selected_names: Iterable[str] | None = None,
 ) -> dict[str, tuple[DiscoveredFunction, ...]]:
     index = _translation_unit_index(environment, translation_unit)
-    return index.discover_namespace_functions(
-        namespace_name, selected_names=selected_names
-    )
+    return index.discover_namespace_functions(namespace_name, selected_names=selected_names)
 
 
 def discover_namespace_functions_with_synthetic_source(
@@ -1211,9 +1095,7 @@ def discover_namespace_functions_with_synthetic_source(
     *,
     reference_source_root: Path | None = None,
 ) -> dict[str, tuple[DiscoveredFunction, ...]]:
-    reference_command = _choose_reference_compile_command(
-        environment, reference_source_root
-    )
+    reference_command = _choose_reference_compile_command(environment, reference_source_root)
     with tempfile.TemporaryDirectory(prefix="ifcwrap-bindgen-") as tmp_dir:
         synthetic_source = Path(tmp_dir) / "contract_discovery.cpp"
         synthetic_source.write_text(source_text, encoding="utf-8")
@@ -1221,18 +1103,14 @@ def discover_namespace_functions_with_synthetic_source(
             directory=reference_command.directory,
             file=synthetic_source,
             arguments=_synthetic_compile_arguments(reference_command, synthetic_source),
-            project_root=reference_source_root.resolve()
-            if reference_source_root is not None
-            else None,
+            project_root=reference_source_root.resolve() if reference_source_root is not None else None,
         )
         debug_log(
             "clang.synthetic_tu_index.create",
             f"reference={debug_path(reference_command.file)}",
         )
         index = TranslationUnitIndex(command=command)
-        return index.discover_namespace_functions(
-            namespace_name, selected_names=selected_names
-        )
+        return index.discover_namespace_functions(namespace_name, selected_names=selected_names)
 
 
 def _normalize_cpp_type_text(text: str) -> str:
@@ -1323,17 +1201,12 @@ def _parse_template_name_and_args(
     if not inner:
         return template_name, ()
     return template_name, tuple(
-        _parse_discovered_cpp_type(arg, index=index, current_scope=current_scope)
-        for arg in _split_template_args(inner)
+        _parse_discovered_cpp_type(arg, index=index, current_scope=current_scope) for arg in _split_template_args(inner)
     )
 
 
-def _qualified_type_core(
-    text: str, *, index: TranslationUnitIndex | None = None, current_scope: str = ""
-) -> str:
-    template_name, template_args = _parse_template_name_and_args(
-        text, index=index, current_scope=current_scope
-    )
+def _qualified_type_core(text: str, *, index: TranslationUnitIndex | None = None, current_scope: str = "") -> str:
+    template_name, template_args = _parse_template_name_and_args(text, index=index, current_scope=current_scope)
     if template_name is not None:
         if template_args:
             rendered_args = ", ".join(arg.storage_spelling for arg in template_args)
@@ -1392,16 +1265,12 @@ def _qualified_type_core(
     return text
 
 
-def _with_requested_enum_name(
-    enum: IndexedEnum, text: str, current_scope: str
-) -> IndexedEnum:
+def _with_requested_enum_name(enum: IndexedEnum, text: str, current_scope: str) -> IndexedEnum:
     if (
         "::" in text
         and enum.qualified_name != text
         and _simple_name(text) == enum.simple_name
-        and (
-            "::" not in enum.qualified_name or text.endswith(f"::{enum.qualified_name}")
-        )
+        and ("::" not in enum.qualified_name or text.endswith(f"::{enum.qualified_name}"))
     ):
         return IndexedEnum(
             qualified_name=text,
@@ -1419,9 +1288,7 @@ def _with_requested_enum_name(
     return enum
 
 
-def _resolved_enum(
-    index: TranslationUnitIndex | None, text: str, current_scope: str
-) -> IndexedEnum | None:
+def _resolved_enum(index: TranslationUnitIndex | None, text: str, current_scope: str) -> IndexedEnum | None:
     if (
         index is None
         or not _looks_like_named_type(text)
@@ -1429,11 +1296,11 @@ def _resolved_enum(
         or _should_skip_clang_type_resolution(text)
     ):
         return None
-    enum = index._resolve_scoped_decl(  # noqa: SLF001
+    enum = index._resolve_scoped_decl(
         text,
         current_scope=current_scope,
-        qualified=index._enums_by_qualified,  # noqa: SLF001
-        simple=index._enum_names_by_simple,  # noqa: SLF001
+        qualified=index._enums_by_qualified,
+        simple=index._enum_names_by_simple,
     )
     if enum is not None:
         return _with_requested_enum_name(enum, text, current_scope)
@@ -1456,16 +1323,10 @@ def _parse_discovered_cpp_type(
         desugared_spelling = None
 
     normalized_spelling = _normalize_cpp_type_text(spelling)
-    normalized_desugared = (
-        _normalize_cpp_type_text(desugared_spelling) if desugared_spelling else None
-    )
+    normalized_desugared = _normalize_cpp_type_text(desugared_spelling) if desugared_spelling else None
     canonical_input = normalized_desugared or normalized_spelling
-    is_const, pointer_depth, is_lvalue_reference, is_rvalue_reference, core = (
-        _parse_type_core(canonical_input)
-    )
-    template_name, template_args = _parse_template_name_and_args(
-        core, index=index, current_scope=current_scope
-    )
+    is_const, pointer_depth, is_lvalue_reference, is_rvalue_reference, core = _parse_type_core(canonical_input)
+    template_name, template_args = _parse_template_name_and_args(core, index=index, current_scope=current_scope)
     base_name = template_name or core
     canonical = _rebuild_type_text(
         is_const=is_const,
@@ -1490,20 +1351,16 @@ def _parse_discovered_cpp_type(
         and not _is_external_qualified_type(base_name)
         and not _should_skip_qualified_resolution(index, base_name)
     ):
-        candidates = index._record_names_by_simple.get(  # noqa: SLF001
-            _simple_name(base_name), []
-        )
+        candidates = index._record_names_by_simple.get(_simple_name(base_name), [])
         if "::" not in base_name or any(
-            name == base_name
-            or name.endswith(f"::{base_name}")
-            or base_name.endswith(f"::{name}")
+            name == base_name or name.endswith(f"::{base_name}") or base_name.endswith(f"::{name}")
             for name in candidates
         ):
-            resolved_record = index._resolve_scoped_decl(  # noqa: SLF001
+            resolved_record = index._resolve_scoped_decl(
                 base_name,
                 current_scope=current_scope,
-                qualified=index._records_by_qualified,  # noqa: SLF001
-                simple=index._record_names_by_simple,  # noqa: SLF001
+                qualified=index._records_by_qualified,
+                simple=index._record_names_by_simple,
             )
     resolved_enum = (
         None
@@ -1531,15 +1388,11 @@ def _parse_discovered_cpp_type(
         canonical_spelling=canonical,
         storage_spelling=storage_spelling,
         base_name=base_name,
-        base_record_names=tuple(_base_record_lookup_names(resolved_record.node))
-        if resolved_record is not None
-        else (),
+        base_record_names=tuple(_base_record_lookup_names(resolved_record.node)) if resolved_record is not None else (),
         template_name=template_name,
         template_args=template_args,
         is_enum=is_enum,
-        enum_qualified_name=resolved_enum.qualified_name
-        if resolved_enum is not None
-        else None,
+        enum_qualified_name=resolved_enum.qualified_name if resolved_enum is not None else None,
         enum_values=enum_values,
         is_const=is_const,
         pointer_depth=pointer_depth,

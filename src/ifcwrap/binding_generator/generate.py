@@ -70,9 +70,7 @@ def write_if_different(path: Path, content: str) -> bool:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary: Path | None = None
     try:
-        descriptor, temporary_name = tempfile.mkstemp(
-            prefix=f".{path.name}.", dir=path.parent
-        )
+        descriptor, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
         temporary = Path(temporary_name)
         with os.fdopen(descriptor, "wb") as stream:
             stream.write(data)
@@ -114,9 +112,7 @@ def generate_all(config: GenerationConfig) -> tuple[Artifact, ...]:
     artifacts = [
         Artifact("c-header", c_dir / "ifcopenshell_api.h", header),
         Artifact("c-source", c_dir / "ifcopenshell_api.cpp", cpp),
-        Artifact(
-            "c-internal-header", c_dir / "ifcopenshell_api_internal.hpp", internal
-        ),
+        Artifact("c-internal-header", c_dir / "ifcopenshell_api_internal.hpp", internal),
     ]
     if config.wasm_output_dir is not None:
         wasm_dir = config.wasm_output_dir.resolve()
@@ -134,9 +130,7 @@ def generate_all(config: GenerationConfig) -> tuple[Artifact, ...]:
         )
     for artifact in artifacts:
         changed = write_if_different(artifact.path, artifact.content)
-        print(
-            f"{artifact.name}:{artifact.path.resolve()}:{'updated' if changed else 'unchanged'}"
-        )
+        print(f"{artifact.name}:{artifact.path.resolve()}:{'updated' if changed else 'unchanged'}")
     return tuple(artifacts)
 
 
@@ -145,9 +139,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--spec-dir", type=Path, required=True)
     parser.add_argument("--c-output-dir", type=Path, required=True)
     parser.add_argument("--wasm-output-dir", type=Path)
-    parser.add_argument(
-        "--discovery-include-dir", type=Path, action="append", default=[]
-    )
+    parser.add_argument("--discovery-include-dir", type=Path, action="append", default=[])
     parser.add_argument("--discovery-define", action="append", default=[])
     parser.add_argument("--discovery-clang-arg", action="append", default=[])
     return parser

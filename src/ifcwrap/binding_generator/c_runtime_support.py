@@ -1,4 +1,3 @@
-# ruff: noqa: F541
 
 from __future__ import annotations
 

@@ -87,8 +87,7 @@ def _cpp_spec_configs(
             path=path,
             namespace=namespace,
             c_prefix=c_prefix,
-            handle_c_prefix=("" if handle_c_prefix == _EMPTY_ARG else handle_c_prefix)
-            or c_prefix,
+            handle_c_prefix=("" if handle_c_prefix == _EMPTY_ARG else handle_c_prefix) or c_prefix,
         )
         for path, namespace, c_prefix, handle_c_prefix in zip(
             spec_paths, namespace_values, c_prefix_values, handle_c_prefix_values
@@ -188,9 +187,7 @@ def _merge_cpp_specs(
     for call in (*selected_calls, *adapter_calls):
         if call.c_name in existing_c_names:
             calls = [existing for existing in calls if existing.c_name != call.c_name]
-            methods = [
-                existing for existing in methods if existing.c_name != call.c_name
-            ]
+            methods = [existing for existing in methods if existing.c_name != call.c_name]
         else:
             existing_c_names.add(call.c_name)
         if call.receiver is None:
@@ -240,10 +237,7 @@ def build_binding_ir(
         for handle_name, handle in lower_cpp_spec_handles_to_specs(
             discover_cpp_spec_handles(config.path, c_prefix=config.handle_c_prefix)
         ).items():
-            if (
-                handle_name in cpp_spec_handles
-                and cpp_spec_handles[handle_name] != handle
-            ):
+            if handle_name in cpp_spec_handles and cpp_spec_handles[handle_name] != handle:
                 msg = f"C++ spec handle '{handle_name}' is declared with conflicting metadata"
                 raise ValueError(msg)
             cpp_spec_handles[handle_name] = handle

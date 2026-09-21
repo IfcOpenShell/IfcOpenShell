@@ -12,7 +12,7 @@ from .abi_ir import (
     _sequence_kind_parts,
     _sequence_prev_kind,
     _snake_name,
-    _type_spec_sequence_kind,  # noqa: F401 - re-exported for call rendering
+    _type_spec_sequence_kind,
 )
 from .binding_ir import BindingIR
 from .binding_model import HandleSpec
@@ -70,21 +70,16 @@ def _render_common_type_decls(sequence_kinds: tuple[str, ...]) -> str:
 } ifcopenshell_logical_t;""",
     ]
     for kind in sequence_kinds:
-        typedefs.append(
-            f"""typedef struct {_sequence_c_type(kind)} {{
+        typedefs.append(f"""typedef struct {_sequence_c_type(kind)} {{
     {_sequence_items_c_type(kind)}* items;
     size_t size;
     void* owner;
-}} {_sequence_c_type(kind)};"""
-        )
+}} {_sequence_c_type(kind)};""")
     decls = [
         "void ifcopenshell_buffer_owner_destroy(void** owner);",
         "void ifcopenshell_string_destroy(ifcopenshell_string_t* value);",
     ]
-    decls.extend(
-        f"void {_sequence_destroy_name(kind)}({_sequence_c_type(kind)}* value);"
-        for kind in sequence_kinds
-    )
+    decls.extend(f"void {_sequence_destroy_name(kind)}({_sequence_c_type(kind)}* value);" for kind in sequence_kinds)
     return "\n\n".join((*typedefs, *decls))
 
 
@@ -95,9 +90,7 @@ def _render_sequence_destroy_impl(kind: str) -> str:
     else:
         child_destroy = _sequence_destroy_name(_sequence_prev_kind(kind))
         body = (
-            "    for (size_t i = 0; i < value->size; ++i) {\n"
-            f"        {child_destroy}(&value->items[i]);\n"
-            "    }"
+            "    for (size_t i = 0; i < value->size; ++i) {\n" f"        {child_destroy}(&value->items[i]);\n" "    }"
         )
     return f"""void {_sequence_destroy_name(kind)}({_sequence_c_type(kind)}* value) {{
     if (value == nullptr) {{
@@ -116,8 +109,7 @@ def _render_sequence_destroy_impl(kind: str) -> str:
 
 
 def _render_common_type_impls(sequence_kinds: tuple[str, ...]) -> str:
-    impls = [
-        """void ifcopenshell_buffer_owner_destroy(void** owner) {
+    impls = ["""void ifcopenshell_buffer_owner_destroy(void** owner) {
     if (owner == nullptr || *owner == nullptr) {
         return;
     }
@@ -138,8 +130,7 @@ void ifcopenshell_string_destroy(ifcopenshell_string_t* value) {
     value->size = 0;
     value->owned = false;
     value->owner = nullptr;
-}"""
-    ]
+}"""]
     impls.extend(_render_sequence_destroy_impl(kind) for kind in sequence_kinds)
     return "\n\n".join(impls)
 
@@ -518,33 +509,25 @@ def _used_handle_list_handles(spec: BindingIR) -> tuple[HandleSpec, ...]:
     return tuple(
         handles_by_c_type[value.element_type]
         for value in spec.abi.value_types.values()
-        if value.kind == "handle_sequence"
-        and value.sequence_depth == 1
-        and value.element_type in handles_by_c_type
+        if value.kind == "handle_sequence" and value.sequence_depth == 1 and value.element_type in handles_by_c_type
     )
 
 
 def _used_handle_list_list_handles(spec: BindingIR) -> tuple[HandleSpec, ...]:
     if spec.abi is None:
         raise ValueError("C emission requires a finalized BindingIR")
-    handles_by_list_type = {
-        _handle_list_c_type(handle): handle for handle in spec.handles.values()
-    }
+    handles_by_list_type = {_handle_list_c_type(handle): handle for handle in spec.handles.values()}
     return tuple(
         handles_by_list_type[value.element_type]
         for value in spec.abi.value_types.values()
-        if value.kind == "handle_sequence"
-        and value.sequence_depth == 2
-        and value.element_type in handles_by_list_type
+        if value.kind == "handle_sequence" and value.sequence_depth == 2 and value.element_type in handles_by_list_type
     )
 
 
 def _used_scalar_sequence_kinds(spec: BindingIR) -> tuple[str, ...]:
     if spec.abi is None:
         raise ValueError("C emission requires a finalized BindingIR")
-    return tuple(
-        name for name, value in spec.abi.value_types.items() if value.kind == "sequence"
-    )
+    return tuple(name for name, value in spec.abi.value_types.items() if value.kind == "sequence")
 
 
 def _sequence_make_helper(kind: str) -> str:
