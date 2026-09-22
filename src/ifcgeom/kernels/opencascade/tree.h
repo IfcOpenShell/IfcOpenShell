@@ -1424,16 +1424,6 @@ namespace ifcopenshell::geom {
             std::unordered_map<T, std::vector<gp_Pnt>> verts_;
             std::unordered_map<T, std::vector<gp_Vec>> normals_;
 
-            // Temporary structures for H5
-            std::vector<ifcopenshell::geom::triangulation_element*> triangulation_elements_;
-            std::map<express::base, std::string> global_ids_;
-            std::map<express::base, std::string> names_;
-            std::map<express::base, ifcopenshell::geom::taxonomy::matrix4::ptr> placements_;
-            std::map<std::string, std::vector<double>> local_verts_;
-            std::map<std::string, std::vector<int>> local_faces_;
-            std::map<std::string, std::vector<ifcopenshell::geom::taxonomy::style::ptr>> local_materials_;
-            std::map<std::string, std::vector<int>> local_material_ids_;
-
 			bool enable_face_styles_ = false;
 
 			class selector : public spatial_tree::Selector
