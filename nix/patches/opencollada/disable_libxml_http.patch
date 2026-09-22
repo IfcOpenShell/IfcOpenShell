@@ -1,0 +1,15 @@
+# We don't use `LIBXML_HTTP_ENABLED`, but it adds requirement for `ws2_32.dll`
+# that needs to be linked later. So we skip it.
+
+diff --git a/Externals/LibXML/CMakeLists.txt b/Externals/LibXML/CMakeLists.txt
+index 40081e76..64ddc020 100644
+--- a/Externals/LibXML/CMakeLists.txt
++++ b/Externals/LibXML/CMakeLists.txt
+@@ -3,7 +3,6 @@ project(${name})
+
+ add_definitions(
+ 		-DLIBXML_AUTOMATA_ENABLED
+-        -DLIBXML_HTTP_ENABLED
+ 		-DLIBXML_PATTERN_ENABLED
+ 		-DLIBXML_REGEXP_ENABLED
+ 		-DLIBXML_SCHEMAS_ENABLED
