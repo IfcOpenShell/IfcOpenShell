@@ -39,7 +39,6 @@ from natsort import natsorted
 import bonsai.bim
 import bonsai.bim.helper
 import bonsai.tool as tool
-from bonsai.bim.ifc import is_cache_locked_by_other_process
 from bonsai.bim.module.bsdd.prop import BIMBSDDProperties, BSDDProperty
 from bonsai.bim.module.material.operator import SelectByMaterial
 from bonsai.bim.module.model import prop as _model_prop
@@ -992,20 +991,6 @@ class BIM_PT_tabs(Panel):
             op = row.operator("bim.open_uri", text="", icon="QUESTION")
             op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html#saving-and-loading-blend-files"
             row.operator("bim.close_blend_warning", text="", icon="CANCEL")
-
-        if is_cache_locked_by_other_process():
-            box = self.layout.box()
-            box.alert = True
-            row = box.row(align=True)
-            row.label(text="IFC Already Open in Another Blender Instance", icon="ERROR")
-            row.operator("bim.dismiss_multi_instance_warning", text="", icon="CANCEL")
-            draw_multiline_text(
-                box.column(align=True),
-                "This file is open in another Blender instance. Editing the same "
-                "IFC from two instances at once can lose your work or display "
-                "outdated geometry. Close the other Blender instances to continue safely.",
-                context=context,
-            )
 
         pprops = tool.Project.get_project_props()
         if pending := pprops.pending_opening_recut:

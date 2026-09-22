@@ -74,7 +74,6 @@ import bonsai.core.style
 import bonsai.core.system
 import bonsai.core.tool
 import bonsai.tool as tool
-from bonsai.bim.ifc import get_cache_or_detect_lock
 
 if TYPE_CHECKING:
     from bonsai.bim.module.geometry.prop import (
@@ -123,22 +122,6 @@ class Geometry(bonsai.core.tool.Geometry):
             if getattr(rep, "RepresentationIdentifier", None) == "Axis":
                 return True
         return False
-
-    @classmethod
-    def clear_cache(cls, element: ifcopenshell.entity_instance) -> None:
-        # Cache acquisition can fail if the HDF5 file is locked by another
-        # process — degrade gracefully rather than aborting the caller's
-        # reimport flow. A stale cache entry is harmless; a raised exception
-        # prevents the actual mesh swap. The wrapper sets the project-panel
-        # warning flag on lock so the user sees one prominent notice instead
-        # of per-element log spam.
-        try:
-            cache = get_cache_or_detect_lock()
-        except Exception as exc:
-            print(f"clear_cache: skipping cache invalidation for {element} ({exc})")
-            return
-        if cache and hasattr(element, "GlobalId"):
-            cache.remove(element.GlobalId)
 
     # Per-host work coalesced by `batch_host_recut`. Keys are voided element ifc ids;
     # dict insertion preserves call ordering. Recut values store the representation at

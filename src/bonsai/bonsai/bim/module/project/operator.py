@@ -3722,21 +3722,6 @@ class BIM_OT_dismiss_pending_opening_cuts(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BIM_OT_dismiss_multi_instance_warning(bpy.types.Operator):
-    bl_idname = "bim.dismiss_multi_instance_warning"
-    bl_label = "Dismiss Multi-Instance Warning"
-    bl_description = (
-        "Hide the warning that another Blender instance has this IFC file open. Sticky for the current session."
-    )
-    bl_options = {"REGISTER"}
-
-    def execute(self, context: bpy.types.Context) -> set[str]:
-        from bonsai.bim.ifc import dismiss_multi_instance_warning
-
-        dismiss_multi_instance_warning()
-        return {"FINISHED"}
-
-
 class BIM_OT_select_pending_opening_cuts(bpy.types.Operator):
     bl_idname = "bim.select_pending_opening_cuts"
     bl_label = "Select Elements With Skipped Opening Cuts"

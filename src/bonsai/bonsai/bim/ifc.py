@@ -18,9 +18,7 @@
 
 from __future__ import annotations
 
-import hashlib
 import os
-import shutil
 import tempfile
 import traceback
 import uuid
@@ -31,7 +29,6 @@ from typing import Literal, NotRequired, Optional, TypedDict, Union
 
 import bpy
 import ifcopenshell
-import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper
 from ifcopenshell.file import UndoSystemError
 
@@ -64,44 +61,6 @@ class TransactionStep(TypedDict):
     operations: list[Operation]
 
 
-# Set when ``IfcStore.get_cache`` observes an external lock on the HDF5 cache —
-# signal that another Blender process has the same IFC file open. Project panel
-# polls ``is_cache_locked_by_other_process`` to warn the user. The dismissed
-# flag is sticky per-session so the warning doesn't re-nag once the user has
-# acknowledged it.
-_cache_locked_by_other_process: bool = False
-_multi_instance_warning_dismissed: bool = False
-
-
-def is_cache_locked_by_other_process() -> bool:
-    return _cache_locked_by_other_process and not _multi_instance_warning_dismissed
-
-
-def dismiss_multi_instance_warning() -> None:
-    global _multi_instance_warning_dismissed
-    _multi_instance_warning_dismissed = True
-
-
-def get_cache_or_detect_lock() -> ifcopenshell.geom.serializers.hdf5 | None:
-    """Like ``IfcStore.get_cache`` but tracks the multi-instance lock flag — sets
-    it on ``PermissionError``, clears it (along with the dismiss flag) when a
-    subsequent call succeeds. Returns ``None`` on lock; other exceptions
-    propagate. Callers that don't need the warning side effect can use
-    ``IfcStore.get_cache`` directly."""
-    global _cache_locked_by_other_process, _multi_instance_warning_dismissed
-    try:
-        cache = IfcStore.get_cache()
-    except PermissionError:
-        _cache_locked_by_other_process = True
-        return None
-    if _cache_locked_by_other_process:
-        # Lock released — clear both flags so a future re-locking re-surfaces
-        # the warning rather than staying suppressed by the previous dismiss.
-        _cache_locked_by_other_process = False
-        _multi_instance_warning_dismissed = False
-    return cache
-
-
 class IfcStore:
     path: str = ""
     """Should be set only using ``tool.Ifc.set_path``."""
@@ -125,8 +84,6 @@ class IfcStore:
     future: list[TransactionStep] = []
     schema_identifiers = ["IFC4", "IFC2X3", "IFC4X3_ADD2"]
     session_files: dict[str, ifcopenshell.file] = {}
-    cache: Optional[ifcopenshell.geom.serializers.hdf5] = None
-    cache_path: str = ""
 
     @staticmethod
     def purge():
@@ -146,8 +103,6 @@ class IfcStore:
         IfcStore.future = []
         IfcStore.schema_identifiers = ["IFC4", "IFC2X3", "IFC4X3_ADD2"]
         IfcStore.session_files = {}
-        IfcStore.cache = None
-        IfcStore.cache_path = ""
 
     @staticmethod
     def get_file() -> ifcopenshell.file | None:
@@ -168,69 +123,6 @@ class IfcStore:
         # Interpret relative paths as relative to .blend file.
         if IfcStore.path and not os.path.isabs(IfcStore.path):
             IfcStore.path = os.path.abspath(os.path.join(bpy.path.abspath("//"), IfcStore.path))
-
-    @staticmethod
-    def generate_cache_path() -> str:
-        """Generate cache path based on the active file and it's path."""
-        assert IfcStore.file
-        ifc_key = IfcStore.path + IfcStore.file.header.file_name.time_stamp
-        ifc_hash = hashlib.md5(ifc_key.encode("utf-8")).hexdigest()
-        prefs = tool.Blender.get_addon_preferences()
-        cache_path = os.path.join(prefs.cache_dir, f"{ifc_hash}.h5")
-        return cache_path
-
-    @staticmethod
-    def get_cache() -> ifcopenshell.geom.serializers.hdf5 | None:
-        """Get existing cache for the current file or create a new one.
-
-        .h5 cache name reflects IFC filepath and it's current header's timestamp.
-        """
-        if IfcStore.cache is None and IfcStore.path:
-            cache_path = IfcStore.generate_cache_path()
-            os.makedirs(os.path.dirname(cache_path), exist_ok=True)
-            IfcStore.cache_path = cache_path
-            cache_path = Path(IfcStore.cache_path)
-            settings = ifcopenshell.geom.settings()
-            cache_preexists = cache_path.exists()
-            try:
-                IfcStore.cache = ifcopenshell.geom.serializers.hdf5(IfcStore.cache_path, settings)
-                if cache_preexists:
-                    print(f"Successfully loaded existing cache: {cache_path.name}.")
-                else:
-                    print("New cache was created.")
-            except Exception as e:
-                if cache_preexists:
-                    print(f"Failed to create a cache from existing file '{cache_path.name}': {str(e)}.")
-                else:
-                    print(f"Failed to create a cache: {str(e)}.")
-                    # No point to trying again the same operation.
-                    return
-
-                os.remove(IfcStore.cache_path)
-                try:
-                    IfcStore.cache = ifcopenshell.geom.serializers.hdf5(IfcStore.cache_path, settings)
-                    print("New cache was created.")
-                except Exception as e:
-                    print(f"Failed to create a cache: {str(e)}.")
-                    return
-        return IfcStore.cache
-
-    @staticmethod
-    def update_cache() -> None:
-        """Update cache filename after timestamp was updated."""
-        if not IfcStore.cache:
-            return
-        assert IfcStore.cache_path
-        new_cache_path = IfcStore.generate_cache_path()
-        IfcStore.cache = None
-        try:
-            shutil.move(IfcStore.cache_path, new_cache_path)
-        except PermissionError:
-            try:
-                shutil.copy2(IfcStore.cache_path, new_cache_path)
-            except PermissionError:
-                pass  # Well we tried. No cache for you!
-        get_cache_or_detect_lock()
 
     @staticmethod
     def load_file(path: str) -> None:
