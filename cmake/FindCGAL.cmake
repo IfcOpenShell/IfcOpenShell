@@ -41,16 +41,14 @@ if(CGAL_INCLUDE_DIR)
     target_include_directories(CGAL::CGAL INTERFACE "${GMP_INCLUDE_DIR}" "${MPFR_INCLUDE_DIR}")
     target_link_libraries(CGAL::CGAL INTERFACE "${libMPFR}" "${libGMP}")
 else()
-    # CGAL is not respecting default Boost_USE_STATIC_LIBS value
-    # and sometiems it's getting in the way.
-    if(NOT DEFINED Boost_USE_STATIC_LIBS)
-        set(CGAL_Boost_USE_STATIC_LIBS OFF)
-    else()
-        set(CGAL_Boost_USE_STATIC_LIBS "${Boost_USE_STATIC_LIBS}")
-    endif()
     # Annoyingly this is producing CMP0167 boost warnings, because it's unsetting cmake policies
     # and using FindBoost module. But there's nothing we can do about it,
     # since everything happens in the scope of CGAL config. I guess it's be resolved in CGAL 6.1.0.
+    #
+    # CGAL's CGAL_TweakFindBoost.cmake (pulled in by `find_package(CGAL CONFIG)`)
+    # overwrites `Boost_USE_STATIC_LIBS` with its own cached default, clobbering
+    # whatever this project (or the user) already set. Setting `CGAL_TweakFindBoost` to avoid it.
+    set(CGAL_TweakFindBoost ON)
     find_package(CGAL CONFIG)
     if(NOT CGAL_FOUND)
         message(
