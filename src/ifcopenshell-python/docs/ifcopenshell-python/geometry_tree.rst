@@ -7,10 +7,12 @@ geometry with one another.
 
 .. image:: images/geometry-tree.png
 
-The most efficient way to build a tree is by using the iterator. If the native
-OpenCASCADE shape is added to the tree, a **UB Tree** is built.  Alternatively,
-if triangulation is added to the tree, a **BVH Tree** is built. The type of
-tree determines the type of operation you can perform.
+The most efficient way to build a tree is by using the iterator. The backend
+passed to ``ifcopenshell.geom.tree()`` determines the type of tree: the
+``opencascade.brep`` backend ingests native OpenCASCADE shapes and builds a
+**UB Tree**, the ``opencascade.trianglebvh`` backend ingests triangulations
+and builds a **BVH Tree**. The type of tree determines the type of operation
+you can perform.
 
 .. code-block:: python
 
@@ -18,25 +20,30 @@ tree determines the type of operation you can perform.
     import ifcopenshell
     import ifcopenshell.geom
 
-    tree = ifcopenshell.geom.tree()
     settings = ifcopenshell.geom.settings()
     iterator = ifcopenshell.geom.iterator(settings, ifc_file, multiprocessing.cpu_count())
+
+    # A BVH tree of triangulated elements, for clashing
+    tree = ifcopenshell.geom.tree(backend="opencascade.trianglebvh")
     if iterator.initialize():
         while True:
-            # Use triangulation to build a BVH tree
             tree.add_element(iterator.get())
+            if not iterator.next():
+                break
 
-            # Alternatively, use this code to build an unbalanced binary tree
-            # tree.add_element(iterator.get_native())
-
+    # Alternatively, a UB tree of native elements, for selection
+    tree = ifcopenshell.geom.tree(backend="opencascade.brep")
+    if iterator.initialize():
+        while True:
+            tree.add_element(iterator.get_native())
             if not iterator.next():
                 break
 
 Clashing or selecting geometry from a geometry tree
 ---------------------------------------------------
 
-With a **BVH Tree**, you can efficiently clash sets of elements with other
-elements.  You can find elements that intersect, collide, or are within a
+With a **BVH Tree** (``backend="opencascade.trianglebvh"``), you can
+efficiently clash sets of elements with other elements.  You can find elements that intersect, collide, or are within a
 clearance distance threshold of one another. There are three methods you can
 use to clash elements in the tree. Each function collides one set of elements
 with another set of elements.
@@ -56,8 +63,8 @@ with another set of elements.
   consider inside vs outside. Elements like pipe and ducts with insulation,
   structural openings, and equipment will typically require clearance checks.
 
-With a **UB Tree**, you can efficiently select geometry by specifying a point,
-radius, or bounding box. There are three methods you can use to select elements
+With a **UB Tree** (``backend="opencascade.brep"``, the default), you can
+efficiently select geometry by specifying a point, radius, or bounding box. There are three methods you can use to select elements
 in the tree.
 
 - `Selecting elements using bounding boxes`_ lets you query for elements that
