@@ -647,6 +647,8 @@ if WASM:
         "IfcGeomServer",
         "BonsaiViewer",
         "qt6",
+        # Skipping `proj`, otherwise we would also need to build/install sqlite3 for wasm.
+        "proj",
     }
     SKIP_TARGETS_FOR_WASM = {t.lower() for t in SKIP_TARGETS_FOR_WASM}
     skip_targets = {t for t in targets if t.lower() in SKIP_TARGETS_FOR_WASM}
