@@ -19,7 +19,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Generator, Iterable
+from collections.abc import Generator
 from os import PathLike, fspath
 from typing import TYPE_CHECKING, Any, Literal, Optional, TypeVar, Union, cast, overload
 
@@ -392,26 +392,25 @@ ClashType = Literal["protrusion", "pierce", "collision", "clearance"]
 CLASH_TYPE_ITEMS = ("protrusion", "pierce", "collision", "clearance")
 
 
-class tree(ifcopenshell_wrapper.tree):
-    def __init__(self, file: Optional[file] = None, settings: Optional[settings] = None):
-        args = [self]
-        if file is not None:
-            args.append(file)
-            if settings is not None:
-                args.append(settings)
-        ifcopenshell_wrapper.tree.__init__(*args)
-
-    def add_file(self, file: file, settings: settings) -> None:
-        ifcopenshell_wrapper.tree.add_file(self, file, settings)
-
-    def add_iterator(self, iterator: iterator) -> None:
-        ifcopenshell_wrapper.tree.add_file(self, iterator)
-
-    def select(
+class _tree(ifcopenshell_wrapper.tree):
+    def __init__(
         self,
-        value: Union[entity_instance, ifcopenshell_wrapper.native_element, tuple[float, float, float]],
-        **kwargs,
-    ) -> list[entity_instance]:
+        file: Optional[file] = None,
+        settings: Optional[settings] = None,
+        backend: str = "opencascade.brep",
+    ):
+        # The object is constructed by the tree registry; adopt its pointer.
+        # SWIG does not generate keyword argument handling for overloaded
+        # methods, hence the select() and select_box() dispatchers below.
+        constructed = ifcopenshell_wrapper.create_tree(backend)
+        self.this = constructed.this
+        self.thisown = True
+        constructed.thisown = False
+
+        if file is not None:
+            self.add_file(file, settings if settings is not None else ifcopenshell_wrapper.settings())
+
+    def select(self, value, **kwargs) -> list[entity_instance]:
         def unwrap(value):
             if isinstance(value, entity_instance):
                 return value
@@ -444,39 +443,38 @@ class tree(ifcopenshell_wrapper.tree):
             args.append(kwargs.get("extend", -1.0e-5))
         return ifcopenshell_wrapper.tree.select_box(*args)
 
-    def clash_intersection_many(
-        self,
-        set_a: Iterable[entity_instance],
-        set_b: Iterable[entity_instance],
-        tolerance: float = 0.002,
-        check_all: bool = True,
-    ) -> tuple[ifcopenshell_wrapper.clash, ...]:
-        args = [self, set_a, set_b, tolerance, check_all]
-        return ifcopenshell_wrapper.tree.clash_intersection_many(*args)
 
-    def clash_collision_many(
-        self, set_a: Iterable[entity_instance], set_b: Iterable[entity_instance], allow_touching=False
-    ) -> tuple[ifcopenshell_wrapper.clash, ...]:
-        args = [self, set_a, set_b, allow_touching]
-        return ifcopenshell_wrapper.tree.clash_collision_many(*args)
+def tree(
+    file: Optional[file] = None,
+    settings: Optional[settings] = None,
+    backend: str = "opencascade.brep",
+) -> ifcopenshell_wrapper.tree:
+    """Create a geometry tree.
 
-    def clash_clearance_many(
-        self,
-        set_a: Iterable[entity_instance],
-        set_b: Iterable[entity_instance],
-        clearance: float = 0.05,
-        check_all: bool = False,
-    ) -> tuple[ifcopenshell_wrapper.clash, ...]:
-        args = [self, set_a, set_b, clearance, check_all]
-        return ifcopenshell_wrapper.tree.clash_clearance_many(*args)
+    The backend determines which elements are ingested and which operations
+    are supported:
 
-    @staticmethod
-    def get_clash_type(clash_type_i: int) -> ClashType:
-        """Convert clash type index to a readable string format.
+    - ``"opencascade.brep"`` ingests native elements and builds an unbalanced
+      binary tree of bounding boxes. It supports ``select``, ``select_box``
+      and ``select_ray``, and is the default.
+    - ``"opencascade.trianglebvh"`` ingests triangulated elements and builds a
+      bounding volume hierarchy. It supports ``clash_intersection_many``,
+      ``clash_collision_many`` and ``clash_clearance_many``.
 
-        :param clash_type_i: Type index that comes from ``clash.clash_type``.
-        """
-        return CLASH_TYPE_ITEMS[clash_type_i]
+    :param file: Optional file to process into the tree immediately.
+    :param settings: Optional settings used when processing the file.
+    :param backend: The tree backend to use.
+    :return: The geometry tree.
+    """
+    return _tree(file, settings, backend)
+
+
+def get_clash_type(clash_type_i: int) -> ClashType:
+    """Convert clash type index to a readable string format.
+
+    :param clash_type_i: Type index that comes from ``clash.clash_type``.
+    """
+    return CLASH_TYPE_ITEMS[clash_type_i]
 
 
 def create_shape(
