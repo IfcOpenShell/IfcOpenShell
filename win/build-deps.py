@@ -77,6 +77,7 @@ class Args(NamedTuple):
     build_type: BuildType
     reuse_boost: bool
     use_ninja: bool
+    shared: bool
     num_build_procs: int
     install_python: bool
     python_version: str
@@ -208,6 +209,13 @@ def parse_args() -> Args:
         help=HelpStrings.USE_NINJA,
     )
     parser.add_argument(
+        "--shared",
+        dest="shared",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Build dependencies as shared libraries instead of static.",
+    )
+    parser.add_argument(
         "--num-build-procs",
         dest="num_build_procs",
         type=int,
@@ -297,6 +305,7 @@ def parse_args() -> Args:
         build_type=build_type,
         reuse_boost=args.reuse_boost,
         use_ninja=args.use_ninja,
+        shared=args.shared,
         num_build_procs=num_build_procs,
         install_python=install_python,
         python_version=python_version,
@@ -380,7 +389,7 @@ def main() -> None:
         ARGS.build_type,
         ARGS.num_build_procs,
     )
-    install_boost(vs_cfg_vars, build_deps_cache, ARGS.build_cfg, ARGS.num_build_procs, ARGS.reuse_boost)
+    install_boost(vs_cfg_vars, build_deps_cache, ARGS.build_cfg, ARGS.num_build_procs, ARGS.reuse_boost, ARGS.shared)
     install_json(vs_cfg_vars.install_dir)
     install_opencollada(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.num_build_procs, generator_cfg)
     install_occt(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.num_build_procs, generator_cfg)
@@ -393,7 +402,7 @@ def main() -> None:
         vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.num_build_procs, generator_cfg, zstd_install_dir
     )
     install_qt6(vs_cfg_vars, build_deps_cache, ARGS.build_cfg, ARGS.install_qt6, ARGS.qt6_version, pythonhome)
-    install_manifold(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.num_build_procs, generator_cfg)
+    install_manifold(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.num_build_procs, generator_cfg, ARGS.shared)
 
     print_success(START_TIME)
 
