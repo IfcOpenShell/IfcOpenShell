@@ -1717,6 +1717,10 @@ if "zstd" in targets:
         name=zstd_name,
         mode="cmake",
         build_tool_args=[
+            # `ZSTD_BUILD_STATIC` and `ZSTD_BUILD_SHARED` are used to decide
+            # whether to built static variant or shared.
+            # `BUILD_SHARED_LIBS` is only used whether `libzstd` exported cmakje target
+            # will be linking against `libzstd_shared` or `libzstd_static`.
             f"-DZSTD_BUILD_STATIC=ON",
             f"-DZSTD_BUILD_SHARED=OFF",
             f"-DCMAKE_INSTALL_LIBDIR=lib",
