@@ -48,8 +48,15 @@ if not existing_versions:
     exit(1)
 
 
+BINARIES_SOURCE_DESCRIPTIONS = {
+    "installed": "From the installed Bonsai. They will be copied to the repo, replacing the ones already there.",
+    "compiled": "I compile IfcOpenShell myself. The binaries in the repo will be used as they are.",
+}
+
+
 class Args(NamedTuple):
     blender_version: str | None
+    binaries_source: str | None
 
 
 def parse_args() -> Args:
@@ -58,6 +65,13 @@ def parse_args() -> Args:
         "--blender-version",
         choices=existing_versions,
         help="Blender version. Will be prompted if not set.",
+    )
+    arg_parser.add_argument(
+        "--binaries-source",
+        choices=tuple(BINARIES_SOURCE_DESCRIPTIONS),
+        help="Where the IfcOpenShell binaries come from ({}). Will be prompted if not set.".format(
+            "; ".join(f"{k}: {v}" for k, v in BINARIES_SOURCE_DESCRIPTIONS.items())
+        ),
     )
     namespace = arg_parser.parse_args()
     return Args(**vars(namespace))
@@ -110,10 +124,15 @@ def find_bonsai_path() -> Path | None:
 BONSAI_PATH = find_bonsai_path()
 
 
-print("Where do the compiled IfcOpenShell binaries (e.g. ifcopenshell_wrapper) come from?")
-print("1. From the installed Bonsai. They will be copied to the repo, replacing the ones already there.")
-print("2. I compile IfcOpenShell myself. The binaries in the repo will be used as they are.")
-should_copy_binaries = input("Enter 1 or 2: ").strip() == "1"
+binaries_source = ARGS.binaries_source
+if binaries_source is None:
+    print("Where do the compiled IfcOpenShell binaries (e.g. ifcopenshell_wrapper) come from?")
+    for i, description in enumerate(BINARIES_SOURCE_DESCRIPTIONS.values(), start=1):
+        print(f"{i}. {description}")
+    choice = input("Enter 1 or 2: ").strip()
+    binaries_source = list(BINARIES_SOURCE_DESCRIPTIONS)[int(choice) - 1]
+
+should_copy_binaries = binaries_source == "installed"
 
 
 # ---------------------------
