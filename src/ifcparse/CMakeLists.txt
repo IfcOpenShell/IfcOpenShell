@@ -60,9 +60,9 @@ if (NOT CREATE_BUNDLE)
 endif()
 if(WASM_BUILD)
     # No Boost link libraries for wasm, but the headers are still needed.
-    target_link_libraries(IfcParse plugin Boost::headers ${BCRYPT_LIBRARIES})
+    target_link_libraries(IfcParse plugin Boost::headers})
 else()
-    target_link_libraries(IfcParse plugin ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES})
+    target_link_libraries(IfcParse plugin ${Boost_LIBRARIES})
 endif()
 
 if(WITH_ROCKSDB)
