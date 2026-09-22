@@ -267,6 +267,15 @@ namespace {
 %shared_ptr(ifcopenshell::geom::taxonomy::sweep_along_curve);
 %shared_ptr(ifcopenshell::geom::taxonomy::node);
 
+// create_shape() constructs representations with make_shared, so the proxies
+// share the same control block, and the variant carries a shared_ptr across the
+// whole hierarchy. Borrowed references (element.geometry) use a null deleter, so
+// they can not double delete.
+%shared_ptr(ifcopenshell::geom::representation);
+%shared_ptr(ifcopenshell::geom::native);
+%shared_ptr(ifcopenshell::geom::serialization);
+%shared_ptr(ifcopenshell::geom::triangulation);
+
 %include "../ifcgeom/ifc_geom_api.h"
 %include "../ifcgeom/conversion_result.h"
 
@@ -303,6 +312,34 @@ namespace {
 GEOMETRY_WITH_BACKREF(ifcopenshell::geom::triangulation_element)
 GEOMETRY_WITH_BACKREF(ifcopenshell::geom::serialized_element)
 GEOMETRY_WITH_BACKREF(ifcopenshell::geom::native_element)
+
+// Elements can also be constructed from scratch, so accept the C++ values
+// where Python only holds a proxy of another type.
+
+// element() takes an express::entity, while Python only ever holds
+// express::base handles.
+%typemap(in) const express::entity& (express::entity temp) {
+	void* argp = nullptr;
+	int res = SWIG_ConvertPtr($input, &argp, SWIGTYPE_p_express__base, 0);
+	if (!SWIG_IsOK(res) || !argp) {
+		SWIG_exception_fail(SWIG_TypeError, "Expected an entity instance");
+	}
+	auto entity = static_cast<express::base*>(argp)->as<express::entity>();
+	if (!entity) {
+		SWIG_exception_fail(SWIG_TypeError, "Expected an entity instance");
+	}
+	temp = entity;
+	$1 = &temp;
+}
+
+%typemap(typecheck, precedence=SWIG_TYPECHECK_POINTER) const express::entity& {
+	void* argp = nullptr;
+	$1 = (SWIG_IsOK(SWIG_ConvertPtr($input, &argp, SWIGTYPE_p_express__base, 0)) && argp) ? 1 : 0;
+}
+
+// The materials of a triangulation are converted with the generic vector
+// typemap, using the style::ptr specialization of the conversion helpers.
+CREATE_VECTOR_TYPEMAP_IN(ifcopenshell::geom::taxonomy::style::ptr, MATERIALS, style);
 
 %include "../ifcgeom/element.h"
 %include "../ifcgeom/representation.h"
@@ -656,18 +693,18 @@ struct shape_rtti : public boost::static_visitor<PyObject*>
 			return SWIG_Py_Void();
 		}
 	}
-    PyObject* operator()(ifcopenshell::geom::representation* representation) const {
-		ifcopenshell::geom::serialization* serialized_representation = dynamic_cast<ifcopenshell::geom::serialization*>(representation);
-		ifcopenshell::geom::triangulation* triangulated_representation = dynamic_cast<ifcopenshell::geom::triangulation*>(representation);
-		ifcopenshell::geom::native* brep_representation = dynamic_cast<ifcopenshell::geom::native*>(representation);
+    PyObject* operator()(const std::shared_ptr<ifcopenshell::geom::representation>& representation) const {
+		auto serialized_representation = std::dynamic_pointer_cast<ifcopenshell::geom::serialization>(representation);
+		auto triangulated_representation = std::dynamic_pointer_cast<ifcopenshell::geom::triangulation>(representation);
+		auto brep_representation = std::dynamic_pointer_cast<ifcopenshell::geom::native>(representation);
 		if (serialized_representation) {
-			return SWIG_NewPointerObj(SWIG_as_voidptr(serialized_representation), SWIGTYPE_p_ifcopenshell__geom__serialization, SWIG_POINTER_OWN);
+			return SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<ifcopenshell::geom::serialization>(serialized_representation)), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geom__serialization_t, SWIG_POINTER_OWN);
 		} else if (triangulated_representation) {
-			return SWIG_NewPointerObj(SWIG_as_voidptr(triangulated_representation), SWIGTYPE_p_ifcopenshell__geom__triangulation, SWIG_POINTER_OWN);
+			return SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<ifcopenshell::geom::triangulation>(triangulated_representation)), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geom__triangulation_t, SWIG_POINTER_OWN);
 		} else if (brep_representation) {
-			return SWIG_NewPointerObj(SWIG_as_voidptr(brep_representation), SWIGTYPE_p_ifcopenshell__geom__native, SWIG_POINTER_OWN);
+			return SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<ifcopenshell::geom::native>(brep_representation)), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geom__native_t, SWIG_POINTER_OWN);
 		} else {
-			return SWIG_Py_Void();
+			return SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<ifcopenshell::geom::representation>(representation)), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geom__representation_t, SWIG_POINTER_OWN);
 		}
 	}
 	PyObject* operator()(ifcopenshell::geom::transformation* transformation) const {
@@ -677,9 +714,9 @@ struct shape_rtti : public boost::static_visitor<PyObject*>
 %}
 
 // Note that these elements ARE to be owned by SWIG/Python
-%typemap(out) std::variant<ifcopenshell::geom::element*, ifcopenshell::geom::representation*, ifcopenshell::geom::transformation*> {
+%typemap(out) std::variant<ifcopenshell::geom::element*, std::shared_ptr<ifcopenshell::geom::representation>, ifcopenshell::geom::transformation*> {
 	// See which type is set and return appropriate
-	$result = std::visit(shape_rtti(), (std::variant<ifcopenshell::geom::element*, ifcopenshell::geom::representation*, ifcopenshell::geom::transformation*>) $1);
+	$result = std::visit(shape_rtti(), (std::variant<ifcopenshell::geom::element*, std::shared_ptr<ifcopenshell::geom::representation>, ifcopenshell::geom::transformation*>) $1);
 }
 
 %newobject construct_iterator;
@@ -882,6 +919,16 @@ struct shape_rtti : public boost::static_visitor<PyObject*>
 };
 
 %extend ifcopenshell::geom::triangulation_element {
+	// The geometry_pointer member is ignored, because a shared_ptr reference is
+	// of no use from Python. Returning it by value shares the control block, so
+	// the triangulation can also be handed to another element.
+	std::shared_ptr<ifcopenshell::geom::triangulation> geometry_pointer_() const {
+		return $self->geometry_pointer();
+	}
+
+	%pythoncode %{
+		geometry_pointer = property(geometry_pointer_)
+	%}
 };
 
 %extend ifcopenshell::geom::serialized_element {
@@ -952,7 +999,7 @@ struct shape_rtti : public boost::static_visitor<PyObject*>
 		return oss.str();
 	}
 
-	static std::variant<ifcopenshell::geom::element*, ifcopenshell::geom::representation*, ifcopenshell::geom::transformation*> helper_fn_create_shape_with_converter(ifcopenshell::geom::converter& kernel, ifcopenshell::geom::settings& settings, const express::base& instance, const express::base& representation) {
+	static std::variant<ifcopenshell::geom::element*, std::shared_ptr<ifcopenshell::geom::representation>, ifcopenshell::geom::transformation*> helper_fn_create_shape_with_converter(ifcopenshell::geom::converter& kernel, ifcopenshell::geom::settings& settings, const express::base& instance, const express::base& representation) {
 		if (instance.declaration().is("IfcProduct")) {
 			if (representation && !representation.declaration().is("IfcRepresentation")) {
 				throw ifcopenshell::exception("Supplied representation not of type IfcRepresentation");
@@ -1014,9 +1061,9 @@ struct shape_rtti : public boost::static_visitor<PyObject*>
 					ifcopenshell::geom::native brep(kernel.settings(), instance.declaration().name(), to_locale_invariant_string(instance.id()), shapes);
 					try {
 						if (settings.get<ifcopenshell::geom::settings::IteratorOutput>().get() == ifcopenshell::geom::settings::SERIALIZED) {
-							return new ifcopenshell::geom::serialization(brep);
+							return std::make_shared<ifcopenshell::geom::serialization>(brep);
 						} else if (settings.get<ifcopenshell::geom::settings::IteratorOutput>().get() == ifcopenshell::geom::settings::TRIANGULATED) {
-							return new ifcopenshell::geom::triangulation(brep);
+							return std::make_shared<ifcopenshell::geom::triangulation>(brep);
 						}
 					} catch (...) {
 						throw ifcopenshell::exception("error during shape serialization");
@@ -1026,10 +1073,10 @@ struct shape_rtti : public boost::static_visitor<PyObject*>
 				throw ifcopenshell::exception("Invalid additional representation specified");
 			}
 		}
-		return std::variant<ifcopenshell::geom::element*, ifcopenshell::geom::representation*, ifcopenshell::geom::transformation*>();
+		return std::variant<ifcopenshell::geom::element*, std::shared_ptr<ifcopenshell::geom::representation>, ifcopenshell::geom::transformation*>();
 	}
 
-	static std::variant<ifcopenshell::geom::element*, ifcopenshell::geom::representation*, ifcopenshell::geom::transformation*> helper_fn_create_shape(ifcopenshell::logger& logger, const std::string& geometry_library, ifcopenshell::geom::settings& settings, const express::base& instance, const express::base& representation = express::base()) {
+	static std::variant<ifcopenshell::geom::element*, std::shared_ptr<ifcopenshell::geom::representation>, ifcopenshell::geom::transformation*> helper_fn_create_shape(ifcopenshell::logger& logger, const std::string& geometry_library, ifcopenshell::geom::settings& settings, const express::base& instance, const express::base& representation = express::base()) {
 		ifcopenshell::file* file = instance.file();
 		ifcopenshell::geom::converter kernel(ifcopenshell::geom::kernels::construct(file, geometry_library, settings, logger), file, settings, logger);
 		return helper_fn_create_shape_with_converter(kernel, settings, instance, representation);
@@ -1061,6 +1108,18 @@ ifcopenshell::geom::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type_inf
     }
     return nullptr;
 }
+
+// The style::ptr conversion used by the generic vector typemap takes a style
+// instance and shares the pointer instead of wrapping it again.
+template <>
+bool check_python_type<ifcopenshell::geom::taxonomy::style::ptr>(PyObject* element) {
+    return static_cast<bool>(try_upcast<ifcopenshell::geom::taxonomy::style>(element, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geom__taxonomy__style_t));
+}
+
+template <>
+ifcopenshell::geom::taxonomy::style::ptr cast_pyobject<ifcopenshell::geom::taxonomy::style::ptr>(PyObject* element) {
+    return std::static_pointer_cast<ifcopenshell::geom::taxonomy::style>(try_upcast<ifcopenshell::geom::taxonomy::style>(element, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geom__taxonomy__style_t));
+}
 %}
 
 %inline %{
@@ -1071,12 +1130,12 @@ ifcopenshell::geom::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type_inf
 %}
 
 %inline %{
-	static std::variant<ifcopenshell::geom::element*, ifcopenshell::geom::representation*, ifcopenshell::geom::transformation*> create_shape(ifcopenshell::geom::settings& settings, const express::base& instance, const express::base& representation, const char* const geometry_library="opencascade", ifcopenshell::logger* logger = nullptr) {
+	static std::variant<ifcopenshell::geom::element*, std::shared_ptr<ifcopenshell::geom::representation>, ifcopenshell::geom::transformation*> create_shape(ifcopenshell::geom::settings& settings, const express::base& instance, const express::base& representation, const char* const geometry_library="opencascade", ifcopenshell::logger* logger = nullptr) {
 		return helper_fn_create_shape(ifcopenshell::logger_or_root(logger), geometry_library, settings, instance, representation);
 	}
 
 	// Manual definition of overload without representation argument
-	static std::variant<ifcopenshell::geom::element*, ifcopenshell::geom::representation*, ifcopenshell::geom::transformation*> create_shape(ifcopenshell::geom::settings& settings, const express::base& instance, const char* const geometry_library="opencascade", ifcopenshell::logger* logger = nullptr) {
+	static std::variant<ifcopenshell::geom::element*, std::shared_ptr<ifcopenshell::geom::representation>, ifcopenshell::geom::transformation*> create_shape(ifcopenshell::geom::settings& settings, const express::base& instance, const char* const geometry_library="opencascade", ifcopenshell::logger* logger = nullptr) {
 		return create_shape(settings, instance, express::base(), geometry_library, logger);
 	}
 %}
@@ -1093,7 +1152,7 @@ ifcopenshell::geom::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type_inf
 			, converter_(ifcopenshell::geom::kernels::construct(file, geometry_library, settings_, ifcopenshell::logger_or_root(logger)), file, settings_, ifcopenshell::logger_or_root(logger))
 		{}
 
-		std::variant<ifcopenshell::geom::element*, ifcopenshell::geom::representation*, ifcopenshell::geom::transformation*> create_shape(const express::base& instance, const express::base& representation) {
+		std::variant<ifcopenshell::geom::element*, std::shared_ptr<ifcopenshell::geom::representation>, ifcopenshell::geom::transformation*> create_shape(const express::base& instance, const express::base& representation) {
 			if (instance.file() != file_) {
 				throw ifcopenshell::exception("Instance does not belong to the file this kernel was constructed for");
 			}
@@ -1101,7 +1160,7 @@ ifcopenshell::geom::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type_inf
 		}
 
 		// Manual definition of overload without representation argument
-		std::variant<ifcopenshell::geom::element*, ifcopenshell::geom::representation*, ifcopenshell::geom::transformation*> create_shape(const express::base& instance) {
+		std::variant<ifcopenshell::geom::element*, std::shared_ptr<ifcopenshell::geom::representation>, ifcopenshell::geom::transformation*> create_shape(const express::base& instance) {
 			return create_shape(instance, express::base());
 		}
 
