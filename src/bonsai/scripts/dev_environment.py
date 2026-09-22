@@ -57,6 +57,7 @@ BINARIES_SOURCE_DESCRIPTIONS = {
 class Args(NamedTuple):
     blender_version: str | None
     binaries_source: str | None
+    repo_path: str | None
 
 
 def parse_args() -> Args:
@@ -73,6 +74,10 @@ def parse_args() -> Args:
             "; ".join(f"{k}: {v}" for k, v in BINARIES_SOURCE_DESCRIPTIONS.items())
         ),
     )
+    arg_parser.add_argument(
+        "--repo-path",
+        help="Path to your local IfcOpenShell repository. Deduced from this script's location if not set.",
+    )
     namespace = arg_parser.parse_args()
     return Args(**vars(namespace))
 
@@ -82,13 +87,6 @@ ARGS = parse_args()
 # ---------------------------
 # SETTINGS.
 # ---------------------------
-# REPO_PATH: Path to your local IfcOpenShell repository.
-# By default, this script will automatically detect the repository path based on its own location,
-# so you usually do NOT need to set this manually.
-# If you want to specify it explicitly, set it to the full absolute path, e.g.:
-# > REPO_PATH = r"C:\Path\To\Your\IfcOpenShell\Repository"
-REPO_PATH = r""
-
 # BLENDER_PATH: Path to Blender's configuration folder.
 # User will be prompted for the Blender version, unless provided via --blender-version.
 BLENDER_VERSION: str | None = ARGS.blender_version
@@ -144,11 +142,11 @@ PACKAGE_PATH = BLENDER_PATH / rf"extensions/.local/lib/python{PYTHON_VERSION}/si
 
 
 def main() -> None:
-    global REPO_PATH
+    REPO_PATH = Path(ARGS.repo_path) if ARGS.repo_path else None
 
-    if not REPO_PATH:
+    if REPO_PATH is None:
         script_path = Path(__file__)
-        print(f"REPO_PATH is not set, deducing it from {script_path.name} location...")
+        print(f"--repo-path is not set, deducing it from {script_path.name} location...")
         repo_bonsai_path = script_path.parent.parent
         assert repo_bonsai_path.name == "bonsai", (
             "Failed to deduce REPO_PATH from the script's location. "
@@ -164,7 +162,7 @@ def main() -> None:
     print(f"BONSAI_PATH={BONSAI_PATH}")
     print("-" * 10)
 
-    assert REPO_PATH.exists(), f"Path '{REPO_PATH=!s}' doesn't exist, ensure variable is set correctly."
+    assert REPO_PATH.exists(), f"Path '{REPO_PATH=!s}' doesn't exist, ensure --repo-path is set correctly."
     assert BLENDER_PATH.exists(), f"Path '{BLENDER_PATH=!s}' doesn't exist, ensure variable is set correctly."
     assert PACKAGE_PATH.exists(), f"Path '{PACKAGE_PATH=!s}' doesn't exist, ensure variable is set correctly."
     assert BONSAI_PATH is not None, (
