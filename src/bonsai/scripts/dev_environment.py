@@ -17,11 +17,13 @@ Example usage:
 
 """
 
+import argparse
 import shutil
 import subprocess
 import sys
 import urllib.request
 from pathlib import Path
+from typing import NamedTuple
 
 available_platforms = ("win32", "darwin", "linux")
 if sys.platform not in available_platforms:
@@ -45,6 +47,24 @@ if not existing_versions:
     print(f"No existing Blender versions found in '{BLENDER_CONFIG_PATH}'. Install Blender first.")
     exit(1)
 
+
+class Args(NamedTuple):
+    blender_version: str | None
+
+
+def parse_args() -> Args:
+    arg_parser = argparse.ArgumentParser(description=__doc__)
+    arg_parser.add_argument(
+        "--blender-version",
+        choices=existing_versions,
+        help="Blender version. Will be prompted if not set.",
+    )
+    namespace = arg_parser.parse_args()
+    return Args(**vars(namespace))
+
+
+ARGS = parse_args()
+
 # ---------------------------
 # SETTINGS.
 # ---------------------------
@@ -56,9 +76,11 @@ if not existing_versions:
 REPO_PATH = r""
 
 # BLENDER_PATH: Path to Blender's configuration folder.
-# User will be prompted for the Blender version.
-print(f"Existing Blender versions found: {', '.join(existing_versions)}")
-BLENDER_VERSION = input("Enter your Blender version: ").strip()
+# User will be prompted for the Blender version, unless provided via --blender-version.
+BLENDER_VERSION: str | None = ARGS.blender_version
+if not BLENDER_VERSION:
+    print(f"Existing Blender versions found: {', '.join(existing_versions)}")
+    BLENDER_VERSION = input("Enter your Blender version: ").strip()
 
 BLENDER_PATH = BLENDER_CONFIG_PATH / BLENDER_VERSION
 
