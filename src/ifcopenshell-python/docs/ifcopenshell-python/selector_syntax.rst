@@ -52,7 +52,7 @@ Filtering is typically used to select any IFC element or type.
 
     "``IfcDoor, Name=D01``", "Any doors named D01, notice how attributes match the IFC Attribute naming exactly"
 
-    "``IfcDoor, Name=/D[0-9]{2}/``", "Any doors with the naming scheme of D followed by two numbers:"
+    "``IfcDoor, Name=/D[0-9]{2}$/``", "Any doors with the naming scheme of D followed by two numbers. The trailing ``$`` matters: without it ``D123`` would match too, because a regex is only anchored at the start. See `Regex values are anchored at the start`_."
 
     "``IfcWall, Pset_WallCommon.FireRating=2HR``", "Any 2 hour fire rated wall"
 
@@ -152,7 +152,23 @@ three ways you can do so:
 
     "Quoted string", "``""foo \""bar\"" baz""``", "The value must be in double quotes. The value may contain spaces, symbols, and other characters. If you need to use a double quote, you can escape it with a backslash. This is the safest, most general way to specify a value."
     "Unquoted string", "``foobarbaz``", "For convenience, if your value contains none of the characters listed under `Quoting values in filters`_ below, you are free to specify it as an unquoted string."
-    "Regex string", "``/foo.*baz/``", "You may specify a Python-compatible regex pattern delimited by forward slashes. You can learn more about regular expressions from `Beginners Regex tutorial <https://regexone.com/>`_ and `Online Regex testing website <https://regex101.com/>`_."
+    "Regex string", "``/foo.*baz/``", "You may specify a Python-compatible regex pattern delimited by forward slashes. The pattern is anchored at the start but not at the end - see `Regex values are anchored at the start`_. You can learn more about regular expressions from `Beginners Regex tutorial <https://regexone.com/>`_ and `Online Regex testing website <https://regex101.com/>`_."
+
+Regex values are anchored at the start
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A regex value is matched with :func:`re.match`, which anchors the pattern at the
+start of the value but not at its end. A pattern therefore matches any value
+that *begins* with it, which is a prefix match rather than a full one:
+
+.. code-block::
+
+    Name=/D[0-9]{2}/     # matches D01, but also D123 and D01A
+    Name=/D[0-9]{2}$/    # matches D01 only
+
+Add a trailing ``$`` whenever you mean an exact match. This is easy to miss with
+values drawn from an enumeration, where ``/DEMOLISH/`` also picks up
+``DEMOLISHED``.
 
 Quoting values in filters
 ~~~~~~~~~~~~~~~~~~~~~~~~~
