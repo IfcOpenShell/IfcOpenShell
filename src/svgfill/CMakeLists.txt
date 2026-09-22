@@ -11,7 +11,6 @@ if(POLICY CMP0167) # 3.30 find_package(Boost) to use BoostConfig instead of Find
 endif()
 
 if(WIN32 AND NOT DEFINED ENV{CONDA_BUILD})
-    set(Boost_USE_STATIC_LIBS ON)
     set(Boost_USE_STATIC_RUNTIME OFF)
     set(Boost_USE_MULTITHREADED ON)
 else()
