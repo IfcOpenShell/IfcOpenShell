@@ -32,6 +32,7 @@ from typing import NamedTuple
 from urllib.request import urlretrieve
 
 from common import (
+    OFF_ON,
     REPO_ROOT,
     SCRIPT_DIR,
     BuildCfg,
@@ -44,6 +45,11 @@ from common import (
 )
 from common_win import BuildDepsCache, msbuild_multiproc_args
 from vs_cfg import CMAKE_GENERATORS, VS_TOOLSET_TO_VS_VER, VsCfgResult, get_vs_var
+
+
+def get_dependency_name(name: str, version: str, shared: bool) -> str:
+    shared_suffix = "-shared" if shared else ""
+    return f"{name}{shared_suffix}-{version}"
 
 
 def build_cfg_marker_filepath(dependency_install_dir: Path, build_cfg: BuildCfg) -> Path:
@@ -283,13 +289,16 @@ def install_boost(
     build_cfg: BuildCfg,
     ifcos_num_build_procs: int,
     reuse_boost: bool,
+    shared: bool,
 ) -> None:
     # NOTE Boost < 1.64 doesn't work without tricks if the user has only VS 2017 installed and no earlier versions.
     BOOST_VERSION = "1.92.0"
     DEPENDENCY_NAME = f"Boost {BOOST_VERSION}"
 
     dependency_dir = vs_cfg_vars.deps_dir / f"boost-{BOOST_VERSION}"
-    dependency_install_dir = dependency_dir / "stage" / vs_cfg_vars.gen_shorthand
+    dependency_install_dir = (
+        dependency_dir / "stage" / vs_cfg_vars.gen_shorthand / get_dependency_name("boost", BOOST_VERSION, shared)
+    )
 
     # Remove leftover dir from before the switch to the archive's actual top-level folder naming.
     # TODO: remove it a bit later.
@@ -360,6 +369,7 @@ def install_boost(
         "--abbreviate-paths",
         f"-j{ifcos_num_build_procs}",
         f"variant={debug_or_release(build_cfg).lower()}",
+        f"link={'shared' if shared else 'static'}",
         *BOOST_LIBS,
         "stage",
         f"--stagedir={dependency_install_dir}",
@@ -450,6 +460,11 @@ def install_opencollada(
     # while here we rely on the versions bundled with the OpenCOLLADA repo (Externals/pcre,
     # Externals/LibXML). Worth reconciling at some point.
     #
+    # When using `USE_SHARED=ON` OpenCOLLADA warns about
+    # "Shared library support implemented for UNIX-like OS only"
+    # and trying to build it results in many errors. So supporting it might require heavy patching.
+    # So keep it static.
+    #
     # NOTE Enforce that the embedded LibXml2 and PCRE are used as there might be problems with
     # arbitrary versions of the libraries.
     run_cmake(
@@ -504,8 +519,7 @@ def install_occt(
     # handed between plug-ins (kernel -> tree, kernel -> SVG serializer) are misread.
     # The `-shared-` infix mirrors `nix/build-all.py` and keeps the dependency cache
     # from silently serving a static build under the same name.
-    OCCT_DEPENDENCY_INSTALL_NAME = f"opencascade-shared-{OCCT_VERSION}"
-    dependency_install_dir = install_dir / OCCT_DEPENDENCY_INSTALL_NAME
+    dependency_install_dir = install_dir / get_dependency_name("opencascade", OCCT_VERSION, True)
 
     build_deps_cache.add_entry("OCC_INSTALL_DIR", str(dependency_install_dir))
 
@@ -1320,6 +1334,7 @@ def install_manifold(
     build_deps_cache: BuildDepsCache,
     num_build_procs: int,
     generator_cfg: CMakeGenCfg,
+    shared: bool,
 ) -> None:
     build_cfg = generator_cfg.build_cfg
     deps_dir = vs_cfg_vars.deps_dir
@@ -1328,7 +1343,7 @@ def install_manifold(
     MANIFOLD_VERSION = "3.2.1"
     DEPENDENCY_NAME = "manifold"
     dependency_dir = deps_dir / f"{DEPENDENCY_NAME}-{MANIFOLD_VERSION}"
-    dependency_install_dir = install_dir / f"{DEPENDENCY_NAME}-{MANIFOLD_VERSION}"
+    dependency_install_dir = install_dir / get_dependency_name(DEPENDENCY_NAME, MANIFOLD_VERSION, shared)
 
     build_deps_cache.add_entry("MANIFOLD_INSTALL_PATH", str(dependency_install_dir))
 
@@ -1348,7 +1363,7 @@ def install_manifold(
         vs_cfg_vars,
         build_type,
         f"-DCMAKE_INSTALL_PREFIX={dependency_install_dir}",
-        "-DBUILD_SHARED_LIBS=OFF",
+        f"-DBUILD_SHARED_LIBS={OFF_ON[shared]}",
         "-DMANIFOLD_PAR=OFF",
         "-DMANIFOLD_CROSS_SECTION=OFF",
         "-DMANIFOLD_PYBIND=OFF",

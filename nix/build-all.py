@@ -610,7 +610,6 @@ BUILD_SHARED = not BUILD_STATIC
 """Whether dependencies are built shared."""
 ENABLE_FLAG = "--enable-static" if BUILD_STATIC else "--enable-shared"
 DISABLE_FLAG = "--disable-shared" if BUILD_STATIC else "--disable-static"
-LINK_TYPE = "static" if BUILD_STATIC else "shared"
 LIBRARY_EXT = "a" if BUILD_STATIC else ("dylib" if APPLE else "so")
 PIC = "-fPIC" if BUILD_STATIC else ""
 
@@ -1577,7 +1576,7 @@ if "boost" in targets:
             # E.g. it ends up linking system's `libicudata.so.67`, so then we need to somehow detect and bundle
             # along the `libboost_regex.so`. So since we don't use it, better just skip it.
             "--disable-icu",
-            f"link={LINK_TYPE}",
+            f"link={'static' if BUILD_STATIC else 'shared'}",
             *toolset,
             *map(str_concat("cxxflags"), CXXFLAGS.strip().split(" ")),
             *map(str_concat("linkflags"), LDFLAGS.strip().split(" ")),
