@@ -384,20 +384,12 @@ if(WIN32 AND NOT DEFINED ENV{CONDA_BUILD})
     # compiled with a toolset different from default.
     if(MSVC)
         add_definitions(-DBOOST_ALL_NO_LIB)
-
-        # Necessary for boost version >= 1.67
-        set(BCRYPT_LIBRARIES "bcrypt.lib")
     endif()
 else()
     # Disable Boost's autolinking as the libraries to be linked to are supplied
     # already by CMake, and it's going to conflict if there are multiple, as is
     # the case in conda-forge's libboost feedstock.
     add_definitions(-DBOOST_ALL_NO_LIB)
-
-    if(WIN32)
-        # Necessary for boost version >= 1.67
-        set(BCRYPT_LIBRARIES "bcrypt.lib")
-    endif()
 endif()
 
 if(WASM_BUILD)
