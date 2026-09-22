@@ -1712,7 +1712,7 @@ if "usd" in targets:
     )
 
 if "zstd" in targets:
-    zstd_name = Dependencies.register("zstd", ZSTD_VERSION)
+    zstd_name = Dependencies.register("zstd", ZSTD_VERSION, use_shared_suffix=False)
     build_dependency(
         name=zstd_name,
         mode="cmake",
@@ -1730,7 +1730,7 @@ if "zstd" in targets:
     )
 
 if "rocksdb" in targets:
-    rocksdb_name = Dependencies.register("rocksdb", ROCKSDB_VERSION)
+    rocksdb_name = Dependencies.register("rocksdb", ROCKSDB_VERSION, use_shared_suffix=False)
     build_dependency(
         name=rocksdb_name,
         mode="cmake",
