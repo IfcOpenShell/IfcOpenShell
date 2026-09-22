@@ -30,8 +30,6 @@ class SvIfcStore:
     path = ""
     file: Union[ifcopenshell.file, None] = None
     schema = None
-    cache = None
-    cache_path = None
     id_map: dict[str, Any] = {}
     """Mapping `{node_id: Any}`"""
     guid_map = {}
@@ -57,8 +55,6 @@ class SvIfcStore:
         SvIfcStore.path = ""
         SvIfcStore.file = None
         SvIfcStore.schema = None
-        SvIfcStore.cache = None
-        SvIfcStore.cache_path = None
         SvIfcStore.id_map = {}
         SvIfcStore.guid_map = {}
         SvIfcStore.deleted_ids = set()
