@@ -573,6 +573,7 @@ def install_proj(
     dependency_install_dir = install_dir / f"proj-{PROJ_VERSION}"
 
     build_deps_cache.add_entry("PROJ_INSTALL_DIR", str(dependency_install_dir))
+    build_deps_cache.add_entry("SQLITE3_INSTALL_DIR", str(install_dir / "sqlite3"))
 
     if is_already_installed(dependency_install_dir):
         return
