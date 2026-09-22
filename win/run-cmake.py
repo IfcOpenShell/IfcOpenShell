@@ -80,11 +80,13 @@ class Deps:
         "mpfr": Dep("MPFR_INSTALL_DIR", Path("mpfr")),
         # CCACHE_INSTALL_DIR is only set when ccache wasn't found on PATH.
         "ccache": Dep("CCACHE_INSTALL_DIR", None, required=False),
-        "zstd": Dep("ZSTD_INSTALL_DIR", Path("zstd")),
+        # TODO: drop fallback_rel_path once everyone has re-run build-deps.py with versioned zstd support.
+        "zstd": Dep("ZSTD_INSTALL_DIR", None, fallback_rel_path=Path("zstd")),
         # TODO: drop this transition check once everyone has re-run build-deps.py with sqlite3 cache entry support.
         "sqlite3": Dep("SQLITE3_INSTALL_DIR", None, required=False),
         "swig": Dep("SWIG_INSTALL_DIR", None),
-        "rocksdb": Dep("ROCKSDB_INSTALL_DIR", Path("rocksdb")),
+        # TODO: drop fallback_rel_path once everyone has re-run build-deps.py with versioned rocksdb support.
+        "rocksdb": Dep("ROCKSDB_INSTALL_DIR", None, fallback_rel_path=Path("rocksdb")),
         "json": Dep("JSON_INCLUDE_DIR", Path("json"), cmake_prefix=False, pass_as_cmake_arg=True),
         # TODO: drop fallback_rel_path once everyone has re-run build-deps.py with versioned OpenCOLLADA support.
         "libxml2_libraries": Dep(

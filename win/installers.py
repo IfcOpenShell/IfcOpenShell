@@ -1188,20 +1188,22 @@ def install_eigen(vs_cfg_vars: VsCfgResult) -> None:
 def install_zstd(
     vs_cfg_vars: VsCfgResult,
     build_type: BuildType,
+    build_deps_cache: BuildDepsCache,
     num_build_procs: int,
     generator_cfg: CMakeGenCfg,
-) -> None:
+) -> Path:
     deps_dir = vs_cfg_vars.deps_dir
     install_dir = vs_cfg_vars.install_dir
 
     ZSTD_VERSION = "1.5.7"
     DEPENDENCY_NAME = "zstd"
     dependency_dir = deps_dir / f"{DEPENDENCY_NAME}-{ZSTD_VERSION}"
-    # TODO: add ZSTD_VERSION to the install path during the next version bump.
-    dependency_install_dir = install_dir / DEPENDENCY_NAME
+    dependency_install_dir = install_dir / f"{DEPENDENCY_NAME}-{ZSTD_VERSION}"
+
+    build_deps_cache.add_entry("ZSTD_INSTALL_DIR", str(dependency_install_dir))
 
     if is_already_installed(dependency_install_dir):
-        return
+        return dependency_install_dir
 
     ZSTD_ZIP = f"zstd-{ZSTD_VERSION}.zip"
     download_file(
@@ -1234,12 +1236,16 @@ def install_zstd(
         DEPENDENCY_NAME, build_path, num_build_procs=num_build_procs, generator_cfg=generator_cfg
     )
 
+    return dependency_install_dir
+
 
 def install_rocksdb(
     vs_cfg_vars: VsCfgResult,
     build_type: BuildType,
+    build_deps_cache: BuildDepsCache,
     num_build_procs: int,
     generator_cfg: CMakeGenCfg,
+    zstd_install_dir: Path,
 ) -> None:
     build_cfg = generator_cfg.build_cfg
     deps_dir = vs_cfg_vars.deps_dir
@@ -1249,8 +1255,9 @@ def install_rocksdb(
     ROCKSDB_VERSION = "9.11.2"
     DEPENDENCY_NAME = "rocksdb"
     dependency_dir = deps_dir / f"{DEPENDENCY_NAME}-{ROCKSDB_VERSION}"
-    # TODO: add ROCKSDB_VERSION to the install path during the next version bump.
-    dependency_install_dir = install_dir / DEPENDENCY_NAME
+    dependency_install_dir = install_dir / f"{DEPENDENCY_NAME}-{ROCKSDB_VERSION}"
+
+    build_deps_cache.add_entry("ROCKSDB_INSTALL_DIR", str(dependency_install_dir))
 
     if is_already_installed(dependency_install_dir, expected_build_cfg=build_cfg):
         return
@@ -1272,8 +1279,8 @@ def install_rocksdb(
     # see rocksdb/thirdparty.inc
     # providing package is not supported on Windows.
     # ZSTD_INCLUDE / ZSTD_LIB_DEBUG / ZSTD_LIB_RELEASE must be env vars - as cmake -D args they have no effect on MSVC.
-    zstd_include = install_dir / "zstd" / "include"
-    zstd_lib = install_dir / "zstd" / "lib" / "zstd_static.lib"
+    zstd_include = zstd_install_dir / "include"
+    zstd_lib = zstd_install_dir / "lib" / "zstd_static.lib"
 
     run_cmake(
         DEPENDENCY_NAME,
