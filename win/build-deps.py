@@ -382,7 +382,7 @@ def main() -> None:
     )
     install_boost(vs_cfg_vars, build_deps_cache, ARGS.build_cfg, ARGS.num_build_procs, ARGS.reuse_boost)
     install_json(vs_cfg_vars.install_dir)
-    install_opencollada(vs_cfg_vars, ARGS.build_type, ARGS.num_build_procs, generator_cfg)
+    install_opencollada(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.num_build_procs, generator_cfg)
     install_occt(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.num_build_procs, generator_cfg)
     pythonhome = install_python(vs_cfg_vars, ARGS.install_python, ARGS.python_version, build_deps_cache, nuget_exe)
     install_swig(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.num_build_procs, generator_cfg)
