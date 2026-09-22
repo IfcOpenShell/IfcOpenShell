@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# /// script
+# ///
 """Setup Bonsai Development Environment.
 
 Script links existing Bonsai installation to the provided IfcOpenShell repository.
