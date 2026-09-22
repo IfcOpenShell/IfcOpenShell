@@ -77,6 +77,8 @@ class Deps:
         # CCACHE_INSTALL_DIR is only set when ccache wasn't found on PATH.
         "ccache": Dep("CCACHE_INSTALL_DIR", None, required=False),
         "zstd": Dep("ZSTD_INSTALL_DIR", Path("zstd")),
+        # TODO: drop this transition check once everyone has re-run build-deps.py with sqlite3 cache entry support.
+        "sqlite3": Dep("SQLITE3_INSTALL_DIR", None, required=False),
         "swig": Dep("SWIG_INSTALL_DIR", None),
         "rocksdb": Dep("ROCKSDB_INSTALL_DIR", Path("rocksdb")),
         "json": Dep("JSON_INCLUDE_DIR", Path("json"), cmake_prefix=False, pass_as_cmake_arg=True),
