@@ -388,8 +388,10 @@ def main() -> None:
     install_swig(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.num_build_procs, generator_cfg)
     install_cgal(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.num_build_procs, generator_cfg)
     install_eigen(vs_cfg_vars)
-    install_zstd(vs_cfg_vars, ARGS.build_type, ARGS.num_build_procs, generator_cfg)
-    install_rocksdb(vs_cfg_vars, ARGS.build_type, ARGS.num_build_procs, generator_cfg)
+    zstd_install_dir = install_zstd(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.num_build_procs, generator_cfg)
+    install_rocksdb(
+        vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.num_build_procs, generator_cfg, zstd_install_dir
+    )
     install_qt6(vs_cfg_vars, build_deps_cache, ARGS.build_cfg, ARGS.install_qt6, ARGS.qt6_version, pythonhome)
     install_manifold(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.num_build_procs, generator_cfg)
 
