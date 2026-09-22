@@ -581,6 +581,7 @@ def install_proj(
 ) -> None:
     deps_dir = vs_cfg_vars.deps_dir
     install_dir = vs_cfg_vars.install_dir
+    build_cfg = generator_cfg.build_cfg
 
     PROJ_VERSION = "9.4.1"
     dependency_install_dir = install_dir / f"proj-{PROJ_VERSION}"
@@ -588,7 +589,7 @@ def install_proj(
     build_deps_cache.add_entry("PROJ_INSTALL_DIR", str(dependency_install_dir))
     build_deps_cache.add_entry("SQLITE3_INSTALL_DIR", str(install_dir / "sqlite3"))
 
-    if is_already_installed(dependency_install_dir):
+    if is_already_installed(dependency_install_dir, expected_build_cfg=build_cfg):
         return
 
     def install_sqlite3() -> None:
@@ -643,6 +644,7 @@ def install_proj(
             dependency_dir,
         )
 
+        # PROJ sets CMAKE_DEBUG_POSTFIX to "_d" for MSVC automatically.
         run_cmake(
             DEPENDENCY_NAME,
             dependency_dir,
@@ -668,6 +670,8 @@ def install_proj(
 
     install_sqlite3()
     _install_proj()
+
+    mark_installation(dependency_install_dir, build_cfg)
 
 
 def install_mpir(vs_cfg_vars: VsCfgResult, deps_dir: Path, install_dir: Path, build_cfg: BuildCfg) -> None:
