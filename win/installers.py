@@ -147,13 +147,16 @@ def run_cmake(
         arch_option = ("-A", vs_cfg_vars.vs_platform)
         build_type_option = ()
 
-    # TODO make deleting cache a parameter for this subroutine? We probably want to delete the
-    # cache always e.g. when we've had new changes in the repository.
     cmake_cache_path = build_path / "CMakeCache.txt"
-    if cmake_cache_path.exists() and (
-        build_type == "Rebuild" or f"CMAKE_GENERATOR:INTERNAL={cmake_generator}" not in cmake_cache_path.read_text()
-    ):
-        cmake_cache_path.unlink()
+    refresh_option = ()
+    if cmake_cache_path.exists():
+        # Switching between generators (MSBuild <-> Ninja) can only be done reliably
+        # if not just CMakeCache.txt is removed, but also CMakeFiles folders.
+        # Using `--fresh` to delegate this to cmake itself.
+        if f"CMAKE_GENERATOR:INTERNAL={cmake_generator}" not in cmake_cache_path.read_text():
+            refresh_option = ("--fresh",)
+        elif build_type == "Rebuild":
+            cmake_cache_path.unlink()
 
     run_streamed(
         "cmake",
@@ -162,6 +165,7 @@ def run_cmake(
         cmake_generator,
         *arch_option,
         *build_type_option,
+        *refresh_option,
         *extra_args,
         cwd=build_path,
         env=env,
@@ -1222,9 +1226,6 @@ def install_rocksdb(
     num_build_procs: int,
     generator_cfg: CMakeGenCfg,
 ) -> None:
-    # TODO: for some reason cmake decides to reconfigure during `--build`,
-    # when all zstd env variables are lost and zstd libs/headers become unreachable.
-    generator_cfg = generator_cfg._replace(use_ninja=False)
     build_cfg = generator_cfg.build_cfg
     deps_dir = vs_cfg_vars.deps_dir
     install_dir = vs_cfg_vars.install_dir
