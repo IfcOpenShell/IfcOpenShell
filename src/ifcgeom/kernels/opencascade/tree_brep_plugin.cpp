@@ -18,7 +18,7 @@
  ********************************************************************************/
 
 #include "../../tree_plugin.h"
-#include "tree_backends.h"
+#include "tree_brep.h"
 
 #include <boost/dll/alias.hpp>
 
