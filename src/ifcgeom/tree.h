@@ -78,13 +78,13 @@ namespace ifcopenshell::geom {
 
 		// Selection is only supported by backends that ingest native elements. Other
 		// backends raise, as do other unsupported combinations below.
-		virtual std::vector<express::entity> select_box(const express::entity& entity, bool completely_within = false, double extend = -1.e-5) const;
-		virtual std::vector<express::entity> select_box(const tree_point& point) const;
-		virtual std::vector<express::entity> select_box(const tree_box& bounds, bool completely_within = false) const;
+		virtual std::vector<express::base> select_box(const express::base& entity, bool completely_within = false, double extend = -1.e-5) const;
+		virtual std::vector<express::base> select_box(const tree_point& point) const;
+		virtual std::vector<express::base> select_box(const tree_box& bounds, bool completely_within = false) const;
 
-		virtual std::vector<express::entity> select(const express::entity& entity, bool completely_within = false, double extend = 0.0) const;
-		virtual std::vector<express::entity> select(const ifcopenshell::geom::element* element, bool completely_within = false, double extend = -1.e-5) const;
-		virtual std::vector<express::entity> select(const tree_point& point, double extend = 0.0) const;
+		virtual std::vector<express::base> select(const express::base& entity, bool completely_within = false, double extend = 0.0) const;
+		virtual std::vector<express::base> select(const ifcopenshell::geom::element* element, bool completely_within = false, double extend = -1.e-5) const;
+		virtual std::vector<express::base> select(const tree_point& point, double extend = 0.0) const;
 		virtual std::vector<ray_intersection_result> select_ray(const tree_point& origin, const tree_point& direction, double length = 1000.) const;
 
 		// Clashing is only supported by backends that ingest triangulated elements.
