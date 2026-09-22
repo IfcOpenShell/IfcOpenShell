@@ -614,67 +614,29 @@ assign_matrix_access(revolve);
 
 %template(clashes) std::vector<ifcopenshell::geom::clash>;
 
+%include <std_array.i>
+%template(DoubleArray3) std::array<double, 3>;
+%template(DoubleArray3x2) std::array<std::array<double, 3>, 2>;
+
+// The tree is constructed through the tree registry; concrete backends live in
+// plug-ins. Keyword arguments and sequence-to-array conversions replace the
+// hand-written wrappers that used to sit here.
+%feature("kwargs") ifcopenshell::geom::tree;
 %ignore ifcopenshell::geom::tree::uint8_to_b64;
 
 %include "../ifcgeom/tree.h"
 
-%extend ifcopenshell::geom::tree {
+%{
+#include "../ifcgeom/tree_registry.h"
+%}
 
-	std::vector<express::base> select_box(const express::base& e, bool completely_within = false, double extend=-1.e-5) const {
-		if (!e.declaration().is("IfcProduct")) {
-			throw ifcopenshell::exception("Instance should be an IfcProduct");
-		}
-		return cast_vector<express::base>($self->select_box(e.as<express::entity>(), completely_within, extend));
+%newobject create_tree;
+
+%inline %{
+	ifcopenshell::geom::tree* create_tree(const std::string& backend_id) {
+		return ifcopenshell::geom::trees::construct(backend_id).release();
 	}
-
-	std::vector<express::base> select_box(const std::vector<double>& p) const {
-		if (p.size() != 3) {
-			throw ifcopenshell::exception("Point should be a sequence of 3 floats");
-		}
-		ifcopenshell::geom::tree_point point = {{ p[0], p[1], p[2] }};
-		return cast_vector<express::base>($self->select_box(point));
-	}
-
-	std::vector<express::base> select_box(const std::vector<std::vector<double>>& b, bool completely_within = false) const {
-		if (b.size() != 2 || b[0].size() != 3 || b[1].size() != 3) {
-			throw ifcopenshell::exception("Bounding box should be a sequence of 2 x 3 floats");
-		}
-		ifcopenshell::geom::tree_box box = {{
-			{ b[0][0], b[0][1], b[0][2] },
-			{ b[1][0], b[1][1], b[1][2] }
-		}};
-		return cast_vector<express::base>($self->select_box(box, completely_within));
-	}
-
-	std::vector<express::base> select(const express::base& e, bool completely_within = false, double extend = 0.0) const {
-		if (!e.declaration().is("IfcProduct")) {
-			throw ifcopenshell::exception("Instance should be an IfcProduct");
-		}
-		return cast_vector<express::base>($self->select(e.as<express::entity>(), completely_within, extend));
-	}
-
-	std::vector<express::base> select(const std::vector<double>& p, double extend=0.0) const {
-		if (p.size() != 3) {
-			throw ifcopenshell::exception("Point should be a sequence of 3 floats");
-		}
-		ifcopenshell::geom::tree_point point = {{ p[0], p[1], p[2] }};
-		return cast_vector<express::base>($self->select(point, extend));
-	}
-
-	std::vector<express::base> select(const ifcopenshell::geom::element* elem, bool completely_within = false, double extend = -1.e-5) const {
-		return cast_vector<express::base>($self->select(elem, completely_within, extend));
-	}
-
-	std::vector<ifcopenshell::geom::ray_intersection_result> select_ray(const std::vector<double>& p0, const std::vector<double>& d, double length = 1000.) const {
-		if (p0.size() != 3 || d.size() != 3) {
-			throw ifcopenshell::exception("Origin and direction should be sequences of 3 floats");
-		}
-		ifcopenshell::geom::tree_point origin = {{ p0[0], p0[1], p0[2] }};
-		ifcopenshell::geom::tree_point direction = {{ d[0], d[1], d[2] }};
-		return $self->select_ray(origin, direction, length);
-	}
-
-}
+%}
 
 // A visitor
 %{
