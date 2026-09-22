@@ -110,7 +110,7 @@ jobs:
             uv run ./nix/build-all.py \
               -v \
               --diskcleanup \
-              --ifcopenshell-shared \
+              --shared \
               --add-commit-sha \
               --build-cfg Release \
               --use-ninja \
@@ -144,7 +144,7 @@ jobs:
 
       - name: Package .zip archives
         run: |
-          uv run nix/package-zip-archives.py "macos${{ matrix.oldarch }}64"
+          uv run nix/package-zip-archives.py "macos${{ matrix.oldarch }}64" --shared
 
       - name: Test packaged Python wrapper
         # Imports the *packaged* wrapper and exercises the cross-plug-in hand-offs
