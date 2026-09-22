@@ -91,6 +91,18 @@ The filters are chained and apply from left to right.
 
     filter[, filter]*
 
+Each group is evaluated independently, so a filter narrows only the group it is
+written in. Criteria that should apply to the whole result must be repeated in
+every group:
+
+.. code-block::
+
+    IfcWall, location="Level 3" + IfcSlab, location="Level 3"
+
+Written as ``IfcWall, location="Level 3" + IfcSlab``, the second group would
+contribute slabs from every level. There is no parenthesis syntax to factor a
+shared filter out of several groups.
+
 Any part of a query may be commented out using a ``/* ... */`` block comment.
 This lets you temporarily disable part of a query without deleting the text, for
 example ``IfcWall + /* IfcSlab, material=concrete */`` selects only walls while
