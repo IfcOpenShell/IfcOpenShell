@@ -434,6 +434,18 @@ def install_opencollada(
             cwd=dependency_dir,
         )
 
+    libxml_cmakelists = dependency_dir / "Externals" / "LibXML" / "CMakeLists.txt"
+    if "LIBXML_HTTP_ENABLED" in libxml_cmakelists.read_text():
+        run_streamed(
+            "git",
+            "apply",
+            "--reject",
+            "--whitespace=fix",
+            str(REPO_ROOT / "nix" / "patches" / "opencollada" / "disable_libxml_http.patch"),
+            "--ignore-whitespace",
+            cwd=dependency_dir,
+        )
+
     # TODO: inconsistency with nix/build-all - there we prepare pcre and libxml2 separately,
     # while here we rely on the versions bundled with the OpenCOLLADA repo (Externals/pcre,
     # Externals/LibXML). Worth reconciling at some point.
