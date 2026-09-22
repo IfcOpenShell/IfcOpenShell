@@ -1334,6 +1334,8 @@ if USE_OCCT and "occ" in targets:
         name=occt_name,
         mode="cmake",
         build_tool_args=[
+            # OCCT completely ignores `BUILD_SHARED_LIBS`
+            # and derives it's value from `BUILD_LIBRARY_TYPE` ('Shared' by defeault).
             f"-DBUILD_LIBRARY_TYPE={occt_link_type}",
             f"-DBUILD_MODULE_Draw=0",
             f"-DBUILD_RELEASE_DISABLE_EXCEPTIONS=Off",
