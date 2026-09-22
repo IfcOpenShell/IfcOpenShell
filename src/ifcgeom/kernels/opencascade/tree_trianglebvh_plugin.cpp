@@ -18,7 +18,7 @@
  ********************************************************************************/
 
 #include "../../tree_plugin.h"
-#include "tree_trianglebvh.h"
+#include "bvh_tree.h"
 
 #include <boost/dll/alias.hpp>
 
@@ -36,7 +36,7 @@ namespace ifcopenshell {
 				}
 
 				ifcopenshell::geom::tree* create_tree() {
-					return new opencascade_tree_backends::trianglebvh_tree();
+					return new ifcopenshell::geom::impl::bvh_tree();
 				}
 
 				void register_plugin(tree_registry& registry, const plugin::module& module) {

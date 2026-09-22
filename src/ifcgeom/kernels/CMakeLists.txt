@@ -86,9 +86,14 @@ foreach(kernel ${GEOMETRY_KERNELS})
 	if (NOT WASM_BUILD)
         foreach(tree_backend brep trianglebvh)
             set(TREE_TARGET "geometry_tree_opencascade_${tree_backend}")
+            if(${tree_backend} STREQUAL "brep")
+                set(TREE_IMPLEMENTATION ub_tree.h)
+            else()
+                set(TREE_IMPLEMENTATION bvh_tree.h)
+            endif()
             add_library(${TREE_TARGET} SHARED
                 ${kernel}/tree_${tree_backend}_plugin.cpp
-                ${kernel}/tree_${tree_backend}.h
+                ${kernel}/${TREE_IMPLEMENTATION}
             )
             if((NOT WIN32) AND NOT CREATE_BUNDLE AND NOT CMAKE_INSTALL_RPATH AND COMMAND SET_INSTALL_SELF_RPATH)
                 SET_INSTALL_SELF_RPATH(${TREE_TARGET})

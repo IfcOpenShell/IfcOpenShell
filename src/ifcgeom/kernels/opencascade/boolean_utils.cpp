@@ -1,6 +1,6 @@
 #include "boolean_utils.h"
 
-#include "tree.h"
+#include "ub_tree.h"
 #include "base_utils.h"
 
 #include <BRepBuilderAPI_Copy.hxx>
@@ -85,7 +85,7 @@ double ifcopenshell::geom::util::min_vertex_edge_distance(const TopoDS_Shape & a
 	TopExp::MapShapes(a, TopAbs_VERTEX, vertices);
 	TopExp::MapShapes(a, TopAbs_EDGE, edges);
 
-	ifcopenshell::geom::impl::tree<int> tree;
+	ifcopenshell::geom::impl::ub_tree<int> tree;
 
 	// Add edges to tree
 	for (int i = 1; i <= edges.Extent(); ++i) {
@@ -164,7 +164,7 @@ double ifcopenshell::geom::util::min_face_face_distance(const TopoDS_Shape & a, 
 
 	TopExp::MapShapes(a, TopAbs_FACE, faces);
 
-	ifcopenshell::geom::impl::tree<int> tree;
+	ifcopenshell::geom::impl::ub_tree<int> tree;
 
 	// Add faces to tree
 	for (int i = 1; i <= faces.Extent(); ++i) {
@@ -445,7 +445,7 @@ int ifcopenshell::geom::util::eliminate_touching_operands(double prec, const Top
 	NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> a_vertices;
 	TopExp::MapShapes(a, TopAbs_VERTEX, a_vertices);
 
-	ifcopenshell::geom::impl::tree<int> tree;
+	ifcopenshell::geom::impl::ub_tree<int> tree;
 
 	// Add faces to tree
 	for (int i = 1; i <= a_faces.Extent(); ++i) {
@@ -574,7 +574,7 @@ int ifcopenshell::geom::util::eliminate_touching_operands(double prec, const Top
 }
 
 bool ifcopenshell::geom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_input, const NCollection_List<TopoDS_Shape> & b_input, TopoDS_Shape & result, double eps, ifcopenshell::logger& logger) {
-	ifcopenshell::geom::impl::tree<int> edge_tree;
+	ifcopenshell::geom::impl::ub_tree<int> edge_tree;
 
 	NCollection_List<TopoDS_Shape> ab_input = b_input;
 	ab_input.Prepend(a_input);
@@ -756,7 +756,7 @@ bool ifcopenshell::geom::util::boolean_subtraction_2d_using_builder(const TopoDS
 
 	// Now build a tree to find inner wires contained in other inner wires
 	// NB first wire is *not* in this tree
-	ifcopenshell::geom::impl::tree<int> wire_tree;
+	ifcopenshell::geom::impl::ub_tree<int> wire_tree;
 	for (size_t wire_index = 1; wire_index < wires.size(); ++wire_index) {
 		wire_tree.add(static_cast<int>(wire_index), wires[wire_index]);
 	}
@@ -1225,7 +1225,7 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 							TopExp::MapShapes(bb, TopAbs_EDGE, edges);
 							TopExp::MapShapesAndAncestors(bb, TopAbs_EDGE, TopAbs_FACE, map);
 						}
-						ifcopenshell::geom::impl::tree<int> tree;
+						ifcopenshell::geom::impl::ub_tree<int> tree;
 						for (int i = 1; i <= edges.Extent(); ++i) {
 							tree.add(i, edges.FindKey(i));
 						}

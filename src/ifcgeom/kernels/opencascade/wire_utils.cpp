@@ -5,7 +5,7 @@
 
 #include "base_utils.h"
 #include "boolean_utils.h"
-#include "tree.h"
+#include "ub_tree.h"
 
 #include <TopExp.hxx>
 #include <TopoDS.hxx>
@@ -398,7 +398,7 @@ bool ifcopenshell::geom::util::wire_intersections(const TopoDS_Wire& wire, NColl
 
 	// ... to be sure to get consecutive edges
 	BRepTools_WireExplorer exp(wire);
-	ifcopenshell::geom::impl::tree<int> tree;
+	ifcopenshell::geom::impl::ub_tree<int> tree;
 
 	int edge_idx = 0;
 	for (; exp.More(); exp.Next()) {
