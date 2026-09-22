@@ -88,7 +88,7 @@ foreach(kernel ${GEOMETRY_KERNELS})
             set(TREE_TARGET "geometry_tree_opencascade_${tree_backend}")
             add_library(${TREE_TARGET} SHARED
                 ${kernel}/tree_${tree_backend}_plugin.cpp
-                ${kernel}/tree_backends.h
+                ${kernel}/tree_${tree_backend}.h
             )
             if((NOT WIN32) AND NOT CREATE_BUNDLE AND NOT CMAKE_INSTALL_RPATH AND COMMAND SET_INSTALL_SELF_RPATH)
                 SET_INSTALL_SELF_RPATH(${TREE_TARGET})
