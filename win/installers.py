@@ -564,8 +564,6 @@ def install_proj(
     num_build_procs: int,
     generator_cfg: CMakeGenCfg,
 ) -> None:
-    build_cfg = generator_cfg.build_cfg
-    use_ninja = generator_cfg.use_ninja
     deps_dir = vs_cfg_vars.deps_dir
     install_dir = vs_cfg_vars.install_dir
 
@@ -1030,7 +1028,6 @@ def install_swig(
 ) -> None:
     # SWIG is always built as Release, regardless of the overall build config.
     generator_cfg = generator_cfg._replace(build_cfg="Release")
-    build_cfg = generator_cfg.build_cfg
 
     SWIG_VERSION = "4.4.1"
     DEPENDENCY_NAME = "SWIG"
@@ -1101,7 +1098,6 @@ def install_cgal(
     num_build_procs: int,
     generator_cfg: CMakeGenCfg,
 ) -> None:
-    build_cfg = generator_cfg.build_cfg
     deps_dir = vs_cfg_vars.deps_dir
     install_dir = vs_cfg_vars.install_dir
 
@@ -1176,7 +1172,6 @@ def install_zstd(
     num_build_procs: int,
     generator_cfg: CMakeGenCfg,
 ) -> None:
-    build_cfg = generator_cfg.build_cfg
     deps_dir = vs_cfg_vars.deps_dir
     install_dir = vs_cfg_vars.install_dir
 

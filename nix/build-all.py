@@ -136,6 +136,8 @@ from pathlib import Path
 from typing import IO, Literal, NamedTuple, TypeAlias
 from urllib.request import urlretrieve
 
+from typing_extensions import assert_never
+
 from common import (
     ADD_COMMIT_SHA_DEFAULT,
     BUILD_CFG_DEFAULT,
@@ -148,7 +150,6 @@ from common import (
     is_on_off,
     resolve_cli_or_env,
 )
-from typing_extensions import assert_never
 
 # `common` configures the root logger on import, so reuse it here.
 logger = logging.getLogger()
@@ -974,7 +975,7 @@ def build_dependency(
             if os.path.exists(patch_abs):
                 try:
                     run(["patch", "-p1", "--batch", "--forward", "-i", patch_abs], cwd=extract_dir)
-                except Exception as e:
+                except Exception:
                     # Assert that the patch has already been applied
                     run(["patch", "-p1", "--batch", "--reverse", "--dry-run", "-i", patch_abs], cwd=extract_dir)
             else:
