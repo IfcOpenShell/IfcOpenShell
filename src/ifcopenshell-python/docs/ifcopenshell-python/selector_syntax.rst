@@ -112,7 +112,7 @@ will search through all IfcTypeProducts and IfcProducts in the IFC project.
     "Class", "Add", "``[!] {{ifc_class_name}}``", "``IfcWall`` adds all IfcWall elements and their subclasses. ``! IfcWall`` subtracts all non-IfcWall elements from the filter group."
     "GlobalId", "Add", "``[!] {{global_id}}``", "``325Q7Fhnf67OZC$$r43uzK`` adds the single element with that GlobalId attribute. ``! 325Q7Fhnf67OZC$$r43uzK`` subtracts that single element."
     "Attribute", "Filter", "``{{name}}{{=}}{{value}}``", "``Name=Foo`` specifies the criteria that elements must have a ``Name`` attribute with a value of ``Foo``. Attribute names must be spelled exactly the same as in IFC, which means that they must start with an uppercase character. For convenience, ``PredefinedType`` will be get using :func:`ifcopenshell.util.element.get_predefined_type` instead of getting the attribute directly."
-    "Property", "Filter", "``{{pset}}.{{prop}}{{=}}{{value}}``", "``Pset_WallCommon.FireRating=2HR`` specifies the criteria that elements must have a ``Pset_WallCommon`` property set, with a ``FireRating`` property within it with a value of ``2HR``. The property set name and the property name are separated by a ``.``."
+    "Property", "Filter", "``{{pset}}.{{prop}}{{=}}{{value}}``", "``Pset_WallCommon.FireRating=2HR`` specifies the criteria that elements must have a ``Pset_WallCommon`` property set, with a ``FireRating`` property within it with a value of ``2HR``. The property set name and the property name are separated by a ``.``. A property may hold more than one value, in which case the check applies to the list as a whole - see `Properties with multiple values`_."
     "Type", "Filter", "``type{{=}}{{value}}``", "``type=Foo`` specifies the criteria that elements must have a type which has a ``Name`` attribute with a value of ``Foo``."
     "Material", "Filter", "``material{{=}}{{value}}``", "``material=Foo`` specifies the criteria that elements must have a IfcMaterial assigned directly or indirectly (such as within a layer set). That IfcMaterial must have either a ``Name`` or ``Category`` attribute with a value of ``Foo``."
     "Classification", "Filter", "``classification{{=}}{{value}}``", "``classification=Foo`` specifies the criteria that elements must have an IfcClassificationReference with an ``Identification`` attribute with a value of ``Foo``."
@@ -197,6 +197,78 @@ numerically, so ``ThermalTransmittance>0.9`` does match a value of ``1.5``.
     Written as ``query:types.count=0`` it does not error, it is silently read
     as a *property* filter looking for a ``count`` property inside a property
     set named ``query:types``, which is not what you asked for.
+
+Properties with multiple values
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Not every property holds a single value. An ``IfcPropertyEnumeratedValue`` or
+``IfcPropertyListValue`` holds a list of them, and this is common in practice:
+the ``Status`` property in the standard common property sets is an enumerated
+value, so an element that is existing *and* scheduled for demolition carries
+both ``EXISTING`` and ``DEMOLISH`` at once.
+
+When a property holds a list, the comparison is applied to the list as a whole
+rather than to a single value:
+
+.. csv-table::
+   :header: "Comparison", "Matches when"
+
+    "``=``", "**Any** item in the list equals the value."
+    "``!=``", "**No** item in the list equals the value."
+
+The same applies to the other comparisons: ``*=`` matches if any item contains
+the value, ``!*=`` if none do. Negation always applies to the list as a whole,
+so ``!=`` stays the exact complement of ``=``.
+
+This means you match on the presence of one value and ignore whatever else sits
+alongside it. Given a ``Status`` of ``EXISTING, DEMOLISH``:
+
+.. code-block::
+
+    IfcDoor, /Pset_.*Common/.Status=DEMOLISH     # matches, EXISTING is ignored
+    IfcDoor, /Pset_.*Common/.Status!=DEMOLISH    # does not match
+
+Note that a regex value is *not* a way to test several values at once, because
+it is matched against each item separately. ``Status=/(EXISTING|DEMOLISH)/``
+matches an element whose status is only ``EXISTING``, which is rarely what is
+intended.
+
+Requiring a combination of values
+`````````````````````````````````
+
+Because ``,`` chains filters, repeating the same property gives you a
+combination. This selects only elements carrying *both* values, and so excludes
+one that is merely ``EXISTING``:
+
+.. code-block::
+
+    IfcDoor, /Pset_.*Common/.Status=EXISTING, /Pset_.*Common/.Status=DEMOLISH
+
+Excluding a combination is the inverse, and needs a union. There is no
+parenthesis syntax, so apply De Morgan's law by hand - ``not (A and B)`` is
+``(not A) or (not B)``:
+
+.. code-block::
+
+    IfcDoor, /Pset_.*Common/.Status!=EXISTING + IfcDoor, /Pset_.*Common/.Status!=DEMOLISH
+
+That returns every door except those that are both existing and demolished. A
+door that is ``TEMPORARY, DEMOLISH`` is kept, because it satisfies the first
+group.
+
+.. warning::
+
+    A ``+`` unions whole filter groups, so a filter written in one group does
+    not constrain any other. Any criteria that should apply to the whole result
+    has to be repeated in every group:
+
+    .. code-block::
+
+        IfcDoor, /Pset_.*Common/.Status!=EXISTING, location!="Level 3"
+         + IfcDoor, /Pset_.*Common/.Status!=DEMOLISH, location!="Level 3"
+
+    Leaving ``location`` off the second group would let doors on Level 3 back
+    in through that group.
 
 Getting element values
 ----------------------
