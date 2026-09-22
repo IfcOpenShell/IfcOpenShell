@@ -28,6 +28,23 @@ if sys.platform not in available_platforms:
     print(f"Currently only available on {', '.join(available_platforms)}. Not available on {sys.platform}.")
     exit(1)
 
+if sys.platform == "win32":
+    BLENDER_CONFIG_PATH = Path.home() / "AppData/Roaming/Blender Foundation/Blender"
+elif sys.platform == "darwin":
+    BLENDER_CONFIG_PATH = Path.home() / "Library/Application Support/Blender"
+elif sys.platform == "linux":
+    BLENDER_CONFIG_PATH = Path.home() / ".config/blender"
+else:
+    raise RuntimeError(f"Unsupported platform: {sys.platform}")
+
+existing_versions = []
+if BLENDER_CONFIG_PATH.exists():
+    existing_versions = sorted((p.name for p in BLENDER_CONFIG_PATH.iterdir() if p.is_dir()), reverse=True)
+
+if not existing_versions:
+    print(f"No existing Blender versions found in '{BLENDER_CONFIG_PATH}'. Install Blender first.")
+    exit(1)
+
 # ---------------------------
 # SETTINGS.
 # ---------------------------
@@ -40,16 +57,10 @@ REPO_PATH = r""
 
 # BLENDER_PATH: Path to Blender's configuration folder.
 # User will be prompted for the Blender version.
-BLENDER_VERSION = input("Enter your Blender version (e.g., 4.5, 4.2, 3.6): ").strip()
+print(f"Existing Blender versions found: {', '.join(existing_versions)}")
+BLENDER_VERSION = input("Enter your Blender version: ").strip()
 
-if sys.platform == "win32":
-    BLENDER_PATH = Path.home() / f"AppData/Roaming/Blender Foundation/Blender/{BLENDER_VERSION}"
-elif sys.platform == "darwin":
-    BLENDER_PATH = Path.home() / f"Library/Application Support/Blender/{BLENDER_VERSION}"
-elif sys.platform == "linux":
-    BLENDER_PATH = Path.home() / f".config/blender/{BLENDER_VERSION}"
-else:
-    raise RuntimeError(f"Unsupported platform: {sys.platform}")
+BLENDER_PATH = BLENDER_CONFIG_PATH / BLENDER_VERSION
 
 
 BONSAI_PATH_CANDIDATES = (
