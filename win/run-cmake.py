@@ -60,14 +60,18 @@ class Dep(NamedTuple):
     required: bool = True
     """Whether to error out if the dep's value can't be resolved."""
     base: Literal["DEPS", "INSTALL"] = "INSTALL"
-    """Which base dir `rel_path` is relative to."""
+    """Which base dir `rel_path` (or `fallback_rel_path`) is relative to."""
+    fallback_rel_path: Path | None = None
+    """Used in place of a missing deps-cache entry, for transition periods after a dep
+    moves from a fixed `rel_path` to a cache-provided one."""
 
 
 class Deps:
     DEPS: dict[str, Dep] = {
         "boost": Dep("BOOST_INSTALL_DIR", None),
         "occ": Dep("OCC_INSTALL_DIR", None),
-        "opencollada": Dep("OPENCOLLADA_INSTALL_DIR", Path("OpenCOLLADA")),
+        # TODO: drop fallback_rel_path once everyone has re-run build-deps.py with versioned OpenCOLLADA support.
+        "opencollada": Dep("OPENCOLLADA_INSTALL_DIR", None, fallback_rel_path=Path("OpenCOLLADA")),
         # We don't install Eigen currently,
         # so there's no Eigen3config.cmake and therefore we provide path explicitly.
         "eigen": Dep("EIGEN_DIR", Path("Eigen"), cmake_prefix=False, pass_as_cmake_arg=True),
@@ -82,18 +86,22 @@ class Deps:
         "swig": Dep("SWIG_INSTALL_DIR", None),
         "rocksdb": Dep("ROCKSDB_INSTALL_DIR", Path("rocksdb")),
         "json": Dep("JSON_INCLUDE_DIR", Path("json"), cmake_prefix=False, pass_as_cmake_arg=True),
+        # TODO: drop fallback_rel_path once everyone has re-run build-deps.py with versioned OpenCOLLADA support.
         "libxml2_libraries": Dep(
             "LIBXML2_LIBRARIES",
-            Path("OpenCOLLADA/lib/opencollada/xml.lib"),
+            None,
             cmake_prefix=False,
             pass_as_cmake_arg=True,
+            fallback_rel_path=Path("OpenCOLLADA/lib/opencollada/xml.lib"),
         ),
+        # TODO: drop fallback_rel_path once everyone has re-run build-deps.py with versioned OpenCOLLADA support.
         "libxml2_include_dir": Dep(
             "LIBXML2_INCLUDE_DIR",
-            Path("OpenCOLLADA/Externals/LibXML/include"),
+            None,
             cmake_prefix=False,
             pass_as_cmake_arg=True,
             base="DEPS",
+            fallback_rel_path=Path("OpenCOLLADA/Externals/LibXML/include"),
         ),
         # TODO: drop this TRANSITION check once everyone has re-run build-deps.py with manifold support.
         "manifold": Dep("MANIFOLD_INSTALL_PATH", None, required=False),
@@ -122,6 +130,9 @@ class Deps:
                 value = get_var(deps_cache, dep.env_var, deps_cache_only=True)
                 if isinstance(value, str):
                     value = Path(value)
+                if value is None and dep.fallback_rel_path is not None:
+                    base_dir = vs_cfg_vars.install_dir if dep.base == "INSTALL" else vs_cfg_vars.deps_dir
+                    value = base_dir / dep.fallback_rel_path
             if dep.required:
                 if value is None:
                     logger.error(f"{dep.env_var} is required but could not be resolved.")

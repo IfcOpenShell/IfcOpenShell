@@ -372,6 +372,7 @@ def install_boost(
 def install_opencollada(
     vs_cfg_vars: VsCfgResult,
     build_type: BuildType,
+    build_deps_cache: BuildDepsCache,
     num_build_procs: int,
     generator_cfg: CMakeGenCfg,
 ) -> None:
@@ -379,35 +380,39 @@ def install_opencollada(
     deps_dir = vs_cfg_vars.deps_dir
     install_dir = vs_cfg_vars.install_dir
 
+    # TODO: drop win/patches/OpenCOLLADA_CMakeLists.txt.patch once build-deps.cmd is removed.
     DEPENDENCY_NAME = "OpenCOLLADA"
+    OPENCOLLADA_VERSION = "v1.6.68"
     dependency_dir = deps_dir / "OpenCOLLADA"
-    # TODO: add the pinned revision to the install path during the next revision bump.
+    dependency_install_dir = install_dir / f"{DEPENDENCY_NAME}-{OPENCOLLADA_VERSION}"
+
+    build_deps_cache.add_entry("OPENCOLLADA_INSTALL_DIR", str(dependency_install_dir))
+    build_deps_cache.add_entry("LIBXML2_LIBRARIES", str(dependency_install_dir / "lib" / "opencollada" / "xml.lib"))
+    build_deps_cache.add_entry("LIBXML2_INCLUDE_DIR", str(dependency_dir / "Externals" / "LibXML" / "include"))
 
     # TODO: we probably can install
     # Always clone it, even if it's installed, because it contains xml headers we need.
-    # Use a fixed revision in order to prevent introducing breaking changes
-    # TODO: commit is almost 3 years behind the latest version used in nix/build-all.py, need to test and bump.
     git_clone_and_checkout_revision(
         DEPENDENCY_NAME,
         "https://github.com/KhronosGroup/OpenCOLLADA.git",
         dependency_dir,
-        "064a60b65c2c31b94f013820856bc84fb1937cc6",
+        OPENCOLLADA_VERSION,
     )
 
-    if is_already_installed(install_dir / DEPENDENCY_NAME, expected_build_cfg=build_cfg):
+    if is_already_installed(dependency_install_dir, expected_build_cfg=build_cfg):
         return
 
     # TODO: add git reset and apply patches more cleanly.
 
     # Debug build of OpenCOLLADAValidator fails (https://github.com/KhronosGroup/OpenCOLLADA/issues/377) so
     # disable it from the build altogether as we have no use for it.
-    if "#add_subdirectory(COLLADAValidator)" not in (dependency_dir / "CMakeLists.txt").read_text():
+    if "# add_subdirectory(COLLADAValidator)" not in (dependency_dir / "CMakeLists.txt").read_text():
         run_streamed(
             "git",
             "apply",
             "--reject",
             "--whitespace=fix",
-            str(SCRIPT_DIR / "patches" / "OpenCOLLADA_CMakeLists.txt.patch"),
+            str(REPO_ROOT / "nix" / "patches" / "opencollada" / "pr622_and_disable_subdirs.patch"),
             "--ignore-whitespace",
             cwd=dependency_dir,
         )
@@ -428,8 +433,6 @@ def install_opencollada(
             "--ignore-whitespace",
             cwd=dependency_dir,
         )
-
-    dependency_install_dir = install_dir / DEPENDENCY_NAME
 
     # TODO: inconsistency with nix/build-all - there we prepare pcre and libxml2 separately,
     # while here we rely on the versions bundled with the OpenCOLLADA repo (Externals/pcre,
