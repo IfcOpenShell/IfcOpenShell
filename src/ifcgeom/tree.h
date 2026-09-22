@@ -24,7 +24,6 @@
 
 #include <array>
 #include <cstdint>
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -63,49 +62,45 @@ namespace ifcopenshell::geom {
 
 	class IFC_GEOM_API tree {
 	public:
-		tree();
-		explicit tree(const std::string& backend_id);
-		explicit tree(ifcopenshell::file& file);
-		tree(ifcopenshell::file& file, const ifcopenshell::geom::settings& settings);
-		explicit tree(ifcopenshell::geom::iterator& iterator);
-		~tree();
-
-		tree(tree&& other) noexcept;
-		tree& operator=(tree&& other) noexcept;
+		tree() = default;
+		virtual ~tree();
 
 		tree(const tree& other) = delete;
 		tree& operator=(const tree& other) = delete;
 
-		void add_file(ifcopenshell::file& file, const ifcopenshell::geom::settings& settings);
+		// Identifier this implementation was registered with in the tree registry.
+		virtual std::string backend_id() const = 0;
+
+		// Process a file into the tree, or add already processed elements.
+		virtual void add_file(ifcopenshell::file& file, const ifcopenshell::geom::settings& settings);
 		void add_file(ifcopenshell::geom::iterator& iterator);
-		void add_element(ifcopenshell::geom::element* element);
+		virtual void add_element(ifcopenshell::geom::element* element);
 
-		std::vector<express::entity> select_box(const express::entity& entity, bool completely_within = false, double extend = -1.e-5) const;
-		std::vector<express::entity> select_box(const tree_point& point) const;
-		std::vector<express::entity> select_box(const tree_box& bounds, bool completely_within = false) const;
+		// Selection is only supported by backends that ingest native elements. Other
+		// backends raise, as do other unsupported combinations below.
+		virtual std::vector<express::entity> select_box(const express::entity& entity, bool completely_within = false, double extend = -1.e-5) const;
+		virtual std::vector<express::entity> select_box(const tree_point& point) const;
+		virtual std::vector<express::entity> select_box(const tree_box& bounds, bool completely_within = false) const;
 
-		std::vector<express::entity> select(const express::entity& entity, bool completely_within = false, double extend = 0.0) const;
-		std::vector<express::entity> select(const ifcopenshell::geom::element* element, bool completely_within = false, double extend = -1.e-5) const;
-		std::vector<express::entity> select(const tree_point& point, double extend = 0.0) const;
-		std::vector<ray_intersection_result> select_ray(const tree_point& origin, const tree_point& direction, double length = 1000.) const;
+		virtual std::vector<express::entity> select(const express::entity& entity, bool completely_within = false, double extend = 0.0) const;
+		virtual std::vector<express::entity> select(const ifcopenshell::geom::element* element, bool completely_within = false, double extend = -1.e-5) const;
+		virtual std::vector<express::entity> select(const tree_point& point, double extend = 0.0) const;
+		virtual std::vector<ray_intersection_result> select_ray(const tree_point& origin, const tree_point& direction, double length = 1000.) const;
 
-		std::vector<clash> clash_intersection_many(const std::vector<express::base>& set_a, const std::vector<express::base>& set_b, double tolerance = 0.002, bool check_all = true) const;
-		std::vector<clash> clash_collision_many(const std::vector<express::base>& set_a, const std::vector<express::base>& set_b, bool allow_touching = false) const;
-		std::vector<clash> clash_clearance_many(const std::vector<express::base>& set_a, const std::vector<express::base>& set_b, double clearance = 0.05, bool check_all = false) const;
+		// Clashing is only supported by backends that ingest triangulated elements.
+		virtual std::vector<clash> clash_intersection_many(const std::vector<express::base>& set_a, const std::vector<express::base>& set_b, double tolerance = 0.002, bool check_all = true) const;
+		virtual std::vector<clash> clash_collision_many(const std::vector<express::base>& set_a, const std::vector<express::base>& set_b, bool allow_touching = false) const;
+		virtual std::vector<clash> clash_clearance_many(const std::vector<express::base>& set_a, const std::vector<express::base>& set_b, double clearance = 0.05, bool check_all = false) const;
 
-		const std::vector<double>& distances() const;
-		const std::vector<double>& protrusion_distances() const;
+		virtual const std::vector<double>& distances() const;
+		virtual const std::vector<double>& protrusion_distances() const;
 
-		bool enable_face_styles() const;
-		void enable_face_styles(bool enable);
-		const std::vector<ifcopenshell::geom::taxonomy::style::ptr>& styles() const;
+		virtual bool enable_face_styles() const;
+		virtual void enable_face_styles(bool enable);
+		virtual const std::vector<ifcopenshell::geom::taxonomy::style::ptr>& styles() const;
 
 		std::string uint8_to_b64(const std::vector<uint8_t>& uuids_array) const;
 		static bool is_manifold(const std::vector<int>& faces);
-
-	private:
-		class impl;
-		std::unique_ptr<impl> impl_;
 	};
 }
 

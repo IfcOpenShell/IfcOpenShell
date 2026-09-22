@@ -41,9 +41,9 @@ namespace ifcopenshell {
 					return box;
 				}
 
-				class brep_tree : public abstract_tree {
+				class brep_tree : public ifcopenshell::geom::tree {
 				public:
-					std::string_view backend_id() const override {
+					std::string backend_id() const override {
 						return "opencascade.brep";
 					}
 

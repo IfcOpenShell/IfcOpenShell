@@ -35,7 +35,7 @@ namespace ifcopenshell {
 					return tree_plugin_metadata("opencascade.trianglebvh");
 				}
 
-				abstract_tree* create_tree() {
+				ifcopenshell::geom::tree* create_tree() {
 					return new opencascade_tree_backends::trianglebvh_tree();
 				}
 

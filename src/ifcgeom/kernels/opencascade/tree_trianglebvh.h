@@ -30,9 +30,28 @@ namespace ifcopenshell {
 		namespace trees {
 			namespace opencascade_tree_backends {
 
-				class trianglebvh_tree : public abstract_tree {
+				inline std::vector<express::entity> to_product_entities(const std::vector<express::base>& instances) {
+					std::vector<express::entity> entities;
+					entities.reserve(instances.size());
+
+					for (const auto& instance : instances) {
+						if (!instance) {
+							throw ifcopenshell::exception("All instances should be of type IfcProduct");
+						}
+
+						auto entity = instance.as<express::entity>();
+						if (!entity || !instance.declaration().is("IfcProduct")) {
+							throw ifcopenshell::exception("All instances should be of type IfcProduct");
+						}
+						entities.push_back(entity);
+					}
+
+					return entities;
+				}
+
+				class trianglebvh_tree : public ifcopenshell::geom::tree {
 				public:
-					std::string_view backend_id() const override {
+					std::string backend_id() const override {
 						return "opencascade.trianglebvh";
 					}
 
@@ -58,16 +77,16 @@ namespace ifcopenshell {
 						tree_.add_element(triangulation);
 					}
 
-					std::vector<ifcopenshell::geom::clash> clash_intersection_many(const std::vector<express::entity>& set_a, const std::vector<express::entity>& set_b, double tolerance, bool check_all) const override {
-						return tree_.clash_intersection_many(set_a, set_b, tolerance, check_all);
+					std::vector<ifcopenshell::geom::clash> clash_intersection_many(const std::vector<express::base>& set_a, const std::vector<express::base>& set_b, double tolerance, bool check_all) const override {
+						return tree_.clash_intersection_many(to_product_entities(set_a), to_product_entities(set_b), tolerance, check_all);
 					}
 
-					std::vector<ifcopenshell::geom::clash> clash_collision_many(const std::vector<express::entity>& set_a, const std::vector<express::entity>& set_b, bool allow_touching) const override {
-						return tree_.clash_collision_many(set_a, set_b, allow_touching);
+					std::vector<ifcopenshell::geom::clash> clash_collision_many(const std::vector<express::base>& set_a, const std::vector<express::base>& set_b, bool allow_touching) const override {
+						return tree_.clash_collision_many(to_product_entities(set_a), to_product_entities(set_b), allow_touching);
 					}
 
-					std::vector<ifcopenshell::geom::clash> clash_clearance_many(const std::vector<express::entity>& set_a, const std::vector<express::entity>& set_b, double clearance, bool check_all) const override {
-						return tree_.clash_clearance_many(set_a, set_b, clearance, check_all);
+					std::vector<ifcopenshell::geom::clash> clash_clearance_many(const std::vector<express::base>& set_a, const std::vector<express::base>& set_b, double clearance, bool check_all) const override {
+						return tree_.clash_clearance_many(to_product_entities(set_a), to_product_entities(set_b), clearance, check_all);
 					}
 
 				private:
