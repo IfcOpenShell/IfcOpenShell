@@ -41,6 +41,23 @@ namespace ifcopenshell {
 					return box;
 				}
 
+				inline express::entity to_product_entity(const express::base& instance) {
+					if (!instance) {
+						throw ifcopenshell::exception("Instance should be an IfcProduct");
+					}
+
+					auto entity = instance.as<express::entity>();
+					if (!entity || !instance.declaration().is("IfcProduct")) {
+						throw ifcopenshell::exception("Instance should be an IfcProduct");
+					}
+
+					return entity;
+				}
+
+				inline std::vector<express::base> to_base_vector(const std::vector<express::entity>& entities) {
+					return std::vector<express::base>(entities.begin(), entities.end());
+				}
+
 				class brep_tree : public ifcopenshell::geom::tree {
 				public:
 					std::string backend_id() const override {
@@ -70,32 +87,32 @@ namespace ifcopenshell {
 						tree_.add_element(brep);
 					}
 
-					std::vector<express::entity> select_box(const express::entity& entity, bool completely_within, double extend) const override {
-						return tree_.select_box(entity, completely_within, extend);
+					std::vector<express::base> select_box(const express::base& entity, bool completely_within, double extend) const override {
+						return to_base_vector(tree_.select_box(to_product_entity(entity), completely_within, extend));
 					}
 
-					std::vector<express::entity> select_box(const ifcopenshell::geom::tree_point& point) const override {
-						return tree_.select_box(make_point(point));
+					std::vector<express::base> select_box(const ifcopenshell::geom::tree_point& point) const override {
+						return to_base_vector(tree_.select_box(make_point(point)));
 					}
 
-					std::vector<express::entity> select_box(const ifcopenshell::geom::tree_box& bounds, bool completely_within) const override {
-						return tree_.select_box(make_box(bounds), completely_within);
+					std::vector<express::base> select_box(const ifcopenshell::geom::tree_box& bounds, bool completely_within) const override {
+						return to_base_vector(tree_.select_box(make_box(bounds), completely_within));
 					}
 
-					std::vector<express::entity> select(const express::entity& entity, bool completely_within, double extend) const override {
-						return tree_.select(entity, completely_within, extend);
+					std::vector<express::base> select(const express::base& entity, bool completely_within, double extend) const override {
+						return to_base_vector(tree_.select(to_product_entity(entity), completely_within, extend));
 					}
 
-					std::vector<express::entity> select(const ifcopenshell::geom::element* element, bool completely_within, double extend) const override {
+					std::vector<express::base> select(const ifcopenshell::geom::element* element, bool completely_within, double extend) const override {
 						auto* brep = dynamic_cast<const ifcopenshell::geom::native_element*>(element);
 						if (!brep) {
 							throw ifcopenshell::exception("Tree backend 'opencascade.brep' requires brep elements for select()");
 						}
-						return tree_.select(brep, completely_within, extend);
+						return to_base_vector(tree_.select(brep, completely_within, extend));
 					}
 
-					std::vector<express::entity> select(const ifcopenshell::geom::tree_point& point, double extend) const override {
-						return tree_.select(make_point(point), extend);
+					std::vector<express::base> select(const ifcopenshell::geom::tree_point& point, double extend) const override {
+						return to_base_vector(tree_.select(make_point(point), extend));
 					}
 
 					std::vector<ifcopenshell::geom::ray_intersection_result> select_ray(const ifcopenshell::geom::tree_point& origin, const ifcopenshell::geom::tree_point& direction, double length) const override {

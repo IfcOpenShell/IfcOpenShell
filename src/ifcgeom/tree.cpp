@@ -54,27 +54,27 @@ void ifcopenshell::geom::tree::add_element(ifcopenshell::geom::element*) {
 	unsupported_tree_operation(backend_id(), "add_element()");
 }
 
-std::vector<express::entity> ifcopenshell::geom::tree::select_box(const express::entity&, bool, double) const {
+std::vector<express::base> ifcopenshell::geom::tree::select_box(const express::base&, bool, double) const {
 	unsupported_tree_operation(backend_id(), "select_box(entity)");
 }
 
-std::vector<express::entity> ifcopenshell::geom::tree::select_box(const tree_point&) const {
+std::vector<express::base> ifcopenshell::geom::tree::select_box(const tree_point&) const {
 	unsupported_tree_operation(backend_id(), "select_box(point)");
 }
 
-std::vector<express::entity> ifcopenshell::geom::tree::select_box(const tree_box&, bool) const {
+std::vector<express::base> ifcopenshell::geom::tree::select_box(const tree_box&, bool) const {
 	unsupported_tree_operation(backend_id(), "select_box(bounds)");
 }
 
-std::vector<express::entity> ifcopenshell::geom::tree::select(const express::entity&, bool, double) const {
+std::vector<express::base> ifcopenshell::geom::tree::select(const express::base&, bool, double) const {
 	unsupported_tree_operation(backend_id(), "select(entity)");
 }
 
-std::vector<express::entity> ifcopenshell::geom::tree::select(const ifcopenshell::geom::element*, bool, double) const {
+std::vector<express::base> ifcopenshell::geom::tree::select(const ifcopenshell::geom::element*, bool, double) const {
 	unsupported_tree_operation(backend_id(), "select(element)");
 }
 
-std::vector<express::entity> ifcopenshell::geom::tree::select(const tree_point&, double) const {
+std::vector<express::base> ifcopenshell::geom::tree::select(const tree_point&, double) const {
 	unsupported_tree_operation(backend_id(), "select(point)");
 }
 
