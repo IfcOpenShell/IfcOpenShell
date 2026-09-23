@@ -278,7 +278,7 @@ namespace ifcopenshell::geom {
 							gp_Pnt P;
 							gp_Vec V;
 							prop.Normal(v, w, P, V);
-							ordered.insert({ u,	{ u, sidx, c.as<express::entity>(),
+							ordered.insert({ u,	{ u, sidx, c.template as<express::entity>(),
 								{P.X(), P.Y(), P.Z()},
 								{V.X(), V.Y(), V.Z()},
 								d.XYZ().Dot(p0.XYZ() - P.XYZ()),
