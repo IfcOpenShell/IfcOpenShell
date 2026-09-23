@@ -302,13 +302,14 @@ def archive_python_package(python_version: str, python_path: Path, zip_template:
     package_binaries = set()
     for file in package_path.rglob("*"):
         arcname = file.relative_to(site_packages)
-        files[str(arcname)] = file
+        files[arcname.as_posix()] = file
         if file.suffix.lower() in (".dll", ".exe", ".pyd"):
             package_binaries.add(file)
 
     runtime_files = ifc_runtime_plugins | geometry_writing
     runtime_dependencies = trace_runtime_dependencies(package_binaries | runtime_files, dlls | package_binaries)
 
+    # TODO: we're packing plugins twice? Some are already installed into the package dir.
     for file in runtime_files | runtime_dependencies:
         files[f"ifcopenshell/{file.name}"] = file
 
