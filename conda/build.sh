@@ -6,7 +6,7 @@
 
 if [ "$(uname)" == "Darwin" ]; then
     export FSUFFIX=dylib
-    export LDFLAGS="$LDFLAGS -Wl,-flat_namespace,-undefined,suppress"
+    export LDFLAGS="$LDFLAGS -Wl,-undefined,dynamic_lookup"
 elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
     export FSUFFIX=so
 fi
