@@ -20,6 +20,7 @@ from typing import NamedTuple
 from zipfile import ZipFile
 
 from common import logger, run, run_streamed
+from vs_cfg import get_vs_var
 
 
 class Args(NamedTuple):
@@ -95,21 +96,12 @@ def find_dumpbin() -> str:
         return dumpbin
 
     arch_dir = "arm64" if is_arm64() else "x64"
-    roots = [Path(p) for p in (os.environ.get("VSINSTALLDIR"),) if p]
-    roots.extend(
-        Path(p)
-        for p in (
-            r"C:\Program Files\Microsoft Visual Studio\2022\Enterprise",
-            r"C:\Program Files\Microsoft Visual Studio\2022\Community",
-            r"C:\Program Files\Microsoft Visual Studio\2022\BuildTools",
-        )
-    )
-    for root in roots:
-        candidates = sorted((root / "VC" / "Tools" / "MSVC").glob(f"*/bin/Host*/{arch_dir}/dumpbin.exe"))
-        if candidates:
-            return str(candidates[-1])
-
-    raise RuntimeError("dumpbin.exe not found. Run build-all-win.py from a Visual Studio developer prompt.")
+    root = Path(get_vs_var("VSINSTALLDIR"))
+    tools_version = get_vs_var("VCToolsVersion")
+    # Hostx64 tools are present even on the arm, no HostARM64 there.
+    dumpbin_path = root / "VC" / "Tools" / "MSVC" / tools_version / "bin" / "Hostx64" / arch_dir / "dumpbin.exe"
+    assert dumpbin_path.exists(), f"dumpbin.exe not found at {dumpbin_path}"
+    return str(dumpbin_path)
 
 
 def dumpbin_dependents(file: Path, dumpbin: str) -> set[str]:

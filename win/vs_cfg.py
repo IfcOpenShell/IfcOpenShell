@@ -128,6 +128,8 @@ VSVar = Literal[
     "VisualStudioVersion",
     "VSCMD_ARG_TGT_ARCH",
     "UCRTVersion",
+    # E.g. "14.44.35207".
+    "VCToolsVersion",
 ]
 
 
