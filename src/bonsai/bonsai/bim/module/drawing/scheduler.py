@@ -286,10 +286,13 @@ class Scheduler:
         # collect columns width
         column_widths = []
         column_styles = []
+        column_hidden = []
         for col in table.getElementsByType(TableColumn):
             style_name = col.getAttribute("stylename")
             col_repeat = col.getAttribute("numbercolumnsrepeated")
             col_repeat = int(col_repeat) if col_repeat else 1
+            # hidden columns are marked as "collapse", filtered out ones as "filter"
+            is_hidden = col.getAttribute("visibility") in ("collapse", "filter")
             for i in range(col_repeat):
                 if not style_name or "column-width" not in styles[style_name]:
                     column_width = 50
@@ -297,6 +300,7 @@ class Scheduler:
                     column_width = self.convert_to_mm(styles[style_name]["column-width"])
                 column_styles.append(style_name)
                 column_widths.append(column_width)
+                column_hidden.append(is_hidden)
             cell_style = col.getAttribute("defaultcellstylename")
             if cell_style:
                 related_styles.append((style_name, cell_style))
@@ -319,6 +323,7 @@ class Scheduler:
             n_columns = max(row_columns)
             column_widths = [25] * n_columns  # some constant width value 👀
             column_styles = [None] * n_columns
+            column_hidden = [False] * n_columns
 
         # collect rows height
         row_heights = []
@@ -436,7 +441,15 @@ class Scheduler:
                         if end_tdi > max_col:
                             end_tdi = max_col
 
-                        width = sum(column_widths[start_tdi : end_tdi + 1])
+                        span_widths = column_widths[start_tdi : end_tdi + 1]
+                        span_hidden = column_hidden[start_tdi : end_tdi + 1]
+
+                        # skip cells that are entirely inside hidden columns
+                        if span_hidden and all(span_hidden):
+                            tdi += column_span
+                            continue
+
+                        width = sum(w for w, hidden in zip(span_widths, span_hidden) if not hidden)
                         col_style = self.get_style(column_styles[tdi], styles)
                         final_cell_style = cell_style or col_style
                         background_color = final_cell_style.get("background-color", "#ffffff")
