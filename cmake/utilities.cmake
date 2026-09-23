@@ -140,6 +140,8 @@ function(ifcopenshell_deploy_qt_runtime TARGET)
         TARGET ${TARGET}
         OUTPUT_SCRIPT deploy_script
         NO_UNSUPPORTED_PLATFORM_ERROR
+        # Don't deploy vc_redist.exe with windeployqt.
+        NO_COMPILER_RUNTIME
     )
 
     if(NOT IFCOPENSHELL_DEPLOY_QT_TRANSLATIONS)
