@@ -25,6 +25,7 @@ from vs_cfg import get_vs_var
 
 class Args(NamedTuple):
     skip_ifcopenshell_build: bool
+    skip_executables: bool
 
 
 def parse_args() -> Args:
@@ -39,8 +40,16 @@ def parse_args() -> Args:
         action="store_true",
         help="skip building and only archive the results of a previous build",
     )
+    parser.add_argument(
+        "--skip-executables",
+        action="store_true",
+        help="skip packaging standalone executables",
+    )
     namespace = parser.parse_args()
-    return Args(skip_ifcopenshell_build=namespace.skip_ifcopenshell_build)
+    return Args(
+        skip_ifcopenshell_build=namespace.skip_ifcopenshell_build,
+        skip_executables=namespace.skip_executables,
+    )
 
 
 def is_arm64() -> bool:
@@ -336,8 +345,9 @@ def main() -> None:
     logger.info(f"Output directory: {OUTPUT_DIR}")
     if not ARGS.skip_ifcopenshell_build:
         build()
-    connector_dir = build_connector()
-    archive_executables(zip_template, connector_dir)
+    if not ARGS.skip_executables:
+        connector_dir = build_connector()
+        archive_executables(zip_template, connector_dir)
     archive_python_packages(zip_template)
 
 
