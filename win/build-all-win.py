@@ -15,17 +15,28 @@ import subprocess
 import sys
 import zipfile
 from pathlib import Path
+from typing import NamedTuple
 from zipfile import ZipFile
 
 
-def parse_args() -> None:
+class Args(NamedTuple):
+    skip_ifcopenshell_build: bool
+
+
+def parse_args() -> Args:
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="Environment variables:\n"
         "  GITHUB_SHA    commit SHA to use in archive names (default: 'git rev-parse HEAD')",
     )
-    parser.parse_args()
+    parser.add_argument(
+        "--skip-ifcopenshell-build",
+        action="store_true",
+        help="skip building and only archive the results of a previous build",
+    )
+    namespace = parser.parse_args()
+    return Args(skip_ifcopenshell_build=namespace.skip_ifcopenshell_build)
 
 
 def is_arm64() -> bool:
@@ -333,12 +344,13 @@ def get_zip_template() -> str:
 
 
 def main() -> None:
-    parse_args()
+    ARGS = parse_args()
 
     zip_template = get_zip_template()
 
     print("Output directory:", OUTPUT_DIR)
-    build()
+    if not ARGS.skip_ifcopenshell_build:
+        build()
     archive_executables(zip_template)
     archive_python_packages(zip_template)
 
