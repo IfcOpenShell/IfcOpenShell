@@ -135,6 +135,7 @@ def trace_runtime_dependencies(roots: set[Path], candidates: set[Path]) -> set[P
 
         for dependent_name in dumpbin_dependents(file, dumpbin):
             dependent = lookup.get(dependent_name)
+            # Not one of our candidates (e.g. system/CRT DLLs) or already queued.
             if dependent is None or dependent in resolved:
                 continue
             resolved.add(dependent)
