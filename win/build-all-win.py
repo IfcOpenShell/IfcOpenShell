@@ -52,10 +52,6 @@ assert Path.cwd() == Path(__file__).parent, "Run this script from the 'win' dire
 PYTHON_VERSIONS = ["3.10.3", "3.11.8", "3.12.1", "3.13.6", "3.14.0", "3.15.0"]
 REPO_PATH = Path(__file__).parent.parent
 REPO_WIN = REPO_PATH / "win"
-# Prebuilt Autodesk connector folder, produced by the connector's packaging
-# build.py. The CI workflow builds it before invoking this script; it gets
-# bundled next to BonsaiViewer.exe so the viewer can discover it at runtime.
-CONNECTOR_DIR = REPO_PATH / "src" / "bonsaiviewer-autodesk" / "dist" / "autodesk"
 OUTPUT_DIR = Path.home() / "output"
 DEPENDENT_DLL_RE = re.compile(r"^\s*([A-Za-z0-9_.+-]+\.dll)\s*$", re.IGNORECASE)
 QT_DEPLOYMENT_DLLS = {
@@ -186,17 +182,19 @@ def collect_qt_deployment_files(install_dir: Path) -> dict[str, Path]:
     return files
 
 
-def collect_connector_files() -> dict[str, Path]:
-    """Map the prebuilt Autodesk connector to ``connectors/autodesk/`` arcnames."""
-    if not CONNECTOR_DIR.is_dir():
-        raise RuntimeError(
-            f"Autodesk connector not found at {CONNECTOR_DIR}. Build it first with: "
-            "python src/bonsaiviewer-autodesk/packaging/build.py"
-        )
+def build_connector() -> Path:
+    connector_repo = REPO_PATH / "src" / "bonsaiviewer-autodesk"
+    connector_dir = connector_repo / "dist" / "autodesk"
+    run([sys.executable, str(connector_repo / "packaging" / "build.py")])
+    return connector_dir
+
+
+def collect_connector_files(connector_dir: Path) -> dict[str, Path]:
+    """Map the Autodesk connector to ``connectors/autodesk/`` arcnames."""
     files: dict[str, Path] = {}
-    for file in CONNECTOR_DIR.rglob("*"):
+    for file in connector_dir.rglob("*"):
         if file.is_file():
-            arcname = Path("connectors") / "autodesk" / file.relative_to(CONNECTOR_DIR)
+            arcname = Path("connectors") / "autodesk" / file.relative_to(connector_dir)
             files[arcname.as_posix()] = file
     return files
 
@@ -247,7 +245,7 @@ def build() -> None:
         run([sys.executable, str(REPO_WIN / "install-ifcopenshell.py"), build_generator(), "Release"])
 
 
-def archive_executables(zip_template: str) -> None:
+def archive_executables(zip_template: str, connector_dir: Path) -> None:
     install_dir = find_install_dir()
 
     bin_files = set((install_dir / "bin").iterdir())
@@ -280,7 +278,7 @@ def archive_executables(zip_template: str) -> None:
 
         # Bundle the Autodesk connector next to the Bonsai Viewer executable.
         if file.stem == "BonsaiViewer":
-            files.update(collect_connector_files())
+            files.update(collect_connector_files(connector_dir))
 
         zip_name = zip_template.format(package_name=file.stem)
         write_zip(OUTPUT_DIR / zip_name, files, generated_files)
@@ -351,7 +349,8 @@ def main() -> None:
     print("Output directory:", OUTPUT_DIR)
     if not ARGS.skip_ifcopenshell_build:
         build()
-    archive_executables(zip_template)
+    connector_dir = build_connector()
+    archive_executables(zip_template, connector_dir)
     archive_python_packages(zip_template)
 
 
