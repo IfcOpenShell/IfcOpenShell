@@ -318,6 +318,7 @@ def build() -> None:
                 "-DBUILD_EXAMPLES=OFF",
                 "-DBUILD_BONSAIVIEWER=ON",
                 "-DUSE_CCACHE=ON",
+                "-DCREATE_BUNDLE=ON",
             ]
         )
         run_streamed(*[sys.executable, str(REPO_WIN / "install-ifcopenshell.py"), build_generator(), "Release"])
@@ -372,13 +373,6 @@ def archive_executables(zip_template: str, connector_dir: Path, no_zip: bool) ->
 def archive_python_package(python_version: str, python_path: Path, zip_template: str, no_zip: bool) -> None:
     install_dir = find_install_dir()
 
-    bin_files = set((install_dir / "bin").iterdir())
-    exes = {file for file in bin_files if file.suffix.lower() == ".exe"}
-    dlls = {file for file in bin_files if file.suffix.lower() == ".dll"}
-    dependencies = trace_runtime_dependencies(exes, dlls)
-    ifc_runtime_plugins = collect_ifc_runtime_plugins(dlls, dependencies)
-    geometry_writing = {f for f in bin_files if is_geometry_writer(f)}
-
     python_version_major_minor = "".join(python_version.split(".")[:2])
     site_packages = python_path / "Lib" / "site-packages"
     package_path = site_packages / "ifcopenshell"
@@ -395,12 +389,9 @@ def archive_python_package(python_version: str, python_path: Path, zip_template:
         if file.suffix.lower() in (".dll", ".exe", ".pyd"):
             package_binaries.add(file)
 
-    runtime_files = ifc_runtime_plugins | geometry_writing
-    runtime_dependencies = trace_runtime_dependencies(package_binaries | runtime_files, dlls | package_binaries)
-
-    # TODO: we're packing plugins twice? Some are already installed into the package dir.
-    for file in runtime_files | runtime_dependencies:
-        files[f"ifcopenshell/{file.name}"] = file
+    # All runtime dependencies are installed into the package (CREATE_BUNDLE),
+    # trace only to report the missing ones.
+    trace_runtime_dependencies(package_binaries, package_binaries)
 
     if no_zip:
         package_dir = install_dir / f".package-python-{python_version_major_minor}"
