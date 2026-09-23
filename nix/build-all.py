@@ -975,6 +975,9 @@ def build_dependency(
                 try:
                     run(["patch", "-p1", "--batch", "--forward", "-i", patch_abs], cwd=extract_dir)
                 except Exception:
+                    logger.info(
+                        f"Patch '{p}' failed to apply, checking if it was already applied (error above is expected then)."
+                    )
                     # Assert that the patch has already been applied
                     run(["patch", "-p1", "--batch", "--reverse", "--dry-run", "-i", patch_abs], cwd=extract_dir)
             else:
