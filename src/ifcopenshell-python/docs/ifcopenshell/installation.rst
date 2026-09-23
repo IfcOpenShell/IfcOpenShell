@@ -186,7 +186,7 @@ GCC (4.7 or newer) or Clang (any version) is required.
         cd /path/to/IfcOpenShell
         mkdir build && cd build
         # set library flags
-        export LDFLAGS="$LDFLAGS -Wl,-flat_namespace,-undefined,suppress"
+        export LDFLAGS="$LDFLAGS -Wl,-undefined,dynamic_lookup"
         cmake ../cmake \
             -DPYTHON_EXECUTABLE=/opt/homebrew/bin/python3.13 \
             -DPYTHON_LIBRARY=/opt/homebrew/opt/python@3.13/Frameworks/Python.framework/Versions/3.13/lib/libpython3.13.dylib \
