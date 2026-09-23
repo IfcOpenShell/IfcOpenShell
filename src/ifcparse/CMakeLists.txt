@@ -36,7 +36,7 @@ set(IFCPARSE_FILES ${IFCPARSE_CPP_FILES} ${IFCPARSE_H_FILES} ${IFCPARSE_SCHEMA_H
 
 add_library(IfcParse ${IFCPARSE_FILES})
 set_target_properties(IfcParse PROPERTIES
-        OUTPUT_NAME "ifcopenshell.parse"
+        OUTPUT_NAME "ifcopenshell_parse"
 )
 target_include_directories(IfcParse PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>

@@ -190,7 +190,7 @@ def stage_runtime_payload(install_dir: Path, dest: Path, *, include_geometry_wri
                 continue
             if not is_shared_library(runtime_file):
                 continue
-            if not include_geometry_writers and runtime_file.name.startswith("ifcopenshell.geometry.writer."):
+            if not include_geometry_writers and runtime_file.name.startswith("ifcopenshell_geometry_writer."):
                 continue
             dest_file = dest / runtime_file.name
             # Currently there's an overlap between dependencies installations.

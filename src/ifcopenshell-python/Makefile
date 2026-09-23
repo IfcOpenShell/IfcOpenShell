@@ -127,7 +127,7 @@ endif
 	cd dist/working && unzip ifcopenshell-python*
 	cp -r dist/working/ifcopenshell/*ifcopenshell_wrapper* dist/ifcopenshell/
 	# v0.9.0 splits IfcOpenShell into shared libraries loaded from next to the
-	# wrapper (libifcopenshell.parse, ifcopenshell_document_rdb, ...). Copy
+	# wrapper (libifcopenshell_parse, ifcopenshell_document_rdb, ...). Copy
 	# them too, otherwise the wrapper fails to import. See #9364.
 	find dist/working/ifcopenshell -maxdepth 1 \( -name '*.so' -o -name '*.so.*' -o -name '*.dylib' -o -name '*.dll' \) -exec cp {} dist/ifcopenshell/ \;
 	rm -rf dist/working
@@ -149,7 +149,7 @@ endif
 	cd build/botbuild && wget $(IOS_URL) && unzip ifcopenshell-python*
 	cp -r build/botbuild/ifcopenshell/*ifcopenshell_wrapper* build/ifcopenshell/
 	# v0.9.0 splits IfcOpenShell into shared libraries loaded from next to the
-	# wrapper (libifcopenshell.parse, ifcopenshell_document_rdb, ...). Copy
+	# wrapper (libifcopenshell_parse, ifcopenshell_document_rdb, ...). Copy
 	# them too, otherwise the wrapper fails to import. See #9364.
 	find build/botbuild/ifcopenshell -maxdepth 1 \( -name '*.so' -o -name '*.so.*' -o -name '*.dylib' -o -name '*.dll' \) -exec cp {} build/ifcopenshell/ \;
 	cp ../../README.md build/
