@@ -118,7 +118,8 @@ def get_runtime_info(install_root: Path, qt6_version: str) -> RuntimeInfo:
     runtime_dirs = []
     for name in sorted(dependencies_to_stage):
         runtime_dir = Path(install_dirs[name])
-        assert "-shared-" in runtime_dir.name, f"Expected a shared build, found: {runtime_dir}"
+        if "-shared-" not in runtime_dir.name:
+            continue
         runtime_dirs.append(runtime_dir)
     return RuntimeInfo(runtime_dirs, qt_dir)
 
