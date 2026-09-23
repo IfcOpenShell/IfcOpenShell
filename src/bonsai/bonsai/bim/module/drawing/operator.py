@@ -680,7 +680,7 @@ class CreateDrawing(bpy.types.Operator):
     def serialize_contexts_elements(
         self,
         ifc: ifcopenshell.file,
-        tree: ifcopenshell.ifcopenshell_wrapper.tree,
+        tree: ifcopenshell.geom.tree,
         contexts: LineworkContexts,
         context_type: Literal["body", "annotation"],
         drawing_elements: set[ifcopenshell.entity_instance],
