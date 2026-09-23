@@ -238,6 +238,7 @@ def build() -> None:
                 "-y",
                 "--reuse-boost",
                 "--use-ninja",
+                "--shared",
                 "--python-version",
                 python_version,
             ]
