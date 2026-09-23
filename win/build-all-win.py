@@ -6,6 +6,7 @@ but serves the similar purpose - build all packages during CI (though by using c
 but also archives them to '~/outputs'.
 """
 
+import argparse
 import os
 import platform
 import re
@@ -15,6 +16,17 @@ import sys
 import zipfile
 from pathlib import Path
 from zipfile import ZipFile
+
+
+def parse_args() -> None:
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="Environment variables:\n"
+        "  TARGET_ARCH   'arm64'/'aarch64' or 'x64'/'amd64'/'x86_64' (default: host architecture)\n"
+        "  GITHUB_SHA    commit SHA to use in archive names (default: 'git rev-parse HEAD')",
+    )
+    parser.parse_args()
 
 
 def is_arm64() -> bool:
@@ -39,13 +51,7 @@ REPO_WIN = REPO_PATH / "win"
 # build.py. The CI workflow builds it before invoking this script; it gets
 # bundled next to BonsaiViewer.exe so the viewer can discover it at runtime.
 CONNECTOR_DIR = REPO_PATH / "src" / "bonsaiviewer-autodesk" / "dist" / "autodesk"
-VERSION = (REPO_PATH / "VERSION").read_text().strip()
-if "GITHUB_SHA" in os.environ:
-    SHA = os.environ["GITHUB_SHA"][:7]
-else:
-    SHA = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()[:7]
 OUTPUT_DIR = Path.home() / "output"
-ZIP_TEMPLATE = f"{{package_name}}-v{VERSION}-{SHA}-{'win-arm64' if is_arm64() else 'win64'}.zip"
 DEPENDENT_DLL_RE = re.compile(r"^\s*([A-Za-z0-9_.+-]+\.dll)\s*$", re.IGNORECASE)
 QT_DEPLOYMENT_DLLS = {
     "dxcompiler.dll",
@@ -236,7 +242,7 @@ def build() -> None:
         run([sys.executable, str(REPO_WIN / "install-ifcopenshell.py"), build_generator(), "Release"])
 
 
-def archive_executables() -> None:
+def archive_executables(zip_template: str) -> None:
     install_dir = find_install_dir()
 
     bin_files = set((install_dir / "bin").iterdir())
@@ -271,12 +277,12 @@ def archive_executables() -> None:
         if file.stem == "BonsaiViewer":
             files.update(collect_connector_files())
 
-        zip_name = ZIP_TEMPLATE.format(package_name=file.stem)
+        zip_name = zip_template.format(package_name=file.stem)
         write_zip(OUTPUT_DIR / zip_name, files, generated_files)
         print(f"{file} -> {zip_name}")
 
 
-def archive_python_package(python_version: str, python_path: Path) -> None:
+def archive_python_package(python_version: str, python_path: Path, zip_template: str) -> None:
     install_dir = find_install_dir()
 
     bin_files = set((install_dir / "bin").iterdir())
@@ -308,25 +314,39 @@ def archive_python_package(python_version: str, python_path: Path) -> None:
     for file in runtime_files | runtime_dependencies:
         files[f"ifcopenshell/{file.name}"] = file
 
-    zip_name = ZIP_TEMPLATE.format(package_name=f"ifcopenshell-python-{python_version_major_minor}")
+    zip_name = zip_template.format(package_name=f"ifcopenshell-python-{python_version_major_minor}")
     write_zip(OUTPUT_DIR / zip_name, files)
     print(f"{package_path} -> {zip_name}")
 
 
-def archive_python_packages() -> None:
+def archive_python_packages(zip_template: str) -> None:
     deps_path = REPO_PATH / "_deps"
     for d in deps_path.iterdir():
         if d.is_dir() and (d.name.startswith("python.") or d.name.startswith("pythonarm64.")):
             python_version = d.name.partition(".")[2]
             python_path = d / "tools"
-            archive_python_package(python_version, python_path)
+            archive_python_package(python_version, python_path, zip_template)
+
+
+def get_zip_template() -> str:
+    version = (REPO_PATH / "VERSION").read_text().strip()
+    if "GITHUB_SHA" in os.environ:
+        sha = os.environ["GITHUB_SHA"]
+    else:
+        sha = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+    sha = sha[:7]
+    return f"{{package_name}}-v{version}-{sha}-{'win-arm64' if is_arm64() else 'win64'}.zip"
 
 
 def main() -> None:
+    parse_args()
+
+    zip_template = get_zip_template()
+
     print("Output directory:", OUTPUT_DIR)
     build()
-    archive_executables()
-    archive_python_packages()
+    archive_executables(zip_template)
+    archive_python_packages(zip_template)
 
 
 if __name__ == "__main__":
