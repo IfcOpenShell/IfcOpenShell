@@ -6,7 +6,7 @@ index 40081e76..64ddc020 100644
 --- a/Externals/LibXML/CMakeLists.txt
 +++ b/Externals/LibXML/CMakeLists.txt
 @@ -3,7 +3,6 @@ project(${name})
-
+ 
  add_definitions(
  		-DLIBXML_AUTOMATA_ENABLED
 -        -DLIBXML_HTTP_ENABLED
