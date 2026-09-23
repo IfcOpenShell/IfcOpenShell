@@ -92,7 +92,7 @@ def _format_clash(
     other = model.by_id(clash_result.b.id())
     return {
         "element": _ref(other),
-        "type": ifcopenshell.geom.get_clash_type(clash_result.clash_type),
+        "type": ifcopenshell.geom.tree.get_clash_type(clash_result.clash_type),
         "distance": clash_result.distance,
         "p1": list(clash_result.p1),
         "p2": list(clash_result.p2),
