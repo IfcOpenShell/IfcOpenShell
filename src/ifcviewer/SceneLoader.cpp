@@ -19,7 +19,7 @@
 
 #include "SceneLoader.h"
 #include "AppSettings.h"
-#include "SidecarLayout.h"
+#include "Federation.h"
 
 #include <QFileInfo>
 #include <QTimer>
@@ -392,9 +392,6 @@ void SceneLoader::onStreamerFinished() {
                     georef = computeModelGeoref(file);
                 }
                 SidecarData data = model.sidecar_builder->finalize(georef, model.streamed_elements);
-                // Lay geometry out in streaming-chunk order + bake the chunk TOC
-                // (v14) so it streams as one contiguous range per chunk.
-                reorderSidecarByMorton(data);
                 // Compress + write the .ifcview on a background thread so the
                 // seconds of zstd on a large model don't freeze the UI right at
                 // 100%. The geometry is already on the GPU and the sidecar is
