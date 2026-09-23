@@ -66,26 +66,6 @@ PYTHON_VERSIONS = ["3.10.3", "3.11.8", "3.12.1", "3.13.6", "3.14.0", "3.15.0"]
 REPO_PATH = Path(__file__).parent.parent
 REPO_WIN = REPO_PATH / "win"
 OUTPUT_DIR = Path.home() / "output"
-DEPENDENT_DLL_RE = re.compile(r"^\s*([A-Za-z0-9_.+-]+\.dll)\s*$", re.IGNORECASE)
-QT_DEPLOYMENT_DLLS = {
-    "dxcompiler.dll",
-    "dxil.dll",
-    "libegl.dll",
-    "libglesv2.dll",
-    "opengl32sw.dll",
-    "vulkan-1.dll",
-}
-QT_CONF = "[Paths]\nPrefix = .\n"
-# Runtime plugins are canonically prefixed with 'ifcopenshell_' (see
-# decorated_basename() in src/plugin/plugin.cpp and the OUTPUT_NAME properties of
-# the plugin targets, e.g. 'ifcopenshell_parse_schema_ifc${schema}'), while the
-# core shared libraries keep the dotted 'ifcopenshell.' names. Match both so the
-# load-by-name plugins are not silently dropped from the archives.
-IFC_RUNTIME_PLUGIN_PREFIXES = ("ifcopenshell.", "ifcopenshell_")
-# Per-schema geometry writers ship with the Python package only, not next to the
-# executables. 'ifcopenshell.geometry.writer.' covers the core library, the
-# underscore form covers the per-schema plugins.
-IFC_GEOMETRY_WRITER_PREFIXES = ("ifcopenshell.geometry.writer.", "ifcopenshell_geometry_writer_")
 
 
 def find_install_dir() -> Path:
@@ -114,8 +94,9 @@ def find_dumpbin() -> str:
 
 
 def dumpbin_dependents(file: Path, dumpbin: str) -> set[str]:
+    dependent_dll_re = re.compile(r"^\s*([A-Za-z0-9_.+-]+\.dll)\s*$", re.IGNORECASE)
     output = run(dumpbin, "/nologo", "/dependents", str(file))
-    return {match.group(1).lower() for line in output.splitlines() if (match := DEPENDENT_DLL_RE.match(line))}
+    return {match.group(1).lower() for line in output.splitlines() if (match := dependent_dll_re.match(line))}
 
 
 def runtime_candidate_files(install_dir: Path, extra_files: list[Path] | None = None) -> list[Path]:
@@ -154,19 +135,37 @@ def trace_runtime_dependencies(roots: set[Path], candidates: set[Path]) -> set[P
 
 
 def is_geometry_writer(file: Path) -> bool:
-    return file.name.startswith(IFC_GEOMETRY_WRITER_PREFIXES)
+    # Per-schema geometry writers ship with the Python package only, not next to the
+    # executables. 'ifcopenshell.geometry.writer.' covers the core library, the
+    # underscore form covers the per-schema plugins.
+    ifc_geometry_writer_prefixes = ("ifcopenshell.geometry.writer.", "ifcopenshell_geometry_writer_")
+    return file.name.startswith(ifc_geometry_writer_prefixes)
 
 
 def collect_ifc_runtime_plugins(dlls: set[Path], dependencies: set[Path]) -> set[Path]:
     """IfcOpenShell plugins are loaded by name at runtime, so dumpbin cannot discover them."""
+    # Runtime plugins are canonically prefixed with 'ifcopenshell_' (see
+    # decorated_basename() in src/plugin/plugin.cpp and the OUTPUT_NAME properties of
+    # the plugin targets, e.g. 'ifcopenshell_parse_schema_ifc${schema}'), while the
+    # core shared libraries keep the dotted 'ifcopenshell.' names. Match both so the
+    # load-by-name plugins are not silently dropped from the archives.
+    ifc_runtime_plugin_prefixes = ("ifcopenshell.", "ifcopenshell_")
     return {
-        d for d in (dlls - dependencies) if d.name.startswith(IFC_RUNTIME_PLUGIN_PREFIXES) and not is_geometry_writer(d)
+        d for d in (dlls - dependencies) if d.name.startswith(ifc_runtime_plugin_prefixes) and not is_geometry_writer(d)
     }
 
 
 def is_qt_deployment_dll(file: Path) -> bool:
+    qt_deployment_dlls = {
+        "dxcompiler.dll",
+        "dxil.dll",
+        "libegl.dll",
+        "libglesv2.dll",
+        "opengl32sw.dll",
+        "vulkan-1.dll",
+    }
     name = file.name.lower()
-    return name.startswith("qt") or name.startswith("d3dcompiler_") or name in QT_DEPLOYMENT_DLLS
+    return name.startswith("qt") or name.startswith("d3dcompiler_") or name in qt_deployment_dlls
 
 
 def collect_qt_deployment_files(install_dir: Path) -> dict[str, Path]:
@@ -270,7 +269,7 @@ def archive_executables(zip_template: str, connector_dir: Path) -> None:
         if any(dependency.name.lower().startswith("qt") for dependency in runtime_dependencies):
             for arcname, dependency in qt_deployment_files.items():
                 files[arcname] = dependency
-            generated_files["qt.conf"] = QT_CONF
+            generated_files["qt.conf"] = "[Paths]\nPrefix = .\n"
 
         # Bundle the Autodesk connector next to the Bonsai Viewer executable.
         if file.stem == "BonsaiViewer":
