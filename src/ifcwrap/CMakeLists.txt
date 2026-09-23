@@ -273,7 +273,7 @@ IF(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
         file(GLOB_RECURSE sourcefiles "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/*")
         # Exclude compiled extensions and shared libraries (including versioned .so.X.Y) -
         # they're part of dev environment and shouldn't leak into installation.
-        list(FILTER sourcefiles EXCLUDE REGEX [[\.(so(\.[0-9]+)*|pyd|dylib)$]])
+        list(FILTER sourcefiles EXCLUDE REGEX [[\.(so(\.[0-9]+)*|pyd|dylib|dll)$]])
         # Exclude cached bytecode.
         list(FILTER sourcefiles EXCLUDE REGEX [[\.pyc$]])
         foreach(file ${sourcefiles})
