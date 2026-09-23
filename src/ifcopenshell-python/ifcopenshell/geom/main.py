@@ -391,82 +391,170 @@ class iterator(ifcopenshell_wrapper.iterator):
 ClashType = Literal["protrusion", "pierce", "collision", "clearance"]
 CLASH_TYPE_ITEMS = ("protrusion", "pierce", "collision", "clearance")
 
+# backwards compatibility - remove when bumped:
+if hasattr(ifcopenshell_wrapper, "create_tree"):
 
-class _tree(ifcopenshell_wrapper.tree):
-    def __init__(
-        self,
+    class _tree(ifcopenshell_wrapper.tree):
+        def __init__(
+            self,
+            file: Optional[file] = None,
+            settings: Optional[settings] = None,
+            backend: str = "opencascade.brep",
+        ):
+            # The object is constructed by the tree registry; adopt its pointer.
+            # SWIG does not generate keyword argument handling for overloaded
+            # methods, hence the select() and select_box() dispatchers below.
+            constructed = ifcopenshell_wrapper.create_tree(backend)
+            self.this = constructed.this
+            self.thisown = True
+            constructed.thisown = False
+
+            if file is not None:
+                self.add_file(file, settings if settings is not None else ifcopenshell_wrapper.settings())
+
+        def select(self, value, **kwargs) -> list[entity_instance]:
+            def unwrap(value):
+                if isinstance(value, entity_instance):
+                    return value
+                elif all(map(lambda v: hasattr(value, v), "XYZ")):
+                    return value.X(), value.Y(), value.Z()
+                return value
+
+            args = [self, unwrap(value)]
+            if isinstance(value, (entity_instance, ifcopenshell_wrapper.native_element)):
+                args.append(kwargs.get("completely_within", False))
+                if "extend" in kwargs:
+                    args.append(kwargs["extend"])
+            elif isinstance(value, (list, tuple)) and len(value) == 3 and set(map(type, value)) == {float}:
+                if "extend" in kwargs:
+                    args.append(kwargs["extend"])
+            return ifcopenshell_wrapper.tree.select(*args)
+
+        def select_box(self, value, **kwargs) -> list[entity_instance]:
+            def unwrap(value):
+                if isinstance(value, entity_instance):
+                    return value
+                elif hasattr(value, "Get"):
+                    return value.Get()[:3], value.Get()[3:]
+                return value
+
+            args = [self, unwrap(value)]
+            if "extend" in kwargs or "completely_within" in kwargs:
+                args.append(kwargs.get("completely_within", False))
+            if "extend" in kwargs:
+                args.append(kwargs.get("extend", -1.0e-5))
+            return ifcopenshell_wrapper.tree.select_box(*args)
+
+    def tree(
         file: Optional[file] = None,
         settings: Optional[settings] = None,
         backend: str = "opencascade.brep",
-    ):
-        # The object is constructed by the tree registry; adopt its pointer.
-        # SWIG does not generate keyword argument handling for overloaded
-        # methods, hence the select() and select_box() dispatchers below.
-        constructed = ifcopenshell_wrapper.create_tree(backend)
-        self.this = constructed.this
-        self.thisown = True
-        constructed.thisown = False
+    ) -> ifcopenshell_wrapper.tree:
+        """Create a geometry tree.
 
-        if file is not None:
-            self.add_file(file, settings if settings is not None else ifcopenshell_wrapper.settings())
+        The backend determines which elements are ingested and which operations
+        are supported:
 
-    def select(self, value, **kwargs) -> list[entity_instance]:
-        def unwrap(value):
-            if isinstance(value, entity_instance):
+        - ``"opencascade.brep"`` ingests native elements and builds an unbalanced
+        binary tree of bounding boxes. It supports ``select``, ``select_box``
+        and ``select_ray``, and is the default.
+        - ``"opencascade.trianglebvh"`` ingests triangulated elements and builds a
+        bounding volume hierarchy. It supports ``clash_intersection_many``,
+        ``clash_collision_many`` and ``clash_clearance_many``.
+
+        :param file: Optional file to process into the tree immediately.
+        :param settings: Optional settings used when processing the file.
+        :param backend: The tree backend to use.
+        :return: The geometry tree.
+        """
+        return _tree(file, settings, backend)
+else:
+
+    class tree(ifcopenshell_wrapper.tree):
+        def __init__(self, file: Optional[file] = None, settings: Optional[settings] = None):
+            args = [self]
+            if file is not None:
+                args.append(file)
+                if settings is not None:
+                    args.append(settings)
+            ifcopenshell_wrapper.tree.__init__(*args)
+
+        def add_file(self, file: file, settings: settings) -> None:
+            ifcopenshell_wrapper.tree.add_file(self, file, settings)
+
+        def add_iterator(self, iterator: iterator) -> None:
+            ifcopenshell_wrapper.tree.add_file(self, iterator)
+
+        def select(
+            self,
+            value: Union[entity_instance, ifcopenshell_wrapper.native_element, tuple[float, float, float]],
+            **kwargs,
+        ) -> list[entity_instance]:
+            def unwrap(value):
+                if isinstance(value, entity_instance):
+                    return value
+                elif all(map(lambda v: hasattr(value, v), "XYZ")):
+                    return value.X(), value.Y(), value.Z()
                 return value
-            elif all(map(lambda v: hasattr(value, v), "XYZ")):
-                return value.X(), value.Y(), value.Z()
-            return value
 
-        args = [self, unwrap(value)]
-        if isinstance(value, (entity_instance, ifcopenshell_wrapper.native_element)):
-            args.append(kwargs.get("completely_within", False))
-            if "extend" in kwargs:
-                args.append(kwargs["extend"])
-        elif isinstance(value, (list, tuple)) and len(value) == 3 and set(map(type, value)) == {float}:
-            if "extend" in kwargs:
-                args.append(kwargs["extend"])
-        return ifcopenshell_wrapper.tree.select(*args)
+            args = [self, unwrap(value)]
+            if isinstance(value, (entity_instance, ifcopenshell_wrapper.native_element)):
+                args.append(kwargs.get("completely_within", False))
+                if "extend" in kwargs:
+                    args.append(kwargs["extend"])
+            elif isinstance(value, (list, tuple)) and len(value) == 3 and set(map(type, value)) == {float}:
+                if "extend" in kwargs:
+                    args.append(kwargs["extend"])
+            return ifcopenshell_wrapper.tree.select(*args)
 
-    def select_box(self, value, **kwargs) -> list[entity_instance]:
-        def unwrap(value):
-            if isinstance(value, entity_instance):
+        def select_box(self, value, **kwargs) -> list[entity_instance]:
+            def unwrap(value):
+                if isinstance(value, entity_instance):
+                    return value
+                elif hasattr(value, "Get"):
+                    return value.Get()[:3], value.Get()[3:]
                 return value
-            elif hasattr(value, "Get"):
-                return value.Get()[:3], value.Get()[3:]
-            return value
 
-        args = [self, unwrap(value)]
-        if "extend" in kwargs or "completely_within" in kwargs:
-            args.append(kwargs.get("completely_within", False))
-        if "extend" in kwargs:
-            args.append(kwargs.get("extend", -1.0e-5))
-        return ifcopenshell_wrapper.tree.select_box(*args)
+            args = [self, unwrap(value)]
+            if "extend" in kwargs or "completely_within" in kwargs:
+                args.append(kwargs.get("completely_within", False))
+            if "extend" in kwargs:
+                args.append(kwargs.get("extend", -1.0e-5))
+            return ifcopenshell_wrapper.tree.select_box(*args)
 
+        def clash_intersection_many(
+            self,
+            set_a: Iterable[entity_instance],
+            set_b: Iterable[entity_instance],
+            tolerance: float = 0.002,
+            check_all: bool = True,
+        ) -> tuple[ifcopenshell_wrapper.clash, ...]:
+            args = [self, set_a, set_b, tolerance, check_all]
+            return ifcopenshell_wrapper.tree.clash_intersection_many(*args)
 
-def tree(
-    file: Optional[file] = None,
-    settings: Optional[settings] = None,
-    backend: str = "opencascade.brep",
-) -> ifcopenshell_wrapper.tree:
-    """Create a geometry tree.
+        def clash_collision_many(
+            self, set_a: Iterable[entity_instance], set_b: Iterable[entity_instance], allow_touching=False
+        ) -> tuple[ifcopenshell_wrapper.clash, ...]:
+            args = [self, set_a, set_b, allow_touching]
+            return ifcopenshell_wrapper.tree.clash_collision_many(*args)
 
-    The backend determines which elements are ingested and which operations
-    are supported:
+        def clash_clearance_many(
+            self,
+            set_a: Iterable[entity_instance],
+            set_b: Iterable[entity_instance],
+            clearance: float = 0.05,
+            check_all: bool = False,
+        ) -> tuple[ifcopenshell_wrapper.clash, ...]:
+            args = [self, set_a, set_b, clearance, check_all]
+            return ifcopenshell_wrapper.tree.clash_clearance_many(*args)
 
-    - ``"opencascade.brep"`` ingests native elements and builds an unbalanced
-      binary tree of bounding boxes. It supports ``select``, ``select_box``
-      and ``select_ray``, and is the default.
-    - ``"opencascade.trianglebvh"`` ingests triangulated elements and builds a
-      bounding volume hierarchy. It supports ``clash_intersection_many``,
-      ``clash_collision_many`` and ``clash_clearance_many``.
+        @staticmethod
+        def get_clash_type(clash_type_i: int) -> ClashType:
+            """Convert clash type index to a readable string format.
 
-    :param file: Optional file to process into the tree immediately.
-    :param settings: Optional settings used when processing the file.
-    :param backend: The tree backend to use.
-    :return: The geometry tree.
-    """
-    return _tree(file, settings, backend)
+            :param clash_type_i: Type index that comes from ``clash.clash_type``.
+            """
+            return CLASH_TYPE_ITEMS[clash_type_i]
 
 
 def get_clash_type(clash_type_i: int) -> ClashType:

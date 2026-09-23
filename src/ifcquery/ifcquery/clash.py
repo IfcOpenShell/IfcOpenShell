@@ -63,7 +63,9 @@ def _get_scope_elements(
     return elements, "all"
 
 
-def _build_tree(model: ifcopenshell.file, elements: set[ifcopenshell.entity_instance]) -> ifcopenshell.ifcopenshell_wrapper.tree | None:
+def _build_tree(
+    model: ifcopenshell.file, elements: set[ifcopenshell.entity_instance]
+) -> ifcopenshell.ifcopenshell_wrapper.tree | None:
     """Build geometry tree for given elements using iterator.
 
     Returns None if iterator fails to initialize (no geometry available).
@@ -81,7 +83,9 @@ def _build_tree(model: ifcopenshell.file, elements: set[ifcopenshell.entity_inst
     return geom_tree
 
 
-def _format_clash(clash_result, geom_tree: ifcopenshell.ifcopenshell_wrapper.tree, model: ifcopenshell.file) -> dict[str, Any]:
+def _format_clash(
+    clash_result, geom_tree: ifcopenshell.ifcopenshell_wrapper.tree, model: ifcopenshell.file
+) -> dict[str, Any]:
     """Format a single clash result to dict."""
     # clash result .a/.b are C++ wrapper entity_instances without .Name;
     # look up the Python entity from the model by id for proper serialization
