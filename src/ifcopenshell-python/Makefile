@@ -58,7 +58,7 @@ PLATFORMTAG:=win_amd64
 endif
 
 BINARY_VERSION:=0.9.0alpha0
-BUILD_COMMIT:=8003d43
+BUILD_COMMIT:=45a8a44
 IOS_URL:=https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v$(BINARY_VERSION)-$(BUILD_COMMIT)-$(PLATFORM).zip
 IFCCONVERT_URL:=https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v$(BINARY_VERSION)-$(BUILD_COMMIT)-$(PLATFORM).zip
 BONSAIVIEWER_URL:=https://s3.amazonaws.com/ifcopenshell-builds/BonsaiViewer-v$(BINARY_VERSION)-$(BUILD_COMMIT)-$(PLATFORM).zip
