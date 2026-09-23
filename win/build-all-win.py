@@ -1,4 +1,6 @@
 # /// script
+# [tool.ty.environment]
+# root = ["."]
 # ///
 """
 It's not really a full version of nix/build-all.py for Windows,
@@ -11,12 +13,13 @@ import os
 import platform
 import re
 import shutil
-import subprocess
 import sys
 import zipfile
 from pathlib import Path
 from typing import NamedTuple
 from zipfile import ZipFile
+
+from common import logger, run, run_streamed
 
 
 class Args(NamedTuple):
@@ -75,11 +78,6 @@ IFC_RUNTIME_PLUGIN_PREFIXES = ("ifcopenshell.", "ifcopenshell_")
 IFC_GEOMETRY_WRITER_PREFIXES = ("ifcopenshell.geometry.writer.", "ifcopenshell_geometry_writer_")
 
 
-def run(command: list[str]) -> None:
-    print("Running:", command)
-    subprocess.check_call(command)
-
-
 def find_install_dir() -> Path:
     arch_install_dir = REPO_PATH / f"_installed-{build_generator()}"
     if arch_install_dir.exists():
@@ -115,11 +113,7 @@ def find_dumpbin() -> str:
 
 
 def dumpbin_dependents(file: Path, dumpbin: str) -> set[str]:
-    output = subprocess.check_output(
-        [dumpbin, "/nologo", "/dependents", str(file)],
-        text=True,
-        errors="replace",
-    )
+    output = run(dumpbin, "/nologo", "/dependents", str(file))
     return {match.group(1).lower() for line in output.splitlines() if (match := DEPENDENT_DLL_RE.match(line))}
 
 
@@ -185,7 +179,7 @@ def collect_qt_deployment_files(install_dir: Path) -> dict[str, Path]:
 def build_connector() -> Path:
     connector_repo = REPO_PATH / "src" / "bonsaiviewer-autodesk"
     connector_dir = connector_repo / "dist" / "autodesk"
-    run([sys.executable, str(connector_repo / "packaging" / "build.py")])
+    run_streamed(sys.executable, str(connector_repo / "packaging" / "build.py"))
     return connector_dir
 
 
@@ -210,9 +204,9 @@ def write_zip(zip_path: Path, files: dict[str, Path], generated_files: dict[str,
 
 def build() -> None:
     for python_version in PYTHON_VERSIONS:
-        print(f"Building for Python {python_version}...")
-        run(
-            [
+        logger.info(f"Building for Python {python_version}...")
+        run_streamed(
+            *[
                 sys.executable,
                 str(REPO_WIN / "build-deps.py"),
                 build_generator(),
@@ -224,8 +218,8 @@ def build() -> None:
                 python_version,
             ]
         )
-        run(
-            [
+        run_streamed(
+            *[
                 sys.executable,
                 str(REPO_WIN / "run-cmake.py"),
                 build_generator(),
@@ -242,7 +236,7 @@ def build() -> None:
                 "-DUSE_CCACHE=ON",
             ]
         )
-        run([sys.executable, str(REPO_WIN / "install-ifcopenshell.py"), build_generator(), "Release"])
+        run_streamed(*[sys.executable, str(REPO_WIN / "install-ifcopenshell.py"), build_generator(), "Release"])
 
 
 def archive_executables(zip_template: str, connector_dir: Path) -> None:
@@ -282,7 +276,7 @@ def archive_executables(zip_template: str, connector_dir: Path) -> None:
 
         zip_name = zip_template.format(package_name=file.stem)
         write_zip(OUTPUT_DIR / zip_name, files, generated_files)
-        print(f"{file} -> {zip_name}")
+        logger.info(f"{file} -> {zip_name}")
 
 
 def archive_python_package(python_version: str, python_path: Path, zip_template: str) -> None:
@@ -319,7 +313,7 @@ def archive_python_package(python_version: str, python_path: Path, zip_template:
 
     zip_name = zip_template.format(package_name=f"ifcopenshell-python-{python_version_major_minor}")
     write_zip(OUTPUT_DIR / zip_name, files)
-    print(f"{package_path} -> {zip_name}")
+    logger.info(f"{package_path} -> {zip_name}")
 
 
 def archive_python_packages(zip_template: str) -> None:
@@ -336,7 +330,7 @@ def get_zip_template() -> str:
     if "GITHUB_SHA" in os.environ:
         sha = os.environ["GITHUB_SHA"]
     else:
-        sha = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+        sha = run("git", "rev-parse", "HEAD").strip()
     sha = sha[:7]
     return f"{{package_name}}-v{version}-{sha}-{'win-arm64' if is_arm64() else 'win64'}.zip"
 
@@ -346,7 +340,7 @@ def main() -> None:
 
     zip_template = get_zip_template()
 
-    print("Output directory:", OUTPUT_DIR)
+    logger.info(f"Output directory: {OUTPUT_DIR}")
     if not ARGS.skip_ifcopenshell_build:
         build()
     connector_dir = build_connector()
