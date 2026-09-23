@@ -26,6 +26,7 @@ from vs_cfg import get_vs_var
 class Args(NamedTuple):
     skip_ifcopenshell_build: bool
     skip_executables: bool
+    no_zip: bool
 
 
 def parse_args() -> Args:
@@ -45,10 +46,16 @@ def parse_args() -> Args:
         action="store_true",
         help="skip packaging standalone executables",
     )
+    parser.add_argument(
+        "--no-zip",
+        action="store_true",
+        help="stage symlinked '.package-*' directories instead of creating zip archives",
+    )
     namespace = parser.parse_args()
     return Args(
         skip_ifcopenshell_build=namespace.skip_ifcopenshell_build,
         skip_executables=namespace.skip_executables,
+        no_zip=namespace.no_zip,
     )
 
 
@@ -203,6 +210,22 @@ def write_zip(zip_path: Path, files: dict[str, Path], generated_files: dict[str,
             zipf.writestr(arcname, contents)
 
 
+def stage_symlinks(package_dir: Path, files: dict[str, Path], generated_files: dict[str, str] | None = None) -> None:
+    if package_dir.exists():
+        # Clean up previous local runs.
+        shutil.rmtree(package_dir)
+    for arcname, file in files.items():
+        if file.is_dir():
+            continue
+        dest = package_dir / arcname
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.symlink_to(file)
+    for arcname, contents in (generated_files or {}).items():
+        dest = package_dir / arcname
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(contents)
+
+
 def build() -> None:
     for python_version in PYTHON_VERSIONS:
         logger.info(f"Building for Python {python_version}...")
@@ -240,7 +263,7 @@ def build() -> None:
         run_streamed(*[sys.executable, str(REPO_WIN / "install-ifcopenshell.py"), build_generator(), "Release"])
 
 
-def archive_executables(zip_template: str, connector_dir: Path) -> None:
+def archive_executables(zip_template: str, connector_dir: Path, no_zip: bool) -> None:
     install_dir = find_install_dir()
 
     bin_files = set((install_dir / "bin").iterdir())
@@ -275,12 +298,18 @@ def archive_executables(zip_template: str, connector_dir: Path) -> None:
         if file.stem == "BonsaiViewer":
             files.update(collect_connector_files(connector_dir))
 
+        if no_zip:
+            package_dir = install_dir / f".package-{file.stem}"
+            stage_symlinks(package_dir, files, generated_files)
+            logger.info(f"{file} -> {package_dir}")
+            continue
+
         zip_name = zip_template.format(package_name=file.stem)
         write_zip(OUTPUT_DIR / zip_name, files, generated_files)
         logger.info(f"{file} -> {zip_name}")
 
 
-def archive_python_package(python_version: str, python_path: Path, zip_template: str) -> None:
+def archive_python_package(python_version: str, python_path: Path, zip_template: str, no_zip: bool) -> None:
     install_dir = find_install_dir()
 
     bin_files = set((install_dir / "bin").iterdir())
@@ -313,18 +342,24 @@ def archive_python_package(python_version: str, python_path: Path, zip_template:
     for file in runtime_files | runtime_dependencies:
         files[f"ifcopenshell/{file.name}"] = file
 
+    if no_zip:
+        package_dir = install_dir / f".package-python-{python_version_major_minor}"
+        stage_symlinks(package_dir, files)
+        logger.info(f"{package_path} -> {package_dir}")
+        return
+
     zip_name = zip_template.format(package_name=f"ifcopenshell-python-{python_version_major_minor}")
     write_zip(OUTPUT_DIR / zip_name, files)
     logger.info(f"{package_path} -> {zip_name}")
 
 
-def archive_python_packages(zip_template: str) -> None:
+def archive_python_packages(zip_template: str, no_zip: bool) -> None:
     deps_path = REPO_PATH / "_deps"
     for d in deps_path.iterdir():
         if d.is_dir() and (d.name.startswith("python.") or d.name.startswith("pythonarm64.")):
             python_version = d.name.partition(".")[2]
             python_path = d / "tools"
-            archive_python_package(python_version, python_path, zip_template)
+            archive_python_package(python_version, python_path, zip_template, no_zip)
 
 
 def get_zip_template() -> str:
@@ -347,8 +382,8 @@ def main() -> None:
         build()
     if not ARGS.skip_executables:
         connector_dir = build_connector()
-        archive_executables(zip_template, connector_dir)
-    archive_python_packages(zip_template)
+        archive_executables(zip_template, connector_dir, ARGS.no_zip)
+    archive_python_packages(zip_template, ARGS.no_zip)
 
 
 if __name__ == "__main__":
