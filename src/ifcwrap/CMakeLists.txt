@@ -313,6 +313,16 @@ IF(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
                         RUNTIME DESTINATION "${python_package_dir}/ifcopenshell")
             endif()
 
+            if(MSVC)
+                # Ship the shared third-party runtime (e.g. OCCT, Boost, manifold) next to the wrapper.
+                foreach(_target ifcopenshell_wrapper ${_ifcopenshell_python_runtime_targets})
+                    get_target_property(_target_type ${_target} TYPE)
+                    if(_target_type STREQUAL "SHARED_LIBRARY" OR _target_type STREQUAL "MODULE_LIBRARY")
+                        install(FILES $<TARGET_RUNTIME_DLLS:${_target}> DESTINATION "${python_package_dir}/ifcopenshell")
+                    endif()
+                endforeach()
+            endif()
+
             if(NOT WIN32 AND NOT WASM_BUILD)
                 # On Linux $ORIGIN expands to the directory of the loaded
                 # object (= site-packages/ifcopenshell/). macOS dyld doesn't
