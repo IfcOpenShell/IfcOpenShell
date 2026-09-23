@@ -147,7 +147,7 @@ class Clasher:
                 b_ifc_class=element2.is_a(),
                 a_name=element1.get_argument(2),
                 b_name=element2.get_argument(2),
-                type=ifcopenshell.geom.get_clash_type(result.clash_type),
+                type=ifcopenshell.geom.tree.get_clash_type(result.clash_type),
                 p1=list(result.p1),
                 p2=list(result.p2),
                 distance=result.distance,

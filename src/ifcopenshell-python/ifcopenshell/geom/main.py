@@ -19,7 +19,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Generator
+from collections.abc import Generator, Iterable
 from os import PathLike, fspath
 from typing import TYPE_CHECKING, Any, Literal, Optional, TypeVar, Union, cast, overload
 
@@ -391,6 +391,7 @@ class iterator(ifcopenshell_wrapper.iterator):
 ClashType = Literal["protrusion", "pierce", "collision", "clearance"]
 CLASH_TYPE_ITEMS = ("protrusion", "pierce", "collision", "clearance")
 
+
 class tree(ifcopenshell_wrapper.tree):
     def __init__(
         self,
@@ -418,7 +419,9 @@ class tree(ifcopenshell_wrapper.tree):
     def add_iterator(self, iterator: iterator) -> None:
         ifcopenshell_wrapper.tree.add_file(self, iterator)
 
-    def select(self, value: Union[entity_instance, ifcopenshell_wrapper.native_element, tuple[float, float, float]], **kwargs) -> list[entity_instance]:
+    def select(
+        self, value: Union[entity_instance, ifcopenshell_wrapper.native_element, tuple[float, float, float]], **kwargs
+    ) -> list[entity_instance]:
         args = [self, value]
         if isinstance(value, (entity_instance, ifcopenshell_wrapper.native_element)):
             args.append(kwargs.get("completely_within", False))
@@ -438,10 +441,10 @@ class tree(ifcopenshell_wrapper.tree):
         return ifcopenshell_wrapper.tree.select_box(*args)
 
     def clash_collision_many(
-            self, set_a: Iterable[entity_instance], set_b: Iterable[entity_instance], allow_touching=False
-        ) -> tuple[ifcopenshell_wrapper.clash, ...]:
-            args = [self, set_a, set_b, allow_touching]
-            return ifcopenshell_wrapper.tree.clash_collision_many(*args)
+        self, set_a: Iterable[entity_instance], set_b: Iterable[entity_instance], allow_touching=False
+    ) -> tuple[ifcopenshell_wrapper.clash, ...]:
+        args = [self, set_a, set_b, allow_touching]
+        return ifcopenshell_wrapper.tree.clash_collision_many(*args)
 
     def clash_clearance_many(
         self,

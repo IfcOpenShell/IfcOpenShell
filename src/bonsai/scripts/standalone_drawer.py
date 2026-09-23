@@ -133,7 +133,13 @@ class Drawer:
         return LineworkContexts(body_contexts, annotation_contexts)
 
     def serialize_contexts_elements(
-        self, ifc, tree: ifcopenshell.ifcopenshell_wrapper.tree, contexts: LineworkContexts, context_type, drawing_elements, target_view
+        self,
+        ifc,
+        tree: ifcopenshell.geom.tree,
+        contexts: LineworkContexts,
+        context_type,
+        drawing_elements,
+        target_view,
     ):
         drawing_elements = drawing_elements.copy()
         contexts = getattr(contexts, context_type)

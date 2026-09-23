@@ -63,9 +63,7 @@ def _get_scope_elements(
     return elements, "all"
 
 
-def _build_tree(
-    model: ifcopenshell.file, elements: set[ifcopenshell.entity_instance]
-) -> ifcopenshell.ifcopenshell_wrapper.tree | None:
+def _build_tree(model: ifcopenshell.file, elements: set[ifcopenshell.entity_instance]) -> ifcopenshell.geom.tree | None:
     """Build geometry tree for given elements using iterator.
 
     Returns None if iterator fails to initialize (no geometry available).
