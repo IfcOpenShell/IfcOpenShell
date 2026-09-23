@@ -42,6 +42,9 @@ foreach(kernel ${GEOMETRY_KERNELS})
     target_link_libraries(${KERNEL_TARGET} PRIVATE ${plugin_when_not_wasm} IfcGeom ${${KERNEL_UPPER}_LIBRARIES} Eigen3::Eigen)
 
     install(TARGETS ${KERNEL_TARGET})
+    # Every OCCT consumer links the same toolkit list, so the kernel's
+    # runtime DLL set covers the tree and serializer plug-ins too.
+    ifcopenshell_install_runtime_dlls(TARGETS ${KERNEL_TARGET})
 
     if(${kernel} STREQUAL "cgal")
         set_property(TARGET ${KERNEL_TARGET} APPEND_STRING PROPERTY COMPILE_FLAGS " -DCGAL_HAS_THREADS")
@@ -71,16 +74,6 @@ foreach(kernel ${GEOMETRY_KERNELS})
             target_link_libraries(${KERNEL_TARGET} PRIVATE ${OCCT_LIBS_FILTERED})
         else()
             target_link_libraries(${KERNEL_TARGET} PRIVATE ${OpenCASCADE_LIBRARIES})
-        endif()
-
-        if(WIN32 AND TARGET TKernel)
-            get_target_property(_occt_library_type TKernel TYPE)
-            if(_occt_library_type STREQUAL "SHARED_LIBRARY")
-                # Ship the shared OCCT runtime next to the plug-ins that load it.
-                # Every OCCT consumer links the same toolkit list, so the kernel's
-                # runtime DLL set covers the tree and serializer plug-ins too.
-                install(FILES $<TARGET_RUNTIME_DLLS:${KERNEL_TARGET}> DESTINATION ${CMAKE_INSTALL_BINDIR})
-            endif()
         endif()
 
 	if (NOT WASM_BUILD)
