@@ -1121,14 +1121,21 @@ class SheetBuilder:
         return drawings
 
     def _documents_by_uri(self) -> dict:
-        """Every schedule and reference, by the path of the file it is kept in."""
+        """Every schedule and reference, by the path of the file it is kept in.
+
+        A schedule is kept as a spreadsheet and placed as the SVG rendered
+        beside it (`add_document`), so the sheet's reference names a file the
+        document itself never does. Both spellings are keyed, or a schedule
+        would be looked up by the `.svg` and never found.
+        """
         documents = {}
         for information in tool.Ifc.get().by_type("IfcDocumentInformation"):
             if information.Scope not in ("SCHEDULE", "REFERENCE"):
                 continue
             for reference in tool.Drawing.get_document_references(information):
                 if uri := tool.Drawing.get_document_uri(reference):
-                    documents.setdefault(self._path_key(uri), information)
+                    for path in (uri, tool.Drawing.get_path_with_ext(uri, "svg")):
+                        documents.setdefault(self._path_key(path), information)
         return documents
 
     def _find_target(self, sheet: ifcopenshell.entity_instance, target: dict) -> tuple:
