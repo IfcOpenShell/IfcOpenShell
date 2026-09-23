@@ -46,10 +46,17 @@ if(WITH_MESH_OPTIMIZER)
     target_compile_definitions(test_lod_builder PRIVATE -DWITH_MESH_OPTIMIZER)
 endif()
 
-# SidecarCompress: zstd compress/decompress wrappers. Links the system libzstd.
-# SidecarCache now (de)compresses geometry + metadata, so every test that
-# compiles SidecarCache.cpp needs SidecarCompress.cpp + libzstd too.
-find_library(ZSTD_LIBRARY NAMES zstd libzstd)
+# SidecarCompress: zstd compress/decompress wrappers. Prefer the imported zstd
+# config target (carries include dirs on Windows/pixi builds); fall back to
+# find_library for distro packages. SidecarCache now (de)compresses geometry +
+# metadata, so every test that compiles SidecarCache.cpp needs SidecarCompress.cpp
+# + libzstd too.
+find_package(zstd QUIET)
+if(TARGET zstd::libzstd_static)
+    set(ZSTD_LIBRARY zstd::libzstd_static)
+else()
+    find_library(ZSTD_LIBRARY NAMES zstd libzstd)
+endif()
 add_ifcviewer_unit_test(test_sidecar_compress
     SOURCES ${IFCVIEWER_SRC}/SidecarCompress.cpp
     LIBS ${ZSTD_LIBRARY}
@@ -89,6 +96,25 @@ add_ifcviewer_unit_test(test_sidecar_layout
         ${IFCVIEWER_SRC}/SidecarCompress.cpp
     LIBS ${ZSTD_LIBRARY}
 )
+
+# SidecarSerializer: the Qt-free assembly shared by SidecarBuilder and the
+# ifcconvert .ifcview serializer plugin. finalize() also runs LodBuilder and
+# the SidecarLayout Morton pass, so those sources are pulled in too.
+find_package(Eigen3 ${EIGEN_MIN_VERSION} REQUIRED)
+add_ifcviewer_unit_test(test_sidecar_serializer
+    SOURCES
+        ${IFCVIEWER_SRC}/SidecarSerializer.cpp
+        ${IFCVIEWER_SRC}/SidecarCache.cpp
+        ${IFCVIEWER_SRC}/SidecarCompress.cpp
+        ${IFCVIEWER_SRC}/SidecarLayout.cpp
+        ${IFCVIEWER_SRC}/ChunkPlanner.cpp
+        ${IFCVIEWER_SRC}/LodBuilder.cpp
+    LIBS ${ZSTD_LIBRARY} Eigen3::Eigen
+)
+if(WITH_MESH_OPTIMIZER)
+    target_compile_definitions(test_sidecar_serializer PRIVATE -DWITH_MESH_OPTIMIZER)
+    target_link_libraries(test_sidecar_serializer PRIVATE meshoptimizer::meshoptimizer)
+endif()
 
 # InstanceCompose: matrix composition + cross-model object_id lookup.
 # Pulls in wgpu_native for the WGPUBuffer typedef via ModelGpuData.h
