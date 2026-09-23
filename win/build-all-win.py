@@ -27,6 +27,7 @@ class Args(NamedTuple):
     skip_ifcopenshell_build: bool
     skip_executables: bool
     no_zip: bool
+    fail_on_missing_deps: bool
 
 
 def parse_args() -> Args:
@@ -51,11 +52,17 @@ def parse_args() -> Args:
         action="store_true",
         help="stage symlinked '.package-*' directories instead of creating zip archives",
     )
+    parser.add_argument(
+        "--fail-on-missing-deps",
+        action="store_true",
+        help="exit with an error if any runtime DLL dependencies were not found among candidates",
+    )
     namespace = parser.parse_args()
     return Args(
         skip_ifcopenshell_build=namespace.skip_ifcopenshell_build,
         skip_executables=namespace.skip_executables,
         no_zip=namespace.no_zip,
+        fail_on_missing_deps=namespace.fail_on_missing_deps,
     )
 
 
@@ -116,6 +123,53 @@ def runtime_candidate_files(install_dir: Path, extra_files: list[Path] | None = 
     return sorted({file.resolve(): file for file in candidates}.values())
 
 
+MISSING_DLLS: set[str] = set()
+
+
+def is_known_missing_dll(name: str) -> bool:
+    known_missing_dlls = {
+        "advapi32.dll",
+        "authz.dll",
+        "bcryptprimitives.dll",
+        "d3d11.dll",
+        "d3d12.dll",
+        "dwmapi.dll",
+        "dwrite.dll",
+        "dxgi.dll",
+        "gdi32.dll",
+        "kernel32.dll",
+        "mpr.dll",
+        "msvcp140.dll",
+        "msvcp140_1.dll",
+        "msvcp140_2.dll",
+        "netapi32.dll",
+        "ntdll.dll",
+        "ole32.dll",
+        "oleaut32.dll",
+        "opengl32.dll",
+        "rpcrt4.dll",
+        "setupapi.dll",
+        "shell32.dll",
+        "shlwapi.dll",
+        "user32.dll",
+        "userenv.dll",
+        "uxtheme.dll",
+        "vcruntime140.dll",
+        "vcruntime140_1.dll",
+        "version.dll",
+        "winmm.dll",
+        "ws2_32.dll",
+        "wsock32.dll",
+    }
+    # Provided by the Python interpreter.
+    if re.fullmatch(r"python3\d*\.dll", name):
+        return True
+    # API sets, resolved by the OS loader.
+    if name.startswith("api-ms-win-"):
+        return True
+    return name in known_missing_dlls
+
+
 def trace_runtime_dependencies(roots: set[Path], candidates: set[Path]) -> set[Path]:
     dumpbin = find_dumpbin()
     lookup = {file.name.lower(): file for file in candidates}
@@ -132,8 +186,13 @@ def trace_runtime_dependencies(roots: set[Path], candidates: set[Path]) -> set[P
 
         for dependent_name in dumpbin_dependents(file, dumpbin):
             dependent = lookup.get(dependent_name)
-            # Not one of our candidates (e.g. system/CRT DLLs) or already queued.
-            if dependent is None or dependent in resolved:
+            # Not one of our candidates (e.g. system/CRT DLLs).
+            if dependent is None:
+                if not is_known_missing_dll(dependent_name):
+                    MISSING_DLLS.add(dependent_name)
+                continue
+            # Already queued.
+            if dependent in resolved:
                 continue
             resolved.add(dependent)
             queue.append(dependent)
@@ -385,6 +444,14 @@ def main() -> None:
         connector_dir = build_connector()
         archive_executables(zip_template, connector_dir, ARGS.no_zip)
     archive_python_packages(zip_template, ARGS.no_zip)
+
+    if MISSING_DLLS:
+        logger.warning("DLLs not found among candidates:")
+        for name in sorted(MISSING_DLLS):
+            logger.warning(f"  {name}")
+        if ARGS.fail_on_missing_deps:
+            logger.error("Failing due to missing DLLs (--fail-on-missing-deps).")
+            sys.exit(1)
 
 
 if __name__ == "__main__":
