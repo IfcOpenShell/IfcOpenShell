@@ -23,18 +23,12 @@ def parse_args() -> None:
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="Environment variables:\n"
-        "  TARGET_ARCH   'arm64'/'aarch64' or 'x64'/'amd64'/'x86_64' (default: host architecture)\n"
         "  GITHUB_SHA    commit SHA to use in archive names (default: 'git rev-parse HEAD')",
     )
     parser.parse_args()
 
 
 def is_arm64() -> bool:
-    arch = os.environ.get("TARGET_ARCH", "").lower()
-    if arch in ("arm64", "aarch64"):
-        return True
-    if arch in ("x64", "amd64", "x86_64"):
-        return False
     return platform.machine().lower() in ("arm64", "aarch64")
 
 

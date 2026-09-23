@@ -77,8 +77,6 @@ jobs:
 
       - name: Run Build Script And Pack .zip Archives
         shell: cmd
-        env:
-          TARGET_ARCH: ${{ matrix.arch }}  # lets the Python script know which arch to target (optional override)
         run: |
           call ${{ matrix.vcvars }}
           cd win
