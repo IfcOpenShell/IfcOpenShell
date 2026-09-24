@@ -813,32 +813,161 @@ CSV-import failure as before).
 
 ## 5. Alternative alignment definition methods
 
-**Confirmed future requirement (per the user, 2026-09-16).** Beyond the PI-based tangent+curve
-workflow (§2), support defining an alignment's geometry directly from:
+**Confirmed future requirement (per the user, 2026-09-16), re-scoped by the user on 2026-09-24.**
+Beyond the PI-based tangent+curve workflow (§2), support the other *geometry definitions* IFC 4.3
+allows for an IfcAlignment. Per the IfcAlignment documentation ("Supported shape representations"):
 
-1. **3D polyline.** A sequence of 3D points (X, Y, Z) defines both the horizontal alignment and a
-   vertical profile in one pass — each point's elevation implies a vertical PI at the corresponding
-   distance-along. Presumably straight-tangent segments only at this stage; curve smoothing would
-   still be layered on afterward via the existing PI-curve workflow (§2 steps 6-7).
-2. **2D polyline.** The same, but points carry only (X, Y) — horizontal geometry only, with no
-   vertical profile implied (vertical would need defining separately, e.g. via the existing
-   draw-by-PI tool in the profile view).
-3. **Offset curve by distance(s).** Define a new alignment as an offset from an existing reference
-   alignment, by a given distance (or distances, if the offset varies along the alignment) — e.g. a
-   parallel ramp or lane edge defined relative to a mainline alignment rather than drawn from
-   scratch.
+* _IfcPolyline_ or _IfcIndexedPolyCurve_ as a 3D alignment by a 3D polyline representation (such as
+  coming from a survey).
+* _IfcPolyline_ or _IfcIndexedPolyCurve_ as a 2D horizontal alignment by a 2D polyline
+  representation (such as in very early planning phases or as a map representation).
+* _IfcOffsetCurveByDistances_ as a 2D or 3D curve defined relative to an _IfcCompositeCurve_,
+  _IfcGradientCurve_ or another _IfcOffsetCurveByDistances_.
 
-**Open questions:**
-- Input source for the polyline methods — trace an existing Blender curve/mesh-edge object? Import
-  points from a table/file? Draw interactively (reusing the existing click-to-place tool, just
-  without forcing tangent-only PI-method smoothing)?
-- For the offset-curve method: constant offset only, or does the distance vary by station (a table
-  of station/offset pairs, similar to how station equations are entered today)? Which side
-  (left/right) convention? Does it need its own live preview/decorator, the way the PI-method draw
-  tool has one?
-- How does an offset curve interact with vertical — does the new alignment inherit the reference
-  alignment's vertical profile (shifted), get its own, or default to flat until vertical is added
-  separately?
+These are geometry definitions *without* the business logic (no IfcAlignmentHorizontal/Vertical/Cant
+layouts), which is what distinguishes them from the layout-based alignments everything else in this
+document edits. (The original 2026-09-16 wording read "3D/2D polyline" as a way of *generating*
+layouts from points -- each vertex a PI. Superseded: per the user, "the idea comes from the supported
+shape representations for an IfcAlignment".)
+
+1. **Polyline alignment (2D or 3D)** -- the current focus, see §5.1 below.
+2. **Offset curve alignment (IfcOffsetCurveByDistances).** **Confirmed requirement (per the user,
+   2026-09-24): "Define an alignment with IfcOffsetCurveByDistances"** -- to be handled *before*
+   partial regeneration (§1/§4). A new alignment defined by offsets (IfcDistanceExpression:
+   distance along, lateral, and optionally vertical offset) from a reference alignment's curve -- an
+   IfcCompositeCurve (horizontal-only), IfcGradientCurve (with vertical), or another
+   IfcOffsetCurveByDistances. Still open:
+   - constant offset only, or offsets that vary by station (a station/offset table, like station
+     equations)? Left/right sign convention?
+   - does it need its own live preview while defining it?
+   - what happens to the offset alignment when its reference alignment is edited and fully
+     regenerated (every segment replaced) -- the offset curve references the reference alignment's
+     curve entity, so it has to survive or be re-pointed.
+
+### 5.1 Polyline alignment
+
+**Requirement (per the user, 2026-09-24).** Sources of the data:
+1. **Coming in from an IFC file** -- an IfcAlignment whose representation is an IfcPolyline or
+   IfcIndexedPolyCurve (2D or 3D) must load, display, and be editable.
+2. **Drawn by the user in the 3D viewport**, either constrained to Z = 0 (a 2D polyline) or in full
+   3D.
+
+Editing:
+- **In a table** (the points' coordinates).
+- **By drag/drop** of the points in the viewport.
+
+(Resolves this section's old open question about the polyline input source.)
+
+**Decided with the user (2026-09-24):** a polyline alignment is started from **Add Alignment**'s
+new *Definition* choice. The **2D/3D choice is made while drawing** (a toggle in the draw tool). New
+alignments are written as an **IfcPolyline**. Editing an existing one keeps whichever of
+IfcPolyline/IfcIndexedPolyCurve it already uses.
+
+**Implemented (2026-09-24).**
+- **What loading already did:** a polyline alignment loaded from a file (IfcPolyline or
+  IfcIndexedPolyCurve, Curve2D or Curve3D) already loaded and displayed through the generic
+  representation loader. Nothing needed changing there. But the PI-method **Draw** was enabled
+  for it and would have layered layouts on top of the polyline, so it's now refused ("This is a
+  polyline alignment -- use Draw Polyline").
+- **The IFC layer (`tool.Alignment`):**
+  - `get_polyline_curve` / `is_polyline_alignment`: an Axis polyline item and no layouts.
+  - `is_bare_alignment`: no layouts and no geometry yet, so it could still become either kind.
+  - `get_polyline_points` returns local IFC coordinates plus the dimension. It reads an
+    IfcIndexedPolyCurve's IfcLineIndex segments in order, and refuses one with IfcArcIndex arcs,
+    which can't be edited point by point without losing the arcs.
+  - `set_polyline_points` creates the curve through ifcopenshell's own
+    `_create_polyline_representation`, or updates the existing curve entity in place. It
+    removes orphaned points, updates the RepresentationType (Curve2D/Curve3D), and keeps the
+    alignment's own placement 2D/3D in step when an edit changes the dimension.
+  - `create_polyline_alignment` makes a bare alignment aggregated to the project.
+- **Add Alignment → Definition: Layouts (PI method) | Polyline.** Polyline creates a bare
+  alignment. Stationing isn't offered for polyline alignments yet (see below).
+- **Draw Polyline** (`align.draw_polyline_alignment`): the main button for a polyline alignment,
+  and an extra button for a bare one, which can still become either kind.
+  - **2D** (default) is the PI-method draw tool's setup: XY plane, Z = 0, written as Curve2D.
+  - **3D** is Bonsai's own Draw Polyline Profile setup: no locked plane, so points snap to scene
+    geometry, with a Z field and Shift+X/Y/Z plane locks. It's written as Curve3D.
+  - **V** toggles between them while drawing. The status bar shows the current mode. Redrawing
+    a 3D polyline starts in 3D.
+  - It has the same bearing/deflection Angle input and Bearing readout as the PI-method tool.
+  - Finishing replaces the alignment's points.
+- **Drag/drop** (`align.edit_polyline_points`): a draggable marker at every point. These are the
+  same marker Empties as the PI method's, with a new role, VERTEX, so marker dots,
+  **Move with Distance/Angle**, and Finish all work on them unchanged. 2D markers are locked in
+  Z; 3D ones move freely. Apply (the same Apply button) writes the markers back.
+- **Table** (`align.load_polyline_table`): Easting/Northing, plus Elevation for 3D, with
+  add/remove point. Adding inserts a point halfway to the next one, or continues the last leg.
+  Staged, then Apply/Finish, like the horizontal PI table.
+
+Verified headless:
+- The IFC layer on its own: create, update in place (same curve entity, no orphaned points,
+  mesh rebuilt), 3D, IfcIndexedPolyCurve kept through an edit, line-index read, arcs refused.
+- The whole flow through the real operators: Add Alignment (Polyline) → bare → draw 2D →
+  PI-method Draw refused → markers dragged and applied → table insert/remove/apply → redraw in 3D
+  (Curve3D, placement 3D) → 3D marker moved in Z and applied → 3D table → Delete Alignment. The
+  draw tool's modal can't run headless, so its 2D/3D setup and its finish step were driven
+  directly.
+- A **file-loaded IfcIndexedPolyCurve** alignment was edited through the table (type kept),
+  saved, reloaded with the edit intact, and opened again as markers at the right 3D positions.
+
+**Scope decided by the user (2026-09-24):**
+- **Stationing: yes** -- implemented, see below.
+- **Key-point referents: no** for polyline alignments. Referents there are left to *manual referent
+  definitions* (§10, a new requirement).
+- **Converting a polyline alignment to a layout-based one: not now** ("maybe later").
+- **Switching an existing polyline between 2D and 3D: no.** 2D/3D is decided when drawing.
+- **Profile view for a 3D polyline: yes, static** -- implemented, see below.
+
+**Implemented (2026-09-24): stationing for polyline alignments.**
+- **Library (ifcopenshell-python).** `add_stationing_referent` only put a referent *on* the curve
+  (IfcLinearPlacement) when the basis curve was an IfcCompositeCurve with segments. For anything
+  else it fell back to an IfcLocalPlacement at the origin. It now does the same for an
+  IfcPolyline/IfcIndexedPolyCurve basis curve: `get_basis_curve` already returns that curve for a
+  polyline alignment. The geometry kernel resolves distance along both, 2D and 3D, including the
+  fallback CartesianPosition. For a 3D polyline, distance along is measured along the 3D curve,
+  which is IFC's DistanceAlong. New test:
+  `test_polyline_alignment_referent_is_placed_on_the_polyline`, covering an IfcPolyline and a 3D
+  IfcIndexedPolyCurve, with positions checked. `test/api/alignment` has 147 passing tests.
+- **Bonsai.**
+  - Add Alignment → Polyline offers Define Start Station / Start Station again. The start referent
+    is created before there's a curve, as for layout alignments, and placed on the curve at
+    distance along 0 the first time points are written.
+  - After *every* point edit (`tool.Alignment._sync_polyline_stationing`, called by
+    `set_polyline_points`), each referent's cached fallback position and its Blender object are
+    moved to match the new geometry. The curve entity itself is updated in place, so the
+    IfcLinearPlacement stays valid.
+  - The Stationing panel (start station, station equations) works on polyline alignments unchanged.
+- **Verified headless:** a start station of 1+000 set at creation lands on the first point once
+  drawn, object included. A station equation at 150 sits exactly on the sloped 3D second leg and
+  reads station 2+000. Editing the points moves both referents, their fallback positions and the
+  start referent's object.
+
+**Fixed (2026-09-24), per the user: "When the polyline alignment is selected, its points should be
+listed along with an edit button. I don't see how you can look at the profile of a 3D polyline."**
+The Alignment Segments panel's polyline section now works like the horizontal section:
+- **A header** "Polyline (2D/3D): n points, length L" with a pencil **edit** button. It opens the
+  point table *in place* (Easting/Northing/Elevation, add/remove point, Apply/Cancel), and it's
+  depressed while the table is open, where clicking it closes the table.
+- **A read-only point list** when not editing: #, **Station** (station equations included),
+  Easting, Northing, and Elevation for 3D.
+
+The profile toggle had been a bare graph icon on a "Profile (static):" row, easy to miss. It's
+now a labelled **Show Profile** / **Hide Profile** button, next to VE. A 2D polyline says why it
+has none: "2D polyline: no elevations to profile". A polyline drawn without pressing V is 2D. The
+point table no longer also appears in the authoring panel, whose table button still opens it here.
+Verified by rendering the panel's own `draw()` headless: the list, the editing state, and the 2D
+case.
+
+**Implemented (2026-09-24): static profile for a 3D polyline.** The Alignment Segments panel now
+summarises a polyline alignment ("Polyline (3D): n points, length L"). For a 3D one it offers
+the profile view toggle, which was previously only shown when there were vertical layouts.
+`VerticalProfileDecorator._compute_profile` adds the polyline as one profile line, one straight
+grade per leg (labelled Start / Point n / End), against distance along the 3D curve. That axis
+matches IFC's DistanceAlong, so the stations shown match the stationing referents, and the grades
+shown are rise over that distance. At road grades, that's within a fraction of a percent of rise
+over plan distance. It's static: none of the vertical editing tools apply without a vertical
+layout. A 2D polyline adds nothing to the profile. Verified headless: legs, 3D lengths,
+labels, station labels starting at 1+000, and the panel summary for a 2D and a 3D polyline.
 
 ## 6. Vertical draw/edit parity with horizontal
 
@@ -1235,3 +1364,19 @@ aren't available in this environment).
 - Toggling visibility/display of key-point referent labels in the viewport, similar to
   `show_h_segment_labels` (used by `AlignmentSegmentDecorator`) — worth its own control, or is having
   the referent objects exist in the scene (selectable, visible in the Outliner) enough on its own?
+
+## 9. Appending to an existing alignment
+
+**Confirmed requirement (per the user, 2026-09-24): "adding to the end of an existing
+alignment"** -- to be handled *before* partial regeneration (§1/§4). Extend an existing alignment
+past its current end (more tangents/PIs for a layout-based alignment, more points for a polyline
+one) without redrawing it from scratch. Not yet designed: how the vertical/cant layouts (which must
+span the horizontal's full length) are extended along with the horizontal, and how stationing and
+key points follow.
+
+## 10. Manual referent definitions
+
+**New requirement (per the user, 2026-09-24): "manual referent definitions" -- details to be
+discussed later.** Placing IfcReferents along an alignment by hand, rather than only the generated
+stationing referents (§4) and key-point referents (§8). Polyline alignments (§5.1) get no key-point
+referents; any referents they need will come from this.

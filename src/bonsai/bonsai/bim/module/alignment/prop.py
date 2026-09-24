@@ -282,6 +282,16 @@ JOIN_MODE_ITEMS = [
 ]
 
 
+class PolylinePointRow(PropertyGroup):
+    """One point of a polyline alignment, staged for table editing (align.load_polyline_table /
+    align.apply_polyline_table). Local IFC project coordinates, like HorizontalPIMarker's x/y --
+    z is only used for a 3D polyline (CivilAlignmentProperties.editing_polyline_is_3d)."""
+
+    x: FloatProperty(name="Easting (Local)", default=0.0, precision=3, unit="LENGTH")
+    y: FloatProperty(name="Northing (Local)", default=0.0, precision=3, unit="LENGTH")
+    z: FloatProperty(name="Elevation (Local)", default=0.0, precision=3, unit="LENGTH")
+
+
 class HorizontalPIMarker(PropertyGroup):
     """One interior PI of a horizontal alignment, for table-based curve editing.
 
@@ -581,6 +591,12 @@ class CivilAlignmentProperties(PropertyGroup):
     vertical_end_elevation: FloatProperty(name="End Elevation", default=0.0, precision=3, unit="LENGTH")
     vertical_endpoints_staged: BoolProperty(default=False)
 
+    # Points of a polyline alignment staged for table editing -- see PolylinePointRow.
+    polyline_point_rows: CollectionProperty(type=PolylinePointRow)
+    active_polyline_point_row_index: IntProperty(default=0)
+    editing_polyline_alignment_id: IntProperty(default=0)
+    editing_polyline_is_3d: BoolProperty(default=False)
+
     # Interior PIs of the horizontal alignment, table-editing companion to the
     # draggable viewport Empties (PICurveMarkerProperties) -- see
     # HorizontalPIMarker.
@@ -679,6 +695,7 @@ class PICurveMarkerProperties(PropertyGroup):
             ("PI", "Interior PI", "An interior PI, optionally with a smoothing curve"),
             ("START", "Start Point", "The alignment's start point"),
             ("END", "End Point", "The alignment's end point"),
+            ("VERTEX", "Polyline Point", "A point of a polyline alignment (REQUIREMENTS.md §5.1)"),
         ],
         default="PI",
     )

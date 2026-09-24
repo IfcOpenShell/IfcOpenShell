@@ -1265,6 +1265,179 @@ class Alignment:
                         verticals.append(obj)
         return verticals
 
+    # =========================================================================
+    # Polyline alignments (IFC 4.3: an IfcAlignment whose geometry is an IfcPolyline or
+    # IfcIndexedPolyCurve, 2D or 3D, with no horizontal/vertical/cant layouts -- REQUIREMENTS.md §5.1)
+    # =========================================================================
+
+    POLYLINE_CURVE_TYPES = ("IfcPolyline", "IfcIndexedPolyCurve")
+
+    @classmethod
+    def get_polyline_curve(cls, alignment: "ifcopenshell.entity_instance") -> Optional["ifcopenshell.entity_instance"]:
+        """The IfcPolyline/IfcIndexedPolyCurve defining a polyline alignment, or None for any other
+        alignment (layout-based ones, bare ones, or ones whose curve is something else)."""
+        if alignment is None or ifcopenshell.api.alignment.get_alignment_layouts(alignment):
+            return None
+        for representation in ifcopenshell.util.representation.get_representations_iter(alignment):
+            if representation.RepresentationIdentifier != "Axis":
+                continue
+            for item in representation.Items:
+                if item.is_a() in cls.POLYLINE_CURVE_TYPES:
+                    return item
+        return None
+
+    @classmethod
+    def is_polyline_alignment(cls, alignment: "ifcopenshell.entity_instance") -> bool:
+        return cls.get_polyline_curve(alignment) is not None
+
+    @classmethod
+    def is_bare_alignment(cls, alignment: "ifcopenshell.entity_instance") -> bool:
+        """No layouts and no geometry yet -- could still become either kind of alignment."""
+        return (
+            alignment is not None
+            and not ifcopenshell.api.alignment.get_alignment_layouts(alignment)
+            and not alignment.Representation
+        )
+
+    @classmethod
+    def get_polyline_points(cls, alignment: "ifcopenshell.entity_instance") -> tuple[list[tuple], int]:
+        """(points, dim) of a polyline alignment, in IFC project (local) coordinates.
+
+        Raises ValueError for an IfcIndexedPolyCurve with arc segments (IfcArcIndex), which isn't a
+        plain polyline and can't be edited point by point without losing the arcs.
+        """
+        curve = cls.get_polyline_curve(alignment)
+        if curve is None:
+            raise ValueError("Not a polyline alignment")
+        if curve.is_a("IfcPolyline"):
+            points = [tuple(float(c) for c in p.Coordinates) for p in curve.Points]
+            return points, (curve.Points[0].Dim if curve.Points else 2)
+        coords = [tuple(float(c) for c in p) for p in curve.Points.CoordList]
+        dim = 3 if curve.Points.is_a("IfcCartesianPointList3D") else 2
+        if not curve.Segments:
+            return coords, dim
+        points = []
+        for segment in curve.Segments:
+            if segment.is_a("IfcArcIndex"):
+                raise ValueError("This polyline alignment has arc segments, which can't be edited as points")
+            for index in segment.wrappedValue:
+                point = coords[index - 1]  # IfcLineIndex is 1-based
+                if not points or points[-1] != point:
+                    points.append(point)
+        return points, dim
+
+    @classmethod
+    def set_polyline_points(cls, alignment: "ifcopenshell.entity_instance", points, dim: int) -> None:
+        """Write a polyline alignment's points (IFC project coordinates), creating its geometry if it
+        has none yet (a new IfcPolyline, via ifcopenshell.api.alignment's own polyline
+        representation) or updating the existing IfcPolyline/IfcIndexedPolyCurve in place (so a
+        file's own choice of curve type survives editing). dim is 2 (Curve2D) or 3 (Curve3D).
+        Refreshes the viewport mesh."""
+        from ifcopenshell.api.alignment._create_polyline_representation import _create_polyline_representation
+
+        if len(points) < 2:
+            raise ValueError("A polyline alignment needs at least 2 points")
+        file = tool.Ifc.get()
+        coords = [tuple(float(c) for c in p[:dim]) + (0.0,) * (dim - len(p[:dim])) for p in points]
+        curve = cls.get_polyline_curve(alignment)
+        if curve is None:
+            _create_polyline_representation(file, alignment, [file.createIfcCartesianPoint(c) for c in coords])
+        else:
+            if curve.is_a("IfcPolyline"):
+                old = list(curve.Points)
+                curve.Points = [file.createIfcCartesianPoint(c) for c in coords]
+            else:
+                old = [curve.Points]
+                list_type = "IfcCartesianPointList3D" if dim == 3 else "IfcCartesianPointList2D"
+                curve.Points = file.create_entity(list_type, CoordList=coords)
+                curve.Segments = None  # a plain polyline through every point, in order
+            for entity in old:
+                if file.get_total_inverses(entity) == 0:
+                    file.remove(entity)
+            for representation in ifcopenshell.util.representation.get_representations_iter(alignment):
+                if curve in representation.Items:
+                    representation.RepresentationType = "Curve3D" if dim == 3 else "Curve2D"
+            cls._match_placement_dimension(alignment, dim)
+        cls.refresh_alignment_representation_object(alignment)
+        cls._sync_polyline_stationing(alignment)
+
+    @classmethod
+    def _sync_polyline_stationing(cls, alignment: "ifcopenshell.entity_instance") -> None:
+        """Keep a polyline alignment's stationing referents on its curve after its points change.
+
+        A start referent added before there was any curve (Add Alignment, then Draw Polyline) sits
+        at the origin with an IfcLocalPlacement -- put it on the curve at distance along 0, as
+        ifcopenshell.api.alignment.create_representation does for a layout-based alignment. Every
+        referent's IfcLinearPlacement stays valid through an edit (the curve entity is updated in
+        place, never replaced), but its cached fallback CartesianPosition and its Blender object
+        both need moving to match the new geometry.
+        """
+        from ifcopenshell.api.alignment.update_fallback_position import update_fallback_position
+
+        file = tool.Ifc.get()
+        curve = cls.get_polyline_curve(alignment)
+        nest = ifcopenshell.api.alignment.get_stationing_nest(file, alignment)
+        if curve is None or nest is None:
+            return
+        for referent in nest.RelatedObjects:
+            placement = referent.ObjectPlacement
+            if placement is not None and not placement.is_a("IfcLinearPlacement"):
+                referent.ObjectPlacement = file.createIfcLinearPlacement(
+                    RelativePlacement=file.createIfcAxis2PlacementLinear(
+                        Location=file.createIfcPointByDistanceExpression(
+                            DistanceAlong=file.createIfcLengthMeasure(0.0), BasisCurve=curve
+                        )
+                    )
+                )
+                if file.get_total_inverses(placement) == 0:
+                    ifcopenshell.util.element.remove_deep2(file, placement)
+            if referent.ObjectPlacement is not None and referent.ObjectPlacement.is_a("IfcLinearPlacement"):
+                update_fallback_position(file, referent.ObjectPlacement)
+        cls.sync_stationing_referent_placements(alignment)
+
+    @classmethod
+    def _match_placement_dimension(cls, alignment: "ifcopenshell.entity_instance", dim: int) -> None:
+        """Keep the alignment's own placement 2D/3D in step with its polyline (as
+        _create_polyline_representation sets it up) when an edit changes the polyline's dimension --
+        only for the unrotated placement Bonsai itself creates; anything else is left as it is."""
+        placement = alignment.ObjectPlacement
+        relative = getattr(placement, "RelativePlacement", None)
+        if relative is None or relative.Location.Dim == dim or getattr(relative, "RefDirection", None):
+            return
+        if relative.is_a("IfcAxis2Placement3D") and relative.Axis:
+            return
+        file = tool.Ifc.get()
+        location = tuple(relative.Location.Coordinates[:2]) + ((0.0,) if dim == 3 else ())
+        entity = "IfcAxis2Placement3D" if dim == 3 else "IfcAxis2Placement2D"
+        placement.RelativePlacement = file.create_entity(entity, Location=file.createIfcCartesianPoint(location))
+        if file.get_total_inverses(relative) == 0:
+            ifcopenshell.util.element.remove_deep2(file, relative)
+
+    @classmethod
+    def create_polyline_alignment(
+        cls, name: str, start_station: float = 0.0, define_stationing: bool = True
+    ) -> "ifcopenshell.entity_instance":
+        """A new, bare IfcAlignment ready to be drawn as a polyline: aggregated to the project like
+        every alignment (ifcopenshell.api.alignment.create does the same), no layouts, and no
+        geometry until its points are drawn (set_polyline_points). With define_stationing, its start
+        referent is added now, at the origin, and put on the curve once it's drawn
+        (_sync_polyline_stationing) -- the same order as a layout-based alignment's create_alignment."""
+        import ifcopenshell.api.root
+        import ifcopenshell.util.alignment
+
+        file = tool.Ifc.get()
+        alignment = ifcopenshell.api.root.create_entity(file, ifc_class="IfcAlignment", name=name)
+        project = file.by_type("IfcProject")
+        if project:
+            ifcopenshell.api.aggregate.assign_object(file, products=[alignment], relating_object=project[0])
+        if define_stationing:
+            station_string = ifcopenshell.util.alignment.station_as_string(file, start_station)
+            ifcopenshell.api.alignment.add_stationing_referent(
+                file, f"{alignment.Name or 'Alignment'} {station_string}", alignment, 0.0, start_station
+            )
+        cls.create_object_for_alignment(alignment)
+        return alignment
+
     @classmethod
     def get_vertical_display_name(cls, vertical_layout: "ifcopenshell.entity_instance") -> str:
         """A name that tells an alignment's verticals apart in the UI.
