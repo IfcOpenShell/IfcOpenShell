@@ -108,6 +108,7 @@ from .solve_horizontal_alignment_by_pi_method import (
     curve_tangent_out,
     solve_horizontal_alignment_by_pi_method,
     solve_join_next_radius,
+    solve_joining_radius,
 )
 from .update_alignment_parameter_segment_tags import update_alignment_parameter_segment_tags
 from .update_end_point import update_end_point
@@ -124,6 +125,7 @@ __all__ = [
     "curve_tangent_out",
     "solve_horizontal_alignment_by_pi_method",
     "solve_join_next_radius",
+    "solve_joining_radius",
     "add_positioning_referent",
     "add_stationing_referent",
     "add_vertical_layout",
