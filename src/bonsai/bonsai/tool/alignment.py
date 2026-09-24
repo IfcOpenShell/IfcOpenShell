@@ -1266,6 +1266,59 @@ class Alignment:
         return verticals
 
     @classmethod
+    def get_vertical_display_name(cls, vertical_layout: "ifcopenshell.entity_instance") -> str:
+        """A name that tells an alignment's verticals apart in the UI.
+
+        A user-given name wins -- the layout's own Name, or its child alignment's (IFC CT
+        4.1.4.4.1.2) -- as long as no sibling vertical shares it. Otherwise it's "Vertical n", n
+        being its place in get_all_vertical_layouts (the profile view's own "V n" order): every
+        child alignment add_vertical_layout creates is named "Child of <alignment>", so those
+        names alone can't distinguish two verticals. A lone vertical keeps its alignment's name.
+        """
+        owner = ifcopenshell.api.alignment.get_alignment(vertical_layout)
+        top = cls._get_top_level_alignment(owner) if owner else None
+        verticals = cls.get_all_vertical_layouts(top) if top else [vertical_layout]
+
+        generated = f"Child of {top.Name}" if top else None  # add_vertical_layout's own default
+
+        def given_name(v):
+            v_owner = ifcopenshell.api.alignment.get_alignment(v)
+            owner_name = v_owner.Name if v_owner is not None and v_owner != top else None
+            return v.Name or (owner_name if owner_name != generated else None)
+
+        if len(verticals) <= 1:
+            return given_name(vertical_layout) or (top.Name if top else None) or f"Vertical #{vertical_layout.id()}"
+        names = [given_name(v) for v in verticals]
+        name = given_name(vertical_layout)
+        if name and names.count(name) == 1:
+            return name
+        index = next((i for i, v in enumerate(verticals) if v.id() == vertical_layout.id()), 0)
+        return f"Vertical {index + 1}"
+
+    @classmethod
+    def rename_vertical(cls, vertical_layout: "ifcopenshell.entity_instance", name: str) -> Optional[str]:
+        """Name a vertical so it can be told apart from its siblings (see get_vertical_display_name).
+
+        Sets the vertical layout's own Name (what the profile view labels it by) and, when it sits
+        on its own child alignment (IFC CT 4.1.4.4.1.2), that child alignment's Name too -- never
+        the top-level alignment's. An empty name clears it back to the defaults (the layout
+        unnamed, the child back to add_vertical_layout's "Child of <alignment>"), so it shows as
+        "Vertical n" again. Returns an error message instead of renaming if another vertical of the
+        same alignment already has that name (the two would be indistinguishable again).
+        """
+        name = name.strip()
+        owner = ifcopenshell.api.alignment.get_alignment(vertical_layout)
+        top = cls._get_top_level_alignment(owner) if owner else None
+        if name:
+            for other in cls.get_all_vertical_layouts(top) if top else []:
+                if other.id() != vertical_layout.id() and cls.get_vertical_display_name(other) == name:
+                    return f"Another vertical is already named '{name}'"
+        vertical_layout.Name = name or None
+        if owner is not None and top is not None and owner != top:
+            owner.Name = name or f"Child of {top.Name}"
+        return None
+
+    @classmethod
     def create_object_for_referent(cls, referent: "ifcopenshell.entity_instance") -> Optional[bpy.types.Object]:
         """Create a Blender empty for one IfcReferent (get-or-create).
 
