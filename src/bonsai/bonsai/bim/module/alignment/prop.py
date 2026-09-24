@@ -257,6 +257,17 @@ class VerticalPIMarker(PropertyGroup):
     )
 
 
+# How a join_next (PCC/PRC) junction is placed -- see operator._apply_join_next_radii.
+JOIN_MODE_ITEMS = [
+    ("RADIUS", "Radius", "This curve's radius is given; the next PI's radius is computed to close the join"),
+    (
+        "DISTANCE",
+        "Distance",
+        "The distance from this PI to the junction is given; both this and the next PI's radii are computed",
+    ),
+]
+
+
 class HorizontalPIMarker(PropertyGroup):
     """One interior PI of a horizontal alignment, for table-based curve editing.
 
@@ -341,6 +352,23 @@ class HorizontalPIMarker(PropertyGroup):
             "join to"
         ),
         default=False,
+    )
+    join_mode: EnumProperty(
+        name="Solve Join Using",
+        description="Which value places the compound/reverse curve junction",
+        items=JOIN_MODE_ITEMS,
+        default="RADIUS",
+    )
+    join_distance: FloatProperty(
+        name="Distance to Junction",
+        description=(
+            "Distance from this PI to the compound/reverse curve junction (PCC/PRC), measured along "
+            "the tangent toward the next PI. Both this curve's and the next PI's radii are computed "
+            "from it on Apply"
+        ),
+        default=100.0,
+        min=0.0001,
+        unit="LENGTH",
     )
 
 
@@ -647,6 +675,23 @@ class PICurveMarkerProperties(PropertyGroup):
             "join to"
         ),
         default=False,
+    )
+    join_mode: EnumProperty(
+        name="Solve Join Using",
+        description="Which value places the compound/reverse curve junction",
+        items=JOIN_MODE_ITEMS,
+        default="RADIUS",
+    )
+    join_distance: FloatProperty(
+        name="Distance to Junction",
+        description=(
+            "Distance from this PI to the compound/reverse curve junction (PCC/PRC), measured along "
+            "the tangent toward the next PI. Both this curve's and the next PI's radii are computed "
+            "from it on Apply"
+        ),
+        default=100.0,
+        min=0.0001,
+        unit="LENGTH",
     )
     curve_type: EnumProperty(
         name="Curve Type",

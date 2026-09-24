@@ -132,6 +132,11 @@ class ALIGN_UL_vertical_pi_markers(UIList):
             row.label(text="")
 
 
+def _joins_by_distance(item) -> bool:
+    """Whether this PI's join_next junction is placed by distance (its own radius then computed)."""
+    return item.curve_type in {"CIRCULAR", "SPIRAL_CIRCULAR"} and item.join_next and item.join_mode == "DISTANCE"
+
+
 class ALIGN_UL_horizontal_pi_markers(UIList):
     """UIList for the interior PIs of a just-drawn/edited horizontal alignment.
 
@@ -148,8 +153,12 @@ class ALIGN_UL_horizontal_pi_markers(UIList):
         row.label(text=f"{item.x:.2f}")
         row.label(text=f"{item.y:.2f}")
         row.prop(item, "curve_type", text="")
+        by_distance = _joins_by_distance(item)
         if item.curve_type != "TANGENT":
-            row.prop(item, "radius", text="")
+            # in Distance mode the radius is computed on Apply -- shown, but not editable
+            sub = row.row(align=True)
+            sub.enabled = not by_distance
+            sub.prop(item, "radius", text="")
         if item.curve_type in {"SPIRAL_CIRCULAR", "SPIRAL_CIRCULAR_SPIRAL"}:
             row.prop(item, "spiral_in_length", text="")
         if item.curve_type in {"CIRCULAR_SPIRAL", "SPIRAL_CIRCULAR_SPIRAL"}:
@@ -162,6 +171,10 @@ class ALIGN_UL_horizontal_pi_markers(UIList):
         # CIRCULAR_SPIRAL/SPIRAL_CIRCULAR_SPIRAL always have one, so the toggle isn't offered there.
         if item.curve_type in {"CIRCULAR", "SPIRAL_CIRCULAR"}:
             row.prop(item, "join_next", text="Join Next", toggle=True)
+            if item.join_next:
+                row.prop(item, "join_mode", text="")
+                if by_distance:
+                    row.prop(item, "join_distance", text="")
 
 
 class ALIGN_UL_h_segments(UIList):
@@ -349,8 +362,12 @@ class ALIGN_PT_alignment_authoring(Panel):
                 box.label(text=f"PI {pi_data.pi_index}", icon="EMPTY_AXIS")
                 box.label(text="Drag in the viewport to reposition", icon="ORIENTATION_GLOBAL")
                 box.prop(pi_data, "curve_type")
+                by_distance = _joins_by_distance(pi_data)
                 if pi_data.curve_type != "TANGENT":
-                    box.prop(pi_data, "radius")
+                    # in Distance mode the radius is computed on Apply -- shown, but not editable
+                    sub = box.row()
+                    sub.enabled = not by_distance
+                    sub.prop(pi_data, "radius")
                 if pi_data.curve_type in {"SPIRAL_CIRCULAR", "SPIRAL_CIRCULAR_SPIRAL"}:
                     box.prop(pi_data, "spiral_in_length")
                 if pi_data.curve_type in {"CIRCULAR_SPIRAL", "SPIRAL_CIRCULAR_SPIRAL"}:
@@ -366,6 +383,10 @@ class ALIGN_PT_alignment_authoring(Panel):
                 # here.
                 if pi_data.curve_type in {"CIRCULAR", "SPIRAL_CIRCULAR"}:
                     box.prop(pi_data, "join_next", text="Join to Next PI (Compound/Reverse Curve)")
+                    if pi_data.join_next:
+                        box.row().prop(pi_data, "join_mode", expand=True)
+                        if by_distance:
+                            box.prop(pi_data, "join_distance")
                 row = box.row(align=True)
                 row.operator("align.apply_pi_curve", icon="CHECKMARK")
                 row.operator("align.finish_pi_editing", icon="CHECKMARK")

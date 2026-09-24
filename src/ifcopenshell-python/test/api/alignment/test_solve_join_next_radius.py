@@ -37,6 +37,7 @@ import ifcopenshell.api.alignment
 from ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method import (
     _solve_spiral_curve,
     solve_join_next_radius,
+    solve_joining_radius,
 )
 from test.api.alignment.test_solve_compound_reverse import _assert_chain_continuous
 
@@ -204,3 +205,79 @@ def test_rejects_non_positive_target():
 def test_rejects_zero_deflection():
     with pytest.raises(ValueError, match="deflection angle is zero"):
         solve_join_next_radius(0.0, 100.0)
+
+
+def _hpoints_for_join(delta1, delta2, pi_to_pi_distance):
+    pob = (0.0, 0.0)
+    pi1 = (1000.0, 0.0)
+    pi2 = (pi1[0] + pi_to_pi_distance * math.cos(delta1), pi1[1] + pi_to_pi_distance * math.sin(delta1))
+    poe = (pi2[0] + 800.0 * math.cos(delta1 + delta2), pi2[1] + 800.0 * math.sin(delta1 + delta2))
+    return [pob, pi1, pi2, poe]
+
+
+def test_joining_radius_plain_circular_matches_closed_form():
+    delta1 = math.radians(60.0)
+    r1 = 600.0
+    target = abs(r1 * math.tan(delta1 / 2.0))
+    assert solve_joining_radius(delta1, target) == pytest.approx(r1, abs=1.0e-9)
+
+
+def test_joining_radius_spiral_circular_matches_known_radius():
+    """SPIRAL_CIRCULAR's forward-side claim shifts with its outer entry spiral -- no closed form,
+    so check the bisection recovers a known radius from its own pi_to_st."""
+    delta1, entry1, r1_known = math.radians(50.0), 100.0, 500.0
+    target = _solve_spiral_curve(delta1, r1_known, entry1, 0.0, "CLOTHOID", None, pi_number=1).pi_to_st
+    solved = solve_joining_radius(delta1, target, entry_length=entry1, family="CLOTHOID")
+    assert solved == pytest.approx(r1_known, abs=1.0e-3)
+
+
+@pytest.mark.parametrize("delta2_deg", [40.0, -30.0])  # PCC, then PRC
+def test_join_by_distance_closes_end_to_end(delta2_deg):
+    """Distance mode: the junction is placed at a stated distance T1 from PI1 along the PI1-PI2 leg,
+    and *both* radii are solved -- PI1's from T1, PI2's from the remainder."""
+    delta1, delta2 = math.radians(60.0), math.radians(delta2_deg)
+    pi_to_pi_distance = 450.0
+    t1 = 300.0
+
+    r1 = solve_joining_radius(delta1, t1)
+    r2 = solve_join_next_radius(delta2, pi_to_pi_distance - t1)
+
+    hpoints = _hpoints_for_join(delta1, delta2, pi_to_pi_distance)
+    radii = [(r1, 0.0, 0.0, "CLOTHOID", None, True), r2]
+    segments = ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(hpoints, radii)
+    assert [s.predefined_type for s in segments] == ["LINE", "CIRCULARARC", "CIRCULARARC", "LINE"]
+    _assert_chain_continuous(segments)
+
+    # the junction lands exactly T1 from PI1 along the leg
+    junction = segments[2].start_point
+    expected = (hpoints[1][0] + t1 * math.cos(delta1), hpoints[1][1] + t1 * math.sin(delta1))
+    assert junction[0] == pytest.approx(expected[0], abs=1.0e-9)
+    assert junction[1] == pytest.approx(expected[1], abs=1.0e-9)
+
+
+@pytest.mark.parametrize("family", ["CLOTHOID", "BLOSSCURVE", "CUBIC"])
+def test_join_by_distance_with_outer_spirals_closes_end_to_end(family):
+    delta1, delta2 = math.radians(50.0), math.radians(35.0)
+    entry1, exit2 = 100.0, 70.0
+    pi_to_pi_distance = 520.0
+    t1 = 300.0
+
+    r1 = solve_joining_radius(delta1, t1, entry_length=entry1, family=family)
+    r2 = solve_join_next_radius(delta2, pi_to_pi_distance - t1, exit_length=exit2, family=family)
+
+    hpoints = _hpoints_for_join(delta1, delta2, pi_to_pi_distance)
+    radii = [(r1, entry1, 0.0, family, None, True), (r2, 0.0, exit2, family, None, False)]
+    segments = ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(hpoints, radii)
+    assert [s.predefined_type for s in segments] == ["LINE", family, "CIRCULARARC", "CIRCULARARC", family, "LINE"]
+    _assert_chain_continuous(segments, abs_tol=1.0e-5)
+
+
+def test_joining_radius_rejects_non_positive_target():
+    with pytest.raises(ValueError, match="not positive"):
+        solve_joining_radius(math.radians(30.0), 0.0)
+
+
+def test_joining_radius_rejects_unreachable_target():
+    """An entry spiral so long its smallest valid radius already claims more than the target."""
+    with pytest.raises(ValueError, match="no radius closes"):
+        solve_joining_radius(math.radians(10.0), 5.0, entry_length=200.0)

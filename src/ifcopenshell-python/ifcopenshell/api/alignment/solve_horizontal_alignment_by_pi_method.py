@@ -544,28 +544,87 @@ def solve_join_next_radius(
         curve type/spiral length/deflection combination (a genuinely unsatisfiable geometry, not a
         root-finding failure)
     """
+    return _solve_radius_for_tangent(
+        delta, target_tangent_in, 0.0, exit_length, family, vb_params, tolerance, max_iterations
+    )
+
+
+def solve_joining_radius(
+    delta: float,
+    target_tangent_out: float,
+    entry_length: float = 0.0,
+    family: str = "CLOTHOID",
+    vb_params: Optional[Sequence[float]] = None,
+    tolerance: float = 1.0e-9,
+    max_iterations: int = 100,
+) -> float:
+    """
+    Solves for the radius of the *joining* curve of a compound (PCC) / reverse (PRC) curve junction
+    (the PI with join_next=True), given the tangent length it must claim on its joined (forward)
+    side -- i.e. the distance from its PI to the junction point along the PI-to-PI leg. The mirror
+    image of solve_join_next_radius, which solves the joined-into curve from its entry-side claim.
+
+    Together the two let a caller place a junction by distance instead of by radius: with the
+    junction at distance T1 from the first PI, this solves the first curve's radius from T1, and
+    solve_join_next_radius solves the second curve's radius from (PI-to-PI distance - T1).
+
+    The joined side is always spiral-free, so the curve here is either plain CIRCULAR
+    (entry_length == 0.0, exact closed form) or SPIRAL_CIRCULAR (entry_length > 0.0, an outer
+    entry spiral only, solved by bisection against _solve_spiral_curve's own pi_to_st).
+
+    :param delta: PI deflection angle at the joining PI, radians (normalized internally)
+    :param target_tangent_out: the tangent length this curve's forward side must claim
+    :param entry_length: this curve's own entry spiral length (0.0 for plain CIRCULAR)
+    :param family: spiral family for the entry spiral (ignored when entry_length is 0.0)
+    :param vb_params: VIENNESEBEND cant params for the entry spiral (ignored otherwise)
+    :param tolerance: relative tolerance to solve to, see solve_join_next_radius
+    :param max_iterations: bisection iteration cap, after the initial bracket search
+    :return: the radius (unsigned magnitude) that claims exactly target_tangent_out
+    :raises ValueError: if target_tangent_out is not positive, or no radius achieves it
+    """
+    return _solve_radius_for_tangent(
+        delta, target_tangent_out, entry_length, 0.0, family, vb_params, tolerance, max_iterations
+    )
+
+
+def _solve_radius_for_tangent(
+    delta: float,
+    target_tangent: float,
+    entry_length: float,
+    exit_length: float,
+    family: str,
+    vb_params: Optional[Sequence[float]],
+    tolerance: float,
+    max_iterations: int,
+) -> float:
+    """Shared root-finder behind solve_join_next_radius (exit spiral only, solves the entry-side
+    ts_to_pi claim) and solve_joining_radius (entry spiral only, solves the forward-side pi_to_st
+    claim). Exactly one of entry_length/exit_length may be non-zero; the spiral always sits on the
+    side opposite the tangent being solved for."""
     delta = math.atan2(math.sin(delta), math.cos(delta))
     if delta == 0.0:
         raise ValueError("cannot solve for a joining radius: the PI deflection angle is zero")
-    if target_tangent_in <= 0.0:
+    if target_tangent <= 0.0:
         raise ValueError(
-            f"cannot solve for a joining radius: the required tangent length ({target_tangent_in:.6g}) "
+            f"cannot solve for a joining radius: the required tangent length ({target_tangent:.6g}) "
             "is not positive -- the two PIs are too close together, or the joining curve's own "
             "tangent claim already exceeds the PI-to-PI distance by itself"
         )
 
-    if exit_length <= 0.0:
+    spiral_length = entry_length if entry_length > 0.0 else exit_length
+    if spiral_length <= 0.0:
         # exact closed form -- same expression the plain-circular branch of the main loop uses.
         denom = math.tan(delta / 2.0)
         if denom == 0.0:
             raise ValueError("cannot solve for a joining radius: the PI deflection angle is zero")
-        return target_tangent_in / abs(denom)
+        return target_tangent / abs(denom)
 
-    def tangent_in(R: float) -> float:
-        return _solve_spiral_curve(delta, R, 0.0, exit_length, family, vb_params, pi_number=0).ts_to_pi
+    def tangent(R: float) -> float:
+        solution = _solve_spiral_curve(delta, R, entry_length, exit_length, family, vb_params, pi_number=0)
+        return solution.pi_to_st if entry_length > 0.0 else solution.ts_to_pi
 
     def residual(R: float) -> float:
-        return tangent_in(R) - target_tangent_in
+        return tangent(R) - target_tangent
 
     # A fixed-length spiral's own deflection is proportional to curvature, i.e. to 1/R -- so a
     # SMALL radius is where the exit spiral alone can exceed the PI's whole deflection (invalid,
@@ -586,7 +645,7 @@ def solve_join_next_radius(
     if valid_lo is None:
         raise ValueError(
             f"no radius closes this compound/reverse curve junction (required tangent length "
-            f"{target_tangent_in:.6g}); the exit spiral's own length never fits within this PI's "
+            f"{target_tangent:.6g}); the spiral's own length never fits within this PI's "
             "deflection angle at any radius tried"
         )
 
@@ -597,13 +656,13 @@ def solve_join_next_radius(
         # length -- since tangent_in only grows from here, no valid radius claims less. Either this
         # smallest radius happens to close it near-exactly (accept it) or the junction is
         # unsatisfiable for this exit spiral length/deflection (report cleanly).
-        if abs(f_lo) <= tolerance * target_tangent_in:
+        if abs(f_lo) <= tolerance * target_tangent:
             return lo
         raise ValueError(
             f"no radius closes this compound/reverse curve junction (required tangent length "
-            f"{target_tangent_in:.6g}); even the smallest radius at which this exit spiral length "
+            f"{target_tangent:.6g}); even the smallest radius at which this spiral length "
             "still fits within the PI's deflection already claims more tangent length than "
-            "required -- use a shorter exit spiral, or increase the required tangent length"
+            "required -- use a shorter spiral, or increase the required tangent length"
         )
 
     hi = lo * 2.0
@@ -616,14 +675,14 @@ def solve_join_next_radius(
     if f_hi < 0.0:
         raise ValueError(
             f"no radius closes this compound/reverse curve junction (required tangent length "
-            f"{target_tangent_in:.6g}); this curve type/spiral length combination cannot reach that "
+            f"{target_tangent:.6g}); this curve type/spiral length combination cannot reach that "
             "tangent claim at any radius tried for this PI's deflection angle"
         )
 
     for _ in range(max_iterations):
         mid = 0.5 * (lo + hi)
         f_mid = residual(mid)
-        if abs(f_mid) <= tolerance * target_tangent_in:
+        if abs(f_mid) <= tolerance * target_tangent:
             return mid
         if f_mid < 0.0:
             lo, f_lo = mid, f_mid

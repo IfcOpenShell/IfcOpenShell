@@ -977,6 +977,14 @@ def _apply_join_next_radii(items, hpoints, cant_lookup):
     The joined-into PI's own entry side (spiral_in_length) is always forced to 0.0, matching the
     join_next constraint the solver itself enforces (the joined side is never spiraled).
 
+    Two ways to place the junction, per the joining PI's join_mode: "RADIUS" (above -- the joining
+    curve's own radius is given) or "DISTANCE" (join_distance, the distance from the joining PI to the
+    junction along the PI-to-PI leg, is given, and *both* radii are computed -- the joining curve's
+    via solve_joining_radius, the joined-into curve's exactly as in RADIUS mode). Either way,
+    join_distance is written back with the junction's actual distance, so switching modes starts
+    from the current geometry rather than a stale default. DISTANCE is refused on a PI that is
+    itself joined into by the previous PI: its radius is already fixed by that earlier join.
+
     Walks ``items`` left to right, so a chain of 3+ joined curves (join_next set on more than one
     PI in a row) closes pairwise down the chain: PI 2's auto-computed radius (from closing against
     PI 1) is what PI 3 closes against next, if PI 2 is also join_next, not whatever radius PI 2 had
@@ -1019,18 +1027,43 @@ def _apply_join_next_radii(items, hpoints, cant_lookup):
             cant, rail_head_distance = cant_lookup[j]
             joining_vb_params = (joining.gravity_centerline_height, cant, rail_head_distance)
 
-        try:
-            tangent_out = ifcopenshell.api.alignment.curve_tangent_out(
-                delta_joining,
-                joining.radius,
-                entry_length=joining_entry_length,
-                exit_length=0.0,
-                family=joining.spiral_family,
-                vb_params=joining_vb_params,
-                pi_number=joining_pi_number,
-            )
-        except ValueError as e:
-            return False, f"Could not compute the join at PI {joining_pi_number}-{joined_pi_number}: {e}"
+        if getattr(joining, "join_mode", "RADIUS") == "DISTANCE":
+            if j > 0 and getattr(items[j - 1], "join_next", False):
+                return False, (
+                    f"PI {joining_pi_number}'s radius is already fixed by the join from PI {joining_pi_number - 1}; "
+                    f"use Radius mode for PI {joining_pi_number}"
+                )
+            tangent_out = joining.join_distance
+            if not 0.0 < tangent_out < pi_to_pi_distance:
+                return False, (
+                    f"PI {joining_pi_number}: the distance to the junction ({tangent_out:.6g}) must be between 0 "
+                    f"and the {pi_to_pi_distance:.6g} distance to PI {joined_pi_number}"
+                )
+            try:
+                joining.radius = ifcopenshell.api.alignment.solve_joining_radius(
+                    delta_joining,
+                    tangent_out,
+                    entry_length=joining_entry_length,
+                    family=joining.spiral_family,
+                    vb_params=joining_vb_params,
+                )
+            except ValueError as e:
+                return False, f"Could not place the junction at PI {joining_pi_number}: {e}"
+        else:
+            try:
+                tangent_out = ifcopenshell.api.alignment.curve_tangent_out(
+                    delta_joining,
+                    joining.radius,
+                    entry_length=joining_entry_length,
+                    exit_length=0.0,
+                    family=joining.spiral_family,
+                    vb_params=joining_vb_params,
+                    pi_number=joining_pi_number,
+                )
+            except ValueError as e:
+                return False, f"Could not compute the join at PI {joining_pi_number}-{joined_pi_number}: {e}"
+            if 0.0 < tangent_out:
+                joining.join_distance = tangent_out
 
         target_tangent_in = pi_to_pi_distance - tangent_out
 
@@ -1065,6 +1098,33 @@ def _apply_join_next_radii(items, hpoints, cant_lookup):
         joined.spiral_family = joined_family
 
     return True, ""
+
+
+def _populate_join_distances(items, hpoints, cant_lookup):
+    """Fill in join_distance on every join_next PI from its current radius, so a freshly loaded
+    PI list (viewport markers or table rows) shows the junction's real distance if the user
+    switches that PI to Distance mode. Only reads the radius -- never changes it. A PI whose tangent
+    claim can't be computed (e.g. spirals too long) is simply left at its default.
+    """
+    for j, item in enumerate(items[:-1]):
+        if not item.join_next:
+            continue
+        vb_params = None
+        if item.spiral_family == "VIENNESEBEND":
+            cant, rail_head_distance = cant_lookup[j]
+            vb_params = (item.gravity_centerline_height, cant, rail_head_distance)
+        try:
+            tangent_out = ifcopenshell.api.alignment.curve_tangent_out(
+                _pi_deflection(hpoints, j + 1),
+                item.radius,
+                entry_length=item.spiral_in_length if item.curve_type == "SPIRAL_CIRCULAR" else 0.0,
+                family=item.spiral_family,
+                vb_params=vb_params,
+            )
+        except ValueError:
+            continue
+        if 0.0 < tangent_out:
+            item.join_distance = tangent_out
 
 
 def _pi_curve_radii_entry(marker, cant_and_rail_head_distance=(0.0, 1.0)):
@@ -1459,6 +1519,14 @@ class ALIGN_OT_edit_horizontal_pis(Operator, tool.Ifc.Operator):
         _create_endpoint_marker(
             context, alignment_id, "END", _local_ifc_to_world_point(ifc, unit_scale, end), pi_index=len(specs) + 1
         )
+        interior_markers = [
+            m.bonsai_pi_curve_marker for m in _find_pi_markers(alignment_id) if _is_interior_pi_marker(m)
+        ]
+        _populate_join_distances(
+            interior_markers,
+            [start] + [spec["pi_local"] for spec in specs] + [end],
+            _cant_lookup_for_pi_markers(alignment, len(specs)),
+        )
 
         alignment_decorator.AlignmentSegmentDecorator.uninstall()
         tool.Blender.update_viewport()
@@ -1546,9 +1614,9 @@ class ALIGN_OT_apply_pi_curve(Operator, tool.Ifc.Operator):
 
         ok, message = _generate_alignment_segments(context, alignment, hpoints, radii)
 
-        marker = marker_obj.bonsai_pi_curve_marker
-        if marker.role == "PI":
-            marker_obj.name = f"PI {marker.pi_index} ({_pi_curve_marker_label(marker)})"
+        # _apply_join_next_radii may have changed radii on markers other than the active one
+        for m in interior_markers:
+            m.name = f"PI {m.bonsai_pi_curve_marker.pi_index} ({_pi_curve_marker_label(m.bonsai_pi_curve_marker)})"
         # _generate_alignment_segments() replaces every IfcAlignmentSegment
         # with a new one, so a previously-highlighted segment's id is gone —
         # refreshing it would silently keep showing the old, now-stale
@@ -1692,6 +1760,14 @@ class ALIGN_OT_load_horizontal_pi_table(Operator, tool.Ifc.Operator):
             item.spiral_family = spec["spiral_family"]
             item.gravity_centerline_height = spec["gravity_centerline_height"]
             item.join_next = spec["join_next"]
+        try:
+            start, end = tool.Alignment.get_alignment_start_end_points(alignment)
+        except ValueError:
+            pass
+        else:
+            rows = list(props.horizontal_pi_rows)
+            hpoints = [start] + [(row.x, row.y) for row in rows] + [end]
+            _populate_join_distances(rows, hpoints, _cant_lookup_for_pi_markers(alignment, len(rows)))
         props.editing_horizontal_pi_alignment_id = alignment.id()
 
         self.report({"INFO"}, f"Loaded {len(specs)} PI(s)")

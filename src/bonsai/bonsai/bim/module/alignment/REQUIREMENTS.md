@@ -439,19 +439,64 @@ improvements:
       137 passed (was 130, +7 new). `test/core/test_alignment.py` / `test/tool/test_alignment.py`:
       40 passed, same one pre-existing, unrelated CSV-import failure as always.
 
-   2. **Not yet built.** A point on the shared tangent stated -- in practice, a distance along the
-      tangent measured from the first PI -- with *both* curves' radii computed. Simpler than mode 1
-      in one respect: the split point directly gives both tangent lengths (T1 = the stated
-      distance, T2 = PI-to-PI distance minus T1) rather than deriving one from a radius first, so
-      each radius is solved independently from its own already-known tangent length using the same
-      `solve_join_next_radius` primitive mode 1 already built -- applied twice, no new math, just a
-      different, more direct way of arriving at T1/T2. UI-wise, likely a mode selector once
-      `join_next` is checked ("Solve using: Radius of first curve | Distance to reverse point"),
-      where distance mode replaces the radius field(s) with a single distance field and computes
-      both radii, rather than the user needing to already know either radius. Preferred over asking
-      for a literal point (which risks not lying exactly on the shared tangent line and needing
-      snapping/validation) -- a distance is unambiguous, and a computed point could still be shown
-      as a visual crosshair for feedback.
+   2. **Implemented (2026-09-24): distance to the junction stated, *both* curves' radii computed.**
+      The split point directly gives both tangent lengths (T1 = the stated distance from the first
+      PI, T2 = PI-to-PI distance minus T1), and each radius is solved from its own tangent length.
+
+      One correction to the original plan ("applied twice, no new math"):
+      `solve_join_next_radius` only solves the *entry*-side claim (`ts_to_pi`) of a curve with an
+      optional exit spiral. The joining curve needs the mirror problem, its *forward*-side claim
+      (`pi_to_st`) with an optional *entry* spiral (SPIRAL_CIRCULAR). The bisection core was pulled
+      out, unchanged, into a shared `_solve_radius_for_tangent`, and a new public
+      `solve_joining_radius(delta, target_tangent_out, entry_length, family, vb_params)` sits
+      beside `solve_join_next_radius`, so there is still only one copy of the root-finding and one
+      copy of the curve math (`_solve_spiral_curve`). Plain CIRCULAR uses the same closed form as
+      before.
+
+      Bonsai layer: `PICurveMarkerProperties`/`HorizontalPIMarker` gained `join_mode`
+      (`RADIUS`/`DISTANCE`, shared `prop.JOIN_MODE_ITEMS`) and `join_distance` (LENGTH, local IFC
+      units, the same units as `radius`). In `_apply_join_next_radii`, DISTANCE mode checks that
+      `0 < join_distance < PI-to-PI distance`, solves and writes back the joining PI's own radius,
+      and then carries on exactly like mode 1 for the joined-into PI (radius, curve-type mapping,
+      mirrored spiral). RADIUS mode now also writes the resulting junction distance back into
+      `join_distance`, so switching modes starts from the current geometry. The new
+      `_populate_join_distances` does the same after Edit PIs and Edit PIs (Table) reload a
+      saved alignment. It reads the radius and never changes it.
+
+      DISTANCE is refused on a PI that is itself joined into by the previous PI ("PI n's radius
+      is already fixed by the join from PI n-1; use Radius mode"), because its radius is already
+      fixed by the earlier join. In a chain, distance mode is only available on the first curve.
+
+      UI: once "Join to Next PI" is checked, the marker panel shows an expanded Radius | Distance
+      selector, and the PI table shows a compact one. In Distance mode the distance field appears
+      and the radius field stays visible but disabled, showing the computed value after Apply.
+      `PIMarkerDecorator` draws a yellow crosshair at the junction point on the PI-to-PI leg.
+      It updates live as the distance is typed or a marker is dragged, before Apply. After any
+      Apply, `ALIGN_OT_apply_pi_curve` now relabels *every* interior marker, not just the active
+      one, since a join can change radii on other markers too.
+
+      Verified in headless Blender through the real registered operators
+      (`edit_horizontal_pis` → `apply_pi_curve` → `finish_pi_editing` → reload →
+      `load_horizontal_pi_table` → `apply_horizontal_pi_table`):
+      - A CIRCULAR PCC by distance (T1=300 on a 450 leg) produces `LINE, CIRCULARARC, CIRCULARARC,
+        LINE` with the junction within float32 noise of the requested point, and both radii
+        match the closed form.
+      - The crosshair's world position matches that point.
+      - A RADIUS-mode Apply writes the correct `join_distance` back.
+      - An out-of-range distance is refused with a WARNING, and the segments are left untouched.
+      - A SPIRAL_CIRCULAR/BLOSSCURVE join by distance produces
+        `LINE, BLOSSCURVE, CIRCULARARC, CIRCULARARC, BLOSSCURVE, LINE` with the junction on the
+        requested point.
+      - Reopening via Edit PIs and via the table pre-fills `join_distance`=280.
+      - The table path by distance produces the expected PCC.
+      - The chain case is refused.
+
+      Pure solver: 9 new tests in `test_solve_join_next_radius.py`, covering closed form,
+      bisection, PCC and PRC by distance with a junction-position check, and CLOTHOID/BLOSSCURVE/CUBIC
+      outer spirals by distance, plus the rejection paths. Full `test/api/alignment` suite: 146 passed
+      (was 137). `test/core/test_alignment.py`/`test/tool/test_alignment.py` could not be run this
+      session: the Bonsai test conftest now fails to import the `pytest-blender` plugin in this
+      environment.
 
 8. Right-click (or whatever is standard) to end the command. Generate the alignment automatically.
 
