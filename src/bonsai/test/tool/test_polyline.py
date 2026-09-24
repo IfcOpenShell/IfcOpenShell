@@ -146,3 +146,43 @@ class TestPolylineUIUnsetField(NewFile):
 
         subject.calculate_x_y_and_z(bpy.context, input_ui, tool_state)
         subject.calculate_distance_and_angle(bpy.context, input_ui, tool_state)
+
+
+class TestCalculateXYAndZStraightOn(NewFile):
+    def _setup(self, points, mouse):
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline.add()
+        for x, y in points:
+            point = polyline_data.polyline_points.add()
+            point.x, point.y, point.z = x, y, 0
+        mouse_point = polyline_props.snap_mouse_point.add()
+        mouse_point.x, mouse_point.y, mouse_point.z = mouse[0], mouse[1], 0
+        tool_state = subject.create_tool_state()
+        tool_state.is_input_on = True
+        tool_state.use_default_container = False
+        tool_state.plane_method = "XY"
+        input_ui = subject.create_input_ui(input_options=["D", "A", "X", "Y", "Z"])
+        input_ui.set_value("X", mouse[0])
+        input_ui.set_value("Y", mouse[1])
+        input_ui.set_value("Z", 0)
+        return tool_state, input_ui
+
+    def test_180_degrees_continues_a_diagonal_leg_straight_on(self):
+        # Regression test: a typed angle of exactly 180 used to force the direction's x to -1,
+        # which is only right for a leg along +X -- a 45 degree leg sent the point the wrong way.
+        tool_state, input_ui = self._setup([(0, 0), (10, 10)], mouse=(30, 0))
+        for angle in (180, -180):
+            input_ui.set_value("D", 5)
+            input_ui.set_value("A", angle)
+            subject.calculate_x_y_and_z(bpy.context, input_ui, tool_state)
+            assert round(input_ui.get_number_value("X"), 6) == round(10 + 5 / 2**0.5, 6)
+            assert round(input_ui.get_number_value("Y"), 6) == round(10 + 5 / 2**0.5, 6)
+
+    def test_180_degrees_from_a_single_point_still_goes_along_negative_x(self):
+        # The old special case's intended behaviour: with one point, angles are measured from +X.
+        tool_state, input_ui = self._setup([(1, 2)], mouse=(1, 2))
+        input_ui.set_value("D", 3)
+        input_ui.set_value("A", 180)
+        subject.calculate_x_y_and_z(bpy.context, input_ui, tool_state)
+        assert round(input_ui.get_number_value("X"), 6) == -2
+        assert round(input_ui.get_number_value("Y"), 6) == 2
