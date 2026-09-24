@@ -2683,6 +2683,72 @@ class ALIGN_OT_load_vertical_pis(Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
+VERTICAL_INPUT_FIELDS = ("ELEVATION", "SLOPE", "DISTANCE")
+VERTICAL_INPUT_LABELS = {"ELEVATION": "Elevation", "SLOPE": "Slope", "DISTANCE": "Distance Along"}
+
+
+def _vertical_input_fields(has_previous_point: bool) -> tuple:
+    """Which typed inputs apply to the next vertical PI. The first PI's distance-along is pinned
+    to the start station and it has no previous PI to measure a slope from, so only Elevation."""
+    return VERTICAL_INPUT_FIELDS if has_previous_point else ("ELEVATION",)
+
+
+def _resolve_vertical_pi(previous, mouse, locks, dist_min, dist_max):
+    """Resolve the next vertical PI from typed (locked) values plus the mouse.
+
+    Elevation, Slope, and Distance Along describe a point with only two degrees of freedom, so
+    any two of them fix it and the third is derived (the caller keeps at most two locked). With
+    one locked, the mouse supplies the other degree of freedom: its distance-along for a locked
+    Elevation or Slope (sliding along the locked grade), its elevation for a locked Distance.
+
+    :param previous: the previous PI (dist_along, elevation), or None for the first PI
+    :param mouse: (dist_along, elevation) under the cursor, or None if unknown
+    :param locks: {"ELEVATION"/"SLOPE"/"DISTANCE": value}, slope in percent
+    :return: ((dist_along, elevation), error) -- error is None, or why the typed values can't be
+        placed (the point is still returned, as a best-effort preview)
+    """
+    elevation = locks.get("ELEVATION")
+    slope = locks.get("SLOPE")
+    distance = locks.get("DISTANCE")
+
+    if previous is None:
+        mouse_elevation = mouse[1] if mouse is not None else 0.0
+        return (dist_min, elevation if elevation is not None else mouse_elevation), None
+
+    prev_d, prev_e = previous
+    mouse_d, mouse_e = mouse if mouse is not None else previous
+    # the mouse is clamped into range silently, same as drawing by mouse alone
+    mouse_d = min(max(mouse_d, prev_d), max(dist_max, prev_d))
+
+    if elevation is not None and slope is not None:
+        if slope == 0.0:
+            if abs(elevation - prev_e) > 1e-9:
+                return (mouse_d, elevation), "a 0% slope can't reach a different elevation"
+            d = mouse_d  # flat grade at the same elevation: distance is still free
+        else:
+            d = prev_d + (elevation - prev_e) / (slope / 100.0)
+        point = (d, elevation)
+    elif elevation is not None and distance is not None:
+        point = (distance, elevation)
+    elif slope is not None and distance is not None:
+        point = (distance, prev_e + slope / 100.0 * (distance - prev_d))
+    elif elevation is not None:
+        point = (mouse_d, elevation)
+    elif distance is not None:
+        point = (distance, mouse_e)
+    elif slope is not None:
+        point = (mouse_d, prev_e + slope / 100.0 * (mouse_d - prev_d))
+    else:
+        return (mouse_d, mouse_e), None
+
+    error = None
+    if point[0] <= prev_d + 1e-9:
+        error = f"distance along {point[0]:.3f} is not past the previous PI ({prev_d:.3f})"
+    elif point[0] > dist_max + 1e-6:
+        error = f"distance along {point[0]:.3f} is past the end of the alignment ({dist_max:.3f})"
+    return point, error
+
+
 class ALIGN_OT_draw_vertical_alignment(Operator, tool.Ifc.Operator):
     """Draw the vertical alignment of the active IfcAlignment by PI, in the profile view.
 
@@ -2701,6 +2767,15 @@ class ALIGN_OT_draw_vertical_alignment(Operator, tool.Ifc.Operator):
     a curve length and click Apply Vertical Curves to regenerate with
     parabolic curves at those PIs. ESC cancels without creating anything.
     Backspace removes the last PI.
+
+    Values can also be typed instead of clicked: Elevation, Slope (%), and
+    Distance Along -- Tab cycles through them in that order, or E/S/D jumps
+    straight to one. A typed value is locked; any two locked values fix the
+    PI and derive the third, so typing a third unlocks the oldest one. With
+    one locked, the mouse supplies the rest (see _resolve_vertical_pi).
+    Enter/RMB places the typed PI (a click places it too, the mouse filling
+    in whatever isn't locked); Enter/RMB with nothing typed finishes as before,
+    and Esc clears the typed values before it cancels the command.
     """
 
     bl_idname = "align.draw_vertical_alignment"
@@ -2748,6 +2823,11 @@ class ALIGN_OT_draw_vertical_alignment(Operator, tool.Ifc.Operator):
         self._points: list = []  # [(dist_along, elevation), ...] in project units
         self._area_ptr = 0
         self._alignment_id = 0
+        self._mouse = None  # last (dist_along, elevation) under the cursor, unconstrained
+        self._locks: dict = {}  # typed values -- see _resolve_vertical_pi
+        self._lock_order: list = []  # locked fields, oldest first
+        self._active_field = None  # field being typed into, or None
+        self._buffer = ""
 
     def invoke(self, context, event):
         return IfcStore.execute_ifc_operator(self, context, event, method="INVOKE")
@@ -2768,11 +2848,149 @@ class ALIGN_OT_draw_vertical_alignment(Operator, tool.Ifc.Operator):
         self._area_ptr = profile_area.as_pointer()
 
         alignment_decorator.VerticalDrawDecorator.install(context, self._points)
-        context.workspace.status_text_set(
-            text="Click: add PI    Backspace: remove last    Enter/RMB: finish    Esc: cancel"
-        )
+        self._update_status_text(context)
         context.window_manager.modal_handler_add(self)
         return {"RUNNING_MODAL"}
+
+    def _update_status_text(self, context):
+        if self._locks or self._active_field:
+            text = (
+                "Type value    Tab: next field (Elevation, Slope %, Distance)    Enter/RMB/Click: place PI    "
+                "Esc: clear typed values"
+            )
+        else:
+            text = (
+                "Click: add PI    Type or Tab/E/S/D: enter Elevation, Slope %, Distance    "
+                "Backspace: remove last    Enter/RMB: finish    Esc: cancel"
+            )
+        context.workspace.status_text_set(text=text)
+
+    def _resolve(self):
+        dec = alignment_decorator.VerticalProfileDecorator
+        previous = self._points[-1] if self._points else None
+        locks = dict(self._locks)
+        if self._active_field and self._buffer:
+            try:
+                locks[self._active_field] = float(self._buffer)
+            except ValueError:
+                pass
+        return _resolve_vertical_pi(previous, self._mouse, locks, dec.dist_min, dec.dist_max)
+
+    def _commit_buffer(self) -> bool:
+        """Lock the value being typed, if any. Returns False (and reports) if it isn't a number."""
+        if not self._active_field or not self._buffer:
+            return True
+        try:
+            value = float(self._buffer)
+        except ValueError:
+            self.report({"WARNING"}, f"'{self._buffer}' is not a number")
+            self._buffer = ""
+            return False
+        field = self._active_field
+        self._locks[field] = value
+        if field in self._lock_order:
+            self._lock_order.remove(field)
+        self._lock_order.append(field)
+        # two values fix the point -- a third unlocks whichever was typed longest ago
+        while len(self._lock_order) > 2:
+            self._locks.pop(self._lock_order.pop(0), None)
+        self._buffer = ""
+        return True
+
+    def _clear_input(self):
+        self._locks = {}
+        self._lock_order = []
+        self._active_field = None
+        self._buffer = ""
+
+    def _refresh_input_display(self):
+        """Hand the decorator the candidate PI and the Elevation/Slope/Distance lines shown beside
+        the cursor -- always shown, typing or not, the same way the horizontal draw tool always
+        shows its D/A/X/Y fields."""
+        dec = alignment_decorator.VerticalDrawDecorator
+        if self._mouse is None and not (self._locks or self._active_field):
+            dec.input_lines = None
+            dec.update_mouse(None)
+            return
+        point, error = self._resolve()
+        previous = self._points[-1] if self._points else None
+        values = {"ELEVATION": point[1], "DISTANCE": point[0]}
+        if previous is not None and abs(point[0] - previous[0]) > 1e-9:
+            values["SLOPE"] = (point[1] - previous[1]) / (point[0] - previous[0]) * 100.0
+        precision = {"ELEVATION": 3, "SLOPE": 2, "DISTANCE": 3}
+        lines = []
+        for field in VERTICAL_INPUT_FIELDS:
+            if field == "SLOPE" and previous is None:
+                continue  # no previous PI to measure a slope from
+            label = VERTICAL_INPUT_LABELS[field]
+            suffix = "%" if field == "SLOPE" else ""
+            if field == self._active_field:
+                lines.append((f"{label}: {self._buffer}{suffix}", "ACTIVE"))
+                continue
+            text = f"{label}: {values[field]:.{precision[field]}f}{suffix}" if field in values else f"{label}: -"
+            if field in self._locks:
+                text += "  (locked)"
+            lines.append((text, "VALUE"))
+        if error:
+            lines.append((f"Can't place: {error}", "ERROR"))
+        dec.input_lines = lines
+        dec.update_mouse(point)
+
+    def _handle_typing(self, context, event):
+        """Keyboard entry of Elevation/Slope/Distance. Returns True if the event was consumed."""
+        if event.value != "PRESS":
+            return False
+        fields = _vertical_input_fields(bool(self._points))
+        jump = {"E": "ELEVATION", "S": "SLOPE", "D": "DISTANCE"}
+
+        if event.type == "TAB":
+            if not self._commit_buffer():
+                return True
+            if self._active_field in fields:
+                self._active_field = fields[(fields.index(self._active_field) + 1) % len(fields)]
+            else:
+                self._active_field = fields[0]
+        elif event.type in jump and not (event.ctrl or event.alt or event.shift):
+            if jump[event.type] not in fields:
+                self.report({"INFO"}, "The first PI only takes an elevation (its distance is the start station)")
+                return True
+            if not self._commit_buffer():
+                return True
+            self._active_field = jump[event.type]
+        elif event.ascii and event.ascii in "0123456789.-+":
+            if self._active_field is None:
+                self._active_field = fields[0]
+            self._buffer += event.ascii
+        elif event.type == "BACK_SPACE" and self._active_field:
+            if self._buffer:
+                self._buffer = self._buffer[:-1]
+            else:
+                # Backspace on an already-empty field unlocks it
+                self._locks.pop(self._active_field, None)
+                if self._active_field in self._lock_order:
+                    self._lock_order.remove(self._active_field)
+        else:
+            return False
+        self._update_status_text(context)
+        self._refresh_input_display()
+        return True
+
+    def _place_resolved_point(self, context) -> bool:
+        """Append the PI the typed values (plus mouse) resolve to. Returns False if they can't."""
+        if not self._commit_buffer():
+            self._refresh_input_display()
+            return False
+        point, error = self._resolve()
+        if error:
+            self.report({"WARNING"}, f"Can't place PI: {error}")
+            self._refresh_input_display()
+            return False
+        self._points.append(point)
+        self._clear_input()
+        self._update_status_text(context)
+        self._refresh_input_display()
+        alignment_decorator.VerticalDrawDecorator.tag_redraw()
+        return True
 
     def modal(self, context, event):
         return IfcStore.execute_ifc_operator(self, context, event, method="MODAL")
@@ -2838,19 +3056,26 @@ class ALIGN_OT_draw_vertical_alignment(Operator, tool.Ifc.Operator):
         mx, my = event.mouse_x, event.mouse_y
         over_profile = area.x <= mx < area.x + area.width and area.y <= my < area.y + area.height
 
+        typing = bool(self._locks or self._active_field)
+
         if event.type == "MOUSEMOVE":
-            point = None
             if over_profile:
                 raw = alignment_decorator.VerticalProfileDecorator.screen_to_data(
                     region, rv3d, mx - region.x, my - region.y
                 )
                 if raw is not None:
-                    point = self._constrain_point(*raw)
-            alignment_decorator.VerticalDrawDecorator.update_mouse(point)
+                    self._mouse = raw
+                alignment_decorator.VerticalDrawDecorator.cursor_px = (mx - region.x, my - region.y)
+            elif not typing:
+                self._mouse = None
+            self._refresh_input_display()
             return {"PASS_THROUGH"}
 
         if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
             return {"PASS_THROUGH"}
+
+        if self._handle_typing(context, event):
+            return {"RUNNING_MODAL"}
 
         if event.type == "LEFTMOUSE" and event.value == "RELEASE":
             if not over_profile:
@@ -2859,9 +3084,28 @@ class ALIGN_OT_draw_vertical_alignment(Operator, tool.Ifc.Operator):
                 region, rv3d, mx - region.x, my - region.y
             )
             if raw is not None:
-                self._points.append(self._constrain_point(*raw))
-                alignment_decorator.VerticalDrawDecorator.tag_redraw()
+                self._mouse = raw
+                if typing:
+                    self._place_resolved_point(context)
+                else:
+                    self._points.append(self._constrain_point(*raw))
+                    alignment_decorator.VerticalDrawDecorator.tag_redraw()
             return {"RUNNING_MODAL"}
+
+        # Handled on RELEASE, like the finish/cancel handlers below -- handling these on PRESS
+        # would leave the matching RELEASE to fall through and finish/cancel the whole command.
+        if typing and event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}:
+            self._place_resolved_point(context)
+            return {"RUNNING_MODAL"}
+
+        if typing and event.value == "RELEASE" and event.type == "ESC":
+            self._clear_input()
+            self._update_status_text(context)
+            self._refresh_input_display()
+            return {"RUNNING_MODAL"}
+
+        if typing and event.type == "BACK_SPACE":
+            return {"RUNNING_MODAL"}  # edits the typed value (on PRESS), never removes a PI
 
         if event.type == "BACK_SPACE" and event.value == "RELEASE":
             if self._points:
