@@ -70,9 +70,10 @@ def run(
     *cmd: str,
     cwd: Path | None = None,
     env: dict[str, str] | None = None,
+    stderr: int | None = None,
 ) -> str:
     logger.debug(f"$ {shlex.join(cmd)}")
-    return subprocess.check_output(cmd, cwd=cwd, env=env, text=True)
+    return subprocess.check_output(cmd, cwd=cwd, env=env, stderr=stderr, text=True)
 
 
 def run_streamed(

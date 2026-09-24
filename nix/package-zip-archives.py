@@ -1,56 +1,21 @@
 #!/usr/bin/env -S uv run --script
 # /// script
+# [tool.ty.environment]
+# root = ["."]
 # ///
 
 import argparse
 import json
-import logging
 import os
 import platform
 import re
-import shlex
 import shutil
 import subprocess
 from pathlib import Path
 from typing import Literal, NamedTuple
 
+from common import REPO_ROOT, logger, run
 
-class C:
-    GREY = "\033[90m"
-    YELLOW = "\033[33m"
-    RED = "\033[31m"
-    RESET = "\033[0m"
-
-
-class ColorFormatter(logging.Formatter):
-    COLORS = {
-        logging.DEBUG: C.GREY,
-        logging.WARNING: C.YELLOW,
-        logging.ERROR: C.RED,
-    }
-
-    def format(self, record: logging.LogRecord) -> str:
-        color = self.COLORS.get(record.levelno, C.RESET)
-        return f"{color}{super().format(record)}{C.RESET}"
-
-
-handler = logging.StreamHandler()
-handler.setFormatter(ColorFormatter("%(message)s"))
-logging.basicConfig(level=logging.INFO, handlers=[handler])
-logger = logging.getLogger(__name__)
-
-
-def run(
-    *cmd: str,
-    cwd: Path | None = None,
-    env: dict[str, str] | None = None,
-    stderr: int | None = None,
-) -> str:
-    logger.debug(f"$ {shlex.join(cmd)}")
-    return subprocess.check_output(cmd, cwd=cwd, env=env, stderr=stderr, text=True)
-
-
-REPO_ROOT = Path(run("git", "-C", str(Path(__file__).parent), "rev-parse", "--show-toplevel").strip())
 VERSION = "v" + (REPO_ROOT / "VERSION").read_text().strip()
 
 
