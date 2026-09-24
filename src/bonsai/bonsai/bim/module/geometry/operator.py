@@ -1388,11 +1388,19 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
             parts = ifcopenshell.util.element.get_parts(element)
             if parts:
                 index = get_max_index(parts)
-                add_linked_aggregate_pset(element, index)
+                # The root is always Index 0. Passing the parts' max index instead
+                # writes a pset with no Name and no Aggregate_Index.
+                add_linked_aggregate_pset(element, 0)
                 index += 1
                 for part in parts:
                     if part.is_a("IfcElementAssembly"):
-                        select_objects_and_add_data(part)
+                        if is_linked_aggregate(part):
+                            select_objects_and_add_data(part)
+                        else:
+                            # A plain sub-assembly is structure, not an instance of
+                            # anything. Take its contents along without turning it
+                            # into a linked aggregate.
+                            select_objects(part)
                     else:
                         index = add_linked_aggregate_pset(part, index)
                     obj = tool.Ifc.get_object(part)
@@ -1415,6 +1423,20 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
                 index += 1
             return index
 
+        def is_linked_aggregate(element: ifcopenshell.entity_instance) -> bool:
+            return any(
+                self.group_name in (r.RelatingGroup.Name or "")
+                for r in getattr(element, "HasAssignments", []) or []
+                if r.is_a("IfcRelAssignsToGroup")
+            )
+
+        def select_objects(element: ifcopenshell.entity_instance) -> None:
+            obj = tool.Ifc.get_object(element)
+            if obj:
+                obj.select_set(True)
+            for part in ifcopenshell.util.element.get_parts(element) or []:
+                select_objects(part)
+
         def add_linked_aggregate_group(element: ifcopenshell.entity_instance) -> None:
             linked_aggregate_group = None
             product_groups_name = [
@@ -1432,6 +1454,9 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
             for new in old_to_new.values():
                 if new[0].is_a("IfcElementAssembly"):
                     pset = ifcopenshell.util.element.get_pset(new[0], "BBIM_Linked_Aggregate")
+                    # A plain sub-assembly has no linked aggregate data to name from.
+                    if not pset or "Name" not in pset or "Aggregate_Index" not in pset:
+                        continue
                     new_obj = tool.Ifc.get_object(new[0])
                     new_obj.name = f"{pset['Name']}_{pset['Aggregate_Index']:02d}"
 
@@ -1647,12 +1672,22 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Blender.update_viewport()
 
         def get_original_data(element: ifcopenshell.entity_instance) -> dict[int, dict[int, dict[str, Any]]]:
-            group: int = next(
-                r.RelatingGroup
-                for r in getattr(element, "HasAssignments", []) or []
-                if r.is_a("IfcRelAssignsToGroup")
-                if self.group_name in r.RelatingGroup.Name
-            ).id()
+            group_entity = next(
+                (
+                    r.RelatingGroup
+                    for r in getattr(element, "HasAssignments", []) or []
+                    if r.is_a("IfcRelAssignsToGroup")
+                    if self.group_name in r.RelatingGroup.Name
+                ),
+                None,
+            )
+
+            # A nested assembly is not necessarily a linked aggregate itself,
+            # there is no group to store its data under.
+            if not group_entity:
+                return original_data
+
+            group: int = group_entity.id()
 
             # Initialize if not exists
             if group not in original_data:
@@ -1800,14 +1835,26 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
                 new_obj.matrix_world = new_obj_matrix
 
         def get_element_assembly(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
-            if element.is_a("IfcElementAssembly"):
-                return element
-            elif element.Decomposes:
-                if element.Decomposes[0].RelatingObject.is_a("IfcElementAssembly"):
-                    element = element.Decomposes[0].RelatingObject
-                    return element
-            else:
-                return None
+            if not element.is_a("IfcElementAssembly"):
+                aggregate = ifcopenshell.util.element.get_aggregate(element)
+                if aggregate is None or not aggregate.is_a("IfcElementAssembly"):
+                    return None
+                element = aggregate
+
+            # A plain sub-assembly is still part of the linked aggregate above it,
+            # so keep climbing until the instance that carries the group is found.
+            candidate = element
+            seen = set()
+            while candidate is not None and candidate.id() not in seen:
+                seen.add(candidate.id())
+                if any(
+                    self.group_name in (r.RelatingGroup.Name or "")
+                    for r in getattr(candidate, "HasAssignments", []) or []
+                    if r.is_a("IfcRelAssignsToGroup")
+                ):
+                    return candidate
+                candidate = ifcopenshell.util.element.get_aggregate(candidate)
+            return element
 
         def handle_selection(
             selected_objs: list[bpy.types.Object],
