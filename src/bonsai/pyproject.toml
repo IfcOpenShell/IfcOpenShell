@@ -30,7 +30,11 @@ dev = [
   "pytest-blender",
   "pytest-bdd",
   "fake-bpy-module-latest",
-  "brickschema[persistence]",
+  # Brick support: brickschema with the persistence extra spelled out, so that the SQLAlchemy
+  # store is IfcOpenShell's fork (SQLAlchemy 2.1, rdflib 7) rather than brickschema-rdflib-sqlalchemy.
+  "brickschema",
+  "alembic",
+  "ifcopenshell-rdflib-sqlalchemy @ git+https://github.com/IfcOpenShell/rdflib-sqlalchemy@develop",
 ]
 # Everything the type checker needs to resolve; see `poe ty-venv` in the repo root.
 type-check = [
