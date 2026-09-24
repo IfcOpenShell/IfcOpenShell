@@ -153,3 +153,41 @@ test_add_stationing_referent_on_basis_curve_true()
 test_add_stationing_referent_on_basis_curve_false()
 test_add_stationing_referent_without_geometry_placed_at_global_origin()
 test_add_stationing_referent_has_increasing_station()
+
+
+def test_polyline_alignment_referent_is_placed_on_the_polyline():
+    """An alignment defined only by an IfcPolyline or IfcIndexedPolyCurve (no layouts) gets a
+    linear placement along that curve, like a layout-based alignment's composite curve."""
+    import ifcopenshell.api.geometry
+    import ifcopenshell.util.placement
+
+    file = _create_test_file()
+    points = [file.createIfcCartesianPoint(p) for p in [(0.0, 0.0), (100.0, 0.0), (100.0, 50.0)]]
+    polyline_alignment = ifcopenshell.api.alignment.create_as_polyline(file, "Polyline", points)
+
+    indexed_alignment = file.createIfcAlignment(GlobalId=ifcopenshell.guid.new(), Name="Indexed")
+    curve = file.createIfcIndexedPolyCurve(
+        Points=file.createIfcCartesianPointList3D(((0.0, 0.0, 10.0), (100.0, 0.0, 10.0), (100.0, 50.0, 20.0)))
+    )
+    indexed_alignment.ObjectPlacement = file.createIfcLocalPlacement(
+        RelativePlacement=file.createIfcAxis2Placement3D(Location=file.createIfcCartesianPoint((0.0, 0.0, 0.0)))
+    )
+    ifcopenshell.api.geometry.assign_representation(
+        file,
+        indexed_alignment,
+        file.createIfcShapeRepresentation(
+            ContextOfItems=ifcopenshell.api.alignment.get_axis_subcontext(file),
+            RepresentationIdentifier="Axis",
+            RepresentationType="Curve3D",
+            Items=(curve,),
+        ),
+    )
+
+    for alignment, expected in ((polyline_alignment, (100.0, 25.0, 0.0)), (indexed_alignment, (100.0, 24.515, 14.903))):
+        referent = ifcopenshell.api.alignment.add_stationing_referent(file, "1+25", alignment, 125.0, 125.0)
+        _assert_common_referent_asserts(referent, "1+25", 125.0)
+        placement = referent.ObjectPlacement
+        assert placement.is_a("IfcLinearPlacement")
+        assert placement.RelativePlacement.Location.BasisCurve == ifcopenshell.api.alignment.get_curve(alignment)
+        location = ifcopenshell.util.placement.get_local_placement(placement)[:3, 3]
+        assert [round(float(v), 3) for v in location] == list(expected)
