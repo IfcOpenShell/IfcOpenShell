@@ -539,6 +539,17 @@ class ALIGN_PT_alignment_stationing_authoring(Panel):
 
         layout.operator("align.add_station_equation", icon="ADD")
 
+        layout.separator()
+        has_key_points = tool.Alignment.has_key_point_referents(alignment)
+        row = layout.row(align=True)
+        row.operator(
+            "align.generate_key_points",
+            text="Regenerate Key Points" if has_key_points else "Generate Key Points",
+            icon="FILE_REFRESH" if has_key_points else "ADD",
+        )
+        if has_key_points:
+            row.operator("align.remove_key_points", text="", icon="X")
+
 
 class ALIGN_PT_alignment_segments(Panel):
     """Read-only segment breakdown for the selected IfcAlignment.

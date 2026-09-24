@@ -189,6 +189,8 @@ classes = (
     operator.ALIGN_OT_add_station_equation,
     operator.ALIGN_OT_edit_station_equation,
     operator.ALIGN_OT_remove_station_equation,
+    operator.ALIGN_OT_generate_key_points,
+    operator.ALIGN_OT_remove_key_points,
     operator.ALIGN_OT_edit_horizontal_pis,
     operator.ALIGN_OT_apply_pi_curve,
     operator.ALIGN_OT_finish_pi_editing,

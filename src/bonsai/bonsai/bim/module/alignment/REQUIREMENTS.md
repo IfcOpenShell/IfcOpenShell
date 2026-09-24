@@ -814,7 +814,7 @@ child alignment outright.
 
 ## 8. Key-point referents
 
-**Confirmed future requirement (per the user, 2026-09-18).** `ifcopenshell.api.alignment.
+**Confirmed future requirement (per the user, 2026-09-18) -- implemented 2026-09-24, see below.** `ifcopenshell.api.alignment.
 update_key_point_referents` already exists at the IFC-API level (creates an `IfcReferent` at every
 segment transition — P.O.B./P.C./P.T./P.C.C./P.R.C./T.S./S.C./etc., per `_get_segment_start_point_
 label`, including the PCC/PRC distinction fixed earlier today) but nothing in the Bonsai Alignments
@@ -851,7 +851,68 @@ wanted together rather than piecemeal:
    has opted in via #1) — don't start generating them unconditionally for alignments that never asked
    for them.
 
-**Open questions, not yet decided:**
+**Implemented (2026-09-24).** Decisions, per the user:
+
+- **One button per alignment, not per layout,** which can also regenerate after the fact:
+  **Generate Key Points** / **Regenerate Key Points** (`align.generate_key_points`) in the
+  Stationing panel (`ALIGN_PT_alignment_stationing_authoring`). A small **X**
+  (`align.remove_key_points`) next to it turns them off again.
+  `tool.Alignment.generate_key_point_referents` covers the horizontal, every vertical and every
+  cant layout, including verticals and cants on child alignments. It puts all of them in *one*
+  IfcRelNests on the top-level alignment, via `update_key_point_referents(...,
+  rel_nests=nest)`, so every key point is named after the top-level alignment. It replaces any
+  existing key points and creates a Blender object for each one (`create_object_for_referent`).
+- **No Blender-side flag. "Turned on" is read from IFC.** The user's point: a flag would be
+  missing for a file that already contains key points (authored elsewhere, or saved in an earlier
+  session), so automatic updates would silently never start for it.
+  `tool.Alignment.get_key_point_nests` instead finds any IfcRelNests on the top-level alignment
+  (or a child alignment) whose related objects are *all* `POSITION` IfcReferents that position no
+  product. That excludes the stationing nest (`STATION` referents), the layout nest, and
+  `add_positioning_referent`'s referents, which link through IfcRelPositions rather than a nest.
+  Loaded key points are therefore picked up automatically, and the next edit regenerates them
+  into the single top-level nest.
+- **No label visibility toggle** for now.
+
+Automatic regeneration (`tool.Alignment.update_key_point_referents_if_present`, which does
+nothing if the alignment has no key points) is called after every rebuild or stationing change:
+- `_generate_alignment_segments`: draw, Apply Curve and Apply Horizontal Curves. It runs after
+  `sync_cant_segment_types`, so cant labels see the synced types.
+- `_generate_vertical_alignment_segments`.
+- `apply_h_segments`, `apply_v_segments` and `apply_cant_segments`.
+- `generate_cant_layout`.
+- `remove_cant_layout` and `remove_vertical_layout`, which regenerate without the removed layout.
+- `set_start_station`, and add, edit and remove station equation. Station values and names change
+  even though the geometry doesn't.
+
+It isn't called when a horizontal rebuild *fails*. The segments have just been cleared at that
+point, and regenerating would find no geometry and remove the key points, which would silently
+turn them off. Instead the old key points stay until the next successful Apply.
+
+Deletion: `remove_horizontal_layout` removes the key points (this was its old `TODO`). Drawing
+again doesn't bring them back, because with nothing left to detect they count as turned off.
+`ALIGN_OT_remove_alignment` now removes them from IFC explicitly before `root.remove_product`,
+which only drops the IfcRelNests and would otherwise leave the referents orphaned in the file.
+
+Verified in headless Blender through the real operators. Each step checked that the IfcRelNests,
+the IfcReferents and their Blender objects agree 1:1, with no orphaned POSITION referents left in
+the file:
+- Generating creates 10 key points (P.O.B./T.S./S.C./C.S./S.T./P.O.E. plus the vertical ones).
+- Regenerating is idempotent.
+- A radius edit via Apply Curve moves them.
+- Setting the start station to 1000 shifts every station by exactly 1000.
+- Generating a cant layout adds the cant key points.
+- An alignment that never asked for key points never gets any.
+- **Save to .ifc → reload in a fresh session:** the key points are detected with no flag, there is
+  no false positive on the other alignment, and the next edit regenerates them.
+- Removing the cant layout, then the vertical, drops each layout's key points.
+- Removing the horizontal removes all of them.
+- The X button removes them.
+- Deleting an alignment that has key points leaves no referents or objects behind.
+
+Not added: automated tests under `test/bim/` (they need `pytest-bdd`/`pytest-blender`, which
+aren't available in this environment).
+
+**Open questions (resolved above, kept for the record):**
 - Per-layout (separate buttons/state for horizontal/vertical/cant) or per-alignment (one button,
   regenerates key points for every layout the alignment has)? The existing Generate Cant Layout
   button is per-row/per-layout; stationing referents are alignment-level (there's only ever one
