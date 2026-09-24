@@ -209,9 +209,10 @@ def open(
         of every instance costs about the same as a normal open, spread over
         the reads. Falls back to a normal open if the file uses syntax the
         index pass does not handle.
-    :param threads: Threads the parser may use; None picks one per core
-        (capped at 16) or honours the IFCOPENSHELL_PARSE_THREADS environment
-        variable, 1 parses on the calling thread only.
+    :param threads: Threads the parser may use. None (the default) parses on
+        the calling thread only, unless the IFCOPENSHELL_PARSE_THREADS
+        environment variable says otherwise; n uses n threads; 0 uses one
+        per core (capped at 16). Files under 2 MB per thread stay serial.
 
     You can specify a file format. If no format is given, it is guessed from
     its extension.
@@ -260,8 +261,8 @@ def open(
         if lazy:
             f.lazy_loading(True)
         if threads is not None:
-            if threads < 1:
-                raise ValueError("threads must be at least 1")
+            if threads < 0:
+                raise ValueError("threads must be 0 (one per core) or a positive count")
             f.parse_threads(threads)
         if mmap:
             # mmap parameter is only available for builds with USE_MMAP, not used in our main builds

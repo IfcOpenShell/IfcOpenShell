@@ -944,11 +944,7 @@ class file(file_mixin):
 
     def get_max_id(self) -> int: ...
     def parse_threads(self, *args: int) -> int:
-        """Get, or with an argument set, the number of threads ``initialize()`` parses instances with; 0 uses one per core (capped at 16) or honours ``IFCOPENSHELL_PARSE_THREADS``."""
-        ...
-
-    def effective_parse_threads(self) -> int:
-        """The thread count ``initialize()`` will use given ``parse_threads()`` and the environment."""
+        """Get the number of threads ``initialize()`` will parse instances with, or with an argument set it: ``n >= 1`` uses ``n`` threads, ``0`` one per core (capped at 16). Unset, the parse is serial unless ``IFCOPENSHELL_PARSE_THREADS`` says otherwise. Set before ``initialize()``."""
         ...
 
     def paged_reading(self, *args: bool) -> bool:
