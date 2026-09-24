@@ -304,6 +304,9 @@ class ALIGN_OT_remove_alignment(Operator, tool.Ifc.Operator):
         name = alignment.Name or "Alignment"
         for marker in _find_pi_markers(alignment.id()):
             bpy.data.objects.remove(marker, do_unlink=True)
+        # before remove_alignment_hierarchy -- root.remove_product only drops the IfcRelNests, so
+        # the key-point referents themselves would otherwise be left orphaned in the file
+        tool.Alignment.remove_key_point_referents(alignment)
         removed_objects = tool.Alignment.remove_alignment_hierarchy(alignment)
         ifcopenshell.api.run("root.remove_product", ifc, product=alignment)
 
@@ -358,6 +361,7 @@ class ALIGN_OT_set_start_station(Operator, tool.Ifc.Operator):
         else:
             tool.Alignment.set_stationing_referent_station(start_referent, station)
         tool.Alignment.create_object_for_referent(start_referent)
+        tool.Alignment.update_key_point_referents_if_present(alignment)
         alignment_decorator.AlignmentSegmentDecorator.refresh()
         self.report({"INFO"}, f"Start station set to {tool.Alignment.format_station(station)}")
         return {"FINISHED"}
@@ -470,6 +474,7 @@ class ALIGN_OT_add_station_equation(Operator, tool.Ifc.Operator, _StationEquatio
             has_increasing_station=False if self.reverse_direction else None,
         )
         tool.Alignment.create_object_for_referent(referent)
+        tool.Alignment.update_key_point_referents_if_present(alignment)
         alignment_decorator.AlignmentSegmentDecorator.refresh()
         self.report({"INFO"}, f"Added station equation '{name}' at distance {self.distance_along}")
         return {"FINISHED"}
@@ -554,6 +559,7 @@ class ALIGN_OT_edit_station_equation(Operator, tool.Ifc.Operator, _StationEquati
             has_increasing_station=False if self.reverse_direction else None,
         )
         tool.Alignment.create_object_for_referent(new_referent)
+        tool.Alignment.update_key_point_referents_if_present(alignment)
         alignment_decorator.AlignmentSegmentDecorator.refresh()
         self.report({"INFO"}, f"Updated station equation to '{name}'")
         return {"FINISHED"}
@@ -586,12 +592,84 @@ class ALIGN_OT_remove_station_equation(Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
 
         name = referent.Name or "referent"
+        alignment = next(
+            (rel.RelatingObject for rel in referent.Nests or [] if rel.RelatingObject.is_a("IfcAlignment")), None
+        )
         if obj := tool.Ifc.get_object(referent):
             bpy.data.objects.remove(obj, do_unlink=True)
         ifcopenshell.api.run("root.remove_product", ifc, product=referent)
 
+        if alignment is not None:
+            tool.Alignment.update_key_point_referents_if_present(alignment)
         alignment_decorator.AlignmentSegmentDecorator.refresh()
         self.report({"INFO"}, f"Removed station equation '{name}'")
+        return {"FINISHED"}
+
+
+class ALIGN_OT_generate_key_points(Operator, tool.Ifc.Operator):
+    """Generate (or regenerate) key-point referents -- P.O.B., P.C., P.T., P.V.C., ... -- at every
+    segment transition of the active alignment's horizontal, vertical, and cant layouts.
+
+    Once an alignment has key points, every later rebuild or stationing change regenerates them
+    automatically (tool.Alignment.update_key_point_referents_if_present); this button is for
+    turning them on, or for forcing a regeneration -- e.g. for key points loaded from a file that
+    were authored elsewhere.
+    """
+
+    bl_idname = "align.generate_key_points"
+    bl_label = "Generate Key Points"
+    bl_description = (
+        "Create a referent at every segment transition (P.C., P.T., P.V.C., ...) of the alignment's "
+        "horizontal, vertical, and cant layouts, replacing any existing ones. Once created, they "
+        "are kept up to date automatically whenever the alignment is edited"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not poll_ifc4x3(cls, context):
+            return False
+        alignment = tool.Alignment.get_active_alignment()
+        if not alignment:
+            cls.poll_message_set("Select an alignment first")
+            return False
+        h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+        if not h_layout or not tool.Alignment.get_real_layout_segments(h_layout):
+            cls.poll_message_set("Draw the horizontal alignment first")
+            return False
+        return True
+
+    def _execute(self, context):
+        alignment = tool.Alignment.get_active_alignment()
+        count = tool.Alignment.generate_key_point_referents(alignment)
+        tool.Blender.update_viewport()
+        self.report({"INFO"}, f"Generated {count} key point(s)")
+        return {"FINISHED"}
+
+
+class ALIGN_OT_remove_key_points(Operator, tool.Ifc.Operator):
+    """Remove every key-point referent from the active alignment, which also stops them being
+    regenerated automatically on later edits."""
+
+    bl_idname = "align.remove_key_points"
+    bl_label = "Remove Key Points"
+    bl_description = "Remove the alignment's key-point referents (they will no longer be updated automatically)"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not poll_ifc4x3(cls, context):
+            return False
+        alignment = tool.Alignment.get_active_alignment()
+        if not alignment or not tool.Alignment.has_key_point_referents(alignment):
+            cls.poll_message_set("This alignment has no key points")
+            return False
+        return True
+
+    def _execute(self, context):
+        tool.Alignment.remove_key_point_referents(tool.Alignment.get_active_alignment())
+        tool.Blender.update_viewport()
+        self.report({"INFO"}, "Removed key points")
         return {"FINISHED"}
 
 
@@ -749,6 +827,9 @@ def _generate_alignment_segments(context, alignment, hpoints, radii):
     # horizontal's own (a no-op if there's no cant layout yet, or if the
     # segment counts have drifted apart -- see sync_cant_segment_types).
     tool.Alignment.sync_cant_segment_types(alignment)
+
+    # Rebuild key-point referents at the new transitions, if this alignment has them.
+    tool.Alignment.update_key_point_referents_if_present(alignment)
 
     _tag_all_areas_redraw(context)
 
@@ -2421,6 +2502,7 @@ def _generate_vertical_alignment_segments(context, alignment, vpoints, lengths, 
     ifcopenshell.api.alignment.create_representation(ifc, alignment)
 
     tool.Alignment.refresh_alignment_representation_object(alignment)
+    tool.Alignment.update_key_point_referents_if_present(alignment)
 
     n_curved = sum(1 for l in lengths if l)
     return True, f"Drew vertical alignment with {len(vpoints)} PIs ({n_curved} curved)", v_layout
@@ -3212,6 +3294,7 @@ class ALIGN_OT_apply_h_segments(Operator, tool.Ifc.Operator):
         # apart (e.g. this Apply added/removed rows on the horizontal side
         # only) -- see sync_cant_segment_types.
         tool.Alignment.sync_cant_segment_types(alignment)
+        tool.Alignment.update_key_point_referents_if_present(alignment)
 
         # Every segment id in this layout just changed.
         props.selected_h_segment_id = 0
@@ -3378,6 +3461,7 @@ class ALIGN_OT_apply_v_segments(Operator, tool.Ifc.Operator):
 
         ifcopenshell.api.alignment.create_representation(ifc_file, alignment)
         tool.Alignment.refresh_alignment_representation_object(alignment)
+        tool.Alignment.update_key_point_referents_if_present(alignment)
         _refresh_vertical_profile_view(context, alignment)
 
         props.selected_v_segment_id = 0
@@ -3510,6 +3594,7 @@ class ALIGN_OT_generate_cant_layout(Operator, tool.Ifc.Operator):
 
         ifcopenshell.api.alignment.create_representation(ifc, alignment)
         tool.Alignment.refresh_alignment_representation_object(alignment)
+        tool.Alignment.update_key_point_referents_if_present(alignment)
         _refresh_vertical_profile_view(context, alignment)
 
         tool.Blender.update_viewport()
@@ -3558,6 +3643,7 @@ class ALIGN_OT_remove_cant_layout(Operator, tool.Ifc.Operator):
         top_level = tool.Alignment._get_top_level_alignment(ifcopenshell.api.alignment.get_alignment(cant_layout))
         tool.Alignment.remove_cant_layout(cant_layout)
         tool.Alignment.refresh_alignment_representation_object(top_level)
+        tool.Alignment.update_key_point_referents_if_present(top_level)
         _refresh_vertical_profile_view(context, top_level)
         tool.Blender.update_viewport()
         self.report({"INFO"}, "Deleted the cant layout")
@@ -3616,6 +3702,7 @@ class ALIGN_OT_remove_vertical_layout(Operator, tool.Ifc.Operator):
         top_level = tool.Alignment._get_top_level_alignment(owning_alignment)
         tool.Alignment.remove_vertical_layout(v_layout)
         tool.Alignment.refresh_alignment_representation_object(top_level)
+        tool.Alignment.update_key_point_referents_if_present(top_level)
         _refresh_vertical_profile_view(context, top_level)
         tool.Blender.update_viewport()
         self.report({"INFO"}, "Deleted the vertical layout")
@@ -3817,6 +3904,7 @@ class ALIGN_OT_apply_cant_segments(Operator, tool.Ifc.Operator):
 
         ifcopenshell.api.alignment.create_representation(ifc_file, alignment)
         tool.Alignment.refresh_alignment_representation_object(alignment)
+        tool.Alignment.update_key_point_referents_if_present(alignment)
         _refresh_vertical_profile_view(context, alignment)
 
         props.selected_cant_segment_id = 0
