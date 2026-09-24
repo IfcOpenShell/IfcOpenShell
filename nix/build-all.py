@@ -757,15 +757,6 @@ def run(cmds: Sequence[str], cwd: str | None = None, can_fail: bool = False, env
     return "".join(stdout).strip()
 
 
-if APPLE:
-    if run(["sw_vers", "-productVersion"]) >= "11.":
-        # Apparently not supported
-        PYTHON_VERSIONS = [pv for pv in PYTHON_VERSIONS if tuple(map(int, pv.split("."))) >= (3, 7)]
-    if run(["sw_vers", "-productVersion"]) < "10.16":
-        # This is now solved with the '__PYVENV_LAUNCHER__' hack
-        # PYTHON_VERSIONS = [pv for pv in PYTHON_VERSIONS if tuple(map(int, pv.split("."))) < (3, 11)]
-        pass
-
 # Helper functions
 
 
