@@ -70,7 +70,8 @@ class TestDisableEditingStyles(NewFile):
 class TestEnableEditing(NewFile):
     def test_run(self):
         props = tool.Style.get_style_props()
-        style = ifcopenshell.file().create_entity("IfcSurfaceStyle")
+        ifc = ifcopenshell.file()
+        style = ifc.create_entity("IfcSurfaceStyle")
         subject.enable_editing(style)
         assert props.is_editing_style is style.id()
 
@@ -393,7 +394,8 @@ class TestGetUVMaps(NewFile):
 
 class TestGetStyleElements(NewFile):
     def test_style_with_null_styles(self):
-        style = ifcopenshell.file().create_entity("IfcSurfaceStyle", "Name", "BOTH", None)
+        ifc = ifcopenshell.file()
+        style = ifc.create_entity("IfcSurfaceStyle", "Name", "BOTH", None)
         assert subject.get_style_elements(style) == {}
 
     def test_material_with_null_styles(self):

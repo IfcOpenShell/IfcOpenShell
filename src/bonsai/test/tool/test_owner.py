@@ -96,7 +96,8 @@ class TestClearPerson(NewFile):
 
 class TestClearRole(NewFile):
     def test_run(self):
-        role = ifcopenshell.file().createIfcActorRole()
+        ifc = ifcopenshell.file()
+        role = ifc.create_entity("IfcActorRole")
         subject().set_role(role)
         subject().clear_role()
         props = subject.get_owner_props()
@@ -552,7 +553,8 @@ class TestSetAddress(NewFile):
 
 class TestSetOrganisation(NewFile):
     def test_run(self):
-        organisation = ifcopenshell.file().createIfcOrganization()
+        ifc = ifcopenshell.file()
+        organisation = ifc.create_entity("IfcOrganization")
         subject().set_organisation(organisation)
         props = subject.get_owner_props()
         assert props.active_organisation_id == organisation.id()
@@ -560,7 +562,8 @@ class TestSetOrganisation(NewFile):
 
 class TestSetPerson(NewFile):
     def test_run(self):
-        person = ifcopenshell.file().createIfcPerson()
+        ifc = ifcopenshell.file()
+        person = ifc.create_entity("IfcPerson")
         subject().set_person(person)
         props = subject.get_owner_props()
         assert props.active_person_id == person.id()
@@ -568,7 +571,8 @@ class TestSetPerson(NewFile):
 
 class TestSetRole(NewFile):
     def test_run(self):
-        role = ifcopenshell.file().createIfcActorRole()
+        ifc = ifcopenshell.file()
+        role = ifc.create_entity("IfcActorRole")
         subject().set_role(role)
         props = subject.get_owner_props()
         assert props.active_role_id == role.id()
@@ -599,7 +603,8 @@ class TestApplicationUI(NewFile):
         return attrs
 
     def test_set(self):
-        application = ifcopenshell.file().create_entity(self.ifc_class)
+        ifc = ifcopenshell.file()
+        application = ifc.create_entity(self.ifc_class)
         subject.set_application(application)
         props = subject.get_owner_props()
         assert props.active_application_id == application.id()
@@ -612,7 +617,8 @@ class TestApplicationUI(NewFile):
         assert subject.get_application() == application
 
     def test_run_clear(self):
-        application = ifcopenshell.file().create_entity(self.ifc_class)
+        ifc = ifcopenshell.file()
+        application = ifc.create_entity(self.ifc_class)
         subject.set_application(application)
         subject.clear_application()
         props = subject.get_owner_props()

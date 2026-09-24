@@ -67,7 +67,8 @@ def test_is_pipe_or_duct_segment_predicate_truth_table(ifc_class, is_pipe_expect
     regression in either direction surfaces in this file too."""
     from bonsai import tool
 
-    probe = ifcopenshell.file(schema="IFC4").create_entity(ifc_class)
+    ifc_file = ifcopenshell.file(schema="IFC4")
+    probe = ifc_file.create_entity(ifc_class)
     assert tool.Parametric.is_pipe_segment(probe) is is_pipe_expected
     assert tool.Parametric.is_duct_segment(probe) is is_duct_expected
 
