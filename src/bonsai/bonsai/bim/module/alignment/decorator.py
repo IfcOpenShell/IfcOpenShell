@@ -2463,10 +2463,14 @@ class VerticalDrawDecorator:
     handlers: list = []
     points: list = []                    # shared reference to the operator's [(dist, elev), ...] list
     mouse_data: Optional[Tuple[float, float]] = None  # (dist_along, elevation) under the cursor, or None
+    # (text, state) Elevation/Slope/Distance lines drawn beside the cursor -- state is "ACTIVE" (being
+    # typed), "ERROR", or anything else for a plain value (see
+    # ALIGN_OT_draw_vertical_alignment._refresh_input_display)
+    input_lines: Optional[list] = None
+    cursor_px: Optional[Tuple[float, float]] = None  # mouse position in the profile region, pixels
 
     COLOR_LINE = (1.0, 0.9, 0.2, 1.0)
     COLOR_RUBBER = (1.0, 0.9, 0.2, 0.5)
-    COLOR_HUD_TEXT = (1.0, 1.0, 1.0, 1.0)
     LINE_WIDTH = 2.0
 
     @classmethod
@@ -2475,6 +2479,8 @@ class VerticalDrawDecorator:
             cls.uninstall()
         cls.points = points
         cls.mouse_data = None
+        cls.input_lines = None
+        cls.cursor_px = None
         handler = cls()
         cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_3d, (context,), "WINDOW", "POST_VIEW"))
         cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_hud, (context,), "WINDOW", "POST_PIXEL"))
@@ -2491,6 +2497,8 @@ class VerticalDrawDecorator:
         cls.is_installed = False
         cls.points = []
         cls.mouse_data = None
+        cls.input_lines = None
+        cls.cursor_px = None
 
     @classmethod
     def tag_redraw(cls) -> None:
@@ -2597,28 +2605,32 @@ class VerticalDrawDecorator:
                     },
                 )
                 batch.draw(shader2d)
-        lines = [
-            f"Dist Along: {dist_along:.2f}",
-            f"Elevation: {elevation:.3f}",
-        ]
-        if cls.points:
-            prev_d, prev_e = cls.points[-1]
-            dd = dist_along - prev_d
-            if abs(dd) > 1e-6:
-                grade = (elevation - prev_e) / dd * 100.0
-                lines.append(f"Grade: {grade:.2f}%")
+        if not cls.input_lines:
+            return
 
+        # Beside the cursor, drawn exactly like the horizontal draw tool's own D/A/X/Y fields
+        # (PolylineDecorator.draw_input_ui): same font size, offset, line spacing, and add-on
+        # decoration colours, with the field being typed in the highlight colour.
+        anchor = cls.cursor_px
+        if anchor is None and rv3d is not None:
+            anchor = location_3d_to_region_2d(region, rv3d, (dist_along, 0.0, VerticalProfileDecorator._ez(elevation)))
+        if anchor is None:
+            return
+
+        prefs = tool.Blender.get_addon_preferences()
+        colors = {
+            "ACTIVE": prefs.decorator_color_special,
+            "ERROR": prefs.decorator_color_error,
+        }
         font_id = 0
-        font_size = tool.Blender.scale_font_size(14)
+        font_size = tool.Blender.scale_font_size()
+        offset = font_size * 1.5
+        line_height = font_size * 1.25
         blf.size(font_id, font_size)
         blf.enable(font_id, blf.SHADOW)
         blf.shadow(font_id, 6, 0, 0, 0, 1)
-        blf.color(font_id, *self.COLOR_HUD_TEXT)
-
-        margin = 20
-        line_height = font_size * 1.4
-        y = region.height - margin
-        for i, line in enumerate(lines):
-            blf.position(font_id, margin, y - i * line_height, 0)
-            blf.draw(font_id, line)
+        for i, (text, state) in enumerate(cls.input_lines, start=1):
+            blf.color(font_id, *colors.get(state, prefs.decorations_colour))
+            blf.position(font_id, anchor[0] + offset, anchor[1] - i * line_height, 0)
+            blf.draw(font_id, text)
         blf.disable(font_id, blf.SHADOW)
