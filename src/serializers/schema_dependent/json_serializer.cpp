@@ -420,18 +420,23 @@ void POSTFIX_SCHEMA(json_serializer)::finalize() {
 #else
         } else {
 #endif
-            /*
-            // not all_attributes() only the attributes defined on this particular concrete type
-            // @todo actually I don't know how to map PreDefinedPropertySet yet
-            auto attributes = inst->declaration().attributes();
-            for (auto* a : attributes) {
-                auto val = inst->get(a->name());
+            const auto& attributes = inst.declaration().as_entity()->all_attributes();
+            for (std::size_t i = 4; i < attributes.size(); ++i) {
+                auto val = inst.get_attribute_value(i);
                 if (val.isNull()) {
                     continue;
                 }
-                val.apply_visitor(format_value_visitor{});
+                json jprop;
+                jprop["name"] = attributes[i]->name();
+                jprop["ifcPropertyType"] = inst.declaration().name();
+                jprop["value"] = val.apply_visitor(format_value_visitor{});
+                jprop["valueType"] = val.apply_visitor(get_type_visitor{});
+                auto [it, inserted] = json_to_index.try_emplace(jprop, output["properties"].size());
+                if (inserted) {
+                    output["properties"].push_back(jprop);
+                }
+                property_indices.push_back(it->second);
             }
-            */
         }
 
         /*
@@ -443,7 +448,7 @@ void POSTFIX_SCHEMA(json_serializer)::finalize() {
         },
         */
         output["propertySets"].push_back(json::object({{"id", inst.GlobalId()},
-                                                       {"name", *inst.Name()}, // @todo optional
+                                                       {"name", inst.Name().value_or("")},
                                                        {"type", inst.declaration().name()},
                                                        {"properties", property_indices}}));
     }
