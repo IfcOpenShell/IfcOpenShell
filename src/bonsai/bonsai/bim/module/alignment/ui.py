@@ -30,7 +30,7 @@ import ifcopenshell.util.geolocation
 import bonsai.tool as tool
 from bpy.types import Panel, Operator, UIList
 from bpy.props import IntProperty, BoolProperty
-from .prop import _alignment_enum_items
+from .prop import _alignment_enum_items, _clamp_alignment_enum
 from .operator import (
     _find_pi_markers,
     _resolve_alignment_id_for_markers,
@@ -38,6 +38,8 @@ from .operator import (
     _is_endpoint_marker,
     _alignment_id_owning_layout,
     ALIGN_OT_drag_vertical_pis,
+    _grid_rotation_deg,
+    _bearing_string,
 )
 
 
@@ -270,27 +272,10 @@ class ALIGN_UL_cant_segments(UIList):
 
 
 def _rad_to_bearing(rad: float) -> str:
-    """Convert IFC start direction (radians, CCW from east) to compass bearing.
-
-    IFC: 0 = east, increasing CCW.  Bearing: 0 = north, increasing CW.
-    Result: N dd°mm'ss" E / S dd°mm'ss" E / S dd°mm'ss" W / N dd°mm'ss" W
-    """
-    bearing_deg = (90.0 - math.degrees(rad)) % 360.0
-
-    def dms(angle_deg: float) -> str:
-        d = int(angle_deg)
-        m = int((angle_deg - d) * 60)
-        s = (angle_deg - d - m / 60) * 3600
-        return f"{d}°{m:02d}'{s:04.1f}\""
-
-    if bearing_deg < 90.0:
-        return f"N {dms(bearing_deg)} E"
-    elif bearing_deg < 180.0:
-        return f"S {dms(180.0 - bearing_deg)} E"
-    elif bearing_deg < 270.0:
-        return f"S {dms(bearing_deg - 180.0)} W"
-    else:
-        return f"N {dms(360.0 - bearing_deg)} W"
+    """Convert a direction (radians, CCW from east) to a quadrant bearing, in the same format as
+    the draw tools' Bearing readout (so it can be typed back into their Angle field). Its own
+    formatting used to round seconds up to 60 without carrying (e.g. N 59°59'60.0" E)."""
+    return _bearing_string(math.degrees(rad))
 
 
 def _start_en(ifc_file, dp) -> tuple[float | None, float | None]:
@@ -595,6 +580,7 @@ class ALIGN_PT_alignment_segments(Panel):
             return
 
         # --- Alignment selector dropdown (always at top, above segment boxes) ---
+        _clamp_alignment_enum(props, context)
         layout.prop(props, "active_alignment_id_str", text="", icon="CURVE_DATA")
 
         # Sync dropdown from viewport/outliner selection.
@@ -742,6 +728,8 @@ class ALIGN_PT_alignment_segments(Panel):
         h4.label(text="Radius")
         h4.label(text="Bearing")
 
+        # grid bearings, matching the E/N shown below (StartDirection is in project coordinates)
+        grid_rotation = _grid_rotation_deg(from_blender_world=False)
         idx = 1
         for seg in self._segments(layout_entity):
             dp = seg.DesignParameters
@@ -755,7 +743,11 @@ class ALIGN_PT_alignment_segments(Panel):
             is_selected = selected_id == seg_id
             seg_type = dp.PredefinedType or "?"
             r_start = getattr(dp, "StartRadiusOfCurvature", None) or 0.0
-            bearing = _rad_to_bearing(dp.StartDirection) if hasattr(dp, "StartDirection") else ""
+            bearing = (
+                _rad_to_bearing(dp.StartDirection + math.radians(grid_rotation))
+                if hasattr(dp, "StartDirection")
+                else ""
+            )
             e, n = _start_en(ifc_file, dp)
 
             col = box.column(align=True)
