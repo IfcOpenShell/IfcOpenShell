@@ -2922,70 +2922,153 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
     this->schema = schema;
     resolve_references_in_place = true;
     lazy_ = true;
-    byref_excl_.reserve(reader.size() / 32);
 
     // One pass over the DATA section with the tokenizer's index policy: the
-    // instance headers through the shared loop, then the attribute list to
-    // the index's consumer, which looks at the parentheses, commas and names
-    // only. Nothing is decoded. A token the tokenizer rejects, or a structure
-    // the consumer does not expect, stops the index and the caller parses in
-    // full.
-    const char* failure = nullptr;
-    size_t failure_offset = 0;
-    try {
-        for_each_instance_header(reader, lexer, reader.size(), schema, bypassed_types, lazy_bypassed_, logger_.get(), [&](uint32_t name, const ifcopenshell::declaration* declaration, size_t) {
-            const uint64_t attributes_offset = reader.tell();
-            attribute_consumer consumer{byref_excl_, name, (uint16_t)declaration->index_in_schema()};
-            lexer.scan(consumer);
-            lexer.reset_pool();
-            if (consumer.failure != nullptr) {
-                failure = consumer.failure;
-                failure_offset = consumer.failure_offset;
-                return false;
-            }
-            if (!consumer.done) {
-                failure = "file ends inside an instance";
-                failure_offset = attributes_offset;
-                return false;
-            }
-            const size_t guid_begin = consumer.guid_begin, guid_end = consumer.guid_end;
-            auto data = ifcopenshell::make_pointer_type<instance_data>(file, declaration, name, instance_data::lazy_tag{});
+    // instance headers through the shared loop, then the attribute list as
+    // tokens with only the parentheses, commas and names looked at. Nothing
+    // is decoded. On a file large enough the section is split at the same
+    // boundaries the parallel parse uses and each chunk is indexed by its
+    // own worker with its own reader, lexer, shells and inverse records,
+    // merged in file order; the serial case is the same code on one chunk.
+    // A token the tokenizer rejects, or a structure the loop does not
+    // expect, stops the index and the caller parses in full.
+    struct index_output {
+        std::vector<shared_pointer_type> shells;
+        std::vector<std::pair<uint32_t, uint64_t>> offsets;
+        std::vector<std::pair<size_t, std::string>> guids;  // shell index, decoded text
+        std::vector<std::pair<const ifcopenshell::declaration*, std::vector<express::base>>> bytype;
+        std::unordered_map<const ifcopenshell::declaration*, size_t> bytype_index;
+        std::vector<unsigned> bypassed;
+        entities_by_ref inverses;
+        const char* failure = nullptr;
+        size_t failure_offset = 0;
+        std::exception_ptr error;
+    };
+    const auto index_chunk = [&](file_reader<paged_file_impl>& chunk_reader, spf_lexer<file_reader<paged_file_impl>>& chunk_lexer, size_t end, index_output& out) {
+        try {
+            for_each_instance_header(chunk_reader, chunk_lexer, end, schema, bypassed_types, out.bypassed, logger_.get(), [&](uint32_t name, const ifcopenshell::declaration* declaration, size_t) {
+                const uint64_t attributes_offset = chunk_reader.tell();
+                attribute_consumer consumer{out.inverses, name, (uint16_t)declaration->index_in_schema()};
+                chunk_lexer.scan(consumer);
+                chunk_lexer.reset_pool();
+                if (consumer.failure != nullptr) {
+                    out.failure = consumer.failure;
+                    out.failure_offset = consumer.failure_offset;
+                    return false;
+                }
+                if (!consumer.done) {
+                    out.failure = "file ends inside an instance";
+                    out.failure_offset = attributes_offset;
+                    return false;
+                }
+                const size_t guid_begin = consumer.guid_begin, guid_end = consumer.guid_end;
+                out.shells.push_back(ifcopenshell::make_pointer_type<instance_data>(file, declaration, name, instance_data::lazy_tag{}));
+                out.offsets.push_back({name, attributes_offset});
+                {
+                    auto found = out.bytype_index.find(declaration);
+                    if (found == out.bytype_index.end()) {
+                        found = out.bytype_index.emplace(declaration, out.bytype.size()).first;
+                        out.bytype.push_back({declaration, {}});
+                    }
+                    out.bytype[found->second].second.push_back(express::base(out.shells.back()));
+                }
+                if (guid_end > guid_begin && declaration->is(*ifcroot)) {
+                    std::string guid;
+                    guid.reserve(guid_end - guid_begin);
+                    for (size_t at = guid_begin; at < guid_end; ++at) {
+                        guid.push_back(chunk_reader.get(at));
+                    }
+                    if (guid.find('\\') != std::string::npos || guid.find("''") != std::string::npos) {
+                        guid = ifcopenshell::decode_spf_string(guid);
+                    }
+                    out.guids.push_back({out.shells.size() - 1, std::move(guid)});
+                }
+                return true;
+            });
+        } catch (const invalid_token_exception&) {
+            out.failure = "invalid token";
+            out.failure_offset = chunk_reader.tell();
+        } catch (...) {
+            out.error = std::current_exception();
+        }
+    };
+
+    std::vector<index_output> outputs;
+    constexpr size_t min_bytes_per_thread = 2u << 20;
+    const unsigned threads = (unsigned)std::min<size_t>(parse_threads, std::max<size_t>(1, reader.size() / min_bytes_per_thread));
+    const std::vector<size_t> bounds = threads > 1 ? chunk_bounds(reader, threads) : std::vector<size_t>();
+    if (bounds.size() >= 3) {
+        outputs.resize(bounds.size() - 1);
+        std::vector<std::thread> workers;
+        for (size_t k = 0; k + 1 < bounds.size(); ++k) {
+            outputs[k].inverses.reserve((bounds[k + 1] - bounds[k]) / 32);
+            workers.emplace_back([&, k]() {
+                file_reader<paged_file_impl> chunk_reader = reader.reopen();
+                chunk_reader.seek(bounds[k]);
+                spf_lexer<file_reader<paged_file_impl>> chunk_lexer(&chunk_reader, logger_.get());
+                index_chunk(chunk_reader, chunk_lexer, bounds[k + 1], outputs[k]);
+                outputs[k].inverses.sort_in_place();
+            });
+        }
+        for (auto& worker : workers) {
+            worker.join();
+        }
+    } else {
+        outputs.resize(1);
+        outputs[0].inverses.reserve(reader.size() / 32);
+        index_chunk(reader, lexer, reader.size(), outputs[0]);
+        outputs[0].inverses.sort();
+    }
+    for (const auto& out : outputs) {
+        if (out.error) {
+            std::rethrow_exception(out.error);
+        }
+        if (out.failure != nullptr) {
+            logger_.get().message(ifcopenshell::logger::LOG_NOTICE, std::string("Lazy loading not possible (") + out.failure + " at offset " + std::to_string(out.failure_offset) + "), parsing the file in full");
+            return false;
+        }
+    }
+
+    // Merge in file order: what the serial index did per instance.
+    size_t shell_count = 0;
+    for (const auto& out : outputs) {
+        shell_count += out.shells.size();
+    }
+    lazy_offsets_.reserve(shell_count);
+    byid_.reserve(byid_.size() + shell_count);
+    std::vector<entities_by_ref*> runs;
+    for (auto& out : outputs) {
+        for (const auto& data : out.shells) {
+            const uint32_t name = data->id();
             if (!byid_.insert({name, data}).second) {
                 logger_.get().message(ifcopenshell::logger::LOG_WARNING, "Overwriting instance with name #" + std::to_string(name));
                 byid_.erase(name);
                 byid_.insert({name, data});
             }
-            lazy_offsets_.push_back({name, attributes_offset});
-            express::base instance(data);
-            bytype_excl_[declaration].push_back(instance);
             max_id = (std::max)(max_id, (unsigned int)name);
-            if (guid_end > guid_begin && declaration->is(*ifcroot)) {
-                std::string guid;
-                guid.reserve(guid_end - guid_begin);
-                for (size_t at = guid_begin; at < guid_end; ++at) {
-                    guid.push_back(reader.get(at));
+        }
+        for (auto& typed : out.bytype) {
+            auto& list = bytype_excl_[typed.first];
+            list.insert(list.end(), typed.second.begin(), typed.second.end());
+            std::vector<express::base>().swap(typed.second);
+        }
+        lazy_offsets_.insert(lazy_offsets_.end(), out.offsets.begin(), out.offsets.end());
+        for (auto& entry : out.guids) {
+            const std::string& guid = entry.second;
+            std::array<char, 22> key;
+            if (guid_key(guid, key)) {
+                if (byguid_.count(key) != 0) {
+                    logger_.get().message(ifcopenshell::logger::LOG_WARNING, "Instance encountered with non-unique GlobalId " + guid);
                 }
-                if (guid.find('\\') != std::string::npos || guid.find("''") != std::string::npos) {
-                    guid = ifcopenshell::decode_spf_string(guid);
-                }
-                std::array<char, 22> key;
-                if (guid_key(guid, key)) {
-                    if (byguid_.count(key) != 0) {
-                        logger_.get().message(ifcopenshell::logger::LOG_WARNING, "Instance encountered with non-unique GlobalId " + guid);
-                    }
-                    byguid_[key] = instance;
-                }
+                byguid_[key] = express::base(out.shells[entry.first]);
             }
-            return true;
-        });
-    } catch (const invalid_token_exception&) {
-        failure = "invalid token";
-        failure_offset = reader.tell();
+        }
+        lazy_bypassed_.insert(lazy_bypassed_.end(), out.bypassed.begin(), out.bypassed.end());
+        runs.push_back(&out.inverses);
+        std::vector<shared_pointer_type>().swap(out.shells);
     }
-    if (failure != nullptr) {
-        logger_.get().message(ifcopenshell::logger::LOG_NOTICE, std::string("Lazy loading not possible (") + failure + " at offset " + std::to_string(failure_offset) + "), parsing the file in full");
-        return false;
-    }
+    byref_excl_.merge_sorted(runs);
+    outputs.clear();
 
     std::sort(lazy_bypassed_.begin(), lazy_bypassed_.end());
     std::sort(lazy_offsets_.begin(), lazy_offsets_.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
