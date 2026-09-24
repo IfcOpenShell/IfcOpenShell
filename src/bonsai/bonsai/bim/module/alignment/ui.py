@@ -36,6 +36,7 @@ from .operator import (
     _resolve_alignment_id_for_markers,
     _is_interior_pi_marker,
     _is_endpoint_marker,
+    _is_vertex_marker,
     _alignment_id_owning_layout,
     ALIGN_OT_drag_vertical_pis,
     _grid_rotation_deg,
@@ -138,6 +139,20 @@ class ALIGN_UL_vertical_pi_markers(UIList):
 def _joins_by_distance(item) -> bool:
     """Whether this PI's join_next junction is placed by distance (its own radius then computed)."""
     return item.curve_type in {"CIRCULAR", "SPIRAL_CIRCULAR"} and item.join_next and item.join_mode == "DISTANCE"
+
+
+class ALIGN_UL_polyline_points(UIList):
+    """A polyline alignment's points, staged for table editing (align.load_polyline_table)."""
+
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        if self.layout_type not in {"DEFAULT", "COMPACT"}:
+            return
+        row = layout.row(align=True)
+        row.label(text=str(index + 1))
+        row.prop(item, "x", text="")
+        row.prop(item, "y", text="")
+        if context.scene.CivilAlignmentProperties.editing_polyline_is_3d:
+            row.prop(item, "z", text="")
 
 
 class ALIGN_UL_horizontal_pi_markers(UIList):
@@ -332,16 +347,43 @@ class ALIGN_PT_alignment_authoring(Panel):
         table_present = bool(props.horizontal_pi_rows)
 
         alignment = tool.Alignment.get_active_alignment()
+        is_polyline = bool(alignment) and tool.Alignment.is_polyline_alignment(alignment)
+        is_bare = bool(alignment) and tool.Alignment.is_bare_alignment(alignment)
+        polyline_table_present = bool(props.polyline_point_rows)
+        is_vertex_marker = bool(marker) and _is_vertex_marker(marker)
         row = col.row(align=True)
         row.enabled = bool(alignment)
-        row.operator("align.draw_horizontal_alignment", icon="EYEDROPPER")
-        row.operator("align.edit_horizontal_pis", text="", icon="EMPTY_AXIS", depress=markers_present)
-        row.operator("align.load_horizontal_pi_table", text="", icon="ANIM_DATA", depress=table_present)
+        if is_polyline:
+            # a polyline alignment (REQUIREMENTS.md §5.1): its own draw/edit tools, no layouts
+            row.operator("align.draw_polyline_alignment", icon="EYEDROPPER")
+            row.operator("align.edit_polyline_points", text="", icon="EMPTY_AXIS", depress=markers_present)
+            row.operator("align.load_polyline_table", text="", icon="ANIM_DATA", depress=polyline_table_present)
+        else:
+            row.operator("align.draw_horizontal_alignment", icon="EYEDROPPER")
+            row.operator("align.edit_horizontal_pis", text="", icon="EMPTY_AXIS", depress=markers_present)
+            row.operator("align.load_horizontal_pi_table", text="", icon="ANIM_DATA", depress=table_present)
         row.operator("align.remove_alignment", text="", icon="TRASH")
+        if is_bare:
+            # nothing drawn yet: it can still become either kind
+            col.operator("align.draw_polyline_alignment", icon="IPO_LINEAR")
         if not alignment:
             col.label(text="Add or select an alignment first", icon="INFO")
 
-        if is_marker or is_endpoint_marker or markers_present:
+        if is_vertex_marker:
+            box = layout.box()
+            data = marker.bonsai_pi_curve_marker
+            count = len(_find_pi_markers(data.alignment_id))
+            if data.pi_index == 0:
+                label = "Start Point"
+            else:
+                label = "End Point" if data.pi_index == count - 1 else f"Point {data.pi_index}"
+            box.label(text=label, icon="EMPTY_AXIS")
+            box.label(text="Drag in the viewport to reposition", icon="ORIENTATION_GLOBAL")
+            box.operator("align.move_pi_marker", icon="DRIVER_DISTANCE")
+            row = box.row(align=True)
+            row.operator("align.apply_pi_curve", text="Apply", icon="CHECKMARK")
+            row.operator("align.finish_pi_editing", icon="CHECKMARK")
+        elif is_marker or is_endpoint_marker or markers_present:
             box = layout.box()
             if is_marker:
                 pi_data = marker.bonsai_pi_curve_marker
@@ -387,8 +429,9 @@ class ALIGN_PT_alignment_authoring(Panel):
                 row.operator("align.apply_pi_curve", text="Apply", icon="CHECKMARK")
                 row.operator("align.finish_pi_editing", icon="CHECKMARK")
             else:
-                box.label(text="Select a PI/Start/End marker to edit it", icon="INFO")
+                box.label(text="Select a marker to edit it", icon="INFO")
                 box.operator("align.finish_pi_editing", icon="CHECKMARK")
+
 
         if table_present:
             box = layout.box()
@@ -623,6 +666,9 @@ class ALIGN_PT_alignment_segments(Panel):
                 elif layout_entity.is_a("IfcAlignmentCant"):
                     all_cants.append(layout_entity)
 
+        if tool.Alignment.is_polyline_alignment(alignment):
+            self._draw_polyline(layout, props, alignment)
+
         # --- Vertical layouts (direct + child alignments) ---
         all_verticals = tool.Alignment.get_all_vertical_layouts(alignment)
 
@@ -643,6 +689,79 @@ class ALIGN_PT_alignment_segments(Panel):
         # --- Cant layouts (after vertical) ---
         for layout_entity in all_cants:
             self._draw_cant(layout, context, layout_entity)
+
+    def _draw_polyline(self, layout, props, alignment):
+        """A polyline alignment (REQUIREMENTS.md §5.1) has no layouts -- list its points instead, the
+        way the horizontal section lists its segments: a header with an edit (pencil) button, which
+        swaps the list for the editable point table in place, and for a 3D polyline a Show Profile
+        button for its (static) distance-along/elevation profile."""
+        from .decorator import VerticalProfileDecorator
+
+        box = layout.box()
+        try:
+            points, dim = tool.Alignment.get_polyline_points(alignment)
+        except ValueError as e:
+            box.label(text=str(e), icon="ERROR")
+            return
+        is_editing = bool(props.polyline_point_rows) and props.editing_polyline_alignment_id == alignment.id()
+        legs = [math.dist(a, b) for a, b in zip(points[:-1], points[1:])]
+
+        row = box.row(align=True)
+        row.label(text=f"Polyline ({dim}D): {len(points)} points, length {sum(legs):.3f}", icon="IPO_LINEAR")
+        if is_editing:
+            row.operator("align.finish_polyline_table", text="", icon="GREASEPENCIL", depress=True)
+        else:
+            row.operator("align.load_polyline_table", text="", icon="GREASEPENCIL")
+
+        if dim == 3:
+            row = box.row(align=True)
+            shown = VerticalProfileDecorator.is_installed
+            row.operator("align.show_vertical_profile", text="Hide Profile" if shown else "Show Profile", icon="GRAPH")
+            row.prop(props, "vertical_exaggeration", text="VE")
+        else:
+            box.label(text="2D polyline: no elevations to profile", icon="INFO")
+
+        if is_editing:
+            header = box.row(align=True)
+            for text in ("#", "Easting", "Northing") + (("Elevation",) if props.editing_polyline_is_3d else ()):
+                header.label(text=text)
+            row = box.row()
+            row.template_list(
+                "ALIGN_UL_polyline_points",
+                "",
+                props,
+                "polyline_point_rows",
+                props,
+                "active_polyline_point_row_index",
+                rows=4,
+            )
+            side = row.column(align=True)
+            side.operator("align.add_polyline_point_row", text="", icon="ADD")
+            side.operator("align.remove_polyline_point_row", text="", icon="REMOVE")
+            row = box.row(align=True)
+            row.operator("align.apply_polyline_table", icon="CHECKMARK")
+            row.operator("align.finish_polyline_table", icon="CANCEL")
+            return
+
+        header = box.row(align=True)
+        for text in ("#", "Station", "Easting", "Northing") + (("Elevation",) if dim == 3 else ()):
+            header.label(text=text)
+        ifc = tool.Ifc.get()
+        distance = 0.0
+        for i, point in enumerate(points):
+            if i:
+                distance += legs[i - 1]
+            try:
+                station = ifcopenshell.api.alignment.station_from_distance_along(ifc, alignment, distance)
+            except Exception:
+                station = distance
+            row = box.row(align=True)
+            row.label(text=str(i + 1))
+            row.label(text=tool.Alignment.format_station(station))
+            row.label(text=f"{point[0]:.3f}")
+            row.label(text=f"{point[1]:.3f}")
+            if dim == 3:
+                row.label(text=f"{point[2]:.3f}")
 
     def _segments(self, layout_entity):
         for rel in getattr(layout_entity, "IsNestedBy", []) or []:
