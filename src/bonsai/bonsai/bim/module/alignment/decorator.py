@@ -2449,6 +2449,146 @@ class VerticalProfileDecorator:
         blf.disable(font_id, blf.SHADOW)
 
 
+def _draw_cursor_fields(anchor, lines) -> None:
+    """Draw (text, state) lines beside the cursor exactly like the horizontal draw tool's own
+    D/A/X/Y fields (PolylineDecorator.draw_input_ui): same font size, offset, line spacing, and
+    add-on decoration colours -- "ACTIVE" (being typed) in the highlight colour, "ERROR" in the
+    error colour, anything else in the normal decoration colour."""
+    prefs = tool.Blender.get_addon_preferences()
+    colors = {"ACTIVE": prefs.decorator_color_special, "ERROR": prefs.decorator_color_error}
+    font_id = 0
+    font_size = tool.Blender.scale_font_size()
+    offset = font_size * 1.5
+    line_height = font_size * 1.25
+    blf.size(font_id, font_size)
+    blf.enable(font_id, blf.SHADOW)
+    blf.shadow(font_id, 6, 0, 0, 0, 1)
+    for i, (text, state) in enumerate(lines, start=1):
+        blf.color(font_id, *colors.get(state, prefs.decorations_colour))
+        blf.position(font_id, anchor[0] + offset, anchor[1] - i * line_height, 0)
+        blf.draw(font_id, text)
+    blf.disable(font_id, blf.SHADOW)
+
+
+class VerticalPIMarkerDecorator:
+    """Draggable PI dots in the vertical profile view while ALIGN_OT_drag_vertical_pis runs --
+    the profile-view counterpart of PIMarkerDecorator, with the same colours and labels
+    ("Start", "PI n", "End"): blue endpoints, red-orange sharp PIs, green curved ones. Also draws
+    the staged PIs' grade lines (dashed), so a drag shows its effect before Apply Vertical Curves.
+    Reads the staged points from the scene every frame, so it always matches the PI list. Beside
+    the cursor, it shows the readout ALIGN_OT_drag_vertical_pis hands it (input_lines).
+    """
+
+    is_installed: bool = False
+    handlers: list = []
+    hover: Optional[int] = None  # index into operator._staged_vertical_points under the cursor
+    dragging: Optional[int] = None
+    selected: Optional[int] = None  # clicked PI that typed values apply to
+    input_lines: Optional[list] = None  # (text, state) readout beside the cursor, or None
+    cursor_px: Optional[Tuple[float, float]] = None  # mouse position in the profile region, pixels
+
+    COLOR_GRADE = (1.0, 0.9, 0.2, 0.8)
+    COLOR_ACTIVE_RING = (1.0, 1.0, 1.0, 1.0)
+
+    @classmethod
+    def install(cls, context) -> None:
+        if cls.is_installed:
+            cls.uninstall()
+        cls.hover = cls.dragging = cls.selected = None
+        cls.input_lines = cls.cursor_px = None
+        handler = cls()
+        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw, (context,), "WINDOW", "POST_PIXEL"))
+        cls.is_installed = True
+        cls.tag_redraw()
+
+    @classmethod
+    def uninstall(cls) -> None:
+        for handler in cls.handlers:
+            try:
+                SpaceView3D.draw_handler_remove(handler, "WINDOW")
+            except ValueError:
+                pass
+        cls.handlers = []
+        cls.is_installed = False
+        cls.hover = cls.dragging = cls.selected = None
+        cls.input_lines = cls.cursor_px = None
+        cls.tag_redraw()
+
+    @classmethod
+    def tag_redraw(cls) -> None:
+        VerticalProfileDecorator.tag_redraw()
+
+    def draw(self, context) -> None:
+        cls = self.__class__
+        try:
+            if bpy.context.area is None or bpy.context.area.as_pointer() != VerticalProfileDecorator.profile_area_ptr:
+                return
+        except Exception:
+            return
+        region = bpy.context.region
+        rv3d = bpy.context.region_data
+        if not region or not rv3d:
+            return
+
+        from . import operator as alignment_operator
+
+        props = bpy.context.scene.CivilAlignmentProperties
+        points = alignment_operator._staged_vertical_points(props)
+        if not points:
+            return
+        screen = [alignment_operator._vertical_point_to_px(region, rv3d, d, e) for d, e in points]
+
+        gpu.state.blend_set("ALPHA")
+        coords = [(p.x, p.y, 0) for p in screen if p is not None]
+        if len(coords) >= 2:
+            shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
+            shader.bind()
+            shader.uniform_float("viewportSize", (region.width, region.height))
+            shader.uniform_float("lineWidth", 1.5)
+            shader.uniform_float("color", self.COLOR_GRADE)
+            dashes = []
+            for a, b in zip(coords[:-1], coords[1:]):
+                length = math.hypot(b[0] - a[0], b[1] - a[1])
+                steps = max(int(length / 8.0), 1)
+                for k in range(0, steps, 2):
+                    t0, t1 = k / steps, min((k + 1) / steps, 1.0)
+                    dashes += [
+                        (a[0] + (b[0] - a[0]) * t0, a[1] + (b[1] - a[1]) * t0, 0),
+                        (a[0] + (b[0] - a[0]) * t1, a[1] + (b[1] - a[1]) * t1, 0),
+                    ]
+            batch_for_shader(shader, "LINES", {"pos": dashes}).draw(shader)
+
+        font_id = 0
+        font_size = tool.Blender.scale_font_size(11)
+        blf.size(font_id, font_size)
+        blf.enable(font_id, blf.SHADOW)
+        blf.shadow(font_id, 6, 0, 0, 0, 1)
+        markers = props.vertical_pi_markers
+        last = len(points) - 1
+        for i, p in enumerate(screen):
+            if p is None:
+                continue
+            if i == 0 or i == last:
+                color = PIMarkerDecorator.COLOR_ENDPOINT
+                label = "Start" if i == 0 else "End"
+            else:
+                curved = markers[i - 1].curve_type != "TANGENT"
+                color = PIMarkerDecorator.COLOR_DONE if curved else PIMarkerDecorator.COLOR_PENDING
+                label = f"PI {i}"
+            radius = PIMarkerDecorator.RADIUS_PX
+            if i in (cls.hover, cls.dragging, cls.selected):
+                radius *= 1.3
+                PIMarkerDecorator._draw_dot(p.x, p.y, radius + 2.5, self.COLOR_ACTIVE_RING, region)
+            PIMarkerDecorator._draw_dot(p.x, p.y, radius, color, region)
+            blf.color(font_id, *PIMarkerDecorator.COLOR_LABEL)
+            blf.position(font_id, p.x + radius + 4, p.y - font_size * 0.35, 0)
+            blf.draw(font_id, label)
+        blf.disable(font_id, blf.SHADOW)
+        if cls.input_lines and cls.cursor_px is not None:
+            _draw_cursor_fields(cls.cursor_px, cls.input_lines)
+        gpu.state.blend_set("NONE")
+
+
 class VerticalDrawDecorator:
     """Live preview while ALIGN_OT_draw_vertical_alignment is running.
 
@@ -2617,20 +2757,4 @@ class VerticalDrawDecorator:
         if anchor is None:
             return
 
-        prefs = tool.Blender.get_addon_preferences()
-        colors = {
-            "ACTIVE": prefs.decorator_color_special,
-            "ERROR": prefs.decorator_color_error,
-        }
-        font_id = 0
-        font_size = tool.Blender.scale_font_size()
-        offset = font_size * 1.5
-        line_height = font_size * 1.25
-        blf.size(font_id, font_size)
-        blf.enable(font_id, blf.SHADOW)
-        blf.shadow(font_id, 6, 0, 0, 0, 1)
-        for i, (text, state) in enumerate(cls.input_lines, start=1):
-            blf.color(font_id, *colors.get(state, prefs.decorations_colour))
-            blf.position(font_id, anchor[0] + offset, anchor[1] - i * line_height, 0)
-            blf.draw(font_id, text)
-        blf.disable(font_id, blf.SHADOW)
+        _draw_cursor_fields(anchor, cls.input_lines)

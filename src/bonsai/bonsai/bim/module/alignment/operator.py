@@ -2166,6 +2166,142 @@ class ALIGN_OT_draw_horizontal_alignment(bpy.types.Operator, PolylineOperator, t
         blf.disable(font_id, blf.SHADOW)
 
 
+def _move_marker_anchors(markers, index):
+    """World positions the moved marker is measured from, oldest first, so the polyline tool's
+    Distance/Angle read exactly as they did when the PI was first drawn: Distance from the previous
+    point, Angle against the leg before it. The Start marker has no previous point, so it's
+    measured backwards from the next one instead."""
+    locations = [m.location.copy() for m in markers]
+    if index == 0:
+        return list(reversed(locations[1:3]))
+    return locations[max(index - 2, 0) : index]
+
+
+class ALIGN_OT_move_pi_marker(bpy.types.Operator, PolylineOperator):
+    """Move the selected PI/Start/End marker with the horizontal draw tool's own input -- the
+    same PolylineOperator D/A/X/Y fields, snapping, and Bearing readout as
+    ALIGN_OT_draw_horizontal_alignment, measured from the neighbouring PI so typed values mean
+    what they meant when the PI was drawn: Distance from the previous PI, Angle against the leg
+    before it (the Start marker is measured backwards from PI 1).
+
+    Click or Enter places the marker; nothing touches IFC until Apply Curve, same as moving the
+    marker any other way. Esc/RMB leaves it where it was.
+    """
+
+    bl_idname = "align.move_pi_marker"
+    bl_label = "Move with Distance/Angle"
+    bl_description = (
+        "Move this marker using typed Distance/Angle/X/Y (as when drawing), measured from the "
+        "previous PI, then Apply Curve to regenerate"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not _active_pi_marker(context):
+            cls.poll_message_set("Select a PI, Start, or End marker first")
+            return False
+        if len(_find_pi_markers(context.active_object.bonsai_pi_curve_marker.alignment_id)) < 2:
+            cls.poll_message_set("There's no neighbouring point to measure from")
+            return False
+        return True
+
+    def __init__(self, *args, **kwargs):
+        bpy.types.Operator.__init__(self, *args, **kwargs)
+        PolylineOperator.__init__(self)
+        # Same instructions the draw tool shows, minus the ones that don't apply to moving a point
+        for key in ("Close Polyline", "Offset", "Remove Point"):
+            self.instructions.pop(key, None)
+        self._bearing_handle = None
+        self._last_mouse_pos = (0, 0)
+        self._marker_name = ""
+        self._seeded = 0
+
+    # the draw tool's Bearing readout, shared as-is
+    _draw_bearing_hud = ALIGN_OT_draw_horizontal_alignment._draw_bearing_hud
+    _uninstall_bearing_hud = ALIGN_OT_draw_horizontal_alignment._uninstall_bearing_hud
+
+    def invoke(self, context, event):
+        marker_obj = _active_pi_marker(context)
+        markers = _find_pi_markers(marker_obj.bonsai_pi_curve_marker.alignment_id)
+        index = markers.index(marker_obj)
+
+        area_3d = next((a for a in context.screen.areas if a.type == "VIEW_3D"), None)
+        region_3d = next((r for r in area_3d.regions if r.type == "WINDOW"), None) if area_3d else None
+        if not area_3d or not region_3d:
+            self.report({"ERROR"}, "No 3D Viewport found")
+            return {"CANCELLED"}
+        with context.temp_override(area=area_3d, region=region_3d):
+            PolylineOperator.invoke(self, context, event)
+
+        self.tool_state.use_default_container = False
+        self.tool_state.plane_method = "XY"
+        self._marker_name = marker_obj.name
+        self._seeded = self._seed_anchor_points(context, _move_marker_anchors(markers, index))
+        self._bearing_handle = SpaceView3D.draw_handler_add(self._draw_bearing_hud, (context,), "WINDOW", "POST_PIXEL")
+        return {"RUNNING_MODAL"}
+
+    def _seed_anchor_points(self, context, anchors) -> int:
+        """Start the polyline at the anchor points, placed exactly as clicks would place them."""
+        tool.Polyline.clear_polyline()
+        mouse_point = tool.Model.get_polyline_props().snap_mouse_point[0]
+        for location in anchors:
+            mouse_point.x, mouse_point.y, mouse_point.z = location.x, location.y, location.z
+            tool.Polyline.calculate_distance_and_angle(context, self.input_ui, self.tool_state)
+            tool.Polyline.insert_polyline_point(self.input_ui, self.tool_state)
+        return len(anchors)
+
+    def _polyline_points(self):
+        data = tool.Model.get_polyline_props().insertion_polyline
+        return data[0].polyline_points if data else []
+
+    def _finish(self, context, moved: bool):
+        self._uninstall_bearing_hud()
+        points = self._polyline_points()
+        marker_obj = bpy.data.objects.get(self._marker_name)
+        new = points[-1] if moved and len(points) > self._seeded else None
+        new = (new.x, new.y) if new is not None else None
+        self.cleanup(context)  # clears the polyline and its status text -- before restoring our own cues
+        if new is not None and marker_obj is not None:
+            marker_obj.location = (new[0], new[1], marker_obj.location.z)
+            _refresh_pi_marker_visuals(context, marker_obj.bonsai_pi_curve_marker.alignment_id)
+            self.report({"INFO"}, "Marker moved -- click Apply Curve to regenerate the alignment")
+            return {"FINISHED"}
+        return {"CANCELLED"}
+
+    def modal(self, context, event):
+        self._last_mouse_pos = (event.mouse_region_x, event.mouse_region_y)
+        PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
+        tool.Blender.update_viewport()
+
+        self.handle_lock_axis(context, event)
+        if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
+            self.handle_mouse_move(context, event)
+            return {"PASS_THROUGH"}
+
+        self.handle_instructions(context)
+        self.handle_mouse_move(context, event, should_round=True)
+        self.choose_axis(event)
+        self.handle_snap_selection(context, event)
+
+        if not self.tool_state.is_input_on:
+            # Backspace would remove an anchor point; RMB/Enter with nothing typed just leave
+            if event.type == "BACK_SPACE":
+                return {"RUNNING_MODAL"}
+            if event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}:
+                return self._finish(context, moved=False)
+
+        self.handle_keyboard_input(context, event)
+        _insert_polyline_point_no_close(self, context, event)
+        if len(self._polyline_points()) > self._seeded:
+            return self._finish(context, moved=True)
+
+        if self.handle_cancelation(context, event) is not None:
+            self._uninstall_bearing_hud()
+            return {"CANCELLED"}
+        return {"RUNNING_MODAL"}
+
+
 # =============================================================================
 # Vertical Profile Window Operator
 # =============================================================================
@@ -2523,6 +2659,53 @@ def _sync_vertical_pi_markers(context, vpoints):
         item.elevation = elevation
         item.curve_type = "TANGENT"
         item.curve_length = 100.0
+    _stage_vertical_endpoints(props, vpoints[0], vpoints[-1])
+
+
+def _stage_vertical_endpoints(props, start, end):
+    """Stage the vertical's start/end (dist_along, elevation) next to vertical_pi_markers."""
+    props.vertical_start_dist_along, props.vertical_start_elevation = start
+    props.vertical_end_dist_along, props.vertical_end_elevation = end
+    props.vertical_endpoints_staged = True
+
+
+def _staged_vertical_points(props) -> list:
+    """Every staged vertical PI as (dist_along, elevation): start, interior PIs, end -- or [] if
+    the endpoints aren't staged (nothing loaded)."""
+    if not props.vertical_endpoints_staged:
+        return []
+    return (
+        [(props.vertical_start_dist_along, props.vertical_start_elevation)]
+        + [(m.dist_along, m.elevation) for m in props.vertical_pi_markers]
+        + [(props.vertical_end_dist_along, props.vertical_end_elevation)]
+    )
+
+
+def _set_staged_vertical_point(props, index, dist_along, elevation):
+    """Write one staged point back (index into _staged_vertical_points). Start/End only take the
+    elevation -- their distance-along is pinned to the horizontal's own start/end."""
+    last = len(props.vertical_pi_markers) + 1
+    if index == 0:
+        props.vertical_start_elevation = elevation
+    elif index == last:
+        props.vertical_end_elevation = elevation
+    else:
+        marker = props.vertical_pi_markers[index - 1]
+        marker.dist_along = dist_along
+        marker.elevation = elevation
+
+
+def _constrain_dragged_vertical_point(points, index, dist_along, elevation):
+    """Keep a dragged PI in order: Start/End keep their distance-along; an interior PI stays
+    strictly between its neighbours (a profile is a function of distance-along)."""
+    if index == 0 or index == len(points) - 1:
+        return points[index][0], elevation
+    gap = 1.0e-3 * max(points[-1][0] - points[0][0], 1.0)
+    lo = points[index - 1][0] + gap
+    hi = points[index + 1][0] - gap
+    if hi < lo:
+        return points[index][0], elevation
+    return min(max(dist_along, lo), hi), elevation
 
 
 def _tangent_grade_intersection(dp_a, dp_b):
@@ -2678,6 +2861,15 @@ class ALIGN_OT_load_vertical_pis(Operator, tool.Ifc.Operator):
             item.curve_type = spec["curve_type"]
             item.curve_length = spec["curve_length"] or 100.0
         props.editing_vertical_pi_layout_id = v_layout.id()
+        start, end = tool.Alignment.get_vertical_alignment_start_end_points(
+            ifcopenshell.api.alignment.get_alignment(v_layout)
+        )
+        _stage_vertical_endpoints(props, start, end)
+
+        # Go straight into drag mode, the way horizontal's Edit PIs leaves its markers ready to drag.
+        # (Never in background mode: Blender can't invoke an operator without a real event there.)
+        if not ALIGN_OT_drag_vertical_pis.is_running and context.window is not None and not bpy.app.background:
+            bpy.ops.align.drag_vertical_pis("INVOKE_DEFAULT")
 
         self.report({"INFO"}, f"Loaded {len(specs)} PI(s)")
         return {"FINISHED"}
@@ -2693,7 +2885,7 @@ def _vertical_input_fields(has_previous_point: bool) -> tuple:
     return VERTICAL_INPUT_FIELDS if has_previous_point else ("ELEVATION",)
 
 
-def _resolve_vertical_pi(previous, mouse, locks, dist_min, dist_max):
+def _resolve_vertical_pi(previous, mouse, locks, dist_min, dist_max, upper_label="the end of the alignment"):
     """Resolve the next vertical PI from typed (locked) values plus the mouse.
 
     Elevation, Slope, and Distance Along describe a point with only two degrees of freedom, so
@@ -2704,6 +2896,7 @@ def _resolve_vertical_pi(previous, mouse, locks, dist_min, dist_max):
     :param previous: the previous PI (dist_along, elevation), or None for the first PI
     :param mouse: (dist_along, elevation) under the cursor, or None if unknown
     :param locks: {"ELEVATION"/"SLOPE"/"DISTANCE": value}, slope in percent
+    :param upper_label: what dist_max is, for the "past ..." error message
     :return: ((dist_along, elevation), error) -- error is None, or why the typed values can't be
         placed (the point is still returned, as a best-effort preview)
     """
@@ -2745,11 +2938,157 @@ def _resolve_vertical_pi(previous, mouse, locks, dist_min, dist_max):
     if point[0] <= prev_d + 1e-9:
         error = f"distance along {point[0]:.3f} is not past the previous PI ({prev_d:.3f})"
     elif point[0] > dist_max + 1e-6:
-        error = f"distance along {point[0]:.3f} is past the end of the alignment ({dist_max:.3f})"
+        error = f"distance along {point[0]:.3f} is past {upper_label} ({dist_max:.3f})"
     return point, error
 
 
-class ALIGN_OT_draw_vertical_alignment(Operator, tool.Ifc.Operator):
+def _station_text(dist_along: float) -> str:
+    """Station at a distance along the profile view's alignment, in project stationing notation
+    (station equations included), for the vertical HUDs."""
+    alignment = alignment_decorator.VerticalProfileDecorator._alignment
+    station = dist_along
+    if alignment is not None:
+        try:
+            station = ifcopenshell.api.alignment.station_from_distance_along(tool.Ifc.get(), alignment, dist_along)
+        except Exception:
+            pass
+    return tool.Alignment.format_station(station)
+
+
+class _VerticalTypedInput:
+    """Typed Elevation / Slope (%) / Distance Along entry for a vertical PI -- the one input system
+    shared by drawing new PIs (ALIGN_OT_draw_vertical_alignment) and moving existing ones
+    (ALIGN_OT_drag_vertical_pis). A typed value is locked; a point has as many locks as it has
+    degrees of freedom (_max_locks), so typing one more unlocks whichever was typed longest ago.
+    Resolving the locks into a point is the operator's own job (see _resolve_vertical_pi), since
+    what's fixed around the point differs between the two.
+
+    Keys: digits start typing (in the first available field), Tab cycles fields in
+    Elevation -> Slope -> Distance order, E/S/D jump to one, Backspace edits (and unlocks an empty
+    field). Hooks: _input_fields(), _max_locks(), _on_typed_input_changed(context), and optionally
+    _field_label(field) / _field_unavailable_message(field).
+    """
+
+    def _init_typed_input(self):
+        self._locks: dict = {}  # typed values -- see _resolve_vertical_pi
+        self._lock_order: list = []  # locked fields, oldest first
+        self._active_field = None  # field being typed into, or None
+        self._buffer = ""
+
+    @property
+    def _is_typing(self) -> bool:
+        return bool(self._locks or self._active_field)
+
+    def _max_locks(self) -> int:
+        return 2
+
+    def _field_label(self, field) -> str:
+        return VERTICAL_INPUT_LABELS[field]
+
+    def _field_unavailable_message(self, field) -> str:
+        return f"{self._field_label(field)} can't be typed for this point"
+
+    def _typed_locks(self) -> dict:
+        """The locked values plus whatever is being typed right now (so previews follow typing)."""
+        locks = dict(self._locks)
+        if self._active_field and self._buffer:
+            try:
+                locks[self._active_field] = float(self._buffer)
+            except ValueError:
+                pass
+        return locks
+
+    def _commit_buffer(self) -> bool:
+        """Lock the value being typed, if any. Returns False (and reports) if it isn't a number."""
+        if not self._active_field or not self._buffer:
+            return True
+        try:
+            value = float(self._buffer)
+        except ValueError:
+            self.report({"WARNING"}, f"'{self._buffer}' is not a number")
+            self._buffer = ""
+            return False
+        field = self._active_field
+        self._locks[field] = value
+        if field in self._lock_order:
+            self._lock_order.remove(field)
+        self._lock_order.append(field)
+        # the point is fixed once every degree of freedom is locked -- one more unlocks the oldest
+        while len(self._lock_order) > self._max_locks():
+            self._locks.pop(self._lock_order.pop(0), None)
+        self._buffer = ""
+        return True
+
+    def _clear_input(self):
+        self._locks = {}
+        self._lock_order = []
+        self._active_field = None
+        self._buffer = ""
+
+    def _handle_typing(self, context, event) -> bool:
+        """Keyboard entry of Elevation/Slope/Distance. Returns True if the event was consumed."""
+        if event.value != "PRESS":
+            return False
+        fields = self._input_fields()
+        if not fields:
+            return False
+        jump = {"E": "ELEVATION", "S": "SLOPE", "D": "DISTANCE"}
+
+        if event.type == "TAB":
+            if not self._commit_buffer():
+                return True
+            if self._active_field in fields:
+                self._active_field = fields[(fields.index(self._active_field) + 1) % len(fields)]
+            else:
+                self._active_field = fields[0]
+        elif event.type in jump and not (event.ctrl or event.alt or event.shift):
+            if jump[event.type] not in fields:
+                self.report({"INFO"}, self._field_unavailable_message(jump[event.type]))
+                return True
+            if not self._commit_buffer():
+                return True
+            self._active_field = jump[event.type]
+        elif event.ascii and event.ascii in "0123456789.-+":
+            if self._active_field is None:
+                self._active_field = fields[0]
+            self._buffer += event.ascii
+        elif event.type == "BACK_SPACE" and self._active_field:
+            if self._buffer:
+                self._buffer = self._buffer[:-1]
+            else:
+                # Backspace on an already-empty field unlocks it
+                self._locks.pop(self._active_field, None)
+                if self._active_field in self._lock_order:
+                    self._lock_order.remove(self._active_field)
+        else:
+            return False
+        self._on_typed_input_changed(context)
+        return True
+
+    def _typed_field_lines(self, point, previous) -> list:
+        """(text, state) HUD lines for the typed fields, in Tab order: each shows the value being
+        typed ("ACTIVE"), or the point's current value, marked "(locked)" if it was typed."""
+        values = {"ELEVATION": point[1], "DISTANCE": point[0]}
+        if previous is not None and abs(point[0] - previous[0]) > 1e-9:
+            values["SLOPE"] = (point[1] - previous[1]) / (point[0] - previous[0]) * 100.0
+        precision = {"ELEVATION": 3, "SLOPE": 2, "DISTANCE": 3}
+        lines = []
+        for field in VERTICAL_INPUT_FIELDS:
+            if field == "SLOPE" and previous is None:
+                continue  # no previous PI to measure a slope from
+            label = self._field_label(field)
+            suffix = "%" if field == "SLOPE" else ""
+            if field == self._active_field:
+                lines.append((f"{label}: {self._buffer}{suffix}", "ACTIVE"))
+                continue
+            text = f"{label}: {values[field]:.{precision[field]}f}{suffix}" if field in values else f"{label}: -"
+            if field in self._locks:
+                text += "  (locked)"
+            lines.append((text, "VALUE"))
+        return lines
+
+
+class ALIGN_OT_draw_vertical_alignment(Operator, tool.Ifc.Operator, _VerticalTypedInput):
     """Draw the vertical alignment of the active IfcAlignment by PI, in the profile view.
 
     Opens (or reuses) the docked vertical profile view, then click to place
@@ -2824,10 +3163,7 @@ class ALIGN_OT_draw_vertical_alignment(Operator, tool.Ifc.Operator):
         self._area_ptr = 0
         self._alignment_id = 0
         self._mouse = None  # last (dist_along, elevation) under the cursor, unconstrained
-        self._locks: dict = {}  # typed values -- see _resolve_vertical_pi
-        self._lock_order: list = []  # locked fields, oldest first
-        self._active_field = None  # field being typed into, or None
-        self._buffer = ""
+        self._init_typed_input()
 
     def invoke(self, context, event):
         return IfcStore.execute_ifc_operator(self, context, event, method="INVOKE")
@@ -2865,115 +3201,40 @@ class ALIGN_OT_draw_vertical_alignment(Operator, tool.Ifc.Operator):
             )
         context.workspace.status_text_set(text=text)
 
+    def _input_fields(self):
+        return _vertical_input_fields(bool(self._points))
+
+    def _max_locks(self):
+        return 2 if self._points else 1  # the first PI's distance is pinned to the start
+
+    def _field_unavailable_message(self, field):
+        return "The first PI only takes an elevation (its distance is the start station)"
+
+    def _on_typed_input_changed(self, context):
+        self._update_status_text(context)
+        self._refresh_input_display()
+
     def _resolve(self):
         dec = alignment_decorator.VerticalProfileDecorator
         previous = self._points[-1] if self._points else None
-        locks = dict(self._locks)
-        if self._active_field and self._buffer:
-            try:
-                locks[self._active_field] = float(self._buffer)
-            except ValueError:
-                pass
-        return _resolve_vertical_pi(previous, self._mouse, locks, dec.dist_min, dec.dist_max)
-
-    def _commit_buffer(self) -> bool:
-        """Lock the value being typed, if any. Returns False (and reports) if it isn't a number."""
-        if not self._active_field or not self._buffer:
-            return True
-        try:
-            value = float(self._buffer)
-        except ValueError:
-            self.report({"WARNING"}, f"'{self._buffer}' is not a number")
-            self._buffer = ""
-            return False
-        field = self._active_field
-        self._locks[field] = value
-        if field in self._lock_order:
-            self._lock_order.remove(field)
-        self._lock_order.append(field)
-        # two values fix the point -- a third unlocks whichever was typed longest ago
-        while len(self._lock_order) > 2:
-            self._locks.pop(self._lock_order.pop(0), None)
-        self._buffer = ""
-        return True
-
-    def _clear_input(self):
-        self._locks = {}
-        self._lock_order = []
-        self._active_field = None
-        self._buffer = ""
+        return _resolve_vertical_pi(previous, self._mouse, self._typed_locks(), dec.dist_min, dec.dist_max)
 
     def _refresh_input_display(self):
-        """Hand the decorator the candidate PI and the Elevation/Slope/Distance lines shown beside
-        the cursor -- always shown, typing or not, the same way the horizontal draw tool always
-        shows its D/A/X/Y fields."""
+        """Hand the decorator the candidate PI and the Station/Elevation/Slope/Distance lines
+        shown beside the cursor -- always shown, typing or not, the same way the horizontal draw
+        tool always shows its D/A/X/Y fields."""
         dec = alignment_decorator.VerticalDrawDecorator
-        if self._mouse is None and not (self._locks or self._active_field):
+        if self._mouse is None and not self._is_typing:
             dec.input_lines = None
             dec.update_mouse(None)
             return
         point, error = self._resolve()
         previous = self._points[-1] if self._points else None
-        values = {"ELEVATION": point[1], "DISTANCE": point[0]}
-        if previous is not None and abs(point[0] - previous[0]) > 1e-9:
-            values["SLOPE"] = (point[1] - previous[1]) / (point[0] - previous[0]) * 100.0
-        precision = {"ELEVATION": 3, "SLOPE": 2, "DISTANCE": 3}
-        lines = []
-        for field in VERTICAL_INPUT_FIELDS:
-            if field == "SLOPE" and previous is None:
-                continue  # no previous PI to measure a slope from
-            label = VERTICAL_INPUT_LABELS[field]
-            suffix = "%" if field == "SLOPE" else ""
-            if field == self._active_field:
-                lines.append((f"{label}: {self._buffer}{suffix}", "ACTIVE"))
-                continue
-            text = f"{label}: {values[field]:.{precision[field]}f}{suffix}" if field in values else f"{label}: -"
-            if field in self._locks:
-                text += "  (locked)"
-            lines.append((text, "VALUE"))
+        lines = [(f"Station: {_station_text(point[0])}", "VALUE")] + self._typed_field_lines(point, previous)
         if error:
             lines.append((f"Can't place: {error}", "ERROR"))
         dec.input_lines = lines
         dec.update_mouse(point)
-
-    def _handle_typing(self, context, event):
-        """Keyboard entry of Elevation/Slope/Distance. Returns True if the event was consumed."""
-        if event.value != "PRESS":
-            return False
-        fields = _vertical_input_fields(bool(self._points))
-        jump = {"E": "ELEVATION", "S": "SLOPE", "D": "DISTANCE"}
-
-        if event.type == "TAB":
-            if not self._commit_buffer():
-                return True
-            if self._active_field in fields:
-                self._active_field = fields[(fields.index(self._active_field) + 1) % len(fields)]
-            else:
-                self._active_field = fields[0]
-        elif event.type in jump and not (event.ctrl or event.alt or event.shift):
-            if jump[event.type] not in fields:
-                self.report({"INFO"}, "The first PI only takes an elevation (its distance is the start station)")
-                return True
-            if not self._commit_buffer():
-                return True
-            self._active_field = jump[event.type]
-        elif event.ascii and event.ascii in "0123456789.-+":
-            if self._active_field is None:
-                self._active_field = fields[0]
-            self._buffer += event.ascii
-        elif event.type == "BACK_SPACE" and self._active_field:
-            if self._buffer:
-                self._buffer = self._buffer[:-1]
-            else:
-                # Backspace on an already-empty field unlocks it
-                self._locks.pop(self._active_field, None)
-                if self._active_field in self._lock_order:
-                    self._lock_order.remove(self._active_field)
-        else:
-            return False
-        self._update_status_text(context)
-        self._refresh_input_display()
-        return True
 
     def _place_resolved_point(self, context) -> bool:
         """Append the PI the typed values (plus mouse) resolve to. Returns False if they can't."""
@@ -3056,7 +3317,7 @@ class ALIGN_OT_draw_vertical_alignment(Operator, tool.Ifc.Operator):
         mx, my = event.mouse_x, event.mouse_y
         over_profile = area.x <= mx < area.x + area.width and area.y <= my < area.y + area.height
 
-        typing = bool(self._locks or self._active_field)
+        typing = self._is_typing
 
         if event.type == "MOUSEMOVE":
             if over_profile:
@@ -3200,6 +3461,10 @@ class ALIGN_OT_apply_vertical_pi_curve(Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, str(e))
             return {"CANCELLED"}
 
+        if props.vertical_endpoints_staged:
+            # the Start/End elevations may have been dragged in the profile view
+            start = (start[0], props.vertical_start_elevation)
+            end = (end[0], props.vertical_end_elevation)
         markers = list(props.vertical_pi_markers)
         vpoints = [start] + [(m.dist_along, m.elevation) for m in markers] + [end]
         lengths = [m.curve_length if m.curve_type == "PARABOLIC" else 0.0 for m in markers]
@@ -3212,6 +3477,357 @@ class ALIGN_OT_apply_vertical_pi_curve(Operator, tool.Ifc.Operator):
             _refresh_vertical_profile_view(context, alignment)
         self.report({"INFO"} if ok else {"WARNING"}, message)
         return {"FINISHED"}
+
+
+def _find_profile_view(context):
+    """(area, WINDOW region, RegionView3D) of the vertical profile view, or None -- looked up by
+    its stable pointer, see ALIGN_OT_draw_vertical_alignment._locate_profile_view for why."""
+    ptr = alignment_decorator.VerticalProfileDecorator.profile_area_ptr
+    if not ptr or context.screen is None:
+        return None
+    for area in context.screen.areas:
+        if area.as_pointer() != ptr:
+            continue
+        region = next((r for r in area.regions if r.type == "WINDOW"), None)
+        space = next((s for s in area.spaces if s.type == "VIEW_3D"), None)
+        if region is None or space is None:
+            return None
+        return area, region, space.region_3d
+    return None
+
+
+def _vertical_point_to_px(region, rv3d, dist_along, elevation):
+    """Region pixel position of a profile (dist_along, elevation) point, or None."""
+    from bpy_extras.view3d_utils import location_3d_to_region_2d
+
+    ez = alignment_decorator.VerticalProfileDecorator._ez
+    return location_3d_to_region_2d(region, rv3d, (dist_along, 0.0, ez(elevation)))
+
+
+class ALIGN_OT_drag_vertical_pis(Operator, _VerticalTypedInput):
+    """Drag the staged vertical PIs in the profile view -- the vertical counterpart of dragging
+    the horizontal's PI/Start/End marker Empties.
+
+    Runs as a background modal while the vertical PI list is loaded: press on a PI dot in the
+    profile view and drag it. Interior PIs move freely between their neighbours; Start/End only
+    move up and down (their distance-along is the horizontal's own start/end). Edits go into the
+    PI list (and the staged Start/End elevations) -- nothing touches IFC until Apply Vertical
+    Curves, same as horizontal's drag-then-Apply Curve. Every other event passes through, so the
+    view can still be panned/zoomed and the panel used.
+
+    Beside the cursor, a readout (Station, Elevation, Slope In, Distance Along, Slope Out) shows the
+    hovered, dragged, or selected PI. Values can be typed for the dragged or selected (clicked) PI
+    with the same typed-input system as drawing (_VerticalTypedInput): Elevation, Slope In (%) and
+    Distance Along for an interior PI, Elevation (and Slope In, for End) for an endpoint. While
+    dragging, the mouse fills in whatever isn't typed; releasing drops the PI there. For a selected
+    PI, Enter/RMB applies the typed values.
+
+    Esc steps back one level at a time: puts a dragged or typed-into PI back, then deselects, then
+    stops drag mode. Ends by itself when the PI list is finished or the profile view is closed.
+
+    Not an Empty-per-PI like horizontal: the profile view is a synthetic (distance-along,
+    exaggerated elevation) space drawn by a decorator, and real objects placed there would also
+    show up in every other 3D view.
+    """
+
+    bl_idname = "align.drag_vertical_pis"
+    bl_label = "Drag PIs in Profile"
+    bl_description = (
+        "Drag the vertical PIs (and the start/end elevations) in the profile view, or click one and "
+        "type Elevation/Slope/Distance, then Apply Vertical Curves to regenerate"
+    )
+    bl_options = {"REGISTER"}
+
+    HIT_RADIUS_PX = 12.0
+
+    # One drag session at a time. A new invoke takes over from an old one (see _generation) rather
+    # than being refused, so a session Blender killed without our cleanup (e.g. loading another
+    # file) can never leave the button stuck.
+    is_running = False
+    _generation = 0
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.CivilAlignmentProperties
+        if not props.vertical_pi_markers or not props.vertical_endpoints_staged:
+            cls.poll_message_set("Load the vertical PIs first (Edit PIs)")
+            return False
+        return True
+
+    def invoke(self, context, event):
+        if not alignment_decorator.VerticalProfileDecorator.is_installed:
+            alignment = tool.Alignment.get_active_alignment()
+            if alignment is None or _open_vertical_profile(context, alignment) is None:
+                self.report({"ERROR"}, "Could not open the vertical profile view")
+                return {"CANCELLED"}
+        cls = self.__class__
+        cls._generation += 1
+        self._generation_id = cls._generation
+        cls.is_running = True
+        self._init_drag_state()
+        alignment_decorator.VerticalPIMarkerDecorator.install(context)
+        self._update_status_text(context)
+        context.window_manager.modal_handler_add(self)
+        return {"RUNNING_MODAL"}
+
+    def _init_drag_state(self):
+        self._drag = None  # index into _staged_vertical_points being dragged
+        self._active = None  # dragged or selected (clicked) index -- what typing applies to
+        self._original = None  # the active point's position before this drag/typing began
+        self._mouse = None  # (dist_along, elevation) under the cursor while dragging
+        self._init_typed_input()
+
+    # ---- typed-input hooks (_VerticalTypedInput)
+
+    def _point_kind(self, index, count):
+        if index == 0:
+            return "START"
+        return "END" if index == count - 1 else "PI"
+
+    def _input_fields(self):
+        if self._active is None:
+            return ()
+        kind = self._point_kind(self._active, len(self._points_cache))
+        return {"START": ("ELEVATION",), "END": ("ELEVATION", "SLOPE")}.get(kind, VERTICAL_INPUT_FIELDS)
+
+    def _max_locks(self):
+        kind = self._point_kind(self._active, len(self._points_cache))
+        return 2 if kind == "PI" else 1  # Start/End only move up and down
+
+    def _field_label(self, field):
+        return "Slope In" if field == "SLOPE" else VERTICAL_INPUT_LABELS[field]
+
+    def _field_unavailable_message(self, field):
+        return "Start/End only move up and down -- their distance is the horizontal's start/end"
+
+    def _on_typed_input_changed(self, context):
+        if self._is_typing and self._original is None:
+            self._original = self._points_cache[self._active]
+        self._preview(context)
+        self._update_status_text(context)
+
+    # ---- resolving and applying
+
+    def _resolve(self, points, index):
+        """Where the typed values (plus the mouse, while dragging) put point ``index``."""
+        kind = self._point_kind(index, len(points))
+        locks = self._typed_locks()
+        if self._drag is not None and self._mouse is not None:
+            mouse = self._mouse
+        else:
+            # typing into a selected PI: whatever isn't typed stays where the PI was
+            mouse = self._original or points[index]
+        if kind == "START":
+            return _resolve_vertical_pi(None, mouse, locks, points[0][0], points[0][0])
+        previous = points[index - 1]
+        if kind == "END":
+            locks["DISTANCE"] = points[-1][0]  # pinned
+            return _resolve_vertical_pi(previous, mouse, locks, points[0][0], points[-1][0], "the End")
+        upper = _constrain_dragged_vertical_point(points, index, points[index + 1][0], 0.0)[0]
+        if mouse is not None:
+            mouse = _constrain_dragged_vertical_point(points, index, *mouse)
+        upper_label = "the End" if index + 1 == len(points) - 1 else f"PI {index + 1}"
+        return _resolve_vertical_pi(previous, mouse, locks, points[0][0], upper, upper_label)
+
+    def _preview(self, context):
+        """Move the active point to where it currently resolves (unless that's invalid), and
+        refresh the cursor readout."""
+        props = context.scene.CivilAlignmentProperties
+        points = _staged_vertical_points(props)
+        if self._active is not None and (self._drag is not None or self._is_typing):
+            point, error = self._resolve(points, self._active)
+            if not error:
+                _set_staged_vertical_point(props, self._active, *point)
+                points = _staged_vertical_points(props)
+            self._refresh_hud(points, self._active, error)
+        else:
+            hover = alignment_decorator.VerticalPIMarkerDecorator.hover
+            self._refresh_hud(points, hover if hover is not None else self._active, None)
+
+    def _commit(self, context) -> bool:
+        """Apply the typed values to the active point (drop it). Returns False if they can't be."""
+        if not self._commit_buffer():
+            return False
+        props = context.scene.CivilAlignmentProperties
+        points = _staged_vertical_points(props)
+        point, error = self._resolve(points, self._active)
+        if error:
+            self.report({"WARNING"}, f"Can't place PI: {error}")
+            self._preview(context)
+            return False
+        _set_staged_vertical_point(props, self._active, *point)
+        self._clear_input()
+        self._original = None
+        return True
+
+    def _restore(self, context):
+        """Put the active point back where it was before this drag/typing."""
+        if self._active is not None and self._original is not None:
+            _set_staged_vertical_point(context.scene.CivilAlignmentProperties, self._active, *self._original)
+        self._clear_input()
+        self._original = None
+
+    def _refresh_hud(self, points, index, error):
+        """Station/Elevation/Slope In/Distance Along/Slope Out beside the cursor for point
+        ``index`` (hovered, dragged, or selected), or nothing."""
+        dec = alignment_decorator.VerticalPIMarkerDecorator
+        if index is None or index >= len(points):
+            dec.input_lines = None
+            dec.tag_redraw()
+            return
+        point = points[index]
+        previous = points[index - 1] if index > 0 else None
+        lines = [(f"Station: {_station_text(point[0])}", "VALUE")] + self._typed_field_lines(point, previous)
+        if index < len(points) - 1:
+            following = points[index + 1]
+            if abs(following[0] - point[0]) > 1e-9:
+                slope_out = (following[1] - point[1]) / (following[0] - point[0]) * 100.0
+                lines.append((f"Slope Out: {slope_out:.2f}%", "VALUE"))
+        if error:
+            lines.append((f"Can't place: {error}", "ERROR"))
+        dec.input_lines = lines
+        dec.tag_redraw()
+
+    # ---- session
+
+    def _update_status_text(self, context):
+        if self._drag is not None:
+            text = "Release: drop PI    Type Elevation/Slope/Distance (Tab/E/S/D)    Esc/RMB: put it back"
+        elif self._is_typing:
+            text = "Type value    Tab: next field    Enter/RMB: apply to PI    Esc: put it back"
+        elif self._active is not None:
+            text = "Type Elevation/Slope/Distance (Tab/E/S/D), or drag a PI    Esc: deselect"
+        else:
+            text = "Drag a PI, or click one to type values    Apply Vertical Curves: regenerate    Esc: stop dragging"
+        context.workspace.status_text_set(text=text)
+
+    def _end(self, context):
+        cls = self.__class__
+        if self._generation_id == cls._generation:
+            cls.is_running = False
+            alignment_decorator.VerticalPIMarkerDecorator.uninstall()
+            context.workspace.status_text_set(text=None)
+        return {"FINISHED"}
+
+    def _hit(self, region, rv3d, mx, my, points):
+        best, best_d2 = None, self.HIT_RADIUS_PX**2
+        for i, (d, e) in enumerate(points):
+            px = _vertical_point_to_px(region, rv3d, d, e)
+            if px is None:
+                continue
+            d2 = (px[0] - mx) ** 2 + (px[1] - my) ** 2
+            if d2 <= best_d2:
+                best, best_d2 = i, d2
+        return best
+
+    def _set_active(self, index):
+        dec = alignment_decorator.VerticalPIMarkerDecorator
+        self._active = index
+        dec.selected = index
+
+    def modal(self, context, event):
+        cls = self.__class__
+        dec = alignment_decorator.VerticalPIMarkerDecorator
+        if self._generation_id != cls._generation:
+            return {"FINISHED"}  # a newer session took over
+        props = context.scene.CivilAlignmentProperties
+        points = self._points_cache = _staged_vertical_points(props)
+        found = _find_profile_view(context)
+        if not points or found is None:
+            return self._end(context)
+        if self._active is not None and self._active >= len(points):
+            self._set_active(None)  # the PI list shrank under us (e.g. reloaded)
+            self._drag = None
+            self._clear_input()
+        area, region, rv3d = found
+        mx, my = event.mouse_x - region.x, event.mouse_y - region.y
+        over_profile = area.x <= event.mouse_x < area.x + area.width and area.y <= event.mouse_y < area.y + area.height
+
+        if event.type in {"MOUSEMOVE", "INBETWEEN_MOUSEMOVE"}:
+            if over_profile:
+                dec.cursor_px = (mx, my)
+            if self._drag is not None:
+                self._mouse = alignment_decorator.VerticalProfileDecorator.screen_to_data(region, rv3d, mx, my)
+                self._preview(context)
+                return {"RUNNING_MODAL"}
+            hover = self._hit(region, rv3d, mx, my, points) if over_profile else None
+            if hover != dec.hover:
+                dec.hover = hover
+            self._preview(context)
+            return {"PASS_THROUGH"}
+
+        if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
+            return {"PASS_THROUGH"}
+
+        # Typing only while it's clearly aimed at the profile view -- otherwise keys like S/E/D
+        # would be taken away from the main 3D view whenever a vertical PI happens to be selected.
+        if (over_profile or self._drag is not None or self._is_typing) and self._handle_typing(context, event):
+            return {"RUNNING_MODAL"}
+        if self._is_typing and event.value == "RELEASE" and event.type not in {"LEFTMOUSE", "RIGHTMOUSE", "ESC"}:
+            if event.type not in {"RET", "NUMPAD_ENTER"}:
+                return {"RUNNING_MODAL"}  # the RELEASE half of a key typed above
+
+        if event.type == "LEFTMOUSE" and event.value == "PRESS" and over_profile and self._drag is None:
+            hit = self._hit(region, rv3d, mx, my, points)
+            if hit is None:
+                if self._active is not None and not self._is_typing:
+                    self._set_active(None)
+                    self._update_status_text(context)
+                    self._preview(context)
+                return {"PASS_THROUGH"}
+            if hit != self._active:
+                self._restore(context)  # typing into a different PI is abandoned
+            self._set_active(hit)
+            self._drag = dec.dragging = hit
+            points = self._points_cache = _staged_vertical_points(props)
+            if self._original is None:
+                self._original = points[hit]
+            self._mouse = points[hit]
+            self._update_status_text(context)
+            self._preview(context)
+            return {"RUNNING_MODAL"}
+
+        if event.type == "LEFTMOUSE" and event.value == "RELEASE" and self._drag is not None:
+            if not self._commit(context):
+                self._restore(context)
+            self._drag = dec.dragging = None
+            if 0 < self._active <= len(props.vertical_pi_markers):
+                props.active_vertical_pi_marker_index = self._active - 1
+            self._update_status_text(context)
+            self._preview(context)
+            return {"RUNNING_MODAL"}
+
+        if self._drag is not None and event.type in {"ESC", "RIGHTMOUSE"} and event.value == "PRESS":
+            self._restore(context)
+            self._drag = dec.dragging = None
+            self._update_status_text(context)
+            self._preview(context)
+            return {"RUNNING_MODAL"}
+
+        if self._drag is not None:
+            return {"RUNNING_MODAL"}
+
+        # Not dragging. Enter/RMB/Esc act on RELEASE, so the key's PRESS never reaches anything else.
+        if self._is_typing and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}:
+            if event.value == "RELEASE":
+                self._commit(context)
+                self._update_status_text(context)
+                self._preview(context)
+            return {"RUNNING_MODAL"}
+        if event.type == "ESC" and (self._active is not None or over_profile):
+            if event.value == "RELEASE":
+                if self._is_typing:
+                    self._restore(context)
+                elif self._active is not None:
+                    self._set_active(None)
+                else:
+                    return self._end(context)
+                self._update_status_text(context)
+                self._preview(context)
+            return {"RUNNING_MODAL"}
+        if self._is_typing and event.type == "BACK_SPACE":
+            return {"RUNNING_MODAL"}
+        return {"PASS_THROUGH"}
 
 
 class ALIGN_OT_finish_vertical_pi_editing(Operator):
@@ -3234,6 +3850,7 @@ class ALIGN_OT_finish_vertical_pi_editing(Operator):
         props = context.scene.CivilAlignmentProperties
         props.vertical_pi_markers.clear()
         props.editing_vertical_pi_layout_id = 0
+        props.vertical_endpoints_staged = False
         return {"FINISHED"}
 
 

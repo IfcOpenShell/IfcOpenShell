@@ -580,6 +580,47 @@ marker-drag interaction (or a bespoke modal replacing the plain Move-tool drag) 
 inventing a new mechanism. Same gap exists for vertical's PI editing per §6 item 2, once that gets
 its own drag-to-edit path — one input system, ideally shared by both. Not yet designed or built.
 
+**Implemented (2026-09-24).** Per the user, together with a heads-up display for the vertical drag
+("it needs some heads up display information about station, elevation, slope, distance along so
+you have some clue about what the drag operation is doing. I guess that is related to 4").
+
+- **Horizontal: `ALIGN_OT_move_pi_marker` ("Move with Distance/Angle").** There's a button in the
+  marker's panel box, for an interior PI and for Start/End. This isn't a new input system: the
+  operator *is* a `PolylineOperator`, exactly like `ALIGN_OT_draw_horizontal_alignment`. It has
+  the same D/A/X/Y fields, snapping, axis locks, status-bar instructions, and the draw tool's own
+  Bearing readout (`_draw_bearing_hud`, reused as-is). The trick is seeding the polyline with the
+  moved marker's neighbours (`_move_marker_anchors`), so every typed value means what it meant
+  when the PI was first drawn:
+  - Distance is from the previous point.
+  - Angle is measured against the leg before it, using the draw tool's own convention:
+    counter-clockwise from the back leg, and a negative value turns the other way. The mouse
+    doesn't pick the side.
+  - With only one point before it, Angle is measured against +X, like a first drawn leg.
+  - The Start marker has no previous point, so it's measured backwards from PI 1 (anchors End/PI 2
+    → PI 1).
+
+  A click or Enter places the marker. RMB/Enter with nothing typed, or Esc, leaves it where it
+  was. Backspace is swallowed, because it would otherwise delete an anchor point. As with any
+  marker move, nothing touches IFC until Apply Curve. Native Blender G-drag still works exactly
+  as before.
+- **Vertical: typed values and a readout in `ALIGN_OT_drag_vertical_pis`.** See §6 item 2,
+  "Implemented (2026-09-24), follow-up". The typed Elevation/Slope/Distance system from vertical
+  drawing is now a shared mixin (`_VerticalTypedInput`) used by both the vertical draw and drag
+  tools, so it's one input system, as this note asked for. Horizontal and vertical each keep
+  their own native one: the polyline tool's D/A/X/Y for plan, E/S/D for profile.
+
+**Fixed (2026-09-24), per the user:** a pre-existing bug in the shared polyline tool
+(`tool.Polyline.calculate_x_y_and_z`, used by every Bonsai polyline tool, including the horizontal
+alignment draw tool). A typed Angle of exactly ±180° ("straight on") forced the result direction's
+X to -1, which is only right when the previous leg runs along +X. With a previous leg at any other
+angle, the point landed in the wrong place. For example, a 45° leg with D=500, A=180 put the point
+about 610 away in the wrong direction. ±180 now uses the previous leg's own direction, which also
+avoids rotating about an undefined axis when the mouse sits on that leg's line. The one-point case,
+measured from +X, still goes along -X as the old special case intended. Regression tests were
+added in `test/tool/test_polyline.py` (`TestCalculateXYAndZStraightOn`: a 45° leg at +180 and -180,
+and the single-point case). They were run directly in headless Blender, since `pytest-blender`
+isn't installed here. A real 180° marker move was also added to the move-marker check.
+
 **Fixed (2026-09-17): the start-station "dot" wasn't following the Start Point marker when it
 moved, for alignments bootstrapped via Blender's generic Add Element rather than the Alignments
 tab's own Add Alignment button.** When an alignment is first created, the start stationing referent
@@ -810,13 +851,99 @@ have that vertical's don't:
    space that `VerticalProfileDecorator` already converts to/from for its own drawing, so a
    draggable marker there isn't actually impossible, just not yet built.
 
+   **Implemented (2026-09-24).** It works like horizontal's drag-then-Apply, with the look copied
+   from horizontal:
+
+   - **The drag session.** `ALIGN_OT_drag_vertical_pis` ("Drag PIs in Profile") is a background
+     modal that runs while the vertical PI list is loaded. Edit PIs (`align.load_vertical_pis`)
+     starts it automatically, just as horizontal's Edit PIs leaves its markers ready to drag, and
+     a button in the Vertical PIs box starts it again.
+   - **What you see.** `VerticalPIMarkerDecorator` draws a dot for every staged point, with
+     `PIMarkerDecorator`'s own colours, sizes and labels ("Start"/"PI n"/"End"; blue endpoints,
+     red-orange sharp PIs, green curved ones). The hovered or dragged dot is enlarged with a ring.
+     It also draws the staged grade lines dashed, so a drag shows its effect before Apply.
+   - **Dragging.** Press on a dot and drag it. An interior PI moves freely but stays strictly
+     between its neighbours. Start/End move up and down only, because their distance-along is the
+     horizontal's own start/end. Esc/RMB while dragging puts the PI back. Esc over the profile
+     view otherwise stops drag mode. Every other event passes through, so pan, zoom and the panel
+     still work.
+   - **Staging and Apply.** Edits go into `vertical_pi_markers` (the table updates live, and the
+     dragged row becomes the active one). The **Start/End elevations are now staged too**:
+     `vertical_start_dist_along`/`_elevation` and `vertical_end_dist_along`/`_elevation`, plus a
+     `vertical_endpoints_staged` flag. They are populated by Edit PIs and by the draw tool
+     (`_sync_vertical_pi_markers`), shown as editable Start/End Elev fields under the table, and
+     used by `ALIGN_OT_apply_vertical_pi_curve`. Before this, Apply always re-read the endpoints
+     from IFC. As on horizontal, nothing touches IFC until **Apply Vertical Curves**.
+   - **Ending.** The session ends by itself when Finish clears the PI list, or when the profile
+     view is closed. A newer invoke takes over from an older one (`_generation`) instead of being
+     refused, so a session Blender killed without cleanup (e.g. on loading another file) can't
+     leave the button stuck.
+
+   Resolved open question: **bespoke, not Empties.** The profile view is a synthetic space drawn
+   by a decorator, and real Empties placed at its coordinates would also appear in every other 3D
+   view, near the world origin.
+
+   Verified in headless Blender by driving the modal's real `modal()` with mouse events, using a
+   stubbed linear view projection (a background session has no real profile region):
+   - hover detection, and a press on empty space passing through;
+   - dragging PI 1 to a new spot, with the table row updated and made active;
+   - dragging past the next PI being held just short of it;
+   - Esc restoring the point;
+   - Start/End moving only in elevation;
+   - wheel events passing through;
+   - Apply writing an IfcAlignmentVertical whose segment starts and end match the dragged points
+     exactly, dragged Start/End elevations included;
+   - Finish ending the session and removing the decorator.
+
+   Edit PIs' automatic start can't be exercised headless: Blender can't invoke any operator without
+   a real event in background mode (confirmed with a bare test operator), so the auto-start is
+   skipped there. Nothing that needs real on-screen pixels (dot drawing, hit testing) has been
+   tried by hand yet.
+
+   **Implemented (2026-09-24), follow-up: heads-up readout and typed values.** Per the user:
+   "it needs some heads up display information about station, elevation, slope, distance along so
+   you have some clue about what the drag operation is doing."
+   - **Readout.** Beside the cursor, drawn exactly like the draw tools' fields (shared
+     `_draw_cursor_fields`), it shows **Station** (project stationing notation, station equations
+     included), **Elevation**, **Slope In**, **Distance Along**, and **Slope Out**. It covers the
+     hovered PI, the one being dragged (updating live), or the selected one. Vertical drawing's
+     readout gained the Station line too.
+   - **Selecting.** Clicking a dot without moving selects it: it's ringed, and typing applies to
+     it. Clicking empty space deselects.
+   - **Typing.** It's the same system as vertical drawing, now the shared `_VerticalTypedInput`
+     mixin: Tab/E/S/D, locks, "(locked)" marks, and refusals shown in the error colour.
+     - An interior PI takes Elevation, Slope In and Distance Along. The distance must stay between
+       its neighbours ("past PI n" / "past the End").
+     - Start takes Elevation only. End takes Elevation or Slope In, and its distance stays pinned.
+       Each endpoint has one lock, since it has one degree of freedom.
+     - While dragging, the mouse fills in whatever isn't typed, and release drops the PI.
+     - For a selected PI, whatever isn't typed stays where the PI was, the PI previews live, and
+       Enter/RMB applies.
+   - **Esc** steps back one level at a time: it puts a dragged or typed-into PI back, then
+     deselects, then stops drag mode.
+   - **Keyboard scope.** Typing is only taken while the mouse is over the profile view (or a drag
+     or typing is under way), so S/E/D in the main 3D view keep working while a vertical PI is
+     selected.
+
+   Verified headless by driving the real `modal()`, with the same stubbed projection as before:
+   - the hover and drag readouts (exact slope values);
+   - typed E+S on a selected PI giving the exact distance;
+   - a typed distance past the End being refused with the PI unmoved;
+   - Esc;
+   - End refusing Distance and taking Slope In;
+   - typed Elevation while dragging combining with the mouse's distance;
+   - S passing through outside the profile view;
+   - the final Apply matching IFC.
+
+   The vertical draw tool's typed-input test still passes after the mixin refactor.
+
 **Open questions:**
 - ~~For numeric entry: does Tab cycle Elevation → Slope → Distance Along (skipping Distance Along at
   the endpoints), mirroring horizontal's D → A → X → Y cycle?~~ Resolved (2026-09-24): yes, per
   the user -- see item 1 above.
-- For drag-to-edit: would it reuse the same `PICurveMarkerProperties`-style Empty-in-a-3D-view
+- ~~For drag-to-edit: would it reuse the same `PICurveMarkerProperties`-style Empty-in-a-3D-view
   pattern horizontal uses, translated into the profile view's (distance-along, scaled-elevation)
-  plane, or something bespoke to that view?
+  plane, or something bespoke to that view?~~ Resolved (2026-09-24): bespoke -- see item 2 above.
 
 ## 7. Cant layout: generate, keep in sync, and delete
 
