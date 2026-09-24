@@ -1557,9 +1557,6 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
             old_to_new = OverrideDuplicateMove.execute_ifc_duplicate_operator(self, context, linked=True)
             all_old_to_new.update(old_to_new)  # Collect all duplicates
 
-            # Recreate aggregate structure
-            tool.Root.recreate_aggregate(old_to_new)
-
             # Copy linked aggregate data
             copy_linked_aggregate_data(old_to_new)
 
