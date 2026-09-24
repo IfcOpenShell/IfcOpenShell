@@ -277,18 +277,28 @@ Handle(Geom_Surface) open_cascade_kernel::convert_surface(const taxonomy::ptr su
 
 bool open_cascade_kernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& result, bool reversed_surface) {
 #ifdef IFOPSH_DEBUG
-	std::ostringstream oss;
-	face->print(oss);
-	auto osss = oss.str();
-	std::wcout << osss.c_str() << std::endl;
+    std::ostringstream oss;
+    face->print(oss);
+    auto osss = oss.str();
+    std::wcout << osss.c_str() << std::endl;
 #endif
 
-	face_definition fd;
+    face_definition fd;
 
-	// when the surface is planar we do not care about it
-	if (face->basis && face->basis->kind() != taxonomy::PLANE) {
-		fd.surface() = convert_surface(face->basis);
-	}
+    // when the surface is planar we do not care about it
+    // - but we do take note of the oriented normal to reverse if needed
+    std::optional<gp_Dir> expected_planar_normal;
+    if (face->basis) {
+        if (face->basis->kind() == taxonomy::PLANE) {
+            const auto& m = taxonomy::cast<taxonomy::plane>(face->basis)->matrix->ccomponents();
+            expected_planar_normal = convert_xyz2<gp_Dir>(m.col(2));
+            if (!face->basis->orientation.value_or(true)) {
+                expected_planar_normal->Reverse();
+            }
+        } else {
+            fd.surface() = convert_surface(face->basis);
+        }
+    }
 
 	const size_t num_bounds = face->children.size();
 	std::size_t num_outer_bounds = 0;
@@ -424,7 +434,7 @@ bool open_cascade_kernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& 
 	}
 
 	if (fd.surface().IsNull()) {
-		// BRepLib_FindSurface is used in case no surface is found or provided
+		// BRepLib_FindSurface is used in case no surface is found or provided - or the surface is planar
 
 		const TopoDS_Wire& wire = fd.wires().front();
 
@@ -433,6 +443,16 @@ bool open_cascade_kernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& 
 			fd.surface() = fs.Surface();
 			ShapeFix_ShapeTolerance ftol;
 			ftol.SetTolerance(wire, fs.ToleranceReached(), TopAbs_WIRE);
+		}
+	}
+
+	// Reverse the normal of our found plane when it does not agree to the oriented normal specified in the model
+	if (expected_planar_normal && !fd.surface().IsNull() && fd.surface()->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
+        auto plane = Handle(Geom_Plane)::DownCast(fd.surface());
+		const auto& axes = plane->Position();
+		const auto found_normal = axes.XDirection().Crossed(axes.YDirection());
+		if (found_normal.Dot(*expected_planar_normal) < 0.) {
+			fd.surface() = fd.surface()->UReversed();
 		}
 	}
 
