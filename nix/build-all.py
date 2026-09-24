@@ -1169,10 +1169,6 @@ os.environ["CMAKE_COLOR_DIAGNOSTICS"] = "ON"
 # Output from cmake itself.
 os.environ["CLICOLOR_FORCE"] = "1"
 
-# Some dependencies need a more recent CMake version than most distros provide
-# @tfk: this is no longer needed
-# build_dependency(name="cmake-%s" % (CMAKE_VERSION,), mode="autoconf", build_tool_args=[], download_url="https://cmake.org/files/v%s" % (CMAKE_VERSION_2,), download_name="cmake-%s.tar.gz" % (CMAKE_VERSION,))
-
 Dependency: TypeAlias = Literal[
     "manifold",
     "occt",
