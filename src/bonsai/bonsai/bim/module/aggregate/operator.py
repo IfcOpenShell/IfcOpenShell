@@ -199,32 +199,88 @@ class BIM_OT_add_aggregate(bpy.types.Operator, tool.Ifc.Operator):
             ifc_class = tool.Ifc.schema().declaration_by_name(self.ifc_class).name()
         except:
             return
-        aggregate = self.create_aggregate(context, ifc_class, self.aggregate_name)
-
+        selection = {}
         for obj in tool.Blender.get_selected_objects():
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
+            promoted = self.get_promotion_target(element)
+            if promoted.id() != element.id():
+                element = promoted
+                obj = tool.Ifc.get_object(element)
+                if obj is None:
+                    continue
+            selection[element.id()] = (obj, element)
+        selection = list(selection.values())
 
-            current_aggregate = ifcopenshell.util.element.get_aggregate(element)
-            current_container = ifcopenshell.util.element.get_container(element)
-            if current_aggregate:
-                core.assign_object(
-                    tool.Ifc,
-                    tool.Aggregate,
-                    tool.Collector,
-                    relating_obj=tool.Ifc.get_object(current_aggregate),
-                    related_obj=aggregate,
-                )
-            elif current_container:
-                bonsai.core.spatial.assign_container(
-                    tool.Ifc,
-                    tool.Collector,
-                    tool.Spatial,
-                    container=current_container,
-                    objs=[aggregate],
-                )
+        # Parts of a selected aggregate travel with it. Re-parenting them
+        # individually would pull them out of their own aggregate and, when the
+        # aggregate is a linked aggregate, nest its siblings inside it.
+        selected_ids = {element.id() for _, element in selection}
+        objs = [(obj, element) for obj, element in selection if not self.has_selected_ancestor(element, selected_ids)]
+        if not objs:
+            return
+
+        # Decide the new aggregate's parent once, from the selection. Deciding it
+        # per object parents it inside an element that is about to move into it.
+        current_aggregate = ifcopenshell.util.element.get_aggregate(objs[0][1])
+        current_container = ifcopenshell.util.element.get_container(objs[0][1])
+
+        aggregate = self.create_aggregate(context, ifc_class, self.aggregate_name)
+
+        if current_aggregate:
+            core.assign_object(
+                tool.Ifc,
+                tool.Aggregate,
+                tool.Collector,
+                relating_obj=tool.Ifc.get_object(current_aggregate),
+                related_obj=aggregate,
+            )
+        elif current_container:
+            bonsai.core.spatial.assign_container(
+                tool.Ifc,
+                tool.Collector,
+                tool.Spatial,
+                container=current_container,
+                objs=[aggregate],
+            )
+
+        for obj, _ in objs:
             core.assign_object(tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=aggregate, related_obj=obj)
+
+    def get_promotion_target(self, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        """The aggregate to collect in place of element.
+
+        Selecting a part normally means the aggregate it belongs to: moving the part
+        on its own fragments that aggregate, and a fragmented linked aggregate
+        silently stops matching its linked copies. Tabbing into an aggregate is how
+        you say you want to restructure its contents, so promotion stops there.
+        """
+        props = tool.Aggregate.get_aggregate_props()
+        boundary = None
+        if props.in_aggregate_mode and props.editing_aggregate:
+            boundary = tool.Ifc.get_entity(props.editing_aggregate)
+
+        target = element
+        seen = {element.id()}
+        parent = ifcopenshell.util.element.get_aggregate(element)
+        while parent is not None and parent.id() not in seen:
+            if boundary is not None and parent.id() == boundary.id():
+                break
+            seen.add(parent.id())
+            target = parent
+            parent = ifcopenshell.util.element.get_aggregate(parent)
+        return target
+
+    def has_selected_ancestor(self, element: ifcopenshell.entity_instance, selected_ids: set[int]) -> bool:
+        seen = set()
+        parent = ifcopenshell.util.element.get_aggregate(element)
+        while parent is not None and parent.id() not in seen:
+            if parent.id() in selected_ids:
+                return True
+            seen.add(parent.id())
+            parent = ifcopenshell.util.element.get_aggregate(parent)
+        return False
 
     def create_aggregate(self, context: bpy.types.Context, ifc_class: str, aggregate_name: str) -> bpy.types.Object:
         aggregate = bpy.data.objects.new(aggregate_name, None)
