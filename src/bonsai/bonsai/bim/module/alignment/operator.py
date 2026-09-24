@@ -230,6 +230,23 @@ class ALIGN_OT_add_alignment(Operator, tool.Ifc.Operator):
         "Accepts a plain number or stationing notation, e.g. 10+00 or 1+000",
         default="0",
     )
+    definition: EnumProperty(
+        name="Definition",
+        description="How the alignment's geometry is defined",
+        items=[
+            (
+                "LAYOUTS",
+                "Layouts (PI method)",
+                "Horizontal/vertical/cant layouts, drawn tangent by tangent with curves",
+            ),
+            (
+                "POLYLINE",
+                "Polyline",
+                "A 2D or 3D polyline (IfcPolyline), with no layouts -- e.g. early planning or survey data",
+            ),
+        ],
+        default="LAYOUTS",
+    )
 
     @classmethod
     def poll(cls, context):
@@ -246,12 +263,39 @@ class ALIGN_OT_add_alignment(Operator, tool.Ifc.Operator):
     def draw(self, context):
         layout = self.layout
         layout.prop(self, "alignment_name")
+        layout.prop(self, "definition")
         layout.prop(self, "define_stationing")
         row = layout.row()
         row.enabled = self.define_stationing
         row.prop(self, "start_station")
 
     def _execute(self, context):
+        if self.definition == "POLYLINE":
+            if not self.alignment_name.strip():
+                self.report({"ERROR"}, "Alignment name cannot be empty")
+                return {"CANCELLED"}
+            start_station = 0.0
+            if self.define_stationing:
+                try:
+                    start_station = tool.Alignment.parse_station(self.start_station)
+                except ValueError as e:
+                    self.report({"ERROR"}, f"Invalid start station: {e}")
+                    return {"CANCELLED"}
+            alignment = tool.Alignment.create_polyline_alignment(
+                self.alignment_name.strip(), start_station, self.define_stationing
+            )
+            start_referent = tool.Alignment.find_stationing_referent_at(alignment, 0.0)
+            if start_referent:
+                tool.Alignment.create_object_for_referent(start_referent)
+            alignment_obj = tool.Ifc.get_object(alignment)
+            if alignment_obj:
+                for obj in context.selected_objects:
+                    obj.select_set(False)
+                alignment_obj.select_set(True)
+                context.view_layer.objects.active = alignment_obj
+            self.report({"INFO"}, f"Added alignment '{alignment.Name}' — draw its polyline next")
+            return {"FINISHED"}
+
         start_station = 0.0
         if self.define_stationing:
             try:
@@ -993,6 +1037,11 @@ def _is_interior_pi_marker(obj) -> bool:
     return obj.bonsai_pi_curve_marker.is_pi_marker and obj.bonsai_pi_curve_marker.role == "PI"
 
 
+def _is_vertex_marker(obj) -> bool:
+    """Whether ``obj`` is a polyline alignment point marker (see _create_vertex_markers)."""
+    return obj.bonsai_pi_curve_marker.is_pi_marker and obj.bonsai_pi_curve_marker.role == "VERTEX"
+
+
 def _is_endpoint_marker(obj) -> bool:
     """Whether ``obj`` is a Start/End Point marker (see _create_endpoint_marker)."""
     return obj.bonsai_pi_curve_marker.is_pi_marker and obj.bonsai_pi_curve_marker.role in {"START", "END"}
@@ -1680,6 +1729,9 @@ class ALIGN_OT_apply_pi_curve(Operator, tool.Ifc.Operator):
         alignment_id = marker_obj.bonsai_pi_curve_marker.alignment_id
         alignment = tool.Ifc.get().by_id(alignment_id)
 
+        if marker_obj.bonsai_pi_curve_marker.role == "VERTEX":
+            return _apply_polyline_vertex_markers(self, context, alignment)
+
         ifc = tool.Ifc.get()
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc)
         all_markers = _find_pi_markers(alignment_id)
@@ -1790,7 +1842,7 @@ class ALIGN_OT_finish_pi_editing(Operator, tool.Ifc.Operator):
             context.view_layer.objects.active = alignment_obj
 
         tool.Blender.update_viewport()
-        self.report({"INFO"}, f"Finished — removed {len(markers)} PI marker(s)")
+        self.report({"INFO"}, f"Finished — removed {len(markers)} marker(s)")
         _refresh_pi_marker_visuals(context, alignment_id)
 
 
@@ -2154,6 +2206,9 @@ class ALIGN_OT_draw_horizontal_alignment(bpy.types.Operator, _CivilAngleInput, P
         if not alignment:
             cls.poll_message_set("Add or select an alignment first")
             return False
+        if tool.Alignment.is_polyline_alignment(alignment):
+            cls.poll_message_set("This is a polyline alignment -- use Draw Polyline")
+            return False
         if _find_pi_markers(alignment.id()):
             cls.poll_message_set("Finish or clear the PI marker edit first")
             return False
@@ -2470,6 +2525,404 @@ class ALIGN_OT_move_pi_marker(bpy.types.Operator, _CivilAngleInput, PolylineOper
             self._uninstall_bearing_hud()
             return {"CANCELLED"}
         return {"RUNNING_MODAL"}
+
+
+# =============================================================================
+# Polyline alignments (REQUIREMENTS.md §5.1)
+# =============================================================================
+
+
+def _world_point_to_local_ifc_3d(ifc, unit_scale, point_xyz):
+    """_world_point_to_local_ifc, keeping the elevation -- for 3D polyline alignments."""
+    local = (point_xyz[0] / unit_scale, point_xyz[1] / unit_scale, point_xyz[2] / unit_scale)
+    e, n, h = tool.Georeference.xyz2enh(local)[:3]
+    return [float(o) for o in ifcopenshell.util.geolocation.auto_enh2xyz(ifc, e, n, h)[:3]]
+
+
+def _local_ifc_to_world_point_3d(ifc, unit_scale, xyz):
+    """_local_ifc_to_world_point, keeping the elevation."""
+    e, n, h = ifcopenshell.util.geolocation.auto_xyz2enh(ifc, xyz[0], xyz[1], xyz[2] if len(xyz) > 2 else 0.0)[:3]
+    local = tool.Georeference.enh2xyz((e, n, h))
+    return (local[0] * unit_scale, local[1] * unit_scale, local[2] * unit_scale)
+
+
+def _polyline_poll(cls, context, need_existing=True) -> bool:
+    """Shared poll for the polyline alignment tools: a polyline alignment is active (or, when
+    need_existing is False, a bare one that could still become one), and nothing else is mid-edit."""
+    if not poll_ifc4x3(cls, context):
+        return False
+    props = context.scene.CivilAlignmentProperties
+    alignment = tool.Alignment.get_active_alignment()
+    if not alignment:
+        cls.poll_message_set("Add or select an alignment first")
+        return False
+    is_polyline = tool.Alignment.is_polyline_alignment(alignment)
+    if not is_polyline and (need_existing or not tool.Alignment.is_bare_alignment(alignment)):
+        cls.poll_message_set(
+            "Not a polyline alignment" if need_existing else "This alignment has layouts -- use Draw (PI method)"
+        )
+        return False
+    if _find_pi_markers(alignment.id()):
+        cls.poll_message_set("Finish or clear the point marker edit first")
+        return False
+    if props.polyline_point_rows:
+        cls.poll_message_set("Finish or clear the point table edit first")
+        return False
+    return True
+
+
+class ALIGN_OT_draw_polyline_alignment(bpy.types.Operator, _CivilAngleInput, PolylineOperator, tool.Ifc.Operator):
+    """Draw a polyline alignment (IfcPolyline, no layouts) in the viewport -- 2D (constrained to
+    Z = 0, Curve2D) or full 3D (Curve3D), toggled with V while drawing.
+
+    2D works exactly like the PI-method draw tool (plan, XY plane); 3D works like Bonsai's own Draw
+    Polyline Profile tool -- no locked plane, so points snap to scene geometry, Shift+X/Y/Z lock a
+    plane, and a Z field joins D/A/X/Y. Same Distance/Angle/bearing/deflection input
+    (_CivilAngleInput) and Bearing readout as the PI-method tool. RMB/Enter writes the points (a
+    redraw replaces an existing polyline alignment's points), Esc cancels.
+    """
+
+    bl_idname = "align.draw_polyline_alignment"
+    bl_label = "Draw Polyline"
+    bl_description = (
+        "Draw this alignment as a polyline in the viewport -- 2D (Z = 0) or 3D, toggled with V. "
+        "RMB/Enter to finish, Esc to cancel"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return _polyline_poll(cls, context, need_existing=False)
+
+    def __init__(self, *args, **kwargs):
+        bpy.types.Operator.__init__(self, *args, **kwargs)
+        PolylineOperator.__init__(self)
+        self.instructions.pop("Close Polyline", None)
+        self.instructions.pop("Offset", None)
+        self.instructions["2D / 3D"] = {"icons": True, "keys": ["EVENT_V"]}
+        self.instructions.update(_CivilAngleInput.INSTRUCTIONS)
+        self._bearing_handle = None
+        self._last_mouse_pos = (0, 0)
+        self._is_3d = False
+
+    _draw_bearing_hud = ALIGN_OT_draw_horizontal_alignment._draw_bearing_hud
+    _uninstall_bearing_hud = ALIGN_OT_draw_horizontal_alignment._uninstall_bearing_hud
+
+    def invoke(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, event, method="INVOKE")
+
+    def _invoke(self, context, event):
+        area_3d = next((a for a in context.screen.areas if a.type == "VIEW_3D"), None)
+        region_3d = next((r for r in area_3d.regions if r.type == "WINDOW"), None) if area_3d else None
+        if not area_3d or not region_3d:
+            self.report({"ERROR"}, "No 3D Viewport found")
+            return {"CANCELLED"}
+        with context.temp_override(area=area_3d, region=region_3d):
+            super().invoke(context, event)
+        self.tool_state.use_default_container = False
+        alignment = tool.Alignment.get_active_alignment()
+        existing = tool.Alignment.get_polyline_curve(alignment) if alignment else None
+        # redrawing a 3D polyline starts in 3D
+        self._set_mode(existing is not None and tool.Alignment.get_polyline_points(alignment)[1] == 3)
+        self._bearing_handle = SpaceView3D.draw_handler_add(self._draw_bearing_hud, (context,), "WINDOW", "POST_PIXEL")
+        return {"RUNNING_MODAL"}
+
+    def _set_mode(self, is_3d: bool) -> None:
+        """2D: the PI-method draw tool's setup (XY plane at Z = 0, D/A/X/Y). 3D: Draw Polyline
+        Profile's (no locked plane, D/A/X/Y/Z). The Z field only tracks the mouse once it holds a
+        value, so 3D seeds it and 2D clears it."""
+        self._is_3d = is_3d
+        # input_ui shares this list object (PolylineOperator.__init__), so both see the change
+        self.input_options[:] = ["D", "A", "X", "Y", "Z"] if is_3d else ["D", "A", "X", "Y"]
+        self.input_ui.set_value("Z", 0.0 if is_3d else "")
+        self.tool_state.plane_method = None if is_3d else "XY"
+        self.tool_state.axis_method = None
+        self.tool_state.plane_origin = mathutils.Vector((0.0, 0.0, 0.0))
+
+    def modal(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, event, method="MODAL")
+
+    def _modal(self, context, event):
+        self._last_mouse_pos = (event.mouse_region_x, event.mouse_region_y)
+        PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
+        tool.Blender.update_viewport()
+
+        self.handle_lock_axis(context, event)
+        if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
+            self.handle_mouse_move(context, event)
+            return {"PASS_THROUGH"}
+
+        self.handle_instructions(context, custom_info=[f"Mode: {'3D' if self._is_3d else '2D (Z = 0)'}"])
+        self.handle_mouse_move(context, event, should_round=True)
+        if not self.tool_state.is_input_on and event.value == "PRESS" and event.type == "V":
+            self._set_mode(not self._is_3d)
+            self.report({"INFO"}, f"Drawing in {'3D' if self._is_3d else '2D (Z = 0)'}")
+            return {"RUNNING_MODAL"}
+        if self._is_3d:
+            self.choose_axis(event, z=True)
+            self.choose_plane(event)
+        else:
+            self.choose_axis(event)
+        self.handle_snap_selection(context, event)
+
+        # finish before handle_keyboard_input -- see ALIGN_OT_draw_horizontal_alignment._modal
+        if (
+            not self.tool_state.is_input_on
+            and event.value == "RELEASE"
+            and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}
+        ):
+            self._uninstall_bearing_hud()
+            context.workspace.status_text_set(text=None)
+            PolylineDecorator.uninstall()
+            self._finish(context)
+            tool.Polyline.clear_polyline()
+            tool.Blender.update_viewport()
+            return {"FINISHED"}
+
+        self.handle_keyboard_input(context, event)
+        _insert_polyline_point_no_close(self, context, event)
+
+        cancel = self.handle_cancelation(context, event)
+        if cancel is not None:
+            self._uninstall_bearing_hud()
+            return cancel
+        return {"RUNNING_MODAL"}
+
+    def _finish(self, context):
+        data = tool.Model.get_polyline_props().insertion_polyline
+        world = [(p.x, p.y, p.z) for p in data[0].polyline_points] if data else []
+        if len(world) < 2:
+            self.report({"WARNING"}, "Need at least 2 points to draw a polyline alignment")
+            return
+        alignment = tool.Alignment.get_active_alignment()
+        ifc = tool.Ifc.get()
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc)
+        if self._is_3d:
+            points, dim = [_world_point_to_local_ifc_3d(ifc, unit_scale, p) for p in world], 3
+        else:
+            points, dim = [_world_point_to_local_ifc(ifc, unit_scale, p) for p in world], 2
+        tool.Alignment.set_polyline_points(alignment, points, dim)
+        alignment_obj = tool.Ifc.get_object(alignment)
+        if alignment_obj:
+            for obj in context.selected_objects:
+                obj.select_set(False)
+            alignment_obj.select_set(True)
+            context.view_layer.objects.active = alignment_obj
+        kind = "3D" if dim == 3 else "2D"
+        self.report({"INFO"}, f"Drew {kind} polyline alignment '{alignment.Name}' with {len(points)} points")
+
+
+def _create_vertex_markers(context, alignment) -> int:
+    """A draggable marker Empty at every point of a polyline alignment -- the same
+    Object.bonsai_pi_curve_marker markers as the PI-method's (so Move with Distance/Angle, Finish,
+    and the marker dots all work on them unchanged), with role VERTEX. 2D polylines lock Z, like
+    the PI markers; 3D ones only lock rotation/scale."""
+    points, dim = tool.Alignment.get_polyline_points(alignment)
+    ifc = tool.Ifc.get()
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc)
+    last = len(points) - 1
+    for i, point in enumerate(points):
+        name = "Start Point" if i == 0 else "End Point" if i == last else f"Point {i}"
+        empty = bpy.data.objects.new(name, None)
+        empty.empty_display_type = "PLAIN_AXES"
+        empty.empty_display_size = 0.3
+        empty.location = _local_ifc_to_world_point_3d(ifc, unit_scale, point)
+        if dim == 2:
+            _lock_pi_marker_transform(empty)
+        else:
+            empty.lock_rotation = (True, True, True)
+            empty.lock_scale = (True, True, True)
+        marker = empty.bonsai_pi_curve_marker
+        marker.is_pi_marker = True
+        marker.alignment_id = alignment.id()
+        marker.role = "VERTEX"
+        marker.pi_index = i
+        context.collection.objects.link(empty)
+    return len(points)
+
+
+def _apply_polyline_vertex_markers(op, context, alignment):
+    """ALIGN_OT_apply_pi_curve for a polyline alignment: write every vertex marker's current
+    position back as the alignment's points, keeping its 2D/3D-ness."""
+    markers = [m for m in _find_pi_markers(alignment.id()) if m.bonsai_pi_curve_marker.role == "VERTEX"]
+    _, dim = tool.Alignment.get_polyline_points(alignment)
+    ifc = tool.Ifc.get()
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc)
+    convert = _world_point_to_local_ifc_3d if dim == 3 else _world_point_to_local_ifc
+    points = [convert(ifc, unit_scale, m.location) for m in markers]
+    try:
+        tool.Alignment.set_polyline_points(alignment, points, dim)
+    except ValueError as e:
+        op.report({"WARNING"}, str(e))
+        return {"FINISHED"}
+    tool.Blender.update_viewport()
+    op.report({"INFO"}, f"Updated polyline alignment '{alignment.Name}' ({len(points)} points)")
+    _refresh_pi_marker_visuals(context, alignment.id())
+    return {"FINISHED"}
+
+
+class ALIGN_OT_edit_polyline_points(Operator, tool.Ifc.Operator):
+    """Put a draggable marker at every point of the active polyline alignment. Drag them (or use
+    Move with Distance/Angle), then Apply; Finish removes them."""
+
+    bl_idname = "align.edit_polyline_points"
+    bl_label = "Edit Points"
+    bl_description = "Place a draggable marker at every point of this polyline alignment, then Apply"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return _polyline_poll(cls, context)
+
+    def _execute(self, context):
+        alignment = tool.Alignment.get_active_alignment()
+        try:
+            count = _create_vertex_markers(context, alignment)
+        except ValueError as e:
+            self.report({"ERROR"}, str(e))
+            return {"CANCELLED"}
+        tool.Blender.update_viewport()
+        _refresh_pi_marker_visuals(context, alignment.id())
+        self.report({"INFO"}, f"Created {count} point markers -- drag them, then Apply")
+        return {"FINISHED"}
+
+
+def _editing_polyline_alignment(context):
+    props = context.scene.CivilAlignmentProperties
+    try:
+        return tool.Ifc.get().by_id(props.editing_polyline_alignment_id)
+    except RuntimeError:
+        return None
+
+
+class ALIGN_OT_load_polyline_table(Operator, tool.Ifc.Operator):
+    """Stage the active polyline alignment's points as table rows (like the horizontal PI table):
+    edit, add, or remove rows freely, then Apply."""
+
+    bl_idname = "align.load_polyline_table"
+    bl_label = "Edit Points (Table)"
+    bl_description = "Edit this polyline alignment's points in a table, then Apply"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return _polyline_poll(cls, context)
+
+    def _execute(self, context):
+        alignment = tool.Alignment.get_active_alignment()
+        try:
+            points, dim = tool.Alignment.get_polyline_points(alignment)
+        except ValueError as e:
+            self.report({"ERROR"}, str(e))
+            return {"CANCELLED"}
+        props = context.scene.CivilAlignmentProperties
+        props.polyline_point_rows.clear()
+        for point in points:
+            row = props.polyline_point_rows.add()
+            row.x, row.y = point[0], point[1]
+            row.z = point[2] if dim == 3 else 0.0
+        props.editing_polyline_alignment_id = alignment.id()
+        props.editing_polyline_is_3d = dim == 3
+        props.active_polyline_point_row_index = 0
+        self.report({"INFO"}, f"Loaded {len(points)} point(s)")
+        return {"FINISHED"}
+
+
+class ALIGN_OT_add_polyline_point_row(Operator):
+    """Insert a point after the selected row -- halfway to the next point, or continuing the last
+    leg when it's the last row."""
+
+    bl_idname = "align.add_polyline_point_row"
+    bl_label = "Add Point"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return bool(context.scene.CivilAlignmentProperties.polyline_point_rows)
+
+    def execute(self, context):
+        props = context.scene.CivilAlignmentProperties
+        rows = props.polyline_point_rows
+        i = min(max(props.active_polyline_point_row_index, 0), len(rows) - 1)
+        a = rows[i]
+        if i + 1 < len(rows):
+            b = rows[i + 1]
+            new = ((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2)
+        elif i > 0:
+            p = rows[i - 1]
+            new = (2 * a.x - p.x, 2 * a.y - p.y, 2 * a.z - p.z)
+        else:
+            new = (a.x + 10.0, a.y, a.z)
+        row = rows.add()
+        row.x, row.y, row.z = new
+        rows.move(len(rows) - 1, i + 1)
+        props.active_polyline_point_row_index = i + 1
+        return {"FINISHED"}
+
+
+class ALIGN_OT_remove_polyline_point_row(Operator):
+    bl_idname = "align.remove_polyline_point_row"
+    bl_label = "Remove Point"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if len(context.scene.CivilAlignmentProperties.polyline_point_rows) <= 2:
+            cls.poll_message_set("A polyline alignment needs at least 2 points")
+            return False
+        return True
+
+    def execute(self, context):
+        props = context.scene.CivilAlignmentProperties
+        i = min(max(props.active_polyline_point_row_index, 0), len(props.polyline_point_rows) - 1)
+        props.polyline_point_rows.remove(i)
+        props.active_polyline_point_row_index = max(i - 1, 0)
+        return {"FINISHED"}
+
+
+class ALIGN_OT_apply_polyline_table(Operator, tool.Ifc.Operator):
+    """Write the table's rows back as the polyline alignment's points."""
+
+    bl_idname = "align.apply_polyline_table"
+    bl_label = "Apply Points"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not context.scene.CivilAlignmentProperties.polyline_point_rows:
+            cls.poll_message_set("Load the point table first")
+            return False
+        return True
+
+    def _execute(self, context):
+        props = context.scene.CivilAlignmentProperties
+        alignment = _editing_polyline_alignment(context)
+        if alignment is None:
+            self.report({"ERROR"}, "The alignment being edited no longer exists")
+            return {"CANCELLED"}
+        dim = 3 if props.editing_polyline_is_3d else 2
+        points = [(r.x, r.y, r.z)[:dim] for r in props.polyline_point_rows]
+        try:
+            tool.Alignment.set_polyline_points(alignment, points, dim)
+        except ValueError as e:
+            self.report({"WARNING"}, str(e))
+            return {"FINISHED"}
+        tool.Blender.update_viewport()
+        self.report({"INFO"}, f"Updated polyline alignment '{alignment.Name}' ({len(points)} points)")
+        return {"FINISHED"}
+
+
+class ALIGN_OT_finish_polyline_table(Operator):
+    bl_idname = "align.finish_polyline_table"
+    bl_label = "Finish"
+    bl_description = "Finish table editing (does not change the alignment beyond what was applied)"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = context.scene.CivilAlignmentProperties
+        props.polyline_point_rows.clear()
+        props.editing_polyline_alignment_id = 0
+        return {"FINISHED"}
 
 
 # =============================================================================
