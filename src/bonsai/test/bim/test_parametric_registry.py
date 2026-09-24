@@ -105,7 +105,8 @@ def test_every_predicate_does_not_raise_on_non_matching_element(registry):
 
     from bonsai import tool
 
-    probe = ifcopenshell.file(schema="IFC4").create_entity("IfcAnnotation")
+    ifc_file = ifcopenshell.file(schema="IFC4")
+    probe = ifc_file.create_entity("IfcAnnotation")
 
     raised = []
     for feature in registry:
