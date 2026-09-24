@@ -1329,6 +1329,9 @@ def _reconstruct_horizontal_pis(h_layout):
 
     specs = []
     skipped = []
+    if len(segments) == 1 and line_indices == [0]:
+        # a dead-straight alignment: no interior PIs at all, but its Start/End are still editable
+        return specs, skipped
     if len(line_indices) < 2:
         return specs, [(s, "no bounding tangent") for s in segments]
 
@@ -1947,7 +1950,140 @@ class ALIGN_OT_finish_horizontal_pi_table(Operator):
         return {"FINISHED"}
 
 
-class ALIGN_OT_draw_horizontal_alignment(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
+def _parse_dms(text: str) -> float:
+    """Degrees from "30", "30.25", "30 15 24", "30°15'24\"" or any mix of space/°/'/"/: separators."""
+    import re
+
+    parts = [p for p in re.split(r"[\s°'\":]+", text.strip()) if p]
+    if not 1 <= len(parts) <= 3:
+        raise ValueError(f"'{text}' is not an angle")
+    values = [float(p) for p in parts]
+    if any(v < 0 for v in values) or any(v >= 60 for v in values[1:]):
+        raise ValueError(f"'{text}' is not a valid degrees/minutes/seconds angle")
+    return sum(v / 60.0**i for i, v in enumerate(values))
+
+
+def _parse_civil_angle(text: str):
+    """Recognise a civil-engineering angle typed into the horizontal tools' Angle field.
+
+    - Quadrant bearing: "N 30 15 24 E", "S45W", "N 30°15'24.00\" E" (the Bearing readout's own
+      format), or "Due N/E/S/W".
+    - Deflection from the previous leg's forward direction: "12 30 Rt", "12.5 L", "Lt 12 30".
+
+    Returns ("BEARING", azimuth) -- degrees clockwise from north -- or ("DEFLECTION", degrees,
+    positive to the left), or None for a plain number (left to the polyline tool as an Angle).
+    Raises ValueError for text that has direction letters but doesn't make sense.
+    """
+    import re
+
+    t = text.strip().upper()
+    if not re.search(r"[NSEWLR]", t):
+        return None
+    due = re.fullmatch(r"DUE\s*([NSEW])", t)
+    if due:
+        return "BEARING", {"N": 0.0, "E": 90.0, "S": 180.0, "W": 270.0}[due.group(1)]
+    bearing = re.fullmatch(r"([NS])\s*(.+?)\s*([EW])", t)
+    if bearing:
+        ns, angle, ew = bearing.group(1), _parse_dms(bearing.group(2)), bearing.group(3)
+        if angle > 90.0:
+            raise ValueError(f"'{text}': a quadrant bearing's angle can't exceed 90°")
+        azimuth = {("N", "E"): angle, ("S", "E"): 180.0 - angle, ("S", "W"): 180.0 + angle, ("N", "W"): 360.0 - angle}
+        return "BEARING", azimuth[(ns, ew)] % 360.0
+    deflection = re.fullmatch(r"(?:(RT|LT|R|L)\s*(.+?)|(.+?)\s*(RT|LT|R|L))", t)
+    if deflection:
+        side = deflection.group(1) or deflection.group(4)
+        angle = _parse_dms(deflection.group(2) or deflection.group(3))
+        if angle >= 180.0:
+            raise ValueError(f"'{text}': a deflection must be less than 180°")
+        return "DEFLECTION", angle if side.startswith("L") else -angle
+    raise ValueError(f"'{text}' is not a bearing (e.g. N 30 15 24 E) or a deflection (e.g. 12 30 Rt)")
+
+
+class _CivilAngleInput:
+    """Lets the horizontal tools' Angle field also take a quadrant bearing or a deflection angle,
+    recognised by format (see _parse_civil_angle), on top of the polyline tool's own numeric Angle.
+    A typed bearing/deflection is converted to that numeric Angle -- measured counter-clockwise from
+    the back leg, exactly as the polyline tool uses it -- before the polyline tool validates it, so
+    everything downstream (X/Y, snapping, placement) is unchanged. Mixed into
+    ALIGN_OT_draw_horizontal_alignment and ALIGN_OT_move_pi_marker ahead of PolylineOperator; the
+    shared polyline tool itself (walls, slabs, ...) is untouched.
+
+    Bearings are relative to Blender's +Y axis, the same north the Bearing readout uses.
+    """
+
+    # Not D: the polyline tool uses D (on release) to jump to the Distance field, so "Due N" can't be
+    # typed -- "N 0 E" is the same bearing.
+    _CIVIL_ANGLE_LETTERS = set("NSEWLRTnsewlrt")
+    # status-bar hint (PolylineOperator.handle_instructions shows an icon-less entry as key + action)
+    INSTRUCTIONS = {"Angle also takes N 30 15 E or 12 30 Rt": {"icons": False, "keys": [""]}}
+
+    def handle_keyboard_input(self, context, event):
+        # Direction letters only mean something in the Angle field; everywhere else (and "D" to
+        # jump to Distance, "A" for angle lock, ...) keeps the polyline tool's own meaning.
+        if (
+            self.tool_state.is_input_on
+            and self.input_type == "A"
+            and event.value == "PRESS"
+            and event.ascii
+            and event.ascii in self._CIVIL_ANGLE_LETTERS
+        ):
+            if self.tool_state.mode != "Edit":
+                self.number_input = []
+            self.number_input.append(event.ascii.upper())
+            self.tool_state.mode = "Edit"
+            self.is_typing = True
+            self.number_output = "".join(self.number_input)
+            self.input_ui.set_value(self.input_type, self.number_output)
+            PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
+            tool.Blender.update_viewport()
+            return
+        return super().handle_keyboard_input(context, event)
+
+    def recalculate_inputs(self, context):
+        if self.number_input and self.input_type == "A":
+            try:
+                parsed = _parse_civil_angle(self.number_output)
+            except ValueError as e:
+                self.report({"WARNING"}, str(e))
+                return False
+            if parsed is not None:
+                try:
+                    angle = self._civil_angle_to_polyline_angle(*parsed)
+                except ValueError as e:
+                    self.report({"WARNING"}, str(e))
+                    return False
+                self.number_output = f"{angle:.10f}"
+                self.number_input = list(self.number_output)
+        return super().recalculate_inputs(context)
+
+    @staticmethod
+    def _civil_angle_to_polyline_angle(kind, value):
+        """The polyline tool's Angle (degrees counter-clockwise from the back leg, in (-180, 180])
+        for a bearing or deflection, from the same last/second-to-last points it measures from."""
+        from mathutils import Vector
+
+        data = tool.Model.get_polyline_props().insertion_polyline
+        points = data[0].polyline_points if data else []
+        if not points:
+            raise ValueError("Place the first point before typing a bearing or deflection")
+        last = Vector((points[-1].x, points[-1].y, points[-1].z))
+        if len(points) > 1:
+            back = Vector((points[-2].x, points[-2].y, points[-2].z))
+        else:
+            if kind == "DEFLECTION":
+                raise ValueError("A deflection needs a previous leg to deflect from -- use a bearing or an angle")
+            # the same fake +X reference the polyline tool uses with only one point
+            back = tool.Polyline.use_transform_orientations(Vector((last.x + 1000000000, last.y, last.z)))
+        back_dir = math.degrees(math.atan2(back.y - last.y, back.x - last.x))
+        if kind == "BEARING":
+            new_dir = 90.0 - value
+        else:
+            new_dir = back_dir + 180.0 + value  # forward along the previous leg, then turned
+        angle = (new_dir - back_dir) % 360.0
+        return angle - 360.0 if angle > 180.0 else angle
+
+
+class ALIGN_OT_draw_horizontal_alignment(bpy.types.Operator, _CivilAngleInput, PolylineOperator, tool.Ifc.Operator):
     """Draw the horizontal alignment of the active IfcAlignment directly in the viewport.
 
     Click to place each PI (tangent-to-tangent). RMB/Enter finishes and
@@ -1959,7 +2095,9 @@ class ALIGN_OT_draw_horizontal_alignment(bpy.types.Operator, PolylineOperator, t
     creating anything.
 
     Numeric Distance/Angle input is available via the D/A keys, same as the
-    rest of Bonsai's polyline tools.
+    rest of Bonsai's polyline tools. The Angle field also takes a quadrant
+    bearing ("N 30 15 24 E") or a deflection from the previous leg
+    ("12 30 Rt"), recognised by format -- see _CivilAngleInput.
     """
 
     bl_idname = "align.draw_horizontal_alignment"
@@ -1998,6 +2136,7 @@ class ALIGN_OT_draw_horizontal_alignment(bpy.types.Operator, PolylineOperator, t
         # Remove instructions that don't apply to alignments
         self.instructions.pop("Close Polyline", None)
         self.instructions.pop("Offset", None)
+        self.instructions.update(_CivilAngleInput.INSTRUCTIONS)
         self._bearing_handle = None
         self._last_mouse_pos = (0, 0)
 
@@ -2177,7 +2316,7 @@ def _move_marker_anchors(markers, index):
     return locations[max(index - 2, 0) : index]
 
 
-class ALIGN_OT_move_pi_marker(bpy.types.Operator, PolylineOperator):
+class ALIGN_OT_move_pi_marker(bpy.types.Operator, _CivilAngleInput, PolylineOperator):
     """Move the selected PI/Start/End marker with the horizontal draw tool's own input -- the
     same PolylineOperator D/A/X/Y fields, snapping, and Bearing readout as
     ALIGN_OT_draw_horizontal_alignment, measured from the neighbouring PI so typed values mean
@@ -2185,7 +2324,8 @@ class ALIGN_OT_move_pi_marker(bpy.types.Operator, PolylineOperator):
     before it (the Start marker is measured backwards from PI 1).
 
     Click or Enter places the marker; nothing touches IFC until Apply Curve, same as moving the
-    marker any other way. Esc/RMB leaves it where it was.
+    marker any other way. Esc/RMB leaves it where it was. The Angle field also takes a bearing or a
+    deflection (_CivilAngleInput), like the draw tool's.
     """
 
     bl_idname = "align.move_pi_marker"
@@ -2212,6 +2352,7 @@ class ALIGN_OT_move_pi_marker(bpy.types.Operator, PolylineOperator):
         # Same instructions the draw tool shows, minus the ones that don't apply to moving a point
         for key in ("Close Polyline", "Offset", "Remove Point"):
             self.instructions.pop(key, None)
+        self.instructions.update(_CivilAngleInput.INSTRUCTIONS)
         self._bearing_handle = None
         self._last_mouse_pos = (0, 0)
         self._marker_name = ""

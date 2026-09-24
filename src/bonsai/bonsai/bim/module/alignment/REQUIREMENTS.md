@@ -79,6 +79,42 @@ improvements:
    think about direction.
 2. Allow manual input of Distance and one of Bearing, Angle, or Deflection Angle — likely via a
    pop-up input box.
+   **Implemented (2026-09-24), per the user: "angle field accepted by input format".** No new
+   field or pop-up: the existing Angle field of the horizontal draw tool and of Move with
+   Distance/Angle (§4) also takes a bearing or a deflection, recognised by what's typed:
+   - **Quadrant bearing:** `N 30 15 24 E`, `S45W`, or the Bearing readout's own format,
+     `N 30°15'24.00" E`. Degrees can be decimal or D M S, separated by spaces, ° ' " or :.
+   - **Deflection** from the previous leg's forward direction: `12 30 Rt`, `12.5 L`, `LT 12 30`.
+     Right is clockwise.
+   - **A plain number** is the polyline tool's own Angle, unchanged.
+
+   Tab/Enter converts a bearing or deflection into that numeric Angle (counter-clockwise from the
+   back leg), measured from the same last/second-to-last points the polyline tool uses, before it
+   validates. So X/Y, snapping and placement are the tool's own, and the field then shows the
+   angle it resolved to, with the Bearing readout confirming the direction.
+
+   Implemented as a mixin, `_CivilAngleInput` (`_parse_civil_angle` is the pure parser), placed
+   ahead of `PolylineOperator` in both alignment operators. The shared polyline tool that walls,
+   slabs and so on use is untouched. The status bar shows a hint: "Angle also takes N 30 15 E or
+   12 30 Rt".
+
+   Direction letters are only taken in the Angle field. D isn't among them, because the polyline
+   tool uses D to jump to Distance, so `Due N` must be typed as `N 0 E`. A deflection on a first
+   leg is refused, since there's no previous leg to deflect from. Malformed text is refused with a
+   specific message: a quadrant angle over 90°, minutes or seconds of 60 or more, or a deflection
+   of 180° or more.
+
+   Bearings are relative to Blender's +Y axis: the same north the Bearing readout uses, which
+   doesn't account for a georeferenced true-north rotation.
+
+   Verified headless:
+   - The parser was checked on every format, on the refusals, and on a round trip of the Bearing
+     readout's own output at 52 directions all the way round.
+   - The real keyboard path was driven through the move tool's polyline input (typing letters and
+     digits into Angle, the polyline tool's recalculation, placement). It covered bearings on a
+     first leg and after one, left/right deflections including D M S, `0 R` straight on (which
+     relies on the 180° fix), a deflection off a diagonal leg, and a plain angle unchanged. Each
+     point landed exactly where expected.
 3. Interactively define the smoothing curves *before* the command ends, rather than as a separate
    pass afterward.
 
@@ -558,6 +594,17 @@ markers → drag Start/End → Apply → new segment start point matches the dra
 also verified a straight 2-point alignment gets Start/End markers with no interior PI, and that
 endpoint markers never count toward the "N PIs still need a curve" status-bar hint. Regression
 tests added in `test_alignment_operators.py` (`TestStartEndPointMarkers`).
+
+**Fixed (2026-09-24), per the user: "If a horizontal alignment is just a straight line, there is
+no way to activate the PI editing to drag/drop the end points."** Drawing a straight line already
+left Start/End markers. Reopening one via Edit PIs failed, though:
+`_reconstruct_horizontal_pis` treated a lone LINE segment as "no bounding tangent" (it looks for
+PIs *between* two LINEs), reported it as unclassifiable, and Edit PIs refused to create any markers.
+A single LINE is now recognised as a valid alignment with zero interior PIs, so Edit PIs creates
+just the Start/End markers. Everything downstream already handled zero interior PIs, the same way
+drawing a straight line does. Verified headless: Edit PIs creates Start/End on a straight alignment,
+dragging End and applying produces one LINE ending exactly at the dragged point, and Edit PIs
+(Table) loads with zero rows instead of erroring.
 
 **Also fixed alongside this (per the user, 2026-09-18): Finish now reselects the alignment.**
 `ALIGN_OT_finish_pi_editing` removes the marker Empties, and if the active object was one of them
