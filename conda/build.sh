@@ -39,8 +39,8 @@ cmake ${CMAKE_ARGS} -G Ninja \
  -DBOOST_USE_STATIC_LIBS:BOOL=OFF \
  ./cmake
 
-ninja
+cmake --build . -j ${CPU_COUNT}
 
-ninja install -j 1
+cmake --install .
 
 python "${RECIPE_DIR}/update_version_init.py" "${PKG_VERSION}" "${SP_DIR}/ifcopenshell/__init__.py"
