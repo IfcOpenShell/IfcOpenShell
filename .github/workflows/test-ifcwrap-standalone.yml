@@ -63,6 +63,19 @@ jobs:
         with:
           key: ci-ifcwrap-standalone-ubuntu-22.04-${{ runner.arch }}
 
+      - name : Build zstd
+        run: |
+          git clone https://github.com/facebook/zstd --depth 1 --branch v1.5.7
+          cd zstd
+          # `build` already exists.
+          mkdir build_ && cd build_
+          cmake ../build/cmake \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          sudo cmake --build . --target install -j $(nproc)
+
       - name: Build SWIG
         # IfcOpenShell requires SWIG 4.1+, ubuntu-22.04 ships 4.0.2.
         run: |
