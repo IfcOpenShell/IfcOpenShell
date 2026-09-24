@@ -93,7 +93,8 @@ endfunction()
 # Static library targets are skipped, as $<TARGET_RUNTIME_DLLS> doesn't support them.
 function(ifcopenshell_install_runtime_dlls)
     cmake_parse_arguments(ARG "" "DESTINATION" "TARGETS" ${ARGN})
-    if(NOT MSVC)
+    # Conda packages get these DLLs from their dependencies.
+    if(NOT MSVC OR DEFINED ENV{CONDA_BUILD})
         return()
     endif()
     if(NOT ARG_DESTINATION)
