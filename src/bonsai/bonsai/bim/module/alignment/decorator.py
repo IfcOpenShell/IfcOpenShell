@@ -772,6 +772,7 @@ class PIMarkerDecorator:
     COLOR_ENDPOINT = (0.4, 0.65, 1.0, 1.0)  # Blue -- Start/End Point marker, no curve state to show
     COLOR_RING = (0.05, 0.05, 0.05, 0.75)  # Dark outline so the dot reads on any background
     COLOR_LABEL = (1.0, 1.0, 1.0, 1.0)
+    COLOR_JUNCTION = (1.0, 0.85, 0.2, 1.0)  # Yellow -- a Distance-mode PCC/PRC junction point
 
     @classmethod
     def install(cls, context, alignment_id: int) -> None:
@@ -860,8 +861,53 @@ class PIMarkerDecorator:
             blf.color(font_id, *cls.COLOR_LABEL)
             blf.position(font_id, sx + cls.RADIUS_PX + 4, sy - font_size * 0.35, 0)
             blf.draw(font_id, label)
+
+        for marker, next_marker in zip(markers[:-1], markers[1:]):
+            junction = self._join_distance_point(marker, next_marker)
+            if junction is None:
+                continue
+            screen = location_3d_to_region_2d(region, rv3d, junction)
+            if screen:
+                self._draw_crosshair(screen.x, screen.y, cls.RADIUS_PX, cls.COLOR_JUNCTION, region)
         gpu.state.blend_set("NONE")
         blf.disable(font_id, blf.SHADOW)
+
+    @staticmethod
+    def _join_distance_point(marker, next_marker):
+        """World position of a Distance-mode PCC/PRC junction: join_distance along the leg from
+        ``marker`` toward ``next_marker``, or None if ``marker`` isn't joining by distance.
+
+        join_distance is in local IFC units (same as the solver's hpoints), so the fraction along the
+        leg is taken in local coords and applied in world space -- the two are related by a
+        similarity transform, so the fraction is the same in both.
+        """
+        from . import operator as alignment_operator
+
+        data = marker.bonsai_pi_curve_marker
+        if data.role != "PI" or data.curve_type not in {"CIRCULAR", "SPIRAL_CIRCULAR"}:
+            return None
+        if not data.join_next or data.join_mode != "DISTANCE":
+            return None
+        ifc = tool.Ifc.get()
+        if not ifc:
+            return None
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc)
+        a = alignment_operator._world_point_to_local_ifc(ifc, unit_scale, marker.location)
+        b = alignment_operator._world_point_to_local_ifc(ifc, unit_scale, next_marker.location)
+        leg = math.hypot(b[0] - a[0], b[1] - a[1])
+        if leg <= 0.0:
+            return None
+        return marker.location.lerp(next_marker.location, data.join_distance / leg)
+
+    @classmethod
+    def _draw_crosshair(cls, cx: float, cy: float, size: float, color: tuple, region) -> None:
+        shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
+        shader.bind()
+        shader.uniform_float("viewportSize", (region.width, region.height))
+        shader.uniform_float("lineWidth", 2.0)
+        shader.uniform_float("color", color)
+        coords = [(cx - size, cy, 0), (cx + size, cy, 0), (cx, cy - size, 0), (cx, cy + size, 0)]
+        batch_for_shader(shader, "LINES", {"pos": coords}).draw(shader)
 
     @classmethod
     def _draw_dot(cls, cx: float, cy: float, radius: float, color: tuple, region, segments: int = 16) -> None:
