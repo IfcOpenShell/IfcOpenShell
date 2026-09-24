@@ -556,6 +556,16 @@ class CivilAlignmentProperties(PropertyGroup):
     # align.apply_vertical_pi_curve so it regenerates the right one; 0 falls back to
     # resolving a single vertical straight off the active alignment (the common case).
     editing_vertical_pi_layout_id: IntProperty(name="Editing Vertical PI Layout ID", default=0)
+    # The vertical's own start/end points, staged alongside vertical_pi_markers so they can be
+    # edited too (dragged in the profile view, like the horizontal's Start/End markers). Their
+    # distance-along is always the horizontal's own start/end, so only elevation is editable.
+    # align.apply_vertical_pi_curve uses them only when vertical_endpoints_staged is set, i.e.
+    # whenever they were populated together with vertical_pi_markers.
+    vertical_start_dist_along: FloatProperty(name="Start Distance Along", default=0.0)
+    vertical_start_elevation: FloatProperty(name="Start Elevation", default=0.0, precision=3, unit="LENGTH")
+    vertical_end_dist_along: FloatProperty(name="End Distance Along", default=0.0)
+    vertical_end_elevation: FloatProperty(name="End Elevation", default=0.0, precision=3, unit="LENGTH")
+    vertical_endpoints_staged: BoolProperty(default=False)
 
     # Interior PIs of the horizontal alignment, table-editing companion to the
     # draggable viewport Empties (PICurveMarkerProperties) -- see

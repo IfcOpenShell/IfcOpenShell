@@ -37,6 +37,7 @@ from .operator import (
     _is_interior_pi_marker,
     _is_endpoint_marker,
     _alignment_id_owning_layout,
+    ALIGN_OT_drag_vertical_pis,
 )
 
 
@@ -361,6 +362,7 @@ class ALIGN_PT_alignment_authoring(Panel):
                 pi_data = marker.bonsai_pi_curve_marker
                 box.label(text=f"PI {pi_data.pi_index}", icon="EMPTY_AXIS")
                 box.label(text="Drag in the viewport to reposition", icon="ORIENTATION_GLOBAL")
+                box.operator("align.move_pi_marker", icon="DRIVER_DISTANCE")
                 box.prop(pi_data, "curve_type")
                 by_distance = _joins_by_distance(pi_data)
                 if pi_data.curve_type != "TANGENT":
@@ -395,6 +397,7 @@ class ALIGN_PT_alignment_authoring(Panel):
                 label = "Start Point" if pi_data.role == "START" else "End Point"
                 box.label(text=label, icon="EMPTY_AXIS")
                 box.label(text="Drag in the viewport to reposition", icon="ORIENTATION_GLOBAL")
+                box.operator("align.move_pi_marker", icon="DRIVER_DISTANCE")
                 row = box.row(align=True)
                 row.operator("align.apply_pi_curve", text="Apply", icon="CHECKMARK")
                 row.operator("align.finish_pi_editing", icon="CHECKMARK")
@@ -476,6 +479,15 @@ class ALIGN_PT_vertical_alignment_authoring(Panel):
                 props,
                 "active_vertical_pi_marker_index",
                 rows=4,
+            )
+            if props.vertical_endpoints_staged:
+                row = box.row(align=True)
+                row.prop(props, "vertical_start_elevation", text="Start Elev")
+                row.prop(props, "vertical_end_elevation", text="End Elev")
+            box.operator(
+                "align.drag_vertical_pis",
+                icon="VIEW_PAN",
+                depress=ALIGN_OT_drag_vertical_pis.is_running,
             )
 
             row = box.row(align=True)

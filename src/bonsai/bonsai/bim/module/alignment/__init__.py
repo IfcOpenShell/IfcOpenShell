@@ -202,6 +202,8 @@ classes = (
     operator.ALIGN_OT_draw_vertical_alignment,
     operator.ALIGN_OT_load_vertical_pis,
     operator.ALIGN_OT_apply_vertical_pi_curve,
+    operator.ALIGN_OT_drag_vertical_pis,
+    operator.ALIGN_OT_move_pi_marker,
     operator.ALIGN_OT_finish_vertical_pi_editing,
     # Operators - Segment table editing (stage edits, then Apply)
     operator.ALIGN_OT_add_segment_row,
