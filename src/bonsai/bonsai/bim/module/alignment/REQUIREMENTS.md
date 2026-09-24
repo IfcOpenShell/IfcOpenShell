@@ -1043,10 +1043,43 @@ top-level alignment) reverts its representation back to horizontal-only; removin
 child alignment outright.
 
 **Not yet built/verified:**
-- No UI picker for *which* vertical when generating cant with 2+ verticals present — the operator
-  supports it (`layout_id`), but the per-row Generate Cant button in the segments panel is the only UI
-  entry point, and multi-vertical generate/delete was only exercised at the Python/operator level in
-  this session, not through the actual panel in a running Blender session.
+- ~~No UI picker for *which* vertical when generating cant with 2+ verticals~~ **Resolved
+  (2026-09-24).** It turned out the per-vertical **Generate Cant** button on each vertical's row
+  (Alignment Segments panel) already *is* the picker: it passes that row's `layout_id`. What was
+  missing was verification, plus a way to tell the rows apart:
+  - **Verified end to end through the real operators,** with two verticals each given its own cant
+    (different values). Each cant nests on its own vertical's child alignment. A horizontal
+    rebuild re-syncs *both* cants' curve types (`sync_cant_segment_types`). Key points include both
+    cants' transitions. Removing one vertical's cant (its row's delete) leaves the other's intact.
+  - **The rows couldn't be told apart.** `add_vertical_layout` names every child alignment
+    `Child of <alignment>`, and the panel labelled each vertical row by that name, so two verticals
+    showed two identical labels. The new `tool.Alignment.get_vertical_display_name` uses a
+    user-given name (the layout's own Name, or its child alignment's, but never the generated
+    `Child of ...`) when it's unique among the alignment's verticals, otherwise `Vertical n`. That
+    matches the profile view's own `V n` fallback, which uses the same order. A lone vertical keeps
+    showing its alignment's name. It's used by the panel row and by the dialog below.
+  - **The dialog says which vertical it's for.** With 2+ verticals, Generate Cant Layout's dialog
+    shows "For vertical: <name>", and it warns "Replaces this vertical's existing cant layout" when
+    there is one.
+  - **No silent failure without a target.** Called without a `layout_id` while there are several
+    verticals (no UI path does this today), it now refuses with a message pointing at the row
+    buttons. It used to report the misleading "That vertical layout has no segments yet".
+  - Verified headless (`draw()` rendered into a recording layout for the dialog text).
+  - **Renaming a vertical (added the same day, per the user: "renaming would be useful").** Click
+    a vertical row's name in the Alignment Segments panel (`align.rename_vertical`, pre-filled with
+    its current display name). `tool.Alignment.rename_vertical` does the work:
+    - It sets the IfcAlignmentVertical's own Name, which is what the profile view labels it by.
+      When the vertical sits on its own child alignment, it also sets that child's Name, e.g.
+      "Existing Ground". It never renames the top-level alignment, even for a lone vertical.
+    - An empty name puts the defaults back: the layout unnamed and the child "Child of
+      <alignment>", so it shows as `Vertical n` again.
+    - A name another vertical of the same alignment already shows is refused, since they'd be
+      indistinguishable again.
+    - The panel, the Generate Cant dialog and an open profile view all update.
+
+    Verified headless through the real operator: rename, duplicate refusal (nothing changed),
+    clearing back to `Vertical 1`, and a lone vertical renamed and cleared without touching the
+    alignment's name.
 - **Key-point referents** — see §8, a new confirmed future requirement covering generation, deletion,
   and regeneration together (this note used to be the only mention; superseded by §8, which also
   covers the deletion-on-layout-removal gap `tool.Alignment.remove_horizontal_layout`'s docstring

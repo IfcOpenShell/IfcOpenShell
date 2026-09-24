@@ -4548,14 +4548,42 @@ class ALIGN_OT_generate_cant_layout(Operator, tool.Ifc.Operator):
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
 
+    def _target_vertical(self, alignment):
+        """The vertical this cant is for: layout_id's (the per-vertical row button always passes
+        it), else the alignment's one direct vertical -- or None when there are several to choose
+        from (once a second vertical exists, none of them sits directly on the alignment)."""
+        if self.layout_id:
+            try:
+                return tool.Ifc.get().by_id(self.layout_id)
+            except RuntimeError:
+                return None
+        return ifcopenshell.api.alignment.get_vertical_layout(alignment)
+
+    def draw(self, context):
+        layout = self.layout
+        # With several verticals the row's icon button alone doesn't say which one this is for --
+        # name it, and say when an existing cant is about to be replaced.
+        alignment = tool.Alignment.get_active_alignment()
+        v_layout = self._target_vertical(alignment) if alignment else None
+        if v_layout is not None and len(tool.Alignment.get_all_vertical_layouts(alignment)) > 1:
+            layout.label(text=f"For vertical: {tool.Alignment.get_vertical_display_name(v_layout)}", icon="FCURVE")
+        layout.prop(self, "cant_value")
+        if v_layout is not None:
+            existing = ifcopenshell.api.alignment.get_cant_layout(ifcopenshell.api.alignment.get_alignment(v_layout))
+            if existing and tool.Alignment.get_real_layout_segments(existing):
+                layout.label(text="Replaces this vertical's existing cant layout", icon="ERROR")
+
     def _execute(self, context):
         alignment = tool.Alignment.get_active_alignment()
         ifc = tool.Ifc.get()
 
-        if self.layout_id:
-            v_layout = ifc.by_id(self.layout_id)
-        else:
-            v_layout = ifcopenshell.api.alignment.get_vertical_layout(alignment)
+        v_layout = self._target_vertical(alignment)
+        if v_layout is None and len(tool.Alignment.get_all_vertical_layouts(alignment)) > 1:
+            self.report(
+                {"ERROR"},
+                "This alignment has several verticals -- use the Generate Cant button on the row of the one to cant",
+            )
+            return {"CANCELLED"}
         if not v_layout or not tool.Alignment.get_real_layout_segments(v_layout):
             self.report({"ERROR"}, "That vertical layout has no segments yet")
             return {"CANCELLED"}
@@ -4649,6 +4677,49 @@ class ALIGN_OT_remove_cant_layout(Operator, tool.Ifc.Operator):
         _refresh_vertical_profile_view(context, top_level)
         tool.Blender.update_viewport()
         self.report({"INFO"}, "Deleted the cant layout")
+        return {"FINISHED"}
+
+
+class ALIGN_OT_rename_vertical(Operator, tool.Ifc.Operator):
+    """Rename one vertical so an alignment's verticals can be told apart -- in the Alignment
+    Segments panel, the Generate Cant Layout dialog, and the profile view (see
+    tool.Alignment.rename_vertical). Clicking a vertical row's name opens this."""
+
+    bl_idname = "align.rename_vertical"
+    bl_label = "Rename Vertical"
+    bl_description = "Rename this vertical (e.g. Design Grade, Existing Ground). Leave empty for the default name"
+    bl_options = {"REGISTER", "UNDO"}
+
+    layout_id: IntProperty(default=0, options={"HIDDEN"})
+    name: StringProperty(name="Name", default="")
+
+    @classmethod
+    def poll(cls, context):
+        return poll_ifc4x3(cls, context)
+
+    def invoke(self, context, event):
+        try:
+            v_layout = tool.Ifc.get().by_id(self.layout_id)
+        except RuntimeError:
+            return {"CANCELLED"}
+        self.name = tool.Alignment.get_vertical_display_name(v_layout)
+        return context.window_manager.invoke_props_dialog(self)
+
+    def _execute(self, context):
+        try:
+            v_layout = tool.Ifc.get().by_id(self.layout_id)
+        except RuntimeError:
+            self.report({"ERROR"}, "That vertical no longer exists")
+            return {"CANCELLED"}
+        error = tool.Alignment.rename_vertical(v_layout, self.name)
+        if error:
+            self.report({"ERROR"}, error)
+            return {"CANCELLED"}
+        if alignment_decorator.VerticalProfileDecorator.is_installed:
+            owner = ifcopenshell.api.alignment.get_alignment(v_layout)
+            _refresh_vertical_profile_view(context, tool.Alignment._get_top_level_alignment(owner))
+        tool.Blender.update_viewport()
+        _tag_all_areas_redraw(context)
         return {"FINISHED"}
 
 
