@@ -212,6 +212,7 @@ public:
 
   private:
     bool lazy_loading_ = false;
+    unsigned parse_threads_ = 0;
     bool paged_reading_ = false;
     file_open_status good_ = file_open_status::SUCCESS;
     std::reference_wrapper<ifcopenshell::logger> logger_;
@@ -289,6 +290,12 @@ public:
     // anything it does not handle.
     void lazy_loading(bool value) { lazy_loading_ = value; }
     bool lazy_loading() const { return lazy_loading_; }
+    // Threads used to parse instances; 0 (the default) picks one per core,
+    // capped at 16, or honours IFCOPENSHELL_PARSE_THREADS. Set before
+    // initialize().
+    void parse_threads(unsigned value) { parse_threads_ = value; }
+    unsigned parse_threads() const { return parse_threads_; }
+    unsigned effective_parse_threads() const;
     // Read the file through the paged reader (64 KB pages, 4 MB cache)
     // instead of loading it into memory as a whole. Set before
     // initialize(). Applies to the full parse; lazy loading always reads
