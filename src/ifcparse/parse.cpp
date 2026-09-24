@@ -1697,7 +1697,7 @@ bool ifcopenshell::file::initialize(const std::string& fn, bool mmap) {
         file_reader<full_buffer_impl> s(fn);
         storage_.emplace<1>(this, logger_.get());
         header_.reset(new spf_header(this, &logger_.get()));
-        std::get<impl::in_memory_file_storage>(storage_).parse_threads = effective_parse_threads();
+        std::get<impl::in_memory_file_storage>(storage_).parse_threads = parse_threads();
         std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_, types_to_bypass_loading_);
     }
 
@@ -1723,7 +1723,7 @@ bool ifcopenshell::file::initialize(const std::string& path, filetype ty, bool r
     if (ty == FT_IFCSPF) {
         storage_.emplace<1>(this, logger_.get());
         header_.reset(new spf_header(this, &logger_.get()));
-        std::get<impl::in_memory_file_storage>(storage_).parse_threads = effective_parse_threads();
+        std::get<impl::in_memory_file_storage>(storage_).parse_threads = parse_threads();
         bool indexed = false;
         if (lazy_loading_) {
             indexed = std::get<impl::in_memory_file_storage>(storage_).index_lazily(path, schema_, max_id_, types_to_bypass_loading_);
@@ -1786,18 +1786,19 @@ bool ifcopenshell::file::initialize(const std::string& path, filetype ty, bool r
     return good_ == file_open_status::SUCCESS;
 }
 
-unsigned ifcopenshell::file::effective_parse_threads() const {
-    if (parse_threads_ != 0) {
-        return parse_threads_;
+unsigned ifcopenshell::file::parse_threads() const {
+    const auto automatic = []() { return std::min(16u, std::max(1u, std::thread::hardware_concurrency())); };
+    if (parse_threads_) {
+        return *parse_threads_ == 0 ? automatic() : *parse_threads_;
     }
     if (const char* env = std::getenv("IFCOPENSHELL_PARSE_THREADS")) {
-        const int value = std::atoi(env);
-        if (value > 0) {
-            return (unsigned)value;
+        char* end = nullptr;
+        const long value = std::strtol(env, &end, 10);
+        if (end != env && *end == '\0' && value >= 0) {
+            return value == 0 ? automatic() : (unsigned)value;
         }
     }
-    const unsigned cores = std::thread::hardware_concurrency();
-    return std::min(16u, std::max(1u, cores));
+    return 1;
 }
 
 void ifcopenshell::file::bypass_type(const std::string& type_name) {
