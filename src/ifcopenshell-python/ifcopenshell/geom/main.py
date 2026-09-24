@@ -19,7 +19,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Generator, Iterable
+from collections.abc import Generator, Iterable, Sequence
 from os import PathLike, fspath
 from typing import TYPE_CHECKING, Any, Literal, Optional, TypeVar, Union, cast, overload
 
@@ -455,6 +455,22 @@ class tree(ifcopenshell_wrapper.tree):
     ) -> tuple[ifcopenshell_wrapper.clash, ...]:
         args = [self, set_a, set_b, clearance, check_all]
         return ifcopenshell_wrapper.tree.clash_clearance_many(*args)
+
+    def clash_intersection_many(
+        self,
+        set_a: Iterable[entity_instance],
+        set_b: Iterable[entity_instance],
+        tolerance: float = 0.002,
+        check_all: bool = True,
+    ) -> tuple[ifcopenshell_wrapper.clash, ...]:
+        args = [self, set_a, set_b, tolerance, check_all]
+        return ifcopenshell_wrapper.tree.clash_intersection_many(*args)
+
+    def select_ray(
+        self, origin: Sequence[float], direction: Sequence[float], length: float = 1000.0
+    ) -> ifcopenshell_wrapper.ray_intersection_results:
+        args = [self, origin, direction, length]
+        return ifcopenshell_wrapper.tree.select_ray(*args)
 
     @staticmethod
     def get_clash_type(clash_type_i: int) -> ClashType:
