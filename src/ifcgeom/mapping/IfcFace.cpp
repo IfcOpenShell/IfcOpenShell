@@ -26,19 +26,16 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFace& inst) {
 	auto bounds = inst.Bounds();
 	for (auto& bound : bounds) {
 		if (auto r = taxonomy::cast<taxonomy::loop>(map(bound.Bound()))) {
-			if (!bound.Orientation()) {
-				r->reverse();
-			}
 			// @todo check why loop sets external to true initially
-			r->external = bound.declaration().is(IfcSchema::IfcFaceOuterBound::Class());
-			/*
-			// Make a copy in case we need immutability later for e.g. caching
-			auto s = r->clone();
-			((taxonomy::loop*)s)->external = true;
-			delete r;
-			r = s;
-			*/
-			face->children.push_back(r);
+
+			// Make a copy for immutability
+            auto s = decltype(r)(r->clone_());
+            if (!bound.Orientation()) {
+                s->reverse();
+            }
+            s->external = bound.declaration().is(IfcSchema::IfcFaceOuterBound::Class());
+
+			face->children.push_back(s);
 		}
 	}
 
@@ -46,6 +43,11 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFace& inst) {
 
 	if (face_surface) {
 		face->basis = map(face_surface.FaceSurface());
+        if (!face_surface.SameSense()) {
+            // Make a copy for immutability
+            face->basis = decltype(face->basis)(face->basis->clone_());
+            face->basis->orientation = !face->basis->orientation.value_or(true);
+		}
 	}
 
 	if (face->children.empty()) {

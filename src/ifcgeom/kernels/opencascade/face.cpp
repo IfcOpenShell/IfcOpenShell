@@ -260,7 +260,16 @@ namespace {
 Handle(Geom_Surface) open_cascade_kernel::convert_surface(const taxonomy::ptr surface) {
 	surface_creation_visitor v{ this, {} };
 	if (dispatch_surface_creation<surface_creation_visitor, 0>::dispatch(surface, v)) {
-		return v.result;
+        if (surface->orientation && !*surface->orientation) {
+			// @nb this is not 100% correct, IFC models same sense as the agreement
+			// between surface normal and eventual face normal, we actually invert
+			// the parameter space, which has the same affect but also affects (well duh)
+			// the parameter space. Since p-curves are not normally seen in IFC I'm ok
+			// with this side-effect for the time being.
+            return v.result->UReversed();
+        } else {
+            return v.result;
+        }
 	} else {
 		throw std::runtime_error("No surface created");
 	}
