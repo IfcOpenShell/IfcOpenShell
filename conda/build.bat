@@ -41,7 +41,11 @@ cmake -G "Ninja" ^
 
 if errorlevel 1 exit 1
 
-ninja install -j 1
+cmake --build . -j %CPU_COUNT%
+
+if errorlevel 1 exit 1
+
+cmake --install .
 
 if errorlevel 1 exit 1
 
