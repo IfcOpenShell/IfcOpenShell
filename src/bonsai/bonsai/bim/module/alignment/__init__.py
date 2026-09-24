@@ -217,6 +217,7 @@ classes = (
     operator.ALIGN_OT_apply_v_segments,
     operator.ALIGN_OT_generate_cant_layout,
     operator.ALIGN_OT_remove_cant_layout,
+    operator.ALIGN_OT_rename_vertical,
     operator.ALIGN_OT_remove_vertical_layout,
     operator.ALIGN_OT_remove_horizontal_layout,
     operator.ALIGN_OT_enable_editing_cant_segments,

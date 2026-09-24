@@ -794,15 +794,8 @@ class ALIGN_PT_alignment_segments(Panel):
         dec = VerticalProfileDecorator
         props = context.scene.CivilAlignmentProperties
         v_id = layout_entity.id()
-        # Prefer the name of the alignment that owns this vertical layout.
-        # For CT 4.1.4.4.1.2 this is the child alignment (e.g. "Design Grade");
-        # for a simple alignment it is the top-level alignment name.
-        label = None
-        for rel in getattr(layout_entity, "Nests", []) or []:
-            if rel.RelatingObject.is_a("IfcAlignment"):
-                label = rel.RelatingObject.Name
-                break
-        label = label or layout_entity.Name or f"Vertical #{v_id}"
+        # Distinct per vertical even when every child alignment carries the same generated name
+        label = tool.Alignment.get_vertical_display_name(layout_entity)
         expanded = _V_EXPANDED.get(v_id, True)
         selected_v_id = props.selected_v_segment_id
         is_editing_this = props.editing_segment_kind == "VERTICAL" and props.editing_layout_id == v_id
@@ -820,7 +813,9 @@ class ALIGN_PT_alignment_segments(Panel):
         )
         op.entity_id = v_id
 
-        row.label(text=label, icon="FCURVE")
+        # the name itself is the rename button
+        rename_op = row.operator("align.rename_vertical", text=label, icon="FCURVE", emboss=False)
+        rename_op.layout_id = v_id
 
         # Per-vertical eye-icon — only shown when the profile window is open
         if dec.is_installed and v_item is not None:
