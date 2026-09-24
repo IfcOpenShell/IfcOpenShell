@@ -737,6 +737,71 @@ have that vertical's don't:
      distance-along there too"), so distance-along has nothing to type for those two; only interior
      PIs have a free distance-along value worth entering numerically.
 
+   **Implemented (2026-09-24).** Per the user: "Elevation, Slope, Distance along are not mutually
+   exclusive. How to deal with that? The tab order is fine." The three describe a point with only
+   two degrees of freedom. The resolution follows horizontal's own precedent (typing X/Y
+   recalculates D/A and vice versa), made explicit as locks:
+
+   - **A typed value is locked, and any two locks fix the PI.** The third value is derived and
+     shown live. Typing a third value unlocks whichever was locked longest ago, so the two most
+     recent entries always win. There's no mode to pick and no dead end.
+   - **With one lock, the mouse supplies the rest.** A locked Elevation takes its distance from the
+     mouse. A locked Distance takes its elevation from the mouse. A locked Slope slides along that
+     grade from the previous PI as the mouse moves. With nothing locked, drawing is purely by mouse,
+     as before.
+   - **Endpoints.** The first PI only offers Elevation: its distance is pinned to the start station
+     and there's no previous PI for a slope. Tab stays on Elevation there, and S/D report why. The
+     last PI is placed by typing the end distance, or by the mouse's existing snap to the end.
+   - **Typed values that can't be placed are refused, not clamped:** a point at or behind the
+     previous PI, one past the end of the alignment, or a 0% slope to a different elevation. They
+     are reported as a WARNING and also shown in red in the HUD before Enter. Mouse positions are
+     still clamped silently, as before.
+   - **Keys:**
+     - Typing a number starts in the first field.
+     - Tab cycles Elevation → Slope (%) → Distance Along. The order was confirmed by the user.
+     - E/S/D jump straight to a field, like horizontal's D.
+     - Backspace edits the value, and on an empty field unlocks it. It never removes a PI while
+       typing.
+     - Enter or RMB (or a click, with the mouse filling in anything unlocked) places the PI.
+     - Esc clears the typed values. Enter/RMB/Esc with nothing typed still finish or cancel as
+       before. These are handled on key *release*, matching the existing finish/cancel handlers,
+       so a key's release half can't also end the command.
+   - Slope is in percent, matching the Grade % the HUD already showed.
+
+   Implementation: `_resolve_vertical_pi` (`operator.py`) is a pure function covering every lock
+   combination, and the operator keeps `_locks`/`_lock_order`/`_active_field`/`_buffer`.
+   `VerticalDrawDecorator.input_lines` holds the Elevation/Slope/Distance fields.
+
+   **Fixed (2026-09-24), per the user:** the readout was drawn pinned to the profile view's top-left
+   corner, where the profile's own labels covered it. They also asked "why isn't this exactly the
+   same as horizontal, just with different labels?" The fields are now drawn beside the cursor,
+   always, typing or not, exactly like `PolylineDecorator.draw_input_ui`: same font size, offset
+   and line spacing, the add-on's decoration colour, the highlight colour for the field being
+   typed, and the error colour for a value that can't be placed. The old separate
+   Dist Along/Elevation/Grade readout is gone. The fields are ordered Elevation → Slope →
+   Distance Along to match the Tab order. Locked values carry a "(locked)" suffix, the one thing
+   horizontal doesn't need.
+
+   Why the operator itself isn't `PolylineOperator`: that operator is built on real-scene 3D
+   picking. It uses raycast snapping against scene geometry, stores points in the scene's
+   insertion polyline, and does its D/A/X/Y math in world XY. The profile view is a synthetic
+   (distance along, exaggerated elevation) space none of that understands, and its keys differ in
+   meaning too (A is an angle *lock* there, not a field). So the input logic stays separate, but
+   the display and key conventions match.
+
+   Verified in headless Blender by driving the operator's real `_modal` with keyboard events, then
+   building the vertical through its real `_finish`. The run covered:
+   - the first PI taking only Elevation;
+   - E+S (distance derived), S+D (elevation derived), and a third value unlocking the oldest;
+   - Backspace-unlock, and Esc clearing the typed values;
+   - the three refusal cases;
+   - one lock plus the mouse;
+   - typing the last PI at the end station.
+
+   The resulting IfcAlignmentVertical segments match the typed PIs exactly, including the typed
+   2% grade. Not tried by hand in the real UI, since the mouse and HUD drawing can't be exercised
+   headless.
+
 2. **Drag-to-edit a PI in the viewport**, as an alternative to the table (horizontal has this as of
    2026-09-16). Vertical's PI editing is table-only today. `REQUIREMENTS.md` §4's original decision
    not to build this ("no equivalent for vertical PIs, which only have meaning in the profile view's
@@ -746,8 +811,9 @@ have that vertical's don't:
    draggable marker there isn't actually impossible, just not yet built.
 
 **Open questions:**
-- For numeric entry: does Tab cycle Elevation → Slope → Distance Along (skipping Distance Along at
-  the endpoints), mirroring horizontal's D → A → X → Y cycle?
+- ~~For numeric entry: does Tab cycle Elevation → Slope → Distance Along (skipping Distance Along at
+  the endpoints), mirroring horizontal's D → A → X → Y cycle?~~ Resolved (2026-09-24): yes, per
+  the user -- see item 1 above.
 - For drag-to-edit: would it reuse the same `PICurveMarkerProperties`-style Empty-in-a-3D-view
   pattern horizontal uses, translated into the profile view's (distance-along, scaled-elevation)
   plane, or something bespoke to that view?
