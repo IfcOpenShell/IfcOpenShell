@@ -833,6 +833,11 @@ class Loader(bonsai.core.tool.Loader):
                 if len(coord) == 2:
                     coord = np.append(coord, (0.0,))
                 coords = np.array((coord,))
+            elif item.is_a("IfcPointByDistanceExpression"):  # Point linearly placed along a curve, e.g. survey points
+                # The kernel evaluates the point along its basis curve. Taxonomy values are always in SI units,
+                # so convert back to project units to be consistent with the other items.
+                matrix = np.array(ifcopenshell.geom.map_shape(ifcopenshell.geom.settings(), item).components)
+                coords = np.array((matrix[:3, 3] / unit_scale,))
             else:
                 assert False
             assert coords is not None
