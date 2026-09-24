@@ -853,6 +853,10 @@ class PIMarkerDecorator:
                 pending = marker.bonsai_pi_curve_marker.curve_type == "TANGENT"
                 color = cls.COLOR_PENDING if pending else cls.COLOR_DONE
                 label = f"PI {marker.bonsai_pi_curve_marker.pi_index}"
+            elif role == "VERTEX":  # a polyline alignment's point -- no curve state to show
+                color = cls.COLOR_ENDPOINT
+                index = marker.bonsai_pi_curve_marker.pi_index
+                label = "Start" if index == 0 else "End" if index == len(markers) - 1 else f"Point {index}"
             else:
                 color = cls.COLOR_ENDPOINT
                 label = "Start" if role == "START" else "End"
@@ -1397,6 +1401,50 @@ class VerticalProfileDecorator:
                 info = cls.segments_info[start_index + k]
                 info["start_label"] = _get_segment_start_point_label(prev_seg, seg)
                 info["end_label"] = _get_segment_start_point_label(seg, next_seg)
+
+        # A 3D polyline alignment (REQUIREMENTS.md §5.1) has no vertical layout, but its points carry
+        # elevations: show them as a static profile -- one straight grade per leg -- against distance
+        # along the 3D curve, which is IFC's DistanceAlong, so the stations shown match the alignment's
+        # stationing referents. Nothing about it is editable here (the vertical tools all need a
+        # vertical layout); its points are edited in plan, or in its point table.
+        polyline_curve = tool.Alignment.get_polyline_curve(alignment)
+        if polyline_curve is not None:
+            try:
+                points, dim = tool.Alignment.get_polyline_points(alignment)
+            except ValueError:
+                points, dim = [], 2
+            if dim == 3 and len(points) >= 2:
+                v_id = polyline_curve.id()
+                v_label = alignment.Name or "Polyline"
+                color_idx = len(cls.available_verticals)
+                cls.available_verticals.append((v_id, v_label))
+                dist = 0.0
+                last = len(points) - 2
+                for k, (a, b) in enumerate(zip(points[:-1], points[1:])):
+                    length = math.dist(a, b)
+                    if length <= 0.0:
+                        continue
+                    grade = (b[2] - a[2]) / length  # rise over the distance along, as the axis is
+                    cls.segments_polylines.append([(dist, a[2]), (dist + length, b[2])])
+                    cls.segments_info.append(
+                        {
+                            "dist": dist,
+                            "height": a[2],
+                            "h_len": length,
+                            "g_start": grade,
+                            "g_end": grade,
+                            "type": "CONSTANTGRADIENT",
+                            "vertical_id": v_id,
+                            "vertical_label": v_label,
+                            "color_idx": color_idx,
+                            "segment_id": None,
+                            "start_label": "Start" if k == 0 else f"Point {k}",
+                            "end_label": "End" if k == last else f"Point {k + 1}",
+                        }
+                    )
+                    all_dists.extend((dist, dist + length))
+                    all_elevs.extend((a[2], b[2]))
+                    dist += length
 
         if all_dists:
             cls.dist_min = min(all_dists)
