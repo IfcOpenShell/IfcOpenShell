@@ -45,6 +45,12 @@ meant to stay visible as a reminder that the kernel itself needs the fix, not pa
 UI-side check. Offer to user that this needs to be handled - offer to explore graceful handling
 in the ifcopenshell geometry kernel, if not practical/possible there, then error guard in the UI.
 
+**Deferred to the bottom of the list (per the user, 2026-09-24):** "We have added a lot of
+calculations on the python side. It may be better (and faster) to have them on the C++ side." Revisit
+this crash together with moving the Python-side alignment geometry (the PI-method solver,
+`_spiral_curvature`'s integrands, the join-radius root-finding) into C++, rather than as a
+stand-alone kernel patch.
+
 ## 2. Interactive creation of a horizontal alignment
 
 **Implemented (2026-09-18): Add Alignment dialog — optional stationing, unit-aware format.** Per
@@ -115,6 +121,25 @@ improvements:
      first leg and after one, left/right deflections including D M S, `0 R` straight on (which
      relies on the 180° fix), a deflection off a diagonal leg, and a plain angle unchanged. Each
      point landed exactly where expected.
+
+   **Implemented (2026-09-24): bearings are grid bearings.** The Bearing readout, typed bearings,
+   and the horizontal segment table's Bearing column previously all took Blender's/the project's
+   +Y as north. They now measure from **grid north**: the map grid of the project's
+   IfcMapConversion, which is the north a surveyor works to and what
+   `ifcopenshell.util.geolocation` itself recommends over the context's TrueNorth for this.
+   `_grid_rotation_deg` finds the rotation numerically, by converting a unit +X step through the
+   same conversion the alignment code already uses for points: Blender world →
+   `tool.Georeference.xyz2enh` for the draw tools, IFC project coordinates → `auto_xyz2enh` for
+   the table, whose E/N column already used that frame. That way the conversion's sign conventions
+   aren't re-derived. Without georeferencing it's 0, so nothing changes.
+
+   Along the way, the table's own bearing formatter (`ui._rad_to_bearing`) rounded seconds up to
+   60 without carrying (`N 59°59'60.0" E`). It now uses the readout's formatter, so text copied from
+   the table can also be typed back into the Angle field.
+
+   Verified headless with a 30° map rotation. Both frames report 30°. A leg along world +X reads
+   `N 60°00'00.00" E` in the readout and the table alike, and typing `N 60 E` draws exactly along
+   world +X.
 3. Interactively define the smoothing curves *before* the command ends, rather than as a separate
    pass afterward.
 
@@ -549,6 +574,16 @@ see `AlignmentSegmentDecorator`, which already covers the three items below):
 - Display segment information in the 3D viewport: Start Point, End Point, Length, Radius, PI,
   Center of Circle, Spiral Type (as applicable to the segment type).
 - Draw tangent and radial lines for the segment.
+
+**Fixed (2026-09-24): "current value 'n' matches no enum ... active_alignment_id_str" after
+deleting an alignment.** The alignment dropdown (`CivilAlignmentProperties.active_alignment_id_str`)
+stores its choice as an index into a list rebuilt from the file each time. Deleting an alignment
+shrank that list, leaving the stored index past its end (Blender warned on the next read) or,
+worse, silently pointing at a *different* alignment. Delete Alignment now clears the dropdown
+first, and `prop._clamp_alignment_enum` resets any out-of-range stored choice before the
+selection handler or the panel read it, which also covers undo and loading another file. Verified
+headless: deleting the selected alignment, and a stale index, no longer warn. The key-point test,
+which deletes an alignment and used to print the warning, is now clean.
 
 ## 4. Interactively editing an alignment
 

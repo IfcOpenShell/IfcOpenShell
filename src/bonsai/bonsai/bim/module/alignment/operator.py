@@ -132,6 +132,32 @@ def _insert_polyline_point_no_close(op, context, event):
             tool.Blender.update_viewport()
 
 
+def _grid_rotation_deg(from_blender_world: bool = True) -> float:
+    """Degrees to add to a direction -- measured counter-clockwise from +X in Blender world
+    coordinates, or in IFC project (local) coordinates -- to measure it from grid east instead, so
+    bearings are grid bearings: relative to the map grid north of the project's IfcMapConversion
+    (the north a surveyor works to), not to whichever way the model's own +Y happens to point.
+    0 without georeferencing.
+
+    Found numerically, by converting a unit step along +X through the same conversion alignment
+    points already go through (_world_point_to_local_ifc, and the segment table's own E/N), rather
+    than re-deriving the conversion's rotation and sign conventions here.
+    """
+    ifc = tool.Ifc.get()
+    if ifc is None:
+        return 0.0
+    try:
+        if from_blender_world:
+            a = tool.Georeference.xyz2enh((0.0, 0.0, 0.0))
+            b = tool.Georeference.xyz2enh((1.0, 0.0, 0.0))
+        else:
+            a = ifcopenshell.util.geolocation.auto_xyz2enh(ifc, 0.0, 0.0, 0.0)
+            b = ifcopenshell.util.geolocation.auto_xyz2enh(ifc, 1.0, 0.0, 0.0)
+    except Exception:
+        return 0.0
+    return math.degrees(math.atan2(b[1] - a[1], b[0] - a[0]))
+
+
 def _bearing_string(azimuth_from_east_ccw_deg: float) -> str:
     """Convert a math-convention azimuth to a civil-engineering quadrant bearing.
 
@@ -302,6 +328,9 @@ class ALIGN_OT_remove_alignment(Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
 
         name = alignment.Name or "Alignment"
+        # The dropdown stores its choice as an index into a list rebuilt from the file; once this
+        # alignment is gone that index points past the end (or at a different alignment) -- clear it.
+        context.scene.CivilAlignmentProperties["active_alignment_id_str"] = 0
         for marker in _find_pi_markers(alignment.id()):
             bpy.data.objects.remove(marker, do_unlink=True)
         # before remove_alignment_hierarchy -- root.remove_product only drops the IfcRelNests, so
@@ -2008,7 +2037,7 @@ class _CivilAngleInput:
     ALIGN_OT_draw_horizontal_alignment and ALIGN_OT_move_pi_marker ahead of PolylineOperator; the
     shared polyline tool itself (walls, slabs, ...) is untouched.
 
-    Bearings are relative to Blender's +Y axis, the same north the Bearing readout uses.
+    Bearings are grid bearings (see _grid_rotation_deg), the same north the Bearing readout uses.
     """
 
     # Not D: the polyline tool uses D (on release) to jump to the Distance field, so "Due N" can't be
@@ -2076,7 +2105,7 @@ class _CivilAngleInput:
             back = tool.Polyline.use_transform_orientations(Vector((last.x + 1000000000, last.y, last.z)))
         back_dir = math.degrees(math.atan2(back.y - last.y, back.x - last.x))
         if kind == "BEARING":
-            new_dir = 90.0 - value
+            new_dir = 90.0 - value - _grid_rotation_deg()  # a grid bearing, back into world directions
         else:
             new_dir = back_dir + 180.0 + value  # forward along the previous leg, then turned
         angle = (new_dir - back_dir) % 360.0
@@ -2301,7 +2330,7 @@ class ALIGN_OT_draw_horizontal_alignment(bpy.types.Operator, _CivilAngleInput, P
         blf.shadow(font_id, 6, 0, 0, 0, 1)
         blf.color(font_id, *addon_prefs.decorations_colour)
         blf.position(font_id, mouse_pos[0] + offset, mouse_pos[1] - below_stack, 0)
-        blf.draw(font_id, "Bearing: " + _bearing_string(azimuth))
+        blf.draw(font_id, "Bearing: " + _bearing_string(azimuth + _grid_rotation_deg()))
         blf.disable(font_id, blf.SHADOW)
 
 

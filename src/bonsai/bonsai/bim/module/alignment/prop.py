@@ -156,6 +156,20 @@ def _alignment_enum_items(self, context):
     return _alignment_enum_items_cache
 
 
+def _clamp_alignment_enum(props, context=None) -> None:
+    """Reset the alignment dropdown to "— select alignment —" if its stored choice no longer exists.
+
+    The dropdown's choice is stored as an index into _alignment_enum_items, which is rebuilt from
+    the file every time -- so once an alignment is deleted (or undone, or another file loaded), an
+    index past the end makes Blender warn "current value 'n' matches no enum" on the next read.
+    Call before reading props.active_alignment_id_str. Writes by index, like every other writer of
+    this property, so the update callback isn't triggered.
+    """
+    stored = props.get("active_alignment_id_str")
+    if stored is not None and stored >= len(_alignment_enum_items(props, context)):
+        props["active_alignment_id_str"] = 0
+
+
 def _on_active_alignment_update(self, context):
     """Select the alignment's Blender object when the dropdown changes."""
     import bonsai.tool as tool

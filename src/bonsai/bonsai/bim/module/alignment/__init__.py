@@ -97,9 +97,10 @@ def _on_active_object_changed(scene, depsgraph):
         _last_active_ptr = ptr
 
         import bonsai.tool as tool
-        from bonsai.bim.module.alignment.prop import _alignment_enum_items
+        from bonsai.bim.module.alignment.prop import _alignment_enum_items, _clamp_alignment_enum
 
         props = scene.CivilAlignmentProperties
+        _clamp_alignment_enum(props)
         alignment = tool.Alignment.get_active_alignment()
         _auto_finish_unrelated_pi_markers(active, alignment)
         new_val = str(alignment.id()) if alignment else "0"
