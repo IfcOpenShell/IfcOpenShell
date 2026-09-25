@@ -5,6 +5,60 @@ Captures planned work, not yet implemented unless noted. Update in place as
 scope is refined or decisions are made; keep open questions marked as such rather than silently
 resolving them.
 
+## Status and work plan (resume here)
+
+*Last updated 2026-09-25.* Branch `rab_infrastructure` (F:\ifcopenshell), 17 commits ahead of
+`origin/rab_infrastructure`, none pushed, working tree clean. Commits this round, oldest first:
+`5123046cf` typed 180 degree polyline angle fix (also its own branch/PR
+`rab_polyline_tool_180_fix` -- **PR already open**), `97e04ca7e` cherry-pick of #9505 (IFC4x3 Road
+and Bridge templates), `483a4c9a5` interactive PI editing, `2aee75b33` bearings/deflections in the
+Angle field, `5b909888d` distinct vertical names + renaming, `53bacc069` grid-north bearings,
+`53bb23aae` stationing referents on polyline curves (library), `1772f309e` polyline alignments (§5.1),
+`ef30e9235` extending alignments + length matching (§9), `3507bd7e4` offset curve alignments (§5.2),
+`fecdc1919` `update_layout_segments` (library), `a5a42c77b` keeping segment GlobalIds through
+edits + Insert/Delete PI + PI click-pick (§11), `6ea213041` cant follows horizontal edits (§11),
+`92039c2ea` exact values through the staged tables (§12).
+
+**Work plan, in order:**
+
+1. **§10 Manual referent definitions -- needs discussion with the user first.** Open questions:
+   - Placement: by station + lateral offset (+ elevation?) along an alignment; picked in the viewport,
+     typed, or both?
+   - Which kinds: mileposts/reference markers, or general IfcReferent PredefinedTypes?
+   - Behaviour on alignment edits: segment GlobalIds are now kept (§11), so should a referent
+     attached to a segment move with it, or stay at its station? What happens when its segment is
+     deleted (today `update_layout_segments` removes referents positioned on removed segments)?
+   - Management UI: a list to view/edit/delete; how they relate to stationing (§4) and key-point
+     (§8) referents; polyline alignments (§5.1) rely on these instead of key points.
+2. **Offset alignment follow-ups (§5.2):** stationing referents on an offset alignment (the library's
+   `add_stationing_referent` only handles composite and polyline curves), and a profile view for a
+   3D offset curve.
+3. **Bottom of the list -- the C++ pass (see the note at the end of §1):** moving the Python-side
+   alignment geometry (PI solver, spiral integrands, join-radius root finding) to C++; the
+   degenerate spiral crash (equal start/end radius spiral, equal-gradient vertical arc); the
+   LINEARTRANSITION divide-by-zero in `_map_linear_transition` (constant cant across a transition,
+   hit when a spiral-less curve sits next to a spiralled one); and
+   [IfcOpenShell#5360](https://github.com/IfcOpenShell/IfcOpenShell/issues/5360) (sample straight
+   regions by their end points only).
+
+**Smaller open items noted along the way:**
+- Typed/dragged values are still limited to float32 resolution (~3 cm at 500 km coordinates) -- a
+  string-backed field would be needed (§12).
+- The cant layout's mirroring when a curve's turn direction flips is implemented but not directly
+  tested (§11).
+- An inserted PI is placed on the straight leg (zero deflection); applying without moving it gives
+  two collinear tangents, which Edit PIs then can't reconstruct.
+- `_cant_lookup_for_pi_markers` (VIENNESEBEND cant per PI) is positional, so it defaults after a PI
+  insert/delete until the cant layout is regenerated.
+- Upstream candidates, if wanted: `fecdc1919` (`update_layout_segments`) and `53bb23aae` (polyline
+  stationing referents) as their own PRs.
+
+**Testing:** headless Blender scripts (`blender --background --python-exit-code 1 --python X.py`,
+Blender 5.1) and a UI-mode harness (`ui_invoke.py`, `ui_pick.py` with `--enable-event-simulate`)
+are kept in `F:/bonsai_alignment_tests/` (see its README). Library tests:
+`src/ifcopenshell-python/test/api/alignment` (`python -m pytest -q test/api/alignment` from
+`src/ifcopenshell-python`).
+
 ## 1. Table-based editing
 
 **Implemented.** The Alignment tab's segment tables (`ALIGN_PT_alignment_segments`) now support
@@ -1097,9 +1151,8 @@ Draw Polyline and Draw Horizontal started, all with no errors.
 - **Stationing referents** on an offset alignment are still placed at the origin: the library's
   `add_stationing_referent` only places referents on composite and polyline curves.
 - **No profile view** for a 3D offset curve.
-- **Single precision:** the table values are Blender float properties (single precision, ~7
-  significant digits), so 0.2 is written as 0.20000000298 -- the same limitation as the other
-  staged tables in this module.
+- ~~**Single precision:** the table values are Blender float properties (single precision, ~7
+  significant digits), so 0.2 is written as 0.20000000298.~~ Fixed 2026-09-25, see §12.
 
 ## 6. Vertical draw/edit parity with horizontal
 
