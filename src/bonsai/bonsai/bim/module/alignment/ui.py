@@ -430,6 +430,9 @@ class ALIGN_PT_alignment_authoring(Panel):
                 box.label(text=f"PI {pi_data.pi_index}", icon="EMPTY_AXIS")
                 box.label(text="Drag in the viewport to reposition", icon="ORIENTATION_GLOBAL")
                 box.operator("align.move_pi_marker", icon="DRIVER_DISTANCE")
+                row = box.row(align=True)
+                row.operator("align.insert_pi_marker", icon="ADD")
+                row.operator("align.delete_pi_marker", icon="REMOVE")
                 box.prop(pi_data, "curve_type")
                 by_distance = _joins_by_distance(pi_data)
                 if pi_data.curve_type != "TANGENT":
@@ -465,6 +468,8 @@ class ALIGN_PT_alignment_authoring(Panel):
                 box.label(text=label, icon="EMPTY_AXIS")
                 box.label(text="Drag in the viewport to reposition", icon="ORIENTATION_GLOBAL")
                 box.operator("align.move_pi_marker", icon="DRIVER_DISTANCE")
+                if pi_data.role == "START":
+                    box.operator("align.insert_pi_marker", icon="ADD")
                 row = box.row(align=True)
                 row.operator("align.apply_pi_curve", text="Apply", icon="CHECKMARK")
                 row.operator("align.finish_pi_editing", icon="CHECKMARK")
@@ -491,10 +496,21 @@ class ALIGN_PT_alignment_authoring(Panel):
                 "active_horizontal_pi_row_index",
                 rows=4,
             )
+            _pi_row_buttons(box, "HORIZONTAL")
 
             row = box.row(align=True)
             row.operator("align.apply_horizontal_pi_table", icon="CHECKMARK")
             row.operator("align.finish_horizontal_pi_table", icon="CHECKMARK")
+
+
+def _pi_row_buttons(box, kind) -> None:
+    """Insert before/after and delete for a staged PI list; Apply keeps every other PI's segments."""
+    row = box.row(align=True)
+    op = row.operator("align.insert_pi_row", text="Insert Before", icon="TRIA_UP_BAR")
+    op.kind, op.after = kind, False
+    op = row.operator("align.insert_pi_row", text="Insert After", icon="TRIA_DOWN_BAR")
+    op.kind, op.after = kind, True
+    row.operator("align.delete_pi_row", text="", icon="REMOVE").kind = kind
 
 
 class ALIGN_PT_vertical_alignment_authoring(Panel):
@@ -548,6 +564,7 @@ class ALIGN_PT_vertical_alignment_authoring(Panel):
                 "active_vertical_pi_marker_index",
                 rows=4,
             )
+            _pi_row_buttons(box, "VERTICAL")
             if props.vertical_endpoints_staged:
                 row = box.row(align=True)
                 row.prop(props, "vertical_start_elevation", text="Start Elev")

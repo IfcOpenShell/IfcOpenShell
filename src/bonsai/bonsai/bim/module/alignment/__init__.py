@@ -233,6 +233,11 @@ classes = (
     operator.ALIGN_OT_apply_vertical_pi_curve,
     operator.ALIGN_OT_drag_vertical_pis,
     operator.ALIGN_OT_move_pi_marker,
+    operator.ALIGN_OT_pick_pi_marker,
+    operator.ALIGN_OT_insert_pi_marker,
+    operator.ALIGN_OT_delete_pi_marker,
+    operator.ALIGN_OT_insert_pi_row,
+    operator.ALIGN_OT_delete_pi_row,
     operator.ALIGN_OT_draw_polyline_alignment,
     operator.ALIGN_OT_extend_polyline_alignment,
     operator.ALIGN_OT_edit_polyline_points,
@@ -310,6 +315,11 @@ def register():
         addon_keymaps.append((km, kmi))
         kmi = km.keymap_items.new(operator.ALIGN_OT_reset_vertical_profile_view.bl_idname, "HOME", "PRESS")
         addon_keymaps.append((km, kmi))
+        # Horizontal PI markers are picked by a pixel radius around their dot, like the vertical
+        # profile's PIs; any other click passes through to Blender's normal select.
+        for shift in (False, True):
+            kmi = km.keymap_items.new(operator.ALIGN_OT_pick_pi_marker.bl_idname, "LEFTMOUSE", "CLICK", shift=shift)
+            addon_keymaps.append((km, kmi))
 
 
 def unregister():
