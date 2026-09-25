@@ -82,15 +82,27 @@ class AggregateData:
         if parts:
             aggregate = element
 
-        product_linked_agg_group = next(
-            (
-                r
-                for r in getattr(aggregate, "HasAssignments", []) or []
-                if r.is_a("IfcRelAssignsToGroup")
-                if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
-            ),
-            None,
-        )
+        # The part may sit inside plain sub-assemblies, so the linked aggregate it
+        # belongs to can be further up the chain. In aggregate mode the user is
+        # working on the contents of one aggregate, so stay in that context and
+        # report only what the part belongs to directly.
+        climb = not tool.Aggregate.get_aggregate_props().in_aggregate_mode
+        product_linked_agg_group = None
+        seen = set()
+        while aggregate is not None and aggregate.id() not in seen:
+            seen.add(aggregate.id())
+            product_linked_agg_group = next(
+                (
+                    r
+                    for r in getattr(aggregate, "HasAssignments", []) or []
+                    if r.is_a("IfcRelAssignsToGroup")
+                    if "BBIM_Linked_Aggregate" in (r.RelatingGroup.Name or "")
+                ),
+                None,
+            )
+            if product_linked_agg_group or not climb:
+                break
+            aggregate = ifcopenshell.util.element.get_aggregate(aggregate)
 
         if product_linked_agg_group is None:
             return

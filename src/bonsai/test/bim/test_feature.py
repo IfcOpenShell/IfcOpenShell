@@ -2045,6 +2045,21 @@ def the_obj1_and_obj2_belong_the_same_linked_aggregate_group(obj_name1, obj_name
     assert groups[0] == groups[1], "Objects do not belong to the same Linked Aggregate group"
 
 
+@then(parsers.parse('the object "{name}" is not part of a Linked Aggregate'))
+def the_object_name_is_not_part_of_a_linked_aggregate(name):
+    element = tool.Ifc.get_entity(the_object_name_exists(replace_variables(name)))
+    group = next(
+        (
+            r.RelatingGroup
+            for r in getattr(element, "HasAssignments", []) or []
+            if r.is_a("IfcRelAssignsToGroup")
+            if "BBIM_Linked_Aggregate" in (r.RelatingGroup.Name or "")
+        ),
+        None,
+    )
+    assert group is None, f"The object {name} is part of Linked Aggregate group {group}"
+
+
 @when(parsers.parse('the object layer length is set to "{value}"'))
 def the_obj_layer_length_is_set_to(value):
     value = float(value)
