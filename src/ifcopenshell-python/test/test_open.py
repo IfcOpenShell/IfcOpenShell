@@ -60,6 +60,16 @@ class TestOpen:
         )
 
     @pytest.mark.skip("IFC-XML temporarily disabled")
+    def test_open_threads(self):
+        path = TEST_FILE_DIR / "WallInstance_IFC4Add2.ifc"
+        serial = ifcopenshell.open(path, threads=1)
+        parallel = ifcopenshell.open(path, threads=4)
+        automatic = ifcopenshell.open(path, threads=0)
+        assert [(e.id(), e.is_a()) for e in serial] == [(e.id(), e.is_a()) for e in parallel]
+        assert [str(e) for e in serial] == [str(e) for e in parallel] == [str(e) for e in automatic]
+        with pytest.raises(ValueError):
+            ifcopenshell.open(path, threads=-1)
+
     def test_invalid_ifcspf(self):
         with pytest.raises(ifcopenshell.Error):
             assert ifcopenshell.open(TEST_FILE_DIR / "invalid.ifc")
