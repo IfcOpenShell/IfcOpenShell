@@ -1449,6 +1449,11 @@ class VerticalProfileDecorator:
         if all_dists:
             cls.dist_min = min(all_dists)
             cls.dist_max = max(all_dists)
+            # a vertical may be shorter than the horizontal (they're edited independently): keep the
+            # canvas -- and the draw/extend tools' limit -- out to the horizontal's own end
+            h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+            if h_layout is not None:
+                cls.dist_max = max(cls.dist_max, tool.Alignment.get_horizontal_alignment_length(h_layout))
             cls.elev_min = min(all_elevs)
             cls.elev_max = max(all_elevs)
         else:
