@@ -597,6 +597,10 @@ namespace ifcopenshell {
 
             void materialize(instance_data* data);
 
+            // The instances of one concrete entity type, sorted by id. Loading
+            // fills the lists in file order and sort_type_lists() establishes
+            // the order once; add_type_ref() and remove_type_ref() keep it, so
+            // a removal finds its instance by binary search instead of a scan.
             typedef std::map<const ifcopenshell::declaration*, std::vector<express::base>> entities_by_type;
             typedef std::unordered_map<uint32_t, shared_pointer_type> entity_instance_by_name_storage;
             typedef map_transformer<entity_instance_by_name_storage, std::function<express::base(shared_pointer_type)>> entity_instance_by_name;
@@ -691,19 +695,71 @@ namespace ifcopenshell {
 
             express::base instance_by_id(int instance_id);
 
-            void add_type_ref(const express::base& new_entity) {
-                if (auto* ty = new_entity.declaration().as_entity()) {
-                    bytype_excl_[ty].push_back(new_entity);
+            static bool id_before(const express::base& instance, uint32_t id) {
+                return instance.id() < id;
+            }
+
+            static bool id_after(uint32_t id, const express::base& instance) {
+                return id < instance.id();
+            }
+
+            // Sorts one type list by id. A list loaded in id order, the common
+            // case, is only checked. Otherwise the ids are read once and
+            // (id, position) pairs are sorted, which touches no instance data
+            // per comparison; equal ids keep their relative order.
+            static void sort_type_list(std::vector<express::base>& instances) {
+                if (std::is_sorted(instances.begin(), instances.end(), [](const express::base& a, const express::base& b) { return a.id() < b.id(); })) {
+                    return;
+                }
+                std::vector<std::pair<uint32_t, uint32_t>> keys(instances.size());
+                for (size_t i = 0; i < instances.size(); ++i) {
+                    keys[i] = {instances[i].id(), (uint32_t)i};
+                }
+                std::sort(keys.begin(), keys.end());
+                std::vector<express::base> sorted;
+                sorted.reserve(instances.size());
+                for (const auto& key : keys) {
+                    sorted.push_back(instances[key.second]);
+                }
+                instances.swap(sorted);
+            }
+
+            // Sorts every type list by id.
+            void sort_type_lists() {
+                for (auto& typed : bytype_excl_) {
+                    sort_type_list(typed.second);
                 }
             }
-            void remove_type_ref(const express::base& new_entity) {
+
+            void add_type_ref(const express::base& new_entity) {
                 if (auto* ty = new_entity.declaration().as_entity()) {
+                    auto& instances = bytype_excl_[ty];
+                    // Fresh ids only grow, so this is normally an append.
+                    if (instances.empty() || instances.back().id() < new_entity.id()) {
+                        instances.push_back(new_entity);
+                    } else {
+                        instances.insert(std::upper_bound(instances.begin(), instances.end(), new_entity.id(), id_after), new_entity);
+                    }
+                }
+            }
+
+            void remove_type_ref(const express::base& entity) {
+                if (auto* ty = entity.declaration().as_entity()) {
                     auto it = bytype_excl_.find(ty);
-                    if (it != bytype_excl_.end()) {
-                        it->second.erase(std::remove(it->second.begin(), it->second.end(), new_entity), it->second.end());
-                        if (it->second.empty()) {
-                            bytype_excl_.erase(ty);
+                    if (it == bytype_excl_.end()) {
+                        return;
+                    }
+                    auto& instances = it->second;
+                    // Equal ids sit together; pick the one that is this instance.
+                    auto first = std::lower_bound(instances.begin(), instances.end(), entity.id(), id_before);
+                    for (; first != instances.end() && first->id() == entity.id(); ++first) {
+                        if (*first == entity) {
+                            instances.erase(first);
+                            break;
                         }
+                    }
+                    if (instances.empty()) {
+                        bytype_excl_.erase(it);
                     }
                 }
             }
