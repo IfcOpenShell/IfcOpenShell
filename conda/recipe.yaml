@@ -39,6 +39,8 @@ requirements:
     - nlohmann_json
     - gmp
     - zlib
+    # bug upstream: https://github.com/conda-forge/vtk-feedstock/issues/459
+    - xorg-xorgproto
   run:
     - python
     - shapely
