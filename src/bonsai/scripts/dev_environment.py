@@ -21,6 +21,7 @@ import argparse
 import shutil
 import subprocess
 import sys
+import time
 import urllib.request
 from pathlib import Path
 from typing import NamedTuple
@@ -140,6 +141,44 @@ BLENDER_VERSION_INT = tuple(map(int, BLENDER_VERSION.split(".")))
 PYTHON_VERSION = "3.13" if BLENDER_VERSION_INT >= (5, 1) else "3.11"
 PACKAGE_PATH = BLENDER_PATH / rf"extensions/.local/lib/python{PYTHON_VERSION}/site-packages"
 
+PARTIAL_LINK_ERROR = """
+Failed while replacing '{path}'.
+
+The extension is now only partially linked and Blender won't be able to import it until
+this completes. This is usually a file lock - close Blender if it's running. An antivirus
+scan of a freshly installed extension can also hold files for a while.
+
+Re-running this script is safe and will finish the job.
+"""
+
+
+def remove_path(path: Path) -> None:
+    """Remove `path` so it can be replaced by a symlink."""
+    # Check `is_symlink` first, as it could be a symlink to a directory or a broken symlink.
+    if path.is_symlink() or path.is_file():
+        path.unlink()
+    elif path.is_dir():
+        shutil.rmtree(path)
+
+
+def remove_path_with_retries(path: Path, attempts: int = 5, delay: float = 2.0) -> None:
+    """`remove_path`, retrying while the files are still locked by another process.
+
+    `rmtree` is only reached on the first setup, when the extension binaries have just been
+    written and an antivirus scanner may still be holding them. On Windows that surfaces as
+    PermissionError (WinError 5, not the sharing violation you might expect) and usually
+    clears within a few seconds.
+    """
+    for attempt in range(1, attempts + 1):
+        try:
+            remove_path(path)
+            return
+        except PermissionError:
+            if attempt == attempts:
+                raise
+            print(f"'{path}' is locked, retrying in {delay:.0f}s ({attempt}/{attempts - 1})...")
+            time.sleep(delay)
+
 
 def main() -> None:
     REPO_PATH = Path(ARGS.repo_path) if ARGS.repo_path else None
@@ -227,12 +266,13 @@ def main() -> None:
 
     for path, dest in symlinks:
         print(f"Linking {path} -> {dest}.")
-        # Check `is_symlink` first, as it could be a symlink to a directory or a broken symlink.
-        if path.is_symlink() or path.is_file():
-            path.unlink()
-        elif path.is_dir():
-            shutil.rmtree(path)
-        path.symlink_to(dest, dest.is_dir())
+        try:
+            remove_path_with_retries(path)
+            path.symlink_to(dest, dest.is_dir())
+        except OSError:
+            # Removal and symlinking can't be atomic, so say what state we're leaving behind.
+            print(PARTIAL_LINK_ERROR.format(path=path))
+            raise
 
     print("Download third party dependencies...")
     BONSAI_DATA = PACKAGE_PATH / "bonsai" / "bim" / "data"
