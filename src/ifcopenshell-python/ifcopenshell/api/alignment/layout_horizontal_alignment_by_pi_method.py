@@ -61,6 +61,24 @@ def _create_cant_segment(
     ifcopenshell.api.alignment.create_layout_segment(file, cant_layout, design_parameters)
 
 
+def _horizontal_design_parameters(file: ifcopenshell.file, segment) -> entity_instance:
+    """The IfcAlignmentHorizontalSegment for one solved HorizontalSegmentDefinition (see
+    solve_horizontal_alignment_by_pi_method) -- shared with callers that write the solved segments
+    some other way, e.g. update_layout_segments to keep existing segments' identity."""
+    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file, "PLANEANGLEUNIT")
+    return file.createIfcAlignmentHorizontalSegment(
+        StartTag=None,
+        EndTag=None,
+        StartPoint=file.createIfcCartesianPoint(Coordinates=segment.start_point),
+        StartDirection=segment.start_direction / angle_unit_scale,
+        StartRadiusOfCurvature=segment.start_radius_of_curvature,
+        EndRadiusOfCurvature=segment.end_radius_of_curvature,
+        SegmentLength=segment.segment_length,
+        GravityCenterLineHeight=segment.gravity_centerline_height or None,
+        PredefinedType=segment.predefined_type,
+    )
+
+
 def layout_horizontal_alignment_by_pi_method(
     file: ifcopenshell.file,
     layout: entity_instance,
@@ -100,23 +118,8 @@ def layout_horizontal_alignment_by_pi_method(
     if (cant_layout is None) != (cants is None):
         raise ValueError("cant_layout and cants must be provided together")
 
-    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file, "PLANEANGLEUNIT")
-
     for segment in solve_horizontal_alignment_by_pi_method(hpoints, radii, cants):
         if cant_layout is not None:
             _create_cant_segment(file, cant_layout, segment)
-        start_point = file.createIfcCartesianPoint(
-            Coordinates=segment.start_point,
-        )
-        design_parameters = file.createIfcAlignmentHorizontalSegment(
-            StartTag=None,
-            EndTag=None,
-            StartPoint=start_point,
-            StartDirection=segment.start_direction / angle_unit_scale,
-            StartRadiusOfCurvature=segment.start_radius_of_curvature,
-            EndRadiusOfCurvature=segment.end_radius_of_curvature,
-            SegmentLength=segment.segment_length,
-            GravityCenterLineHeight=segment.gravity_centerline_height or None,
-            PredefinedType=segment.predefined_type,
-        )
+        design_parameters = _horizontal_design_parameters(file, segment)
         ifcopenshell.api.alignment.create_layout_segment(file, layout, design_parameters)
