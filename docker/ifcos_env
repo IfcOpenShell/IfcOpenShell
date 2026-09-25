@@ -155,7 +155,7 @@ function build() {
     
     docker exec -i -w "${WORKDIR}" -e PY_TGT="${PY_TGT}" -e BUILD_TARGET="${BUILD_TARGET}" "${NAMEPREFIX}-${UNIQUE_ID}" bash -c '
         set -o pipefail
-        CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release uv run ./nix/build-all.py -v ${PY_TGT:+-$PY_TGT} --diskcleanup ${BUILD_TARGET} 2>&1 | tee build.log
+        CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release uv run ./nix/build-all.py -v ${PY_TGT:+-$PY_TGT} --diskcleanup --ifcopenshell-shared ${BUILD_TARGET} 2>&1 | tee build.log
     '
     echo "🎒 Pack Dependencies"
     docker exec -i -w "${WORKDIR}" "${NAMEPREFIX}-${UNIQUE_ID}" bash -c '
