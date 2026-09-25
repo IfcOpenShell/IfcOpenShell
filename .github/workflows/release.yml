@@ -44,8 +44,6 @@ jobs:
            -G Ninja \
            -DCMAKE_INSTALL_PREFIX=$PWD/install/ \
            -DCMAKE_BUILD_TYPE=Release \
-           -DCMAKE_PREFIX_PATH=/usr \
-           -DCMAKE_SYSTEM_PREFIX_PATH=/usr \
            -DBUILD_PACKAGE=On \
            -DOCC_INCLUDE_DIR=/usr/include/opencascade \
            -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
