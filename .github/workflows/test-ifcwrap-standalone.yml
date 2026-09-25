@@ -85,8 +85,6 @@ jobs:
             -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX="${IFCOPENSHELL_PREFIX}" \
-            -DCMAKE_PREFIX_PATH=/usr \
-            -DCMAKE_SYSTEM_PREFIX_PATH=/usr \
             -DMINIMAL_BUILD=ON \
             -DBUILD_IFCPYTHON=OFF \
             -DUSE_CCACHE=ON \
