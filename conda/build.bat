@@ -5,9 +5,8 @@ REM From https://github.com/tpaviot/pythonocc-core/blob/master/ci/conda/bld.bat
 set MY_PY_VER=%PY_VER:.=%
 
 cmake -G "Ninja" ^
+ %CMAKE_ARGS% ^
  -D SCHEMA_VERSIONS="2x3;4;4x1;4x3_add2" ^
- -D CMAKE_BUILD_TYPE:STRING=Release ^
- -D CMAKE_INSTALL_PREFIX:FILEPATH="%LIBRARY_PREFIX%" ^
  -D CMAKE_PREFIX_PATH:FILEPATH="%LIBRARY_PREFIX%" ^
  -D CMAKE_SYSTEM_PREFIX_PATH:FILEPATH="%LIBRARY_PREFIX%" ^
  -D OCC_INCLUDE_DIR:FILEPATH="%LIBRARY_PREFIX%\include\opencascade" ^
