@@ -824,6 +824,15 @@ def _world_point_to_local_ifc(ifc, unit_scale, point_xyz):
     return [float(o) for o in ifcopenshell.util.geolocation.auto_enh2xyz(ifc, e, n, 0.0)[:2]]
 
 
+def _marker_local_ifc(ifc, unit_scale, marker_obj):
+    """A PI marker's local IFC point: exactly where it was loaded from if it hasn't moved since (see
+    tool.Alignment.remember_marker_point), else converted from its (float32) location."""
+    exact = tool.Alignment.marker_local_point(marker_obj)
+    if exact is not None:
+        return exact
+    return _world_point_to_local_ifc(ifc, unit_scale, marker_obj.location)
+
+
 def _hpoints_from_polyline(context):
     """Read the drawn polyline and convert it to local IFC coords.
 
@@ -1229,12 +1238,18 @@ def _staged_pi_rows(props, kind):
                 alignment = None
         alignment = alignment or tool.Alignment.get_active_alignment()
         start, end = tool.Alignment.get_alignment_start_end_points(alignment)
-        return props.horizontal_pi_rows, "active_horizontal_pi_row_index", (lambda r: (r.x, r.y)), start, end
+        return (
+            props.horizontal_pi_rows,
+            "active_horizontal_pi_row_index",
+            (lambda r: (tool.Alignment.exact(r, "x"), tool.Alignment.exact(r, "y"))),
+            start,
+            end,
+        )
     points = _staged_vertical_points(props)
     return (
         props.vertical_pi_markers,
         "active_vertical_pi_marker_index",
-        (lambda r: (r.dist_along, r.elevation)),
+        (lambda r: (tool.Alignment.exact(r, "dist_along"), tool.Alignment.exact(r, "elevation"))),
         points[0],
         points[-1],
     )
@@ -1570,12 +1585,14 @@ def _populate_join_distances(items, hpoints, cant_lookup):
         vb_params = None
         if item.spiral_family == "VIENNESEBEND":
             cant, rail_head_distance = cant_lookup[j]
-            vb_params = (item.gravity_centerline_height, cant, rail_head_distance)
+            vb_params = (tool.Alignment.exact(item, "gravity_centerline_height"), cant, rail_head_distance)
         try:
             tangent_out = ifcopenshell.api.alignment.curve_tangent_out(
                 _pi_deflection(hpoints, j + 1),
-                item.radius,
-                entry_length=item.spiral_in_length if item.curve_type == "SPIRAL_CIRCULAR" else 0.0,
+                tool.Alignment.exact(item, "radius"),
+                entry_length=tool.Alignment.exact(item, "spiral_in_length")
+                if item.curve_type == "SPIRAL_CIRCULAR"
+                else 0.0,
                 family=item.spiral_family,
                 vb_params=vb_params,
             )
@@ -1601,23 +1618,26 @@ def _pi_curve_radii_entry(marker, cant_and_rail_head_distance=(0.0, 1.0)):
     curve_type = marker.curve_type
     if curve_type == "TANGENT":
         return 0.0
+    radius = tool.Alignment.exact(marker, "radius")
+    spiral_in = tool.Alignment.exact(marker, "spiral_in_length")
+    spiral_out = tool.Alignment.exact(marker, "spiral_out_length")
 
     vb_params = None
     if marker.spiral_family == "VIENNESEBEND":
         cant, rail_head_distance = cant_and_rail_head_distance
-        vb_params = (marker.gravity_centerline_height, cant, rail_head_distance)
+        vb_params = (tool.Alignment.exact(marker, "gravity_centerline_height"), cant, rail_head_distance)
 
     if curve_type == "CIRCULAR":
-        return (marker.radius, 0.0, 0.0, marker.spiral_family, vb_params, marker.join_next)
+        return (radius, 0.0, 0.0, marker.spiral_family, vb_params, marker.join_next)
     if curve_type == "SPIRAL_CIRCULAR":
-        return (marker.radius, marker.spiral_in_length, 0.0, marker.spiral_family, vb_params, marker.join_next)
+        return (radius, spiral_in, 0.0, marker.spiral_family, vb_params, marker.join_next)
     if curve_type == "CIRCULAR_SPIRAL":
-        return (marker.radius, 0.0, marker.spiral_out_length, marker.spiral_family, vb_params, marker.join_next)
+        return (radius, 0.0, spiral_out, marker.spiral_family, vb_params, marker.join_next)
     # SPIRAL_CIRCULAR_SPIRAL
     return (
-        marker.radius,
-        marker.spiral_in_length,
-        marker.spiral_out_length,
+        radius,
+        spiral_in,
+        spiral_out,
         marker.spiral_family,
         vb_params,
         marker.join_next,
@@ -2002,7 +2022,10 @@ class ALIGN_OT_edit_horizontal_pis(Operator, tool.Ifc.Operator):
         except ValueError as e:
             self.report({"ERROR"}, str(e))
             return {"CANCELLED"}
-        _create_endpoint_marker(context, alignment_id, "START", _local_ifc_to_world_point(ifc, unit_scale, start), pi_index=0)
+        start_marker = _create_endpoint_marker(
+            context, alignment_id, "START", _local_ifc_to_world_point(ifc, unit_scale, start), pi_index=0
+        )
+        tool.Alignment.remember_marker_point(start_marker, start)
 
         for i, spec in enumerate(specs, start=1):
             x, y, z = _local_ifc_to_world_point(ifc, unit_scale, spec["pi_local"])
@@ -2018,18 +2041,23 @@ class ALIGN_OT_edit_horizontal_pis(Operator, tool.Ifc.Operator):
             marker.alignment_id = alignment_id
             marker.pi_index = i
             marker.curve_type = spec["curve_type"]
-            marker.radius = spec["radius"] or 100.0
-            marker.spiral_in_length = spec["spiral_in_length"] or 100.0
-            marker.spiral_out_length = spec["spiral_out_length"] or 100.0
+            tool.Alignment.stage_exact(
+                marker,
+                radius=spec["radius"] or 100.0,
+                spiral_in_length=spec["spiral_in_length"] or 100.0,
+                spiral_out_length=spec["spiral_out_length"] or 100.0,
+                gravity_centerline_height=spec["gravity_centerline_height"],
+            )
             marker.spiral_family = spec["spiral_family"]
-            marker.gravity_centerline_height = spec["gravity_centerline_height"]
             marker.join_next = spec["join_next"]
+            tool.Alignment.remember_marker_point(empty, spec["pi_local"])
             empty.name = f"PI {i} ({_pi_curve_marker_label(marker)})"
             context.collection.objects.link(empty)
 
-        _create_endpoint_marker(
+        end_marker = _create_endpoint_marker(
             context, alignment_id, "END", _local_ifc_to_world_point(ifc, unit_scale, end), pi_index=len(specs) + 1
         )
+        tool.Alignment.remember_marker_point(end_marker, end)
         interior_markers = [
             m.bonsai_pi_curve_marker for m in _find_pi_markers(alignment_id) if _is_interior_pi_marker(m)
         ]
@@ -2089,8 +2117,8 @@ class ALIGN_OT_apply_pi_curve(Operator, tool.Ifc.Operator):
         end_marker = next((m for m in all_markers if m.bonsai_pi_curve_marker.role == "END"), None)
 
         if start_marker and end_marker:
-            start = _world_point_to_local_ifc(ifc, unit_scale, start_marker.location)
-            end = _world_point_to_local_ifc(ifc, unit_scale, end_marker.location)
+            start = _marker_local_ifc(ifc, unit_scale, start_marker)
+            end = _marker_local_ifc(ifc, unit_scale, end_marker)
         else:
             # Defensive fallback for a marker set predating Start/End markers (e.g. an older
             # session's markers still sitting in a .blend file) -- every current code path that
@@ -2103,7 +2131,7 @@ class ALIGN_OT_apply_pi_curve(Operator, tool.Ifc.Operator):
 
         hpoints = (
             [start]
-            + [_world_point_to_local_ifc(ifc, unit_scale, m.location) for m in interior_markers]
+            + [_marker_local_ifc(ifc, unit_scale, m) for m in interior_markers]
             + [end]
         )
         cant_lookup = _cant_lookup_for_pi_markers(alignment, len(interior_markers))
@@ -2266,13 +2294,17 @@ class ALIGN_OT_load_horizontal_pi_table(Operator, tool.Ifc.Operator):
         props.horizontal_pi_rows.clear()
         for spec in specs:
             item = props.horizontal_pi_rows.add()
-            item.x, item.y = spec["pi_local"]
+            tool.Alignment.stage_exact(
+                item,
+                x=spec["pi_local"][0],
+                y=spec["pi_local"][1],
+                radius=spec["radius"] or 100.0,
+                spiral_in_length=spec["spiral_in_length"] or 100.0,
+                spiral_out_length=spec["spiral_out_length"] or 100.0,
+                gravity_centerline_height=spec["gravity_centerline_height"],
+            )
             item.curve_type = spec["curve_type"]
-            item.radius = spec["radius"] or 100.0
-            item.spiral_in_length = spec["spiral_in_length"] or 100.0
-            item.spiral_out_length = spec["spiral_out_length"] or 100.0
             item.spiral_family = spec["spiral_family"]
-            item.gravity_centerline_height = spec["gravity_centerline_height"]
             item.join_next = spec["join_next"]
         try:
             start, end = tool.Alignment.get_alignment_start_end_points(alignment)
@@ -2280,7 +2312,9 @@ class ALIGN_OT_load_horizontal_pi_table(Operator, tool.Ifc.Operator):
             pass
         else:
             rows = list(props.horizontal_pi_rows)
-            hpoints = [start] + [(row.x, row.y) for row in rows] + [end]
+            hpoints = (
+                [start] + [(tool.Alignment.exact(row, "x"), tool.Alignment.exact(row, "y")) for row in rows] + [end]
+            )
             _populate_join_distances(rows, hpoints, _cant_lookup_for_pi_markers(alignment, len(rows)))
         props.editing_horizontal_pi_alignment_id = alignment.id()
 
@@ -2331,7 +2365,7 @@ class ALIGN_OT_apply_horizontal_pi_table(Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
 
         rows = list(props.horizontal_pi_rows)
-        hpoints = [start] + [(row.x, row.y) for row in rows] + [end]
+        hpoints = [start] + [(tool.Alignment.exact(row, "x"), tool.Alignment.exact(row, "y")) for row in rows] + [end]
         cant_lookup = _cant_lookup_for_pi_markers(alignment, len(rows))
 
         # See ALIGN_OT_apply_pi_curve's own call to this -- same auto-compute, same reasoning,
@@ -3362,8 +3396,7 @@ class ALIGN_OT_load_polyline_table(Operator, tool.Ifc.Operator):
         props.polyline_point_rows.clear()
         for point in points:
             row = props.polyline_point_rows.add()
-            row.x, row.y = point[0], point[1]
-            row.z = point[2] if dim == 3 else 0.0
+            tool.Alignment.stage_exact(row, x=point[0], y=point[1], z=point[2] if dim == 3 else 0.0)
         props.editing_polyline_alignment_id = alignment.id()
         props.editing_polyline_is_3d = dim == 3
         props.active_polyline_point_row_index = 0
@@ -3444,7 +3477,10 @@ class ALIGN_OT_apply_polyline_table(Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "The alignment being edited no longer exists")
             return {"CANCELLED"}
         dim = 3 if props.editing_polyline_is_3d else 2
-        points = [(r.x, r.y, r.z)[:dim] for r in props.polyline_point_rows]
+        points = [
+            (tool.Alignment.exact(r, "x"), tool.Alignment.exact(r, "y"), tool.Alignment.exact(r, "z"))[:dim]
+            for r in props.polyline_point_rows
+        ]
         try:
             tool.Alignment.set_polyline_points(alignment, points, dim)
         except ValueError as e:
@@ -3559,11 +3595,14 @@ class ALIGN_OT_load_offset_table(Operator, tool.Ifc.Operator):
         props.offset_value_rows.clear()
         for distance, lateral, vertical, longitudinal in rows:
             row = props.offset_value_rows.add()
-            row.distance_along = distance
-            row.lateral = lateral or 0.0
-            row.vertical = vertical or 0.0
+            tool.Alignment.stage_exact(
+                row,
+                distance_along=distance,
+                lateral=lateral or 0.0,
+                vertical=vertical or 0.0,
+                longitudinal=longitudinal or 0.0,
+            )
             row.has_longitudinal = longitudinal is not None
-            row.longitudinal = longitudinal or 0.0
         props.active_offset_value_row_index = 0
         if any(curve.id() == basis.id() for curve, _, _ in candidates):
             props.offset_basis_curve = str(basis.id())
@@ -3648,7 +3687,12 @@ class ALIGN_OT_apply_offset_table(Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "Choose the curve to offset from")
             return {"CANCELLED"}
         rows = [
-            (r.distance_along, r.lateral, r.vertical, r.longitudinal if r.has_longitudinal else None)
+            (
+                tool.Alignment.exact(r, "distance_along"),
+                tool.Alignment.exact(r, "lateral"),
+                tool.Alignment.exact(r, "vertical"),
+                tool.Alignment.exact(r, "longitudinal") if r.has_longitudinal else None,
+            )
             for r in props.offset_value_rows
         ]
         try:
@@ -4043,8 +4087,7 @@ def _sync_vertical_pi_markers(context, vpoints):
     props.vertical_pi_markers.clear()
     for dist_along, elevation in vpoints[1:-1]:
         item = props.vertical_pi_markers.add()
-        item.dist_along = dist_along
-        item.elevation = elevation
+        tool.Alignment.stage_exact(item, dist_along=dist_along, elevation=elevation)
         item.curve_type = "TANGENT"
         item.curve_length = 100.0
     _stage_vertical_endpoints(props, vpoints[0], vpoints[-1])
@@ -4052,8 +4095,13 @@ def _sync_vertical_pi_markers(context, vpoints):
 
 def _stage_vertical_endpoints(props, start, end):
     """Stage the vertical's start/end (dist_along, elevation) next to vertical_pi_markers."""
-    props.vertical_start_dist_along, props.vertical_start_elevation = start
-    props.vertical_end_dist_along, props.vertical_end_elevation = end
+    tool.Alignment.stage_exact(
+        props,
+        vertical_start_dist_along=start[0],
+        vertical_start_elevation=start[1],
+        vertical_end_dist_along=end[0],
+        vertical_end_elevation=end[1],
+    )
     props.vertical_endpoints_staged = True
 
 
@@ -4063,9 +4111,22 @@ def _staged_vertical_points(props) -> list:
     if not props.vertical_endpoints_staged:
         return []
     return (
-        [(props.vertical_start_dist_along, props.vertical_start_elevation)]
-        + [(m.dist_along, m.elevation) for m in props.vertical_pi_markers]
-        + [(props.vertical_end_dist_along, props.vertical_end_elevation)]
+        [
+            (
+                tool.Alignment.exact(props, "vertical_start_dist_along"),
+                tool.Alignment.exact(props, "vertical_start_elevation"),
+            )
+        ]
+        + [
+            (tool.Alignment.exact(m, "dist_along"), tool.Alignment.exact(m, "elevation"))
+            for m in props.vertical_pi_markers
+        ]
+        + [
+            (
+                tool.Alignment.exact(props, "vertical_end_dist_along"),
+                tool.Alignment.exact(props, "vertical_end_elevation"),
+            )
+        ]
     )
 
 
@@ -4247,10 +4308,13 @@ class ALIGN_OT_load_vertical_pis(Operator, tool.Ifc.Operator):
         props.vertical_pi_markers.clear()
         for spec in specs:
             item = props.vertical_pi_markers.add()
-            item.dist_along = spec["dist_along"]
-            item.elevation = spec["elevation"]
+            tool.Alignment.stage_exact(
+                item,
+                dist_along=spec["dist_along"],
+                elevation=spec["elevation"],
+                curve_length=spec["curve_length"] or 100.0,
+            )
             item.curve_type = spec["curve_type"]
-            item.curve_length = spec["curve_length"] or 100.0
         props.editing_vertical_pi_layout_id = v_layout.id()
         start, end = tool.Alignment.get_vertical_alignment_start_end_points(
             ifcopenshell.api.alignment.get_alignment(v_layout)
@@ -4960,11 +5024,15 @@ class ALIGN_OT_apply_vertical_pi_curve(Operator, tool.Ifc.Operator):
 
         if props.vertical_endpoints_staged:
             # the Start/End elevations may have been dragged in the profile view
-            start = (start[0], props.vertical_start_elevation)
-            end = (end[0], props.vertical_end_elevation)
+            start = (start[0], tool.Alignment.exact(props, "vertical_start_elevation"))
+            end = (end[0], tool.Alignment.exact(props, "vertical_end_elevation"))
         markers = list(props.vertical_pi_markers)
-        vpoints = [start] + [(m.dist_along, m.elevation) for m in markers] + [end]
-        lengths = [m.curve_length if m.curve_type == "PARABOLIC" else 0.0 for m in markers]
+        vpoints = (
+            [start]
+            + [(tool.Alignment.exact(m, "dist_along"), tool.Alignment.exact(m, "elevation")) for m in markers]
+            + [end]
+        )
+        lengths = [tool.Alignment.exact(m, "curve_length") if m.curve_type == "PARABOLIC" else 0.0 for m in markers]
 
         ok, message, v_layout = _generate_vertical_alignment_segments(
             context, alignment, vpoints, lengths, v_layout=v_layout
@@ -5517,9 +5585,13 @@ class ALIGN_OT_enable_editing_h_segments(Operator):
             else:
                 row.predefined_type = "UNSUPPORTED"
                 row.original_predefined_type = seg_type or "?"
-            row.length = abs(dp.SegmentLength) * length_scale
-            row.start_radius = (dp.StartRadiusOfCurvature or 0.0) * length_scale
-            row.end_radius = (dp.EndRadiusOfCurvature or 0.0) * length_scale
+            tool.Alignment.stage_exact(
+                row,
+                length_scale,
+                length=abs(dp.SegmentLength),
+                start_radius=dp.StartRadiusOfCurvature or 0.0,
+                end_radius=dp.EndRadiusOfCurvature or 0.0,
+            )
 
         props.active_h_segment_row_index = 0
         props.editing_segment_kind = "HORIZONTAL"
@@ -5615,13 +5687,14 @@ class ALIGN_OT_apply_h_segments(Operator, tool.Ifc.Operator):
             # unit="LENGTH" space (metres) -- see enable_editing_h_segments'
             # own comment -- so they're converted back to the project's
             # length unit here before going into IFC.
-            row_length = row.length / length_scale
+            row_length = tool.Alignment.exact(row, "length", length_scale)
             if row.predefined_type == "LINE":
                 start_radius, end_radius = 0.0, 0.0
             elif row.predefined_type == "CIRCULARARC":
-                start_radius, end_radius = row.start_radius / length_scale, row.start_radius / length_scale
+                start_radius = end_radius = tool.Alignment.exact(row, "start_radius", length_scale)
             else:  # spiral family (CLOTHOID/CUBIC/HELMERTCURVE/BLOSSCURVE/COSINECURVE/SINECURVE)
-                start_radius, end_radius = row.start_radius / length_scale, row.end_radius / length_scale
+                start_radius = tool.Alignment.exact(row, "start_radius", length_scale)
+                end_radius = tool.Alignment.exact(row, "end_radius", length_scale)
 
             design_parameters = ifc_file.createIfcAlignmentHorizontalSegment(
                 StartTag=None,
@@ -5718,9 +5791,10 @@ class ALIGN_OT_enable_editing_v_segments(Operator):
             else:
                 row.predefined_type = "UNSUPPORTED"
                 row.original_predefined_type = seg_type or "?"
-            row.h_length = dp.HorizontalLength * length_scale
-            row.start_gradient = (dp.StartGradient or 0.0) * 100.0
-            row.end_gradient = (dp.EndGradient or 0.0) * 100.0
+            tool.Alignment.stage_exact(row, length_scale, h_length=dp.HorizontalLength)
+            tool.Alignment.stage_exact(
+                row, 100.0, start_gradient=dp.StartGradient or 0.0, end_gradient=dp.EndGradient or 0.0
+            )
 
         props.active_v_segment_row_index = 0
         props.editing_segment_kind = "VERTICAL"
@@ -5790,10 +5864,12 @@ class ALIGN_OT_apply_v_segments(Operator, tool.Ifc.Operator):
         # every row that came from an existing segment keeps it (and its GlobalId) -- REQUIREMENTS.md §11
         new_segments = []
         for row in rows:
-            h_length = row.h_length / length_scale
-            start_gradient = row.start_gradient / 100.0
+            h_length = tool.Alignment.exact(row, "h_length", length_scale)
+            start_gradient = tool.Alignment.exact(row, "start_gradient", 100.0)
             end_gradient = (
-                row.end_gradient / 100.0 if row.predefined_type in prop.VERTICAL_TWO_GRADIENT_TYPES else start_gradient
+                tool.Alignment.exact(row, "end_gradient", 100.0)
+                if row.predefined_type in prop.VERTICAL_TWO_GRADIENT_TYPES
+                else start_gradient
             )
 
             design_parameters = ifc_file.createIfcAlignmentVerticalSegment(
@@ -6248,13 +6324,16 @@ class ALIGN_OT_enable_editing_cant_segments(Operator):
             else:
                 row.predefined_type = "UNSUPPORTED"
                 row.original_predefined_type = seg_type or "?"
-            row.h_length = dp.HorizontalLength * length_scale
             start_l = dp.StartCantLeft or 0.0
             start_r = dp.StartCantRight or 0.0
-            row.start_cant_left = start_l
-            row.start_cant_right = start_r
-            row.end_cant_left = dp.EndCantLeft if dp.EndCantLeft is not None else start_l
-            row.end_cant_right = dp.EndCantRight if dp.EndCantRight is not None else start_r
+            tool.Alignment.stage_exact(row, length_scale, h_length=dp.HorizontalLength)
+            tool.Alignment.stage_exact(
+                row,
+                start_cant_left=start_l,
+                start_cant_right=start_r,
+                end_cant_left=dp.EndCantLeft if dp.EndCantLeft is not None else start_l,
+                end_cant_right=dp.EndCantRight if dp.EndCantRight is not None else start_r,
+            )
 
         props.active_cant_segment_row_index = 0
         props.editing_segment_kind = "CANT"
@@ -6320,7 +6399,7 @@ class ALIGN_OT_apply_cant_segments(Operator, tool.Ifc.Operator):
         # every row that came from an existing segment keeps it (and its GlobalId) -- REQUIREMENTS.md §11
         new_segments = []
         for row in rows:
-            h_length = row.h_length / length_scale
+            h_length = tool.Alignment.exact(row, "h_length", length_scale)
             # Every cant type except CONSTANTCANT is a transition that needs
             # End* set -- see _map_alignment_cant_segment (ifcopenshell):
             # HELMERTCURVE/BLOSSCURVE/COSINECURVE/SINECURVE/VIENNESEBEND all
@@ -6331,10 +6410,10 @@ class ALIGN_OT_apply_cant_segments(Operator, tool.Ifc.Operator):
                 EndTag=None,
                 StartDistAlong=dist_along,
                 HorizontalLength=h_length,
-                StartCantLeft=row.start_cant_left,
-                EndCantLeft=row.end_cant_left if is_transition else None,
-                StartCantRight=row.start_cant_right,
-                EndCantRight=row.end_cant_right if is_transition else None,
+                StartCantLeft=tool.Alignment.exact(row, "start_cant_left"),
+                EndCantLeft=tool.Alignment.exact(row, "end_cant_left") if is_transition else None,
+                StartCantRight=tool.Alignment.exact(row, "start_cant_right"),
+                EndCantRight=tool.Alignment.exact(row, "end_cant_right") if is_transition else None,
                 PredefinedType=row.predefined_type,
             )
             new_segments.append((tool.Alignment.existing_segment(c_layout, row.segment_id), design_parameters))
