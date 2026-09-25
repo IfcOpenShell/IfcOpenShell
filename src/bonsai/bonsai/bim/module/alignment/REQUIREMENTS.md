@@ -31,10 +31,9 @@ mapper raises `NotImplementedError` for it). A row whose real IFC type is someth
 (e.g. a file authored outside Bonsai) shows as "Unsupported" and blocks Apply rather than silently
 mis-editing it.
 
-**Known, deliberate gap carried over from §4's existing note below:** Apply is a full rebuild, not
-a partial/in-place regenerate — every segment in that layout gets a fresh GUID each time, same
-limitation §4 already documents for the interactive draw tools. Not fixed here; a future "regenerate
-only the affected subset" pass would benefit both this and §4 together.
+**~~Known, deliberate gap carried over from §4's existing note below:~~ Apply is a full rebuild, not
+a partial/in-place regenerate — every segment in that layout gets a fresh GUID each time.**
+Fixed (2026-09-25) — see §11: every row loaded from an existing segment keeps it (and its GlobalId).
 
 **Known, deliberate non-validation (per the user, 2026-09-14):** a spiral-family row with equal
 start/end radius, or a vertical CIRCULARARC row with equal start/end gradient, is degenerate input
@@ -1550,3 +1549,61 @@ driven directly; the quick fix ran through the real operator):
 discussed later.** Placing IfcReferents along an alignment by hand, rather than only the generated
 stationing referents (§4) and key-point referents (§8). Polyline alignments (§5.1) get no key-point
 referents; any referents they need will come from this.
+
+## 11. Partial regeneration (keeping segment GlobalIds)
+
+**Requirement (per the user, 2026-09-25):** "The types of changes we are talking about are changes in
+spiral length, circular curve radii, PI location, vertical curve PI and horizontal length for
+parabola or circular curve. [...] for cant the cant values could change. If just these parameter are
+modified but the overall layout of the segments is the same, the guids should not change, just the
+design parameters. The other form of change that is more complex is deleting a PI or a VPI in the
+middle of a layout. There needs to be a re-joining but the guids of the remaining segments is
+unchanged. There is also mid-layout insertion of a PI/VPI and resulting horizontal curve and
+spirals." Also: "if the last segment changes its properties, then the orientation of the zero
+length segment probably needs to be updated so that it is tangent-continuous with the end of the
+previous segment."
+
+**Implemented (2026-09-25):**
+
+- **Library: `ifcopenshell.api.alignment.update_layout_segments(file, layout, [(existing | None,
+  design_parameters), ...])`.** Replaces a layout's real segments with a new sequence, keeping each
+  IfcAlignmentSegment the caller maps a new segment onto (new DesignParameters, same GlobalId),
+  creating the unmapped ones and removing the unreferenced ones (with referents positioned on them,
+  as `clear_layout_segments` does). IfcCurveSegments have no identity, so the layout's curve is
+  rebuilt in place on the same curve entity (offset curves and linear placements stay attached);
+  per-segment representations are rebuilt if present. The zero-length terminator is kept and moved
+  *and turned* to the new end, tangent-continuous with the last segment (tested). The PI-method
+  layout functions' design-parameter builders were split out (`_horizontal_design_parameters`,
+  `_vertical_design_parameters`) so callers can build parameters without writing segments. Tests:
+  `test/api/alignment/test_update_layout_segments.py`.
+- **Segment tables (horizontal/vertical/cant):** Apply maps each row to the segment it was loaded
+  from (`row.segment_id`); new rows get new segments, removed rows' segments are removed, reordering
+  keeps identities. The chained start of each segment is evaluated before anything is written
+  (`tool.Alignment.design_parameters_end`).
+- **PI method (markers, horizontal PI table, draw/extend, vertical PI list/drag):**
+  `_generate_alignment_segments`/`_generate_vertical_alignment_segments` update in place.
+  Ownership: each PI owns its back tangent plus its entry spiral / arc / exit spiral; the end owns
+  the final tangent (`tool.Alignment.group_segments_by_pi`). PIs correspond one to one when their
+  count is unchanged (moves, radii, spiral lengths, curve lengths); when a PI was inserted or
+  deleted, unmoved PIs are matched by position (`tool.Alignment.map_segments_by_pi`), so only that
+  PI's own segments are created or removed and its neighbours rejoin. Within a PI, segments keep
+  identity by role (e.g. dropping the spirals keeps the tangent and arc). Falls back to the old full
+  rebuild only when the layout has no segments yet or its PIs can't be reconstructed.
+- **Cant: Generate Cant Layout** keeps every cant segment when the segment count is unchanged
+  (one cant segment per horizontal segment).
+- **Insert/Delete PI UI:** Insert PI / Delete PI on the selected viewport marker (Insert from the
+  Start Point or a PI, halfway to the next point; drag it off the line, give it a curve, Apply), and
+  Insert Before / Insert After / Delete on the horizontal PI table and the vertical PI list. Like
+  dragging, these are staged until Apply.
+- **PI marker picking (per the user, 2026-09-25: "selecting a PI in the 3D viewport for editing the
+  horizontal alignment, it is difficult to do that with the mouse. Selection is easier for the
+  vertical layout PI"):** the marker empties are tiny crosses, so a click near the dot often picked
+  whatever mesh was underneath (e.g. terrain) instead -- which also ended the PI edit.
+  `ALIGN_OT_pick_pi_marker` (3D View left-click keymap, shift to extend) now selects the marker
+  whose dot is within 12 px of the click, like the vertical profile's PIs; any other click passes
+  through to Blender's own select. Verified in UI-mode Blender with simulated clicks over a mesh.
+
+**Known, not addressed:** a spiral-less curve next to a spiralled one gives a LINEARTRANSITION cant
+segment with equal start/end cant, which `_map_linear_transition` divides by zero on (pre-existing,
+same path with or without this change) -- belongs with the degenerate-spiral/C++ item. Cant is not
+regenerated automatically when the horizontal's segment structure changes.
