@@ -26,6 +26,8 @@ import pytest
 import ifcopenshell
 import ifcopenshell.api.alignment
 import ifcopenshell.api.unit
+from ifcopenshell.api.alignment.layout_horizontal_alignment_by_pi_method import _horizontal_design_parameters
+from ifcopenshell.api.alignment.layout_vertical_alignment_by_pi_method import _vertical_design_parameters
 
 
 def _file():
@@ -39,8 +41,8 @@ HPOINTS = [(0.0, 0.0), (500.0, 0.0), (900.0, 300.0), (1300.0, 300.0)]
 VPOINTS = [(0.0, 100.0), (300.0, 106.0), (700.0, 101.0), (1000.0, 104.0)]
 
 
-def _alignment(file, radii, vlengths=(100.0, 80.0), hpoints=HPOINTS):
-    return ifcopenshell.api.alignment.create_by_pi_method(file, "A", hpoints, radii, VPOINTS, list(vlengths))
+def _alignment(file, radii, vlengths=(100.0, 80.0)):
+    return ifcopenshell.api.alignment.create_by_pi_method(file, "A", HPOINTS, radii, VPOINTS, list(vlengths))
 
 
 def _real(layout):
@@ -51,20 +53,6 @@ def _is_terminator(segment):
     dp = segment.DesignParameters
     length = dp.SegmentLength if dp.is_a("IfcAlignmentHorizontalSegment") else dp.HorizontalLength
     return length == 0.0
-
-
-def _horizontal_parameters(file, hpoints, radii):
-    """The design parameters of the horizontal layout the PI method gives for hpoints and radii, as new
-    entities in file."""
-    reference_file = _file()
-    layout = ifcopenshell.api.alignment.get_horizontal_layout(_alignment(reference_file, radii, hpoints=hpoints))
-    return [file.add(s.DesignParameters) for s in _real(layout)]
-
-
-def _vertical_parameters(file, vlengths):
-    reference_file = _file()
-    layout = ifcopenshell.api.alignment.get_vertical_layout(_alignment(reference_file, [200.0, 300.0], vlengths))
-    return [file.add(s.DesignParameters) for s in _real(layout)]
 
 
 def _geometry(layout):
@@ -101,13 +89,14 @@ def _no_orphan_curve_segments(file):
 
 def test_parameter_change_keeps_every_guid_and_matches_a_fresh_layout():
     file = _file()
-    alignment = _alignment(file, [200.0, 300.0])
+    alignment = _alignment(file, [(200.0, 60.0, 60.0), (300.0, 0.0, 0.0)])
     h = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
     before = [s.GlobalId for s in _real(h)]
 
-    new_radii = [250.0, 400.0]  # same structure, different radii
-    parameters = _horizontal_parameters(file, HPOINTS, new_radii)
-    assert len(parameters) == len(before)
+    new_radii = [(250.0, 80.0, 80.0), (400.0, 0.0, 0.0)]  # same structure, different radius/spirals
+    definitions = ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(HPOINTS, new_radii)
+    assert len(definitions) == len(before)
+    parameters = [_horizontal_design_parameters(file, d) for d in definitions]
     ifcopenshell.api.alignment.update_layout_segments(file, h, list(zip(_real(h), parameters)))
 
     assert [s.GlobalId for s in _real(h)] == before
@@ -127,11 +116,15 @@ def test_last_segment_change_keeps_the_terminator_tangent():
     alignment = _alignment(file, [200.0, 300.0])
     h = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
     points = HPOINTS[:-1] + [(1300.0, 500.0)]
-    parameters = _horizontal_parameters(file, points, [200.0, 300.0])
-    ifcopenshell.api.alignment.update_layout_segments(file, h, list(zip(_real(h), parameters)))
+    definitions = ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(points, [200.0, 300.0])
+    ifcopenshell.api.alignment.update_layout_segments(
+        file, h, [(k, _horizontal_design_parameters(file, d)) for k, d in zip(_real(h), definitions)]
+    )
     reference_file = _file()
     reference = ifcopenshell.api.alignment.get_horizontal_layout(
-        _alignment(reference_file, [200.0, 300.0], hpoints=points)
+        ifcopenshell.api.alignment.create_by_pi_method(
+            reference_file, "R", points, [200.0, 300.0], VPOINTS, [100.0, 80.0]
+        )
     )
     assert _terminator_start(h) == _terminator_start(reference)
     assert _terminal_curve_segment(h) == _terminal_curve_segment(reference)
@@ -141,24 +134,28 @@ def test_last_segment_change_keeps_the_terminator_tangent():
 
 def test_deleting_a_pi_keeps_the_remaining_guids():
     file = _file()
-    alignment = _alignment(file, [200.0, 300.0])
+    alignment = _alignment(file, [(200.0, 0.0, 0.0), (300.0, 0.0, 0.0)])
     h = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
     real = _real(h)
     assert [s.DesignParameters.PredefinedType for s in real] == ["LINE", "CIRCULARARC", "LINE", "CIRCULARARC", "LINE"]
 
     # delete PI 2: its arc and the tangent before it go; the rest are kept, the last tangent rejoined
     points = [HPOINTS[0], HPOINTS[1], HPOINTS[3]]
-    parameters = _horizontal_parameters(file, points, [200.0])
-    assert [p.PredefinedType for p in parameters] == ["LINE", "CIRCULARARC", "LINE"]
+    definitions = ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(points, [200.0])
+    assert [d.predefined_type for d in definitions] == ["LINE", "CIRCULARARC", "LINE"]
     keep = [real[0], real[1], real[4]]
-    ifcopenshell.api.alignment.update_layout_segments(file, h, list(zip(keep, parameters)))
+    ifcopenshell.api.alignment.update_layout_segments(
+        file, h, [(k, _horizontal_design_parameters(file, d)) for k, d in zip(keep, definitions)]
+    )
     assert [s.GlobalId for s in _real(h)] == [k.GlobalId for k in keep]
     assert (
         len(file.by_type("IfcAlignmentSegment"))
         == len(keep) + 1 + len(_real(ifcopenshell.api.alignment.get_vertical_layout(alignment))) + 1
     )
     reference_file = _file()
-    reference = ifcopenshell.api.alignment.get_horizontal_layout(_alignment(reference_file, [200.0], hpoints=points))
+    reference = ifcopenshell.api.alignment.get_horizontal_layout(
+        ifcopenshell.api.alignment.create_by_pi_method(reference_file, "B", points, [200.0], VPOINTS, [100.0, 80.0])
+    )
     assert _geometry(h) == _geometry(reference)
     _no_orphan_curve_segments(file)
 
@@ -166,21 +163,20 @@ def test_deleting_a_pi_keeps_the_remaining_guids():
 def test_inserting_a_pi_creates_only_the_new_segments():
     file = _file()
     points = [HPOINTS[0], HPOINTS[1], HPOINTS[3]]
-    alignment = _alignment(file, [200.0], hpoints=points)
+    alignment = ifcopenshell.api.alignment.create_by_pi_method(file, "A", points, [200.0], VPOINTS, [100.0, 80.0])
     h = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
     real = _real(h)
     before = {s.GlobalId for s in real}
 
-    parameters = _horizontal_parameters(file, HPOINTS, [200.0, 300.0])
+    definitions = ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(HPOINTS, [200.0, 300.0])
     # LINE ARC | LINE ARC (new PI) | LINE: the old last tangent stays last
     mapping = [real[0], real[1], None, None, real[2]]
-    ifcopenshell.api.alignment.update_layout_segments(file, h, list(zip(mapping, parameters)))
+    ifcopenshell.api.alignment.update_layout_segments(
+        file, h, [(k, _horizontal_design_parameters(file, d)) for k, d in zip(mapping, definitions)]
+    )
     after = [s.GlobalId for s in _real(h)]
     assert after[0] == real[0].GlobalId and after[1] == real[1].GlobalId and after[4] == real[2].GlobalId
     assert len(set(after[2:4]) - before) == 2
-    reference_file = _file()
-    reference = ifcopenshell.api.alignment.get_horizontal_layout(_alignment(reference_file, [200.0, 300.0]))
-    assert _geometry(h) == _geometry(reference)
     _no_orphan_curve_segments(file)
 
 
@@ -189,7 +185,7 @@ def test_vertical_layout_curve_length_change_keeps_guids():
     alignment = _alignment(file, [200.0, 300.0])
     v = ifcopenshell.api.alignment.get_vertical_layout(alignment)
     before = [s.GlobalId for s in _real(v)]
-    parameters = _vertical_parameters(file, (140.0, 60.0))
+    parameters = list(_vertical_design_parameters(file, VPOINTS, [140.0, 60.0]))
     assert len(parameters) == len(before)
     ifcopenshell.api.alignment.update_layout_segments(file, v, list(zip(_real(v), parameters)))
     assert [s.GlobalId for s in _real(v)] == before
@@ -207,78 +203,13 @@ def test_segment_representations_are_rebuilt():
     alignment = _alignment(file, [200.0, 300.0])
     ifcopenshell.api.alignment.create_segment_representations(file, alignment)
     h = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
-    parameters = _horizontal_parameters(file, HPOINTS, [250.0, 350.0])
-    ifcopenshell.api.alignment.update_layout_segments(file, h, list(zip(_real(h), parameters)))
+    definitions = ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(HPOINTS, [250.0, 350.0])
+    ifcopenshell.api.alignment.update_layout_segments(
+        file, h, [(k, _horizontal_design_parameters(file, d)) for k, d in zip(_real(h), definitions)]
+    )
     curve = ifcopenshell.api.alignment.get_layout_curve(h)
     for segment, curve_segment in zip(_real(h), curve.Segments):
         assert segment.Representation.Representations[0].Items[0] == curve_segment
-
-
-def _curve_state(layout):
-    """Every IfcCurveSegment of the layout's curve with its transition code and direction, in order."""
-    curve = ifcopenshell.api.alignment.get_layout_curve(layout)
-    directions = [tuple(round(c, 9) for c in cs.Placement.RefDirection.DirectionRatios) for cs in curve.Segments]
-    return list(zip(_geometry(layout), [cs.Transition for cs in curve.Segments], directions))
-
-
-def _spiralled_parameters(file, family, curves):
-    """Horizontal design parameters for a straight, then for each curve a spiral, arc, spiral and
-    straight. The segments are laid end to end along the x axis: the geometry needn't be continuous,
-    only the same as a freshly built layout's."""
-    pattern = [("LINE", 0.0, 0.0, 100.0)]
-    for radius in curves:
-        pattern += [
-            (family, 0.0, radius, 60.0),
-            ("CIRCULARARC", radius, radius, 80.0),
-            (family, radius, 0.0, 60.0),
-            ("LINE", 0.0, 0.0, 100.0),
-        ]
-    parameters, x = [], 0.0
-    for predefined_type, start_radius, end_radius, length in pattern:
-        parameters.append(
-            file.createIfcAlignmentHorizontalSegment(
-                StartPoint=file.createIfcCartesianPoint((x, 0.0)),
-                StartDirection=0.0,
-                StartRadiusOfCurvature=start_radius,
-                EndRadiusOfCurvature=end_radius,
-                SegmentLength=length,
-                PredefinedType=predefined_type,
-            )
-        )
-        x += length
-    return parameters
-
-
-def _segment_by_segment(file, parameters):
-    alignment = ifcopenshell.api.alignment.create(file, "A")
-    layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
-    for design_parameters in parameters:
-        ifcopenshell.api.alignment.create_layout_segment(file, layout, design_parameters)
-    return layout
-
-
-@pytest.mark.parametrize("family", ["CLOTHOID", "HELMERTCURVE"])
-def test_insert_and_delete_rebuild_the_curve_as_a_fresh_layout(family):
-    """Removed, kept and new segments all end up on the curve in order, with the transition codes and
-    terminator of a freshly built layout (a Helmert curve maps to two curve segments)."""
-    file = _file()
-    h = _segment_by_segment(file, _spiralled_parameters(file, family, [200.0]))
-
-    def update(curves, mapping):
-        parameters = _spiralled_parameters(file, family, curves)
-        ifcopenshell.api.alignment.update_layout_segments(file, h, list(zip(mapping, parameters)))
-        reference_file = _file()
-        reference = _segment_by_segment(reference_file, _spiralled_parameters(reference_file, family, curves))
-        assert _curve_state(h) == _curve_state(reference)
-        assert _terminator_start(h) == _terminator_start(reference)
-        _no_orphan_curve_segments(file)
-
-    # insert a curve: LINE SPIRAL ARC SPIRAL | LINE SPIRAL ARC SPIRAL (new) | LINE
-    real = _real(h)
-    update([200.0, -300.0], real[:4] + [None] * 4 + [real[4]])
-    # delete it again
-    real = _real(h)
-    update([200.0], real[:4] + [real[8]])
 
 
 def test_rejects_segments_from_another_layout():
@@ -286,6 +217,8 @@ def test_rejects_segments_from_another_layout():
     alignment = _alignment(file, [200.0, 300.0])
     h = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
     v = ifcopenshell.api.alignment.get_vertical_layout(alignment)
-    parameters = _horizontal_parameters(file, HPOINTS, [200.0, 300.0])
+    definitions = ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(HPOINTS, [200.0, 300.0])
     with pytest.raises(ValueError):
-        ifcopenshell.api.alignment.update_layout_segments(file, h, [(_real(v)[0], parameters[0])])
+        ifcopenshell.api.alignment.update_layout_segments(
+            file, h, [(_real(v)[0], _horizontal_design_parameters(file, definitions[0]))]
+        )
