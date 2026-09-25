@@ -50,6 +50,21 @@ this crash together with moving the Python-side alignment geometry (the PI-metho
 `_spiral_curvature`'s integrands, the join-radius root-finding) into C++, rather than as a
 stand-alone kernel patch.
 
+The same C++ pass also covers (per the user, 2026-09-25: "If we are going to dig into the C++ side,
+this needs to be addressed too"):
+
+- **[IfcOpenShell#5360](https://github.com/IfcOpenShell/IfcOpenShell/issues/5360) -- optimize
+  `piecewise_function_evaluator.evaluate` by eliminating unnecessary points in straight regions.**
+  `evaluate()` samples the whole domain at a uniform step (default max 0.5), so straight runs get
+  as many points as curves, while segment start/end positions -- the points that matter most -- can
+  be skipped entirely. The issue's proposal: use Boost's Interval Container Library to find where
+  the horizontal, vertical and cant curves are all straight at once, evaluate only the endpoints
+  there, and keep the dense sampling for curved regions, always including segment boundaries. On
+  the issue's bridge example this cut 24,676 evaluations to 15,159 (~39%) and improved accuracy.
+  This is directly relevant here: every Apply regenerates the alignment's evaluated geometry.
+- The LINEARTRANSITION divide-by-zero in `_map_linear_transition` (constant cant across a
+  transition), found while implementing §11.
+
 ## 2. Interactive creation of a horizontal alignment
 
 **Implemented (2026-09-18): Add Alignment dialog — optional stationing, unit-aware format.** Per
@@ -1290,7 +1305,7 @@ Three things this required beyond the generator itself:
 
 - **Curve-type sync.** Per the user: "When editing horizontal curve types update the cant layout to
   keep them in sync. Example: change BLOSS to COSINE in horizontal makes the same change in cant
-  layout." `tool.Alignment.sync_cant_segment_types()` matches cant segments to horizontal segments
+  layout." (Superseded 2026-09-25 by `follow_horizontal_with_cant`, see §11.) `tool.Alignment.sync_cant_segment_types()` matches cant segments to horizontal segments
   positionally and retypes any cant segment whose type has drifted from what
   `CANT_TYPE_FOR_HORIZONTAL_TYPE` now expects, leaving its cant values untouched. Called after every
   horizontal rebuild (`_generate_alignment_segments`, shared by Draw/Apply Curve/Apply Horizontal
@@ -1605,5 +1620,19 @@ previous segment."
 
 **Known, not addressed:** a spiral-less curve next to a spiralled one gives a LINEARTRANSITION cant
 segment with equal start/end cant, which `_map_linear_transition` divides by zero on (pre-existing,
-same path with or without this change) -- belongs with the degenerate-spiral/C++ item. Cant is not
-regenerated automatically when the horizontal's segment structure changes.
+same path with or without this change) -- belongs with the degenerate-spiral/C++ item.
+
+**Implemented (2026-09-25): cant follows horizontal edits.** ~~Cant is not regenerated automatically
+when the horizontal's segment structure changes.~~ Every horizontal rebuild (the PI method via
+`_generate_alignment_segments`, and the horizontal segment table) now pairs each cant layout with
+the horizontal before the edit (`tool.Alignment.pair_cant_with_horizontal`) and rebuilds it after
+(`tool.Alignment.follow_horizontal_with_cant`, replacing the type-only `sync_cant_segment_types`):
+one cant segment per horizontal segment again, with the new lengths and stations (previously a radius
+or spiral-length change left the cant lengths stale) and curve families. A horizontal segment the
+edit kept keeps its cant segment's GlobalId; a kept arc keeps its own cant values, hand-tuned ones
+included, mirrored only if that curve now turns the other way. A new arc (an inserted PI) gets the
+layout's design cant -- the largest cant it had anywhere -- and transitions/tangents are worked out
+from the arcs as Generate Cant Layout does. A cant layout whose segment count had already drifted
+from the horizontal's (hand-edited rows) is left alone, as before. Tested headless: radius change,
+PI delete, PI insert, spiral-family change, and a row added in the horizontal segment table.
+Not directly tested: the mirroring when a curve's turn direction flips.

@@ -314,7 +314,7 @@ class Alignment:
     #: (a plain linear cant ramp -- the conventional real-world pairing for a
     #: clothoid transition anyway). LINE/CIRCULARARC both become CONSTANTCANT
     #: (0 on tangents, the design value on arcs). Used by both
-    #: generate_cant_layout() and sync_cant_segment_types() so the two always
+    #: generate_cant_layout() and follow_horizontal_with_cant() so the two always
     #: agree on the mapping.
     CANT_TYPE_FOR_HORIZONTAL_TYPE = {
         "LINE": "CONSTANTCANT",
@@ -425,7 +425,7 @@ class Alignment:
 
     @classmethod
     def build_cant_specs_from_horizontal(
-        cls, h_segments: list, cant_value: float
+        cls, h_segments: list, cant_value: float, arc_cant=None
     ) -> list[tuple[str, float, float, float, Optional[float], Optional[float]]]:
         """One cant segment spec per real horizontal segment, mirroring its
         station range and curve family (see CANT_TYPE_FOR_HORIZONTAL_TYPE).
@@ -446,6 +446,11 @@ class Alignment:
         PI-method solver already produces; raises ValueError for any
         horizontal segment type with no CANT_TYPE_FOR_HORIZONTAL_TYPE entry.
 
+        ``arc_cant``, if given, is called with a CIRCULARARC's index into
+        h_segments and returns that arc's own (left, right) cant, or None for
+        the cant_value default -- so a regeneration can keep each curve's own
+        cant (see follow_horizontal_with_cant).
+
         :return: (predefined_type, length, start_left, start_right, end_left,
             end_right) tuples, in station order. end_left/end_right are None
             for CONSTANTCANT (matches how ALIGN_OT_apply_cant_segments already
@@ -458,6 +463,12 @@ class Alignment:
             if radius < 0.0:
                 return cant_value, 0.0
             return 0.0, 0.0
+
+        def _arc_left_right(index: int) -> tuple[float, float]:
+            own = arc_cant(index) if arc_cant is not None else None
+            if own is not None:
+                return own
+            return _outer_left_right(h_segments[index].DesignParameters.StartRadiusOfCurvature or 0.0)
 
         specs = []
         cur_left, cur_right = 0.0, 0.0
@@ -477,7 +488,7 @@ class Alignment:
                 continue
 
             if h_type == "CIRCULARARC":
-                cur_left, cur_right = _outer_left_right(dp.StartRadiusOfCurvature or 0.0)
+                cur_left, cur_right = _arc_left_right(i)
                 specs.append((cant_type, length, cur_left, cur_right, None, None))
                 continue
 
@@ -487,7 +498,7 @@ class Alignment:
             next_dp = h_segments[i + 1].DesignParameters if i + 1 < n else None
             prev_dp = h_segments[i - 1].DesignParameters if i > 0 else None
             if next_dp is not None and next_dp.PredefinedType == "CIRCULARARC":
-                target = _outer_left_right(next_dp.StartRadiusOfCurvature or 0.0)
+                target = _arc_left_right(i + 1)
                 start_left, start_right = cur_left, cur_right
                 end_left, end_right = target
             elif prev_dp is not None and prev_dp.PredefinedType == "CIRCULARARC":
@@ -503,62 +514,103 @@ class Alignment:
         return specs
 
     @classmethod
-    def sync_cant_segment_types(cls, alignment: "ifcopenshell.entity_instance") -> int:
-        """Keep an already-generated cant layout's curve *types* in step with
-        the horizontal layout's own, after a horizontal edit (Apply Curve,
-        Apply Horizontal Curves, or the raw segment table's Apply) changes
-        which spiral family a transition uses -- e.g. BLOSSCURVE to
-        COSINECURVE (per the user, 2026-09-16: "When editing horizontal curve
-        types update the cant layout to keep them in sync").
-
-        Matches cant segments to horizontal segments by position (the i-th
-        real cant segment corresponds to the i-th real horizontal segment) --
-        exactly how generate_cant_layout() built them in the first place, so
-        this holds as long as neither layout's segment *count* has drifted
-        independently (e.g. the raw segment table adding/removing rows on one
-        side only) since the last (re)generation. Silently does nothing if
-        there's no cant layout yet, or if the segment counts no longer match
-        -- forcing a positional correspondence that's gone stale would silently
-        retype the wrong segments, worse than leaving cant untouched until the
-        user regenerates it.
-
-        Only the PredefinedType changes here, in place -- start/end cant
-        values are left exactly as they are (this is a curve-family swap, not
-        a re-generation; see generate_cant_layout() for that). Returns the
-        number of cant segments actually retyped.
-        """
+    def pair_cant_with_horizontal(cls, alignment: "ifcopenshell.entity_instance") -> list:
+        """Before a horizontal edit: every cant layout that still corresponds one to one with the
+        horizontal (the i-th cant segment for the i-th horizontal segment, as generate_cant_layout
+        builds it), with (its cant segment, the horizontal segment's turn direction) for each
+        horizontal segment's entity id. Pass the result
+        to follow_horizontal_with_cant after the edit. A cant layout whose count has drifted from the
+        horizontal's (hand-edited in the cant table) is left out, and so left alone."""
         h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
-        cant_layouts = cls.get_all_cant_layouts(alignment)
-        if not h_layout or not cant_layouts:
-            return 0
+        if not h_layout:
+            return []
+        h_segments = cls.get_real_layout_segments(h_layout)
+        pairs = []
+        for cant_layout in cls.get_all_cant_layouts(alignment):
+            cant_segments = cls.get_real_layout_segments(cant_layout)
+            if cant_segments and len(cant_segments) == len(h_segments):
+                pairs.append(
+                    (
+                        cant_layout,
+                        {
+                            h.id(): (c, math.copysign(1.0, h.DesignParameters.StartRadiusOfCurvature or 0.0))
+                            for h, c in zip(h_segments, cant_segments)
+                        },
+                    )
+                )
+        return pairs
 
+    @classmethod
+    def follow_horizontal_with_cant(cls, alignment: "ifcopenshell.entity_instance", pairs: list) -> int:
+        """After a horizontal edit, rebuild each cant layout from ``pairs`` (see
+        pair_cant_with_horizontal) to match the horizontal again: one cant segment per horizontal
+        segment, with its new length and curve family (CANT_TYPE_FOR_HORIZONTAL_TYPE).
+
+        A horizontal segment the edit kept (see update_layout_segments) keeps its cant segment and
+        GlobalId; an arc it kept also keeps its own cant values (mirrored if the curve now turns the
+        other way). A new arc gets the layout's design cant -- the largest cant it had anywhere.
+        Transitions and tangents are worked out from the arcs, as generate_cant_layout does. Returns
+        the number of cant layouts rebuilt."""
+        h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+        if not h_layout or not pairs:
+            return 0
+        file = tool.Ifc.get()
         h_segments = cls.get_real_layout_segments(h_layout)
 
-        changed = 0
-        for cant_layout in cant_layouts:
-            cant_segments = cls.get_real_layout_segments(cant_layout)
-            if len(h_segments) != len(cant_segments):
-                # Horizontal is shared across every vertical/cant pairing --
-                # a count mismatch here means THIS cant is stale relative to
-                # the (just-changed) horizontal, not that the mapping is
-                # wrong in general. Skip it, same reasoning as the module
-                # docstring above.
+        rebuilt = 0
+        for cant_layout, partners in pairs:
+            design_cant = max(
+                (
+                    abs(value or 0.0)
+                    for c, _ in partners.values()
+                    for value in (
+                        c.DesignParameters.StartCantLeft,
+                        c.DesignParameters.StartCantRight,
+                        c.DesignParameters.EndCantLeft,
+                        c.DesignParameters.EndCantRight,
+                    )
+                ),
+                default=0.0,
+            )
+
+            def arc_cant(index: int, partners=partners):
+                h = h_segments[index]
+                partner, old_turn = partners.get(h.id(), (None, 0.0))
+                if partner is None or partner.DesignParameters.PredefinedType != "CONSTANTCANT":
+                    return None
+                left = partner.DesignParameters.StartCantLeft or 0.0
+                right = partner.DesignParameters.StartCantRight or 0.0
+                if math.copysign(1.0, h.DesignParameters.StartRadiusOfCurvature or 0.0) != old_turn:
+                    left, right = right, left  # the curve turns the other way now: mirror its cant
+                return left, right
+
+            try:
+                specs = cls.build_cant_specs_from_horizontal(h_segments, design_cant, arc_cant)
+            except ValueError:
                 continue
-            for h_seg, cant_seg in zip(h_segments, cant_segments):
-                h_type = h_seg.DesignParameters.PredefinedType
-                expected = cls.CANT_TYPE_FOR_HORIZONTAL_TYPE.get(h_type)
-                if expected is None:
-                    continue
-                cant_dp = cant_seg.DesignParameters
-                if cant_dp.PredefinedType != expected:
-                    cant_dp.PredefinedType = expected
-                    changed += 1
+            if len(specs) != len(h_segments):
+                continue
 
-        if changed:
-            file = tool.Ifc.get()
+            new_segments = []
+            dist_along = 0.0
+            for h, (predefined_type, length, start_left, start_right, end_left, end_right) in zip(h_segments, specs):
+                design_parameters = file.createIfcAlignmentCantSegment(
+                    StartDistAlong=dist_along,
+                    HorizontalLength=length,
+                    StartCantLeft=start_left,
+                    EndCantLeft=end_left,
+                    StartCantRight=start_right,
+                    EndCantRight=end_right,
+                    PredefinedType=predefined_type,
+                )
+                new_segments.append((partners.get(h.id(), (None, 0.0))[0], design_parameters))
+                dist_along += length
+            ifcopenshell.api.alignment.update_layout_segments(file, cant_layout, new_segments)
+            rebuilt += 1
+
+        if rebuilt:
             ifcopenshell.api.alignment.create_representation(file, alignment)
-
-        return changed
+        return rebuilt
 
     @classmethod
     def remove_cant_layout(cls, cant_layout: "ifcopenshell.entity_instance") -> None:
