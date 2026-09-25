@@ -73,6 +73,26 @@ def _auto_finish_unrelated_pi_markers(active, alignment) -> None:
         operator._refresh_pi_marker_visuals(bpy.context, active_alignment_id or 0)
 
 
+def _auto_finish_unrelated_tables(scene, active, alignment) -> None:
+    """Close a staged point/offset/PI table left open for an alignment other than the one now active,
+    discarding its unapplied edits -- the same "moving on to something else" rule as
+    _auto_finish_unrelated_pi_markers. Otherwise that table stays open, and every table's poll refuses
+    to open another one while it is, leaving no way to edit the alignment that's now selected."""
+    if active is None:
+        return
+    props = scene.CivilAlignmentProperties
+    active_id = alignment.id() if alignment else None
+    if props.offset_value_rows and props.editing_offset_alignment_id != active_id:
+        props.offset_value_rows.clear()
+        props.editing_offset_alignment_id = 0
+    if props.polyline_point_rows and props.editing_polyline_alignment_id != active_id:
+        props.polyline_point_rows.clear()
+        props.editing_polyline_alignment_id = 0
+    if props.horizontal_pi_rows and props.editing_horizontal_pi_alignment_id not in (0, active_id):
+        props.horizontal_pi_rows.clear()
+        props.editing_horizontal_pi_alignment_id = 0
+
+
 @bpy.app.handlers.persistent
 def _on_active_object_changed(scene, depsgraph):
     """Sync the alignment dropdown, vertical profile, and Properties panel on selection change.
@@ -103,6 +123,7 @@ def _on_active_object_changed(scene, depsgraph):
         _clamp_alignment_enum(props)
         alignment = tool.Alignment.get_active_alignment()
         _auto_finish_unrelated_pi_markers(active, alignment)
+        _auto_finish_unrelated_tables(scene, active, alignment)
         new_val = str(alignment.id()) if alignment else "0"
 
         # Sync dropdown (only needed when selection came from 3D view / outliner)
@@ -159,6 +180,7 @@ classes = (
     prop.VerticalAlignmentItem,
     prop.CantAlignmentItem,
     prop.VerticalPIMarker,
+    prop.OffsetValueRow,
     prop.PolylinePointRow,
     prop.HorizontalPIMarker,
     prop.HorizontalSegmentRow,
@@ -171,6 +193,7 @@ classes = (
     ui.ALIGN_OT_toggle_v_segments,
     ui.ALIGN_OT_toggle_cant_segments,
     ui.ALIGN_UL_vertical_pi_markers,
+    ui.ALIGN_UL_offset_values,
     ui.ALIGN_UL_polyline_points,
     ui.ALIGN_UL_horizontal_pi_markers,
     ui.ALIGN_UL_h_segments,
@@ -214,6 +237,11 @@ classes = (
     operator.ALIGN_OT_extend_polyline_alignment,
     operator.ALIGN_OT_edit_polyline_points,
     operator.ALIGN_OT_load_polyline_table,
+    operator.ALIGN_OT_load_offset_table,
+    operator.ALIGN_OT_add_offset_value_row,
+    operator.ALIGN_OT_remove_offset_value_row,
+    operator.ALIGN_OT_apply_offset_table,
+    operator.ALIGN_OT_finish_offset_table,
     operator.ALIGN_OT_add_polyline_point_row,
     operator.ALIGN_OT_remove_polyline_point_row,
     operator.ALIGN_OT_apply_polyline_table,
