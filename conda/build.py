@@ -17,7 +17,6 @@ CondaVar = Literal[
     # - CMAKE_INSTALL_PREFIX (depends on the platform)
     "CMAKE_ARGS",
     "CPU_COUNT",
-    "RECIPE_DIR",
     "PKG_VERSION",
     "PREFIX",
     "LIBRARY_PREFIX",
@@ -81,14 +80,14 @@ def main() -> None:
     run(cmake_command, env=build_env)
     run(["cmake", "--build", str(BUILD_DIR), "-j", get_conda_var("CPU_COUNT")])
     run(["cmake", "--install", str(BUILD_DIR)])
-    run(
-        [
-            sys.executable,
-            str(Path(get_conda_var("RECIPE_DIR")) / "update_version_init.py"),
-            get_conda_var("PKG_VERSION"),
-            str(Path(get_conda_var("SP_DIR")) / "ifcopenshell" / "__init__.py"),
-        ]
+
+    init_path = Path(get_conda_var("SP_DIR")) / "ifcopenshell" / "__init__.py"
+    version = get_conda_var("PKG_VERSION")
+    init_path.write_text(
+        init_path.read_text(encoding="utf-8").replace('version = "0.0.0"', f'version = "{version}"'),
+        encoding="utf-8",
     )
+    print(f"Updated version in {init_path} to {version}")
 
 
 if __name__ == "__main__":
