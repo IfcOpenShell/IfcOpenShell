@@ -38,8 +38,7 @@ jobs:
         libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev libocct-ocaf-dev libocct-visualization-dev libocct-data-exchange-dev \
         libcgal-dev nlohmann-json3-dev libeigen3-dev
 
-    -
-      name: ccache
+    - name: ccache
       uses: hendrikmuhs/ccache-action@v1.2.24
 
     -
@@ -69,8 +68,7 @@ jobs:
          -DJSON_INCLUDE_DIR=/usr/include \
          -DEIGEN_DIR=/usr/include/eigen3
         cmake --build . --target install -j $(nproc)
-    -
-      name: Package
+    - name: Package
       run: |
         make package
       working-directory: build
@@ -98,20 +96,16 @@ jobs:
         # Artifact name
         name: ifcos-artifacts
         path: artifacts/
-    -
-      name: Set up QEMU
+    - name: Set up QEMU
       uses: docker/setup-qemu-action@v4
-    -
-      name: Set up Docker Buildx
+    - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v4
-    -
-      name: Login to Dockerhub
+    - name: Login to Dockerhub
       uses: docker/login-action@v4
       with:
         username: aecgeeks
         password: ${{ secrets.DOCKER_HUB_TOKEN }}
-    -
-      name: Build container image
+    - name: Build container image
       uses: docker/build-push-action@v7
       with:
         context: artifacts
