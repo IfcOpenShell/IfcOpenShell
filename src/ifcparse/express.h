@@ -26,6 +26,7 @@
 #include "utils.h"
 
 #include <atomic>
+#include <optional>
 #include <memory>
 
 class aggregate_of_instance;
@@ -123,6 +124,11 @@ class IFC_PARSE_API base {
     void unset_attribute_value(size_t attribute_index);
 
     ifcopenshell::attribute_value get_attribute_value(size_t attribute_index) const;
+
+#ifndef SWIG
+    // See instance_data::erase_from_aggregate().
+    std::optional<size_t> erase_from_aggregate(size_t attribute_index, const express::base& instance);
+#endif
 
     uint32_t identity() const;
 

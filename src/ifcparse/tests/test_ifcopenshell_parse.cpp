@@ -765,3 +765,43 @@ TEST_CASE("A file loaded out of id order lists each type in id order", "[ifcpars
     }
     CHECK(ids == std::vector<int>{1, 3, 5});
 }
+
+TEST_CASE("Removing an instance referenced from aggregates edits them in place", "[ifcparse]") {
+    ifcopenshell::file file(ifcopenshell::schema_by_name("IFC4"));
+    const auto* point_declaration = file.schema()->declaration_by_name("IfcCartesianPoint");
+    auto p0 = file.create(point_declaration);
+    auto p1 = file.create(point_declaration);
+    auto p2 = file.create(point_declaration);
+    // A list naming the same instance twice.
+    auto polyline = file.create(file.schema()->declaration_by_name("IfcPolyline"));
+    polyline.set_attribute_value(0, std::vector<express::base>{p0, p1, p2, p1});
+    // A list of lists.
+    auto surface = file.create(file.schema()->declaration_by_name("IfcBSplineSurfaceWithKnots"));
+    surface.set_attribute_value(2, std::vector<std::vector<express::base>>{{p0, p1}, {p1, p2}});
+    // An optional aggregate that is left empty.
+    const auto* wall_type_declaration = file.schema()->declaration_by_name("IfcWallType");
+    auto wall_type = file.create(wall_type_declaration);
+    auto map = file.create(file.schema()->declaration_by_name("IfcRepresentationMap"));
+    const size_t maps_index = (size_t)wall_type_declaration->as_entity()->attribute_index("RepresentationMaps");
+    wall_type.set_attribute_value(maps_index, std::vector<express::base>{map});
+
+    // One inverse record per occurrence: twice in the polyline, twice in the surface.
+    REQUIRE(file.instances_by_reference((int)p1.id()).size() == 4);
+    file.remove_entity(p1);
+
+    std::vector<express::base> points = polyline.get_attribute_value(0);
+    CHECK(points == std::vector<express::base>{p0, p2});
+    std::vector<std::vector<express::base>> control_points = surface.get_attribute_value(2);
+    CHECK(control_points == std::vector<std::vector<express::base>>{{p0}, {p2}});
+    // The other points keep their inverses.
+    CHECK(file.instances_by_reference((int)p0.id()).size() == 2);
+    CHECK(file.instances_by_reference((int)p2.id()).size() == 2);
+    std::vector<int> point_ids;
+    for (const auto& instance : file.instances_by_type_excl_subtypes(point_declaration)) {
+        point_ids.push_back(instance.id());
+    }
+    CHECK(point_ids == std::vector<int>{(int)p0.id(), (int)p2.id()});
+
+    file.remove_entity(map);
+    CHECK(wall_type.get_attribute_value(maps_index).isNull());
+}
