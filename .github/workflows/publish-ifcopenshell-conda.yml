@@ -70,6 +70,8 @@ jobs:
         run: |
           pwd
           if [[ "$RUNNER_OS" == "Windows" ]]; then
+            # Keep forward slashes - backslashes would break "upload to anaconda"
+            # as bash would treat them as escape characters.
             echo "ARTIFACTS_DIR=D:/a/artifacts" >> $GITHUB_ENV
           elif [[ "$RUNNER_OS" == "macOS" ]]; then
             echo "ARTIFACTS_DIR=/Users/runner/work/artifacts" >> $GITHUB_ENV
@@ -105,11 +107,5 @@ jobs:
           VERSION_OVERRIDE: ${{ needs.resolve-version.outputs.verdate }}
 
       - name: upload to anaconda
-        if: ${{ matrix.platform.name == 'win' }}
-        run: |
-          anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user ifcopenshell '${{ env.ARTIFACTS_DIR }}/${{ matrix.platform.pkg_dir }}/*.conda'
-
-      - name: upload to anaconda
-        if: ${{ matrix.platform.name != 'win' }}
         run: |
           anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user ifcopenshell ${{ env.ARTIFACTS_DIR }}/${{ matrix.platform.pkg_dir }}/*.conda
