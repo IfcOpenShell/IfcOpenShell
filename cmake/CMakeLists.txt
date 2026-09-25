@@ -106,7 +106,8 @@ if(BUILD_BONSAIVIEWER AND NOT BUILD_BONSAIVIEWER_WGPU)
                    "(SceneLoader uses ViewportWindow); auto-enabling.")
     set(BUILD_BONSAIVIEWER_WGPU ON)
 endif()
-option(BUILD_PACKAGE "" OFF)
+# TODO: still needed?
+option(BUILD_PACKAGE "Install the Python module to lib/python3/dist-packages under the install prefix" OFF)
 
 option(
     BUILD_FUZZERS
