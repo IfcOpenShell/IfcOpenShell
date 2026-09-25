@@ -41,6 +41,12 @@ requirements:
     - zlib
     # bug upstream: https://github.com/conda-forge/vtk-feedstock/issues/459
     - xorg-xorgproto
+    # TODO: Drop once occt is bumped to vtk >=9.4.2.
+    # Only needed because of old occt, which pins vtk-base <9.4.2: vtk built with TBB on Windows
+    # doesn't declare tbb-devel needed for find_package(VTK).
+    - if: win
+      then:
+        - tbb-devel
   run:
     - python
     - shapely
