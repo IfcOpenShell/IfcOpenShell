@@ -1025,6 +1025,7 @@ EXCLUDE_PATTERNS       =
 # ANamespace::AClass, ANamespace::*Test
 
 EXCLUDE_SYMBOLS        = "ifcopenshell::geom::opaque_number::*" \
+                         ifcopenshell::geom::impl::bvh_tree::clash_task \
                          ifcopenshell::entity::attribute_by_name_cmp \
                          ifcopenshell::impl::rocks_db_file_storage::rocksdb_types_iterator \
                          ifcopenshell::impl::in_memory_file_storage::type_iterator \
