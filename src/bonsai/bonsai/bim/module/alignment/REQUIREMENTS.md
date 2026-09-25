@@ -8,7 +8,7 @@ resolving them.
 ## Status and work plan (resume here)
 
 *Last updated 2026-09-25.* Branch `rab_infrastructure` (F:\ifcopenshell), 17 commits ahead of
-`origin/rab_infrastructure`, none pushed, working tree clean. Commits this round, oldest first:
+`origin/rab_infrastructure` before this push (all pushed 2026-09-25). Commits this round, oldest first:
 `5123046cf` typed 180 degree polyline angle fix (also its own branch/PR
 `rab_polyline_tool_180_fix` -- **PR already open**), `97e04ca7e` cherry-pick of #9505 (IFC4x3 Road
 and Bridge templates), `483a4c9a5` interactive PI editing, `2aee75b33` bearings/deflections in the
@@ -40,6 +40,7 @@ edits + Insert/Delete PI + PI click-pick (§11), `6ea213041` cant follows horizo
    hit when a spiral-less curve sits next to a spiralled one); and
    [IfcOpenShell#5360](https://github.com/IfcOpenShell/IfcOpenShell/issues/5360) (sample straight
    regions by their end points only).
+4. **Before the PR for the final work is posted: delete `dev_tests/`** (see Testing below).
 
 **Smaller open items noted along the way:**
 - Typed/dragged values are still limited to float32 resolution (~3 cm at 500 km coordinates) -- a
@@ -55,9 +56,12 @@ edits + Insert/Delete PI + PI click-pick (§11), `6ea213041` cant follows horizo
 
 **Testing:** headless Blender scripts (`blender --background --python-exit-code 1 --python X.py`,
 Blender 5.1) and a UI-mode harness (`ui_invoke.py`, `ui_pick.py` with `--enable-event-simulate`)
-are kept in `F:/bonsai_alignment_tests/` (see its README). Library tests:
+are in `dev_tests/` next to this file (see its README). Library tests:
 `src/ifcopenshell-python/test/api/alignment` (`python -m pytest -q test/api/alignment` from
 `src/ifcopenshell-python`).
+
+**Before posting the PR for the final alignment work: remove `dev_tests/`** (temporary development
+scripts, committed only so work can resume on another computer).
 
 ## 1. Table-based editing
 
