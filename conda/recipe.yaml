@@ -12,6 +12,7 @@ source:
 
 build:
   number: ${{ build }}
+  script: build.py
   dynamic_linking:
     binary_relocation: ${{ true if osx }}
 
