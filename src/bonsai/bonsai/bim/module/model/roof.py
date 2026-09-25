@@ -84,27 +84,25 @@ class GenerateHippedRoof(bpy.types.Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
 
         bm = tool.Blender.get_bmesh_for_mesh(obj.data)
-        op_status, error_message = is_valid_roof_footprint(bm)
-        if error_message:
-            self.report(op_status, error_message)
-            return {"CANCELLED"}
-
+        flatten_roof_footprint(bm)
         generate_hipped_roof_bmesh(bm, self.mode, self.height, self.angle)
         tool.Blender.apply_bmesh(obj.data, bm)
         return {"FINISHED"}
 
 
-def is_valid_roof_footprint(bm: bmesh.types.BMesh) -> tuple[set[str], str]:
-    # should be bmesh to support edit mode
+def flatten_roof_footprint(bm: bmesh.types.BMesh) -> bool:
+    """Snap all footprint verts to the first vert's Z-level (the level used by
+    `generate_hipped_roof_bmesh`). Returns True if any vert was moved."""
     bm.verts.ensure_lookup_table()
+    if not bm.verts:
+        return False
     base_z = bm.verts[0].co.z
-    all_verts_same_level = all([tool.Cad.is_x(v.co.z - base_z, 0) for v in bm.verts[1:]])
-    if not all_verts_same_level:
-        return (
-            {"ERROR"},
-            "\nAll roof footprint vertices should have same Z-level.\nCurrently Z-level doesn't completely match",
-        )
-    return ({"FINISHED"}, "")
+    moved = False
+    for v in bm.verts[1:]:
+        if v.co.z != base_z:
+            v.co.z = base_z
+            moved = True
+    return moved
 
 
 def generate_hipped_roof_bmesh(
@@ -819,21 +817,20 @@ class EnableEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
             # copying to make sure not to mutate the edit mode bmesh
             bm = tool.Blender.get_bmesh_for_mesh(obj.data)
             main_bm = bm.copy()
-            op_status, error_message = is_valid_roof_footprint(main_bm)
-            if error_message:
-                print("Error: %s" % error_message)
-                return main_bm
-
             main_bm.edges.layers.int.new("BBIM_preview")
 
+            # Preview the roof from a flattened copy so it doesn't vanish while a
+            # vert is off-level; finishing the path flattens the same way.
+            roof_src_bm = bm.copy()
+            flatten_roof_footprint(roof_src_bm)
             second_bm = generate_hipped_roof_bmesh(
-                bm,
+                roof_src_bm,
                 props.generation_method,
                 props.height,
                 props.roof_thickness,
                 props.angle,
                 props.rafter_edge_angle,
-                mutate_current_bmesh=False,
+                mutate_current_bmesh=True,
             )
 
             tool.Blender.bmesh_join(main_bm, second_bm, callback=mark_preview_edges)
@@ -918,10 +915,9 @@ class FinishEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
         props = tool.Model.get_roof_props(obj)
 
         bm = tool.Blender.get_bmesh_for_mesh(obj.data)
-        op_status, error_message = is_valid_roof_footprint(bm)
-        if error_message:
-            self.report(op_status, error_message)
-            return {"CANCELLED"}
+        if flatten_roof_footprint(bm):
+            tool.Blender.apply_bmesh(obj.data, bm, obj)
+            self.report({"WARNING"}, "Roof footprint vertices were flattened to the same Z-level")
 
         roof_data = props.get_general_kwargs(convert_to_project_units=True)
         path_data = get_path_data(obj)
