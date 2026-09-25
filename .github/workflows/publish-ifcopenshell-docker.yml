@@ -76,7 +76,7 @@ jobs:
         cmake --build . --target install -j $(nproc)
     - name: Package
       run: |
-        make package
+        cmake --build . --target package
       working-directory: build
     - name: Upload
       uses: actions/upload-artifact@v7
