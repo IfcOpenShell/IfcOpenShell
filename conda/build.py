@@ -69,6 +69,15 @@ def main() -> None:
         f"-DCMAKE_PREFIX_PATH:FILEPATH={DEPENDENCY_PREFIX}",
         f"-DCMAKE_SYSTEM_PREFIX_PATH:FILEPATH={DEPENDENCY_PREFIX}",
     ]
+
+    if MAC:
+        # Qt6 is pulled in by VTK (via OCCT). Older conda-forge osx-arm64 qt6-main builds
+        # (6.8.3 build <3) were cross-compiled and require QT_HOST_PATH in find_package(Qt6).
+        # See https://github.com/conda-forge/qt-main-feedstock/issues/273.
+        # TODO: drop once qt starts to resolve to 6.8.4, currently it resolves 6.8.3
+        # by some tricky dependency chain.
+        cmake_command.append("-DQT_REQUIRE_HOST_PATH_CHECK:BOOL=OFF")
+
     run(cmake_command, env=build_env)
     run(["cmake", "--build", str(BUILD_DIR), "-j", get_conda_var("CPU_COUNT")])
     run(["cmake", "--install", str(BUILD_DIR)])
