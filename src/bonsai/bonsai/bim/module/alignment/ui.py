@@ -141,6 +141,20 @@ def _joins_by_distance(item) -> bool:
     return item.curve_type in {"CIRCULAR", "SPIRAL_CIRCULAR"} and item.join_next and item.join_mode == "DISTANCE"
 
 
+def _draw_length_mismatch(box, layout_entity) -> None:
+    """Under a vertical or cant layout's header: when it doesn't end where the horizontal does --
+    allowed, they're edited independently -- say by how much, with the Match Horizontal Length quick
+    fix."""
+    delta = tool.Alignment.get_length_mismatch(layout_entity)
+    if delta is None:
+        return
+    row = box.row(align=True)
+    word = "past" if delta > 0 else "short of"
+    row.label(text=f"Ends {abs(delta):.3f} {word} the horizontal", icon="ERROR")
+    op = row.operator("align.match_horizontal_length", text="Match", icon="ARROW_LEFTRIGHT")
+    op.layout_id = layout_entity.id()
+
+
 class ALIGN_UL_polyline_points(UIList):
     """A polyline alignment's points, staged for table editing (align.load_polyline_table)."""
 
@@ -356,10 +370,12 @@ class ALIGN_PT_alignment_authoring(Panel):
         if is_polyline:
             # a polyline alignment (REQUIREMENTS.md §5.1): its own draw/edit tools, no layouts
             row.operator("align.draw_polyline_alignment", icon="EYEDROPPER")
+            row.operator("align.extend_polyline_alignment", text="", icon="FORWARD")
             row.operator("align.edit_polyline_points", text="", icon="EMPTY_AXIS", depress=markers_present)
             row.operator("align.load_polyline_table", text="", icon="ANIM_DATA", depress=polyline_table_present)
         else:
             row.operator("align.draw_horizontal_alignment", icon="EYEDROPPER")
+            row.operator("align.extend_horizontal_alignment", text="", icon="FORWARD")
             row.operator("align.edit_horizontal_pis", text="", icon="EMPTY_AXIS", depress=markers_present)
             row.operator("align.load_horizontal_pi_table", text="", icon="ANIM_DATA", depress=table_present)
         row.operator("align.remove_alignment", text="", icon="TRASH")
@@ -964,6 +980,11 @@ class ALIGN_PT_alignment_segments(Panel):
         )
         pi_op.layout_id = v_id
 
+        extend_row = row.row(align=True)
+        extend_row.enabled = not h_markers_open
+        extend_op = extend_row.operator("align.extend_vertical_alignment", text="", icon="FORWARD")
+        extend_op.layout_id = v_id
+
         # Only shown once this vertical's PIs are loaded -- the button that ends the
         # edit lives right next to the one that started it, rather than only in the
         # (separate, collapsed-by-default) Vertical Alignment panel below.
@@ -988,6 +1009,8 @@ class ALIGN_PT_alignment_segments(Panel):
         del_row.enabled = not h_markers_open and not has_cant
         del_op = del_row.operator("align.remove_vertical_layout", text="", icon="TRASH")
         del_op.layout_id = v_id
+
+        _draw_length_mismatch(box, layout_entity)
 
         if not expanded:
             return
@@ -1092,6 +1115,8 @@ class ALIGN_PT_alignment_segments(Panel):
 
         del_op = row.operator("align.remove_cant_layout", text="", icon="TRASH")
         del_op.layout_id = c_id
+
+        _draw_length_mismatch(box, layout_entity)
 
         if not expanded:
             return
