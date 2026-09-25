@@ -47,6 +47,12 @@ requirements:
     - if: win
       then:
         - tbb-devel
+    # TODO: Drop once occt is bumped to >=7.9.1.
+    # occt <7.9.1 CMake config lists bare `GL` in TKOpenGl/TKV3d link libraries,
+    # but doesn't depend on libgl-devel, which provides libGL.so for linking.
+    - if: linux
+      then:
+        - libgl-devel
   run:
     - python
     - shapely
