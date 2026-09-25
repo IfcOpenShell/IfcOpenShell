@@ -1636,3 +1636,27 @@ from the arcs as Generate Cant Layout does. A cant layout whose segment count ha
 from the horizontal's (hand-edited rows) is left alone, as before. Tested headless: radius change,
 PI delete, PI insert, spiral-family change, and a row added in the horizontal segment table.
 Not directly tested: the mirroring when a curve's turn direction flips.
+
+## 12. Exact values through the staged tables (float32 precision)
+
+**Fixed (2026-09-25).** Blender FloatProperties hold only a float32, so every staged table rounded
+what it loaded (312.4567891 read back as 312.45670166) and Apply wrote that noise back to IFC even
+for values nobody touched; at large local coordinates (e.g. 512345.678) float32 is only good to a few
+centimetres, so an untouched PI or polyline point could move. Typed values came back noisy too
+(0.2 written as 0.20000000298).
+
+Every staged row -- horizontal/vertical/cant segment tables, the horizontal PI table, the vertical
+PI list and its start/end, polyline points, offsets -- and every PI marker now carries a hidden
+`exact_values` store. Loaders stage through `tool.Alignment.stage_exact(owner, scale, **values)`,
+which remembers the unscaled IFC value; appliers read through `tool.Alignment.exact(owner, name,
+scale)`, which returns that exact value while the field is unchanged, else the shortest decimal with
+the same float32 as what's shown (`snap_float32`), unscaled. PI markers remember the exact local PI
+point they were placed at and Apply uses it while the marker hasn't moved
+(`remember_marker_point`/`marker_local_point`). Tested headless with ~512 km local coordinates and
+7-decimal radii/lengths: untouched tables write back bit-identical design values; PI-method paths
+come back within 1e-6 (the PI points are rebuilt by intersecting tangents, double rounding only);
+typed 250.2 / 111.3 are written as exactly that.
+
+**Still float32:** a value *typed or dragged* in is limited to float32 resolution -- at 500 km
+coordinates, about 3 cm; that would need a string-backed field.
+
