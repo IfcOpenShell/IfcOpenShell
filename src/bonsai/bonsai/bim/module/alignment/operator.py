@@ -29,6 +29,8 @@ from typing import TYPE_CHECKING
 import bonsai.core.alignment as core
 import bonsai.tool as tool
 import ifcopenshell.api.alignment
+from ifcopenshell.api.alignment.layout_horizontal_alignment_by_pi_method import _horizontal_design_parameters
+from ifcopenshell.api.alignment.layout_vertical_alignment_by_pi_method import _vertical_design_parameters
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.unit
 from bpy_extras.io_utils import ImportHelper
@@ -934,9 +936,11 @@ def _generate_alignment_segments(context, alignment, hpoints, radii):
     # per-layout/per-segment objects alongside it.
     tool.Alignment.remove_layout_and_child_layout_objects(alignment)
 
-    tool.Alignment.clear_layout_segments(h_layout)
     try:
-        tool.Alignment.safe_layout_horizontal_by_pi_method(ifc, h_layout, hpoints, radii)
+        # keep the existing segments where they correspond (REQUIREMENTS.md §11), else rebuild
+        if not _update_horizontal_pi_segments(ifc, h_layout, hpoints, radii):
+            tool.Alignment.clear_layout_segments(h_layout)
+            tool.Alignment.safe_layout_horizontal_by_pi_method(ifc, h_layout, hpoints, radii)
     except ValueError as e:
         # Solving the exact same hpoints/radii already succeeded above, so reaching here means the
         # *write* step itself failed for some unrelated reason (e.g. a geometry-kernel mapping
@@ -988,27 +992,33 @@ def _create_pi_markers(context, alignment_id, raw_points):
     """
     n = len(raw_points)
     markers = [_create_endpoint_marker(context, alignment_id, "START", raw_points[0], pi_index=0)]
-    for i, (x, y, z) in enumerate(raw_points):
+    for i, point in enumerate(raw_points):
         if i == 0 or i == n - 1:
             continue
-        empty = bpy.data.objects.new(f"PI {i} (tangent)", None)
-        # A minimal, small click target -- PIMarkerDecorator's colored
-        # screen-space dot (red/green by curve state) plus its "PI n" label
-        # is the actual visual cue now; a full-size SPHERE display here would
-        # just double it up with a second, competing circle.
-        empty.empty_display_type = "PLAIN_AXES"
-        empty.empty_display_size = 0.3
-        empty.location = (x, y, z)
-        _lock_pi_marker_transform(empty)
-        marker = empty.bonsai_pi_curve_marker
-        marker.is_pi_marker = True
-        marker.alignment_id = alignment_id
-        marker.pi_index = i
-        marker.curve_type = "TANGENT"
-        context.collection.objects.link(empty)
-        markers.append(empty)
+        markers.append(_create_interior_pi_marker(context, alignment_id, i, point))
     markers.append(_create_endpoint_marker(context, alignment_id, "END", raw_points[n - 1], pi_index=n - 1))
     return markers
+
+
+def _create_interior_pi_marker(context, alignment_id, pi_index, point):
+    """An interior PI marker empty at ``point`` (Blender-world XYZ), sharp (TANGENT) until given a curve."""
+    empty = bpy.data.objects.new(f"PI {pi_index} (tangent)", None)
+    # A minimal, small click target -- PIMarkerDecorator's colored
+    # screen-space dot (red/green by curve state) plus its "PI n" label
+    # is the actual visual cue now; a full-size SPHERE display here would
+    # just double it up with a second, competing circle. ALIGN_OT_pick_pi_marker
+    # makes the dot itself the click target.
+    empty.empty_display_type = "PLAIN_AXES"
+    empty.empty_display_size = 0.3
+    empty.location = point
+    _lock_pi_marker_transform(empty)
+    marker = empty.bonsai_pi_curve_marker
+    marker.is_pi_marker = True
+    marker.alignment_id = alignment_id
+    marker.pi_index = pi_index
+    marker.curve_type = "TANGENT"
+    context.collection.objects.link(empty)
+    return empty
 
 
 def _create_endpoint_marker(context, alignment_id, role, point, pi_index=0):
@@ -1070,6 +1080,232 @@ def _active_pi_marker(context):
     if obj is not None and obj.bonsai_pi_curve_marker.is_pi_marker:
         return obj
     return None
+
+
+class ALIGN_OT_pick_pi_marker(Operator):
+    """Select the horizontal PI marker nearest the click"""
+
+    bl_idname = "align.pick_pi_marker"
+    bl_label = "Pick PI Marker"
+    bl_description = "Select the PI marker under the mouse (within a few pixels of its dot)"
+    bl_options = {"REGISTER", "UNDO"}
+
+    # Same pick radius as the vertical profile's PIs (ALIGN_OT_drag_vertical_pis.HIT_RADIUS_PX): the
+    # marker empties themselves are tiny crosses, so Blender's own click-select rarely hits them.
+    HIT_RADIUS_PX = 12.0
+
+    @classmethod
+    def poll(cls, context):
+        return context.area is not None and context.area.type == "VIEW_3D" and context.mode == "OBJECT"
+
+    def invoke(self, context, event):
+        from bpy_extras.view3d_utils import location_3d_to_region_2d
+
+        found = _find_profile_view(context)
+        if found is not None and found[0] == context.area:
+            return {"PASS_THROUGH"}  # the profile view picks its own (vertical) PIs
+        region, rv3d = context.region, context.region_data
+        if region is None or rv3d is None:
+            return {"PASS_THROUGH"}
+        best, best_d2 = None, self.HIT_RADIUS_PX**2
+        for obj in context.visible_objects:
+            if not obj.bonsai_pi_curve_marker.is_pi_marker:
+                continue
+            px = location_3d_to_region_2d(region, rv3d, obj.matrix_world.translation)
+            if px is None:
+                continue
+            d2 = (px[0] - event.mouse_region_x) ** 2 + (px[1] - event.mouse_region_y) ** 2
+            if d2 <= best_d2:
+                best, best_d2 = obj, d2
+        if best is None:
+            return {"PASS_THROUGH"}  # not on a PI: Blender's normal click-select
+        if not event.shift:
+            for obj in context.selected_objects:
+                obj.select_set(False)
+        best.select_set(True)
+        context.view_layer.objects.active = best
+        return {"FINISHED"}
+
+
+def _renumber_pi_markers(alignment_id) -> None:
+    """Number an alignment's markers 0..n in their current order (Start, the PIs, End) after one was
+    inserted or deleted, relabelling the PIs to match."""
+    for i, obj in enumerate(_find_pi_markers(alignment_id)):
+        data = obj.bonsai_pi_curve_marker
+        data.pi_index = i
+        if _is_interior_pi_marker(obj):
+            obj.name = f"PI {i} ({_pi_curve_marker_label(data)})"
+
+
+def _select_only(context, obj) -> None:
+    for other in context.selected_objects:
+        other.select_set(False)
+    obj.select_set(True)
+    context.view_layer.objects.active = obj
+
+
+class ALIGN_OT_insert_pi_marker(Operator):
+    """Insert a PI halfway along the leg after the selected Start/PI marker"""
+
+    bl_idname = "align.insert_pi_marker"
+    bl_label = "Insert PI"
+    bl_description = (
+        "Insert a new PI halfway to the next PI; drag it off the line, give it a curve, then Apply. "
+        "Every other PI keeps its segments"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        marker = _active_pi_marker(context)
+        if marker is None or marker.bonsai_pi_curve_marker.role not in ("START", "PI"):
+            cls.poll_message_set("Select the Start Point or a PI marker")
+            return False
+        return True
+
+    def execute(self, context):
+        active = _active_pi_marker(context)
+        alignment_id = active.bonsai_pi_curve_marker.alignment_id
+        markers = _find_pi_markers(alignment_id)
+        index = markers.index(active)
+        if index + 1 >= len(markers):
+            self.report({"ERROR"}, "There's no next PI to insert before")
+            return {"CANCELLED"}
+        following = markers[index + 1]
+        for obj in markers[index + 1 :]:
+            obj.bonsai_pi_curve_marker.pi_index += 1
+        midpoint = (active.location + following.location) / 2.0
+        new = _create_interior_pi_marker(context, alignment_id, index + 1, midpoint)
+        _renumber_pi_markers(alignment_id)
+        _select_only(context, new)
+        _refresh_pi_marker_visuals(context, alignment_id)
+        tool.Blender.update_viewport()
+        return {"FINISHED"}
+
+
+class ALIGN_OT_delete_pi_marker(Operator):
+    """Delete the selected PI; Apply rejoins its neighbours"""
+
+    bl_idname = "align.delete_pi_marker"
+    bl_label = "Delete PI"
+    bl_description = (
+        "Remove this PI and its curve; Apply rejoins the neighbouring PIs. Every other PI keeps its segments"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        marker = _active_pi_marker(context)
+        if marker is None or not _is_interior_pi_marker(marker):
+            cls.poll_message_set("Select a PI marker (not the Start or End Point)")
+            return False
+        return True
+
+    def execute(self, context):
+        active = _active_pi_marker(context)
+        alignment_id = active.bonsai_pi_curve_marker.alignment_id
+        markers = _find_pi_markers(alignment_id)
+        previous = markers[markers.index(active) - 1]
+        bpy.data.objects.remove(active, do_unlink=True)
+        _renumber_pi_markers(alignment_id)
+        _select_only(context, previous)
+        _refresh_pi_marker_visuals(context, alignment_id)
+        tool.Blender.update_viewport()
+        return {"FINISHED"}
+
+
+_PI_ROW_KIND_ITEMS = [("HORIZONTAL", "Horizontal", ""), ("VERTICAL", "Vertical", "")]
+
+
+def _staged_pi_rows(props, kind):
+    """(rows, active index property name, the row's own point, the staged start/end points) of the
+    horizontal PI table or the vertical PI list."""
+    if kind == "HORIZONTAL":
+        alignment = None
+        if props.editing_horizontal_pi_alignment_id:
+            try:
+                alignment = tool.Ifc.get().by_id(props.editing_horizontal_pi_alignment_id)
+            except RuntimeError:
+                alignment = None
+        alignment = alignment or tool.Alignment.get_active_alignment()
+        start, end = tool.Alignment.get_alignment_start_end_points(alignment)
+        return props.horizontal_pi_rows, "active_horizontal_pi_row_index", (lambda r: (r.x, r.y)), start, end
+    points = _staged_vertical_points(props)
+    return (
+        props.vertical_pi_markers,
+        "active_vertical_pi_marker_index",
+        (lambda r: (r.dist_along, r.elevation)),
+        points[0],
+        points[-1],
+    )
+
+
+class ALIGN_OT_insert_pi_row(Operator):
+    """Insert a PI halfway along the leg before or after the selected row"""
+
+    bl_idname = "align.insert_pi_row"
+    bl_label = "Insert PI"
+    bl_description = "Insert a new PI halfway along the leg next to the selected one, then edit it and Apply"
+    bl_options = {"REGISTER", "UNDO"}
+
+    kind: EnumProperty(items=_PI_ROW_KIND_ITEMS, options={"HIDDEN"})
+    after: BoolProperty(default=True, options={"HIDDEN"})
+
+    @classmethod
+    def description(cls, context, properties):
+        side = "after" if properties.after else "before"
+        return f"Insert a new PI halfway along the leg {side} the selected one, then edit it and Apply"
+
+    def execute(self, context):
+        props = context.scene.CivilAlignmentProperties
+        try:
+            rows, index_attr, point_of, start, end = _staged_pi_rows(props, self.kind)
+        except (ValueError, IndexError) as e:
+            self.report({"ERROR"}, str(e) or "Load the PIs first")
+            return {"CANCELLED"}
+        points = [start] + [point_of(r) for r in rows] + [end]
+        active = min(max(getattr(props, index_attr), 0), len(rows) - 1) if len(rows) else -1
+        # the leg between points[k] and points[k + 1]; row i is points[i + 1]
+        k = active + 1 if self.after else max(active, 0)
+        if not len(rows):
+            k = 0
+        (x0, y0), (x1, y1) = points[k], points[k + 1]
+        rows.add()
+        rows.move(len(rows) - 1, k)
+        row = rows[k]
+        if self.kind == "HORIZONTAL":
+            row.x, row.y = (x0 + x1) / 2.0, (y0 + y1) / 2.0
+        else:
+            row.dist_along, row.elevation = (x0 + x1) / 2.0, (y0 + y1) / 2.0
+        row.curve_type = "TANGENT"
+        setattr(props, index_attr, k)
+        tool.Blender.update_viewport()
+        return {"FINISHED"}
+
+
+class ALIGN_OT_delete_pi_row(Operator):
+    """Delete the selected PI; Apply rejoins its neighbours"""
+
+    bl_idname = "align.delete_pi_row"
+    bl_label = "Delete PI"
+    bl_description = "Remove the selected PI and its curve; Apply rejoins the neighbouring PIs"
+    bl_options = {"REGISTER", "UNDO"}
+
+    kind: EnumProperty(items=_PI_ROW_KIND_ITEMS, options={"HIDDEN"})
+
+    def execute(self, context):
+        props = context.scene.CivilAlignmentProperties
+        if self.kind == "HORIZONTAL":
+            rows, index_attr = props.horizontal_pi_rows, "active_horizontal_pi_row_index"
+        else:
+            rows, index_attr = props.vertical_pi_markers, "active_vertical_pi_marker_index"
+        active = getattr(props, index_attr)
+        if not (0 <= active < len(rows)):
+            return {"CANCELLED"}
+        rows.remove(active)
+        setattr(props, index_attr, max(0, min(active, len(rows) - 1)))
+        tool.Blender.update_viewport()
+        return {"FINISHED"}
 
 
 def _alignment_id_owning_layout(layout_entity) -> int | None:
@@ -1435,6 +1671,56 @@ def _tangent_line_intersection(dp_a, dp_b):
         return None
     t1 = ((ex - sx) * d2y - (ey - sy) * d2x) / denom
     return sx + t1 * d1x, sy + t1 * d1y
+
+
+def _update_horizontal_pi_segments(ifc, h_layout, hpoints, radii) -> bool:
+    """Regenerate an existing PI-method horizontal layout from ``hpoints``/``radii`` in place, keeping
+    each segment that corresponds to one of the new ones (same PI, same role) and so its GlobalId --
+    moving a PI or changing a radius or spiral length keeps them all; deleting or inserting a PI only
+    removes or creates that PI's own segments. False, touching nothing, when the layout has no
+    segments yet or its PIs can't be recognized; the caller then rebuilds it from scratch."""
+    old_segments = tool.Alignment.get_real_layout_segments(h_layout)
+    if not old_segments or tool.Alignment.validate_layout_has_parent_alignment(h_layout) is None:
+        return False
+    specs, skipped = _reconstruct_horizontal_pis(h_layout)
+    if skipped:
+        return False
+    definitions = ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(hpoints, radii)
+    sources = tool.Alignment.map_segments_by_pi(
+        old_segments,
+        [s.DesignParameters.PredefinedType for s in old_segments],
+        [spec["pi_local"] for spec in specs],
+        [d.predefined_type for d in definitions],
+        list(hpoints[1:-1]),
+        "LINE",
+        ("CIRCULARARC",),
+    )
+    parameters = [_horizontal_design_parameters(ifc, d) for d in definitions]
+    ifcopenshell.api.alignment.update_layout_segments(ifc, h_layout, list(zip(sources, parameters)))
+    return True
+
+
+def _update_vertical_pi_segments(ifc, v_layout, vpoints, lengths) -> bool:
+    """The vertical counterpart of _update_horizontal_pi_segments: a VPI owns its back grade and its
+    vertical curve."""
+    old_segments = tool.Alignment.get_real_layout_segments(v_layout)
+    if not old_segments or tool.Alignment.validate_layout_has_parent_alignment(v_layout) is None:
+        return False
+    specs, skipped = _reconstruct_vertical_pis(v_layout)
+    if skipped:
+        return False
+    parameters = list(_vertical_design_parameters(ifc, vpoints, lengths))
+    sources = tool.Alignment.map_segments_by_pi(
+        old_segments,
+        [s.DesignParameters.PredefinedType for s in old_segments],
+        [(spec["dist_along"], spec["elevation"]) for spec in specs],
+        [p.PredefinedType for p in parameters],
+        list(vpoints[1:-1]),
+        "CONSTANTGRADIENT",
+        ("PARABOLICARC", "CIRCULARARC"),
+    )
+    ifcopenshell.api.alignment.update_layout_segments(ifc, v_layout, list(zip(sources, parameters)))
+    return True
 
 
 def _reconstruct_horizontal_pis(h_layout):
@@ -3733,8 +4019,10 @@ def _generate_vertical_alignment_segments(context, alignment, vpoints, lengths, 
         if v_layout is None:
             v_layout = ifcopenshell.api.alignment.add_vertical_layout(ifc, alignment)
 
-    tool.Alignment.clear_layout_segments(v_layout)
-    tool.Alignment.safe_layout_vertical_by_pi_method(ifc, v_layout, vpoints, lengths)
+    # keep the existing segments where they correspond (REQUIREMENTS.md §11), else rebuild
+    if not _update_vertical_pi_segments(ifc, v_layout, vpoints, lengths):
+        tool.Alignment.clear_layout_segments(v_layout)
+        tool.Alignment.safe_layout_vertical_by_pi_method(ifc, v_layout, vpoints, lengths)
     ifcopenshell.api.alignment.create_representation(ifc, alignment)
 
     tool.Alignment.refresh_alignment_representation_object(alignment)
@@ -5319,8 +5607,8 @@ class ALIGN_OT_apply_h_segments(Operator, tool.Ifc.Operator):
         length_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file, "LENGTHUNIT")
         angle_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file, "PLANEANGLEUNIT")
 
-        ifcopenshell.api.alignment.clear_layout_segments(ifc_file, h_layout)
-
+        # every row that came from an existing segment keeps it (and its GlobalId) -- REQUIREMENTS.md §11
+        new_segments = []
         for row in rows:
             # row.length/start_radius/end_radius are in Blender's internal
             # unit="LENGTH" space (metres) -- see enable_editing_h_segments'
@@ -5345,13 +5633,15 @@ class ALIGN_OT_apply_h_segments(Operator, tool.Ifc.Operator):
                 GravityCenterLineHeight=None,
                 PredefinedType=row.predefined_type,
             )
-            placement = ifcopenshell.api.alignment.create_layout_segment(ifc_file, h_layout, design_parameters)
+            new_segments.append((tool.Alignment.existing_segment(h_layout, row.segment_id), design_parameters))
+            placement = tool.Alignment.design_parameters_end(h_layout, design_parameters)
             x = float(placement[0, 3]) / length_scale
             y = float(placement[1, 3]) / length_scale
             # atan2, not atan(Rdy/Rdx) (what ifcopenshell's own internal
             # _update_zero_length_segment_placement uses) -- atan can't tell
             # a segment pointing north from one pointing south when Rdx≈0.
             direction = math.atan2(float(placement[1, 0]), float(placement[0, 0])) / angle_scale
+        ifcopenshell.api.alignment.update_layout_segments(ifc_file, h_layout, new_segments)
 
         ifcopenshell.api.alignment.create_representation(ifc_file, alignment)
         tool.Alignment.refresh_alignment_representation_object(alignment)
@@ -5366,7 +5656,7 @@ class ALIGN_OT_apply_h_segments(Operator, tool.Ifc.Operator):
         tool.Alignment.sync_cant_segment_types(alignment)
         tool.Alignment.update_key_point_referents_if_present(alignment)
 
-        # Every segment id in this layout just changed.
+        # The table replaced the "#" highlight toggle (enable_editing_h_segments cleared it).
         props.selected_h_segment_id = 0
         alignment_decorator.AlignmentSegmentDecorator.uninstall()
 
@@ -5499,8 +5789,8 @@ class ALIGN_OT_apply_v_segments(Operator, tool.Ifc.Operator):
         # project units, read straight from IFC above).
         length_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file, "LENGTHUNIT")
 
-        ifcopenshell.api.alignment.clear_layout_segments(ifc_file, v_layout)
-
+        # every row that came from an existing segment keeps it (and its GlobalId) -- REQUIREMENTS.md §11
+        new_segments = []
         for row in rows:
             h_length = row.h_length / length_scale
             start_gradient = row.start_gradient / 100.0
@@ -5519,7 +5809,8 @@ class ALIGN_OT_apply_v_segments(Operator, tool.Ifc.Operator):
                 RadiusOfCurvature=None,
                 PredefinedType=row.predefined_type,
             )
-            placement = ifcopenshell.api.alignment.create_layout_segment(ifc_file, v_layout, design_parameters)
+            new_segments.append((tool.Alignment.existing_segment(v_layout, row.segment_id), design_parameters))
+            placement = tool.Alignment.design_parameters_end(v_layout, design_parameters)
             # Read the next segment's start state back off the kernel-evaluated
             # end placement, rather than the closed-form "average gradient"
             # shortcut -- that's only exact for CONSTANTGRADIENT/PARABOLICARC.
@@ -5528,6 +5819,7 @@ class ALIGN_OT_apply_v_segments(Operator, tool.Ifc.Operator):
             # evaluation): using the real placement keeps every type exact.
             dist_along = float(placement[0, 3]) / length_scale
             height = float(placement[1, 3]) / length_scale
+        ifcopenshell.api.alignment.update_layout_segments(ifc_file, v_layout, new_segments)
 
         ifcopenshell.api.alignment.create_representation(ifc_file, alignment)
         tool.Alignment.refresh_alignment_representation_object(alignment)
@@ -5672,7 +5964,12 @@ class ALIGN_OT_generate_cant_layout(Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
 
         cant_layout = tool.Alignment.get_or_create_cant_layout(owning_alignment)
-        ifcopenshell.api.alignment.clear_layout_segments(ifc, cant_layout)
+        # One cant segment per horizontal segment: when the count is unchanged, regenerating keeps
+        # every existing cant segment (and its GlobalId) -- REQUIREMENTS.md §11
+        old_segments = tool.Alignment.get_real_layout_segments(cant_layout)
+        if len(old_segments) != len(specs):
+            old_segments = [None] * len(specs)
+        new_segments = []
 
         dist_along = 0.0
         for predefined_type, length, start_left, start_right, end_left, end_right in specs:
@@ -5687,8 +5984,9 @@ class ALIGN_OT_generate_cant_layout(Operator, tool.Ifc.Operator):
                 EndCantRight=end_right,
                 PredefinedType=predefined_type,
             )
-            ifcopenshell.api.alignment.create_layout_segment(ifc, cant_layout, design_parameters)
+            new_segments.append((old_segments[len(new_segments)], design_parameters))
             dist_along += length
+        ifcopenshell.api.alignment.update_layout_segments(ifc, cant_layout, new_segments)
 
         ifcopenshell.api.alignment.create_representation(ifc, alignment)
         tool.Alignment.refresh_alignment_representation_object(alignment)
@@ -6021,8 +6319,8 @@ class ALIGN_OT_apply_cant_segments(Operator, tool.Ifc.Operator):
         # units, read straight from IFC above).
         length_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file, "LENGTHUNIT")
 
-        ifcopenshell.api.alignment.clear_layout_segments(ifc_file, c_layout)
-
+        # every row that came from an existing segment keeps it (and its GlobalId) -- REQUIREMENTS.md §11
+        new_segments = []
         for row in rows:
             h_length = row.h_length / length_scale
             # Every cant type except CONSTANTCANT is a transition that needs
@@ -6041,8 +6339,9 @@ class ALIGN_OT_apply_cant_segments(Operator, tool.Ifc.Operator):
                 EndCantRight=row.end_cant_right if is_transition else None,
                 PredefinedType=row.predefined_type,
             )
-            ifcopenshell.api.alignment.create_layout_segment(ifc_file, c_layout, design_parameters)
+            new_segments.append((tool.Alignment.existing_segment(c_layout, row.segment_id), design_parameters))
             dist_along += h_length
+        ifcopenshell.api.alignment.update_layout_segments(ifc_file, c_layout, new_segments)
 
         ifcopenshell.api.alignment.create_representation(ifc_file, alignment)
         tool.Alignment.refresh_alignment_representation_object(alignment)
