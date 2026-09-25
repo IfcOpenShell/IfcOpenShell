@@ -919,7 +919,7 @@ class Model(bonsai.core.tool.Model):
 
         Hook for the duplicate path (Shift+D): the source wall's clip booleans
         don't make sense on a copy pulled away from the slab. Booleans whose
-        ``SecondOperand.is_a("IfcTessellatedFaceSet")`` are removed — same
+        ``SecondOperand`` is a tessellated face set (or a UNION of them) are removed — same
         imprecise discriminator the rest of the wall-to-underside machinery
         uses (manual cuts authored from tessellated meshes would also be
         stripped, but most manual cuts use ``IfcExtrudedAreaSolid`` / CSG
@@ -934,9 +934,9 @@ class Model(bonsai.core.tool.Model):
         if not representation:
             return False
         chain = cls.get_booleans(wall, representation)
-        to_remove = [b for b in chain if (sec := b.SecondOperand) is not None and sec.is_a("IfcTessellatedFaceSet")]
+        to_remove = [b for b in chain if cls.is_underside_trim_operand(b.SecondOperand)]
         for b in to_remove:
-            tool.Geometry.remove_representation_item(b.SecondOperand, wall)
+            cls.remove_underside_trim_operand(b.SecondOperand, wall)
         # Sweep the now-stale BBIM_Boolean entries on the copy (their ids point
         # at booleans that were never in this wall's chain — they survived the
         # ifcopenshell deep copy as JSON text in the pset payload).
@@ -971,8 +971,8 @@ class Model(bonsai.core.tool.Model):
                         parent.Items = new_items
                 cls.unmark_manual_booleans(wall, [b.id()])
                 ifc_file.remove(b)
-            elif sec.is_a("IfcTessellatedFaceSet"):
-                tool.Geometry.remove_representation_item(sec, wall)
+            elif cls.is_underside_trim_operand(sec):
+                cls.remove_underside_trim_operand(sec, wall)
 
     @classmethod
     def get_manual_booleans(
@@ -2808,14 +2808,59 @@ class Model(bonsai.core.tool.Model):
         return clipping_bm  # clipping_bm is in project units
 
     @classmethod
-    def clip_wall_to_slab(cls, wall: ifcopenshell.entity_instance, clipping_bm: bmesh.types.BMesh) -> None:
-        matrix_i = np.linalg.inv(ifcopenshell.util.placement.get_local_placement(wall.ObjectPlacement))
-        bm = clipping_bm.copy()
-        bmesh.ops.transform(bm, matrix=Matrix(matrix_i.tolist()), verts=bm.verts)
+    def is_underside_trim_operand(cls, operand: Optional[ifcopenshell.entity_instance]) -> bool:
+        """Whether ``operand`` looks like a slab-trim tool from ``clip_wall_to_slabs``.
 
-        bm.verts.ensure_lookup_table()
-        zs = [v.co.z for v in bm.verts]
-        min_z = min(zs)
+        That is a tessellated face set, or a UNION tree whose leaves are all
+        tessellated face sets (several clip solids fused into one tool).
+        """
+        if operand is None:
+            return False
+        if operand.is_a("IfcTessellatedFaceSet"):
+            return True
+        if operand.is_a("IfcBooleanResult") and operand.Operator == "UNION":
+            return cls.is_underside_trim_operand(operand.FirstOperand) and cls.is_underside_trim_operand(
+                operand.SecondOperand
+            )
+        return False
+
+    @classmethod
+    def get_underside_trim_leaves(cls, operand: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+        """Tessellated face sets making up a slab-trim tool (see ``is_underside_trim_operand``)."""
+        if operand.is_a("IfcBooleanResult"):
+            return cls.get_underside_trim_leaves(operand.FirstOperand) + cls.get_underside_trim_leaves(
+                operand.SecondOperand
+            )
+        return [operand]
+
+    @classmethod
+    def remove_underside_trim_operand(cls, operand: ifcopenshell.entity_instance, wall: ifcopenshell.entity_instance):
+        # Removing each leaf splices its parent boolean out of the tree, so once the
+        # last leaf goes the DIFFERENCE holding the tool is gone too.
+        for leaf in cls.get_underside_trim_leaves(operand):
+            tool.Geometry.remove_representation_item(leaf, wall)
+
+    @classmethod
+    def clip_wall_to_slabs(cls, wall: ifcopenshell.entity_instance, clipping_bms: list[bmesh.types.BMesh]) -> None:
+        """Extend ``wall`` up to the highest underside and trim it with every clipping face.
+
+        All clip solids are fused into a single UNION tool under one DIFFERENCE.
+        The geometry kernel hands each DIFFERENCE operand in a chain to OCCT as a
+        separate tool of one cut, and for a ridge (two slopes, from one slab or
+        two) the overlapping tools meet exactly at the extended wall top — OCCT
+        then silently returns the uncut wall, or corrupt geometry when the top
+        sits just above the ridge. A pre-fused tool cuts cleanly.
+        """
+        matrix_i = Matrix(np.linalg.inv(ifcopenshell.util.placement.get_local_placement(wall.ObjectPlacement)).tolist())
+        bms = []
+        for clipping_bm in clipping_bms:
+            bm = clipping_bm.copy()
+            bmesh.ops.transform(bm, matrix=matrix_i, verts=bm.verts)
+            bms.append(bm)
+
+        zs = [v.co.z for bm in bms for v in bm.verts]
+        if not zs:
+            return
         max_z = max(zs)
 
         ifc_file = tool.Ifc.get()
@@ -2824,14 +2869,17 @@ class Model(bonsai.core.tool.Model):
         # Build one IfcPolygonalFaceSet clip solid per clipping face.
         # Each solid uses a rectangle on the slope plane rather than the exact face
         # footprint.  The original approach (exact footprint) caused a kissing-solid /
-        # boundary-coincidence bug when the operator is called twice for a ridge roof: the
-        # two slope solids share an exact ridge edge, and OCCT produces spurious extra
-        # vertices.  Extending each solid slightly past the ridge (by margin) creates a
-        # volumetric overlap instead of a kissing boundary — OCCT handles overlapping
-        # DIFFERENCE operands correctly.
+        # boundary-coincidence bug for a ridge roof: the two slope solids share an
+        # exact ridge edge, and OCCT produces spurious extra vertices.  Extending each
+        # solid slightly past the ridge (by margin) creates a volumetric overlap
+        # instead of a kissing boundary; the overlapping solids are then fused (UNION)
+        # into one tool, see the docstring.
         margin = 1.0  # project units past the face edge — enough to ensure overlap at ridge
+        # Flat top well above the wall top, so no tool face lies near it. The margin
+        # rectangle can rise at most ~sqrt(2) * margin above the face, hence 3x.
+        top_z = max_z + 3 * margin
         operands = []
-        for face in bm.faces:
+        for face in (face for bm in bms for face in bm.faces):
             face.normal_update()
             normal = Vector(face.normal).normalized()
 
@@ -2857,7 +2905,10 @@ class Model(bonsai.core.tool.Model):
             bottom_face = clip_bm.faces.new([v0, v1, v2, v3])
             result = bmesh.ops.extrude_face_region(clip_bm, geom=[bottom_face])
             top_verts = [e for e in result["geom"] if isinstance(e, bmesh.types.BMVert)]
-            bmesh.ops.translate(clip_bm, verts=top_verts, vec=Vector((0, 0, max_z - min_z)))
+            for v in top_verts:
+                v.co.z = top_z
+            # Winding follows the face normal, which is arbitrary for an open underside.
+            bmesh.ops.recalc_face_normals(clip_bm, faces=clip_bm.faces)
             clip_bm.verts.ensure_lookup_table()
 
             clip_verts = [v.co for v in clip_bm.verts]
@@ -2865,6 +2916,16 @@ class Model(bonsai.core.tool.Model):
             operand = builder.mesh(clip_verts, clip_faces)
             clip_bm.free()
             operands.append(operand)
+
+        for bm in bms:
+            bm.free()
+
+        tool_operand = None
+        for operand in operands:
+            if tool_operand is None:
+                tool_operand = operand
+            else:
+                tool_operand = ifc_file.createIfcBooleanResult("UNION", tool_operand, operand)
 
         for extrusion in ifcopenshell.util.shape.get_base_extrusions(wall) or []:
             if extrusion.Position:
@@ -2881,9 +2942,10 @@ class Model(bonsai.core.tool.Model):
 
             extrusion.Depth = max_z / direction[2]
 
-            if operands:
-                body_repr = ifcopenshell.util.representation.get_representation(wall, "Model", "Body", "MODEL_VIEW")
-                booleans = ifcopenshell.api.geometry.add_boolean(ifc_file, first_item=extrusion, second_items=operands)
+            if tool_operand:
+                booleans = ifcopenshell.api.geometry.add_boolean(
+                    ifc_file, first_item=extrusion, second_items=[tool_operand]
+                )
                 tool.Model.mark_manual_booleans(wall, booleans)
 
     @classmethod
