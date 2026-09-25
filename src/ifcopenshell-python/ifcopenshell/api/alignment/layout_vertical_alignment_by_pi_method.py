@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import math
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 
 import ifcopenshell
 import ifcopenshell.api.alignment
@@ -40,6 +40,16 @@ def layout_vertical_alignment_by_pi_method(
     if not (len(vpoints) - 2 == len(lengths)):
         raise ValueError("lengths should have two fewer elements that vpoints")
 
+    for design_parameters in _vertical_design_parameters(file, vpoints, lengths):
+        ifcopenshell.api.alignment.create_layout_segment(file, layout, design_parameters)
+
+
+def _vertical_design_parameters(
+    file: ifcopenshell.file, vpoints: Sequence[Sequence[float]], lengths: Sequence[float]
+) -> Iterator[entity_instance]:
+    """The IfcAlignmentVerticalSegments of a vertical layout by the PI method, in order (see
+    layout_vertical_alignment_by_pi_method) -- shared with callers that write them some other way,
+    e.g. update_layout_segments to keep existing segments' identity."""
     xPBG, yPBG = vpoints[0]
     xPVI, yPVI = vpoints[1]
     i = 1
@@ -73,7 +83,7 @@ def layout_vertical_alignment_by_pi_method(
                 RadiusOfCurvature=None,
                 PredefinedType="CONSTANTGRADIENT",
             )
-            ifcopenshell.api.alignment.create_layout_segment(file, layout, design_parameters)
+            yield design_parameters
 
         # create vertical curve
         if 0.0 < length:
@@ -92,7 +102,7 @@ def layout_vertical_alignment_by_pi_method(
                 RadiusOfCurvature=1 / k,
                 PredefinedType="PARABOLICARC",
             )
-            ifcopenshell.api.alignment.create_layout_segment(file, layout, design_parameters)
+            yield design_parameters
 
         # start of next curve is end of this curve
         xPBG = xEVC
@@ -118,4 +128,4 @@ def layout_vertical_alignment_by_pi_method(
             RadiusOfCurvature=None,
             PredefinedType="CONSTANTGRADIENT",
         )
-        ifcopenshell.api.alignment.create_layout_segment(file, layout, design_parameters)
+        yield design_parameters
