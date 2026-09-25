@@ -31,8 +31,17 @@ classes = (
 
 
 def register():
+    import bonsai.tool as tool
+
     bpy.types.Scene.WebProperties = bpy.props.PointerProperty(type=prop.WebProperties)
+    # Honours the "Keep Web Connection" preference; stops at once if it is off.
+    # Delayed so preferences are readable, and never runs in background mode.
+    tool.Web.ensure_keep_connection_timer(first_interval=3.0)
 
 
 def unregister():
+    import bonsai.tool.web as web
+
+    if web.keep_connection_timer is not None and bpy.app.timers.is_registered(web.keep_connection_timer):
+        bpy.app.timers.unregister(web.keep_connection_timer)
     del bpy.types.Scene.WebProperties

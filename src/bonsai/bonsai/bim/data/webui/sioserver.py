@@ -10,6 +10,7 @@ if bonsai_lib_path:
 import argparse
 import base64
 import json
+import socket
 import urllib.parse
 import xml.etree.ElementTree as ET
 
@@ -236,6 +237,18 @@ class BlenderNamespace(socketio.AsyncNamespace):
         blender_messages[sid]["classification"] = data
         await sio.emit("classification", {"blenderId": sid, "data": data}, namespace="/web")
 
+    async def on_sheet_template_values(self, sid, data):
+        # Answers a "sheets" getTemplateValues request - for tools that show
+        # sheets without building them. Not cached: callers ask again, and the
+        # values change with every edit.
+        await sio.emit("sheet_template_values", {"blenderId": sid, "data": data}, namespace="/web")
+
+    async def on_sheet_edit_result(self, sid, data):
+        # Answers a "sheets" getEditableFields or setTemplateValue request, and
+        # carries that request's id: unlike the other messages here this is a
+        # reply to one caller, not a broadcast of state.
+        await sio.emit("sheet_edit_result", {"blenderId": sid, "data": data}, namespace="/web")
+
     async def on_message(self, sid, data):
         print(f"Error from Blender client {sid}")
         blender_messages[sid]["error"] = data
@@ -279,23 +292,52 @@ async def demo(request):
     return web.Response(text=html_content, content_type="text/html")
 
 
-async def on_startup(app):
-    pid_file = "running_pid.json"
+PID_FILE = "running_pid.json"
 
-    if os.path.exists(pid_file):
-        with open(pid_file, "r") as f:
-            pids = json.load(f)
-    else:
-        pids = {}
 
-    pids[str(os.getpid())] = sio_port
+def read_pids() -> dict:
+    try:
+        with open(PID_FILE, "r") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
 
-    with open(pid_file, "w") as f:
+
+def write_pids(pids: dict) -> None:
+    with open(PID_FILE, "w") as f:
         json.dump(pids, f, indent=4)
+
+
+def is_port_live(port) -> bool:
+    """Whether something is listening on a port - i.e. that server still exists."""
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+            probe.settimeout(0.25)
+            return probe.connect_ex(("127.0.0.1", int(port))) == 0
+    except (OSError, TypeError, ValueError):
+        return False
+
+
+async def on_startup(app):
+    # Only bim.kill_websocket_server ever removed an entry, so quitting Blender
+    # left one behind and the file gained a dead server per session. Anything
+    # whose port no longer answers is gone, whether it was killed, crashed, or
+    # went down with Blender. Ours is not listed yet: aiohttp binds after this.
+    pids = {pid: port for pid, port in read_pids().items() if is_port_live(port)}
+    pids[str(os.getpid())] = sio_port
+    write_pids(pids)
+
+
+async def on_cleanup(app):
+    """Leave the file as we found it when shut down cleanly."""
+    pids = read_pids()
+    if pids.pop(str(os.getpid()), None) is not None:
+        write_pids(pids)
 
 
 # Add on startup function
 app.on_startup.append(on_startup)
+app.on_cleanup.append(on_cleanup)
 
 # Attach namespaces
 sio.register_namespace(WebNamespace("/web"))
