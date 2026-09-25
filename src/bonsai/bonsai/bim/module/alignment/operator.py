@@ -24,6 +24,7 @@ import blf
 import math
 import mathutils
 import time
+from types import SimpleNamespace
 from typing import TYPE_CHECKING
 import bonsai.core.alignment as core
 import bonsai.tool as tool
@@ -2164,7 +2165,13 @@ class _CivilAngleInput:
         return angle - 360.0 if angle > 180.0 else angle
 
 
-class ALIGN_OT_draw_horizontal_alignment(bpy.types.Operator, _CivilAngleInput, PolylineOperator, tool.Ifc.Operator):
+# The draw tools' logic lives in plain (unregistered) base classes, with thin registered operators on
+# top -- the same shape as PolylineOperator. The extend tools subclass the *bases*: registering a
+# subclass of an already-registered Blender operator strips the parent's own poll/invoke/modal
+# (seen as "type object has no attribute 'poll'"), so a registered operator must never be subclassed.
+
+
+class _DrawHorizontalAlignment(_CivilAngleInput, PolylineOperator, tool.Ifc.Operator):
     """Draw the horizontal alignment of the active IfcAlignment directly in the viewport.
 
     Click to place each PI (tangent-to-tangent). RMB/Enter finishes and
@@ -2389,6 +2396,15 @@ class ALIGN_OT_draw_horizontal_alignment(bpy.types.Operator, _CivilAngleInput, P
         blf.disable(font_id, blf.SHADOW)
 
 
+class ALIGN_OT_draw_horizontal_alignment(bpy.types.Operator, _DrawHorizontalAlignment):
+    __doc__ = _DrawHorizontalAlignment.__doc__
+
+    def __init__(self, *args, **kwargs):
+        # bpy.types.Operator comes first in the bases, so its own __init__ would shadow the base's --
+        # which sets up the tool's state (tool_state, input fields, ...)
+        _DrawHorizontalAlignment.__init__(self, *args, **kwargs)
+
+
 def _move_marker_anchors(markers, index):
     """World positions the moved marker is measured from, oldest first, so the polyline tool's
     Distance/Angle read exactly as they did when the PI was first drawn: Distance from the previous
@@ -2443,8 +2459,8 @@ class ALIGN_OT_move_pi_marker(bpy.types.Operator, _CivilAngleInput, PolylineOper
         self._seeded = 0
 
     # the draw tool's Bearing readout, shared as-is
-    _draw_bearing_hud = ALIGN_OT_draw_horizontal_alignment._draw_bearing_hud
-    _uninstall_bearing_hud = ALIGN_OT_draw_horizontal_alignment._uninstall_bearing_hud
+    _draw_bearing_hud = _DrawHorizontalAlignment._draw_bearing_hud
+    _uninstall_bearing_hud = _DrawHorizontalAlignment._uninstall_bearing_hud
 
     def invoke(self, context, event):
         marker_obj = _active_pi_marker(context)
@@ -2528,6 +2544,163 @@ class ALIGN_OT_move_pi_marker(bpy.types.Operator, _CivilAngleInput, PolylineOper
 
 
 # =============================================================================
+# Extending an alignment past its end (REQUIREMENTS.md §9)
+# =============================================================================
+
+
+def _seed_polyline_tool(op, context, anchors_world) -> int:
+    """Start a PolylineOperator-based draw tool from existing points (Blender world), placed as clicks
+    would place them -- so Distance/Angle/bearings are measured from the current end, against its
+    last leg, exactly as if the drawing had never stopped. Returns how many were seeded."""
+    return ALIGN_OT_move_pi_marker._seed_anchor_points(op, context, [mathutils.Vector(p) for p in anchors_world])
+
+
+def _swallow_seed_backspace(op, event) -> bool:
+    """Backspace must not remove the seeded (existing) points -- only ones drawn this time."""
+    if op.tool_state.is_input_on or event.type != "BACK_SPACE":
+        return False
+    data = tool.Model.get_polyline_props().insertion_polyline
+    return len(data[0].polyline_points if data else []) <= op._seeded
+
+
+class _ExtendHorizontalAlignment(_DrawHorizontalAlignment):
+    """Add tangents past the current end of the active alignment's horizontal layout, with the
+    same tool as drawing it: Distance/Angle (and bearing/deflection) are measured from the current
+    end, against its last leg. The old end becomes a sharp PI (give it a curve afterwards, like
+    any drawn PI); existing PIs keep their curves. The vertical and cant layouts are left as they
+    are -- they may be shorter than the horizontal (see Match Horizontal Length)."""
+
+    bl_idname = "align.extend_horizontal_alignment"
+    bl_label = "Extend"
+    bl_description = "Add tangents past the end of this horizontal alignment. RMB/Enter to finish, Esc to cancel"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not poll_ifc4x3(cls, context):
+            return False
+        alignment = tool.Alignment.get_active_alignment()
+        h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment) if alignment else None
+        if not h_layout or not tool.Alignment.get_real_layout_segments(h_layout):
+            cls.poll_message_set("Draw the horizontal alignment first")
+            return False
+        return _DrawHorizontalAlignment.poll.__func__(cls, context)
+
+    def _invoke(self, context, event):
+        error = self._load_existing(tool.Alignment.get_active_alignment())
+        if error:
+            self.report({"ERROR"}, error)
+            return {"CANCELLED"}
+        result = super()._invoke(context, event)
+        if result != {"RUNNING_MODAL"}:
+            return result
+        ifc = tool.Ifc.get()
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc)
+        anchors = [_local_ifc_to_world_point(ifc, unit_scale, p) for p in self._existing_hpoints[-2:]]
+        self._seeded = _seed_polyline_tool(self, context, anchors)
+        return result
+
+    def _load_existing(self, alignment):
+        """The current PIs (with their curves), to append to. Returns an error message, or None."""
+        specs, skipped = _reconstruct_horizontal_pis(ifcopenshell.api.alignment.get_horizontal_layout(alignment))
+        if skipped:
+            return "Can't extend: some horizontal segments couldn't be read as PIs"
+        start, end = tool.Alignment.get_alignment_start_end_points(alignment)
+        self._existing_hpoints = [start] + [spec["pi_local"] for spec in specs] + [end]
+        cant_lookup = _cant_lookup_for_pi_markers(alignment, len(specs))
+        self._existing_radii = [
+            _pi_curve_radii_entry(
+                SimpleNamespace(
+                    **{**spec, **{k: spec.get(k) or 0.0 for k in ("radius", "spiral_in_length", "spiral_out_length")}}
+                ),
+                cant_lookup[i],
+            )
+            for i, spec in enumerate(specs)
+        ]
+        return None
+
+    def _modal(self, context, event):
+        if _swallow_seed_backspace(self, event):
+            return {"RUNNING_MODAL"}
+        return super()._modal(context, event)
+
+    def _finish(self, context):
+        ok, result = _hpoints_from_polyline(context)
+        if not ok:
+            self.report({"WARNING"}, result)
+            return
+        raw_points, hpoints = result
+        new_points, new_raw = hpoints[self._seeded :], raw_points[self._seeded :]
+        if not new_points:
+            self.report({"WARNING"}, "Nothing was added")
+            return
+        alignment = tool.Alignment.get_active_alignment()
+        hpoints = self._existing_hpoints + new_points
+        # every old PI keeps its curve; the old end and every new interior point are sharp PIs
+        radii = self._existing_radii + [0.0] * len(new_points)
+        for old_marker in _find_pi_markers(alignment.id()):
+            bpy.data.objects.remove(old_marker, do_unlink=True)
+        ok, message = _generate_alignment_segments(context, alignment, hpoints, radii)
+        if ok:
+            ifc = tool.Ifc.get()
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc)
+            world = [_local_ifc_to_world_point(ifc, unit_scale, p) for p in self._existing_hpoints] + list(new_raw)
+            _create_pi_markers(context, alignment.id(), world)
+            message = f"Extended '{alignment.Name}' by {len(new_points)} point(s) — select a PI marker to add curves"
+            alignment_obj = tool.Ifc.get_object(alignment)
+            if alignment_obj:
+                for obj in context.selected_objects:
+                    obj.select_set(False)
+                alignment_obj.select_set(True)
+                context.view_layer.objects.active = alignment_obj
+        self.report({"INFO"} if ok else {"WARNING"}, message)
+        _refresh_pi_marker_visuals(context, alignment.id())
+
+
+class ALIGN_OT_extend_horizontal_alignment(bpy.types.Operator, _ExtendHorizontalAlignment):
+    __doc__ = _ExtendHorizontalAlignment.__doc__
+
+    def __init__(self, *args, **kwargs):
+        # bpy.types.Operator comes first in the bases, so its own __init__ would shadow the base's --
+        # which sets up the tool's state (tool_state, input fields, ...)
+        _ExtendHorizontalAlignment.__init__(self, *args, **kwargs)
+
+
+class ALIGN_OT_match_horizontal_length(Operator, tool.Ifc.Operator):
+    """Stretch or shorten a vertical or cant layout's last segment so it ends exactly where the
+    horizontal does. Verticals and cants may be shorter or longer than the horizontal (they're edited
+    independently); this is the quick fix when they should match."""
+
+    bl_idname = "align.match_horizontal_length"
+    bl_label = "Match Horizontal Length"
+    bl_description = "Stretch or shorten this layout's last segment so it ends exactly where the horizontal does"
+    bl_options = {"REGISTER", "UNDO"}
+
+    layout_id: IntProperty(default=0, options={"HIDDEN"})
+
+    @classmethod
+    def poll(cls, context):
+        return poll_ifc4x3(cls, context)
+
+    def _execute(self, context):
+        try:
+            layout = tool.Ifc.get().by_id(self.layout_id)
+        except RuntimeError:
+            self.report({"ERROR"}, "That layout no longer exists")
+            return {"CANCELLED"}
+        error = tool.Alignment.match_layout_length_to_horizontal(layout)
+        if error:
+            self.report({"ERROR"}, error)
+            return {"CANCELLED"}
+        top = tool.Alignment._get_top_level_alignment(ifcopenshell.api.alignment.get_alignment(layout))
+        _refresh_vertical_profile_view(context, top)
+        tool.Blender.update_viewport()
+        _tag_all_areas_redraw(context)
+        self.report({"INFO"}, "Matched the horizontal's length")
+        return {"FINISHED"}
+
+
+# =============================================================================
 # Polyline alignments (REQUIREMENTS.md §5.1)
 # =============================================================================
 
@@ -2571,7 +2744,7 @@ def _polyline_poll(cls, context, need_existing=True) -> bool:
     return True
 
 
-class ALIGN_OT_draw_polyline_alignment(bpy.types.Operator, _CivilAngleInput, PolylineOperator, tool.Ifc.Operator):
+class _DrawPolylineAlignment(_CivilAngleInput, PolylineOperator, tool.Ifc.Operator):
     """Draw a polyline alignment (IfcPolyline, no layouts) in the viewport -- 2D (constrained to
     Z = 0, Curve2D) or full 3D (Curve3D), toggled with V while drawing.
 
@@ -2604,9 +2777,10 @@ class ALIGN_OT_draw_polyline_alignment(bpy.types.Operator, _CivilAngleInput, Pol
         self._bearing_handle = None
         self._last_mouse_pos = (0, 0)
         self._is_3d = False
+        self._mode_locked = False
 
-    _draw_bearing_hud = ALIGN_OT_draw_horizontal_alignment._draw_bearing_hud
-    _uninstall_bearing_hud = ALIGN_OT_draw_horizontal_alignment._uninstall_bearing_hud
+    _draw_bearing_hud = _DrawHorizontalAlignment._draw_bearing_hud
+    _uninstall_bearing_hud = _DrawHorizontalAlignment._uninstall_bearing_hud
 
     def invoke(self, context, event):
         return IfcStore.execute_ifc_operator(self, context, event, method="INVOKE")
@@ -2622,8 +2796,11 @@ class ALIGN_OT_draw_polyline_alignment(bpy.types.Operator, _CivilAngleInput, Pol
         self.tool_state.use_default_container = False
         alignment = tool.Alignment.get_active_alignment()
         existing = tool.Alignment.get_polyline_curve(alignment) if alignment else None
-        # redrawing a 3D polyline starts in 3D
+        # redrawing a polyline keeps its dimension (switching 2D/3D isn't supported)
         self._set_mode(existing is not None and tool.Alignment.get_polyline_points(alignment)[1] == 3)
+        self._mode_locked = existing is not None
+        if self._mode_locked:
+            self.instructions.pop("2D / 3D", None)
         self._bearing_handle = SpaceView3D.draw_handler_add(self._draw_bearing_hud, (context,), "WINDOW", "POST_PIXEL")
         return {"RUNNING_MODAL"}
 
@@ -2655,8 +2832,11 @@ class ALIGN_OT_draw_polyline_alignment(bpy.types.Operator, _CivilAngleInput, Pol
         self.handle_instructions(context, custom_info=[f"Mode: {'3D' if self._is_3d else '2D (Z = 0)'}"])
         self.handle_mouse_move(context, event, should_round=True)
         if not self.tool_state.is_input_on and event.value == "PRESS" and event.type == "V":
-            self._set_mode(not self._is_3d)
-            self.report({"INFO"}, f"Drawing in {'3D' if self._is_3d else '2D (Z = 0)'}")
+            if self._mode_locked:
+                self.report({"INFO"}, "This alignment is already a 2D/3D polyline -- that can't be switched")
+            else:
+                self._set_mode(not self._is_3d)
+                self.report({"INFO"}, f"Drawing in {'3D' if self._is_3d else '2D (Z = 0)'}")
             return {"RUNNING_MODAL"}
         if self._is_3d:
             self.choose_axis(event, z=True)
@@ -2710,6 +2890,15 @@ class ALIGN_OT_draw_polyline_alignment(bpy.types.Operator, _CivilAngleInput, Pol
             context.view_layer.objects.active = alignment_obj
         kind = "3D" if dim == 3 else "2D"
         self.report({"INFO"}, f"Drew {kind} polyline alignment '{alignment.Name}' with {len(points)} points")
+
+
+class ALIGN_OT_draw_polyline_alignment(bpy.types.Operator, _DrawPolylineAlignment):
+    __doc__ = _DrawPolylineAlignment.__doc__
+
+    def __init__(self, *args, **kwargs):
+        # bpy.types.Operator comes first in the bases, so its own __init__ would shadow the base's --
+        # which sets up the tool's state (tool_state, input fields, ...)
+        _DrawPolylineAlignment.__init__(self, *args, **kwargs)
 
 
 def _create_vertex_markers(context, alignment) -> int:
@@ -2910,6 +3099,71 @@ class ALIGN_OT_apply_polyline_table(Operator, tool.Ifc.Operator):
         tool.Blender.update_viewport()
         self.report({"INFO"}, f"Updated polyline alignment '{alignment.Name}' ({len(points)} points)")
         return {"FINISHED"}
+
+
+class _ExtendPolylineAlignment(_DrawPolylineAlignment):
+    """Add points past the end of the active polyline alignment, with the same tool as drawing it
+    (seeded from its last leg). Stays 2D or 3D as it already is."""
+
+    bl_idname = "align.extend_polyline_alignment"
+    bl_label = "Extend"
+    bl_description = "Add points past the end of this polyline alignment. RMB/Enter to finish, Esc to cancel"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return _polyline_poll(cls, context)
+
+    def _invoke(self, context, event):
+        error = self._load_existing(tool.Alignment.get_active_alignment())
+        if error:
+            self.report({"ERROR"}, error)
+            return {"CANCELLED"}
+        result = super()._invoke(context, event)
+        if result != {"RUNNING_MODAL"}:
+            return result
+        ifc = tool.Ifc.get()
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc)
+        anchors = [_local_ifc_to_world_point_3d(ifc, unit_scale, p) for p in self._existing_points[-2:]]
+        self._seeded = _seed_polyline_tool(self, context, anchors)
+        return result
+
+    def _load_existing(self, alignment):
+        """The current points, to append to. Returns an error message, or None."""
+        try:
+            self._existing_points, self._existing_dim = tool.Alignment.get_polyline_points(alignment)
+        except ValueError as e:
+            return str(e)
+        return None
+
+    def _modal(self, context, event):
+        if _swallow_seed_backspace(self, event):
+            return {"RUNNING_MODAL"}
+        return super()._modal(context, event)
+
+    def _finish(self, context):
+        data = tool.Model.get_polyline_props().insertion_polyline
+        world = [(p.x, p.y, p.z) for p in data[0].polyline_points][self._seeded :] if data else []
+        if not world:
+            self.report({"WARNING"}, "Nothing was added")
+            return
+        alignment = tool.Alignment.get_active_alignment()
+        ifc = tool.Ifc.get()
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc)
+        dim = self._existing_dim
+        convert = _world_point_to_local_ifc_3d if dim == 3 else _world_point_to_local_ifc
+        points = list(self._existing_points) + [convert(ifc, unit_scale, p) for p in world]
+        tool.Alignment.set_polyline_points(alignment, points, dim)
+        self.report({"INFO"}, f"Extended '{alignment.Name}' by {len(world)} point(s)")
+
+
+class ALIGN_OT_extend_polyline_alignment(bpy.types.Operator, _ExtendPolylineAlignment):
+    __doc__ = _ExtendPolylineAlignment.__doc__
+
+    def __init__(self, *args, **kwargs):
+        # bpy.types.Operator comes first in the bases, so its own __init__ would shadow the base's --
+        # which sets up the tool's state (tool_state, input fields, ...)
+        _ExtendPolylineAlignment.__init__(self, *args, **kwargs)
 
 
 class ALIGN_OT_finish_polyline_table(Operator):
@@ -3367,6 +3621,9 @@ def _reconstruct_vertical_pis(v_layout):
 
     specs = []
     skipped = []
+    if len(segments) == 1 and grade_indices == [0]:
+        # a single grade: no interior PIs at all, but still a valid vertical to edit or extend
+        return specs, skipped
     if len(grade_indices) < 2:
         return specs, [(s, "no bounding grade") for s in segments]
 
@@ -3711,7 +3968,7 @@ class _VerticalTypedInput:
         return lines
 
 
-class ALIGN_OT_draw_vertical_alignment(Operator, tool.Ifc.Operator, _VerticalTypedInput):
+class _DrawVerticalAlignment(tool.Ifc.Operator, _VerticalTypedInput):
     """Draw the vertical alignment of the active IfcAlignment by PI, in the profile view.
 
     Opens (or reuses) the docked vertical profile view, then click to place
@@ -4037,6 +4294,112 @@ class ALIGN_OT_draw_vertical_alignment(Operator, tool.Ifc.Operator, _VerticalTyp
             context.scene.CivilAlignmentProperties.editing_vertical_pi_layout_id = v_layout.id()
             _refresh_vertical_profile_view(context, alignment)
         self.report({"INFO"} if ok else {"WARNING"}, message)
+
+
+class ALIGN_OT_draw_vertical_alignment(Operator, _DrawVerticalAlignment):
+    __doc__ = _DrawVerticalAlignment.__doc__
+
+    def __init__(self, *args, **kwargs):
+        # bpy.types.Operator comes first in the bases, so its own __init__ would shadow the base's --
+        # which sets up the tool's state (tool_state, input fields, ...)
+        _DrawVerticalAlignment.__init__(self, *args, **kwargs)
+
+
+class _ExtendVerticalAlignment(_DrawVerticalAlignment):
+    """Add PIs past the current end of one vertical layout, with the same profile-view tool as
+    drawing it (typed Elevation/Slope/Distance included). The old end becomes a sharp PI; existing
+    PIs keep their vertical curves. Each vertical's row has its own button (layout_id)."""
+
+    bl_idname = "align.extend_vertical_alignment"
+    bl_label = "Extend Vertical"
+    bl_description = (
+        "Add PIs past the end of this vertical layout in the profile view. RMB/Enter to finish, Esc to cancel"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not poll_ifc4x3(cls, context):
+            return False
+        if context.scene.CivilAlignmentProperties.vertical_pi_markers:
+            cls.poll_message_set("Finish or clear the vertical PI edit first")
+            return False
+        return True
+
+    def _invoke(self, context, event):
+        error = self._load_existing(tool.Alignment.get_active_alignment())
+        if error:
+            self.report({"ERROR"}, error)
+            return {"CANCELLED"}
+        result = super()._invoke(context, event)
+        if result != {"RUNNING_MODAL"}:
+            return result
+        # in place: VerticalDrawDecorator shares this list
+        self._points.extend(self._existing_vpoints)
+        self._seeded = len(self._points)
+        alignment_decorator.VerticalDrawDecorator.tag_redraw()
+        return result
+
+    def _load_existing(self, alignment):
+        """The vertical's current PIs (with their curve lengths), to append to. Returns an error
+        message, or None."""
+        ifc = tool.Ifc.get()
+        try:
+            v_layout = (
+                ifc.by_id(self.layout_id)
+                if self.layout_id
+                else ifcopenshell.api.alignment.get_vertical_layout(alignment)
+            )
+        except RuntimeError:
+            v_layout = None
+        if v_layout is None or not tool.Alignment.get_real_layout_segments(v_layout):
+            return "Draw the vertical alignment first"
+        specs, skipped = _reconstruct_vertical_pis(v_layout)
+        if skipped:
+            return "Can't extend: some vertical segments couldn't be read as PIs"
+        start, end = tool.Alignment.get_vertical_alignment_start_end_points(
+            ifcopenshell.api.alignment.get_alignment(v_layout)
+        )
+        self._v_layout_id = v_layout.id()
+        self._existing_lengths = [s["curve_length"] if s["curve_type"] == "PARABOLIC" else 0.0 for s in specs]
+        self._existing_vpoints = [tuple(start)] + [(s["dist_along"], s["elevation"]) for s in specs] + [tuple(end)]
+        return None
+
+    def _modal(self, context, event):
+        # Backspace must not remove the existing PIs -- only ones added this time
+        if event.type == "BACK_SPACE" and not self._is_typing and len(self._points) <= self._seeded:
+            return {"RUNNING_MODAL"}
+        return super()._modal(context, event)
+
+    def _finish(self, context):
+        new = sorted(self._points[self._seeded :], key=lambda p: p[0])
+        if not new:
+            self.report({"WARNING"}, "Nothing was added")
+            return
+        ifc = tool.Ifc.get()
+        alignment = ifc.by_id(self._alignment_id)
+        v_layout = ifc.by_id(self._v_layout_id)
+        vpoints = self._points[: self._seeded] + new
+        # every old PI keeps its curve; the old end and every new interior point are sharp
+        lengths = self._existing_lengths + [0.0] * len(new)
+        ok, message, v_layout = _generate_vertical_alignment_segments(
+            context, alignment, vpoints, lengths, v_layout=v_layout
+        )
+        if ok:
+            message = f"Extended the vertical by {len(new)} PI(s)"
+            _refresh_vertical_profile_view(context, alignment)
+        self.report({"INFO"} if ok else {"WARNING"}, message)
+
+
+class ALIGN_OT_extend_vertical_alignment(Operator, _ExtendVerticalAlignment):
+    __doc__ = _ExtendVerticalAlignment.__doc__
+
+    def __init__(self, *args, **kwargs):
+        # bpy.types.Operator comes first in the bases, so its own __init__ would shadow the base's --
+        # which sets up the tool's state (tool_state, input fields, ...)
+        _ExtendVerticalAlignment.__init__(self, *args, **kwargs)
+
+    layout_id: IntProperty(default=0, options={"HIDDEN"})
 
 
 class ALIGN_OT_apply_vertical_pi_curve(Operator, tool.Ifc.Operator):
@@ -5214,6 +5577,7 @@ class ALIGN_OT_remove_vertical_layout(Operator, tool.Ifc.Operator):
     bl_idname = "align.remove_vertical_layout"
     bl_label = "Delete Vertical Layout"
     bl_description = "Delete this vertical layout. Blocked while it has a cant layout."
+
     bl_options = {"REGISTER", "UNDO"}
 
     layout_id: IntProperty(default=0, options={"HIDDEN"})
@@ -5547,4 +5911,3 @@ class ALIGN_OT_select_cant_segment(Operator):
 
         alignment_decorator.VerticalProfileDecorator.tag_redraw()
         return {"FINISHED"}
-

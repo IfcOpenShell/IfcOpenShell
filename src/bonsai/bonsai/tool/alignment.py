@@ -2042,6 +2042,66 @@ class Alignment:
         return True
 
     @classmethod
+    def get_layout_end_distance(cls, layout: "ifcopenshell.entity_instance") -> Optional[float]:
+        """Distance along at which a vertical or cant layout ends (its last real segment's
+        StartDistAlong + HorizontalLength), or None with no real segments."""
+        segments = cls.get_real_layout_segments(layout)
+        if not segments:
+            return None
+        dp = segments[-1].DesignParameters
+        return float(dp.StartDistAlong) + float(dp.HorizontalLength)
+
+    @classmethod
+    def get_length_mismatch(cls, layout: "ifcopenshell.entity_instance") -> Optional[float]:
+        """How far a vertical or cant layout ends past (+) or short of (-) its alignment's horizontal
+        layout, or None when they match (within 1e-6 relative) or either has no segments. Verticals
+        and cants may legitimately differ in length from the horizontal (per the user, 2026-09-24);
+        this is just what the "Match Horizontal Length" quick fix acts on."""
+        end = cls.get_layout_end_distance(layout)
+        owner = ifcopenshell.api.alignment.get_alignment(layout)
+        top = cls._get_top_level_alignment(owner) if owner else None
+        h_layout = ifcopenshell.api.alignment.get_horizontal_layout(top) if top else None
+        if end is None or h_layout is None or not cls.get_real_layout_segments(h_layout):
+            return None
+        target = cls.get_horizontal_alignment_length(h_layout)
+        delta = end - target
+        return None if abs(delta) <= 1e-6 * max(target, 1.0) else delta
+
+    @classmethod
+    def match_layout_length_to_horizontal(cls, layout: "ifcopenshell.entity_instance") -> Optional[str]:
+        """Stretch or shorten a vertical or cant layout's last real segment so the layout ends exactly
+        where the horizontal does. Every other segment is rebuilt unchanged (the same clear + recreate
+        a segment-table Apply does). Returns an error message instead of changing anything if the last
+        segment is too short to absorb the difference."""
+        delta = cls.get_length_mismatch(layout)
+        if delta is None:
+            return None
+        file = tool.Ifc.get()
+        segments = cls.get_real_layout_segments(layout)
+        new_length = float(segments[-1].DesignParameters.HorizontalLength) - delta
+        if new_length <= 1e-6:
+            return (
+                f"The last segment is only {segments[-1].DesignParameters.HorizontalLength:.3f} long -- too short to "
+                f"shorten by {delta:.3f}; edit the segments instead"
+            )
+        definitions = []
+        for segment in segments:
+            dp = segment.DesignParameters
+            info = dp.get_info(include_identifier=False, recursive=False)
+            definitions.append((info.pop("type"), info))
+        definitions[-1][1]["HorizontalLength"] = new_length
+        ifcopenshell.api.alignment.clear_layout_segments(file, layout)
+        for entity_type, attributes in definitions:
+            ifcopenshell.api.alignment.create_layout_segment(
+                file, layout, file.create_entity(entity_type, **attributes)
+            )
+        top = cls._get_top_level_alignment(ifcopenshell.api.alignment.get_alignment(layout))
+        ifcopenshell.api.alignment.create_representation(file, top)
+        cls.refresh_alignment_representation_object(top)
+        cls.update_key_point_referents_if_present(top)
+        return None
+
+    @classmethod
     def get_horizontal_alignment_length(cls, h_layout: "ifcopenshell.entity_instance") -> float:
         """Total plan length of a horizontal layout's real (non-zero-length) segments.
 

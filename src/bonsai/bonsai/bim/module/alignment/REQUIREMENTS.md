@@ -1369,10 +1369,62 @@ aren't available in this environment).
 
 **Confirmed requirement (per the user, 2026-09-24): "adding to the end of an existing
 alignment"** -- to be handled *before* partial regeneration (§1/§4). Extend an existing alignment
-past its current end (more tangents/PIs for a layout-based alignment, more points for a polyline
-one) without redrawing it from scratch. Not yet designed: how the vertical/cant layouts (which must
-span the horizontal's full length) are extended along with the horizontal, and how stationing and
-key points follow.
+past its current end without redrawing it from scratch.
+
+**Decided by the user (2026-09-24):** "IfcGradientCurve (vertical) and IfcSegmentedReferenceCurve
+(cant) and their semantic counterparts don't have to be as long as the IfcCompositeCurve
+(horizontal). I would let all 3 be edited independently. If vertical or cant is shorter or longer
+than horizontal, maybe have a quick fix to extend the last (non zero length) segment so the result
+matches the horizontal's length."
+
+**Implemented (2026-09-24).**
+- **Extend a horizontal** (`align.extend_horizontal_alignment`, a ▶ button next to Draw). This is
+  the horizontal draw tool, seeded with the alignment's last leg, so Distance/Angle/bearing/
+  deflection are measured from the current end exactly as if drawing had never stopped.
+  - Backspace can't remove the existing points.
+  - On finish, the new points are appended to the current PIs, which are rebuilt with
+    `_reconstruct_horizontal_pis`. Every existing PI keeps its curve (spirals included), and the old
+    end becomes a sharp PI, ready for a curve like any drawn PI. PI markers are left for that.
+  - The vertical and cant layouts are left alone.
+- **Extend a polyline alignment** (`align.extend_polyline_alignment`, ▶ next to Draw Polyline):
+  the same thing, adding points after the last one. It stays 2D or 3D.
+- **No 2D/3D switching (per the user):** the polyline draw tool's V toggle now only works for an
+  alignment with no polyline yet. Redrawing or extending keeps the existing dimension.
+- **Extend a vertical** (`align.extend_vertical_alignment`, ▶ on each vertical's row): the profile-
+  view draw tool, seeded with that vertical's current PIs, with typed Elevation/Slope/Distance
+  included. Existing PIs keep their parabolic curves, and the old end becomes a sharp PI.
+  - The profile view's range now always spans at least the horizontal's length
+    (`_compute_profile`). It used to span only the verticals' own extent, so a vertical shorter
+    than the horizontal couldn't be drawn or extended past its current end.
+- **Cant** has no draw tool; it's extended through its segment table, as before.
+- **Length mismatch + quick fix.** Each vertical and cant row shows "Ends X past / short of the
+  horizontal" whenever it doesn't end where the horizontal does (`tool.Alignment.
+  get_length_mismatch`, 1e-6 relative tolerance). Next to it is a **Match** button
+  (`align.match_horizontal_length`), which stretches or shortens the layout's *last* real segment
+  so it ends exactly at the horizontal's end. Every other segment is rebuilt unchanged, the same
+  clear + recreate a segment-table Apply does. Shortening by more than the last segment's length is
+  refused, with nothing changed.
+- **Found and fixed along the way:** `_reconstruct_vertical_pis` reported a single-grade vertical
+  (one CONSTANTGRADIENT) as "no bounding grade". That blocked extending it, and Edit PIs on it,
+  the same flaw §4 fixed for a single-LINE horizontal.
+- **Implementation note:** the three draw tools' logic now lives in unregistered base classes
+  (`_DrawHorizontalAlignment`, `_DrawPolylineAlignment`, `_DrawVerticalAlignment`), with thin
+  registered operators on top, the same shape as `PolylineOperator`. The extend tools subclass the
+  bases. An earlier version subclassed the registered draw operators directly, and registering
+  those subclasses stripped the parents' own `poll` ("type object has no attribute 'poll'"), which
+  broke the original draw buttons. The test suite caught it.
+
+Verified headless (the draw tools' modals can't run headless, so their load/seed/finish steps were
+driven directly; the quick fix ran through the real operator):
+- A horizontal extended by two points keeps its spiral curve at PI 1, has the old end as a sharp
+  PI, and ends at the last new point. Backspace is blocked on the seeded points and allowed on a
+  new one.
+- The unchanged vertical and cant are then reported 900 short. Match fixes each, changing only the
+  last segment.
+- An over-trim is refused.
+- A vertical extended to a new end keeps its 150-long parabolic curve.
+- A 3D polyline extended stays 3D with the new point appended.
+- All earlier test scripts pass.
 
 ## 10. Manual referent definitions
 
