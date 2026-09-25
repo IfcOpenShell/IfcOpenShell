@@ -52,8 +52,6 @@ Used environment variables:
     (installed dependencies are never cleared).
     By default option is disabled, to enable pass any value from `1`, `on`, `true`.
     - ``IFCOS_SCHEMAS`` - schemas to be built; defaults to cmake default (8 schemas), to be supplied as `2x3;4;4x3_add2`
-    - ``USE_OCCT`` - whether to use official Open CASCADE instead of Community Edition
-    `on` by default
     - ``WASM_PYTHON_PATH`` - path to WASM Python installation,
     used to deduce `PYVERSION` (e.g. '3.13.2'), `PYTHONINCLUDE`,
     `SIDE_MODULE_CFLAGS`, `SIDE_MODULE_LDFLAGS`.
@@ -74,7 +72,7 @@ Used environment variables:
 # Prerequisites for this script to function correctly:                        #
 #     * cmake * git * bzip2 * tar * c(++) compilers * autoconf                #
 #                                                                             #
-#   if building with USE_OCCT additionally:                                   #
+#   if building with OCCT additionally:                                       #
 #     * glx.h                                                                 #
 #                                                                             #
 #   if building with OCCT 7.4.0 additionally:                                 #
@@ -157,12 +155,10 @@ logger = logging.getLogger()
 
 USE_CURRENT_PYTHON_VERSION = is_on_off(os.getenv("USE_CURRENT_PYTHON_VERSION"), default=False)
 IFCOS_BUILD_PYTHON_WRAPPER = is_on_off(os.getenv("IFCOS_BUILD_PYTHON_WRAPPER"), default=True)
-USE_OCCT = is_on_off(os.getenv("USE_OCCT"), default=True)
 PYTHON_USER_SITE = is_on_off(os.getenv("PYTHON_USER_SITE"), default=False)
 
 PYTHON_VERSIONS = ["3.10.3", "3.11.8", "3.12.1", "3.13.6", "3.14.0", "3.15.0"]
 JSON_VERSION = "3.11.3"
-OCE_VERSION = "0.18.3"
 OCCT_VERSION = "7.8.1"
 BOOST_VERSION = "1.86.0"
 EIGEN_VERSION = "3.4.0"
@@ -526,11 +522,6 @@ cecho(
 """,
     GREEN,
 )
-cecho(f"""* USE_OCCT               = {USE_OCCT}""", MAGENTA)
-if USE_OCCT:
-    cecho(" - Compiling against official Open Cascade")
-else:
-    cecho(" - Compiling against Open Cascade Community Edition")
 cecho(f"* Build Directory   = {BUILD_DIR}", MAGENTA)
 cecho(f"* Dependency Directory   = {DEPS_DIR}", MAGENTA)
 cecho(f" - The directory where {PROJECT_NAME} dependencies are installed.")
@@ -1167,7 +1158,6 @@ Dependency: TypeAlias = Literal[
     "json",
     "eigen",
     "swig",
-    "oce",
     "cgal",
     "gmp",
     "mpfr",
@@ -1286,7 +1276,7 @@ if "swig" in targets:
         cmake_native=WASM,
     )
 
-if USE_OCCT and "occ" in targets:
+if "occ" in targets:
     occt_args: list[str] = []
     patches: list[str] = []
     occt_link_type = "Shared" if ARGS.occt_shared else "Static"
@@ -1347,23 +1337,6 @@ if USE_OCCT and "occ" in targets:
         restore_env("CPPFLAGS", OLD_CPP_FLAGS)
         restore_env("CXXFLAGS", OLD_CXX_FLAGS)
         restore_env("CFLAGS", OLD_C_FLAGS)
-elif "occ" in targets:
-    oce_name = Dependencies.register("oce", OCE_VERSION, use_shared_suffix=False, bundle_as_runtime_dependency=False)
-    build_dependency(
-        name=oce_name,
-        mode="cmake",
-        build_tool_args=[
-            f"-DOCE_DISABLE_TKSERVICE_FONT=ON",
-            f"-DOCE_TESTING=OFF",
-            f"-DOCE_BUILD_SHARED_LIB=OFF",
-            f"-DOCE_DISABLE_X11=ON",
-            f"-DOCE_VISUALISATION=OFF",
-            f"-DOCE_OCAF=OFF",
-            f"-DOCE_INSTALL_PREFIX={Dependencies.get_install_dir('oce')}",
-        ],
-        download_url="https://github.com/tpaviot/oce/archive/",
-        download_name=f"OCE-{OCE_VERSION}.tar.gz",
-    )
 
 if "manifold" in targets:
     dependency_name = Dependencies.register("manifold", MANIFOLD_VERSION)
@@ -1811,14 +1784,8 @@ if "cgal" in targets:
     cmake_args_prefix_path.append(str(Dependencies.get_install_dir("mpfr")))
     cmake_args.append(f"-DCGAL_WITH_GMPXX=Off")
 
-if "occ" in targets and USE_OCCT:
+if "occ" in targets:
     cmake_args_prefix_path.append(str(OCCT_INSTALL_PATH))
-
-elif "occ" in targets:
-    # We don't support find_package for OCE.
-    occ_include_dir = f"{Dependencies.get_install_dir('oce')}/include/oce"
-    occ_library_dir = f"{Dependencies.get_install_dir('oce')}/lib"
-    cmake_args.extend(["-DOCC_INCLUDE_DIR=" + occ_include_dir, "-DOCC_LIBRARY_DIR=" + occ_library_dir])
 
 if "manifold" in targets:
     cmake_args_prefix_path.append(str(Dependencies.get_install_dir("manifold")))
@@ -1891,7 +1858,7 @@ ld_library_paths = [
     # E.g. Rocky.
     f"{IFCOPENSHELL_INSTALL_PATH}/lib64",
 ]
-if ARGS.occt_shared and USE_OCCT and "occ" in targets:
+if ARGS.occt_shared and "occ" in targets:
     ld_library_paths.append(f"{OCCT_INSTALL_PATH}/lib")
 if ARGS.shared and "boost" in targets:
     ld_library_paths.append(f"{Dependencies.get_install_dir('boost')}/lib")

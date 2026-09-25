@@ -75,29 +75,9 @@ operating systems. GCC (4.7 or newer) or Clang (any version) is required.
 
    IfcOpenShell 0.8 depends on fairly recent OCCT additions such as the BVH Tree functionality. Users on Ubuntu 20.04 are advised to manually compile and install OCCT 7.7.
 
-   Another alternative is to use OpenCascade Community Edition (OCE), but it may
-   lag behind OCCT and is no longer actively maintained so is not recommended.
-
-   .. code-block:: bash
-
-        sudo apt-get install liboce-foundation-dev liboce-modeling-dev liboce-ocaf-dev liboce-visualization-dev liboce-ocaf-lite-dev
-
-   As a final alternative, you may also manually compile OCE:
-
-   .. code-block:: bash
-
-        sudo apt-get install libftgl-dev libtbb2 libtbb-dev libgl1-mesa-dev libfreetype6-dev
-        git clone https://github.com/tpaviot/oce.git
-        cd oce
-        mkdir build && cd build
-        cmake ..
-        # Replace X with number of CPU cores + 1
-        make -j X
-        sudo make install
-
    .. warning::
 
-    Choose one option only between installing OCCT, installing OCE, or
+    Choose one option only between installing OCCT packages or
     self-compilation. If you install and compile multiple versions of
     OpenCascade, your system may get confused.
 
