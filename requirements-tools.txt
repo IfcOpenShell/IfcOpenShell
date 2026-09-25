@@ -1,4 +1,4 @@
 ruff==0.16.7
 poethepoet
-ty==0.0.81
+ty==0.0.83
 gersemi==0.29.1
