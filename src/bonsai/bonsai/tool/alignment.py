@@ -791,7 +791,7 @@ class Alignment:
 
     @classmethod
     def refresh_alignment_representation_object(
-        cls, alignment: ifcopenshell.entity_instance
+        cls, alignment: ifcopenshell.entity_instance, refresh_dependents: bool = True
     ) -> Optional[bpy.types.Object]:
         """Create or refresh the single mesh object for `alignment`'s own geometry.
 
@@ -898,6 +898,9 @@ class Alignment:
         # apply_blender_offset_to_matrix_world reads the offset back off
         # obj.data — must run after obj.data is reassigned above.
         obj.matrix_world = tool.Loader.apply_blender_offset_to_matrix_world(obj, mat)
+        if refresh_dependents:
+            # offset curve alignments built on this one (REQUIREMENTS.md §5.2) follow its edits
+            cls.refresh_dependent_offset_alignments(alignment)
         tool.Geometry.record_object_position(obj)
 
         return obj
@@ -1290,6 +1293,18 @@ class Alignment:
     def is_polyline_alignment(cls, alignment: "ifcopenshell.entity_instance") -> bool:
         return cls.get_polyline_curve(alignment) is not None
 
+    #: Blender object custom property recording that a still-bare alignment was added (Add Alignment →
+    #: Polyline) to be drawn as a polyline -- IFC has nothing to hold that intent until it has geometry.
+    DEFINITION_PROPERTY = "bonsai_alignment_definition"
+
+    @classmethod
+    def is_polyline_to_draw(cls, alignment: "ifcopenshell.entity_instance") -> bool:
+        """A bare alignment added as a polyline, not drawn yet -- only Draw Polyline applies to it."""
+        if not cls.is_bare_alignment(alignment):
+            return False
+        obj = tool.Ifc.get_object(alignment)
+        return obj is not None and obj.get(cls.DEFINITION_PROPERTY) == "POLYLINE"
+
     @classmethod
     def is_bare_alignment(cls, alignment: "ifcopenshell.entity_instance") -> bool:
         """No layouts and no geometry yet -- could still become either kind of alignment."""
@@ -1414,12 +1429,12 @@ class Alignment:
             ifcopenshell.util.element.remove_deep2(file, relative)
 
     @classmethod
-    def create_polyline_alignment(
+    def create_bare_alignment(
         cls, name: str, start_station: float = 0.0, define_stationing: bool = True
     ) -> "ifcopenshell.entity_instance":
-        """A new, bare IfcAlignment ready to be drawn as a polyline: aggregated to the project like
-        every alignment (ifcopenshell.api.alignment.create does the same), no layouts, and no
-        geometry until its points are drawn (set_polyline_points). With define_stationing, its start
+        """A new, bare IfcAlignment -- aggregated to the project like every alignment
+        (ifcopenshell.api.alignment.create does the same), no layouts, and no geometry until it's
+        given some: a polyline (set_polyline_points) or an offset curve (set_offset_values). With define_stationing, its start
         referent is added now, at the origin, and put on the curve once it's drawn
         (_sync_polyline_stationing) -- the same order as a layout-based alignment's create_alignment."""
         import ifcopenshell.api.root
@@ -1437,6 +1452,173 @@ class Alignment:
             )
         cls.create_object_for_alignment(alignment)
         return alignment
+
+    # =========================================================================
+    # Offset curve alignments (IFC 4.3: an IfcAlignment whose geometry is an IfcOffsetCurveByDistances
+    # relative to another alignment's curve, with no layouts -- REQUIREMENTS.md §5.2)
+    # =========================================================================
+
+    @classmethod
+    def get_offset_curve(cls, alignment: "ifcopenshell.entity_instance") -> Optional["ifcopenshell.entity_instance"]:
+        """The IfcOffsetCurveByDistances defining an offset curve alignment, or None."""
+        if alignment is None or ifcopenshell.api.alignment.get_alignment_layouts(alignment):
+            return None
+        for representation in ifcopenshell.util.representation.get_representations_iter(alignment):
+            if representation.RepresentationIdentifier != "Axis":
+                continue
+            for item in representation.Items:
+                if item.is_a("IfcOffsetCurveByDistances"):
+                    return item
+        return None
+
+    @classmethod
+    def is_offset_alignment(cls, alignment: "ifcopenshell.entity_instance") -> bool:
+        return cls.get_offset_curve(alignment) is not None
+
+    @classmethod
+    def get_offset_dimension(cls, curve: "ifcopenshell.entity_instance") -> int:
+        """3 if an offset curve (or a curve an offset curve could be based on) is 3D, else 2: decided by
+        the lowest-level basis curve -- an IfcGradientCurve (or the IfcSegmentedReferenceCurve built on
+        one) is 3D, an IfcCompositeCurve is 2D (per the user, 2026-09-25)."""
+        while curve is not None and curve.is_a("IfcOffsetCurveByDistances"):
+            curve = curve.BasisCurve
+        return 3 if curve is not None and curve.is_a() in ("IfcGradientCurve", "IfcSegmentedReferenceCurve") else 2
+
+    @classmethod
+    def _offset_depends_on(
+        cls, curve: "ifcopenshell.entity_instance", alignment: "ifcopenshell.entity_instance"
+    ) -> bool:
+        """Whether an offset curve is (directly or through other offset curves) built on
+        ``alignment``'s own curves -- so offsetting ``alignment`` from it would be circular."""
+        own_curves = (
+            ifcopenshell.api.alignment.get_curve(alignment),
+            ifcopenshell.api.alignment.get_basis_curve(alignment),
+        )
+        own = {c.id() for c in own_curves if c}
+        while curve is not None:
+            if curve.id() in own:
+                return True
+            curve = curve.BasisCurve if curve.is_a("IfcOffsetCurveByDistances") else None
+        return False
+
+    @classmethod
+    def get_offset_basis_candidates(cls, alignment: Optional["ifcopenshell.entity_instance"] = None) -> list:
+        """Curves an offset curve alignment can be defined relative to, as (curve, label, dim):
+        every layout-based alignment's horizontal IfcCompositeCurve (2D) and each of its verticals'
+        IfcGradientCurve (3D), plus every other offset curve alignment (IfcOffsetCurveByDistances,
+        2D/3D per its own basis) -- the three kinds of basis curve IFC allows for it. Excludes
+        ``alignment``'s own curves and any offset curve built on them (a curve can't be offset from
+        itself)."""
+        file = tool.Ifc.get()
+        found = []
+        for other in file.by_type("IfcAlignment"):
+            if alignment is not None and other.id() == alignment.id():
+                continue
+            curve = ifcopenshell.api.alignment.get_curve(other)
+            if curve is None:
+                continue
+            if curve.is_a("IfcOffsetCurveByDistances"):
+                if alignment is None or not cls._offset_depends_on(curve, alignment):
+                    dim = cls.get_offset_dimension(curve)
+                    found.append((curve, f"{other.Name or 'Alignment'} (offset, {dim}D)", dim))
+                continue
+            if not ifcopenshell.api.alignment.get_alignment_layouts(other):
+                continue  # a polyline alignment -- not an allowed basis for an offset curve
+            top = cls._get_top_level_alignment(other)
+            if top.id() == other.id():
+                horizontal = ifcopenshell.api.alignment.get_basis_curve(other)
+                if horizontal is not None and horizontal.is_a("IfcCompositeCurve") and horizontal.Segments:
+                    found.append((horizontal, f"{other.Name or 'Alignment'} — horizontal (2D)", 2))
+            gradient = curve.BaseCurve if curve.is_a("IfcSegmentedReferenceCurve") else curve
+            if gradient.is_a("IfcGradientCurve") and gradient.Segments:
+                vertical = ifcopenshell.api.alignment.get_vertical_layout(other)
+                name = cls.get_vertical_display_name(vertical) if vertical else None
+                if not name or name == top.Name:
+                    name = "vertical"  # a lone vertical is shown by its alignment's name -- don't repeat it
+                found.append((gradient, f"{top.Name or 'Alignment'} — {name} (3D)", 3))
+        return found
+
+    @classmethod
+    def get_offset_values(cls, alignment: "ifcopenshell.entity_instance") -> tuple:
+        """(basis curve, rows) of an offset curve alignment -- rows are (distance along, lateral,
+        vertical, longitudinal) per IfcPointByDistanceExpression, None where unset."""
+        curve = cls.get_offset_curve(alignment)
+        if curve is None:
+            raise ValueError("Not an offset curve alignment")
+        rows = []
+        for point in curve.OffsetValues:
+            distance = getattr(point.DistanceAlong, "wrappedValue", point.DistanceAlong)
+            rows.append((float(distance), point.OffsetLateral, point.OffsetVertical, point.OffsetLongitudinal))
+        return curve.BasisCurve, rows
+
+    @classmethod
+    def set_offset_values(cls, alignment: "ifcopenshell.entity_instance", basis_curve, rows) -> None:
+        """Write an offset curve alignment's basis curve and offsets, creating its
+        IfcOffsetCurveByDistances (and the Axis representation) if it has none yet, or updating the
+        existing one in place -- so anything referring to it (another offset curve built on it) stays
+        attached. ``rows`` are (distance along, lateral, vertical, longitudinal); the vertical offset
+        is only kept for a 3D curve, and longitudinal (not offered in the UI) is only ever kept from
+        what was already there. Refreshes the viewport mesh, and every offset alignment built on it."""
+        if not rows:
+            raise ValueError("An offset curve needs at least one offset")
+        distances = [r[0] for r in rows]
+        if any(b <= a for a, b in zip(distances, distances[1:])):
+            raise ValueError("Offsets must be in order of increasing distance along")
+        file = tool.Ifc.get()
+        dim = cls.get_offset_dimension(basis_curve)
+        offsets = [
+            file.createIfcPointByDistanceExpression(
+                DistanceAlong=file.createIfcLengthMeasure(float(distance)),
+                OffsetLateral=float(lateral or 0.0),
+                OffsetVertical=float(vertical) if dim == 3 and vertical is not None else None,
+                OffsetLongitudinal=float(longitudinal) if longitudinal is not None else None,
+                BasisCurve=basis_curve,
+            )
+            for distance, lateral, vertical, longitudinal in rows
+        ]
+        curve = cls.get_offset_curve(alignment)
+        if curve is None:
+            curve = file.createIfcOffsetCurveByDistances(BasisCurve=basis_curve, OffsetValues=offsets)
+            if dim == 3:
+                relative = file.createIfcAxis2Placement3D(Location=file.createIfcCartesianPoint((0.0, 0.0, 0.0)))
+            else:
+                relative = file.createIfcAxis2Placement2D(Location=file.createIfcCartesianPoint((0.0, 0.0)))
+            alignment.ObjectPlacement = file.createIfcLocalPlacement(RelativePlacement=relative)
+            ifcopenshell.api.geometry.assign_representation(
+                file,
+                alignment,
+                file.createIfcShapeRepresentation(
+                    ContextOfItems=ifcopenshell.api.alignment.get_axis_subcontext(file),
+                    RepresentationIdentifier="Axis",
+                    RepresentationType="Curve3D" if dim == 3 else "Curve2D",
+                    Items=(curve,),
+                ),
+            )
+        else:
+            old = list(curve.OffsetValues)
+            curve.BasisCurve = basis_curve
+            curve.OffsetValues = offsets
+            for entity in old:
+                if file.get_total_inverses(entity) == 0:
+                    file.remove(entity)
+            for representation in ifcopenshell.util.representation.get_representations_iter(alignment):
+                if curve in representation.Items:
+                    representation.RepresentationType = "Curve3D" if dim == 3 else "Curve2D"
+            cls._match_placement_dimension(alignment, dim)
+        cls.refresh_alignment_representation_object(alignment)
+
+    @classmethod
+    def refresh_dependent_offset_alignments(cls, alignment: "ifcopenshell.entity_instance") -> None:
+        """Rebuild the meshes of every offset curve alignment built (directly or through other offset
+        curves) on ``alignment``. Their IFC stays valid through ``alignment``'s own edits -- its curve
+        entities are updated in place, not replaced -- but their tessellated geometry doesn't."""
+        file = tool.Ifc.get()
+        for other in file.by_type("IfcAlignment"):
+            if other.id() == alignment.id():
+                continue
+            curve = cls.get_offset_curve(other)
+            if curve is not None and cls._offset_depends_on(curve, alignment):
+                cls.refresh_alignment_representation_object(other, refresh_dependents=False)
 
     @classmethod
     def get_vertical_display_name(cls, vertical_layout: "ifcopenshell.entity_instance") -> str:

@@ -831,18 +831,7 @@ layouts from points -- each vertex a PI. Superseded: per the user, "the idea com
 shape representations for an IfcAlignment".)
 
 1. **Polyline alignment (2D or 3D)** -- the current focus, see §5.1 below.
-2. **Offset curve alignment (IfcOffsetCurveByDistances).** **Confirmed requirement (per the user,
-   2026-09-24): "Define an alignment with IfcOffsetCurveByDistances"** -- to be handled *before*
-   partial regeneration (§1/§4). A new alignment defined by offsets (IfcDistanceExpression:
-   distance along, lateral, and optionally vertical offset) from a reference alignment's curve -- an
-   IfcCompositeCurve (horizontal-only), IfcGradientCurve (with vertical), or another
-   IfcOffsetCurveByDistances. Still open:
-   - constant offset only, or offsets that vary by station (a station/offset table, like station
-     equations)? Left/right sign convention?
-   - does it need its own live preview while defining it?
-   - what happens to the offset alignment when its reference alignment is edited and fully
-     regenerated (every segment replaced) -- the offset curve references the reference alignment's
-     curve entity, so it has to survive or be re-pointed.
+2. **Offset curve alignment (IfcOffsetCurveByDistances)** -- see §5.2 below.
 
 ### 5.1 Polyline alignment
 
@@ -968,6 +957,135 @@ shown are rise over that distance. At road grades, that's within a fraction of a
 over plan distance. It's static: none of the vertical editing tools apply without a vertical
 layout. A 2D polyline adds nothing to the profile. Verified headless: legs, 3D lengths,
 labels, station labels starting at 1+000, and the panel summary for a 2D and a 3D polyline.
+
+### 5.2 Offset curve alignment
+
+**Requirements (per the user, 2026-09-25):**
+1. IfcOffsetCurveByDistances is a representation on IfcAlignment.
+2. The IfcAlignment has no nested layout structure.
+3. It's **3D** when its OffsetValues use a BasisCurve of type IfcGradientCurve.
+4. It's **2D** when its OffsetValues use a BasisCurve of type IfcCompositeCurve.
+5. It can be offset from a previously defined IfcOffsetCurveByDistances. Its 2D/3D nature then
+   depends on the lowest-level basis curve, per 3 and 4.
+6. The minimum number of OffsetValues is 1.
+7. The IfcPointByDistanceExpression offsets may be limited to OffsetLateral and OffsetVertical in
+   this context. **Not confirmed** -- no such rule was found in the IFC 4.3 documentation or schema
+   sources reachable here. So, per the user, **OffsetLongitudinal is omitted as an input for now**
+   and can be added later if needed. A value already in a file is carried through an edit
+   unchanged, rather than dropped.
+8. A table is enough for the UI: select the curve, enter distance along / offset lateral / offset
+   vertical, and commit the edits.
+
+**From the spec** (IfcOffsetCurveByDistances): a single offset means a constant offset along the
+whole basis curve. Where the offsets don't span the basis curve, the lateral and vertical offsets
+implicitly continue with the nearest value. OffsetLateral is positive to the left, facing along the
+basis curve.
+
+**Implemented (2026-09-25).**
+- **The IFC layer (`tool.Alignment`):**
+  - `get_offset_curve` / `is_offset_alignment`.
+  - `get_offset_dimension`: walks down the chain of offset curves to the lowest-level basis curve.
+    An IfcGradientCurve (or an IfcSegmentedReferenceCurve built on one) is 3D; otherwise 2D.
+  - `get_offset_basis_candidates`: every layout alignment's horizontal IfcCompositeCurve (2D),
+    each of its verticals' IfcGradientCurve (3D, named with `get_vertical_display_name`), and every
+    other offset alignment. It leaves out the alignment's own curves and any offset curve built on
+    them, so a circular definition can't be chosen. Polyline alignments aren't offered, since IFC
+    doesn't allow them as the basis.
+  - `get_offset_values`.
+  - `set_offset_values`:
+    - It creates the IfcOffsetCurveByDistances and its Axis representation (Curve2D/Curve3D,
+      with a matching 2D/3D placement), or updates the existing curve entity in place.
+    - It drops OffsetVertical for a 2D curve, and requires at least one offset, with strictly
+      increasing distances along.
+    - It removes orphaned IfcPointByDistanceExpressions and keeps the representation type and
+      placement in step when the dimension changes.
+  - `create_polyline_alignment` became `create_bare_alignment`, shared by both kinds.
+- **Following the reference alignment.** A reference alignment's curve entities are updated in
+  place by every rebuild (segments are cleared and re-added to the same IfcCompositeCurve/
+  IfcGradientCurve), so an offset curve stays attached through its reference's edits. Its
+  *tessellated* mesh doesn't update by itself, though. `refresh_alignment_representation_object`
+  now also rebuilds every offset alignment built on the refreshed one, directly or through other
+  offset curves (`refresh_dependent_offset_alignments`). This answers the open question of what
+  happens when the reference is fully regenerated.
+- **UI:**
+  - Add Alignment → *Definition* has a third choice, **Offset Curve**. It makes a bare alignment,
+    with stationing as for the other kinds.
+  - **Edit Offsets** (`align.load_offset_table`) is the offset alignment's main button in the
+    authoring panel, and a bare alignment offers "Define Offset Curve".
+  - The Alignment Segments panel lists the offsets ("Offset curve (3D): n offset(s)", the curve
+    it's offset from, then Distance Along / Lateral / Vertical). Its pencil opens the table in
+    place: the **From** curve dropdown, rows (Vertical only for a 3D curve), add/remove, and
+    Apply/Cancel.
+  - The PI-method Draw refuses an offset alignment.
+- **Verified headless**, through the real operators:
+  - Add Alignment (Offset Curve) → bare → Edit Offsets. The candidates are the reference's
+    horizontal (2D) and vertical (3D).
+  - Applied on the vertical, it gives Curve3D with a 3D placement and no layouts, and the mesh
+    starts 3.5 left and 0.2 up of the reference.
+  - An offset of that offset works, and is 3D. The first offset isn't offered the second as a basis.
+  - Switching the first to the horizontal gives Curve2D with a 2D placement and drops the vertical
+    offset. The second then counts as 2D too.
+  - Out-of-order distances are refused, with nothing changed.
+  - Moving the reference 20 north moves both offset alignments' meshes exactly 20 north, and
+    their basis curve entity is unchanged.
+  - A longitudinal offset in the file survives an edit.
+  - Everything survives save and reload.
+  - The panel was rendered in both its states.
+- **Kernel check:** IfcOpenShell's geometry kernel was confirmed beforehand to tessellate constant,
+  varying and offset-of-offset curves in 2D and 3D.
+
+**Fixed (2026-09-25), per the user, after testing:**
+- (1) "after defining a standard alignment, I create an offset alignment but three options are
+  enabled, draw horizontal alignment, draw polyline and define offset curve. Only the define offset
+  curve should be enabled."
+- (2) Creating an offset alignment should not be possible without a basis alignment selected, and
+  there was "no way to input offset points for the second offset alignment."
+- (3) "Creating an offset alignment is not possible if there aren't any previously defined
+  alignments, so it should not be an enabled option."
+
+The root cause of (1) and (2): Add Alignment made an *empty* alignment for both Polyline and
+Offset Curve, and an empty alignment offered every kind of tool, since nothing recorded which kind
+it was meant to be. Now:
+- **An offset curve alignment is created complete, never empty.** Choosing Offset Curve in Add
+  Alignment shows **Offset From** (the candidate curves) and the first **Offset Lateral** (plus
+  **Offset Vertical** when the chosen curve is 3D). OK creates the IfcOffsetCurveByDistances right
+  away, and more offsets are added with Edit Offsets. So an offset alignment can't exist without its
+  basis, and its only tool is Edit Offsets. Edit Offsets itself now applies only to offset
+  alignments, and "Define Offset Curve" on an empty alignment is gone.
+- **Offset Curve isn't offered with nothing to offset from.** Add Alignment's *Definition* is now a
+  dynamic list, and Offset Curve only appears once `get_offset_basis_candidates` finds a curve --
+  the same "hide it until it can work" approach as Viennese Bend (§2).
+- **A polyline alignment that isn't drawn yet remembers it's a polyline.** IFC has nothing to hold
+  that intent before there's geometry, so Add Alignment sets a Blender object custom property
+  (`tool.Alignment.DEFINITION_PROPERTY`), read by `is_polyline_to_draw`. Such an alignment gets only
+  Draw Polyline; the PI-method Draw refuses it. An empty alignment from elsewhere (Add Element, or
+  with its horizontal layout deleted) can still be drawn either way.
+- **The likely cause of (2)'s missing input: a table left open for another alignment.** Every
+  table's poll refuses to open while another table is open, so a table left open for the first
+  offset alignment blocked editing the second. The selection-change handler now closes a staged
+  offset, polyline or horizontal-PI table left open for a different alignment, discarding unapplied
+  edits (`_auto_finish_unrelated_tables`) -- the same "moving on" rule as leftover PI markers.
+
+Verified headless:
+- A fresh project doesn't offer Offset Curve; it's offered once there's a standard alignment.
+- An offset alignment created from the vertical is complete, and its authoring panel offers only
+  Edit Offsets. Both Draw tools are refused.
+- An offset of it is created in one step. Selecting it closes the first one's leftover table, and
+  its offsets can then be edited.
+- A new polyline alignment offers Draw Polyline, with its other tools greyed out, and refuses the
+  PI-method Draw.
+- A standard alignment still gets only the PI tools.
+
+Also in real UI-mode Blender: the Add Alignment dialog opened with Offset Curve selected, and
+Draw Polyline and Draw Horizontal started, all with no errors.
+
+**Not done / noted:**
+- **Stationing referents** on an offset alignment are still placed at the origin: the library's
+  `add_stationing_referent` only places referents on composite and polyline curves.
+- **No profile view** for a 3D offset curve.
+- **Single precision:** the table values are Blender float properties (single precision, ~7
+  significant digits), so 0.2 is written as 0.20000000298 -- the same limitation as the other
+  staged tables in this module.
 
 ## 6. Vertical draw/edit parity with horizontal
 
