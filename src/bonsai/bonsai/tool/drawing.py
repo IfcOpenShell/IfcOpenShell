@@ -26,6 +26,7 @@ import platform
 import re
 import shutil
 import subprocess
+import urllib.parse
 from collections.abc import Iterable, Sequence
 from fractions import Fraction
 from pathlib import Path
@@ -1491,6 +1492,204 @@ class Drawing(bonsai.core.tool.Drawing):
                 )
             )
         return warnings
+
+    @classmethod
+    def get_sheet_drawing_guids(cls, sheet: ifcopenshell.entity_instance) -> set[str]:
+        """GlobalIds of the drawings placed on a sheet, according to the model."""
+        locations = {
+            reference.Location
+            for reference in cls.get_document_references(sheet)
+            if cls.get_reference_description(reference) == "DRAWING" and reference.Location
+        }
+        guids: set[str] = set()
+        for drawing in tool.Ifc.get().by_type("IfcAnnotation"):
+            if drawing.ObjectType != "DRAWING":
+                continue
+            document = cls.get_drawing_document(drawing)
+            if document is not None and document.Location in locations:
+                guids.add(drawing.GlobalId)
+        return guids
+
+    @classmethod
+    def find_moved_sheet_file(cls, sheet: ifcopenshell.entity_instance, description: str) -> Union[str, None]:
+        """Find a sheet's layout or built sheet if it sits under a name the model does not know.
+
+        Renaming a sheet moves its files at once (`core.rename_sheet`), but the new
+        names reach the IFC only when it is saved. Reopen the model unsaved and its
+        references name files that are gone, while the files sit under names the
+        model never kept.
+
+        A candidate is an .svg in the same folder that no sheet in the model refers
+        to. It belongs to this sheet if it places exactly the sheet's drawings, or -
+        for a sheet edited as well as renamed, or with no drawings - if it carries
+        the sheet's number and shares a drawing with it (or neither has any). Only
+        an unambiguous match is returned.
+
+        :param description: "LAYOUT" or "SHEET".
+        :return: The file's path, or None if nothing is missing or no single file matches.
+        """
+        expected = cls.get_document_uri(sheet, description)
+        if not expected or os.path.exists(expected):
+            return None
+        folder = os.path.dirname(expected)
+        if not os.path.isdir(folder):
+            return None
+
+        def key(path: str) -> str:
+            return os.path.normcase(os.path.abspath(path))
+
+        claimed = set()
+        for other in tool.Ifc.get().by_type("IfcDocumentInformation"):
+            if other.Scope == "SHEET" and (uri := cls.get_document_uri(other, description)):
+                claimed.add(key(uri))
+        orphans = [
+            path
+            for name in os.listdir(folder)
+            if name.lower().endswith(".svg") and key(path := os.path.join(folder, name)) not in claimed
+        ]
+        if not orphans:
+            return None
+
+        def placed_drawings(path: str) -> Union[set[str], None]:
+            try:
+                root = etree.parse(path).getroot()
+            except Exception:
+                return None
+            return {g.get("data-drawing") for g in root.iter("{http://www.w3.org/2000/svg}g") if g.get("data-drawing")}
+
+        wanted = cls.get_sheet_drawing_guids(sheet)
+        placed = {path: placed_drawings(path) for path in orphans}
+
+        same = [path for path in orphans if wanted and placed[path] == wanted]
+        if len(same) == 1:
+            return same[0]
+
+        prefix = cls.sanitise_filename(f"{cls.get_sheet_identification(sheet)} - ")
+        related = [
+            path
+            for path in orphans
+            if os.path.basename(path).startswith(prefix)
+            and placed[path] is not None
+            and ((not placed[path] and not wanted) or (placed[path] & wanted))
+        ]
+        return related[0] if len(related) == 1 else None
+
+    @classmethod
+    def restore_moved_sheet_files(cls, sheet: ifcopenshell.entity_instance) -> list[str]:
+        """Move a sheet's renamed files back to where the model expects them.
+
+        The open model decides what a sheet is called, and Bonsai names a sheet's
+        files after it - so after reopening a model that was not saved since a
+        rename, the files follow the model back. Renaming the sheet again (and
+        saving) moves them forward. See `find_moved_sheet_file`.
+
+        :return: One "old name -> new name" line per file moved.
+        """
+        moved = []
+        for description in ("LAYOUT", "SHEET"):
+            if not (found := cls.find_moved_sheet_file(sheet, description)):
+                continue
+            expected = cls.get_document_uri(sheet, description)
+            assert expected
+            cls.move_file(found, expected)
+            moved.append(f"{description.lower()} '{os.path.basename(found)}' -> '{os.path.basename(expected)}'")
+        return moved
+
+    @classmethod
+    def restore_moved_drawing_files(cls, sheet: ifcopenshell.entity_instance) -> list[str]:
+        """Move a sheet's renamed drawings back to where the model expects them.
+
+        Renaming a drawing moves its SVG and rewrites its href in every layout
+        placing it (`core.update_drawing_name`) - on disk, at once - while the new
+        name reaches the IFC only when it is saved. The layout is what still ties
+        the drawing, by GlobalId, to the file it was moved to, so the file is
+        found there and moved back.
+
+        Every layout placing the drawing was rewritten, so every one needs its
+        href put back - including those processed after the file has already
+        been moved. A layout's href always mirrors the model's path for the
+        drawing, so any that disagrees is repointed once that file exists.
+
+        A file some drawing in the model expects is never taken.
+
+        :return: One line per drawing moved or href repointed.
+        """
+        layout = cls.get_document_uri(sheet, "LAYOUT")
+        if not layout or not os.path.exists(layout):
+            return []
+        layout_dir = os.path.dirname(layout)
+        ifc_file = tool.Ifc.get()
+
+        def key(path: str) -> str:
+            return os.path.normcase(os.path.abspath(path))
+
+        claimed = set()
+        for drawing in ifc_file.by_type("IfcAnnotation"):
+            if drawing.ObjectType == "DRAWING" and (document := cls.get_drawing_document(drawing)):
+                if uri := cls.get_document_uri(document):
+                    claimed.add(key(uri))
+
+        svg, xlink = "{http://www.w3.org/2000/svg}", "{http://www.w3.org/1999/xlink}"
+        tree = etree.parse(layout)
+        moved = []
+        for group in tree.getroot().iter(f"{svg}g"):
+            if not (guid := group.get("data-drawing")):
+                continue
+            try:
+                drawing = ifc_file.by_guid(guid)
+            except RuntimeError:
+                continue
+            document = cls.get_drawing_document(drawing)
+            expected = cls.get_document_uri(document) if document else None
+            if not expected:
+                continue
+            foreground = group.find(f'.//{svg}image[@data-type="foreground"]')
+            href = foreground.get(f"{xlink}href") if foreground is not None else None
+            if not href:
+                continue
+            found = os.path.normpath(os.path.join(layout_dir, urllib.parse.unquote(href).replace("\\", "/")))
+            if key(found) == key(expected):
+                continue
+
+            if not os.path.exists(expected):
+                if not os.path.exists(found) or key(found) in claimed:
+                    continue  # nothing of ours to put back
+                cls.move_file(found, expected)
+                underlay = found[0:-4] + "-underlay.png"
+                if os.path.exists(underlay) and not os.path.exists(expected[0:-4] + "-underlay.png"):
+                    cls.move_file(underlay, expected[0:-4] + "-underlay.png")
+                moved.append(f"drawing '{os.path.basename(found)}' -> '{os.path.basename(expected)}'")
+            else:
+                moved.append(
+                    f"{os.path.basename(layout)} now places '{os.path.basename(expected)}', "
+                    f"not '{os.path.basename(found)}'"
+                )
+
+            relative = os.path.relpath(expected, layout_dir)
+            foreground.set(f"{xlink}href", relative)
+            for background in group.findall(f'.//{svg}image[@data-type="background"]'):
+                background.set(f"{xlink}href", relative[0:-4] + "-underlay.png")
+
+        if moved:
+            tree.write(layout, pretty_print=True, xml_declaration=True, encoding="utf-8")
+        return moved
+
+    @classmethod
+    def restore_all_moved_files(cls) -> list[str]:
+        """Put back every sheet's and drawing's files renamed in an unsaved session.
+
+        The open model names all of them, so one pass over every sheet is right,
+        whichever sheet prompted it. Sheet files go first: drawings are found
+        through the layouts.
+
+        :return: One line per change, prefixed with the sheet it belongs to.
+        """
+        sheets = [s for s in tool.Ifc.get().by_type("IfcDocumentInformation") if s.Scope == "SHEET"]
+        changes = []
+        for restore in (cls.restore_moved_sheet_files, cls.restore_moved_drawing_files):
+            for sheet in sheets:
+                changes.extend(f"{cls.get_sheet_identification(sheet)}: {line}" for line in restore(sheet))
+        return changes
 
     @classmethod
     def does_file_exist(cls, uri: str) -> bool:
