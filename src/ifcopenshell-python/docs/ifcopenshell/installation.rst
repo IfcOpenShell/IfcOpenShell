@@ -110,24 +110,9 @@ operating systems. GCC (4.7 or newer) or Clang (any version) is required.
         cd /path/to/IfcOpenShell
         mkdir build && cd build
         # Customise the compile options to suit your environment
-        # Check all paths are valid for your environment
-        cmake ../cmake \
-              -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu/ \
-              -DOCC_INCLUDE_DIR=/usr/include/opencascade \
-              \
-              # Optional Collada support
-              -DCOLLADA_SUPPORT=On \
-              -DOPENCOLLADA_INCLUDE_DIR="/usr/local/include/opencollada" \
-              -DOPENCOLLADA_LIBRARY_DIR="/usr/local/lib/opencollada"  \
-              -DPCRE_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu/ \
-              \
-              -DCGAL_INCLUDE_DIR=/usr/include \
-              -DGMP_INCLUDE_DIR=/usr/include \
-              -DMPFR_INCLUDE_DIR=/usr/include \
-              -DGMP_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
-              -DMPFR_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
-              -DJSON_INCLUDE_DIR=/usr/include \
-              -DEIGEN_DIR=/usr/include/eigen3
+        # Dependencies are found automatically.
+        # If you skipped step 4, pass -DCOLLADA_SUPPORT=Off.
+        cmake ../cmake
         # Replace X with number of CPU cores + 1. Reduce when running out of memory. Compiling the code generated from the schemas is resource intensive.
         make -j X
         # Optionally install to the system
@@ -171,12 +156,6 @@ GCC (4.7 or newer) or Clang (any version) is required.
             -DPYTHON_EXECUTABLE=/opt/homebrew/bin/python3.13 \
             -DPYTHON_LIBRARY=/opt/homebrew/opt/python@3.13/Frameworks/Python.framework/Versions/3.13/lib/libpython3.13.dylib \
             -DPYTHON_INCLUDE_DIR=/opt/homebrew/opt/python@3.13/Frameworks/Python.framework/Versions/3.13/include/python3.13/ \
-            -DOCC_LIBRARY_DIR=/opt/homebrew/lib/ \
-            -DOCC_INCLUDE_DIR=/opt/homebrew/include/opencascade/ \
-            -DCGAL_INCLUDE_DIR=/opt/homebrew/include/ \
-            -DGMP_LIBRARY_DIR=/opt/homebrew/lib/ \
-            -DMPFR_LIBRARY_DIR=/opt/homebrew/lib/ \
-            -DEIGEN_DIR=/opt/homebrew/Cellar/eigen/3.4.0_1/include/eigen3 \
             -DCOLLADA_SUPPORT=0
         # `sysctl -n hw.ncpu` returns the number of cpu cores on macOS
         make -j$(sysctl -n hw.ncpu)
