@@ -210,6 +210,42 @@ def _bearing_string(azimuth_from_east_ccw_deg: float) -> str:
 # =============================================================================
 
 
+_add_alignment_items_cache: dict = {}
+
+
+def _alignment_definition_items(self, context):
+    """Add Alignment's Definition choices. Offset Curve is only offered once there's another
+    alignment's curve to offset from -- an offset curve can't exist without its basis."""
+    items = [
+        ("LAYOUTS", "Layouts (PI method)", "Horizontal/vertical/cant layouts, drawn tangent by tangent with curves"),
+        (
+            "POLYLINE",
+            "Polyline",
+            "A 2D or 3D polyline (IfcPolyline), with no layouts -- e.g. early planning or survey data",
+        ),
+    ]
+    if tool.Ifc.get() is not None and tool.Alignment.get_offset_basis_candidates(None):
+        items.append(
+            (
+                "OFFSET",
+                "Offset Curve",
+                "Offsets (IfcOffsetCurveByDistances) from another alignment's curve, with no layouts -- "
+                "e.g. a lane edge or parallel ramp",
+            )
+        )
+    _add_alignment_items_cache["definition"] = items
+    return items
+
+
+def _add_offset_basis_items(self, context):
+    """The curves a new offset curve alignment can be offset from."""
+    items = []
+    if tool.Ifc.get() is not None:
+        items = [(str(c.id()), label, "") for c, label, _ in tool.Alignment.get_offset_basis_candidates(None)]
+    _add_alignment_items_cache["offset_from"] = items or [("0", "— nothing to offset from —", "")]
+    return _add_alignment_items_cache["offset_from"]
+
+
 class ALIGN_OT_add_alignment(Operator, tool.Ifc.Operator):
     """Add a new, empty IfcAlignment to the project"""
 
@@ -234,20 +270,19 @@ class ALIGN_OT_add_alignment(Operator, tool.Ifc.Operator):
     definition: EnumProperty(
         name="Definition",
         description="How the alignment's geometry is defined",
-        items=[
-            (
-                "LAYOUTS",
-                "Layouts (PI method)",
-                "Horizontal/vertical/cant layouts, drawn tangent by tangent with curves",
-            ),
-            (
-                "POLYLINE",
-                "Polyline",
-                "A 2D or 3D polyline (IfcPolyline), with no layouts -- e.g. early planning or survey data",
-            ),
-        ],
-        default="LAYOUTS",
+        items=_alignment_definition_items,
+        default=0,  # LAYOUTS -- dynamic items (a callback) can't take a string default
     )
+    offset_from: EnumProperty(
+        name="Offset From",
+        description="The curve the new offset curve is measured from -- a horizontal (2D), a vertical (3D), "
+        "or another offset curve",
+        items=_add_offset_basis_items,
+    )
+    offset_lateral: FloatProperty(
+        name="Offset Lateral", description="Positive to the left, facing along the basis curve", default=3.0
+    )
+    offset_vertical: FloatProperty(name="Offset Vertical", description="Positive up (3D only)", default=0.0)
 
     @classmethod
     def poll(cls, context):
@@ -265,13 +300,24 @@ class ALIGN_OT_add_alignment(Operator, tool.Ifc.Operator):
         layout = self.layout
         layout.prop(self, "alignment_name")
         layout.prop(self, "definition")
+        if self.definition == "OFFSET":
+            # the offset curve is created complete: its basis and first (constant) offset, chosen here
+            layout.prop(self, "offset_from")
+            layout.prop(self, "offset_lateral")
+            try:
+                basis = tool.Ifc.get().by_id(int(self.offset_from))
+            except (RuntimeError, ValueError, TypeError):
+                basis = None
+            if basis is not None and tool.Alignment.get_offset_dimension(basis) == 3:
+                layout.prop(self, "offset_vertical")
+            layout.label(text="Add more offsets afterwards with Edit Offsets", icon="INFO")
         layout.prop(self, "define_stationing")
         row = layout.row()
         row.enabled = self.define_stationing
         row.prop(self, "start_station")
 
     def _execute(self, context):
-        if self.definition == "POLYLINE":
+        if self.definition in ("POLYLINE", "OFFSET"):
             if not self.alignment_name.strip():
                 self.report({"ERROR"}, "Alignment name cannot be empty")
                 return {"CANCELLED"}
@@ -282,9 +328,22 @@ class ALIGN_OT_add_alignment(Operator, tool.Ifc.Operator):
                 except ValueError as e:
                     self.report({"ERROR"}, f"Invalid start station: {e}")
                     return {"CANCELLED"}
-            alignment = tool.Alignment.create_polyline_alignment(
+            basis = None
+            if self.definition == "OFFSET":
+                try:
+                    basis = tool.Ifc.get().by_id(int(self.offset_from))
+                except (RuntimeError, ValueError, TypeError):
+                    self.report({"ERROR"}, "Choose the curve to offset from")
+                    return {"CANCELLED"}
+            alignment = tool.Alignment.create_bare_alignment(
                 self.alignment_name.strip(), start_station, self.define_stationing
             )
+            if basis is not None:
+                first_offset = (0.0, self.offset_lateral, self.offset_vertical, None)
+                tool.Alignment.set_offset_values(alignment, basis, [first_offset])
+            else:
+                # remember it's to be drawn as a polyline, so only Draw Polyline is offered until it is
+                tool.Ifc.get_object(alignment)[tool.Alignment.DEFINITION_PROPERTY] = "POLYLINE"
             start_referent = tool.Alignment.find_stationing_referent_at(alignment, 0.0)
             if start_referent:
                 tool.Alignment.create_object_for_referent(start_referent)
@@ -294,7 +353,10 @@ class ALIGN_OT_add_alignment(Operator, tool.Ifc.Operator):
                     obj.select_set(False)
                 alignment_obj.select_set(True)
                 context.view_layer.objects.active = alignment_obj
-            self.report({"INFO"}, f"Added alignment '{alignment.Name}' — draw its polyline next")
+            if self.definition == "POLYLINE":
+                self.report({"INFO"}, f"Added alignment '{alignment.Name}' — draw its polyline next")
+            else:
+                self.report({"INFO"}, f"Added offset curve alignment '{alignment.Name}' — Edit Offsets to add more")
             return {"FINISHED"}
 
         start_station = 0.0
@@ -2216,6 +2278,12 @@ class _DrawHorizontalAlignment(_CivilAngleInput, PolylineOperator, tool.Ifc.Oper
         if tool.Alignment.is_polyline_alignment(alignment):
             cls.poll_message_set("This is a polyline alignment -- use Draw Polyline")
             return False
+        if tool.Alignment.is_offset_alignment(alignment):
+            cls.poll_message_set("This is an offset curve alignment -- use Edit Offsets")
+            return False
+        if tool.Alignment.is_polyline_to_draw(alignment):
+            cls.poll_message_set("This alignment was added as a polyline -- use Draw Polyline")
+            return False
         if _find_pi_markers(alignment.id()):
             cls.poll_message_set("Finish or clear the PI marker edit first")
             return False
@@ -3164,6 +3232,161 @@ class ALIGN_OT_extend_polyline_alignment(bpy.types.Operator, _ExtendPolylineAlig
         # bpy.types.Operator comes first in the bases, so its own __init__ would shadow the base's --
         # which sets up the tool's state (tool_state, input fields, ...)
         _ExtendPolylineAlignment.__init__(self, *args, **kwargs)
+
+
+class ALIGN_OT_load_offset_table(Operator, tool.Ifc.Operator):
+    """Edit an offset curve alignment (IfcOffsetCurveByDistances, REQUIREMENTS.md §5.2) as a table:
+    the curve to offset from, then Distance Along / Offset Lateral (/ Offset Vertical for a 3D curve)
+    rows. Staged, then Apply. (A new offset curve alignment is created complete by Add Alignment.)"""
+
+    bl_idname = "align.load_offset_table"
+    bl_label = "Edit Offsets"
+    bl_description = "Edit this offset curve alignment's offsets in a table"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not poll_ifc4x3(cls, context):
+            return False
+        alignment = tool.Alignment.get_active_alignment()
+        if not alignment or not tool.Alignment.is_offset_alignment(alignment):
+            cls.poll_message_set("Select an offset curve alignment")
+            return False
+        props = context.scene.CivilAlignmentProperties
+        if props.offset_value_rows or props.polyline_point_rows or props.horizontal_pi_rows:
+            cls.poll_message_set("Finish the table edit that's open first")
+            return False
+        if _find_pi_markers(alignment.id()):
+            cls.poll_message_set("Finish or clear the marker edit first")
+            return False
+        return True
+
+    def _execute(self, context):
+        alignment = tool.Alignment.get_active_alignment()
+        props = context.scene.CivilAlignmentProperties
+        candidates = tool.Alignment.get_offset_basis_candidates(alignment)
+        if not candidates:
+            self.report({"ERROR"}, "There's no alignment curve to offset from -- draw a horizontal alignment first")
+            return {"CANCELLED"}
+        basis, rows = tool.Alignment.get_offset_values(alignment)
+        props.editing_offset_alignment_id = alignment.id()
+        props.offset_value_rows.clear()
+        for distance, lateral, vertical, longitudinal in rows:
+            row = props.offset_value_rows.add()
+            row.distance_along = distance
+            row.lateral = lateral or 0.0
+            row.vertical = vertical or 0.0
+            row.has_longitudinal = longitudinal is not None
+            row.longitudinal = longitudinal or 0.0
+        props.active_offset_value_row_index = 0
+        if any(curve.id() == basis.id() for curve, _, _ in candidates):
+            props.offset_basis_curve = str(basis.id())
+        self.report({"INFO"}, f"Loaded {len(rows)} offset(s)")
+        return {"FINISHED"}
+
+
+class ALIGN_OT_add_offset_value_row(Operator):
+    """Insert an offset after the selected row -- halfway to the next one, or 10 further along when
+    it's the last."""
+
+    bl_idname = "align.add_offset_value_row"
+    bl_label = "Add Offset"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return bool(context.scene.CivilAlignmentProperties.offset_value_rows)
+
+    def execute(self, context):
+        props = context.scene.CivilAlignmentProperties
+        rows = props.offset_value_rows
+        i = min(max(props.active_offset_value_row_index, 0), len(rows) - 1)
+        a = rows[i]
+        if i + 1 < len(rows):
+            b = rows[i + 1]
+            new = (
+                (a.distance_along + b.distance_along) / 2,
+                (a.lateral + b.lateral) / 2,
+                (a.vertical + b.vertical) / 2,
+            )
+        else:
+            new = (a.distance_along + 10.0, a.lateral, a.vertical)
+        row = rows.add()
+        row.distance_along, row.lateral, row.vertical = new
+        rows.move(len(rows) - 1, i + 1)
+        props.active_offset_value_row_index = i + 1
+        return {"FINISHED"}
+
+
+class ALIGN_OT_remove_offset_value_row(Operator):
+    bl_idname = "align.remove_offset_value_row"
+    bl_label = "Remove Offset"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if len(context.scene.CivilAlignmentProperties.offset_value_rows) <= 1:
+            cls.poll_message_set("An offset curve needs at least one offset")
+            return False
+        return True
+
+    def execute(self, context):
+        props = context.scene.CivilAlignmentProperties
+        i = min(max(props.active_offset_value_row_index, 0), len(props.offset_value_rows) - 1)
+        props.offset_value_rows.remove(i)
+        props.active_offset_value_row_index = max(i - 1, 0)
+        return {"FINISHED"}
+
+
+class ALIGN_OT_apply_offset_table(Operator, tool.Ifc.Operator):
+    """Write the table back as the alignment's IfcOffsetCurveByDistances."""
+
+    bl_idname = "align.apply_offset_table"
+    bl_label = "Apply Offsets"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not context.scene.CivilAlignmentProperties.offset_value_rows:
+            cls.poll_message_set("Open Edit Offsets first")
+            return False
+        return True
+
+    def _execute(self, context):
+        props = context.scene.CivilAlignmentProperties
+        ifc = tool.Ifc.get()
+        try:
+            alignment = ifc.by_id(props.editing_offset_alignment_id)
+            basis = ifc.by_id(int(props.offset_basis_curve))
+        except (RuntimeError, ValueError, TypeError):
+            self.report({"ERROR"}, "Choose the curve to offset from")
+            return {"CANCELLED"}
+        rows = [
+            (r.distance_along, r.lateral, r.vertical, r.longitudinal if r.has_longitudinal else None)
+            for r in props.offset_value_rows
+        ]
+        try:
+            tool.Alignment.set_offset_values(alignment, basis, rows)
+        except ValueError as e:
+            self.report({"WARNING"}, str(e))
+            return {"FINISHED"}
+        tool.Blender.update_viewport()
+        _tag_all_areas_redraw(context)
+        self.report({"INFO"}, f"Updated offset curve alignment '{alignment.Name}' ({len(rows)} offset(s))")
+        return {"FINISHED"}
+
+
+class ALIGN_OT_finish_offset_table(Operator):
+    bl_idname = "align.finish_offset_table"
+    bl_label = "Finish"
+    bl_description = "Close the offset table (does not change the alignment beyond what was applied)"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = context.scene.CivilAlignmentProperties
+        props.offset_value_rows.clear()
+        props.editing_offset_alignment_id = 0
+        return {"FINISHED"}
 
 
 class ALIGN_OT_finish_polyline_table(Operator):

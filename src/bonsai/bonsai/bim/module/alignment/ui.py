@@ -155,6 +155,24 @@ def _draw_length_mismatch(box, layout_entity) -> None:
     op.layout_id = layout_entity.id()
 
 
+class ALIGN_UL_offset_values(UIList):
+    """An offset curve alignment's offsets, staged for table editing (align.load_offset_table)."""
+
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        if self.layout_type not in {"DEFAULT", "COMPACT"}:
+            return
+        row = layout.row(align=True)
+        row.label(text=str(index + 1))
+        row.prop(item, "distance_along", text="")
+        row.prop(item, "lateral", text="")
+        try:
+            basis = tool.Ifc.get().by_id(int(data.offset_basis_curve))
+        except (RuntimeError, ValueError, TypeError):
+            basis = None
+        if basis is not None and tool.Alignment.get_offset_dimension(basis) == 3:
+            row.prop(item, "vertical", text="")
+
+
 class ALIGN_UL_polyline_points(UIList):
     """A polyline alignment's points, staged for table editing (align.load_polyline_table)."""
 
@@ -367,7 +385,12 @@ class ALIGN_PT_alignment_authoring(Panel):
         is_vertex_marker = bool(marker) and _is_vertex_marker(marker)
         row = col.row(align=True)
         row.enabled = bool(alignment)
-        if is_polyline:
+        is_offset = bool(alignment) and tool.Alignment.is_offset_alignment(alignment)
+        polyline_to_draw = bool(alignment) and tool.Alignment.is_polyline_to_draw(alignment)
+        if is_offset:
+            # an offset curve alignment (REQUIREMENTS.md §5.2): defined by a table of offsets only
+            row.operator("align.load_offset_table", icon="MOD_OFFSET", depress=bool(props.offset_value_rows))
+        elif is_polyline or polyline_to_draw:
             # a polyline alignment (REQUIREMENTS.md §5.1): its own draw/edit tools, no layouts
             row.operator("align.draw_polyline_alignment", icon="EYEDROPPER")
             row.operator("align.extend_polyline_alignment", text="", icon="FORWARD")
@@ -379,8 +402,9 @@ class ALIGN_PT_alignment_authoring(Panel):
             row.operator("align.edit_horizontal_pis", text="", icon="EMPTY_AXIS", depress=markers_present)
             row.operator("align.load_horizontal_pi_table", text="", icon="ANIM_DATA", depress=table_present)
         row.operator("align.remove_alignment", text="", icon="TRASH")
-        if is_bare:
-            # nothing drawn yet: it can still become either kind
+        if is_bare and not polyline_to_draw:
+            # an empty alignment from elsewhere (e.g. Add Element, or its horizontal layout deleted) could
+            # still be drawn either way; one added through Add Alignment already knows which
             col.operator("align.draw_polyline_alignment", icon="IPO_LINEAR")
         if not alignment:
             col.label(text="Add or select an alignment first", icon="INFO")
@@ -684,6 +708,10 @@ class ALIGN_PT_alignment_segments(Panel):
 
         if tool.Alignment.is_polyline_alignment(alignment):
             self._draw_polyline(layout, props, alignment)
+        if tool.Alignment.is_offset_alignment(alignment) or (
+            props.offset_value_rows and props.editing_offset_alignment_id == alignment.id()
+        ):
+            self._draw_offset(layout, props, alignment)
 
         # --- Vertical layouts (direct + child alignments) ---
         all_verticals = tool.Alignment.get_all_vertical_layouts(alignment)
@@ -778,6 +806,70 @@ class ALIGN_PT_alignment_segments(Panel):
             row.label(text=f"{point[1]:.3f}")
             if dim == 3:
                 row.label(text=f"{point[2]:.3f}")
+
+    def _draw_offset(self, layout, props, alignment):
+        """An offset curve alignment (REQUIREMENTS.md §5.2): what it's offset from and its offsets,
+        with a pencil button that swaps the list for the editable table in place -- the basis curve
+        to offset from, then Distance Along / Lateral (/ Vertical for a 3D curve) rows."""
+        box = layout.box()
+        is_editing = bool(props.offset_value_rows) and props.editing_offset_alignment_id == alignment.id()
+        ifc = tool.Ifc.get()
+        if is_editing:
+            try:
+                basis = ifc.by_id(int(props.offset_basis_curve))
+            except (RuntimeError, ValueError, TypeError):
+                basis = None
+            rows = None
+        else:
+            basis, rows = tool.Alignment.get_offset_values(alignment)
+        dim = tool.Alignment.get_offset_dimension(basis) if basis is not None else 2
+        count = len(props.offset_value_rows) if is_editing else len(rows)
+
+        row = box.row(align=True)
+        row.label(text=f"Offset curve ({dim}D): {count} offset(s)", icon="MOD_OFFSET")
+        if is_editing:
+            row.operator("align.finish_offset_table", text="", icon="GREASEPENCIL", depress=True)
+        else:
+            row.operator("align.load_offset_table", text="", icon="GREASEPENCIL")
+
+        if is_editing:
+            box.prop(props, "offset_basis_curve", text="From")
+            header = box.row(align=True)
+            for text in ("#", "Distance Along", "Lateral") + (("Vertical",) if dim == 3 else ()):
+                header.label(text=text)
+            row = box.row()
+            row.template_list(
+                "ALIGN_UL_offset_values",
+                "",
+                props,
+                "offset_value_rows",
+                props,
+                "active_offset_value_row_index",
+                rows=4,
+            )
+            side = row.column(align=True)
+            side.operator("align.add_offset_value_row", text="", icon="ADD")
+            side.operator("align.remove_offset_value_row", text="", icon="REMOVE")
+            row = box.row(align=True)
+            row.operator("align.apply_offset_table", icon="CHECKMARK")
+            row.operator("align.finish_offset_table", icon="CANCEL")
+            return
+
+        label = next(
+            (text for curve, text, _ in tool.Alignment.get_offset_basis_candidates(alignment) if curve == basis),
+            basis.is_a() if basis is not None else "?",
+        )
+        box.label(text=f"From: {label}")
+        header = box.row(align=True)
+        for text in ("#", "Distance Along", "Lateral") + (("Vertical",) if dim == 3 else ()):
+            header.label(text=text)
+        for i, (distance, lateral, vertical, _) in enumerate(rows):
+            row = box.row(align=True)
+            row.label(text=str(i + 1))
+            row.label(text=f"{distance:.3f}")
+            row.label(text=f"{lateral or 0.0:.3f}")
+            if dim == 3:
+                row.label(text=f"{vertical or 0.0:.3f}")
 
     def _segments(self, layout_entity):
         for rel in getattr(layout_entity, "IsNestedBy", []) or []:

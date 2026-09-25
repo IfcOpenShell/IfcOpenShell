@@ -282,6 +282,56 @@ JOIN_MODE_ITEMS = [
 ]
 
 
+_offset_basis_items_cache: list = []
+
+
+def _offset_basis_items(self, context):
+    """The curves the offset curve being edited can be based on (tool.Alignment.
+    get_offset_basis_candidates), identified by curve entity id."""
+    import bonsai.tool as tool
+
+    global _offset_basis_items_cache
+    items = []
+    ifc_file = tool.Ifc.get()
+    if ifc_file is not None:
+        try:
+            alignment = ifc_file.by_id(self.editing_offset_alignment_id) if self.editing_offset_alignment_id else None
+        except RuntimeError:
+            alignment = None
+        try:
+            for curve, label, _ in tool.Alignment.get_offset_basis_candidates(alignment):
+                items.append((str(curve.id()), label, ""))
+        except Exception:
+            pass
+    _offset_basis_items_cache = items or [("0", "— no curve to offset from —", "")]
+    return _offset_basis_items_cache
+
+
+class OffsetValueRow(PropertyGroup):
+    """One IfcPointByDistanceExpression of an offset curve alignment (IfcOffsetCurveByDistances),
+    staged for table editing (align.load_offset_table / align.apply_offset_table). Project units.
+    OffsetLongitudinal isn't offered (per the user, 2026-09-25) -- a value already in the file is
+    carried through unchanged."""
+
+    distance_along: FloatProperty(name="Distance Along", default=0.0, precision=3, unit="LENGTH")
+    lateral: FloatProperty(
+        name="Offset Lateral",
+        description="Positive to the left, facing along the basis curve",
+        default=0.0,
+        precision=3,
+        unit="LENGTH",
+    )
+    vertical: FloatProperty(
+        name="Offset Vertical",
+        description="Positive up (3D offset curves only)",
+        default=0.0,
+        precision=3,
+        unit="LENGTH",
+    )
+    longitudinal: FloatProperty(default=0.0)
+    has_longitudinal: BoolProperty(default=False)
+
+
 class PolylinePointRow(PropertyGroup):
     """One point of a polyline alignment, staged for table editing (align.load_polyline_table /
     align.apply_polyline_table). Local IFC project coordinates, like HorizontalPIMarker's x/y --
@@ -596,6 +646,16 @@ class CivilAlignmentProperties(PropertyGroup):
     active_polyline_point_row_index: IntProperty(default=0)
     editing_polyline_alignment_id: IntProperty(default=0)
     editing_polyline_is_3d: BoolProperty(default=False)
+
+    # Offsets of an offset curve alignment staged for table editing -- see OffsetValueRow.
+    offset_value_rows: CollectionProperty(type=OffsetValueRow)
+    active_offset_value_row_index: IntProperty(default=0)
+    editing_offset_alignment_id: IntProperty(default=0)
+    offset_basis_curve: EnumProperty(
+        name="Offset From",
+        description="The curve these offsets are measured from -- a horizontal (2D), a vertical (3D), or another offset curve",
+        items=_offset_basis_items,
+    )
 
     # Interior PIs of the horizontal alignment, table-editing companion to the
     # draggable viewport Empties (PICurveMarkerProperties) -- see
