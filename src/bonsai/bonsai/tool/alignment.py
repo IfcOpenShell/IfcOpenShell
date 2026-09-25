@@ -29,6 +29,7 @@ All methods are classmethods following Bonsai's tool pattern.
 from __future__ import annotations
 import bpy
 import difflib
+import json
 import math
 import logging
 import numpy as np
@@ -2305,6 +2306,65 @@ class Alignment:
         if not segment_id:
             return None
         return next((s for s in cls.get_real_layout_segments(layout) if s.id() == segment_id), None)
+
+    # =========================================================================
+    # Exact values through float32 FloatProperties
+    # =========================================================================
+
+    @staticmethod
+    def _exact_values(owner) -> dict:
+        try:
+            return json.loads(owner.exact_values) if owner.exact_values else {}
+        except ValueError:
+            return {}
+
+    @classmethod
+    def stage_exact(cls, owner, scale: float = 1.0, **values: float) -> None:
+        """Stage float properties of a row (or marker) and remember their exact values. A Blender
+        FloatProperty only holds a float32, so e.g. a loaded 312.4567 reads back as 312.45670166 --
+        written back to IFC unchanged, that noise would creep into every untouched value; see exact.
+        Each property is set to value * ``scale`` (e.g. a unit scale, or 100 for a percentage) while
+        the unscaled value itself is remembered."""
+        exact = cls._exact_values(owner)
+        for name, value in values.items():
+            setattr(owner, name, value * scale)
+            exact[name] = float(value)
+        owner.exact_values = json.dumps(exact)
+
+    @classmethod
+    def exact(cls, owner, name: str, scale: float = 1.0) -> float:
+        """A staged float property's value for writing to IFC, divided by the ``scale`` it was staged
+        with: exactly what it was staged with (stage_exact) if it hasn't been edited since, else the
+        shortest decimal with the same float32 as the value shown -- so a typed 0.2 is written as 0.2,
+        not 0.20000000298."""
+        shown = getattr(owner, name)
+        staged = cls._exact_values(owner).get(name)
+        if staged is not None and np.float32(staged * scale) == np.float32(shown):
+            return staged
+        return cls.snap_float32(shown) / scale
+
+    @staticmethod
+    def snap_float32(value: float) -> float:
+        """The shortest decimal that rounds to the same float32 as ``value``."""
+        return float(np.format_float_positional(np.float32(value), unique=True, trim="-"))
+
+    @classmethod
+    def remember_marker_point(cls, marker_obj, local_point) -> None:
+        """Remember the exact local IFC point a PI marker was placed at (see marker_local_point):
+        object locations are float32 too."""
+        data = marker_obj.bonsai_pi_curve_marker
+        exact = cls._exact_values(data)
+        exact["location"] = list(marker_obj.location)
+        exact["local"] = [float(c) for c in local_point]
+        data.exact_values = json.dumps(exact)
+
+    @classmethod
+    def marker_local_point(cls, marker_obj) -> Optional[list]:
+        """The exact local IFC point a marker was placed at, if it hasn't been moved since, else None."""
+        exact = cls._exact_values(marker_obj.bonsai_pi_curve_marker)
+        if "local" in exact and exact.get("location") == list(marker_obj.location):
+            return list(exact["local"])
+        return None
 
     @classmethod
     def group_segments_by_pi(

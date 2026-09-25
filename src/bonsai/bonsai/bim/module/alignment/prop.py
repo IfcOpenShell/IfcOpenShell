@@ -256,6 +256,9 @@ class VerticalPIMarker(PropertyGroup):
     align.apply_vertical_pi_curve.
     """
 
+    # the exact values this row was loaded with -- see tool.Alignment.stage_exact / exact
+    exact_values: StringProperty(options={"HIDDEN"})
+
     dist_along: FloatProperty(name="Distance Along", default=0.0, precision=2)
     elevation: FloatProperty(name="Elevation", default=0.0, precision=3, unit="LENGTH")
     curve_type: EnumProperty(
@@ -313,6 +316,9 @@ class OffsetValueRow(PropertyGroup):
     OffsetLongitudinal isn't offered (per the user, 2026-09-25) -- a value already in the file is
     carried through unchanged."""
 
+    # the exact values this row was loaded with -- see tool.Alignment.stage_exact / exact
+    exact_values: StringProperty(options={"HIDDEN"})
+
     distance_along: FloatProperty(name="Distance Along", default=0.0, precision=3, unit="LENGTH")
     lateral: FloatProperty(
         name="Offset Lateral",
@@ -337,6 +343,9 @@ class PolylinePointRow(PropertyGroup):
     align.apply_polyline_table). Local IFC project coordinates, like HorizontalPIMarker's x/y --
     z is only used for a 3D polyline (CivilAlignmentProperties.editing_polyline_is_3d)."""
 
+    # the exact values this row was loaded with -- see tool.Alignment.stage_exact / exact
+    exact_values: StringProperty(options={"HIDDEN"})
+
     x: FloatProperty(name="Easting (Local)", default=0.0, precision=3, unit="LENGTH")
     y: FloatProperty(name="Northing (Local)", default=0.0, precision=3, unit="LENGTH")
     z: FloatProperty(name="Elevation (Local)", default=0.0, precision=3, unit="LENGTH")
@@ -356,6 +365,9 @@ class HorizontalPIMarker(PropertyGroup):
     _generate_alignment_segments expects directly, so applying this table
     needs no world<->local conversion the Empty-based flow requires.
     """
+
+    # the exact values this row was loaded with -- see tool.Alignment.stage_exact / exact
+    exact_values: StringProperty(options={"HIDDEN"})
 
     x: FloatProperty(name="Easting (Local)", default=0.0, precision=3, unit="LENGTH")
     y: FloatProperty(name="Northing (Local)", default=0.0, precision=3, unit="LENGTH")
@@ -483,6 +495,9 @@ class HorizontalSegmentRow(PropertyGroup):
     always rebuilds every segment from scratch in row order.
     """
 
+    # the exact values this row was loaded with -- see tool.Alignment.stage_exact / exact
+    exact_values: StringProperty(options={"HIDDEN"})
+
     segment_id: IntProperty(name="Source Segment ID", default=0)
     predefined_type: EnumProperty(
         name="Type",
@@ -524,6 +539,9 @@ class VerticalSegmentRow(PropertyGroup):
     raises NotImplementedError), so it's intentionally left off this list.
     """
 
+    # the exact values this row was loaded with -- see tool.Alignment.stage_exact / exact
+    exact_values: StringProperty(options={"HIDDEN"})
+
     segment_id: IntProperty(name="Source Segment ID", default=0)
     predefined_type: EnumProperty(
         name="Type",
@@ -556,6 +574,9 @@ class CantSegmentRow(PropertyGroup):
     align.generate_cant_layout and the horizontal-edit-time sync use).
     """
 
+    # the exact values this row was loaded with -- see tool.Alignment.stage_exact / exact
+    exact_values: StringProperty(options={"HIDDEN"})
+
     segment_id: IntProperty(name="Source Segment ID", default=0)
     predefined_type: EnumProperty(
         name="Type",
@@ -583,6 +604,9 @@ class CantSegmentRow(PropertyGroup):
 
 class CivilAlignmentProperties(PropertyGroup):
     """Properties for the alignment module"""
+
+    # the exact values staged here were loaded with -- see tool.Alignment.stage_exact / exact
+    exact_values: StringProperty(options={"HIDDEN"})
 
     # Alignment selector dropdown (top-level alignments only)
     active_alignment_id_str: EnumProperty(
@@ -746,6 +770,9 @@ class PICurveMarkerProperties(PropertyGroup):
     loop). A plain "Apply" button clicked from the panel is a top-level
     operator invocation, not a nested one, so it's safe.
     """
+
+    # the exact values staged here were loaded with -- see tool.Alignment.stage_exact / exact
+    exact_values: StringProperty(options={"HIDDEN"})
 
     is_pi_marker: BoolProperty(default=False)
     role: EnumProperty(
