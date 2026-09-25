@@ -109,3 +109,18 @@ jobs:
       - name: upload to anaconda
         run: |
           anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user ifcopenshell ${{ env.ARTIFACTS_DIR }}/${{ matrix.platform.pkg_dir }}/*.conda
+
+  clean:
+    needs: publish
+    runs-on: ubuntu-latest
+    env:
+      ANACONDA_TOKEN: ${{ secrets.ANACONDA_TOKEN }}
+      NUM_SUPPORTED_VERSIONS: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+
+      - name: Run conda cleaner
+        run: uv run --script conda/clean-old-versions.py
