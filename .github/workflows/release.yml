@@ -65,7 +65,7 @@ jobs:
       - name: Package
         id: package
         run: |
-          make package
+          cmake --build . --target package
           echo ::set-output name=tgz::$( ls assets/*.tar.gz | head -n 1 | xargs basename )
           echo ::set-output name=deb::$( ls assets/*.deb | head -n 1 | xargs basename )
         working-directory: build
