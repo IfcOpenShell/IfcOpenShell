@@ -23,8 +23,6 @@ if(OCC_LIBRARY_DIR)
 endif()
 
 if(NOT OCC_INCLUDE_DIR AND NOT OCC_LIBRARY_DIR)
-    # OCE is not supported for find_package, because it's using a different name (`oce`)
-    # and also has an odd directory structure (install/lib/oce-0.18/*.cmake).
     # find_package creates variables:
     # - `OpenCASCADE_INCLUDE_DIR`
     # - `OpenCASCADE_LIBRARIES`
@@ -107,9 +105,7 @@ else()
         FATAL_ERROR
         "Couldn't find Open CASCADE installation. "
         "Either both OCC_INCLUDE_DIR ('${OCC_INCLUDE_DIR}') and OCC_LIBRARY_DIR ('${OCC_LIBRARY_DIR}') "
-        "must be specified or OpenCASCADE package should be discoverable. "
-        "If you're using OCE, then providing a package is not available "
-        "and you need to provide OCE_INCLUDE_DIR and OCE_LIBRARY_DIR directly."
+        "must be specified or OpenCASCADE package should be discoverable."
     )
 endif()
 
