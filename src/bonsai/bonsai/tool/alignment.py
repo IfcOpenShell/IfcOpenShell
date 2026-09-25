@@ -28,6 +28,7 @@ All methods are classmethods following Bonsai's tool pattern.
 
 from __future__ import annotations
 import bpy
+import difflib
 import math
 import logging
 import numpy as np
@@ -2222,6 +2223,111 @@ class Alignment:
         align_api.layout_vertical_alignment_by_pi_method(ifc_file, layout, vpoints, lengths)
 
         return True
+
+    # =========================================================================
+    # Keeping segment identity through edits (REQUIREMENTS.md §11)
+    # =========================================================================
+
+    @classmethod
+    def design_parameters_end(cls, layout: "ifcopenshell.entity_instance", design_parameters) -> "np.ndarray":
+        """The 4x4 end placement of a segment with ``design_parameters`` in ``layout``, evaluated by the
+        geometry kernel -- for chaining a table of segments (each starts where the previous ends)
+        before any of them is written. The kernel works out the segment kind from its layout, so a
+        throwaway IfcAlignmentSegment is nested for the evaluation and removed again;
+        _get_segment_endpoint discards its own temporary geometry."""
+        from ifcopenshell.api.alignment._get_segment_endpoint import _get_segment_endpoint
+
+        file = tool.Ifc.get()
+        temp = file.createIfcAlignmentSegment(GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters)
+        ifcopenshell.api.nest.assign_object(file, related_objects=[temp], relating_object=layout)
+        try:
+            return _get_segment_endpoint(file, temp)
+        finally:
+            ifcopenshell.api.nest.unassign_object(file, related_objects=[temp])
+            file.remove(temp)
+
+    @classmethod
+    def existing_segment(cls, layout: "ifcopenshell.entity_instance", segment_id: int):
+        """The real segment of ``layout`` with entity id ``segment_id`` (a staged row's source), or None
+        -- for a new row (0), or one whose segment is gone or belongs to another layout."""
+        if not segment_id:
+            return None
+        return next((s for s in cls.get_real_layout_segments(layout) if s.id() == segment_id), None)
+
+    @classmethod
+    def group_segments_by_pi(
+        cls, types: list[str], n_pis: int, tangent_type: str, arc_types: tuple[str, ...]
+    ) -> Optional[list[dict[str, int]]]:
+        """Split a PI-method layout's segment types into what each PI owns: its back tangent, entry
+        transition, arc and exit transition, as {role: index into types}. One group per interior PI,
+        then one for the end (the final tangent, or nothing when the last curve runs right into the
+        end). A tangent always starts a group; an arc starts one when the current group already has
+        its arc (a compound/reverse curve, or a curve right after the previous one). None when the
+        types don't split into n_pis + 1 groups."""
+        groups: list[dict[str, int]] = []
+        for i, t in enumerate(types):
+            group = groups[-1] if groups else None
+            if t == tangent_type:
+                groups.append({"tangent": i})
+            elif t in arc_types:
+                if group is None or "arc" in group or "exit" in group:
+                    groups.append({})
+                groups[-1]["arc"] = i
+            elif group is None or "exit" in group:
+                groups.append({"entry": i})
+            elif "arc" in group or "entry" in group:
+                group["exit"] = i
+            else:
+                group["entry"] = i
+        if not groups or set(groups[-1]) != {"tangent"}:
+            groups.append({})
+        return groups if len(groups) == n_pis + 1 else None
+
+    @classmethod
+    def map_segments_by_pi(
+        cls,
+        old_segments: list,
+        old_types: list[str],
+        old_pis: list,
+        new_types: list[str],
+        new_pis: list,
+        tangent_type: str,
+        arc_types: tuple[str, ...],
+    ) -> list:
+        """For each new segment of a PI-method layout, the existing segment it replaces (to keep its
+        GlobalId, see update_layout_segments) or None. ``old_pis``/``new_pis`` are the interior PI
+        positions. PIs correspond one to one when their count is unchanged (moved PIs, new radii or
+        spiral lengths); otherwise unmoved PIs are matched by position, so deleting or inserting a
+        PI only removes or creates that PI's own segments. The end always corresponds to the end.
+        Within a PI, a segment keeps the segment in the same role (back tangent, entry, arc, exit)."""
+        new_segments: list = [None] * len(new_types)
+        old_groups = cls.group_segments_by_pi(old_types, len(old_pis), tangent_type, arc_types)
+        new_groups = cls.group_segments_by_pi(new_types, len(new_pis), tangent_type, arc_types)
+        if old_groups is None or new_groups is None:
+            if len(old_types) == len(new_types):  # can't tell the PIs apart; keep them positionally
+                return list(old_segments)
+            return new_segments
+
+        def pair(o: int, n: int) -> None:
+            for role, j in new_groups[n].items():
+                if role in old_groups[o]:
+                    new_segments[j] = old_segments[old_groups[o][role]]
+
+        pair(len(old_groups) - 1, len(new_groups) - 1)
+        if len(old_pis) == len(new_pis):
+            for k in range(len(new_pis)):
+                pair(k, k)
+            return new_segments
+
+        def key(point) -> tuple:
+            return tuple(round(float(c), 4) for c in point)
+
+        matcher = difflib.SequenceMatcher(None, [key(p) for p in old_pis], [key(p) for p in new_pis], autojunk=False)
+        for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+            if tag in ("equal", "replace"):
+                for o, n in zip(range(i1, i2), range(j1, j2)):
+                    pair(o, n)
+        return new_segments
 
     @classmethod
     def get_layout_end_distance(cls, layout: "ifcopenshell.entity_instance") -> Optional[float]:
