@@ -936,6 +936,7 @@ def _generate_alignment_segments(context, alignment, hpoints, radii):
     # per-layout/per-segment objects alongside it.
     tool.Alignment.remove_layout_and_child_layout_objects(alignment)
 
+    cant_pairs = tool.Alignment.pair_cant_with_horizontal(alignment)
     try:
         # keep the existing segments where they correspond (REQUIREMENTS.md §11), else rebuild
         if not _update_horizontal_pi_segments(ifc, h_layout, hpoints, radii):
@@ -953,6 +954,9 @@ def _generate_alignment_segments(context, alignment, hpoints, radii):
         # uncaught exception.
         tool.Alignment.clear_layout_segments(h_layout)
         return False, f"Could not lay out alignment: {e}"
+    # Keep an already-generated cant layout in step with the horizontal -- lengths, curve
+    # families, and a cant segment per new horizontal segment (see follow_horizontal_with_cant).
+    tool.Alignment.follow_horizontal_with_cant(alignment, cant_pairs)
     ifcopenshell.api.alignment.create_representation(ifc, alignment)
 
     tool.Alignment.refresh_alignment_representation_object(alignment)
@@ -963,10 +967,6 @@ def _generate_alignment_segments(context, alignment, hpoints, radii):
     # stays stuck at the origin forever regardless of where the alignment ended up.
     tool.Alignment.sync_stationing_referent_placements(alignment)
 
-    # Keep an already-generated cant layout's curve types matching the
-    # horizontal's own (a no-op if there's no cant layout yet, or if the
-    # segment counts have drifted apart -- see sync_cant_segment_types).
-    tool.Alignment.sync_cant_segment_types(alignment)
 
     # Rebuild key-point referents at the new transitions, if this alignment has them.
     tool.Alignment.update_key_point_referents_if_present(alignment)
@@ -1393,7 +1393,7 @@ def _cant_lookup_for_pi_markers(alignment, n):
     Always returns exactly n entries, defaulting to (0.0, 1.0) for any PI
     _reconstruct_horizontal_pis doesn't account for (a different count than n means something --
     typically a manually added/removed marker -- has already broken the positional correspondence
-    this relies on, same as the reason _reconstruct_horizontal_pis/sync_cant_segment_types both
+    this relies on, same as the reason _reconstruct_horizontal_pis/follow_horizontal_with_cant both
     already tolerate a mismatched count elsewhere rather than erroring on it).
     """
     h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
@@ -1763,7 +1763,7 @@ def _reconstruct_horizontal_pis(h_layout):
         return specs, [(s, "no bounding tangent") for s in segments]
 
     # Positionally match the arc segment (see below) to a real cant segment at the same station,
-    # the same correspondence tool.Alignment.sync_cant_segment_types relies on -- only meaningful
+    # the same correspondence tool.Alignment.follow_horizontal_with_cant relies on -- only meaningful
     # for VIENNESEBEND (see _pi_curve_radii_entry), but cheap enough to always compute here rather
     # than duplicate this lookup at Apply time on a fresh walk of the same segments.
     alignment = ifcopenshell.api.alignment.get_alignment(h_layout)
@@ -5607,6 +5607,7 @@ class ALIGN_OT_apply_h_segments(Operator, tool.Ifc.Operator):
         length_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file, "LENGTHUNIT")
         angle_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file, "PLANEANGLEUNIT")
 
+        cant_pairs = tool.Alignment.pair_cant_with_horizontal(alignment)
         # every row that came from an existing segment keeps it (and its GlobalId) -- REQUIREMENTS.md §11
         new_segments = []
         for row in rows:
@@ -5642,18 +5643,15 @@ class ALIGN_OT_apply_h_segments(Operator, tool.Ifc.Operator):
             # a segment pointing north from one pointing south when Rdx≈0.
             direction = math.atan2(float(placement[1, 0]), float(placement[0, 0])) / angle_scale
         ifcopenshell.api.alignment.update_layout_segments(ifc_file, h_layout, new_segments)
+        # Keep an already-generated cant layout in step with the horizontal (lengths, curve families
+        # -- per the user, 2026-09-16: "change BLOSS to COSINE in horizontal makes the same change in
+        # cant layout" -- and a cant segment per added row); see follow_horizontal_with_cant.
+        tool.Alignment.follow_horizontal_with_cant(alignment, cant_pairs)
 
         ifcopenshell.api.alignment.create_representation(ifc_file, alignment)
         tool.Alignment.refresh_alignment_representation_object(alignment)
         _refresh_vertical_profile_view(context, alignment)
 
-        # Keep an already-generated cant layout's curve types matching the
-        # horizontal's own (per the user, 2026-09-16: "change BLOSS to COSINE
-        # in horizontal makes the same change in cant layout") -- a no-op if
-        # there's no cant layout yet, or if the segment counts have drifted
-        # apart (e.g. this Apply added/removed rows on the horizontal side
-        # only) -- see sync_cant_segment_types.
-        tool.Alignment.sync_cant_segment_types(alignment)
         tool.Alignment.update_key_point_referents_if_present(alignment)
 
         # The table replaced the "#" highlight toggle (enable_editing_h_segments cleared it).
