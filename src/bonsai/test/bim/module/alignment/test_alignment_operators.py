@@ -23,7 +23,7 @@ Follows Bonsai's existing test patterns (NewIfc4X3 base class from bootstrap).
 
 Operators tested:
     Horizontal: add_pi, remove_pi, recalculate_pis, clear_pis, create_alignment_by_pi
-    Utility: name_segments
+    Stationing: add_stationing_referent, name_segments
     CSV import: import_alignment_csv (EXEC_DEFAULT with explicit filepath)
 
 Operators skipped (modal / viewport):
@@ -768,6 +768,94 @@ class TestEndToEndIfcRoundtrip(NewIfc4X3):
 # Station formatting is tool-layer now (tool.Alignment.format_station wrapping
 # ifcopenshell.util.alignment.station_as_string) — see TestFormatStation in
 # test/tool/test_alignment.py.
+
+
+class TestStationingOperators(NewIfc4X3):
+    """civil.add_stationing_referent and civil.name_segments (Stationing sub-panel)."""
+
+    def _author(self):
+        alignment, _ = create_empty_alignment("A")
+        add_pis_to_props([(0, 0, 0), (500, 0, 0), (1000, 200, 0)])
+        assert bpy.ops.civil.create_alignment_by_pi() == {"FINISHED"}
+        return alignment
+
+    def _referent(self, alignment, station):
+        referents = align_api.get_stationing_nest(tool.Ifc.get(), alignment).RelatedObjects
+        return next(r for r in referents if r.Name == tool.Alignment.format_station(station))
+
+    def _distance_along(self, referent):
+        return referent.ObjectPlacement.RelativePlacement.Location.DistanceAlong.wrappedValue
+
+    @requires_geometry_engine
+    def test_add_stationing_referent_adds_a_station_referent(self):
+        alignment = self._author()
+        station = get_alignment_props().start_station + 200.0
+
+        assert bpy.ops.civil.add_stationing_referent("EXEC_DEFAULT", station=station) == {"FINISHED"}
+
+        assert self._distance_along(self._referent(alignment, station)) == pytest.approx(200.0)
+
+    @requires_geometry_engine
+    def test_add_stationing_referent_uses_the_alignments_own_stationing(self, tmp_path):
+        """A CSV import is stationed from 0, whatever the Creation panel's start station."""
+        get_alignment_props().start_station = 10000.0
+        path = tmp_path / "alignment.csv"
+        path.write_text("0,0,0,1000,0,300,2000,800,0\n", encoding="utf-8")
+        assert bpy.ops.bim.import_alignment_csv("EXEC_DEFAULT", filepath=str(path)) == {"FINISHED"}
+        ifc_file = tool.Ifc.get()
+        alignment = ifc_file.by_id(get_alignment_props().active_alignment_id)
+
+        assert bpy.ops.civil.add_stationing_referent("EXEC_DEFAULT", station=500.0) == {"FINISHED"}
+
+        assert self._distance_along(self._referent(alignment, 500.0)) == pytest.approx(500.0)
+        assert align_api.get_alignment_start_station(ifc_file, alignment) == pytest.approx(0.0)
+
+    @requires_geometry_engine
+    def test_add_stationing_referent_rejects_a_station_off_the_alignment(self):
+        alignment = self._author()
+        start_station = align_api.get_alignment_start_station(tool.Ifc.get(), alignment)
+
+        for station in (start_station - 1.0, start_station + 5000.0):
+            with pytest.raises(RuntimeError, match="is not on the alignment"):
+                bpy.ops.civil.add_stationing_referent("EXEC_DEFAULT", station=station)
+
+        assert len(align_api.get_stationing_nest(tool.Ifc.get(), alignment).RelatedObjects) == 1
+
+    @requires_geometry_engine
+    def test_add_stationing_referent_rejects_a_point_already_marked(self):
+        """Re-adding the start station, or the back station of an equation, must not
+        add a second referent that redefines that point's station."""
+        ifc_file = tool.Ifc.get()
+        alignment = self._author()
+        start_station = align_api.get_alignment_start_station(ifc_file, alignment)
+        align_api.add_stationing_referent(
+            ifc_file, "EQ", alignment, 200.0, start_station + 1000.0, incoming_station=start_station + 200.0
+        )
+
+        for station in (start_station, start_station + 200.0):
+            with pytest.raises(RuntimeError, match="already marks this point"):
+                bpy.ops.civil.add_stationing_referent("EXEC_DEFAULT", station=station)
+
+        assert len(align_api.get_stationing_nest(ifc_file, alignment).RelatedObjects) == 2
+
+    def test_add_stationing_referent_needs_a_built_alignment(self):
+        create_empty_alignment("A")
+
+        with pytest.raises(RuntimeError, match="Build the alignment first"):
+            bpy.ops.civil.add_stationing_referent("EXEC_DEFAULT", station=0.0)
+
+    @requires_geometry_engine
+    def test_name_segments_names_each_layout_in_sequence(self):
+        alignment = self._author()
+        align_api.add_vertical_layout(tool.Ifc.get(), alignment)
+
+        assert bpy.ops.civil.name_segments() == {"FINISHED"}
+
+        horizontal = align_api.get_layout_segments(align_api.get_horizontal_layout(alignment))
+        vertical = align_api.get_layout_segments(align_api.get_vertical_layout(alignment))
+        assert [s.Name for s in horizontal] == ["H1", "H2", "H3"]
+        assert vertical
+        assert [s.Name for s in vertical] == [f"V{i}" for i in range(1, len(vertical) + 1)]
 
 
 @requires_geometry_engine

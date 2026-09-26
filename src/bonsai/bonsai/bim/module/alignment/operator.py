@@ -880,12 +880,20 @@ class CIVIL_OT_add_stationing_referent(Operator, tool.Ifc.Operator):
         if props.active_alignment_id == 0:
             cls.poll_message_set("Select an alignment first")
             return False
+        alignment = _resolve_active_alignment(context)
+        if alignment is None:
+            cls.poll_message_set("Selected alignment no longer exists")
+            return False
+        # The first layout adds the starting referent; one added before it
+        # would take its place.
+        if not tool.Alignment.layout_has_real_segments(tool.Alignment.get_horizontal_layout(alignment)):
+            cls.poll_message_set("Build the alignment first")
+            return False
         return True
 
     def invoke(self, context, event):
-        # Default station to start_station from props
-        props = context.scene.CivilAlignmentProperties
-        self.station = props.start_station
+        alignment = _resolve_active_alignment(context)
+        self.station = ifcopenshell.api.alignment.get_alignment_start_station(tool.Ifc.get(), alignment)
         return context.window_manager.invoke_props_dialog(self)
 
     def draw(self, context):
@@ -898,23 +906,36 @@ class CIVIL_OT_add_stationing_referent(Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         ifc = tool.Ifc.get()
-        props = context.scene.CivilAlignmentProperties
 
         alignment = _resolve_active_alignment(context)
         if alignment is None:
             self.report({"ERROR"}, "Alignment no longer exists. Reference cleared.")
             return {"CANCELLED"}
 
-        # Compute distance_along from station and start_station
-        # distance_along = station - start_station
-        distance_along = self.station - props.start_station
+        # The alignment's own stationing (referents, equations, direction) maps
+        # the station to a distance along, not the Creation panel's start station.
+        from ifcopenshell.api.alignment._referent_distance_along import _referent_distance_along
+
+        distance_along = ifcopenshell.api.alignment.distance_along_from_station(ifc, alignment, self.station)
+        segments = ifcopenshell.api.alignment.get_layout_segments(tool.Alignment.get_horizontal_layout(alignment))
+        length = sum(segment.DesignParameters.SegmentLength for segment in segments)
+        # self.station is a float32 FloatProperty, so allow its rounding at either end.
+        tolerance = 1e-6 + 1.2e-7 * abs(self.station)
+        if distance_along is None or not -tolerance <= distance_along <= length + tolerance:
+            self.report({"ERROR"}, f"Station {tool.Alignment.format_station(self.station)} is not on the alignment")
+            return {"CANCELLED"}
+        distance_along = min(max(distance_along, 0.0), length)
+
+        # A second referent at the same point would redefine its station, e.g.
+        # cancel a station equation or duplicate the starting referent.
+        if nest := ifcopenshell.api.alignment.get_stationing_nest(ifc, alignment):
+            for referent in nest.RelatedObjects:
+                if abs(_referent_distance_along(referent) - distance_along) <= tolerance:
+                    self.report({"ERROR"}, f"Referent '{referent.Name}' already marks this point")
+                    return {"CANCELLED"}
 
         # Auto-generate name if not provided
         name = self.name if self.name else tool.Alignment.format_station(self.station)
-
-        # Use the alignment itself as the positioned product
-        # (The referent marks a point on the alignment)
-        positioned_product = alignment
 
         ifcopenshell.api.alignment.add_stationing_referent(
             ifc,
@@ -922,18 +943,17 @@ class CIVIL_OT_add_stationing_referent(Operator, tool.Ifc.Operator):
             distance_along=distance_along,
             station=self.station,
             name=name,
-            positioned_product=positioned_product,
         )
 
         self.report({"INFO"}, f"Added referent '{name}' at station {self.station}")
 
 
 class CIVIL_OT_name_segments(Operator, tool.Ifc.Operator):
-    """Auto-name segments based on station values"""
+    """Name each layout's segments in sequence (H1, H2, ... V1, ... C1, ...)"""
 
     bl_idname = "civil.name_segments"
     bl_label = "Name Segments"
-    bl_description = "Automatically name segments with station-based labels"
+    bl_description = "Name the segments of each layout in sequence: H1, H2, ... (V and C for vertical and cant)"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -947,7 +967,6 @@ class CIVIL_OT_name_segments(Operator, tool.Ifc.Operator):
         return True
 
     def _execute(self, context):
-        ifc = tool.Ifc.get()
         props = context.scene.CivilAlignmentProperties
 
         alignment = _resolve_active_alignment(context)
@@ -955,7 +974,9 @@ class CIVIL_OT_name_segments(Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "Alignment no longer exists. Reference cleared.")
             return {"CANCELLED"}
 
-        ifcopenshell.api.alignment.name_segments(ifc, alignment)
+        prefixes = {"IfcAlignmentHorizontal": "H", "IfcAlignmentVertical": "V", "IfcAlignmentCant": "C"}
+        for layout in ifcopenshell.api.alignment.get_alignment_layouts(alignment):
+            ifcopenshell.api.alignment.name_segments(prefixes[layout.is_a()], layout)
 
         self.report({"INFO"}, "Named alignment segments")
 
