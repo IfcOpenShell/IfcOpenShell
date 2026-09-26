@@ -937,7 +937,18 @@ bool ifcopenshell::geom::util::convert_wire_to_faces(const TopoDS_Wire& w, TopoD
 		}
 
 		TopoDS_Face face = mf.Face();
-		const double m = face_area(face);
+		double m;
+		try {
+			m = face_area(face);
+		} catch (const Standard_Failure& e) {
+			// Area here is only a heuristic to drop slivers from self-intersection splitting;
+			// don't let a rare OCCT failure computing it (e.g. on a degenerate surface) abort
+			// conversion of the whole element. Fall back to 0 rather than losing the face.
+			ifcopenshell::logger::root().warning("GEO", 232,
+				std::string("Failed to compute face area, assuming 0: ") +
+				(e.GetMessageString() ? e.GetMessageString() : e.DynamicType()->Name()));
+			m = 0.;
+		}
 
 		face_list.push_back({ m, face });
 		if (m > max_area) {
