@@ -178,10 +178,12 @@ class SheetBuilder:
 
         # where does the last drawing finish
         try:
-            last = drawings[-1][0]
+            last_group = drawings[-1]
+            last = last_group[0]
+            last_dx, last_dy = self.group_translate(last_group)
             last_width = self.convert_to_mm(last.attrib["width"])
-            last_x = self.convert_to_mm(last.attrib["x"])
-            last_y = self.convert_to_mm(last.attrib["y"])
+            last_x = self.convert_to_mm(last.attrib["x"]) + last_dx
+            last_y = self.convert_to_mm(last.attrib["y"]) + last_dy
         except (IndexError, AttributeError):
             return [DEFAULT_POSITION.x, DEFAULT_POSITION.y]
 
@@ -191,15 +193,37 @@ class SheetBuilder:
 
         # start a new row, find the y
         for drawing in drawings:
+            _, dy = self.group_translate(drawing)
             for image in drawing:
                 try:
-                    image_y = self.convert_to_mm(image.attrib["y"])
+                    image_y = self.convert_to_mm(image.attrib["y"]) + dy
                     image_height = self.convert_to_mm(image.attrib["height"])
                 except AttributeError:
                     return [DEFAULT_POSITION.x, DEFAULT_POSITION.y]
                 if image_y + image_height + DRAWING_PADDING > last_y:
                     last_y = image_y + image_height + DRAWING_PADDING
         return [DEFAULT_POSITION.x, last_y]
+
+    @staticmethod
+    def group_translate(group: ET.Element) -> tuple[float, float]:
+        """A drawing group's own offset, in millimetres.
+
+        Where a drawing sits is its image's x/y composed with its group's
+        transform, and moving one is a change to the transform - that is what
+        `build_drawings` preserves, and what Inkscape writes when you drag a
+        group. So measuring a sheet by image coordinates alone measures where
+        its drawings were rather than where they are: on a sheet whose drawings
+        had been rearranged, the next one was placed hundreds of millimetres
+        below the page, off the sheet entirely.
+
+        Only `translate` is read. A drawing group carrying a matrix or a scale
+        is not something Bonsai or a drag in Inkscape produces, and guessing at
+        one would be worse than treating it as unmoved.
+        """
+        moved = re.search(
+            r"translate\(\s*([-\d.eE]+)[ ,]+([-\d.eE]+)\s*\)", group.attrib.get("transform", "")
+        )
+        return (float(moved.group(1)), float(moved.group(2))) if moved else (0.0, 0.0)
 
     def update_sheet_drawing_sizes(self, sheet: ifcopenshell.entity_instance) -> None:
         ET.register_namespace("", "http://www.w3.org/2000/svg")
@@ -1050,6 +1074,48 @@ class SheetBuilder:
         moved = tool.Drawing.get_document_uri(sheet, "LAYOUT")
         return {"changed": sorted(values), "layout": os.path.abspath(moved) if moved else ""}
 
+    def list_drawings(self, layout: str) -> dict:
+        """Every drawing in the model, and whether this sheet already places it.
+
+        For a tool offering "add a drawing to this sheet": it needs what there
+        is to choose from, named as a person named them, and it needs to know
+        what is already here so it does not offer it twice.
+
+        ::
+
+            {"drawings": [{"globalId": "...", "name": "PLAN - LEVEL 1",
+                           "file": "<absolute path>", "onSheet": false,
+                           "generated": true}]}
+        """
+        sheet = self._require_sheet(layout)
+        here = {
+            r.Location
+            for r in tool.Drawing.get_document_references(sheet)
+            if tool.Drawing.get_reference_description(r) == "DRAWING" and r.Location
+        }
+
+        drawings = []
+        for drawing in tool.Ifc.get().by_type("IfcAnnotation"):
+            if drawing.ObjectType != "DRAWING":
+                continue
+            reference = tool.Drawing.get_drawing_document(drawing)
+            if reference is None or not reference.Location:
+                continue
+            uri = tool.Drawing.get_document_uri(reference)
+            drawings.append(
+                {
+                    "globalId": drawing.GlobalId,
+                    "name": drawing.Name or os.path.basename(reference.Location)[:-4],
+                    "file": os.path.abspath(uri) if uri else "",
+                    "onSheet": reference.Location in here,
+                    # A drawing that has never been generated has no SVG to
+                    # place; Bonsai refuses it, so say so before it is offered.
+                    "generated": bool(uri) and tool.Drawing.does_file_exist(uri),
+                }
+            )
+        drawings.sort(key=lambda d: d["name"].lower())
+        return {"drawings": drawings}
+
     def find_drawing(self, target: dict) -> ifcopenshell.entity_instance:
         """The drawing a request names, whether or not it is on any sheet.
 
@@ -1081,11 +1147,43 @@ class SheetBuilder:
         reference = tool.Drawing.get_drawing_document(drawing)
         if reference is None or not reference.Location:
             raise ValueError(f"{drawing.Name or 'that drawing'} has no drawing file to place")
-        if not tool.Drawing.does_file_exist(tool.Drawing.get_document_uri(reference)):
+        uri = tool.Drawing.get_document_uri(reference)
+        if not tool.Drawing.does_file_exist(uri):
             raise ValueError(f"{drawing.Name or 'that drawing'} has not been generated yet")
         for other in tool.Drawing.get_document_references(sheet):
             if other.Location == reference.Location:
                 raise ValueError(f"{drawing.Name or 'that drawing'} is already on this sheet")
+
+        # The model is not the only place it can already be. A removal that
+        # takes the reference out but fails to find the group leaves the layout
+        # placing a drawing the model has forgotten - and asking only the model
+        # then allows a second copy, which makes the next removal ambiguous and
+        # the sheet worse with every attempt. Seen in the field: one drawing
+        # placed three times, two groups sharing a data-id.
+        if uri and self._layout_places(layout, uri):
+            raise ValueError(
+                f"the layout for this sheet already places {os.path.basename(uri)}, "
+                "though the model does not reference it. Remove it in Bonsai first."
+            )
+
+    def _layout_places(self, layout: str, drawing_uri: str) -> bool:
+        """Does the layout file itself place this drawing, whatever the model says?"""
+        try:
+            root = ET.parse(layout).getroot()
+        except Exception:
+            return False
+        wanted = self._path_key(drawing_uri)
+        layout_dir = os.path.dirname(layout)
+        for foreground in root.iter(f"{SVG}image"):
+            if foreground.attrib.get("data-type") != "foreground":
+                continue
+            href = foreground.attrib.get(f"{XLINK}href") or foreground.attrib.get("href")
+            if not href:
+                continue
+            placed = os.path.join(layout_dir, urllib.parse.unquote(href).replace("\\", "/"))
+            if self._path_key(placed) == wanted:
+                return True
+        return False
 
     def add_to_sheet(
         self,
@@ -1142,14 +1240,25 @@ class SheetBuilder:
         into the image's own x/y - which are Bonsai's. The group's transform is
         what a tool moves a placement with, so the offset goes there and the
         image keeps the coordinates Bonsai gave it.
+
+        The group moved is the one `add_drawing` just appended - the last with
+        this reference's id, not the first. IfcOpenShell reuses the STEP id of
+        a deleted entity, so an older group left behind by a removal that could
+        not find it can carry the same `data-id`, and moving that one would
+        shift a different drawing while leaving this one where Bonsai put it.
         """
         ET.register_namespace("", "http://www.w3.org/2000/svg")
         ET.register_namespace("xlink", "http://www.w3.org/1999/xlink")
         tree = ET.parse(layout)
         root = tree.getroot()
-        group = self.find_drawing_group(root, layout, reference)
-        if group is None:
+        mine = [
+            g
+            for g in root.findall(f'{SVG}g[@data-type="drawing"]')
+            if g.attrib.get("data-id") == str(reference.id())
+        ]
+        if not mine:
             return
+        group = mine[-1]
         foreground = group.find(f'.//{SVG}image[@data-type="foreground"]')
         if foreground is None:
             return
@@ -1187,9 +1296,21 @@ class SheetBuilder:
         if kind == "sheet":
             raise ValueError("a titleblock cannot be removed from its sheet")
 
-        name = os.path.basename(tool.Drawing.get_document_uri(reference) or "")
+        uri = tool.Drawing.get_document_uri(reference) or ""
+        name = os.path.basename(uri)
         tool.Drawing.remove_drawing_from_sheet(reference)
-        return {"removed": name, "layout": os.path.abspath(layout)}
+
+        # `remove_drawing` takes the reference out of the model whether or not
+        # it finds the group, so a removal can half happen: the sheet still
+        # shows the drawing while the model has forgotten it. Reporting that as
+        # done is how it stayed invisible - the caller logged "removed" and the
+        # drawing was still there. Say so instead, and let the caller repeat it
+        # or show it.
+        return {
+            "removed": name,
+            "layout": os.path.abspath(layout),
+            "stillPlaced": bool(uri) and self._layout_places(layout, uri),
+        }
 
     #: What each kind of view can write back. An allow-list, because the rest of
     #: a document's attributes are either maintained by Bonsai alongside files on

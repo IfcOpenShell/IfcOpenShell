@@ -459,13 +459,21 @@ class Web(bonsai.core.tool.Web):
             )
             return
 
-        if request_type not in ("getEditableFields", "setTemplateValue", "removeFromSheet", "addToSheet"):
+        if request_type not in (
+            "getEditableFields",
+            "setTemplateValue",
+            "removeFromSheet",
+            "addToSheet",
+            "listDrawings",
+        ):
             return
 
         result = {"requestId": operator_data.get("requestId"), "ok": True}
         try:
             builder = sheeter.SheetBuilder()
-            if request_type == "getEditableFields":
+            if request_type == "listDrawings":
+                result.update(builder.list_drawings(operator_data["layout"]))
+            elif request_type == "getEditableFields":
                 result.update(
                     builder.get_editable_fields(
                         operator_data["layout"],

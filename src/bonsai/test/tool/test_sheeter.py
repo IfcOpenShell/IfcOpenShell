@@ -674,3 +674,158 @@ class TestCheckAddable:
             sheet_model.builder.check_addable(
                 sheet_model.layout, {"globalId": "0abcdefghijklmnopqrstu"}
             )
+
+
+class TestListDrawings:
+    """What a tool can offer to add. Both reasons a drawing cannot be picked are
+    reported rather than left to fail on OK."""
+
+    def test_lists_the_models_drawings(self, sheet_model, monkeypatch):
+        import bonsai.tool as tool
+
+        monkeypatch.setattr(tool.Drawing, "does_file_exist", staticmethod(lambda uri: True))
+        drawings = sheet_model.builder.list_drawings(sheet_model.layout)["drawings"]
+        assert [d["name"] for d in drawings] == ["MY STOREY PLAN"]
+        assert drawings[0]["globalId"] == "0abcdefghijklmnopqrstu"
+
+    def test_says_which_are_already_on_this_sheet(self, sheet_model, monkeypatch):
+        import bonsai.tool as tool
+
+        monkeypatch.setattr(tool.Drawing, "does_file_exist", staticmethod(lambda uri: True))
+        drawings = sheet_model.builder.list_drawings(sheet_model.layout)["drawings"]
+        assert drawings[0]["onSheet"] is True
+
+    def test_says_which_have_not_been_generated(self, sheet_model, monkeypatch):
+        # Its SVG is what gets placed; without one there is nothing to place.
+        import bonsai.tool as tool
+
+        monkeypatch.setattr(tool.Drawing, "does_file_exist", staticmethod(lambda uri: False))
+        drawings = sheet_model.builder.list_drawings(sheet_model.layout)["drawings"]
+        assert drawings[0]["generated"] is False
+
+
+class TestOrphanedGroups:
+    """A removal that cannot find the group takes the reference out of the model
+    and leaves the layout placing the drawing. Everything here is about that
+    state not getting worse, which in the field it did: one drawing placed three
+    times, and two groups sharing a data-id."""
+
+    def _layout_placing(self, model, *drawing_files) -> str:
+        groups = "".join(
+            f'<g data-type="drawing" data-id="{900 + i}" data-drawing="0x{i}">'
+            f'<image data-type="foreground" xlink:href="{os.path.relpath(f, os.path.dirname(model.layout))}"/>'
+            f"</g>"
+            for i, f in enumerate(drawing_files)
+        )
+        os.makedirs(os.path.dirname(model.layout), exist_ok=True)
+        with open(model.layout, "w") as out:
+            out.write(
+                '<svg xmlns="http://www.w3.org/2000/svg" '
+                f'xmlns:xlink="http://www.w3.org/1999/xlink">{groups}</svg>'
+            )
+        return model.layout
+
+    def test_adding_is_refused_when_the_layout_already_places_it(self, sheet_model, monkeypatch):
+        # The model has forgotten it, so the model-only check says yes. Asking
+        # only the model is what let a second copy in.
+        import bonsai.tool as tool
+
+        monkeypatch.setattr(tool.Drawing, "does_file_exist", staticmethod(lambda uri: True))
+        monkeypatch.setattr(
+            tool.Drawing, "get_document_references", staticmethod(lambda info: [])
+        )
+        self._layout_placing(sheet_model, sheet_model.drawing_path)
+
+        with pytest.raises(ValueError, match="already places"):
+            sheet_model.builder.check_addable(
+                sheet_model.layout, {"globalId": "0abcdefghijklmnopqrstu"}
+            )
+
+    def test_adding_is_allowed_when_the_layout_does_not_place_it(self, sheet_model, monkeypatch, tmp_path):
+        import bonsai.tool as tool
+
+        monkeypatch.setattr(tool.Drawing, "does_file_exist", staticmethod(lambda uri: True))
+        monkeypatch.setattr(
+            tool.Drawing, "get_document_references", staticmethod(lambda info: [])
+        )
+        self._layout_placing(sheet_model, str(tmp_path / "drawings" / "SOMETHING ELSE.svg"))
+
+        assert (
+            sheet_model.builder.check_addable(
+                sheet_model.layout, {"globalId": "0abcdefghijklmnopqrstu"}
+            )
+            is None
+        )
+
+    def test_a_removal_that_left_the_group_says_so(self, sheet_model, monkeypatch):
+        # remove_drawing_from_sheet removes the reference whether or not it finds
+        # the group. Answering "removed" either way is how this stayed hidden.
+        import bonsai.tool as tool
+
+        monkeypatch.setattr(
+            tool.Drawing, "remove_drawing_from_sheet", staticmethod(lambda ref: None)
+        )
+        self._layout_placing(sheet_model, sheet_model.drawing_path)
+
+        answer = sheet_model.builder.remove_from_sheet(
+            sheet_model.layout, {"kind": "drawing", "globalId": "0abcdefghijklmnopqrstu"}
+        )
+        assert answer["stillPlaced"] is True
+
+    def test_a_removal_that_worked_says_that_too(self, sheet_model, monkeypatch, tmp_path):
+        import bonsai.tool as tool
+
+        monkeypatch.setattr(
+            tool.Drawing, "remove_drawing_from_sheet", staticmethod(lambda ref: None)
+        )
+        self._layout_placing(sheet_model, str(tmp_path / "drawings" / "SOMETHING ELSE.svg"))
+
+        answer = sheet_model.builder.remove_from_sheet(
+            sheet_model.layout, {"kind": "drawing", "globalId": "0abcdefghijklmnopqrstu"}
+        )
+        assert answer["stillPlaced"] is False
+
+
+class TestNextDrawingLocation:
+    """Where the next drawing goes has to be measured from where the drawings
+    are, which is their images composed with their groups' transforms. Reading
+    the images alone placed a drawing 1030mm down a 594mm sheet."""
+
+    def _layout(self, *drawings) -> ET.Element:
+        """A layout with a titleblock and (x, y, w, h, transform) drawings."""
+        svg = ET.Element("{http://www.w3.org/2000/svg}svg")
+        block = ET.SubElement(svg, "{http://www.w3.org/2000/svg}g")
+        block.attrib["data-type"] = "titleblock"
+        image = ET.SubElement(block, "{http://www.w3.org/2000/svg}image")
+        image.attrib.update({"x": "0", "y": "0", "width": "841", "height": "594"})
+        for x, y, w, h, transform in drawings:
+            group = ET.SubElement(svg, "{http://www.w3.org/2000/svg}g")
+            group.attrib["data-type"] = "drawing"
+            if transform:
+                group.attrib["transform"] = transform
+            foreground = ET.SubElement(group, "{http://www.w3.org/2000/svg}image")
+            foreground.attrib.update(
+                {"data-type": "foreground", "x": str(x), "y": str(y), "width": str(w), "height": str(h)}
+            )
+        return svg
+
+    def test_an_empty_sheet_uses_the_default(self, builder):
+        assert builder.next_drawing_location(self._layout(), 100) == [30, 30]
+
+    def test_a_drawing_that_fits_goes_beside_the_last(self, builder):
+        # 30 + 100 + 10 padding
+        assert builder.next_drawing_location(self._layout((30, 30, 100, 100, None)), 100) == [140, 30]
+
+    def test_a_moved_drawing_is_measured_where_it_renders(self, builder):
+        # The image says y=800, but the group lifts it to y=100, so the next row
+        # starts below 100+100, not below 800+100.
+        at = self._layout((30, 800, 700, 100, "translate(0,-700)"))
+        assert builder.next_drawing_location(at, 700) == [30, 210]
+
+    def test_an_unmoved_drawing_is_unaffected(self, builder):
+        at = self._layout((30, 800, 700, 100, None))
+        assert builder.next_drawing_location(at, 700) == [30, 910]
+
+    def test_a_transform_it_cannot_read_is_treated_as_unmoved(self, builder):
+        at = self._layout((30, 800, 700, 100, "matrix(1,0,0,1,0,-700)"))
+        assert builder.next_drawing_location(at, 700) == [30, 910]
