@@ -58,6 +58,7 @@ class ImportAlignmentCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
 
         props.active_alignment_name = alignment.Name or "Imported Alignment"
         props.active_alignment_id = alignment.id()
+        sync_pis_from_ifc(context)
 
         self.report({"INFO"}, "Imported in %s seconds" % (time.time() - start))
 
@@ -96,64 +97,57 @@ def _resolve_active_alignment(context):
     return alignment if alignment.is_a("IfcAlignment") else None
 
 
-def sync_pis_from_ifc(props):
-    """Sync PI Editor data from IFC alignment.
+def _resolve_pi_table_alignment(context):
+    """Return the IfcAlignment the scene PI table belongs to, or None.
 
-    This is called on undo/redo to ensure the PI Editor reflects the current
-    IFC state. It extracts PI data from the alignment's horizontal segments.
+    The table is authored for ``props.active_alignment_id``, so a recorded id
+    resolves only to that alignment, never to another alignment that happens
+    to be the active viewport object. The active object is used only when no
+    alignment is recorded (e.g. a file reopened without its .blend).
+    """
+    if context.scene.CivilAlignmentProperties.active_alignment_id:
+        return _resolve_active_alignment(context)
+    return tool.Alignment.get_active_alignment()
 
-    If no active alignment exists or it's invalid, clears the PI Editor.
+
+def sync_pis_from_ifc(context):
+    """Re-seed the PI table from the IFC segments of ``props.active_alignment_id``.
+
+    Called wherever that id is set, or that alignment's horizontal geometry is
+    rewritten, outside the table (CSV import, Add Element, applying PI edit
+    mode), so the table never holds PIs that Recalculate would write into the
+    wrong alignment. The table is cleared when the alignment no longer exists
+    or has no real segments yet.
 
     Returns:
-        bool: True if sync was successful, False if alignment was cleared.
+        bool: True if the table was filled from IFC, False if it was cleared.
     """
-    ifc = tool.Ifc.get()
-    if ifc is None:
-        # No IFC file - clear everything
-        props.pis.clear()
-        props.active_pi_index = 0
-        rebuild_display_rows(props)
-        return False
+    props = context.scene.CivilAlignmentProperties
+    alignment = _resolve_active_alignment(context)
+    h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment) if alignment else None
 
-    alignment = tool.Alignment.get_active_alignment()
-    if not alignment:
-        # Alignment no longer exists - clear everything
-        props.pis.clear()
-        props.active_pi_index = 0
-        rebuild_display_rows(props)
-        return False
+    extracted_pis = []
+    if h_layout and tool.Alignment.layout_has_real_segments(h_layout):
+        # This reconstructs approximate PIs from the IFC segment geometry
+        segments = ifcopenshell.api.alignment.get_layout_segments(h_layout)
+        extracted_pis = tool.Alignment.extract_pis_from_segments(segments)
 
-    # Alignment exists - extract PI data from IFC segments
-    h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
-    if not h_layout:
-        # No horizontal layout - rebuild display with current props
-        rebuild_display_rows(props)
-        return True
-
-    segments = ifcopenshell.api.alignment.get_layout_segments(h_layout)
-    if not segments:
-        # No segments - rebuild display with current props
-        rebuild_display_rows(props)
-        return True
-
-    # Extract PIs from segment data
-    # This reconstructs approximate PIs from the IFC segment geometry
-    extracted_pis = tool.Alignment.extract_pis_from_segments(segments)
-
-    if not extracted_pis:
-        # Couldn't extract - keep current props.pis
-        rebuild_display_rows(props)
-        return True
-
-    # Update props.pis with extracted data
     props.pis.clear()
+    props.active_pi_index = 0
+    if not extracted_pis:
+        rebuild_display_rows(props)
+        return False
+
     # pi.radius is a Blender LENGTH property (metres); the extracted radius is in
     # project units, so scale it so the table displays the correct value.
     unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
     for pi_data in extracted_pis:
+        # Segment geometry is local XYZ; the table stores global E/N, which
+        # _build_alignment_from_active_pis converts back with auto_enh2xyz.
+        e, n, _ = ifcopenshell.util.geolocation.auto_xyz2enh(tool.Ifc.get(), pi_data["e"], pi_data["n"], 0.0)
         pi = props.pis.add()
-        pi.e = str(pi_data["e"])
-        pi.n = str(pi_data["n"])
+        pi.e = str(float(e))
+        pi.n = str(float(n))
         pi.pi_type = pi_data["pi_type"]
         pi.radius = pi_data.get("radius", 0.0) * unit_scale
 
@@ -579,8 +573,8 @@ class CIVIL_OT_pick_pi_from_viewport(bpy.types.Operator, PolylineOperator, tool.
 
 
 def _build_alignment_from_active_pis(context):
-    """Build/refresh the IFC horizontal segments from props.pis on the active
-    alignment and visualize them.
+    """Build/refresh the IFC horizontal segments from props.pis on the
+    alignment the table belongs to, and visualize them.
 
     Shared by the Recalculate/Visualize operator and the PI picker (so picking
     auto-visualizes on completion). Returns (ok: bool, message: str).
@@ -591,7 +585,15 @@ def _build_alignment_from_active_pis(context):
     props = context.scene.CivilAlignmentProperties
     recalculate_pi_geometry(props)
 
-    alignment = tool.Alignment.get_active_alignment()
+    alignment = _resolve_pi_table_alignment(context)
+    if not alignment and props.active_alignment_id:
+        # The table's alignment was deleted; its PIs must not land on another one.
+        props.active_alignment_id = 0
+        props.active_alignment_name = ""
+        props.pis.clear()
+        props.active_pi_index = 0
+        rebuild_display_rows(props)
+        return False, "Alignment no longer exists. Reference cleared."
     if not alignment:
         total_length = sum(pi.length_to_next for pi in props.pis)
         return (
@@ -699,8 +701,10 @@ class CIVIL_OT_clear_pis(Operator, tool.Ifc.Operator):
         if alignment := _resolve_active_alignment(context):
             removed_objects = tool.Alignment.remove_alignment_hierarchy(alignment)
             ifcopenshell.api.run("root.remove_product", ifc, product=alignment)
-            props.active_alignment_id = 0
-            props.active_alignment_name = ""
+        # Also reset an id whose alignment was deleted elsewhere, so the next
+        # pick is not discarded as belonging to it.
+        props.active_alignment_id = 0
+        props.active_alignment_name = ""
 
         # Clear the PI list in the UI
         props.pis.clear()
@@ -783,8 +787,14 @@ class CIVIL_OT_create_alignment_by_pi(Operator, tool.Ifc.Operator):
         if len(props.pis) < 2:
             cls.poll_message_set("Need at least 2 PI points")
             return False
-        if not tool.Alignment.get_active_alignment():
-            cls.poll_message_set("Select an alignment to edit")
+        if not (alignment := _resolve_pi_table_alignment(context)):
+            if props.active_alignment_id:
+                cls.poll_message_set("Recorded alignment no longer exists; Recalculate or Clear All to reset")
+            else:
+                cls.poll_message_set("Select an alignment to edit")
+            return False
+        if tool.Alignment.layout_has_real_segments(tool.Alignment.get_horizontal_layout(alignment)):
+            cls.poll_message_set("Alignment already has segments; use Recalculate")
             return False
         return True
 
@@ -801,7 +811,7 @@ class CIVIL_OT_create_alignment_by_pi(Operator, tool.Ifc.Operator):
         ]
         radii = [pi.radius for pi in props.pis[1:-1]]
 
-        existing_alignment = tool.Alignment.get_active_alignment()
+        existing_alignment = _resolve_pi_table_alignment(context)
         if not (h_layout := ifcopenshell.api.alignment.get_horizontal_layout(existing_alignment)):
             return
         # Check if horizontal layout is empty (only has zero-length terminal or no segments)
@@ -1091,6 +1101,9 @@ class CIVIL_OT_enter_pi_edit_mode(Operator, tool.Ifc.Operator):
                 core.exit_pi_edit_mode(
                     tool.Ifc, tool.Alignment, self._alignment_id, apply=True
                 )
+                # The segments changed outside the table; re-seed it so
+                # Recalculate does not revert the edit.
+                sync_pis_from_ifc(context)
                 self.report({"INFO"}, "PI changes applied - alignment updated")
             else:
                 # Just cleanup without regenerating

@@ -30,12 +30,18 @@ Operators skipped (modal / viewport):
     pick_pi_from_viewport, enter_pi_edit_mode
 """
 
+import types
+
 import pytest
 
 import bpy
 import ifcopenshell
 import ifcopenshell.api.alignment as align_api
+import ifcopenshell.api.georeference
+import ifcopenshell.api.root
 import ifcopenshell.util.alignment
+import ifcopenshell.util.geolocation
+import ifcopenshell.util.unit
 
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
@@ -124,6 +130,12 @@ def add_pis_to_props(pi_data):
         pi.n = str(n)
         if radius > 0:
             pi.radius = radius
+
+
+def real_segments(alignment):
+    """The alignment's horizontal segments, without the zero-length terminator."""
+    segments = align_api.get_layout_segments(align_api.get_horizontal_layout(alignment))
+    return [s for s in segments if not tool.Alignment.is_zero_length_segment(s)]
 
 
 # ===========================================================================
@@ -286,6 +298,18 @@ class TestClearPis(NewIfc4X3):
         assert props.active_alignment_id == 0
         assert props.active_alignment_name == ""
 
+    def test_clear_pis_resets_a_reference_to_a_deleted_alignment(self):
+        alignment, _ = create_empty_alignment("A")
+        add_pis_to_props([(0, 0, 0), (500, 0, 0)])
+        tool.Alignment.remove_alignment_hierarchy(alignment)
+        ifcopenshell.api.root.remove_product(tool.Ifc.get(), product=alignment)
+
+        assert bpy.ops.civil.clear_pis() == {"FINISHED"}
+
+        props = get_alignment_props()
+        assert props.active_alignment_id == 0
+        assert props.active_alignment_name == ""
+
 
 class TestRecalculatePis(NewIfc4X3):
     """Tests for CIVIL_OT_recalculate_pis (civil.recalculate_pis)."""
@@ -359,6 +383,146 @@ class TestRecalculatePis(NewIfc4X3):
         assert align_api.get_stationing_nest(ifc_file, alignment).RelatedObjects == (referent,)
         position = referent.ObjectPlacement.CartesianPosition.Location.Coordinates
         assert position == pytest.approx((600.0, 300.0, 0.0), abs=1e-6)
+
+
+@requires_geometry_engine
+class TestPiTableAlignment(NewIfc4X3):
+    """The PI table belongs to props.active_alignment_id.
+
+    Operators that write the table to IFC target that alignment, never the
+    active viewport object, and every path that sets the id or rewrites the
+    alignment's segments outside the table re-seeds the table from IFC.
+    """
+
+    def _author(self, name):
+        alignment, obj = create_empty_alignment(name)
+        add_pis_to_props([(0, 0, 0), (500, 0, 0), (1000, 200, 0)])
+        assert bpy.ops.civil.create_alignment_by_pi() == {"FINISHED"}
+        return alignment, obj
+
+    def _import_csv(self, tmp_path):
+        path = tmp_path / "alignment.csv"
+        path.write_text("0,0,0,1000,0,300,2000,800,0\n", encoding="utf-8")
+        assert bpy.ops.bim.import_alignment_csv("EXEC_DEFAULT", filepath=str(path)) == {"FINISHED"}
+        return tool.Ifc.get().by_id(get_alignment_props().active_alignment_id)
+
+    def _lengths(self, alignment):
+        return [s.DesignParameters.SegmentLength for s in real_segments(alignment)]
+
+    def test_recalculate_writes_to_table_alignment_not_active_object(self):
+        alignment_a, _ = self._author("A")
+        alignment_b, obj_b = create_empty_alignment("B")
+        props = get_alignment_props()
+        props.active_alignment_id = alignment_a.id()
+        bpy.context.view_layer.objects.active = obj_b
+
+        props.pis[1].e = str(600.0)
+        assert bpy.ops.civil.recalculate_pis() == {"FINISHED"}
+
+        assert real_segments(alignment_b) == []
+        assert self._lengths(alignment_a)[0] == pytest.approx(600.0)
+        assert props.active_alignment_id == alignment_a.id()
+
+    def test_recalculate_without_recorded_alignment_uses_active_object(self):
+        alignment, _ = create_empty_alignment("A")
+        props = get_alignment_props()
+        props.active_alignment_id = 0
+        add_pis_to_props([(0, 0, 0), (500, 0, 0), (1000, 200, 0)])
+
+        assert bpy.ops.civil.recalculate_pis() == {"FINISHED"}
+
+        assert len(real_segments(alignment)) == 2
+        assert props.active_alignment_id == alignment.id()
+
+    def test_recalculate_with_deleted_alignment_clears_table_and_reference(self):
+        alignment_a, _ = self._author("A")
+        alignment_b, obj_b = create_empty_alignment("B")
+        props = get_alignment_props()
+        props.active_alignment_id = alignment_a.id()
+        tool.Alignment.remove_alignment_hierarchy(alignment_a)
+        ifcopenshell.api.root.remove_product(tool.Ifc.get(), product=alignment_a)
+        bpy.context.view_layer.objects.active = obj_b
+
+        assert bpy.ops.civil.recalculate_pis() == {"FINISHED"}
+
+        assert real_segments(alignment_b) == []
+        assert len(props.pis) == 0
+        assert props.active_alignment_id == 0
+
+    def test_create_by_pi_writes_to_table_alignment_not_active_object(self):
+        alignment_a, _ = create_empty_alignment("A")
+        alignment_b, obj_b = create_empty_alignment("B")
+        props = get_alignment_props()
+        props.active_alignment_id = alignment_a.id()
+        bpy.context.view_layer.objects.active = obj_b
+        add_pis_to_props([(0, 0, 0), (500, 0, 0), (1000, 200, 0)])
+
+        assert bpy.ops.civil.create_alignment_by_pi() == {"FINISHED"}
+
+        assert len(real_segments(alignment_a)) == 2
+        assert real_segments(alignment_b) == []
+
+    def test_create_by_pi_is_unavailable_once_the_alignment_has_segments(self):
+        self._author("A")
+        assert not bpy.ops.civil.create_alignment_by_pi.poll()
+
+    def test_create_by_pi_poll_reports_a_deleted_alignment(self):
+        alignment, _ = create_empty_alignment("A")
+        add_pis_to_props([(0, 0, 0), (500, 0, 0), (1000, 200, 0)])
+        tool.Alignment.remove_alignment_hierarchy(alignment)
+        ifcopenshell.api.root.remove_product(tool.Ifc.get(), product=alignment)
+
+        with pytest.raises(RuntimeError, match="Recorded alignment no longer exists"):
+            bpy.ops.civil.create_alignment_by_pi()
+
+    def test_recalculate_after_csv_import_keeps_imported_segments(self, tmp_path):
+        _, obj_a = self._author("A")
+        imported = self._import_csv(tmp_path)
+        props = get_alignment_props()
+        coordinates = [float(value) for pi in props.pis for value in (pi.e, pi.n)]
+        assert coordinates == pytest.approx([0.0, 0.0, 1000.0, 0.0, 2000.0, 800.0], abs=1e-3)
+        lengths = self._lengths(imported)
+
+        bpy.context.view_layer.objects.active = obj_a
+        assert bpy.ops.civil.recalculate_pis() == {"FINISHED"}
+
+        assert self._lengths(imported) == pytest.approx(lengths, abs=1e-3)
+
+    def test_csv_import_seeds_the_table_in_map_coordinates(self, tmp_path):
+        ifc_file = tool.Ifc.get()
+        ifcopenshell.api.georeference.add_georeferencing(ifc_file)
+        ifcopenshell.api.georeference.edit_georeferencing(
+            ifc_file, coordinate_operation={"Eastings": 1000.0, "Northings": 2000.0}
+        )
+        imported = self._import_csv(tmp_path)
+        props = get_alignment_props()
+        easting, northing, _ = ifcopenshell.util.geolocation.auto_xyz2enh(ifc_file, 0.0, 0.0, 0.0)
+        assert (float(props.pis[0].e), float(props.pis[0].n)) == pytest.approx((easting, northing))
+
+        assert bpy.ops.civil.recalculate_pis() == {"FINISHED"}
+
+        start = real_segments(imported)[0].DesignParameters.StartPoint.Coordinates
+        assert start == pytest.approx((0.0, 0.0), abs=1e-3)
+
+    def test_recalculate_after_pi_edit_keeps_the_edit(self):
+        import bonsai.core.alignment as core
+        from bonsai.bim.module.alignment.operator import CIVIL_OT_enter_pi_edit_mode
+
+        alignment, _ = self._author("A")
+        empties = core.enter_pi_edit_mode(tool.Ifc, tool.Alignment, alignment.id())
+        empties[1].location.y += 150.0 * ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        bpy.context.view_layer.update()
+        # PI edit mode is modal; apply it as pressing Enter does.
+        operator = types.SimpleNamespace(_alignment_id=alignment.id(), _area=None, report=lambda *args: None)
+        CIVIL_OT_enter_pi_edit_mode._cleanup_and_finish(operator, bpy.context, apply=True)
+        props = get_alignment_props()
+        assert float(props.pis[1].n) == pytest.approx(150.0, abs=1e-3)
+        lengths = self._lengths(alignment)
+
+        bpy.context.view_layer.objects.active = None
+        assert bpy.ops.civil.recalculate_pis() == {"FINISHED"}
+
+        assert self._lengths(alignment) == pytest.approx(lengths, abs=1e-3)
 
 
 @requires_geometry_engine
@@ -699,6 +863,29 @@ class TestAddElementAlignment(NewIfc4X3):
         props = get_alignment_props()
         assert props.active_alignment_id == alignment.id()
         assert props.active_alignment_name == "Route 66"
+
+    def test_add_element_clears_the_previous_alignments_pi_table(self):
+        alignment_a, _ = create_empty_alignment("A")
+        add_pis_to_props([(0, 0, 0), (500, 0, 0), (1000, 200, 0)])
+
+        self._add_alignment(name="Route 66")
+
+        props = get_alignment_props()
+        assert len(props.pis) == 0
+        assert props.active_alignment_id != alignment_a.id()
+
+    @requires_geometry_engine
+    def test_add_element_adopts_an_unbound_pi_table(self):
+        """PIs picked before any alignment existed are not bound to one; the
+        new alignment takes them, and Create by PI Method builds them into it."""
+        add_pis_to_props([(0, 0, 0), (500, 0, 0), (1000, 200, 0)])
+
+        self._add_alignment(name="Route 66")
+
+        assert len(get_alignment_props().pis) == 3
+        assert bpy.ops.civil.create_alignment_by_pi() == {"FINISHED"}
+        alignment = tool.Ifc.get().by_type("IfcAlignment")[0]
+        assert len(real_segments(alignment)) == 2
 
     @requires_geometry_engine
     def test_first_layout_adds_stationing_referent_on_the_curve(self):

@@ -586,8 +586,15 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             h_layout = tool.Alignment.add_horizontal_layout_to_alignment(element)
             tool.Alignment.create_object_for_layout(h_layout, obj)
             civil_props = context.scene.CivilAlignmentProperties
+            previous_id = civil_props.active_alignment_id
             civil_props.active_alignment_id = element.id()
             civil_props.active_alignment_name = element.Name or ""
+            if previous_id:
+                # The PI table belonged to another alignment; drop its PIs. An
+                # unbound table is adopted, as the PI operators do with no id.
+                from bonsai.bim.module.alignment.operator import sync_pis_from_ifc
+
+                sync_pis_from_ifc(context)
             bpy.context.view_layer.update()
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
             tool.Blender.set_active_object(obj)
