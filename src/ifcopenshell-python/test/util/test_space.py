@@ -22,6 +22,9 @@ import ifcopenshell.geom
 import ifcopenshell.guid
 import ifcopenshell.util.shape
 import ifcopenshell.util.space as subject
+import math
+import numpy as np
+import os
 import pytest
 import shapely
 import test.bootstrap
@@ -47,7 +50,7 @@ def _build_shapes_dict(ifc_file, elements):
     return shapes
 
 
-def _add_extruded_body(ifc_file, element, coords_2d, depth, z_offset=0.0):
+def _add_extruded_body(ifc_file, element, coords_2d, depth, z_offset=0.0, direction=(0.0, 0.0, 1.0)):
     """Add a body representation (extruded polyline) to an element."""
     if not ifc_file.by_type("IfcProject"):
         ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcProject")
@@ -75,7 +78,7 @@ def _add_extruded_body(ifc_file, element, coords_2d, depth, z_offset=0.0):
         ifc_file.createIfcDirection((0.0, 0.0, 1.0)),
         ifc_file.createIfcDirection((1.0, 0.0, 0.0)),
     )
-    direction = ifc_file.createIfcDirection((0.0, 0.0, 1.0))
+    direction = ifc_file.createIfcDirection(direction)
     solid = ifc_file.createIfcExtrudedAreaSolid(profile, placement, direction, depth)
     rep = ifc_file.create_entity(
         "IfcShapeRepresentation",
@@ -184,3 +187,158 @@ class TestGetAutoSpaceHeight(test.bootstrap.IFC4):
         space_polygon = shapely.box(-100, -100, -90, -90)
         height = subject.get_auto_space_height(self.file, shapes, space_polygon, 0.0, [])
         assert height is None
+
+
+class TestGetVerticalBoundingPlanes(test.bootstrap.IFC4):
+    def test_flat_ceiling_returns_single_plane(self):
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        slab = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSlab")
+        _add_extruded_body(self.file, wall, [[-5, -5], [5, -5], [5, 5], [-5, 5]], 3.0)
+        _add_extruded_body(self.file, slab, [[-5, -5], [5, -5], [5, 5], [-5, 5]], 0.3, z_offset=3.0)
+        shapes = _build_shapes_dict(self.file, [wall, slab])
+        tree = ifcopenshell.geom.tree(self.file)
+        tree.add_file(self.file, ifcopenshell.geom.settings())
+        space_polygon = shapely.box(-5, -5, 5, 5)
+        strategy, planes = subject.get_vertical_bounding_planes(
+            self.file, shapes, tree, space_polygon, base_z=0.0, direction="UP"
+        )
+        assert strategy == "EXTRUDE_CLIP"
+        assert len(planes) == 1
+        assert np.allclose(planes[0][0], [0.0, 0.0, 3.0], atol=0.1)
+        assert np.allclose(planes[0][1], [0.0, 0.0, 1.0], atol=0.01)
+
+    def test_flat_ceiling_returns_single_plane_from_rl_origin(self):
+        # Same result when rays are cast from an RL cut elevation (z=1.0)
+        # instead of the default base_z + 0.001.
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        slab = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSlab")
+        _add_extruded_body(self.file, wall, [[-5, -5], [5, -5], [5, 5], [-5, 5]], 3.0)
+        _add_extruded_body(self.file, slab, [[-5, -5], [5, -5], [5, 5], [-5, 5]], 0.3, z_offset=3.0)
+        shapes = _build_shapes_dict(self.file, [wall, slab])
+        tree = ifcopenshell.geom.tree(self.file)
+        tree.add_file(self.file, ifcopenshell.geom.settings())
+        strategy, planes = subject.get_vertical_bounding_planes(
+            self.file, shapes, tree, shapely.box(-5, -5, 5, 5), base_z=0.0, direction="UP", start_z=1.0
+        )
+        assert strategy == "EXTRUDE_CLIP"
+        assert len(planes) == 1
+        assert np.allclose(planes[0][0], [0.0, 0.0, 3.0], atol=0.1)
+
+
+class TestDetectSpaceVolumeStrategy(test.bootstrap.IFC4):
+    def test_vertical_walls_flat_slab_returns_extrude_clip(self):
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        slab = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSlab")
+        _add_extruded_body(self.file, wall, [[-5, -5], [5, -5], [5, 5], [-5, 5]], 3.0)
+        _add_extruded_body(self.file, slab, [[-5, -5], [5, -5], [5, 5], [-5, 5]], 0.3, z_offset=3.0)
+        shapes = _build_shapes_dict(self.file, [wall, slab])
+        tree = ifcopenshell.geom.tree(self.file)
+        tree.add_file(self.file, ifcopenshell.geom.settings())
+        strategy, top, bottom = subject.detect_space_volume_strategy(
+            self.file, shapes, tree, shapely.box(-5, -5, 5, 5), 0.0, [wall]
+        )
+        assert strategy == "EXTRUDE_CLIP"
+        assert len(top) == 1
+        assert len(bottom) == 0
+
+    def test_vertical_walls_flat_slab_returns_extrude_clip_from_rl_origin(self):
+        # Same as above but rays cast from an RL cut elevation (z=1.0).
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        slab = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSlab")
+        _add_extruded_body(self.file, wall, [[-5, -5], [5, -5], [5, 5], [-5, 5]], 3.0)
+        _add_extruded_body(self.file, slab, [[-5, -5], [5, -5], [5, 5], [-5, 5]], 0.3, z_offset=3.0)
+        shapes = _build_shapes_dict(self.file, [wall, slab])
+        tree = ifcopenshell.geom.tree(self.file)
+        tree.add_file(self.file, ifcopenshell.geom.settings())
+        strategy, top, bottom = subject.detect_space_volume_strategy(
+            self.file, shapes, tree, shapely.box(-5, -5, 5, 5), 0.0, [wall], start_z=1.0
+        )
+        assert strategy == "EXTRUDE_CLIP"
+        assert len(top) == 1
+        assert len(bottom) == 0
+
+    def test_sloped_wall_returns_brep(self):
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        _add_extruded_body(self.file, wall, [[-5, -5], [5, -5], [5, 5], [-5, 5]], 6.0, direction=(0.0, 0.5, 1.0))
+        shapes = _build_shapes_dict(self.file, [wall])
+        tree = ifcopenshell.geom.tree(self.file)
+        tree.add_file(self.file, ifcopenshell.geom.settings())
+        strategy, _, _ = subject.detect_space_volume_strategy(
+            self.file, shapes, tree, shapely.box(-4, -4, 4, 4), 0.0, [wall]
+        )
+        assert strategy == "BREP"
+
+    def test_curved_vertical_wall_returns_extrude_clip(self):
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        pts = []
+        for i in range(9):
+            angle = -math.pi / 2.0 + math.pi * i / 8.0
+            pts.append((5.0 * math.cos(angle), 5.0 * math.sin(angle)))
+        _add_extruded_body(self.file, wall, pts, 6.0)
+        shapes = _build_shapes_dict(self.file, [wall])
+        tree = ifcopenshell.geom.tree(self.file)
+        tree.add_file(self.file, ifcopenshell.geom.settings())
+        strategy, top, bottom = subject.detect_space_volume_strategy(
+            self.file, shapes, tree, shapely.box(-4, -4, 4, 4), 0.0, [wall]
+        )
+        assert strategy == "EXTRUDE_CLIP"
+        assert len(top) == 1
+        assert len(bottom) == 0
+
+
+class TestBuildExtrudedClippedSpace(test.bootstrap.IFC4):
+    def test_shed_roof_clips_to_sloped_plane(self):
+        space_polygon = shapely.box(-5, -5, 5, 5)
+        top_plane = (np.array([0.0, 0.0, 4.0]), np.array([0.0, 0.0, 1.0]))
+        bottom_plane = (np.array([0.0, 0.0, 0.0]), np.array([0.0, 0.0, -1.0]))
+        item = subject.build_extruded_clipped_space(self.file, space_polygon, 0.0, [top_plane], [bottom_plane])
+        assert item.is_a("IfcBooleanClippingResult")
+        assert item.SecondOperand.is_a("IfcHalfSpaceSolid")
+        # Chain: bottom clip -> top clip -> IfcExtrudedAreaSolid.
+        assert item.FirstOperand.is_a("IfcBooleanClippingResult")
+        assert item.FirstOperand.FirstOperand.is_a("IfcExtrudedAreaSolid")
+
+    def test_sloped_top_plane_reaches_footprint_max(self):
+        # A sloped ceiling's high side must reach the plane at the footprint
+        # edge (z=7.0 at y=-5), not be capped at the plane anchor z=5.5.
+        # 3D coords guard against the polygon carrying Z from the bisection.
+        space_polygon = shapely.Polygon([(-5, -5, 0), (5, -5, 0), (5, 5, 0), (-5, 5, 0)])
+        top_plane = (np.array([0.0, 0.0, 5.5]), np.array([0.0, 0.287, 0.958]))
+        bottom_plane = (np.array([0.0, 0.0, 0.0]), np.array([0.0, 0.0, -1.0]))
+        item = subject.build_extruded_clipped_space(self.file, space_polygon, 0.0, [top_plane], [bottom_plane])
+        shape = ifcopenshell.geom.create_shape(ifcopenshell.geom.settings(), item)
+        verts = ifcopenshell.util.shape.get_vertices(shape)
+        assert verts[:, 2].min() == pytest.approx(0.0, abs=0.1)
+        assert verts[:, 2].max() == pytest.approx(7.0, abs=0.1)
+
+
+class TestBuildBrepSpace(test.bootstrap.IFC4):
+    def test_sloped_wall_brep_has_faces(self):
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        _add_extruded_body(self.file, wall, [[-5, -5], [5, -5], [5, 5], [-5, 5]], 6.0, direction=(0.0, 0.5, 1.0))
+        space = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSpace")
+        shapes = _build_shapes_dict(self.file, [wall])
+        item = subject.build_brep_space(self.file, space, shapes, shapely.box(-4, -4, 4, 4), 0.0)
+        assert item is not None
+        assert item.is_a("IfcFacetedBrep") or item.is_a("IfcPolygonalFaceSet")
+
+
+class TestBuildBrepSpaceIfc2x3:
+    def test_build_brep_space_on_ifc2x3_uses_rel_space_boundary(self):
+        # IFC2X3 does not have IfcRelSpaceBoundary1stLevel; build_brep_space must
+        # fall back to plain IfcRelSpaceBoundary without raising a schema error.
+        # We use the real IFC2X3 fixture because the installed wrapper in this
+        # environment has a quirk with synthetic IFC2X3 geometry creation.
+        path = os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "IfcRelSpaceBoundary_TestFiles",
+            "IfcRelSpaceBoundary2ndLevel",
+            "HouseWithGarage_AC22_IFC2X3.ifc",
+        )
+        ifc_file = ifcopenshell.open(path)
+        space = ifc_file.by_type("IfcSpace")[0]
+        shapes = _build_shapes_dict(ifc_file, ifc_file.by_type("IfcWall") + ifc_file.by_type("IfcSlab"))
+        item = subject.build_brep_space(ifc_file, space, shapes, shapely.box(-1, -1, 1, 1), 0.0)
+        assert item is not None
+        assert item.is_a("IfcFacetedBrep") or item.is_a("IfcPolygonalFaceSet")
