@@ -1252,8 +1252,11 @@ class Array:
     def get_modifiers_data(cls, parent_element): pass
     def get_parent_element(cls, element): pass
     def get_parent_object(cls, element): pass
+    def is_closed_loop(cls, layer): pass
     def layer_from_props(cls, props, count, si_conversion): pass
     def remove_constraints(cls, parent_element): pass
+    def rise_divisor(cls, layer): pass
+    def rise_method(cls, layer): pass
     def set_children_lock_state(cls, parent_element, item, lock_state): pass
     def step_divisor(cls, layer): pass
 

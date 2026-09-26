@@ -1344,7 +1344,8 @@ class Model(bonsai.core.tool.Model):
                         should_purge=False,
                     )
 
-                    # Set child object position. The placement math lives in
+                    # Set child object position. All placement math — linear
+                    # offsets and radial/helical rotation alike — lives in
                     # ``tool.Array.child_matrix`` so the drag-time ghost preview
                     # renders from the exact same function.
                     child_obj.matrix_world = tool.Array.child_matrix(obj.matrix_world, array, i, unit_scale)
