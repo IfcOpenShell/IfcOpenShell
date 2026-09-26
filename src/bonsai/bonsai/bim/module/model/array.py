@@ -298,13 +298,10 @@ class _ArrayEditMixin(ParametricEditMixinBase):
             props.editing_item_index = -1
             return
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        layers[item]["count"] = props.count
-        layers[item]["x"] = props.x / si_conversion
-        layers[item]["y"] = props.y / si_conversion
-        layers[item]["z"] = props.z / si_conversion
-        layers[item]["use_local_space"] = props.use_local_space
-        layers[item]["method"] = props.method
-        layers[item]["per_child_opening"] = props.per_child_opening
+        # Update in place rather than replacing the dict: ``children`` holds the
+        # layer's existing GUIDs and is owned by the regenerator below, not by
+        # the property round-trip.
+        layers[item].update(tool.Array.layer_from_props(props, si_conversion=si_conversion))
         # Note: ``tool.Model.regenerate_array`` below removes and re-adds the
         # BBIM_Array pset with the in-memory ``layers`` data ([tool/model.py:
         # 1163-1167](src/bonsai/bonsai/tool/model.py#L1163-L1167)), so an
@@ -1552,23 +1549,17 @@ class ArrayPreviewDecorator(tool.Blender.ViewportDecorator):
     ) -> list[tuple[tuple[float, float, float], tuple[float, float, float]]]:
         """World-space (start, end) line segments for the bbox edges of
         every future instance (i = 1 … count-1; i = 0 is the parent itself).
-        props.x/y/z are SI — the edit-lifecycle Enable hydrates them via
-        si_conversion, so no unit_scale multiplier here."""
-        offset = Vector((props.x, props.y, props.z))
-        if props.method == "DISTRIBUTE":
-            divider = (count - 1) if count > 1 else 1
-            offset = offset / divider
 
+        Placement comes from ``tool.Array.child_matrix`` — the same function the
+        regenerator uses — so the ghosts cannot drift from what Finish builds.
+        The draft props are already SI (the edit-lifecycle Enable hydrates them
+        through si_conversion), hence ``unit_scale=1.0``."""
+        layer = tool.Array.layer_from_props(props, count)
         parent_mw = parent_obj.matrix_world
         parent_corners = [Vector(c) for c in parent_obj.bound_box]
         segments: list[tuple[tuple[float, float, float], tuple[float, float, float]]] = []
         for i in range(1, count):
-            delta = offset * i
-            child_mw = parent_mw.copy()
-            if props.use_local_space:
-                child_mw.translation = parent_mw @ delta
-            else:
-                child_mw.translation = parent_mw.translation + delta
+            child_mw = tool.Array.child_matrix(parent_mw, layer, i, 1.0)
             world_corners = [child_mw @ corner for corner in parent_corners]
             for a, b in _BBOX_EDGES:
                 segments.append((tuple(world_corners[a]), tuple(world_corners[b])))
