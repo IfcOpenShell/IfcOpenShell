@@ -57,3 +57,16 @@ class TestUnassignObject:
         collector.assign("relating_obj").should_be_called()
         collector.assign("related_obj").should_be_called()
         subject.unassign_object(ifc, nest, collector, relating_obj="relating_obj", related_obj="related_obj")
+
+    def test_run_with_falsy_relating_obj_when_no_nest_parent_is_found(self, ifc, nest, collector):
+        # Unlike aggregate.unassign_object, relating_obj here has no Optional
+        # default, but nothing stops a caller from passing a falsy value
+        # anyway (type hints are not enforced at runtime), and the function
+        # body is written to handle exactly that: it looks the parent up
+        # itself via nest.get_relating_object(). When that lookup finds no
+        # nest parent, it must not call ifc.get_object() with that None
+        # result, and must not run any unassign/collector side effects.
+        ifc.get_entity("related_obj").should_be_called().will_return("element")
+        nest.get_container("element").should_be_called().will_return(None)
+        nest.get_relating_object("element").should_be_called().will_return(None)
+        subject.unassign_object(ifc, nest, collector, relating_obj=None, related_obj="related_obj")
