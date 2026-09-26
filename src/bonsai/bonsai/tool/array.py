@@ -117,6 +117,53 @@ class Array(bonsai.core.tool.Array):
         }
 
     @classmethod
+    def angle_gap_count(cls, layer: dict[str, Any]) -> int:
+        """Number of steps actually between instances — 0 for a lone instance.
+
+        Distinct from ``step_divisor``, which floors at 1 to keep the DISTRIBUTE
+        division safe. For display the honest count matters: a one-instance
+        layer spans nothing and should report nothing, not a phantom step."""
+        count = max(int(layer.get("count", 1)), 1)
+        if layer.get("type", cls.DEFAULT_ARRAY_TYPE) == "RADIAL" and cls.is_closed_loop(layer):
+            return count
+        return count - 1
+
+    @classmethod
+    def rise_gap_count(cls, layer: dict[str, Any]) -> int:
+        """Steps between instances for the climb. Never the closed-loop count —
+        a closed loop requires zero rise (see ``is_closed_loop``)."""
+        return max(int(layer.get("count", 1)), 1) - 1
+
+    @classmethod
+    def resolved_rise(cls, layer: dict[str, Any]) -> tuple[float, float]:
+        """``(per_copy, total)`` climb, however the layer happens to specify it.
+
+        Whichever of the two the user typed, the other is the one they need to
+        see: a spiral stair given as a floor-to-floor total still has to clear
+        a code-limited riser height, and that riser only exists as a derived
+        number. Returning both lets the panel show the half that was computed.
+
+        Units follow the layer's — project units in, project units out."""
+        rise = layer.get("rise", 0.0)
+        gaps = cls.rise_gap_count(layer)
+        if cls.rise_method(layer) == "DISTRIBUTE":
+            return (rise / gaps if gaps else 0.0), rise
+        return rise, rise * gaps
+
+    @classmethod
+    def resolved_angle(cls, layer: dict[str, Any]) -> tuple[float, float]:
+        """``(per_copy, total)`` sweep in radians, however it was specified.
+
+        The total is deliberately NOT wrapped: reporting 630 degrees rather
+        than 270 is the whole point of showing it, since the turn count is
+        exactly what a bare heading hides."""
+        angle = layer.get("angle", 0.0)
+        gaps = cls.angle_gap_count(layer)
+        if layer.get("method") == "DISTRIBUTE":
+            return (angle / gaps if gaps else 0.0), angle
+        return angle, angle * gaps
+
+    @classmethod
     def rise_method(cls, layer: dict[str, Any]) -> str:
         """Spacing method governing the helix climb, independent of the angle's.
 
