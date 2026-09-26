@@ -65,6 +65,18 @@ def make_non_alignment_entity(name: str = "Wall") -> FakeIfcEntity:
 
 
 # ---------------------------------------------------------------------------
+# create_alignment
+# ---------------------------------------------------------------------------
+
+
+class TestCreateAlignment:
+    def test_creates_alignment_with_stripped_name(self, ifc, alignment):
+        ifc.get().should_be_called().will_return("ifc_file")
+        alignment.create_alignment("Main St").should_be_called().will_return("alignment")
+        assert subject.create_alignment(ifc, alignment, " Main St ") == "alignment"
+
+
+# ---------------------------------------------------------------------------
 # enter_pi_edit_mode
 # ---------------------------------------------------------------------------
 

@@ -625,6 +625,21 @@ class TestCreateObjectForAlignment(NewIfc4X3):
         assert obj1 == obj2  # Same object returned, not a duplicate
 
 
+class TestCreateAlignment(NewIfc4X3):
+    """Tests for Alignment.create_alignment(), the civil.create_alignment_by_pis path."""
+
+    def test_creates_alignment_with_horizontal_layout_and_objects(self):
+        alignment = subject.create_alignment("Main St")
+        assert alignment.is_a("IfcAlignment")
+        assert alignment.Name == "Main St"
+        assert align_api.get_horizontal_layout(alignment) is not None
+        assert tool.Ifc.get_object(alignment) is not None
+
+    def test_defines_no_stationing_before_geometry(self):
+        alignment = subject.create_alignment("Main St")
+        assert align_api.get_stationing_nest(tool.Ifc.get(), alignment) is None
+
+
 class TestCreateObjectForLayout(NewIfc4X3):
     """Tests for Alignment.create_object_for_layout()."""
 

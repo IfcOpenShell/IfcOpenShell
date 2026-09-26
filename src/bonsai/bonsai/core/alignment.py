@@ -48,7 +48,6 @@ def create_alignment(
     ifc_tool: "type[tool.Ifc]",
     alignment_tool: "type[tool.Alignment]",
     name: str,
-    start_station: float = 0.0,
 ) -> "ifcopenshell.entity_instance":
     """Create a new alignment with full IFC structure.
 
@@ -61,7 +60,6 @@ def create_alignment(
         ifc_tool: The IFC tool class
         alignment_tool: The Alignment tool class
         name: The alignment name
-        start_station: Starting station value
 
     Returns:
         The created IfcAlignment entity
@@ -75,7 +73,7 @@ def create_alignment(
     if not name or not name.strip():
         raise ValueError("Alignment name cannot be empty")
 
-    return alignment_tool.create_alignment(name.strip(), start_station)
+    return alignment_tool.create_alignment(name.strip())
 
 
 # =============================================================================
