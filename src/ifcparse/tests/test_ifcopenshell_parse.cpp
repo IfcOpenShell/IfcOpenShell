@@ -783,3 +783,37 @@ TEST_CASE("A file loaded out of id order lists each type in id order", "[ifcpars
     }
     CHECK(ids == std::vector<int>{1, 3, 5});
 }
+
+TEST_CASE("Type lists sorted by several workers are in id order for every type", "[ifcparse]") {
+    // Four types, each written in descending id order, so that with three
+    // workers some sort more than one list and some lists are sorted on the
+    // calling thread.
+    std::string contents = "ISO-10303-21;\nHEADER;\nFILE_DESCRIPTION((''),'2;1');\nFILE_NAME('','',(''),(''),'','','');\nFILE_SCHEMA(('IFC4'));\nENDSEC;\nDATA;\n";
+    const std::vector<std::pair<std::string, std::string>> types = {
+        {"IfcCartesianPoint", "IFCCARTESIANPOINT((0.,0.,0.))"},
+        {"IfcDirection", "IFCDIRECTION((1.,0.,0.))"},
+        {"IfcSIUnit", "IFCSIUNIT(*,.LENGTHUNIT.,$,.METRE.)"},
+        {"IfcPropertySingleValue", "IFCPROPERTYSINGLEVALUE('x',$,$,$)"},
+    };
+    for (int id = 40; id > 0; --id) {
+        contents += "#" + std::to_string(id) + "=" + types[(size_t)id % types.size()].second + ";\n";
+    }
+    contents += "ENDSEC;\nEND-ISO-10303-21;\n";
+    const auto path = std::filesystem::temp_directory_path() / "ifcopenshell_sorted_type_lists_test.ifc";
+    {
+        std::ofstream out(path, std::ios::binary);
+        out << contents;
+    }
+    ifcopenshell::file file(ifcopenshell::uninitialized_tag{});
+    file.parse_threads(3);
+    REQUIRE(file.initialize(path.string()));
+    std::filesystem::remove(path);
+    for (const auto& type : types) {
+        std::vector<int> ids;
+        for (const auto& instance : file.instances_by_type_excl_subtypes(file.schema()->declaration_by_name(type.first))) {
+            ids.push_back(instance.id());
+        }
+        CHECK(ids.size() == 10);
+        CHECK(std::is_sorted(ids.begin(), ids.end()));
+    }
+}

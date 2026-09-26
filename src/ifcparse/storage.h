@@ -44,6 +44,8 @@ namespace rocksdb {
 #include <vector>
 #include <list>
 #include <mutex>
+#include <atomic>
+#include <thread>
 #include <set>
 #include <unordered_map>
 
@@ -793,10 +795,36 @@ namespace ifcopenshell {
                 instances.swap(sorted);
             }
 
-            // Sorts every type list by id.
+            // Sorts every type list by id, using parse_threads workers when
+            // more than one was configured: the lists are handed out largest
+            // first so the workers finish together.
             void sort_type_lists() {
+                std::vector<std::vector<express::base>*> lists;
+                lists.reserve(bytype_excl_.size());
                 for (auto& typed : bytype_excl_) {
-                    sort_type_list(typed.second);
+                    lists.push_back(&typed.second);
+                }
+                const size_t threads = std::min<size_t>(lists.size(), std::max(1u, parse_threads));
+                if (threads == 1) {
+                    for (auto* list : lists) {
+                        sort_type_list(*list);
+                    }
+                    return;
+                }
+                std::sort(lists.begin(), lists.end(), [](const auto* a, const auto* b) { return a->size() > b->size(); });
+                std::atomic<size_t> next{0};
+                const auto work = [&lists, &next]() {
+                    for (size_t i = next++; i < lists.size(); i = next++) {
+                        sort_type_list(*lists[i]);
+                    }
+                };
+                std::vector<std::thread> workers;
+                for (size_t i = 1; i < threads; ++i) {
+                    workers.emplace_back(work);
+                }
+                work();
+                for (auto& worker : workers) {
+                    worker.join();
                 }
             }
 
