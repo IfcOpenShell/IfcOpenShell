@@ -346,6 +346,97 @@ class TestIndependentRiseMethod:
                 assert (pos_a - pos_b).length > 1e-3
 
 
+class TestResolvedValues:
+    """``resolved_rise`` / ``resolved_angle`` report both halves of each
+    (per-copy, total) pair so the panel can show whichever the user did not
+    type. The derived riser is the number building code constrains, and it
+    exists nowhere else — without this it is only discoverable by rebuilding
+    the array and measuring it.
+
+    These feed a read-only display, so the contract that matters is that they
+    agree with what ``child_matrix`` actually builds.
+    """
+
+    STAIR = {
+        "type": "RADIAL",
+        "count": 17,
+        "method": "OFFSET",
+        "rise_method": "DISTRIBUTE",
+        "angle": math.radians(30),
+        "rise": 3.0,
+        "center": [-1.4, 0.0, 0.0],
+        "axis": [0.0, 0.0, 1.0],
+        "use_local_space": True,
+        "rotate_children": True,
+    }
+
+    def test_total_rise_yields_the_derived_riser(self):
+        per_copy, total = tool.Array.resolved_rise(self.STAIR)
+        assert abs(total - 3.0) < EPS
+        assert abs(per_copy - 3.0 / 16) < EPS
+
+    def test_per_copy_rise_yields_the_derived_total(self):
+        layer = dict(self.STAIR, rise_method="OFFSET", rise=0.18)
+        per_copy, total = tool.Array.resolved_rise(layer)
+        assert abs(per_copy - 0.18) < EPS
+        assert abs(total - 0.18 * 16) < EPS
+
+    def test_derived_riser_matches_what_child_matrix_builds(self):
+        """The readout must not be able to disagree with the geometry."""
+        for rise_method, rise in (("DISTRIBUTE", 3.0), ("OFFSET", 0.18)):
+            layer = dict(self.STAIR, rise_method=rise_method, rise=rise)
+            per_copy, total = tool.Array.resolved_rise(layer)
+            first = tool.Array.child_matrix(IDENTITY, layer, 1, 1.0)
+            last = tool.Array.child_matrix(IDENTITY, layer, 16, 1.0)
+            assert abs(first.translation.z - per_copy) < EPS
+            assert abs(last.translation.z - total) < EPS
+
+    def test_total_sweep_is_reported_unwrapped(self):
+        """Reporting 480 rather than 120 degrees is the entire point — the
+        turn count is exactly what a bare heading hides."""
+        per_copy, total = tool.Array.resolved_angle(self.STAIR)
+        assert abs(math.degrees(per_copy) - 30) < 1e-4
+        assert abs(math.degrees(total) - 480) < 1e-4
+
+    def test_distribute_sweep_yields_the_derived_step(self):
+        layer = dict(self.STAIR, method="DISTRIBUTE", angle=math.radians(540))
+        per_copy, total = tool.Array.resolved_angle(layer)
+        assert abs(math.degrees(per_copy) - 540 / 16) < 1e-4
+        assert abs(math.degrees(total) - 540) < 1e-4
+
+    def test_single_instance_spans_nothing(self):
+        """A lone instance has no gaps. The display count is honest about that
+        rather than borrowing ``step_divisor``'s floor of 1, which exists only
+        to keep the division safe."""
+        offset = dict(self.STAIR, count=1, method="OFFSET", rise_method="OFFSET")
+        assert tool.Array.rise_gap_count(offset) == 0
+        assert tool.Array.angle_gap_count(offset) == 0
+        # Per-copy in, so the total climb across zero gaps is zero.
+        assert tool.Array.resolved_rise(offset)[1] == 0.0
+        assert tool.Array.resolved_angle(offset)[1] == 0.0
+
+        distribute = dict(self.STAIR, count=1, method="DISTRIBUTE", rise_method="DISTRIBUTE")
+        # Total in, but nothing to divide it between — report zero rather than
+        # dividing by the safety floor and inventing a step.
+        assert tool.Array.resolved_rise(distribute)[0] == 0.0
+        assert tool.Array.resolved_angle(distribute)[0] == 0.0
+
+    def test_closed_ring_counts_the_wrapping_gap(self):
+        """A closed ring has ``count`` gaps, not ``count - 1`` — the last one
+        wraps back onto the first."""
+        ring = dict(self.STAIR, count=6, full_circle=True, rise=0.0, method="DISTRIBUTE")
+        assert tool.Array.angle_gap_count(ring) == 6
+        # The climb never takes that branch: a closed loop requires zero rise.
+        assert tool.Array.rise_gap_count(ring) == 5
+
+    def test_gap_counts_agree_with_the_divisors_above_one_instance(self):
+        """The display counts and the safe divisors may only differ at count<=1."""
+        for count in range(2, 8):
+            layer = dict(self.STAIR, count=count)
+            assert tool.Array.angle_gap_count(layer) == tool.Array.step_divisor(layer)
+            assert tool.Array.rise_gap_count(layer) == tool.Array.rise_divisor(layer)
+
+
 class TestClosedLoop:
     RING = {
         "type": "RADIAL",
