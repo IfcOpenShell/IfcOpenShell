@@ -1050,6 +1050,147 @@ class SheetBuilder:
         moved = tool.Drawing.get_document_uri(sheet, "LAYOUT")
         return {"changed": sorted(values), "layout": os.path.abspath(moved) if moved else ""}
 
+    def find_drawing(self, target: dict) -> ifcopenshell.entity_instance:
+        """The drawing a request names, whether or not it is on any sheet.
+
+        `_find_target` looks among a sheet's references, which is no use for
+        putting a drawing back on one. By GlobalId, or by the file it is drawn
+        into - the same two handles, and both survive a re-serialised model.
+        """
+        guid = target.get("globalId")
+        if guid:
+            try:
+                drawing = tool.Ifc.get().by_guid(guid)
+            except RuntimeError:
+                drawing = None
+            if drawing is not None and drawing.is_a("IfcAnnotation") and drawing.ObjectType == "DRAWING":
+                return drawing
+        if path := target.get("path"):
+            if (drawing := self._drawings_by_uri().get(self._path_key(path))) is not None:
+                return drawing
+        raise ValueError("that drawing is not in this model")
+
+    def check_addable(self, layout: str, target: dict) -> None:
+        """Refuse what `add_to_sheet` would refuse, without adding anything.
+
+        Asked first by a caller applying the addition as an undoable operator,
+        so a refusal leaves nothing in the undo history.
+        """
+        sheet = self._require_sheet(layout)
+        drawing = self.find_drawing(target)
+        reference = tool.Drawing.get_drawing_document(drawing)
+        if reference is None or not reference.Location:
+            raise ValueError(f"{drawing.Name or 'that drawing'} has no drawing file to place")
+        if not tool.Drawing.does_file_exist(tool.Drawing.get_document_uri(reference)):
+            raise ValueError(f"{drawing.Name or 'that drawing'} has not been generated yet")
+        for other in tool.Drawing.get_document_references(sheet):
+            if other.Location == reference.Location:
+                raise ValueError(f"{drawing.Name or 'that drawing'} is already on this sheet")
+
+    def add_to_sheet(
+        self,
+        layout: str,
+        target: dict,
+        position: Union[dict, None] = None,
+        identification: Union[str, None] = None,
+    ) -> dict:
+        """Put a drawing back on a sheet, where it was and with the number it had.
+
+        The undo of `remove_from_sheet`, for a tool that shows sheets: deleting
+        a drawing there removes it here, so undoing there has to put it back
+        here. Bonsai's own Add Drawing To Sheet places it in the next free spot
+        and numbers it next, which is right for adding a drawing and wrong for
+        undoing - it would come back somewhere else, called something else. So
+        the caller passes what it had, and this restores both.
+
+        :param position: Where the drawing's own image sat, in mm: {"x", "y"}.
+        :param identification: The view number it had.
+        """
+        self.check_addable(layout, target)
+        sheet = self._require_sheet(layout)
+        drawing = self.find_drawing(target)
+        drawing_reference = tool.Drawing.get_drawing_document(drawing)
+
+        placed = [
+            r
+            for r in tool.Drawing.get_document_references(sheet)
+            if tool.Drawing.get_reference_description(r) in ("DRAWING", "SCHEDULE", "REFERENCE")
+        ]
+        reference = tool.Ifc.run("document.add_reference", information=sheet)
+        attributes = tool.Drawing.generate_reference_attributes(
+            reference,
+            Identification=identification or str(len(placed) + 1),
+            Location=drawing_reference.Location,
+            Description="DRAWING",
+        )
+        tool.Ifc.run("document.edit_reference", reference=reference, attributes=attributes)
+
+        self.add_drawing(reference, drawing, sheet)
+        if position:
+            self._move_group_to(layout, reference, position)
+
+        tool.Drawing.import_sheets()
+        return {
+            "added": os.path.basename(tool.Drawing.get_document_uri(drawing_reference) or ""),
+            "layout": os.path.abspath(layout),
+        }
+
+    def _move_group_to(self, layout: str, reference: ifcopenshell.entity_instance, position: dict) -> None:
+        """Put a just added group back where it was, with a group transform.
+
+        `add_drawing` lays the drawing out at the next free spot, writing that
+        into the image's own x/y - which are Bonsai's. The group's transform is
+        what a tool moves a placement with, so the offset goes there and the
+        image keeps the coordinates Bonsai gave it.
+        """
+        ET.register_namespace("", "http://www.w3.org/2000/svg")
+        ET.register_namespace("xlink", "http://www.w3.org/1999/xlink")
+        tree = ET.parse(layout)
+        root = tree.getroot()
+        group = self.find_drawing_group(root, layout, reference)
+        if group is None:
+            return
+        foreground = group.find(f'.//{SVG}image[@data-type="foreground"]')
+        if foreground is None:
+            return
+        dx = float(position["x"]) - self.convert_to_mm(foreground.attrib.get("x", "0"))
+        dy = float(position["y"]) - self.convert_to_mm(foreground.attrib.get("y", "0"))
+        group.attrib["transform"] = f"translate({dx},{dy})"
+        tree.write(layout)
+
+    def check_removable(self, layout: str, target: dict) -> None:
+        """Refuse what `remove_from_sheet` would refuse, without removing anything.
+
+        Asked first by a caller applying the removal as an undoable operator, so
+        a refusal comes back as its reason rather than as a failed operator, and
+        leaves nothing in the undo history.
+        """
+        sheet = self._require_sheet(layout)
+        kind, _, _ = self._find_target(sheet, target)
+        if kind == "sheet":
+            raise ValueError("a titleblock cannot be removed from its sheet")
+
+    def remove_from_sheet(self, layout: str, target: dict) -> dict:
+        """Take a view off a sheet, as Bonsai's own Remove Drawing From Sheet does.
+
+        For a tool that shows sheets and lets a drawing be deleted from one.
+        Removing it there cannot be the whole of it: the layout still places the
+        drawing, so the next time the tool reads the sheet it is back.
+
+        This removes the sheet's reference to it and the group from the layout.
+        The drawing itself is untouched - its annotation, its camera and its SVG
+        all remain, and it stays on any other sheet that places it. A titleblock
+        is refused, as Bonsai's own operator refuses it.
+        """
+        sheet = self._require_sheet(layout)
+        kind, reference, entity = self._find_target(sheet, target)
+        if kind == "sheet":
+            raise ValueError("a titleblock cannot be removed from its sheet")
+
+        name = os.path.basename(tool.Drawing.get_document_uri(reference) or "")
+        tool.Drawing.remove_drawing_from_sheet(reference)
+        return {"removed": name, "layout": os.path.abspath(layout)}
+
     #: What each kind of view can write back. An allow-list, because the rest of
     #: a document's attributes are either maintained by Bonsai alongside files on
     #: disk, or are entities rather than text.

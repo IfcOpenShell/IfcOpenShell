@@ -430,9 +430,10 @@ class Web(bonsai.core.tool.Web):
         model in memory - so unsaved edits are included, and a tool can show
         sheets as a build would.
 
-        `getEditableFields` and `setTemplateValue` are the other direction: a tool
-        showing those values lets them be edited, and the edit is applied here
-        rather than written into the IFC. Blender holds the model in memory, so a
+        `getEditableFields`, `setTemplateValue` and `removeFromSheet` are the
+        other direction: a tool showing a sheet lets its values be edited and a
+        drawing be taken off it, and that is applied here rather than written
+        into the IFC. Blender holds the model in memory, so a
         write to the file would be invisible to it and lost on its next save -
         and renaming a sheet or a drawing moves files and relinks layouts, which
         only Bonsai does.
@@ -458,7 +459,7 @@ class Web(bonsai.core.tool.Web):
             )
             return
 
-        if request_type not in ("getEditableFields", "setTemplateValue"):
+        if request_type not in ("getEditableFields", "setTemplateValue", "removeFromSheet", "addToSheet"):
             return
 
         result = {"requestId": operator_data.get("requestId"), "ok": True}
@@ -472,6 +473,37 @@ class Web(bonsai.core.tool.Web):
                         operator_data.get("fields") or [],
                     )
                 )
+            elif request_type == "addToSheet":
+                # The undo of removeFromSheet, and an operator for the same
+                # reason - undoing an undo is Ctrl+Z again, not a special case.
+                import bonsai.bim.module.drawing.operator as drawing_operator
+
+                layout = operator_data["layout"]
+                target = operator_data.get("target") or {}
+                builder.check_addable(layout, target)
+                try:
+                    bpy.ops.bim.add_sheet_view(
+                        layout=layout,
+                        target=json.dumps(target),
+                        position=json.dumps(operator_data["position"]) if operator_data.get("position") else "",
+                        identification=str(operator_data.get("identification") or ""),
+                    )
+                except RuntimeError as e:
+                    raise RuntimeError(str(e).strip().splitlines()[-1]) from e
+                result.update(drawing_operator.AddSheetView.result)
+            elif request_type == "removeFromSheet":
+                # Also an operator, and more obviously deserving of an undo step
+                # than an edit: this takes a drawing off a sheet.
+                import bonsai.bim.module.drawing.operator as drawing_operator
+
+                layout = operator_data["layout"]
+                target = operator_data.get("target") or {}
+                builder.check_removable(layout, target)
+                try:
+                    bpy.ops.bim.remove_sheet_view(layout=layout, target=json.dumps(target))
+                except RuntimeError as e:
+                    raise RuntimeError(str(e).strip().splitlines()[-1]) from e
+                result.update(drawing_operator.RemoveSheetView.result)
             else:
                 # Checked here, applied as an operator: a refusal comes back as
                 # its reason and leaves no undo step, and an edit that is made
@@ -512,7 +544,7 @@ class Web(bonsai.core.tool.Web):
         # the same reason: this ran on a timer, not on an event, so its own
         # panels would otherwise keep showing the names they last drew. (Their
         # cached data is already fresh: the edit ran as an IFC operator.)
-        if request_type == "setTemplateValue" and result["ok"]:
+        if request_type in ("setTemplateValue", "removeFromSheet", "addToSheet") and result["ok"]:
             tool.Blender.redraw_all_areas()
             values = sheeter.SheetBuilder().get_template_values()
             values["requestId"] = operator_data.get("requestId")

@@ -581,3 +581,96 @@ class TestSheetSpatial:
         ifcopenshell.api.document.remove_information(sheet_model.ifc, information=sheet_model.sheet)
         assert not sheet_model.ifc.by_type("IfcRelAssociatesDocument")
         assert site.HasAssociations == ()
+
+
+class TestRemoveFromSheet:
+    def test_takes_the_view_off_through_bonsai(self, sheet_model, monkeypatch):
+        # Deleting the drawing in a tool that shows the sheet cannot be the whole
+        # of it: the layout still places it, so it comes back. Bonsai removes the
+        # reference and the group together.
+        import bonsai.tool as tool
+
+        taken = []
+        monkeypatch.setattr(
+            tool.Drawing, "remove_drawing_from_sheet", staticmethod(lambda ref: taken.append(ref))
+        )
+        answer = sheet_model.builder.remove_from_sheet(
+            sheet_model.layout, {"kind": "drawing", "globalId": "0abcdefghijklmnopqrstu"}
+        )
+        assert taken == [sheet_model.reference]
+        assert answer["removed"] == "MY STOREY PLAN.svg"
+
+    def test_refuses_the_titleblock(self, sheet_model, monkeypatch):
+        import bonsai.tool as tool
+
+        taken = []
+        monkeypatch.setattr(
+            tool.Drawing, "remove_drawing_from_sheet", staticmethod(lambda ref: taken.append(ref))
+        )
+        with pytest.raises(ValueError, match="titleblock"):
+            sheet_model.builder.remove_from_sheet(sheet_model.layout, {"kind": "sheet"})
+        assert taken == []
+
+    def test_refuses_a_view_that_is_not_on_the_sheet(self, sheet_model, tmp_path):
+        with pytest.raises(ValueError, match="no such view"):
+            sheet_model.builder.remove_from_sheet(
+                sheet_model.layout, {"kind": "placement", "path": str(tmp_path / "drawings" / "GONE.svg")}
+            )
+
+
+class TestCheckRemovable:
+    """The handler asks this before running the operator, so a refusal leaves no
+    undo step. It has to refuse exactly what `remove_from_sheet` refuses."""
+
+    def test_passes_a_drawing(self, sheet_model):
+        assert sheet_model.builder.check_removable(
+            sheet_model.layout, {"kind": "drawing", "globalId": "0abcdefghijklmnopqrstu"}
+        ) is None
+
+    def test_refuses_the_titleblock(self, sheet_model):
+        with pytest.raises(ValueError, match="titleblock"):
+            sheet_model.builder.check_removable(sheet_model.layout, {"kind": "sheet"})
+
+    def test_refuses_a_view_that_is_not_on_the_sheet(self, sheet_model, tmp_path):
+        with pytest.raises(ValueError, match="no such view"):
+            sheet_model.builder.check_removable(
+                sheet_model.layout, {"kind": "placement", "path": str(tmp_path / "drawings" / "GONE.svg")}
+            )
+
+
+class TestFindDrawing:
+    """Putting a drawing back cannot look for it among the sheet's references -
+    it is not there any more. It is named the same two ways, from elsewhere."""
+
+    def test_by_global_id(self, sheet_model):
+        found = sheet_model.builder.find_drawing({"globalId": "0abcdefghijklmnopqrstu"})
+        assert found == sheet_model.drawing
+
+    def test_by_the_file_it_is_drawn_into(self, sheet_model):
+        found = sheet_model.builder.find_drawing({"path": sheet_model.drawing_path})
+        assert found == sheet_model.drawing
+
+    def test_refuses_something_that_is_not_a_drawing(self, sheet_model):
+        with pytest.raises(ValueError, match="not in this model"):
+            sheet_model.builder.find_drawing({"globalId": "0notadrawingatallxxxxx"})
+
+
+class TestCheckAddable:
+    def test_refuses_a_drawing_already_on_the_sheet(self, sheet_model, tmp_path, monkeypatch):
+        import bonsai.tool as tool
+
+        monkeypatch.setattr(tool.Drawing, "does_file_exist", staticmethod(lambda uri: True))
+        with pytest.raises(ValueError, match="already on this sheet"):
+            sheet_model.builder.check_addable(
+                sheet_model.layout, {"globalId": "0abcdefghijklmnopqrstu"}
+            )
+
+    def test_refuses_a_drawing_that_has_not_been_generated(self, sheet_model, monkeypatch):
+        # Its file is what gets placed, so there is nothing to put on the sheet.
+        import bonsai.tool as tool
+
+        monkeypatch.setattr(tool.Drawing, "does_file_exist", staticmethod(lambda uri: False))
+        with pytest.raises(ValueError, match="not been generated"):
+            sheet_model.builder.check_addable(
+                sheet_model.layout, {"globalId": "0abcdefghijklmnopqrstu"}
+            )

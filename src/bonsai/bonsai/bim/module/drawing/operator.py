@@ -3105,6 +3105,58 @@ class EditSheetTemplateValues(bpy.types.Operator, tool.Ifc.Operator):
         )
 
 
+class RemoveSheetView(bpy.types.Operator, tool.Ifc.Operator):
+    """Take a view off a sheet for a tool that shows sheets, such as SketchSpace.
+
+    Deleting a drawing in such a tool cannot stop there: the layout still places
+    it, so it reappears the next time the sheet is read. An operator for the
+    same reason as `EditSheetTemplateValues` - removing a drawing from a sheet
+    is a transaction, and one that deserves Ctrl+Z more than most.
+    """
+
+    bl_idname = "bim.remove_sheet_view"
+    bl_label = "Remove View From Sheet"
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+    layout: bpy.props.StringProperty()
+    target: bpy.props.StringProperty(description="JSON: the view, as SheetBuilder._find_target takes it")
+
+    #: What the last run answered - the file removed, and the sheet's layout.
+    result: dict = {}
+
+    def _execute(self, context):
+        RemoveSheetView.result = sheeter.SheetBuilder().remove_from_sheet(
+            self.layout, json.loads(self.target)
+        )
+
+
+class AddSheetView(bpy.types.Operator, tool.Ifc.Operator):
+    """Put a drawing back on a sheet, for a tool that shows sheets.
+
+    The undo of `RemoveSheetView`: deleting a drawing in such a tool removes it
+    here, so undoing there has to put it back here - where it was, and with the
+    number it had, which is what makes it an undo rather than a fresh add.
+    """
+
+    bl_idname = "bim.add_sheet_view"
+    bl_label = "Add View To Sheet"
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+    layout: bpy.props.StringProperty()
+    target: bpy.props.StringProperty(description="JSON: the drawing, as SheetBuilder.find_drawing takes it")
+    position: bpy.props.StringProperty(description="JSON: {x, y} in mm, where its image sat")
+    identification: bpy.props.StringProperty(description="The view number it had")
+
+    #: What the last run answered - the file added, and the sheet's layout.
+    result: dict = {}
+
+    def _execute(self, context):
+        AddSheetView.result = sheeter.SheetBuilder().add_to_sheet(
+            self.layout,
+            json.loads(self.target),
+            json.loads(self.position) if self.position else None,
+            self.identification or None,
+        )
+
+
 #: Enum items for the sheet link operators, kept alive here: Blender does not keep
 #: the strings a dynamic enum callback returns, and reading freed ones crashes it.
 _SHEET_LINK_ITEMS: dict[str, list] = {}
