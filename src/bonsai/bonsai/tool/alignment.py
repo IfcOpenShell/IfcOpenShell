@@ -401,9 +401,7 @@ class Alignment:
             The newly created IfcAlignmentHorizontal entity.
         """
         import ifcopenshell.api.aggregate
-        import ifcopenshell.api.alignment as align_api
         import ifcopenshell.api.nest
-        import ifcopenshell.util.alignment
         from ifcopenshell.api.alignment._add_zero_length_segment import (
             _add_zero_length_segment,
         )
@@ -433,13 +431,6 @@ class Alignment:
         # Create geometric representation (curves) for the alignment
         _create_geometric_representation(ifc_file, alignment)
 
-        # Stationing referent (required by the segment-creation API), using
-        # the upstream "<alignment name> <station>" naming convention.
-        start_station = 0.0
-        station_string = ifcopenshell.util.alignment.station_as_string(ifc_file, start_station)
-        referent_name = f"{alignment.Name or 'Alignment'} {station_string}"
-        align_api.add_stationing_referent(ifc_file, referent_name, alignment, 0.0, start_station)
-
         # Zero-length terminal segment (semantic + geometric)
         _add_zero_length_segment(ifc_file, h_layout)
 
@@ -449,6 +440,36 @@ class Alignment:
             ifcopenshell.api.aggregate.assign_object(ifc_file, products=[alignment], relating_object=project)
 
         return h_layout
+
+    @classmethod
+    def update_stationing(cls, alignment: ifcopenshell.entity_instance, start_station: float) -> None:
+        """Define or refresh an alignment's stationing after its layout is built.
+
+        create() leaves stationing undefined until the layout has geometry
+        (upstream b5670c4fc), so the first build adds the starting-station
+        referent at distance along 0.0, named "<alignment name> <station>", as
+        create_by_pi_method() and create_from_csv() do. Later builds keep the
+        referents and refresh the fallback position of each IfcLinearPlacement,
+        since the curve it measures along has been laid out again.
+
+        Args:
+            alignment: The IfcAlignment whose horizontal layout was just built
+            start_station: Station at the start of the alignment (project units)
+        """
+        import ifcopenshell.api.alignment as align_api
+        import ifcopenshell.util.alignment
+
+        ifc_file = tool.Ifc.get()
+        nest = align_api.get_stationing_nest(ifc_file, alignment)
+        if nest is None:
+            station_string = ifcopenshell.util.alignment.station_as_string(ifc_file, start_station)
+            name = f"{alignment.Name or 'Alignment'} {station_string}"
+            align_api.add_stationing_referent(ifc_file, name, alignment, 0.0, start_station)
+            return
+        for referent in nest.RelatedObjects:
+            placement = referent.ObjectPlacement if referent.is_a("IfcReferent") else None
+            if placement and placement.is_a("IfcLinearPlacement"):
+                align_api.update_fallback_position(ifc_file, placement)
 
     @classmethod
     def clear_layout_segments(cls, layout: "ifcopenshell.entity_instance"):

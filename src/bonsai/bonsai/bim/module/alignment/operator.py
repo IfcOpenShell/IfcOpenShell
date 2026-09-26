@@ -627,6 +627,7 @@ def _build_alignment_from_active_pis(context):
     tool.Alignment.remove_layout_segment_objects(h_layout)
     tool.Alignment.clear_layout_segments(h_layout)
     align_api.layout_horizontal_alignment_by_pi_method(ifc, h_layout, hpoints, radii)
+    tool.Alignment.update_stationing(alignment, props.start_station)
 
     layout_obj = tool.Ifc.get_object(h_layout)
     if not layout_obj:
@@ -813,6 +814,7 @@ class CIVIL_OT_create_alignment_by_pi(Operator, tool.Ifc.Operator):
             # Use existing alignment - add segments to it
             # Use safe wrapper to validate layout has parent alignment
             tool.Alignment.safe_layout_horizontal_by_pi_method(tool.Ifc.get(), h_layout, hpoints, radii)
+            tool.Alignment.update_stationing(existing_alignment, props.start_station)
 
             # Create/update Blender objects for the segments
             alignment_obj = tool.Ifc.get_object(existing_alignment)

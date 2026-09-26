@@ -35,6 +35,7 @@ import pytest
 import bpy
 import ifcopenshell
 import ifcopenshell.api.alignment as align_api
+import ifcopenshell.util.alignment
 
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
@@ -335,6 +336,30 @@ class TestRecalculatePis(NewIfc4X3):
         segments = ifc_file.by_type("IfcAlignmentSegment")
         assert len(segments) >= 2
 
+    @requires_geometry_engine
+    def test_layout_starts_stationing_at_the_table_start_station(self):
+        """The first build adds the starting-station referent on the curve at
+        props.start_station; later builds move it with the curve."""
+        ifc_file = tool.Ifc.get()
+        alignment = tool.Alignment.create_alignment("R")
+        props = get_alignment_props()
+        props.active_alignment_id = alignment.id()
+        bpy.context.view_layer.objects.active = tool.Ifc.get_object(alignment)
+        add_pis_to_props([(500, 300, 0), (1000, 300, 0), (1500, 700, 0)])
+
+        assert bpy.ops.civil.recalculate_pis() == {"FINISHED"}
+        referent = align_api.get_stationing_nest(ifc_file, alignment).RelatedObjects[0]
+        assert referent.Name == f"R {ifcopenshell.util.alignment.station_as_string(ifc_file, props.start_station)}"
+        assert align_api.get_alignment_start_station(ifc_file, alignment) == pytest.approx(props.pis[0].station)
+        position = referent.ObjectPlacement.CartesianPosition.Location.Coordinates
+        assert position == pytest.approx((500.0, 300.0, 0.0), abs=1e-6)
+
+        props.pis[0].e = str(600.0)
+        assert bpy.ops.civil.recalculate_pis() == {"FINISHED"}
+        assert align_api.get_stationing_nest(ifc_file, alignment).RelatedObjects == (referent,)
+        position = referent.ObjectPlacement.CartesianPosition.Location.Coordinates
+        assert position == pytest.approx((600.0, 300.0, 0.0), abs=1e-6)
+
 
 @requires_geometry_engine
 class TestCreateAlignmentByPi(NewIfc4X3):
@@ -418,6 +443,15 @@ class TestCreateAlignmentByPi(NewIfc4X3):
 
         segments = ifc_file.by_type("IfcAlignmentSegment")
         assert len(segments) >= 1
+
+    def test_adds_start_station_referent(self):
+        alignment, _ = create_empty_alignment()
+        add_pis_to_props([(0, 0, 0), (500, 0, 0), (1000, 200, 0)])
+
+        assert bpy.ops.civil.create_alignment_by_pi() == {"FINISHED"}
+
+        start_station = align_api.get_alignment_start_station(tool.Ifc.get(), alignment)
+        assert start_station == pytest.approx(get_alignment_props().start_station)
 
 
 @requires_geometry_engine
@@ -617,8 +651,8 @@ class TestAddElementAlignment(NewIfc4X3):
 
     Reinstated from the 0.8 saikei branch in minimal scope: IfcAlignment in
     the Definition dropdown; creating one bootstraps the horizontal layout,
-    stationing referent, zero-length terminator, and project aggregation â€”
-    landing in the same state as panel creation.
+    zero-length terminator, and project aggregation, landing in the same
+    state as panel creation. Stationing starts with the first layout.
     """
 
     def _add_alignment(self, name=""):
@@ -656,15 +690,28 @@ class TestAddElementAlignment(NewIfc4X3):
         assert alignment.Decomposes[0].RelatingObject.is_a("IfcProject")
         assert not alignment.ContainedInStructure
 
-    def test_add_element_creates_stationing_referent_and_sets_active(self):
+    def test_add_element_sets_active_and_leaves_stationing_to_first_layout(self):
         self._add_alignment(name="Route 66")
         alignment = tool.Ifc.get().by_type("IfcAlignment")[0]
 
-        nest = align_api.get_stationing_nest(tool.Ifc.get(), alignment)
-        assert nest is not None
-        referent = nest.RelatedObjects[0]
-        assert referent.Name.startswith("Route 66")
+        assert align_api.get_stationing_nest(tool.Ifc.get(), alignment) is None
 
         props = get_alignment_props()
         assert props.active_alignment_id == alignment.id()
         assert props.active_alignment_name == "Route 66"
+
+    @requires_geometry_engine
+    def test_first_layout_adds_stationing_referent_on_the_curve(self):
+        self._add_alignment(name="Route 66")
+        ifc_file = tool.Ifc.get()
+        alignment = ifc_file.by_type("IfcAlignment")[0]
+        props = get_alignment_props()
+        add_pis_to_props([(500, 300, 0), (1000, 300, 0), (1500, 700, 0)])
+
+        assert bpy.ops.civil.recalculate_pis() == {"FINISHED"}
+
+        referent = align_api.get_stationing_nest(ifc_file, alignment).RelatedObjects[0]
+        station = ifcopenshell.util.alignment.station_as_string(ifc_file, props.start_station)
+        assert referent.Name == f"Route 66 {station}"
+        position = referent.ObjectPlacement.CartesianPosition.Location.Coordinates
+        assert position == pytest.approx((500.0, 300.0, 0.0), abs=1e-6)

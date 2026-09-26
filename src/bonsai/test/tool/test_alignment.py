@@ -21,6 +21,7 @@ import pytest
 import bpy
 import ifcopenshell
 import ifcopenshell.api.alignment as align_api
+import ifcopenshell.util.alignment
 import bonsai.tool as tool
 from bonsai.tool.alignment import Alignment as subject
 from test.bim.bootstrap import NewFile, NewIfc4X3
@@ -638,6 +639,44 @@ class TestCreateAlignment(NewIfc4X3):
     def test_defines_no_stationing_before_geometry(self):
         alignment = subject.create_alignment("Main St")
         assert align_api.get_stationing_nest(tool.Ifc.get(), alignment) is None
+
+
+@requires_geometry_engine
+class TestUpdateStationing(NewIfc4X3):
+    """Tests for Alignment.update_stationing(), run after each horizontal layout build."""
+
+    def _lay_out(self, alignment, hpoints):
+        h_layout = align_api.get_horizontal_layout(alignment)
+        subject.clear_layout_segments(h_layout)
+        align_api.layout_horizontal_alignment_by_pi_method(tool.Ifc.get(), h_layout, hpoints, [0.0])
+
+    def test_adds_start_station_referent_on_the_laid_out_curve(self):
+        ifc_file = tool.Ifc.get()
+        alignment = align_api.create(ifc_file, name="Main St")
+        self._lay_out(alignment, [(500.0, 300.0), (1000.0, 300.0), (1500.0, 700.0)])
+
+        subject.update_stationing(alignment, 1000.0)
+
+        referent = align_api.get_stationing_nest(ifc_file, alignment).RelatedObjects[0]
+        assert referent.Name == f"Main St {ifcopenshell.util.alignment.station_as_string(ifc_file, 1000.0)}"
+        assert align_api.get_alignment_start_station(ifc_file, alignment) == pytest.approx(1000.0)
+        assert referent.ObjectPlacement.is_a("IfcLinearPlacement")
+        position = referent.ObjectPlacement.CartesianPosition.Location.Coordinates
+        assert position == pytest.approx((500.0, 300.0, 0.0), abs=1e-6)
+
+    def test_relayout_keeps_referent_and_refreshes_its_fallback_position(self):
+        ifc_file = tool.Ifc.get()
+        alignment = align_api.create(ifc_file, name="Main St")
+        self._lay_out(alignment, [(500.0, 300.0), (1000.0, 300.0), (1500.0, 700.0)])
+        subject.update_stationing(alignment, 1000.0)
+
+        self._lay_out(alignment, [(600.0, 300.0), (1000.0, 300.0), (1500.0, 700.0)])
+        subject.update_stationing(alignment, 1000.0)
+
+        referents = align_api.get_stationing_nest(ifc_file, alignment).RelatedObjects
+        assert len(referents) == 1
+        position = referents[0].ObjectPlacement.CartesianPosition.Location.Coordinates
+        assert position == pytest.approx((600.0, 300.0, 0.0), abs=1e-6)
 
 
 class TestCreateObjectForLayout(NewIfc4X3):
