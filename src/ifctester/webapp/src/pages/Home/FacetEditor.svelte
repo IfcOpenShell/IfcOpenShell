@@ -15,14 +15,18 @@
         facetType,
         activeTab,
         removeFacet,
+        moveFacet,
         index,
+        listLength,
         specification
     }: {
         facet: Facet;
         facetType: FacetType;
         activeTab: "applicability" | "requirements";
         removeFacet: (facetType: FacetType, facetIndex: number) => void | Promise<void>;
+        moveFacet: (facetType: FacetType, facetIndex: number, direction: -1 | 1) => void;
         index: number;
+        listLength: number;
         specification: Specification;
     } = $props();
 
@@ -41,6 +45,16 @@
     <div class="restriction-header">
         <span class="restriction-type">{facetType.toUpperCase()}</span>
         <span class="restriction-name">{@html stringifyFacet(activeTab, facet, facetType, specification)}</span>
+        <button class="btn-move" onclick={() => moveFacet(facetType, index, -1)} disabled={index === 0} aria-label={`Move ${facetType} facet up`} title="Move up (within {facetType.toUpperCase()} facets)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="18,15 12,9 6,15"></polyline>
+            </svg>
+        </button>
+        <button class="btn-move" onclick={() => moveFacet(facetType, index, 1)} disabled={index === listLength - 1} aria-label={`Move ${facetType} facet down`} title="Move down (within {facetType.toUpperCase()} facets)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6,9 12,15 18,9"></polyline>
+            </svg>
+        </button>
         <button class="btn-delete" onclick={() => removeFacet(facetType, index)} aria-label="Delete Restriction">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M18 6L6 18M6 6l12 12"></path>
@@ -97,3 +111,28 @@
         {/if}
     </div>
 </div>
+
+<style>
+    .btn-move {
+        padding: 5px;
+        border-radius: 50px;
+        border: 1px solid #ffffff26;
+        color: #b0b0b0;
+        background: none;
+        cursor: pointer;
+        transition: background-color 200ms;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-move:hover:not(:disabled) {
+        background: #ffffff12;
+        color: white;
+    }
+
+    .btn-move:disabled {
+        opacity: 0.35;
+        cursor: default;
+    }
+</style>
