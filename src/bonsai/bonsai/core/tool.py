@@ -1243,6 +1243,7 @@ class Voider:
 @interface
 class Array:
     def bake_children_transform(cls, parent_element, item): pass
+    def child_matrix(cls, source_matrix, layer, i, unit_scale): pass
     def constrain_children_to_parent(cls, parent_element): pass
     def get_all_children_objects(cls, parent_element): pass
     def get_all_objects(cls, parent_element): pass
@@ -1251,8 +1252,10 @@ class Array:
     def get_modifiers_data(cls, parent_element): pass
     def get_parent_element(cls, element): pass
     def get_parent_object(cls, element): pass
+    def layer_from_props(cls, props, count, si_conversion): pass
     def remove_constraints(cls, parent_element): pass
     def set_children_lock_state(cls, parent_element, item, lock_state): pass
+    def step_divisor(cls, layer): pass
 
 
 @interface

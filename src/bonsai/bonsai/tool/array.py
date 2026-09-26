@@ -34,6 +34,7 @@ from typing import TYPE_CHECKING, Any
 import bpy
 import ifcopenshell
 import ifcopenshell.util.element
+from mathutils import Matrix, Vector
 
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -43,6 +44,61 @@ if TYPE_CHECKING:
 
 
 class Array(bonsai.core.tool.Array):
+    @classmethod
+    def child_matrix(cls, source_matrix: Matrix, layer: dict[str, Any], i: int, unit_scale: float) -> Matrix:
+        """World matrix for instance ``i`` of ``layer``, given the world matrix
+        of the instance it is copied from. ``i == 0`` is the source itself.
+
+        Single source of truth for array placement: both the regenerator
+        (``tool.Model._regenerate_array_body``) and the drag-time ghost preview
+        (``ArrayPreviewDecorator``) call this. They previously carried separate
+        hand-written copies of the formula, so the preview could disagree with
+        what Finish actually built.
+
+        ``source_matrix`` is the *previous layer's* instance, not necessarily
+        the root parent — that is what makes stacked layers compose.
+
+        ``unit_scale`` converts the layer's stored distances (project units)
+        to Blender SI. Callers whose values are already SI pass ``1.0``."""
+        offset = Vector((layer.get("x", 0.0), layer.get("y", 0.0), layer.get("z", 0.0))) * unit_scale
+        if layer.get("method") == "DISTRIBUTE":
+            offset = offset / cls.step_divisor(layer)
+        offset = offset * i
+        matrix = source_matrix.copy()
+        if layer.get("use_local_space", True):
+            matrix.translation = source_matrix @ offset
+        else:
+            matrix.translation = source_matrix.translation + offset
+        return matrix
+
+    @classmethod
+    def step_divisor(cls, layer: dict[str, Any]) -> int:
+        """Number the per-instance step is divided by under ``DISTRIBUTE``.
+
+        ``DISTRIBUTE`` spreads ``count`` instances across a fixed total span, so
+        the step is the span over the number of gaps between them."""
+        return max(int(layer.get("count", 1)) - 1, 1)
+
+    @classmethod
+    def layer_from_props(cls, props, count: int | None = None, si_conversion: float = 1.0) -> dict:
+        """Build a ``BBIM_Array.Data`` layer dict from the draft edit props.
+
+        Distances are divided by ``si_conversion`` so the result is in project
+        units, matching what the pset stores. Callers that want SI out (the ghost
+        preview, which already holds SI props) pass ``si_conversion=1.0``.
+
+        ``count`` overrides ``props.count`` for callers that have already clamped
+        it (the preview caps instances for GPU budget reasons)."""
+        return {
+            "count": props.count if count is None else count,
+            "method": props.method,
+            "x": props.x / si_conversion,
+            "y": props.y / si_conversion,
+            "z": props.z / si_conversion,
+            "use_local_space": props.use_local_space,
+            "per_child_opening": props.per_child_opening,
+        }
+
     @classmethod
     def bake_children_transform(cls, parent_element: entity_instance, item: int) -> None:
         modifier_data = list(cls.get_modifiers_data(parent_element))[item]
