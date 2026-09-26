@@ -39,6 +39,7 @@ import ifcopenshell
 import ifcopenshell.api.alignment as align_api
 import ifcopenshell.api.georeference
 import ifcopenshell.api.root
+import ifcopenshell.api.unit
 import ifcopenshell.util.alignment
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.unit
@@ -616,6 +617,19 @@ class TestCreateAlignmentByPi(NewIfc4X3):
 
         start_station = align_api.get_alignment_start_station(tool.Ifc.get(), alignment)
         assert start_station == pytest.approx(get_alignment_props().start_station)
+
+    def test_radius_is_converted_to_project_units(self):
+        """pi.radius is a Blender length in metres; a feet project gets feet."""
+        ifc_file = tool.Ifc.get()
+        ifcopenshell.api.unit.assign_unit(ifc_file, length={"is_metric": False, "raw": "FEET"})
+        alignment, _ = create_empty_alignment()
+        add_pis_to_props([(0, 0, 0), (1000, 0, 100), (2000, 800, 0)])
+
+        assert bpy.ops.civil.create_alignment_by_pi() == {"FINISHED"}
+
+        arc = next(s for s in real_segments(alignment) if s.DesignParameters.PredefinedType == "CIRCULARARC")
+        radius = abs(arc.DesignParameters.StartRadiusOfCurvature)
+        assert radius == pytest.approx(100.0 / ifcopenshell.util.unit.calculate_unit_scale(ifc_file))
 
 
 @requires_geometry_engine

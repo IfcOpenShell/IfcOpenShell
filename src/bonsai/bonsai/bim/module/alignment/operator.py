@@ -809,7 +809,10 @@ class CIVIL_OT_create_alignment_by_pi(Operator, tool.Ifc.Operator):
             ]
             for pi in props.pis
         ]
-        radii = [pi.radius for pi in props.pis[1:-1]]
+        # pi.radius is a Blender LENGTH property (stored in metres); the API expects
+        # project units, as in _build_alignment_from_active_pis.
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        radii = [pi.radius / unit_scale for pi in props.pis[1:-1]]
 
         existing_alignment = _resolve_pi_table_alignment(context)
         if not (h_layout := ifcopenshell.api.alignment.get_horizontal_layout(existing_alignment)):
