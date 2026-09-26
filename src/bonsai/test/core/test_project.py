@@ -149,9 +149,6 @@ class TestCreateProject:
         ifc.set("ifc").should_be_called()
 
         project.create_empty("My Project").should_be_called().will_return("project")
-        project.create_empty("My Site").should_be_called().will_return("site")
-        project.create_empty("My Building").should_be_called().will_return("building")
-        project.create_empty("My Storey").should_be_called().will_return("storey")
         project.run_root_assign_class(
             obj="project", ifc_class="IfcProject", should_add_representation=False
         ).should_be_called()
@@ -159,6 +156,11 @@ class TestCreateProject:
 
         self.check_contexts(project)
 
+        project.append_structure_from_template("template").should_be_called().will_return(False)
+
+        project.create_empty("My Site").should_be_called().will_return("site")
+        project.create_empty("My Building").should_be_called().will_return("building")
+        project.create_empty("My Storey").should_be_called().will_return("storey")
         project.run_root_assign_class(obj="site", ifc_class="IfcSite", context="body").should_be_called()
         project.run_root_assign_class(obj="building", ifc_class="IfcBuilding", context="body").should_be_called()
         project.run_root_assign_class(obj="storey", ifc_class="IfcBuildingStorey", context="body").should_be_called()
@@ -180,6 +182,41 @@ class TestCreateProject:
         georeference.set_model_origin().should_be_called()
 
         subject.create_project(ifc, georeference, project, spatial, schema="IFC4", template="template")
+
+    def test_using_a_project_template_that_defines_its_own_spatial_structure(
+        self, ifc, georeference, project, spatial
+    ):
+        ifc.get().should_be_called().will_return(None)
+        ifc.run("project.create_file", version="IFC4X3").should_be_called().will_return("ifc")
+        ifc.set("ifc").should_be_called()
+
+        project.create_empty("My Project").should_be_called().will_return("project")
+        project.run_root_assign_class(
+            obj="project", ifc_class="IfcProject", should_add_representation=False
+        ).should_be_called()
+        project.run_unit_assign_scene_units().should_be_called()
+
+        self.check_contexts(project)
+
+        project.append_structure_from_template("Road Template.ifc").should_be_called().will_return(True)
+
+        # The default Site/Building/Storey should NOT be created since the
+        # template already provided its own spatial structure.
+
+        project.set_context("body").should_be_called()
+        spatial.run_spatial_import_spatial_decomposition().should_be_called()
+        spatial.guess_default_container().should_be_called().will_return(None)
+
+        # The template's types (if any) were already merged in by
+        # append_structure_from_template, so it shouldn't be appended again.
+
+        project.load_default_thumbnails().should_be_called()
+        project.set_default_context().should_be_called()
+        project.set_default_modeling_dimensions().should_be_called()
+        project.run_root_reload_grid_decorator().should_be_called()
+        georeference.set_model_origin().should_be_called()
+
+        subject.create_project(ifc, georeference, project, spatial, schema="IFC4X3", template="Road Template.ifc")
 
     def test_create_an_ifc2x3_project_with_owner_defaults(self, ifc, georeference, project, spatial):
         ifc.get().should_be_called().will_return(None)
