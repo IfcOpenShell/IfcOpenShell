@@ -1004,3 +1004,19 @@ class TestAddElementAlignment(NewIfc4X3):
         assert referent.Name == f"Route 66 {station}"
         position = referent.ObjectPlacement.CartesianPosition.Location.Coordinates
         assert position == pytest.approx((500.0, 300.0, 0.0), abs=1e-6)
+
+
+class TestSubPanelVisibility(NewIfc4X3):
+    """Sub-panels follow their CIVIL root panel, as Bonsai's own sub-panels do.
+
+    Only root panels have panel_visibilities entries, so on the Bookmark tab
+    should_show_panel is False for a sub-panel's own idname. Polling it hid
+    the sub-panels whenever the root panel was shown there.
+    """
+
+    def test_sub_panels_poll_true_when_should_show_panel_rejects_them(self, monkeypatch):
+        from bonsai.bim.module.alignment import ui
+
+        monkeypatch.setattr(tool.Blender, "should_show_panel", classmethod(lambda cls, *args: False))
+        for panel in (ui.CIVIL_PT_alignment_creation, ui.CIVIL_PT_pi_editor, ui.CIVIL_PT_alignment_stationing):
+            assert panel.poll(bpy.context)

@@ -136,7 +136,7 @@ class CIVIL_PT_alignment_creation(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.should_show_panel(context, "CIVIL", cls.bl_idname) and is_ifc4x3()
+        return is_ifc4x3()
 
     def draw(self, context):
         layout = self.layout
@@ -171,7 +171,7 @@ class CIVIL_PT_pi_editor(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.should_show_panel(context, "CIVIL", cls.bl_idname) and is_ifc4x3()
+        return is_ifc4x3()
 
     def draw(self, context):
         layout = self.layout
@@ -249,7 +249,7 @@ class CIVIL_PT_alignment_stationing(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.should_show_panel(context, "CIVIL", cls.bl_idname) and is_ifc4x3()
+        return is_ifc4x3()
 
     def draw(self, context):
         layout = self.layout
