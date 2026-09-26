@@ -1421,6 +1421,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             if obj:
                 obj.select_set(True)
                 obj.hide_set(False)
+                bpy.context.view_layer.objects.active = obj
 
     def set_colours(self, viewpoint: bcf.agnostic.visinfo.VisualizationInfoHandler) -> None:
         if not viewpoint.visualization_info.components or not viewpoint.visualization_info.components.coloring:
