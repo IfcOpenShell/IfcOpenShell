@@ -368,6 +368,7 @@ class TestRecalculatePis(NewIfc4X3):
         ifc_file = tool.Ifc.get()
         alignment = tool.Alignment.create_alignment("R")
         props = get_alignment_props()
+        props.start_station = 1000.0
         props.active_alignment_id = alignment.id()
         bpy.context.view_layer.objects.active = tool.Ifc.get_object(alignment)
         add_pis_to_props([(500, 300, 0), (1000, 300, 0), (1500, 700, 0)])
@@ -626,12 +627,27 @@ class TestCreateAlignmentByPi(NewIfc4X3):
 
     def test_adds_start_station_referent(self):
         alignment, _ = create_empty_alignment()
+        get_alignment_props().start_station = 1000.0
         add_pis_to_props([(0, 0, 0), (500, 0, 0), (1000, 200, 0)])
 
         assert bpy.ops.civil.create_alignment_by_pi() == {"FINISHED"}
 
         start_station = align_api.get_alignment_start_station(tool.Ifc.get(), alignment)
-        assert start_station == pytest.approx(get_alignment_props().start_station)
+        assert start_station == pytest.approx(1000.0)
+
+    def test_new_alignment_is_stationed_from_zero_by_default(self):
+        """A new alignment is stationed from 0, the station the alignment API assumes
+        before any stationing referent exists (distance_along_from_station)."""
+        ifc_file = tool.Ifc.get()
+        alignment, _ = create_empty_alignment("A")
+        add_pis_to_props([(0, 0, 0), (500, 0, 0), (1000, 200, 0)])
+
+        assert bpy.ops.civil.create_alignment_by_pi() == {"FINISHED"}
+
+        referent = align_api.get_stationing_nest(ifc_file, alignment).RelatedObjects[0]
+        assert referent.Name == f"A {ifcopenshell.util.alignment.station_as_string(ifc_file, 0.0)}"
+        assert align_api.get_alignment_start_station(ifc_file, alignment) == 0.0
+        assert get_alignment_props().pis[0].station == 0.0
 
     def test_radius_is_converted_to_project_units(self):
         """pi.radius is a Blender length in metres; a feet project gets feet."""
@@ -1010,6 +1026,7 @@ class TestAddElementAlignment(NewIfc4X3):
         ifc_file = tool.Ifc.get()
         alignment = ifc_file.by_type("IfcAlignment")[0]
         props = get_alignment_props()
+        props.start_station = 1000.0
         add_pis_to_props([(500, 300, 0), (1000, 300, 0), (1500, 700, 0)])
 
         assert bpy.ops.civil.recalculate_pis() == {"FINISHED"}

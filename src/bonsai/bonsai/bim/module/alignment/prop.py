@@ -173,7 +173,7 @@ class CivilAlignmentProperties(PropertyGroup):
     start_station: FloatProperty(
         name="Start Station",
         description="Starting station value (e.g., 10000 for 100+00)",
-        default=10000.0,
+        default=0.0,
         min=0.0,
     )
 
