@@ -1124,6 +1124,14 @@ class CIVIL_OT_enter_pi_edit_mode(Operator, tool.Ifc.Operator):
                 core.exit_pi_edit_mode(
                     tool.Ifc, tool.Alignment, self._alignment_id, apply=True
                 )
+                # The curve was laid out again; keep the referents on it. Resolve the
+                # edited alignment, not the active one, which may have changed mid-edit.
+                try:
+                    edited = tool.Ifc.get().by_id(self._alignment_id)
+                except RuntimeError:
+                    edited = None
+                if edited is not None and edited.is_a("IfcAlignment"):
+                    tool.Alignment.update_stationing(edited, props.start_station)
                 # The segments changed outside the table; re-seed it so
                 # Recalculate does not revert the edit.
                 sync_pis_from_ifc(context)

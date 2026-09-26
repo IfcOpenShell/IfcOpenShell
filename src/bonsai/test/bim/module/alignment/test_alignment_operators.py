@@ -525,6 +525,21 @@ class TestPiTableAlignment(NewIfc4X3):
 
         assert self._lengths(alignment) == pytest.approx(lengths, abs=1e-3)
 
+    def test_applying_a_pi_edit_moves_the_start_referent_with_the_curve(self):
+        import bonsai.core.alignment as core
+        from bonsai.bim.module.alignment.operator import CIVIL_OT_enter_pi_edit_mode
+
+        alignment, _ = self._author("A")
+        empties = core.enter_pi_edit_mode(tool.Ifc, tool.Alignment, alignment.id())
+        empties[0].location.x += 50.0 * ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        bpy.context.view_layer.update()
+        operator = types.SimpleNamespace(_alignment_id=alignment.id(), _area=None, report=lambda *args: None)
+        CIVIL_OT_enter_pi_edit_mode._cleanup_and_finish(operator, bpy.context, apply=True)
+
+        referent = align_api.get_stationing_nest(tool.Ifc.get(), alignment).RelatedObjects[0]
+        position = referent.ObjectPlacement.CartesianPosition.Location.Coordinates
+        assert position == pytest.approx((50.0, 0.0, 0.0), abs=1e-6)
+
 
 @requires_geometry_engine
 class TestCreateAlignmentByPi(NewIfc4X3):
