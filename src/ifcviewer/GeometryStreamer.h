@@ -34,15 +34,6 @@
 
 #include "InstancedGeometry.h"
 
-struct ElementInfo {
-    uint32_t object_id;
-    uint32_t session_model_id;
-    int ifc_id;
-    std::string guid;
-    std::string name;
-    std::string type;
-};
-
 class GeometryStreamer : public QObject {
     Q_OBJECT
 public:
