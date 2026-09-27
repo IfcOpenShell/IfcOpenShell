@@ -20,6 +20,7 @@ import pytest
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 import ifcopenshell.api.unit
+import ifcopenshell.util.unit
 
 
 def unit_convert(unit_scale, p):
