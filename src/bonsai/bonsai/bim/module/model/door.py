@@ -102,7 +102,7 @@ def update_door_modifier_representation(obj: bpy.types.Object) -> None:
     tool.Model.replace_object_ifc_representation(body, obj, model_representation)
 
     material_target_element = element
-    if (type_elem := ifcopenshell.util.element.get_type(element)) and tool.Blender.Modifier.is_door(type_elem):
+    if (type_elem := ifcopenshell.util.element.get_type(element)) and tool.Parametric.is_door(type_elem):
         material_target_element = type_elem
 
     if fallback_material := (int(props.lining_material) or int(props.framing_material) or int(props.glazing_material)):
@@ -617,7 +617,7 @@ class FinishEditingDoor(_DoorEditMixin, bpy.types.Operator, tool.Ifc.Operator):
     def _finish_one(cls, obj: bpy.types.Object, context: bpy.types.Context) -> None:
         super()._finish_one(obj, context)
         element = tool.Ifc.get_entity(obj)
-        if element is None or not tool.Blender.Modifier.is_door(element):
+        if element is None or not tool.Parametric.is_door(element):
             return
         if mirrored_type := tool.Blender.Modifier.has_mirrored_type(element):
             door_data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Door", "Data"))
