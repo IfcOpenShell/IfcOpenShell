@@ -158,6 +158,19 @@ PyObject* get_feature(const std::string& x) {
 // the rename stays on a single filesystem and is therefore atomic. The temp
 // path never leaks into the FILE_NAME header, which is derived from the model
 // header, not the output path.
+// True iff every instance referencing e has an id in ids. Stops at the
+// first referencing instance outside the set, without materializing any.
+static bool helper_fn_is_referenced_only_in(ifcopenshell::file& file_obj, const express::base& e, const std::vector<int>& ids, const char* caller) {
+	auto e_ = e.as<express::entity>();
+	if (!e_) {
+		throw ifcopenshell::exception(std::string("Only entities with ids are supported for ") + caller + ". Provided entity: '" + e.declaration().name() + "'.");
+	}
+	const std::unordered_set<uint32_t> allowed(ids.begin(), ids.end());
+	return file_obj.all_referencing_instances(e_.id(), [&allowed](uint32_t source_id) {
+		return allowed.count(source_id) != 0;
+	});
+}
+
 template <typename T>
 static void helper_fn_atomic_write(T& file_obj, const std::string& fn) {
 	std::random_device rd;
@@ -317,17 +330,15 @@ private:
 		throw ifcopenshell::exception("Only entities with ids are supported for get_total_inverses. Provided entity: '" + e.declaration().name() + "'.");
 	}
 
-	// True iff every instance referencing e has an id in ids. Stops at the
-	// first referencing instance outside the set, without materializing any.
+	// True iff every instance referencing e has an id in ids.
+	bool _is_referenced_only_in(const express::base& e, const std::vector<int>& ids) {
+		return helper_fn_is_referenced_only_in(*$self, e, ids, "_is_referenced_only_in");
+	}
+
+	// The former name of _is_referenced_only_in, kept until the Python that
+	// calls it has moved over and the pinned binary builds carry the new one.
 	bool _all_inverses_within(const express::base& e, const std::vector<int>& ids) {
-		auto e_ = e.as<express::entity>();
-		if (!e_) {
-			throw ifcopenshell::exception("Only entities with ids are supported for _all_inverses_within. Provided entity: '" + e.declaration().name() + "'.");
-		}
-		const std::unordered_set<uint32_t> allowed(ids.begin(), ids.end());
-		return $self->all_referencing_instances(e_.id(), [&allowed](uint32_t source_id) {
-			return allowed.count(source_id) != 0;
-		});
+		return helper_fn_is_referenced_only_in(*$self, e, ids, "_all_inverses_within");
 	}
 
 	// The subset of ids whose every referencing instance is itself in ids:
