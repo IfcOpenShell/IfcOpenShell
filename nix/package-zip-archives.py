@@ -539,7 +539,7 @@ def package_app_bundle(
     run("zip", "-qq", "-r", str(zip_path), app_path.name, cwd=install_root)
 
 
-ARCH_SUFFIXES = ("linux64", "linuxarm64", "macosm164")
+ARCH_SUFFIXES = ("linux64", "linuxarm64", "macos64", "macosm164")
 LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR")
 
 

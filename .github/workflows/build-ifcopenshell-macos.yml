@@ -10,17 +10,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # x64 (Intel cross-compile) dropped while wgpu Qt is required:
-          # the runner is arm64 so `brew --prefix qt` returns the arm64
-          # prefix; we'd need a separate x86_64 Qt install under
-          # /usr/local to cross-build BonsaiViewer. Revisit if Intel-Mac
-          # demand resurfaces.
+          - os: macos
+            runner: macos-15-intel
+            arch: x64
+            oldarch: ""
+            without: -without-bonsaiviewer
           - os: macos
             # macos-14 no longer receives Homebrew bottles, so `brew install qt`
             # compiles Qt (and QtWebEngine) from source there and fails.
             runner: macos-15
             arch: arm64
             oldarch: m1
+            without: ""
 
     steps:
       - name: Checkout Repository
@@ -47,8 +48,10 @@ jobs:
           brew install git bison autoconf automake libffi findutils
           # qt brings in Qt6 + Svg; nix/build-all.py honours pre-set
           # QT_DIR so BonsaiViewer doesn't try to aqtinstall (which is
-          # Linux-only).
-          brew install qt
+          # Linux-only). Only the viewer needs it.
+          if [ "${{ matrix.arch }}" == "arm64" ]; then
+            brew install qt
+          fi
           echo "$(brew --prefix findutils)/libexec/gnubin" >> $GITHUB_PATH
           # Mac is using bison 2.5 by default, but we need 3.5+ for swig.
           echo "$(brew --prefix bison)/bin" >> $GITHUB_PATH
@@ -79,21 +82,10 @@ jobs:
           if [ "${{ matrix.os }}" == "macos" ]; then
             DARWIN_C_SOURCE=-D_DARWIN_C_SOURCE
           fi
-          if [ "${{ matrix.arch }}" == "x64" ]; then
-            arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-            MAC_INTEL=-mac-cross-compile-intel
-            # We don't use gmpcxx, but it comes preinstalled on macos runner as arm64 bottle
-            # and CGAL detects it and breaks cross compilation.
-            brew uninstall --ignore-dependencies gmp
-            # Otherwise Python will fallback to use arm64 `pkg-config`,
-            # will pick up arm64 libraries ('zstd' in particular),
-            # and break the build.
-            /usr/local/bin/brew install pkg-config
-            # Required by Python.
-            /usr/local/bin/brew install gettext openssl
-          fi
           set -o pipefail
-          export QT_DIR="$(brew --prefix qt)"
+          if [ "${{ matrix.arch }}" == "arm64" ]; then
+            export QT_DIR="$(brew --prefix qt)"
+          fi
           # --ifcopenshell-shared mirrors build_rocky.yml after 27249770e: builds
           # IfcOpenShell as shared libs so each plug-in dylib references
           # libIfcParse / libIfcGeom via @rpath instead of statically
@@ -114,7 +106,7 @@ jobs:
               --add-commit-sha \
               --build-cfg Release \
               --use-ninja \
-              ${MAC_INTEL} \
+              ${{ matrix.without }} \
             | tee build.log
 
       - name: Upload Build Logs
