@@ -2101,6 +2101,10 @@ class Model(bonsai.core.tool.Model):
         """Regenerate only the mapped source used by ``filling``'s opening so
         it matches ``filling``'s current parametric dimensions.
 
+        A custom or manually adjusted void is left frozen - regenerating it would reset
+        it to the filling's bounding box, discarding the user's edit. Such an opening is
+        only ever changed by the user adjusting it again.
+
         Returns the voided host Blender object so the caller can recut it,
         or ``None`` if ``filling`` has no opening to refresh or the host is
         an aggregate (no mesh data to recut against)."""
@@ -2120,12 +2124,14 @@ class Model(bonsai.core.tool.Model):
             return voided_obj
         old_representation = tool.Geometry.resolve_mapped_representation(old_representation)
 
+        generator = FilledOpeningGenerator()
+        if generator.should_preserve_opening(opening):
+            return voided_obj
+
         ifcopenshell.api.geometry.unassign_representation(ifc_file, product=opening, representation=old_representation)
 
         filling_obj = tool.Ifc.get_object(filling)
-        new_representation = FilledOpeningGenerator().generate_opening_from_filling(
-            filling, filling_obj, voided_obj.dimensions[1]
-        )
+        new_representation = generator.generate_opening_from_filling(filling, filling_obj, voided_obj.dimensions[1])
 
         for inverse in ifc_file.get_inverse(old_representation):
             ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)

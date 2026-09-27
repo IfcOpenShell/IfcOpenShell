@@ -663,7 +663,20 @@ class FilledOpeningGenerator:
         if not filling_obj or current is None:
             return False
         current = ifcopenshell.util.representation.resolve_representation(current)
-        default_representation = self.generate_opening_from_filling(filling, filling_obj)
+        filling_type = ifcopenshell.util.element.get_type(filling)
+        if filling_type and self.get_type_opening_representation(filling_type) is not None:
+            # An anchored template is preserved by definition, and generating the "default"
+            # here would hand back that very template - so removing it below would destroy
+            # the geometry we are asking about.
+            return True
+        # The default must be generated against the same host thickness the current body was,
+        # or the extrusion depth alone reads as a manual adjustment on hosts thicker than the
+        # 1.2m fallback in generate_opening_from_filling.
+        voided_obj = (
+            tool.Ifc.get_object(opening.VoidsElements[0].RelatingBuildingElement) if opening.VoidsElements else None
+        )
+        thickness = voided_obj.dimensions[1] if voided_obj else 0.0
+        default_representation = self.generate_opening_from_filling(filling, filling_obj, thickness)
         try:
             settings = ifcopenshell.geom.settings()
             current_bbox = self._representation_bbox(settings, current)
