@@ -205,6 +205,63 @@ class TestExtractElements(test.bootstrap.IFC4):
             wall_items = {i for r in wall.Representation.Representations for i in r.Items}
             assert wall_items & assigned, f"{wall.GlobalId} lost its presentation layer"
 
+    def test_shared_type_members_are_assigned_once(self, monkeypatch):
+        # Regression test: every extracted occurrence of a shared type used to
+        # re-assign the type's growing RelatedObjects list, which is O(n^2).
+        # Count the members written instead of timing them, so the check is
+        # deterministic: it must grow linearly with the number of occurrences.
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        wall_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        set_attribute = ifcopenshell.entity_instance.__setitem__
+        written = []
+
+        def count_type_member_writes(instance, index, value):
+            if instance.is_a("IfcRelDefinesByType") and index == instance.get_argument_index("RelatedObjects"):
+                written.append(len(value))
+            return set_attribute(instance, index, value)
+
+        walls = []
+        for total in (25, 50, 100):
+            new_walls = [
+                ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall") for _ in range(total - len(walls))
+            ]
+            ifcopenshell.api.type.assign_type(self.file, related_objects=new_walls, relating_type=wall_type)
+            walls += new_walls
+
+            written.clear()
+            with monkeypatch.context() as patch:
+                patch.setattr(ifcopenshell.entity_instance, "__setitem__", count_type_member_writes)
+                output = ifcpatch.execute({"file": self.file, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
+
+            assert written == [total]
+            rels = output.by_type("IfcRelDefinesByType")
+            assert len(rels) == 1
+            assert {o.GlobalId for o in rels[0].RelatedObjects} == {w.GlobalId for w in walls}
+
+    def test_shared_types_keep_exactly_the_selected_members(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        occurrences = {}
+        for ifc_class, name, count in (("IfcWall", "A", 3), ("IfcWall", "B", 2), ("IfcSlab", "C", 2)):
+            element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class=f"{ifc_class}Type", name=name)
+            occurrences[name] = [
+                ifcopenshell.api.root.create_entity(self.file, ifc_class=ifc_class) for _ in range(count)
+            ]
+            ifcopenshell.api.type.assign_type(self.file, related_objects=occurrences[name], relating_type=element_type)
+        selected = occurrences["A"][:2] + occurrences["B"][:1]
+
+        query = ", ".join(e.GlobalId for e in selected)
+        output = ifcpatch.execute({"file": self.file, "recipe": "ExtractElements", "arguments": [query]})
+
+        assert {e.GlobalId for e in output.by_type("IfcElement")} == {e.GlobalId for e in selected}
+        members = {
+            rel.RelatingType.Name: {o.GlobalId for o in rel.RelatedObjects}
+            for rel in output.by_type("IfcRelDefinesByType")
+        }
+        assert members == {
+            "A": {e.GlobalId for e in occurrences["A"][:2]},
+            "B": {occurrences["B"][0].GlobalId},
+        }
+
     def test_ifc2x3_mep_ports_and_abstract_distribution_type_are_preserved(self):
         if self.file.schema != "IFC2X3":
             pytest.skip("IfcRelConnectsPortToElement is an IFC2X3-only port relationship")

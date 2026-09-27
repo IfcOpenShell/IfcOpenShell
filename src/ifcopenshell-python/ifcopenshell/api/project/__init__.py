@@ -27,7 +27,12 @@ into your project.
 """
 
 from .. import wrap_usecases
-from .append_asset import append_asset, flush_deferred_layer_items, flush_deferred_relationship_members
+from .append_asset import (
+    append_asset,
+    flush_deferred_layer_items,
+    flush_deferred_relationship_members,
+    flush_deferred_type_assignments,
+)
 from .assign_declaration import assign_declaration
 from .create_file import create_file
 from .unassign_declaration import unassign_declaration
@@ -40,5 +45,6 @@ __all__ = [
     "create_file",
     "flush_deferred_layer_items",
     "flush_deferred_relationship_members",
+    "flush_deferred_type_assignments",
     "unassign_declaration",
 ]

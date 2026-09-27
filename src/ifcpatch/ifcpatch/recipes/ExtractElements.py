@@ -112,6 +112,11 @@ class Patcher(ifcpatch.BasePatcher):
         self.deferred_layer_items: dict[
             int, tuple[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]
         ] = {}
+        # A type is shared by all its occurrences, so they are collected per type
+        # here and each type is assigned once instead of on every element append.
+        self.deferred_type_assignments: dict[
+            int, tuple[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]
+        ] = {}
         self.ifc2x3_georeferenced_sites: dict[
             int, tuple[ifcopenshell.entity_instance, ifcopenshell.entity_instance]
         ] = {}
@@ -124,6 +129,7 @@ class Patcher(ifcpatch.BasePatcher):
         ifcopenshell.api.project.flush_deferred_relationship_members(
             self.new, self.deferred_relationship_members, self.reuse_identities
         )
+        ifcopenshell.api.project.flush_deferred_type_assignments(self.new, self.deferred_type_assignments)
         for source_site, new_site in self.ifc2x3_georeferenced_sites.values():
             self.copy_ifc2x3_georeferencing_psets(source_site, new_site)
         ifcopenshell.api.project.flush_deferred_layer_items(self.deferred_layer_items)
@@ -160,6 +166,7 @@ class Patcher(ifcpatch.BasePatcher):
             assume_asset_uniqueness_by_name=self.assume_asset_uniqueness_by_name,
             deferred_relationship_members=self.deferred_relationship_members,
             deferred_layer_items=self.deferred_layer_items,
+            deferred_type_assignments=self.deferred_type_assignments,
         )
         if self.file.schema == "IFC2X3" and element.is_a("IfcSite") and new_element:
             self.ifc2x3_georeferenced_sites[element.id()] = (element, new_element)

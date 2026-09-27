@@ -45,6 +45,7 @@ APPENDABLE_ASSET_TYPES: tuple[APPENDABLE_ASSET, ...] = get_args(APPENDABLE_ASSET
 MATERIAL_SETS = ("IfcMaterialLayerSet", "IfcMaterialConstituentSet", "IfcMaterialProfileSet")
 DeferredRelationshipMembers = dict[int, tuple[ifcopenshell.entity_instance, ifcopenshell.entity_instance]]
 DeferredLayerItems = dict[int, tuple[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]]
+DeferredTypeAssignments = dict[int, tuple[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]]
 
 
 def is_reusable_name(name: Any) -> bool:
@@ -67,6 +68,7 @@ def append_asset(
     assume_asset_uniqueness_by_name: bool = True,
     deferred_relationship_members: Optional[DeferredRelationshipMembers] = None,
     deferred_layer_items: Optional[DeferredLayerItems] = None,
+    deferred_type_assignments: Optional[DeferredTypeAssignments] = None,
 ) -> ifcopenshell.entity_instance:
     """Appends an asset from a library into the active project
 
@@ -100,6 +102,11 @@ def append_asset(
         calls that collects ``IfcPresentationLayerAssignment.AssignedItems`` instead
         of re-assigning the growing item set on every call, which is O(n^2). Pass it
         to ``flush_deferred_layer_items`` once all assets have been appended.
+    :param deferred_type_assignments: Optional accumulator shared across ``append_asset``
+        calls that collects the occurrences of each appended type instead of
+        re-assigning the type's growing ``RelatedObjects`` on every appended product,
+        which is O(n^2). Pass it to ``flush_deferred_type_assignments`` once all assets
+        have been appended. Without it, each product is typed immediately.
     :return: The appended element
 
     Example:
@@ -166,6 +173,7 @@ def append_asset(
         "assume_asset_uniqueness_by_name": assume_asset_uniqueness_by_name,
         "deferred_relationship_members": deferred_relationship_members,
         "deferred_layer_items": deferred_layer_items,
+        "deferred_type_assignments": deferred_type_assignments,
     }
     return usecase.execute()
 
@@ -186,6 +194,39 @@ def flush_deferred_layer_items(
     """
     for layer, items in deferred_layer_items.values():
         layer.AssignedItems = list(dict.fromkeys([*(layer.AssignedItems or ()), *items]))
+
+
+def flush_deferred_type_assignments(
+    file: ifcopenshell.file,
+    deferred_type_assignments: DeferredTypeAssignments,
+) -> None:
+    """Assign occurrence types deferred by ``append_asset``.
+
+    A type is shared by all its occurrences, so typing each appended product on
+    its own re-writes ``IfcRelDefinesByType.RelatedObjects`` with a list that
+    grows with the number of products, which is O(n^2). With a shared
+    ``deferred_type_assignments`` accumulator the occurrences are collected per
+    type and each type is assigned to all of them in a single ``assign_type``
+    call here, which also extends a typing relationship the type already had.
+    Call this once, after all appends, on the file the assets were appended into.
+
+    :param file: The file assets were appended into.
+    :param deferred_type_assignments: The accumulator passed to ``append_asset``.
+    """
+    if not deferred_type_assignments:
+        return
+    ifcopenshell.api.owner.settings.factory_reset()
+    try:
+        for relating_type, related_objects in deferred_type_assignments.values():
+            ifcopenshell.api.type.assign_type(
+                file,
+                should_run_listeners=False,  # ty:ignore[unknown-argument]
+                related_objects=related_objects,
+                relating_type=relating_type,
+                should_map_representations=False,
+            )
+    finally:
+        ifcopenshell.api.owner.settings.restore()
 
 
 def flush_deferred_relationship_members(
@@ -349,6 +390,7 @@ class Usecase:
         self.assume_asset_uniqueness_by_name = self.settings["assume_asset_uniqueness_by_name"]
         self.deferred_relationship_members = self.settings["deferred_relationship_members"]
         self.deferred_layer_items = self.settings["deferred_layer_items"]
+        self.deferred_type_assignments = self.settings["deferred_type_assignments"]
 
         if self.settings["element"].is_a("IfcTypeProduct"):
             self.target_class = "IfcTypeProduct"
@@ -581,14 +623,19 @@ class Usecase:
                 assume_asset_uniqueness_by_name=self.assume_asset_uniqueness_by_name,
                 deferred_relationship_members=self.deferred_relationship_members,
                 deferred_layer_items=self.deferred_layer_items,
+                deferred_type_assignments=self.deferred_type_assignments,
             )
-            ifcopenshell.api.type.assign_type(
-                self.file,
-                should_run_listeners=False,  # ty:ignore[unknown-argument]
-                related_objects=[element],
-                relating_type=new_type,
-                should_map_representations=False,
-            )
+            if self.deferred_type_assignments is not None:
+                # Typed once per type by flush_deferred_type_assignments.
+                self.deferred_type_assignments.setdefault(new_type.id(), (new_type, []))[1].append(element)
+            else:
+                ifcopenshell.api.type.assign_type(
+                    self.file,
+                    should_run_listeners=False,  # ty:ignore[unknown-argument]
+                    related_objects=[element],
+                    relating_type=new_type,
+                    should_map_representations=False,
+                )
             ifcopenshell.api.owner.settings.restore()
 
         return element

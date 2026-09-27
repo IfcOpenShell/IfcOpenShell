@@ -717,6 +717,34 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         assert set(layer.AssignedItems) == set(self.file.by_type("IfcShapeRepresentation"))
         assert len(layer.AssignedItems) == 1
 
+    def test_append_products_deferring_their_type_assignment(self):
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        element_type = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWallType")
+        walls = [ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall") for _ in range(4)]
+        ifcopenshell.api.type.assign_type(library, related_objects=walls, relating_type=element_type)
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+
+        # Without an accumulator the product is typed immediately.
+        first = ifcopenshell.api.project.append_asset(self.file, library=library, element=walls[0])
+        assert ifcopenshell.util.element.get_type(first).GlobalId == element_type.GlobalId
+
+        # With one, the existing typing relationship is extended once, without duplicates.
+        reuse_identities = {}
+        deferred_type_assignments = {}
+        for wall in walls[1:] + walls[1:2]:
+            ifcopenshell.api.project.append_asset(
+                self.file,
+                library=library,
+                element=wall,
+                reuse_identities=reuse_identities,
+                deferred_type_assignments=deferred_type_assignments,
+            )
+        ifcopenshell.api.project.flush_deferred_type_assignments(self.file, deferred_type_assignments)
+
+        rels = self.file.by_type("IfcRelDefinesByType")
+        assert len(rels) == 1
+        assert sorted(o.GlobalId for o in rels[0].RelatedObjects) == sorted(w.GlobalId for w in walls)
+
     def test_append_owner_history_without_producing_duplicates(self):
         ifc_file = ifcopenshell.file()
         library = ifcopenshell.file()
