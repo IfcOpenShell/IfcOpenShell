@@ -108,6 +108,8 @@
 // _add() because mixin defined add which adds transaction logic
 %rename("_add") add_entity;
 %rename("_remove") remove_entity;
+%rename("_batch") batch;
+%rename("_unbatch") unbatch;
 %rename("_traverse") traverse;
 %rename("_traverse_breadth_first") traverse_breadth_first;
 

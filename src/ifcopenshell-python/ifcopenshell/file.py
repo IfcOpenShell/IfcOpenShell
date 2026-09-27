@@ -845,17 +845,26 @@ class file_mixin:
             self.transaction.store_delete(inst)
         return self._remove(inst)
 
-    def batch(self):
-        """Low-level mechanism to speed up deletion of large subgraphs"""
+    def batch(self) -> None:
+        """Enable batch mode, a low-level mechanism to speed up deleting large subgraphs.
+
+        In batch mode ``remove(entity)`` marks the entity for deletion instead
+        of deleting it, and ``unbatch()`` deletes everything marked in one
+        operation. The difference from usual removal: normally, removing an
+        entity immediately edits it out of every entity that references it; in
+        batch mode a referencing entity that is itself marked is left alone,
+        so removing a face set and its thousands of faces does not rewrite the
+        face set's list once per face.
+        """
         if self.transaction:
             self.transaction.batch()
-        return self.batch()
+        self._batch()
 
-    def unbatch(self):
-        """Low-level mechanism to speed up deletion of large subgraphs"""
+    def unbatch(self) -> None:
+        """Exit batch mode, deleting everything marked since ``batch()``."""
         if self.transaction:
             self.transaction.unbatch()
-        return self.unbatch()
+        self._unbatch()
 
     def __iter__(self) -> Generator[ifcopenshell.entity_instance]:
         return iter(self[id] for id in self.entity_names())
