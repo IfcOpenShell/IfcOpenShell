@@ -1874,6 +1874,7 @@ file::file(const ifcopenshell::schema_definition* schema, filetype ty, const std
         byid_ = decltype(byid_)(&std::get<impl::in_memory_file_storage>(storage_).byid_read_);
         byref_excl_ = decltype(byref_excl_)(&std::get<impl::in_memory_file_storage>(storage_).byref_excl_);
         byguid_ = decltype(byguid_)(&std::get<impl::in_memory_file_storage>(storage_).byguid_);
+        std::get<impl::in_memory_file_storage>(storage_).adopt_schema(schema_);
 
         // byidentity_ = decltype(byidentity_)(&std::get<impl::in_memory_file_storage>(storage_).byidentity_);
     } else if (ty == FT_ROCKSDB) {
@@ -2313,7 +2314,7 @@ void ifcopenshell::instance_streamer<Reader>::materialize_bypass_types() {
 template <typename Reader>
 void ifcopenshell::instance_streamer<Reader>::initialize_header() {
     storage_.file = owner_;
-    storage_.schema = schema_;
+    storage_.adopt_schema(schema_);
     storage_.references_to_resolve = &references_to_resolve_;
 
     if (!lexer_ || !stream_ || !stream_->size() || stream_->eof()) {
@@ -2329,7 +2330,7 @@ void ifcopenshell::instance_streamer<Reader>::initialize_header() {
         }
     }
 
-    storage_.schema = schema_;
+    storage_.adopt_schema(schema_);
 
     materialize_bypass_types();
 }
@@ -2920,7 +2921,7 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
     }
     const auto* ifcroot = schema->declaration_by_name("IfcRoot");
 
-    this->schema = schema;
+    adopt_schema(schema);
     resolve_references_in_place = true;
     lazy_ = true;
 
@@ -2937,8 +2938,7 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
         std::vector<shared_pointer_type> shells;
         std::vector<std::pair<uint32_t, uint64_t>> offsets;
         std::vector<std::pair<size_t, std::string>> guids;  // shell index, decoded text
-        std::vector<std::pair<const ifcopenshell::declaration*, std::vector<express::base>>> bytype;
-        std::unordered_map<const ifcopenshell::declaration*, size_t> bytype_index;
+        entities_by_type bytype;
         std::vector<unsigned> bypassed;
         entities_by_ref inverses;
         const char* failure = nullptr;
@@ -2965,14 +2965,7 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
                 const size_t guid_begin = consumer.guid_begin, guid_end = consumer.guid_end;
                 out.shells.push_back(ifcopenshell::make_pointer_type<instance_data>(file, declaration, name, instance_data::lazy_tag{}));
                 out.offsets.push_back({name, attributes_offset});
-                {
-                    auto found = out.bytype_index.find(declaration);
-                    if (found == out.bytype_index.end()) {
-                        found = out.bytype_index.emplace(declaration, out.bytype.size()).first;
-                        out.bytype.push_back({declaration, {}});
-                    }
-                    out.bytype[found->second].second.push_back(express::base(out.shells.back()));
-                }
+                out.bytype[declaration->index_in_schema()].push_back(express::base(out.shells.back()), name);
                 if (guid_end > guid_begin && declaration->is(*ifcroot)) {
                     std::string guid;
                     guid.reserve(guid_end - guid_begin);
@@ -3002,6 +2995,7 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
         outputs.resize(bounds.size() - 1);
         std::vector<std::thread> workers;
         for (size_t k = 0; k + 1 < bounds.size(); ++k) {
+            outputs[k].bytype = type_lists_for(schema);
             outputs[k].inverses.reserve((bounds[k + 1] - bounds[k]) / 32);
             workers.emplace_back([&, k]() {
                 file_reader<paged_file_impl> chunk_reader = reader.reopen();
@@ -3016,6 +3010,7 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
         }
     } else {
         outputs.resize(1);
+        outputs[0].bytype = type_lists_for(schema);
         outputs[0].inverses.reserve(reader.size() / 32);
         index_chunk(reader, lexer, reader.size(), outputs[0]);
         outputs[0].inverses.sort();
@@ -3048,10 +3043,10 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
             }
             max_id = (std::max)(max_id, (unsigned int)name);
         }
-        for (auto& typed : out.bytype) {
-            auto& list = bytype_excl_[typed.first];
-            list.insert(list.end(), typed.second.begin(), typed.second.end());
-            std::vector<express::base>().swap(typed.second);
+        for (auto& chunk : out.bytype) {
+            if (!chunk.instances.empty()) {
+                bytype_excl_[chunk.declaration->index_in_schema()].append(chunk);
+            }
         }
         lazy_offsets_.insert(lazy_offsets_.end(), out.offsets.begin(), out.offsets.end());
         for (auto& entry : out.guids) {
@@ -3085,8 +3080,7 @@ namespace {
 struct parse_worker_output {
     std::vector<shared_pointer_type> instances;
     std::vector<std::pair<std::string, size_t>> guids;  // GlobalId, index into instances
-    std::vector<std::pair<const ifcopenshell::declaration*, std::vector<express::base>>> bytype;
-    std::unordered_map<const ifcopenshell::declaration*, size_t> bytype_index;
+    ifcopenshell::impl::in_memory_file_storage::entities_by_type bytype;
     std::vector<unsigned> bypassed;
     unresolved_references mixed_references;
     std::unique_ptr<ifcopenshell::impl::in_memory_file_storage> storage;
@@ -3113,12 +3107,7 @@ void parse_chunk(const Reader& source, size_t begin, size_t end, const ifcopensh
                 lexer.reset_pool();
                 out.instances.push_back(data);
                 express::base instance(data);
-                auto found = out.bytype_index.find(declaration);
-                if (found == out.bytype_index.end()) {
-                    found = out.bytype_index.emplace(declaration, out.bytype.size()).first;
-                    out.bytype.push_back({declaration, {}});
-                }
-                out.bytype[found->second].second.push_back(instance);
+                out.bytype[declaration->index_in_schema()].push_back(instance, name);
                 if (declaration->is(*ifcroot)) {
                     try {
                         const std::string guid = instance.get_attribute_value(0);
@@ -3183,7 +3172,8 @@ bool ifcopenshell::impl::in_memory_file_storage::read_instances_parallel(Reader*
         for (size_t k = 0; k + 1 < bounds.size(); ++k) {
             auto output = std::make_unique<parse_worker_output>();
             output->storage = std::make_unique<in_memory_file_storage>(file, logger_.get());
-            output->storage->schema = schema;
+            output->storage->adopt_schema(schema);
+            output->bytype = in_memory_file_storage::type_lists_for(schema);
             output->storage->resolve_references_in_place = true;
             output->storage->references_to_resolve = &output->mixed_references;
             output->storage->byref_excl_.reserve((bounds[k + 1] - bounds[k]) / 32);
@@ -3227,10 +3217,10 @@ bool ifcopenshell::impl::in_memory_file_storage::read_instances_parallel(Reader*
                     byguid_[key] = express::base(output->instances[entry.second]);
                 }
             }
-            for (auto& typed : output->bytype) {
-                auto& list = bytype_excl_[typed.first];
-                list.insert(list.end(), typed.second.begin(), typed.second.end());
-                std::vector<express::base>().swap(typed.second);
+            for (auto& chunk : output->bytype) {
+                if (!chunk.instances.empty()) {
+                    bytype_excl_[chunk.declaration->index_in_schema()].append(chunk);
+                }
             }
             for (const auto& data : output->instances) {
                 const uint32_t name = data->id();
@@ -3305,6 +3295,9 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
     }
 
     auto ifcroot_type_ = schema->declaration_by_name("IfcRoot");
+    // The streamer parsed the header into a storage of its own; the
+    // instances below go into this one.
+    adopt_schema(schema);
     streamer.bypass_types(typed_to_bypass);
     streamer.resolve_references_in_place(true);
 
@@ -3342,8 +3335,7 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
             }
         }
 
-        const ifcopenshell::declaration* ty = &instance.declaration();
-        bytype_excl_[ty].push_back(instance);
+        bytype_excl_[instance.declaration().index_in_schema()].push_back(instance, (uint32_t)current_id);
 
         if (byid_.find(current_id) != byid_.end()) {
             std::stringstream ss;
@@ -4019,8 +4011,8 @@ std::vector<express::base> file::instances_by_type(const ifcopenshell::declarati
 std::vector<express::base> file::instances_by_type_excl_subtypes(const ifcopenshell::declaration* t) {
     return std::visit([t](auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
-            auto it = x.bytype_excl_.find(t);
-            return (it == x.bytype_excl_.end()) ? std::vector<express::base>{} : it->second;
+            const size_t index = t->index_in_schema();
+            return index < x.bytype_excl_.size() ? x.bytype_excl_[index].instances : std::vector<express::base>{};
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
             std::vector<express::base> ret;
             auto it = x.bytype_.find(t->index_in_schema());
@@ -4168,7 +4160,7 @@ file::type_iterator file::types_begin() const {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, std::monostate>) {
             return file::type_iterator{ impl::rocks_db_file_storage::rocksdb_types_iterator{} };
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
-            return file::type_iterator{ x.bytype_excl_.begin() };
+            return file::type_iterator{ impl::in_memory_file_storage::type_iterator(x.bytype_excl_.begin(), x.bytype_excl_.end()) };
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
             return file::type_iterator{ impl::rocks_db_file_storage::rocksdb_types_iterator(&x) };
         }
@@ -4180,7 +4172,7 @@ file::type_iterator file::types_end() const {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, std::monostate>) {
             return file::type_iterator{ impl::rocks_db_file_storage::rocksdb_types_iterator{} };
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
-            return file::type_iterator{ x.bytype_excl_.end() };
+            return file::type_iterator{ impl::in_memory_file_storage::type_iterator(x.bytype_excl_.end(), x.bytype_excl_.end()) };
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
             return file::type_iterator{ impl::rocks_db_file_storage::rocksdb_types_iterator{} };
         }
