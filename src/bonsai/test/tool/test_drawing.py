@@ -1328,3 +1328,75 @@ class TestRestoreAllMovedFiles(NewFile):
         assert len(changes) == 2
         assert any(line.startswith("A01: ") for line in changes)
         assert any(line.startswith("A02: ") for line in changes)
+
+class TestRemoveUnreferencedGroups(NewFile):
+    """Adding a drawing writes the group at once but the reference only on save,
+    so an unsaved session leaves the layout placing what the model never got.
+    The reopened model is what the sheet is."""
+
+    def _layout(self, model, places):
+        """places: (file, data-id) pairs written as drawing groups."""
+        groups = "".join(
+            f'<g data-type="drawing" data-id="{did}" data-drawing="0g{i}">'
+            f'<image data-type="foreground" xlink:href="{os.path.relpath(f, str(model.layouts))}"/>'
+            f"</g>"
+            for i, (f, did) in enumerate(places)
+        )
+        Path(model.layout_path).write_text(
+            '<svg xmlns="http://www.w3.org/2000/svg" '
+            f'xmlns:xlink="http://www.w3.org/1999/xlink">{groups}</svg>'
+        )
+
+    def _places(self, model) -> list[str]:
+        root = ET.parse(model.layout_path).getroot()
+        out = []
+        for g in root.findall("{http://www.w3.org/2000/svg}g"):
+            image = g.find('.//{http://www.w3.org/2000/svg}image[@data-type="foreground"]')
+            if image is not None:
+                out.append(os.path.basename(image.get("{http://www.w3.org/1999/xlink}href")))
+        return out
+
+    def test_a_group_the_model_does_not_place_is_removed(self, tmp_path):
+        model = SheetOnDisk(tmp_path)
+        kept = model.add_drawing("PLAN", "0aaa")
+        stray = str(model.drawings / "NEVER SAVED.svg")
+        Path(stray).write_text("<svg/>")
+        self._layout(model, [(kept, 5000), (stray, 5001)])
+
+        removed = subject.remove_unreferenced_groups(model.sheet)
+
+        assert len(removed) == 1
+        assert "NEVER SAVED.svg" in removed[0]
+        assert self._places(model) == ["PLAN.svg"]
+
+    def test_a_second_copy_of_one_drawing_is_removed(self, tmp_path):
+        # One reference, three groups - what a removal that could not find its
+        # group leaves behind, once adding is allowed again.
+        model = SheetOnDisk(tmp_path)
+        plan = model.add_drawing("PLAN", "0aaa")
+        self._layout(model, [(plan, 5000), (plan, 5001), (plan, 5002)])
+
+        removed = subject.remove_unreferenced_groups(model.sheet)
+
+        assert len(removed) == 2
+        assert self._places(model) == ["PLAN.svg"]
+
+    def test_nothing_goes_when_the_model_accounts_for_everything(self, tmp_path):
+        model = SheetOnDisk(tmp_path)
+        plan = model.add_drawing("PLAN", "0aaa")
+        section = model.add_drawing("SECTION", "0bbb")
+        self._layout(model, [(plan, 5000), (section, 5001)])
+
+        assert subject.remove_unreferenced_groups(model.sheet) == []
+        assert self._places(model) == ["PLAN.svg", "SECTION.svg"]
+
+    def test_a_renumbered_model_keeps_its_groups(self, tmp_path):
+        # After a re-serialisation no data-id matches anything. Removing on that
+        # basis would empty every sheet in the project.
+        model = SheetOnDisk(tmp_path)
+        plan = model.add_drawing("PLAN", "0aaa")
+        section = model.add_drawing("SECTION", "0bbb")
+        self._layout(model, [(plan, 999001), (section, 999002)])
+
+        assert subject.remove_unreferenced_groups(model.sheet) == []
+        assert self._places(model) == ["PLAN.svg", "SECTION.svg"]

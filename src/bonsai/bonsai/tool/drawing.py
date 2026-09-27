@@ -1675,18 +1675,105 @@ class Drawing(bonsai.core.tool.Drawing):
         return moved
 
     @classmethod
+    def remove_unreferenced_groups(cls, sheet: ifcopenshell.entity_instance) -> list[str]:
+        """Take out layout groups the open model does not account for.
+
+        Adding a drawing to a sheet has the same two halves as renaming one:
+        the group is written into the layout at once, while the reference
+        reaches the IFC only on save. Reopen without having saved and the
+        layout places a drawing the model has never heard of - Bonsai's Sheets
+        panel does not list it, but anything reading the layout shows it.
+        A removal that could not find its group leaves the same thing behind.
+
+        The reopened model is what the sheet is, so a group it cannot account
+        for goes. Counted rather than merely matched, because a drawing can be
+        placed twice with one reference: for each file, as many groups are kept
+        as there are references to it, preferring those whose `data-id` still
+        matches one. Nothing is removed while a reference is unaccounted for,
+        so a renumbered model - where no `data-id` matches anything - keeps
+        every group.
+
+        :return: One line per group removed.
+        """
+        layout = cls.get_document_uri(sheet, "LAYOUT")
+        if not layout or not os.path.exists(layout):
+            return []
+
+        def key(path: str) -> str:
+            return os.path.normcase(os.path.abspath(path))
+
+        wanted: dict[str, list[int]] = {}
+        for reference in cls.get_document_references(sheet):
+            if cls.get_reference_description(reference) in ("LAYOUT", "TITLEBLOCK", "SHEET", "RASTER"):
+                continue
+            if uri := cls.get_document_uri(reference):
+                wanted.setdefault(key(uri), []).append(reference.id())
+
+        svg, xlink = "{http://www.w3.org/2000/svg}", "{http://www.w3.org/1999/xlink}"
+        tree = etree.parse(layout)
+        root = tree.getroot()
+        layout_dir = os.path.dirname(layout)
+
+        placed: dict[str, list] = {}
+        # Keyed for comparison, named for the person reading the report: the
+        # key is normcased, and telling someone their file is called
+        # "never saved.svg" when it is not helps nobody.
+        names: dict[str, str] = {}
+        for group in root.findall(f"{svg}g"):
+            if group.get("data-type") not in ("drawing", "schedule", "reference"):
+                continue
+            image = group.find(f'.//{svg}image[@data-type="foreground"]')
+            if image is None:
+                image = group.find(f'.//{svg}image[@data-type="content"]')
+            href = image.get(f"{xlink}href") or image.get("href") if image is not None else None
+            if not href:
+                continue
+            file = os.path.normpath(os.path.join(layout_dir, urllib.parse.unquote(href).replace("\\", "/")))
+            placed.setdefault(key(file), []).append(group)
+            names.setdefault(key(file), os.path.basename(file))
+
+        removed = []
+        for file, groups in placed.items():
+            references = wanted.get(file, [])
+            keep = [g for g in groups if g.get("data-id") in {str(i) for i in references}]
+            # Ids drift when a model is re-serialised, so a group that matches
+            # nothing still stands in for a reference that has no group.
+            for group in groups:
+                if len(keep) >= len(references):
+                    break
+                if group not in keep:
+                    keep.append(group)
+            for group in groups:
+                if group not in keep:
+                    root.remove(group)
+                    removed.append(
+                        f"took '{names[file]}' off the sheet - the model does not place it"
+                    )
+
+        if removed:
+            tree.write(layout, pretty_print=True, xml_declaration=True, encoding="utf-8")
+        return removed
+
+    @classmethod
     def restore_all_moved_files(cls) -> list[str]:
         """Put back every sheet's and drawing's files renamed in an unsaved session.
 
         The open model names all of them, so one pass over every sheet is right,
         whichever sheet prompted it. Sheet files go first: drawings are found
-        through the layouts.
+        through the layouts, and groups the model cannot account for go last -
+        after the files are where the model expects them, so a drawing is not
+        mistaken for unplaced merely because its file was still under the name
+        an unsaved session gave it.
 
         :return: One line per change, prefixed with the sheet it belongs to.
         """
         sheets = [s for s in tool.Ifc.get().by_type("IfcDocumentInformation") if s.Scope == "SHEET"]
         changes = []
-        for restore in (cls.restore_moved_sheet_files, cls.restore_moved_drawing_files):
+        for restore in (
+            cls.restore_moved_sheet_files,
+            cls.restore_moved_drawing_files,
+            cls.remove_unreferenced_groups,
+        ):
             for sheet in sheets:
                 changes.extend(f"{cls.get_sheet_identification(sheet)}: {line}" for line in restore(sheet))
         return changes
