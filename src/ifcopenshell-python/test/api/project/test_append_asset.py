@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
+import pytest
 
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.classification
@@ -37,6 +38,7 @@ import ifcopenshell.api.style
 import ifcopenshell.api.system
 import ifcopenshell.api.type
 import ifcopenshell.api.unit
+import ifcopenshell.guid
 import ifcopenshell.util.classification
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
@@ -780,6 +782,88 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         # Ensure their attributes are also not duplicated.
         assert len(ifc_file.by_type("IfcTelecomAddress")) == 1
         assert len(ifc_file.by_type("IfcActorRole")) == 2
+
+    def test_keep_the_owner_settings_if_appending_the_type_fails(self):
+        # Regression test: a type is appended with the out-of-the-box owner
+        # callbacks, which used to stay in place of the application's own ones
+        # when appending the type failed.
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWallType")
+        ifcopenshell.api.type.assign_type(library, related_objects=[element], relating_type=element_type)
+        get_user = ifcopenshell.api.owner.settings.get_user
+        get_application = ifcopenshell.api.owner.settings.get_application
+
+        def fail_on_types(usecase_path, ifc_file, settings):
+            if settings["element"].is_a("IfcTypeProduct"):
+                raise RuntimeError("Type not appended")
+
+        ifcopenshell.api.add_pre_listener("project.append_asset", "fail_on_types", fail_on_types)
+        try:
+            with pytest.raises(RuntimeError, match="Type not appended"):
+                ifcopenshell.api.project.append_asset(self.file, library=library, element=element)
+        finally:
+            ifcopenshell.api.remove_pre_listener("project.append_asset", "fail_on_types", fail_on_types)
+
+        assert ifcopenshell.api.owner.settings.get_user is get_user
+        assert ifcopenshell.api.owner.settings.get_application is get_application
+
+    def test_keep_the_owner_settings_if_the_type_assignment_is_rejected(self):
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.root.create_entity(library, ifc_class="IfcSlabType")
+        # assign_type rejects this pairing, so it is built directly, as an exporter writes it.
+        library.createIfcRelDefinesByType(
+            GlobalId=ifcopenshell.guid.new(),
+            OwnerHistory=element.OwnerHistory,
+            RelatedObjects=[element, element2],
+            RelatingType=element_type,
+        )
+        get_user = ifcopenshell.api.owner.settings.get_user
+        get_application = ifcopenshell.api.owner.settings.get_application
+
+        with pytest.raises(TypeError, match="IfcSlabType cannot type IfcWall"):
+            ifcopenshell.api.project.append_asset(self.file, library=library, element=element)
+
+        assert ifcopenshell.api.owner.settings.get_user is get_user
+        assert ifcopenshell.api.owner.settings.get_application is get_application
+
+        deferred_type_assignments = {}
+        ifcopenshell.api.project.append_asset(
+            self.file, library=library, element=element2, deferred_type_assignments=deferred_type_assignments
+        )
+        with pytest.raises(TypeError, match="IfcSlabType cannot type IfcWall"):
+            ifcopenshell.api.project.flush_deferred_type_assignments(self.file, deferred_type_assignments)
+
+        assert ifcopenshell.api.owner.settings.get_user is get_user
+        assert ifcopenshell.api.owner.settings.get_application is get_application
+
+    def test_keep_the_owner_settings_of_a_caller_that_reset_them_around_appending_typed_products(self):
+        # Regression test: appending a typed product reset the owner settings
+        # itself, which overwrote the single backup of the caller's own reset.
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWallType")
+        ifcopenshell.api.type.assign_type(library, related_objects=[element, element2], relating_type=element_type)
+        get_user = ifcopenshell.api.owner.settings.get_user
+        get_application = ifcopenshell.api.owner.settings.get_application
+
+        ifcopenshell.api.owner.settings.factory_reset()
+        ifcopenshell.api.project.append_asset(self.file, library=library, element=element)
+        deferred_type_assignments = {}
+        ifcopenshell.api.project.append_asset(
+            self.file, library=library, element=element2, deferred_type_assignments=deferred_type_assignments
+        )
+        ifcopenshell.api.project.flush_deferred_type_assignments(self.file, deferred_type_assignments)
+        ifcopenshell.api.owner.settings.restore()
+
+        assert ifcopenshell.api.owner.settings.get_user is get_user
+        assert ifcopenshell.api.owner.settings.get_application is get_application
+        rels = self.file.by_type("IfcRelDefinesByType")
+        assert len(rels) == 1
+        assert {o.GlobalId for o in rels[0].RelatedObjects} == {element.GlobalId, element2.GlobalId}
 
     def test_append_products_without_leaving_orphan_placements(self):
         library = ifcopenshell.api.project.create_file(version=self.file.schema)

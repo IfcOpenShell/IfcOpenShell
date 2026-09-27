@@ -17,7 +17,8 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 from collections import deque
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from functools import partial
 from typing import Any, Literal, Optional, Union, get_args
 
@@ -60,6 +61,25 @@ def is_reusable_name(name: Any) -> bool:
     into one. See https://github.com/IfcOpenShell/IfcOpenShell/issues/8045.
     """
     return isinstance(name, str) and bool(name.strip())
+
+
+@contextmanager
+def factory_owner_settings() -> Iterator[None]:
+    """Use the out-of-the-box owner callbacks for the duration of the block.
+
+    Unlike ``owner.settings.factory_reset()`` and ``restore()``, which share a
+    single backup, this keeps the callbacks in use itself. So they come back
+    even if the block raises, and a caller's own reset around ``append_asset``
+    keeps its backup.
+    """
+    owner_settings = ifcopenshell.api.owner.settings
+    get_user, get_application = owner_settings.get_user, owner_settings.get_application
+    owner_settings.get_user = owner_settings.get_user_factory
+    owner_settings.get_application = owner_settings.get_application_factory
+    try:
+        yield
+    finally:
+        owner_settings.get_user, owner_settings.get_application = get_user, get_application
 
 
 def append_asset(
@@ -217,8 +237,7 @@ def flush_deferred_type_assignments(
     """
     if not deferred_type_assignments:
         return
-    ifcopenshell.api.owner.settings.factory_reset()
-    try:
+    with factory_owner_settings():
         for relating_type, related_objects in deferred_type_assignments.values():
             ifcopenshell.api.type.assign_type(
                 file,
@@ -227,8 +246,6 @@ def flush_deferred_type_assignments(
                 relating_type=relating_type,
                 should_map_representations=False,
             )
-    finally:
-        ifcopenshell.api.owner.settings.restore()
 
 
 def flush_deferred_relationship_members(
@@ -636,29 +653,28 @@ class Usecase:
 
         element_type = ifcopenshell.util.element.get_type(self.settings["element"])
         if element_type:
-            ifcopenshell.api.owner.settings.factory_reset()
-            new_type = ifcopenshell.api.project.append_asset(
-                self.file,
-                library=self.settings["library"],
-                element=element_type,
-                reuse_identities=self.reuse_identities,
-                assume_asset_uniqueness_by_name=self.assume_asset_uniqueness_by_name,
-                deferred_relationship_members=self.deferred_relationship_members,
-                deferred_layer_items=self.deferred_layer_items,
-                deferred_type_assignments=self.deferred_type_assignments,
-            )
-            if self.deferred_type_assignments is not None:
-                # Typed once per type by flush_deferred_type_assignments.
-                self.deferred_type_assignments.setdefault(new_type.id(), (new_type, []))[1].append(element)
-            else:
-                ifcopenshell.api.type.assign_type(
+            with factory_owner_settings():
+                new_type = ifcopenshell.api.project.append_asset(
                     self.file,
-                    should_run_listeners=False,  # ty:ignore[unknown-argument]
-                    related_objects=[element],
-                    relating_type=new_type,
-                    should_map_representations=False,
+                    library=self.settings["library"],
+                    element=element_type,
+                    reuse_identities=self.reuse_identities,
+                    assume_asset_uniqueness_by_name=self.assume_asset_uniqueness_by_name,
+                    deferred_relationship_members=self.deferred_relationship_members,
+                    deferred_layer_items=self.deferred_layer_items,
+                    deferred_type_assignments=self.deferred_type_assignments,
                 )
-            ifcopenshell.api.owner.settings.restore()
+                if self.deferred_type_assignments is not None:
+                    # Typed once per type by flush_deferred_type_assignments.
+                    self.deferred_type_assignments.setdefault(new_type.id(), (new_type, []))[1].append(element)
+                else:
+                    ifcopenshell.api.type.assign_type(
+                        self.file,
+                        should_run_listeners=False,  # ty:ignore[unknown-argument]
+                        related_objects=[element],
+                        relating_type=new_type,
+                        should_map_representations=False,
+                    )
 
         return element
 

@@ -25,6 +25,7 @@ import ifcopenshell.api.feature
 import ifcopenshell.api.geometry
 import ifcopenshell.api.georeference
 import ifcopenshell.api.material
+import ifcopenshell.api.owner.settings
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
@@ -315,6 +316,37 @@ class TestExtractElements(test.bootstrap.IFC4):
         ifcopenshell.validate.validate(output, logger, express_rules=True)
         typing = {rels[0], rels[0].RelatingType, *rels[0].RelatedObjects}
         assert not [statement for statement in logger.statements if statement.get("instance") in typing]
+
+    def test_owner_settings_are_kept_when_an_extraction_fails(self):
+        # Regression test: types are appended with the out-of-the-box owner
+        # callbacks. When that failed, they stayed in place of the application's
+        # own ones, so the next operation in the process ran with them.
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        wall_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[wall], relating_type=wall_type)
+        get_user = ifcopenshell.api.owner.settings.get_user
+        get_application = ifcopenshell.api.owner.settings.get_application
+
+        def fail_on_types(usecase_path, ifc_file, settings):
+            if settings["element"].is_a("IfcTypeProduct"):
+                raise RuntimeError("Type not appended")
+
+        ifcopenshell.api.add_pre_listener("project.append_asset", "fail_on_types", fail_on_types)
+        try:
+            with pytest.raises(RuntimeError, match="Type not appended"):
+                ifcpatch.execute({"file": self.file, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
+        finally:
+            ifcopenshell.api.remove_pre_listener("project.append_asset", "fail_on_types", fail_on_types)
+
+        assert ifcopenshell.api.owner.settings.get_user is get_user
+        assert ifcopenshell.api.owner.settings.get_application is get_application
+
+        output = ifcpatch.execute({"file": self.file, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
+
+        assert ifcopenshell.util.element.get_type(output.by_type("IfcWall")[0]).GlobalId == wall_type.GlobalId
+        assert ifcopenshell.api.owner.settings.get_user is get_user
+        assert ifcopenshell.api.owner.settings.get_application is get_application
 
     def test_keep_spatial_structure(self):
         project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
