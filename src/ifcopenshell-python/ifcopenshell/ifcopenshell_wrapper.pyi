@@ -895,28 +895,6 @@ class file(file_mixin):
 
     def _add(self, entity: entity_instance, id: int = -1) -> entity_instance: ...
     def add_type_ref(self, new_entity): ...
-    def batch(self) -> None:
-        """Enable batch mode.
-
-        Batch mode:
-        1. Calling ``remove(entity)`` does not immediately remove the entity;
-           it marks it for deletion instead.
-        2. When you call ``unbatch()``, all marked entities are deleted in a single operation.
-
-        Difference from usual removal:
-        - In normal mode, removing an entity immediately traverses and removes all inverse references to it.
-        - In batch mode, inverse references are not updated per entity.
-          Instead, the entire inverse reference map is scanned during ``unbatch()``
-          to remove references to all deleted entities.
-
-        Batch deletion may be slower than immediate deletion, depending on the size of the inverse reference map.
-        """
-        ...
-
-    def unbatch(self) -> None:
-        """Exit batch mode."""
-        ...
-
     def by_guid(self, global_id: str) -> entity_instance: ...
     def by_id(self, instance_id: int) -> entity_instance: ...
     def _by_type(self, *args: declaration | str) -> tuple[entity_instance, ...]: ...
@@ -1064,7 +1042,15 @@ class implicit_item(geom_item):
     def __init__(self, *args, **kwargs): ...
 
 class inverse_attribute:
-    def __init__(self, name, type_of_aggregation, bound1, bound2, entity_reference, attribute_reference): ...
+    def __init__(
+        self,
+        name,
+        type_of_aggregation,
+        bound1,
+        bound2,
+        entity_reference,
+        attribute_reference,
+    ): ...
     bag_type: Any
     set_type: Any
     unspecified_type: Any
@@ -1624,7 +1610,10 @@ class tree:
         check_all: bool = False,
     ) -> clashes: ...
     def clash_collision_many(
-        self, set_a: Sequence[entity_instance], set_b: Sequence[entity_instance], allow_touching: bool = False
+        self,
+        set_a: Sequence[entity_instance],
+        set_b: Sequence[entity_instance],
+        allow_touching: bool = False,
     ) -> clashes: ...
     def clash_intersection_many(
         self,
@@ -1664,7 +1653,9 @@ class type_declaration(declaration):
 class uninitialized_tag: ...
 
 def arrange_polygons(
-    settings: arrange_polygon_settings, polygons: Sequence[polygon_2], logger: logger | None = None
+    settings: arrange_polygon_settings,
+    polygons: Sequence[polygon_2],
+    logger: logger | None = None,
 ) -> tuple[polygon_2, ...]: ...
 def get_plugin_search_paths() -> tuple[str, ...]: ...
 def set_plugin_search_paths(paths: Sequence[str]) -> None: ...
