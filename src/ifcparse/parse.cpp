@@ -2937,8 +2937,7 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
         std::vector<shared_pointer_type> shells;
         std::vector<std::pair<uint32_t, uint64_t>> offsets;
         std::vector<std::pair<size_t, std::string>> guids;  // shell index, decoded text
-        std::vector<std::pair<const ifcopenshell::declaration*, std::vector<express::base>>> bytype;
-        std::unordered_map<const ifcopenshell::declaration*, size_t> bytype_index;
+        entities_by_type bytype;
         std::vector<unsigned> bypassed;
         entities_by_ref inverses;
         const char* failure = nullptr;
@@ -2965,14 +2964,7 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
                 const size_t guid_begin = consumer.guid_begin, guid_end = consumer.guid_end;
                 out.shells.push_back(ifcopenshell::make_pointer_type<instance_data>(file, declaration, name, instance_data::lazy_tag{}));
                 out.offsets.push_back({name, attributes_offset});
-                {
-                    auto found = out.bytype_index.find(declaration);
-                    if (found == out.bytype_index.end()) {
-                        found = out.bytype_index.emplace(declaration, out.bytype.size()).first;
-                        out.bytype.push_back({declaration, {}});
-                    }
-                    out.bytype[found->second].second.push_back(express::base(out.shells.back()));
-                }
+                append_loaded(out.bytype, declaration, express::base(out.shells.back()), name);
                 if (guid_end > guid_begin && declaration->is(*ifcroot)) {
                     std::string guid;
                     guid.reserve(guid_end - guid_begin);
@@ -3048,10 +3040,10 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
             }
             max_id = (std::max)(max_id, (unsigned int)name);
         }
-        for (auto& typed : out.bytype) {
-            auto& list = bytype_excl_[typed.first];
-            list.insert(list.end(), typed.second.begin(), typed.second.end());
-            std::vector<express::base>().swap(typed.second);
+        for (auto& chunk : out.bytype) {
+            if (!chunk.instances.empty()) {
+                append_loaded_chunk(bytype_excl_, chunk);
+            }
         }
         lazy_offsets_.insert(lazy_offsets_.end(), out.offsets.begin(), out.offsets.end());
         for (auto& entry : out.guids) {
@@ -3085,8 +3077,7 @@ namespace {
 struct parse_worker_output {
     std::vector<shared_pointer_type> instances;
     std::vector<std::pair<std::string, size_t>> guids;  // GlobalId, index into instances
-    std::vector<std::pair<const ifcopenshell::declaration*, std::vector<express::base>>> bytype;
-    std::unordered_map<const ifcopenshell::declaration*, size_t> bytype_index;
+    ifcopenshell::impl::in_memory_file_storage::entities_by_type bytype;
     std::vector<unsigned> bypassed;
     unresolved_references mixed_references;
     std::unique_ptr<ifcopenshell::impl::in_memory_file_storage> storage;
@@ -3113,12 +3104,7 @@ void parse_chunk(const Reader& source, size_t begin, size_t end, const ifcopensh
                 lexer.reset_pool();
                 out.instances.push_back(data);
                 express::base instance(data);
-                auto found = out.bytype_index.find(declaration);
-                if (found == out.bytype_index.end()) {
-                    found = out.bytype_index.emplace(declaration, out.bytype.size()).first;
-                    out.bytype.push_back({declaration, {}});
-                }
-                out.bytype[found->second].second.push_back(instance);
+                ifcopenshell::impl::in_memory_file_storage::append_loaded(out.bytype, declaration, instance, name);
                 if (declaration->is(*ifcroot)) {
                     try {
                         const std::string guid = instance.get_attribute_value(0);
@@ -3227,10 +3213,10 @@ bool ifcopenshell::impl::in_memory_file_storage::read_instances_parallel(Reader*
                     byguid_[key] = express::base(output->instances[entry.second]);
                 }
             }
-            for (auto& typed : output->bytype) {
-                auto& list = bytype_excl_[typed.first];
-                list.insert(list.end(), typed.second.begin(), typed.second.end());
-                std::vector<express::base>().swap(typed.second);
+            for (auto& chunk : output->bytype) {
+                if (!chunk.instances.empty()) {
+                    append_loaded_chunk(bytype_excl_, chunk);
+                }
             }
             for (const auto& data : output->instances) {
                 const uint32_t name = data->id();
@@ -3342,8 +3328,7 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
             }
         }
 
-        const ifcopenshell::declaration* ty = &instance.declaration();
-        bytype_excl_[ty].push_back(instance);
+        append_loaded(bytype_excl_, &instance.declaration(), instance, (uint32_t)current_id);
 
         if (byid_.find(current_id) != byid_.end()) {
             std::stringstream ss;
@@ -4019,8 +4004,8 @@ std::vector<express::base> file::instances_by_type(const ifcopenshell::declarati
 std::vector<express::base> file::instances_by_type_excl_subtypes(const ifcopenshell::declaration* t) {
     return std::visit([t](auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
-            auto it = x.bytype_excl_.find(t);
-            return (it == x.bytype_excl_.end()) ? std::vector<express::base>{} : it->second;
+            const size_t index = t->index_in_schema();
+            return index < x.bytype_excl_.size() ? x.bytype_excl_[index].instances : std::vector<express::base>{};
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
             std::vector<express::base> ret;
             auto it = x.bytype_.find(t->index_in_schema());
@@ -4168,7 +4153,7 @@ file::type_iterator file::types_begin() const {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, std::monostate>) {
             return file::type_iterator{ impl::rocks_db_file_storage::rocksdb_types_iterator{} };
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
-            return file::type_iterator{ x.bytype_excl_.begin() };
+            return file::type_iterator{ impl::in_memory_file_storage::type_iterator(x.bytype_excl_.begin(), x.bytype_excl_.end()) };
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
             return file::type_iterator{ impl::rocks_db_file_storage::rocksdb_types_iterator(&x) };
         }
@@ -4180,7 +4165,7 @@ file::type_iterator file::types_end() const {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, std::monostate>) {
             return file::type_iterator{ impl::rocks_db_file_storage::rocksdb_types_iterator{} };
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
-            return file::type_iterator{ x.bytype_excl_.end() };
+            return file::type_iterator{ impl::in_memory_file_storage::type_iterator(x.bytype_excl_.end(), x.bytype_excl_.end()) };
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
             return file::type_iterator{ impl::rocks_db_file_storage::rocksdb_types_iterator{} };
         }
