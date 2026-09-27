@@ -1755,7 +1755,7 @@ def remove_deep2(
         ifc_file = element.file
     # The start element may only be referenced from also_consider; decided in
     # C++ without traversing each considered element.
-    if not ifc_file._all_inverses_within(element, [e.id() for e in also_consider if e.id()]):
+    if not ifc_file._is_referenced_only_in(element, [e.id() for e in also_consider if e.id()]):
         return
 
     to_delete: set[ifcopenshell.entity_instance] = set()
