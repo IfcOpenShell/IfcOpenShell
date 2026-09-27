@@ -845,15 +845,6 @@ class file_mixin:
             self.transaction.store_delete(inst)
         return self._remove(inst)
 
-    def _is_referenced_only_in(self, element: ifcopenshell.entity_instance, ids: list[int]) -> bool:
-        """Temporary: forwards to the wrapper's former name of this helper.
-
-        On a wrapper built after the rename, the C++ _is_referenced_only_in
-        on the generated class shadows this method and it never runs. Remove
-        once the pinned IfcOpenShell builds (BUILD_COMMIT) carry the rename.
-        """
-        return self._all_inverses_within(element, ids)
-
     def batch(self) -> None:
         """Enable batch mode, a low-level mechanism to speed up deleting large subgraphs.
 
