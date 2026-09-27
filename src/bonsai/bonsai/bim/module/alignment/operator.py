@@ -19,20 +19,23 @@
 # pyright: reportUnnecessaryTypeIgnoreComment=error
 
 
-import bpy
 import time
-import bonsai.core.alignment as core
-import bonsai.tool as tool
+
+import bpy
 import ifcopenshell.api.alignment
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.unit
-from bpy_extras.io_utils import ImportHelper
+from bpy.props import FloatProperty, StringProperty
 from bpy.types import Operator
-from bpy.props import StringProperty, FloatProperty
-from . import decorator as alignment_decorator
-from bonsai.bim.module.model.polyline import PolylineOperator
-from bonsai.bim.module.model.decorator import PolylineDecorator
+from bpy_extras.io_utils import ImportHelper
+
+import bonsai.core.alignment as core
+import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.model.decorator import PolylineDecorator
+from bonsai.bim.module.model.polyline import PolylineOperator
+
+from . import decorator as alignment_decorator
 
 
 class ImportAlignmentCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
@@ -275,9 +278,7 @@ def rebuild_display_rows(props):
                     pi_coords[i], pi_coords[i + 1], pi_coords[i + 2], next_pi.radius
                 )
 
-            seg_row.length = tool.Alignment.tangent_segment_length(
-                pi_coords[i], pi_coords[i + 1], start_t, end_t
-            )
+            seg_row.length = tool.Alignment.tangent_segment_length(pi_coords[i], pi_coords[i + 1], start_t, end_t)
 
         i += 1
 
@@ -401,7 +402,9 @@ class CIVIL_OT_pick_pi_from_viewport(bpy.types.Operator, PolylineOperator, tool.
 
     bl_idname = "civil.pick_pi_from_viewport"
     bl_label = "Pick PI from Viewport"
-    bl_description = "Click in the viewport to add PI points with snapping and numeric input. RMB/Enter to finish, ESC to cancel."
+    bl_description = (
+        "Click in the viewport to add PI points with snapping and numeric input. RMB/Enter to finish, ESC to cancel."
+    )
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -746,9 +749,7 @@ class CIVIL_OT_create_alignment_by_pis(Operator, tool.Ifc.Operator):
 
         # Create full alignment via core → tool → API
         try:
-            alignment = core.create_alignment(
-                tool.Ifc, tool.Alignment, self.alignment_name
-            )
+            alignment = core.create_alignment(tool.Ifc, tool.Alignment, self.alignment_name)
         except ValueError as e:
             self.report({"ERROR"}, str(e))
             return {"CANCELLED"}
@@ -838,9 +839,7 @@ class CIVIL_OT_create_alignment_by_pi(Operator, tool.Ifc.Operator):
             if h_layout_obj:
                 tool.Alignment.create_objects_for_layout_segments(h_layout, h_layout_obj)
 
-            self.report(
-                {"INFO"}, f"Added {len(hpoints)} PIs to existing alignment '{existing_alignment.Name}'"
-            )
+            self.report({"INFO"}, f"Added {len(hpoints)} PIs to existing alignment '{existing_alignment.Name}'")
 
 
 # CSV import lives on the single upstream operator id `bim.import_alignment_csv`
@@ -1029,9 +1028,7 @@ class CIVIL_OT_enter_pi_edit_mode(Operator, tool.Ifc.Operator):
 
         # Enter edit mode via core layer (validates and creates empties)
         try:
-            empties = core.enter_pi_edit_mode(
-                tool.Ifc, tool.Alignment, self._alignment_id
-            )
+            empties = core.enter_pi_edit_mode(tool.Ifc, tool.Alignment, self._alignment_id)
         except ValueError as e:
             self.report({"ERROR"}, str(e))
             return {"CANCELLED"}
@@ -1121,9 +1118,7 @@ class CIVIL_OT_enter_pi_edit_mode(Operator, tool.Ifc.Operator):
         try:
             if apply:
                 # Regenerate alignment from new PI positions
-                core.exit_pi_edit_mode(
-                    tool.Ifc, tool.Alignment, self._alignment_id, apply=True
-                )
+                core.exit_pi_edit_mode(tool.Ifc, tool.Alignment, self._alignment_id, apply=True)
                 # The curve was laid out again; keep the referents on it. Resolve the
                 # edited alignment, not the active one, which may have changed mid-edit.
                 try:
@@ -1138,9 +1133,7 @@ class CIVIL_OT_enter_pi_edit_mode(Operator, tool.Ifc.Operator):
                 self.report({"INFO"}, "PI changes applied - alignment updated")
             else:
                 # Just cleanup without regenerating
-                core.exit_pi_edit_mode(
-                    tool.Ifc, tool.Alignment, self._alignment_id, apply=False
-                )
+                core.exit_pi_edit_mode(tool.Ifc, tool.Alignment, self._alignment_id, apply=False)
                 self.report({"INFO"}, "PI Edit Mode cancelled")
         except ValueError as e:
             self.report({"ERROR"}, str(e))

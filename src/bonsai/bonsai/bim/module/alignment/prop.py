@@ -19,15 +19,15 @@
 
 """Property groups for the alignment module"""
 
-from bpy.types import PropertyGroup
 from bpy.props import (
-    StringProperty,
-    FloatProperty,
-    IntProperty,
     BoolProperty,
     CollectionProperty,
     EnumProperty,
+    FloatProperty,
+    IntProperty,
+    StringProperty,
 )
+from bpy.types import PropertyGroup
 
 
 def _on_radius_update(self, context):

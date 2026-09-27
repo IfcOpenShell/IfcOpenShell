@@ -32,8 +32,6 @@ Operators skipped (modal / viewport):
 
 import types
 
-import pytest
-
 import bpy
 import ifcopenshell
 import ifcopenshell.api.alignment as align_api
@@ -43,9 +41,9 @@ import ifcopenshell.api.unit
 import ifcopenshell.util.alignment
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.unit
+import pytest
 
 import bonsai.tool as tool
-from bonsai.bim.ifc import IfcStore
 from test.bim.bootstrap import NewIfc4X3
 
 
@@ -606,7 +604,8 @@ class TestCreateAlignmentByPi(NewIfc4X3):
 
         # Should have at least the alignment object in the scene
         alignment_objects = [
-            obj for obj in bpy.data.objects
+            obj
+            for obj in bpy.data.objects
             if tool.Ifc.get_entity(obj) and tool.Ifc.get_entity(obj).is_a("IfcAlignment")
         ]
         assert len(alignment_objects) >= 1
@@ -726,13 +725,15 @@ class TestEndToEndAlignmentCreation(NewIfc4X3):
         ifc_file = tool.Ifc.get()
         props = get_alignment_props()
 
-        add_pis_to_props([
-            (0, 0, 0),
-            (300, 0, 200),
-            (600, 300, 150),
-            (900, 300, 250),
-            (1200, 0, 0),
-        ])
+        add_pis_to_props(
+            [
+                (0, 0, 0),
+                (300, 0, 200),
+                (600, 300, 150),
+                (900, 300, 250),
+                (1200, 0, 0),
+            ]
+        )
 
         result = bpy.ops.civil.create_alignment_by_pi()
         assert result == {"FINISHED"}
@@ -766,14 +767,15 @@ class TestEndToEndAlignmentCreation(NewIfc4X3):
         assert len(props.pis) == 0
         assert len(props.display_rows) == 0
 
+
 @requires_geometry_engine
 class TestEndToEndIfcRoundtrip(NewIfc4X3):
     """IFC save/reload roundtrip validation."""
 
     def test_alignment_survives_ifc_roundtrip(self):
         """Create alignment, save to temp file, reload, verify entities."""
-        import tempfile
         import os
+        import tempfile
 
         alignment, alignment_obj = create_empty_alignment("Roundtrip Test")
         ifc_file = tool.Ifc.get()

@@ -19,8 +19,7 @@
 import pytest
 
 import bonsai.core.alignment as subject
-from test.core.bootstrap import alignment, ifc
-
+from test.core.bootstrap import alignment, ifc  # ruff: ignore[unused-import]
 
 # ---------------------------------------------------------------------------
 # Helpers

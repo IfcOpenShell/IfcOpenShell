@@ -17,11 +17,13 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import math
-import pytest
+
 import bpy
 import ifcopenshell
 import ifcopenshell.api.alignment as align_api
 import ifcopenshell.util.alignment
+import pytest
+
 import bonsai.tool as tool
 from bonsai.tool.alignment import Alignment as subject
 from test.bim.bootstrap import NewFile, NewIfc4X3
@@ -56,7 +58,7 @@ TOLERANCE = 1e-9
 
 
 def assert_close(actual: float, expected: float, tol: float = TOLERANCE) -> None:
-    assert abs(actual - expected) < tol, f"Expected {expected}, got {actual} (diff={abs(actual-expected):.2e})"
+    assert abs(actual - expected) < tol, f"Expected {expected}, got {actual} (diff={abs(actual - expected):.2e})"
 
 
 class _FakeDesignParams:
@@ -422,7 +424,6 @@ class TestSafeLayoutHorizontalByPiMethod(NewFile):
     def test_succeeds_when_layout_has_parent_alignment(self):
         """A layout properly nested under an IfcAlignment should not raise."""
         import ifcopenshell.api.root
-        import ifcopenshell.api.alignment
 
         ifc = ifcopenshell.file(schema="IFC4X3_ADD2")
         tool.Ifc.set(ifc)
@@ -431,9 +432,7 @@ class TestSafeLayoutHorizontalByPiMethod(NewFile):
         alignment = ifc.createIfcAlignment()
         layout = ifc.createIfcAlignmentHorizontal()
         ifc.createIfcRelNests(RelatingObject=alignment, RelatedObjects=[layout])
-        result = subject.safe_layout_horizontal_by_pi_method(
-            ifc, layout, hpoints=[(0.0, 0.0), (100.0, 0.0)], radii=[]
-        )
+        result = subject.safe_layout_horizontal_by_pi_method(ifc, layout, hpoints=[(0.0, 0.0), (100.0, 0.0)], radii=[])
         assert result is True
 
 
@@ -485,9 +484,7 @@ class TestGetHorizontalLayout(NewIfc4X3):
     def test_returns_none_for_alignment_without_horizontal(self):
         ifc_file = tool.Ifc.get()
         # Create a bare alignment without the helper (no nesting)
-        alignment = ifc_file.createIfcAlignment(
-            GlobalId=ifcopenshell.guid.new(), Name="Bare"
-        )
+        alignment = ifc_file.createIfcAlignment(GlobalId=ifcopenshell.guid.new(), Name="Bare")
         h_layout = subject.get_horizontal_layout(alignment)
         assert h_layout is None
 
@@ -517,9 +514,7 @@ class TestLayoutByPiMethod(NewIfc4X3):
         alignment = align_api.create(ifc_file, name="Curve")
         h_layout = subject.get_horizontal_layout(alignment)
 
-        subject.layout_by_pi_method(
-            h_layout, [(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], [300.0]
-        )
+        subject.layout_by_pi_method(h_layout, [(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], [300.0])
 
         segments = align_api.get_layout_segments(h_layout)
         real_segments = [s for s in segments if not subject.is_zero_length_segment(s)]
@@ -538,9 +533,7 @@ class TestBackCalculatePisFromAlignment(NewIfc4X3):
     """Tests for Alignment.back_calculate_pis_from_alignment() — PI recovery."""
 
     def test_recovers_endpoints_from_straight_alignment(self):
-        alignment, _ = _create_alignment_with_pis(
-            hpoints=[(0.0, 0.0), (1000.0, 0.0)], radii=[]
-        )
+        alignment, _ = _create_alignment_with_pis(hpoints=[(0.0, 0.0), (1000.0, 0.0)], radii=[])
         pis = subject.back_calculate_pis_from_alignment(alignment)
         assert len(pis) >= 2
         assert pis[0]["pi_type"] == "ENDPOINT"
@@ -551,9 +544,7 @@ class TestBackCalculatePisFromAlignment(NewIfc4X3):
         assert_close(pis[-1]["n"], 0.0, tol=0.01)
 
     def test_recovers_curve_pi_with_radius(self):
-        alignment, _ = _create_alignment_with_pis(
-            hpoints=[(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], radii=[300.0]
-        )
+        alignment, _ = _create_alignment_with_pis(hpoints=[(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], radii=[300.0])
         pis = subject.back_calculate_pis_from_alignment(alignment)
         # Should have 3 PIs: start endpoint, curve PI, end endpoint
         assert len(pis) == 3
@@ -565,9 +556,7 @@ class TestBackCalculatePisFromAlignment(NewIfc4X3):
 
     def test_raises_for_alignment_without_horizontal_layout(self):
         ifc_file = tool.Ifc.get()
-        alignment = ifc_file.createIfcAlignment(
-            GlobalId=ifcopenshell.guid.new(), Name="Bare"
-        )
+        alignment = ifc_file.createIfcAlignment(GlobalId=ifcopenshell.guid.new(), Name="Bare")
         with pytest.raises(ValueError, match="no horizontal layout"):
             subject.back_calculate_pis_from_alignment(alignment)
 
@@ -582,9 +571,7 @@ class TestBackCalculatePisFromAlignment(NewIfc4X3):
         """Create alignment from PIs, back-calculate, verify positions match."""
         original_hpoints = [(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)]
         original_radii = [300.0]
-        alignment, _ = _create_alignment_with_pis(
-            hpoints=original_hpoints, radii=original_radii
-        )
+        alignment, _ = _create_alignment_with_pis(hpoints=original_hpoints, radii=original_radii)
 
         recovered_pis = subject.back_calculate_pis_from_alignment(alignment)
         assert len(recovered_pis) == len(original_hpoints)
@@ -768,9 +755,7 @@ class TestCreatePiEditEmpties(NewIfc4X3):
     """Tests for Alignment.create_pi_edit_empties()."""
 
     def test_creates_empties_at_pi_positions(self):
-        alignment, _ = _create_alignment_with_pis(
-            hpoints=[(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], radii=[300.0]
-        )
+        alignment, _ = _create_alignment_with_pis(hpoints=[(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], radii=[300.0])
         alignment_obj = subject.create_hierarchy_for_alignment(alignment)
         bpy.context.view_layer.objects.active = alignment_obj
 
@@ -784,9 +769,7 @@ class TestCreatePiEditEmpties(NewIfc4X3):
             assert empty.get("civil_alignment_id") == alignment.id()
 
     def test_empties_are_parented_to_alignment_object(self):
-        alignment, _ = _create_alignment_with_pis(
-            hpoints=[(0.0, 0.0), (500.0, 0.0)], radii=[]
-        )
+        alignment, _ = _create_alignment_with_pis(hpoints=[(0.0, 0.0), (500.0, 0.0)], radii=[])
         alignment_obj = subject.create_hierarchy_for_alignment(alignment)
         pis = subject.back_calculate_pis_from_alignment(alignment)
         empties = subject.create_pi_edit_empties(alignment, pis)
@@ -794,9 +777,7 @@ class TestCreatePiEditEmpties(NewIfc4X3):
             assert empty.parent == alignment_obj
 
     def test_empties_have_sequential_pi_indices(self):
-        alignment, _ = _create_alignment_with_pis(
-            hpoints=[(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], radii=[300.0]
-        )
+        alignment, _ = _create_alignment_with_pis(hpoints=[(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], radii=[300.0])
         alignment_obj = subject.create_hierarchy_for_alignment(alignment)
         pis = subject.back_calculate_pis_from_alignment(alignment)
         empties = subject.create_pi_edit_empties(alignment, pis)
@@ -809,9 +790,7 @@ class TestGetPiEditEmpties(NewIfc4X3):
     """Tests for Alignment.get_pi_edit_empties()."""
 
     def test_finds_empties_for_given_alignment_id(self):
-        alignment, _ = _create_alignment_with_pis(
-            hpoints=[(0.0, 0.0), (500.0, 0.0)], radii=[]
-        )
+        alignment, _ = _create_alignment_with_pis(hpoints=[(0.0, 0.0), (500.0, 0.0)], radii=[])
         alignment_obj = subject.create_hierarchy_for_alignment(alignment)
         pis = subject.back_calculate_pis_from_alignment(alignment)
         subject.create_pi_edit_empties(alignment, pis)
@@ -824,9 +803,7 @@ class TestGetPiEditEmpties(NewIfc4X3):
         assert found == []
 
     def test_returns_sorted_by_pi_index(self):
-        alignment, _ = _create_alignment_with_pis(
-            hpoints=[(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], radii=[300.0]
-        )
+        alignment, _ = _create_alignment_with_pis(hpoints=[(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], radii=[300.0])
         alignment_obj = subject.create_hierarchy_for_alignment(alignment)
         pis = subject.back_calculate_pis_from_alignment(alignment)
         subject.create_pi_edit_empties(alignment, pis)
@@ -841,9 +818,7 @@ class TestRemovePiEditEmpties(NewIfc4X3):
     """Tests for Alignment.remove_pi_edit_empties()."""
 
     def test_removes_all_empties_for_alignment(self):
-        alignment, _ = _create_alignment_with_pis(
-            hpoints=[(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], radii=[300.0]
-        )
+        alignment, _ = _create_alignment_with_pis(hpoints=[(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], radii=[300.0])
         alignment_obj = subject.create_hierarchy_for_alignment(alignment)
         pis = subject.back_calculate_pis_from_alignment(alignment)
         subject.create_pi_edit_empties(alignment, pis)
@@ -863,9 +838,7 @@ class TestCollectPisFromEmpties(NewIfc4X3):
 
     def test_roundtrip_positions_through_empties(self):
         """Create empties from PIs, collect back, verify positions match."""
-        alignment, _ = _create_alignment_with_pis(
-            hpoints=[(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], radii=[300.0]
-        )
+        alignment, _ = _create_alignment_with_pis(hpoints=[(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], radii=[300.0])
         alignment_obj = subject.create_hierarchy_for_alignment(alignment)
 
         pis = subject.back_calculate_pis_from_alignment(alignment)
@@ -883,9 +856,7 @@ class TestCollectPisFromEmpties(NewIfc4X3):
             assert_close(back_n, pi["n"], tol=2.0)
 
     def test_collects_radii_for_interior_pis_only(self):
-        alignment, _ = _create_alignment_with_pis(
-            hpoints=[(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], radii=[300.0]
-        )
+        alignment, _ = _create_alignment_with_pis(hpoints=[(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], radii=[300.0])
         alignment_obj = subject.create_hierarchy_for_alignment(alignment)
         pis = subject.back_calculate_pis_from_alignment(alignment)
         subject.create_pi_edit_empties(alignment, pis)
@@ -916,9 +887,7 @@ class TestRemoveAlignmentHierarchy(NewIfc4X3):
         assert root_obj is not None
 
         # Count objects before removal (excluding default camera/light)
-        alignment_objects_before = [
-            o for o in bpy.data.objects if tool.Ifc.get_entity(o)
-        ]
+        alignment_objects_before = [o for o in bpy.data.objects if tool.Ifc.get_entity(o)]
         assert len(alignment_objects_before) > 0
 
         removed = subject.remove_alignment_hierarchy(alignment)
@@ -938,12 +907,10 @@ class TestIfcSaveReloadRoundtrip(NewIfc4X3):
     """Tests verifying alignment data survives IFC file save/reload."""
 
     def test_alignment_entities_survive_roundtrip(self):
-        import tempfile
         import os
+        import tempfile
 
-        alignment, _ = _create_alignment_with_pis(
-            hpoints=[(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], radii=[300.0]
-        )
+        alignment, _ = _create_alignment_with_pis(hpoints=[(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], radii=[300.0])
 
         ifc_file = tool.Ifc.get()
         alignment_count_before = len(ifc_file.by_type("IfcAlignment"))
@@ -1015,9 +982,7 @@ class TestClearLayoutSegments(NewFile):
             ifc, h, hpoints=[(0.0, 0.0), (500.0, 0.0), (1000.0, 200.0)], radii=[300.0]
         )
         subject.clear_layout_segments(h)
-        align_api.layout_horizontal_alignment_by_pi_method(
-            ifc, h, hpoints=[(0.0, 0.0), (1000.0, 0.0)], radii=[]
-        )
+        align_api.layout_horizontal_alignment_by_pi_method(ifc, h, hpoints=[(0.0, 0.0), (1000.0, 0.0)], radii=[])
         nested = align_api.get_layout_segments(h)
         real = [s for s in nested if not subject.is_zero_length_segment(s)]
         assert len(real) == 1  # exactly one LINE — no leftover from the first layout

@@ -32,10 +32,12 @@ tool/alignment.py. This module only handles:
 """
 
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     import ifcopenshell
+
     from .. import tool
 
 
@@ -45,10 +47,10 @@ if TYPE_CHECKING:
 
 
 def create_alignment(
-    ifc_tool: "type[tool.Ifc]",
-    alignment_tool: "type[tool.Alignment]",
+    ifc_tool: type[tool.Ifc],
+    alignment_tool: type[tool.Alignment],
     name: str,
-) -> "ifcopenshell.entity_instance":
+) -> ifcopenshell.entity_instance:
     """Create a new alignment with full IFC structure.
 
     Business rules:
@@ -82,8 +84,8 @@ def create_alignment(
 
 
 def enter_pi_edit_mode(
-    ifc_tool: "type[tool.Ifc]",
-    alignment_tool: "type[tool.Alignment]",
+    ifc_tool: type[tool.Ifc],
+    alignment_tool: type[tool.Alignment],
     alignment_id: int,
 ) -> list:
     """Enter PI edit mode for an alignment.
@@ -141,8 +143,8 @@ def enter_pi_edit_mode(
 
 
 def import_alignment_csv(
-    ifc_tool: "type[tool.Ifc]",
-    alignment_tool: "type[tool.Alignment]",
+    ifc_tool: type[tool.Ifc],
+    alignment_tool: type[tool.Alignment],
     filepath: str,
 ):
     """Import alignment(s) from a CSV file and build their viewport objects.
@@ -180,8 +182,8 @@ def import_alignment_csv(
 
 
 def exit_pi_edit_mode(
-    ifc_tool: "type[tool.Ifc]",
-    alignment_tool: "type[tool.Alignment]",
+    ifc_tool: type[tool.Ifc],
+    alignment_tool: type[tool.Alignment],
     alignment_id: int,
     apply: bool,
 ) -> bool:

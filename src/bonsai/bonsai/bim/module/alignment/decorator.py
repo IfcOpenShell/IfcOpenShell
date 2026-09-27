@@ -22,12 +22,13 @@ This module contains decorators for rendering visual feedback during
 alignment-related operations, such as PI editing.
 """
 
-import bpy
 import blf
+import bpy
 import gpu
-import bonsai.tool as tool
 from bpy.types import SpaceView3D
 from gpu_extras.batch import batch_for_shader
+
+import bonsai.tool as tool
 
 
 class PIEditDecorator:
@@ -76,9 +77,7 @@ class PIEditDecorator:
             SpaceView3D.draw_handler_add(handler.draw_tangent_lines_3d, (context,), "WINDOW", "POST_VIEW")
         )
         # POST_PIXEL for 2D screen-space drawing (HUD)
-        cls.handlers.append(
-            SpaceView3D.draw_handler_add(handler.draw_hud, (context,), "WINDOW", "POST_PIXEL")
-        )
+        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_hud, (context,), "WINDOW", "POST_PIXEL"))
         cls.is_installed = True
 
     @classmethod

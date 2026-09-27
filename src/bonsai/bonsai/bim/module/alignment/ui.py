@@ -23,9 +23,9 @@ All panels appear in the Properties sidebar under the CIVIL tab,
 nested under BIM_PT_tab_horizontal_alignment.
 """
 
-import bpy
-import bonsai.tool as tool
 from bpy.types import Panel, UIList
+
+import bonsai.tool as tool
 
 
 def is_ifc4x3():

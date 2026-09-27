@@ -17,8 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, prop, operator, decorator, workspace
 
+from . import operator, prop, ui, workspace
 
 classes = (
     # Property groups (must be registered before classes that use them)

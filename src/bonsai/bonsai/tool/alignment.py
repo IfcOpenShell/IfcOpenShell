@@ -27,14 +27,17 @@ All methods are classmethods following Bonsai's tool pattern.
 """
 
 from __future__ import annotations
-import bpy
-import math
+
 import logging
-import bonsai.tool as tool
-import bonsai.bim.import_ifc
-import ifcopenshell.api.alignment
-from typing import TYPE_CHECKING, Optional, List, Tuple
+import math
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, Optional
+
+import bpy
+import ifcopenshell.api.alignment
+
+import bonsai.bim.import_ifc
+import bonsai.tool as tool
 
 if TYPE_CHECKING:
     import ifcopenshell
@@ -49,9 +52,9 @@ if TYPE_CHECKING:
 class PIGeometryResult:
     """Result of PI geometry calculation."""
 
-    stations: List[float]
-    lengths: List[float]
-    directions: List[float]
+    stations: list[float]
+    lengths: list[float]
+    directions: list[float]
     total_length: float
 
 
@@ -67,7 +70,7 @@ class Alignment:
     # =========================================================================
 
     @classmethod
-    def calculate_pi_geometry(cls, pis: List[Tuple[float, float]], start_station: float = 0.0) -> PIGeometryResult:
+    def calculate_pi_geometry(cls, pis: list[tuple[float, float]], start_station: float = 0.0) -> PIGeometryResult:
         """Calculate lengths, stations, and directions for a list of PI points.
 
         Args:
@@ -144,7 +147,7 @@ class Alignment:
 
     @classmethod
     def deflection_angle_from_points(
-        cls, p1: Tuple[float, float], p2: Tuple[float, float], p3: Tuple[float, float]
+        cls, p1: tuple[float, float], p2: tuple[float, float], p3: tuple[float, float]
     ) -> float:
         """Calculate deflection angle at p2 from three (e, n) coordinate tuples.
 
@@ -174,9 +177,9 @@ class Alignment:
     @classmethod
     def arc_length_at_pi(
         cls,
-        p1: Tuple[float, float],
-        p2: Tuple[float, float],
-        p3: Tuple[float, float],
+        p1: tuple[float, float],
+        p2: tuple[float, float],
+        p3: tuple[float, float],
         radius: float,
     ) -> float:
         """Calculate arc length L = R * |delta| at a PI with curve.
@@ -196,9 +199,9 @@ class Alignment:
     @classmethod
     def tangent_length_at_pi(
         cls,
-        p1: Tuple[float, float],
-        p2: Tuple[float, float],
-        p3: Tuple[float, float],
+        p1: tuple[float, float],
+        p2: tuple[float, float],
+        p3: tuple[float, float],
         radius: float,
     ) -> float:
         """Calculate tangent length T = R * tan(|delta|/2) at a PI.
@@ -218,8 +221,8 @@ class Alignment:
     @classmethod
     def tangent_segment_length(
         cls,
-        p_start: Tuple[float, float],
-        p_end: Tuple[float, float],
+        p_start: tuple[float, float],
+        p_end: tuple[float, float],
         start_tangent: float = 0.0,
         end_tangent: float = 0.0,
     ) -> float:
@@ -244,9 +247,7 @@ class Alignment:
     # =========================================================================
 
     @classmethod
-    def _get_segment_vertices_in_model_units(
-        cls, ifc_file: "ifcopenshell.file", segment: "ifcopenshell.entity_instance"
-    ):
+    def _get_segment_vertices_in_model_units(cls, ifc_file: ifcopenshell.file, segment: ifcopenshell.entity_instance):
         """Get segment control points (Start, End, TI, NI) in model units.
 
         Wraps ifcopenshell.api.alignment.segment_vertices() with:
@@ -349,7 +350,7 @@ class Alignment:
     # =========================================================================
 
     @classmethod
-    def get_horizontal_layout(cls, alignment: "ifcopenshell.entity_instance"):
+    def get_horizontal_layout(cls, alignment: ifcopenshell.entity_instance):
         """Get the IfcAlignmentHorizontal layout from an alignment.
 
         Args:
@@ -386,8 +387,8 @@ class Alignment:
 
     @classmethod
     def add_horizontal_layout_to_alignment(
-        cls, alignment: "ifcopenshell.entity_instance"
-    ) -> "ifcopenshell.entity_instance":
+        cls, alignment: ifcopenshell.entity_instance
+    ) -> ifcopenshell.entity_instance:
         """Add an IfcAlignmentHorizontal layout to a bare IfcAlignment.
 
         Creates the nested horizontal layout, zero-length terminal segment,
@@ -472,7 +473,7 @@ class Alignment:
                 align_api.update_fallback_position(ifc_file, placement)
 
     @classmethod
-    def clear_layout_segments(cls, layout: "ifcopenshell.entity_instance"):
+    def clear_layout_segments(cls, layout: ifcopenshell.entity_instance):
         """Clear the real (non-terminator) segments from a layout.
 
         The alignment API's PI/PVI layout functions *append* segments and
@@ -519,7 +520,7 @@ class Alignment:
             ifcopenshell.api.root.remove_product(ifc_file, product=segment)
 
     @classmethod
-    def layout_by_pi_method(cls, layout: "ifcopenshell.entity_instance", hpoints: list, radii: list):
+    def layout_by_pi_method(cls, layout: ifcopenshell.entity_instance, hpoints: list, radii: list):
         """Add segments to a horizontal layout using the PI method.
 
         Args:
@@ -537,7 +538,7 @@ class Alignment:
     # =========================================================================
 
     @classmethod
-    def is_zero_length_segment(cls, segment: "ifcopenshell.entity_instance") -> bool:
+    def is_zero_length_segment(cls, segment: ifcopenshell.entity_instance) -> bool:
         """Check if a segment is a zero-length terminator segment.
 
         Zero-length segments are required by IFC to mark the end of an alignment
@@ -565,7 +566,7 @@ class Alignment:
         return False
 
     @classmethod
-    def layout_has_real_segments(cls, layout: "ifcopenshell.entity_instance") -> bool:
+    def layout_has_real_segments(cls, layout: ifcopenshell.entity_instance) -> bool:
         """Check if a layout has any real (non-zero-length) segments.
 
         An empty layout only has the mandatory zero-length terminator segment.
@@ -664,7 +665,7 @@ class Alignment:
 
     @classmethod
     def _create_segment_curve(
-        cls, segment: "ifcopenshell.entity_instance", index: int, parent_obj: Optional[bpy.types.Object] = None
+        cls, segment: ifcopenshell.entity_instance, index: int, parent_obj: Optional[bpy.types.Object] = None
     ) -> Optional[bpy.types.Object]:
         """Create a Blender curve object for an IFC alignment segment.
 
@@ -735,7 +736,7 @@ class Alignment:
         return obj
 
     @classmethod
-    def create_alignment_from_csv(cls, filepath: str) -> "ifcopenshell.entity_instance":
+    def create_alignment_from_csv(cls, filepath: str) -> ifcopenshell.entity_instance:
         """Create alignment(s) from a CSV file via the alignment API.
 
         The CSV format (see ifcopenshell.api.alignment.create_from_csv) is one
@@ -753,13 +754,11 @@ class Alignment:
         # and the import path below materializes the referents it creates.
         alignment = align_api.create_from_csv(ifc_file, filepath, start_station=0.0)
         for site in ifc_file.by_type("IfcSite"):
-            ifcopenshell.api.spatial.reference_structure(
-                ifc_file, products=[alignment], relating_structure=site
-            )
+            ifcopenshell.api.spatial.reference_structure(ifc_file, products=[alignment], relating_structure=site)
         return alignment
 
     @classmethod
-    def get_child_alignments(cls, alignment: "ifcopenshell.entity_instance") -> list:
+    def get_child_alignments(cls, alignment: ifcopenshell.entity_instance) -> list:
         """Return child IfcAlignments aggregated under ``alignment``.
 
         Per IFC CT 4.1.4.4.1.2, an alignment reusing one horizontal for
@@ -774,7 +773,7 @@ class Alignment:
         return children
 
     @classmethod
-    def create_objects_for_referents(cls, alignment: "ifcopenshell.entity_instance") -> int:
+    def create_objects_for_referents(cls, alignment: ifcopenshell.entity_instance) -> int:
         """Create empty objects for IfcReferents nested on ``alignment``.
 
         Returns the number of referent objects created.
@@ -790,7 +789,7 @@ class Alignment:
         return count
 
     @classmethod
-    def create_hierarchy_for_alignment(cls, alignment: "ifcopenshell.entity_instance") -> Optional[bpy.types.Object]:
+    def create_hierarchy_for_alignment(cls, alignment: ifcopenshell.entity_instance) -> Optional[bpy.types.Object]:
         """Create the full Blender object hierarchy for an alignment.
 
         Creates:
@@ -828,8 +827,8 @@ class Alignment:
 
     @classmethod
     def create_objects_for_layout_segments(
-        cls, layout: "ifcopenshell.entity_instance", layout_obj: bpy.types.Object
-    ) -> List[bpy.types.Object]:
+        cls, layout: ifcopenshell.entity_instance, layout_obj: bpy.types.Object
+    ) -> list[bpy.types.Object]:
         """Create Blender curve objects for all segments in a layout.
 
         Each segment becomes its own selectable curve object, using IfcOpenShell's
@@ -990,8 +989,8 @@ class Alignment:
 
     @classmethod
     def validate_layout_has_parent_alignment(
-        cls, layout: "ifcopenshell.entity_instance"
-    ) -> Optional["ifcopenshell.entity_instance"]:
+        cls, layout: ifcopenshell.entity_instance
+    ) -> Optional[ifcopenshell.entity_instance]:
         """Check if a layout entity has a valid parent IfcAlignment.
 
         Orphan layouts (e.g., from undo/redo operations) can cause issues
@@ -1010,7 +1009,7 @@ class Alignment:
 
     @classmethod
     def safe_layout_horizontal_by_pi_method(
-        cls, ifc_file: "ifcopenshell.file", layout: "ifcopenshell.entity_instance", hpoints: list, radii: list
+        cls, ifc_file: ifcopenshell.file, layout: ifcopenshell.entity_instance, hpoints: list, radii: list
     ) -> bool:
         """Safely add segments to a horizontal layout using PI method.
 
@@ -1059,7 +1058,7 @@ class Alignment:
     # 4. Collect new positions and regenerate alignment segments
 
     @classmethod
-    def back_calculate_pis_from_alignment(cls, alignment: "ifcopenshell.entity_instance") -> List[dict]:
+    def back_calculate_pis_from_alignment(cls, alignment: ifcopenshell.entity_instance) -> list[dict]:
         """Reverse-engineer PI positions from IFC alignment segments.
 
         Uses ifcopenshell.api.alignment.segment_vertices() to extract
@@ -1145,9 +1144,9 @@ class Alignment:
     @classmethod
     def create_pi_edit_empties(
         cls,
-        alignment: "ifcopenshell.entity_instance",
-        pis: List[dict],
-    ) -> List[bpy.types.Object]:
+        alignment: ifcopenshell.entity_instance,
+        pis: list[dict],
+    ) -> list[bpy.types.Object]:
         """Create EMPTY objects at PI locations for editing.
 
         Creates temporary Blender EMPTY objects at each PI position,
@@ -1214,7 +1213,7 @@ class Alignment:
         return empties
 
     @classmethod
-    def get_pi_edit_empties(cls, alignment_id: int) -> List[bpy.types.Object]:
+    def get_pi_edit_empties(cls, alignment_id: int) -> list[bpy.types.Object]:
         """Find all PI EMPTY objects for a given alignment.
 
         Searches all objects in the scene for empties tagged with
@@ -1257,7 +1256,7 @@ class Alignment:
         return removed_count
 
     @classmethod
-    def collect_pis_from_empties(cls, alignment_id: int) -> Tuple[List[Tuple[float, float]], List[float]]:
+    def collect_pis_from_empties(cls, alignment_id: int) -> tuple[list[tuple[float, float]], list[float]]:
         """Gather current PI positions from EMPTY objects.
 
         Reads the current positions of PI empties and converts them
@@ -1298,7 +1297,7 @@ class Alignment:
         return (hpoints, radii)
 
     @classmethod
-    def set_layout_segments_selectable(cls, layout: "ifcopenshell.entity_instance", selectable: bool) -> None:
+    def set_layout_segments_selectable(cls, layout: ifcopenshell.entity_instance, selectable: bool) -> None:
         """Toggle viewport selectability of a layout's segment objects.
 
         During PI edit mode the segment curves are made non-selectable so
