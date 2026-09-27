@@ -666,11 +666,22 @@ namespace ifcopenshell {
             bool read_instances_parallel(Reader* stream, const ifcopenshell::schema_definition* schema, const std::set<std::string>& types_to_bypass, unsigned int& max_id, unsigned threads, std::vector<unsigned>& bypassed, unresolved_references& mixed_references, std::vector<shared_pointer_type>& instances);
             void materialize(instance_data* data);
 
-            // The instances of one concrete entity type, sorted by id. Loading
-            // fills the lists in file order and sort_type_lists() establishes
-            // the order once; add_type_ref() and remove_type_ref() keep it, so
-            // a removal finds its instance by binary search instead of a scan.
-            typedef std::map<const ifcopenshell::declaration*, std::vector<express::base>> entities_by_type;
+            // The instances of one concrete entity type, sorted by id, in the
+            // slot indexed by the type's index_in_schema(); a slot with no
+            // instances is a type the file has none of. Loading fills the
+            // lists in file order and notes per slot whether the ids arrived
+            // in increasing order, so sort_type_lists() sorts exactly the lists
+            // that did not; add_type_ref() and remove_type_ref() keep the order,
+            // so a removal finds its instance by binary search.
+            struct type_list {
+                const ifcopenshell::declaration* declaration = nullptr;
+                std::vector<express::base> instances;
+                // While loading: the last id appended, and whether an id
+                // arrived lower than the one before it.
+                uint32_t last_id = 0;
+                bool out_of_order = false;
+            };
+            typedef std::vector<type_list> entities_by_type;
             typedef std::unordered_map<uint32_t, shared_pointer_type> entity_instance_by_name_storage;
             typedef map_transformer<entity_instance_by_name_storage, std::function<express::base(shared_pointer_type)>> entity_instance_by_name;
             typedef std::unordered_map<uint32_t, shared_pointer_type> type_instance_by_name;
@@ -699,29 +710,27 @@ namespace ifcopenshell {
             in_memory_file_storage(const in_memory_file_storage&& other) = delete;
 
 
-            class type_iterator : public entities_by_type::const_iterator {
+            // The types the file has instances of, in index_in_schema() order.
+            class type_iterator {
             public:
                 using iterator_category = std::forward_iterator_tag;
-                using value_type = entities_by_type::key_type;
-                using difference_type = typename entities_by_type::const_iterator::difference_type;
+                using value_type = const ifcopenshell::declaration*;
+                using difference_type = std::ptrdiff_t;
                 using pointer = value_type const*;
                 using reference = value_type const&;
 
-                type_iterator() : entities_by_type::const_iterator() {};
-
-                type_iterator(const entities_by_type::const_iterator& iterator)
-                    : entities_by_type::const_iterator(iterator) {};
-
-                entities_by_type::key_type const* operator->() const {
-                    return &entities_by_type::const_iterator::operator->()->first;
+                type_iterator() = default;
+                type_iterator(entities_by_type::const_iterator it, entities_by_type::const_iterator end)
+                    : it_(it), end_(end) {
+                    skip_empty_();
                 }
 
-                entities_by_type::key_type const& operator*() const {
-                    return entities_by_type::const_iterator::operator*().first;
-                }
+                reference operator*() const { return it_->declaration; }
+                pointer operator->() const { return &it_->declaration; }
 
                 type_iterator& operator++() {
-                    entities_by_type::const_iterator::operator++();
+                    ++it_;
+                    skip_empty_();
                     return *this;
                 }
 
@@ -730,11 +739,57 @@ namespace ifcopenshell {
                     operator++();
                     return tmp;
                 }
+
+                bool operator==(const type_iterator& other) const { return it_ == other.it_; }
+                bool operator!=(const type_iterator& other) const { return it_ != other.it_; }
+
+            private:
+                void skip_empty_() {
+                    while (it_ != end_ && it_->instances.empty()) {
+                        ++it_;
+                    }
+                }
+                entities_by_type::const_iterator it_{}, end_{};
             };
 
             entity_instance_by_name_storage byid_;
             type_instance_by_name tbyid_;
             entities_by_type bytype_excl_;
+
+            // The slot for a type, made on first use.
+            static type_list& type_slot(entities_by_type& lists, const ifcopenshell::declaration* declaration) {
+                const size_t index = declaration->index_in_schema();
+                if (index >= lists.size()) {
+                    lists.resize(index + 1);
+                }
+                type_list& slot = lists[index];
+                slot.declaration = declaration;
+                return slot;
+            }
+
+            // Appends an instance read from the file to its type's list,
+            // noting whether the ids still arrive in increasing order.
+            static void append_loaded(entities_by_type& lists, const ifcopenshell::declaration* declaration, const express::base& instance, uint32_t id) {
+                type_list& slot = type_slot(lists, declaration);
+                if (id < slot.last_id) {
+                    slot.out_of_order = true;
+                }
+                slot.last_id = id;
+                slot.instances.push_back(instance);
+            }
+
+            // Appends a chunk's list, read from the file after everything the
+            // slot holds: the list stays in order only if the chunk is and
+            // starts no lower than the previous last id.
+            static void append_loaded_chunk(entities_by_type& lists, type_list& chunk) {
+                type_list& slot = type_slot(lists, chunk.declaration);
+                if (chunk.out_of_order || (!slot.instances.empty() && chunk.instances.front().id() < slot.last_id)) {
+                    slot.out_of_order = true;
+                }
+                slot.last_id = chunk.last_id;
+                slot.instances.insert(slot.instances.end(), chunk.instances.begin(), chunk.instances.end());
+                std::vector<express::base>().swap(chunk.instances);
+            }
             entities_by_ref byref_excl_;
             entity_instance_by_guid byguid_;
             entity_instance_by_name byid_read_;
@@ -772,14 +827,10 @@ namespace ifcopenshell {
                 return id < instance.id();
             }
 
-            // Sorts one type list by id. A list loaded in id order, the common
-            // case, is only checked. Otherwise the ids are read once and
+            // Sorts one type list by id: the ids are read once and
             // (id, position) pairs are sorted, which touches no instance data
             // per comparison; equal ids keep their relative order.
             static void sort_type_list(std::vector<express::base>& instances) {
-                if (std::is_sorted(instances.begin(), instances.end(), [](const express::base& a, const express::base& b) { return a.id() < b.id(); })) {
-                    return;
-                }
                 std::vector<std::pair<uint32_t, uint32_t>> keys(instances.size());
                 for (size_t i = 0; i < instances.size(); ++i) {
                     keys[i] = {instances[i].id(), (uint32_t)i};
@@ -793,16 +844,21 @@ namespace ifcopenshell {
                 instances.swap(sorted);
             }
 
-            // Sorts every type list by id.
+            // Sorts the type lists whose ids did not arrive in increasing
+            // order while loading; every other list is in id order already.
             void sort_type_lists() {
-                for (auto& typed : bytype_excl_) {
-                    sort_type_list(typed.second);
+                for (auto& slot : bytype_excl_) {
+                    if (slot.out_of_order) {
+                        sort_type_list(slot.instances);
+                    }
+                    slot.out_of_order = false;
+                    slot.last_id = 0;
                 }
             }
 
             void add_type_ref(const express::base& new_entity) {
                 if (auto* ty = new_entity.declaration().as_entity()) {
-                    auto& instances = bytype_excl_[ty];
+                    auto& instances = type_slot(bytype_excl_, ty).instances;
                     // Fresh ids only grow, so this is normally an append.
                     if (instances.empty() || instances.back().id() < new_entity.id()) {
                         instances.push_back(new_entity);
@@ -814,11 +870,11 @@ namespace ifcopenshell {
 
             void remove_type_ref(const express::base& entity) {
                 if (auto* ty = entity.declaration().as_entity()) {
-                    auto it = bytype_excl_.find(ty);
-                    if (it == bytype_excl_.end()) {
+                    const size_t index = ty->index_in_schema();
+                    if (index >= bytype_excl_.size()) {
                         return;
                     }
-                    auto& instances = it->second;
+                    auto& instances = bytype_excl_[index].instances;
                     // Equal ids sit together; pick the one that is this instance.
                     auto first = std::lower_bound(instances.begin(), instances.end(), entity.id(), id_before);
                     for (; first != instances.end() && first->id() == entity.id(); ++first) {
@@ -826,9 +882,6 @@ namespace ifcopenshell {
                             instances.erase(first);
                             break;
                         }
-                    }
-                    if (instances.empty()) {
-                        bytype_excl_.erase(it);
                     }
                 }
             }

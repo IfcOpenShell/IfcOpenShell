@@ -783,3 +783,37 @@ TEST_CASE("A file loaded out of id order lists each type in id order", "[ifcpars
     }
     CHECK(ids == std::vector<int>{1, 3, 5});
 }
+
+TEST_CASE("Only the type lists whose ids arrived out of order are sorted, across parse chunks too", "[ifcparse]") {
+    // Directions numbered upwards, points numbered downwards, interleaved,
+    // in a file large enough to be parsed in two chunks: the merged point
+    // list is out of order within each chunk and at the chunk boundary,
+    // the direction list never is. Both must read in id order.
+    std::string contents = "ISO-10303-21;\nHEADER;\nFILE_DESCRIPTION((''),'2;1');\nFILE_NAME('','',(''),(''),'','','');\nFILE_SCHEMA(('IFC4'));\nENDSEC;\nDATA;\n";
+    const int count = 120000;
+    for (int i = 0; i < count; ++i) {
+        contents += "#" + std::to_string(1 + i) + "=IFCDIRECTION((1.,0.,0.));\n";
+        contents += "#" + std::to_string(10000000 - i) + "=IFCCARTESIANPOINT((0.,0.,0.));\n";
+    }
+    contents += "ENDSEC;\nEND-ISO-10303-21;\n";
+    REQUIRE(contents.size() > 4 * 1024 * 1024);
+    const auto path = std::filesystem::temp_directory_path() / "ifcopenshell_out_of_order_lists_test.ifc";
+    {
+        std::ofstream out(path, std::ios::binary);
+        out << contents;
+    }
+    for (unsigned threads : {1u, 2u}) {
+        ifcopenshell::file file(ifcopenshell::uninitialized_tag{});
+        file.parse_threads(threads);
+        REQUIRE(file.initialize(path.string()));
+        for (const char* type : {"IfcDirection", "IfcCartesianPoint"}) {
+            std::vector<int> ids;
+            for (const auto& instance : file.instances_by_type_excl_subtypes(file.schema()->declaration_by_name(type))) {
+                ids.push_back(instance.id());
+            }
+            CHECK(ids.size() == (size_t)count);
+            CHECK(std::is_sorted(ids.begin(), ids.end()));
+        }
+    }
+    std::filesystem::remove(path);
+}
