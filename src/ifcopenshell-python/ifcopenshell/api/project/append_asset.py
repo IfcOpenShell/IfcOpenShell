@@ -21,6 +21,8 @@ from collections.abc import Callable
 from functools import partial
 from typing import Any, Literal, Optional, Union, get_args
 
+import numpy as np
+
 import ifcopenshell
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
@@ -600,17 +602,37 @@ class Usecase:
         }
         self.existing_contexts = list(self.file.by_type("IfcGeometricRepresentationContext"))
         element = self.add_element(self.settings["element"])
+        # Collected before reuse_existing_contexts removes the contexts it added.
+        products = [e for e in self.added_elements.values() if e.is_a("IfcProduct") and e != element]
         self.reuse_existing_contexts()
+
+        # Other appended products, such as openings, keep their copied placement
+        # chain. If it runs through the placement of a product that is not
+        # appended, e.g. an opening placed relative to the storey, that copy
+        # places no product, which IFC2X3 forbids (PlacesObject SET [1:1]).
+        # Their world placement is read before the element is placed anew.
+        dependents = [
+            (product, self.get_placement_matrix(product))
+            for product in products
+            if self.is_placed_via_an_empty_placement(product)
+        ]
 
         placement = element.ObjectPlacement
         if placement is not None:
-            matrix = ifcopenshell.util.placement.get_local_placement(placement)
-            matrix = ifcopenshell.util.geolocation.auto_local2global(self.settings["library"], matrix)
-            matrix = ifcopenshell.util.geolocation.auto_global2local(self.file, matrix)
+            matrix = self.get_placement_matrix(element)
             with SafeRemovalContext(
                 self.file, self.reuse_identities, self.assume_asset_uniqueness_by_name, self.new_reuse_identities
             ):
                 ifcopenshell.api.geometry.edit_object_placement(self.file, element, matrix, is_si=False)
+
+        for product, matrix in dependents:
+            # Placing the element anew may already have fixed the chain.
+            if not self.is_placed_via_an_empty_placement(product):
+                continue
+            with SafeRemovalContext(
+                self.file, self.reuse_identities, self.assume_asset_uniqueness_by_name, self.new_reuse_identities
+            ):
+                ifcopenshell.api.geometry.edit_object_placement(self.file, product, matrix, is_si=False)
 
         element_type = ifcopenshell.util.element.get_type(self.settings["element"])
         if element_type:
@@ -639,6 +661,24 @@ class Usecase:
             ifcopenshell.api.owner.settings.restore()
 
         return element
+
+    def get_placement_matrix(self, product: ifcopenshell.entity_instance) -> np.ndarray:
+        """World placement of an appended product, moved from library to file georeferencing."""
+        matrix = ifcopenshell.util.placement.get_local_placement(product.ObjectPlacement)
+        matrix = ifcopenshell.util.geolocation.auto_local2global(self.settings["library"], matrix)
+        return ifcopenshell.util.geolocation.auto_global2local(self.file, matrix)
+
+    def is_placed_via_an_empty_placement(self, product: ifcopenshell.entity_instance) -> bool:
+        """Whether a placement up the product's placement chain places no product."""
+        placement = product.ObjectPlacement
+        if placement is None or not placement.is_a("IfcLocalPlacement"):
+            return False
+        placement = placement.PlacementRelTo
+        while placement is not None and placement.is_a("IfcLocalPlacement"):
+            if not placement.PlacesObject:
+                return True
+            placement = placement.PlacementRelTo
+        return False
 
     def add_element(self, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         """Add element and check all it's subgraph inverses."""

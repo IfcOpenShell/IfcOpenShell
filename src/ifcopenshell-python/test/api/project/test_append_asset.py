@@ -812,6 +812,49 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         ifcopenshell.validate.validate(self.file, logger)
         assert not [statement for statement in logger.statements if "PlacesObject" in str(statement)]
 
+    def test_append_a_product_whose_opening_is_placed_relative_to_the_storey(self):
+        # Regression test: authoring tools sometimes place an opening relative to
+        # the storey instead of the voided element. The copied placement chain of
+        # the opening then kept a copy of the storey placement without a product,
+        # which IFC2X3 forbids (PlacesObject SET [1:1]).
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject")
+        storey = ifcopenshell.api.root.create_entity(library, ifc_class="IfcBuildingStorey")
+        wall = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
+        opening = ifcopenshell.api.root.create_entity(library, ifc_class="IfcOpeningElement")
+        ifcopenshell.api.spatial.assign_container(library, products=[wall], relating_structure=storey)
+        ifcopenshell.api.feature.add_feature(library, feature=opening, element=wall)
+        builder = ShapeBuilder(library)
+        storey.ObjectPlacement = library.createIfcLocalPlacement(
+            RelativePlacement=builder.create_axis2_placement_3d((10.0, 20.0, 3.0), x_axis=(0.6, 0.8, 0.0))
+        )
+        wall.ObjectPlacement = library.createIfcLocalPlacement(
+            PlacementRelTo=storey.ObjectPlacement,
+            RelativePlacement=builder.create_axis2_placement_3d((5.0, 0.0, 0.0)),
+        )
+        opening.ObjectPlacement = library.createIfcLocalPlacement(
+            PlacementRelTo=storey.ObjectPlacement,
+            RelativePlacement=builder.create_axis2_placement_3d((6.0, 0.0, 0.5)),
+        )
+
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        new_wall = ifcopenshell.api.project.append_asset(self.file, library=library, element=wall)
+
+        assert not [placement for placement in self.file.by_type("IfcLocalPlacement") if not placement.PlacesObject]
+        logger = ifcopenshell.validate.json_logger()
+        ifcopenshell.validate.validate(self.file, logger)
+        assert not [statement for statement in logger.statements if "PlacesObject" in str(statement)]
+        new_opening = new_wall.HasOpenings[0].RelatedOpeningElement
+        assert new_opening.GlobalId == opening.GlobalId
+        for product, new_product in ((wall, new_wall), (opening, new_opening)):
+            assert np.allclose(
+                ifcopenshell.util.placement.get_local_placement(new_product.ObjectPlacement),
+                ifcopenshell.util.placement.get_local_placement(product.ObjectPlacement),
+                rtol=0,
+                atol=1e-9,
+            )
+        assert new_opening.ObjectPlacement.PlacementRelTo == new_wall.ObjectPlacement
+
     def test_append_a_distribution_element_with_its_ports(self):
         library = ifcopenshell.api.project.create_file(version=self.file.schema)
         element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcFlowSegment")

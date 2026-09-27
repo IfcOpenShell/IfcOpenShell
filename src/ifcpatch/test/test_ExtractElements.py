@@ -32,9 +32,11 @@ import ifcopenshell.api.system
 import ifcopenshell.api.type
 import ifcopenshell.guid
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
 import ifcopenshell.validate
 import numpy
 import pytest
+from ifcopenshell.util.shape_builder import ShapeBuilder
 
 import ifcpatch
 import test.bootstrap
@@ -380,6 +382,69 @@ class TestExtractElements(test.bootstrap.IFC4):
         logger = ifcopenshell.validate.json_logger()
         ifcopenshell.validate.validate(output, logger)
         assert not [statement for statement in logger.statements if "PlacesObject" in str(statement)]
+
+    def test_extract_openings_placed_relative_to_the_storey(self, tmp_path):
+        # Regression test: authoring tools sometimes place an opening relative to
+        # the storey instead of the voided wall. Once the storey was extracted with
+        # a placement of its own, the opening of the next wall kept a copy of the
+        # storey placement without a product, which IFC2X3 forbids
+        # (PlacesObject SET [1:1]). The storey placement is rotated, so composing
+        # placements in the wrong order would move the openings. The opening of
+        # the last wall is placed relative to that wall and keeps its placement.
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        storey = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
+        builder = ShapeBuilder(self.file)
+        storey.ObjectPlacement = self.file.createIfcLocalPlacement(
+            RelativePlacement=builder.create_axis2_placement_3d((10.0, 20.0, 3.0), x_axis=(0.6, 0.8, 0.0))
+        )
+        walls, openings = [], []
+        for index in range(3):
+            wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+            opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
+            ifcopenshell.api.spatial.assign_container(self.file, products=[wall], relating_structure=storey)
+            ifcopenshell.api.feature.add_feature(self.file, feature=opening, element=wall)
+            wall.ObjectPlacement = self.file.createIfcLocalPlacement(
+                PlacementRelTo=storey.ObjectPlacement,
+                RelativePlacement=builder.create_axis2_placement_3d((5.0 * index, 0.0, 0.0)),
+            )
+            opening.ObjectPlacement = self.file.createIfcLocalPlacement(
+                PlacementRelTo=storey.ObjectPlacement,
+                RelativePlacement=builder.create_axis2_placement_3d((5.0 * index + 1.0, 0.0, 0.5)),
+            )
+            walls.append(wall)
+            openings.append(opening)
+        opening.ObjectPlacement.PlacementRelTo = wall.ObjectPlacement
+        opening.ObjectPlacement.RelativePlacement = builder.create_axis2_placement_3d((1.0, 0.0, 0.5))
+        assert not [placement for placement in self.file.by_type("IfcLocalPlacement") if not placement.PlacesObject]
+
+        output = ifcpatch.execute({"file": self.file, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
+
+        assert not [placement for placement in output.by_type("IfcLocalPlacement") if not placement.PlacesObject]
+        logger = ifcopenshell.validate.json_logger()
+        ifcopenshell.validate.validate(output, logger)
+        assert not [statement for statement in logger.statements if "PlacesObject" in str(statement)]
+        for wall, opening in zip(walls, openings):
+            new_wall = output.by_guid(wall.GlobalId)
+            assert [rel.RelatedOpeningElement.GlobalId for rel in new_wall.HasOpenings] == [opening.GlobalId]
+            assert output.by_guid(opening.GlobalId).ObjectPlacement.PlacementRelTo == new_wall.ObjectPlacement
+        assert numpy.allclose(
+            ifcopenshell.util.placement.get_axis2placement(
+                output.by_guid(openings[-1].GlobalId).ObjectPlacement.RelativePlacement
+            ),
+            ifcopenshell.util.placement.get_axis2placement(openings[-1].ObjectPlacement.RelativePlacement),
+            rtol=0,
+            atol=1e-9,
+        )
+        output.write(str(tmp_path / "output.ifc"))
+        reopened = ifcopenshell.open(str(tmp_path / "output.ifc"))
+        for product in [storey] + walls + openings:
+            for result in (output, reopened):
+                assert numpy.allclose(
+                    ifcopenshell.util.placement.get_local_placement(result.by_guid(product.GlobalId).ObjectPlacement),
+                    ifcopenshell.util.placement.get_local_placement(product.ObjectPlacement),
+                    rtol=0,
+                    atol=1e-9,
+                ), product.is_a()
 
     def test_keep_aggregate_in_spatial_structure(self):
         project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
