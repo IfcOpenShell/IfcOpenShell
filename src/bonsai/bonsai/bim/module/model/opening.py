@@ -425,11 +425,12 @@ class FilledOpeningGenerator:
     ) -> None:
         """Pre-listener for type.assign_type: anchor the old type's void before reassigning.
 
-        A custom void that lives only on an occurrence (the type has no 'Reference'
-        template) would be lost when that occurrence is moved to another type - the
-        post-assign regeneration replaces it. Promoting it onto its current type first
-        keeps it durable, so switching back later restores it. Idempotent and only acts on
-        genuinely custom (non-extrusion) voids.
+        A void worth preserving that lives only on an occurrence (the type has no
+        'Reference' template) would be lost when that occurrence is moved to another type -
+        the post-assign regeneration replaces it. Promoting it onto its current type first
+        keeps it durable, so switching back later restores it. Idempotent, and acts on
+        whatever :meth:`should_preserve_opening` accepts: user-authored geometry or a
+        manually adjusted extrusion.
         """
         relating_type = settings.get("relating_type")
         for related_object in settings.get("related_objects") or []:
@@ -837,12 +838,14 @@ class FilledOpeningGenerator:
         return True
 
     def promote_opening_to_type(self, filling_type: ifcopenshell.entity_instance) -> None:
-        """Promote a custom opening from an occurrence to a 'Reference' template on the type.
+        """Promote a preserved opening from an occurrence to a 'Reference' template on the type.
 
-        Called before a type is copied (``bim.duplicate_type``) so that a custom
-        (non-extrusion) opening, currently shared only between occurrences, is
-        anchored on the type itself and therefore carried to the copy. No-op if the
-        type already has a template or has no custom opening to promote.
+        Called before a type is copied (``bim.duplicate_type``) so that an opening
+        currently shared only between occurrences is anchored on the type itself and
+        therefore carried to the copy, and from the ``type.assign_type`` pre-listener so it
+        survives a type switch. Acts on whatever :meth:`should_preserve_opening` accepts:
+        user-authored geometry or a manually adjusted extrusion. No-op if the type already
+        has a template or has no opening worth preserving.
         """
         if self.get_type_opening_representation(filling_type):
             return
