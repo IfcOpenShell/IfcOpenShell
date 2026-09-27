@@ -282,6 +282,38 @@ class TestExtractElements(test.bootstrap.IFC4):
         assert {rel.RelatedElement for rel in rels} == {new_terminal}
         assert {rel.RelatingPort for rel in rels} == set(new_ports)
 
+    def test_ifc2x3_stair_typed_by_a_bare_type_product_is_preserved(self):
+        # Regression test: IFC2X3 has no IfcStairType, so exporters type a stair
+        # with a bare IfcTypeProduct, often without a class name in
+        # ApplicableOccurrence. Extraction used to abort on that pairing. The
+        # typing is built directly, as an exporter writes it.
+        if self.file.schema != "IFC2X3":
+            pytest.skip("From IFC4 on, IfcStair.CorrectTypeAssigned requires an IfcStairType")
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        stair = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStair")
+        stair.ShapeType = "STRAIGHT_RUN_STAIR"
+        stair_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTypeProduct", name="Concrete")
+        self.file.createIfcRelDefinesByType(
+            GlobalId=ifcopenshell.guid.new(),
+            OwnerHistory=stair.OwnerHistory,
+            RelatedObjects=[stair],
+            RelatingType=stair_type,
+        )
+
+        output = ifcpatch.execute({"file": self.file, "recipe": "ExtractElements", "arguments": ["IfcStair"]})
+
+        assert [s.GlobalId for s in output.by_type("IfcStair")] == [stair.GlobalId]
+        rels = output.by_type("IfcRelDefinesByType")
+        assert len(rels) == 1
+        assert rels[0].RelatingType.GlobalId == stair_type.GlobalId
+        assert rels[0].RelatingType.Name == "Concrete"
+        assert rels[0].RelatingType.ApplicableOccurrence is None
+        assert [o.GlobalId for o in rels[0].RelatedObjects] == [stair.GlobalId]
+        logger = ifcopenshell.validate.json_logger()
+        ifcopenshell.validate.validate(output, logger, express_rules=True)
+        typing = {rels[0], rels[0].RelatingType, *rels[0].RelatedObjects}
+        assert not [statement for statement in logger.statements if statement.get("instance") in typing]
+
     def test_keep_spatial_structure(self):
         project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
 

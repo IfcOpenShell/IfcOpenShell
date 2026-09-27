@@ -209,6 +209,15 @@ class Usecase:
                 allowed_occurrences.add(occurrence_class)
             except RuntimeError:
                 pass
+        # A bare IfcTypeProduct is also the only type IFC2X3 offers for
+        # occurrence classes without a dedicated type (IfcStair, IfcRamp,
+        # IfcRoof, ...), and exporters do not always put a class name in its
+        # ApplicableOccurrence. When that names no class, accept any
+        # IfcProduct, as WR41 does: IFC2X3 has no occurrence rule requiring a
+        # specific type. From IFC4 on, rules like IfcStair.CorrectTypeAssigned
+        # do, so the pairing stays rejected there.
+        if self.file.schema == "IFC2X3" and relating_type.is_a() == "IfcTypeProduct" and not allowed_occurrences:
+            allowed_occurrences.add("IfcProduct")
         # The map only covers physical product occurrence/type pairs (e.g.
         # IfcWallType -> IfcWall). Process and resource types (IfcTaskType,
         # IfcCrewResourceType, ...) aren't in it, but the schema's universal

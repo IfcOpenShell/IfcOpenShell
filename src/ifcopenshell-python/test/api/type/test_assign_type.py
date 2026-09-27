@@ -234,6 +234,42 @@ class TestAssignType(test.bootstrap.IFC4):
         with pytest.raises(TypeError, match=r"IfcAirTerminalType cannot type IfcWall"):
             ifcopenshell.api.type.assign_type(self.file, related_objects=[wall], relating_type=air_terminal_type)
 
+    def test_bare_type_product_without_applicable_occurrence_types_any_product_in_ifc2x3(self):
+        """IFC2X3 has no IfcStairType, so exporters type a stair with a bare
+        IfcTypeProduct, often without ApplicableOccurrence. WR41 allows any
+        IfcProduct. From IFC4 on, IfcStair.CorrectTypeAssigned requires an
+        IfcStairType, so the pairing stays rejected there."""
+        stair = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStair")
+        type_product = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTypeProduct")
+        if self.file.schema == "IFC2X3":
+            ifcopenshell.api.type.assign_type(self.file, related_objects=[stair], relating_type=type_product)
+            assert ifcopenshell.util.element.get_type(stair) == type_product
+        else:
+            with pytest.raises(TypeError, match=r"IfcTypeProduct cannot type IfcStair"):
+                ifcopenshell.api.type.assign_type(self.file, related_objects=[stair], relating_type=type_product)
+
+    def test_applicable_occurrence_limits_a_bare_type_product(self):
+        annotation = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcAnnotation")
+        stair = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStair")
+        type_product = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTypeProduct")
+        type_product.ApplicableOccurrence = "IfcAnnotation/TEXT"
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[annotation], relating_type=type_product)
+        assert ifcopenshell.util.element.get_type(annotation) == type_product
+        with pytest.raises(TypeError, match=r"IfcTypeProduct cannot type IfcStair"):
+            ifcopenshell.api.type.assign_type(self.file, related_objects=[stair], relating_type=type_product)
+
+    def test_bare_type_product_still_rejects_a_non_product(self):
+        task = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTask")
+        type_product = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTypeProduct")
+        with pytest.raises(TypeError, match=r"IfcTypeProduct cannot type IfcTask"):
+            ifcopenshell.api.type.assign_type(self.file, related_objects=[task], relating_type=type_product)
+
+    def test_specific_type_does_not_inherit_the_bare_type_product_exception(self):
+        stair = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStair")
+        wall_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        with pytest.raises(TypeError, match=r"IfcWallType cannot type IfcStair"):
+            ifcopenshell.api.type.assign_type(self.file, related_objects=[stair], relating_type=wall_type)
+
 
 class TestAssignTypeIFC2X3(test.bootstrap.IFC2X3, TestAssignType):
     pass
