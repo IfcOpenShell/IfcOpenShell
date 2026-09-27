@@ -45,12 +45,13 @@ def _add_real_segment_without_geometry(file, horizontal, design_parameters):
 
 
 def test_get_stationing_nest_returns_the_station_nest_even_after_key_point_nest_created():
-    # create() establishes the stationing IfcRelNests (one IfcReferent, PredefinedType="STATION")
-    # first. update_key_point_referents() then creates a second, separate IfcRelNests of
-    # PredefinedType="POSITION" referents. get_stationing_nest() must keep finding the STATION
-    # nest regardless of which nest happens to come first in alignment.IsNestedBy.
+    # add_stationing_referent() establishes the stationing IfcRelNests (one IfcReferent,
+    # PredefinedType="STATION") first. update_key_point_referents() then creates a second, separate
+    # IfcRelNests of PredefinedType="POSITION" referents. get_stationing_nest() must keep finding the
+    # STATION nest regardless of which nest happens to come first in alignment.IsNestedBy.
     file = _new_file()
-    alignment = ifcopenshell.api.alignment.create(file, "A1", include_geometry=False, start_station=100.0)
+    alignment = ifcopenshell.api.alignment.create(file, "A1", include_geometry=False)
+    ifcopenshell.api.alignment.add_stationing_referent(file, "A1 1+00.00", alignment, distance_along=0.0, station=100.0)
     horizontal = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
 
     design_parameters = file.createIfcAlignmentHorizontalSegment(
@@ -97,11 +98,7 @@ def test_get_stationing_nest_returns_none_when_only_key_point_nest_exists():
     )
     _add_real_segment_without_geometry(file, horizontal, design_parameters)
 
-    # remove the stationing nest that create() made, leaving only key-point referents behind
-    stationing_nest = ifcopenshell.api.alignment.get_stationing_nest(file, alignment)
-    file.remove(stationing_nest.RelatedObjects[0])
-    file.remove(stationing_nest)
-
+    # create() defines no stationing, so only key-point referents are nested
     ifcopenshell.api.alignment.update_key_point_referents(file, horizontal)
 
     assert ifcopenshell.api.alignment.get_stationing_nest(file, alignment) is None
