@@ -17,11 +17,20 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import xml.etree.ElementTree as ET
 
 import ifcopenshell
 import ifcopenshell.api.document
 import ifcopenshell.guid
 import pytest
+
+
+@pytest.fixture
+def builder():
+    """A SheetBuilder, with bonsai.bim loaded lazily."""
+    from bonsai.bim.module.drawing import sheeter
+
+    return sheeter.SheetBuilder()
 
 
 # ---------------------------------------------------------------------------
