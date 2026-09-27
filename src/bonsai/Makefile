@@ -151,9 +151,9 @@ endif
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pytest --dest=./wheels
 	# Provides Brickschema functionality
 	# Is not platform specific but has platform specific dependencies.
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download brickschema alembic $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
-	# The SQLAlchemy store for Brick: IfcOpenShell's fork, built from its develop branch (pure Python).
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) wheel "ifcopenshell-rdflib-sqlalchemy @ git+https://github.com/IfcOpenShell/rdflib-sqlalchemy@develop" --no-deps --wheel-dir=./wheels
+	# The SQLAlchemy store must be 0.7.1 or later (SQLAlchemy 2.1, rdflib 7, and the
+	# store.transaction() that brickschema 0.8 runs its persistent graph through).
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download brickschema "brickschema-rdflib-sqlalchemy>=0.7.1" alembic $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 	# Required for SVG to DXF conversion
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download ezdxf $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 	# Required by bcf
