@@ -309,7 +309,7 @@ IF EXIST "%INSTALL_DIR%\mpir" (
 set DEPENDENCY_NAME=mpir
 :: `mpfr` depends on relative path `..\mpir\config.h`, so dependency name should match exactly.
 set DEPENDENCY_DIR=%DEPS_DIR%\mpir
-call :GitCloneAndCheckoutRevision https://github.com/Andrej730/mpir-vs2026.git "%DEPENDENCY_DIR%"
+call :GitCloneAndCheckoutRevision https://github.com/BrianGladman/mpir.git "%DEPENDENCY_DIR%" 5e0c2061af105c151970d41c8394ce956f77e455
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 pushd "%DEPENDENCY_DIR%"
 git reset --hard
@@ -320,11 +320,6 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpir_gc\"}" | git apply --unidiff-zero --ignore-whitespace
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 git apply "%~dp0patches\mpir_runtime.patch" --unidiff-zero --ignore-whitespace
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-IF /I "%VS_PLATFORM%"=="ARM64" (
-    echo "Applying ARM64 Patches for Mpir"
-    git apply "%~dp0patches\mpir-arm64-changes.patch" --unidiff-zero --ignore-whitespace
-)
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd msvc
 cd vs%VS_VER:~2,2%

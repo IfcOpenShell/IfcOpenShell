@@ -696,7 +696,12 @@ def install_mpir(vs_cfg_vars: VsCfgResult, deps_dir: Path, install_dir: Path, bu
     if is_already_installed(install_dir / "mpir"):
         return
 
-    git_clone_and_checkout_revision(DEPENDENCY_NAME, "https://github.com/Andrej730/mpir-vs2026.git", dependency_dir)
+    git_clone_and_checkout_revision(
+        DEPENDENCY_NAME,
+        "https://github.com/BrianGladman/mpir.git",
+        dependency_dir,
+        "5e0c2061af105c151970d41c8394ce956f77e455",
+    )
     run_streamed("git", "reset", "--hard", cwd=dependency_dir)
     run_streamed("git", "clean", "-fdx", cwd=dependency_dir)
 
@@ -721,17 +726,6 @@ def install_mpir(vs_cfg_vars: VsCfgResult, deps_dir: Path, install_dir: Path, bu
         "--ignore-whitespace",
         cwd=dependency_dir,
     )
-
-    if vs_cfg_vars.is_vs_platform("ARM64"):
-        logger.info("Applying ARM64 patches for mpir.")
-        run_streamed(
-            "git",
-            "apply",
-            str(SCRIPT_DIR / "patches" / "mpir-arm64-changes.patch"),
-            "--unidiff-zero",
-            "--ignore-whitespace",
-            cwd=dependency_dir,
-        )
 
     vs_ver_short = str(vs_cfg_vars.generator.vs_ver)[2:]
     msvc_dir = dependency_dir / "msvc" / f"vs{vs_ver_short}"
