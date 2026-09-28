@@ -66,6 +66,11 @@ def add_stationing_referent(
 
         alignment = model.by_type("IfcAlignment")[0]
         ifcopenshell.api.alignment.add_stationing_referent(model,name="1+00.0",alignment=alignment,distance_along=0.0,station=100.0)
+
+        # A station equation at distance along 500: back station 6+00, ahead station 10+00
+        ifcopenshell.api.alignment.add_stationing_referent(
+            model, name="10+00.0", alignment=alignment, distance_along=500.0, station=1000.0, incoming_station=600.0
+        )
     """
 
     if on_basis_curve is None:

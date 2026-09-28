@@ -50,6 +50,9 @@ def clear_layout_segments(file: ifcopenshell.file, layout: entity_instance) -> N
     - The zero-length terminator segment (required by IFC spec)
     - The alignment's main stationing referent
 
+    Every segment gets a new GlobalId. To keep the GlobalIds of segments that survive the edit, use
+    update_layout_segments instead.
+
     :param file: The IFC file
     :param layout: An IfcAlignmentHorizontal, IfcAlignmentVertical, or IfcAlignmentCant
 
@@ -64,6 +67,8 @@ def clear_layout_segments(file: ifcopenshell.file, layout: entity_instance) -> N
         ifcopenshell.api.alignment.clear_layout_segments(model, h_layout)
 
         # Add new segments with updated PI positions
+        new_hpoints = [(0.0, 0.0), (1000.0, 0.0), (1900.0, 600.0)]
+        new_radii = [900.0]
         ifcopenshell.api.alignment.layout_horizontal_alignment_by_pi_method(
             model, h_layout, new_hpoints, new_radii
         )

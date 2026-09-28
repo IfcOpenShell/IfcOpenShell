@@ -50,8 +50,23 @@ def segment_vertices(file: ifcopenshell.file, segment: entity_instance):
 
     TI and NI are None if intersection points do not exist, such as in the case of a line.
 
-    :param curve_segment: A curve segment of type IfcAlignmentSegment or IfcCurveSegment
-    :return: tuples for Start, End, TI, NI
+    Coordinates are in SI units (metres) regardless of the project length unit, in the coordinate system of
+    the alignment curve.
+
+    :param segment: A curve segment of type IfcAlignmentSegment or IfcCurveSegment
+    :return: (x, y) tuples for Start, End, TI, NI
+
+    Example:
+
+    .. code:: python
+
+        alignment = ifcopenshell.api.alignment.create_by_pi_method(
+            model, "Main Street", [(0.0, 0.0), (1000.0, 0.0), (1800.0, 700.0)], [800.0]
+        )
+        horizontal = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+        arc = ifcopenshell.api.alignment.get_layout_segments(horizontal)[1]  # tangent, arc, tangent
+        start, end, ti, ni = ifcopenshell.api.alignment.segment_vertices(model, arc)
+        # in a project with metre units: ti is the PI (1000.0, 0.0) and ni the curve center (699.41, 800.0)
     """
     supported_segment_types = ["IFCALIGNMENTSEGMENT", "IFCCURVESEGMENT"]
     segment_type = segment.is_a().upper()

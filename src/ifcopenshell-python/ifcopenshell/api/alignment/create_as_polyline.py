@@ -129,7 +129,7 @@ def create_as_polyline(
     """
     Creates a new IfcAlignment with an IfcPolyline representation.
 
-    The IfcAlignment is aggreated to IfcProject
+    The IfcAlignment is aggregated to IfcProject
 
     If start_station is given, a STATION IfcReferent named "<alignment name> <station>"
     (e.g. "MyAlignment 49+00.00") is added at distance along 0.0 - the same naming
@@ -142,6 +142,19 @@ def create_as_polyline(
     :param points: sequence of points defining the polyline
     :param start_station: station value at the start of the alignment, or None for no stationing referent
     :return: Returns an IfcAlignment
+
+    Example:
+
+    .. code:: python
+
+        # 3D points give a polyline with elevations; 2D points give a horizontal-only polyline
+        points = [
+            model.createIfcCartesianPoint((0.0, 0.0, 50.0)),
+            model.createIfcCartesianPoint((300.0, 150.0, 55.0)),
+            model.createIfcCartesianPoint((600.0, 150.0, 58.0)),
+            model.createIfcCartesianPoint((900.0, 400.0, 60.0)),
+        ]
+        alignment = ifcopenshell.api.alignment.create_as_polyline(model, "Survey Line", points, start_station=0.0)
     """
     alignment = file.createIfcAlignment(
         GlobalId=ifcopenshell.guid.new(),

@@ -34,24 +34,25 @@ This API does not determine alignment parameters based on rules, such as minimum
 This API is under development and subject to code breaking changes in the future.
 
 Presently, this API supports:
-    1. Creating alignments, both horizontal and vertical, using the PI method, including clothoid
-       transition spirals in the horizontal layout. The horizontal PI solve is also available as a
-       pure geometric computation (solve_horizontal_alignment_by_pi_method) for callers that need
-       segment parameters without writing to a file, such as interactive editors. Alignment
-       definition can be read from a CSV file.
-    2. Creating alignments segment by segment.
-    3. Automatic creation of geometric definitions (IfcCompositeCurve, IfcGradientCurve, IfcSegmentedReferenceCurve)
-    4. Explicit definition of stationing, including station equations and reverse (decreasing) stationing
-    5. Automatic definition of alignment transition point referents
-    6. Utility functions for printing business logical and geometric representations, as well as minimal geometry evaluations
-
-Future versions of this API may support:
-    1. Transition spiral families other than the clothoid (Bloss, cosine, sine, cubic, Helmert) in
-       the PI method solver.
-    2. Updating horizontal curve definitions by revising transition spiral parameters and circular curve radii
-    3. Updating vertical curve definitions by revising horizontal length of curves
-    4. Removing a segment at any location along a curve
-    5. Adding a segment at any location along a curve
+    1. Creating alignments, both horizontal and vertical, using the PI method, including transition
+       spirals (clothoid and the other spiral families in SPIRAL_FAMILIES) and compound/reverse curves
+       in the horizontal layout. The horizontal PI solve is also available as a pure geometric
+       computation (solve_horizontal_alignment_by_pi_method) for callers that need segment parameters
+       without writing to a file, such as interactive editors. Alignment definition can be read from a
+       CSV file.
+    2. Creating a cant layout alongside the horizontal layout (layout_horizontal_alignment_by_pi_method).
+    3. Creating alignments segment by segment.
+    4. Creating alignments represented by a polyline (create_as_polyline) or as an offset from another
+       alignment (create_as_offset_curve).
+    5. Revising a layout's segments - changing curve parameters, and inserting or removing segments -
+       while keeping the GlobalIds of the segments that correspond (update_layout_segments), or replacing
+       them all (clear_layout_segments).
+    6. Automatic creation of geometric definitions (IfcCompositeCurve, IfcGradientCurve, IfcSegmentedReferenceCurve)
+    7. Explicit definition of stationing, including station equations and reverse (decreasing) stationing,
+       and conversion between station and distance along (station_from_distance_along,
+       distance_along_from_station)
+    8. Automatic definition of alignment transition point referents
+    9. Utility functions for printing business logical and geometric representations, as well as minimal geometry evaluations
 """
 
 from ._get_segment_start_point_label import register_referent_name_callback
