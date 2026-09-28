@@ -919,3 +919,41 @@ TopoDS_Shape IfcGeom::util::unify(const TopoDS_Shape& s, double tolerance) {
 	usd.Build();
 	return usd.Shape();
 }
+
+TopoDS_Shape IfcGeom::util::sew_and_unify_for_linework(const TopoDS_Shape& s, double tolerance) {
+	// Sewing first: faces that are geometrically coincident/adjacent but were built as
+	// topologically disjoint pieces (the normal outcome of concatenating independently-built
+	// items into one compound) don't share edges yet, so unify()'s ShapeUpgrade_UnifySameDomain
+	// below -- which only merges faces that already share topology -- would otherwise never see
+	// them as mergeable. This is a per-shape healing step only: callers are responsible for
+	// never handing it more than one object's own shape, since sewing/unifying across distinct
+	// building elements would erase the object-boundary information later classification depends
+	// on structurally (separate shapes per object).
+	BRepOffsetAPI_Sewing sewing_builder;
+	sewing_builder.SetTolerance(tolerance);
+	sewing_builder.SetMaxTolerance(tolerance);
+	sewing_builder.SetMinTolerance(tolerance);
+	sewing_builder.Add(s);
+
+	TopoDS_Shape sewed = s;
+	try {
+		sewing_builder.Perform();
+		sewed = sewing_builder.SewedShape();
+	} catch (const Standard_Failure&) {
+		sewed = s;
+	}
+
+	return IfcGeom::util::unify(sewed, tolerance);
+}
+
+TopoDS_Shape IfcGeom::util::heal_for_linework(const TopoDS_Shape& s, double tolerance) {
+	TopoDS_Shape healed = IfcGeom::util::sew_and_unify_for_linework(s, tolerance);
+
+	if (!IfcGeom::util::validate_shape(healed)) {
+		ShapeFix_Shape sfs(healed);
+		sfs.Perform();
+		healed = sfs.Shape();
+	}
+
+	return IfcGeom::util::validate_shape(healed) ? healed : s;
+}

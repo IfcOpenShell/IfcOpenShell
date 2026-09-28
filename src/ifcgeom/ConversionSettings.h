@@ -407,6 +407,52 @@ namespace ifcopenshell {
 				static constexpr bool defaultvalue = true;
 			};
 
+			struct SvgUseCrossCoplanarClassification : public SettingBase<SvgUseCrossCoplanarClassification, bool> {
+				static constexpr const char* const name = "svg-use-cross-coplanar-classification";
+				static constexpr const char* const description = "SVG edge classification (issue #3742): additionally classify a projection edge as 'cross-coplanar' when its entire length lies on a face of a different product that is coplanar with, and shares style/material identity with, the face it came from -- i.e. a duplicate boundary between two distinct elements' coincident surfaces, not a fold within one element's own geometry. Only takes effect when svg-use-edge-classification is also enabled, since it shares that system's classification buckets.";
+				static constexpr bool defaultvalue = true;
+			};
+
+			struct SvgRenderCrossCoplanarEdges : public SettingBase<SvgRenderCrossCoplanarEdges, bool> {
+				static constexpr const char* const name = "svg-render-cross-coplanar-edges";
+				static constexpr const char* const description = "SVG edge classification (issue #3742): whether to emit 'cross-coplanar' projection edges. Defaults to false, i.e. these duplicate-boundary edges are omitted from the output. Only relevant when svg-use-cross-coplanar-classification is enabled.";
+				static constexpr bool defaultvalue = false;
+			};
+
+			struct SvgCrossCoplanarTolerance : public SettingBase<SvgCrossCoplanarTolerance, double> {
+				static constexpr const char* const name = "svg-cross-coplanar-tolerance";
+				static constexpr const char* const description = "SVG edge classification (issue #3742): distance tolerance, in project length units, used for the bounding-box pre-filter and the plane-coincidence test between two different products' faces when deciding 'cross-coplanar' classification. Defaults to 1e-4 (0.1mm for a project in metres).";
+				static constexpr double defaultvalue = 1.e-4;
+			};
+
+			struct SvgUseMatStyleChangeClassification : public SettingBase<SvgUseMatStyleChangeClassification, bool> {
+				static constexpr const char* const name = "svg-use-mat-style-change-classification";
+				static constexpr const char* const description = "SVG edge classification: additionally classify a projection edge as 'mat-style-change' when (a) it lies on a coplanar, coincident boundary between two different products whose material/style genuinely differ, or (b) it is a newly-constructed edge marking where a single face of one product's own multi-layer IfcMaterialLayerSetUsage crosses an internal boundary between two genuinely different materials. Only takes effect when svg-use-edge-classification is also enabled. Case (b) is independent of svg-use-cross-coplanar-classification. Case (a) requires svg-use-cross-coplanar-classification to also be enabled, since it reuses that same cross-product comparison pass. Reuses svg-cross-coplanar-tolerance for its own plane-coincidence/boundary-crossing tests.";
+				static constexpr bool defaultvalue = false;
+			};
+
+			// Unlike cross-coplanar/mat-style-change, this pass has no "dissolve/trim a neighbouring
+			// outline edge" interaction for a separate render flag to preserve when classification
+			// runs but rendering doesn't (there is nothing else in the drawing for a face-intersection
+			// edge's mere presence to affect -- it never wins a coincident-duplicate-edge priority
+			// contest, see coincident_edge_class_priority() in SvgSerializer.cpp, since it's left
+			// unranked/lowest-priority there). A classification-on/render-off state would therefore
+			// just pay this pass' real per-face-pair BRepAlgoAPI_Section cost for zero visible effect
+			// -- so, mirroring svg-use-mat-style-change-classification's own single-boolean precedent
+			// (same reasoning: no separate render flag), this one setting both enables the match pass
+			// AND controls whether its edges are emitted.
+			struct SvgUseFaceIntersectionClassification : public SettingBase<SvgUseFaceIntersectionClassification, bool> {
+				static constexpr const char* const name = "svg-use-face-intersection-classification";
+				static constexpr const char* const description = "SVG edge classification (issue #3742 follow-on): classify AND emit a projection edge as 'face-intersection' when it is a newly-constructed edge marking where a planar face of one product genuinely crosses a (non-parallel) planar face of a different product in 3D -- e.g. a diagonal brace passing through a wall -- as opposed to 'cross-coplanar', which handles coincident/parallel faces. Computed via BRepAlgoAPI_Section trimmed to both faces' real boundaries. Unlike cross-coplanar/mat-style-change, there is no separate render toggle: this pass has no outline-trimming side effect for a render-off state to preserve, so one setting controls both. Only takes effect when svg-use-edge-classification is also enabled, since it shares that system's classification buckets.";
+				static constexpr bool defaultvalue = false;
+			};
+
+			struct SvgFaceIntersectionTolerance : public SettingBase<SvgFaceIntersectionTolerance, double> {
+				static constexpr const char* const name = "svg-face-intersection-tolerance";
+				static constexpr const char* const description = "SVG edge classification (issue #3742 follow-on): distance tolerance, in project length units, used for the bounding-box pre-filter, the near-parallel face-normal rejection (faces this close to parallel are cross-coplanar's job, not this pass'), and the minimum surviving intersection-segment length for 'face-intersection' classification. Defaults to 1e-4 (0.1mm for a project in metres), the same order of magnitude as svg-cross-coplanar-tolerance.";
+				static constexpr double defaultvalue = 1.e-4;
+			};
+
 			struct KeepBoundingBoxes : public SettingBase<KeepBoundingBoxes, bool> {
 				static constexpr const char* const name = "keep-bounding-boxes";
 				static constexpr const char* const description =
@@ -689,7 +735,7 @@ namespace ifcopenshell {
 		};
 
 		class Settings : public SettingsContainer<
-                             std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, CgalSmoothAngleDegrees, SvgRidgeAngleMinDegrees, SvgValleyAngleMinDegrees, SvgEmitFlushEdges, SvgUseEdgeClassification, SvgRenderCreaseEdges, SvgRenderSharpEdges, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes, DeferProcessingFirstElement, MaxOffset, MaxOffsetDeviation, ApplyOffset, MakeVolume>
+                             std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, CgalSmoothAngleDegrees, SvgRidgeAngleMinDegrees, SvgValleyAngleMinDegrees, SvgEmitFlushEdges, SvgUseEdgeClassification, SvgRenderCreaseEdges, SvgRenderSharpEdges, SvgUseCrossCoplanarClassification, SvgRenderCrossCoplanarEdges, SvgCrossCoplanarTolerance, SvgUseMatStyleChangeClassification, SvgUseFaceIntersectionClassification, SvgFaceIntersectionTolerance, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes, DeferProcessingFirstElement, MaxOffset, MaxOffsetDeviation, ApplyOffset, MakeVolume>
 		>
 		{};
 }

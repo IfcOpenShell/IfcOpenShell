@@ -587,6 +587,69 @@ class BIMCameraProperties(PropertyGroup):
         default=False,
         update=get_update_layer_callback("render_flush", "RenderFlush"),
     )
+    use_cross_coplanar_classification: BoolProperty(
+        name="Use Cross-Coplanar Classification",
+        description="Additionally classify a projection edge as 'cross-coplanar' when its entire "
+        "length lies on a different element's coincident, same-style/material face -- a duplicate "
+        "boundary between two elements' coincident surfaces. Only takes effect when Use Edge "
+        "Classification is also enabled",
+        default=True,
+        update=get_update_layer_callback("use_cross_coplanar_classification", "UseCrossCoplanarClassification"),
+    )
+    render_cross_coplanar: BoolProperty(
+        name="Render Cross-Coplanar",
+        description="Render 'cross-coplanar' projection edges (duplicate boundaries between two "
+        "different elements' coincident surfaces). Omitted by default",
+        default=False,
+        update=get_update_layer_callback("render_cross_coplanar", "RenderCrossCoplanar"),
+    )
+    cross_coplanar_tolerance: FloatProperty(
+        name="Cross-Coplanar Tolerance",
+        description="Distance tolerance, in project length units, used when deciding whether two "
+        "different elements' faces are coincident for 'cross-coplanar' classification",
+        default=0.0001,
+        min=0.0,
+        update=get_update_layer_callback("cross_coplanar_tolerance", "CrossCoplanarTolerance"),
+    )
+    use_mat_style_change_classification: BoolProperty(
+        name="Use Material/Style Change Classification",
+        description="Classify a projection edge as 'mat-style-change' where two coincident faces of "
+        "different elements have different material/style, or where a single face crosses an "
+        "internal boundary of its own multi-layer material usage (e.g. a section-cut face showing "
+        "more than one layer of a wall's material stack). Only takes effect when Use Edge "
+        "Classification is also enabled",
+        default=False,
+        update=get_update_layer_callback("use_mat_style_change_classification", "UseMatStyleChangeClassification"),
+    )
+    use_face_intersection_classification: BoolProperty(
+        name="Use Face-Intersection Classification",
+        description="Classify and render a projection edge as 'face-intersection' where a planar "
+        "face of one element genuinely crosses a (non-parallel) planar face of a different element "
+        "in 3D -- e.g. a diagonal brace passing through a wall -- as opposed to a coincident/parallel "
+        "'cross-coplanar' boundary. Unlike Cross-Coplanar/Material-Style-Change, there is no separate "
+        "render toggle: this classification has no other edges to trim, so one setting controls both. "
+        "Only takes effect when Use Edge Classification is also enabled",
+        default=False,
+        update=get_update_layer_callback("use_face_intersection_classification", "UseFaceIntersectionClassification"),
+    )
+    face_intersection_tolerance: FloatProperty(
+        name="Face-Intersection Tolerance",
+        description="Distance tolerance, in project length units, used when deciding whether two "
+        "different elements' faces genuinely cross for 'face-intersection' classification",
+        default=0.0001,
+        min=0.0,
+        update=get_update_layer_callback("face_intersection_tolerance", "FaceIntersectionTolerance"),
+    )
+    merge_duplicate_edges: BoolProperty(
+        name="Merge Duplicate Edges",
+        description="Two different elements can each independently draw their own copy of the same "
+        "physical edge (e.g. a shared 'cross-coplanar' boundary) -- both are individually correct, "
+        "but drawing both is visibly wrong once stroke opacity drops below 100%. When enabled, a "
+        "post-processing pass removes/trims same-class duplicate or overlapping strokes after the "
+        "drawing is generated. Only takes effect when Use Edge Classification is also enabled",
+        default=False,
+        update=get_update_layer_callback("merge_duplicate_edges", "MergeDuplicateEdges"),
+    )
     target_view: EnumProperty(
         name="Target View",
         default="PLAN_VIEW",
