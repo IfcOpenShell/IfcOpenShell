@@ -92,6 +92,9 @@ class ExploreTool(bpy.types.WorkSpaceTool):
         row = layout.row(align=True)
         row.operator("bim.generate_uv_map", icon="UV")
 
+        row = layout.row(align=True)
+        row.operator("bim.fetch_cad_sketcher", text="CadSketcher", icon="MOD_LATTICE")
+
 
 class ExploreHotkey(bpy.types.Operator):
     bl_idname = "bim.explore_hotkey"
