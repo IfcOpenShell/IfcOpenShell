@@ -44,7 +44,7 @@ def create_by_pi_method(
     layout_horizontal_alignment_by_pi_method / solve_horizontal_alignment_by_pi_method).
 
     :param name: value for Name attribute
-    :param points: (X,Y) pairs denoting the location of the horizontal PIs, including start and end
+    :param hpoints: (X,Y) pairs denoting the location of the horizontal PIs, including start and end
     :param radii: radii values to use for transition, optionally with spiral transition lengths
     :param vpoints: (distance_along, Z_height) pairs denoting the location of the vertical PIs, including start and end.
     :param lengths: parabolic vertical curve horizontal length values to use for transition
@@ -52,6 +52,26 @@ def create_by_pi_method(
         "<name> <station string>" is added at distance along 0.0 once the geometry exists. If None
         (the default), no stationing referent is created and get_alignment_start_station() reports 0.0.
     :return: Returns an IfcAlignment
+
+    Example:
+
+    .. code:: python
+
+        model = ifcopenshell.api.project.create_file(version="IFC4X3")
+        ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(model, length={"is_metric": True, "raw": "METERS"})
+
+        # Horizontal PIs (X, Y), including the start (POB) and end (POE) points
+        hpoints = [(500.0, 2500.0), (3340.0, 660.0), (4340.0, 5000.0), (7600.0, 4560.0), (8480.0, 2010.0)]
+        # One entry per interior PI: a circular curve radius, or (R, Lin, Lout) with clothoid spirals
+        radii = [1000.0, (1250.0, 150.0, 150.0), 950.0]
+        # Vertical PIs (distance along, elevation) and one parabolic curve length per interior VPI
+        vpoints = [(0.0, 100.0), (2000.0, 135.0), (5000.0, 105.0), (7400.0, 153.0), (9800.0, 105.0), (12800.0, 90.0)]
+        lengths = [1600.0, 1200.0, 2000.0, 800.0]
+
+        alignment = ifcopenshell.api.alignment.create_by_pi_method(
+            model, "Main Street", hpoints, radii, vpoints, lengths, start_station=1000.0
+        )
     """
     include_vertical = True if vpoints and lengths else False
     alignment = ifcopenshell.api.alignment.create(file, name, include_vertical=include_vertical)

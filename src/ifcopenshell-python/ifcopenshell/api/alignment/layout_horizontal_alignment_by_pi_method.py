@@ -114,6 +114,26 @@ def layout_horizontal_alignment_by_pi_method(
     :param cant_layout: An IfcAlignmentCant layout to receive the cant segments. Required when cants is provided.
     :param cants: cant values, one per PI curve, applied to the outer rail. Required when cant_layout is provided.
     :return: None
+
+    Example:
+
+    .. code:: python
+
+        model = ifcopenshell.api.project.create_file(version="IFC4X3")
+        ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(model, length={"is_metric": True, "raw": "METERS"})
+
+        # A rail alignment with cant: the cant layout is filled in one-for-one with the horizontal layout
+        alignment = ifcopenshell.api.alignment.create(model, "Main Line", include_vertical=True, include_cant=True)
+        horizontal = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+        cant = ifcopenshell.api.alignment.get_cant_layout(alignment)
+        cant.RailHeadDistance = 1.5
+
+        hpoints = [(0.0, 0.0), (1000.0, 0.0), (1800.0, 700.0), (2800.0, 700.0)]
+        radii = [(800.0, 120.0, 120.0), (1200.0, 90.0, 90.0)]  # spirals are needed where the cant changes
+        ifcopenshell.api.alignment.layout_horizontal_alignment_by_pi_method(
+            model, horizontal, hpoints, radii, cant_layout=cant, cants=[0.15, 0.10]
+        )
     """
     if (cant_layout is None) != (cants is None):
         raise ValueError("cant_layout and cants must be provided together")
