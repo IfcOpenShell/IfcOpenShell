@@ -7,8 +7,8 @@ resolving them.
 
 ## Status and work plan (resume here)
 
-*Last updated 2026-09-28.* Committed 2026-09-28, not yet pushed: `1ae038098` stationing on offset
-curve alignments (§5.2) + the extend fix (§9), and the profile view for 3D offset curves (§5.2). The
+*Last updated 2026-09-28.* Pushed as of 2026-09-28: `1ae038098` stationing on offset curve
+alignments (§5.2) + the extend fix (§9), and `ddf24724f` the profile view for 3D offset curves (§5.2). The
 source tree is on D: on one computer and F: on the other; the
 `IFCOPENSHELL_DIR` environment variable points to it on each.
 
@@ -26,10 +26,36 @@ edits + Insert/Delete PI + PI click-pick (§11), `6ea213041` cant follows horizo
 
 **Work plan, in order:**
 
-1. **Documentation and examples for the new alignment features (per the user, 2026-09-28).** Not
-   yet scoped: what the documentation covers (Bonsai user docs for the Alignment tab's tools, the
-   `ifcopenshell.api.alignment` functions added on this branch, or both), and what form the examples
-   take (sample IFC files, scripts, step-by-step walkthroughs).
+1. **Documentation and examples for the new alignment features (per the user, 2026-09-28).**
+   Scoped 2026-09-28:
+   - **Bonsai user guide -- committed 2026-09-28; the user is reviewing it against the app.**
+     `src/bonsai/docs/guides/alignment.rst` rewritten from the 36-line CSV-import stub (whose
+     "stop-gap, will be phased out" note is gone) into a guide to the whole Alignments tab: adding
+     (Layouts / Polyline / Offset Curve), drawing and curving the horizontal, compound/reverse
+     curves, PI-marker and table editing, extending, the profile view and vertical draw/edit,
+     multiple verticals, cant, segment tables, length mismatch/Match, polyline and offset curve
+     alignments, stationing and station equations, key points, the Alignment Segments review
+     panel, deleting, CSV import (kept), and a pointer to the Python API. Walkthroughs are numbered
+     steps in each section. No screenshots yet -- to add alongside the tutorial. Full Sphinx
+     build of `src/bonsai/docs` is clean (no `.. contents::` -- Furo replaces it with an error
+     message and shows its own page contents in the sidebar).
+   - **Tutorial with video -- paused (per the user, 2026-09-28).** A start-to-finish tutorial
+     (create a horizontal alignment, add a vertical profile, add cant, create an offset curve, add
+     stationing). Open: who records the video (Claude can write the script/shot list and capture
+     screenshots with the UI harness; screen recording + narration is likely a manual step), where
+     it is hosted, and how it is embedded (the Bonsai docs have no video precedent yet).
+   - **API docs -- done 2026-09-28 (`01e167ecd`, `8f6bccd4a`).** Every public `ifcopenshell.api.alignment` function added or
+     changed on this branch now has an example (all 28 examples extracted from the docstrings and
+     executed); stale module overview ("future" list) brought up to date; fixes: `create` notes a
+     cant layout needs `include_vertical=True` (otherwise a bare AssertionError),
+     `segment_vertices` returns SI metres regardless of project units and had a wrong param name,
+     `create_by_pi_method` param name, `clear_layout_segments` example had undefined names.
+     `8f6bccd4a` fixes four upstream examples (`get_basis_curve`, `get_curve`, `get_layout_curve`,
+     `get_parent_alignment`) that Sphinx rejected. Full build of `src/ifcopenshell-python/docs`
+     (~9 min) leaves no alignment warnings beyond the site-wide duplicate-description and
+     ambiguous-`str` ones. `ifcopenshell.validate` has the same broken-example error; not ours.
+     Building the docs: a venv with `sphinx furo sphinx-autoapi sphinx-copybutton`, then
+     `sphinx-build -b html . <out>` from each docs directory.
 2. **Bottom of the list -- the C++ pass (see the note at the end of §1):** moving the Python-side
    alignment geometry (PI solver, spiral integrands, join-radius root finding) to C++; the
    degenerate spiral crash (equal start/end radius spiral, equal-gradient vertical arc); the
