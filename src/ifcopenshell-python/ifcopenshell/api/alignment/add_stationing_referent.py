@@ -80,12 +80,25 @@ def add_stationing_referent(
     object_placement = None
     representation = None
     # A polyline alignment's IfcPolyline/IfcIndexedPolyCurve (an alignment with no layouts) is as
-    # valid a basis curve for linear placement as a layout-based alignment's composite curve.
-    on_curve = curve is not None and (
-        (curve.is_a("IfcCompositeCurve") and 0 < len(curve.Segments))
-        or curve.is_a("IfcPolyline")
-        or curve.is_a("IfcIndexedPolyCurve")
-    )
+    # valid a basis curve for linear placement as a layout-based alignment's composite curve. So is an
+    # offset curve alignment's IfcOffsetCurveByDistances, once the curve it is ultimately offset from
+    # has segments of real length (its DistanceAlong is measured along that basis curve; the geometry
+    # kernel can't offset a curve that is only the zero-length terminating segment).
+    lowest = curve
+    while lowest is not None and lowest.is_a("IfcOffsetCurveByDistances"):
+        lowest = lowest.BasisCurve
+    if curve is not None and curve.is_a("IfcOffsetCurveByDistances"):
+        on_curve = (
+            lowest is not None
+            and lowest.is_a("IfcCompositeCurve")
+            and any(segment.SegmentLength.wrappedValue != 0.0 for segment in lowest.Segments)
+        )
+    else:
+        on_curve = curve is not None and (
+            (curve.is_a("IfcCompositeCurve") and 0 < len(curve.Segments))
+            or curve.is_a("IfcPolyline")
+            or curve.is_a("IfcIndexedPolyCurve")
+        )
     if on_curve:
         object_placement = file.createIfcLinearPlacement(
             RelativePlacement=file.createIfcAxis2PlacementLinear(
