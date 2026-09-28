@@ -72,6 +72,10 @@ jobs:
           uv run ../nix/cache_dependencies.py unpack
 
       - name: ccache
+        # Homebrew has no Intel bottles for this macOS (Tier 3), so the
+        # action's `brew install ccache` compiles it from source and fails.
+        # cmake only uses ccache when it is found; Intel builds go without.
+        if: matrix.arch == 'arm64'
         uses: hendrikmuhs/ccache-action@v1.2.24
         with:
           key: mac-${{ matrix.arch }}
