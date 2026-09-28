@@ -1400,3 +1400,174 @@ class TestRemoveUnreferencedGroups(NewFile):
 
         assert subject.remove_unreferenced_groups(model.sheet) == []
         assert self._places(model) == ["PLAN.svg", "SECTION.svg"]
+
+class TestRestoreUnplacedReferences(NewFile):
+    """The mirror of the above, and the way it bit in the field: drawings deleted
+    in a tool were taken off the sheets, then Blender was reopened without the
+    IFC having been saved, so the model was back to placing three drawings whose
+    groups had gone. Bonsai's Sheets panel listed them; the sheets were empty.
+
+    What a group would look like is Bonsai's own business and built elsewhere, so
+    the builder is recorded rather than run."""
+
+    def _layout(self, model, places):
+        """places: (file, data-id) pairs written as drawing groups."""
+        groups = "".join(
+            f'<g data-type="drawing" data-id="{did}" data-drawing="0g{i}">'
+            f'<image data-type="foreground" xlink:href="{os.path.relpath(f, str(model.layouts))}"/>'
+            f"</g>"
+            for i, (f, did) in enumerate(places)
+        )
+        Path(model.layout_path).write_text(
+            '<svg xmlns="http://www.w3.org/2000/svg" '
+            f'xmlns:xlink="http://www.w3.org/1999/xlink">{groups}</svg>'
+        )
+
+    @pytest.fixture
+    def built(self, monkeypatch):
+        """What the sheet builder was asked to put back, without putting it back."""
+        import bonsai.bim.module.drawing.sheeter as sheeter
+
+        recorded = []
+        monkeypatch.setattr(
+            subject, "owner_of_placed_file", classmethod(lambda cls, uri: ("drawing", uri))
+        )
+        for name in ("add_drawing", "add_document"):
+            monkeypatch.setattr(
+                sheeter.SheetBuilder,
+                name,
+                lambda self, reference, entity, sheet, _name=name: recorded.append(
+                    (_name, os.path.basename(entity))
+                ),
+            )
+        return recorded
+
+    def test_a_reference_with_no_group_is_put_back(self, tmp_path, monkeypatch, built):
+        model = SheetOnDisk(tmp_path, monkeypatch)
+        plan = model.add_drawing("PLAN", "0aaa")
+        model.add_drawing("SECTION", "0bbb")
+        self._layout(model, [(plan, 5000)])
+
+        restored = subject.restore_unplaced_references(model.sheet)
+
+        assert built == [("add_drawing", "SECTION.svg")]
+        assert len(restored) == 1
+        assert "SECTION.svg" in restored[0]
+
+    def test_nothing_happens_when_every_reference_has_a_group(self, tmp_path, monkeypatch, built):
+        model = SheetOnDisk(tmp_path, monkeypatch)
+        plan = model.add_drawing("PLAN", "0aaa")
+        section = model.add_drawing("SECTION", "0bbb")
+        self._layout(model, [(plan, 5000), (section, 5001)])
+
+        assert subject.restore_unplaced_references(model.sheet) == []
+        assert built == []
+
+    def test_a_group_whose_data_id_matches_nothing_still_counts(self, tmp_path, monkeypatch, built):
+        # Ids drift when a model is re-serialised. Placing a second copy because
+        # of that is how a sheet ends up showing one drawing three times.
+        model = SheetOnDisk(tmp_path, monkeypatch)
+        plan = model.add_drawing("PLAN", "0aaa")
+        self._layout(model, [(plan, 999001)])
+
+        assert subject.restore_unplaced_references(model.sheet) == []
+        assert built == []
+
+    def test_a_drawing_placed_twice_wants_two_groups(self, tmp_path, monkeypatch, built):
+        model = SheetOnDisk(tmp_path, monkeypatch)
+        plan = model.add_drawing("PLAN", "0aaa")
+        model.references.append(
+            model.ifc.createIfcDocumentReference(
+                Location=plan, Description="DRAWING", ReferencedDocument=model.sheet
+            )
+        )
+        self._layout(model, [(plan, 5000)])
+
+        assert len(subject.restore_unplaced_references(model.sheet)) == 1
+        assert built == [("add_drawing", "PLAN.svg")]
+
+    def test_one_never_generated_is_reported_not_placed(self, tmp_path, monkeypatch, built):
+        # Its file is what the group would place, so a group pointing at nothing
+        # is worse than saying why.
+        model = SheetOnDisk(tmp_path, monkeypatch)
+        missing = str(model.drawings / "NOT GENERATED.svg")
+        model.references.append(
+            model.ifc.createIfcDocumentReference(
+                Location=missing, Description="DRAWING", ReferencedDocument=model.sheet
+            )
+        )
+        self._layout(model, [])
+
+        restored = subject.restore_unplaced_references(model.sheet)
+
+        assert built == []
+        assert "has not been generated" in restored[0]
+
+    def test_a_file_nothing_owns_is_reported(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(subject, "owner_of_placed_file", classmethod(lambda cls, uri: None))
+        model = SheetOnDisk(tmp_path, monkeypatch)
+        model.add_drawing("ORPHAN", "0aaa")
+        self._layout(model, [])
+
+        restored = subject.restore_unplaced_references(model.sheet)
+
+        assert "nothing in it owns that file" in restored[0]
+
+    def test_it_finds_the_drawing_a_file_belongs_to(self, tmp_path, monkeypatch):
+        # Not stubbed here: this is the lookup the fixture above stands in for.
+        model = SheetOnDisk(tmp_path, monkeypatch)
+        plan = model.add_drawing("PLAN", "0aaa")
+        drawing_reference = model.references[-1]
+        annotation = model.ifc.createIfcAnnotation(
+            GlobalId="0abcdefghijklmnopqrstu", ObjectType="DRAWING", Name="PLAN"
+        )
+        monkeypatch.setattr(
+            subject, "get_drawing_document", staticmethod(lambda d: drawing_reference)
+        )
+
+        assert subject.owner_of_placed_file(plan) == ("drawing", annotation)
+
+    def test_it_finds_the_schedule_a_rendered_svg_belongs_to(self, tmp_path, monkeypatch):
+        # The model stores the spreadsheet; the sheet references the SVG beside it.
+        model = SheetOnDisk(tmp_path, monkeypatch)
+        schedule = model.ifc.createIfcDocumentInformation(
+            Identification="X1", Name="DOOR SCHEDULE", Scope="SCHEDULE"
+        )
+        spreadsheet = model.ifc.createIfcDocumentReference(
+            Location=str(model.drawings / "DOOR SCHEDULE.ods"), ReferencedDocument=schedule
+        )
+        monkeypatch.setattr(
+            subject,
+            "get_document_references",
+            staticmethod(
+                lambda info: model.references if info == model.sheet else [spreadsheet]
+            ),
+        )
+        monkeypatch.setattr(subject, "get_drawing_document", staticmethod(lambda d: None))
+
+        found = subject.owner_of_placed_file(str(model.drawings / "DOOR SCHEDULE.svg"))
+        assert found == ("schedule", schedule)
+
+    def test_it_answers_none_for_a_file_nothing_owns(self, tmp_path, monkeypatch):
+        model = SheetOnDisk(tmp_path, monkeypatch)
+        monkeypatch.setattr(subject, "get_drawing_document", staticmethod(lambda d: None))
+
+        assert subject.owner_of_placed_file(str(model.drawings / "NOBODY.svg")) is None
+
+    def test_the_titleblock_and_layout_are_not_drawings(self, tmp_path, monkeypatch, built):
+        # They are references on the sheet too, and neither is placed as a group
+        # this way - asking for them back would add junk to every layout.
+        model = SheetOnDisk(tmp_path, monkeypatch)
+        for description in ("TITLEBLOCK", "SHEET", "RASTER"):
+            model.references.append(
+                model.ifc.createIfcDocumentReference(
+                    Location=str(model.layouts / f"{description}.svg"),
+                    Description=description,
+                    ReferencedDocument=model.sheet,
+                )
+            )
+        self._layout(model, [])
+
+        assert subject.restore_unplaced_references(model.sheet) == []
+        assert built == []
+

@@ -1964,19 +1964,23 @@ class OpenLayout(bpy.types.Operator, tool.Ifc.Operator):
 
 
 def restore_moved_files(operator: bpy.types.Operator) -> None:
-    """Put back files renamed in a session whose model was never saved, and say so.
+    """Make the sheets on disk agree with the model that is open, and say so.
 
-    Renaming a sheet or a drawing moves its files immediately, but the rename is
-    only kept if the IFC is saved - so reopening the model leaves it pointing at
-    files that are gone. Every sheet is checked, whichever one this operator is
-    about: the open model names them all. See
-    `tool.Drawing.restore_all_moved_files`.
+    Renaming a sheet or a drawing moves its files immediately, and adding or
+    removing one writes the layout immediately, but the model only keeps any of
+    it on save. So reopening a model that was not saved leaves files under names
+    it does not know and layouts placing more or less than it says. Every sheet
+    is checked, whichever one this operator is about: the open model names them
+    all. See `tool.Drawing.restore_all_moved_files`.
     """
     if changes := tool.Drawing.restore_all_moved_files():
+        # Deliberately not "files were renamed": the same pass also puts groups
+        # back and takes them out, and a message about renaming sent people
+        # looking for a rename that had not happened.
         operator.report(
             {"WARNING"},
-            "Files renamed in a session that was not saved were put back to the names in this model - "
-            f"{'; '.join(changes)}. Rename again, and save, to keep a new name.",
+            "The sheets on disk did not match this model and were brought into line with it - "
+            f"{'; '.join(changes)}. Make the change again, and save, to keep it.",
         )
 
 

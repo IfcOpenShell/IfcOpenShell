@@ -1755,15 +1755,139 @@ class Drawing(bonsai.core.tool.Drawing):
         return removed
 
     @classmethod
+    def owner_of_placed_file(cls, uri: str) -> Union[tuple[str, ifcopenshell.entity_instance], None]:
+        """What a sheet reference's file belongs to: (kind, the drawing or document).
+
+        A sheet references a file; putting its group back needs the thing that
+        file is drawn or rendered from, because that is what the sheet builder
+        takes. A drawing is an IfcAnnotation reached through its own document; a
+        schedule and a reference are IfcDocumentInformation, whose stored
+        location is the spreadsheet or file beside the SVG that gets placed.
+
+        :return: None when nothing in the model owns it, which is its own answer.
+        """
+
+        def key(path: str) -> str:
+            return os.path.normcase(os.path.abspath(path))
+
+        wanted = key(uri)
+        for drawing in tool.Ifc.get().by_type("IfcAnnotation"):
+            if drawing.ObjectType != "DRAWING":
+                continue
+            document = cls.get_drawing_document(drawing)
+            if document and (found := cls.get_document_uri(document)) and key(found) == wanted:
+                return "drawing", drawing
+
+        for information in tool.Ifc.get().by_type("IfcDocumentInformation"):
+            if information.Scope not in ("SCHEDULE", "REFERENCE"):
+                continue
+            for reference in cls.get_document_references(information):
+                found = cls.get_document_uri(reference)
+                if found and key(cls.get_path_with_ext(found, "svg")) == wanted:
+                    return information.Scope.lower(), information
+        return None
+
+    @classmethod
+    def restore_unplaced_references(cls, sheet: ifcopenshell.entity_instance) -> list[str]:
+        """Put back layout groups for what the open model says is on the sheet.
+
+        The mirror of `remove_unreferenced_groups`, and the other way the two
+        halves of a sheet come apart. A removal writes the group out of the
+        layout at once and takes the reference out of the model, which only
+        reaches the IFC on save; reopen without having saved and the model is
+        back to placing a drawing whose group has gone. Bonsai's Sheets panel
+        lists it and the sheet does not show it, which is the harder way round
+        to notice - an empty sheet looks like a sheet, while a stray drawing
+        looks wrong.
+
+        A removal that could not find its group leaves the same thing behind,
+        from the other direction.
+
+        Counted per file rather than merely matched, as its mirror is: a drawing
+        placed twice has two references and wants two groups. What goes back is
+        a group like any other, laid out at the next free spot - where it sat is
+        not recoverable, the group that knew is gone.
+
+        :return: One line per group put back.
+        """
+        import bonsai.bim.module.drawing.sheeter as sheeter
+
+        layout = cls.get_document_uri(sheet, "LAYOUT")
+        if not layout or not os.path.exists(layout):
+            return []
+
+        builder = sheeter.SheetBuilder()
+
+        def key(path: str) -> str:
+            return os.path.normcase(os.path.abspath(path))
+
+        placed: dict[str, int] = {}
+        svg, xlink = "{http://www.w3.org/2000/svg}", "{http://www.w3.org/1999/xlink}"
+        layout_dir = os.path.dirname(layout)
+        try:
+            root = etree.parse(layout).getroot()
+        except Exception:
+            return []
+        for group in root.findall(f"{svg}g"):
+            if group.get("data-type") not in ("drawing", "schedule", "reference"):
+                continue
+            image = group.find(f'.//{svg}image[@data-type="foreground"]')
+            if image is None:
+                image = group.find(f'.//{svg}image[@data-type="content"]')
+            if image is None:
+                continue
+            href = image.get(f"{xlink}href") or image.get("href")
+            if not href:
+                continue
+            file = os.path.normpath(os.path.join(layout_dir, urllib.parse.unquote(href).replace("\\", "/")))
+            placed[key(file)] = placed.get(key(file), 0) + 1
+
+        restored = []
+        for reference in cls.get_document_references(sheet):
+            if cls.get_reference_description(reference) in ("LAYOUT", "TITLEBLOCK", "SHEET", "RASTER"):
+                continue
+            uri = cls.get_document_uri(reference)
+            if not uri:
+                continue
+            if placed.get(key(uri), 0) > 0:
+                # One reference, one group. A second reference to the same file
+                # wants a second group, so what is accounted for is used up.
+                placed[key(uri)] -= 1
+                continue
+            name = os.path.basename(uri)
+            if not cls.does_file_exist(uri):
+                # Its file is what the group would place. Saying so beats
+                # putting back a group pointing at nothing.
+                restored.append(f"'{name}' is on this sheet in the model but has not been generated")
+                continue
+            owner = cls.owner_of_placed_file(uri)
+            if owner is None:
+                restored.append(f"'{name}' is on this sheet in the model but nothing in it owns that file")
+                continue
+            kind, entity = owner
+            try:
+                if kind == "drawing":
+                    builder.add_drawing(reference, entity, sheet)
+                else:
+                    builder.add_document(reference, entity, sheet)
+            except Exception as exception:
+                restored.append(f"could not put '{name}' back on the sheet: {exception}")
+                continue
+            restored.append(f"put '{name}' back on the sheet - the model places it and the layout did not")
+        return restored
+
+    @classmethod
     def restore_all_moved_files(cls) -> list[str]:
         """Put back every sheet's and drawing's files renamed in an unsaved session.
 
         The open model names all of them, so one pass over every sheet is right,
         whichever sheet prompted it. Sheet files go first: drawings are found
-        through the layouts, and groups the model cannot account for go last -
-        after the files are where the model expects them, so a drawing is not
-        mistaken for unplaced merely because its file was still under the name
-        an unsaved session gave it.
+        through the layouts, and the two group passes go last - after the files
+        are where the model expects them, so a drawing is not mistaken for
+        unplaced merely because its file was still under the name an unsaved
+        session gave it. Groups the model cannot account for are taken out
+        before references with no group are put back, so a group that is merely
+        in the wrong place is not counted twice.
 
         :return: One line per change, prefixed with the sheet it belongs to.
         """
@@ -1773,6 +1897,7 @@ class Drawing(bonsai.core.tool.Drawing):
             cls.restore_moved_sheet_files,
             cls.restore_moved_drawing_files,
             cls.remove_unreferenced_groups,
+            cls.restore_unplaced_references,
         ):
             for sheet in sheets:
                 changes.extend(f"{cls.get_sheet_identification(sheet)}: {line}" for line in restore(sheet))
