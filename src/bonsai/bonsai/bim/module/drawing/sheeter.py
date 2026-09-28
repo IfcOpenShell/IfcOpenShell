@@ -34,6 +34,10 @@ from mathutils import Vector
 
 import bonsai.tool as tool
 
+#: The `data-type` of a group that places something on a sheet. A drawing has
+#: its own; a schedule and a reference carry their document's scope.
+PLACED_GROUPS = ("drawing", "schedule", "reference")
+
 VIEW_TITLE_OFFSET_Y = 5
 DRAWING_PADDING = 10
 DEFAULT_POSITION = Vector((30, 30))
@@ -1075,53 +1079,88 @@ class SheetBuilder:
         return {"changed": sorted(values), "layout": os.path.abspath(moved) if moved else ""}
 
     def list_drawings(self, layout: str) -> dict:
-        """Every drawing in the model, and whether this sheet already places it.
+        """Everything the model could put on this sheet, and what is already on it.
 
-        For a tool offering "add a drawing to this sheet": it needs what there
+        For a tool offering "add something to this sheet": it needs what there
         is to choose from, named as a person named them, and it needs to know
-        what is already here so it does not offer it twice.
+        what is already here so it does not offer it twice. Drawings, schedules
+        and references alike - the three things `add_to_sheet` accepts, and the
+        three Bonsai has its own Add … To Sheet operators for.
+
+        A schedule and a reference have no GlobalId, so theirs is empty and they
+        are named to `addToSheet` by `file` instead.
 
         ::
 
-            {"drawings": [{"globalId": "...", "name": "PLAN - LEVEL 1",
-                           "file": "<absolute path>", "onSheet": false,
-                           "generated": true}]}
+            {"drawings": [{"kind": "drawing", "globalId": "...",
+                           "name": "PLAN - LEVEL 1", "file": "<absolute path>",
+                           "onSheet": false, "generated": true}]}
         """
         sheet = self._require_sheet(layout)
         here = {
             r.Location
             for r in tool.Drawing.get_document_references(sheet)
-            if tool.Drawing.get_reference_description(r) == "DRAWING" and r.Location
+            if tool.Drawing.get_reference_description(r) in ("DRAWING", "SCHEDULE", "REFERENCE")
+            and r.Location
         }
 
-        drawings = []
+        def entry(kind: str, name: str, guid: str, location: str) -> dict:
+            uri = tool.Ifc.resolve_uri(location)
+            return {
+                "kind": kind,
+                "globalId": guid,
+                "name": name or os.path.splitext(os.path.basename(location))[0],
+                "file": os.path.abspath(uri) if uri else "",
+                "onSheet": location in here,
+                # Never generated means no SVG to place, which Bonsai refuses -
+                # better said before it is offered than after it is picked.
+                "generated": bool(uri) and tool.Drawing.does_file_exist(uri),
+            }
+
+        placeable = []
         for drawing in tool.Ifc.get().by_type("IfcAnnotation"):
             if drawing.ObjectType != "DRAWING":
                 continue
-            reference = tool.Drawing.get_drawing_document(drawing)
-            if reference is None or not reference.Location:
-                continue
-            uri = tool.Drawing.get_document_uri(reference)
-            drawings.append(
-                {
-                    "globalId": drawing.GlobalId,
-                    "name": drawing.Name or os.path.basename(reference.Location)[:-4],
-                    "file": os.path.abspath(uri) if uri else "",
-                    "onSheet": reference.Location in here,
-                    # A drawing that has never been generated has no SVG to
-                    # place; Bonsai refuses it, so say so before it is offered.
-                    "generated": bool(uri) and tool.Drawing.does_file_exist(uri),
-                }
-            )
-        drawings.sort(key=lambda d: d["name"].lower())
-        return {"drawings": drawings}
+            document = tool.Drawing.get_drawing_document(drawing)
+            if document is not None and document.Location:
+                placeable.append(entry("drawing", drawing.Name, drawing.GlobalId, document.Location))
 
-    def find_drawing(self, target: dict) -> ifcopenshell.entity_instance:
-        """The drawing a request names, whether or not it is on any sheet.
+        for document in tool.Ifc.get().by_type("IfcDocumentInformation"):
+            if document.Scope not in ("SCHEDULE", "REFERENCE"):
+                continue
+            if location := self.document_location(document):
+                placeable.append(entry(document.Scope.lower(), document.Name, "", location))
+
+        placeable.sort(key=lambda d: (d["kind"], d["name"].lower()))
+        return {"drawings": placeable}
+
+    def document_location(self, document: ifcopenshell.entity_instance) -> Union[str, None]:
+        """Where a schedule or reference is placed from, as the model stores it.
+
+        A schedule is authored in a spreadsheet and placed as the SVG rendered
+        beside it; a reference is its own SVG. Both are reached the same way -
+        the document's first reference, with an svg extension - which is what
+        Bonsai's own Add Schedule/Reference To Sheet do.
+        """
+        references = (
+            document.DocumentReferences
+            if tool.Ifc.get_schema() == "IFC2X3"
+            else document.HasDocumentReferences
+        )
+        if not references or not references[0].Location:
+            return None
+        return tool.Drawing.get_path_with_ext(references[0].Location, "svg")
+
+    def find_placeable(self, target: dict) -> tuple[str, ifcopenshell.entity_instance, str]:
+        """What a request names, whether or not it is on any sheet.
 
         `_find_target` looks among a sheet's references, which is no use for
-        putting a drawing back on one. By GlobalId, or by the file it is drawn
-        into - the same two handles, and both survive a re-serialised model.
+        putting something on one. By GlobalId or by the file it is placed from -
+        the same two handles, both of which survive a re-serialised model. A
+        schedule or a reference has no GlobalId of its own, so it is always
+        named by its file.
+
+        :return: (kind, the entity, the Location to put on the sheet's reference)
         """
         guid = target.get("globalId")
         if guid:
@@ -1130,10 +1169,28 @@ class SheetBuilder:
             except RuntimeError:
                 drawing = None
             if drawing is not None and drawing.is_a("IfcAnnotation") and drawing.ObjectType == "DRAWING":
-                return drawing
+                document = tool.Drawing.get_drawing_document(drawing)
+                if document is not None and document.Location:
+                    return "drawing", drawing, document.Location
+
         if path := target.get("path"):
-            if (drawing := self._drawings_by_uri().get(self._path_key(path))) is not None:
-                return drawing
+            wanted = self._path_key(path)
+            if (drawing := self._drawings_by_uri().get(wanted)) is not None:
+                document = tool.Drawing.get_drawing_document(drawing)
+                if document is not None and document.Location:
+                    return "drawing", drawing, document.Location
+            for document in tool.Ifc.get().by_type("IfcDocumentInformation"):
+                if document.Scope not in ("SCHEDULE", "REFERENCE"):
+                    continue
+                location = self.document_location(document)
+                if location and self._path_key(tool.Ifc.resolve_uri(location)) == wanted:
+                    return document.Scope.lower(), document, location
+
+        if not guid and not target.get("path"):
+            # Worth saying apart: a tool built before schedules were listed sends
+            # an empty GlobalId for one, and "not in this model" sends whoever
+            # sees it looking at the model rather than at the request.
+            raise ValueError("no drawing, schedule or reference was named")
         raise ValueError("that drawing is not in this model")
 
     def check_addable(self, layout: str, target: dict) -> None:
@@ -1143,16 +1200,16 @@ class SheetBuilder:
         so a refusal leaves nothing in the undo history.
         """
         sheet = self._require_sheet(layout)
-        drawing = self.find_drawing(target)
-        reference = tool.Drawing.get_drawing_document(drawing)
-        if reference is None or not reference.Location:
-            raise ValueError(f"{drawing.Name or 'that drawing'} has no drawing file to place")
-        uri = tool.Drawing.get_document_uri(reference)
+        kind, entity, location = self.find_placeable(target)
+        name = entity.Name or os.path.basename(location)
+        uri = tool.Ifc.resolve_uri(location)
         if not tool.Drawing.does_file_exist(uri):
-            raise ValueError(f"{drawing.Name or 'that drawing'} has not been generated yet")
+            # A drawing is generated, a schedule is rendered from its
+            # spreadsheet; either way the SVG is what gets placed.
+            raise ValueError(f"{name} has not been generated yet")
         for other in tool.Drawing.get_document_references(sheet):
-            if other.Location == reference.Location:
-                raise ValueError(f"{drawing.Name or 'that drawing'} is already on this sheet")
+            if other.Location == location:
+                raise ValueError(f"{name} is already on this sheet")
 
         # The model is not the only place it can already be. A removal that
         # takes the reference out but fails to find the group leaves the layout
@@ -1175,7 +1232,9 @@ class SheetBuilder:
         wanted = self._path_key(drawing_uri)
         layout_dir = os.path.dirname(layout)
         for foreground in root.iter(f"{SVG}image"):
-            if foreground.attrib.get("data-type") != "foreground":
+            # A drawing is placed as a `foreground`, a schedule or reference as
+            # a `content`; both are the file the group puts on the sheet.
+            if foreground.attrib.get("data-type") not in ("foreground", "content"):
                 continue
             href = foreground.attrib.get(f"{XLINK}href") or foreground.attrib.get("href")
             if not href:
@@ -1206,8 +1265,7 @@ class SheetBuilder:
         """
         self.check_addable(layout, target)
         sheet = self._require_sheet(layout)
-        drawing = self.find_drawing(target)
-        drawing_reference = tool.Drawing.get_drawing_document(drawing)
+        kind, entity, location = self.find_placeable(target)
 
         placed = [
             r
@@ -1218,34 +1276,50 @@ class SheetBuilder:
         attributes = tool.Drawing.generate_reference_attributes(
             reference,
             Identification=identification or str(len(placed) + 1),
-            Location=drawing_reference.Location,
-            Description="DRAWING",
+            Location=location,
+            Description=kind.upper(),
         )
         tool.Ifc.run("document.edit_reference", reference=reference, attributes=attributes)
 
-        self.add_drawing(reference, drawing, sheet)
-        if position:
-            self._move_group_to(layout, reference, position)
+        # A drawing is placed with its own builder, a schedule or a reference
+        # with the one for documents - the difference Bonsai's own Add … To
+        # Sheet operators make, and the only one between the three here.
+        if kind == "drawing":
+            self.add_drawing(reference, entity, sheet)
+        else:
+            self.add_document(reference, entity, sheet)
+        # A position asked for and not applied leaves the placement at the next
+        # free spot Bonsai chose, which is not where the caller pointed. Say so:
+        # reporting it as added full stop is how a placement that ignored the
+        # click looked like one that worked.
+        moved = self._move_group_to(layout, reference, position) if position else None
 
         tool.Drawing.import_sheets()
         return {
-            "added": os.path.basename(tool.Drawing.get_document_uri(drawing_reference) or ""),
+            "added": os.path.basename(location),
             "layout": os.path.abspath(layout),
+            "moved": moved,
         }
 
-    def _move_group_to(self, layout: str, reference: ifcopenshell.entity_instance, position: dict) -> None:
+    def _move_group_to(self, layout: str, reference: ifcopenshell.entity_instance, position: dict) -> bool:
         """Put a just added group back where it was, with a group transform.
 
         `add_drawing` lays the drawing out at the next free spot, writing that
         into the image's own x/y - which are Bonsai's. The group's transform is
         what a tool moves a placement with, so the offset goes there and the
-        image keeps the coordinates Bonsai gave it.
+        image keeps the coordinates Bonsai gave it. `add_document` places a
+        schedule or a reference the same way, in a group of its own scope whose
+        image is a `content` rather than a `foreground`.
 
-        The group moved is the one `add_drawing` just appended - the last with
-        this reference's id, not the first. IfcOpenShell reuses the STEP id of
-        a deleted entity, so an older group left behind by a removal that could
+        The group moved is the one just appended - the last with this
+        reference's id, not the first. IfcOpenShell reuses the STEP id of a
+        deleted entity, so an older group left behind by a removal that could
         not find it can carry the same `data-id`, and moving that one would
-        shift a different drawing while leaving this one where Bonsai put it.
+        shift something else while leaving this where Bonsai put it.
+
+        :return: Whether it moved. False leaves the placement where Bonsai's own
+            layout put it, which is somewhere the caller did not ask for, so it
+            is reported rather than passed off as done.
         """
         ET.register_namespace("", "http://www.w3.org/2000/svg")
         ET.register_namespace("xlink", "http://www.w3.org/1999/xlink")
@@ -1253,19 +1327,25 @@ class SheetBuilder:
         root = tree.getroot()
         mine = [
             g
-            for g in root.findall(f'{SVG}g[@data-type="drawing"]')
-            if g.attrib.get("data-id") == str(reference.id())
+            for g in root.findall(f"{SVG}g")
+            if g.attrib.get("data-type") in PLACED_GROUPS
+            and g.attrib.get("data-id") == str(reference.id())
         ]
         if not mine:
-            return
+            return False
         group = mine[-1]
-        foreground = group.find(f'.//{SVG}image[@data-type="foreground"]')
-        if foreground is None:
-            return
-        dx = float(position["x"]) - self.convert_to_mm(foreground.attrib.get("x", "0"))
-        dy = float(position["y"]) - self.convert_to_mm(foreground.attrib.get("y", "0"))
+        # `is None`, not `or`: an <image> has no children, so an element that was
+        # found is still falsy and `a or b` would throw it away.
+        image = group.find(f'.//{SVG}image[@data-type="foreground"]')
+        if image is None:
+            image = group.find(f'.//{SVG}image[@data-type="content"]')
+        if image is None:
+            return False
+        dx = float(position["x"]) - self.convert_to_mm(image.attrib.get("x", "0"))
+        dy = float(position["y"]) - self.convert_to_mm(image.attrib.get("y", "0"))
         group.attrib["transform"] = f"translate({dx},{dy})"
         tree.write(layout)
+        return True
 
     def check_removable(self, layout: str, target: dict) -> None:
         """Refuse what `remove_from_sheet` would refuse, without removing anything.

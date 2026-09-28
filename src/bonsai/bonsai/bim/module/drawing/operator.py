@@ -3141,7 +3141,9 @@ class AddSheetView(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Add View To Sheet"
     bl_options = {"REGISTER", "UNDO", "INTERNAL"}
     layout: bpy.props.StringProperty()
-    target: bpy.props.StringProperty(description="JSON: the drawing, as SheetBuilder.find_drawing takes it")
+    target: bpy.props.StringProperty(
+        description="JSON: the drawing, schedule or reference, as SheetBuilder.find_placeable takes it"
+    )
     position: bpy.props.StringProperty(description="JSON: {x, y} in mm, where its image sat")
     identification: bpy.props.StringProperty(description="The view number it had")
 

@@ -82,12 +82,25 @@ def sheet_model(tmp_path, monkeypatch):
 
     layout_path = str(tmp_path / "layouts" / "A01 - PLANS.svg")
     drawing_path = str(tmp_path / "drawings" / "MY STOREY PLAN.svg")
+    schedule_path = str(tmp_path / "schedules" / "DOOR SCHEDULE.svg")
+    reference_path = str(tmp_path / "references" / "SITE SURVEY.svg")
 
     ifc = ifcopenshell.file()
     sheet = ifc.createIfcDocumentInformation(Identification="A01", Name="PLANS", Scope="SHEET")
     layout_ref = ifc.createIfcDocumentReference(Location=layout_path, Description="LAYOUT")
     drawing_ref = ifc.createIfcDocumentReference(Location=drawing_path, Description="DRAWING", Identification="1")
     annotation = ifc.createIfcAnnotation(GlobalId="0abcdefghijklmnopqrstu", ObjectType="DRAWING", Name="MY STOREY PLAN")
+
+    # A schedule and a reference: no GlobalId of their own, placed from the file
+    # their document's first reference names. A schedule is authored in a
+    # spreadsheet and placed as the SVG rendered beside it, which is why its
+    # stored Location is the spreadsheet.
+    schedule = ifc.createIfcDocumentInformation(Identification="X1", Name="DOOR SCHEDULE", Scope="SCHEDULE")
+    ifc.createIfcDocumentReference(
+        Location=os.path.splitext(schedule_path)[0] + ".ods", ReferencedDocument=schedule
+    )
+    reference_doc = ifc.createIfcDocumentInformation(Identification="X2", Name="SITE SURVEY", Scope="REFERENCE")
+    ifc.createIfcDocumentReference(Location=reference_path, ReferencedDocument=reference_doc)
 
     references = {sheet.id(): [layout_ref, drawing_ref]}
     uris = {layout_ref.id(): layout_path, drawing_ref.id(): drawing_path}
@@ -128,8 +141,15 @@ def sheet_model(tmp_path, monkeypatch):
     model.reference = drawing_ref
     model.layout = layout_path
     model.drawing_path = drawing_path
+    model.schedule = schedule
+    model.schedule_path = schedule_path
+    model.reference_doc = reference_doc
+    model.reference_path = reference_path
     # So a test can move the layout the way rename_sheet would.
     model.uris = uris
+    # The sheet's own references, as the stub hands them out: a test that puts
+    # something on the sheet appends here.
+    model.references = references[sheet.id()]
     model.layout_ref = layout_ref
     return model
 
@@ -647,21 +667,36 @@ class TestCheckRemovable:
             )
 
 
-class TestFindDrawing:
-    """Putting a drawing back cannot look for it among the sheet's references -
-    it is not there any more. It is named the same two ways, from elsewhere."""
+class TestFindPlaceable:
+    """Putting something back on a sheet cannot look for it among the sheet's
+    references - it is not there any more. It is named the same two ways, from
+    elsewhere, and a schedule or reference only by its file."""
 
-    def test_by_global_id(self, sheet_model):
-        found = sheet_model.builder.find_drawing({"globalId": "0abcdefghijklmnopqrstu"})
-        assert found == sheet_model.drawing
+    def test_a_drawing_by_global_id(self, sheet_model):
+        kind, found, location = sheet_model.builder.find_placeable(
+            {"globalId": "0abcdefghijklmnopqrstu"}
+        )
+        assert (kind, found) == ("drawing", sheet_model.drawing)
+        assert location == sheet_model.drawing_path
 
-    def test_by_the_file_it_is_drawn_into(self, sheet_model):
-        found = sheet_model.builder.find_drawing({"path": sheet_model.drawing_path})
-        assert found == sheet_model.drawing
+    def test_a_drawing_by_the_file_it_is_drawn_into(self, sheet_model):
+        kind, found, _ = sheet_model.builder.find_placeable({"path": sheet_model.drawing_path})
+        assert (kind, found) == ("drawing", sheet_model.drawing)
 
-    def test_refuses_something_that_is_not_a_drawing(self, sheet_model):
+    def test_refuses_something_that_is_not_in_the_model(self, sheet_model):
         with pytest.raises(ValueError, match="not in this model"):
-            sheet_model.builder.find_drawing({"globalId": "0notadrawingatallxxxxx"})
+            sheet_model.builder.find_placeable({"globalId": "0notadrawingatallxxxxx"})
+
+    def test_a_schedule_by_the_svg_it_is_placed_from(self, sheet_model):
+        # The model stores the spreadsheet; the sheet places the SVG beside it.
+        kind, found, location = sheet_model.builder.find_placeable({"path": sheet_model.schedule_path})
+        assert (kind, found) == ("schedule", sheet_model.schedule)
+        assert location == sheet_model.schedule_path
+
+    def test_a_reference_by_its_file(self, sheet_model):
+        kind, found, location = sheet_model.builder.find_placeable({"path": sheet_model.reference_path})
+        assert (kind, found) == ("reference", sheet_model.reference_doc)
+        assert location == sheet_model.reference_path
 
 
 class TestCheckAddable:
@@ -684,6 +719,61 @@ class TestCheckAddable:
                 sheet_model.layout, {"globalId": "0abcdefghijklmnopqrstu"}
             )
 
+    def test_accepts_a_schedule_that_is_not_on_the_sheet_yet(self, sheet_model, monkeypatch):
+        import bonsai.tool as tool
+
+        monkeypatch.setattr(tool.Drawing, "does_file_exist", staticmethod(lambda uri: True))
+        sheet_model.builder.check_addable(sheet_model.layout, {"path": sheet_model.schedule_path})
+
+    def test_refuses_a_schedule_that_has_not_been_rendered(self, sheet_model, monkeypatch):
+        import bonsai.tool as tool
+
+        monkeypatch.setattr(tool.Drawing, "does_file_exist", staticmethod(lambda uri: False))
+        with pytest.raises(ValueError, match="not been generated"):
+            sheet_model.builder.check_addable(sheet_model.layout, {"path": sheet_model.schedule_path})
+
+
+class TestAddToSheet:
+    """Which builder draws it, and what the sheet's new reference says it is.
+    Building the SVG itself is Bonsai's own, and stubbed out here."""
+
+    @pytest.fixture
+    def drawn(self, sheet_model, monkeypatch):
+        import bonsai.tool as tool
+
+        monkeypatch.setattr(tool.Drawing, "does_file_exist", staticmethod(lambda uri: True))
+        monkeypatch.setattr(tool.Drawing, "generate_reference_attributes", staticmethod(lambda ref, **kw: kw))
+        recorded = []
+        for name in ("add_drawing", "add_document"):
+            monkeypatch.setattr(
+                sheet_model.builder,
+                name,
+                lambda reference, entity, sheet, _name=name: recorded.append((_name, entity)),
+            )
+        return recorded
+
+    def test_a_schedule_is_placed_by_the_document_builder(self, sheet_model, drawn):
+        sheet_model.builder.add_to_sheet(sheet_model.layout, {"path": sheet_model.schedule_path})
+        assert drawn == [("add_document", sheet_model.schedule)]
+
+    def test_a_schedule_reference_is_described_as_one(self, sheet_model, drawn):
+        sheet_model.builder.add_to_sheet(sheet_model.layout, {"path": sheet_model.schedule_path})
+        added = sheet_model.ifc.by_type("IfcDocumentReference")[-1]
+        assert added.Description == "SCHEDULE"
+        assert added.Location == sheet_model.schedule_path
+
+    def test_a_reference_is_described_as_one(self, sheet_model, drawn):
+        sheet_model.builder.add_to_sheet(sheet_model.layout, {"path": sheet_model.reference_path})
+        assert drawn == [("add_document", sheet_model.reference_doc)]
+        assert sheet_model.ifc.by_type("IfcDocumentReference")[-1].Description == "REFERENCE"
+
+    def test_a_drawing_is_still_placed_by_the_drawing_builder(self, sheet_model, drawn):
+        # Its file is on the sheet already, so ask about it after taking it off.
+        sheet_model.references.remove(sheet_model.reference)
+        sheet_model.builder.add_to_sheet(sheet_model.layout, {"globalId": "0abcdefghijklmnopqrstu"})
+        assert drawn == [("add_drawing", sheet_model.drawing)]
+        assert sheet_model.ifc.by_type("IfcDocumentReference")[-1].Description == "DRAWING"
+
 
 class TestListDrawings:
     """What a tool can offer to add. Both reasons a drawing cannot be picked are
@@ -694,8 +784,30 @@ class TestListDrawings:
 
         monkeypatch.setattr(tool.Drawing, "does_file_exist", staticmethod(lambda uri: True))
         drawings = sheet_model.builder.list_drawings(sheet_model.layout)["drawings"]
-        assert [d["name"] for d in drawings] == ["MY STOREY PLAN"]
+        assert [d["name"] for d in drawings if d["kind"] == "drawing"] == ["MY STOREY PLAN"]
         assert drawings[0]["globalId"] == "0abcdefghijklmnopqrstu"
+
+    def test_lists_schedules_and_references_too(self, sheet_model, monkeypatch):
+        # The three things add_to_sheet accepts, so all three can be offered.
+        import bonsai.tool as tool
+
+        monkeypatch.setattr(tool.Drawing, "does_file_exist", staticmethod(lambda uri: True))
+        drawings = sheet_model.builder.list_drawings(sheet_model.layout)["drawings"]
+        assert [(d["kind"], d["name"]) for d in drawings] == [
+            ("drawing", "MY STOREY PLAN"),
+            ("reference", "SITE SURVEY"),
+            ("schedule", "DOOR SCHEDULE"),
+        ]
+
+    def test_a_schedule_is_named_by_its_file_having_no_global_id(self, sheet_model, monkeypatch):
+        import bonsai.tool as tool
+
+        monkeypatch.setattr(tool.Drawing, "does_file_exist", staticmethod(lambda uri: True))
+        drawings = sheet_model.builder.list_drawings(sheet_model.layout)["drawings"]
+        schedule = next(d for d in drawings if d["kind"] == "schedule")
+        assert schedule["globalId"] == ""
+        assert schedule["file"] == os.path.abspath(sheet_model.schedule_path)
+        assert schedule["onSheet"] is False
 
     def test_says_which_are_already_on_this_sheet(self, sheet_model, monkeypatch):
         import bonsai.tool as tool
@@ -703,6 +815,18 @@ class TestListDrawings:
         monkeypatch.setattr(tool.Drawing, "does_file_exist", staticmethod(lambda uri: True))
         drawings = sheet_model.builder.list_drawings(sheet_model.layout)["drawings"]
         assert drawings[0]["onSheet"] is True
+
+    def test_says_a_schedule_is_already_on_this_sheet(self, sheet_model, monkeypatch):
+        import bonsai.tool as tool
+
+        sheet_model.references.append(
+            sheet_model.ifc.createIfcDocumentReference(
+                Location=sheet_model.schedule_path, Description="SCHEDULE", Identification="2"
+            )
+        )
+        monkeypatch.setattr(tool.Drawing, "does_file_exist", staticmethod(lambda uri: True))
+        drawings = sheet_model.builder.list_drawings(sheet_model.layout)["drawings"]
+        assert next(d for d in drawings if d["kind"] == "schedule")["onSheet"] is True
 
     def test_says_which_have_not_been_generated(self, sheet_model, monkeypatch):
         # Its SVG is what gets placed; without one there is nothing to place.
@@ -712,6 +836,69 @@ class TestListDrawings:
         drawings = sheet_model.builder.list_drawings(sheet_model.layout)["drawings"]
         assert drawings[0]["generated"] is False
 
+
+class TestMoveGroupTo:
+    """Putting a placement where the caller asked, rather than where Bonsai's own
+    layout put it. A drawing's image is a `foreground` and a schedule's a
+    `content`, and both have to be found: looking for one with `a or b` finds
+    nothing, because an <image> has no children and so a found element is falsy.
+    A placement that silently stayed where Bonsai put it is exactly what this
+    looked like in the field - the click was ignored and nothing said so."""
+
+    def _layout_with(self, model, group_type: str, image_type: str, x: str = "20", y: str = "30") -> None:
+        os.makedirs(os.path.dirname(model.layout), exist_ok=True)
+        with open(model.layout, "w") as out:
+            out.write(
+                '<svg xmlns="http://www.w3.org/2000/svg" '
+                'xmlns:xlink="http://www.w3.org/1999/xlink">'
+                f'<g data-type="{group_type}" data-id="{model.reference.id()}">'
+                f'<image data-type="{image_type}" x="{x}mm" y="{y}mm"/>'
+                "</g></svg>"
+            )
+
+    def _transform(self, model) -> str:
+        root = ET.parse(model.layout).getroot()
+        return root.find("{http://www.w3.org/2000/svg}g").attrib.get("transform", "")
+
+    def test_moves_a_drawing_by_the_difference(self, sheet_model):
+        # Its image is where Bonsai laid it out; the transform makes up the rest.
+        self._layout_with(sheet_model, "drawing", "foreground", x="20", y="30")
+        moved = sheet_model.builder._move_group_to(
+            sheet_model.layout, sheet_model.reference, {"x": 50, "y": 80}
+        )
+        assert moved is True
+        assert self._transform(sheet_model) == "translate(30.0,50.0)"
+
+    def test_moves_a_schedule_whose_image_is_a_content(self, sheet_model):
+        self._layout_with(sheet_model, "schedule", "content", x="20", y="30")
+        moved = sheet_model.builder._move_group_to(
+            sheet_model.layout, sheet_model.reference, {"x": 50, "y": 80}
+        )
+        assert moved is True
+        assert self._transform(sheet_model) == "translate(30.0,50.0)"
+
+    def test_says_so_when_the_group_is_not_there(self, sheet_model):
+        # Nothing to move means the placement is wherever Bonsai put it, which
+        # is not what was asked for, so the caller is told rather than not.
+        self._layout_with(sheet_model, "drawing", "foreground")
+        root = ET.parse(sheet_model.layout).getroot()
+        root.find("{http://www.w3.org/2000/svg}g").attrib["data-id"] = "999999"
+        ET.ElementTree(root).write(sheet_model.layout)
+        assert (
+            sheet_model.builder._move_group_to(
+                sheet_model.layout, sheet_model.reference, {"x": 50, "y": 80}
+            )
+            is False
+        )
+
+    def test_says_so_when_the_group_has_no_image(self, sheet_model):
+        self._layout_with(sheet_model, "drawing", "titleblock")
+        assert (
+            sheet_model.builder._move_group_to(
+                sheet_model.layout, sheet_model.reference, {"x": 50, "y": 80}
+            )
+            is False
+        )
 
 class TestOrphanedGroups:
     """A removal that cannot find the group takes the reference out of the model
