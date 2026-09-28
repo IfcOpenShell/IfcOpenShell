@@ -7,8 +7,9 @@ resolving them.
 
 ## Status and work plan (resume here)
 
-*Last updated 2026-09-28.* Uncommitted on 2026-09-28: stationing on offset curve alignments (§5.2) and
-the extend fix (§9, below). The source tree is on D: on one computer and F: on the other; the
+*Last updated 2026-09-28.* Committed 2026-09-28, not yet pushed: `1ae038098` stationing on offset
+curve alignments (§5.2) + the extend fix (§9), and the profile view for 3D offset curves (§5.2). The
+source tree is on D: on one computer and F: on the other; the
 `IFCOPENSHELL_DIR` environment variable points to it on each.
 
 Branch `rab_infrastructure` (F:\ifcopenshell), 17 commits ahead of
@@ -25,20 +26,18 @@ edits + Insert/Delete PI + PI click-pick (§11), `6ea213041` cant follows horizo
 
 **Work plan, in order:**
 
-1. **Offset alignment follow-up (§5.2):** a profile view for a 3D offset curve. (Stationing on
-   offset curves is done, 2026-09-28.)
-2. **Documentation and examples for the new alignment features (per the user, 2026-09-28).** Not
+1. **Documentation and examples for the new alignment features (per the user, 2026-09-28).** Not
    yet scoped: what the documentation covers (Bonsai user docs for the Alignment tab's tools, the
    `ifcopenshell.api.alignment` functions added on this branch, or both), and what form the examples
    take (sample IFC files, scripts, step-by-step walkthroughs).
-3. **Bottom of the list -- the C++ pass (see the note at the end of §1):** moving the Python-side
+2. **Bottom of the list -- the C++ pass (see the note at the end of §1):** moving the Python-side
    alignment geometry (PI solver, spiral integrands, join-radius root finding) to C++; the
    degenerate spiral crash (equal start/end radius spiral, equal-gradient vertical arc); the
    LINEARTRANSITION divide-by-zero in `_map_linear_transition` (constant cant across a transition,
    hit when a spiral-less curve sits next to a spiralled one); and
    [IfcOpenShell#5360](https://github.com/IfcOpenShell/IfcOpenShell/issues/5360) (sample straight
    regions by their end points only).
-4. **Before the PR for the final work is posted: delete `dev_tests/`** (see Testing below).
+3. **Before the PR for the final work is posted: delete `dev_tests/`** (see Testing below).
 
 ~~§10 Manual referent definitions~~ -- removed from the plan (per the user, 2026-09-28).
 
@@ -1196,8 +1195,43 @@ Verified:
   - A 3D offset alignment created with stationing puts its start referent on the curve.
 - The full `dev_tests` regression set passes.
 
+**Implemented (2026-09-28): the profile view for a 3D offset curve.** An offset alignment has no
+vertical layout, so the profile view showed nothing for one.
+- **What it shows.** `tool.Alignment.get_offset_profile` samples the offset curve's elevations from
+  the geometry kernel at least every metre. The kernel maps an IfcOffsetCurveByDistances to an
+  `offset_function`, whose length and distance along are the basis curve's. So the profile is the
+  curve exactly as IFC defines it: it follows the reference's vertical curves, and the vertical
+  offset is square to the sloped tangent. It is plotted against distance along, the same axis its
+  stationing uses.
+- **How it's split.** It is split at the offsets, labelled Start / Offset n / End, with each end's
+  grade. There's no P.V.I., because a span isn't a parabola. It is read-only, like a 3D polyline's
+  profile: offsets are edited in Edit Offsets, and Apply refreshes the open view.
+- **Panel.** The offset section gets Show Profile and VE. A 2D offset says it has no elevations to
+  profile.
+- **The reference's horizontal (per the user: "Eventually in the chain there will be an horizontal
+  layout").** An IfcOffsetCurveByDistances is offset from an IfcCompositeCurve, an IfcGradientCurve
+  (built on one), or another offset curve, so every chain ends on a reference alignment's
+  horizontal. The new `tool.Alignment.get_reference_horizontal_layout` walks the chain to it, for
+  look-ups only (option 1, chosen by the user). The profile view uses it to frame its canvas out to
+  the horizontal's end, as the reference's own view does. So an offset built on a vertical that
+  stops short of the horizontal's end shows where it stops. The editing tools (Draw Vertical, Edit
+  PIs, cant generation, ...) still refuse an offset alignment: an edit through the chain would change
+  the reference, and every offset built on it.
+
+Verified:
+- Headless, `dev_tests/bl_offset_profile.py`:
+  - A 3D offset, 3 left / 0.5 up easing to 6 left / 1 down at 150, splits at 150.
+  - Its sampled elevations match the kernel's own values at 0/40/80/150.
+  - The start grade is 1.5%: the reference's 2.5% less the easing's 1%.
+  - An offset of it sits 0.3 higher all along.
+  - A 2D offset has no profile, and its canvas is framed to Main's horizontal.
+  - All three resolve to Main's horizontal, and none gets a layout of its own.
+- UI mode, `dev_tests/ui_offset_profile.py`: Show Profile opens and draws the profile, and the
+  screenshot was checked.
+- The full `dev_tests` regression set passes.
+
 **Not done / noted:**
-- **No profile view** for a 3D offset curve.
+- (none)
 - ~~**Single precision:** the table values are Blender float properties (single precision, ~7
   significant digits), so 0.2 is written as 0.20000000298.~~ Fixed 2026-09-25, see §12.
 
