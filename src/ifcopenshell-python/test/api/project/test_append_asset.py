@@ -865,6 +865,28 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         assert len(rels) == 1
         assert {o.GlobalId for o in rels[0].RelatedObjects} == {element.GlobalId, element2.GlobalId}
 
+    def test_keep_the_owner_settings_of_a_caller_that_reset_them_around_a_failed_append(self):
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.root.create_entity(library, ifc_class="IfcSlabType")
+        # assign_type rejects this pairing, so it is built directly, as an exporter writes it.
+        library.createIfcRelDefinesByType(
+            GlobalId=ifcopenshell.guid.new(),
+            OwnerHistory=element.OwnerHistory,
+            RelatedObjects=[element],
+            RelatingType=element_type,
+        )
+        get_user = ifcopenshell.api.owner.settings.get_user
+        get_application = ifcopenshell.api.owner.settings.get_application
+
+        ifcopenshell.api.owner.settings.factory_reset()
+        with pytest.raises(TypeError, match="IfcSlabType cannot type IfcWall"):
+            ifcopenshell.api.project.append_asset(self.file, library=library, element=element)
+        ifcopenshell.api.owner.settings.restore()
+
+        assert ifcopenshell.api.owner.settings.get_user is get_user
+        assert ifcopenshell.api.owner.settings.get_application is get_application
+
     def test_append_products_without_leaving_orphan_placements(self):
         library = ifcopenshell.api.project.create_file(version=self.file.schema)
         project = ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject")
