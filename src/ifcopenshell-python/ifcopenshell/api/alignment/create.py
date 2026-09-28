@@ -37,7 +37,7 @@ def create(
     Creates a new alignment with a horizontal layout. Optionally, vertical and cant layouts can be created as well.
     The geometric representations are created as well, unless they are explicitly excluded.
     Zero length segments are added at the end of the layouts and geometric representations.
-    The alignment is automatically aggreated to the project if it exists.
+    The alignment is automatically aggregated to the project if it exists.
 
     Use get_horizontal_layout(alignment), get_vertical_layout(alignment) and get_cant_layout(alignment) to get the
      corresponding IfcAlignmentHorizontal, IfcAlignmentVertical, and IfcAlignmentCant layout entities.
@@ -53,9 +53,48 @@ def create(
     :param file:
     :param name: name assigned to IfcAlignment.Name
     :param include_vertical: If True, IfcAlignmentVertical is created. IfcGradientCurve is created if include_geometry is True
-    :param include_cant: If True, IfcAlignmentCant is created. IfcSegmentedReferenceCurve is created if include_geometry is True
+    :param include_cant: If True, IfcAlignmentCant is created. IfcSegmentedReferenceCurve is created if include_geometry is True.
+        A cant layout requires a vertical layout, so include_vertical must also be True
     :param include_geometry: If True, the geometric representations are added
     :return: Returns an IfcAlignment
+
+    Example:
+
+    .. code:: python
+
+        model = ifcopenshell.api.project.create_file(version="IFC4X3")
+        ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(model, length={"is_metric": True, "raw": "METERS"})
+
+        # An alignment with horizontal and vertical layouts, built segment by segment
+        alignment = ifcopenshell.api.alignment.create(model, "Main Street", include_vertical=True)
+        horizontal = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+        vertical = ifcopenshell.api.alignment.get_vertical_layout(alignment)
+
+        line = model.createIfcAlignmentHorizontalSegment(
+            StartPoint=model.createIfcCartesianPoint((500.0, 2500.0)),
+            StartDirection=0.0,
+            StartRadiusOfCurvature=0.0,
+            EndRadiusOfCurvature=0.0,
+            SegmentLength=1000.0,
+            PredefinedType="LINE",
+        )
+        ifcopenshell.api.alignment.create_layout_segment(model, horizontal, line)
+
+        grade = model.createIfcAlignmentVerticalSegment(
+            StartDistAlong=0.0,
+            HorizontalLength=1000.0,
+            StartHeight=100.0,
+            StartGradient=0.02,
+            EndGradient=0.02,
+            PredefinedType="CONSTANTGRADIENT",
+        )
+        ifcopenshell.api.alignment.create_layout_segment(model, vertical, grade)
+
+        # Stationing is defined once the geometry exists: start at 10+00
+        ifcopenshell.api.alignment.add_stationing_referent(
+            model, name="10+00.00", alignment=alignment, distance_along=0.0, station=1000.0
+        )
     """
     alignment = file.createIfcAlignment(
         GlobalId=ifcopenshell.guid.new(),

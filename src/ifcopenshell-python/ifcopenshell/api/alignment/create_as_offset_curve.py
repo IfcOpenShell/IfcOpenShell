@@ -37,13 +37,30 @@ def create_as_offset_curve(
     """
     Creates a new IfcAlignment with an IfcOffsetCurveByDistances representation.
 
-    The IfcAlignment is aggreated to IfcProject
+    The IfcAlignment is aggregated to IfcProject
 
     :param file:
     :param name: name assigned to IfcAlignment.Name
     :param offsets: offsets from the basis curve that defines the offset curve, expected to be IfcPointByDistanceExpression.
+        Use the parent alignment's IfcGradientCurve as the BasisCurve for a 3D offset curve (one that follows
+        the parent's profile), or its IfcCompositeCurve for a 2D one.
     :param start_station: station value at the start of the alignment
     :return: Returns an IfcAlignment
+
+    Example:
+
+    .. code:: python
+
+        # A curb line 3.6 left of an existing centerline, widening to 5.4 at distance along 500
+        centerline = model.by_type("IfcAlignment")[0]
+        basis_curve = ifcopenshell.api.alignment.get_curve(centerline)  # the centerline's IfcGradientCurve
+        offsets = [
+            model.createIfcPointByDistanceExpression(
+                DistanceAlong=model.createIfcLengthMeasure(distance_along), OffsetLateral=offset, BasisCurve=basis_curve
+            )
+            for distance_along, offset in [(0.0, 3.6), (500.0, 5.4), (1500.0, 5.4)]
+        ]
+        curb = ifcopenshell.api.alignment.create_as_offset_curve(model, "Left Curb", offsets, start_station=0.0)
     """
     alignment = file.createIfcAlignment(
         GlobalId=ifcopenshell.guid.new(),

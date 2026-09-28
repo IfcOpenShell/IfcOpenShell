@@ -36,6 +36,16 @@ def layout_vertical_alignment_by_pi_method(
     :param vpoints: (distance_along, Z_height) pairs denoting the location of the vertical PIs, including start and end.
     :param lengths: horizontal length of parabolic vertical curves
     :return: None
+
+    Example:
+
+    .. code:: python
+
+        # Add a profile to an alignment that only has a horizontal layout
+        alignment = model.by_type("IfcAlignment")[0]
+        vertical = ifcopenshell.api.alignment.add_vertical_layout(model, alignment)
+        vpoints = [(0.0, 100.0), (1200.0, 124.0), (2500.0, 110.0), (3400.0, 118.0)]
+        ifcopenshell.api.alignment.layout_vertical_alignment_by_pi_method(model, vertical, vpoints, [300.0, 250.0])
     """
     if not (len(vpoints) - 2 == len(lengths)):
         raise ValueError("lengths should have two fewer elements that vpoints")

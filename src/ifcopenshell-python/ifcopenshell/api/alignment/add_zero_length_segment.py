@@ -38,6 +38,15 @@ def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance) ->
 
     :param layout: An IfcAlignmentHorizontal, IfcAlignmentVertical, IfcAlignmentCant, IfcCompositeCurve, IfcGradientCurve, IfcSegmentedReferenceCurve
     :return: True if segment is added
+
+    Example:
+
+    .. code:: python
+
+        # Layouts made by this API already end with a zero length segment; this is for layouts built by other means
+        alignment = model.by_type("IfcAlignment")[0]
+        horizontal = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+        ifcopenshell.api.alignment.add_zero_length_segment(model, horizontal)
     """
 
     # These are valid curve types for alignment, but don't have the zero-length segment

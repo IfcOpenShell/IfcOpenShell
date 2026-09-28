@@ -105,10 +105,26 @@ def update_layout_segments(
 
     .. code:: python
 
-        existing = ifcopenshell.api.alignment.get_layout_segments(layout)[:-1]  # without the terminator
-        # same segments, a longer first one: every GlobalId is kept
-        new_parameters = [...]  # an IfcAlignmentHorizontalSegment per segment
-        ifcopenshell.api.alignment.update_layout_segments(model, layout, list(zip(existing, new_parameters)))
+        # Flatten the curve at the first PI from R=800 to R=1000, keeping every segment's GlobalId
+        hpoints = [(0.0, 0.0), (1000.0, 0.0), (1800.0, 700.0), (2800.0, 700.0)]
+        alignment = ifcopenshell.api.alignment.create_by_pi_method(model, "Main Street", hpoints, [800.0, 1200.0])
+        layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+        existing = ifcopenshell.api.alignment.get_layout_segments(layout)[:-1]  # without the zero length terminator
+
+        definitions = ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(hpoints, [1000.0, 1200.0])
+        parameters = [
+            model.createIfcAlignmentHorizontalSegment(
+                StartPoint=model.createIfcCartesianPoint(d.start_point),
+                StartDirection=d.start_direction,  # radians; convert if the project angle unit is degrees
+                StartRadiusOfCurvature=d.start_radius_of_curvature,
+                EndRadiusOfCurvature=d.end_radius_of_curvature,
+                SegmentLength=d.segment_length,
+                PredefinedType=d.predefined_type,
+            )
+            for d in definitions
+        ]
+        # the segment structure is unchanged (tangent, arc, tangent, arc, tangent), so pair them one-for-one
+        ifcopenshell.api.alignment.update_layout_segments(model, layout, list(zip(existing, parameters)))
     """
     expected_types = ["IfcAlignmentHorizontal", "IfcAlignmentVertical", "IfcAlignmentCant"]
     if layout.is_a() not in expected_types:
