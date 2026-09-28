@@ -18,9 +18,9 @@ jobs:
 
           - arch: ARM64
             runs_on: windows-11-arm
-            deps_dir: _deps-vs2022-ARM64-installed
-            vcvars: '"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsarm64.bat"'
-            build_branch: windows-arm64
+            deps_dir: _deps-vs2026-ARM64-installed
+            vcvars: '"C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Auxiliary\Build\vcvarsarm64.bat"'
+            build_branch: windows-arm64-vs2026
             zip_suffix: win-arm64
 
     runs-on: ${{ matrix.runs_on }}
