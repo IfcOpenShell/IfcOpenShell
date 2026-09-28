@@ -102,6 +102,14 @@ def compute_clothoid_end(length: float, start_curvature: float, end_curvature: f
     :param start_curvature: curvature at the start (1/R, 0.0 for a straight)
     :param end_curvature: curvature at the end (1/R, 0.0 for a straight)
     :return: (dx, dy, dtheta) displacement and change in tangent direction over the transition
+
+    Example:
+
+    .. code:: python
+
+        # A 120 long clothoid from a straight into a curve of radius 800 to the left
+        dx, dy, dtheta = ifcopenshell.api.alignment.compute_clothoid_end(120.0, 0.0, 1.0 / 800.0)
+        # dx = 119.93, dy = 3.00, dtheta = 120 / (2 * 800) = 0.075 radians
     """
     u, w = _gauss_legendre_points
     l = 0.5 * length * (u + 1.0)  # map quadrature points from (-1,1) onto (0,length)
@@ -189,6 +197,14 @@ def compute_spiral_end(
         leg from a PI's gravity centerline height and cant, see the "extra" element of its radii
         tuple.
     :return: (dx, dy, dtheta) displacement and change in tangent direction over the transition
+
+    Example:
+
+    .. code:: python
+
+        # The same transition as a clothoid and as a Bloss curve
+        clothoid = ifcopenshell.api.alignment.compute_spiral_end("CLOTHOID", 120.0, 0.0, 800.0)  # (119.93, 3.00, 0.075)
+        bloss = ifcopenshell.api.alignment.compute_spiral_end("BLOSSCURVE", 120.0, 0.0, 800.0)  # (119.94, 2.70, 0.075)
     """
     if family == "CLOTHOID":
         start_curvature = 1.0 / start_radius if start_radius != 0.0 else 0.0
@@ -260,6 +276,17 @@ def compute_horizontal_segment_end(segment: HorizontalSegmentDefinition) -> tupl
 
     :param segment: the segment definition
     :return: (x, y, direction) at the end of the segment, direction in radians
+
+    Example:
+
+    .. code:: python
+
+        definitions = ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(
+            [(0.0, 0.0), (1000.0, 0.0), (1800.0, 700.0)], [(800.0, 120.0, 120.0)]
+        )
+        for this, following in zip(definitions, definitions[1:]):
+            x, y, direction = ifcopenshell.api.alignment.compute_horizontal_segment_end(this)
+            assert math.isclose(x, following.start_point[0], abs_tol=1e-6)
     """
     x, y = segment.start_point
     direction = segment.start_direction
@@ -494,6 +521,13 @@ def curve_tangent_out(
     :param pi_number: 1-based PI number, used only in a "spirals too long" error message
     :return: tangent length from the PI to this curve's own forward tangent point (PT, or ST if it
         has an exit spiral)
+
+    Example:
+
+    .. code:: python
+
+        # 30 degree deflection, R=500 with 100 long spirals
+        tangent = ifcopenshell.api.alignment.curve_tangent_out(math.radians(30.0), 500.0, 100.0, 100.0)
     """
     delta = math.atan2(math.sin(delta), math.cos(delta))
     if entry_length <= 0.0 and exit_length <= 0.0:
@@ -543,6 +577,14 @@ def solve_join_next_radius(
     :raises ValueError: if target_tangent_in is not positive, or no radius closes the join for this
         curve type/spiral length/deflection combination (a genuinely unsatisfiable geometry, not a
         root-finding failure)
+
+    Example:
+
+    .. code:: python
+
+        # Two PIs 400 apart, deflecting 30 and 20 degrees: put the compound curve junction 150 past the first PI
+        r1 = ifcopenshell.api.alignment.solve_joining_radius(math.radians(30.0), 150.0)  # 559.81
+        r2 = ifcopenshell.api.alignment.solve_join_next_radius(math.radians(20.0), 400.0 - 150.0)  # 1417.82
     """
     return _solve_radius_for_tangent(
         delta, target_tangent_in, 0.0, exit_length, family, vb_params, tolerance, max_iterations
@@ -581,6 +623,13 @@ def solve_joining_radius(
     :param max_iterations: bisection iteration cap, after the initial bracket search
     :return: the radius (unsigned magnitude) that claims exactly target_tangent_out
     :raises ValueError: if target_tangent_out is not positive, or no radius achieves it
+
+    Example:
+
+    .. code:: python
+
+        # See solve_join_next_radius for the second curve of the junction
+        r1 = ifcopenshell.api.alignment.solve_joining_radius(math.radians(30.0), 150.0)  # 559.81
     """
     return _solve_radius_for_tangent(
         delta, target_tangent_out, entry_length, 0.0, family, vb_params, tolerance, max_iterations
@@ -758,6 +807,19 @@ def solve_horizontal_alignment_by_pi_method(
     :param radii: radius values to use for transition, optionally with spiral transition lengths
     :param cants: cant values, one per PI curve, applied to the outer rail
     :return: list of segment definitions, in order, continuous in position and direction
+
+    Example:
+
+    .. code:: python
+
+        hpoints = [(0.0, 0.0), (1000.0, 0.0), (1800.0, 700.0), (2800.0, 700.0)]
+        radii = [(800.0, 120.0, 120.0), 1200.0]  # spiralled curve, then a plain circular curve
+        for d in ifcopenshell.api.alignment.solve_horizontal_alignment_by_pi_method(hpoints, radii):
+            print(d.predefined_type, d.start_dist_along, d.segment_length)
+        # LINE 0.0 639.141...
+        # CLOTHOID 639.141... 120.0
+        # CIRCULARARC 759.141... 455.064...
+        # ...
     """
     if not (len(hpoints) - 2 == len(radii)):
         raise ValueError("radii should have two fewer elements that hpoints")
