@@ -754,12 +754,9 @@ def install_mpfr(
     if is_already_installed(install_dir / "mpfr"):
         return
 
-    git_clone_and_checkout_revision(
-        DEPENDENCY_NAME,
-        "https://github.com/aothms/mpfr.git",
-        dependency_dir,
-        "2ebbe10fd029a480cf6e8a64c493afa9f3654251",
-    )
+    revision = "ifcopenshell-arm64" if vs_cfg_vars.is_vs_platform("ARM64") else "ifcopenshell"
+    # TODO: move to IfcOpenShell organization.
+    git_clone_and_checkout_revision(DEPENDENCY_NAME, "https://github.com/Andrej730/mpfr.git", dependency_dir, revision)
     run_streamed("git", "reset", "--hard", cwd=dependency_dir)
     run_streamed("git", "clean", "-fdx", cwd=dependency_dir)
 
@@ -774,26 +771,6 @@ def install_mpfr(
         cwd=dependency_dir,
         check=True,
     )
-
-    run_streamed(
-        "git",
-        "apply",
-        str(SCRIPT_DIR / "patches" / "mpfr_runtime.patch"),
-        "--unidiff-zero",
-        "--ignore-whitespace",
-        cwd=dependency_dir,
-    )
-
-    if vs_cfg_vars.is_vs_platform("ARM64"):
-        logger.info("Applying ARM64 patches for mpfr.")
-        run_streamed(
-            "git",
-            "apply",
-            str(SCRIPT_DIR / "patches" / "mpfr-arm64-changes.patch"),
-            "--unidiff-zero",
-            "--ignore-whitespace",
-            cwd=dependency_dir,
-        )
 
     # mpfr's repo only ships these two prebaked solution folders, regardless of the actual VS version in use.
     if vs_cfg_vars.generator.vs_ver == 2017:

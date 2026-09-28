@@ -340,19 +340,15 @@ IF EXIST "%INSTALL_DIR%\mpfr" (
 
 set DEPENDENCY_NAME=mpfr
 set DEPENDENCY_DIR=%DEPS_DIR%\mpfr
-call :GitCloneAndCheckoutRevision https://github.com/aothms/mpfr.git "%DEPENDENCY_DIR%" 2ebbe10fd029a480cf6e8a64c493afa9f3654251
+set MPFR_REVISION=ifcopenshell
+IF /I "%VS_PLATFORM%"=="ARM64" set MPFR_REVISION=ifcopenshell-arm64
+call :GitCloneAndCheckoutRevision https://github.com/Andrej730/mpfr.git "%DEPENDENCY_DIR%" %MPFR_REVISION%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 pushd "%DEPENDENCY_DIR%"
 git reset --hard
 git clean -fdx
 powershell -c "get-content %~dp0patches\mpfr.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpfr\"}" | git apply --unidiff-zero --ignore-whitespace
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-git apply "%~dp0patches\mpfr_runtime.patch" --unidiff-zero --ignore-whitespace
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-IF /I "%VS_PLATFORM%"=="ARM64" (
-    echo "Applying ARM64 Patches for Mpfr"
-    git apply "%~dp0patches\mpfr-arm64-changes.patch" --unidiff-zero --ignore-whitespace
-)
 if "%VS_VER%"=="2017" (
   set mpfr_sln=build.vc15
   set orig_platform_toolset=v141
