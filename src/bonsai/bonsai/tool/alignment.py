@@ -1665,6 +1665,69 @@ class Alignment:
         cls._sync_bare_stationing(alignment)
 
     @classmethod
+    def get_reference_horizontal_layout(
+        cls, alignment: "ifcopenshell.entity_instance"
+    ) -> Optional["ifcopenshell.entity_instance"]:
+        """The IfcAlignmentHorizontal an alignment's distances along are measured on, for look-ups
+        (lengths, station ranges). A layout-based alignment's own; for an offset curve alignment, which
+        has no layouts of its own, the one at the bottom of its chain -- an IfcOffsetCurveByDistances
+        is offset from an IfcCompositeCurve, an IfcGradientCurve (whose base curve is one), or another
+        offset curve, so the chain always ends on a reference alignment's horizontal (per the user,
+        2026-09-28). Only for reading: an edit made through it would change the reference, and every
+        offset built on it, not the selected alignment. None if there's no horizontal to be found."""
+        curve = cls.get_offset_curve(alignment)
+        if curve is None:
+            return ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+        while curve is not None and curve.is_a("IfcOffsetCurveByDistances"):
+            curve = curve.BasisCurve
+        while curve is not None and curve.is_a() in ("IfcSegmentedReferenceCurve", "IfcGradientCurve"):
+            curve = curve.BaseCurve
+        if curve is None:
+            return None
+        for other in tool.Ifc.get().by_type("IfcAlignment"):
+            if other.id() != alignment.id() and ifcopenshell.api.alignment.get_basis_curve(other) == curve:
+                return ifcopenshell.api.alignment.get_horizontal_layout(cls._get_top_level_alignment(other))
+        return None
+
+    @classmethod
+    def get_offset_profile(cls, alignment: "ifcopenshell.entity_instance", step: float = 1.0) -> list:
+        """A 3D offset curve alignment's elevation profile, for the profile view: one span per stretch
+        between its offsets (plus the lead-in before the first and run-out after the last, where the
+        offset continues unchanged), as (start distance, end distance, [(distance along, elevation), ...]).
+        Empty for a 2D offset curve, which has no elevations.
+
+        Sampled from the geometry kernel's own evaluation of the IfcOffsetCurveByDistances, so it's the
+        curve exactly as IFC defines it -- following the reference's vertical curves, and with the
+        vertical offset square to the sloped tangent. Distance along is measured along the basis curve,
+        which is the offset curve's own DistanceAlong, so it matches its stationing referents.
+        ``step`` is the largest sampling interval; every span's end is always sampled."""
+        import ifcopenshell.geom
+        from ifcopenshell import ifcopenshell_wrapper
+
+        curve = cls.get_offset_curve(alignment)
+        if curve is None or cls.get_offset_dimension(curve) != 3:
+            return []
+        settings = ifcopenshell.geom.settings()
+        function = ifcopenshell_wrapper.map_shape(settings, curve)
+        evaluator = ifcopenshell_wrapper.function_item_evaluator(settings, function)
+        length = function.length()
+        if length <= 0.0:
+            return []
+        _, rows = cls.get_offset_values(alignment)
+        breaks = sorted({0.0, length, *(min(max(r[0], 0.0), length) for r in rows)})
+        spans = []
+        for start, end in zip(breaks[:-1], breaks[1:]):
+            if end - start <= 1e-9:
+                continue
+            n = max(1, math.ceil((end - start) / step))
+            points = []
+            for k in range(n + 1):
+                d = start + (end - start) * k / n
+                points.append((d, float(evaluator.evaluate(d)[2][3])))
+            spans.append((start, end, points))
+        return spans
+
+    @classmethod
     def refresh_dependent_offset_alignments(cls, alignment: "ifcopenshell.entity_instance") -> None:
         """Rebuild the meshes of every offset curve alignment built (directly or through other offset
         curves) on ``alignment``. Their IFC stays valid through ``alignment``'s own edits -- its curve
