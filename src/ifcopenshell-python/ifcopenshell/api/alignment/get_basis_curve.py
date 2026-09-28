@@ -31,6 +31,7 @@ def get_basis_curve(alignment: entity_instance) -> entity_instance:
     Example:
 
     .. code:: python
+
         alignment = model.by_type("IfcAlignment")[0]
         composite_curve = ifcopenshell.api.alignment.get_basis_curve(alignment)
     """
