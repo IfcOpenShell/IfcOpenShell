@@ -20,7 +20,7 @@ from typing import NamedTuple
 from zipfile import ZipFile
 
 from common import logger, run, run_streamed
-from vs_cfg import get_vs_var
+from vs_cfg import VsCfg, get_vs_var
 
 
 class Args(NamedTuple):
@@ -71,7 +71,9 @@ def is_arm64() -> bool:
 
 
 def build_generator() -> str:
-    return "vs2022-ARM64" if is_arm64() else "vs2022-x64"
+    vs_ver = VsCfg.generator_from_visual_studio_version().vs_ver
+    vs_platform = "ARM64" if is_arm64() else "x64"
+    return f"vs{vs_ver}-{vs_platform}"
 
 
 assert Path.cwd() == Path(__file__).parent, "Run this script from the 'win' directory."
