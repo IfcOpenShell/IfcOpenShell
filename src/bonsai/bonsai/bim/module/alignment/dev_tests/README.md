@@ -16,12 +16,12 @@ pytest tests.
 Exit code 0 means pass, and scripts that print "ALL OK" print it on success. Don't pass
 `--factory-startup`, because it disables the Bonsai extension.
 
-The regression set last run (all passing on 2026-09-25):
+The regression set last run (all passing on 2026-09-28):
 
 - bl_cant_follow, bl_pi_keep, bl_tables_keep, bl_insert_delete, bl_exact
 - bl_multi_vertical_cant, bl_extend, bl_key_points, bl_drag_vertical, bl_move_marker
 - bl_straight_repro, bl_offset, bl_offset_flow2, bl_join_distance, bl_polyline_flow
-- bl_vertical_typed
+- bl_vertical_typed, bl_offset_stationing
 
 `bl_panel_render_rec.py` is a helper imported by the panel tests.
 

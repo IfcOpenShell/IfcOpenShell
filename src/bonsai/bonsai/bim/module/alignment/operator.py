@@ -248,6 +248,15 @@ def _add_offset_basis_items(self, context):
     return _add_alignment_items_cache["offset_from"]
 
 
+def _on_add_alignment_definition_update(self, context):
+    """An offset curve (a lane edge, a parallel ramp) rarely needs stationing of its own, so it
+    defaults to none; every other kind defaults to stationing (per the user, 2026-09-28). Stationing
+    can still be added afterwards with Set Start Station. Only while the dialog is open: a script
+    passing both definition and define_stationing keeps the define_stationing it asked for."""
+    if self.in_dialog:
+        self.define_stationing = self.definition != "OFFSET"
+
+
 class ALIGN_OT_add_alignment(Operator, tool.Ifc.Operator):
     """Add a new, empty IfcAlignment to the project"""
 
@@ -274,6 +283,7 @@ class ALIGN_OT_add_alignment(Operator, tool.Ifc.Operator):
         description="How the alignment's geometry is defined",
         items=_alignment_definition_items,
         default=0,  # LAYOUTS -- dynamic items (a callback) can't take a string default
+        update=_on_add_alignment_definition_update,
     )
     offset_from: EnumProperty(
         name="Offset From",
@@ -285,6 +295,8 @@ class ALIGN_OT_add_alignment(Operator, tool.Ifc.Operator):
         name="Offset Lateral", description="Positive to the left, facing along the basis curve", default=3.0
     )
     offset_vertical: FloatProperty(name="Offset Vertical", description="Positive up (3D only)", default=0.0)
+    # set by invoke(), so changing Definition in the dialog resets define_stationing to that kind's default
+    in_dialog: BoolProperty(default=False, options={"HIDDEN", "SKIP_SAVE"})
 
     @classmethod
     def poll(cls, context):
@@ -296,6 +308,9 @@ class ALIGN_OT_add_alignment(Operator, tool.Ifc.Operator):
         # digit grouping from the project's LENGTHUNIT) rather than a bare "0", so the
         # field already shows the format the user is expected to type in.
         self.start_station = tool.Alignment.format_station(0.0)
+        # the dialog remembers the last Definition chosen -- start from that kind's stationing default
+        self.define_stationing = self.definition != "OFFSET"
+        self.in_dialog = True
         return context.window_manager.invoke_props_dialog(self)
 
     def draw(self, context):
@@ -2996,15 +3011,19 @@ class _ExtendHorizontalAlignment(_DrawHorizontalAlignment):
         start, end = tool.Alignment.get_alignment_start_end_points(alignment)
         self._existing_hpoints = [start] + [spec["pi_local"] for spec in specs] + [end]
         cant_lookup = _cant_lookup_for_pi_markers(alignment, len(specs))
-        self._existing_radii = [
-            _pi_curve_radii_entry(
-                SimpleNamespace(
-                    **{**spec, **{k: spec.get(k) or 0.0 for k in ("radius", "spiral_in_length", "spiral_out_length")}}
-                ),
-                cant_lookup[i],
+        self._existing_radii = []
+        for i, spec in enumerate(specs):
+            # a stand-in for a PI marker, its values staged exactly as a real marker's are, so
+            # _pi_curve_radii_entry reads them back at full precision (tool.Alignment.exact)
+            marker = SimpleNamespace(**spec, exact_values="")
+            tool.Alignment.stage_exact(
+                marker,
+                **{
+                    k: spec.get(k) or 0.0
+                    for k in ("radius", "spiral_in_length", "spiral_out_length", "gravity_centerline_height")
+                },
             )
-            for i, spec in enumerate(specs)
-        ]
+            self._existing_radii.append(_pi_curve_radii_entry(marker, cant_lookup[i]))
         return None
 
     def _modal(self, context, event):

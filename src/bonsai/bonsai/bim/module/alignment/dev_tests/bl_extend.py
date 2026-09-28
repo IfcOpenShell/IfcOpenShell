@@ -100,10 +100,12 @@ try:
     print("h length", round(h_len, 3), "->", round(h_len2, 3))
     bpy.ops.align.finish_pi_editing()
 
-    # ---- vertical and cant were left alone -> now short of the horizontal
+    # ---- the vertical was left alone -> now short of the horizontal; the cant follows the
+    #      horizontal's edits (REQUIREMENTS.md §11), so it already matches
     dv, dc = A.get_length_mismatch(v), A.get_length_mismatch(cant)
-    print("mismatch: vertical", round(dv, 3), "| cant", round(dc, 3))
-    check(dv < 0 and dc < 0 and abs(dv - (h_len - h_len2)) < 1e-3, "mismatch not detected")
+    print("mismatch: vertical", round(dv, 3), "| cant", dc)
+    check(dv < 0 and abs(dv - (h_len - h_len2)) < 1e-3, "vertical mismatch not detected")
+    check(dc is None and abs(A.get_layout_end_distance(cant) - h_len2) < 1e-6, "cant didn't follow the horizontal")
 
     # ---- Match Horizontal Length on the vertical: only its last segment changes
     before = [(s.DesignParameters.PredefinedType, round(s.DesignParameters.HorizontalLength, 6))
@@ -114,9 +116,6 @@ try:
     print("vertical segments:", before, "->", after)
     check(after[:-1] == before[:-1] and after[-1][1] > before[-1][1], "vertical match changed the wrong segments")
     check(A.get_length_mismatch(v) is None and abs(A.get_layout_end_distance(v) - h_len2) < 1e-6, "vertical not matched")
-    cant = A.get_all_cant_layouts(a)[0]
-    check(bpy.ops.align.match_horizontal_length(layout_id=cant.id()) == {"FINISHED"}, "match cant")
-    check(A.get_length_mismatch(cant) is None, "cant not matched")
 
     # ---- a layout too short to trim is refused, nothing changed
     #      (shorten the horizontal a lot by redrawing it short, then try to trim the vertical)

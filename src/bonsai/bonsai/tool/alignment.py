@@ -1428,14 +1428,16 @@ class Alignment:
                     representation.RepresentationType = "Curve3D" if dim == 3 else "Curve2D"
             cls._match_placement_dimension(alignment, dim)
         cls.refresh_alignment_representation_object(alignment)
-        cls._sync_polyline_stationing(alignment)
+        cls._sync_bare_stationing(alignment)
 
     @classmethod
-    def _sync_polyline_stationing(cls, alignment: "ifcopenshell.entity_instance") -> None:
-        """Keep a polyline alignment's stationing referents on its curve after its points change.
+    def _sync_bare_stationing(cls, alignment: "ifcopenshell.entity_instance") -> None:
+        """Keep a polyline or offset curve alignment's stationing referents on its curve after the
+        curve changes (its points or offsets edited, or the curve it's offset from edited).
 
-        A start referent added before there was any curve (Add Alignment, then Draw Polyline) sits
-        at the origin with an IfcLocalPlacement -- put it on the curve at distance along 0, as
+        A start referent added before there was any curve (Add Alignment, then Draw Polyline; or an
+        offset alignment from before offset curves could carry stationing) sits at the origin with an
+        IfcLocalPlacement -- put it on the curve at distance along 0, as
         ifcopenshell.api.alignment.create_representation does for a layout-based alignment. Every
         referent's IfcLinearPlacement stays valid through an edit (the curve entity is updated in
         place, never replaced), but its cached fallback CartesianPosition and its Blender object
@@ -1444,7 +1446,7 @@ class Alignment:
         from ifcopenshell.api.alignment.update_fallback_position import update_fallback_position
 
         file = tool.Ifc.get()
-        curve = cls.get_polyline_curve(alignment)
+        curve = cls.get_polyline_curve(alignment) or cls.get_offset_curve(alignment)
         nest = ifcopenshell.api.alignment.get_stationing_nest(file, alignment)
         if curve is None or nest is None:
             return
@@ -1490,7 +1492,7 @@ class Alignment:
         (ifcopenshell.api.alignment.create does the same), no layouts, and no geometry until it's
         given some: a polyline (set_polyline_points) or an offset curve (set_offset_values). With define_stationing, its start
         referent is added now, at the origin, and put on the curve once it's drawn
-        (_sync_polyline_stationing) -- the same order as a layout-based alignment's create_alignment."""
+        (_sync_bare_stationing) -- the same order as a layout-based alignment's create_alignment."""
         import ifcopenshell.api.root
         import ifcopenshell.util.alignment
 
@@ -1660,6 +1662,7 @@ class Alignment:
                     representation.RepresentationType = "Curve3D" if dim == 3 else "Curve2D"
             cls._match_placement_dimension(alignment, dim)
         cls.refresh_alignment_representation_object(alignment)
+        cls._sync_bare_stationing(alignment)
 
     @classmethod
     def refresh_dependent_offset_alignments(cls, alignment: "ifcopenshell.entity_instance") -> None:
@@ -1673,6 +1676,7 @@ class Alignment:
             curve = cls.get_offset_curve(other)
             if curve is not None and cls._offset_depends_on(curve, alignment):
                 cls.refresh_alignment_representation_object(other, refresh_dependents=False)
+                cls._sync_bare_stationing(other)
 
     @classmethod
     def get_vertical_display_name(cls, vertical_layout: "ifcopenshell.entity_instance") -> str:
