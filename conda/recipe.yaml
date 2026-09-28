@@ -142,10 +142,6 @@ about:
           <td><a href="https://aur.archlinux.org/packages/ifcopenshell-git"><img src="https://img.shields.io/aur/version/ifcopenshell-git" alt="AUR Badge"></a></td>
         </tr>
         <tr>
-          <td>BlenderBIM Add-on Chocolatey (under moderation)</td>
-          <td><a href="https://community.chocolatey.org/packages/blenderbim-nightly/"><img src="https://img.shields.io/chocolatey/v/blenderbim-nightly" alt="Chocolatey Badge"></a></td>
-        </tr>
-        <tr>
           <td>Sponsor development on OpenCollective</td>
           <td><a href="https://opencollective.com/opensourcebim/"><img src="https://opencollective.com/opensourcebim/tiers/badge.svg" alt="Financial Contributors"></a></td>
         </tr>
