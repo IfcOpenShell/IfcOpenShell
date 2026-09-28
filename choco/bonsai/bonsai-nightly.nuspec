@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>bonsai-nightly</id>
+    <version>{{VERSION}}</version>
+    <packageSourceUrl>https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.9.0/choco/bonsai</packageSourceUrl>
+    <owners>fbpyr</owners>
+    <title>Bonsai (nightly)</title>
+    <authors>Dion Moult and many more, see: https://github.com/IfcOpenShell/IfcOpenShell/graphs/contributors</authors>
+    <projectUrl>https://bonsaibim.org/</projectUrl>
+    <iconUrl>https://rawcdn.githack.com/IfcOpenShell/IfcOpenShell/c6ee1d1679d1298de0d7447ff108c22709c68e54/choco/blenderbim/blenderbim.png</iconUrl>
+    <licenseUrl>https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.9.0/COPYING</licenseUrl>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <projectSourceUrl>https://github.com/IfcOpenShell/IfcOpenShell</projectSourceUrl>
+    <docsUrl>https://docs.bonsaibim.org/</docsUrl>
+    <bugTrackerUrl>https://github.com/IfcOpenShell/IfcOpenShell/issues</bugTrackerUrl>
+    <tags>blender bim bonsai ifc openbim python opensource foss</tags>
+    <summary>Bonsai, the Blender extension for native IFC authoring: nightly build</summary>
+    <description>Bonsai is a free and open source Blender extension for authoring and documenting BIM data natively in IFC. This package installs the nightly build into the newest Blender found under Program Files, as a Blender extension. Source: https://github.com/IfcOpenShell/IfcOpenShell</description>
+    <dependencies>
+      <dependency id="blender" version="4.2.0" />
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>

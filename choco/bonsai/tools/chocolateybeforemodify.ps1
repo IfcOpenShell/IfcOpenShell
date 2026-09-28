@@ -1,4 +1,4 @@
-﻿$processName      = "blender"
+$processName      = "blender"
 $blenderIsRunning = Get-Process -Name $processName -ErrorAction SilentlyContinue
 
 if($blenderIsRunning -eq $null) {

@@ -1,22 +1,15 @@
-﻿$appDataUserDir = [System.Environment]::GetEnvironmentVariable('appdata')
-$unzippedDir = "$appDataUserDir\Blender Foundation\Blender\latest_blender_version_maj_min\scripts\addons\blenderbim"
+# This file was generated with the assistance of an AI coding tool.
+$ErrorActionPreference = 'Stop'
 
-$chocoBaseDir    = [System.Environment]::GetEnvironmentVariable('ChocolateyInstall')
-$addonDisable     = "$chocoBaseDir\lib\blenderbim-nightly\tools\disable_blenderbim_addon.py"
-
-$programFilesDir = [System.Environment]::GetEnvironmentVariable('ProgramFiles')
-$blenderExePath  = "$env:ProgramFiles\Blender Foundation\Blender latest_blender_version_maj_min\blender.exe"
-
-$processName      = "blender"
-$blenderIsRunning = Get-Process -Name $processName -ErrorAction SilentlyContinue
-
-if($blenderIsRunning -eq $null) {
-    echo "attempting to uninstall blenderbim."
-    Start-Process -FilePath $blenderExePath -ArgumentList "-b", "-y", "--python", "$addonDisable"
-    Remove-Item -LiteralPath $unzippedDir -Force -Recurse
+$blender = Get-ChildItem "$env:ProgramFiles\Blender Foundation\Blender *\blender.exe" -ErrorAction SilentlyContinue |
+  Sort-Object { [version]($_.Directory.Name -replace '^Blender ') } -Descending |
+  Select-Object -First 1
+if (-not $blender) {
+  Write-Warning "No Blender found under '$env:ProgramFiles\Blender Foundation'; nothing to remove."
+  return
 }
-else {
-    Write-Warning "$processName is still running - blenderbim cannot be safely uninstalled."
-    Write-Warning "Please retry after closing all running blender applications."
-    exit 1
+
+& $blender.FullName --command extension remove bonsai
+if ($LASTEXITCODE -ne 0) {
+  throw "Blender could not remove the extension (exit code $LASTEXITCODE)."
 }

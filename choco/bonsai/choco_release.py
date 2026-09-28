@@ -1,237 +1,125 @@
-# commands to run it on a generic ubuntu 2404 oci container:
-"""
-apt update && apt install git wget curl ptpython mono-devel micro
-mkdir -p /home/runner/work/IfcOpenShell && cd /home/runner/work/IfcOpenShell
-git clone https://github.com/IfcOpenShell/IfcOpenShell
-cd /home/runner/work/IfcOpenShell/IfcOpenShell/choco/bonsai/
-micro choco_release.py # paste this script, comment out push command
-export CHOCO_TOKEN="secret_choco_release_token"
-python3 choco_release.py
+#!/usr/bin/env -S uv run
+# /// script
+# dependencies = [
+#     "PyGithub",
+# ]
+# ///
+# This file was generated with the assistance of an AI coding tool.
+"""Package a Bonsai nightly for Chocolatey and push it to chocolatey.org.
+
+Takes the newest `bonsai-*-alpha<yymmdd>*` GitHub release of yesterday (UTC),
+or the release named with --tag, fills the nuspec and the install script with
+the release's Windows zips, runs `choco pack` and, unless --dry-run, `choco
+push`. Meant for a Windows runner, where choco is preinstalled; the package
+lands in dist/ next to this script.
 """
 
+import argparse
 import datetime
 import hashlib
+import itertools
 import os
-import pathlib
 import re
+import shutil
 import subprocess
-from typing import NoReturn
-from urllib import request
+import sys
+from pathlib import Path
+from urllib.request import urlretrieve
 
 from github import Github
+from github.GitRelease import GitRelease
+
+HERE = Path(__file__).parent
+REPO = "IfcOpenShell/IfcOpenShell"
+NUSPEC = HERE / "bonsai-nightly.nuspec"
+PLATFORM = "windows-x64"
+PYTHON_VARIANTS = ("py311", "py313")
+PUSH_SOURCE = "https://push.chocolatey.org/"
 
 
-def get_repo_tag_names() -> list[str]:
-    git_return = subprocess.check_output("git tag -l", text=True)
-    tag_names = [tag_name for tag_name in git_return.split("\n") if tag_name]
-    print(f"{len(tag_names)} tag_names found in repo")
-    return tag_names
+def find_nightly_release(releases, date: str) -> GitRelease | None:
+    """The newest release of `date` (yymmdd); releases come newest first."""
+    pattern = re.compile(rf"^bonsai-.+-alpha{date}\d*$")
+    # A few nightlies a day: yesterday's are well within the newest hundred
+    # releases, and paging through the whole history is refused past 1000.
+    for release in itertools.islice(releases, 100):
+        if pattern.match(release.tag_name):
+            return release
+    return None
 
 
-def request_repo_info(url: str):
-    req = request.Request(url)
-    resp = request.urlopen(req)
-    if not resp.status == 200:
-        print(f"[ERROR] could not contact server: {url}")
-        quit(1)
-    return resp
+def download(url: str, dest: Path) -> str:
+    """Download `url` to `dest` and return its SHA-256."""
+    print(f"Downloading {url}")
+    urlretrieve(url, dest)
+    return hashlib.sha256(dest.read_bytes()).hexdigest()
 
 
-def get_choco_package_info() -> str:
-    resp = request_repo_info(URL_CHOCO_PACKAGE)
-    html_txt = str(resp.read())
-    return html_txt
+def fill(template: Path, dest: Path, values: dict[str, str]) -> None:
+    text = template.read_text(encoding="utf-8")
+    for key, value in values.items():
+        placeholder = "{{" + key + "}}"
+        if placeholder not in text:
+            raise SystemExit(f"{placeholder} not found in {template}")
+        text = text.replace(placeholder, value)
+    dest.write_text(text, encoding="utf-8")
 
 
-def get_latest_choco_blender_version() -> list:
-    html_txt = get_choco_package_info()
-    return re.findall(RE_BLENDER_VERSION_MIN_MAJ_PAT, html_txt)
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--tag", help="release tag to package instead of yesterday's newest nightly")
+    parser.add_argument("--dry-run", action="store_true", help="pack, but do not push to chocolatey.org")
+    args = parser.parse_args()
+
+    repo = Github().get_repo(REPO)
+    if args.tag:
+        release = repo.get_release(args.tag)
+    else:
+        yesterday = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1)).strftime("%y%m%d")
+        release = find_nightly_release(repo.get_releases(), yesterday)
+        if release is None:
+            print(f"No bonsai nightly release for {yesterday}, nothing to publish.")
+            return
+    print(f"Packaging {release.tag_name}")
+
+    token = os.environ.get("CHOCO_TOKEN")
+    if not args.dry_run and not token:
+        raise SystemExit("CHOCO_TOKEN is not set")
+
+    build_dir = HERE / "build"
+    dist_dir = HERE / "dist"
+    shutil.rmtree(build_dir, ignore_errors=True)
+    shutil.copytree(HERE / "tools", build_dir / "tools")
+    dist_dir.mkdir(exist_ok=True)
+
+    version = release.tag_name.removeprefix("bonsai-")
+    values: dict[str, str] = {}
+    assets = {asset.name: asset for asset in release.get_assets()}
+    for variant in PYTHON_VARIANTS:
+        name = next((n for n in assets if n.startswith(f"bonsai_{variant}-") and n.endswith(f"-{PLATFORM}.zip")), None)
+        if name is None:
+            raise SystemExit(f"{release.tag_name} has no bonsai_{variant}-*-{PLATFORM}.zip asset")
+        url = assets[name].browser_download_url
+        values[f"URL_{variant.upper()}"] = url
+        values[f"SHA256_{variant.upper()}"] = download(url, build_dir / name)
+        (build_dir / name).unlink()
+
+    fill(NUSPEC, build_dir / NUSPEC.name, {"VERSION": version})
+    fill(HERE / "tools" / "chocolateyinstall.ps1", build_dir / "tools" / "chocolateyinstall.ps1", values)
+
+    subprocess.run(["choco", "pack", NUSPEC.name, "--outputdirectory", str(dist_dir)], cwd=build_dir, check=True)
+    nupkg = next(dist_dir.glob("*.nupkg"))
+    print(f"Packed {nupkg}")
+
+    if args.dry_run:
+        print("Dry run, not pushing.")
+        return
+    subprocess.run(
+        ["choco", "push", str(nupkg), "--source", PUSH_SOURCE, "--api-key", token],
+        check=True,
+    )
+    print(f"Pushed {nupkg.name} to {PUSH_SOURCE}")
 
 
-def get_file_sha256_hash(file_path: str) -> str:
-    BLOCKSIZE = 65536
-    hasher = hashlib.sha256()
-
-    with open(file_path, "rb") as input_file:
-        buffer = input_file.read(BLOCKSIZE)
-        while len(buffer) > 0:
-            hasher.update(buffer)
-            buffer = input_file.read(BLOCKSIZE)
-
-    return hasher.hexdigest()
-
-
-def quit_with_error_message(message: str) -> NoReturn:
-    print(f"ERROR: {message}")
-    quit(0)
-
-
-def get_release_zip(tag: str) -> tuple[str, str]:
-    g = Github()
-    repo = g.get_repo("IfcOpenShell/IfcOpenShell")
-    release = repo.get_release(tag)
-    for asset in release.get_assets():
-        asset_name = asset.name
-        if python_version not in asset_name:
-            continue
-        if TARGET_OS not in asset_name:
-            continue
-        return (asset_name, asset.browser_download_url)
-    raise Exception(f"Couldn't find the release matching '{python_version}' and '{TARGET_OS}' in tag '{tag}'.")
-
-
-def run(command: str) -> None:
-    subprocess.check_output(command)
-
-
-start = datetime.datetime.now()
-
-URL_CHOCO_PACKAGE = "https://community.chocolatey.org/packages/blender"
-URL_BLENDER_CMAKE = (
-    "https://raw.githubusercontent.com/blender/blender/{}/build_files/cmake/Modules/FindPythonLibsUnix.cmake"
-)
-RE_BLENDER_VERSION_MIN_MAJ = r"Latest Version.+<span>Blender (\d+\.\d+)\..+</span>"
-RE_BLENDER_VERSION_MIN_MAJ_PAT = r"Latest Version.+<span>Blender (\d+\.\d+\.\d+)</span>"
-RE_BLENDER_PYTHON_VERSION_MAJ_MIN = r"\(_PYTHON_VERSION_SUPPORTED (\d+\.\d+)\)"
-
-BLENDERBIM_DIR = pathlib.Path("/home/runner/work/IfcOpenShell/IfcOpenShell/choco/bonsai/")
-
-print("_____ check choco release needed?")
-
-os.chdir(BLENDERBIM_DIR)
-
-blenderbim_date_yesterday = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime("%y%m%d")
-should_release = False
-target_release_tag = ""
-TARGET_OS = "windows-x64"
-
-git_status = subprocess.check_output("git status", text=True)
-print(git_status)
-
-for tag_name in get_repo_tag_names():
-    print(tag_name)
-    if blenderbim_date_yesterday in tag_name:
-        should_release = True
-        target_release_tag = tag_name
-        print(f"found {tag_name=} - {should_release=}")
-        break
-
-if not should_release:
-    print(f"INFO: no blenderbim release tags found for {blenderbim_date_yesterday} -> no choco release today.")
-    quit(0)
-print(f"{should_release=}")
-
-if not os.environ.get("CHOCO_TOKEN"):
-    quit_with_error_message("could retrieve CHOCO_TOKEN env var")
-choco_token = os.environ["CHOCO_TOKEN"]
-
-print("\n_____ get blender info")
-# blender_version_min_maj_pat - from chocolatey.org
-latest_blender_release_maj_min_pat = get_latest_choco_blender_version()
-if not latest_blender_release_maj_min_pat:
-    quit_with_error_message("could not determine blender_version_min_maj_pat")
-latest_blender_release_maj_min_pat = latest_blender_release_maj_min_pat[0]
-print(f"{latest_blender_release_maj_min_pat=}")
-
-# blender_version_min_maj - from chocolatey.org
-blender_version_min_maj = latest_blender_release_maj_min_pat.rsplit(".", 1)[0]
-print(f"{blender_version_min_maj=}")
-
-# blender_python_version_maj_min - from blender repo
-python_version = ""
-latest_blender_version_tag = f"v{latest_blender_release_maj_min_pat}"
-resp = request_repo_info(URL_BLENDER_CMAKE.format(latest_blender_version_tag))
-html_txt = str(resp.read())
-found = re.findall(RE_BLENDER_PYTHON_VERSION_MAJ_MIN, html_txt)
-if not found:
-    quit_with_error_message("could not determine blender_python_version_maj_min")
-
-blender_python_version_maj_min = found[0]
-print(f"{blender_python_version_maj_min=}")
-python_version = f"py{found[0].replace('.', '')}"
-print(f"{python_version=}")
-
-blenderbim_build_version = target_release_tag.replace("bonsai-", "")
-
-# url_blenderbim_py3x_win_zip
-release_zip_file_name, url_blenderbim_py3x_win_zip = get_release_zip(target_release_tag)
-subprocess.check_call(f"wget {url_blenderbim_py3x_win_zip} --no-verbose")
-
-# sha256sum_blenderbim_py310_win_zip
-sha256sum_blenderbim_py3x_win_zip = get_file_sha256_hash(release_zip_file_name)
-
-print("\n_____ fill dynamic chocolatey package parameters")
-HERE_DIR = pathlib.Path(__file__).parent.absolute()
-# print(f"[INFO] HERE_DIR: {HERE_DIR}")
-
-topics = {
-    "spec": {
-        "path": HERE_DIR / "blenderbim.nuspec",
-        "key_values": {
-            "latest_blender_version_maj_min_pat": latest_blender_release_maj_min_pat,
-            "blenderbim_build_version": blenderbim_build_version,
-        },
-    },
-    "install": {
-        "path": HERE_DIR / "tools" / "chocolateyinstall.ps1",
-        "key_values": {
-            "url_blenderbim_py3x_win_zip": url_blenderbim_py3x_win_zip,
-            "sha256sum_blenderbim_py3x_win_zip": sha256sum_blenderbim_py3x_win_zip,
-            "latest_blender_version_maj_min": blender_version_min_maj,
-        },
-    },
-    "uninstall": {
-        "path": HERE_DIR / "tools" / "chocolateyuninstall.ps1",
-        "key_values": {
-            "latest_blender_version_maj_min": blender_version_min_maj,
-        },
-    },
-}
-
-for topic, info in topics.items():
-    print(f"  {topic}:")
-    with open(info["path"], encoding="utf-8") as txt:
-        content = txt.read()
-
-    for key, value in info["key_values"].items():
-        # print(f"[INFO] replace: {env_var_name}")
-        if not key in content:
-            print(f"  {key=} not found in {info['path']}")
-        content = content.replace(key, value)
-
-    with open(info["path"], "w", encoding="utf-8") as txt:
-        txt.write(content)
-        print(f"  written: {info['path']}")
-
-print("[INFO] inserting dynamic chocolatey package parameters successful")
-
-
-print("\n_____ build choco.exe with mono")
-
-choco_version = "1.1.0"
-run(f"wget https://github.com/chocolatey/choco/archive/refs/tags/{choco_version}.tar.gz --quiet")
-run(f"tar -xzf {choco_version}.tar.gz")
-print("choco tar unpack successful")
-os.chdir("choco-1.1.0")
-run("./build.sh")
-
-run("cp -r build_output/chocolatey /opt/chocolatey")
-os.chdir(BLENDERBIM_DIR)
-
-if pathlib.Path("/opt/chocolatey/choco.exe").exists():
-    print("choco build successful")
-
-print("\n_____ build choco pack")
-
-run("mono /opt/chocolatey/choco.exe pack --allow-unofficial")
-run(
-    'mono /opt/chocolatey/choco.exe setapikey --key="{choco_token}" --source="https://push.chocolatey.org/" --allow-unofficial'
-)
-
-print("\n_____ build choco push")
-run(
-    'mono /opt/chocolatey/choco.exe push --source="https://push.chocolatey.org/" --key="$CHOCO_TOKEN" --allow-unofficial --verbose'
-)
-
-print(f"choco push of version: {target_release_tag} successful!")
-print(f"it took: {datetime.datetime.now() - start}")
+if __name__ == "__main__":
+    sys.exit(main())

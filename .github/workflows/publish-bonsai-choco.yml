@@ -10,13 +10,14 @@ on:
     #         *  * * * *
     - cron:  "30 0 * * *" # 30min past utc midnight
   workflow_dispatch:
-
-env:
-  major: 0
-  minor: 0
-  name: bonsai
-  choco_version: 1.1.0
-  CHOCO_TOKEN:   ${{ secrets.CHOCO_TOKEN }}
+    inputs:
+      tag:
+        description: "Release tag to package (default: yesterday's newest nightly)"
+        required: false
+      dry_run:
+        description: "Pack only, do not push to chocolatey.org"
+        type: boolean
+        default: false
 
 jobs:
   upstream-only:
@@ -30,18 +31,19 @@ jobs:
   publish:
     needs: upstream-only
     name: "choco_release"
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
+    # choco is preinstalled on the Windows runners.
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+      - name: Pack the nightly and push it
+        env:
+          CHOCO_TOKEN: ${{ secrets.CHOCO_TOKEN }}
+        run: >
+          uv run choco/bonsai/choco_release.py
+          ${{ inputs.tag && format('--tag {0}', inputs.tag) || '' }}
+          ${{ inputs.dry_run && '--dry-run' || '' }}
+      - uses: actions/upload-artifact@v7
         with:
-          fetch-tags: true
-          fetch-depth: 0
-      - run: echo ${{ env.DATE }}
-      - name: Check in release tags if we should do a choco release and perform the release if needed
-        id: do_choco_release
-        run: |
-          pip install pygithub
-          cd /home/runner/work/IfcOpenShell/IfcOpenShell/choco/bonsai/ &&
-          python3 choco_release.py
+          name: bonsai-nightly-nupkg
+          path: choco/bonsai/dist/*.nupkg

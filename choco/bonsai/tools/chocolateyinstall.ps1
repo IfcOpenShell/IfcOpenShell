@@ -1,29 +1,30 @@
-﻿$ErrorActionPreference = 'Stop'
+# This file was generated with the assistance of an AI coding tool.
+$ErrorActionPreference = 'Stop'
 
-$url64          = 'url_blenderbim_py3x_win_zip'
-$checksum64     = 'sha256sum_blenderbim_py3x_win_zip'
-$checksumType64 = 'sha256'
-
-$appDataUserDir  = [System.Environment]::GetEnvironmentVariable('appdata')
-$unzipTargetDir  = "$appDataUserDir\Blender Foundation\Blender\latest_blender_version_maj_min\scripts\addons"
-
-$chocoBaseDir    = [System.Environment]::GetEnvironmentVariable('ChocolateyInstall')
-$addonEnable     = "$chocoBaseDir\lib\blenderbim-nightly\tools\enable_blenderbim_addon.py"
-
-$programFilesDir = [System.Environment]::GetEnvironmentVariable('ProgramFiles')
-$blenderExePath  = "$env:ProgramFiles\Blender Foundation\Blender latest_blender_version_maj_min\blender.exe"
-
-$processName      = "blender"
-$blenderIsRunning = Get-Process -Name $processName -ErrorAction SilentlyContinue
-
-
-if($blenderIsRunning -eq $null) {
-    echo "attempting to install blenderbim."
-    Install-ChocolateyZipPackage -PackageName $env:ChocolateyPackageName -Url64 $url64 -Checksum64 $checksum64 -checksumType $checksumType64 -UnzipLocation $unzipTargetDir
-    Start-Process -FilePath  $blenderExePath -ArgumentList "-b", "-y", "--python", "$addonEnable"
+# The zip is chosen for the newest Blender found: Blender 5.1 and later bundle
+# Python 3.13, earlier releases Python 3.11.
+$blender = Get-ChildItem "$env:ProgramFiles\Blender Foundation\Blender *\blender.exe" -ErrorAction SilentlyContinue |
+  Sort-Object { [version]($_.Directory.Name -replace '^Blender ') } -Descending |
+  Select-Object -First 1
+if (-not $blender) {
+  throw "No Blender found under '$env:ProgramFiles\Blender Foundation'. Install the 'blender' package first."
 }
-else {
-    Write-Warning "$processName is still running - blenderbim cannot be safely installed."
-    Write-Warning "Please retry after closing all running blender applications."
-    exit 1
+$blenderVersion = [version]($blender.Directory.Name -replace '^Blender ')
+if ($blenderVersion -ge [version]'5.1') {
+  $url = '{{URL_PY313}}'
+  $checksum = '{{SHA256_PY313}}'
+} else {
+  $url = '{{URL_PY311}}'
+  $checksum = '{{SHA256_PY311}}'
 }
+
+$zip = Join-Path $env:TEMP (($url -split '/')[-1])
+Get-ChocolateyWebFile -PackageName $env:ChocolateyPackageName -FileFullPath $zip `
+  -Url64bit $url -Checksum64 $checksum -ChecksumType64 'sha256'
+
+# Blender installs and enables the extension for the current user.
+& $blender.FullName --command extension install-file --repo user_default --enable $zip
+if ($LASTEXITCODE -ne 0) {
+  throw "Blender $blenderVersion could not install the extension (exit code $LASTEXITCODE)."
+}
+Remove-Item $zip
