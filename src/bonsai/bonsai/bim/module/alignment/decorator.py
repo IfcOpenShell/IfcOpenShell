@@ -1446,12 +1446,58 @@ class VerticalProfileDecorator:
                     all_elevs.extend((a[2], b[2]))
                     dist += length
 
+        # A 3D offset curve alignment (REQUIREMENTS.md §5.2) has no vertical layout either: show its
+        # actual elevations (tool.Alignment.get_offset_profile, sampled from the geometry kernel) as a
+        # static profile, split at its offsets. Like the polyline's, nothing is editable here -- its
+        # offsets are edited in the Edit Offsets table, and its shape follows the reference's vertical.
+        offset_spans = tool.Alignment.get_offset_profile(alignment)
+        if offset_spans:
+            offset_curve = tool.Alignment.get_offset_curve(alignment)
+            v_id = offset_curve.id()
+            v_label = alignment.Name or "Offset curve"
+            color_idx = len(cls.available_verticals)
+            cls.available_verticals.append((v_id, v_label))
+            _, rows = tool.Alignment.get_offset_values(alignment)
+            offset_labels = {round(row[0], 6): f"Offset {k + 1}" for k, row in enumerate(rows)}
+            last = len(offset_spans) - 1
+
+            def point_label(d, is_start, is_end):
+                if is_start:
+                    return "Start"
+                if is_end:
+                    return "End"
+                return offset_labels.get(round(d, 6), "")
+
+            for k, (start, end, pts) in enumerate(offset_spans):
+                h_len = end - start
+                cls.segments_polylines.append(pts)
+                cls.segments_info.append(
+                    {
+                        "dist": start,
+                        "height": pts[0][1],
+                        "h_len": h_len,
+                        # the grades at either end, from the first/last sampled step
+                        "g_start": (pts[1][1] - pts[0][1]) / (pts[1][0] - pts[0][0]),
+                        "g_end": (pts[-1][1] - pts[-2][1]) / (pts[-1][0] - pts[-2][0]),
+                        "type": "OFFSET",
+                        "vertical_id": v_id,
+                        "vertical_label": v_label,
+                        "color_idx": color_idx,
+                        "segment_id": None,
+                        "start_label": point_label(start, k == 0, False),
+                        "end_label": point_label(end, False, k == last),
+                    }
+                )
+                all_dists.extend(d for d, _ in pts)
+                all_elevs.extend(e for _, e in pts)
+
         if all_dists:
             cls.dist_min = min(all_dists)
             cls.dist_max = max(all_dists)
             # a vertical may be shorter than the horizontal (they're edited independently): keep the
-            # canvas -- and the draw/extend tools' limit -- out to the horizontal's own end
-            h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+            # canvas -- and the draw/extend tools' limit -- out to the horizontal's own end (for an
+            # offset curve, the reference horizontal its distances are measured on)
+            h_layout = tool.Alignment.get_reference_horizontal_layout(alignment)
             if h_layout is not None:
                 cls.dist_max = max(cls.dist_max, tool.Alignment.get_horizontal_alignment_length(h_layout))
             cls.elev_min = min(all_elevs)
@@ -1461,7 +1507,7 @@ class VerticalProfileDecorator:
             # the first one. Frame the canvas to the horizontal alignment's
             # own length instead of leaving stale/default 0..1 bounds, so
             # there's a sensible drawing surface to click PIs onto.
-            h_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+            h_layout = tool.Alignment.get_reference_horizontal_layout(alignment)
             h_length = tool.Alignment.get_horizontal_alignment_length(h_layout) if h_layout else 0.0
             cls.dist_min = 0.0
             cls.dist_max = max(h_length, 1.0)
@@ -1485,7 +1531,8 @@ class VerticalProfileDecorator:
                 evc_e = bvc_e + info["g_start"] * info["h_len"]
             is_curve = info["type"] not in ("CONSTANTGRADIENT",)
             pvi = None
-            if is_curve and abs(info["g_start"] - info["g_end"]) > 1e-10:
+            # an offset curve's span isn't a parabola: it has no P.V.I. of its own
+            if is_curve and info["type"] != "OFFSET" and abs(info["g_start"] - info["g_end"]) > 1e-10:
                 pvi_d = bvc_d + info["h_len"] / 2.0
                 pvi_e = bvc_e + info["g_start"] * info["h_len"] / 2.0
                 pvi = (pvi_d, pvi_e)

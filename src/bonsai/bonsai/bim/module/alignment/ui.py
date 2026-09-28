@@ -858,6 +858,17 @@ class ALIGN_PT_alignment_segments(Panel):
         else:
             row.operator("align.load_offset_table", text="", icon="GREASEPENCIL")
 
+        if dim == 3:
+            # its (static) distance-along/elevation profile, as for a 3D polyline
+            from .decorator import VerticalProfileDecorator
+
+            row = box.row(align=True)
+            shown = VerticalProfileDecorator.is_installed
+            row.operator("align.show_vertical_profile", text="Hide Profile" if shown else "Show Profile", icon="GRAPH")
+            row.prop(props, "vertical_exaggeration", text="VE")
+        else:
+            box.label(text="2D offset curve: no elevations to profile", icon="INFO")
+
         if is_editing:
             box.prop(props, "offset_basis_curve", text="From")
             header = box.row(align=True)

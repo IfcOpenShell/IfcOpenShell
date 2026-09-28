@@ -3721,6 +3721,7 @@ class ALIGN_OT_apply_offset_table(Operator, tool.Ifc.Operator):
             return {"FINISHED"}
         tool.Blender.update_viewport()
         _tag_all_areas_redraw(context)
+        _refresh_vertical_profile_view(context, alignment)  # a 3D offset curve's profile shows its offsets
         self.report({"INFO"}, f"Updated offset curve alignment '{alignment.Name}' ({len(rows)} offset(s))")
         return {"FINISHED"}
 

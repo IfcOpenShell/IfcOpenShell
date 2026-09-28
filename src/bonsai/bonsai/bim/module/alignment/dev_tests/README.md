@@ -21,7 +21,7 @@ The regression set last run (all passing on 2026-09-28):
 - bl_cant_follow, bl_pi_keep, bl_tables_keep, bl_insert_delete, bl_exact
 - bl_multi_vertical_cant, bl_extend, bl_key_points, bl_drag_vertical, bl_move_marker
 - bl_straight_repro, bl_offset, bl_offset_flow2, bl_join_distance, bl_polyline_flow
-- bl_vertical_typed, bl_offset_stationing
+- bl_vertical_typed, bl_offset_stationing, bl_offset_profile
 
 `bl_panel_render_rec.py` is a helper imported by the panel tests.
 
@@ -39,3 +39,6 @@ those.
 - `ui_pick.py` simulates clicks near a PI marker placed over a mesh, and needs
   `--enable-event-simulate`. Set `PICK_CONTROL=1` to disable the PI pick keymap for comparison. The
   result is written to `%TEMP%\align_ui_pick_result.txt`.
+- `ui_offset_profile.py` opens the profile view for a 3D offset curve alignment and saves a
+  screenshot to `%TEMP%\align_ui_offset_profile.png`. The result is written to
+  `%TEMP%\align_ui_offset_profile.txt`.
