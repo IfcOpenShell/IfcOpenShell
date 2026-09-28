@@ -32,7 +32,7 @@ bool OpenCascadeKernel::convert(const taxonomy::shell::ptr l, TopoDS_Shape& shap
 
 	faceset_helper_ = helper_scope.get();
 
-	double minimal_face_area = precision_ * precision_ * 0.5;
+	double minimal_face_area = settings_.get<ifcopenshell::geometry::settings::Precision>().get() * settings_.get<ifcopenshell::geometry::settings::Precision>().get() * 0.5;
 
 	double min_face_area = faceset_helper_
 		? (faceset_helper_->epsilon() * faceset_helper_->epsilon() / 20.)

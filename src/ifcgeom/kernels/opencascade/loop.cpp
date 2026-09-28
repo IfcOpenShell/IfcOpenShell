@@ -128,8 +128,7 @@ namespace {
 				} else if (crv_or_wire.which() == 1) {
 					curve = boost::get<Handle(Geom_Curve)>(crv_or_wire);
 				} else {
-					// @todo
-					const double precision_ = 1.e-5;
+                    auto precision_ = kernel->settings().get<ifcopenshell::geometry::settings::Precision>().get();
 					Logger::Root().Warning("GEO", 180, "Approximating BasisCurve due to possible discontinuities", e->instance);
 					const auto& w = boost::get<TopoDS_Wire>(crv_or_wire);
 #if OCC_VERSION_HEX < 0x70600
@@ -139,7 +138,7 @@ namespace {
 					auto hcc = new BRepAdaptor_CompCurve(w, true);
 #endif
 					// @todo, arbitrary numbers here, note they cannot be too high as contiguous memory is allocated based on them.
-					Approx_Curve3d approx(hcc, precision_, GeomAbs_C0, 10, 10);
+                    Approx_Curve3d approx(hcc, precision_, GeomAbs_C0, 10, 10);
 					curve = approx.Curve();
 				}
 
@@ -261,7 +260,7 @@ bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wir
 #endif
 
 		ShapeFix_ShapeTolerance FTol;
-		FTol.SetTolerance(segment_wire, precision_, TopAbs_WIRE);
+		FTol.SetTolerance(segment_wire, settings_.get<ifcopenshell::geometry::settings::Precision>().get(), TopAbs_WIRE);
 
 		converted_segments.Append(segment_wire);
 	}
@@ -284,7 +283,7 @@ bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wir
 		force_close = profile && profile->size() > 0;
 	}
 
-	wire_builder bld(precision_, loop->instance ? loop->instance->as<IfcUtil::IfcBaseEntity>() : nullptr);
+	wire_builder bld(settings_.get<ifcopenshell::geometry::settings::Precision>().get(), loop->instance ? loop->instance->as<IfcUtil::IfcBaseEntity>() : nullptr);
 	shape_pair_enumerate(it, bld, force_close);
 	wire = bld.wire();
 
