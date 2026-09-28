@@ -29,6 +29,7 @@ def get_parent_alignment(alignment: entity_instance) -> entity_instance:
     Example:
 
     .. code:: python
+
         alignment = model.by_type("IfcAlignment")[0]
         parent = ifcopenshell.api.alignment.get_parent_alignment(alignment)
     """

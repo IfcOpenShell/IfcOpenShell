@@ -31,8 +31,9 @@ def get_layout_curve(layout: entity_instance) -> entity_instance:
     Example:
 
     .. code:: python
+
         alignment = model.by_type("IfcAlignment")[0]
-        layout = ifcopenshell.api.get_horizontal_layout(alignment)
+        layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
         composite_curve = ifcopenshell.api.alignment.get_layout_curve(layout)
     """
     alignment = ifcopenshell.api.alignment.get_alignment(layout)

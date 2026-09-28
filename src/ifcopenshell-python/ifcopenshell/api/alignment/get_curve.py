@@ -34,6 +34,7 @@ def get_curve(alignment: entity_instance) -> entity_instance:
     Example:
 
     .. code:: python
+
         alignment = model.by_type("IfcAlignment")[0]
         gradient_curve = ifcopenshell.api.alignment.get_curve(alignment)
     """
