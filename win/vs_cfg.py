@@ -71,6 +71,7 @@ class VsCfgResult(NamedTuple):
     """E.g. "v142", or None if not explicitly overridden via generator shorthand."""
     arch_bits: ArchBits
     boost_toolset: str
+    boost_bootstrap_ver: str
     """E.g. "msvc-14.2"."""
     gen_shorthand: str
     """E.g. "vs2019-x64"."""
@@ -168,7 +169,18 @@ class VsCfg:
         generator_info = CMAKE_GENERATORS[generator]
         arch_bits = VS_PLATFORM_TO_INFO[vs_platform].arch_bits
 
-        boost_toolset = f"msvc-{boost_toolset_ver or generator_info.vc_ver}"
+        # Boost tags its libraries with the toolset that built them and its CMake
+        # config rejects any other, so unless the shorthand overrides it the
+        # toolset is that of the Visual Studio vcvars put in the environment, not
+        # the generator's default: a build machine's Visual Studio can be newer
+        # than the generator the dependency cache is named after.
+        if boost_toolset_ver is None:
+            env_generator_info = VsCfg._generator_info_from_env()
+            boost_toolset_ver = env_generator_info.vc_ver
+            boost_bootstrap_ver = env_generator_info.boost_bootstrap_ver
+        else:
+            boost_bootstrap_ver = f"vc{boost_toolset_ver.replace('.', '')}"
+        boost_toolset = f"msvc-{boost_toolset_ver}"
 
         gen_shorthand = f"vs{generator_info.vs_ver}-{vs_platform}"
         if vs_toolset is not None:
@@ -192,6 +204,7 @@ class VsCfg:
             vs_toolset_override=vs_toolset,
             arch_bits=arch_bits,
             boost_toolset=boost_toolset,
+            boost_bootstrap_ver=boost_bootstrap_ver,
             gen_shorthand=gen_shorthand,
             deps_dir=deps_dir,
             install_dir=install_dir,
@@ -202,23 +215,27 @@ class VsCfg:
         return result
 
     @staticmethod
-    def _generator_from_visual_studio_version() -> str:
+    def _generator_info_from_env() -> CMakeGeneratorInfo:
+        """The generator of the Visual Studio whose vcvars set up the environment."""
         # E.g. '17.0' -> 17.
         vs_version = get_vs_var("VisualStudioVersion")
         generator_num = int(vs_version.replace(".0", ""))
 
-        for candidate, info in CMAKE_GENERATORS.items():
+        for info in CMAKE_GENERATORS.values():
             if info.generator_num == generator_num:
-                logger.info(
-                    f"Generator not passed, but VisualStudioVersion={vs_version} environment variable detected:"
-                )
-                logger.info(f"using '{candidate}' as the generator.")
-                return candidate
+                return info
 
-        logger.error(
-            f"Generator is not provided and VisualStudioVersion='{vs_version}' is not supported - cannot proceed."
-        )
+        logger.error(f"VisualStudioVersion='{vs_version}' is not supported - cannot proceed.")
         sys.exit(1)
+
+    @staticmethod
+    def _generator_from_visual_studio_version() -> str:
+        info = VsCfg._generator_info_from_env()
+        logger.info(
+            f"Generator not passed, but VisualStudioVersion={get_vs_var('VisualStudioVersion')} environment variable detected:"
+        )
+        logger.info(f"using '{info.name}' as the generator.")
+        return info.name
 
     @staticmethod
     def _vs_platform_from_env() -> VsPlatform:

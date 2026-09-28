@@ -335,9 +335,7 @@ def install_boost(
             logger.error(f"'{boost_css}' not found.")
             sys.exit(1)
         logger.info("Building Boost build script.")
-        run_streamed(
-            str(dependency_dir / "bootstrap.bat"), vs_cfg_vars.generator.boost_bootstrap_ver, cwd=dependency_dir
-        )
+        run_streamed(str(dependency_dir / "bootstrap.bat"), vs_cfg_vars.boost_bootstrap_ver, cwd=dependency_dir)
 
     # TODO: this means that 'arm' and 'win32' platforms are not actually supported
     # and can be dropped.
