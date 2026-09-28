@@ -7,7 +7,11 @@ resolving them.
 
 ## Status and work plan (resume here)
 
-*Last updated 2026-09-25.* Branch `rab_infrastructure` (F:\ifcopenshell), 17 commits ahead of
+*Last updated 2026-09-28.* Uncommitted on 2026-09-28: stationing on offset curve alignments (§5.2) and
+the extend fix (§9, below). The source tree is on D: on one computer and F: on the other; the
+`IFCOPENSHELL_DIR` environment variable points to it on each.
+
+Branch `rab_infrastructure` (F:\ifcopenshell), 17 commits ahead of
 `origin/rab_infrastructure` before this push (all pushed 2026-09-25). Commits this round, oldest first:
 `5123046cf` typed 180 degree polyline angle fix (also its own branch/PR
 `rab_polyline_tool_180_fix` -- **PR already open**), `97e04ca7e` cherry-pick of #9505 (IFC4x3 Road
@@ -21,18 +25,12 @@ edits + Insert/Delete PI + PI click-pick (§11), `6ea213041` cant follows horizo
 
 **Work plan, in order:**
 
-1. **§10 Manual referent definitions -- needs discussion with the user first.** Open questions:
-   - Placement: by station + lateral offset (+ elevation?) along an alignment; picked in the viewport,
-     typed, or both?
-   - Which kinds: mileposts/reference markers, or general IfcReferent PredefinedTypes?
-   - Behaviour on alignment edits: segment GlobalIds are now kept (§11), so should a referent
-     attached to a segment move with it, or stay at its station? What happens when its segment is
-     deleted (today `update_layout_segments` removes referents positioned on removed segments)?
-   - Management UI: a list to view/edit/delete; how they relate to stationing (§4) and key-point
-     (§8) referents; polyline alignments (§5.1) rely on these instead of key points.
-2. **Offset alignment follow-ups (§5.2):** stationing referents on an offset alignment (the library's
-   `add_stationing_referent` only handles composite and polyline curves), and a profile view for a
-   3D offset curve.
+1. **Offset alignment follow-up (§5.2):** a profile view for a 3D offset curve. (Stationing on
+   offset curves is done, 2026-09-28.)
+2. **Documentation and examples for the new alignment features (per the user, 2026-09-28).** Not
+   yet scoped: what the documentation covers (Bonsai user docs for the Alignment tab's tools, the
+   `ifcopenshell.api.alignment` functions added on this branch, or both), and what form the examples
+   take (sample IFC files, scripts, step-by-step walkthroughs).
 3. **Bottom of the list -- the C++ pass (see the note at the end of §1):** moving the Python-side
    alignment geometry (PI solver, spiral integrands, join-radius root finding) to C++; the
    degenerate spiral crash (equal start/end radius spiral, equal-gradient vertical arc); the
@@ -41,6 +39,8 @@ edits + Insert/Delete PI + PI click-pick (§11), `6ea213041` cant follows horizo
    [IfcOpenShell#5360](https://github.com/IfcOpenShell/IfcOpenShell/issues/5360) (sample straight
    regions by their end points only).
 4. **Before the PR for the final work is posted: delete `dev_tests/`** (see Testing below).
+
+~~§10 Manual referent definitions~~ -- removed from the plan (per the user, 2026-09-28).
 
 **Smaller open items noted along the way:**
 - Typed/dragged values are still limited to float32 resolution (~3 cm at 500 km coordinates) -- a
@@ -59,6 +59,12 @@ Blender 5.1) and a UI-mode harness (`ui_invoke.py`, `ui_pick.py` with `--enable-
 are in `dev_tests/` next to this file (see its README). Library tests:
 `src/ifcopenshell-python/test/api/alignment` (`python -m pytest -q test/api/alignment` from
 `src/ifcopenshell-python`).
+
+On a clone with `core.symlinks=false` (the D: computer), the IFC4x3 Road/Bridge project templates
+(git symlinks, from #9505) are checked out as small text files holding the link path. Bonsai's
+template scan then fails on them, and every `bl_*` script fails at `export_schema`. Fixed locally on
+2026-09-28 by hard-linking each to its `bim/data/libraries` file, since creating a symlink needs
+admin rights, and marking both `git update-index --skip-worktree`. Nothing was committed.
 
 **Before posting the PR for the final alignment work: remove `dev_tests/`** (temporary development
 scripts, committed only so work can resume on another computer).
@@ -1151,9 +1157,46 @@ Verified headless:
 Also in real UI-mode Blender: the Add Alignment dialog opened with Offset Curve selected, and
 Draw Polyline and Draw Horizontal started, all with no errors.
 
+**Implemented (2026-09-28): stationing on offset curve alignments.** Per the user: "When
+interactively defining an offset alignment, I would like NO STATIONING as the default compared to
+WITH STATIONING for other alignment types. Need to be able to add stationing to an offset alignment
+after the fact if it is needed, but in general, it probably isn't needed."
+- **Default.** In Add Alignment, *Define Start Station* is off for Offset Curve and on for Layouts
+  and Polyline. The checkbox is reset whenever *Definition* changes in the dialog, and when the
+  dialog opens (it remembers the last Definition). The reset only happens in the dialog. A script
+  passing `define_stationing` explicitly gets what it asked for.
+- **Adding it afterwards.** When an alignment has no start referent, the Stationing panel shows "No
+  stationing defined" and an **Add Stationing** button, which is Set Start Station. That operator
+  already added a start referent when there was none. Station equations are offered once stationing
+  exists.
+- **On the curve, not at the origin.** `add_stationing_referent` now gives an
+  IfcOffsetCurveByDistances referent an IfcLinearPlacement on the offset curve, directly or through
+  an offset of an offset. It does this only once the lowest basis curve has a segment of non-zero
+  length, because the kernel can't offset a curve that is only the zero-length terminator.
+  Otherwise it still falls back to the origin. `DistanceAlong` on an offset curve is measured along
+  its basis curve, so a lane edge's stations line up with the centreline's. On a 3D basis, the
+  vertical offset is square to the sloped tangent, not plumb: on a 2.5% grade, a 0.5 vertical offset
+  is 0.4998 up and 0.0125 back.
+- **Following edits.** The polyline stationing sync became `tool.Alignment._sync_bare_stationing`,
+  covering polyline and offset alignments. It restates any origin-placed referent onto the curve,
+  and refreshes fallback positions and Blender objects. It runs after `set_offset_values`, and for
+  each dependent offset alignment in `refresh_dependent_offset_alignments`, so referents follow both
+  offset edits and edits to the reference alignment.
+
+Verified:
+- Library: a new test in `test_create_as_offset_curve_stationing.py` covers an offset and an offset
+  of an offset. `test/api/alignment` has 155 passed.
+- Headless Blender, `dev_tests/bl_offset_stationing.py`:
+  - The dialog defaults are right, and a script's explicit value is kept.
+  - An offset alignment with no stationing shows Add Stationing.
+  - Stationing added afterwards lands on the curve, 3.5 left.
+  - A station equation at 50 lands on the curve too.
+  - Changing the lateral offset to 5 moves both referents.
+  - Moving the reference 20 north moves both referents.
+  - A 3D offset alignment created with stationing puts its start referent on the curve.
+- The full `dev_tests` regression set passes.
+
 **Not done / noted:**
-- **Stationing referents** on an offset alignment are still placed at the origin: the library's
-  `add_stationing_referent` only places referents on composite and polyline curves.
 - **No profile view** for a 3D offset curve.
 - ~~**Single precision:** the table values are Blender float properties (single precision, ~7
   significant digits), so 0.2 is written as 0.20000000298.~~ Fixed 2026-09-25, see §12.
@@ -1615,7 +1658,18 @@ driven directly; the quick fix ran through the real operator):
 - A 3D polyline extended stays 3D with the new point appended.
 - All earlier test scripts pass.
 
+**Fixed (2026-09-28): extending a horizontal that has curves crashed.** Found by the regression
+set. The extend tool rebuilds each existing PI's curve through `_pi_curve_radii_entry`, handing it a
+`SimpleNamespace` stand-in for a PI marker. Since §12, that function reads values through
+`tool.Alignment.exact`, which needs the marker's `exact_values`, and the stand-in didn't have one
+(`AttributeError`). The stand-in's radius, spiral lengths and gravity centerline height are now
+staged with `stage_exact`, like a real marker's, so they go through at full precision. Also,
+`bl_extend.py` expected the cant to fall short after extending, which has been out of date since
+the cant started following the horizontal (§11). It now expects the cant to match.
+
 ## 10. Manual referent definitions
+
+**Removed from the plan (per the user, 2026-09-28).** Kept here for the record.
 
 **New requirement (per the user, 2026-09-24): "manual referent definitions" -- details to be
 discussed later.** Placing IfcReferents along an alignment by hand, rather than only the generated

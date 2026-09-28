@@ -580,6 +580,34 @@ class ALIGN_PT_vertical_alignment_authoring(Panel):
             row.operator("align.finish_vertical_pi_editing", icon="CHECKMARK")
 
 
+def _draw_stationing(layout, alignment):
+    """The start station and station equations rows of the Stationing panel."""
+    start_station = ifcopenshell.api.alignment.get_alignment_start_station(tool.Ifc.get(), alignment) or 0.0
+    row = layout.row(align=True)
+    row.label(text=f"Start: {tool.Alignment.format_station(start_station)}", icon="EMPTY_AXIS")
+    row.operator("align.set_start_station", text="", icon="GREASEPENCIL")
+
+    equations = tool.Alignment.get_stationing_referents(alignment)[1:]  # skip the start referent (D 0)
+    if equations:
+        layout.separator()
+        layout.label(text="Station Equations:")
+        for referent, distance_along, station, incoming_station, has_increasing in equations:
+            box = layout.box()
+            row = box.row(align=True)
+            label = f"D {distance_along:.2f}: {tool.Alignment.format_station(station or 0.0)}"
+            if incoming_station is not None:
+                label += f" (from {tool.Alignment.format_station(incoming_station)})"
+            if has_increasing is False:
+                label += " ↓"
+            row.label(text=label)
+            op = row.operator("align.edit_station_equation", text="", icon="GREASEPENCIL")
+            op.referent_id = referent.id()
+            op = row.operator("align.remove_station_equation", text="", icon="X")
+            op.referent_id = referent.id()
+
+    layout.operator("align.add_station_equation", icon="ADD")
+
+
 class ALIGN_PT_alignment_stationing_authoring(Panel):
     """Start station and station equations — Alignments tab.
 
@@ -610,31 +638,12 @@ class ALIGN_PT_alignment_stationing_authoring(Panel):
             layout.label(text="Select an alignment", icon="INFO")
             return
 
-        ifc_file = tool.Ifc.get()
-        start_station = ifcopenshell.api.alignment.get_alignment_start_station(ifc_file, alignment) or 0.0
-        row = layout.row(align=True)
-        row.label(text=f"Start: {tool.Alignment.format_station(start_station)}", icon="EMPTY_AXIS")
-        row.operator("align.set_start_station", text="", icon="GREASEPENCIL")
-
-        equations = tool.Alignment.get_stationing_referents(alignment)[1:]  # skip the start referent (D 0)
-        if equations:
-            layout.separator()
-            layout.label(text="Station Equations:")
-            for referent, distance_along, station, incoming_station, has_increasing in equations:
-                box = layout.box()
-                row = box.row(align=True)
-                label = f"D {distance_along:.2f}: {tool.Alignment.format_station(station or 0.0)}"
-                if incoming_station is not None:
-                    label += f" (from {tool.Alignment.format_station(incoming_station)})"
-                if has_increasing is False:
-                    label += " ↓"
-                row.label(text=label)
-                op = row.operator("align.edit_station_equation", text="", icon="GREASEPENCIL")
-                op.referent_id = referent.id()
-                op = row.operator("align.remove_station_equation", text="", icon="X")
-                op.referent_id = referent.id()
-
-        layout.operator("align.add_station_equation", icon="ADD")
+        if tool.Alignment.find_stationing_referent_at(alignment, 0.0) is None:
+            # e.g. an offset curve alignment, which is added without stationing by default
+            layout.label(text="No stationing defined", icon="INFO")
+            layout.operator("align.set_start_station", text="Add Stationing", icon="ADD")
+        else:
+            _draw_stationing(layout, alignment)
 
         layout.separator()
         has_key_points = tool.Alignment.has_key_point_referents(alignment)
