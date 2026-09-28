@@ -56,10 +56,19 @@ def create_from_csv(file: ifcopenshell.file, filepath: str, start_station: Optio
 
     The CSV file contains one horizontal alignment, zero, one, or more vertical alignments
 
-    :param filepath: path the to CSV file
+    :param filepath: path to the CSV file
     :param start_station: if given, the starting station value; a STATION IfcReferent is added at
         distance along 0.0 once the geometry exists. If None (the default), no stationing referent is created.
     :return: IfcAlignment
+
+    Example:
+
+    .. code:: python
+
+        # alignment.csv, from the FHWA Bridge Geometry Manual example:
+        # 500,2500,0.0,3340,660,1000,4340,5000,1250,7600,4560,950,8480,2010,0
+        # 0,100,0,2000,135,1600,5000,105,1200,7400,153,2000,9800,105,800,12800,90,0
+        alignment = ifcopenshell.api.alignment.create_from_csv(model, "alignment.csv", start_station=1000.0)
     """
     alignment = None
     with open(filepath, newline="") as csvfile:
