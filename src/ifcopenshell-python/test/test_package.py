@@ -22,7 +22,7 @@ from urllib.parse import urlparse
 
 from typing_extensions import assert_never
 
-SUPPORTED_PY_VERSIONS = ("310", "311", "312", "313", "314")
+SUPPORTED_PY_VERSIONS = ("310", "311", "312", "313", "314", "315")
 SUPPORTED_PLATFORMS = ("win64", "linux64", "macos64", "macosm164")
 
 WASM_SUPPORTED_PY_VERSIONS = ("313",)
