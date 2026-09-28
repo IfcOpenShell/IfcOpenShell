@@ -56,6 +56,9 @@ endif
 ifeq ($(PLATFORM), win64)
 PLATFORMTAG:=win_amd64
 endif
+ifeq ($(PLATFORM), win-arm64)
+PLATFORMTAG:=win_arm64
+endif
 
 BINARY_VERSION:=0.9.0alpha0
 BUILD_COMMIT:=8c614fa
@@ -65,7 +68,7 @@ BONSAIVIEWER_URL:=https://s3.amazonaws.com/ifcopenshell-builds/BonsaiViewer-v$(B
 
 .PHONY: build-urls
 build-urls:
-	@echo "You can provide one of the 4 platforms (linux64, macos64, macosm164, win64) using 'PLATFORM=xxx'."
+	@echo "You can provide one of the platforms (linux64, linuxarm64, macos64, macosm164, win64, win-arm64) using 'PLATFORM=xxx'."
 	@echo "And Python version using 'PYNUMBER=xx' (e.g. 'PYNUMBER=311')."
 	@echo ${IOS_URL}
 	@echo ${IFCCONVERT_URL}
