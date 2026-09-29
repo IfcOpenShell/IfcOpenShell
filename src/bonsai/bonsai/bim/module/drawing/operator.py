@@ -882,10 +882,8 @@ class CreateDrawing(bpy.types.Operator):
             context.view_layer.freestyle_settings.crease_angle = radians(140)
             context.view_layer.freestyle_settings.use_culling = True
             lineset = linesets[0]
-            # Positively select the wanted edge types instead of excluding the two unwanted
-            # ones. On Blender 5.x the classifier also tags our extruded edge ribbons as
-            # ridge/valley and suggestive contour, so an EXCLUSIVE negation of those types
-            # dropped every line and produced empty stroke sets on Blender 5.1.
+            # Select the wanted edge types; on Blender 5.x excluding ridge/valley and suggestive
+            # contour drops every line, as the classifier also tags our extruded edge ribbons with them.
             lineset.edge_type_negation = "INCLUSIVE"
             lineset.select_silhouette = True
             lineset.select_crease = True
