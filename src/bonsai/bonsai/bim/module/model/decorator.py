@@ -1556,7 +1556,8 @@ class ProductDecorator(tool.Blender.ViewportDecorator):
             point_on_side_axis = tool.Cad.point_on_edge(mouse_point, axis_side)
             if (point_on_base_axis - mouse_point).length_squared <= (point_on_side_axis - mouse_point).length_squared:
                 # mouse is snapped to the base axis, the preview looks exactly like the placed door / window
-                rot_mat = snap_obj.matrix_world
+                rot_mat = snap_obj.matrix_world.copy()
+                rot_mat.translation = (0, 0, 0)
             else:
                 # mouse is snapped to the side axis, the preview is inverted, rotate it now and correct x position later
                 rot_mat = (
@@ -1596,7 +1597,9 @@ class ProductDecorator(tool.Blender.ViewportDecorator):
 
         translate_mouse = Matrix.Translation(mouse_point)
         translate_rl = Matrix.Translation((0.0, 0.0, rl))
-        combined_m = translate_mouse @ rot_mat @ translate_rl @ self.obj_matrix_i
+        # Recalculate the inverted matrix to handle potential representation switches
+        obj_matrix_i = obj_type.matrix_world.inverted()
+        combined_m = translate_mouse @ rot_mat @ translate_rl @ obj_matrix_i
         data["verts"] = [tuple(combined_m @ v) for v in data["raw_verts"]]
         return data
 
