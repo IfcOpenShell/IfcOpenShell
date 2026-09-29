@@ -530,14 +530,7 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def sync_moved_spatial_placements(cls) -> None:
-        """Write back any spatial element whose Blender object was moved but not yet
-        committed to IFC, so the container manager shows its current placement.
-
-        Elevations displayed here come from ``get_storey_elevation``, which reads the
-        element's ``ObjectPlacement``. Dragging a storey empty along Z updates the
-        Blender object but not the IFC placement until a sync point (e.g. project
-        save) runs, so the manager would otherwise show a stale elevation. This
-        mirrors the placement sync that runs on save, scoped to spatial elements."""
+        """Commit the placement of moved spatial elements so the container manager shows current elevations."""
         ifc_file = tool.Ifc.get()
         spatial_class = "IfcSpatialStructureElement" if ifc_file.schema == "IFC2X3" else "IfcSpatialElement"
         for element in ifc_file.by_type(spatial_class):
@@ -554,10 +547,7 @@ class Spatial(bonsai.core.tool.Spatial):
         new.ifc_class = element.is_a()
         new["name"] = element.Name or "Unnamed"
         new.description = element.Description or ""
-        # Assign via subscript so the update callbacks don't fire on this programmatic
-        # import. update_long_name and update_elevation write back to IFC, and
-        # update_elevation in particular re-moves the storey placement on every rebuild
-        # (which can collapse every storey to Z=0 on a parse failure). See #8545.
+        # Assign via subscript so the update callbacks, which write back to IFC, don't fire. See #8545.
         new["long_name"] = element.LongName or ""
         if not element.is_a("IfcProject"):
             elevation = ifcopenshell.util.placement.get_storey_elevation(element)
