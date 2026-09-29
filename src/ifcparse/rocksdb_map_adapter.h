@@ -105,12 +105,64 @@ struct DefaultCodec<std::string> {
     }
 };
 
+// Numeric key segments are fixed-width lowercase hex, so keys sort as
+// numbers: an instance's records are laid out in id order and the largest
+// id under a prefix is its last key.
+inline std::string hex_key(uint64_t value) {
+    static constexpr char digits[] = "0123456789abcdef";
+    std::string s(16, '0');
+    for (int i = 15; i >= 0; --i) {
+        s[(size_t)i] = digits[value & 0xf];
+        value >>= 4;
+    }
+    return s;
+}
+
+inline uint64_t parse_hex_key(const std::string& s) {
+    return std::stoull(s, nullptr, 16);
+}
+
 template <typename KeyT>
 std::string key_to_string(const KeyT& key) {
     if constexpr (std::is_same_v<KeyT, std::string>) {
         return key;
     } else {
-        return std::to_string(key);
+        static_assert(std::is_integral_v<KeyT>, "key_to_string expects a string or an integral key");
+        return hex_key((uint64_t)key);
+    }
+}
+
+// The keys the file storage and the serializer agree on:
+//   i|<id>|<attribute>   t|<identity>|<attribute>   h|<name>|<attribute>
+//   i|<id>|_             t|<identity>|_             type record
+//   v|<referenced id>|<entity index>|<attribute>    inverse record
+//   t|<declaration index>                           instances of a type
+namespace rocksdb_key {
+    // The exclusive end of everything under prefix.
+    inline std::string upper_bound(std::string prefix) {
+        prefix.back() = (char)(prefix.back() + 1);
+        return prefix;
+    }
+    inline std::string instance(bool is_entity, uint64_t id) {
+        return (is_entity ? "i|" : "t|") + key_to_string(id) + "|";
+    }
+    inline std::string attribute(bool is_entity, uint64_t id, uint64_t index) {
+        return instance(is_entity, id) + key_to_string(index);
+    }
+    inline std::string header_attribute(const std::string& name, uint64_t index) {
+        return "h|" + name + "|" + key_to_string(index);
+    }
+    inline std::string type_record(bool is_entity, uint64_t id) {
+        return instance(is_entity, id) + "_";
+    }
+    inline std::string inverse_prefix(uint64_t referenced_id) {
+        return "v|" + key_to_string(referenced_id) + "|";
+    }
+    inline std::string inverse(uint64_t referenced_id, uint64_t entity_index, uint64_t attribute_index) {
+        return inverse_prefix(referenced_id) + key_to_string(entity_index) + "|" + key_to_string(attribute_index);
+    }
+    inline std::string type_list(uint64_t declaration_index) {
+        return "t|" + key_to_string(declaration_index);
     }
 }
 
@@ -121,7 +173,7 @@ KeyT key_from_string(const std::string& key_string) {
     if constexpr (std::is_same_v<KeyT, std::string>) {
         return key_string;
     } else if constexpr (std::is_integral_v<KeyT>) {
-        return static_cast<KeyT>(std::stoll(key_string));
+        return static_cast<KeyT>(parse_hex_key(key_string));
     } else {
         static_assert(sizeof(KeyT) == 0, "key_from_string not implemented for this type");
     }
@@ -132,7 +184,7 @@ std::string tuple_to_string_impl(const Tuple& tuple_value, std::index_sequence<I
     static_cast<void>(indices);
     std::ostringstream oss;
     // Unpack the tuple; add a pipe before each element except the first.
-    ((oss << (Is == 0 ? "" : "|") << std::to_string(std::get<Is>(tuple_value))), ...);
+    ((oss << (Is == 0 ? "" : "|") << key_to_string(std::get<Is>(tuple_value))), ...);
     return oss.str();
 }
 
@@ -145,7 +197,7 @@ std::string key_to_string(const std::tuple<Ts...>& key) {
 template<typename T>
 T convert_string(const std::string& token) {
     if constexpr (std::is_integral_v<T>) {
-        return static_cast<T>(std::stoll(token));
+        return static_cast<T>(parse_hex_key(token));
     } else if constexpr (std::is_floating_point_v<T>) {
         return static_cast<T>(std::stod(token));
     } else {

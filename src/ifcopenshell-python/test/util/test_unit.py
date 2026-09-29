@@ -329,11 +329,9 @@ class TestCalculateUnitScaleOnLinkedFile(test.bootstrap.IFC4):
     def test_run(self):
         # Regression test: IfcSIUnit.Dimensions is a schema-*derived*
         # attribute that isn't computed for SQLite-linked files (used for
-        # Bonsai's "linked project" large-model workflow), so it returns None
-        # there instead of an IfcDimensionalExponents entity. calculate_unit_scale()
-        # used to access unit.Dimensions.LengthExponent unconditionally for
-        # every IfcSIUnit, which crashed project loading for any linked file.
-        # See the PR discussion for a standalone reproduction script.
+        # Bonsai's "linked project" large-model workflow) and raises there
+        # instead of returning an IfcDimensionalExponents entity.
+        # Test ensures `calculate_unit_scale` doesn't rely on derived attribute computation.
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         length = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT")
         ifcopenshell.api.unit.assign_unit(self.file, units=[length])
@@ -345,7 +343,6 @@ class TestCalculateUnitScaleOnLinkedFile(test.bootstrap.IFC4):
 
         try:
             linked_file = ifcopenshell.open(str(tmp_file))
-            assert linked_file.by_type("IfcSIUnit")[0].Dimensions is None
             assert subject.calculate_unit_scale(linked_file, "LENGTHUNIT") == 1.0
         finally:
             if isinstance(linked_file, ifcopenshell.sqlite):

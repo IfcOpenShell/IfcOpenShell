@@ -134,7 +134,8 @@ def test_add_stationing_referent_has_increasing_station():
         file, "1+00.000", alignment, distance_along=0.0, station=100.0
     )
     assert (
-        ifcopenshell.util.element.get_pset(default_referent, name="Pset_Stationing", prop="HasIncreasingStation") is None
+        ifcopenshell.util.element.get_pset(default_referent, name="Pset_Stationing", prop="HasIncreasingStation")
+        is None
     )
 
     # explicit False (reverse stationing) is written
@@ -142,7 +143,8 @@ def test_add_stationing_referent_has_increasing_station():
         file, "R", alignment, distance_along=0.0, station=100.0, has_increasing_station=False
     )
     assert (
-        ifcopenshell.util.element.get_pset(reverse_referent, name="Pset_Stationing", prop="HasIncreasingStation") is False
+        ifcopenshell.util.element.get_pset(reverse_referent, name="Pset_Stationing", prop="HasIncreasingStation")
+        is False
     )
 
 

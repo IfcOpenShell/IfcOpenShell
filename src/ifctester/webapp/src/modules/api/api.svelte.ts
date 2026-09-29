@@ -49,7 +49,7 @@ wasm.init().then(async () => {
 export async function preloadAutocompletions() {
     try {
         const schemas = ["IFC2X3", "IFC4"]; // TODO: IFC4X3 is excluded for now because of an error
-        
+
         // Entity classes
         const entitySets = await Promise.all(
             schemas.map(schema => wasm.getAllEntityClasses(schema))
@@ -60,7 +60,7 @@ export async function preloadAutocompletions() {
                 allEntities.add(entity.toUpperCase());
             }
         }
-        
+
         // Data types
         const dataTypeSets = await Promise.all(
             schemas.map(schema => wasm.getAllDataTypes(schema))
@@ -71,20 +71,20 @@ export async function preloadAutocompletions() {
                 allDataTypes.add(dataType);
             }
         }
-        
+
         // Material categories and Classification systems
         const [materialCategories, classificationSystems] = await Promise.all([
             wasm.getMaterialCategories(),
             wasm.getStandardClassificationSystems()
         ]) as [string[], AutocompletionState["classificationSystems"]];
-        
+
         // Cache autocompletions
         Autocompletions.entityClasses = Array.from(allEntities).sort();
         Autocompletions.materialCategories = materialCategories;
         Autocompletions.classificationSystems = classificationSystems;
         Autocompletions.dataTypes = Array.from(allDataTypes).sort();
         Autocompletions.isLoaded = true;
-        
+
         console.log('Autocompletions preloaded');
     } catch (error) {
         console.error('Failed to preload autocompletions:', error);
@@ -126,13 +126,13 @@ export function getDataTypes() {
 export async function loadIfc(file: File): Promise<IfcModel> {
     try {
         IFCModels.isLoading = true;
-        
+
         const arrayBuffer = await file.arrayBuffer();
         const uint8Array = new Uint8Array(arrayBuffer);
-        
+
         // Load IFC model
         const ifcId = await wasm.loadIfc(Array.from(uint8Array)) as string;
-        
+
         // Add to models list
         const model: IfcModel = {
             id: ifcId,
@@ -141,7 +141,7 @@ export async function loadIfc(file: File): Promise<IfcModel> {
             loadedAt: new Date()
         };
         IFCModels.models = [...IFCModels.models, model];
-        
+
         console.log(`IFC model "${file.name}" loaded with ID: ${ifcId}`);
         return model;
     } catch (error) {
@@ -156,10 +156,10 @@ export async function unloadIfc(modelId: string) {
     try {
         // Unload model
         await wasm.unloadIfc(modelId);
-        
+
         // Remove from models list
         IFCModels.models = IFCModels.models.filter(model => model.id !== modelId);
-        
+
         console.log(`IFC model with ID ${modelId} unloaded`);
     } catch (error) {
         console.error('Failed to unload IFC model:', error);
@@ -177,10 +177,10 @@ export async function auditIfc(modelId: string, idsData: string | Uint8Array | A
         } else {
             idsBytes = idsData;
         }
-        
+
         // Run audit
         const auditResult = await wasm.auditIfc(modelId, idsBytes) as { json: AuditReportData; html: string };
-        
+
         console.log(`Audit completed for model ${modelId}`);
         return auditResult;
     } catch (error) {
@@ -198,7 +198,7 @@ export async function openIfc() {
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
         fileInput.accept = '.ifc';
-        
+
         fileInput.onchange = async (event) => {
             const target = event.target as HTMLInputElement | null;
             const file = target?.files?.[0];
@@ -206,13 +206,13 @@ export async function openIfc() {
                 reject(new Error('No file selected'));
                 return;
             }
-            
+
             // Check if it's an IFC file
             if (!file.name.toLowerCase().endsWith('.ifc')) {
                 reject(new Error('Please select a valid IFC file (.ifc)'));
                 return;
             }
-            
+
             try {
                 await loadIfc(file);
                 resolve();
@@ -220,7 +220,7 @@ export async function openIfc() {
                 reject(error);
             }
         };
-        
+
         fileInput.onerror = () => reject(new Error('Failed to open file picker'));
         fileInput.click();
     });
@@ -238,7 +238,7 @@ export function createAuditReport(
 ): AuditReport | undefined {
     const model = getIfcById(modelId);
     if (!model) return;
-    
+
     const auditReport: AuditReport = {
         id: id(),
         modelId: modelId,
@@ -248,7 +248,7 @@ export function createAuditReport(
         data: auditData,
         htmlReport: htmlReport
     };
-    
+
     IFCModels.audits.unshift(auditReport);
     return auditReport;
 }
@@ -270,7 +270,7 @@ export async function downloadAuditReport(auditId: string) {
     if (!audit || !audit.htmlReport) {
         throw new Error('HTML report not available for this audit');
     }
-    
+
     // Get IDS document title for filename
     let filename = 'report.html';
     if (audit.document && IDS.Module.documents[audit.document]) {
@@ -278,15 +278,15 @@ export async function downloadAuditReport(auditId: string) {
         const title = doc.info?.title || 'untitled';
         filename = `report_${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`;
     }
-    
+
     const blob = new Blob([audit.htmlReport], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
-    
+
     const link = document.createElement('a');
     link.href = url;
     link.download = filename;
     link.style.display = 'none';
-    
+
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -297,47 +297,47 @@ export async function runAudit() {
     if (IFCModels.models.length === 0) {
         throw new Error('Please load an IFC model first');
     }
-    
+
     if (!IDS.Module.activeDocument) {
         throw new Error('Please create or open an IDS document first');
     }
-    
+
     // Clear previous audit reports
     IFCModels.audits = [];
-    
+
     // Get the active IDS document XML
     const idsXml = await IDS.exportActiveDocument();
     if (!idsXml) {
         throw new Error('Failed to export IDS document');
     }
-    
+
     // Run audit on all loaded models
     let firstAuditReport: AuditReport | undefined;
     for (const model of IFCModels.models) {
         const result = await auditIfc(model.id, idsXml);
-        
+
         // Extract JSON and HTML reports from the result
         const jsonData = result.json || null;
         const htmlReport = result.html || null;
-        
+
         if (!jsonData) {
             continue;
         }
         const auditReport = createAuditReport(model.id, IDS.Module.activeDocument as string, jsonData, htmlReport);
-        
+
         // Store the first audit report to open in viewer
         if (!firstAuditReport) {
             firstAuditReport = auditReport;
         }
     }
-    
+
     // Switch to viewer mode and set the first audit report as active
     if (firstAuditReport && IDS.Module.activeDocument) {
-        IDS.setDocumentState(IDS.Module.activeDocument, { 
+        IDS.setDocumentState(IDS.Module.activeDocument, {
             viewMode: 'viewer',
             auditReport: firstAuditReport.id
         });
     }
-    
+
     return firstAuditReport;
 }

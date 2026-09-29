@@ -18,7 +18,6 @@
 
 import ifcopenshell
 import ifcopenshell.api.aggregate
-import ifcopenshell.api.alignment
 import ifcopenshell.api.nest
 from ifcopenshell import entity_instance
 from ifcopenshell.api.alignment._add_zero_length_segment import _add_zero_length_segment
