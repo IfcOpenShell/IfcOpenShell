@@ -28,7 +28,7 @@ operators via ``target_set_operator``; drag handles inherit modal state
 from ``GizmoMovable``.
 """
 
-__all__ = [  # noqa: RUF022 (unsorted `__all__`)
+__all__ = [  # ruff: ignore[unsorted-dunder-all]
     "GizmoColor",
     "GizmoAxis",
     "TextAlignment",
@@ -82,7 +82,15 @@ import math
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, ClassVar, Literal, Optional, Protocol, runtime_checkable
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Literal,
+    Optional,
+    Protocol,
+    runtime_checkable,
+)
 
 import blf
 import bpy
@@ -104,6 +112,9 @@ from mathutils.kdtree import KDTree
 
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.shaders import ExtrusionGuidesShader
+
+if TYPE_CHECKING:
+    import bmesh
 
 SNAP_POINT_SIZE = 10.0
 SNAP_POINT_COLOR = (1.0, 0.5, 0.0, 1.0)
@@ -2058,7 +2069,9 @@ class TexturedQuadGizmoMixin(StaticTrisGizmoMixin):
 
     def setup(self) -> None:
         super().setup()
-        from bonsai.bim.module.drawing import gizmo_textures
+        from bonsai.bim.module.drawing import (
+            gizmo_textures,  # ty: ignore[unresolved-import]
+        )
 
         self._quad_batch = batch_for_shader(
             gizmo_textures.get_shader(),
@@ -2067,7 +2080,9 @@ class TexturedQuadGizmoMixin(StaticTrisGizmoMixin):
         )
 
     def draw(self, context: bpy.types.Context) -> None:
-        from bonsai.bim.module.drawing import gizmo_textures
+        from bonsai.bim.module.drawing import (
+            gizmo_textures,  # ty: ignore[unresolved-import]
+        )
 
         texture = gizmo_textures.get_icon_texture(self.icon_name)
         if texture is None:
@@ -2543,9 +2558,12 @@ class ExtrusionGuidesGizmo(CustomGizmo, types.Gizmo):
         verts, edges = shader_wrapper.process_geometry(verts)
         if not tool.Blender.validate_shader_batch_data(verts, edges):
             verts, edges = [], []
-        self.custom_shape = shader_wrapper, shader_wrapper.batch(
-            pos=verts,
-            indices=edges,
+        self.custom_shape = (
+            shader_wrapper,
+            shader_wrapper.batch(
+                pos=verts,
+                indices=edges,
+            ),
         )
 
     def draw(self, ctx):
@@ -5670,7 +5688,7 @@ class BaseParametricGizmoGroup:
         """
         return 0.0
 
-    def _update_view_dependent_dimensions(self, context: bpy.types.Context, mw: Matrix, props) -> None:  # noqa: ARG002
+    def _update_view_dependent_dimensions(self, context: bpy.types.Context, mw: Matrix, props) -> None:
         """Update overall_width, overall_height, and lining_offset based on view direction.
 
         This base implementation handles the common pattern for door/window gizmos.
@@ -5847,7 +5865,7 @@ class BaseParametricGizmoGroup:
         self.update_dimension_gizmos(mw, props)
         self._refresh_element_specific(context, mw, props)
 
-    def _refresh_element_specific(self, context: bpy.types.Context, mw: "Matrix", props) -> None:  # noqa: ARG002
+    def _refresh_element_specific(self, context: bpy.types.Context, mw: "Matrix", props) -> None:
         """Override for element-specific refresh logic.
 
         Called from both refresh() (on state change) and draw_prepare() (per frame),
@@ -6354,7 +6372,7 @@ class BaseParametricGizmoGroup:
         """
         return (0.0, 0.0)
 
-    def get_icon_y_offset(self, context: bpy.types.Context, mw: Matrix) -> float:  # noqa: ARG002
+    def get_icon_y_offset(self, context: bpy.types.Context, mw: Matrix) -> float:
         """Get Y offset for icons based on view direction.
 
         Uses get_icon_y_extent() to determine how far to offset icons based on
@@ -6556,9 +6574,7 @@ class BaseParametricGizmoGroup:
 
         self._refresh_element_specific(context, mw, props)
 
-    def _update_dimension_gizmo_positions(
-        self, context: bpy.types.Context, mw: "Matrix", props  # noqa: ARG002
-    ) -> None:
+    def _update_dimension_gizmo_positions(self, context: bpy.types.Context, mw: "Matrix", props) -> None:
         """Update dimension gizmo positions based on view direction.
 
         Override this method in subclasses to implement view-dependent
