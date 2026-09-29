@@ -20,10 +20,9 @@
 import ifcopenshell.api.control
 import ifcopenshell.api.cost
 import ifcopenshell.api.pset
-import test.bootstrap
 import ifcopenshell.api.root
-
 import ifcopenshell.util.cost as subject
+import test.bootstrap
 
 
 class TestGetCostItemForProduct(test.bootstrap.IFC4):
@@ -65,15 +64,10 @@ class TestGetProductQuantityNames(test.bootstrap.IFC4):
         assert subject.get_product_quantity_names([a, b]) == ["Length"]
 
     def test_no_shared_quantity_stays_empty_regardless_of_order(self):
-        # B has no quantities at all, so nothing is common to all three
-        # elements. A later element (C) sharing a name with A alone must not
-        # resurrect a name into the result: once the intersection is empty,
-        # it must stay empty no matter what comes next.
         a = self.add_element_with_qto({"Length": 1.0, "Width": 2.0})
-        b = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")  # no Qto assigned
+        b = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         c = self.add_element_with_qto({"Length": 5.0})
         assert subject.get_product_quantity_names([a, b, c]) == []
-        # Order must not matter.
         assert subject.get_product_quantity_names([a, c, b]) == []
         assert subject.get_product_quantity_names([b, a, c]) == []
 

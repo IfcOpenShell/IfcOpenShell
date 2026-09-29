@@ -326,9 +326,7 @@ def get_product_quantity_names(elements: list[ifcopenshell.entity_instance]) -> 
         qtos = get_psets(element, qtos_only=True)
         for qset, quantities in qtos.items():
             potential_names.update(quantities.keys())
-        # `names is None` marks "not yet initialised", distinct from an
-        # empty set, which means the intersection has already excluded
-        # every quantity name and must stay empty.
+        # None means not yet initialised; an empty set must stay empty.
         names = potential_names if names is None else names.intersection(potential_names)
     return [n for n in (names or set()) if n != "id"]
 
