@@ -421,9 +421,7 @@ class Drawing(bonsai.core.tool.Drawing):
             element, "Plan", "Annotation"
         ) or ifcopenshell.util.representation.get_representation(element, "Model", "Annotation")
         if not rep:
-            # Some files attach the Annotation representation directly to the
-            # parent Model or Plan context instead of an Annotation subcontext,
-            # so fall back to matching by RepresentationIdentifier.
+            # Some files attach the Annotation representation to the parent context; match by identifier.
             rep = next(
                 (
                     r
