@@ -172,7 +172,7 @@ def assign_object(
                 "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
                 "RelatedObjects": related_objects,
                 "RelatingObject": relating_object,
-            }
+            },
         )
 
     # NOTE: Creating a nesting relationship doesn't localize the object's placement,

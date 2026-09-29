@@ -21,7 +21,6 @@
 import tempfile
 from pathlib import Path
 
-import bpy
 import ifcopenshell
 import pytest
 

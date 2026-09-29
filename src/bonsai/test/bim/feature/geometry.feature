@@ -185,6 +185,7 @@ Scenario: Update representation - updating a layered extrusion
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
     And I press "bim.add_material()"
+    And the object "IfcWallType/Empty" is selected
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
     And I press "bim.assign_material"
     And I press "bim.enable_editing_assigned_material"
@@ -213,6 +214,7 @@ Scenario: Update representation - updating a profiled extrusion
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
     And I press "bim.add_material()"
+    And the object "IfcWallType/Empty" is selected
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialProfileSet"
     And I press "bim.assign_material"
     And I press "bim.enable_editing_assigned_material"
@@ -416,6 +418,7 @@ Scenario: Override duplicate move - copying a layered extrusion
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
     And I press "bim.add_material()"
+    And the object "IfcWallType/Empty" is selected
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
     And I press "bim.assign_material"
     And I press "bim.enable_editing_assigned_material"
@@ -447,6 +450,7 @@ Scenario: Override duplicate move - copying a profiled extrusion
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
     And I press "bim.add_material()"
+    And the object "IfcWallType/Empty" is selected
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialProfileSet"
     And I press "bim.assign_material"
     And I press "bim.enable_editing_assigned_material"
@@ -655,3 +659,16 @@ Scenario: Refresh linked aggregate - after duplicating an object
     Then the object "IfcWall/Wall_01.001" exists
     And the object "IfcWall/Wall_02.001" exists
     And the object "IfcWall/Wall_03.001" exists
+
+Scenario: Representation items list follows the representation when it is rewritten
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And the object "IfcWall/Cube" is selected
+    And I press "bim.enable_editing_representation_items"
+    When I press "bim.update_representation(obj='IfcWall/Cube')"
+    And I press "bim.enable_editing_representation_item_style"
+    Then "active_object.BIMGeometryProperties.is_editing_item_style" is "True"
