@@ -31,11 +31,10 @@ This runs:
 
 .. code-block:: bash
 
-    pytest -p no:pytest-blender test --ignore=test/util/test_shape_builder.py
+    pytest -p no:pytest-blender test
 
 The ``pytest-blender`` plugin is disabled because these are IfcOpenShell-Python
-tests, not Bonsai Blender tests. The shape builder tests are split into a
-separate target because they require Blender's ``mathutils`` package.
+tests, not Bonsai Blender tests.
 
 Parallel tests
 --------------
@@ -53,12 +52,9 @@ This automatically uses the available CPU count and runs the same tests as
 Shape builder tests
 -------------------
 
-The shape builder tests require ``mathutils``. Run them separately:
-
-.. code-block:: bash
-
-    pip install mathutils
-    make test-mathutils
+Most of ``ifcopenshell.util.shape_builder`` is covered here, but the tests
+that check its ``mathutils``-compatible helpers live in the Bonsai test suite instead,
+since they need Blender's ``mathutils`` package. See ``src/bonsai/test/tool/test_shape_builder.py``.
 
 Running individual tests
 ------------------------

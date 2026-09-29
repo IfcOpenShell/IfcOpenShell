@@ -1,10 +1,10 @@
 #include "opencascade_kernel.h"
 
-#include "tree.h"
+#include "ub_tree.h"
 #include "wire_utils.h"
 
 namespace {
-	void find_neighbours(ifcopenshell::geom::impl::tree<int>& tree, std::vector<std::unique_ptr<gp_Pnt>>& pnts, std::set<int>& visited, int p, double eps) {
+	void find_neighbours(ifcopenshell::geom::impl::ub_tree<int>& tree, std::vector<std::unique_ptr<gp_Pnt>>& pnts, std::set<int>& visited, int p, double eps) {
 		visited.insert(p);
 
 		Bnd_Box b;
@@ -56,7 +56,7 @@ ifcopenshell::geom::open_cascade_kernel::faceset_helper::faceset_helper(
 	std::vector<std::unique_ptr<gp_Pnt>> pnts(points.size());
 	std::vector<TopoDS_Vertex> vertices(pnts.size());
 
-	ifcopenshell::geom::impl::tree<int> tree;
+	ifcopenshell::geom::impl::ub_tree<int> tree;
 
 	BRep_Builder B;
 

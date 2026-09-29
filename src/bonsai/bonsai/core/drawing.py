@@ -98,7 +98,6 @@ def edit_assigned_product(
     # Temporarily accomodate existing bug and check for multiple products.
     existing_products = drawing.get_assigned_product_workaround(element)
     if existing_products != [product]:
-
         if product in existing_products:
             assert product is not None
             existing_products.remove(product)

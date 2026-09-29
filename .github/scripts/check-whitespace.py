@@ -45,6 +45,15 @@ class Checker:
         self.newline = newline
         self.issues = 0
 
+    def set_newline_for_path(self, filepath: Path) -> None:
+        suffix = filepath.suffix.lower()
+        if suffix in (".bat", ".cmd"):
+            self.newline = CRLF
+        elif suffix == ".sh":
+            self.newline = LF
+        else:
+            self.newline = SYSTEM_LINE_SEPARATOR
+
     def report(self, label: str, issue: str) -> None:
         self.issues += 1
         print(f"{label}: {C.RED}{issue}{C.RESET}")
@@ -267,6 +276,19 @@ class TestChecker:
     ) -> None:
         self._assert_check(Checker._check_trailing_whitespaces, content, expected_issues, fixed, check, line_ending)
 
+    def test_trailing_whitespace_runs_before_eof_newline(self, tmp_path: Path) -> None:
+        # 'foo\n\s\s` should result in `foo\n`.
+        # If we run eof check first before trailing whitespace check,
+        # it will result in `foo\n\n` instead.
+        filepath = tmp_path / "test.txt"
+        filepath.write_bytes(b"foo\n  \n\n")
+
+        checker = Checker(LF)
+        checker.check_trailing_whitespaces(filepath, False)
+        checker.check_eof_newline(filepath, False)
+
+        assert filepath.read_bytes() == b"foo\n"
+
     @staticmethod
     def run_tests(extra_args: list[str] | None = None) -> None:
         pytest.main([__file__, *(extra_args or [])])
@@ -279,7 +301,8 @@ def existing_path(value: str) -> Path:
     return path
 
 
-# Python files are covered by `black`.
+# Python files are covered by `ruff format`.
+# Rust files (*.rs) are covered by `cargo fmt`.
 PATTERNS = (
     "*.cpp",
     "*.h",
@@ -287,6 +310,14 @@ PATTERNS = (
     "*.cmake",
     "*/CMakeLists.txt",
     "*.yml",
+    "*.yaml",
+    "*.json",
+    "*.ts",
+    "*.js",
+    "*.css",
+    "*.bat",
+    "*.cmd",
+    "*.sh",
 )
 
 REPO_ROOT = Path(subprocess.check_output(["git", "rev-parse", "--show-toplevel"], text=True).strip())
@@ -362,10 +393,11 @@ def main() -> int:
     for filepath in filepaths:
         if args.verbose:
             print(f"checking {filepath}")
+        checker.set_newline_for_path(filepath)
         checker.check_stray_cr(filepath, args.check)
         checker.check_line_endings_mismatch(filepath, args.check)
-        checker.check_eof_newline(filepath, args.check)
         checker.check_trailing_whitespaces(filepath, args.check)
+        checker.check_eof_newline(filepath, args.check)
     print(f"{len(filepaths)} file(s) checked.")
     if not checker.issues:
         color = C.GREEN

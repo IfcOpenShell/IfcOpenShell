@@ -258,12 +258,10 @@ class curve_segment_evaluator {
                 }
                 if (s == inst) {
                     emit_next = true;
-                } else {
-                    logger_.warning("GEO", 242, "IfcCurveSegment belongs to multiple IfcCompositeCurve instances. Cannot determine the next segment.");
                 }
             }
         } else {
-            logger_.warning("IfcCurveSegment belongs to multiple IfcCompositeCurve instances. Cannot determine the next segment.");
+            logger_.warning("GEO", 242, "IfcCurveSegment belongs to multiple IfcCompositeCurve instances. Cannot determine the next segment.");
         }
 
         bool is_horizontal = false;

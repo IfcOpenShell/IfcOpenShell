@@ -641,7 +641,7 @@ void gltf_serializer::setup_georeferencing(
 		PJ_COORD wgs84_point;
 
 		auto C = proj_context_create();
-		proj_log_func(C, &logger_, proj_log);
+		proj_log_func(C, &logger(), proj_log);
 
 		// @todo a bit ugly we assume a proj.db in current working directory.
 		// a very simplistic but at least portable solution.
@@ -663,7 +663,7 @@ void gltf_serializer::setup_georeferencing(
 				NULL);
 
 			if (!P) {
-				logger_.error("SER", 2, "Failed to create PROJ transformation object");
+				logger().error("SER", 2, "Failed to create PROJ transformation object");
 				return;
 			}
 
@@ -675,7 +675,7 @@ void gltf_serializer::setup_georeferencing(
 
 			wgs84_point = proj_trans(P, PJ_FWD, a);
 
-			logger_.notice("SER", 3, "Calculated latitude: " + std::to_string(wgs84_point.lp.lam) + " longitude: " + std::to_string(wgs84_point.lp.phi));
+			logger().notice("SER", 3, "Calculated latitude: " + std::to_string(wgs84_point.lp.lam) + " longitude: " + std::to_string(wgs84_point.lp.phi));
 		}
 
 		std::swap(wgs84_point.lp.phi, wgs84_point.lp.lam);
@@ -700,7 +700,7 @@ void gltf_serializer::setup_georeferencing(
 		PJ *ellipsoid_crs = proj_create(C, ellipsoid_def);
 
 		if (!ellipsoid_crs) {
-			logger_.error("SER", 4, "Failed to create ellipsoid CRS");
+			logger().error("SER", 4, "Failed to create ellipsoid CRS");
 			return;
 		}
 
