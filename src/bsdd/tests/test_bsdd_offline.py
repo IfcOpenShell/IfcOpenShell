@@ -36,11 +36,6 @@ def _client_with_captured_get(monkeypatch):
 
 
 def test_get_classes_sends_use_nested_classes_false(monkeypatch):
-    # Regression test: get_classes() used to build its request params with a blanket
-    # `if value:` filter, which is falsy for `use_nested_classes=False`. Explicitly
-    # asking for a flat (non-nested) class list therefore silently dropped
-    # `UseNestedClasses` from the request, so the server would fall back to its
-    # nested-tree default instead of honouring the caller's choice.
     client, captured = _client_with_captured_get(monkeypatch)
 
     client.get_classes(
@@ -54,7 +49,6 @@ def test_get_classes_sends_use_nested_classes_false(monkeypatch):
 
 
 def test_get_classes_sends_zero_offset(monkeypatch):
-    # offset=0 is a meaningful, explicit "start from the first result", not "unset".
     client, captured = _client_with_captured_get(monkeypatch)
 
     client.get_classes("uri-x", offset=0, limit=50)
@@ -74,8 +68,6 @@ def test_get_classes_default_is_nested(monkeypatch):
 
 
 def test_get_classes_empty_class_type_is_still_omitted(monkeypatch):
-    # class_type="" (used by search_in_dictionary's Dictionary/Classes fallback) means
-    # "no ClassType filter" and must stay omitted, unlike UseNestedClasses/offset/limit.
     client, captured = _client_with_captured_get(monkeypatch)
 
     client.get_classes("uri-x", use_nested_classes=False, class_type="", related_ifc_entity="IfcWall")
