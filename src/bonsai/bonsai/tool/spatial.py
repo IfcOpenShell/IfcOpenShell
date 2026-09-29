@@ -1245,19 +1245,20 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def toggle_spaces_visibility_wired_and_textured(cls, spaces: list[ifcopenshell.entity_instance]) -> None:
-        first_obj = tool.Ifc.get_object(spaces[0])
-        assert isinstance(first_obj, bpy.types.Object)
-        obj: bpy.types.Object
-        if first_obj.display_type == "TEXTURED":
-            for space in spaces:
-                obj = tool.Ifc.get_object(space)
+        objs: list[bpy.types.Object] = []
+        for space in spaces:
+            if isinstance(obj := tool.Ifc.get_object(space), bpy.types.Object):
+                objs.append(obj)
+        if not objs:
+            return
+        if objs[0].display_type == "TEXTURED":
+            for obj in objs:
                 obj.show_wire = True
                 obj.display_type = "WIRE"
             return
 
-        elif first_obj.display_type == "WIRE":
-            for space in spaces:
-                obj = tool.Ifc.get_object(space)
+        elif objs[0].display_type == "WIRE":
+            for obj in objs:
                 obj.show_wire = False
                 obj.display_type = "TEXTURED"
             return
