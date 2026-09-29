@@ -18,13 +18,12 @@
 
 # This file was generated with the assistance of an AI coding tool.
 
-import numpy as np
-import pytest
-
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.geometry
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
+import numpy as np
+import pytest
 
 import ifcpatch
 import test.bootstrap

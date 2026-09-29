@@ -16,14 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import pytest
-
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.geometry
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
 import ifcopenshell.util.placement
 import numpy as np
+import pytest
 
 import ifcpatch
 import test.bootstrap

@@ -18,10 +18,9 @@
 
 # This file was generated with the assistance of an AI coding tool.
 
-import pytest
-
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.root
+import pytest
 
 import ifcpatch
 import test.bootstrap
