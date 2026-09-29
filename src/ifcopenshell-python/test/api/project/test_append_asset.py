@@ -479,7 +479,7 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         )
 
         new_style = ifcopenshell.api.project.append_asset(self.file, library=library, element=style)
-        assert self.file.by_type("IfcSurfaceStyle") == [new_style]
+        assert self.file.by_type("IfcSurfaceStyle") == (new_style,)
         assert new_style.Name == style_name
         style_elements = new_style.Styles
         assert len(style_elements) == 1
