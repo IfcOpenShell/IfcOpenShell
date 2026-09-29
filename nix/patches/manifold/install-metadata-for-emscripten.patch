@@ -1,0 +1,17 @@
+# This file was generated with the assistance of an AI coding tool.
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 42e403b..764562f 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -249,11 +249,6 @@ set_source_files_properties(
+   PROPERTIES GENERATED TRUE
+ )
+ 
+-# If it's an EMSCRIPTEN build, we're done
+-if(EMSCRIPTEN)
+-  return()
+-endif()
+-
+ # CMake exports
+ configure_file(
+   cmake/manifoldConfig.cmake.in

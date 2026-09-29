@@ -34,7 +34,7 @@ try:
 except ImportError:
     _HAS_DRAW = False
 
-from xml.etree.ElementTree import Element, ElementTree, SubElement, register_namespace
+from xml.etree.ElementTree import Element, ElementTree, register_namespace
 
 try:
     import cairosvg  # type: ignore
