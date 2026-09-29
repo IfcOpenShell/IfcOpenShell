@@ -2671,9 +2671,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 return
 
             if item.is_a("IfcGeometricCurveSet"):
-                # The set itself is the edited representation item (e.g. a dimension
-                # annotation). Keep the same set entity and just swap out its nested
-                # curve Elements, rather than replacing the set with a bare curve.
+                # Keep the edited set and swap its Elements instead of replacing it with a bare curve.
                 old_elements = list(item.Elements)
                 item.Elements = tuple(new)
                 for old_element in old_elements:
@@ -2889,9 +2887,7 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
                 ifc_file = tool.Ifc.get()
 
                 if item.is_a("IfcGeometricCurveSet"):
-                    # The set itself is the edited representation item (e.g. a dimension
-                    # annotation). Keep the same set entity and just swap out its nested
-                    # curve Elements, rather than replacing the set with a bare curve.
+                    # Keep the edited set and swap its Elements instead of replacing it with a bare curve.
                     old_elements = list(item.Elements)
                     item.Elements = tuple(new)
                     for old_element in old_elements:
