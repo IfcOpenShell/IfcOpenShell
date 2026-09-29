@@ -4,7 +4,7 @@ from unittest.mock import patch
 import ifcopenshell
 import pytest
 
-from ifcmcp.core import IfcSession, IfcSessionError
+from ifcmcp.core import IfcSessionError
 
 
 class TestLoad:
