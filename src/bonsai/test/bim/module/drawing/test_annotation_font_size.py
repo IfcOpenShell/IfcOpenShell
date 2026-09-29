@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+# This file was generated with the assistance of an AI coding tool.
+
 """Sizing-math test for viewport annotation text (issues #3353 and #3683).
 
 The viewport (``blf``) text path and the SVG/print path historically diverged:
@@ -107,7 +109,6 @@ def test_current_viewport_factor_varies_with_resolution():
     factors = [effective_paper_unit_factor(viewport_font_size_px_current(2.5, x), 2.5, x) for x in MM_TO_PX_SWEEP]
     spread = max(factors) - min(factors)
     assert spread > 0.3, f"Expected the buggy factor to vary widely, got spread {spread:.4f}: {factors}"
-    # And it disagrees with the SVG by more than 10% at some resolutions.
     worst = max(abs(f - SVG_MM_TO_UNIT) / SVG_MM_TO_UNIT for f in factors)
     assert worst > 0.10, f"Expected >10% disagreement with SVG somewhere, worst was {worst:.3%}"
 
@@ -115,7 +116,9 @@ def test_current_viewport_factor_varies_with_resolution():
 def test_fixed_viewport_factor_is_resolution_independent():
     """AFTER: the effective mm->px factor is constant across all resolutions."""
     for font_mm in FONT_SIZES_MM:
-        factors = [effective_paper_unit_factor(viewport_font_size_px_fixed(font_mm, x), font_mm, x) for x in MM_TO_PX_SWEEP]
+        factors = [
+            effective_paper_unit_factor(viewport_font_size_px_fixed(font_mm, x), font_mm, x) for x in MM_TO_PX_SWEEP
+        ]
         spread = max(factors) - min(factors)
         assert spread < 1e-9, f"font {font_mm}mm not resolution independent, spread {spread}: {factors}"
 
@@ -124,7 +127,6 @@ def test_fixed_viewport_matches_svg_ratio():
     """AFTER: the constant factor equals the SVG's CSS mm->unit ratio (within the pre-existing magic-constant tolerance)."""
     factor = effective_paper_unit_factor(viewport_font_size_px_fixed(1.0, 1234.0), 1.0, 1234.0)
     rel_error = abs(factor - SVG_MM_TO_UNIT) / SVG_MM_TO_UNIT
-    # magic_font_scale (0.004118616) is a hand-tuned proxy for the SVG's 4.13/1000; it is 0.28% low.
     assert rel_error < 0.005, f"viewport factor {factor:.5f} vs SVG {SVG_MM_TO_UNIT:.5f}, rel error {rel_error:.3%}"
 
 
@@ -138,7 +140,6 @@ def test_3683_custom_little_size_is_consistent_after_fix():
         little = effective_paper_unit_factor(viewport_font_size_px_fixed(1.0, x), 1.0, x)
         regular = effective_paper_unit_factor(viewport_font_size_px_fixed(2.5, x), 2.5, x)
         assert little == pytest.approx(regular, rel=1e-12)
-        # Both equal the SVG ground-truth factor (print consistency).
         assert little == pytest.approx(SVG_MM_TO_UNIT, rel=0.005)
 
 
