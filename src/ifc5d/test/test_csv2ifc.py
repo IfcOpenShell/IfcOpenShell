@@ -150,13 +150,6 @@ class TestCsv2Ifc:
             assert parent_row[4].value.startswith("=SUM(")
 
     def test_property_column_accepts_comma_separated_candidate_names(self):
-        # Regression test for #6616. A single article can cover elements of
-        # different classes even when their relevant quantity is stored
-        # under a different property name per class, e.g. IfcWall.SOLIDWALL
-        # and IfcColumn.COLUMN. The Query column already supports selecting
-        # both classes with a comma (an existing ifcopenshell.util.selector
-        # OR), so only the Property column needed to gain the same "," OR
-        # convention to resolve the right name per element.
         ifc_file = self.setup_ifc_file()
 
         wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall", name="Wall")

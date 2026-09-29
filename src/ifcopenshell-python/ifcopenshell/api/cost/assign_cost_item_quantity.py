@@ -99,12 +99,7 @@ def assign_cost_item_quantity(
         ifcopenshell.api.cost.assign_cost_item_quantity(model,
             cost_item=item, products=[slab], prop_name="NetVolume")
 
-        # If different classes of products store the relevant quantity under
-        # different names (e.g. a wall's formwork area is under "SOLIDWALL"
-        # while a column's is under "COLUMN"), list the candidate names
-        # separated by a comma. Each product resolves to whichever of these
-        # names is actually present on it, so one cost item can cover both
-        # classes instead of being duplicated per class.
+        # Candidate quantity names may be comma separated, resolved per product.
         ifcopenshell.api.cost.assign_cost_item_quantity(model,
             cost_item=item, products=[wall, column], prop_name="SOLIDWALL, COLUMN")
 
