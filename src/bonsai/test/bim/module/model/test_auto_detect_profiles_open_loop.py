@@ -89,9 +89,6 @@ def _mesh_obj(name, verts, edges):
 
 
 def test_open_edge_without_groups_does_not_crash(ifc_file):
-    # One unclosed edge, no vertex groups: the UNCLOSED_LOOP sanity check
-    # is skipped (it is gated behind `if deform_layer:`), so this reaches
-    # the shapely union as the crash-triggering single LineString.
     obj, mesh = _mesh_obj("open_edge", [(0, 0, 0), (1, 0.2, 0)], [(0, 1)])
     result = tool.Model.auto_detect_profiles(obj, mesh)
     assert result is None
@@ -109,9 +106,6 @@ def test_closed_triangle_still_detected(ifc_file):
 
 
 def test_valid_boundary_survives_stray_unclosed_edge(ifc_file):
-    # A real closed square plus an unrelated stray open edge in the same
-    # mesh (e.g. leftover geometry from an aborted arc edit). The square
-    # must still be detected; the stray edge must not corrupt or block it.
     obj, mesh = _mesh_obj(
         "square_plus_stray_edge",
         [
@@ -141,10 +135,6 @@ def test_void_with_hole_still_detected(ifc_file):
 
 
 def test_degenerate_closed_void_loop_surfaces_a_failure(ifc_file):
-    # #8983: a genuine 10x10 outer square, plus a "void" that IS a closed
-    # loop (3 collinear points along y=4, closing back on itself) but
-    # encloses zero area. Unlike the stray open edge above, this loop was
-    # authored closed, so it must not be silently dropped.
     verts = [
         (0, 0, 0),
         (10, 0, 0),
