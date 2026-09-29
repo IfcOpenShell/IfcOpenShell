@@ -41,12 +41,12 @@ def unassign_flow_control(
         flow_element = file.createIfcFlowSegment()
         flow_control = file.createIfcController()
         relation = ifcopenshell.api.system.assign_flow_control(
-            file, relating_control=flow_control, related_object=flow_element
+            file, relating_flow_element=flow_element, related_flow_control=flow_control
         )
 
         # und unassign it
         ifcopenshell.api.system.unassign_flow_control(file,
-            relating_control=flow_control, related_object=flow_element
+            relating_flow_element=flow_element, related_flow_control=flow_control
         )
     """
 
