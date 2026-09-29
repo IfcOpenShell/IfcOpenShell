@@ -59,8 +59,7 @@ class DumbProfileGenerator:
         self.insertion_type = insertion_type
         self.file = tool.Ifc.get()
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        profile_set = tool.Model.get_material_profile_set(self.relating_type)
-        if not profile_set:
+        if not (profile_set := tool.Model.get_material_profile_set(self.relating_type)):
             return
         self.profile_set = profile_set
 
