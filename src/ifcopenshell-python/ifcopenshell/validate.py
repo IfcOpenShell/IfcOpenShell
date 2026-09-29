@@ -248,10 +248,8 @@ def get_select_members(schema: schema_definition, ty: select_type) -> set[str]:
     return v
 
 
-measure_unit_type_cache: dict[str, dict[str, str]] = {}
-
-
-def get_measure_unit_types(schema: schema_definition) -> dict[str, str]:
+@functools.cache
+def get_measure_unit_types(schema_name: str) -> dict[str, str]:
     """Map instantiable measure type names to the unit type a project unit needs to be defined for.
 
     Some measure types (e.g. ratios, counts, descriptive or monetary measures) have no
@@ -261,10 +259,7 @@ def get_measure_unit_types(schema: schema_definition) -> dict[str, str]:
     :return: A mapping of measure type name (e.g. "IfcLengthMeasure") to unit type
         (e.g. "LENGTHUNIT").
     """
-    cache_key = schema.name()
-    if (from_cache := measure_unit_type_cache.get(cache_key)) is not None:
-        return from_cache
-
+    schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_name)
     valid_unit_types: set[str] = set()
     for enum_name in ("IfcUnitEnum", "IfcDerivedUnitEnum"):
         try:
@@ -281,7 +276,6 @@ def get_measure_unit_types(schema: schema_definition) -> dict[str, str]:
             if unit_type in valid_unit_types:
                 mapping[decl.name()] = unit_type
 
-    measure_unit_type_cache[cache_key] = mapping
     return mapping
 
 
@@ -570,7 +564,7 @@ def validate(f: ifcopenshell.file | str | Path, logger: Logger | json_logger, ex
 
     schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(f.schema_identifier)
     used_guids: dict[str, ifcopenshell.entity_instance] = dict()
-    measure_unit_types = get_measure_unit_types(schema)
+    measure_unit_types = get_measure_unit_types(schema.name())
     project_units = get_project_units_by_type(f)
 
     for inst in f:
