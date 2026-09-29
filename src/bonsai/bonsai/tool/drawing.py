@@ -3016,12 +3016,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
         sheet = tool.Drawing.get_reference_document(reference)
 
-        # The sheet layout SVG is edited directly on disk and isn't tracked by
-        # Blender's undo system. Snapshot it so an undo/redo of `operator` can
-        # restore the file to match the reverted/reapplied IFC state (#7275).
-        # Snapshots are written to disk rather than kept as bytes in the
-        # rollback/commit closures, so they don't sit on the Python heap for
-        # as long as the undo history entry is alive.
+        # Layout SVG edits bypass Blender undo, so snapshot it to disk for undo/redo (#7275).
         layout_path = tool.Drawing.get_document_uri(sheet, "LAYOUT") if sheet else None
         previous_layout_path: Optional[str] = None
         if layout_path and os.path.exists(layout_path):
@@ -3049,15 +3044,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def snapshot_layout_svg(cls, layout_path: str) -> str:
-        """Copy a sheet layout SVG into a temp file and return its path.
-
-        Used to snapshot undo/redo state for #7275 without holding the SVG
-        contents as bytes for the lifetime of the undo history entry. These
-        are ordinary OS temp files (same convention as
-        tool.Blender.temp_file_with_traceback) and aren't explicitly
-        tracked/cleaned up; they're small and rely on the OS's normal temp
-        directory lifecycle.
-        """
+        """Copy a sheet layout SVG into a temp file and return its path."""
         fd, snapshot_path = tempfile.mkstemp(prefix="bonsai_sheet_layout_", suffix=".svg")
         os.close(fd)
         shutil.copyfile(layout_path, snapshot_path)
