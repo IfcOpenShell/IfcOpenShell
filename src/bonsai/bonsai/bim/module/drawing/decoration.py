@@ -549,30 +549,16 @@ class BaseDecorator:
         return text_dir
 
     def get_symbols_path(self) -> Optional[str]:
-        """Resolve the path to the ``symbols.svg`` resource used by the active
-        drawing, falling back to the bundled default one."""
-        try:
-            props = tool.Drawing.get_document_props()
-            symbols_path = props.symbols_path
-            if symbols_path:
-                resolved = tool.Ifc.resolve_uri(symbols_path)
-                if resolved and os.path.exists(resolved):
-                    return resolved
-        except Exception:
-            pass
-        try:
-            return str(tool.Blender.get_data_dir_path(Path("assets") / "symbols.svg"))
-        except Exception:
-            return None
+        """Resolve the drawing symbols file, falling back to the bundled one."""
+        if tool.Ifc.get() and (symbols_path := tool.Drawing.get_default_drawing_resource_path("Symbols")):
+            if os.path.exists(resolved := tool.Ifc.resolve_uri(symbols_path)):
+                return resolved
+        return str(tool.Blender.get_data_dir_path(Path("assets") / "symbols.svg"))
 
     def draw_glyph(
         self, context: bpy.types.Context, symbol_id: str, pos: Vector, rotation: float = 0.0, scale: float = 1.0
     ) -> None:
-        """Draw the real symbol geometry (from `symbols.svg`) at `pos`, falling
-        back to a generic asterisk marker if the symbol can't be resolved.
-
-        `pos` is a world space position, `rotation` is in radians.
-        """
+        """Draw the symbol geometry at world space `pos`, or an asterisk if it can't be resolved."""
         polylines = None
         if symbols_path := self.get_symbols_path():
             polylines = svg_symbol.get_symbol_polylines(symbols_path, symbol_id)

@@ -18,20 +18,8 @@
 
 # This file was generated with the assistance of an AI coding tool.
 
-"""Converts symbol definitions from ``symbols.svg`` into 2D polylines that the
-drawing decorators can draw directly in the 3D viewport.
-
-Only the small subset of SVG used by Bonsai's bundled ``symbols.svg`` (and, by
-extension, any custom replacement following the same conventions) is
-supported: ``<rect>``, ``<circle>``, ``<ellipse>``, ``<line>``, ``<polyline>``,
-``<polygon>`` and ``<path>`` with the ``M/L/H/V/C/S/Q/T/A/Z`` commands.
-``<text>`` elements (used as template fields, e.g. door tag numbers) are
-ignored as text is drawn separately by the decorators.
-
-Parsing is deliberately forgiving: any unsupported/malformed content is
-skipped rather than raised, so a symbol that can't be parsed simply falls
-back to the generic placeholder marker used previously.
-"""
+"""Converts the supported SVG subset of ``symbols.svg`` into 2D polylines for viewport drawing.
+Anything unsupported or malformed is skipped, so an unparseable symbol falls back to the placeholder."""
 
 from __future__ import annotations
 
@@ -342,8 +330,7 @@ def _load_symbols(path: str, mtime: float) -> dict[str, list[list[Vector]]]:
         return result
 
     for group in root:
-        symbol_id = group.get("id")
-        if not symbol_id:
+        if not (symbol_id := group.get("id")):
             continue
         polylines: list[list[Vector]] = []
         for child in group:
