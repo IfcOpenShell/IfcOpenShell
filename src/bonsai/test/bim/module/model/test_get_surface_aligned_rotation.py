@@ -114,10 +114,8 @@ class TestSlopedRoofFace:
 
     def test_thickness_axis_follows_the_face_normal(self):
         identity = Matrix.Identity(4)
-        local_normal = Vector((0.0, -0.5, math.sqrt(3) / 2))  # 30 degree slope
+        local_normal = Vector((0.0, -0.5, math.sqrt(3) / 2))
         result = get_surface_aligned_rotation(identity, local_normal)
-        # Local Y (thickness) is the axis that ends up opposite the outward
-        # face normal (matches the flat case: Y -> world -Z when normal +Z).
         thickness_axis_world = result.to_3x3() @ Vector((0.0, 1.0, 0.0))
         assert (thickness_axis_world + local_normal.normalized()).length < 1e-6
 
@@ -127,7 +125,6 @@ class TestSlopedRoofFace:
         assert _is_proper_rotation(get_surface_aligned_rotation(identity, local_normal).to_3x3())
 
     def test_does_not_blow_up_on_a_downward_facing_normal(self):
-        # eg. a soffit / underside face picked up by a stray raycast.
         identity = Matrix.Identity(4)
         result = get_surface_aligned_rotation(identity, Vector((0.0, 0.0, -1.0)))
         assert _is_proper_rotation(result.to_3x3())

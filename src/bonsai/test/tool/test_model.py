@@ -998,9 +998,6 @@ class TestGetMaterialLayerParameters(NewFile):
     def test_explicit_layer_set_usage_still_wins_over_class_default(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
-        # A wall-shaped element that's actually authored with an AXIS3 usage
-        # (unusual, but the explicit material must still win over the
-        # class-based fallback).
         wall_type = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWallType", name="WAL01")
         material_set = ifcopenshell.api.material.add_material_set(ifc, set_type="IfcMaterialLayerSet")
         material = ifcopenshell.api.material.add_material(ifc, name="PB01", category="gypsum")
