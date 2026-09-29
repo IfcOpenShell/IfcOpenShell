@@ -709,9 +709,7 @@ class Usecase:
         )
 
     def fallback_to_mesh_representation(self) -> ifcopenshell.entity_instance:
-        # Reached when a mesh could not be reverse engineered into an
-        # IfcExtrudedAreaSolid (see Helper.create_extruded_area_solid and #2851).
-        # Rather than crash, preserve the geometry exactly as a tessellated mesh.
+        # The mesh could not be reverse engineered into an IfcExtrudedAreaSolid (#2851).
         geometry = self.settings["geometry"]
         name = getattr(geometry, "name", "<unnamed>")
         print(
