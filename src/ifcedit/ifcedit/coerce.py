@@ -60,9 +60,11 @@ def coerce_value(
     # Union / Optional
     if origin is typing.Union:
         non_none_types = [a for a in args if a is not type(None)]
-        if value_str.lower() == "none":
+        if isinstance(value_str, str) and value_str.lower() == "none":
             if type(None) in args:
                 return None
+        if value_str is None and type(None) in args:
+            return None
         # Try each non-None type in order
         for t in non_none_types:
             try:
