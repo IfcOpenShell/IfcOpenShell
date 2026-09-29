@@ -22,6 +22,7 @@ import pytest
 
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.classification
+import ifcopenshell.api.feature
 import ifcopenshell.api.geometry
 import ifcopenshell.api.group
 import ifcopenshell.api.material
