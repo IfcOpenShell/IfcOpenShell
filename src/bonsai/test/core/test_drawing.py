@@ -672,9 +672,6 @@ class TestAddAnnotation:
 
 
 class TestRunConversionCommand:
-    """See issue #4822: a misconfigured svg2pdf/svg2dxf command must raise a
-    catchable ConversionCommandError instead of an uncaught traceback."""
-
     def test_bad_json_raises_conversion_command_error(self):
         drawing_tool = Mock()
         drawing_tool.run_conversion_command.side_effect = json.JSONDecodeError("Expecting value", "not json", 0)
