@@ -92,6 +92,71 @@ endif
 
 endif # def PLATFORM
 
+# Wheels bundled with Bonsai, downloaded for the target platform in one pip call.
+BUNDLED_WHEELS :=
+BUNDLED_WHEELS += GitPython
+# IfcOpenShell dependency - support for new typing features
+BUNDLED_WHEELS += typing_extensions
+# Required by IfcCSV
+BUNDLED_WHEELS += pandas
+BUNDLED_WHEELS += openpyxl
+# Required by IFCCityJSON
+BUNDLED_WHEELS += "cjio >=0.8, <0.10"
+# Required in general for sorting all sorts of stuff in a nice way
+BUNDLED_WHEELS += natsort
+# Provides express rule validation for ifcopenshell.validate
+BUNDLED_WHEELS += pytest
+# Provides Brickschema functionality
+# Is not platform specific but has platform specific dependencies.
+# The SQLAlchemy store must be 0.7.1 or later (SQLAlchemy 2.1, rdflib 7, and the
+# store.transaction() that brickschema 0.8 runs its persistent graph through).
+BUNDLED_WHEELS += brickschema "brickschema-rdflib-sqlalchemy>=0.7.1" alembic
+# Required for SVG to DXF conversion
+BUNDLED_WHEELS += ezdxf
+# Required by bcf
+BUNDLED_WHEELS += xsdata
+BUNDLED_WHEELS += xmlschema
+BUNDLED_WHEELS += elementpath
+BUNDLED_WHEELS += six
+# Required by drawing module
+BUNDLED_WHEELS += lxml
+# Required by drawing module for markdown hyperlinks in annotations
+BUNDLED_WHEELS += markdown-it-py
+BUNDLED_WHEELS += mdurl
+# Required by qto and drawing module
+BUNDLED_WHEELS += shapely
+# Required by the BIM type manager thumbnail generator
+BUNDLED_WHEELS += pillow
+# Provides mustache templating in construction docs and web UI data
+BUNDLED_WHEELS += pystache
+# Provides SVG export in construction documentation
+BUNDLED_WHEELS += svgwrite
+# Provides fuzzy date parsing for construction sequencing
+BUNDLED_WHEELS += python-dateutil
+# Provides duration parsing for construction sequencing
+BUNDLED_WHEELS += isodate
+# Provides networkx graph analysis for project dependency calculations
+BUNDLED_WHEELS += networkx
+# Required by IFCDiff
+# Pinned <9.1: deepdiff 9.1.0 adds the compiled dependency cachebox<6,>=5.2,
+# which this platformless download cannot provide for every target platform.
+BUNDLED_WHEELS += "deepdiff<9.1"
+# Required by IFCCSV and ifcopenshell.util.selector
+BUNDLED_WHEELS += lark
+# Required by IFC4D
+BUNDLED_WHEELS += PyP6Xer
+# Required by web module
+# Is not platform specific but has platform specific dependencies.
+BUNDLED_WHEELS += "python-socketio[asyncio_client]"
+BUNDLED_WHEELS += aiohttp
+# Required to access platform specific paths
+BUNDLED_WHEELS += platformdirs
+# Required by light module
+BUNDLED_WHEELS += pytz
+BUNDLED_WHEELS += tzfpy
+# Required by ifctester web ui.
+BUNDLED_WHEELS += flask
+
 # Current build commit hash.
 OLD:=8c614fa
 .PHONY: bump
@@ -134,76 +199,20 @@ endif
 	cd ../ifc4d && make dist && mv dist/*.whl ../bonsai/build/wheels/
 	cd ../ifc5d && make dist && mv dist/*.whl ../bonsai/build/wheels/
 	cd ../ifccityjson && make dist && mv dist/*.whl ../bonsai/build/wheels/
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download GitPython --dest=./wheels
-	# IfcOpenShell dependency - support for new typing features
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download typing_extensions --dest=./wheels
-	# Required by IfcCSV
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pandas $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download openpyxl --dest=./wheels
+
+	# Resolve all bundled wheels in one pip call, so they share a single consistent
+	# dependency set - no conflicting versions or duplicate wheels of the same package -
+	# and skip re-resolving shared dependencies in dozens of separate pip calls.
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download $(BUNDLED_WHEELS) $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+
 	# odfpy doesn't come with its own wheel, so whee'l (get it?) create it ourselves!
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) wheel odfpy --wheel-dir=./wheels
-	# Required by IFCCityJSON
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download "cjio >=0.8, <0.10" --dest=./wheels
-	# Required in general for sorting all sorts of stuff in a nice way
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download natsort --dest=./wheels
-	# Provides express rule validation for ifcopenshell.validate
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pytest --dest=./wheels
-	# Provides Brickschema functionality
-	# Is not platform specific but has platform specific dependencies.
-	# The SQLAlchemy store must be 0.7.1 or later (SQLAlchemy 2.1, rdflib 7, and the
-	# store.transaction() that brickschema 0.8 runs its persistent graph through).
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download brickschema "brickschema-rdflib-sqlalchemy>=0.7.1" alembic $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
-	# Required for SVG to DXF conversion
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download ezdxf $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
-	# Required by bcf
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download xsdata --dest=./wheels
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download xmlschema --dest=./wheels
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download elementpath --dest=./wheels
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download six --dest=./wheels
-	# Required by drawing module
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download lxml $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
-	# Required by drawing module for markdown hyperlinks in annotations
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download markdown-it-py --dest=./wheels
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download mdurl --dest=./wheels
-	# Required by qto and drawing module
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download shapely $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
-	# Required by the BIM type manager thumbnail generator
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pillow $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
-	# Provides mustache templating in construction docs and web UI data
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pystache --dest=./wheels
-	# Provides SVG export in construction documentation
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download svgwrite --dest=./wheels
-	# Provides fuzzy date parsing for construction sequencing
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download python-dateutil --dest=./wheels
-	# Provides duration parsing for construction sequencing
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download isodate --dest=./wheels
-	# Provides networkx graph analysis for project dependency calculations
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download networkx --dest=./wheels
-	# Required by IFCDiff
-	# Pinned <9.1: deepdiff 9.1.0 adds the compiled dependency cachebox<6,>=5.2,
-	# which this platformless download cannot provide for every target platform.
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download "deepdiff<9.1" --dest=./wheels
-	# Required by IFCCSV and ifcopenshell.util.selector
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download lark --dest=./wheels
-	# Required by IFC4D
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download PyP6Xer --dest=./wheels
-	# Required by web module
-	# Is not platform specific but has platform specific dependencies.
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download python-socketio[asyncio_client] $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download aiohttp $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
-	# Required to access platform specific paths
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download platformdirs --dest=./wheels
-	# Required by light module
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pytz --dest=./wheels
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download tzfpy $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 	# pyradiance is using different platform versions than defaults in our makefile.
 ifeq ($(PLATFORM), linux)
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance --platform manylinux_2_28_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 else
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 endif
-	# Required by ifctester web ui.
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download flask $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 
 	# jQuery is required for web UI functionality
 	cd build/bonsai/bim/data/webui/static/js/ && wget --no-verbose https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js
