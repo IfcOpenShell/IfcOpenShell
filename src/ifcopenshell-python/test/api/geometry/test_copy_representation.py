@@ -117,8 +117,6 @@ class TestCopyRepresentation(test.bootstrap.IFC4):
         assert result is None
 
     def test_replacing_a_target_rep_shared_with_another_product_keeps_the_sibling(self):
-        # #9207: some authoring tools reuse the same IfcProductDefinitionShape
-        # across occurrences, so replacing wall_b's rep must not destroy wall_c's
         wall_a = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         wall_b = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         wall_c = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")

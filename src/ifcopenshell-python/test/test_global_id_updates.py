@@ -21,7 +21,7 @@ def test_global_id_updates():
     # Non-unique guid, succeeds but logs an error
     ifcopenshell.get_log()
     inst = f.createIfcWall(g3)
-    assert "Overwriting" in ifcopenshell.get_log()
+    assert "Duplicate guid" in ifcopenshell.get_log()
 
 
 if __name__ == "__main__":

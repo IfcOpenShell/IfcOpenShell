@@ -46,18 +46,14 @@ class Usecase:
     def unassign_product_representation(
         self, product: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
     ) -> None:
-        product_def = product.Representation
+        if not (product_def := product.Representation):
+            return
         representations = list(product_def.Representations or [])
         if representation not in representations:
             return
         representations.remove(representation)
 
-        # product_def may be shared verbatim by other products (eg. some
-        # authoring tools reuse the same IfcProductDefinitionShape across
-        # occurrences, see #9207). Mutating it in place, or removing it once
-        # empty, would silently take the geometry away from every other
-        # owner too. Detach only this product onto its own definition
-        # instead, and leave the shared one untouched for its other owners.
+        # A shape shared with other products (#9207) must not be mutated or removed, so detach this product.
         if len(product_def.ShapeOfProduct) > 1:
             if representations:
                 product.Representation = self.file.createIfcProductDefinitionShape(

@@ -62,9 +62,6 @@ class TestRemoveContext(test.bootstrap.IFC4):
             assert len([e for e in self.file]) == 1
 
     def test_removing_a_context_used_by_two_products_sharing_one_shape(self):
-        # two products referencing the exact same IfcProductDefinitionShape
-        # (eg. Revit-authored files, #9207) must not crash and must not
-        # leak an orphaned representation once both are detached
         context = self.file.createIfcGeometricRepresentationContext()
         rep = self.file.createIfcRepresentation(ContextOfItems=context)
         shape = self.file.createIfcProductDefinitionShape(Representations=[rep])

@@ -16,8 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api.type
 import ifcopenshell.api.root
+import ifcopenshell.api.type
 import test.bootstrap
 
 
@@ -53,9 +53,6 @@ class TestMapTypeRepresentations(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcShapeRepresentation")) == 2
 
     def test_mapping_type_representations_keeps_a_sibling_sharing_the_old_shape(self):
-        # #9207: some authoring tools reuse the same IfcProductDefinitionShape
-        # across occurrences. Stripping related_object's own representations
-        # before mapping the type's must not destroy a sibling's copy.
         context = self.file.createIfcGeometricRepresentationSubContext()
         old_rep = self.file.createIfcShapeRepresentation(ContextOfItems=context)
         shape = self.file.createIfcProductDefinitionShape(Representations=[old_rep])
