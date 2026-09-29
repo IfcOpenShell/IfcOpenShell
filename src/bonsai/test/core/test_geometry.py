@@ -17,14 +17,12 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bonsai.core.geometry as subject
-import test.core.test_style
-from test.core.bootstrap import geometry, ifc, style, surveyor
+from test.core.bootstrap import geometry, ifc, style, surveyor  # ruff: ignore[unused-import]
 
 
 class TestEditObjectPlacement:
     def predict(self, ifc, geometry, surveyor):
         ifc.get_entity("obj").should_be_called().will_return("element")
-        geometry.clear_cache("element").should_be_called()
         geometry.clear_scale("obj").should_be_called()
         geometry.get_blender_offset_type("obj").should_be_called()
         surveyor.get_absolute_matrix("obj").should_be_called().will_return("matrix")
@@ -197,7 +195,6 @@ class TestSwitchRepresentation:
     def test_switching_to_a_representation(self, ifc, geometry):
         geometry.get_object_data("obj").should_be_called().will_return("current_obj_data")
         ifc.get_entity("obj").should_be_called().will_return("element")
-        geometry.clear_cache("element").should_be_called()
         geometry.reimport_element_representations("obj", "mapped_rep", apply_openings=True).should_be_called()
         subject.switch_representation(
             ifc,
@@ -210,15 +207,11 @@ class TestSwitchRepresentation:
 
 class TestSwitchRepresentations:
     def test_batches_all_items_into_a_single_reimport_call(self, ifc, geometry):
-        # get_object_data returns truthy, so is_text_literal is short-circuited away,
-        # same as switch_representation's own guard.
         geometry.get_object_data("obj1").should_be_called().will_return("data1")
         ifc.get_entity("obj1").should_be_called().will_return("element1")
-        geometry.clear_cache("element1").should_be_called()
 
         geometry.get_object_data("obj2").should_be_called().will_return("data2")
         ifc.get_entity("obj2").should_be_called().will_return("element2")
-        geometry.clear_cache("element2").should_be_called()
 
         geometry.reimport_element_representations_batch(
             [("obj1", "rep1", True), ("obj2", "rep2", False)]
