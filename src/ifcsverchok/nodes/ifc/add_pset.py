@@ -72,9 +72,9 @@ class SvIfcAddPset(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIf
         )
 
     def draw_buttons(self, context, layout):
-        layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = (
-            "Add a property set and corresponding properties to IfcElements."
-        )
+        layout.operator(
+            "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
+        ).tooltip = "Add a property set and corresponding properties to IfcElements."
 
     def process(self):
         if not any(socket.is_linked for socket in self.outputs):

@@ -142,9 +142,9 @@ def get_element_result_data(model, field_label, name, element, field_type):
             elif len(model.point_data[field_label][points[0]]) == 14:
                 offset = 6
             else:
-                assert (
-                    False
-                ), f"Internal force field with {len(model.point_data[field_label][points[0]])} field values for {field_label} and {element['Name']} "
+                assert False, (
+                    f"Internal force field with {len(model.point_data[field_label][points[0]])} field values for {field_label} and {element['Name']} "
+                )
 
             return {
                 "NXX": [round(model.point_data[field_label][p][offset + 0], 4) for p in points],
