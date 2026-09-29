@@ -37,9 +37,6 @@ class TestRemoveStructuralConnectionCondition(test.bootstrap.IFC4):
         ifcopenshell.api.structural.remove_structural_connection_condition(self.file, relation=rel)
 
         assert len(self.file.by_type("IfcRelConnectsStructuralMember")) == 0
-        # The boundary condition was assigned to the relation (not the bare
-        # connection), so it must be purged along with the relation instead
-        # of being left as an orphan with no inverses.
         assert len(self.file.by_type("IfcBoundaryCondition")) == 0
 
 

@@ -25,8 +25,6 @@ class TestRemoveStructuralLoadCase(test.bootstrap.IFC4):
     # IfcStructuralLoadCase does not exist in IFC2X3, so add_structural_load_case
     # (and therefore this test) is IFC4+ only.
     def test_removing_a_structural_load_case_without_owner_history(self):
-        # OwnerHistory is not set by add_structural_load_case, so it is None
-        # by default. Removal must not crash on that common case.
         load_case = ifcopenshell.api.structural.add_structural_load_case(self.file, name="LC1")
         assert load_case.OwnerHistory is None
         ifcopenshell.api.structural.remove_structural_load_case(self.file, load_case=load_case)
