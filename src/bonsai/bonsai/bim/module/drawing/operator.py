@@ -1154,8 +1154,7 @@ class CreateDrawing(bpy.types.Operator):
             unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
             closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
 
-            # Candidate element pairs whose fill cells look ambiguous, keyed by
-            # GlobalId pair so the same pair isn't queued twice. Confirmed below.
+            # Element pairs with possibly ambiguous fill cells, keyed by GlobalId pair.
             overlap_candidates: dict[
                 frozenset[str], tuple[ifcopenshell.entity_instance, ifcopenshell.entity_instance]
             ] = {}
@@ -1785,10 +1784,7 @@ class CreateDrawing(bpy.types.Operator):
         raycast_objs: set[bpy.types.Object],
         candidates: dict[frozenset[str], tuple[ifcopenshell.entity_instance, ifcopenshell.entity_instance]],
     ) -> None:
-        # A fill cell is only styled with one element, but if another
-        # element's bounding box occupies the same 3D space, that element's
-        # own separating edge may have gone missing from the same cause.
-        # Confirmed with an exact solid check below. See #3642.
+        # Elements whose bounding box overlaps the primary one may have lost their separating edge too (#3642).
         primary_corners = [primary_obj.matrix_world @ Vector(c) for c in primary_obj.bound_box]
         primary_min = Vector(map(min, zip(*primary_corners)))
         primary_max = Vector(map(max, zip(*primary_corners)))
@@ -1806,9 +1802,7 @@ class CreateDrawing(bpy.types.Operator):
                 candidates.setdefault(key, (primary_element, other_element))
 
     def solids_overlap(self, context: bpy.types.Context, obj_a: bpy.types.Object, obj_b: bpy.types.Object) -> bool:
-        # An exact boolean intersection is empty for elements that merely
-        # touch along a coincident face (normal, valid modelling) and
-        # non-empty only when they genuinely share 3D volume. See #3642.
+        # Exact intersection is empty for merely touching elements, non-empty only for shared volume (#3642).
         probe = obj_a.copy()
         probe_mesh = obj_a.data.copy()
         probe.data = probe_mesh
