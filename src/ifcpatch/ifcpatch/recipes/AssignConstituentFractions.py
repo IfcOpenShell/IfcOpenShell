@@ -80,6 +80,7 @@ class Patcher:
                 if quantities:
                     element_quantities = quantities
                     break
+
             if not element_quantities:
                 continue
 
@@ -94,9 +95,7 @@ class Patcher:
                 fraction = width / total_width
                 constituent.Fraction = fraction
                 self.logger.info(
-                    f"Constituent: {constituent.Name}, "
-                    f"Width: {width:.4f} {length_unit}, "
-                    f"Fraction: {fraction:.4f}"
+                    f"Constituent: {constituent.Name}, Width: {width:.4f} {length_unit}, Fraction: {fraction:.4f}"
                 )
 
     def get_element_quantities(self, element: ifcopenshell.entity_instance) -> dict[str, float]:

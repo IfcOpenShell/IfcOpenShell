@@ -18,12 +18,11 @@
 #
 # This file was generated with the assistance of an AI coding tool.
 
-import pytest
-
 import ifcopenshell.api.material
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
 import ifcopenshell.guid
+import pytest
 
 import ifcpatch
 import test.bootstrap
@@ -82,11 +81,6 @@ class TestAssignConstituentFractions(test.bootstrap.IFC4):
         assert constituent_b.Fraction == pytest.approx(2 / 3, rel=1e-6)
 
     def test_run_skips_constituent_set_when_no_element_has_matching_quantities(self):
-        # None of the associated elements carry a Qto_*BaseQuantities with a
-        # "layer" discrimination, so get_element_quantities() returns {} for
-        # every element and element_quantities is never assigned. This must
-        # be skipped quietly instead of raising, per the very next
-        # "if not element_quantities: continue" line.
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         unit = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT")
         ifcopenshell.api.unit.assign_unit(self.file, units=[unit])
@@ -110,9 +104,6 @@ class TestAssignConstituentFractions(test.bootstrap.IFC4):
 
 class TestAssignConstituentFractionsIFC2X3(test.bootstrap.IFC2X3):
     def test_run_is_a_no_op_since_constituent_sets_do_not_exist_in_ifc2x3(self):
-        """IfcMaterialConstituentSet is an IFC4 concept absent from IFC2X3.
-        Running this recipe against an IFC2X3 file must not raise, even
-        though the schema has no equivalent to convert."""
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
 
         ifcpatch.execute(
