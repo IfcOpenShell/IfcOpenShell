@@ -38,9 +38,7 @@ if TYPE_CHECKING:
 
 
 class Misc(bonsai.core.tool.Misc):
-
     class BlenderCStructs:
-
         class ListBase(ctypes.Structure):
             _fields_ = [("first", ctypes.c_void_p), ("last", ctypes.c_void_p)]
 

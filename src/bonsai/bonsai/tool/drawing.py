@@ -1321,7 +1321,7 @@ class Drawing(bonsai.core.tool.Drawing):
             commands = json.loads(user_command)
             replacements = {"path": path}
             for command in commands:
-                command[0] = shutil.which(command[0]) or command[0]
+                command[0] = shutil.which(str(command[0])) or command[0]
                 subprocess.Popen([replacements.get(c, c) for c in command])
         else:
             if platform.system() == "Darwin":
@@ -2609,10 +2609,12 @@ class Drawing(bonsai.core.tool.Drawing):
                 subcontext = current_representation.ContextOfItems
                 current_representation_subcontext = tool.Geometry.get_subcontext_parameters(subcontext)
 
+            has_context = False
             for subcontext in subcontexts:
                 # prioritize already active representation if it matches the subcontext
                 # (element could have multiple representations in the same subcontext)
-                if current_representation_subcontext and subcontext == current_representation_subcontext:
+                if current_representation and subcontext == current_representation_subcontext:
+                    has_context = True
                     break
                 priority_representation = ifcopenshell.util.representation.get_representation(element, *subcontext)
                 if priority_representation:
@@ -2622,6 +2624,7 @@ class Drawing(bonsai.core.tool.Drawing):
                         obj=obj,
                         representation=priority_representation,
                     )
+                    has_context = True
                     break
 
         linked_handles: set[bpy.types.Object] = set()
