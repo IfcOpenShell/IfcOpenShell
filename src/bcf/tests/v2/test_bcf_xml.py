@@ -162,3 +162,14 @@ def test_bcf_get_set_version(build_sample) -> None:
     assert bcf.version.version_id == "2.1"
     bcf.version.version_id = "2.0"
     assert bcf.version.version_id == "2.0"
+
+
+def test_get_viewpoint_filename(xml_handler, build_sample) -> None:
+    _, th = build_sample
+    primary = _make_visinfo(xml_handler)
+    extra = _make_visinfo(xml_handler)
+    th.add_visinfo_handler(primary)
+    th.add_visinfo_handler(extra)
+    assert th.get_viewpoint_filename(primary.guid) == "viewpoint.bcfv"
+    assert th.get_viewpoint_filename(extra.guid) == f"{extra.guid}.bcfv"
+    assert th.get_viewpoint_filename("unknown") is None
