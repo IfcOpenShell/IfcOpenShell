@@ -129,9 +129,9 @@ class WheelBuilder:
             py_files = [f for f in zf.namelist() if f.endswith(py_wrapper_filename)]
 
             assert so_files, "No .so file found in wheel"
-            assert any(
-                Path(f).name.startswith("_ifcopenshell_wrapper") for f in so_files
-            ), "No _ifcopenshell_wrapper .so file found in wheel"
+            assert any(Path(f).name.startswith("_ifcopenshell_wrapper") for f in so_files), (
+                "No _ifcopenshell_wrapper .so file found in wheel"
+            )
             assert py_files, f"No {py_wrapper_filename} file found in wheel"
 
             so_dsts = []
