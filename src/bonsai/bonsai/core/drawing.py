@@ -47,6 +47,10 @@ def edit_text(drawing: type[tool.Drawing], obj: bpy.types.Object) -> None:
     drawing.disable_editing_text(obj)
 
 
+def edit_text_literal_value(drawing: type[tool.Drawing], obj: bpy.types.Object, literal_index: int, value: str) -> None:
+    drawing.edit_text_literal_value(obj, literal_index, drawing.sanitize_multiline_literal(value))
+
+
 def copy_text_to_selection(
     drawing: type[tool.Drawing],
     attribute: Literal["FONT_SIZE", "ALIGNMENT", "WRAP_LENGTH", "SYMBOL", "LITERALS"],
