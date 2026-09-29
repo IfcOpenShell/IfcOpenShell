@@ -418,6 +418,13 @@ class ImportQuickFavorites(bpy.types.Operator):
     bl_description = "Import operators from Blender's Quick Favorites menu, including their configured properties"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        if bpy.app.version[:2] not in tool.Misc.QuickFavorites.OFFSET_USER_MENUS:
+            cls.poll_message_set(f"Blender version {bpy.app.version_string} is not supported.")
+            return False
+        return True
+
     def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
         props = tool.Misc.get_misc_props()
         props.quick_favorites.clear()

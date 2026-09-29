@@ -20,14 +20,17 @@ from __future__ import annotations
 
 import builtins
 import re
-from functools import lru_cache
+from collections.abc import Sequence
+from functools import cache, lru_cache
 from logging import Logger
 from typing import TYPE_CHECKING, Any, Literal, Optional, TypedDict, Union
 
 import ifcopenshell.util.classification
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
-from xmlschema.validators import identities
+from elementpath.regex import translate_pattern
+
+translate_pattern = cache(translate_pattern)
 
 if TYPE_CHECKING:
     from .ids import Specification
@@ -120,8 +123,8 @@ class Facet:
         return self
 
     def filter(
-        self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]]
-    ) -> list[ifcopenshell.entity_instance]:
+        self, ifc_file: ifcopenshell.file, elements: Optional[Sequence[ifcopenshell.entity_instance]]
+    ) -> Sequence[ifcopenshell.entity_instance]:
         if not elements:
             return []
         return [e for e in elements if self(e)]
@@ -148,6 +151,8 @@ class Facet:
                 templates = [
                     t.replace("shall", "may").replace("Shall", "May").replace("must", "may") for t in templates
                 ]
+        else:
+            assert False, clause_type
 
         for template in templates:
             total_variables = len(template) - len(template.replace("{", ""))
@@ -203,32 +208,36 @@ class Entity(Facet):
         super().__init__(name, predefinedType, instructions)
 
     def filter(
-        self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]] = None
-    ) -> list[ifcopenshell.entity_instance]:
-        if isinstance(elements, list):
+        self, ifc_file: ifcopenshell.file, elements: Optional[Sequence[ifcopenshell.entity_instance]] = None
+    ) -> Sequence[ifcopenshell.entity_instance]:
+        if elements is not None:
             return super().filter(ifc_file, elements)
 
-        if isinstance(self.name, str):
-            try:
-                results = ifc_file.by_type(self.name, include_subtypes=False)
-            except:
-                # If the user has specified a class that doesn't exist in the version
-                results = []
-                if not self.name.endswith("TYPE"):
-                    try:
-                        for element_type in ifc_file.by_type(f"{self.name}Type"):
-                            results.extend(ifcopenshell.util.element.get_types(element_type))
-                    except:
-                        pass
-        else:
+        if ifc_file.schema == "IFC2X3":
             results = []
-            ifc_classes = [t for t in ifc_file.wrapped_data.types() if t.upper() == self.name]
-            for ifc_class in ifc_classes:
-                try:
+            for ifc_class in ifc_file.types():
+                ifc_class = ifc_class.upper()
+                if ifc_class == self.name:
                     results.extend(ifc_file.by_type(ifc_class, include_subtypes=False))
+            for element_type in ifc_file.by_type("IfcTypeProduct"):
+                derived_occurrence_class = element_type.is_a().upper().removesuffix("TYPE").removesuffix("STYLE")
+                if derived_occurrence_class == self.name:
+                    results.extend(ifcopenshell.util.element.get_types(element_type))
+            results = list(set(results))
+        else:
+            if isinstance(self.name, str):
+                try:
+                    results = ifc_file.by_type(self.name, include_subtypes=False)
                 except:
-                    # If the user has specified a class that doesn't exist in the version
-                    continue
+                    results = []  # If the user has specified a class that doesn't exist in the version
+            else:
+                results = []
+                ifc_classes = [t for t in ifc_file.types() if t.upper() == self.name]
+                for ifc_class in ifc_classes:
+                    try:
+                        results.extend(ifc_file.by_type(ifc_class, include_subtypes=False))
+                    except:
+                        continue  # If the user has specified a class that doesn't exist in the version
         if self.predefinedType:
             return [r for r in results if self(r)]
         return results
@@ -240,14 +249,16 @@ class Entity(Facet):
         if (
             not is_pass
             and inst.file.schema == "IFC2X3"
-            and not self.name.endswith("TYPE")
             and (element_type := ifcopenshell.util.element.get_type(inst))
+            and element_type != inst
         ):
-            is_pass = element_type.is_a().upper() == f"{self.name}TYPE"
-            reason = {"type": "NAME", "actual": element_type.is_a().upper()[:-4]}
+            derived_occurrence_class = element_type.is_a().upper().removesuffix("TYPE").removesuffix("STYLE")
+            is_pass = derived_occurrence_class == self.name
+            reason = {"type": "NAME", "actual": derived_occurrence_class}
         elif not is_pass:
             reason = {"type": "NAME", "actual": inst.is_a().upper()}
 
+        predefined_type = None
         if is_pass and self.predefinedType:
             if self.predefinedType == "USERDEFINED":
                 is_pass = ifcopenshell.util.element.is_userdefined_type(inst)
@@ -281,9 +292,9 @@ class Attribute(Facet):
         super().__init__(name, value, cardinality, instructions)
 
     def filter(
-        self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]]
-    ) -> list[ifcopenshell.entity_instance]:
-        if isinstance(elements, list):
+        self, ifc_file: ifcopenshell.file, elements: Optional[Sequence[ifcopenshell.entity_instance]]
+    ) -> Sequence[ifcopenshell.entity_instance]:
+        if elements is not None:
             return super().filter(ifc_file, elements)
 
         results = []
@@ -311,7 +322,7 @@ class Attribute(Facet):
     def __call__(self, inst: ifcopenshell.entity_instance, logger: Optional[Logger] = None) -> AttributeResult:
         if isinstance(self.name, str):
             names = [self.name]
-            attribute_type = inst.wrapped_data.get_attribute_category(self.name)
+            attribute_type = inst.get_attribute_category(self.name)
             if attribute_type == 1:  # Forward attribute
                 values = [getattr(inst, self.name, None)]
             else:
@@ -322,7 +333,7 @@ class Attribute(Facet):
             values = []
             for k, v in info.items():
                 if k == self.name:
-                    attribute_type = inst.wrapped_data.get_attribute_category(k)
+                    attribute_type = inst.get_attribute_category(k)
                     if attribute_type == 1:  # Forward attribute
                         names.append(k)
                         values.append(v)
@@ -346,13 +357,13 @@ class Attribute(Facet):
                 elif value == tuple():
                     is_empty = True
                 else:
-                    argument_index = inst.wrapped_data.get_argument_index(names[i])
+                    argument_index = inst.get_argument_index(names[i])
                     try:
                         attribute_type = inst.attribute_type(argument_index)
                         if attribute_type == "LOGICAL" and value == "UNKNOWN":
                             is_empty = True
                     except:
-                        if names[i] in inst.wrapped_data.get_inverse_attribute_names():
+                        if names[i] in inst.get_inverse_attribute_names():
                             is_empty = True
                 if not is_empty:
                     non_empty_values.append(value)
@@ -416,9 +427,9 @@ class Classification(Facet):
         super().__init__(value, system, uri, cardinality, instructions)
 
     def filter(
-        self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]]
-    ) -> list[ifcopenshell.entity_instance]:
-        if isinstance(elements, list):
+        self, ifc_file: ifcopenshell.file, elements: Optional[Sequence[ifcopenshell.entity_instance]]
+    ) -> Sequence[ifcopenshell.entity_instance]:
+        if elements is not None:
             return super().filter(ifc_file, elements)
         return ifc_file.by_type("IfcObjectDefinition")
 
@@ -481,9 +492,9 @@ class PartOf(Facet):
         super().__init__(name, predefinedType, relation, cardinality, instructions)
 
     def filter(
-        self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]]
-    ) -> list[ifcopenshell.entity_instance]:
-        if isinstance(elements, list):
+        self, ifc_file: ifcopenshell.file, elements: Optional[Sequence[ifcopenshell.entity_instance]]
+    ) -> Sequence[ifcopenshell.entity_instance]:
+        if elements is not None:
             return super().filter(ifc_file, elements)
         return list(ifc_file)  # Lazy
 
@@ -622,6 +633,8 @@ class PartOf(Facet):
                     if predefined_type != self.predefinedType:
                         is_pass = False
                         reason = {"type": "PREDEFINEDTYPE", "actual": predefined_type}
+        else:
+            assert False, self.relation
 
         if self.cardinality == "prohibited":
             return PartOfResult(not is_pass, {"type": "PROHIBITED"})
@@ -672,9 +685,9 @@ class Property(Facet):
         super().__init__(propertySet, baseName, value, dataType, uri, cardinality, instructions)
 
     def filter(
-        self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]]
-    ) -> list[ifcopenshell.entity_instance]:
-        if isinstance(elements, list):
+        self, ifc_file: ifcopenshell.file, elements: Optional[Sequence[ifcopenshell.entity_instance]]
+    ) -> Sequence[ifcopenshell.entity_instance]:
+        if elements is not None:
             return super().filter(ifc_file, elements)
         if ifc_file.schema == "IFC2X3":
             return ifc_file.by_type("IfcObjectDefinition")
@@ -707,9 +720,7 @@ class Property(Facet):
                 if isinstance(self.baseName, str):
                     prop = pset_props.get(self.baseName)
                     if prop == "UNKNOWN" and next(
-                        p
-                        for p in self.get_properties(inst.wrapped_data.file.by_id(pset_props["id"]))
-                        if p.Name == self.baseName
+                        p for p in self.get_properties(inst.file.by_id(pset_props["id"])) if p.Name == self.baseName
                     ).NominalValue.is_a("IfcLogical"):
                         pass
                     elif prop is not None and prop != "":
@@ -726,7 +737,7 @@ class Property(Facet):
                     reason = {"type": "NOVALUE"}
                     break
 
-                pset_entity = inst.wrapped_data.file.by_id(pset_props["id"])
+                pset_entity = inst.file.by_id(pset_props["id"])
 
                 is_property_supported_class = True
                 for prop_entity in self.get_properties(pset_entity):
@@ -743,7 +754,7 @@ class Property(Facet):
                             reason = {"type": "DATATYPE", "actual": data_type, "dataType": self.dataType}
                             break
 
-                        unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
+                        unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.file)
                         if unit and getattr(unit, "Name", None):
                             # TODO support unnamed derived units
                             output_prefix = "KILO" if unit.UnitType == "MASSUNIT" else None
@@ -755,7 +766,7 @@ class Property(Facet):
                                 ifcopenshell.util.unit.si_type_names[unit.UnitType],
                             )
                     elif prop_entity.is_a("IfcPhysicalSimpleQuantity"):
-                        prop_schema = prop_entity.wrapped_data.declaration().as_entity()
+                        prop_schema = prop_entity.declaration.as_entity()
                         data_type = prop_schema.attribute_by_index(3).type_of_attribute().declared_type().name()
 
                         if self.dataType and data_type.lower() != self.dataType.lower():
@@ -763,7 +774,7 @@ class Property(Facet):
                             reason = {"type": "DATATYPE", "actual": data_type, "dataType": self.dataType}
                             break
 
-                        unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
+                        unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.file)
                         if unit:
                             props[pset_name][prop_entity.Name] = ifcopenshell.util.unit.convert(
                                 prop_entity[3],
@@ -792,7 +803,7 @@ class Property(Facet):
                             is_pass = False
                             reason = {"type": "DATATYPE", "actual": data_type, "dataType": self.dataType}
                             break
-                        unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
+                        unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.file)
                         if unit:
                             props[pset_name][prop_entity.Name] = [
                                 ifcopenshell.util.unit.convert(
@@ -806,16 +817,18 @@ class Property(Facet):
                             ]
                     elif prop_entity.is_a("IfcPropertyBoundedValue"):
                         values = []
+                        data_type = None
                         for attribute in ["UpperBoundValue", "LowerBoundValue", "SetPointValue"]:
                             value = getattr(prop_entity, attribute)
                             if value is not None:
                                 data_type = value.is_a()
                                 values.append(value.wrappedValue)
+                        assert data_type is not None, prop_entity
                         if self.dataType and data_type.lower() != self.dataType.lower():
                             is_pass = False
                             reason = {"type": "DATATYPE", "actual": data_type, "dataType": self.dataType}
                             break
-                        unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
+                        unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.file)
                         if unit:
                             values = [
                                 ifcopenshell.util.unit.convert(
@@ -830,7 +843,8 @@ class Property(Facet):
                         props[pset_name][prop_entity.Name] = values
                     elif prop_entity.is_a("IfcPropertyTableValue"):
                         values = []
-                        units = ifcopenshell.util.unit.get_property_table_unit(prop_entity, inst.wrapped_data.file)
+                        units = ifcopenshell.util.unit.get_property_table_unit(prop_entity, inst.file)
+                        data_type = None
                         for attribute in ["Defining", "Defined"]:
                             column_values = props[pset_name][prop_entity.Name][f"{attribute}Values"]
                             if not column_values:
@@ -853,6 +867,7 @@ class Property(Facet):
                                 values.extend(column_values)
                         if not values:
                             is_pass = False
+                            assert data_type is not None, prop_entity
                             reason = {"type": "DATATYPE", "actual": data_type, "dataType": self.dataType}
                             break
                         props[pset_name][prop_entity.Name] = values
@@ -943,9 +958,9 @@ class Material(Facet):
         super().__init__(value, uri, cardinality, instructions)
 
     def filter(
-        self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]]
-    ) -> list[ifcopenshell.entity_instance]:
-        if isinstance(elements, list):
+        self, ifc_file: ifcopenshell.file, elements: Optional[Sequence[ifcopenshell.entity_instance]]
+    ) -> Sequence[ifcopenshell.entity_instance]:
+        if elements is not None:
             return super().filter(ifc_file, elements)
         return ifc_file.by_type("IfcObjectDefinition")
 
@@ -990,6 +1005,8 @@ class Material(Facet):
                     values.update(
                         [item.Name, item.Category, item.Material.Name, getattr(item.Material, "Category", None)]
                     )
+            else:
+                assert False, material
 
             is_pass = False
             for value in values:
@@ -1061,7 +1078,10 @@ class Restriction:
                         return False
                     value = value if isinstance(value, list) else [value]
                     for pattern in value:
-                        if re.compile(identities.translate_pattern(pattern)).fullmatch(other) is None:
+                        xsd_pattern = translate_pattern(
+                            pattern, back_references=False, lazy_quantifiers=False, anchors=False
+                        )
+                        if re.compile(xsd_pattern).fullmatch(other) is None:
                             return False
                 elif constraint == "length":
                     if len(str(other)) != int(value):
@@ -1110,9 +1130,9 @@ class Result:
 class EntityResult(Result):
     def to_string(self):
         if self.reason["type"] == "NAME":
-            return f"The entity class \"{self.reason['actual']}\" does not meet the required IFC class"
+            return f'The entity class "{self.reason["actual"]}" does not meet the required IFC class'
         elif self.reason["type"] == "PREDEFINEDTYPE":
-            return f"The predefined type \"{str(self.reason['actual'])}\" does not meet the required type"
+            return f'The predefined type "{str(self.reason["actual"])}" does not meet the required type'
 
 
 class AttributeResult(Result):
@@ -1120,11 +1140,11 @@ class AttributeResult(Result):
         if self.reason["type"] == "NOVALUE":
             return "The required attribute did not exist"
         elif self.reason["type"] == "FALSEY":
-            return f"The attribute value \"{str(self.reason['actual'])}\" is empty"
+            return f'The attribute value "{str(self.reason["actual"])}" is empty'
         elif self.reason["type"] == "INVALID":
             return "An invalid attribute name was specified in the IDS"
         elif self.reason["type"] == "VALUE":
-            return f"The attribute value \"{str(self.reason['actual'])}\" does not match the requirement"
+            return f'The attribute value "{str(self.reason["actual"])}" does not match the requirement'
         elif self.reason["type"] == "PROHIBITED":
             return "The attribute value should not have met the requirement"
 
@@ -1134,9 +1154,9 @@ class ClassificationResult(Result):
         if self.reason["type"] == "NOVALUE":
             return "The entity has no classification"
         elif self.reason["type"] == "VALUE":
-            return f"The references \"{str(self.reason['actual'])}\" do not match the requirements"
+            return f'The references "{str(self.reason["actual"])}" do not match the requirements'
         elif self.reason["type"] == "SYSTEM":
-            return f"The systems \"{str(self.reason['actual'])}\" do not match the requirements"
+            return f'The systems "{str(self.reason["actual"])}" do not match the requirements'
         elif self.reason["type"] == "PROHIBITED":
             return "The classification should not have met the requirement"
 
@@ -1146,9 +1166,9 @@ class PartOfResult(Result):
         if self.reason["type"] == "NOVALUE":
             return "The entity has no relationship"
         elif self.reason["type"] == "ENTITY":
-            return f"The entity has a relationship with incorrect entities: \"{str(self.reason['actual'])}\""
+            return f'The entity has a relationship with incorrect entities: "{str(self.reason["actual"])}"'
         elif self.reason["type"] == "PREDEFINEDTYPE":
-            return f"The entity has a relationship with incorrect predefined type: \"{str(self.reason['actual'])}\""
+            return f'The entity has a relationship with incorrect predefined type: "{str(self.reason["actual"])}"'
         elif self.reason["type"] == "PROHIBITED":
             return "The relationship should not have met the requirement"
 
@@ -1160,15 +1180,15 @@ class PropertyResult(Result):
         elif self.reason["type"] == "NOVALUE":
             return "The property set does not contain the required property"
         elif self.reason["type"] == "DATATYPE":
-            return f"The property's data type \"{str(self.reason['actual'])}\" does not match the required data type of \"{str(self.reason['dataType'])}\""
+            return f'The property\'s data type "{str(self.reason["actual"])}" does not match the required data type of "{str(self.reason["dataType"])}"'
         elif self.reason["type"] == "VALUE":
             if isinstance(self.reason["actual"], list):
                 if len(self.reason["actual"]) == 1:
-                    return f"The property value \"{str(self.reason['actual'][0])}\" does not match the requirements"
+                    return f'The property value "{str(self.reason["actual"][0])}" does not match the requirements'
                 else:
-                    return f"The property values \"{str(self.reason['actual'])}\" do not match the requirements"
+                    return f'The property values "{str(self.reason["actual"])}" do not match the requirements'
             else:
-                return f"The property value \"{str(self.reason['actual'])}\" does not match the requirements"
+                return f'The property value "{str(self.reason["actual"])}" does not match the requirements'
         elif self.reason["type"] == "PROHIBITED":
             return f"The property should not have met the requirement"
 
@@ -1178,8 +1198,6 @@ class MaterialResult(Result):
         if self.reason["type"] == "NOVALUE":
             return "The entity has no material"
         elif self.reason["type"] == "VALUE":
-            return (
-                f"The material names and categories of \"{str(self.reason['actual'])}\" does not match the requirement"
-            )
+            return f'The material names and categories of "{str(self.reason["actual"])}" does not match the requirement'
         elif self.reason["type"] == "PROHIBITED":
             return f"The material should not have met the requirement"

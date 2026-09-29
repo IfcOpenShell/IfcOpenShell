@@ -24,5 +24,6 @@ possible at compile-time when using C++ and at run-time when using Python.
    ifcopenshell/getting_started
    ifcopenshell/geometry_iterator
    ifcopenshell/geometry_settings
+   ifcopenshell/formats
    ifcopenshell/serialiser_settings
    ifcopenshell/boolean_process
