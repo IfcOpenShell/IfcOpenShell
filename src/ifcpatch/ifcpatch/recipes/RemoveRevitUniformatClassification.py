@@ -60,9 +60,7 @@ class Patcher:
                     self.file.remove(rel)
 
     def get_references(self, classification):
-        # IFC2X3 has no HasReferences inverse on IfcClassification or
-        # IfcClassificationReference, so the dependents are resolved through the
-        # inverse index instead of a schema specific inverse attribute.
+        # IFC2X3 has no HasReferences inverse, so resolve the dependents through the inverse index.
         results = []
         seen = set()
         queue = [classification]
