@@ -26,11 +26,11 @@
 
 bl_info = {
     "name": "IfcBlender",
-    "description": "Import files in the " "Industry Foundation Classes (.ifc) file format",
+    "description": "Import files in the Industry Foundation Classes (.ifc) file format",
     "author": "Thomas Krijnen, IfcOpenShell",
     "blender": (2, 80, 0),
     "location": "File > Import",
-    "tracker_url": "https://sourceforge.net/p/ifcopenshell/" "_list/tickets?source=navbar",
+    "tracker_url": "https://sourceforge.net/p/ifcopenshell/_list/tickets?source=navbar",
     "category": "Import-Export",
 }
 
@@ -330,17 +330,15 @@ class ImportIFC(bpy.types.Operator, ImportHelper):
     filter_glob: StringProperty(default="*.ifc", options={"HIDDEN"})
 
     use_names: BoolProperty(
-        name="Use entity names", description="Use entity names rather than " "GlobalIds for objects", default=True
+        name="Use entity names", description="Use entity names rather than GlobalIds for objects", default=True
     )
     process_relations: BoolProperty(
         name="Process relations",
-        description="Convert containment and "
-        "aggregation relations to parenting"
-        " (warning: may be slow on large files)",
+        description="Convert containment and aggregation relations to parenting (warning: may be slow on large files)",
         default=False,
     )
     blender_booleans: BoolProperty(
-        name="Use Blender booleans", description="Use Blender boolean modifiers " "for opening elements", default=False
+        name="Use Blender booleans", description="Use Blender boolean modifiers for opening elements", default=False
     )
 
     def execute(self, context):

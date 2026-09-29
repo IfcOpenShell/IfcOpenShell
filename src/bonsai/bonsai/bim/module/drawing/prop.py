@@ -50,11 +50,13 @@ from bonsai.bim.module.drawing.data import refresh as refresh_drawing_data
 from bonsai.bim.prop import Attribute, BIMFilterGroup
 
 diagram_scales_enum = []
+diagram_scales_enum_system = None
 
 
 def purge():
-    global diagram_scales_enum
+    global diagram_scales_enum, diagram_scales_enum_system
     diagram_scales_enum = []
+    diagram_scales_enum_system = None
 
 
 def update_target_view_doc(self: "DocProperties", context: bpy.types.Context) -> None:
@@ -123,14 +125,12 @@ def update_is_nts(self: "BIMCameraProperties", context: bpy.types.Context) -> No
 
 
 def get_diagram_scales(self: "BIMCameraProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
-    global diagram_scales_enum
+    global diagram_scales_enum, diagram_scales_enum_system
     assert context.scene
-    if (
-        len(diagram_scales_enum) < 1
-        or (context.scene.unit_settings.system == "IMPERIAL" and len(diagram_scales_enum) == 13)
-        or (context.scene.unit_settings.system == "METRIC" and len(diagram_scales_enum) == 31)
-    ):
-        if context.scene.unit_settings.system == "IMPERIAL":
+    system = context.scene.unit_settings.system
+    if len(diagram_scales_enum) < 1 or diagram_scales_enum_system != system:
+        diagram_scales_enum_system = system
+        if system == "IMPERIAL":
             diagram_scales_enum = [
                 ("CUSTOM", "Custom", ""),
                 ("1'=1'-0\"|1/1", "1'=1'-0\"", ""),
@@ -144,21 +144,21 @@ def get_diagram_scales(self: "BIMCameraProperties", context: bpy.types.Context) 
                 ('1/4"=1\'-0"|1/48', '1/4"=1\'-0"', ""),
                 ('3/16"=1\'-0"|1/64', '3/16"=1\'-0"', ""),
                 ('1/8"=1\'-0"|1/96', '1/8"=1\'-0"', ""),
+                ("1\"=10'|1/120", "1\"=10'", ""),
                 ('3/32"=1\'-0"|1/128', '3/32"=1\'-0"', ""),
                 ('1/16"=1\'-0"|1/192', '1/16"=1\'-0"', ""),
-                ('1/32"=1\'-0"|1/384', '1/32"=1\'-0"', ""),
-                ('1/64"=1\'-0"|1/768', '1/64"=1\'-0"', ""),
-                ('1/128"=1\'-0"|1/1536', '1/128"=1\'-0"', ""),
-                ("1\"=10'|1/120", "1\"=10'", ""),
                 ("1\"=20'|1/240", "1\"=20'", ""),
                 ("1\"=30'|1/360", "1\"=30'", ""),
+                ('1/32"=1\'-0"|1/384', '1/32"=1\'-0"', ""),
                 ("1\"=40'|1/480", "1\"=40'", ""),
                 ("1\"=50'|1/600", "1\"=50'", ""),
                 ("1\"=60'|1/720", "1\"=60'", ""),
+                ('1/64"=1\'-0"|1/768', '1/64"=1\'-0"', ""),
                 ("1\"=70'|1/840", "1\"=70'", ""),
                 ("1\"=80'|1/960", "1\"=80'", ""),
                 ("1\"=90'|1/1080", "1\"=90'", ""),
                 ("1\"=100'|1/1200", "1\"=100'", ""),
+                ('1/128"=1\'-0"|1/1536', '1/128"=1\'-0"', ""),
                 ("1\"=150'|1/1800", "1\"=150'", ""),
                 ("1\"=200'|1/2400", "1\"=200'", ""),
                 ("1\"=300'|1/3600", "1\"=300'", ""),
@@ -409,6 +409,12 @@ class DocProperties(PropertyGroup):
         options=set(),
     )
     is_editing_drawings: BoolProperty(name="Is Editing Drawings", default=False)
+    show_drawings_on_sheets_only: BoolProperty(
+        name="Show Only Drawings on Sheets",
+        description="Only show drawings that are placed on a sheet",
+        default=False,
+        options=set(),
+    )
     is_editing_schedules: BoolProperty(name="Is Editing Schedules", default=False)
     is_editing_references: BoolProperty(name="Is Editing References", default=False)
     target_view: EnumProperty(
@@ -439,6 +445,7 @@ class DocProperties(PropertyGroup):
         should_use_annotation_cache: bool
         should_draw_linked_projects: bool
         is_editing_drawings: bool
+        show_drawings_on_sheets_only: bool
         is_editing_schedules: bool
         is_editing_references: bool
         target_view: Literal["PLAN_VIEW", "ELEVATION_VIEW", "SECTION_VIEW", "REFLECTED_PLAN_VIEW", "MODEL_VIEW"]
