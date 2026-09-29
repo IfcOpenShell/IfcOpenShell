@@ -221,10 +221,7 @@ class PolylineOperator:
 
     def handle_keyboard_input(self, context: bpy.types.Context, event: bpy.types.Event) -> None:
 
-        # The numpad decimal key emits ',' on some OS layouts (e.g. German), which
-        # is not in ``number_options`` and was silently dropped, turning ``9,8``
-        # into ``98``. Blender's native fields insert a decimal point for that
-        # physical key, so mirror that behaviour. See issue #8262.
+        # The numpad decimal key can emit ',' (e.g. German layouts); treat it as '.' like native fields.
         input_char = (
             "." if (event.value == "PRESS" and event.type in {"NUMPAD_PERIOD", "NUMPAD_COMMA"}) else event.ascii
         )

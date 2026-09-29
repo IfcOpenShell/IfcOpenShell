@@ -169,21 +169,12 @@ _SPECIAL = {"=", " "}  # Formula prefix, spaces
 
 NUMERIC_INPUT_CHARS = _DIGITS | _OPERATORS | _METRIC_UNITS | _IMPERIAL_UNITS | _SPECIAL
 
-# The numpad decimal key emits ',' rather than '.' on some OS keyboard layouts
-# (e.g. German/QWERTZ). Blender's native number fields still insert a decimal
-# point for that physical key, so we mirror that here. See issue #8262.
+# The numpad decimal key can emit ',' (e.g. German layouts); treat it as '.' like native fields.
 _NUMPAD_DECIMAL_TYPES = {"NUMPAD_PERIOD", "NUMPAD_COMMA"}
 
 
 def resolve_numeric_input_char(event: bpy.types.Event) -> str | None:
-    """Return the character a keystroke contributes to a numeric input field,
-    or ``None`` if the key is not numeric input.
-
-    The numpad decimal key always contributes ``.`` regardless of the OS
-    character it emits, matching Blender's native field behaviour. This keeps
-    Bonsai's custom modal input consistent with the rest of Blender instead of
-    silently dropping a comma (which turned ``9,8`` into ``98``). See #8262.
-    """
+    """Return the character a keystroke adds to a numeric input, or None."""
     if event.value != "PRESS":
         return None
     if event.type in _NUMPAD_DECIMAL_TYPES:
