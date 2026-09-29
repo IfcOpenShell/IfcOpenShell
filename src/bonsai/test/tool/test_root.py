@@ -79,7 +79,6 @@ class TestGetElementTypeExtraClasses(NewFile):
             extra = subject.get_element_type_extra_classes(schema)
             assert "IfcDoorStyle" in extra
             assert "IfcWindowStyle" in extra
-        # IfcDoorStyle/IfcWindowStyle do not exist in IFC4X3 and must not be offered there.
         extra = subject.get_element_type_extra_classes("IFC4X3")
         assert "IfcDoorStyle" not in extra
         assert "IfcWindowStyle" not in extra
@@ -87,8 +86,6 @@ class TestGetElementTypeExtraClasses(NewFile):
 
 class TestGetAddElementProduct(NewFile):
     def test_ifc_space_type_resolves_to_spatial_element_type(self):
-        # Regression for #7204: IfcSpaceType is an IfcSpatialElementType, not an IfcElementType, so a
-        # hardcoded IfcElementType product would raise a TypeError when assigning the ifc_class enum.
         tool.Ifc.set(ifcopenshell.file(schema="IFC4"))
         assert subject.get_add_element_product("IfcSpaceType", "IfcElementType") == "IfcSpatialElementType"
 
@@ -103,8 +100,6 @@ class TestGetAddElementProduct(NewFile):
                 assert subject.get_add_element_product(ifc_class, "IfcElementType") == "IfcElementType"
 
     def test_schema_guard_is_honoured_on_ifc4x3(self):
-        # IfcDoorStyle/IfcWindowStyle do not exist in IFC4X3, so they must not be special-cased there,
-        # while IfcTypeProduct is still offered under IfcElementType.
         tool.Ifc.set(ifcopenshell.file(schema="IFC4X3"))
         extra = subject.get_element_type_extra_classes(tool.Ifc.get_schema())
         assert "IfcDoorStyle" not in extra
