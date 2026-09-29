@@ -114,6 +114,8 @@ def test_valid_entities_are_not_blamed():
         crash(wall)
     except Exception as e:
         report = ifcopenshell.diagnostics.diagnose(e)
+    else:
+        pytest.fail("expected crash to raise")
 
     assert report.likely_cause is None
     assert report.candidates
@@ -137,6 +139,8 @@ def test_diagnose_defaults_to_current_exception():
         ifcopenshell.util.placement.get_mappeditem_transformation(item)
     except Exception:
         report = ifcopenshell.diagnostics.diagnose()
+    else:
+        pytest.fail("expected the invalid file to raise")
 
     assert report.likely_cause == item
 

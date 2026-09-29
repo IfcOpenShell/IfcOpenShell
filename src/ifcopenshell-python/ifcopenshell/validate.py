@@ -446,8 +446,8 @@ def validate_instance(
     if schema is None:
         schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(inst.file.schema_identifier)
 
+    feature_org = ifcopenshell.ifcopenshell_wrapper.get_feature("use_attribute_value_derived")
     if manage_feature:
-        feature_org = ifcopenshell.ifcopenshell_wrapper.get_feature("use_attribute_value_derived")
         ifcopenshell.ifcopenshell_wrapper.set_feature("use_attribute_value_derived", True)
 
     if isinstance(logger, json_logger):
