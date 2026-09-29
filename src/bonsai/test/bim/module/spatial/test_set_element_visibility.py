@@ -73,7 +73,6 @@ class TestSetElementVisibilityIsolate(NewFile):
             ifc, products=[existing_wall, demolish_wall, new_wall], relating_structure=storey_a
         )
 
-        # Unrelated elements in a different storey; must never be visited individually.
         other_walls = []
         other_objs = []
         for i in range(5):
@@ -91,7 +90,6 @@ class TestSetElementVisibilityIsolate(NewFile):
         for obj in (existing_obj, demolish_obj, new_obj, *other_objs):
             obj.hide_set(False)
 
-        # Apply a Status filter that hides DEMOLISH elements everywhere in the file.
         tool.Sequence.set_visibility_by_status({"EXISTING", "NEW"})
         assert demolish_obj.hide_get() is True
         assert existing_obj.hide_get() is False
@@ -108,16 +106,13 @@ class TestSetElementVisibilityIsolate(NewFile):
         result = bpy.ops.bim.set_element_visibility(mode="ISOLATE", should_filter=False)
         assert result == {"FINISHED"}
 
-        # Correctness (#6664): isolating storey_a must not clobber the Status filter.
         assert existing_obj.hide_get() is False
         assert new_obj.hide_get() is False
         assert demolish_obj.hide_get() is True
 
-        # Everything outside the isolated storey is hidden.
         for obj in other_objs:
             assert obj.hide_get() is True
 
-        # Perf regression guard: a whole-file scan would call this 8 times instead of 3.
         assert len(calls) == 3, f"expected exactly the 3 isolated-storey objects, got {len(calls)}: {calls}"
         assert set(calls) == {existing_obj, demolish_obj, new_obj}
 
