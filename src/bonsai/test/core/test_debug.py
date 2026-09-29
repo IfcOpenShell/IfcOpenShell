@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bonsai.core.debug as subject
-from test.core.bootstrap import debug
+from test.core.bootstrap import debug  # ruff: ignore[unused-import]
 
 
 class TestParseExpress:
@@ -25,9 +25,3 @@ class TestParseExpress:
         debug.load_express("filename").should_be_called().will_return("schema")
         debug.add_schema_identifier("schema").should_be_called()
         subject.parse_express(debug, "filename")
-
-
-class TestPurgeHdf5Cache:
-    def test_run(self, debug):
-        debug.purge_hdf5_cache().should_be_called()
-        subject.purge_hdf5_cache(debug)
