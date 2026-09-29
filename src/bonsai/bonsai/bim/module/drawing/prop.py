@@ -540,6 +540,12 @@ class BIMCameraProperties(PropertyGroup):
         default=False,
         update=update_has_underlay,
     )
+    show_sheet_references: BoolProperty(
+        name="Show Sheet References",
+        description="Show the sheet reference below the drawing number in section and elevation markers",
+        default=True,
+        update=get_update_layer_callback("show_sheet_references", "ShowSheetReferences"),
+    )
     has_linework: BoolProperty(
         name="Linework",
         default=True,
@@ -549,12 +555,6 @@ class BIMCameraProperties(PropertyGroup):
         name="Annotation",
         default=True,
         update=get_update_layer_callback("has_annotation", "HasAnnotation"),
-    )
-    show_sheet_references: BoolProperty(
-        name="Show Sheet References",
-        description="Show the sheet reference below the drawing number in section and elevation markers",
-        default=True,
-        update=get_update_layer_callback("show_sheet_references", "ShowSheetReferences"),
     )
     use_edge_classification: BoolProperty(
         name="Use Edge Classification",
@@ -641,9 +641,9 @@ class BIMCameraProperties(PropertyGroup):
         cut_mode: Literal["BISECT", "OPENCASCADE"]
 
         has_underlay: bool
+        show_sheet_references: bool
         has_linework: bool
         has_annotation: bool
-        show_sheet_references: bool
         target_view: TargetView
 
         representation: str

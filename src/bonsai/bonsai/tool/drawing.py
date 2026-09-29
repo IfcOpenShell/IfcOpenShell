@@ -1079,9 +1079,9 @@ class Drawing(bonsai.core.tool.Drawing):
         camera_props.update_props = False
 
         camera_props.has_underlay = False
+        camera_props.show_sheet_references = True
         camera_props.has_linework = True
         camera_props.has_annotation = True
-        camera_props.show_sheet_references = True
         camera_props.target_view = "PLAN_VIEW"
         camera_props.is_nts = False
         camera_props.use_edge_classification = False
@@ -1114,12 +1114,12 @@ class Drawing(bonsai.core.tool.Drawing):
                     camera_props.custom_scale_denominator = denominator
             if "HasUnderlay" in pset:
                 camera_props.has_underlay = bool(pset["HasUnderlay"])
+            if "ShowSheetReferences" in pset:
+                camera_props.show_sheet_references = bool(pset["ShowSheetReferences"])
             if "HasLinework" in pset:
                 camera_props.has_linework = bool(pset["HasLinework"])
             if "HasAnnotation" in pset:
                 camera_props.has_annotation = bool(pset["HasAnnotation"])
-            if "ShowSheetReferences" in pset:
-                camera_props.show_sheet_references = bool(pset["ShowSheetReferences"])
             if "IsNTS" in pset:
                 camera_props.is_nts = bool(pset["IsNTS"])
             if "UseEdgeClassification" in pset:
