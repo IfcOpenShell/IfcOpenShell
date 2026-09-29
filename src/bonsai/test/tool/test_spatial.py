@@ -318,8 +318,6 @@ class TestGenerateSpace(NewFile):
 
 class TestGetSpacePolygonFromContextVisibleObjects(NewFile):
     def test_boundary_lines_collapsing_to_one_piece_returns_no_polygons_found(self):
-        # A single bounding line (eg. one flat IfcVirtualElement) makes
-        # shapely.union_all return a scalar LineString, not a MultiLineString.
         single_line = [shapely.LineString([(0.0, 0.0), (5.0, 0.0)])]
         with mock.patch.object(subject, "get_boundary_lines_from_context_visible_objects", return_value=single_line):
             result = subject.get_space_polygon_from_context_visible_objects(1.0, 1.0)

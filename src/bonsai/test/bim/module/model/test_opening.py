@@ -59,8 +59,6 @@ def test_non_closing_profile_falls_back_to_bounding_box():
     )
 
     door_type = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcDoorType")
-    # A multi-item profile is required to reach the shapely tessellation
-    # path (a single-item profile takes a direct, shapely-free shortcut).
     profile_rep = ifc.createIfcShapeRepresentation(
         ContextOfItems=profile_context,
         RepresentationIdentifier="Profile",
@@ -83,10 +81,6 @@ def test_non_closing_profile_falls_back_to_bounding_box():
     bpy.context.collection.objects.link(door_obj)
     tool.Ifc.link(door, door_obj)
 
-    # A single edge (0,1) never closes a loop, so shapely.polygonize finds
-    # no polygon regardless of which of the two calls below it services.
-    # The box corners (1.0m x 0.2m x 2.0m) let the fallback path compute a
-    # distinctive, checkable opening size.
     fake_verts = np.array(
         [
             [0.0, 0.0, 0.0],
@@ -110,7 +104,4 @@ def test_non_closing_profile_falls_back_to_bounding_box():
     solid = representation.Items[0]
     assert solid.is_a("IfcExtrudedAreaSolid")
     outer_curve = solid.SweptArea.OuterCurve
-    # Only shape_builder.rectangle(size=(x, z)) produces this exact 1x2
-    # rectangle; the (unreachable, guarded-off) profile-curve path would
-    # have produced a different, non-rectangular polyline.
     assert outer_curve.Points.CoordList == ((0.0, 0.0), (1.0, 0.0), (1.0, 2.0), (0.0, 2.0))

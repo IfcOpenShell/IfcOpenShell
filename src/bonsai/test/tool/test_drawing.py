@@ -63,8 +63,6 @@ class TestCreateAnnotationObject(NewFile):
 
 class TestSetupAnnotationObject(NewFile):
     def test_revision_cloud_raises_when_related_object_has_no_closed_outline(self):
-        # A related object with a single edge makes shapely.union_all return
-        # a scalar LineString, not a MultiLineString.
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
 
