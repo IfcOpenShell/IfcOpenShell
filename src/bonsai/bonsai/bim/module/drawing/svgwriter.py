@@ -198,7 +198,10 @@ def parse_markdown_it(text: str) -> list[dict[str, Union[str, None]]]:
 
 class SvgWriter:
     metadata: list[str]
-    resource_paths: dict[tool.Drawing.ResourceType, Union[str, None]]
+    # Resources in MULTI_PATH_RESOURCES are stored as a list of paths, other resources as a single path.
+    resource_paths: dict[tool.Drawing.ResourceType, Union[str, list[str], None]]
+    # Resources that support multiple comma-separated paths.
+    MULTI_PATH_RESOURCES = ("Stylesheet",)
 
     # Gap between a leader line's end and its text, in mm on the printed sheet.
     LEADER_TEXT_GAP_MM = 1.5
@@ -251,17 +254,28 @@ class SvgWriter:
             if not resource_path:
                 self.resource_paths[resource] = None
                 continue
-            resource_path = tool.Ifc.resolve_uri(resource_path)
-            os.makedirs(os.path.dirname(resource_path), exist_ok=True)
-            if not os.path.exists(resource_path):
-                resource_basename = os.path.basename(resource_path)
-                ootb_resource = tool.Blender.get_data_dir_path(Path("assets") / resource_basename)
-                print(
-                    f"WARNING. Couldn't find {resource} for the drawing by the path: {resource_path}. Default BBIM resource will be copied from {ootb_resource}"
-                )
-                if os.path.exists(ootb_resource):
-                    shutil.copy(ootb_resource, resource_path)
-            self.resource_paths[resource] = resource_path
+            if resource in self.MULTI_PATH_RESOURCES:
+                # Paths need to be split before they're resolved,
+                # otherwise the entire string is resolved as a single path.
+                self.resource_paths[resource] = [
+                    self.prepare_resource_path(resource, p) for p in resource_path.split(",") if p.strip()
+                ]
+                continue
+            self.resource_paths[resource] = self.prepare_resource_path(resource, resource_path)
+
+    def prepare_resource_path(self, resource: tool.Drawing.ResourceType, resource_path: str) -> str:
+        """Resolve resource path relative to the IFC file, copying the OOTB resource, if it's missing."""
+        resource_path = tool.Ifc.resolve_uri(resource_path.strip())
+        os.makedirs(os.path.dirname(resource_path), exist_ok=True)
+        if not os.path.exists(resource_path):
+            resource_basename = os.path.basename(resource_path)
+            ootb_resource = tool.Blender.get_data_dir_path(Path("assets") / resource_basename)
+            print(
+                f"WARNING. Couldn't find {resource} for the drawing by the path: {resource_path}. Default BBIM resource will be copied from {ootb_resource}"
+            )
+            if os.path.exists(ootb_resource):
+                shutil.copy(ootb_resource, resource_path)
+        return resource_path
 
     def define_boilerplate(self):
         self.add_stylesheet()
@@ -283,13 +297,17 @@ class SvgWriter:
         paths = self.resource_paths["Stylesheet"]
         if not paths:
             return
-        path_list = [p.strip() for p in paths.split(",")]
-        for path in path_list:
+        assert isinstance(paths, list)
+        # Stylesheets are concatenated in the order they're listed, so they cascade naturally.
+        css = []
+        for path in paths:
             if not os.path.exists(path):
                 print(f"WARNING. Couldn't find stylesheet for the drawing by the path: {path}")
                 continue
             with open(path, "r") as stylesheet:
-                self.svg.defs.add(self.svg.style(stylesheet.read()))
+                css.append(stylesheet.read())
+        if css:
+            self.svg.defs.add(self.svg.style("\n".join(css)))
 
     def add_markers(self):
         path = self.resource_paths["Markers"]
@@ -621,14 +639,14 @@ class SvgWriter:
             points = [start_svg + pattern_dir * segment_width * i for i in range(segments)]
             marker_id = f"batting-{element.GlobalId}"
             marker_end_id = f"batting-end-{element.GlobalId}"
-            path_data = f"""M 0 {0.2*thickness}
-                A {0.5*segment_width} {0.2*thickness} 0 0 1 {segment_width} {0.2*thickness}
-                L {0.5*segment_width} {0.8*thickness}
-                M 0 {0.2*thickness}
-                L {0.5*segment_width} {0.8*thickness}
-                A {0.5*segment_width} {0.2*thickness} 0 0 0 {segment_width} {1.0*thickness}
-                M {0.5*segment_width} {0.8*thickness}
-                A {0.5*segment_width} {0.2*thickness} 0 0 1 0 {1.0*thickness}
+            path_data = f"""M 0 {0.2 * thickness}
+                A {0.5 * segment_width} {0.2 * thickness} 0 0 1 {segment_width} {0.2 * thickness}
+                L {0.5 * segment_width} {0.8 * thickness}
+                M 0 {0.2 * thickness}
+                L {0.5 * segment_width} {0.8 * thickness}
+                A {0.5 * segment_width} {0.2 * thickness} 0 0 0 {segment_width} {1.0 * thickness}
+                M {0.5 * segment_width} {0.8 * thickness}
+                A {0.5 * segment_width} {0.2 * thickness} 0 0 1 0 {1.0 * thickness}
                 """
             path_data = " ".join(path_data.split())
 
@@ -1462,11 +1480,12 @@ class SvgWriter:
                 O = A.copy()
                 O.z = B.z
                 run = (B - O).length
+
+                angle_tg = None
                 if run != 0:
                     angle_tg = rise / run
                     angle = round(degrees(atan(angle_tg)))
                 else:
-                    angle_tg = None
                     angle = 90
 
                 # ues SLOPE_ANGLE as default
