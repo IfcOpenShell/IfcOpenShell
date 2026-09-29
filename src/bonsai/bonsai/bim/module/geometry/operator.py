@@ -2331,13 +2331,8 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
             elif tool.Blender.Modifier.try_applying_edit_mode(obj, element):
                 pass
             elif obj.type == "CURVE" and not element.is_a("IfcAnnotation"):
-                # Swept disk solids (e.g. rebars, or tubes modelled without separate
-                # elbow elements) are loaded as native Blender curves that carry no
-                # mesh item ids, so they can't enter the mesh-based item editing mode.
-                # Decline gracefully instead of crashing inside
-                # import_representation_items (see #4813). Curve annotations
-                # (dimensions, leaders) are also curves but DO carry item ids, so they
-                # must stay editable and are deliberately excluded here (see #5025).
+                # Swept disk curves carry no mesh item ids, so item editing cannot enter (#4813).
+                # Curve annotations do carry item ids and stay editable (#5025).
                 self.report({"INFO"}, "Editing this curve representation is not supported yet.")
                 obj.select_set(False)
             else:
