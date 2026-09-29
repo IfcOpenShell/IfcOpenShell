@@ -701,8 +701,7 @@ class Property(Facet):
             psets = {k: v for k, v in all_psets.items() if k == self.propertySet}
 
         if self.cardinality == "prohibited" and not self.value:
-            # "Must not exist, even if empty": a present empty string still
-            # counts, only a genuinely unset (None) property is absent.
+            # "Must not exist, even if empty": only a genuinely unset (None) property is absent.
             for pset_props in psets.values():
                 if isinstance(self.baseName, str):
                     raw_values = [pset_props[self.baseName]] if self.baseName in pset_props else []
@@ -713,10 +712,7 @@ class Property(Facet):
             return PropertyResult(True, {"type": "PROHIBITED"})
 
         if self.cardinality == "prohibited" and self.value:
-            # Each matching pset (there may be several when propertySet is a
-            # pattern) must be checked independently: reusing one shared
-            # pass flag let an earlier pset's absence or mismatch mask a
-            # later pset that actually held the prohibited value.
+            # Check each matching pset independently so an earlier pset cannot mask a later one.
             for pset_name in psets:
                 probe = copy.copy(self)
                 probe.propertySet = pset_name
