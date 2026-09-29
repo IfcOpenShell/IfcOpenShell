@@ -19,18 +19,16 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
-#define ALMOST_ZERO 1.e-7;
-
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCircle* inst) {
-	const double r = inst->Radius() * length_unit_;
-	if (r < settings_.get<settings::Precision>().get()) { 
-		logger_.Message(Logger::LOG_ERROR, "GEO", 237, "Radius not greater than zero for:", inst);
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCircle& inst) {
+	const double r = inst.Radius() * length_unit_;
+	if (r < settings_.get<settings::Precision>().get()) {
+		logger_.message(ifcopenshell::logger::LOG_ERROR, "GEO", 237, "Radius not greater than zero for:", inst);
 		return nullptr;
 	}
 
-	IfcSchema::IfcAxis2Placement* placement = inst->Position();
+	auto placement = inst.Position();
 	auto c = taxonomy::make<taxonomy::circle>();
 	c->radius = r;
 	c->matrix = taxonomy::cast<taxonomy::matrix4>(map(placement));
