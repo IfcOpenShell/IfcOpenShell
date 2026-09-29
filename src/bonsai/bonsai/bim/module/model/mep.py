@@ -478,9 +478,7 @@ class MEPGenerator:
             if predefined_type == "OBSTRUCTION":
                 return packed_data
 
-            # the start port is placed at the fitting's local origin, but for fittings that
-            # weren't created parametrically none of the ports may sit exactly there, so we
-            # fall back to the port closest to the origin to avoid an unbound `start_port`
+            # No port may sit exactly at the local origin for non parametric fittings, so use the closest one.
             start_port = min(
                 ports,
                 key=lambda port: V(*port.ObjectPlacement.RelativePlacement.Location.Coordinates).length,
