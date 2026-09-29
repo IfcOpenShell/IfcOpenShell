@@ -17,12 +17,15 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import math
+from typing import Union
+
+import numpy as np
+
 import ifcopenshell.api.alignment
+import ifcopenshell.geom
 from ifcopenshell import entity_instance, ifcopenshell_wrapper
 from ifcopenshell.api.alignment._map_alignment_segment import _map_alignment_segment
-from typing import Union
-import math
-import numpy as np
 
 
 def _get_segment_endpoint(file: ifcopenshell.file, segment: entity_instance) -> Union[np.array, None]:
@@ -77,7 +80,7 @@ def _get_segment_endpoint(file: ifcopenshell.file, segment: entity_instance) -> 
 
     settings = ifcopenshell.geom.settings()
 
-    segment_fn = ifcopenshell_wrapper.map_shape(settings, curve_segment.wrapped_data)
+    segment_fn = ifcopenshell_wrapper.map_shape(settings, curve_segment)
     segment_evaluator = ifcopenshell_wrapper.function_item_evaluator(settings, segment_fn)
     x = segment_fn.end()
     e = segment_evaluator.evaluate(x)
