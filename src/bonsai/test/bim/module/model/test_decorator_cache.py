@@ -73,7 +73,7 @@ def test_install_and_uninstall_manage_all_invalidation_hooks():
         decorator_cache.uninstall_decorator_cache_handlers()
         for hook in expected_hooks:
             assert decorator_cache._bump_decorator_cache_token not in hook, (
-                "uninstall_decorator_cache_handlers() must remove the bump " "handler from every hook install touched"
+                "uninstall_decorator_cache_handlers() must remove the bump handler from every hook install touched"
             )
     finally:
         # Make sure the test never leaves the handler dangling.
@@ -129,9 +129,9 @@ def test_depsgraph_update_with_no_object_changes_does_not_bump():
     depsgraph = MagicMock(spec=bpy.types.Depsgraph, name="depsgraph")
     depsgraph.updates = []  # empty updates list — animation tick with no real changes
     decorator_cache._bump_decorator_cache_token("scene", depsgraph)
-    assert (
-        decorator_cache.get_decorator_cache_token() == initial
-    ), "depsgraph_update_post with no Object changes must not bump the token"
+    assert decorator_cache.get_decorator_cache_token() == initial, (
+        "depsgraph_update_post with no Object changes must not bump the token"
+    )
 
 
 def test_depsgraph_update_with_object_geometry_change_bumps():
@@ -169,8 +169,8 @@ def test_depsgraph_update_with_non_object_change_does_not_bump():
         depsgraph = MagicMock(spec=bpy.types.Depsgraph, name="depsgraph")
         depsgraph.updates = [update]
         decorator_cache._bump_decorator_cache_token("scene", depsgraph)
-        assert (
-            decorator_cache.get_decorator_cache_token() == initial
-        ), "Non-Object ID updates must not bump the decorator cache token"
+        assert decorator_cache.get_decorator_cache_token() == initial, (
+            "Non-Object ID updates must not bump the decorator cache token"
+        )
     finally:
         bpy.data.materials.remove(update.id, do_unlink=True)
