@@ -38,7 +38,7 @@ from bonsai.bim.decorator_cache import (
     install_decorator_cache_handlers,
     uninstall_decorator_cache_handlers,
 )
-from bonsai.bim.ifc import IfcStore, get_cache_or_detect_lock
+from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.aggregate.decorator import AggregateDecorator
 from bonsai.bim.module.georeference.decorator import GeoreferenceDecorator
 from bonsai.bim.module.model.array import (
@@ -308,6 +308,8 @@ def refresh_ui_data():
         except AttributeError:
             pass
 
+    tool.Ifc.notify_listeners()
+
     if isinstance(ifc_file := tool.Ifc.get(), ifcopenshell.sqlite):
         ifc_file.clear_cache()
 
@@ -320,9 +322,11 @@ def loadIfcStore(scene: bpy.types.Scene) -> None:
     IfcStore.purge()
     refresh_ui_data()
     if not tool.Ifc.get():
+        tool.Autosave.cancel_timer()
         return
     tool.Ifc.schema()
     IfcStore.relink_all_objects()
+    tool.Autosave.reset_timer()
 
 
 @persistent
@@ -416,9 +420,10 @@ def get_user(ifc: ifcopenshell.file) -> Union[ifcopenshell.entity_instance, None
 
 
 def viewport_shading_changed_callback(area: bpy.types.Area) -> None:
-    shading = area.spaces.active.shading.type
-    if shading == "RENDERED":
-        tool.Style.get_style_props().active_style_type = "External"
+    shading_type = area.spaces.active.shading.type
+    tool.Style.restore_material_style_types(shading_type)
+    if shading_type == "SOLID":
+        area.spaces.active.shading.color_type = "MATERIAL"
 
 
 def subscribe_to_viewport_shading_changes():
@@ -456,13 +461,6 @@ def _apply_save_file_invariants(scene: bpy.types.Scene) -> None:
     if tool.Ifc.get() and bpy.data.is_saved:
         props = tool.Blender.get_bim_props()
         props.has_blend_warning = True
-
-    # Probe the H5 cooked-geometry cache so the multi-instance warning surfaces
-    # right after .blend load. Without this, the lock is only detected when a
-    # mutation triggers ``clear_cache`` — by which time the user has already
-    # made changes that may now conflict with the other Blender instance.
-    if tool.Ifc.get():
-        get_cache_or_detect_lock()
 
 
 def _apply_user_preferences() -> None:
