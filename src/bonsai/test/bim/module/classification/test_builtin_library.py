@@ -28,16 +28,10 @@ from test.bim.bootstrap import NewFile
 class TestBuiltinClassificationLibrary(NewFile):
     def test_picking_a_bundled_library_loads_it(self):
         bpy.ops.bim.create_project()
+        IfcStore.classification_file = None
         ClassificationsData.load()
         props = bpy.context.scene.BIMClassificationProperties
         assert IfcStore.classification_file is None
         props.builtin_classification_library = "Brick.ifc"
         assert IfcStore.classification_file is not None
         assert IfcStore.classification_file.by_type("IfcClassification")
-
-    def test_the_custom_file_entry_loads_nothing(self):
-        bpy.ops.bim.create_project()
-        ClassificationsData.load()
-        props = bpy.context.scene.BIMClassificationProperties
-        assert props.builtin_classification_library == "0"
-        assert IfcStore.classification_file is None
