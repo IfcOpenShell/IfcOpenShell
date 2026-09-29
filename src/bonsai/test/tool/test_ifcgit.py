@@ -476,7 +476,6 @@ def _make_drawing_with_resources(ifc: "ifcopenshell.file", properties: dict) -> 
 
 class TestGetProjectAssetPaths(NewFile):
     def test_returns_empty_list_without_a_file(self):
-        # NewFile leaves no IFC loaded
         assert IfcGit.get_project_asset_paths("/repo/model.ifc") == []
 
     def test_collects_drawing_resources_relative_to_the_ifc(self):
@@ -780,8 +779,6 @@ class TestCommitChangesRealProject(NewFile):
 
                 committed = _committed_files(repo)
                 assert any(f.endswith(".ifc") for f in committed)
-                # The sheet's layout SVG is real on disk right after add_sheet
-                # and must be committed alongside the IFC.
                 assert any("layouts" in f for f in committed)
                 assert not operator.reports, f"unexpected warnings: {operator.reports}"
             finally:
