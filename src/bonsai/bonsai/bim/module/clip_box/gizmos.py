@@ -160,7 +160,7 @@ def _make_face_set_cb(gz: Any, group: Any, axis: int, is_max: bool):
     return setter
 
 
-class OBJECT_GGT_bim_clip_box(bpy.types.GizmoGroup):  # noqa: N801 — Blender bl_idname convention
+class OBJECT_GGT_bim_clip_box(bpy.types.GizmoGroup):
     """Face-quad resize handles on the active clip box.
 
     Renders six near-invisible click-target quads and six colored edge

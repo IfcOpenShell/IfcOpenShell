@@ -261,7 +261,8 @@ class Document(bonsai.core.tool.Document):
     def get_reference_document(cls, reference: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance | None:
         # TODO: migrate to util.document and replace all instances
         if reference.file.schema == "IFC2X3":
-            return (reference.ReferenceToDocument or (None))[0]
+            reference_to_document = reference.ReferenceToDocument
+            return reference_to_document[0] if reference_to_document else None
         return reference.ReferencedDocument
 
     @classmethod

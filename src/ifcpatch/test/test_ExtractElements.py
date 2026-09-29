@@ -21,10 +21,12 @@ import os
 import ifcopenshell
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.context
+import ifcopenshell.api.geometry
 import ifcopenshell.api.georeference
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
 import ifcopenshell.util.element
+import numpy
 import pytest
 
 import ifcpatch
@@ -96,7 +98,10 @@ class TestExtractElements(test.bootstrap.IFC4):
             self.file,
             coordinate_operation={"Eastings": 100000.0, "Northings": 200000.0},
         )
-        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        matrix = numpy.eye(4)
+        matrix[:3, 3] = [5.0, 10.0, 2.0]
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=wall, matrix=matrix)
 
         output = ifcpatch.execute({"file": self.file, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
 
@@ -105,6 +110,11 @@ class TestExtractElements(test.bootstrap.IFC4):
         conversion = output.by_type("IfcMapConversion")[0]
         assert conversion.Eastings == 100000.0
         assert conversion.Northings == 200000.0
+        # Placements must be copied verbatim: extraction must not bake map
+        # coordinates (or any other georeferencing transform) into the local
+        # placements of the extracted elements.
+        wall_new = output.by_type("IfcWall")[0]
+        assert wall_new.ObjectPlacement.RelativePlacement.Location.Coordinates == (5.0, 10.0, 2.0)
 
     @pytest.mark.skipif(
         "IFC4X3" not in ifcopenshell.ifcopenshell_wrapper.schema_names(),
