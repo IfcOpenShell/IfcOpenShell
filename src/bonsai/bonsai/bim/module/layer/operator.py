@@ -101,8 +101,7 @@ class EnableEditingLayer(bpy.types.Operator):
     def execute(self, context):
         props = tool.Layer.get_layer_props()
         ifc_file = tool.Ifc.get()
-        layer = resolve_layer(self, ifc_file, self.layer)
-        if layer is None:
+        if not (layer := resolve_layer(self, ifc_file, self.layer)):
             return {"CANCELLED"}
         props.layer_attributes.clear()
         bonsai.bim.helper.import_attributes(layer, props.layer_attributes)
@@ -164,8 +163,7 @@ class RemovePresentationLayer(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         ifc_file = tool.Ifc.get()
-        layer = resolve_layer(self, ifc_file, self.layer)
-        if layer is None:
+        if not (layer := resolve_layer(self, ifc_file, self.layer)):
             return {"CANCELLED"}
         ifcopenshell.api.layer.remove_layer(ifc_file, layer=layer)
         bpy.ops.bim.load_layers()
@@ -187,8 +185,7 @@ class AssignPresentationLayer(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         item = get_active_mesh(context, self.item)
         ifc_file = tool.Ifc.get()
-        layer = resolve_layer(self, ifc_file, self.layer)
-        if layer is None:
+        if not (layer := resolve_layer(self, ifc_file, self.layer)):
             return {"CANCELLED"}
         ifcopenshell.api.layer.assign_layer(
             ifc_file,
@@ -213,8 +210,7 @@ class UnassignPresentationLayer(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         item = get_active_mesh(context, self.item)
         ifc_file = tool.Ifc.get()
-        layer = resolve_layer(self, ifc_file, self.layer)
-        if layer is None:
+        if not (layer := resolve_layer(self, ifc_file, self.layer)):
             return {"CANCELLED"}
         representation = tool.Geometry.get_data_representation(item)
         assert representation
@@ -233,8 +229,7 @@ class SelectLayerProducts(bpy.types.Operator):
 
     def execute(self, context):
         ifc_file = tool.Ifc.get()
-        layer = resolve_layer(self, ifc_file, self.layer)
-        if layer is None:
+        if not (layer := resolve_layer(self, ifc_file, self.layer)):
             return {"CANCELLED"}
         elements = ifcopenshell.util.element.get_elements_by_layer(ifc_file, layer)
         for obj in context.visible_objects:
@@ -257,14 +252,12 @@ class SelectLayerInLayerUI(bpy.types.Operator):
     def execute(self, context):
         props = tool.Layer.get_layer_props()
         ifc_file = tool.Ifc.get()
-        layer = resolve_layer(self, ifc_file, self.layer_id)
-        if layer is None:
+        if not (layer := resolve_layer(self, ifc_file, self.layer_id)):
             return {"CANCELLED"}
         bpy.ops.bim.load_layers()
-        index = next((i for i, m in enumerate(props.layers) if m.ifc_definition_id == self.layer_id), None)
-        if index is None:
+        if not (indices := [i for i, m in enumerate(props.layers) if m.ifc_definition_id == self.layer_id]):
             return {"CANCELLED"}
-        props.active_layer_index = index
+        props.active_layer_index = indices[0]
         self.report(
             {"INFO"},
             f"Layer '{layer.Name or 'Unnamed'}' is selected in Layers UI.",
