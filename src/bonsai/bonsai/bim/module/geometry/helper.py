@@ -75,9 +75,13 @@ class Helper:
         for face in bm.faces:
             if len(face.verts) > 4:
                 potential_faces.append(face)
+
+        # TODO: replace with next(..., None)
+        face = None
         for face in potential_faces:
             if face.normal.z < -0.1:
                 break
+        assert face is not None
 
         profile = [l.vert.index for l in face.loops]
         extrusion = self.detect_extrusion_edge(bm, face)
@@ -108,10 +112,12 @@ class Helper:
         if not potential_faces:
             potential_faces = bm.faces
 
+        # TODO: replace with next(..., None)
+        face = None
         for face in potential_faces:
             if face.normal.z < -0.1:
                 break
-
+        assert face is not None
         profile = [l.vert.index for l in face.loops]
         extrusion = self.detect_extrusion_edge(bm, face)
 
@@ -145,9 +151,12 @@ class Helper:
             if total_verts > 4:
                 potential_faces.append(face)
 
+        # TODO: replace with next(..., None)
+        face = None
         for face in potential_faces:
             if face.normal.z < -0.1:
                 break
+        assert face is not None
 
         end_faces = []
         end_face_normal = face.normal
