@@ -30,8 +30,8 @@ from ifc4d.csv4d2ifc import Csv2Ifc
 from ifc4d.ifc2msp import Ifc2Msp
 from ifc4d.ifc2p6 import Ifc2P6
 from ifc4d.msp2ifc import MSP2Ifc
-from ifc4d.p62ifc import P62Ifc
 from ifc4d.p6xer2ifc import P6XER2Ifc
+from ifc4d.p62ifc import P62Ifc
 from ifc4d.pp2ifc import PP2Ifc
 
 IMPORTERS = [MSP2Ifc, P62Ifc, P6XER2Ifc, PP2Ifc, Csv2Ifc]
@@ -78,7 +78,6 @@ class TestValidateInputPath:
 
 
 class TestImportersRejectBadPaths:
-    # The crash in #9409 was ET.parse() receiving a folder path from the file selector.
     @pytest.mark.parametrize("cls", IMPORTERS)
     def test_directory_is_rejected(self, cls):
         with tempfile.TemporaryDirectory() as tmp_dir:
