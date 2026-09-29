@@ -54,7 +54,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from types import TracebackType
-from typing import Optional, Union
+from typing import Optional
 
 import ifcopenshell
 import ifcopenshell.validate
@@ -241,12 +241,10 @@ def _collect_candidates(traceback: Optional[TracebackType]) -> list[Candidate]:
             if key in seen:
                 continue
             seen.add(key)
-            errors = _validate(inst)
-            if not errors:
+            if not (errors := _validate(inst)):
                 continue
             location = (
-                f"referenced by {_format_instance(parent.instance)} via .{attr_name}, "
-                f"{parent.location.split(', ')[0]}"
+                f"referenced by {_format_instance(parent.instance)} via .{attr_name}, {parent.location.split(', ')[0]}"
             )
             candidates.append(
                 Candidate(instance=inst, depth=parent.depth, in_frame=False, location=location, errors=errors)

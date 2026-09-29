@@ -45,6 +45,7 @@ class SpatialTool(WorkSpaceTool):
         ("bim.spatial_hotkey", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_T")]}),
         ("bim.spatial_hotkey", {"type": "G", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_G")]}),
         ("bim.spatial_hotkey", {"type": "H", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_H")]}),
+        ("bim.spatial_hotkey", {"type": "Q", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_Q")]}),
     )
 
     def draw_settings(context, layout, ws_tool):
@@ -184,3 +185,9 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
     def hotkey_S_G(self):
         bpy.ops.bim.generate_space()
+
+    def hotkey_S_Q(self):
+        # Mirrors BimTool.hotkey_S_Q so quantities can be (re)calculated without switching tools.
+        if not bpy.context.selected_objects:
+            return
+        bpy.ops.bim.perform_quantity_take_off()

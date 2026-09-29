@@ -16,11 +16,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import pytest
+
 import ifcopenshell
 import ifcopenshell.diagnostics
 import ifcopenshell.guid
 import ifcopenshell.util.placement
-import pytest
 
 
 def _mapped_item_without_source() -> tuple[ifcopenshell.file, ifcopenshell.entity_instance]:
@@ -87,8 +88,6 @@ def test_null_direction_in_caller_frame_is_named():
 def test_null_direction_reachable_only_by_reference_is_named_with_medium_confidence():
     f, placement = _placement_with_null_direction()
     try:
-        # Only the placement is a local here. The invalid direction is reached
-        # by following IfcAxis2Placement3D.Axis, so it is a referenced suspect.
         ifcopenshell.util.placement.get_axis2placement(placement)
     except Exception as e:
         report = ifcopenshell.diagnostics.diagnose(e)
@@ -116,7 +115,6 @@ def test_valid_entities_are_not_blamed():
     except Exception as e:
         report = ifcopenshell.diagnostics.diagnose(e)
 
-    # The wall is a valid entity, so it must not be reported as the cause.
     assert report.likely_cause is None
     assert report.candidates
     assert all(c.confidence == "low" for c in report.candidates)
