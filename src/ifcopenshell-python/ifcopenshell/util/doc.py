@@ -19,9 +19,7 @@
 import copy
 import json
 from pathlib import Path
-from typing import Optional, TypedDict, Union
-
-from typing_extensions import NotRequired
+from typing import NotRequired, Optional, TypedDict, Union
 
 import ifcopenshell
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
