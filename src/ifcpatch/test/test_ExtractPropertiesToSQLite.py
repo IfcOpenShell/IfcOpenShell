@@ -36,10 +36,6 @@ class ExtractPropertiesToSQLiteMixin:
         assert rows == [(wall.GlobalId, "IfcWall")]
 
     def test_material_layer_without_material_does_not_crash(self):
-        # Regression test: IfcMaterialLayer.Material is OPTIONAL. A layer set
-        # containing a layer with no Material assigned used to raise
-        # AttributeError: 'NoneType' object has no attribute 'Name', aborting
-        # the whole extraction.
         wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         layer_set = ifcopenshell.api.material.add_material_set(self.file, set_type="IfcMaterialLayerSet")
         layer = self.file.create_entity("IfcMaterialLayer", Material=None, LayerThickness=0.1)
@@ -57,8 +53,6 @@ class ExtractPropertiesToSQLiteMixin:
 
 class TestExtractPropertiesToSQLite(test.bootstrap.IFC4, ExtractPropertiesToSQLiteMixin):
     def test_material_profile_without_material_does_not_crash(self):
-        # Same optional-attribute defect as above, for IfcMaterialProfile.Material.
-        # IfcMaterialProfileSet is IFC4+, so this is not run against IFC2X3.
         beam = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBeam")
         profile_set = ifcopenshell.api.material.add_material_set(self.file, set_type="IfcMaterialProfileSet")
         profile_def = self.file.create_entity("IfcRectangleProfileDef", ProfileType="AREA", XDim=0.1, YDim=0.2)

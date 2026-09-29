@@ -18,12 +18,11 @@
 
 # This file was generated with the assistance of an AI coding tool.
 
-import pytest
-
 import ifcopenshell
 import ifcopenshell.api.material
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
+import pytest
 
 import ifcpatch
 import test.bootstrap
@@ -82,10 +81,6 @@ class TestAssignConstituentFractions(test.bootstrap.IFC4):
         assert constituents["Insulation"] == pytest.approx(2 / 3)
 
     def test_skips_constituent_set_without_layer_quantities_instead_of_crashing(self):
-        # Regression test: a constituent set whose associated element has no
-        # *BaseQuantities (or none with a "layer" discriminated complex
-        # quantity) used to raise a bare AssertionError, aborting the whole
-        # patch. It must be skipped instead.
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         ifcopenshell.api.unit.assign_unit(self.file)
         wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
@@ -98,7 +93,6 @@ class TestAssignConstituentFractions(test.bootstrap.IFC4):
         ifcopenshell.api.material.assign_material(
             self.file, products=[wall], type="IfcMaterialConstituentSet", material=constituent_set
         )
-        # No BaseQuantities at all on the wall.
 
         output = ifcpatch.execute({"file": self.file, "recipe": "AssignConstituentFractions", "arguments": []})
 

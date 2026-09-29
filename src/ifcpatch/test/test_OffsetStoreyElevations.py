@@ -18,11 +18,10 @@
 
 # This file was generated with the assistance of an AI coding tool.
 
-import numpy as np
-
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.geometry
 import ifcopenshell.api.root
+import numpy as np
 
 import ifcpatch
 import test.bootstrap
@@ -43,10 +42,6 @@ class TestOffsetStoreyElevations(test.bootstrap.IFC4):
         assert storey.ObjectPlacement.RelativePlacement.Location.Coordinates[2] == 5
 
     def test_skips_storey_without_object_placement_instead_of_crashing(self):
-        # Regression test: a storey with no ObjectPlacement (common when a
-        # storey is authored without geometry) used to raise
-        # AttributeError: 'NoneType' object has no attribute
-        # 'RelativePlacement', aborting the whole patch.
         project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         site = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSite")
         storey_with_placement = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
