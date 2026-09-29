@@ -877,6 +877,14 @@ class BIMWindowProperties(PropertyGroup):
         default="RECTANGLE",
         update=window_shape_prop_update,
     )
+    arch_muntin_count: bpy.props.IntProperty(
+        name="Arch Muntin Bars",
+        description="Number of radiating muntin bars in the arch fanlight",
+        default=4,
+        min=0,
+        max=24,
+        update=update_window,
+    )
     window_type: bpy.props.EnumProperty(
         name="Window Type",
         items=[(i, i, "") for i in get_args(tool.Model.WindowType)],
@@ -887,14 +895,6 @@ class BIMWindowProperties(PropertyGroup):
         name="Overall Height", default=0.9, subtype="DISTANCE", update=update_window
     )
     overall_width: bpy.props.FloatProperty(name="Overall Width", default=0.6, subtype="DISTANCE", update=update_window)
-    arch_muntin_count: bpy.props.IntProperty(
-        name="Arch Muntin Bars",
-        description="Number of radiating muntin bars in the arch fanlight",
-        default=4,
-        min=0,
-        max=24,
-        update=update_window,
-    )
 
     # lining properties
     lining_depth: bpy.props.FloatProperty(
