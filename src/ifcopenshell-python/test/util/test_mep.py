@@ -54,7 +54,6 @@ class TestCalculateOrthogonalPath:
         assert path[0] == (0.0, 0.0, 0.0)
         assert path[-1] == (5.0, 3.0, 2.0)
         assert _segments_are_axis_aligned(path)
-        # every coordinate is fixed to its final value one axis at a time
         axes_fixed_at = set()
         point = path[0]
         for next_point in path[1:]:
@@ -65,7 +64,6 @@ class TestCalculateOrthogonalPath:
         assert axes_fixed_at == {0, 1, 2}
 
     def test_start_direction_picks_which_axis_is_travelled_first(self):
-        # forcing the first leg along +Y instead of the default +X first.
         path = calculate_orthogonal_path((0.0, 0.0, 0.0), (5.0, 3.0, 0.0), start_direction=(0.0, 1.0, 0.0))
         assert path[1] == (0.0, 3.0, 0.0)
         assert path[-1] == (5.0, 3.0, 0.0)
@@ -91,8 +89,6 @@ class TestCalculateOrthogonalPath:
         assert path[1] == (0.0, 0.0, 0.0)
 
     def test_direction_along_a_shared_axis_is_rejected(self):
-        # start and end already agree on Z, so a Z-facing start direction
-        # cannot be honoured by a direct orthogonal path.
         with pytest.raises(ValueError):
             calculate_orthogonal_path((0.0, 0.0, 0.0), (5.0, 3.0, 0.0), start_direction=(0.0, 0.0, 1.0))
 
