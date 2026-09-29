@@ -490,8 +490,8 @@ class IfcCsv:
         bool_false: str,
         concat: str,
     ) -> None:
-        # Exact match on read-only keys, so names like "Pset_MaterialCommon" are not skipped.
-        SKIP_KEYS = {"count", "material", "mat", "materials", "mats"}
+        # Read-only selector pseudo-attributes, matched as whole path segments.
+        SKIP_SEGMENTS = {"count", "material", "materials", "mat", "mats"}
 
         try:
             element = ifc_file.by_guid(row[0])
@@ -519,8 +519,7 @@ class IfcCsv:
                 value = False
             key = attributes[i] or headers[i]
 
-            # Skip read-only/computed keys
-            if key.lower() in SKIP_KEYS:
+            if any(segment in SKIP_SEGMENTS for segment in key.lower().split(".")):
                 continue
 
             ifcopenshell.util.selector.set_element_value(ifc_file, element, key, value, concat=concat)
