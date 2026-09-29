@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bonsai.core.style as subject
-from test.core.bootstrap import ifc, material, spatial, style
+from test.core.bootstrap import ifc, material, spatial, style  # ruff: ignore[unused-import]
 
 
 class TestAddStyle:
