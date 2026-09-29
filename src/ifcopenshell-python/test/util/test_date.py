@@ -49,7 +49,6 @@ class TestDurationRoundTrip:
     """
 
     def test_whole_value_survives_the_round_trip(self):
-        # This is the exact clean value from his file.
         value = "PT2H30M"
         parsed = subject.ifc2datetime(value)
         assert subject.datetime2ifc(parsed, "IfcDuration") == value
@@ -66,9 +65,6 @@ class TestDurationRoundTrip:
         assert duration.total_seconds() == 8999.999867
 
     def test_sub_second_duration_is_not_floored_to_the_whole_second(self):
-        # Before the fix, any fractional second was silently dropped by
-        # timedelta2duration, so a duration ending in ".999867S" would come
-        # back as a whole second short.
         value = "PT29M59.999867S"
         parsed = subject.ifc2datetime(value)
         assert parsed.total_seconds() == 1799.999867
