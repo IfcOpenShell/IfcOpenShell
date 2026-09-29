@@ -70,7 +70,7 @@ def _run(context, body, extrusion, old_profile, new_profile, element, obj, ifc_f
 
     with (
         patch("bonsai.bim.module.model.slab.ProfileDecorator"),
-        patch("bonsai.bim.module.model.slab.bpy.ops.object.mode_set"),
+        patch("bonsai.bim.module.model.slab.bpy.ops", new=Mock()),
         patch("bonsai.bim.module.model.slab.ifcopenshell.util.unit.calculate_unit_scale", return_value=1.0),
         patch("bonsai.bim.module.model.slab.tool.Ifc.get_entity", return_value=element),
         patch("bonsai.bim.module.model.slab.tool.Ifc.get", return_value=ifc_file),
