@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import base64
+import importlib.util
 import os
 import subprocess
 import sys
 import tempfile
 
-import ifcopenshell
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
@@ -19,19 +19,9 @@ import pytest
 
 from ifcquery.plot import _highlight_css_from_ids, plot
 
-try:
-    import ifcopenshell.draw  # noqa: F401
+HAS_DRAW = importlib.util.find_spec("ifcopenshell.draw") is not None
 
-    HAS_DRAW = True
-except ImportError:
-    HAS_DRAW = False
-
-try:
-    import cairosvg  # noqa: F401
-
-    HAS_CAIROSVG = True
-except ImportError:
-    HAS_CAIROSVG = False
+HAS_CAIROSVG = importlib.util.find_spec("cairosvg") is not None
 
 pytestmark = pytest.mark.skipif(not HAS_DRAW, reason="ifcopenshell.draw not available")
 
