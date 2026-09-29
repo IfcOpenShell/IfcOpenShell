@@ -23,6 +23,7 @@ import shutil
 import urllib.parse
 import uuid
 import xml.etree.ElementTree as ET
+from datetime import datetime
 from pathlib import Path
 from xml.dom import minidom
 
@@ -31,6 +32,8 @@ import pystache
 from mathutils import Vector
 
 import bonsai.tool as tool
+
+os.environ.setdefault("GIT_PYTHON_REFRESH", "quiet")
 
 VIEW_TITLE_OFFSET_Y = 5
 DRAWING_PADDING = 10
@@ -316,10 +319,65 @@ class SheetBuilder:
 
         return {"SHEET": sheet_path}
 
+    def get_titleblock_data(self, sheet: ifcopenshell.entity_instance) -> dict:
+        data = sheet.get_info()
+        revisions = self._get_git_revisions()
+        data["revisions"] = revisions
+        data["has_revisions"] = bool(revisions)
+        return data
+
+    def _get_git_revisions(self) -> list[dict]:
+        try:
+            import git
+        except ImportError:
+            return []
+
+        ifc_path = tool.Ifc.get_path()
+        if not ifc_path:
+            return []
+        try:
+            repo = git.Repo(ifc_path, search_parent_directories=True)
+        except Exception:
+            return []
+
+        # Oldest-first so the SVG template can anchor at the bottom: oldest
+        # tag sits at y=0 (the anchor point) and newer tags stack upward.
+        # Always sort and date by the tagged commit, not when the tag was applied.
+        tags = sorted(repo.tags, key=lambda t: t.commit.committed_date)
+
+        def initials(actor) -> str:
+            if not actor or not actor.name:
+                return ""
+            return "".join(w[0].upper() for w in actor.name.split() if w)
+
+        rows = []
+        for i, tag_ref in enumerate(tags):
+            date = datetime.fromtimestamp(tag_ref.commit.committed_date).date().isoformat()
+            if tag_ref.tag:
+                description = (tag_ref.tag.message or "").strip().splitlines()[0]
+                author = initials(tag_ref.tag.tagger)
+            else:
+                description = ""
+                author = initials(tag_ref.commit.author)
+            # y is a negative offset from the group anchor (5 mm row height to
+            # match the A3 titleblock grid). Oldest tag sits at y=0 (the anchor);
+            # newer tags stack upward so the oldest stays at a fixed position.
+            rows.append(
+                {
+                    "rev": tag_ref.name,
+                    "date": date,
+                    "description": description,
+                    "author": author,
+                    "issued": "",
+                    "y": -i * 5,
+                }
+            )
+        return rows
+
     def build_titleblock(self, root: ET.Element, sheet: ifcopenshell.entity_instance) -> None:
         titleblock = root.findall(f'{SVG}g[@data-type="titleblock"]')[0]
         image = titleblock.findall(f"{SVG}image")[0]
-        g = self.parse_embedded_svg(image, sheet.get_info())
+        g = self.parse_embedded_svg(image, self.get_titleblock_data(sheet))
         grid_north = ifcopenshell.util.geolocation.get_grid_north(tool.Ifc.get()) * -1
         true_north = ifcopenshell.util.geolocation.get_true_north(tool.Ifc.get()) * -1
         for north in g.iterfind(f'.//{SVG}g[@data-type="grid-north"]'):
