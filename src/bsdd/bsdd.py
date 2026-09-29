@@ -739,9 +739,7 @@ class Client:
         This API replaces Domain
         """
         endpoint = f"Dictionary/v{version}/Classes"
-        # UseNestedClasses, offset and limit always have a meaningful value (False/0 are not
-        # "unset"), so they must always be sent. ClassType and languageCode use "" to mean
-        # "no filter", so those stay conditional.
+        # UseNestedClasses, offset and limit are always sent; ClassType and languageCode use "" for no filter.
         params = {
             "Uri": dictionary_uri,
             "UseNestedClasses": use_nested_classes,
