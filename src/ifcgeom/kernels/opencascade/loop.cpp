@@ -204,7 +204,7 @@ namespace {
 			BRep_Tool::Pnt(v1).DumpJson(oss);
 			auto osss = oss.str();
 			std::wcout << osss.c_str() << std::endl;
-#endif 
+#endif
 
 			BRep_Builder B;
 			TopoDS_Wire W;

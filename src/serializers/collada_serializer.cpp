@@ -70,12 +70,12 @@ void collada_serializer::collada_exporter::collada_geometries::write(
     const std::vector<double>& uvs, const std::vector<std::string>& material_references)
 {
 	openMesh(mesh_id);
-	
+
 	// The normals vector can be empty for example when the WELD_VERTICES setting is used.
 	// IfcOpenShell does not provide them with multiple face normals collapsed into a single vertex.
 	const bool has_normals = !normals.empty();
     const bool has_uvs = !uvs.empty();
-	
+
 	addFloatSource(mesh_id, COLLADASW::LibraryGeometries::POSITIONS_SOURCE_ID_SUFFIX, positions);
 	if (has_normals) {
 		addFloatSource(mesh_id, COLLADASW::LibraryGeometries::NORMALS_SOURCE_ID_SUFFIX, normals);
@@ -88,7 +88,7 @@ void collada_serializer::collada_exporter::collada_geometries::write(
 	vertices.setId(mesh_id + COLLADASW::LibraryGeometries::VERTICES_ID_SUFFIX );
 	vertices.getInputList().push_back(COLLADASW::Input(COLLADASW::InputSemantic::POSITION, "#" + mesh_id + COLLADASW::LibraryGeometries::POSITIONS_SOURCE_ID_SUFFIX));
 	vertices.add();
-	
+
 	std::vector<int>::const_iterator index_range_start = faces.begin();
 	std::vector<int>::const_iterator material_it = material_ids.begin();
 	int previous_material_id = -1;
@@ -185,7 +185,7 @@ void collada_serializer::collada_exporter::collada_scene::add(
 		openVisualScene(scene_id);
 		scene_opened = true;
 	}
-			
+
 	COLLADASW::Node node(mSW);
 	node.setNodeId(node_id);
 	node.setNodeName(node_name);
@@ -195,7 +195,7 @@ void collada_serializer::collada_exporter::collada_scene::add(
 	// Note that this placement is absolute, ie it is multiplied with all parent placements.
 
 	auto transformation_towrite = transformation.data()->ccomponents();
-	
+
 	// If this is not the first parent, get the relative placement
 	if (parentNodes.size() > 0)
 	{
@@ -294,9 +294,9 @@ void collada_serializer::collada_exporter::collada_scene::write() {
 	if (scene_opened) {
 		closeVisualScene();
 		closeLibrary();
-		
+
 		COLLADASW::Scene scene (mSW, COLLADASW::URI ("#" + scene_id));
-		scene.add();		
+		scene.add();
 	}
 }
 
@@ -442,11 +442,11 @@ void collada_serializer::collada_exporter::endDocument() {
 	// only at this point all objects are written to the stream.
 	materials.write();
 	bool use_hierarchy = serializer->settings().get<ifcopenshell::geom::settings::UseElementHierarchy>().get();
-	
+
 	std::set<std::string> geometries_written;
 
 	//if the setting USE_ELEMENT_HIERARCHY is in use, we sort the deferreds objects by their parents.
-	
+
 	if (use_hierarchy) {
 		std::sort(deferreds.begin(), deferreds.end(), [](const auto& first, const auto& second) {
 			const auto& first_parents = first->parents();
@@ -461,7 +461,7 @@ void collada_serializer::collada_exporter::endDocument() {
 				: *first_parents[index] < *second_parents[index];
 		});
 	}
-	
+
 	for (const auto& object_pointer : deferreds) {
 		const auto& object = *object_pointer;
 		std::string representation_id = "representation-" + object.geometry().id();
@@ -527,7 +527,7 @@ void collada_serializer::collada_exporter::endDocument() {
 				}
 			}
 		}
-		
+
         /// @todo redundant information using ID as both ID and Name, maybe omit Name or allow specifying what would be used as the name
 		scene.add(object_name, object_name, representation_id, material_references, object.transformation());
 	}

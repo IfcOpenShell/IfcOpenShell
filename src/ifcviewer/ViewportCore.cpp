@@ -28,6 +28,7 @@
 #endif
 
 #include "CameraMath.h"
+#include "GpuAllocScope.h"
 #include "InstanceCompose.h"
 #include "Log.h"
 
@@ -60,6 +61,17 @@ Eigen::Vector3f orbitEye(const float target[3], float dist,
 ViewportCore::ViewportCore(ViewportHost* host) : host_(host) {}
 ViewportCore::~ViewportCore() = default;
 
+void releaseModelBuffers(ModelGpuData& m) {
+    for (auto& c : m.chunks) {
+        if (c.visible_draws_buffer) { wgpuBufferRelease(c.visible_draws_buffer);   c.visible_draws_buffer = nullptr; }
+        if (c.prefix_sums_buffer)   { wgpuBufferRelease(c.prefix_sums_buffer);     c.prefix_sums_buffer = nullptr; }
+        if (c.per_chunk_uniform)    { wgpuBufferRelease(c.per_chunk_uniform);      c.per_chunk_uniform = nullptr; }
+    }
+    if (m.mesh_storage)     { wgpuBufferRelease(m.mesh_storage);     m.mesh_storage = nullptr; }
+    if (m.instance_storage) { wgpuBufferRelease(m.instance_storage); m.instance_storage = nullptr; }
+    m.vram_bytes_ssbo = 0;
+}
+
 // Tear down a model's per-chunk GPU resources, free its pool slices,
 // and reset all the bookkeeping vectors so the slot can be reused.
 // Static because callers from outside this TU still live in
@@ -76,10 +88,8 @@ void releaseWgpuModelGpuData(ModelGpuData& m, BufferPool& pool) {
             pool.free(c.index_slice);
             c.index_slice = {};
         }
-        if (c.visible_draws_buffer) { wgpuBufferRelease(c.visible_draws_buffer);   c.visible_draws_buffer = nullptr; }
-        if (c.prefix_sums_buffer)   { wgpuBufferRelease(c.prefix_sums_buffer);     c.prefix_sums_buffer = nullptr; }
-        if (c.per_chunk_uniform)    { wgpuBufferRelease(c.per_chunk_uniform);      c.per_chunk_uniform = nullptr; }
     }
+    releaseModelBuffers(m);
     m.chunks.clear();
     m.mesh_chunk_idx.clear();
     m.mesh_chunk_local_base_vertex.clear();
@@ -89,8 +99,6 @@ void releaseWgpuModelGpuData(ModelGpuData& m, BufferPool& pool) {
     m.instance_base_vertex.clear();
     m.instance_ebo_first_u32.clear();
     m.instance_lod1_first_u32.clear();
-    if (m.mesh_storage)         { wgpuBufferRelease(m.mesh_storage);          m.mesh_storage = nullptr; }
-    if (m.instance_storage)     { wgpuBufferRelease(m.instance_storage);      m.instance_storage = nullptr; }
     m.vertex_bytes   = 0;
     m.index_count    = 0;
     m.mesh_count     = 0;
@@ -101,7 +109,41 @@ void releaseWgpuModelGpuData(ModelGpuData& m, BufferPool& pool) {
 
 // ---- Scene mutators -------------------------------------------------------
 
+namespace {
+
+// The GPU-side records the shaders read, built from the CPU mirrors.
+std::vector<MeshGpu> meshGpuRecords(const std::vector<MeshInfo>& meshes) {
+    std::vector<MeshGpu> gpu;
+    gpu.reserve(meshes.size());
+    for (const auto& mesh_info : meshes) {
+        MeshGpu rec = {};
+        for (int a = 0; a < 3; ++a) {
+            rec.aabb_min[a] = mesh_info.local_aabb_min[a];
+            rec.aabb_max[a] = mesh_info.local_aabb_max[a];
+        }
+        gpu.push_back(rec);
+    }
+    return gpu;
+}
+
+std::vector<InstanceGpu> instanceGpuRecords(const std::vector<InstanceInfo>& instances) {
+    std::vector<InstanceGpu> gpu(instances.size());
+    for (size_t i = 0; i < instances.size(); ++i) {
+        const InstanceInfo& inst = instances[i];
+        InstanceGpu& dst = gpu[i];
+        std::memcpy(dst.transform, inst.transform, sizeof(dst.transform));
+        dst.object_id            = inst.object_id;
+        dst.color_override_rgba8 = inst.color_override_rgba8;
+        dst.mesh_id              = inst.mesh_id;
+        dst._pad1                = 0;
+    }
+    return gpu;
+}
+
+}  // namespace
+
 void ViewportCore::removeModel(uint32_t session_model_id) {
+    markCullInputsChanged();
     auto it = models_gpu_.find(session_model_id);
     if (it == models_gpu_.end()) return;
     releaseWgpuModelGpuData(it->second, pool_);
@@ -110,6 +152,7 @@ void ViewportCore::removeModel(uint32_t session_model_id) {
 }
 
 void ViewportCore::resetScene() {
+    markCullInputsChanged();
     for (auto& [session_model_id, m] : models_gpu_) releaseWgpuModelGpuData(m, pool_);
     models_gpu_.clear();
     // A fresh scene should auto-frame its first model. Without this the flag
@@ -121,6 +164,7 @@ void ViewportCore::resetScene() {
 }
 
 void ViewportCore::hideModel(uint32_t session_model_id) {
+    markCullInputsChanged();
     auto it = models_gpu_.find(session_model_id);
     if (it == models_gpu_.end() || it->second.hidden) return;
     it->second.hidden = true;
@@ -128,10 +172,52 @@ void ViewportCore::hideModel(uint32_t session_model_id) {
 }
 
 void ViewportCore::showModel(uint32_t session_model_id) {
+    markCullInputsChanged();
     auto it = models_gpu_.find(session_model_id);
     if (it == models_gpu_.end() || !it->second.hidden) return;
     it->second.hidden = false;
     host_->requestFrame();
+}
+
+void ViewportCore::unloadModel(uint32_t session_model_id) {
+    auto it = models_gpu_.find(session_model_id);
+    if (it == models_gpu_.end() || it->second.unloaded) return;
+    ModelGpuData& m = it->second;
+    for (std::size_t ci = 0; ci < m.chunks.size(); ++ci) unloadChunk(m, ci);
+    releaseModelBuffers(m);
+    m.unloaded = true;
+    host_->requestFrame();
+}
+
+bool ViewportCore::loadModel(uint32_t session_model_id) {
+    markCullInputsChanged();
+    auto it = models_gpu_.find(session_model_id);
+    if (it == models_gpu_.end()) return false;
+    ModelGpuData& m = it->second;
+    if (!m.unloaded) return true;
+    // Chunks stream back in on demand once the model is drawable again;
+    // only the model's own buffers have to be recreated here.
+    if (!createModelBuffers(session_model_id, m,
+                            meshGpuRecords(m.meshes), instanceGpuRecords(m.instances))) {
+        Log::warn() << "[wgpu] model " << session_model_id
+                    << " not reloaded: the device cannot fit its metadata buffers";
+        return false;
+    }
+    m.unloaded = false;
+    host_->requestFrame();
+    return true;
+}
+
+bool ViewportCore::isModelUnloaded(uint32_t session_model_id) const {
+    auto it = models_gpu_.find(session_model_id);
+    return it != models_gpu_.end() && it->second.unloaded;
+}
+
+std::uint64_t ViewportCore::modelVramBytes(uint32_t session_model_id) const {
+    auto it = models_gpu_.find(session_model_id);
+    if (it == models_gpu_.end()) return 0;
+    const ModelGpuData& m = it->second;
+    return m.vram_bytes_vbo + m.vram_bytes_ebo + m.vram_bytes_ssbo;
 }
 
 void ViewportCore::setFederatedFalseOrigin(const Eigen::Matrix4d& matrix_meters) {
@@ -254,19 +340,30 @@ float ViewportCore::chunkScreenAreaPx(const ModelGpuData::Chunk& c,
     return (xmax - xmin) * (ymax - ymin);
 }
 
-void ViewportCore::uploadInstanceRecords(ModelGpuData& m) {
-    if (!wgpu_initialized_ || m.instances.empty() || m.instance_storage == nullptr) return;
-
-    std::vector<InstanceGpu> gpu(m.instances.size());
-    for (size_t i = 0; i < m.instances.size(); ++i) {
+void rebuildCullInstances(ModelGpuData& m) {
+    m.cull_instances.resize(m.instances.size());
+    for (std::size_t i = 0; i < m.instances.size(); ++i) {
         const InstanceInfo& inst = m.instances[i];
-        InstanceGpu& dst = gpu[i];
-        std::memcpy(dst.transform, inst.transform, sizeof(dst.transform));
-        dst.object_id            = inst.object_id;
-        dst.color_override_rgba8 = inst.color_override_rgba8;
-        dst.mesh_id              = inst.mesh_id;
-        dst._pad1                = 0;
+        ModelGpuData::CullInstance& out = m.cull_instances[i];
+        for (int a = 0; a < 3; ++a) {
+            out.aabb_min[a] = inst.world_aabb_min[a];
+            out.aabb_max[a] = inst.world_aabb_max[a];
+        }
+        out.mesh_id              = inst.mesh_id;
+        out.object_id            = inst.object_id;
+        out.color_override_rgba8 = inst.color_override_rgba8;
+        out.chunk_idx            = i < m.instance_chunk_idx.size()
+                                 ? m.instance_chunk_idx[i] : 0;
     }
+}
+
+void ViewportCore::uploadInstanceRecords(ModelGpuData& m) {
+    // Every path that mutates instances (recompose, transforms, colour
+    // overrides) funnels through here, so the packed cull mirror follows.
+    rebuildCullInstances(m);
+    markCullInputsChanged();
+    if (!wgpu_initialized_ || m.instances.empty() || m.instance_storage == nullptr) return;
+    const std::vector<InstanceGpu> gpu = instanceGpuRecords(m.instances);
     wgpuQueueWriteBuffer(queue_, m.instance_storage, 0,
                          gpu.data(), gpu.size() * sizeof(InstanceGpu));
 }
@@ -276,8 +373,11 @@ void ViewportCore::recomposeAndUploadModel(uint32_t session_model_id) {
     auto it = models_gpu_.find(session_model_id);
     if (it == models_gpu_.end()) return;
     ModelGpuData& m = it->second;
-    if (m.instances.empty() || m.instance_storage == nullptr) return;
+    if (m.instances.empty()) return;
 
+    // The CPU mirrors are recomposed even while the model is unloaded (no
+    // instance_storage): cull and loadModel read them, and the upload
+    // below is skipped on its own.
     for (auto& inst : m.instances) composeInstanceFromPlacement(inst, m);
     uploadInstanceRecords(m);
 
@@ -574,6 +674,21 @@ void ViewportCore::dollyBy(float notches) {
     const float factor = std::pow(0.9f, notches);
     camera_distance_   = std::max(0.01f, camera_distance_ * factor);
     host_->requestFrame();
+}
+
+void ViewportCore::setPivotIndicatorVisible(bool visible, int hide_after_ms) {
+    pivot_indicator_visible_ = visible;
+    pivot_indicator_hide_ms_ = hide_after_ms;
+    if (visible && hide_after_ms > 0) pivot_indicator_timer_.start();
+    else                              pivot_indicator_timer_.invalidate();
+    host_->requestFrame();
+}
+
+bool ViewportCore::pivotIndicatorVisible() const {
+    if (!pivot_indicator_visible_) return false;
+    // No armed afterglow means a drag is holding it up.
+    if (!pivot_indicator_timer_.isValid()) return true;
+    return pivot_indicator_timer_.elapsed() < pivot_indicator_hide_ms_;
 }
 
 void ViewportCore::flyMove(bool fwd, bool back, bool right, bool left,
@@ -1297,6 +1412,10 @@ bool ViewportCore::buildPipelines() {
     // Section-plane gizmo (shared desktop + web). Optional — a failure just
     // means no gizmo, not a dead viewport.
     section_gizmo_.init(device_, queue_, surface_view_format_, kViewportSampleCount);
+
+    // Corner axis gizmo + orbit pivot indicator (shared desktop + web).
+    // Also optional: a failure costs the indicator, not the viewport.
+    axis_indicator_.init(device_, queue_, surface_view_format_, kViewportSampleCount);
     return true;
 }
 
@@ -1573,20 +1692,193 @@ bool ViewportCore::createPool() {
         std::max<uint64_t>(MIN_POOL_CAPACITY, INITIAL_SUB_BUFFER));
     pool_.configure(instance_, device_, pool_usage, per_sub,
                     "ifcviewer-wgpu.pool");
+
+    // How far the pool may grow. The cache must stop short of what the
+    // required tier (attachments, model metadata, staging) will need,
+    // because those are allocated later and the frame cannot be drawn
+    // without them; see GpuBudget.h for the model.
 #if defined(__EMSCRIPTEN__)
-    // Cap total pool capacity below the wasm heap ceiling. On web a growth that
-    // would push the heap past MAXIMUM_MEMORY is a bad_alloc → uncatchable
-    // abort, so the pool must stop growing (and evict) before then. Leave
-    // headroom for metadata (instances/maps), transient decompression buffers,
-    // and wgpu overhead. Big federations then keep a bounded, highest-priority
-    // resident set instead of aborting.
-    pool_.setMaxTotalCapacity(3072ull * 1024 * 1024);  // 3 GB (heap ceiling 4 GB)
+    // No memory query on web. Cap total pool capacity below the wasm heap
+    // ceiling: a growth that would push the heap past MAXIMUM_MEMORY is a
+    // bad_alloc → uncatchable abort, so the pool must stop growing (and
+    // evict) before then. Leave headroom for metadata (instances/maps),
+    // transient decompression buffers, and wgpu overhead. Big federations
+    // then keep a bounded, highest-priority resident set instead of
+    // aborting. Device exhaustion below that is learnt through pressure.
+    budget_.setHardCap(3072ull * 1024 * 1024);  // 3 GB (heap ceiling 4 GB)
+#else
+    {
+        WGPUAdapterInfo adapter_info = WGPU_ADAPTER_INFO_INIT;
+        wgpuAdapterGetInfo(adapter_, &adapter_info);
+        adapter_vendor_id_ = adapter_info.vendorID;
+        adapter_device_id_ = adapter_info.deviceID;
+        wgpuAdapterInfoFreeMembers(adapter_info);
+    }
+    pollDeviceMemory();
 #endif
+    pool_.setMaxTotalCapacity(budget_.bounded() ? budget_.cache_budget_bytes() : 0);
+
     Log::info() << "wgpu: pool per-sub-buffer capacity = "
                 << (per_sub / (1024 * 1024)) << " MB (grows lazily on "
                 << "demand; device maxBufferSize = "
                 << (device_limits.maxBufferSize / (1024 * 1024)) << " MB)";
+    if (budget_.bounded()) {
+        Log::info() << "wgpu: geometry cache budget = "
+                    << (budget_.cache_budget_bytes() / (1024 * 1024)) << " MB"
+                    << (device_vram_total_bytes_ > 0
+                        ? " (device free "
+                          + std::to_string((device_vram_total_bytes_ - device_vram_used_bytes_)
+                                           / (1024 * 1024))
+                          + " MB - margin "
+                          + std::to_string(budget_.margin_bytes() / (1024 * 1024))
+                          + " MB; tracks the driver's report)"
+                        : " (fixed cap)");
+    } else {
+        Log::info() << "wgpu: geometry cache budget unknown (no device memory "
+                       "query); bounded on first memory-pressure event";
+    }
     return true;
+}
+
+ifcviewer::GpuMemoryInfo ViewportCore::queryDeviceMemory() const {
+#if defined(__EMSCRIPTEN__)
+    return {};
+#else
+    return ifcviewer::queryGpuMemory(adapter_vendor_id_, adapter_device_id_);
+#endif
+}
+
+void ViewportCore::pollDeviceMemory() {
+    // Re-derive immediately after the pool has grown: a ceiling computed
+    // from a second-old report can be reached by growth plus the upload
+    // staging that rides on it, leaving the device far below the margin
+    // before the next scheduled poll notices.
+    const bool pool_grew = pool_.sub_buffer_count() != polled_sub_buffer_count_;
+    if (!pool_grew && device_vram_poll_timer_.isValid()
+        && device_vram_poll_timer_.elapsed() < 1000) return;
+    device_vram_poll_timer_.start();
+    polled_sub_buffer_count_ = pool_.sub_buffer_count();
+    const ifcviewer::GpuMemoryInfo mem = queryDeviceMemory();
+    if (!mem.valid) return;
+    device_vram_used_bytes_  = mem.used_bytes;
+    device_vram_total_bytes_ = mem.total_bytes;
+    budget_.update(mem.free_bytes(), pool_.total_capacity_bytes());
+    applyBudgetToPool();
+}
+
+void ViewportCore::applyBudgetToPool() {
+    if (!budget_.bounded()) return;
+    const std::uint64_t budget = budget_.cache_budget_bytes();
+    pool_.setMaxTotalCapacity(budget);
+    const std::uint64_t target = budget_.shrinkTarget(pool_.total_capacity_bytes());
+    if (target == 0) return;
+    const std::uint64_t released = pool_.shrinkToCapacity(
+        target, [this](int sub_idx) { evictChunksInSubBuffer(sub_idx); });
+    if (released > 0) {
+        const double mb = 1.0 / (1024.0 * 1024.0);
+        Log::info() << "[wgpu] device has less to give: geometry cache budget now "
+                    << double(budget) * mb << " MB, released "
+                    << double(released) * mb << " MB";
+    }
+}
+
+std::uint64_t ViewportCore::attachmentBytesPerPixel() {
+    // Sizes follow the formats in ensureDepthTexture / ensureMsaaColorTexture /
+    // ensureSelectionOutlineTextures / createPickAttachments.
+    constexpr std::uint64_t msaa = kViewportSampleCount;
+    return 4 * msaa          // msaa colour, 4 B/sample (any 8-bit RGBA surface)
+         + 4 * msaa          // depth32 msaa
+         + 1 * msaa          // selection mask msaa (R8)
+         + 1                 // selection mask resolve (R8)
+         + 4                 // selection scratch (RGBA8)
+         + 4 + 8 + 16 + 4;   // pick: R32Uint id, RGBA16F normal, RGBA32F position, depth32
+}
+
+bool ViewportCore::onRequiredAllocationFailed(const char* what, std::uint64_t bytes) {
+    const std::uint64_t capacity_before = pool_.total_capacity_bytes();
+    const ifcviewer::GpuMemoryInfo mem = queryDeviceMemory();
+    const bool lowered = budget_.onPressure(capacity_before, bytes,
+                                            mem.valid ? mem.free_bytes() : 0);
+    const double mb = 1.0 / (1024.0 * 1024.0);
+    if (!lowered) {
+        Log::warn() << "[wgpu] out of memory allocating " << what << " ("
+                    << double(bytes) * mb << " MB) and the geometry cache ("
+                    << double(capacity_before) * mb
+                    << " MB) has nothing left to give -- device exhausted";
+        return false;
+    }
+    pool_.setMaxTotalCapacity(budget_.cache_budget_bytes());
+    // The budget was just lowered by what the allocation needs; free at
+    // least that much, whatever the sub-buffer granularity.
+    const std::uint64_t released = pool_.releaseAtLeast(
+        capacity_before - budget_.cache_budget_bytes(),
+        [this](int sub_idx) { evictChunksInSubBuffer(sub_idx); });
+    Log::warn() << "[wgpu] out of memory allocating " << what << " ("
+                << double(bytes) * mb << " MB); geometry cache budget lowered to "
+                << double(budget_.cache_budget_bytes()) * mb << " MB, released "
+                << double(released) * mb << " MB (pressure event #"
+                << budget_.pressure_events() << ")";
+#if !defined(__EMSCRIPTEN__)
+    // Released buffers are reclaimed once the GPU has finished with them;
+    // wait for that so the retry that follows sees the memory. On web
+    // there is no blocking wait — the next frame's attempt will.
+    wgpuDevicePoll(device_, true, nullptr);
+#endif
+    return released > 0;
+}
+
+void ViewportCore::evictChunksInSubBuffer(int sub_idx) {
+    for (auto& [session_model_id, m] : models_gpu_) {
+        for (std::size_t ci = 0; ci < m.chunks.size(); ++ci) {
+            const auto& c = m.chunks[ci];
+            if (!c.is_resident) continue;
+            if (c.vertex_slice.sub_idx == sub_idx || c.index_slice.sub_idx == sub_idx) {
+                unloadChunk(m, ci);
+            }
+        }
+    }
+}
+
+bool ViewportCore::allocateRequired(const char* what, std::uint64_t bytes,
+                                    const std::function<void()>& create,
+                                    const std::function<void()>& release,
+                                    std::function<void()> on_web_failure) {
+#if defined(__EMSCRIPTEN__)
+    (void)release;
+    GpuAllocScope scope(instance_, device_);
+    create();
+    scope.end([this, what, bytes, on_web_failure = std::move(on_web_failure)](bool ok) {
+        if (ok) return;
+        onRequiredAllocationFailed(what, bytes);
+        if (on_web_failure) on_web_failure();
+    });
+    return true;
+#else
+    (void)on_web_failure;
+    // Each failed attempt lowers the budget by the allocation plus slack
+    // and releases at least one sub-buffer, so the loop strictly shrinks
+    // the cache and ends at the floor — the driver may need more headroom
+    // than one carve-out (its refusal threshold is not "free == 0").
+    for (;;) {
+        GpuAllocScope scope(instance_, device_);
+        create();
+        bool ok = false;
+        scope.end([&](bool result) { ok = result; });
+        if (ok) return true;
+        release();
+        if (!onRequiredAllocationFailed(what, bytes)) return false;
+    }
+#endif
+}
+
+WGPUBuffer ViewportCore::createRequiredBuffer(const WGPUBufferDescriptor& desc,
+                                              const char* what) {
+    WGPUBuffer buf = nullptr;
+    const bool ok = allocateRequired(
+        what, desc.size,
+        [&]() { buf = wgpuDeviceCreateBuffer(device_, &desc); },
+        [&]() { if (buf) { wgpuBufferRelease(buf); buf = nullptr; } });
+    return ok ? buf : nullptr;
 }
 
 bool ViewportCore::initWgpu(bool web_limits) {
@@ -1913,6 +2205,7 @@ void ViewportCore::shutdown() {
     if (main_pipeline_no_cull_)      { wgpuRenderPipelineRelease(main_pipeline_no_cull_);     main_pipeline_no_cull_ = nullptr; }
     if (main_pipeline_transparent_)  { wgpuRenderPipelineRelease(main_pipeline_transparent_); main_pipeline_transparent_ = nullptr; }
     section_gizmo_.destroy();
+    axis_indicator_.destroy();
     if (main_shader_module_)   { wgpuShaderModuleRelease(main_shader_module_);    main_shader_module_ = nullptr; }
     if (pipeline_layout_)      { wgpuPipelineLayoutRelease(pipeline_layout_);     pipeline_layout_ = nullptr; }
     if (model_bgl_)            { wgpuBindGroupLayoutRelease(model_bgl_);          model_bgl_ = nullptr; }
@@ -2085,6 +2378,17 @@ bool ViewportCore::applyStreamedChunk(
     c.is_resident      = true;
     c.is_loading       = false;
     c.loaded_frame_idx = streaming_frame_idx_;
+    markCullInputsChanged();
+
+    // The CPU triangle shadow follows residency: count this chunk into each
+    // of its meshes (a mesh can live in several chunks under the spatial
+    // planner); unloadChunk counts it back out and releases the shadow of
+    // any mesh with no resident chunk left.
+    if (m.mesh_resident_chunk_refs.size() == m.meshes.size()) {
+        for (std::uint32_t mi : c.mesh_ids) {
+            if (mi < m.mesh_resident_chunk_refs.size()) ++m.mesh_resident_chunk_refs[mi];
+        }
+    }
 
     // Per-mesh alpha probe. Scan every vertex of every mesh in this chunk
     // for any alpha byte < 255 — fires the mesh_has_alpha flag the cull
@@ -2122,9 +2426,17 @@ bool ViewportCore::applyStreamedChunk(
     // chunk to deliver each mesh fills it in.
     bool filled_volume = false;
     if (!m.mesh_local_volumes.empty() && !idx.empty()) {
+        const bool want_tris = host_->wantsCpuMeshTriangles();
         for (std::uint32_t mi : c.mesh_ids) {
             if (mi >= m.meshes.size() || mi >= m.mesh_local_volumes.size()) continue;
-            if (m.mesh_local_volumes[mi] != 0.0) continue;
+            // Volume is computed once per mesh (8 B, kept across eviction);
+            // the triangle shadow is refilled whenever this mesh returns to
+            // residency after its shadow was released.
+            const bool need_volume = m.mesh_local_volumes[mi] == 0.0;
+            const bool need_tris   = want_tris
+                && mi < m.mesh_triangles_cache.size()
+                && m.mesh_triangles_cache[mi].indices.empty();
+            if (!need_volume && !need_tris) continue;
             const MeshInfo& mesh = m.meshes[mi];
             if (mesh.vertex_count == 0 || mesh.index_count < 3) continue;
             const std::size_t v_off =
@@ -2135,14 +2447,18 @@ bool ViewportCore::applyStreamedChunk(
                 + std::size_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
             if (v_end > vbytes.size()) continue;
             if (i_off + mesh.index_count > idx.size()) continue;
-            ModelGpuData::MeshTriangles* tris =
-                (mi < m.mesh_triangles_cache.size())
-                    ? &m.mesh_triangles_cache[mi]
-                    : nullptr;
-            m.mesh_local_volumes[mi] = computeMeshLocalVolumeQuantised(
+            const double volume = computeMeshLocalVolumeQuantised(
                 mesh, vbytes.data() + v_off, idx.data() + i_off, mesh.index_count,
-                tris);
-            filled_volume = true;
+                need_tris ? &m.mesh_triangles_cache[mi] : nullptr);
+            if (need_tris) {
+                const auto& tris = m.mesh_triangles_cache[mi];
+                m.cpu_shadow_bytes += tris.positions.size() * sizeof(float)
+                                    + tris.indices.size() * sizeof(std::uint32_t);
+            }
+            if (need_volume) {
+                m.mesh_local_volumes[mi] = volume;
+                filled_volume = true;
+            }
         }
     }
     // Fire the tool-refresh callback once per apply if anything new filled
@@ -2219,6 +2535,39 @@ void ViewportCore::unloadChunk(ModelGpuData& m, std::size_t chunk_idx) {
     c.total_visible_draws    = 0;
     c.total_visible_vertices = 0;
     c.is_resident = false;
+    markCullInputsChanged();
+
+    // CPU side of the eviction. The cull scratch and the uploaded mirrors
+    // are only meaningful for a resident chunk (cull no longer emits for
+    // non-resident ones); releasing them here also keeps the memcmp
+    // dirty-check honest — after a model unload/load cycle the GPU cull
+    // buffers are fresh, and a stale mirror would wrongly skip the first
+    // upload into them. Assignment, not clear(): capacity must go too.
+    c.visible_draws_scratch             = {};
+    c.prefix_sums_scratch               = {};
+    c.visible_draws_scratch_transparent = {};
+    c.transparent_per_draw_vertex_counts = {};
+    c.visible_draws_uploaded            = {};
+    c.prefix_sums_uploaded              = {};
+
+    // Count this chunk out of its meshes' residency; a mesh with no
+    // resident chunk left releases its triangle shadow (refilled from the
+    // chunk bytes on the next residency — see applyStreamedChunk).
+    if (m.mesh_resident_chunk_refs.size() == m.meshes.size()) {
+        for (std::uint32_t mi : c.mesh_ids) {
+            if (mi >= m.mesh_resident_chunk_refs.size()) continue;
+            if (m.mesh_resident_chunk_refs[mi] > 0) --m.mesh_resident_chunk_refs[mi];
+            if (m.mesh_resident_chunk_refs[mi] == 0
+                && mi < m.mesh_triangles_cache.size()) {
+                auto& tris = m.mesh_triangles_cache[mi];
+                const std::uint64_t bytes = tris.positions.size() * sizeof(float)
+                                          + tris.indices.size() * sizeof(std::uint32_t);
+                m.cpu_shadow_bytes = m.cpu_shadow_bytes > bytes
+                                   ? m.cpu_shadow_bytes - bytes : 0;
+                tris = {};
+            }
+        }
+    }
 }
 
 // ===========================================================================
@@ -2250,7 +2599,7 @@ void ViewportCore::driveStreamingLoads() {
     // last ~30 frames.
     constexpr float HISTORY_ALPHA = 1.0f / 30.0f;
     for (auto& [session_model_id, m] : models_gpu_) {
-        if (m.hidden) continue;
+        if (!m.drawable()) continue;
         for (auto& c : m.chunks) {
             if (c.is_resident && c.frustum_visible_count > 0) {
                 c.last_visible_frame_idx = streaming_frame_idx_;
@@ -2455,7 +2804,7 @@ void ViewportCore::driveStreamingLoads() {
     std::vector<Candidate> candidates;
     candidates.reserve(64);
     for (auto& [session_model_id, m] : models_gpu_) {
-        if (m.streaming_file_path.empty() || m.hidden) continue;
+        if (m.streaming_file_path.empty() || !m.drawable()) continue;
         for (std::size_t ci = 0; ci < m.chunks.size(); ++ci) {
             auto& c = m.chunks[ci];
             if (c.is_resident)                       continue;
@@ -2671,7 +3020,7 @@ void ViewportCore::driveStreamingLoads() {
     const bool growth_may_land = pool_.growth_pending() || pool_.can_grow();
     bool visible_pending = false;
     for (const auto& [session_model_id, m] : models_gpu_) {
-        if (m.streaming_file_path.empty() || m.hidden) continue;
+        if (m.streaming_file_path.empty() || !m.drawable()) continue;
         for (const auto& c : m.chunks) {
             if (c.is_resident) continue;
             if (c.is_loading) { visible_pending = true; break; }
@@ -2812,7 +3161,8 @@ std::uint32_t ViewportCore::cullModelCpuCompute(
         const HizOccludedFn& hiz_occluded) const {
     std::uint32_t hiz_rejects = 0;
 
-    if (m.instances.empty() || m.meshes.empty() || m.chunks.empty()) {
+    if (m.instances.empty() || m.meshes.empty() || m.chunks.empty()
+        || m.cull_instances.size() != m.instances.size()) {
         return 0;
     }
 
@@ -2840,15 +3190,15 @@ std::uint32_t ViewportCore::cullModelCpuCompute(
     std::vector<std::uint32_t> running_vertex_count(m.chunks.size(), 0);
 
     auto process_instance = [&](std::uint32_t i) {
-        const auto& inst = m.instances[i];
+        const ModelGpuData::CullInstance& inst = m.cull_instances[i];
         if (inst.mesh_id >= m.meshes.size()) return;
         if (visibility_.isHidden(inst.object_id)) return;
         // Per-instance frustum still needed: a partially-covered subtree
         // descended this far means *some* leaves are visible, but not
         // necessarily this one.
-        if (!aabbInFrustum(inst.world_aabb_min, inst.world_aabb_max, planes)) return;
+        if (!aabbInFrustum(inst.aabb_min, inst.aabb_max, planes)) return;
 
-        const std::uint32_t chunk_idx = m.instance_chunk_idx[i];
+        const std::uint32_t chunk_idx = inst.chunk_idx;
         ModelGpuData::Chunk& c = m.chunks[chunk_idx];
 
         // Bump the chunk's frustum-only counter before contribution / HiZ
@@ -2862,12 +3212,12 @@ std::uint32_t ViewportCore::cullModelCpuCompute(
         // rectangle projection (tight — used for streaming priority).
         float projected_px = std::numeric_limits<float>::infinity();
         {
-            const float cx = 0.5f * (inst.world_aabb_min[0] + inst.world_aabb_max[0]);
-            const float cy = 0.5f * (inst.world_aabb_min[1] + inst.world_aabb_max[1]);
-            const float cz = 0.5f * (inst.world_aabb_min[2] + inst.world_aabb_max[2]);
-            const float ex = inst.world_aabb_max[0] - inst.world_aabb_min[0];
-            const float ey = inst.world_aabb_max[1] - inst.world_aabb_min[1];
-            const float ez = inst.world_aabb_max[2] - inst.world_aabb_min[2];
+            const float cx = 0.5f * (inst.aabb_min[0] + inst.aabb_max[0]);
+            const float cy = 0.5f * (inst.aabb_min[1] + inst.aabb_max[1]);
+            const float cz = 0.5f * (inst.aabb_min[2] + inst.aabb_max[2]);
+            const float ex = inst.aabb_max[0] - inst.aabb_min[0];
+            const float ey = inst.aabb_max[1] - inst.aabb_min[1];
+            const float ez = inst.aabb_max[2] - inst.aabb_min[2];
             const float radius_world = 0.5f * std::sqrt(ex*ex + ey*ey + ez*ez);
             const float view_z = forward[0] * (cx - eye[0])
                                + forward[1] * (cy - eye[1])
@@ -2901,8 +3251,15 @@ std::uint32_t ViewportCore::cullModelCpuCompute(
         // decide what's worth fetching for the current view.
         ++c.contribution_visible_count;
 
+        // Streaming has everything it needs. The HiZ test and the draw
+        // emission below only matter for a chunk that can actually draw;
+        // for a non-resident one they were pure waste — scratch heap that
+        // eviction never reclaimed and per-frame buffer uploads that
+        // render() skipped anyway.
+        if (!c.is_resident) return;
+
         if (hiz_active
-            && hiz_occluded(inst.world_aabb_min, inst.world_aabb_max)) {
+            && hiz_occluded(inst.aabb_min, inst.aabb_max)) {
             ++hiz_rejects;
             return;
         }
@@ -3108,6 +3465,64 @@ SidecarData& getOrCreateDirectStaging(
 
 } // namespace
 
+bool ViewportCore::createModelBuffers(std::uint32_t session_model_id,
+                                      ModelGpuData& m,
+                                      const std::vector<MeshGpu>& mesh_gpu,
+                                      const std::vector<InstanceGpu>& inst_gpu) {
+    const std::size_t mesh_storage_bytes = mesh_gpu.size() * sizeof(MeshGpu);
+    const std::size_t inst_storage_bytes = inst_gpu.size() * sizeof(InstanceGpu);
+    std::uint64_t total_bytes = mesh_storage_bytes + inst_storage_bytes;
+    for (const auto& c : m.chunks) {
+        total_bytes += c.visible_draws_capacity * sizeof(ModelGpuData::VisibleDrawGpu)
+                     + c.prefix_sums_capacity * sizeof(std::uint32_t) + 16;
+    }
+
+    return allocateRequired(
+        "model buffers", total_bytes,
+        [&]() {
+            for (auto& chunk : m.chunks) {
+                WGPUBufferDescriptor vd_desc = {};
+                vd_desc.size  = std::max<std::uint64_t>(
+                    chunk.visible_draws_capacity * sizeof(ModelGpuData::VisibleDrawGpu), 16);
+                vd_desc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
+                vd_desc.label = svFromCStr("model.chunk.visible_draws");
+                chunk.visible_draws_buffer = wgpuDeviceCreateBuffer(device_, &vd_desc);
+                m.vram_bytes_ssbo += vd_desc.size;
+
+                WGPUBufferDescriptor ps_desc = {};
+                ps_desc.size  = std::max<std::uint64_t>(
+                    chunk.prefix_sums_capacity * sizeof(std::uint32_t), 16);
+                ps_desc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
+                ps_desc.label = svFromCStr("model.chunk.prefix_sums");
+                chunk.prefix_sums_buffer = wgpuDeviceCreateBuffer(device_, &ps_desc);
+                m.vram_bytes_ssbo += ps_desc.size;
+
+                WGPUBufferDescriptor mu_desc = {};
+                mu_desc.size  = 16;
+                mu_desc.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
+                mu_desc.label = svFromCStr("model.chunk.uniform");
+                chunk.per_chunk_uniform = wgpuDeviceCreateBuffer(device_, &mu_desc);
+                m.vram_bytes_ssbo += 16;
+            }
+            m.mesh_storage = createBufferWithData(
+                device_, queue_, mesh_gpu.data(), mesh_storage_bytes,
+                WGPUBufferUsage_Storage, "model.mesh_storage");
+            m.vram_bytes_ssbo += mesh_storage_bytes;
+            m.instance_storage = createBufferWithData(
+                device_, queue_, inst_gpu.data(), inst_storage_bytes,
+                WGPUBufferUsage_Storage, "model.instance_storage");
+            m.vram_bytes_ssbo += inst_storage_bytes;
+        },
+        [&]() { releaseModelBuffers(m); },
+        // Web hears of the failure after the model is in the scene; its
+        // buffers are error objects that would fail every bind, so drop it.
+        [this, session_model_id]() {
+            Log::warn() << "[wgpu] model " << session_model_id
+                        << " removed: the device could not fit its metadata buffers";
+            removeModel(session_model_id);
+        });
+}
+
 void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
                                     StreamingSidecar metadata) {
     if (!device_ || !queue_) {
@@ -3285,87 +3700,37 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
         model_gpu_data.vertex_bytes += chunk.vertex_byte_size;
         model_gpu_data.index_count  += std::uint32_t(chunk.index_count);
 
-        // Small per-chunk buffers, allocated upfront so cull can write into
-        // them. visible_draws_buffer cap = chunk's instance count.
+        // Per-chunk cull buffer capacities: visible_draws cap = the chunk's
+        // instance count. The buffers themselves are created together with
+        // the model's other buffers in createModelBuffers below.
         const std::size_t chunk_inst = std::max<std::size_t>(chunk_instance_count[chunk_index], 1);
-        const std::size_t draws_bytes = chunk_inst * sizeof(ModelGpuData::VisibleDrawGpu);
-        const std::size_t ps_bytes    = (chunk_inst + 1) * sizeof(std::uint32_t);
-
-        WGPUBufferDescriptor vd_desc = {};
-        vd_desc.size  = std::max<std::uint64_t>(draws_bytes, 16);
-        vd_desc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
-        vd_desc.label = svFromCStr("model.chunk.visible_draws");
-        chunk.visible_draws_buffer   = wgpuDeviceCreateBuffer(device_, &vd_desc);
         chunk.visible_draws_capacity = chunk_inst;
-        model_gpu_data.vram_bytes_ssbo += vd_desc.size;
-
-        WGPUBufferDescriptor ps_desc = {};
-        ps_desc.size  = std::max<std::uint64_t>(ps_bytes, 16);
-        ps_desc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
-        ps_desc.label = svFromCStr("model.chunk.prefix_sums");
-        chunk.prefix_sums_buffer   = wgpuDeviceCreateBuffer(device_, &ps_desc);
-        chunk.prefix_sums_capacity = chunk_inst + 1;
-        model_gpu_data.vram_bytes_ssbo += ps_desc.size;
-
-        WGPUBufferDescriptor mu_desc = {};
-        mu_desc.size  = 16;
-        mu_desc.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
-        mu_desc.label = svFromCStr("model.chunk.uniform");
-        chunk.per_chunk_uniform = wgpuDeviceCreateBuffer(device_, &mu_desc);
-        model_gpu_data.vram_bytes_ssbo += 16;
-
-        chunk.visible_draws_scratch.reserve(chunk_inst);
-        chunk.prefix_sums_scratch.reserve(chunk_inst + 1);
+        chunk.prefix_sums_capacity   = chunk_inst + 1;
+        // The CPU scratch is NOT reserved here: it grows on the chunk's
+        // first resident cull and is released again on eviction, so only
+        // resident chunks pay for it.
     }
 
     // Index section is NOT loaded upfront. Each chunk's index slice is
     // range-read alongside its vertex bytes in loadChunkBytesAndUploadGpu.
 
-    // MeshGpu storage (per-mesh quant basis).
-    std::vector<MeshGpu> mesh_gpu;
-    mesh_gpu.reserve(metadata.meta.meshes.size());
-    for (const auto& mesh_info : metadata.meta.meshes) {
-        MeshGpu mesh_gpu_record = {};
-        mesh_gpu_record.aabb_min[0] = mesh_info.local_aabb_min[0];
-        mesh_gpu_record.aabb_min[1] = mesh_info.local_aabb_min[1];
-        mesh_gpu_record.aabb_min[2] = mesh_info.local_aabb_min[2];
-        mesh_gpu_record.aabb_max[0] = mesh_info.local_aabb_max[0];
-        mesh_gpu_record.aabb_max[1] = mesh_info.local_aabb_max[1];
-        mesh_gpu_record.aabb_max[2] = mesh_info.local_aabb_max[2];
-        mesh_gpu.push_back(mesh_gpu_record);
-    }
-    const std::size_t mesh_storage_bytes = mesh_gpu.size() * sizeof(MeshGpu);
-    model_gpu_data.mesh_storage = createBufferWithData(
-        device_, queue_,
-        mesh_gpu.data(), mesh_storage_bytes,
-        WGPUBufferUsage_Storage,
-        "model.mesh_storage");
-    model_gpu_data.vram_bytes_ssbo += mesh_storage_bytes;
-
-    // InstanceGpu storage. Rebase object_ids globally.
+    // Rebase object_ids globally (element metadata records rebase to match).
     const std::uint32_t object_id_base = next_object_id_;
     std::uint32_t max_local_id = 0;
-    std::vector<InstanceGpu> inst_gpu;
-    inst_gpu.reserve(metadata.meta.instances.size());
     for (auto& instance_cpu : metadata.meta.instances) {
         if (instance_cpu.object_id > max_local_id) max_local_id = instance_cpu.object_id;
         instance_cpu.object_id = object_id_base + instance_cpu.object_id;
-        InstanceGpu instance_gpu = {};
-        std::memcpy(instance_gpu.transform, instance_cpu.transform, sizeof(instance_gpu.transform));
-        instance_gpu.object_id            = instance_cpu.object_id;
-        instance_gpu.color_override_rgba8 = instance_cpu.color_override_rgba8;
-        instance_gpu.mesh_id              = instance_cpu.mesh_id;
-        inst_gpu.push_back(instance_gpu);
     }
     next_object_id_ = object_id_base + max_local_id + 1;
-    model_gpu_data.object_id_base = object_id_base;  // element metadata records rebase to match
-    const std::size_t inst_storage_bytes = inst_gpu.size() * sizeof(InstanceGpu);
-    model_gpu_data.instance_storage = createBufferWithData(
-        device_, queue_,
-        inst_gpu.data(), inst_storage_bytes,
-        WGPUBufferUsage_Storage,
-        "model.instance_storage");
-    model_gpu_data.vram_bytes_ssbo += inst_storage_bytes;
+    model_gpu_data.object_id_base = object_id_base;
+
+    const std::vector<MeshGpu>     mesh_gpu = meshGpuRecords(metadata.meta.meshes);
+    const std::vector<InstanceGpu> inst_gpu = instanceGpuRecords(metadata.meta.instances);
+    if (!createModelBuffers(session_model_id, model_gpu_data, mesh_gpu, inst_gpu)) {
+        Log::warn() << "[wgpu] model " << session_model_id
+                    << " not loaded: the device cannot fit its metadata buffers";
+        return;
+    }
 
     // Hand off CPU mirrors.
     model_gpu_data.meshes    = std::move(metadata.meta.meshes);
@@ -3398,6 +3763,7 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
     // inside applyStreamedChunk as the bytes arrive.
     model_gpu_data.mesh_local_volumes.assign(model_gpu_data.meshes.size(), 0.0);
     model_gpu_data.mesh_triangles_cache.assign(model_gpu_data.meshes.size(), ModelGpuData::MeshTriangles{});
+    model_gpu_data.mesh_resident_chunk_refs.assign(model_gpu_data.meshes.size(), 0);
     model_gpu_data.mesh_has_alpha.assign(model_gpu_data.meshes.size(), std::uint8_t(0));
 
     // object_id → instance index lookup. Volume tool reads it on every
@@ -3407,6 +3773,8 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
     for (std::uint32_t i = 0; i < std::uint32_t(model_gpu_data.instances.size()); ++i) {
         model_gpu_data.object_id_to_instance.emplace(model_gpu_data.instances[i].object_id, i);
     }
+    rebuildCullInstances(model_gpu_data);
+    markCullInputsChanged();
 
     // Per-chunk world AABBs + instance-id lists from instance_to_chunk.
     for (std::size_t chunk_index = 0; chunk_index < model_gpu_data.chunks.size(); ++chunk_index) {
@@ -3752,7 +4120,7 @@ void ViewportCore::pumpWebChunkLoads() {
         auto it = models_gpu_.find(next.session_model_id);
         if (it == models_gpu_.end()) continue;
         ModelGpuData& m = it->second;
-        if (m.hidden || next.ci >= m.chunks.size()) continue;
+        if (!m.drawable() || next.ci >= m.chunks.size()) continue;
         auto& c = m.chunks[next.ci];
         if (c.is_resident || c.is_loading)     continue;
         if (c.contribution_visible_count == 0) continue;   // no longer worth drawing
@@ -3878,10 +4246,24 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
         return;
     }
 
+    // Mint the session model id HERE, synchronously, rather than at the end of
+    // the read chain below. Session ids are what orders the scene's models —
+    // modelIdsInLoadOrder sorts by them, and every per-model slot a host sees
+    // (modelProgress's index, ElementRef::model_index) is a rank in that order.
+    // Minting on completion made that rank the order the models' network reads
+    // happened to finish in, so with several federated models in flight the
+    // slots came out shuffled against the order the host added them and a pick
+    // was attributed to the wrong file. Requesting order is the order the host
+    // asked for, which is the order it can reason about. A load that fails
+    // partway simply abandons its id — the ranks compact over whatever models
+    // made it into the scene, exactly as before.
+    const std::uint32_t session_model_id = next_session_model_id_++;
+
     // Head (v16): [header 12][geom_bytes 8]. The two compressed metadata blocks
     // follow the compressed geometry at SIDECAR_HEAD_BYTES + geom_bytes.
     webReadRangesAsync(source_id, 0, {{0, SIDECAR_HEAD_BYTES}},
-        [this, fsize, source_id, source_label, on_loaded = std::move(on_loaded)]
+        [this, fsize, source_id, source_label, session_model_id,
+         on_loaded = std::move(on_loaded)]
         (bool ok, std::vector<std::uint8_t>&& head) mutable {
             std::uint64_t geom_bytes = 0;
             if (!ok || !parseSidecarHead(head.data(), head.size(), geom_bytes)) {
@@ -3895,7 +4277,7 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
             }
             // Geometry metadata block on disk: [comp u64][raw u64][zstd frame].
             webReadRangesAsync(source_id, 0, {{meta_off, 16}},
-                [this, fsize, meta_off, source_id, source_label,
+                [this, fsize, meta_off, source_id, source_label, session_model_id,
                  on_loaded = std::move(on_loaded)]
                 (bool ok2, std::vector<std::uint8_t>&& h) {
                     if (!ok2 || h.size() < 16) {
@@ -3914,7 +4296,7 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                         {{geometry_metadata_off, geometry_metadata_comp}},
                         [this, geometry_metadata_off, geometry_metadata_comp,
                          geometry_metadata_raw, source_id, source_label,
-                         on_loaded = std::move(on_loaded)]
+                         session_model_id, on_loaded = std::move(on_loaded)]
                         (bool ok3, std::vector<std::uint8_t>&& cz) {
                             if (!ok3) {
                                 Log::warn() << "loadSidecarMetadataWeb: geometry metadata read failed";
@@ -3951,7 +4333,7 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                                 geometry_metadata_off + geometry_metadata_comp;
                             webReadRangesAsync(source_id, 0, {{element_metadata_hdr_off, 16}},
                                 [this, sc = std::move(sc), element_metadata_hdr_off,
-                                 source_id, source_label,
+                                 source_id, source_label, session_model_id,
                                  on_loaded = std::move(on_loaded)]
                                 (bool ok4, std::vector<std::uint8_t>&& dh) mutable {
                                     if (ok4 && dh.size() >= 16) {
@@ -3969,7 +4351,6 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
 
                                     const std::size_t n_meshes    = sc.meta.meshes.size();
                                     const std::size_t n_instances = sc.meta.instances.size();
-                                    const std::uint32_t session_model_id = next_session_model_id_++;
                                     applyCachedModel(session_model_id, std::move(sc));
                                     // Mark web-streamed + set the source IMMEDIATELY — the
                                     // model now has non-resident chunks and the RAF loop's
@@ -4071,11 +4452,14 @@ void ViewportCore::logSelectedObjectGuidWeb(std::uint32_t object_id) {
         }
         Log::info() << "pick: object " << object_id << " GUID " << e.guid;
         // Surface the selection to JS so host pages can react (e.g. show the
-        // GUID + model). Fires Module.__ifcvOnSelect(object_id, guid, modelIndex);
-        // model_index is the load-order slot, matching the JS model list.
+        // GUID + model). Fires
+        // Module.__ifcvOnSelect(object_id, guid, modelIndex, sourceId).
+        // modelIndex is the load-order slot; sourceId is the byte-source the
+        // host added the model from, which is the one that cannot shift.
         EM_ASM({
-            if (Module.__ifcvOnSelect) Module.__ifcvOnSelect($0, UTF8ToString($1), $2);
-        }, object_id, e.guid.c_str(), e.model_index);
+            if (Module.__ifcvOnSelect)
+                Module.__ifcvOnSelect($0, UTF8ToString($1), $2, $3);
+        }, object_id, e.guid.c_str(), e.model_index, e.source_id);
     });
 }
 #endif  // __EMSCRIPTEN__
@@ -4084,6 +4468,7 @@ void ViewportCore::streamingProgress(int& resident_chunks, int& total_chunks) co
     resident_chunks = 0;
     total_chunks    = 0;
     for (const auto& [session_model_id, m] : models_gpu_) {
+        if (m.unloaded) continue;
         for (const auto& c : m.chunks) {
             ++total_chunks;
             if (c.is_resident) ++resident_chunks;
@@ -4115,7 +4500,7 @@ void ViewportCore::streamingModelProgress(int idx, int& resident_chunks,
     total_chunks    = 0;
     if (idx < 0 || idx >= int(models_gpu_.size())) return;
     auto it = models_gpu_.find(modelIdsInLoadOrder()[std::size_t(idx)]);
-    if (it == models_gpu_.end()) return;
+    if (it == models_gpu_.end() || it->second.unloaded) return;
     for (const auto& c : it->second.chunks) {
         ++total_chunks;
         if (c.is_resident) ++resident_chunks;
@@ -4137,6 +4522,7 @@ ViewportCore::ElementRef makeElementRef(const ModelGpuData& m, int model_index,
     ViewportCore::ElementRef ref;
     ref.object_id   = e.object_id;
     ref.model_index = model_index;
+    ref.source_id   = m.web_source_id;
     ref.guid        = str(e.guid_offset, e.guid_length);
     ref.name        = str(e.name_offset, e.name_length);
     ref.type        = str(e.type_offset, e.type_length);
@@ -4157,6 +4543,36 @@ std::vector<ViewportCore::ElementRef> ViewportCore::elements() const {
             out.push_back(makeElementRef(m, int(model_index), e));
     }
     return out;
+}
+
+void ViewportCore::visitModelElements(
+        int model_index,
+        const std::function<void(const ElementSlices&)>& visit) const {
+    const std::vector<std::uint32_t> ids = modelIdsInLoadOrder();
+    if (model_index < 0 || std::size_t(model_index) >= ids.size()) return;
+    auto it = models_gpu_.find(ids[std::size_t(model_index)]);
+    if (it == models_gpu_.end()) return;
+    const ModelGpuData& m = it->second;
+    auto slice = [&m](std::uint32_t offset, std::uint32_t length,
+                      const char*& out_ptr, std::uint32_t& out_len) {
+        // Out-of-range or zero-length offsets mean "no string was written".
+        if (length > 0 && std::size_t(offset) + length <= m.string_table.size()) {
+            out_ptr = m.string_table.data() + offset;
+            out_len = length;
+        } else {
+            out_ptr = nullptr;
+            out_len = 0;
+        }
+    };
+    for (const ElementTableRecord& e : m.elements) {
+        ElementSlices out;
+        out.object_id = e.object_id;
+        out.source_id = m.web_source_id;
+        slice(e.guid_offset, e.guid_length, out.guid, out.guid_len);
+        slice(e.name_offset, e.name_length, out.name, out.name_len);
+        slice(e.type_offset, e.type_length, out.type, out.type_len);
+        visit(out);
+    }
 }
 
 bool ViewportCore::elementForObject(std::uint32_t object_id, ElementRef& out) const {
@@ -4183,7 +4599,7 @@ void ViewportCore::streamingByteProgress(std::uint64_t& total_bytes,
     // whole model this view even requires.
     total_bytes = needed_bytes = loaded_bytes = 0;
     for (const auto& [session_model_id, m] : models_gpu_) {
-        if (m.hidden) continue;
+        if (!m.drawable()) continue;
         for (const auto& c : m.chunks) {
             // Report COMPRESSED bytes — what actually crosses the network. Fall
             // back to raw for direct (in-memory) loads that have no blobs.
@@ -4435,21 +4851,7 @@ void ViewportCore::ensureHizTextures(int viewport_w, int viewport_h) {
 
     if (dst_w == hiz_resolve_w_ && dst_h == hiz_resolve_h_ && hiz_resolve_view_) return;
 
-    if (hiz_resolve_view_)    { wgpuTextureViewRelease(hiz_resolve_view_); hiz_resolve_view_ = nullptr; }
-    if (hiz_resolve_texture_) { wgpuTextureRelease(hiz_resolve_texture_);  hiz_resolve_texture_ = nullptr; }
-    for (int s = 0; s < HIZ_SLOTS; ++s) {
-        if (hiz_staging_buffers_[s]) {
-            if (hiz_slot_state_[s] == HizSlotState::Mapped) {
-                wgpuBufferUnmap(hiz_staging_buffers_[s]);
-            }
-            wgpuBufferRelease(hiz_staging_buffers_[s]);
-            hiz_staging_buffers_[s] = nullptr;
-        }
-        hiz_slot_state_[s] = HizSlotState::Idle;
-    }
-    hiz_write_idx_ = 0;
-    hiz_valid_     = false;
-    if (hiz_bind_group_)      { wgpuBindGroupRelease(hiz_bind_group_);     hiz_bind_group_ = nullptr; }
+    releaseHizTextures();
 
     WGPUTextureDescriptor desc = {};
     desc.usage         = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc;
@@ -4492,9 +4894,8 @@ void ViewportCore::ensureHizTextures(int viewport_w, int viewport_h) {
     hiz_valid_     = false;
 }
 
-void ViewportCore::releaseHizResources() {
+void ViewportCore::releaseHizTextures() {
     if (hiz_bind_group_)      { wgpuBindGroupRelease(hiz_bind_group_);     hiz_bind_group_ = nullptr; }
-    if (hiz_uniform_buffer_)  { wgpuBufferRelease(hiz_uniform_buffer_);    hiz_uniform_buffer_ = nullptr; }
     if (hiz_resolve_view_)    { wgpuTextureViewRelease(hiz_resolve_view_); hiz_resolve_view_ = nullptr; }
     if (hiz_resolve_texture_) { wgpuTextureRelease(hiz_resolve_texture_);  hiz_resolve_texture_ = nullptr; }
     for (int s = 0; s < HIZ_SLOTS; ++s) {
@@ -4508,12 +4909,17 @@ void ViewportCore::releaseHizResources() {
         hiz_slot_state_[s] = HizSlotState::Idle;
     }
     hiz_write_idx_ = 0;
+    hiz_resolve_w_ = hiz_resolve_h_ = hiz_padded_bpr_ = 0;
+    hiz_valid_     = false;
+}
+
+void ViewportCore::releaseHizResources() {
+    releaseHizTextures();
+    if (hiz_uniform_buffer_)  { wgpuBufferRelease(hiz_uniform_buffer_);    hiz_uniform_buffer_ = nullptr; }
     if (hiz_pipeline_)        { wgpuRenderPipelineRelease(hiz_pipeline_);  hiz_pipeline_ = nullptr; }
     if (hiz_shader_module_)   { wgpuShaderModuleRelease(hiz_shader_module_); hiz_shader_module_ = nullptr; }
     if (hiz_pipeline_layout_) { wgpuPipelineLayoutRelease(hiz_pipeline_layout_); hiz_pipeline_layout_ = nullptr; }
     if (hiz_bgl_)             { wgpuBindGroupLayoutRelease(hiz_bgl_);      hiz_bgl_ = nullptr; }
-    hiz_resolve_w_ = hiz_resolve_h_ = hiz_padded_bpr_ = 0;
-    hiz_valid_ = false;
     hiz_pyramid_.clear();
     hiz_mip_offset_.clear();
     hiz_mip_w_.clear();
@@ -4699,6 +5105,7 @@ void ViewportCore::drainHizReadbacks() {
 
         hiz_vp_    = hiz_slot_vp_[slot];
         hiz_valid_ = true;
+        markCullInputsChanged();
     }
 }
 
@@ -4799,6 +5206,44 @@ bool ViewportCore::aabbOccludedByHiz(const float mn[3], const float mx[3]) const
         }
     }
     return rejected;
+}
+
+bool ViewportCore::ensureRenderAttachments(int width_px, int height_px) {
+    const std::uint64_t bytes =
+        attachmentBytesPerPixel() * std::uint64_t(width_px) * std::uint64_t(height_px);
+    const bool ok = allocateRequired(
+        "render attachments", bytes,
+        [&]() {
+            ensureDepthTexture(width_px, height_px);
+            ensureMsaaColorTexture(width_px, height_px);
+            ensureHizTextures(width_px, height_px);
+            ensureSelectionOutlineTextures(width_px, height_px);
+            createPickAttachments(width_px, height_px);
+        },
+        [&]() { releaseRenderAttachments(); },
+        // Web learns of the failure after the views are already in use:
+        // drop the set and reconfigure against the now-smaller cache.
+        [this]() {
+            releaseRenderAttachments();
+            int w = 0, h = 0;
+            host_->framebufferSize(w, h);
+            if (w > 0 && h > 0) configureSurface(w, h);
+            host_->requestFrame();
+        });
+    if (!ok && render_attachments_ok_) {
+        Log::warn() << "[wgpu] render attachments unavailable at " << width_px
+                    << "x" << height_px << "; frames are skipped until memory frees up";
+    }
+    render_attachments_ok_ = ok;
+    return ok;
+}
+
+void ViewportCore::releaseRenderAttachments() {
+    releaseDepthTexture();
+    releaseMsaaColorTexture();
+    releaseHizTextures();
+    releaseSelectionOutlineTextures();
+    releasePickResources();
 }
 
 void ViewportCore::ensureDepthTexture(int w, int h) {
@@ -5409,7 +5854,7 @@ void ViewportCore::encodeSelectionMaskPass(WGPUCommandEncoder enc) {
     // Same draw stream as the main pass, opaque and transparent together —
     // a selected element that happens to be translucent still gets a halo.
     for (const auto& [session_model_id, m] : models_gpu_) {
-        if (m.hidden) continue;
+        if (!m.drawable()) continue;
         for (const auto& c : m.chunks) {
             if (!c.bind_group || c.total_visible_vertices == 0) continue;
             wgpuRenderPassEncoderSetBindGroup(pass, 1, c.bind_group, 0, nullptr);
@@ -5698,8 +6143,18 @@ bool ViewportCore::buildBoxPickPipeline() {
     return true;
 }
 
-void ViewportCore::ensurePickAttachments(int w, int h) {
-    if (w <= 0 || h <= 0) return;
+bool ViewportCore::ensurePickAttachments(int w, int h) {
+    if (w <= 0 || h <= 0) return false;
+    if (w == pick_w_ && h == pick_h_ && pick_color_view_) return true;
+    constexpr std::uint64_t kPickBytesPerPixel = 4 + 8 + 16 + 4;
+    const std::uint64_t bytes = kPickBytesPerPixel * std::uint64_t(w) * std::uint64_t(h);
+    return allocateRequired(
+        "pick attachments", bytes,
+        [&]() { createPickAttachments(w, h); },
+        [&]() { releasePickResources(); });
+}
+
+void ViewportCore::createPickAttachments(int w, int h) {
     if (w == pick_w_ && h == pick_h_ && pick_color_view_) return;
 
     if (pick_color_view_)     { wgpuTextureViewRelease(pick_color_view_); pick_color_view_ = nullptr; }
@@ -5861,7 +6316,7 @@ void ViewportCore::encodePickReadbackToStaging(int x_pixels, int y_pixels,
     wgpuRenderPassEncoderSetPipeline(pass, pick_pipeline_);
     wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
     for (const auto& [session_model_id, m] : models_gpu_) {
-        if (m.hidden) continue;
+        if (!m.drawable()) continue;
         for (const auto& c : m.chunks) {
             if (!c.bind_group || c.total_visible_vertices == 0) continue;
             wgpuRenderPassEncoderSetBindGroup(pass, 1, c.bind_group, 0, nullptr);
@@ -5926,8 +6381,8 @@ std::uint32_t ViewportCore::pickObjectAt(int x_pixels, int y_pixels,
     if (x_pixels < 0 || y_pixels < 0 ||
         x_pixels >= configured_w_ || y_pixels >= configured_h_) return 0;
 
-    ensurePickAttachments(configured_w_, configured_h_);
-    if (!pick_color_view_ || !pick_depth_view_ || !pick_staging_buffer_) return 0;
+    if (!ensurePickAttachments(configured_w_, configured_h_)
+        || !pick_staging_buffer_) return 0;
     if (normal_out && !pick_normal_staging_buffer_) return 0;
 
     encodePickReadbackToStaging(x_pixels, y_pixels, normal_out != nullptr);
@@ -6045,6 +6500,7 @@ void ViewportCore::applyMarqueeToSelection(const std::vector<std::uint32_t>& ids
 }
 
 void ViewportCore::hideSelected() {
+    markCullInputsChanged();
     if (selection_.count() == 0) return;
     for (uint32_t id : selection_.selectionIds()) visibility_.hide(id);
     const size_t n = selection_.count();
@@ -6054,13 +6510,14 @@ void ViewportCore::hideSelected() {
 }
 
 void ViewportCore::isolateSelected() {
+    markCullInputsChanged();
     if (selection_.count() == 0) return;
     // Hide every object in a VISIBLE model that isn't selected. Model-hidden
     // objects stay model-hidden (element-level hiding on top is redundant), and
     // object_id 0 (unpickable) is skipped.
     const auto& sel_ids = selection_.selectionIds();
     for (const auto& [session_model_id, m] : models_gpu_) {
-        if (m.hidden) continue;
+        if (!m.drawable()) continue;
         for (const InstanceInfo& inst : m.instances) {
             if (inst.object_id == 0) continue;
             if (sel_ids.find(inst.object_id) == sel_ids.end())
@@ -6072,6 +6529,7 @@ void ViewportCore::isolateSelected() {
 }
 
 void ViewportCore::showAll() {
+    markCullInputsChanged();
     if (visibility_.hiddenCount() == 0) return;
     visibility_.clear();
     Log::info() << "[wgpu] show all";
@@ -6079,11 +6537,12 @@ void ViewportCore::showAll() {
 }
 
 void ViewportCore::hideAll() {
+    markCullInputsChanged();
     // Element-level hide of everything in a visible model — the inverse of
     // showAll, and isolateSelected with an empty selection. Model-hidden
     // models are already gone from the cull, so they contribute nothing.
     for (const auto& [session_model_id, m] : models_gpu_) {
-        if (m.hidden) continue;
+        if (!m.drawable()) continue;
         for (const InstanceInfo& inst : m.instances) visibility_.hide(inst.object_id);
     }
     Log::info().noquote().nospace() << "[wgpu] hid all (" << visibility_.hiddenCount() << ")";
@@ -6091,6 +6550,7 @@ void ViewportCore::hideAll() {
 }
 
 void ViewportCore::setObjectsVisible(const std::vector<std::uint32_t>& object_ids, bool visible) {
+    markCullInputsChanged();
     for (std::uint32_t id : object_ids) {
         if (visible) visibility_.show(id);
         else         visibility_.hide(id);
@@ -6155,8 +6615,8 @@ void ViewportCore::pickObjectAtAsync(int x_pixels, int y_pixels,
     if (x_pixels < 0 || y_pixels < 0 ||
         x_pixels >= configured_w_ || y_pixels >= configured_h_) { miss(0); return; }
 
-    ensurePickAttachments(configured_w_, configured_h_);
-    if (!pick_color_view_ || !pick_depth_view_ || !pick_staging_buffer_) { miss(0); return; }
+    if (!ensurePickAttachments(configured_w_, configured_h_)
+        || !pick_staging_buffer_) { miss(0); return; }
 
     // One pick in flight at a time. Clicks are far slower than a readback, so
     // dropping a pick issued while another is mapping is acceptable (and
@@ -6201,8 +6661,7 @@ bool ViewportCore::encodeBoxPickToStaging(int& x, int& y, int& w, int& h,
     if (y + h > configured_h_) h = configured_h_ - y;
     if (w <= 0 || h <= 0) return false;
 
-    ensurePickAttachments(configured_w_, configured_h_);
-    if (!pick_color_view_ || !pick_depth_view_) return false;
+    if (!ensurePickAttachments(configured_w_, configured_h_)) return false;
 
     // Padded bytes-per-row. R32UInt = 4 B/texel; align to 256 B.
     constexpr std::uint64_t kWgpuBytesPerRowAlign = 256;
@@ -6221,8 +6680,8 @@ bool ViewportCore::encodeBoxPickToStaging(int& x, int& y, int& w, int& h,
         sb.size  = cap;
         sb.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
         sb.label = svFromCStr("ifcviewer-wgpu.box_pick_staging");
-        box_pick_staging_buffer_ = wgpuDeviceCreateBuffer(device_, &sb);
-        box_pick_staging_capacity_ = cap;
+        box_pick_staging_buffer_ = createRequiredBuffer(sb, "box pick staging");
+        box_pick_staging_capacity_ = box_pick_staging_buffer_ ? cap : 0;
     }
     if (!box_pick_staging_buffer_) return false;
 
@@ -6264,7 +6723,7 @@ bool ViewportCore::encodeBoxPickToStaging(int& x, int& y, int& w, int& h,
     wgpuRenderPassEncoderSetPipeline(pass, pick_pipeline_);
     wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
     for (const auto& [session_model_id, m] : models_gpu_) {
-        if (m.hidden) continue;
+        if (!m.drawable()) continue;
         for (const auto& c : m.chunks) {
             if (!c.bind_group || c.total_visible_vertices == 0) continue;
             wgpuRenderPassEncoderSetBindGroup(pass, 1, c.bind_group, 0, nullptr);
@@ -6336,8 +6795,7 @@ bool ViewportCore::encodeXrayBoxPickToStaging(int& x, int& y, int& w, int& h,
     if (y + h > configured_h_) h = configured_h_ - y;
     if (w <= 0 || h <= 0) return false;
 
-    ensurePickAttachments(configured_w_, configured_h_);
-    if (!pick_depth_view_) return false;
+    if (!ensurePickAttachments(configured_w_, configured_h_)) return false;
 
     const std::uint64_t needed_bytes = std::uint64_t(hit_flags_words_) * sizeof(std::uint32_t);
     if (needed_bytes > hit_flags_staging_capacity_) {
@@ -6350,8 +6808,8 @@ bool ViewportCore::encodeXrayBoxPickToStaging(int& x, int& y, int& w, int& h,
         sb.size  = cap;
         sb.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
         sb.label = svFromCStr("ifcviewer-wgpu.hit_flags_staging");
-        hit_flags_staging_buffer_   = wgpuDeviceCreateBuffer(device_, &sb);
-        hit_flags_staging_capacity_ = cap;
+        hit_flags_staging_buffer_   = createRequiredBuffer(sb, "hit flags staging");
+        hit_flags_staging_capacity_ = hit_flags_staging_buffer_ ? cap : 0;
     }
     if (!hit_flags_staging_buffer_) return false;
 
@@ -6385,7 +6843,7 @@ bool ViewportCore::encodeXrayBoxPickToStaging(int& x, int& y, int& w, int& h,
     wgpuRenderPassEncoderSetPipeline(pass, box_pick_pipeline_);
     wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
     for (const auto& [session_model_id, m] : models_gpu_) {
-        if (m.hidden) continue;
+        if (!m.drawable()) continue;
         for (const auto& c : m.chunks) {
             if (!c.bind_group || c.total_visible_vertices == 0) continue;
             wgpuRenderPassEncoderSetBindGroup(pass, 1, c.bind_group, 0, nullptr);
@@ -6575,7 +7033,7 @@ bool ViewportCore::raycastSurfaceForObject(std::uint32_t object_id, int x_pixels
     float           best_radius = 0.0f;
     bool found = false;
     for (const auto& [session_model_id, m] : models_gpu_) {
-        if (m.hidden) continue;
+        if (!m.drawable()) continue;
         for (const auto& inst : m.instances) {
             if (inst.object_id != object_id) continue;
             float t = 0.0f;
@@ -6663,9 +7121,8 @@ void ViewportCore::pickSurfaceAtAsync(int x_pixels, int y_pixels,
     if (configured_w_ <= 0 || configured_h_ <= 0) { miss(); return; }
     if (x_pixels < 0 || y_pixels < 0 ||
         x_pixels >= configured_w_ || y_pixels >= configured_h_) { miss(); return; }
-    ensurePickAttachments(configured_w_, configured_h_);
-    if (!pick_color_view_ || !pick_depth_view_ ||
-        !pick_staging_buffer_ || !pick_normal_staging_buffer_) { miss(); return; }
+    if (!ensurePickAttachments(configured_w_, configured_h_)
+        || !pick_staging_buffer_ || !pick_normal_staging_buffer_) { miss(); return; }
     // Shares the single-pick staging buffers → shares the in-flight guard.
     if (pick_async_in_flight_) { miss(); return; }
     pick_async_in_flight_ = true;
@@ -6891,7 +7348,7 @@ bool ViewportCore::raycast(const float origin[3], const float dir[3],
     float         best_normal[3] = {0, 0, 0};
 
     for (const auto& [session_model_id, m] : models_gpu_) {
-        if (m.hidden) continue;
+        if (!m.drawable()) continue;
         for (std::uint32_t inst_idx = 0; inst_idx < std::uint32_t(m.instances.size()); ++inst_idx) {
             const InstanceInfo& inst = m.instances[inst_idx];
             if (!rayAabbSlab(origin, inv_d, inst.world_aabb_min, inst.world_aabb_max)) {
@@ -7116,10 +7573,7 @@ void ViewportCore::configureSurface(int width_px, int height_px) {
     configured_w_       = width_px;
     configured_h_       = height_px;
     surface_configured_ = true;
-    ensureDepthTexture(width_px, height_px);
-    ensureMsaaColorTexture(width_px, height_px);
-    ensureHizTextures(width_px, height_px);
-    ensureSelectionOutlineTextures(width_px, height_px);
+    ensureRenderAttachments(width_px, height_px);
     // depth_view_ was just replaced; force the HiZ + edge bind groups
     // to rebuild against the new view on next encode.
     if (hiz_bind_group_) {
@@ -7172,7 +7626,8 @@ WGPUBuffer ViewportCore::encodeScreenshotCapture(
     bdesc.size  = total_bytes;
     bdesc.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
     bdesc.label = svFromCStr("ifcviewer-wgpu.capture");
-    WGPUBuffer capture_buffer = wgpuDeviceCreateBuffer(device_, &bdesc);
+    WGPUBuffer capture_buffer = createRequiredBuffer(bdesc, "screenshot capture");
+    if (!capture_buffer) return nullptr;
 
     WGPUTexelCopyTextureInfo src = {};
     src.texture = surface_texture;
@@ -7304,9 +7759,33 @@ void ViewportCore::render() {
     // we don't busy-loop reconfiguring a dead surface — that retry storm is
     // what otherwise freezes the tab. The page logs guidance to reload.
     if (device_lost_) return;
+    // configureSurface could not fit the per-pixel attachments even after
+    // the geometry cache yielded. Drawing would submit invalid views (an
+    // abort on wgpu-native), so try again — memory may have been freed by
+    // another process since — and skip the frame if it still does not fit.
+    if (!render_attachments_ok_
+        && !ensureRenderAttachments(configured_w_, configured_h_)) return;
 
     Stopwatch frame_timer;
     frame_timer.start();
+
+    // The driver refusing pool growth is the query-less platform's device
+    // report (web has no memory query; the pool just grew until the GPU
+    // process said no). Answer it once, immediately: lower the budget so
+    // the required-tier margin comes back out of the cache NOW, instead of
+    // the next attachment resize having to fail — and paint broken frames —
+    // before pressure feedback carves the same room.
+    if (pool_.growth_was_refused() && !pool_growth_refusal_handled_) {
+        pool_growth_refusal_handled_ = true;
+        const double mb = 1.0 / (1024.0 * 1024.0);
+        Log::info() << "[wgpu] driver refused geometry-cache growth at "
+                    << double(pool_.total_capacity_bytes()) * mb
+                    << " MB -- reserving the required-tier margin out of the cache";
+        if (budget_.onPressure(pool_.total_capacity_bytes(),
+                               GpuBudget::kFixedMarginBytes, 0)) {
+            applyBudgetToPool();
+        }
+    }
 
     // Drain any HiZ async readbacks completed since last frame.
     if (hiz_enabled_) drainHizReadbacks();
@@ -7351,10 +7830,6 @@ void ViewportCore::render() {
     updateFrameUniforms();
 
     // ---- Per-frame cull --------------------------------------------------
-    last_visible_objects_   = 0;
-    last_visible_triangles_ = 0;
-    last_sub_draws_         = 0;
-    hiz_reject_count_       = 0;
     Stopwatch cull_timer;
     cull_timer.start();
     cull_writes_this_frame_ = 0;
@@ -7395,8 +7870,20 @@ void ViewportCore::render() {
              || camera_distance_  != prev_camera_distance_
              || camera_yaw_deg_   != prev_camera_yaw_deg_
              || camera_pitch_deg_ != prev_camera_pitch_deg_);
+        if (camera_moved) {
+            motion_cull_latched_ = true;
+            motion_hold_timer_.start();
+        } else if (motion_cull_latched_
+                   && motion_hold_timer_.elapsed() >= kMotionHoldMs) {
+            motion_cull_latched_ = false;
+        }
+        // While the latch holds with the camera still, keep frames coming so
+        // the expiry actually happens and the fine-threshold re-cull runs —
+        // the loop is on demand, and a fully-resident scene would otherwise
+        // stay coarsely culled until the next input.
+        if (motion_cull_latched_ && !camera_moved) host_->requestFrame();
         const bool use_motion_threshold =
-            camera_moved && motion_min_pixel_radius_ > min_pixel_radius_;
+            motion_cull_latched_ && motion_min_pixel_radius_ > min_pixel_radius_;
         const float effective_min_px =
             use_motion_threshold ? motion_min_pixel_radius_ : min_pixel_radius_;
         last_cull_was_motion_ = use_motion_threshold;
@@ -7435,6 +7922,36 @@ void ViewportCore::render() {
             };
         }
 
+        // Re-cull only when something that can change its outcome did:
+        // the camera, the scene epoch (residency / visibility / colours /
+        // transforms / models / a new HiZ pyramid), or a cull-relevant
+        // setting. Everything the draw needs from a cull persists — the
+        // per-chunk counters and the uploaded visible_draws buffers — so a
+        // frame requested for an overlay, a pick highlight, or a streaming
+        // tick where nothing landed skips the whole walk. Benchmarks are
+        // exempt so bench numbers keep measuring the real cull.
+        const bool cull_inputs_unchanged =
+            bench_total_ == 0
+            && has_last_cull_
+            && last_cull_epoch_  == scene_epoch_
+            && last_cull_vp_     == vp_this_frame
+            && last_cull_min_px_ == effective_min_px
+            && last_cull_lod_px_ == lod1_pixel_threshold_
+            && last_cull_xray_   == xray_alpha_cap_
+            && last_cull_hiz_    == hiz_for_this_frame;
+        if (!cull_inputs_unchanged) {
+            has_last_cull_    = true;
+            last_cull_epoch_  = scene_epoch_;
+            last_cull_vp_     = vp_this_frame;
+            last_cull_min_px_ = effective_min_px;
+            last_cull_lod_px_ = lod1_pixel_threshold_;
+            last_cull_xray_   = xray_alpha_cap_;
+            last_cull_hiz_    = hiz_for_this_frame;
+            last_visible_objects_   = 0;
+            last_visible_triangles_ = 0;
+            last_sub_draws_         = 0;
+            hiz_reject_count_       = 0;
+
         // Force sequential on Emscripten: std::async(std::launch::async)
         // without -pthread throws std::system_error from inside libstdc++,
         // and we link without exceptions so that becomes abort(). Until
@@ -7448,7 +7965,7 @@ void ViewportCore::render() {
             std::vector<std::pair<std::uint32_t, std::future<std::uint32_t>>> futures;
             futures.reserve(models_gpu_.size());
             for (auto& [session_model_id, m] : models_gpu_) {
-                if (m.hidden) continue;
+                if (!m.drawable()) continue;
                 auto& m_ref = m;
                 futures.emplace_back(session_model_id, std::async(std::launch::async,
                     [this, &m_ref, &planes, &eye_a, &fwd_a, &right_a, &up_a,
@@ -7465,7 +7982,7 @@ void ViewportCore::render() {
             }
         } else {
             for (auto& [session_model_id, m] : models_gpu_) {
-                if (m.hidden) continue;
+                if (!m.drawable()) continue;
                 hiz_reject_count_ += cullModelCpuCompute(
                     m, planes, eye_a, fwd_a, right_a, up_a, focal_px,
                     effective_min_px, lod1_pixel_threshold_,
@@ -7477,7 +7994,7 @@ void ViewportCore::render() {
         Stopwatch upload_timer;
         upload_timer.start();
         for (auto& [session_model_id, m] : models_gpu_) {
-            if (m.hidden) continue;
+            if (!m.drawable()) continue;
             cullModelCpuUpload(m);
             for (const auto& c : m.chunks) {
                 last_visible_objects_   += c.total_visible_draws;
@@ -7487,6 +8004,10 @@ void ViewportCore::render() {
         }
         last_cull_compute_ms_ = cull_compute_ms;
         last_cull_upload_ms_  = double(upload_timer.nsecsElapsed()) / 1e6;
+        } else {
+            last_cull_compute_ms_ = 0.0;
+            last_cull_upload_ms_  = 0.0;
+        }
     }
 
     const double cull_only_ms = double(cull_timer.nsecsElapsed()) / 1e6;
@@ -7558,7 +8079,7 @@ void ViewportCore::render() {
         wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
 
         for (const auto& [session_model_id, m] : models_gpu_) {
-            if (m.hidden) continue;
+            if (!m.drawable()) continue;
             for (const auto& c : m.chunks) {
                 if (!c.bind_group || c.opaque_visible_vertices == 0) continue;
                 wgpuRenderPassEncoderSetBindGroup(pass, 1, c.bind_group, 0, nullptr);
@@ -7569,7 +8090,7 @@ void ViewportCore::render() {
 
         wgpuRenderPassEncoderSetPipeline(pass, main_pipeline_transparent_);
         for (const auto& [session_model_id, m] : models_gpu_) {
-            if (m.hidden) continue;
+            if (!m.drawable()) continue;
             for (const auto& c : m.chunks) {
                 if (!c.bind_group) continue;
                 const std::uint32_t transparent_verts =
@@ -7606,8 +8127,15 @@ void ViewportCore::render() {
     section_gizmo_.encode(pass, vp_this_frame, section_planes_,
                           viewport_w_px, viewport_h_px, dpr_int, section_selected_index_);
 
-    // Remaining in-pass overlays (highlight triangles, pivot, overlay
-    // lines/points). QtViewportHost forwards to overlays_.X(); web host no-ops.
+    // Orbit pivot indicator — same shared-renderer story. Drawn while the host
+    // has it gated on (drag) or an afterglow is still running; in the latter
+    // case keep frames coming so the one that clears it actually lands.
+    const bool pivot_visible = pivotIndicatorVisible();
+    axis_indicator_.encodePivot(pass, overlay_frame, pivot_visible);
+    if (pivot_visible && pivot_indicator_timer_.isValid()) host_->requestFrame();
+
+    // Remaining in-pass overlays (highlight triangles, overlay lines/points).
+    // QtViewportHost forwards to overlays_.X(); the web host no-ops.
     host_->encodeOverlaysInMainPass(pass, overlay_frame);
 
     wgpuRenderPassEncoderEnd(pass);
@@ -7626,8 +8154,12 @@ void ViewportCore::render() {
     int hiz_submitted_slot = -1;
     if (hiz_enabled_) hiz_submitted_slot = encodeHizResolve(enc);
 
-    // Post-main overlays (corner axis, marquee, labels) on the resolved
-    // surface. QtViewportHost forwards to overlays_.X().
+    // Corner axis gizmo on the resolved surface — shared renderer, ahead of the
+    // host's own post-main overlays so marquee / labels still stack on top.
+    axis_indicator_.encodeCornerAxis(enc, view, overlay_frame);
+
+    // Remaining post-main overlays (marquee, labels) on the resolved surface.
+    // QtViewportHost forwards to overlays_.X(); the web host no-ops.
     host_->encodeOverlaysPostMain(enc, view, overlay_frame);
 
     // Optional capture: encode copy on the same command buffer.
@@ -7680,13 +8212,35 @@ void ViewportCore::render() {
         stats.unique_meshes     = total_meshes;
         std::uint32_t draw_calls = 0;
         for (const auto& [session_model_id, mm] : models_gpu_) {
-            if (mm.hidden) continue;
+            if (!mm.drawable()) continue;
             for (const auto& c : mm.chunks) {
                 if (c.is_resident && c.total_visible_draws > 0) ++draw_calls;
             }
         }
         stats.gl_draw_calls      = draw_calls;
         stats.indirect_sub_draws = last_sub_draws_;
+        std::uint32_t wanted = 0, wanted_missing = 0;
+        std::uint64_t wanted_missing_bytes = 0;
+        for (const auto& [session_model_id, mm] : models_gpu_) {
+            if (!mm.drawable()) continue;
+            for (const auto& c : mm.chunks) {
+                if (c.contribution_visible_count == 0) continue;
+                ++wanted;
+                if (c.is_resident) continue;
+                ++wanted_missing;
+                wanted_missing_bytes += c.vertex_byte_size
+                                      + c.index_count * sizeof(std::uint32_t);
+            }
+        }
+        stats.chunks_wanted         = wanted;
+        stats.chunks_wanted_missing = wanted_missing;
+        stats.wanted_missing_bytes  = wanted_missing_bytes;
+        stats.vram_used_bytes     = pool_.total_used_bytes();
+        stats.vram_capacity_bytes = pool_.total_capacity_bytes();
+        stats.vram_budget_bytes   = budget_.bounded() ? budget_.cache_budget_bytes() : 0;
+        pollDeviceMemory();
+        stats.device_vram_used_bytes  = device_vram_used_bytes_;
+        stats.device_vram_total_bytes = device_vram_total_bytes_;
         host_->onFrameStats(stats);
     }
 
@@ -7718,6 +8272,7 @@ void ViewportCore::render() {
         ++interactive_frame_count_;
         const float ms = float(frame_timer.nsecsElapsed()) / 1e6f;
         std::uint64_t total_vbo = 0, total_ebo = 0, total_ssbo = 0;
+        std::uint64_t total_cpu_shadow = 0;
         std::uint32_t total_instances = 0;
         std::size_t chunks_total = 0, chunks_resident = 0;
         std::size_t chunks_frustum_vis = 0, chunks_missing = 0;
@@ -7725,6 +8280,7 @@ void ViewportCore::render() {
             total_vbo  += mo.vram_bytes_vbo;
             total_ebo  += mo.vram_bytes_ebo;
             total_ssbo += mo.vram_bytes_ssbo;
+            total_cpu_shadow += mo.cpu_shadow_bytes;
             total_instances += mo.instance_count;
             for (const auto& c : mo.chunks) {
                 ++chunks_total;
@@ -7755,6 +8311,7 @@ void ViewportCore::render() {
             << "  chunks " << chunks_resident << "/" << chunks_frustum_vis
             << "/" << chunks_total << " (missing " << chunks_missing << ")"
             << "  vram " << fmtF(double(total_vbo + total_ebo + total_ssbo) * mb, 1) << "MB"
+            << "  cpuTris " << fmtF(float(double(total_cpu_shadow) * mb), 1) << "MB"
             << "  models " << models_gpu_.size()
             << "  lod1 " << lod1_dbg_count_ << "/" << (lod1_dbg_count_ + lod0_dbg_eligible_count_)
             << " (saved " << lod1_dbg_tris_saved_ << " tris, "

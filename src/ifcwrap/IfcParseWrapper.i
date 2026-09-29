@@ -108,6 +108,8 @@
 // _add() because mixin defined add which adds transaction logic
 %rename("_add") add_entity;
 %rename("_remove") remove_entity;
+%rename("_batch") batch;
+%rename("_unbatch") unbatch;
 %rename("_traverse") traverse;
 %rename("_traverse_breadth_first") traverse_breadth_first;
 
@@ -148,6 +150,7 @@ PyObject* get_feature(const std::string& x) {
 
 #include <fstream>
 #include <random>
+#include <unordered_set>
 
 // Atomic IFC/STEP write (issue #4797): serialize to a temporary file next to
 // the destination, then atomically rename it onto the destination. If the
@@ -316,6 +319,33 @@ private:
 		throw ifcopenshell::exception("Only entities with ids are supported for get_total_inverses. Provided entity: '" + e.declaration().name() + "'.");
 	}
 
+	// True iff every instance referencing e has an id in ids. Stops at the
+	// first referencing instance outside the set, without materializing any.
+	bool _is_referenced_only_in(const express::base& e, const std::vector<int>& ids) {
+		auto e_ = e.as<express::entity>();
+		if (!e_) {
+			throw ifcopenshell::exception("Only entities with ids are supported for _is_referenced_only_in. Provided entity: '" + e.declaration().name() + "'.");
+		}
+		const std::unordered_set<uint32_t> allowed(ids.begin(), ids.end());
+		return $self->all_referencing_instances(e_.id(), [&allowed](uint32_t source_id) {
+			return allowed.count(source_id) != 0;
+		});
+	}
+
+	// The subset of ids whose every referencing instance is itself in ids:
+	// one crossing in, one crossing out, early exit per id.
+	std::vector<int> _ids_referenced_only_within(const std::vector<int>& ids) {
+		const std::unordered_set<uint32_t> allowed(ids.begin(), ids.end());
+		const auto within = [&allowed](uint32_t source_id) { return allowed.count(source_id) != 0; };
+		std::vector<int> contained;
+		for (int id : ids) {
+			if ($self->all_referencing_instances(id, within)) {
+				contained.push_back(id);
+			}
+		}
+		return contained;
+	}
+
 	void _write(const std::string& fn) {
 		// Atomic write: serialize to a temp file next to the target, then
 		// atomically rename it into place, so an interrupted write can never
@@ -443,7 +473,7 @@ private:
 		if (!$self->declaration().as_entity()) {
 			return name == "wrappedValue" ? 1 : 0;
 		}
-		
+
 		{
 		const std::vector<const ifcopenshell::attribute*> attrs = $self->declaration().as_entity()->all_attributes();
 		std::vector<const ifcopenshell::attribute*>::const_iterator it = attrs.begin();
@@ -496,12 +526,12 @@ private:
 		if (!$self->declaration().as_entity()) {
 			return std::vector<std::string>(1, "wrappedValue");
 		}
-		
+
 		const std::vector<const ifcopenshell::attribute*> attrs = $self->declaration().as_entity()->all_attributes();
-		
+
 		std::vector<std::string> attr_names;
-		attr_names.reserve(attrs.size());		
-		
+		attr_names.reserve(attrs.size());
+
 		std::vector<const ifcopenshell::attribute*>::const_iterator it = attrs.begin();
 		for (; it != attrs.end(); ++it) {
 			attr_names.push_back((*it)->name());
@@ -516,10 +546,10 @@ private:
 		}
 
 		const std::vector<const ifcopenshell::inverse_attribute*> attrs = $self->declaration().as_entity()->all_inverse_attributes();
-		
+
 		std::vector<std::string> attr_names;
-		attr_names.reserve(attrs.size());		
-		
+		attr_names.reserve(attrs.size());
+
 		std::vector<const ifcopenshell::inverse_attribute*>::const_iterator it = attrs.begin();
 		for (; it != attrs.end(); ++it) {
 			attr_names.push_back((*it)->name());
@@ -527,7 +557,7 @@ private:
 
 		return attr_names;
 	}
-	
+
 	bool is_a(const std::string& s) {
 		return self->declaration().is(s);
 	}
@@ -623,6 +653,12 @@ private:
 			// @nb we don't check anymore if the attribute is optional here, because it should be
 			// possible to go back to the state at construction time.
 			// bool is_optional = $self->declaration().as_entity()->attribute_by_index(i)->optional();
+			// A derived attribute keeps its derived marker, as at construction time.
+			auto* ent = $self->declaration().as_entity();
+			if (ent && i < ent->derived().size() && ent->derived()[i]) {
+				self->set_attribute_value(i, ifcopenshell::derived{});
+				return;
+			}
 			self->set_attribute_value(i, blank{});
 			return;
 		}
@@ -901,7 +937,7 @@ private:
 						bits.push_back(boost::dynamic_bitset<>(v));
 					} else {
 						throw ifcopenshell::exception("String not a valid binary representation");
-					}			
+					}
 				}
 				self->set_attribute_value(i, bits);
 				return;
@@ -962,6 +998,12 @@ private:
 };
 
 %include "../ifcparse/ifc_parse_api.h"
+
+namespace ifcopenshell {
+std::string encode_spf_string(const std::string& value);
+std::string decode_spf_string(const std::string& value);
+}
+
 %include "../ifcparse/spf_header.h"
 
 %pythoncode %{
@@ -1181,7 +1223,7 @@ from .entity_instance import entity_instance_mixin
 %{
 	PyObject* get_info_cpp(const express::base& v, bool recursive, bool include_identifier);
 
-	// @todo refactor this to remove duplication with the typemap. 
+	// @todo refactor this to remove duplication with the typemap.
 	// except this is calls the above function in case of instances.
 	PyObject* convert_cpp_attribute_to_python(const express::base& instance, size_t attribute_index, bool recursive, bool include_identifier) {
 		return instance.get_attribute_value(attribute_index).apply_visitor([recursive, include_identifier](const auto& v){
@@ -1193,7 +1235,7 @@ from .entity_instance import entity_instance_mixin
 					return SWIG_NewPointerObj(new attribute_value_derived, SWIGTYPE_p_attribute_value_derived, SWIG_POINTER_OWN);
 				} else {
 					Py_INCREF(Py_None);
-					return static_cast<PyObject*>(Py_None); 
+					return static_cast<PyObject*>(Py_None);
 				}
 			} else if constexpr (std::is_same_v<u, express::base>) {
 				if (recursive) {
@@ -1230,7 +1272,7 @@ from .entity_instance import entity_instance_mixin
 				}
             } else if constexpr (std::is_same_v<u, ifcopenshell::empty_aggregate> || std::is_same_v<u, ifcopenshell::empty_aggregate_of_aggregate> || std::is_same_v<u, ifcopenshell::blank>) {
                 Py_INCREF(Py_None);
-				return static_cast<PyObject*>(Py_None); 
+				return static_cast<PyObject*>(Py_None);
             } else if constexpr (is_std_vector_v<u>) {
 				// only for non-entity-instance vectors
 				return pythonize_vector(v);
@@ -1418,7 +1460,7 @@ from .entity_instance import entity_instance_mixin
 				std::visit([&](const auto& v) -> void {
                     PyObject* attribute_val_py = nullptr;
 					using t = std::decay_t<decltype(v)>;
-					
+
 					if constexpr (std::is_same_v<t, ifcopenshell::reference_or_simple_type>) {
 						if (auto* inst = std::get_if<express::base>(&v)) {
 							// So this never happens?

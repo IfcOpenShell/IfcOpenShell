@@ -56,7 +56,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcExtrudedAreaSolidTapered& in
 	if (has_position) {
 		matrix = taxonomy::cast<taxonomy::matrix4>(map(inst.Position()));
 	}
-	
+
 	loft->matrix = matrix;
 
 	return loft;

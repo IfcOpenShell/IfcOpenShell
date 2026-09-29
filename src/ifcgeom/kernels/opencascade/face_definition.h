@@ -70,7 +70,7 @@ namespace ifcopenshell::geom {
 			std::pair<wire_it, wire_it> inner_wires() const {
 				return { wires_.begin() + 1, wires_.end() };
 			}
-		};	
+		};
 
 	}
 }

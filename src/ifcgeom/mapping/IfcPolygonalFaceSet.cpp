@@ -61,7 +61,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolygonalFaceSet& inst) {
 	for (auto& f : polygonal_faces) {
 		auto fa = taxonomy::make<taxonomy::face>();
 		shell->children.push_back(fa);
-		
+
 		{
 			auto loop = taxonomy::make<taxonomy::loop>();
 			fa->children = { loop };

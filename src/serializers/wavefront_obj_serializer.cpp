@@ -101,7 +101,7 @@ void wavefront_obj_serializer::write(const ifcopenshell::geom::triangulation_ele
         const double x = *(it++);
         const double y = *(it++);
         const double z = *(it++);
-		
+
 		if (isyup) {
 			obj_stream.stream << "v " << x << " " << z << " " << -y << "\n";
 		} else {
@@ -128,7 +128,7 @@ void wavefront_obj_serializer::write(const ifcopenshell::geom::triangulation_ele
     const bool has_uvs = !mesh.uvs().empty();
 	const bool has_normals = !mesh.normals().empty();
 	for ( std::vector<int>::const_iterator it = mesh.faces().begin(); it != mesh.faces().end(); ) {
-		
+
 		const int material_id = *(material_it++);
 		if (material_id != previous_material_id) {
 			const ifcopenshell::geom::taxonomy::style::ptr material = mesh.materials()[material_id];

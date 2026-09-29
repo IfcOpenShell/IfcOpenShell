@@ -620,7 +620,7 @@ typedef item const* ptr;
 
 			struct equal_functor {
 				bool operator()(taxonomy::item::ptr const& a,
-					taxonomy::item::ptr const& b) const 
+					taxonomy::item::ptr const& b) const
 				{
 					if (a == b) {
 						return true;

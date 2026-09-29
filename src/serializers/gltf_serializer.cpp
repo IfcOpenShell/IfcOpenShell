@@ -93,7 +93,7 @@ int gltf_serializer::writeMaterial(const ifcopenshell::geom::taxonomy::style::pt
 	if (it != materials_.end()) {
 		return it->second;
 	}
-	
+
 	int idx = json_["materials"].size();
 	materials_[style->name] = idx;
 
@@ -116,7 +116,7 @@ int gltf_serializer::writeMaterial(const ifcopenshell::geom::taxonomy::style::pt
 		json_["materials"].push_back({ {"name", style->name}, {"doubleSided", true}, {"pbrMetallicRoughness", {{"baseColorFactor", base}, {"metallicFactor", 0}, {"roughnessFactor", roughness}}}});
 	} else
 		json_["materials"].push_back({ {"name", style->name}, {"doubleSided", true}, {"pbrMetallicRoughness", {{"baseColorFactor", base}, {"metallicFactor", 0}}}});
-	
+
 	if (style->transparency == style->transparency && style->transparency > 1.e-9) {
 		json_["materials"].back()["alphaMode"] = "BLEND";
 	}
@@ -212,7 +212,7 @@ void gltf_serializer::write(const ifcopenshell::geom::triangulation_element* o) 
                 break;
 			}
 
-            
+
 			auto mm = (*it)->transformation().data()->ccomponents();
             if (!is_root) {
                 mm = (*jt)->transformation().data()->ccomponents().inverse() * mm;
@@ -238,9 +238,9 @@ void gltf_serializer::write(const ifcopenshell::geom::triangulation_element* o) 
 					mm(0,3), mm(2,3), -mm(1,3), mm(3,3)
 				};
 			}
-	
+
 			static const std::array<double, 16> identity_matrix = {1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
-	
+
 			if (matrix_flat != identity_matrix) {
 				// glTF validator complains about identity matrices
                 parent_node["matrix"] = matrix_flat;
@@ -260,7 +260,7 @@ void gltf_serializer::write(const ifcopenshell::geom::triangulation_element* o) 
             }
 		}
     }
-	
+
 	json node;
     {
 		std::array<double, 16> matrix_flat;
@@ -281,16 +281,16 @@ void gltf_serializer::write(const ifcopenshell::geom::triangulation_element* o) 
 				m(0,3), m(2,3), -m(1,3), m(3,3)
 			};
 		}
-	
+
 		static const std::array<double, 16> identity_matrix = {1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
-	
+
 		if (matrix_flat != identity_matrix) {
 			// glTF validator complains about identity matrices
 			node["matrix"] = matrix_flat;
 		}
 	}
 	node["name"] = object_id(o);
-	
+
 	int current_mesh_index;
 
 	// See if this mesh has already been processed
@@ -316,7 +316,7 @@ void gltf_serializer::write(const ifcopenshell::geom::triangulation_element* o) 
 
 		json mesh;
 		mesh["name"] = o->geometry().id();
-		
+
 		while (true) {
 			// In glTF we need to decompose a mesh into several primitives
 			// with a constant material. In the triangulations coming from
@@ -342,7 +342,7 @@ void gltf_serializer::write(const ifcopenshell::geom::triangulation_element* o) 
 				});
 
 				json primitive = json::object();
-				
+
 				primitive["indices"] = write_accessor<1U>(json_, tmp_fstream1_, idx_transformed.begin(), idx_transformed.end(), bufferViewId++);
 
 				auto vbegin = o->geometry().verts().begin();
@@ -354,12 +354,12 @@ void gltf_serializer::write(const ifcopenshell::geom::triangulation_element* o) 
 					std::vector<float> nf(nbegin + idx_begin * 3, nbegin + idx_end * 3);
 					primitive["attributes"]["NORMAL"] = write_accessor<3U>(json_, tmp_fstream2_, nf.begin(), nf.end(), bufferViewId++);
 				}
-				
+
 				if (*mid0 >= 0) {
 					primitive["material"] = writeMaterial(o->geometry().materials()[*mid0]);
 				}
 				primitive["mode"] = primitive_type;
-				
+
 				mesh["primitives"].push_back(primitive);
 
 				if (mid1 == o->geometry().material_ids().end()) {
@@ -471,7 +471,7 @@ void gltf_serializer::finalize() {
 	json_["scenes"].push_back(scene_0);
 
 	//The generated glb file will contain the indices buffer followed by the vertices buffer.
-	//Therefore once we know the size of the indices buffer, we update our vertices buffer 
+	//Therefore once we know the size of the indices buffer, we update our vertices buffer
 	//to have an offset equal to the size of the indices buffer.
 	for (auto &n : json_["bufferViews"]) {
 		if (n.contains("byteStride")) {
@@ -488,7 +488,7 @@ void gltf_serializer::finalize() {
 	const int GLB_JSON_HEADER = 8;
 	const int GLB_BINARY_CHUNK_HEADER = 8;
 
-	uint32_t header[] = { GLTF, 2U, GLB_FILE_HEADER + GLB_JSON_HEADER + json_length + padding_for(json_length) + 
+	uint32_t header[] = { GLTF, 2U, GLB_FILE_HEADER + GLB_JSON_HEADER + json_length + padding_for(json_length) +
 						  GLB_BINARY_CHUNK_HEADER + binary_length + padding_for(binary_length) };
 	fstream_.write((const char*)header, sizeof(header));
 
@@ -508,7 +508,7 @@ void gltf_serializer::finalize() {
 }
 
 namespace {
-	void normalize(std::array<double, 3>& v) {
+	[[maybe_unused]] void normalize(std::array<double, 3>& v) {
 		auto l = std::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
 
 		v[0] /= l;
@@ -516,13 +516,13 @@ namespace {
 		v[2] /= l;
 	}
 
-	void cross(const std::array<double, 3>& v1, const std::array<double, 3>& v2, std::array<double, 3>& result) {
+	[[maybe_unused]] void cross(const std::array<double, 3>& v1, const std::array<double, 3>& v2, std::array<double, 3>& result) {
 		result[0] = v1[1] * v2[2] - v1[2] * v2[1];
 		result[1] = v1[2] * v2[0] - v1[0] * v2[2];
 		result[2] = v1[0] * v2[1] - v1[1] * v2[0];
 	}
 
-	void proj_log(void* data, int, const char* c) {
+	[[maybe_unused]] void proj_log(void* data, int, const char* c) {
 		auto logger = static_cast<ifcopenshell::logger*>(data);
 		if (logger) {
 			logger->error("SER", 1, "PROJ: " + std::string(c));
@@ -551,7 +551,7 @@ void gltf_serializer::setFile(ifcopenshell::file& f) {
             express::base target_crs = coordop.as<express::entity>().get("TargetCRS");
 			auto name_attr = target_crs.as<express::entity>().get("Name");
 			if (coordop.declaration().is("IfcMapConversion")) {
-					
+
 				if (!name_attr.isNull()) {
 					std::string epsg_code = name_attr;
 					crs_epsg = epsg_code;
@@ -627,13 +627,21 @@ void gltf_serializer::setFile(ifcopenshell::file& f) {
 		}
 	}
 
+	setup_georeferencing(crs_epsg, eastings_northings_elevation, crs_x_axis);
+}
+
+void gltf_serializer::setup_georeferencing(
+	[[maybe_unused]] const std::optional<std::string>& crs_epsg,
+	[[maybe_unused]] const std::optional<std::array<double, 3>>& eastings_northings_elevation,
+	[[maybe_unused]] std::optional<std::array<double, 3>> crs_x_axis)
+{
 #ifdef WITH_PROJ
 
 	if (crs_epsg) {
 		PJ_COORD wgs84_point;
 
 		auto C = proj_context_create();
-		proj_log_func(C, &logger_, proj_log);
+		proj_log_func(C, &logger(), proj_log);
 
 		// @todo a bit ugly we assume a proj.db in current working directory.
 		// a very simplistic but at least portable solution.
@@ -655,7 +663,7 @@ void gltf_serializer::setFile(ifcopenshell::file& f) {
 				NULL);
 
 			if (!P) {
-				logger_.error("SER", 2, "Failed to create PROJ transformation object");
+				logger().error("SER", 2, "Failed to create PROJ transformation object");
 				return;
 			}
 
@@ -667,7 +675,7 @@ void gltf_serializer::setFile(ifcopenshell::file& f) {
 
 			wgs84_point = proj_trans(P, PJ_FWD, a);
 
-			logger_.notice("SER", 3, "Calculated latitude: " + std::to_string(wgs84_point.lp.lam) + " longitude: " + std::to_string(wgs84_point.lp.phi));
+			logger().notice("SER", 3, "Calculated latitude: " + std::to_string(wgs84_point.lp.lam) + " longitude: " + std::to_string(wgs84_point.lp.phi));
 		}
 
 		std::swap(wgs84_point.lp.phi, wgs84_point.lp.lam);
@@ -692,7 +700,7 @@ void gltf_serializer::setFile(ifcopenshell::file& f) {
 		PJ *ellipsoid_crs = proj_create(C, ellipsoid_def);
 
 		if (!ellipsoid_crs) {
-			logger_.error("SER", 4, "Failed to create ellipsoid CRS");
+			logger().error("SER", 4, "Failed to create ellipsoid CRS");
 			return;
 		}
 

@@ -336,7 +336,7 @@ int main(int argc, char** argv) {
 	std::string exterior_only_algo;
 
 	ifcopenshell::geom::settings settings;
-    
+
 	po::options_description geom_options("Geometry options");
 	geom_options.add_options()
 		("kernel", po::value<std::string>(&geometry_kernel)->default_value(default_kernel),
@@ -389,7 +389,7 @@ int main(int argc, char** argv) {
 		("model", "Specifies whether to include surfaces and solids in the output result. "
 			"Typically these are representations of type Body or Facetation. ")
 		;
-	
+
 	settings.define_options(geom_options);
 
     std::string bounds;
@@ -466,7 +466,7 @@ int main(int argc, char** argv) {
 		num_threads = std::thread::hardware_concurrency();
 		logger.notice("SYS", 7, "Using " + std::to_string(num_threads) + " threads");
 	}
-    
+
 	if (vmap.count("log-format") == 1) {
 		boost::to_lower(log_format);
 		if (log_format == "plain") {
@@ -479,7 +479,7 @@ int main(int argc, char** argv) {
 			return EXIT_FAILURE;
 		}
 	}
-    
+
     if (!filter_filename.empty()) {
         size_t num_filters = read_filters_from_file(ifcopenshell::path::to_utf8(filter_filename), include_filter, include_traverse_filter, exclude_filter, exclude_traverse_filter);
         if (num_filters) {
@@ -524,10 +524,10 @@ int main(int argc, char** argv) {
 
 	// If no output filename is specified a Wavefront OBJ file will be output
 	// to maintain backwards compatibility with the obsolete IfcObj executable.
-	const path_t output_filename = vmap.count("output-file") == 1 
+	const path_t output_filename = vmap.count("output-file") == 1
 		? vmap["output-file"].as<path_t>()
 		: change_extension(input_filename, ifcopenshell::path::from_utf8(DEFAULT_EXTENSION));
-	
+
 	if (output_filename.size() < 5) {
         cerr_ << "[error] Invalid or unsupported output file '" << output_filename << "' given" << std::endl;
         print_usage();
@@ -572,13 +572,13 @@ int main(int argc, char** argv) {
 	}
 
     path_t output_temp_filename = output_filename + ifcopenshell::path::from_utf8(TEMP_FILE_EXTENSION);
-	
+
 	std::vector<path_t> tokens;
 	split(tokens, output_filename, boost::is_any_of("."));
 	std::vector<path_t>::iterator tok_iter;
 	path_t ext = *(tokens.end() - 1);
 	path_t dot;
-	dot = '.';	
+	dot = '.';
 	path_t output_extension = dot + ext;
 
 	boost::to_lower(output_extension);
@@ -785,7 +785,7 @@ int main(int argc, char** argv) {
 
 	time_t start,end;
 	time(&start);
-	
+
 	// @nb last argument true -> bypass_properties which are not read by any of the geometry serializers
     // Document serializers and IFC are already special-cased above
     // SVG requires properties for IfcAnnotation/DRAWING properties
@@ -839,12 +839,12 @@ int main(int argc, char** argv) {
 
 		settings.get<ifcopenshell::geom::settings::ModelOffset>().value = offset;
 	}
-	
+
     if (is_tesselated && (center_model || center_model_geometry)) {
 		std::vector<double> offset(3);
 
 		ifcopenshell::geom::iterator tmp_context_iterator(ifcopenshell::geom::kernels::construct(ifc_file, geometry_kernel, settings, logger), settings, ifc_file, filter_funcs, num_threads, logger);
-			
+
 		time_t bounds_start, bounds_end;
 		time(&bounds_start);
 		if (!quiet) logger.status("Computing bounds...");
@@ -860,7 +860,7 @@ int main(int argc, char** argv) {
 				return EXIT_FAILURE;
 			}
 		}
-		
+
         tmp_context_iterator.compute_bounds(center_model_geometry);
 
 		time(&bounds_end);
@@ -919,19 +919,19 @@ int main(int argc, char** argv) {
 	}
 
 	// The functions ifcopenshell::geom::iterator::get() and ifcopenshell::geom::iterator::next()
-	// wrap an iterator of all geometrical products in the Ifc file. 
+	// wrap an iterator of all geometrical products in the Ifc file.
 	// ifcopenshell::geom::iterator::get() returns an ifcopenshell::geom::triangulation_element or
 	// -native_element pointer, based on current settings. (see iterator.h
 	// for definition) ifcopenshell::geom::iterator::next() is used to poll whether more
-	// geometrical entities are available. None of these functions throw 
-	// exceptions, neither for parsing errors or geometrical errors. Upon 
-	// calling next() the entity to be returned has already been processed, a 
-	// non-null return value guarantees that a successfully processed product is 
-	// available. 
+	// geometrical entities are available. None of these functions throw
+	// exceptions, neither for parsing errors or geometrical errors. Upon
+	// calling next() the entity to be returned has already been processed, a
+	// non-null return value guarantees that a successfully processed product is
+	// available.
 	size_t num_created = 0;
 
 	while (true) {
-		
+
 		auto geom_object = context_iterator->get();
 
 		if (is_tesselated)
@@ -967,7 +967,7 @@ int main(int argc, char** argv) {
 		if (!context_iterator->next()) {
 			break;
 		}
-    } 
+    }
 	if (!no_progress && quiet) {
 		for (; old_progress < 100; ++old_progress) {
 			cout_ << ".";
@@ -1086,7 +1086,7 @@ bool init_input_file(const std::string& filename, ifcopenshell::file*& ifc_file,
         ifc_file->bypass_type("IfcProfileProperties");
         ifc_file->bypass_type("IfcPhysicalQuantity");
     }
-    
+
 #ifdef USE_MMAP
     if (mmap) {
         ifc_file->initialize(filename, mmap);
@@ -1382,20 +1382,20 @@ void fix_quantities(ifcopenshell::file& f, bool no_progress, bool quiet, bool st
 	auto person = latebound_access::create(f, "IfcPerson");
 	latebound_access::set(person, "FamilyName", std::string("IfcOpenShell"));
 	latebound_access::set(person, "GivenName", std::string("IfcOpenShell"));
-	
+
 	auto org = latebound_access::create(f, "IfcOrganization");
 	latebound_access::set(org, "Name", std::string("IfcOpenShell"));
-	
+
 	auto pando = latebound_access::create(f, "IfcPersonAndOrganization");
 	latebound_access::set(pando, "ThePerson", person);
 	latebound_access::set(pando, "TheOrganization", org);
-	
+
 	auto application = latebound_access::create(f, "IfcApplication");
 	latebound_access::set(application, "ApplicationDeveloper", org);
 	latebound_access::set(application, "Version", std::string(IFCOPENSHELL_VERSION));
 	latebound_access::set(application, "ApplicationFullName", std::string("IfcConvert"));
 	latebound_access::set(application, "ApplicationIdentifier", std::string("IfcConvert") + IFCOPENSHELL_VERSION);
-	
+
 	auto ownerhist = latebound_access::create(f, "IfcOwnerHistory");
 	latebound_access::set(ownerhist, "OwningUser", pando);
 	latebound_access::set(ownerhist, "OwningApplication", application);
@@ -1440,7 +1440,7 @@ void fix_quantities(ifcopenshell::file& f, bool no_progress, bool quiet, bool st
 				latebound_access::set(quantity_area, "AreaValue", a);
 				quantities.push_back(quantity_area);
 			}
-			
+
 			if (geom_object->geometry().calculate_volume(a)) {
 				auto quantity_volume = latebound_access::create(f, "IfcQuantityVolume");
 				latebound_access::set(quantity_volume, "Name", std::string("Volume"));
@@ -1461,13 +1461,13 @@ void fix_quantities(ifcopenshell::file& f, bool no_progress, bool quiet, bool st
 
 			std::vector<express::base> quantities_2;
 
-			for (auto& part : geom_object->geometry()) {				
+			for (auto& part : geom_object->geometry()) {
 				auto quantity_count = latebound_access::create(f, "IfcQuantityCount");
 				latebound_access::set(quantity_count, "Name", std::string("Surface Genus"));
 				latebound_access::set(quantity_count, "Description", '#' + boost::lexical_cast<std::string>(part.ItemId()));
 				latebound_access::set(quantity_count, "CountValue", (int64_t) part.shape()->surface_genus());
 
-				quantities_2.push_back(quantity_count);				
+				quantities_2.push_back(quantity_count);
 			}
 
 			latebound_access::set(quantity_complex, "HasQuantities", quantities_2);

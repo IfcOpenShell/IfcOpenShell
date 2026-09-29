@@ -121,7 +121,7 @@ ifcopenshell::geom::triangulation::triangulation(const native& shape_model)
 	, weld_offset_(0)
 {
 	for (std::vector<ifcopenshell::geom::conversion_result>::const_iterator iit = shape_model.begin(); iit != shape_model.end(); ++iit) {
-		
+
 		// Don't weld vertices that belong to different items to prevent non-manifold situations.
 		resetWelds();
 

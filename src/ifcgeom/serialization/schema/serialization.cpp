@@ -162,7 +162,7 @@ int convert_to_ifc(ifcopenshell::file& f, const opencascade::handle<Geom_Curve>&
         el.setSemiAxis1(ellipse->MajorRadius());
         el.setSemiAxis2(ellipse->MinorRadius());
         curve = el;
-		        
+
 		return 1;
 	}
 #ifdef SCHEMA_HAS_IfcRationalBSplineSurfaceWithKnots
@@ -461,11 +461,11 @@ int convert_to_ifc(ifcopenshell::file& f, const TopoDS_Edge& e, IfcSchema::IfcEd
         IfcSchema::IfcEdge edge2 = f.create<IfcSchema::IfcEdge>();
         edge2.setEdgeStart(vertex1);
         edge2.setEdgeEnd(vertex2);
-		
+
 		auto ori = f.create<IfcSchema::IfcOrientedEdge>();
 		ori.setEdgeElement(edge2);
         ori.setOrientation(true);
-		
+
 		edge = ori;
 		return 1;
 	} else {
@@ -812,10 +812,9 @@ express::base POSTFIX_SCHEMA(tesselate)(ifcopenshell::file& f, const TopoDS_Shap
                 cpnt.setCoordinates(xyz);
 				vertices.push_back(cpnt);
 			}
-			const NCollection_Array1<Poly_Triangle>& triangles = tri->Triangles();
-			for (int i = 1; i <= triangles.Length(); ++i) {
+			for (int i = 1; i <= tri->NbTriangles(); ++i) {
 				int n1, n2, n3;
-				triangles(i).Get(n1, n2, n3);
+				tri->Triangle(i).Get(n1, n2, n3);
                 std::vector<IfcSchema::IfcCartesianPoint> points {
                     vertices[n1 - 1], vertices[n2 - 1], vertices[n3 - 1]
                 };

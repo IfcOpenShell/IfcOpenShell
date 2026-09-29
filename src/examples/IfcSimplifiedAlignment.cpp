@@ -28,7 +28,9 @@
 // to simplify alignment construction
 
 // Disable warnings coming from IfcOpenShell
+#if defined(_MSC_VER)
 #pragma warning(disable : 4018 4267 4250 4984 4985)
+#endif
 
 #include "../ifcparse/schemas/Ifc4x3_add2.h"
 #include "../ifcparse/alignment_helper.h"

@@ -97,9 +97,9 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSweptDiskSolid& inst) {
 	return taxonomy::make<taxonomy::sweep_along_curve>(taxonomy::make<taxonomy::matrix4>(), f, nullptr, loop);
 
 
-	
+
 	/*
-	
+
 	TopoDS_Wire wire, section1, section2;
 
 	bool hasInnerRadius = !!inst.InnerRadius();
@@ -107,7 +107,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSweptDiskSolid& inst) {
 	if (!convert_wire(inst.Directrix(), wire)) {
 		return false;
 	}
-	
+
 
 
 	if (util::count(wire, TopAbs_EDGE) == 1 && sp && ep) {
@@ -119,7 +119,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSweptDiskSolid& inst) {
 			double a, b;
 			auto crv = BRep_Tool::Curve(e, a, b);
 			if ((crv->DynamicType() == STANDARD_TYPE(Geom_Circle)) ||
-				(crv->DynamicType() == STANDARD_TYPE(Geom_Ellipse))) 
+				(crv->DynamicType() == STANDARD_TYPE(Geom_Ellipse)))
 			{
 				BRepBuilderAPI_MakeEdge me(crv, *sp, *ep);
 				if (me.IsDone()) {
@@ -227,7 +227,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSweptDiskSolid& inst) {
 								j += 1;
 							} else {
 								ifcopenshell::logger::root().error("Unexpected amount of fillet edges generated");
-							}					
+							}
 						} else {
 							ifcopenshell::logger::root().error("Unable to build fillet, probably edge too short");
 						}
@@ -258,7 +258,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSweptDiskSolid& inst) {
 	// NB: Note that StartParam and EndParam param are ignored and the assumption is
 	// made that the parametric range over which to be swept matches the IfcCurve in
 	// its entirety.
-	
+
 	util::process_sweep(wire, inst.Radius() * length_unit_, shape);
 
 	if (shape.IsNull()) {

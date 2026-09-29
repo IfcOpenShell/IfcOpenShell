@@ -42,6 +42,10 @@ private:
     std::vector<size_t> roots_;
 
 	int writeMaterial(const ifcopenshell::geom::taxonomy::style::ptr style);
+	void setup_georeferencing(
+		const std::optional<std::string>& crs_epsg,
+		const std::optional<std::array<double, 3>>& eastings_northings_elevation,
+		std::optional<std::array<double, 3>> crs_x_axis);
 public:
 	gltf_serializer(const std::string& filename, const ifcopenshell::geom::settings& settings, ifcopenshell::logger* logger = nullptr);
 	virtual ~gltf_serializer();

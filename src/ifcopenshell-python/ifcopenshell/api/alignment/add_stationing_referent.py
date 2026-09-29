@@ -22,8 +22,8 @@ import ifcopenshell
 import ifcopenshell.api.alignment
 import ifcopenshell.api.pset
 import ifcopenshell.guid
-import ifcopenshell.util.element
 from ifcopenshell import entity_instance
+from ifcopenshell.api.alignment._referent_distance_along import _referent_distance_along
 from ifcopenshell.api.alignment._sort_nest import _sort_nest
 from ifcopenshell.api.alignment.update_fallback_position import update_fallback_position
 
@@ -35,16 +35,28 @@ def add_stationing_referent(
     distance_along: float,
     station: float,
     incoming_station: Optional[float] = None,
+    has_increasing_station: Optional[bool] = None,
     on_basis_curve: Optional[bool] = None,
 ) -> entity_instance:
     """
     Adds an IfcReferent to the alignment that defines the stationing system.
+
+    Call this once with ``distance_along=0.0`` to define the starting station, and again
+    for each station equation. If the alignment has no geometry yet, the referent is
+    placed with an IfcLocalPlacement at the global origin; once the basis curve has real
+    segments it is placed with an IfcLinearPlacement at ``distance_along`` on that curve.
+    create_representation() restates an origin-placed starting referent onto the curve
+    when geometry is added later.
 
     :param name: name to assign to IfcReferent.Name, typically a stringized version of the station value
     :param alignment: the alignment to receive the referent
     :param distance_along: distance along the alignment basis curve
     :param station: station value
     :param incoming_station: station value of the incoming segment, only set to specify a station equation
+    :param has_increasing_station: sets Pset_Stationing.HasIncreasingStation, which records the direction of
+        stationing for the referents nested after this one. Leave None (the default) or pass True for the
+        common case where station values increase with distance along; pass False on the starting referent
+        of a reverse-stationed alignment, where station values decrease as distance along increases.
     :param on_basis_curve: whether the referent is positioned on the basis curve or the alignment curve, if None the function will default to the basis curve
     :return: referent
 
@@ -82,10 +94,13 @@ def add_stationing_referent(
 
         update_fallback_position(file, object_placement)
     else:
+        # No resolvable basis curve yet: place the referent at the global origin. Once
+        # geometry exists, create_representation() restates the starting referent onto the
+        # curve at DistanceAlong 0.0.
         object_placement = file.createIfcLocalPlacement(
             PlacementRelTo=None,
             RelativePlacement=file.createIfcAxis2Placement2D(
-                Location=file.createIfcCartesianPoint(alignment.ObjectPlacement.RelativePlacement.Location.Coordinates)
+                Location=file.createIfcCartesianPoint(Coordinates=(0.0, 0.0))
             ),
         )
 
@@ -111,6 +126,8 @@ def add_stationing_referent(
     properties = {"Station": station}
     if incoming_station is not None:
         properties["IncomingStation"] = incoming_station
+    if has_increasing_station is not None:
+        properties["HasIncreasingStation"] = has_increasing_station
 
     pset_stationing = ifcopenshell.api.pset.add_pset(file, product=referent, name="Pset_Stationing")
     ifcopenshell.api.pset.edit_pset(file, pset=pset_stationing, properties=properties)
@@ -123,6 +140,8 @@ def add_stationing_referent(
     else:
         nest.RelatedObjects += (referent,)
 
-    _sort_nest(nest, key=lambda x: ifcopenshell.util.element.get_pset(x, name="Pset_Stationing", prop="Station"))
+    # Referents are ordered by increasing DistanceAlong (IFC CT 4.1.4.4.3), which for a
+    # reverse-stationed alignment is decreasing Station - so sort on DistanceAlong, not Station.
+    _sort_nest(nest, key=_referent_distance_along)
 
     return referent

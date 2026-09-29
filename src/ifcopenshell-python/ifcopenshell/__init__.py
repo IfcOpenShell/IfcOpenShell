@@ -95,6 +95,8 @@ from .sql import sqlite, sqlite_entity
 
 rocksdb_lazy_instance = file_module.rocksdb_lazy_instance
 
+decode_spf_string = ifcopenshell_wrapper.decode_spf_string
+encode_spf_string = ifcopenshell_wrapper.encode_spf_string
 get_log = ifcopenshell_wrapper.get_log
 logger = ifcopenshell_wrapper.logger if hasattr(ifcopenshell_wrapper, "logger") else None
 if hasattr(ifcopenshell_wrapper, "logger_or_root"):
@@ -114,6 +116,8 @@ def optional_logger_args(logger: ifcopenshell_wrapper.logger | None) -> tuple[lo
 # (it's a requirement for a typed library)
 __all__ = [
     "clear_plugin_search_paths",
+    "decode_spf_string",
+    "encode_spf_string",
     "entity_instance",
     "file",
     "get_plugin_search_paths",
@@ -191,12 +195,19 @@ def open(
     mmap: bool = False,
     bypass_types: Optional[Sequence[str]] = None,
     logger: Optional[logger] = None,
+    lazy: bool = False,
 ) -> Union[file, sqlite, _stream]:
     """Loads an IFC dataset from a filepath
 
     :param should_stream: Whether to open the file in streaming mode. Could be useful
         for reading large files.
     :param logger: Logger that receives native parser messages.
+    :param lazy: Index the file with one quick pass and parse each instance's
+        attributes only when they are first read. Opening is then faster and
+        memory stays proportional to what is accessed; reading every attribute
+        of every instance costs about the same as a normal open, spread over
+        the reads. Falls back to a normal open if the file uses syntax the
+        index pass does not handle.
 
     You can specify a file format. If no format is given, it is guessed from
     its extension.
@@ -238,10 +249,12 @@ def open(
         return stream(path)
     if readonly:  # Temporary conditional see #7131. Remove once newer builds don't segfault on Linux.
         f = ifcopenshell_wrapper.open(str(path.absolute()), readonly, *optional_logger_args(logger))
-    elif bypass_types:
+    elif bypass_types or lazy:
         f = ifcopenshell_wrapper.file.create_uninitialized(*optional_logger_args(logger))
-        for ty in bypass_types:
+        for ty in bypass_types or ():
             f.bypass_type(ty)
+        if lazy:
+            f.lazy_loading(True)
         if mmap:
             # mmap parameter is only available for builds with USE_MMAP, not used in our main builds
             f.initialize(str(path.absolute()), mmap=mmap)  # ty: ignore[unknown-argument]

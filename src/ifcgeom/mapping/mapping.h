@@ -16,7 +16,7 @@
 namespace ifcopenshell {
 
 namespace geom {
-    
+
     class POSTFIX_SCHEMA(mapping) : public abstract_mapping {
 	private:
 		ifcopenshell::file* file_;
@@ -30,7 +30,7 @@ namespace geom {
 		const express::base placement_rel_to_instance_;
 
 		Eigen::Matrix4d offset_and_rotation_ = Eigen::Matrix4d::Identity();
-		
+
 		void initialize_units_();
 		void addRepresentationsFromContextIds(std::vector<IfcSchema::IfcRepresentation>&);
 		void addRepresentationsFromPriorities(std::vector<IfcSchema::IfcRepresentation>&);
@@ -136,7 +136,7 @@ namespace geom {
 	template <>
 	struct element_type<taxonomy::solid> {
 		typedef taxonomy::shell type;
-	};	
+	};
 
 	template <typename U = taxonomy::collection, typename T>
 	typename U::ptr map_to_collection(POSTFIX_SCHEMA(mapping)* m, const T& ts) {

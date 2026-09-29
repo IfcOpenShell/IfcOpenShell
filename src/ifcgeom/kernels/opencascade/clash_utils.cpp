@@ -43,8 +43,8 @@ bool is_intersect_ray_box(const struct ray *ray, const struct box *box) {
 // https://github.com/NVIDIA-Omniverse/PhysX/blob/main/physx/source/geomutils/src/intersection/GuIntersectionRayTriangle.h
 // With minor modifications to use gp_Vec type.
 // More reading: https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
-bool intersectRayTriangle(	const gp_Vec& orig, const gp_Vec& dir, 
-                                                const gp_Vec& vert0, const gp_Vec& vert1, const gp_Vec& vert2, 
+bool intersectRayTriangle(	const gp_Vec& orig, const gp_Vec& dir,
+                                                const gp_Vec& vert0, const gp_Vec& vert1, const gp_Vec& vert2,
                                                 double& at, double& au, double& av,
                                                 bool cull, float enlarge) {
     // Find vectors for two edges sharing vert0
@@ -147,7 +147,7 @@ void edgeEdgeDist(gp_Vec& x, gp_Vec& y,				// closest points
     const double Denom = ADotA*BDotB - ADotB*ADotB;
 
     double t;	// We will clamp result so t is on the segment (p, a)
-    if(Denom!=0.0)	
+    if(Denom!=0.0)
         t = ios_clamp((ADotT*BDotB - BDotT*ADotB) / Denom, 0.0, 1.0);
     else
         t = 0.0;
@@ -268,7 +268,7 @@ double distanceTriangleTriangleSquared(gp_Vec& cp, gp_Vec& cq, const std::array<
             if(Tp[2]>Tp[index])	index = 2;
         }
 
-        if(index >= 0) 
+        if(index >= 0)
         {
             shown_disjoint = true;
 
@@ -297,7 +297,7 @@ double distanceTriangleTriangleSquared(gp_Vec& cp, gp_Vec& cq, const std::array<
 
     gp_Vec Tn = Tv[0].Crossed(Tv[1]);
     double Tnl = Tn.Dot(Tn);
-  
+
     if(Tnl>1e-15f)
     {
         const std::array<double, 3> Sp = {(q[0] - p[0]).Dot(Tn),
@@ -317,7 +317,7 @@ double distanceTriangleTriangleSquared(gp_Vec& cp, gp_Vec& cq, const std::array<
         }
 
         if(index >= 0)
-        { 
+        {
             shown_disjoint = true;
 
             const gp_Vec& pIndex = p[index];
@@ -525,11 +525,11 @@ bool trianglesIntersectCoplanar(const gp_Vec& p1_n, const gp_Vec& a1, const gp_V
 
     const double third = (1.0 / 3.0);
 
-    //A bit of the computations done inside the following functions could be shared but it's kept simple since the 
+    //A bit of the computations done inside the following functions could be shared but it's kept simple since the
     //difference is not very big and the coplanar case is not expected to be the most common case
     if (linesIntersect(a1, b1, a2, b2, x, y) || linesIntersect(a1, b1, b2, c2, x, y) || linesIntersect(a1, b1, c2, a2, x, y) ||
         linesIntersect(b1, c1, a2, b2, x, y) || linesIntersect(b1, c1, b2, c2, x, y) || linesIntersect(b1, c1, c2, a2, x, y) ||
-        linesIntersect(c1, a1, a2, b2, x, y) || linesIntersect(c1, a1, b2, c2, x, y) || linesIntersect(c1, a1, c2, a2, x, y) || 
+        linesIntersect(c1, a1, a2, b2, x, y) || linesIntersect(c1, a1, b2, c2, x, y) || linesIntersect(c1, a1, c2, a2, x, y) ||
         pointInTriangle(a1, b1, c1, third * (a2 + b2 + c2), x, y) || pointInTriangle(a2, b2, c2, third * (a1 + b1 + c1), x, y))
         return true;
 
@@ -557,7 +557,7 @@ bool trianglesIntersect(const gp_Vec& a1, const gp_Vec& b1, const gp_Vec& c1, co
 
 	if ((p1ToA > 0) == (p1ToB > 0) && (p1ToA > 0) == (p1ToC > 0))
 		return false; //All points of triangle 2 on same side of triangle 1 -> no intersection
-		
+
     gp_Dir p2_n((b2 - a2).Crossed(c2 - a2).Normalized());
     double p2_d = -a2.Dot(p2_n);
 	// const PxPlane p2(a2, b2, c2);
@@ -566,7 +566,7 @@ bool trianglesIntersect(const gp_Vec& a1, const gp_Vec& b1, const gp_Vec& c1, co
     const double p2ToC = c1.Dot(p2_n) + p2_d;
 
 	if ((p2ToA > 0) == (p2ToB > 0) && (p2ToA > 0) == (p2ToC > 0))
-		return false; //All points of triangle 1 on same side of triangle 2 -> no intersection	
+		return false; //All points of triangle 1 on same side of triangle 2 -> no intersection
 
 	gp_Vec intersectionDirection = p1_n.Crossed(p2_n);
     const double l2 = intersectionDirection.SquareMagnitude();

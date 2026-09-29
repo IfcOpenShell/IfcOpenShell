@@ -17,9 +17,12 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import ifc5d.qto
 
 import bonsai.tool as tool
+from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.qto.data import QtoData
+from bonsai.bim.module.qto.prop import MEASURE_TO_TARGET_UNIT_FIELD
 
 
 class BIM_PT_qto(bpy.types.Panel):
@@ -44,6 +47,14 @@ class BIM_PT_qto(bpy.types.Panel):
         row = layout.row()
         row.prop(props, "qto_rule", text="")
         row.prop(props, "fallback", text="", icon="RADIOBUT_ON" if props.fallback else "RADIOBUT_OFF")
+
+        box = layout.box()
+        box.label(text="Target Units (optional, otherwise project default)")
+        for field_name, _special_type, label in MEASURE_TO_TARGET_UNIT_FIELD.values():
+            row = box.row(align=True)
+            row.label(text=label)
+            prop_with_search(row, props, field_name, text="")
+
         row = layout.row()
         row.operator("bim.perform_quantity_take_off")
 
@@ -65,6 +76,15 @@ class BIM_PT_qto_manual(bpy.types.Panel):
         row.prop(props, "calculator")
         row = layout.row()
         row.prop(props, "calculator_function", text="Function")
+
+        calculator = ifc5d.qto.calculators.get(props.calculator)
+        function = calculator.functions.get(props.calculator_function) if calculator else None
+        target_unit_field = MEASURE_TO_TARGET_UNIT_FIELD.get(function.measure) if function else None
+        if target_unit_field:
+            field_name, _special_type, label = target_unit_field
+            row = layout.row(align=True)
+            row.label(text=f"{label} Unit")
+            prop_with_search(row, props, field_name, text="")
 
         row = layout.row(align=True)
         row.prop(props, "qto_name", text="")

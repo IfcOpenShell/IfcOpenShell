@@ -86,11 +86,12 @@ private:
 	private:
 		open_cascade_kernel* kernel_;
 		std::set<int> duplicates_;
+		std::set<int> duplicate_identities_built_;
 		std::map<int, int> vertex_mapping_;
 		std::map<std::pair<int, int>, TopoDS_Edge> edges_;
 		double eps_;
 		bool non_manifold_;
-		
+
 		void loop_(const ifcopenshell::geom::taxonomy::loop::ptr ps, const std::function<void(int, int, bool)>& callback);
 	public:
 		faceset_helper(open_cascade_kernel* kernel, const ifcopenshell::geom::taxonomy::shell::ptr l);
@@ -99,7 +100,7 @@ private:
 		bool non_manifold() const { return non_manifold_; }
 		bool& non_manifold() { return non_manifold_; }
 		double epsilon() const { return eps_; }
-		
+
 		bool edge(int A, int B, TopoDS_Edge& e);
 
 		bool wire(const ifcopenshell::geom::taxonomy::loop::ptr loop, TopoDS_Wire& wire);

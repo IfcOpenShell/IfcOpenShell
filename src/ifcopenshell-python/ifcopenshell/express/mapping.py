@@ -18,14 +18,19 @@
 
 
 from __future__ import annotations
+
 import sys
-import nodes
-import templates
-import schema
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from . import nodes, schema, templates
+else:
+    import nodes
+    import schema
+    import templates
 
 
 class Mapping:
-
     express_to_cpp_typemapping = {
         "boolean": "bool",
         "logical": "boost::logic::tribool",
@@ -34,6 +39,15 @@ class Mapping:
         "number": "double",
         "string": "std::string",
         "binary": "boost::dynamic_bitset<>",
+    }
+
+    cpp_to_argument_types = {
+        "boolean": "BOOL",
+        "logical": "LOGICAL",
+        "integer": "INT",
+        "real": "DOUBLE",
+        "number": "DOUBLE",
+        "string": "STRING",
     }
 
     supported_argument_types = set(
@@ -117,8 +131,8 @@ class Mapping:
         else:
             return "Type::%s" % type
 
-    def make_argument_type(self, attr):
-        def _make_argument_type(type):
+    def make_argument_type(self, attr: nodes.Node | str) -> str:
+        def _make_argument_type(type: nodes.Node | str) -> str:
             if isinstance(type, nodes.SimpleType):
                 type = type.type
             if self.schema.is_entity(type) or isinstance(type, nodes.SelectType):
@@ -134,8 +148,8 @@ class Mapping:
                 if ty == "UNKNOWN":
                     return "UNKNOWN"
                 return "AGGREGATE_OF_" + ty
-            elif str(type) in self.express_to_cpp_typemapping:
-                return self.express_to_cpp_typemapping.get(str(type), type).split("::")[-1].upper()
+            elif (ty := self.cpp_to_argument_types.get(str(type))) is not None:
+                return ty
             elif self.schema.is_type(type):
                 return _make_argument_type(self.schema.types[type].type)
             else:
@@ -253,10 +267,10 @@ class Mapping:
         derived = set(self.derived_in_supertype(t))
         attrs = enumerate(self.arguments(t))
 
-        def include(attr):
+        def include(attr: nodes.Node) -> bool:
             not_derived = include_derived or (attr.name not in derived)
             supported = self.make_argument_type(attr) != "ifcopenshell::Argument_UNKNOWN"
-            return not_derived and supported
+            return bool(not_derived and supported)
 
         return [
             {

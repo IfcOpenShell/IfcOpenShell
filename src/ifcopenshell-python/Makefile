@@ -56,31 +56,31 @@ endif
 ifeq ($(PLATFORM), win64)
 PLATFORMTAG:=win_amd64
 endif
+ifeq ($(PLATFORM), win-arm64)
+PLATFORMTAG:=win_arm64
+endif
 
-BINARY_VERSION:=0.8.6
-BUILD_COMMIT:=e333c1c
+BINARY_VERSION:=0.9.0alpha0
+BUILD_COMMIT:=8c614fa
 IOS_URL:=https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v$(BINARY_VERSION)-$(BUILD_COMMIT)-$(PLATFORM).zip
 IFCCONVERT_URL:=https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v$(BINARY_VERSION)-$(BUILD_COMMIT)-$(PLATFORM).zip
+BONSAIVIEWER_URL:=https://s3.amazonaws.com/ifcopenshell-builds/BonsaiViewer-v$(BINARY_VERSION)-$(BUILD_COMMIT)-$(PLATFORM).zip
 
 .PHONY: build-urls
 build-urls:
-	@echo "You can provide one of the 4 platforms (linux64, macos64, macosm164, win64) using 'PLATFORM=xxx'."
+	@echo "You can provide one of the platforms (linux64, linuxarm64, macos64, macosm164, win64, win-arm64) using 'PLATFORM=xxx'."
 	@echo "And Python version using 'PYNUMBER=xx' (e.g. 'PYNUMBER=311')."
 	@echo ${IOS_URL}
 	@echo ${IFCCONVERT_URL}
 
 .PHONY: test
 test:
-	pytest -p no:pytest-blender test --ignore=test/util/test_shape_builder.py
+	pytest --import-mode=importlib -p no:pytest-blender test
 
 .PHONY: test-parallel
 test-parallel:
 	@NPROCS=$$(nproc 2>/dev/null || sysctl -n hw.ncpu); \
-	pytest -p no:pytest-blender -n $$NPROCS test --ignore=test/util/test_shape_builder.py
-
-.PHONY: test-mathutils
-test-mathutils:
-	pytest -p no:pytest-blender test/util/test_shape_builder.py
+	pytest --import-mode=importlib -p no:pytest-blender -n $$NPROCS test
 
 
 .PHONY: license
@@ -90,7 +90,7 @@ license:
 
 .PHONY: coverage
 coverage:
-	coverage run --source ifcopenshell -m pytest -p no:pytest-blender test
+	coverage run --source ifcopenshell -m pytest --import-mode=importlib -p no:pytest-blender test
 	coverage html
 	xdg-open htmlcov/index.html
 
@@ -107,6 +107,15 @@ endif
 	cd dist && wget $(IFCCONVERT_URL)
 	cd dist && mv *.zip ifcconvert-$(VERSION)-$(PLATFORM).zip
 
+.PHONY: zip-bonsaiviewer
+zip-bonsaiviewer:
+ifndef PLATFORM
+	$(error PLATFORM is not set)
+endif
+	mkdir -p dist
+	cd dist && wget $(BONSAIVIEWER_URL)
+	cd dist && mv *.zip bonsaiviewer-$(VERSION)-$(PLATFORM).zip
+
 .PHONY: zip
 zip:
 ifndef PLATFORM
@@ -120,6 +129,10 @@ endif
 	cd dist/working && wget $(IOS_URL)
 	cd dist/working && unzip ifcopenshell-python*
 	cp -r dist/working/ifcopenshell/*ifcopenshell_wrapper* dist/ifcopenshell/
+	# v0.9.0 splits IfcOpenShell into shared libraries loaded from next to the
+	# wrapper (libifcopenshell.parse, ifcopenshell_document_rdb, ...). Copy
+	# them too, otherwise the wrapper fails to import. See #9364.
+	find dist/working/ifcopenshell -maxdepth 1 \( -name '*.so' -o -name '*.so.*' -o -name '*.dylib' -o -name '*.dll' \) -exec cp {} dist/ifcopenshell/ \;
 	rm -rf dist/working
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' dist/ifcopenshell/__init__.py
 	cd dist && zip -r ifcopenshell-python-$(VERSION)-$(PYVERSION)-$(PLATFORM).zip ifcopenshell
@@ -138,6 +151,10 @@ endif
 	mkdir build/botbuild
 	cd build/botbuild && wget $(IOS_URL) && unzip ifcopenshell-python*
 	cp -r build/botbuild/ifcopenshell/*ifcopenshell_wrapper* build/ifcopenshell/
+	# v0.9.0 splits IfcOpenShell into shared libraries loaded from next to the
+	# wrapper (libifcopenshell.parse, ifcopenshell_document_rdb, ...). Copy
+	# them too, otherwise the wrapper fails to import. See #9364.
+	find build/botbuild/ifcopenshell -maxdepth 1 \( -name '*.so' -o -name '*.so.*' -o -name '*.dylib' -o -name '*.dll' \) -exec cp {} build/ifcopenshell/ \;
 	cp ../../README.md build/
 	cp pyproject.toml build/
 ifeq ($(IS_STABLE), TRUE)

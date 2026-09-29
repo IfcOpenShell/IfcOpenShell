@@ -95,7 +95,7 @@ std::string dump_facet(typename CGAL::Nef_polyhedron_3<Kernel>::Halffacet_const_
 
 	const auto& p = h->plane();
 	oss << "Facet plane=" << p << std::endl;
-	
+
 	auto fc = h->facet_cycles_begin();
 	auto se = shalfedge_const_handle(fc);
 	CGAL_assertion(se != 0);
@@ -187,7 +187,7 @@ plane_map<Kernel> snap_halfspaces(const std::list<CGAL::Plane_3<Kernel>>& planes
 
 		fuzzy_sphere fs(query, search_radius, 0.);
 		// std::cout << "q " << query << std::endl;
-		
+
 		std::list<point_d> results_pos, results_neg;
 		kdtree.search(std::back_inserter(results_pos), fs);
 
@@ -801,7 +801,7 @@ void bfs(graph<Kernel>& g, size_t start_vertex, Fn& fn) {
 		for (boost::tie(ei, ei_end) = boost::out_edges(cur, g); ei != ei_end; ++ei) {
 			auto s = boost::source(*ei, g);
 			auto t = boost::target(*ei, g);
-			
+
 			// @todo is this necessary?
 			if (cur == t) {
 				std::swap(s, t);
@@ -863,10 +863,10 @@ std::unique_ptr<halfspace_tree<TreeKernel>> build_halfspace_tree(graph<Kernel>& 
 		int largest_component_idx = -1;
 
 		int num_components = 0;
-		
+
 		// @nb we don't just randomly start from an arbitrary seed, but we sort planes by d / | abc |
 		// for (size_t i = 0; i < boost::num_vertices(sub_graph_0); ++i) {
-		
+
 		std::vector<size_t> sorted_verts;
 		for (size_t i = 0; i < boost::num_vertices(sub_graph_0); ++i) {
 			sorted_verts.push_back(i);
@@ -1232,7 +1232,7 @@ std::unique_ptr<halfspace_tree<TreeKernel>> build_halfspace_tree_decomposed(cons
 			// directly, so for now we need to isolate the individual volumes.
 			CGAL::Polyhedron_3<Kernel> P;
 			poly.convert_inner_shell_to_polyhedron(ci->shells_begin(), P);
-			CGAL::Nef_polyhedron_3<Kernel> Pnef(P);			
+			CGAL::Nef_polyhedron_3<Kernel> Pnef(P);
 
 			for (auto it = Pnef.halffacets_begin(); it != Pnef.halffacets_end(); ++it) {
 				if (it->incident_volume()->mark()) {
@@ -1315,7 +1315,7 @@ size_t edge_contract(graph<Kernel>& G) {
 						bool exists = boost::edge(srcid, tt, G).second;
 						if (!exists) {
 							boost::add_edge(srcid, tt, G);
-						}						
+						}
 					}
 				}
 				++n;

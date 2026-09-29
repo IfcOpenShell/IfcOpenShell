@@ -38,6 +38,26 @@ struct FrameStats {
     std::uint32_t unique_meshes;
     std::uint32_t gl_draw_calls;        // wgpu draw-call count; name kept for bonsai parity
     std::uint32_t indirect_sub_draws;   // sub-draws packed into the chunk-indirect lists
+    // Chunk geometry pool occupancy (see BufferPool): bytes held by
+    // resident chunks, the pool's current capacity, and the budget the
+    // pool may grow to (GpuBudget; 0 when still unbounded).
+    std::uint64_t vram_used_bytes;
+    std::uint64_t vram_capacity_bytes;
+    std::uint64_t vram_budget_bytes;
+    // The camera's working set: chunks the streaming driver wants resident
+    // (in frustum and large enough on screen) and how many of those are
+    // not — i.e. geometry the user should be seeing but is not yet, or
+    // cannot be because it does not fit the cache. Transiently non-zero
+    // after any camera move; persistently non-zero means the scene does
+    // not fit in VRAM.
+    std::uint32_t chunks_wanted;
+    std::uint32_t chunks_wanted_missing;
+    std::uint64_t wanted_missing_bytes;   // raw vertex + index bytes of the missing chunks
+    // Whole-device VRAM from the driver (NVML / sysfs, see GpuMemory.h).
+    // Desktop only; zero on web or when no backend could answer, so
+    // consumers must treat 0 as "unknown" rather than as empty.
+    std::uint64_t device_vram_used_bytes;
+    std::uint64_t device_vram_total_bytes;
 };
 
 #endif  // IFCVIEWER_FRAMESTATS_H

@@ -26,6 +26,7 @@
 #include <QStringList>
 
 class QLabel;
+#include <QElapsedTimer>
 class QDockWidget;
 class QMenu;
 class QProgressBar;
@@ -70,6 +71,10 @@ private:
     QLabel* status_mode_label_ = nullptr;
     QLabel* status_selection_label_ = nullptr;
     QLabel* status_perf_label_ = nullptr;
+    // Shown while the visible geometry persistently exceeds what fits in
+    // GPU memory (see onFrameStats): the user's cue to unload models.
+    QLabel* status_memory_label_ = nullptr;
+    QElapsedTimer memory_shortfall_since_;
     QProgressBar* status_progress_bar_ = nullptr;
     bonsaiviewer::components::TabBar* ribbon_tabs_ = nullptr;
     QStackedWidget* ribbon_pages_ = nullptr;

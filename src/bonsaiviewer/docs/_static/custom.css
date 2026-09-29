@@ -46,6 +46,34 @@ a {
     background: #70ba35;
 }
 
+.download-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.download-buttons .blockbutton {
+    flex: 1 1 10rem;
+    margin: 0;
+}
+
+.download-buttons .blockbutton a {
+    font-weight: bold;
+}
+
+.download-buttons .blockbutton a::before {
+    content: "";
+    display: block;
+    height: 3rem;
+    margin-bottom: 0.75rem;
+    background: no-repeat center / contain;
+}
+
+.download-buttons .windows a::before { background-image: url("os-windows.png"); }
+.download-buttons .macos a::before { background-image: url("os-macos.png"); }
+.download-buttons .linux a::before { background-image: url("os-linux.png"); }
+
 .blockbutton a.download code {
     background: none !important;
     border: none !important;

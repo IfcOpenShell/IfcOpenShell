@@ -3,6 +3,8 @@
 # dependencies = [
 #     "typing_extensions",
 # ]
+# [tool.ty.environment]
+# root = ["."]
 # ///
 ###############################################################################
 #                                                                             #
@@ -25,27 +27,14 @@
 
 """
 Example usage:
-    # Build all targets by default, except BonsaiViewer (it's set explicitly).
+    # Build all targets by default.
     python build-all.py
 
     # Build just the provided targets.
     python build-all.py IfcParse IfcOpenShell-Python
 
 
-Available arguments:
-    ``-py-313`` - build for specific Python version
-        (building for all supported Python version by default).
-    ``-occt-xxx`` - use a specific OCCT version (e.g. ``-occt-7.8.1``) instead of the default
-    ``-wasm`` - compile for wasm
-    ``-without-xxx`` - do not build dependency ``xxx`` (e.g. ``--without-swig``)
-    ``-mac-cross-compile-intel`` - cross compile for Intel Mac on Apple Silicon host
-    ``-shared`` - build shared libraries. By default will build static.
-    ``-ifcopenshell-shared`` - build only IfcOpenShell's own libraries as shared
-        (dependencies stay static). Redundant if ``-shared`` is also passed.
-    ``-diskcleanup`` - clean up build directories after finishing building dependencies
-    ``-build-examples`` - build IfcOpenShell examples
-    ``-lto`` - enable link-time optimization (adds ``-flto`` to compiler flags)
-    ``-v`` - enable verbose logs
+Run with --help to see available arguments.
 
 
 Used environment variables:
@@ -63,8 +52,6 @@ Used environment variables:
     (installed dependencies are never cleared).
     By default option is disabled, to enable pass any value from `1`, `on`, `true`.
     - ``IFCOS_SCHEMAS`` - schemas to be built; defaults to cmake default (8 schemas), to be supplied as `2x3;4;4x3_add2`
-    - ``USE_OCCT`` - whether to use official Open CASCADE instead of Community Edition
-    `on` by default
     - ``WASM_PYTHON_PATH`` - path to WASM Python installation,
     used to deduce `PYVERSION` (e.g. '3.13.2'), `PYTHONINCLUDE`,
     `SIDE_MODULE_CFLAGS`, `SIDE_MODULE_LDFLAGS`.
@@ -72,15 +59,20 @@ Used environment variables:
     Example value: 'pyodide/cpython/installs/python-3.13.2'
     - ``ADD_COMMIT_SHA`` - `off` by default. If enabled
     `ADD_COMMIT_SHA` and `VERSION_OVERRIDE` will be set to `ON` while configuring IfcOpenShell
-    - ``BUILD_BONSAIVIEWER`` - enable building BonsaiViewer, `off` by default.
     - ``IFCOS_BUILD_PYTHON_WRAPPER`` - enable building the Python wrapper, `on` by default.
+    - ``PYTHON_USER_SITE`` - install the Python wrapper into the user's site-packages directory
+    instead of the interpreter's prefix, `off` by default.
+    - ``QT_DIR`` - optional path to a pre-installed Qt6 (e.g. `brew --prefix qt` on Mac`).
+    Skips fetching Qt6 via aqtinstall if the install is found there.
+    - ``QT6_VERSION`` - Qt6 version to fetch via aqtinstall when building the viewer,
+    defaults to the version hardcoded in this script.
 
 # This script builds IfcOpenShell and its dependencies                        #
 #                                                                             #
 # Prerequisites for this script to function correctly:                        #
 #     * cmake * git * bzip2 * tar * c(++) compilers * autoconf                #
 #                                                                             #
-#   if building with USE_OCCT additionally:                                   #
+#   if building with OCCT additionally:                                       #
 #     * glx.h                                                                 #
 #                                                                             #
 #   if building with OCCT 7.4.0 additionally:                                 #
@@ -118,54 +110,55 @@ Used environment variables:
 
 """
 
+from __future__ import annotations
+
+import argparse
 import glob
+import importlib.util
+import json
 import logging
 import multiprocessing
 import os
 import platform
 import shutil
-import ssl
 import subprocess as sp
 import sys
 import sysconfig
 import tarfile
+import textwrap
 import threading
 import time
 from collections.abc import Generator, Sequence
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
-from typing import Literal
+from typing import IO, Literal, NamedTuple, TypeAlias
 from urllib.request import urlretrieve
 
 from typing_extensions import assert_never
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-ch = logging.StreamHandler()
-logger.addHandler(ch)
+from common import (
+    ADD_COMMIT_SHA_DEFAULT,
+    BUILD_CFG_DEFAULT,
+    BUILD_CFGS,
+    OFF_ON,
+    PROJECT_NAME,
+    BuildCfg,
+    ColorFormatter,
+    HelpStrings,
+    is_on_off,
+    resolve_cli_or_env,
+)
+
+# `common` configures the root logger on import, so reuse it here.
+logger = logging.getLogger()
 
 
-def is_on_off(value: str | None, *, default: bool) -> bool:
-    if value is None:
-        return default
-    lowered = value.lower()
-    if lowered in {"1", "on", "true", "yes"}:
-        return True
-    if lowered in {"0", "off", "false", "no"}:
-        return False
-    return default
-
-
-PROJECT_NAME = "IfcOpenShell"
 USE_CURRENT_PYTHON_VERSION = is_on_off(os.getenv("USE_CURRENT_PYTHON_VERSION"), default=False)
-ADD_COMMIT_SHA = is_on_off(os.getenv("ADD_COMMIT_SHA"), default=False)
 IFCOS_BUILD_PYTHON_WRAPPER = is_on_off(os.getenv("IFCOS_BUILD_PYTHON_WRAPPER"), default=True)
-BUILD_BONSAIVIEWER = is_on_off(os.getenv("BUILD_BONSAIVIEWER"), default=False)
-USE_OCCT = is_on_off(os.getenv("USE_OCCT"), default=True)
+PYTHON_USER_SITE = is_on_off(os.getenv("PYTHON_USER_SITE"), default=False)
 
-PYTHON_VERSIONS = ["3.10.3", "3.11.8", "3.12.1", "3.13.6", "3.14.0"]
+PYTHON_VERSIONS = ["3.10.3", "3.11.8", "3.12.1", "3.13.6", "3.14.0", "3.15.0"]
 JSON_VERSION = "3.11.3"
-OCE_VERSION = "0.18.3"
 OCCT_VERSION = "7.8.1"
 BOOST_VERSION = "1.86.0"
 EIGEN_VERSION = "3.4.0"
@@ -182,10 +175,10 @@ TBB_VERSION = "2021.9.0"
 ROCKSDB_VERSION = "10.4.2"
 ZSTD_VERSION = "1.5.7"
 MANIFOLD_VERSION = "3.2.1"
+PROJ_VERSION = "9.4.1"
 QT6_VERSION = os.getenv("QT6_VERSION", "6.8.3")
 
 # binaries
-cp = "cp"
 bash = "bash"
 git = "git"
 bunzip2 = "bunzip2"
@@ -195,17 +188,222 @@ cplusplus = "c++"
 autoconf = "autoconf"
 automake = "automake"
 make = "make"
-date = "date"
-curl = "curl"
-wget = "wget"
 strip = "strip"
 xz = "xz"  # Used implicitly for `tar -xf *.tar.xz`.
 brew = "brew"
 
-explicit_targets = [s for s in sys.argv[1:] if not s.startswith("-")]
+
+class ArgFormatter(argparse.RawDescriptionHelpFormatter, argparse.ArgumentDefaultsHelpFormatter):
+    """
+    `RawDescriptionHelpFormatter`needed to keep epilog's manual formatting.
+    Default formatter collapses whitespaces.
+    """
+
+
+class Args(NamedTuple):
+    explicit_targets: list[str]
+    build_examples: bool
+    diskcleanup: bool
+    lto: bool
+    verbose: bool
+    shared: bool
+    ifcopenshell_shared: bool
+    occt_shared: bool
+    mac_cross_compile_intel: bool
+    wasm: bool
+    num_build_procs: int
+    schemas: str | None
+    build_cfg: BuildCfg
+    add_commit_sha: bool
+    use_ninja: bool
+
+
+class DynamicArgs(NamedTuple):
+    without: set[str]
+    py_versions: set[str]
+    occt_version: str | None
+
+    @classmethod
+    def from_unknown_flags(cls, unknown_flags: list[str], arg_parser: argparse.ArgumentParser) -> DynamicArgs:
+        flags = set(s.lstrip("-") for s in unknown_flags if s.startswith("-"))
+
+        without: set[str] = set()
+        py_versions: set[str] = set()
+        occt_versions: set[str] = set()
+        leftover: set[str] = set()
+
+        for f in flags:
+            if f.startswith("without-"):
+                without.add(f.removeprefix("without-").lower())
+            elif f.startswith("py-"):
+                py_versions.add(f.removeprefix("py-"))
+            elif f.startswith("occt-"):
+                occt_versions.add(f.removeprefix("occt-"))
+            else:
+                leftover.add(f)
+
+        if leftover:
+            arg_parser.error(f"unrecognized arguments: {', '.join('-' + f for f in sorted(leftover))}")
+        if len(occt_versions) > 1:
+            arg_parser.error(f"more than one OCCT version provided: {', '.join(sorted(occt_versions))}")
+
+        occt_version = next(iter(occt_versions), None)
+        return cls(without=without, py_versions=py_versions, occt_version=occt_version)
+
+
+def parse_args() -> tuple[Args, DynamicArgs]:
+    arg_parser = argparse.ArgumentParser(
+        formatter_class=ArgFormatter,
+        epilog=textwrap.dedent("""\
+            Additional dynamic -flags (not declared above):
+                -py-313               build for specific Python version
+                                      (building for all supported Python versions by default)
+                -occt-xxx             use a specific OCCT version (e.g. -occt-7.8.1) instead of the default
+                -without-xxx          do not build dependency `xxx` (e.g. --without-swig)"""),
+    )
+    arg_parser.add_argument("explicit_targets", nargs="*", default=[], help="Targets provided by CLI.")
+    arg_parser.add_argument(
+        "--build-examples",
+        action="store_true",
+        default=False,
+        help="Build IfcOpenShell examples.",
+    )
+    arg_parser.add_argument(
+        "-diskcleanup",
+        "--diskcleanup",
+        action="store_true",
+        default=False,
+        help="Clean up build directories after finishing building dependencies.",
+    )
+    arg_parser.add_argument(
+        "-lto",
+        "--lto",
+        action="store_true",
+        default=False,
+        help="Enable link-time optimization (adds -flto to compiler flags).",
+    )
+    arg_parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        default=False,
+        help="Enable verbose logs.",
+    )
+    arg_parser.add_argument(
+        "-shared",
+        "--shared",
+        action="store_true",
+        default=False,
+        help="Build shared libraries. By default will build static.",
+    )
+    arg_parser.add_argument(
+        "-ifcopenshell-shared",
+        "--ifcopenshell-shared",
+        action="store_true",
+        default=False,
+        help="Build only IfcOpenShell's own libraries as shared (dependencies stay static). "
+        "Redundant if -shared is also passed.",
+    )
+    arg_parser.add_argument(
+        "--occt-shared",
+        action=argparse.BooleanOptionalAction,
+        # None (rather than True) so the -wasm fallback below can tell "unset" apart from
+        # an explicit --occt-shared and default to static only when the user said nothing.
+        default=None,
+        help=(
+            "Build OCCT as shared libraries. Default unless -wasm, which has no shared libraries. "
+            "--no-occt-shared is not recommended: a static OCCT is linked privately into every "
+            "plug-in, so shapes handed between plug-ins (kernel -> tree, kernel -> SVG serializer) "
+            "are misread."
+        ),
+    )
+    arg_parser.add_argument(
+        "-mac-cross-compile-intel",
+        "--mac-cross-compile-intel",
+        action="store_true",
+        default=False,
+        help="Cross compile for Intel Mac on Apple Silicon host.",
+    )
+    arg_parser.add_argument("-wasm", "--wasm", action="store_true", default=False, help="Compile for wasm.")
+    arg_parser.add_argument(
+        "--num-build-procs",
+        dest="num_build_procs",
+        type=int,
+        default=argparse.SUPPRESS,
+        help=HelpStrings.NUM_BUILD_PROCS,
+    )
+    arg_parser.add_argument(
+        "--schemas",
+        dest="schemas",
+        default=argparse.SUPPRESS,
+        help="IFC schemas to be built, e.g. '2x3;4;4x3_add2'. Also can be specified by using IFCOS_SCHEMAS "
+        "env variable. (default: cmake default, currently 8 schemas)",
+    )
+    arg_parser.add_argument(
+        "--build-cfg",
+        dest="build_cfg",
+        choices=BUILD_CFGS,
+        default=argparse.SUPPRESS,
+        help=HelpStrings.BUILD_CFG + " Also can be specified by using BUILD_CFG env variable.",
+    )
+    arg_parser.add_argument(
+        "--add-commit-sha",
+        dest="add_commit_sha",
+        action=argparse.BooleanOptionalAction,
+        default=argparse.SUPPRESS,
+        help=HelpStrings.ADD_COMMIT_SHA,
+    )
+    # TODO: can start to mean "require ninja" in the future
+    # and just use ninja by default if it's available from PATH.
+    arg_parser.add_argument(
+        "--use-ninja",
+        dest="use_ninja",
+        action="store_true",
+        default=False,
+        help="Use Ninja instead of Make to configure and build CMake-based targets.",
+    )
+    namespace, unknown_flags = arg_parser.parse_known_args()
+    num_build_procs = resolve_cli_or_env(
+        getattr(namespace, "num_build_procs", None),
+        "IFCOS_NUM_BUILD_PROCS",
+        multiprocessing.cpu_count() + 1,
+        arg_type="int",
+    )
+    schemas = resolve_cli_or_env(getattr(namespace, "schemas", None), "IFCOS_SCHEMAS", None, arg_type="str")
+    build_cfg = resolve_cli_or_env(
+        getattr(namespace, "build_cfg", None), "BUILD_CFG", BUILD_CFG_DEFAULT, arg_type="str"
+    )
+    add_commit_sha = resolve_cli_or_env(
+        getattr(namespace, "add_commit_sha", None), "ADD_COMMIT_SHA", ADD_COMMIT_SHA_DEFAULT, arg_type="bool"
+    )
+    args = Args(
+        explicit_targets=namespace.explicit_targets,
+        build_examples=namespace.build_examples,
+        diskcleanup=namespace.diskcleanup,
+        lto=namespace.lto,
+        verbose=namespace.verbose,
+        shared=namespace.shared,
+        ifcopenshell_shared=namespace.ifcopenshell_shared or namespace.shared,
+        # -shared implies a shared OCCT too, even overriding an explicit --no-occt-shared.
+        occt_shared=namespace.shared
+        or (namespace.occt_shared if namespace.occt_shared is not None else not namespace.wasm),
+        mac_cross_compile_intel=namespace.mac_cross_compile_intel,
+        wasm=namespace.wasm,
+        num_build_procs=num_build_procs,
+        schemas=schemas,
+        build_cfg=build_cfg,
+        add_commit_sha=add_commit_sha,
+        use_ninja=namespace.use_ninja,
+    )
+
+    dynamic_args = DynamicArgs.from_unknown_flags(unknown_flags, arg_parser)
+    return args, dynamic_args
+
+
+ARGS, DYNAMIC_ARGS = parse_args()
+
+explicit_targets: set[str] = set(ARGS.explicit_targets)
 """Targets provided by CLI."""
-flags = set(s.lstrip("-") for s in sys.argv[1:] if s.startswith("-"))
-"""CLI flags."""
 
 # Helper function for coloured printing
 
@@ -219,22 +417,17 @@ YELLOW = "\033[33m"
 MAGENTA = "\033[35m"
 
 
-def cecho(message, color=NO_COLOR):
+def cecho(message: str, color: str = NO_COLOR) -> None:
     """Logs message `message` in color `color`."""
     logger.info(f"{color}{message}\033[0m")
 
 
-# Flags.
-BUILD_EXAMPLES = "build-examples" in flags
-DISK_CLEANUP = "diskcleanup" in flags
-LTO = "lto" in flags
-VERBOSE = "v" in flags
-
 APPLE = platform.system() == "Darwin"
-MAC_CROSS_COMPILE_INTEL = "mac-cross-compile-intel" in flags
-assert platform.system() == "Darwin" or not MAC_CROSS_COMPILE_INTEL
+LIBRARY_PATH_ENV_VAR = "DYLD_LIBRARY_PATH" if APPLE else "LD_LIBRARY_PATH"
+MAC_CROSS_COMPILE_INTEL = ARGS.mac_cross_compile_intel
+assert APPLE or not MAC_CROSS_COMPILE_INTEL
 
-WASM = "wasm" in flags
+WASM = ARGS.wasm
 """Build WASM outside pyodide build environment."""
 WASM_CMAKE_IS_USING_INIT_VARS = False
 if WASM:
@@ -281,14 +474,11 @@ if WASM:
     assert get_pyodide_build_version() >= (0, 31)
 
 TOOLSET = None
-if platform.system() == "Darwin":
-    # C++11 features used in OCCT 7+ need a more recent stdlib
-    # TOOLSET = "10.9" if USE_OCCT else "10.6"
-    # /Users/runner/work/IfcOpenShell/IfcOpenShell/build/Darwin/arm64/10.9/build/rocksdb/cache/clock_cache.cc:732:14: error: aligned allocation function of type 'void *(std::size_t, std::align_val_t)' is only available on macOS 10.13 or newer
+if APPLE:
     # /Users/runner/work/IfcOpenShell/IfcOpenShell/src/ifcparse/IfcFile.cpp:539:14: error: 'exists' is unavailable: introduced in macOS 10.15
     TOOLSET = "10.15"
 
-IFCOS_NUM_BUILD_PROCS = os.getenv("IFCOS_NUM_BUILD_PROCS", multiprocessing.cpu_count() + 1)
+IFCOS_NUM_BUILD_PROCS = ARGS.num_build_procs
 
 SCRIPT_PATH = Path(__file__).parent
 REPO_PATH = SCRIPT_PATH.parent
@@ -315,7 +505,8 @@ if not os.path.exists(DEPS_DIR):
     os.makedirs(DEPS_DIR)
 
 INSTALL_DIR = Path(DEPS_DIR) / "install"
-BUILD_CFG = os.getenv("BUILD_CFG", "RelWithDebInfo")
+BUILD_CFG = ARGS.build_cfg
+ADD_COMMIT_SHA = ARGS.add_commit_sha
 
 
 # Print build configuration information
@@ -331,11 +522,6 @@ cecho(
 """,
     GREEN,
 )
-cecho(f"""* USE_OCCT               = {USE_OCCT}""", MAGENTA)
-if USE_OCCT:
-    cecho(" - Compiling against official Open Cascade")
-else:
-    cecho(" - Compiling against Open Cascade Community Edition")
 cecho(f"* Build Directory   = {BUILD_DIR}", MAGENTA)
 cecho(f"* Dependency Directory   = {DEPS_DIR}", MAGENTA)
 cecho(f" - The directory where {PROJECT_NAME} dependencies are installed.")
@@ -348,7 +534,7 @@ if BUILD_CFG == "MinSizeRel":
 
 cecho(f"* IFCOS_NUM_BUILD_PROCS  = {IFCOS_NUM_BUILD_PROCS}", MAGENTA)
 cecho(""" - How many compiler processes may be run in parallel.""")
-cecho(f"* IFCOS_SCHEMAS = '{os.environ.get('IFCOS_SCHEMAS')}'", MAGENTA)
+cecho(f"* IFCOS_SCHEMAS = '{ARGS.schemas}'", MAGENTA)
 cecho(""" - IFC Schemas to compile. If not provided, fallback to default provided in cmake.
 """)
 
@@ -367,12 +553,13 @@ dependency_tree: dict[str, tuple[str, ...]] = {
     "occ": (),
     "pcre": (),
     "json": (),
-    "cgal": (),
+    "cgal": ("boost",),
     "eigen": (),
     "rocksdb": ("zstd",),
     "zstd": (),
     "manifold": (),
     "qt6": (),
+    "proj": (),
     # 'usd': ('boost', 'oneTBB')
 }
 
@@ -380,15 +567,15 @@ dependency_tree: dict[str, tuple[str, ...]] = {
 def gather_dependencies(dep: str) -> Generator[str]:
     yield dep
     for d in dependency_tree[dep]:
-        if f"without-{d.lower()}" not in flags:
+        if d.lower() not in DYNAMIC_ARGS.without:
             for x in gather_dependencies(d):
                 yield x
 
 
-if VERBOSE:
+if ARGS.verbose:
     logger.setLevel(logging.DEBUG)
-    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-    ch.setFormatter(formatter)
+    formatter = ColorFormatter("%(asctime)s - %(levelname)s - %(message)s")
+    logger.handlers[0].setFormatter(formatter)
 else:
     logger.setLevel(logging.INFO)
 
@@ -405,34 +592,31 @@ else:
     MAC_CROSS_COMPILE_INTEL_CC = ""
     MAC_CROSS_COMPILE_INTEL_AUTOCONF_HOST_ARGS = []
 
-OFF_ON = ["OFF", "ON"]
-BUILD_STATIC = "shared" not in flags
+BUILD_STATIC = not ARGS.shared
 """Whether dependencies are built static."""
-IFCOPENSHELL_STATIC = BUILD_STATIC and "ifcopenshell-shared" not in flags
-"""Whether IfcOpenShell's own libraries are built static."""
+BUILD_SHARED = not BUILD_STATIC
+"""Whether dependencies are built shared."""
 ENABLE_FLAG = "--enable-static" if BUILD_STATIC else "--enable-shared"
 DISABLE_FLAG = "--disable-shared" if BUILD_STATIC else "--disable-static"
-LINK_TYPE = "static" if BUILD_STATIC else "shared"
-LINK_TYPE_UCFIRST = LINK_TYPE.capitalize()
-LIBRARY_EXT = "a" if BUILD_STATIC else "so"
+LIBRARY_EXT = "a" if BUILD_STATIC else ("dylib" if APPLE else "so")
 PIC = "-fPIC" if BUILD_STATIC else ""
 
-if any(f.startswith("py-") for f in flags):
-    PYTHON_VERSIONS = [pyv for pyv in PYTHON_VERSIONS if f"py-{''.join(pyv.split('.')[:2])}" in flags]
+if DYNAMIC_ARGS.py_versions:
+    PYTHON_VERSIONS = [pyv for pyv in PYTHON_VERSIONS if "".join(pyv.split(".")[:2]) in DYNAMIC_ARGS.py_versions]
 
-if any(f.startswith("occt-") for f in flags):
-    OCCT_VERSION = next(f.split("-", 1)[1] for f in flags if f.startswith("occt-"))
+if DYNAMIC_ARGS.occt_version is not None:
+    OCCT_VERSION = DYNAMIC_ARGS.occt_version
 
 if explicit_targets:
     targets = {dep for target in explicit_targets for dep in gather_dependencies(target)}
 else:
     targets = set(dependency_tree.keys())
 
-targets = set(t for t in targets if "without-%s" % t.lower() not in flags)
-if not explicit_targets and not BUILD_BONSAIVIEWER:
-    targets.difference_update({"BonsaiViewer", "qt6"})
-if BUILD_BONSAIVIEWER:
-    targets.update(gather_dependencies("BonsaiViewer"))
+targets = set(t for t in targets if t.lower() not in DYNAMIC_ARGS.without)
+
+# Allow `-without-bonsaiviewer` to be a shortcut for `-without-bonsaiviewer -without-qt6`.
+if "bonsaiviewer" in DYNAMIC_ARGS.without:
+    targets.discard("qt6")
 
 # Opt-out for the Python wrapper. Currently used by the bonsai CI workflow
 # on macOS, where the post-plug-in-refactor wrapper hard-links
@@ -451,6 +635,8 @@ if WASM:
         "IfcGeomServer",
         "BonsaiViewer",
         "qt6",
+        # Skipping `proj`, otherwise we would also need to build/install sqlite3 for wasm.
+        "proj",
     }
     SKIP_TARGETS_FOR_WASM = {t.lower() for t in SKIP_TARGETS_FOR_WASM}
     skip_targets = {t for t in targets if t.lower() in SKIP_TARGETS_FOR_WASM}
@@ -458,7 +644,7 @@ if WASM:
         cecho(f"Skipping targets for wasm build: {', '.join(sorted(skip_targets))}", YELLOW)
     targets.difference_update(skip_targets)
 
-print("Building:", *sorted(targets, key=lambda t: len(list(gather_dependencies(t)))))
+logger.info("Building: " + " ".join(sorted(targets, key=lambda t: len(list(gather_dependencies(t))))))
 
 # Check that required tools are in PATH
 yacc = "yacc"  # Used during swig building process, installed with `bison` on Debian / `byacc` on Red Hat.
@@ -470,6 +656,10 @@ if WASM:
     required_commands.append("pyodide")
 if platform.system() == "Linux" and "BonsaiViewer" in targets:
     required_commands.append("patchelf")
+if "proj" in targets:
+    required_commands.append("sqlite3")
+if ARGS.use_ninja:
+    required_commands.append("ninja")
 
 for cmd in required_commands:
     if shutil.which(cmd) is None:
@@ -489,12 +679,10 @@ download_tool_git = "git"
 
 # Create log directory and file
 
-log_dir = os.path.join(DEPS_DIR, "logs")
-if not os.path.exists(log_dir):
-    os.makedirs(log_dir)
-LOG_FILE = os.path.join(log_dir, sp.check_output([date, "+%Y%m%d"], encoding="utf-8").strip()) + ".log"
-if not os.path.exists(LOG_FILE):
-    open(LOG_FILE, "w").close()
+log_dir = Path(DEPS_DIR) / "logs"
+log_dir.mkdir(parents=True, exist_ok=True)
+LOG_FILE = log_dir / f"{date.today().strftime('%Y%m%d')}.log"
+LOG_FILE.touch(exist_ok=True)
 logger.info(f"using command log file '{LOG_FILE}'")
 
 # Causing havoc in python 3.11 build
@@ -511,7 +699,7 @@ def restore_env(var_name: str, old_value: str | None) -> None:
         os.environ[var_name] = old_value
 
 
-def run(cmds: Sequence[str], cwd: str | None = None, can_fail: bool = False) -> str:
+def run(cmds: Sequence[str], cwd: str | None = None, can_fail: bool = False, env: dict[str, str] | None = None) -> str:
     """
     Wraps `subprocess.Popen.communicate()` and logs the command being executed,
     sets up logging `stderr` to `LOG_FILE` (in append mode) and returns stdout
@@ -521,7 +709,7 @@ def run(cmds: Sequence[str], cwd: str | None = None, can_fail: bool = False) -> 
     def timestamp() -> str:
         return datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]  # same format as logging
 
-    def stream_reader(pipe, collector: list[str], log_file) -> None:
+    def stream_reader(pipe: IO[str], collector: list[str], log_file: IO[str]) -> None:
         for line in iter(pipe.readline, ""):
             log_file.write(f"{timestamp()} {line}")
             log_file.flush()
@@ -535,7 +723,7 @@ def run(cmds: Sequence[str], cwd: str | None = None, can_fail: bool = False) -> 
     # Ensure both live logs available in the log file
     # and the putput.
     with open(LOG_FILE, "a", encoding="utf-8") as log_file_handle:
-        proc = sp.Popen(cmds, cwd=cwd, stdout=sp.PIPE, stderr=sp.PIPE, encoding="utf-8")
+        proc = sp.Popen(cmds, cwd=cwd, stdout=sp.PIPE, stderr=sp.PIPE, encoding="utf-8", env=env)
         assert proc.stdout and proc.stderr
 
         t_out = threading.Thread(target=stream_reader, args=(proc.stdout, stdout, log_file_handle))
@@ -549,27 +737,13 @@ def run(cmds: Sequence[str], cwd: str | None = None, can_fail: bool = False) -> 
     logger.debug(f"command returned {proc.returncode}")
 
     if proc.returncode != 0 and not can_fail:
-        print("-" * 70)
-        print("".join(stderr))
-        print("-" * 70)
+        logger.error("-" * 70)
+        logger.error("".join(stderr))
+        logger.error("-" * 70)
         raise RuntimeError(f"Command `{' '.join(cmds)}` returned exit code {proc.returncode}")
 
     return "".join(stdout).strip()
 
-
-if platform.system() == "Darwin":
-    if run(["sw_vers", "-productVersion"]) >= "11.":
-        # Apparently not supported
-        PYTHON_VERSIONS = [pv for pv in PYTHON_VERSIONS if tuple(map(int, pv.split("."))) >= (3, 7)]
-    if run(["sw_vers", "-productVersion"]) < "10.16":
-        # This is now solved with the '__PYVENV_LAUNCHER__' hack
-        # PYTHON_VERSIONS = [pv for pv in PYTHON_VERSIONS if tuple(map(int, pv.split("."))) < (3, 11)]
-        pass
-
-BOOST_VERSION_UNDERSCORE = BOOST_VERSION.replace(".", "_")
-
-OCE_LOCATION = f"https://github.com/tpaviot/oce/archive/OCE-{OCE_VERSION}.tar.gz"
-BOOST_LOCATION = f"https://github.com/boostorg/boost/releases/download/boost-{BOOST_VERSION}/"
 
 # Helper functions
 
@@ -601,7 +775,11 @@ def run_autoconf(dependency_name: str, configure_args: list[str], cwd: str) -> N
 
 
 def run_cmake(
-    name, cmake_args: list[str], cmake_dir: str | None = None, cwd: str | None = None, native: bool = False
+    name: str,
+    cmake_args: list[str],
+    cmake_dir: str | None = None,
+    cwd: str | None = None,
+    native: bool = False,
 ) -> None:
     if cmake_dir is None:
         P = ".."
@@ -613,6 +791,8 @@ def run_cmake(
         wasm.append("emcmake")
 
     cmake_flags: list[str] = []
+    if ARGS.use_ninja:
+        cmake_flags.extend(["-G", "Ninja"])
     if not native and (not WASM or not WASM_CMAKE_IS_USING_INIT_VARS):
         # For WASM we provide flags using just environment variables.
         # If we provide them using cmake vars, it will override emscripten toolchain flags.
@@ -628,6 +808,9 @@ def run_cmake(
         cmake_flags.append(
             f"-DBUILD_SHARED_LIBS={OFF_ON[not BUILD_STATIC]}",
         )
+
+    if not any("CMAKE_INSTALL_PREFIX" in f for f in cmake_args):
+        cmake_flags.append(f"-DCMAKE_INSTALL_PREFIX={Path(DEPS_DIR) / 'install' / name}")
 
     if WASM and native:
         # Override emscripten cmake toolchain coming from environment variable.
@@ -645,6 +828,13 @@ def run_cmake(
         ],
         cwd=cwd,
     )
+
+
+def cmake_build(build_dir: str, targets: Sequence[str] = ()) -> None:
+    cmd = ["cmake", "--build", build_dir, "-j", str(IFCOS_NUM_BUILD_PROCS), "--verbose"]
+    for t in targets:
+        cmd.extend(["--target", t])
+    run(cmd)
 
 
 def git_clone_or_pull_repository(clone_url: str, target_dir: str, revision: str | None = None) -> None:
@@ -684,11 +874,8 @@ def build_dependency(
     download_tool: Literal["py", "git"] = download_tool_default,
     revision: str | None = None,
     patch: list[str] | None = None,
-    shell=None,
     pre_compile_subs: Sequence[tuple[str, str, str]] = (),
-    additional_files: dict[str, str] | None = None,
-    no_append_name=False,
-    cmake_dir=None,
+    cmake_dir: str | None = None,
     cmake_native: bool = False,
 ) -> None:
     """Handles building of dependencies with different tools (which are
@@ -697,7 +884,6 @@ def build_dependency(
     linker flags.
 
     :param pre_compile_subs: A sequence of ``(fn, before, after)``
-    :param additional_files: Mapping path->url.
     :param cmake_native: For ``mode="cmake"``, force a native (host) build
         even when building for WASM. Needed for build-time tools like swig.
     """
@@ -712,10 +898,7 @@ def build_dependency(
     logger.info(f"\rFetching {name}...   ")
 
     if download_tool == download_tool_py:
-        if no_append_name:
-            url = download_url
-        else:
-            url = os.path.join(download_url, download_name)
+        url = os.path.join(download_url, download_name)
 
         download_path = os.path.join(build_dir, download_name)
         if not os.path.exists(download_path):
@@ -724,7 +907,7 @@ def build_dependency(
                     urlretrieve(url, os.path.join(build_dir, download_path))
                     break
                 except ConnectionError as e:
-                    print(e, "... retrying...")
+                    logger.warning(f"{e} ... retrying...")
                     time.sleep(30.0)
                     continue
         else:
@@ -752,9 +935,7 @@ def build_dependency(
         else:
             raise RuntimeError("fix source for new download type")
         # ty: false positive bug upstream.
-        download_tarfile = tarfile.open(
-            name=download_tarfile_path, mode=f"r:{compr}"
-        )  # ty:ignore[no-matching-overload]
+        download_tarfile = tarfile.open(name=download_tarfile_path, mode=f"r:{compr}")  # ty:ignore[no-matching-overload]
         # tarfile seriously doesn't have a function to retrieve the root directory more easily
         extract_dir_name = os.path.commonprefix([x for x in download_tarfile.getnames() if x != "."])
         # run([tar, "--exclude=\"*/*\"", "-tf", download_name], cwd=build_dir).strip() no longer works
@@ -766,25 +947,20 @@ def build_dependency(
         if not os.path.exists(extract_dir):
             run([tar, "-xf", download_name], cwd=build_dir)
 
-    if additional_files:
-        for path, url in additional_files.items():
-            if not os.path.exists(path):
-                urlretrieve(url, os.path.join(extract_dir, path))
-
     if patch is not None:
         for p in patch:
             patch_abs = (SCRIPT_PATH / p).absolute().__str__()
             if os.path.exists(patch_abs):
                 try:
                     run(["patch", "-p1", "--batch", "--forward", "-i", patch_abs], cwd=extract_dir)
-                except Exception as e:
+                except Exception:
+                    logger.info(
+                        f"Patch '{p}' failed to apply, checking if it was already applied (error above is expected then)."
+                    )
                     # Assert that the patch has already been applied
                     run(["patch", "-p1", "--batch", "--reverse", "--dry-run", "-i", patch_abs], cwd=extract_dir)
             else:
                 raise FileNotFoundError(patch_abs)
-
-    if shell is not None:
-        sp.run(shell, shell=True, check=True, cwd=extract_dir)
 
     if mode != "bjam":
         extract_build_dir = os.path.join(extract_dir, *([cmake_dir] if cmake_dir else []), "build")
@@ -806,9 +982,16 @@ def build_dependency(
             with open(os.path.join(extract_dir, fn), "w") as f:
                 f.write(s)
         logger.info(f"\rBuilding {name}...   ")
-        run([make, f"-j{IFCOS_NUM_BUILD_PROCS}", "VERBOSE=1"], cwd=extract_build_dir)
-        logger.info(f"\rInstalling {name}... ")
-        run([make, "install"], cwd=extract_build_dir)
+        if mode == "cmake":
+            cmake_build(extract_build_dir)
+            logger.info(f"\rInstalling {name}... ")
+            cmake_build(extract_build_dir, ["install"])
+        elif mode == "autoconf":
+            run([make, f"-j{IFCOS_NUM_BUILD_PROCS}", "VERBOSE=1"], cwd=extract_build_dir)
+            logger.info(f"\rInstalling {name}... ")
+            run([make, "install"], cwd=extract_build_dir)
+        else:
+            assert_never(mode)
         logger.info(f"\rInstalled {name}     \n")
     else:  # bjam
         logger.info(f"\rConfiguring {name}...")
@@ -816,12 +999,10 @@ def build_dependency(
         logger.info(f"\rBuilding {name}...   ")
         run(["./b2", f"-j{IFCOS_NUM_BUILD_PROCS}"] + build_tool_args, cwd=extract_dir, can_fail=WASM)
         logger.info(f"\rInstalling {name}... ")
-        shutil.copytree(
-            os.path.join(extract_dir, "boost"), os.path.join(DEPS_DIR, "install", f"boost-{BOOST_VERSION}", "boost")
-        )
+        shutil.copytree(os.path.join(extract_dir, "boost"), os.path.join(DEPS_DIR, "install", name, "boost"))
         logger.info(f"\rInstalled {name}     \n")
 
-    if DISK_CLEANUP:
+    if ARGS.diskcleanup:
         shutil.rmtree(build_dir, ignore_errors=True)
 
 
@@ -849,12 +1030,11 @@ def install_qt6() -> str:
         if preset_qt_config.exists():
             logger.info(f"Using pre-set QT_DIR={preset_qt_dir}, skipping aqt install")
             return preset_qt_dir
-        logger.warning(
-            f"QT_DIR={preset_qt_dir} is set but {preset_qt_config} not found; " f"falling through to aqtinstall"
-        )
+        logger.warning(f"QT_DIR={preset_qt_dir} is set but {preset_qt_config} not found; falling through to aqtinstall")
 
     host, qt_arch, install_suffix = get_qt6_aqt_config()
-    qt_install_root = INSTALL_DIR / f"qt6-{QT6_VERSION}-{install_suffix}"
+    Dependencies.register("qt6", f"{QT6_VERSION}-{install_suffix}", use_shared_suffix=False)
+    qt_install_root = Dependencies.get_install_dir("qt6")
     qt_dir = qt_install_root / QT6_VERSION / install_suffix
     os.environ["QT_DIR"] = str(qt_dir)
 
@@ -867,20 +1047,23 @@ def install_qt6() -> str:
 
     os.makedirs(qt_install_root, exist_ok=True)
 
-    try:
-        import aqt  # ty:ignore[unresolved-import]
-    except ModuleNotFoundError:
+    # Prefer uv when available: uvx runs aqtinstall in an ephemeral env, avoiding polluting
+    # any Python installation (isolated or global) with aqtinstall and its dependencies.
+    if uv_path := shutil.which("uv"):
+        logger.info(f"Using uv ('{uv_path}') to run aqtinstall in an ephemeral env.")
+        AQT_CMD = ["uvx", "--from", "aqtinstall", "aqt"]
+    elif importlib.util.find_spec("aqt") is not None:
+        AQT_CMD = [sys.executable, "-m", "aqt"]
+    else:
         logger.error(
             "Could not find an existing Qt6 install, so aqtinstall is needed to fetch it automatically. "
-            "Install the `aqtinstall` PyPI package or set QT_DIR."
+            "Install `uv`, install the `aqtinstall` PyPI package, or set QT_DIR."
         )
         exit(1)
 
     run(
-        [
-            sys.executable,
-            "-m",
-            "aqt",
+        AQT_CMD
+        + [
             "install-qt",
             host,
             "desktop",
@@ -895,7 +1078,10 @@ def install_qt6() -> str:
             "icu",
             "qtbase",
             "qtsvg",
-        ]
+        ],
+        # aqtinstall writes its log as `aqtinstall.log` relative to cwd. Run from
+        # DEPS_DIR instead of the repo dir so it doesn't leave a stray file there.
+        cwd=DEPS_DIR,
     )
 
     if not (qt_config.exists() and qt_core.exists() and qt_svg.exists()):
@@ -906,12 +1092,9 @@ def install_qt6() -> str:
 
 cecho("Collecting dependencies:", GREEN)
 
-# Set compiler flags for 32bit builds on 64bit system
-# TODO: This is untested
-
 ADDITIONAL_ARGS = []
 
-if platform.system() == "Darwin":
+if APPLE:
     ADDITIONAL_ARGS = [f"-mmacosx-version-min={TOOLSET}"] + ADDITIONAL_ARGS
 
 # If the linker supports GC sections, set it up to reduce binary file size
@@ -927,6 +1110,8 @@ ADDITIONAL_ARGS_STR = " ".join(ADDITIONAL_ARGS)
 
 CXXFLAGS_MINIMAL = f"{CXXFLAGS} {PIC} {ADDITIONAL_ARGS_STR}"
 CFLAGS_MINIMAL = f"{CFLAGS} {PIC} {ADDITIONAL_ARGS_STR}"
+CXXFLAGS_SHARED = CXXFLAGS_MINIMAL
+CFLAGS_SHARED = CFLAGS_MINIMAL
 if WASM:
     # WASM `SIDE_MODULE_` are absorbed by `emcmake` automatically.
     CXXFLAGS = CXXFLAGS_MINIMAL
@@ -936,19 +1121,19 @@ elif sp.call([bash, "-c", "ld --gc-sections 2>&1 | grep -- --gc-sections &> /dev
         CXXFLAGS = f"{CXXFLAGS} {PIC} -fdata-sections -ffunction-sections -fvisibility=hidden -fvisibility-inlines-hidden {ADDITIONAL_ARGS_STR}"
         CFLAGS = f"{CFLAGS}   {PIC} -fdata-sections -ffunction-sections -fvisibility=hidden {ADDITIONAL_ARGS_STR}"
     else:
-        CXXFLAGS = CXXFLAGS_MINIMAL
-        CFLAGS = CFLAGS_MINIMAL
+        CXXFLAGS = CXXFLAGS_SHARED
+        CFLAGS = CFLAGS_SHARED
     LDFLAGS = f"{LDFLAGS}  -Wl,--gc-sections {ADDITIONAL_ARGS_STR}"
 else:
     if BUILD_STATIC:
         CXXFLAGS = f"{CXXFLAGS} {PIC} -fvisibility=hidden -fvisibility-inlines-hidden {ADDITIONAL_ARGS_STR}"
         CFLAGS = f"{CFLAGS}   {PIC} -fvisibility=hidden -fvisibility-inlines-hidden {ADDITIONAL_ARGS_STR}"
     else:
-        CXXFLAGS = CXXFLAGS_MINIMAL
-        CFLAGS = CFLAGS_MINIMAL
+        CXXFLAGS = CXXFLAGS_SHARED
+        CFLAGS = CFLAGS_SHARED
     LDFLAGS = f"{LDFLAGS} {ADDITIONAL_ARGS_STR}"
 
-if LTO:
+if ARGS.lto:
     for f in compiler_flags:
         locals()[f] += f" -flto={IFCOS_NUM_BUILD_PROCS}"
 
@@ -963,17 +1148,74 @@ os.environ["CMAKE_COLOR_DIAGNOSTICS"] = "ON"
 # Output from cmake itself.
 os.environ["CLICOLOR_FORCE"] = "1"
 
-# Some dependencies need a more recent CMake version than most distros provide
-# @tfk: this is no longer needed
-# build_dependency(name="cmake-%s" % (CMAKE_VERSION,), mode="autoconf", build_tool_args=[], download_url="https://cmake.org/files/v%s" % (CMAKE_VERSION_2,), download_name="cmake-%s.tar.gz" % (CMAKE_VERSION,))
+Dependency: TypeAlias = Literal[
+    "manifold",
+    "occt",
+    "qt6",
+    "pcre",
+    "libxml2",
+    "OpenCOLLADA",
+    "json",
+    "eigen",
+    "swig",
+    "cgal",
+    "gmp",
+    "mpfr",
+    "zstd",
+    "rocksdb",
+    "boost",
+    "tbb",
+    "usd",
+    "python",
+    "proj",
+]
+
+
+class Dependencies:
+    names: dict[Dependency, str] = {}
+    runtime_dependencies: set[Dependency] = set()
+
+    @classmethod
+    def register(
+        cls,
+        dependency: Dependency,
+        version: str,
+        *,
+        use_shared_suffix: bool = not BUILD_STATIC,
+        bundle_as_runtime_dependency: bool = True,
+        alternative_name: str | None = None,
+    ) -> str:
+        """Register a dependency's install directory name.
+
+        :return: The registered install directory name.
+        """
+        name_prefix = alternative_name or dependency
+        name = f"{name_prefix}-shared-{version}" if use_shared_suffix else f"{name_prefix}-{version}"
+        cls.names[dependency] = name
+        if bundle_as_runtime_dependency:
+            cls.runtime_dependencies.add(dependency)
+        return name
+
+    @classmethod
+    def get_install_dir(cls, dependency: Dependency) -> Path:
+        return Path(DEPS_DIR) / "install" / cls.names[dependency]
+
+    @classmethod
+    def write_install_dirs_json(cls) -> None:
+        install_dirs = {dependency: str(cls.get_install_dir(dependency)) for dependency in cls.runtime_dependencies}
+        install_dirs_path = INSTALL_DIR / "install_dirs.json"
+        install_dirs_path.write_text(json.dumps(install_dirs, indent=2))
+        logger.info(f"Wrote {install_dirs_path}")
+
 
 if "json" in targets:
-    dependency_name = f"json-{JSON_VERSION}"
+    dependency_name = Dependencies.register(
+        "json", JSON_VERSION, use_shared_suffix=False, bundle_as_runtime_dependency=False
+    )
     build_dependency(
         name=dependency_name,
         mode="cmake",
         build_tool_args=[
-            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/{dependency_name}",
             "-DJSON_BuildTests=OFF",
         ],
         download_url=f"https://github.com/nlohmann/json/releases/download/v{JSON_VERSION}",
@@ -981,14 +1223,18 @@ if "json" in targets:
     )
 
 if "eigen" in targets:
-    dependency_name = f"eigen-install-{EIGEN_VERSION}"
+    # We add '-install-' in the middle, so it won't be confused with git repo we used previously.
+    dependency_name = Dependencies.register(
+        "eigen",
+        EIGEN_VERSION,
+        use_shared_suffix=False,
+        bundle_as_runtime_dependency=False,
+        alternative_name="eigen-install",
+    )
     build_dependency(
-        name=f"{dependency_name}",
+        name=dependency_name,
         mode="cmake",
-        # We add '-install-' in the middle, so it won't be confused with git repo we used previously.
-        build_tool_args=[
-            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/{dependency_name}",
-        ],
+        build_tool_args=[],
         download_url=f"https://gitlab.com/libeigen/eigen/-/archive/{EIGEN_VERSION}/",
         download_name=f"eigen-{EIGEN_VERSION}.tar.gz",
     )
@@ -1001,8 +1247,9 @@ if "pcre" in targets:
         os.environ["CXX"] = MAC_CROSS_COMPILE_INTEL_CXX
     # Keep it autoconf as OpenCOLLADA is pretty old and might break
     # if we update it's dependencies for mmore modern cmake.
+    pcre_name = Dependencies.register("pcre", PCRE_VERSION)
     build_dependency(
-        name=f"pcre-{PCRE_VERSION}",
+        name=pcre_name,
         mode="autoconf",
         build_tool_args=[DISABLE_FLAG],
         download_url=f"https://downloads.sourceforge.net/project/pcre/pcre/{PCRE_VERSION}/",
@@ -1013,13 +1260,14 @@ if "pcre" in targets:
         restore_env("CXX", OLD_CXX)
 
 if "swig" in targets:
-    dependency_name = f"swig-{SWIG_VERSION}"
+    dependency_name = Dependencies.register(
+        "swig", SWIG_VERSION, use_shared_suffix=False, bundle_as_runtime_dependency=False
+    )
     build_dependency(
         name=dependency_name,
         mode="cmake",
         build_tool_args=[
             "-DWITH_PCRE=OFF",
-            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/{dependency_name}",
         ],
         download_url="https://github.com/swig/swig.git",
         download_name="swig",
@@ -1028,9 +1276,12 @@ if "swig" in targets:
         cmake_native=WASM,
     )
 
-if USE_OCCT and "occ" in targets:
+if "occ" in targets:
     occt_args: list[str] = []
     patches: list[str] = []
+    occt_link_type = "Shared" if ARGS.occt_shared else "Static"
+    occt_name = Dependencies.register("occt", OCCT_VERSION, use_shared_suffix=ARGS.occt_shared)
+    OCCT_INSTALL_PATH = Dependencies.get_install_dir("occt")
     if OCCT_VERSION < "7.4":
         patches.append("./patches/occt/enable-exception-handling.patch")
 
@@ -1045,12 +1296,24 @@ if USE_OCCT and "occ" in targets:
     if WASM:
         patches.append("./patches/occt/no_em_js.patch")
 
+    if ARGS.occt_shared:
+        # Using static flags for shared builds break it
+        # (e.g. `-fvisibility=hidden` hides many symbols).
+        # So we temporarily override flags.
+        OLD_CPP_FLAGS = os.environ["CPPFLAGS"]
+        OLD_CXX_FLAGS = os.environ["CXXFLAGS"]
+        OLD_C_FLAGS = os.environ["CFLAGS"]
+        os.environ["CXXFLAGS"] = CXXFLAGS_SHARED
+        os.environ["CPPFLAGS"] = CXXFLAGS_SHARED
+        os.environ["CFLAGS"] = CFLAGS_SHARED
+
     build_dependency(
-        name=f"occt-{OCCT_VERSION}",
+        name=occt_name,
         mode="cmake",
         build_tool_args=[
-            f"-DINSTALL_DIR={DEPS_DIR}/install/occt-{OCCT_VERSION}",
-            f"-DBUILD_LIBRARY_TYPE={LINK_TYPE_UCFIRST}",
+            # OCCT completely ignores `BUILD_SHARED_LIBS`
+            # and derives it's value from `BUILD_LIBRARY_TYPE` ('Shared' by defeault).
+            f"-DBUILD_LIBRARY_TYPE={occt_link_type}",
             f"-DBUILD_MODULE_Draw=0",
             f"-DBUILD_RELEASE_DISABLE_EXCEPTIONS=Off",
             # Disable xlib explicitly, as it tries to use it on Desktop Ubuntu, adding unnecessary dependency.
@@ -1069,25 +1332,14 @@ if USE_OCCT and "occ" in targets:
         patch=patches,
         revision="V" + OCCT_VERSION.replace(".", "_"),
     )
-elif "occ" in targets:
-    build_dependency(
-        name=f"oce-{OCE_VERSION}",
-        mode="cmake",
-        build_tool_args=[
-            f"-DOCE_DISABLE_TKSERVICE_FONT=ON",
-            f"-DOCE_TESTING=OFF",
-            f"-DOCE_BUILD_SHARED_LIB=OFF",
-            f"-DOCE_DISABLE_X11=ON",
-            f"-DOCE_VISUALISATION=OFF",
-            f"-DOCE_OCAF=OFF",
-            f"-DOCE_INSTALL_PREFIX={DEPS_DIR}/install/oce-{OCE_VERSION}",
-        ],
-        download_url="https://github.com/tpaviot/oce/archive/",
-        download_name=f"OCE-{OCE_VERSION}.tar.gz",
-    )
+
+    if ARGS.occt_shared:
+        restore_env("CPPFLAGS", OLD_CPP_FLAGS)
+        restore_env("CXXFLAGS", OLD_CXX_FLAGS)
+        restore_env("CFLAGS", OLD_C_FLAGS)
 
 if "manifold" in targets:
-    dependency_name = f"manifold-{MANIFOLD_VERSION}"
+    dependency_name = Dependencies.register("manifold", MANIFOLD_VERSION)
     patches = []
     if WASM:
         patches.append("./patches/manifold/install-metadata-for-emscripten.patch")
@@ -1095,7 +1347,6 @@ if "manifold" in targets:
         name=dependency_name,
         mode="cmake",
         build_tool_args=[
-            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/{dependency_name}",
             "-DMANIFOLD_PAR=OFF",
             "-DMANIFOLD_CROSS_SECTION=OFF",
             "-DMANIFOLD_PYBIND=OFF",
@@ -1113,6 +1364,23 @@ if "manifold" in targets:
         patch=patches,
     )
 
+if "proj" in targets:
+    dependency_name = Dependencies.register("proj", PROJ_VERSION, use_shared_suffix=False)
+    build_dependency(
+        name=dependency_name,
+        mode="cmake",
+        build_tool_args=[
+            "-DENABLE_TIFF=OFF",
+            "-DENABLE_CURL=OFF",
+            "-DBUILD_APPS=OFF",
+            "-DBUILD_PROJSYNC=OFF",
+            "-DBUILD_SHARED_LIBS=OFF",
+            "-DBUILD_TESTING=OFF",
+        ],
+        download_url="https://download.osgeo.org/proj/",
+        download_name=f"proj-{PROJ_VERSION}.tar.gz",
+    )
+
 if "libxml2" in targets:
     OLD_CC = ""
     if MAC_CROSS_COMPILE_INTEL:
@@ -1128,8 +1396,9 @@ if "libxml2" in targets:
     ]
     if WASM:
         build_tool_args.append("--without-threads")
+    libxml2_name = Dependencies.register("libxml2", LIBXML2_VERSION)
     build_dependency(
-        f"libxml2-{LIBXML2_VERSION}",
+        libxml2_name,
         "autoconf",
         build_tool_args=build_tool_args,
         download_url=f"https://download.gnome.org/sources/libxml2/{'.'.join(LIBXML2_VERSION.split('.')[0:2])}/",
@@ -1147,24 +1416,18 @@ if "OpenCOLLADA" in targets:
     # OpenCOLLADAConfig.cmake.in hardcodes shared-lib targets on Unix regardless of
     # whether shared libs were actually built. We make it follow `USE_SHARED` instead.
     patches.append("./patches/opencollada/config_select_libs_by_use_shared.patch")
+    patches.append("./patches/opencollada/remove_tr1.patch")
 
-    if WASM:
-        # This is necessary for the WASM build, because recent versions of
-        # clang don't have the tr1:: namespace anymore. However, it breaks
-        # some versions of gcc (9.4.0 at least) due to specializing std::hash
-        # outside of the std:: namespace.
-        patches.append("./patches/opencollada/remove_tr1.patch")
-
+    opencollada_name = Dependencies.register("OpenCOLLADA", OPENCOLLADA_VERSION)
     build_dependency(
-        "OpenCOLLADA",
+        opencollada_name,
         "cmake",
         build_tool_args=[
-            f"-DLIBXML2_INCLUDE_DIR={DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/include/libxml2",
-            f"-DLIBXML2_LIBRARIES={DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}/lib/libxml2.{LIBRARY_EXT}",
-            f"-DPCRE_INCLUDE_DIR={DEPS_DIR}/install/pcre-{PCRE_VERSION}/include",
-            f"-DPCRE_PCREPOSIX_LIBRARY={DEPS_DIR}/install/pcre-{PCRE_VERSION}/lib/libpcreposix.{LIBRARY_EXT}",
-            f"-DPCRE_PCRE_LIBRARY={DEPS_DIR}/install/pcre-{PCRE_VERSION}/lib/libpcre.{LIBRARY_EXT}",
-            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/OpenCOLLADA/",
+            f"-DLIBXML2_INCLUDE_DIR={Dependencies.get_install_dir('libxml2')}/include/libxml2",
+            f"-DLIBXML2_LIBRARIES={Dependencies.get_install_dir('libxml2')}/lib/libxml2.{LIBRARY_EXT}",
+            f"-DPCRE_INCLUDE_DIR={Dependencies.get_install_dir('pcre')}/include",
+            f"-DPCRE_PCREPOSIX_LIBRARY={Dependencies.get_install_dir('pcre')}/lib/libpcreposix.{LIBRARY_EXT}",
+            f"-DPCRE_PCRE_LIBRARY={Dependencies.get_install_dir('pcre')}/lib/libpcre.{LIBRARY_EXT}",
             # OpenCOLLADA is ancient at this point and allows cmake 2.6+, which results in error in cmake 4.
             f"-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
             f"-DUSE_STATIC={OFF_ON[BUILD_STATIC]}",
@@ -1177,6 +1440,15 @@ if "OpenCOLLADA" in targets:
         patch=patches,
         revision=OPENCOLLADA_VERSION,
     )
+
+
+def python_consider_rc(python_version: str) -> str:
+    # TODO: remove after Python 3.15 release.
+    # Python 3.15.0 is released on 2026-10-01, before that only rc builds are available.
+    if python_version == "3.15.0" and date.today() < date(2026, 10, 2):
+        python_version += "rc2"
+    return python_version
+
 
 if "python" in targets and not USE_CURRENT_PYTHON_VERSION and not WASM:
     # Python should not be built with -fvisibility=hidden, from experience that introduces segfaults
@@ -1191,7 +1463,7 @@ if "python" in targets and not USE_CURRENT_PYTHON_VERSION and not WASM:
     # with the system python because of some threading initialization
     PYTHON_CONFIGURE_ARGS: list[str] = []
     original_path = ""
-    if platform.system() == "Darwin":
+    if APPLE:
         PYTHON_CONFIGURE_ARGS = ["--enable-shared"]
         open_ssl_prefix = run([brew, "--prefix", "openssl@3"]).strip()
         # I'm not sure why, but if I do `"{open_ssl_prefix}"` (keep the quotes),
@@ -1206,24 +1478,30 @@ if "python" in targets and not USE_CURRENT_PYTHON_VERSION and not WASM:
         PYTHON_CONFIGURE_ARGS.extend(["--with-universal-archs=intel-64", "--enable-universalsdk"])
 
     for PYTHON_VERSION in PYTHON_VERSIONS:
+        python_version_url = PYTHON_VERSION
+        PYTHON_VERSION = python_consider_rc(PYTHON_VERSION)
+
+        python_name = Dependencies.register(
+            "python", PYTHON_VERSION, use_shared_suffix=False, bundle_as_runtime_dependency=False
+        )
         # Don't fail silently on missing Python dependencies (e.g. openssl or zlib),
         # because later ifcopenshell-python build will fail too but in a more confusing way.
         build_dependency(
-            f"python-{PYTHON_VERSION}",
+            python_name,
             "autoconf",
             PYTHON_CONFIGURE_ARGS,
-            f"http://www.python.org/ftp/python/{PYTHON_VERSION}/",
+            f"http://www.python.org/ftp/python/{python_version_url}/",
             f"Python-{PYTHON_VERSION}.tgz",
         )
-        python_install = INSTALL_DIR / f"python-{PYTHON_VERSION}"
+        python_install = Dependencies.get_install_dir("python")
         python_bin = python_install / "bin" / "python3"
         # `_ssl` module is present -> we will be able to install `numpy` later
         # to verify IfcOpenShell installation
         try:
             run([str(python_bin), "-c", "import _ssl"])
         except RuntimeError:
-            print(
-                "ERROR: Python was built without SSL support (_ssl module is missing). "
+            logger.error(
+                "Python was built without SSL support (_ssl module is missing). "
                 f"To fix this: remove the installed Python at {python_install}; "
                 "install OpenSSL development libraries and re-run."
             )
@@ -1237,23 +1515,28 @@ if "python" in targets and not USE_CURRENT_PYTHON_VERSION and not WASM:
     os.environ["CFLAGS"] = OLD_C_FLAGS
 
 if "boost" in targets:
+    BOOST_LOCATION = f"https://github.com/boostorg/boost/releases/download/boost-{BOOST_VERSION}/"
     str_concat = lambda prefix: lambda postfix: "" if postfix.strip() == "" else "=".join((prefix, postfix.strip()))
     toolset = []
     if WASM:
         toolset.append("toolset=emscripten")
+    # TODO: drop `boost_alternative_name` on next BOOST_VERSION bump, it's only needed to force rebuild cache.
+    boost_alternative_name = "boost-disable-icu" if BUILD_SHARED and BOOST_VERSION == "1.86.0" else None
+    boost_name = Dependencies.register("boost", BOOST_VERSION, alternative_name=boost_alternative_name)
     build_dependency(
-        f"boost-{BOOST_VERSION}",
+        boost_name,
         mode="bjam",
         build_tool_args=[
-            f"--stagedir={DEPS_DIR}/install/boost-{BOOST_VERSION}",
-            "--with-system",
+            f"--stagedir={Dependencies.get_install_dir('boost')}",
             "--with-program_options",
             "--with-regex",
-            "--with-thread",
-            "--with-date_time",
             "--with-iostreams",
-            "--with-filesystem",
-            f"link={LINK_TYPE}",
+            # By default boost will keep ICU enabled, if it manages to find dev ICU dev package on the system.
+            # Which then creates issues when during our executables packaging.
+            # E.g. it ends up linking system's `libicudata.so.67`, so then we need to somehow detect and bundle
+            # along the `libboost_regex.so`. So since we don't use it, better just skip it.
+            "--disable-icu",
+            f"link={'static' if BUILD_STATIC else 'shared'}",
             *toolset,
             *map(str_concat("cxxflags"), CXXFLAGS.strip().split(" ")),
             *map(str_concat("linkflags"), LDFLAGS.strip().split(" ")),
@@ -1271,7 +1554,7 @@ if "boost" in targets:
         # only supported on nix for now
         run(
             ("find", ".", "-name", "*.bc", "-exec", "bash", "-c", "emar q ${1%.bc}.a $1", "bash", "{}", ";"),
-            cwd=f"{DEPS_DIR}/install/boost-{BOOST_VERSION}/lib",
+            cwd=f"{Dependencies.get_install_dir('boost')}/lib",
         )
 
 if "cgal" in targets:
@@ -1305,24 +1588,33 @@ if "cgal" in targets:
     if GMP_VERSION != "6.3.0":
         raise Exception(f"GMP_VERSION changed to {GMP_VERSION}, check whether {gmp_patches} is still needed.")
 
+    gmp_name = Dependencies.register("gmp", GMP_VERSION)
     build_dependency(
-        name=f"gmp-{GMP_VERSION}",
+        name=gmp_name,
         mode="autoconf",
         build_tool_args=[ENABLE_FLAG, DISABLE_FLAG, "--with-pic", *gmp_args],
         pre_compile_subs=([("build/config.h", "HAVE_OBSTACK_VPRINTF 1", "HAVE_OBSTACK_VPRINTF 0")] if WASM else []),
         patch=gmp_patches,
-        # Sometimes ftp.gnu.org is very slow, use ftpmirror.gnu.org as a workaround.
-        download_url="https://ftpmirror.gnu.org/gnu/gmp/",
+        # Alternative mirrors:
+        # - ftpmirror.gnu.org
+        # - ftp.gnu.org
+        download_url="https://mirrors.kernel.org/gnu/gmp/",
         download_name=f"gmp-{GMP_VERSION}.tar.bz2",
     )
 
     if WASM and APPLE:
         restore_env("HOST_CC", OLD_HOST_CC)
 
+    mpfr_name = Dependencies.register("mpfr", MPFR_VERSION)
     build_dependency(
-        name=f"mpfr-{MPFR_VERSION}",
+        name=mpfr_name,
         mode="autoconf",
-        build_tool_args=[ENABLE_FLAG, DISABLE_FLAG, *mpfr_args, f"--with-gmp={DEPS_DIR}/install/gmp-{GMP_VERSION}"],
+        build_tool_args=[
+            ENABLE_FLAG,
+            DISABLE_FLAG,
+            *mpfr_args,
+            f"--with-gmp={Dependencies.get_install_dir('gmp')}",
+        ],
         download_url=f"http://www.mpfr.org/mpfr-{MPFR_VERSION}/",
         download_name=f"mpfr-{MPFR_VERSION}.tar.bz2",
     )
@@ -1330,19 +1622,13 @@ if "cgal" in targets:
     if MAC_CROSS_COMPILE_INTEL:
         restore_env("CC", OLD_CC)
 
+    # CGAL itself is header-only, but we keep `-shared-`,
+    # because it's shared dependencies might sneak in to the cmake configs.
+    cgal_name = Dependencies.register("cgal", CGAL_VERSION, bundle_as_runtime_dependency=False)
     build_dependency(
-        name=f"cgal-{CGAL_VERSION}",
+        name=cgal_name,
         mode="cmake",
-        build_tool_args=[
-            f"-DGMP_LIBRARIES={DEPS_DIR}/install/gmp-{GMP_VERSION}/lib/libgmp.{LIBRARY_EXT}",
-            f"-DGMP_INCLUDE_DIR={DEPS_DIR}/install/gmp-{GMP_VERSION}/include",
-            f"-DMPFR_LIBRARIES={DEPS_DIR}/install/mpfr-{MPFR_VERSION}/lib/libmpfr.{LIBRARY_EXT}",
-            f"-DMPFR_INCLUDE_DIR={DEPS_DIR}/install/mpfr-{MPFR_VERSION}/include",
-            f"-DBoost_INCLUDE_DIR={DEPS_DIR}/install/boost-{BOOST_VERSION}",
-            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/cgal-{CGAL_VERSION}/",
-            f"-DCGAL_HEADER_ONLY=On",
-            f"-DBUILD_SHARED_LIBS=Off",
-        ],
+        build_tool_args=[],
         download_url="https://github.com/CGAL/cgal.git",
         download_name="cgal",
         download_tool=download_tool_git,
@@ -1350,23 +1636,26 @@ if "cgal" in targets:
     )
 
 if "usd" in targets:
+    tbb_name = Dependencies.register("tbb", TBB_VERSION)
     build_dependency(
-        name=f"oneTBB-{TBB_VERSION}",
+        name=tbb_name,
         mode="cmake",
-        build_tool_args=[f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/tbb-{TBB_VERSION}", f"-DTBB_TEST=OFF"],
+        build_tool_args=[
+            f"-DTBB_TEST=OFF",
+        ],
         download_url="https://github.com/oneapi-src/oneTBB",
         download_name="oneTBB",
         download_tool=download_tool_git,
         revision=f"v{TBB_VERSION}",
     )
 
+    usd_name = Dependencies.register("usd", USD_VERSION)
     build_dependency(
-        name=f"usd-{USD_VERSION}",
+        name=usd_name,
         mode="cmake",
         build_tool_args=[
-            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/usd-{USD_VERSION}",
-            f"-DBOOST_ROOT={DEPS_DIR}/install/boost-{BOOST_VERSION}",
-            f"-DTBB_ROOT_DIR={DEPS_DIR}/install/tbb-{TBB_VERSION}",
+            f"-DBOOST_ROOT={Dependencies.get_install_dir('boost')}",
+            f"-DTBB_ROOT_DIR={Dependencies.get_install_dir('tbb')}",
             f"-DPXR_ENABLE_PYTHON_SUPPORT=FALSE",
             f"-DPXR_ENABLE_GL_SUPPORT=FALSE",
             f"-DPXR_BUILD_IMAGING=FALSE",
@@ -1382,11 +1671,15 @@ if "usd" in targets:
     )
 
 if "zstd" in targets:
+    zstd_name = Dependencies.register("zstd", ZSTD_VERSION, use_shared_suffix=False)
     build_dependency(
-        name=f"zstd-{ZSTD_VERSION}",
+        name=zstd_name,
         mode="cmake",
         build_tool_args=[
-            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/zstd-{ZSTD_VERSION}",
+            # `ZSTD_BUILD_STATIC` and `ZSTD_BUILD_SHARED` are used to decide
+            # whether to built static variant or shared.
+            # `BUILD_SHARED_LIBS` is only used whether `libzstd` exported cmakje target
+            # will be linking against `libzstd_shared` or `libzstd_static`.
             f"-DZSTD_BUILD_STATIC=ON",
             f"-DZSTD_BUILD_SHARED=OFF",
             f"-DCMAKE_INSTALL_LIBDIR=lib",
@@ -1400,23 +1693,27 @@ if "zstd" in targets:
     )
 
 if "rocksdb" in targets:
+    rocksdb_name = Dependencies.register("rocksdb", ROCKSDB_VERSION, use_shared_suffix=False)
     build_dependency(
-        name=f"rocksdb-{ROCKSDB_VERSION}",
+        name=rocksdb_name,
         mode="cmake",
         build_tool_args=[
-            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/rocksdb-{ROCKSDB_VERSION}",
             f"-DFAIL_ON_WARNINGS=Off",
             f"-DWITH_TESTS=OFF",
             f"-DWITH_TOOLS=OFF",
             f"-DWITH_GFLAGS=OFF",
             f"-DWITH_BENCHMARK_TOOLS=OFF",
             f"-DWITH_CORE_TOOLS=OFF",
+            f"-DWITH_TRACE_TOOLS=OFF",
+            # rocksdb always builds its static lib regardless of this option,
+            # its just add additional shared build.
+            # `BUILD_SHARED_LIBS` is ignored.
             f"-DROCKSDB_BUILD_SHARED=Off",
             f"-DCMAKE_POSITION_INDEPENDENT_CODE=On",
             f"-DUSE_RTTI=On",
             f"-DWITH_ZSTD=On",
             f"-DPORTABLE=1",
-            f"-DCMAKE_PREFIX_PATH={DEPS_DIR}/install/zstd-{ZSTD_VERSION}",
+            f"-DCMAKE_PREFIX_PATH={Dependencies.get_install_dir('zstd')}",
             *MAC_CROSS_COMPILE_INTEL_ARGS,
         ],
         download_url="https://github.com/facebook/rocksdb",
@@ -1431,7 +1728,7 @@ if "qt6" in targets:
 cecho("Building IfcOpenShell:", GREEN)
 
 IFCOS_DIR = os.path.join(DEPS_DIR, "build", "ifcopenshell")
-if os.environ.get("NO_CLEAN", "").lower() not in {"1", "on", "true"}:
+if not is_on_off(os.getenv("NO_CLEAN"), default=False):
     if os.path.exists(IFCOS_DIR):
         shutil.rmtree(IFCOS_DIR)
 os.makedirs(IFCOS_DIR, exist_ok=True)
@@ -1441,8 +1738,8 @@ os.makedirs(ifcos_build_dir, exist_ok=True)
 
 cmake_args = [
     "-DUSE_MMAP=OFF",
-    f"-DBUILD_EXAMPLES={OFF_ON[BUILD_EXAMPLES]}",
-    "-DBUILD_SHARED_LIBS=" + OFF_ON[not IFCOPENSHELL_STATIC],
+    f"-DBUILD_EXAMPLES={OFF_ON[ARGS.build_examples]}",
+    "-DBUILD_SHARED_LIBS=" + OFF_ON[ARGS.ifcopenshell_shared],
     "-DGLTF_SUPPORT=ON",
     "-DBoost_NO_BOOST_CMAKE=On",
     "-DCREATE_BUNDLE=On",
@@ -1451,11 +1748,13 @@ cmake_args = [
     *MAC_CROSS_COMPILE_INTEL_ARGS,
 ]
 """Default CMake args to use for all CMake configs."""
-cmake_args_prefix_path: list[str] = [
-    f"{DEPS_DIR}/install/boost-{BOOST_VERSION}",
-    f"{DEPS_DIR}/install/eigen-install-{EIGEN_VERSION}",
-    f"{DEPS_DIR}/install/json-{JSON_VERSION}",
-]
+cmake_args_prefix_path: list[str] = []
+if "boost" in targets:
+    cmake_args_prefix_path.append(str(Dependencies.get_install_dir("boost")))
+if "eigen" in targets:
+    cmake_args_prefix_path.append(str(Dependencies.get_install_dir("eigen")))
+if "json" in targets:
+    cmake_args_prefix_path.append(str(Dependencies.get_install_dir("json")))
 
 
 def get_cmake_args_prefix_path(additional_paths: Sequence[str] = ()) -> list[str]:
@@ -1476,33 +1775,30 @@ if WASM:
     # inside of the sysroot set by the emscriptem toolchain
     cmake_args.append("-DWASM_BUILD=On")
 
-schemas = os.environ.get("IFCOS_SCHEMAS")
-if schemas:
-    cmake_args.append(f"-DSCHEMA_VERSIONS={schemas}")
+if ARGS.schemas:
+    cmake_args.append(f"-DSCHEMA_VERSIONS={ARGS.schemas}")
 
 if "cgal" in targets:
-    cmake_args_prefix_path.append(f"{DEPS_DIR}/install/cgal-{CGAL_VERSION}")
-    cmake_args_prefix_path.append(f"{DEPS_DIR}/install/gmp-{GMP_VERSION}")
-    cmake_args_prefix_path.append(f"{DEPS_DIR}/install/mpfr-{MPFR_VERSION}")
+    cmake_args_prefix_path.append(str(Dependencies.get_install_dir("cgal")))
+    cmake_args_prefix_path.append(str(Dependencies.get_install_dir("gmp")))
+    cmake_args_prefix_path.append(str(Dependencies.get_install_dir("mpfr")))
     cmake_args.append(f"-DCGAL_WITH_GMPXX=Off")
 
-if "occ" in targets and USE_OCCT:
-    cmake_args_prefix_path.append(f"{DEPS_DIR}/install/occt-{OCCT_VERSION}")
-
-elif "occ" in targets:
-    # We don't support find_package for OCE.
-    occ_include_dir = f"{DEPS_DIR}/install/oce-{OCE_VERSION}/include/oce"
-    occ_library_dir = f"{DEPS_DIR}/install/oce-{OCE_VERSION}/lib"
-    cmake_args.extend(["-DOCC_INCLUDE_DIR=" + occ_include_dir, "-DOCC_LIBRARY_DIR=" + occ_library_dir])
+if "occ" in targets:
+    cmake_args_prefix_path.append(str(OCCT_INSTALL_PATH))
 
 if "manifold" in targets:
-    cmake_args_prefix_path.append(f"{DEPS_DIR}/install/manifold-{MANIFOLD_VERSION}")
+    cmake_args_prefix_path.append(str(Dependencies.get_install_dir("manifold")))
     cmake_args.append("-DWITH_MANIFOLD=On")
+
+if "proj" in targets:
+    cmake_args_prefix_path.append(str(Dependencies.get_install_dir("proj")))
+    cmake_args.append("-DWITH_PROJ=ON")
 
 if "OpenCOLLADA" in targets:
     # pcre is a dependency of OpenCOLLADA, but since we `find_package`,
     # we don't need to add it explicitly here as cmake will find it from the config.
-    cmake_args_prefix_path.append(f"{DEPS_DIR}/install/OpenCOLLADA")
+    cmake_args_prefix_path.append(str(Dependencies.get_install_dir("OpenCOLLADA")))
 else:
     cmake_args.extend(
         [
@@ -1511,14 +1807,14 @@ else:
     )
 
 if "libxml2" in targets:
-    cmake_args_prefix_path.append(f"{DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}")
+    cmake_args_prefix_path.append(str(Dependencies.get_install_dir("libxml2")))
 
 if "usd" in targets:
     cmake_args.append("-DUSD_SUPPORT=ON")
     cmake_args_prefix_path.extend(
         [
-            f"{DEPS_DIR}/install/tbb-{TBB_VERSION}",
-            f"{DEPS_DIR}/install/usd-{USD_VERSION}",
+            str(Dependencies.get_install_dir("tbb")),
+            str(Dependencies.get_install_dir("usd")),
         ]
     )
 
@@ -1531,8 +1827,8 @@ if "rocksdb" in targets:
     )
     cmake_args_prefix_path.extend(
         [
-            f"{DEPS_DIR}/install/rocksdb-{ROCKSDB_VERSION}",
-            f"{DEPS_DIR}/install/zstd-{ZSTD_VERSION}",
+            str(Dependencies.get_install_dir("rocksdb")),
+            str(Dependencies.get_install_dir("zstd")),
         ]
     )
 
@@ -1540,19 +1836,32 @@ if "swig" in targets:
     # `cmake_args_prefix_path` won't work on wasm
     # because `find_program` in emscripten toolchain don't use `find_root_path`.
     # As a workaround we provide executable path directly on all platforms.
-    cmake_args.append(f"-DSWIG_EXECUTABLE={DEPS_DIR}/install/swig-{SWIG_VERSION}/bin/swig")
+    cmake_args.append(f"-DSWIG_EXECUTABLE={Dependencies.get_install_dir('swig')}/bin/swig")
 
 if os.environ.get("QT_DIR"):
     cmake_args_prefix_path.append(os.environ["QT_DIR"])
     cmake_args.append(f"-DQT_DIR={os.environ['QT_DIR']}")
 
+IFCOPENSHELL_INSTALL_PATH = f"{DEPS_DIR}/install/ifcopenshell"
 ifcos_build_args = [
     f"-DBUILD_IFCGEOM={OFF_ON['IfcGeom' in targets]}",
     f"-DBUILD_GEOMSERVER={OFF_ON['IfcGeomServer' in targets]}",
     f"-DBUILD_CONVERT={OFF_ON['IfcConvert' in targets]}",
     f"-DBUILD_BONSAIVIEWER={OFF_ON['BonsaiViewer' in targets]}",
-    f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/ifcopenshell",
+    "-DUSE_CCACHE=ON",
+    "-DIFCOPENSHELL_DEPLOY_QT_RUNTIME=OFF",
 ]
+
+ld_library_paths = [
+    # E.g. Debian.
+    f"{IFCOPENSHELL_INSTALL_PATH}/lib",
+    # E.g. Rocky.
+    f"{IFCOPENSHELL_INSTALL_PATH}/lib64",
+]
+if ARGS.occt_shared and "occ" in targets:
+    ld_library_paths.append(f"{OCCT_INSTALL_PATH}/lib")
+if ARGS.shared and "boost" in targets:
+    ld_library_paths.append(f"{Dependencies.get_install_dir('boost')}/lib")
 
 if not WASM and (
     "BonsaiViewer" in targets
@@ -1566,16 +1875,54 @@ if not WASM and (
         f"-DBUILD_IFCPYTHON=OFF",
     ]
 
-    run_cmake("", exec_args + cmake_args + get_cmake_args_prefix_path(), cmake_dir=CMAKE_DIR, cwd=ifcos_build_dir)
+    run_cmake(
+        "ifcopenshell",
+        exec_args + cmake_args + get_cmake_args_prefix_path(),
+        cmake_dir=CMAKE_DIR,
+        cwd=ifcos_build_dir,
+    )
 
     logger.info("\rBuilding executables...   ")
 
-    run([make, f"-j{IFCOS_NUM_BUILD_PROCS}", "VERBOSE=1"], cwd=ifcos_build_dir)
-    run([make, "install/strip" if BUILD_CFG == "Release" else "install"], cwd=ifcos_build_dir)
+    cmake_build(ifcos_build_dir)
+    cmake_build(ifcos_build_dir, ["install/strip" if BUILD_CFG == "Release" else "install"])
+
+    def test_examples() -> None:
+        cecho("Running examples...", GREEN)
+        examples_bin_dir = Path(DEPS_DIR) / "install" / "ifcopenshell" / "bin"
+
+        examples_env = os.environ.copy()
+        examples_env[LIBRARY_PATH_ENV_VAR] = os.pathsep.join(ld_library_paths)
+
+        examples: dict[tuple[str, ...], str | None] = {
+            ("./IfcOpenHouse",): "IfcOpenHouse.ifc",
+            ("./IfcParseExamples", "IfcOpenHouse.ifc"): None,
+            ("./IfcAdvancedHouse",): "IfcAdvancedHouse.ifc",
+        }
+        # Only for ifc4x3 schema.
+        if (examples_bin_dir / "IfcAlignment").is_file():
+            examples[("./IfcAlignment",)] = "FHWA_Bridge_Geometry_Alignment_Example.ifc"
+            examples[("./IfcSimplifiedAlignment",)] = "FHWA_Bridge_Geometry_Alignment_Example_Simplified.ifc"
+
+        produced_files: set[str] = set()
+        try:
+            for cmd, expected_file in examples.items():
+                run(cmd, cwd=str(examples_bin_dir), env=examples_env)
+                if expected_file is None:
+                    continue
+                if not (examples_bin_dir / expected_file).is_file():
+                    raise RuntimeError(f"Example `{' '.join(cmd)}` did not produce expected file '{expected_file}'.")
+                produced_files.add(expected_file)
+        finally:
+            for produced_file in produced_files:
+                (examples_bin_dir / produced_file).unlink(missing_ok=True)
+
+    if ARGS.build_examples:
+        test_examples()
 
 if "IfcOpenShell-Python" in targets:
     wrapper_ldflags = ""
-    if platform.system() == "Darwin":
+    if APPLE:
         # On OSX the actual Python library is not linked against.
         wrapper_ldflags = "-Wl,-undefined,dynamic_lookup"
 
@@ -1611,7 +1958,7 @@ if "IfcOpenShell-Python" in targets:
 
         try:
             run_cmake(
-                "",
+                "ifcopenshell",
                 ifcos_build_args
                 + [
                     "-DBUILD_IFCPYTHON=ON",
@@ -1624,8 +1971,7 @@ if "IfcOpenShell-Python" in targets:
                     *([f"-DPYTHON_MODULE_INSTALL_DIR={REPO_PATH}"] * WASM),
                     f"-DPYTHON_INCLUDE_DIR={python_include}",
                     f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/ifcopenshell/tmp",
-                    "-DUSERSPACE_PYTHON_PREFIX="
-                    + ["Off", "On"][os.environ.get("PYTHON_USER_SITE", "").lower() in {"1", "on", "true"}],
+                    "-DUSERSPACE_PYTHON_PREFIX=" + OFF_ON[PYTHON_USER_SITE],
                 ],
                 cmake_dir=CMAKE_DIR,
                 cwd=ifcos_build_dir,
@@ -1635,21 +1981,27 @@ if "IfcOpenShell-Python" in targets:
 
         logger.info(f"\rBuilding python {python_version} wrapper...   ")
 
-        run([make, f"-j{IFCOS_NUM_BUILD_PROCS}", "ifcopenshell_wrapper", "VERBOSE=1"], cwd=ifcos_build_dir)
-        run([make, "install/local"], cwd=os.path.join(ifcos_build_dir, "ifcwrap"))
+        cmake_build(ifcos_build_dir, ["ifcopenshell_wrapper"])
+        if ARGS.use_ninja:
+            cmake_build(ifcos_build_dir, ["ifcwrap/install"])
+        else:
+            run([make, "install"], cwd=os.path.join(ifcos_build_dir, "ifcwrap"))
 
         if python_executable:
             run([python_executable, "-m", "ensurepip"])
             run([python_executable, "-m", "pip", "install", "--user", "numpy", "typing_extensions"])
+            env = os.environ.copy()
+            env[LIBRARY_PATH_ENV_VAR] = os.pathsep.join(ld_library_paths)
             module_dir = run(
-                [python_executable, "-c", "import inspect, ifcopenshell; print(inspect.getfile(ifcopenshell))"]
+                [python_executable, "-c", "import inspect, ifcopenshell; print(inspect.getfile(ifcopenshell))"],
+                env=env,
             )
             # Use just the last line is used,
             # because output might contain warning like `No stream support: No module named 'lark'`.
             module_dir = module_dir.strip().splitlines()[-1]
             module_dir = os.path.dirname(module_dir)
 
-            if platform.system() != "Darwin":
+            if not APPLE:
                 if BUILD_CFG == "Release":
                     for so in glob.glob(os.path.join(module_dir, "*.so")):
                         if WASM:
@@ -1678,16 +2030,19 @@ if "IfcOpenShell-Python" in targets:
         compile_python_wrapper(platform.python_version(), python_info["include"], sys.executable)
     else:
         for python_version in PYTHON_VERSIONS:
+            python_version = python_consider_rc(python_version)
             python_path = INSTALL_DIR / f"python-{python_version}"
             module_dir = compile_python_wrapper(python_version, python_path=python_path)
             assert module_dir
             # Not sure why, but added after reading this in the logs
             # cp: /Users/runner/work/IfcOpenShell/IfcOpenShell/build/Darwin/x86_64/10.15/install/ifcopenshell/python-3.9.11: No such file or directory
             # D'oh this was just due to a missing f-string f but doesn't hurt to keep it in.
-            run(["mkdir", "-p", os.path.join(DEPS_DIR, "install", "ifcopenshell")])
-            dest = os.path.join(DEPS_DIR, "install", "ifcopenshell", f"python-{python_version}")
-            if os.path.exists(dest):
+            dest = Path(DEPS_DIR) / "install" / "ifcopenshell" / f"python-{python_version}"
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            if dest.exists():
                 shutil.rmtree(dest)
-            run([cp, "-R", module_dir, dest])
+            shutil.copytree(module_dir, dest)
+
+Dependencies.write_install_dirs_json()
 
 logger.info("\rBuilt IfcOpenShell...\n\n")

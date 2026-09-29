@@ -20,7 +20,7 @@ struct IFC_GEOMLIBRARY_API box {
 IFC_GEOMLIBRARY_API bool is_intersect_ray_box(const struct ray *ray, const struct box *box);
 
 IFC_GEOMLIBRARY_API bool intersectRayTriangle(	const gp_Vec& orig, const gp_Vec& dir,
-                                                const gp_Vec& vert0, const gp_Vec& vert1, const gp_Vec& vert2, 
+                                                const gp_Vec& vert0, const gp_Vec& vert1, const gp_Vec& vert2,
                                                 double& at, double& au, double& av,
                                                 bool cull, float enlarge=0.0f);
 

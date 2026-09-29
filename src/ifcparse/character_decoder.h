@@ -62,14 +62,14 @@ class IFC_PARSE_API character_decoder {
     // Gets a decoded string representation at the token stream
     // read pointer and advances the underlying token stream.
     operator std::string();
+    // Advances the token stream past the string at the read pointer
+    // without decoding it: the same state machine as the conversion, so
+    // escapes such as \S\' end the string at the same byte.
+    void skip();
     // Gets a decoded string representation at the offset provided,
     // does not mutate the underlying token stream read pointer.
     std::string get(size_t& offset);
 };
-
-} // namespace ifcopenshell
-
-namespace ifcopenshell {
 
 class IFC_PARSE_API character_encoder {
   private:
@@ -80,6 +80,6 @@ class IFC_PARSE_API character_encoder {
     operator std::string();
 };
 
-} // namespace IfcWrite
+} // namespace ifcopenshell
 
 #endif

@@ -19,6 +19,7 @@ dependencies = [
     "ifcopenshell",
     "python-dateutil",
     "xmlschema",
+    "elementpath",
     "numpy",
     "odfpy",
     "pystache",
@@ -45,6 +46,3 @@ exclude = ["test*"]
 
 [tool.ruff]
 extend = "../../pyproject.toml"
-lint.extend-select = [
-  "unused-import",  # unused imports
-]

@@ -319,7 +319,9 @@ struct ModelGpuData {
     // (Module.__ifcvSources[id] = a picked File or a remote URL) this model's
     // chunk + element metadata reads pull from. Lets several federated models stream
     // from different files at once, mirroring the desktop per-model path.
-    int         web_source_id = 0;
+    // -1 when the model came from somewhere else (a path read on desktop, the
+    // embedded sample) — source id 0 is a real source, so it can't mean "none".
+    int         web_source_id = -1;
 
     // v15 element metadata (web, on-demand). The IFC element metadata
     // (elements + string_table — names/GUIDs, for UI/picking, never
@@ -393,6 +395,25 @@ struct ModelGpuData {
     std::vector<MeshInfo>    meshes;
     std::vector<InstanceInfo> instances;
 
+    // The cull-hot per-instance fields packed contiguously. InstanceInfo is
+    // 232 bytes with the AABB 200 bytes from the ids, so the per-frame cull
+    // paid two or three cache lines per instance — at half a million
+    // instances that is the whole frame budget on the single-threaded web
+    // build. 40 bytes per entry here makes the walk sequential. Rebuilt by
+    // rebuildCullInstances wherever instances change (applyCachedModel,
+    // uploadInstanceRecords — which every recompose and colour change
+    // already funnels through).
+    struct CullInstance {
+        float         aabb_min[3];
+        float         aabb_max[3];
+        std::uint32_t mesh_id;
+        std::uint32_t object_id;
+        std::uint32_t color_override_rgba8;
+        std::uint32_t chunk_idx;
+    };
+    static_assert(sizeof(CullInstance) == 40, "keep the cull walk dense");
+    std::vector<CullInstance> cull_instances;
+
     // Per-mesh "any vertex has alpha < 255?" flag, indexed by mesh_id.
     // Populated at uploadStreamedMesh / applyStreamedChunk as vertex bytes
     // become CPU-resident. Used at cull time to classify each instance
@@ -432,6 +453,19 @@ struct ModelGpuData {
         std::vector<uint32_t> indices;    // 3 * triangle_count, LOD0
     };
     std::vector<MeshTriangles> mesh_triangles_cache;
+    // How many RESIDENT chunks currently contain each mesh (the spatial
+    // planner may duplicate a mesh into several chunks). Maintained by
+    // applyStreamedChunk / unloadChunk; when it drops to zero the mesh's
+    // mesh_triangles_cache entry is released — the shadow follows GPU
+    // residency instead of accumulating every mesh ever loaded, which on
+    // a large federation grew monotonically toward the whole scene's
+    // geometry on the CPU heap. mesh_local_volumes is NOT released: the
+    // Volume tool needs it for evicted meshes too, and it is 8 B/mesh.
+    std::vector<std::uint16_t> mesh_resident_chunk_refs;
+    // Bytes currently held by mesh_triangles_cache, maintained at the fill
+    // (applyStreamedChunk) and release (unloadChunk) sites so the heartbeat
+    // log can report the shadow without walking every mesh per frame.
+    std::uint64_t cpu_shadow_bytes = 0;
 
     // object_id (globally rebased) → instance index in `instances`.
     // Populated alongside the instance vector so the Volume tool can do
@@ -445,6 +479,15 @@ struct ModelGpuData {
     // is gone; cull iterates m.chunks instead.
 
     bool hidden = false;
+    // Unloaded by the user: every chunk evicted and the model's own GPU
+    // buffers released, while the CPU mirrors (meshes, instances, chunk
+    // plan, element metadata) stay so the entry remains in the scene and
+    // loadModel can bring it back without touching the disk. Distinct
+    // from hidden (a viewing state; the geometry may stay resident) and
+    // from removal (the model leaves the scene).
+    bool unloaded = false;
+    // Whether cull / draw / pick / streaming should consider this model.
+    bool drawable() const { return !hidden && !unloaded; }
 
     // Per-model federation matrices in metres. Default identity → no
     // per-model contribution to the composed transform. See bonsai's
@@ -473,5 +516,11 @@ struct ModelGpuData {
 // ranges via `pool.free()`) and clear its size mirrors. Safe to call
 // repeatedly; idempotent on already-released entries.
 void releaseWgpuModelGpuData(ModelGpuData& m, BufferPool& pool);
+// Just the model's own (non-pool) wgpu buffers: mesh + instance storage
+// and the per-chunk cull buffers. Chunk bookkeeping is left intact so the
+// buffers can be re-created — the undo step of a failed model load.
+void releaseModelBuffers(ModelGpuData& m);
+// Refresh ModelGpuData::cull_instances from instances + instance_chunk_idx.
+void rebuildCullInstances(ModelGpuData& m);
 
 #endif // WGPUMODELGPUDATA_H

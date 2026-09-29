@@ -26,6 +26,9 @@
 #include "../../ViewerSettings.h"
 #include "../../SessionState.h"
 #include "../../../ifcviewer/Federation.h"
+#include "../../../ifcviewer/ViewportWindow.h"
+
+#include <QTimer>
 
 namespace bonsaiviewer::modules::models {
 
@@ -54,17 +57,19 @@ QList<GroupOption> validMoveTargets(const Federation& federation,
 
 ModelsPanelView::ModelsPanelView(ModelsPanel* widget,
                                  bonsaiviewer::SessionState* session_state,
+                                 ViewportWindow* viewport,
                                  QObject* parent)
     : QObject(parent)
     , widget_(widget)
     , session_state_(session_state)
+    , viewport_(viewport)
     , model_(new FederationItemModel(session_state->federation(), this))
 {
     widget_->setModel(model_);
 
     // Coarse signals: full rebuild + re-style. The granular Federation
     // signals are handled inside FederationItemModel and don't reach here.
-    auto rebuild = [this]() { model_->rebuildAll(); };
+    auto rebuild = [this]() { model_->rebuildAll(); refreshResidency(); };
     connect(session_state_, &SessionState::projectReset,  this, rebuild);
     connect(session_state_, &SessionState::projectOpened, this, rebuild);
     connect(&bonsaiviewer::ViewerSettings::instance(),
@@ -73,6 +78,30 @@ ModelsPanelView::ModelsPanelView(ModelsPanel* widget,
     connect(session_state_, &SessionState::activeModelChanged, this, [this](const QString& model_id) {
         model_->setActiveModelId(model_id);
     });
+
+    // Residency: immediately on the events that change it, and on a slow
+    // tick for the memory figures, which move as chunks stream.
+    auto refresh = [this]() { refreshResidency(); };
+    connect(session_state_, &SessionState::modelLoadStateChanged, this, refresh);
+    connect(session_state_, &SessionState::modelGeometryReady,   this, refresh);
+    connect(session_state_, &SessionState::modelsChanged,        this, refresh);
+    auto* tick = new QTimer(this);
+    tick->setInterval(1000);
+    connect(tick, &QTimer::timeout, this, refresh);
+    tick->start();
+}
+
+void ModelsPanelView::refreshResidency() {
+    for (const auto& model : session_state_->federation()->models()) {
+        const uint32_t session_model_id = session_state_->sessionModelIdForModelId(model.id);
+        if (session_model_id == 0) {
+            model_->setModelResidency(model.id, false, 0);
+            continue;
+        }
+        model_->setModelResidency(model.id,
+                                  viewport_->isModelUnloaded(session_model_id),
+                                  viewport_->modelVramBytes(session_model_id));
+    }
 }
 
 } // namespace bonsaiviewer::modules::models

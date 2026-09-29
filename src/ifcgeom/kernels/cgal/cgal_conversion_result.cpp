@@ -296,7 +296,7 @@ ifcopenshell::geom::cgal_shape::cgal_shape(const cgal_polyhedron& shape, bool co
 		};
 
 		std::vector<CGAL::Point_2<kernel_>> ps;
-			
+
 		for (auto& he1 : CGAL::halfedges_around_face(face->halfedge(), poly)) {
 			const auto& source = he1->vertex()->point();
 			ps.push_back(transform_point(source));
@@ -345,7 +345,7 @@ void ifcopenshell::geom::cgal_shape::to_poly() const {
 			CGAL::Polygon_mesh_processing::orient_to_bound_a_volume(poly);
 		}
 		shape_ = poly;
-		
+
 		// nef_->convert_to_polyhedron(*shape_);
 	}
 }
@@ -384,7 +384,7 @@ void ifcopenshell::geom::cgal_shape::triangulate(ifcopenshell::geom::settings se
 	}
 
 	const bool setting_use_original_edges = settings.get<ifcopenshell::geom::settings::CgalEmitOriginalEdges>().get();
-	
+
 	std::set<std::set<kernel_::Point_3>> original_edges;
 	if (setting_use_original_edges) {
 		for (auto it = shape_to_use->edges_begin(); it != shape_to_use->edges_end(); ++it) {
@@ -457,7 +457,7 @@ void ifcopenshell::geom::cgal_shape::triangulate(ifcopenshell::geom::settings se
 
 	// std::map<cgal_vertex_descriptor, kernel_::Vector_3> vertex_normals;
 	// boost::associative_property_map<std::map<cgal_vertex_descriptor, kernel_::Vector_3>> vertex_normals_map(vertex_normals);
-	
+
 	// triangulate the shape and compute the normals
 	std::map<facet_const_handle, kernel_::Vector_3> face_normals;
 	boost::associative_property_map<std::map<facet_const_handle, kernel_::Vector_3>> face_normals_map(face_normals);
@@ -556,7 +556,7 @@ void ifcopenshell::geom::cgal_shape::triangulate(ifcopenshell::geom::settings se
 			is_face_boundary[i] = setting_use_original_edges
 				? original_edges.find({ current_halfedge->vertex()->point(), current_halfedge->prev()->vertex()->point() }) != original_edges.end()
 				: facet_to_component[face] != facet_to_component[current_halfedge->opposite()->face()];
-				
+
 			++i;
 			++num_vertices;
 			++current_halfedge;
@@ -764,7 +764,7 @@ opaque_coordinate<3> ifcopenshell::geom::cgal_shape::position()
 		for (auto it = shp.points_begin(); it != shp.points_end(); ++it) {
 			for (int i = 0; i < 3; ++i) {
 				p[i] += it->cartesian(i);
-			}			
+			}
 		}
 		kernel_::FT N(static_cast<double>(std::distance(shp.points_begin(), shp.points_end())));
 		for (int i = 0; i < 3; ++i) {

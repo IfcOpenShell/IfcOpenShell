@@ -23,6 +23,7 @@
 #include <webgpu/webgpu.h>
 
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -105,6 +106,12 @@ public:
     uint64_t next_growth_size_bytes() const {
         return last_growth_size_ > 0 ? last_growth_size_ : per_sub_buffer_capacity_;
     }
+    // Smallest sub-buffer worth adding: below this the per-allocation
+    // bookkeeping (one bind group per chunk, free-list overhead) outweighs
+    // the space. Growth that cannot reach the floor — the driver refusing,
+    // or the budget leaving less than this — is not attempted.
+    static constexpr uint64_t MIN_SUB_BUFFER_BYTES = 64ull * 1024 * 1024;
+
     // Whether the pool can still attempt to add a sub-buffer. Flips to
     // false the first time addSubBuffer is refused even at the floor
     // size — eviction callers need this to know whether a future alloc
@@ -112,8 +119,16 @@ public:
     bool     can_grow() const {
         return !growth_disabled_ && per_sub_buffer_capacity_ > 0
             && (max_total_capacity_bytes_ == 0
-                || total_capacity_bytes() < max_total_capacity_bytes_);
+                || total_capacity_bytes() + MIN_SUB_BUFFER_BYTES
+                       <= max_total_capacity_bytes_);
     }
+
+    // True once the driver (not the budget) has refused growth even at the
+    // floor size. On platforms with no memory query this is the only device
+    // report there is: the owner treats the first refusal as a pressure
+    // event and carves the required-tier margin out of the cache before a
+    // required allocation has to fail for it (see ViewportCore::render).
+    bool     growth_was_refused() const { return growth_disabled_; }
 
     // Whether a growth is in flight. On web that window is real time — a
     // provisional sub-buffer validates asynchronously a frame or two later — so
@@ -127,6 +142,28 @@ public:
     // is a bad_alloc that -fno-exceptions turns into an uncatchable abort, so
     // the async grow-OOM detection can't save us — we must stop first.
     void     setMaxTotalCapacity(uint64_t max_bytes) { max_total_capacity_bytes_ = max_bytes; }
+    uint64_t max_total_capacity_bytes() const { return max_total_capacity_bytes_; }
+
+    // Release whole sub-buffers, newest first. Before each is dropped,
+    // `evict_sub_buffer(sub_idx)` is invoked so the owner can free every
+    // slice that lives in it — the pool does not know what a slice holds,
+    // and a sub-buffer is only released once it is empty. Releasing from
+    // the back keeps every surviving Slice::sub_idx valid. Both return the
+    // bytes released. This is how the cache yields memory to the required
+    // tier (see GpuBudget); on web a provisional sub-buffer that is still
+    // validating is left alone and the caller retries once it resolves.
+    //
+    // shrinkToCapacity never goes *below* target_bytes: a sub-buffer is
+    // released only while doing so keeps capacity ≥ target, so an excess
+    // smaller than the newest sub-buffer releases nothing (the budget's
+    // margin absorbs it) instead of dropping 256 MB for the last 36.
+    uint64_t shrinkToCapacity(uint64_t target_bytes,
+                              const std::function<void(int sub_idx)>& evict_sub_buffer);
+    // releaseAtLeast frees sub-buffers until at least `bytes` have gone
+    // (or nothing is left) — for a failed required allocation that needs
+    // that much back no matter the granularity.
+    uint64_t releaseAtLeast(uint64_t bytes,
+                            const std::function<void(int sub_idx)>& evict_sub_buffer);
 
     // Proactively add a sub-buffer (no allocation). On web this kicks off the
     // async provisional-validation cycle so validated free space appears a
@@ -161,6 +198,9 @@ private:
         // capacity/free tallies skip provisional sub-pools so an
         // unvalidated (possibly invalid) buffer is never handed out.
         bool                   provisional = false;
+        // False only for addSubBufferForTesting's fake handles: release
+        // paths (shrinkToCapacity, destroy) then skip the wgpu calls.
+        bool                   owns_handle = true;
     };
 
     // Append a new sub-buffer to the pool. Starts at last_growth_size_
@@ -176,6 +216,10 @@ private:
     // ≥ MIN_SUB_BUFFER_BYTES; false only when even the minimum size is
     // refused, at which point growth_disabled_ latches.
     bool addSubBuffer();
+    // Drop the newest sub-buffer after `evict_sub_buffer` empties it.
+    // Returns its capacity; 0 when the pool is empty or the newest
+    // sub-buffer is still provisional (web).
+    uint64_t releaseNewestSubBuffer(const std::function<void(int sub_idx)>& evict_sub_buffer);
 
 #if defined(__EMSCRIPTEN__)
     // Web-only async-growth resolver. Called from the AllowSpontaneous
