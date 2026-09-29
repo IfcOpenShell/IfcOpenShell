@@ -271,6 +271,8 @@ def get_contact_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_i
         pao = the_actor
         person = the_actor.ThePerson
         organization = the_actor.TheOrganization
+    else:
+        assert False, the_actor
 
     email = get_email_from_pao(person, organization)
 
@@ -877,7 +879,7 @@ def get_coordinate_elements(ifc_file: ifcopenshell.file) -> list[dict[str, Any]]
     return results
 
 
-def get_coordinate_data_(element: ifcopenshell.entity_instance) -> Generator[dict[str, Any], None, None]:
+def get_coordinate_data_(element: ifcopenshell.entity_instance) -> Generator[dict[str, Any]]:
     M_TRANSLATION = (slice(0, 3), 3)
     element_name = val(element.Name)
     element_class = element.is_a()

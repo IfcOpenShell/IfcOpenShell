@@ -196,13 +196,25 @@ class Usecase:
         allowed_occurrences = set(
             ifcopenshell.util.type.get_applicable_entities(relating_type.is_a(), schema=self.file.schema)
         )
+        schema = ifcopenshell.schema_by_name(self.file.schema)
+
         # The implementer agreement map has no entry for the abstract
         # IfcTypeProduct, which Bonsai uses for annotation types. The schema
         # itself defines IfcTypeProduct.ApplicableOccurrence for exactly this
         # purpose, so honor it when the leading class token is a valid entity.
         if applicable_occurrence := getattr(relating_type, "ApplicableOccurrence", None):
             occurrence_class = applicable_occurrence.split("/", 1)[0]
-            schema = ifcopenshell.schema_by_name(self.file.schema)
+            try:
+                schema.declaration_by_name(occurrence_class)
+                allowed_occurrences.add(occurrence_class)
+            except RuntimeError:
+                pass
+        # The map only covers physical product occurrence/type pairs (e.g.
+        # IfcWallType -> IfcWall). Process and resource types (IfcTaskType,
+        # IfcCrewResourceType, ...) aren't in it, but the schema's universal
+        # Type-suffix naming convention gives the same pairing directly.
+        if (type_class := relating_type.is_a()).endswith("Type"):
+            occurrence_class = type_class[: -len("Type")]
             try:
                 schema.declaration_by_name(occurrence_class)
                 allowed_occurrences.add(occurrence_class)
