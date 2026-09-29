@@ -2182,8 +2182,7 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def recalculate_fillings(cls, objs: Iterable[bpy.types.Object]) -> None:
         """Resync moved fillings' openings, reusing ``bim.recalculate_fill``."""
-        objs = list(objs)
-        if not objs:
+        if not (objs := list(objs)):
             return
         with bpy.context.temp_override(selected_objects=objs):
             bpy.ops.bim.recalculate_fill()
