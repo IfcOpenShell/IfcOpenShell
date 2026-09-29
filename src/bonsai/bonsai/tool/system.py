@@ -357,6 +357,13 @@ class System(bonsai.core.tool.System):
             if not cls.is_mep_element(element):
                 continue
 
+            # Array children inherit port topology from their parent's IFC
+            # entity, but their positions are derived — drawing ports on every
+            # copy of an arrayed segment doubles up markers and misleads the
+            # user into thinking each copy has its own port network.
+            if tool.Array.is_array_child(element):
+                continue
+
             selected_element = element in connected_elements
             verts_pos = []
 

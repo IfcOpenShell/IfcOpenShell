@@ -79,7 +79,7 @@ class DereferenceStructure(bpy.types.Operator, tool.Ifc.Operator):
 class ReferenceFromProvidedStructure(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.reference_from_provided_structure"
     bl_label = "Reference from Provided Structure"
-    bl_description = "Reference selected objects from the provided structure.\n\n" "ALT + Click to dereference instead."
+    bl_description = "Reference selected objects from the provided structure.\n\nALT + Click to dereference instead."
     bl_options = {"REGISTER", "UNDO"}
 
     structure: bpy.props.IntProperty(options={"SKIP_SAVE"})
@@ -516,7 +516,7 @@ class SetContainerVisibility(bpy.types.Operator):
         if self.mode == "ISOLATE":
             if tool.Ifc.get_schema() == "IFC2X3":
                 containers = tool.Ifc.get().by_type("IfcSpatialStructureElement")
-            elif tool.Ifc.get_schema() != "IFC2X3":
+            else:
                 containers = set(tool.Ifc.get().by_type("IfcSpatialElement"))
                 containers -= set(tool.Ifc.get().by_type("IfcSpatialZone"))
             for container in containers:

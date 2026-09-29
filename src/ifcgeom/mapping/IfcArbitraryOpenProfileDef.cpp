@@ -21,10 +21,10 @@
 #define _USE_MATH_DEFINES
 #define mapping POSTFIX_SCHEMA(mapping)
 
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcArbitraryOpenProfileDef* inst) {
-	auto mapped = map(inst->Curve());
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcArbitraryOpenProfileDef& inst) {
+	auto mapped = map(inst.Curve());
     if (mapped->kind() == taxonomy::LOOP) {
         auto r = taxonomy::loop::ptr((taxonomy::loop*)mapped->clone_());
         r->closed = false;
