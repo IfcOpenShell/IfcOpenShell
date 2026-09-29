@@ -53,9 +53,9 @@ LAST_COMMIT_DATE:=$(shell git show -s --format=%cI)
 LAST_GIT_BRANCH:=$(shell git rev-parse --abbrev-ref HEAD)
 PYPI_IMP:=cp
 
-ifdef PYVERSION
 SUPPORTED_PYVERSIONS := py311 py313
 
+ifdef PYVERSION
 ifeq ($(filter $(PYVERSION),$(SUPPORTED_PYVERSIONS)),)
 $(error Unsupported PYVERSION=$(PYVERSION). Must be one of $(SUPPORTED_PYVERSIONS))
 endif
@@ -68,9 +68,9 @@ endif # def PYVERSION
 
 IFCMERGE_VERSION:=2026-04-07
 
-ifdef PLATFORM
 SUPPORTED_PLATFORMS := linux macosm1 win
 
+ifdef PLATFORM
 ifeq ($(filter $(PLATFORM),$(SUPPORTED_PLATFORMS)),)
 $(error Unsupported PLATFORM=$(PLATFORM). Must be one of $(SUPPORTED_PLATFORMS))
 endif
