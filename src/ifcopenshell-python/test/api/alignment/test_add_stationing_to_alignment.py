@@ -17,14 +17,23 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import pytest
+
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 import ifcopenshell.api.unit
 import ifcopenshell.util.element
 
+try:
+    ifcopenshell.file(schema="IFC4X3_ADD2")
+    IFC4X3_AVAILABLE = True
+except RuntimeError:
+    IFC4X3_AVAILABLE = False
 
+
+@pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
 def test_add_stationing_to_alignment():
-    file = ifcopenshell.file(schema="IFC4X3")
+    file = ifcopenshell.file(schema="IFC4X3_ADD2")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
     length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
     ifcopenshell.api.unit.assign_unit(file, units=[length])
@@ -37,13 +46,16 @@ def test_add_stationing_to_alignment():
         parent=geometric_representation_context,
     )
 
-    alignment = ifcopenshell.api.alignment.create(file, "TestAlignment", start_station=2000.0)
+    alignment = ifcopenshell.api.alignment.create(file, "TestAlignment")
+    ifcopenshell.api.alignment.add_stationing_referent(
+        file, "TestAlignment 2+000.000", alignment, distance_along=0.0, station=2000.0
+    )
 
-    referent_nest = ifcopenshell.api.alignment.get_referent_nest(file, alignment)
-    referent = referent_nest.RelatedObjects[0]
+    stationing_nest = ifcopenshell.api.alignment.get_stationing_nest(file, alignment)
+    referent = stationing_nest.RelatedObjects[0]
 
     assert referent.PredefinedType == "STATION"
-    assert referent.Name == "2+000.000"
+    assert referent.Name == "TestAlignment 2+000.000"
     assert ifcopenshell.util.element.get_pset(element=referent, name="Pset_Stationing")
     assert ifcopenshell.util.element.get_pset(element=referent, name="Pset_Stationing", prop="Station") == 2000.0
     assert referent.ObjectPlacement != None
@@ -54,10 +66,10 @@ def test_add_stationing_to_alignment():
         file, "4+000.000", alignment, distance_along=1000.0, station=4000.0, incoming_station=3000.0
     )
 
-    referent_nest = ifcopenshell.api.alignment.get_referent_nest(file, alignment)
-    assert len(referent_nest.RelatedObjects) == 2
+    stationing_nest = ifcopenshell.api.alignment.get_stationing_nest(file, alignment)
+    assert len(stationing_nest.RelatedObjects) == 2
 
-    assert second_referent == referent_nest.RelatedObjects[1]
+    assert second_referent == stationing_nest.RelatedObjects[1]
 
     assert second_referent.PredefinedType == "STATION"
     assert second_referent.Name == "4+000.000"

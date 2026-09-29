@@ -16,8 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api.cost
-import ifcopenshell.api.control
 import ast
 import operator
 from typing import Any
@@ -137,7 +135,7 @@ class Usecase:
         if self.prop_name or formula:
             self.quantities = set(cost_item.CostQuantities or [])
         for product in products:
-            if product.is_a("IfcSpatialElement"):
+            if product.is_a("IfcSpatialElement") and not product.is_a("IfcSpace"):
                 continue
             ifcopenshell.api.control.assign_control(
                 self.file,
