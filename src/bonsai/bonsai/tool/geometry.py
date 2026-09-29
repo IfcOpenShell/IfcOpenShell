@@ -2265,21 +2265,14 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     def sync_active_item_index(cls) -> None:
-        """Highlight the newly active representation item in the "Representation
-        Items" UI list to match the object just selected in the 3D viewport.
-
-        Only relevant in Item Mode (``representation_obj`` is set), so this is a
-        no-op for regular element selection.
-        """
+        """Highlight the active representation item's row in the Representation Items list (Item Mode only)."""
         props = tool.Geometry.get_geometry_props()
-        rep_obj = props.representation_obj
-        if not rep_obj:
+        if not (rep_obj := props.representation_obj):
             return
         obj = tool.Blender.get_active_object()
         if not obj or obj == rep_obj or not cls.has_mesh_properties(obj.data):
             return
-        ifc_definition_id = cls.get_mesh_props(obj.data).ifc_definition_id
-        if not ifc_definition_id:
+        if not (ifc_definition_id := cls.get_mesh_props(obj.data).ifc_definition_id):
             return
         obj_props = cls.get_object_geometry_props(rep_obj)
         for i, item in enumerate(obj_props.items):

@@ -759,12 +759,6 @@ class TestApplyItemIdsAsVertexGroups(NewFile):
 
 
 class TestSyncActiveItemIndex(NewFile):
-    """https://github.com/IfcOpenShell/IfcOpenShell/issues/6239
-
-    Selecting a representation item object in the 3D viewport should
-    highlight the matching row in the "Representation Items" UI list.
-    """
-
     def setup_item_mode(self, item_ifc_ids: list[int]) -> tuple[bpy.types.Object, list[bpy.types.Object]]:
         rep_obj = bpy.data.objects.new("RepObj", bpy.data.meshes.new("RepObj"))
         bpy.context.collection.objects.link(rep_obj)
@@ -805,7 +799,7 @@ class TestSyncActiveItemIndex(NewFile):
 
         bpy.context.view_layer.objects.active = item_objs[1]
         subject.sync_active_item_index()
-        assert obj_props.active_item_index == 0  # unchanged default
+        assert obj_props.active_item_index == 0
 
     def test_does_nothing_for_unrelated_object(self):
         rep_obj, item_objs = self.setup_item_mode([101, 202])
@@ -816,8 +810,8 @@ class TestSyncActiveItemIndex(NewFile):
         bpy.context.collection.objects.link(unrelated)
         bpy.context.view_layer.objects.active = unrelated
 
-        subject.sync_active_item_index()  # must not raise
-        assert obj_props.active_item_index == 1  # unchanged
+        subject.sync_active_item_index()
+        assert obj_props.active_item_index == 1
 
     def test_does_nothing_when_representation_obj_itself_is_active(self):
         rep_obj, item_objs = self.setup_item_mode([101, 202])
@@ -825,5 +819,5 @@ class TestSyncActiveItemIndex(NewFile):
         obj_props.active_item_index = 1
 
         bpy.context.view_layer.objects.active = rep_obj
-        subject.sync_active_item_index()  # must not raise
-        assert obj_props.active_item_index == 1  # unchanged
+        subject.sync_active_item_index()
+        assert obj_props.active_item_index == 1
