@@ -61,8 +61,6 @@ class TestGetPartOfProductIFC2X3(test.bootstrap.IFC2X3):
         assert subject.get_part_of_product(type, context) is None
 
     def test_returns_none_for_a_type_product_even_with_matching_representation_maps(self):
-        # As documented, get_part_of_product always returns None for IFC2X3
-        # type products, since IFC2X3 does not fully support shape aspects.
         context = self.file.createIfcGeometricRepresentationSubContext()
         map = self.file.createIfcRepresentationMap(
             MappedRepresentation=self.file.createIfcShapeRepresentation(ContextOfItems=context)
