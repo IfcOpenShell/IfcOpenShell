@@ -26,9 +26,10 @@ _cant_callback = None
 
 def register_referent_name_callback(horizontal=None, vertical=None, cant=None):
     """
-    Referents are automatically created at the start of each horizontal, vertical, and cant segment.
-    The referents represent key points in the alignment layout such as Point of Curvature, Point of Tangent, and others.
-    Different juristicions use different naming systems for these key points.
+    Referents are created at the start of each horizontal, vertical, and cant segment by
+    ifcopenshell.api.alignment.update_key_point_referents. The referents represent key points in the
+    alignment layout such as Point of Curvature, Point of Tangent, and others. Different
+    juristicions use different naming systems for these key points.
 
     The referent name callback functions provide a customizable method for naming these referents. If a callback is registered,
     it is called when creating the referent name, otherwise the default naming is used.
@@ -39,8 +40,8 @@ def register_referent_name_callback(horizontal=None, vertical=None, cant=None):
 
     The callback function returns a string that is used in the referent name for the referent at the start of `segment`.
     The callback must accomodate the following cases:
-    * prev_segment = None and segment != None - this indicates the last segment so the "End of Alignment" name is returned
-    * prev_segment != None and segment == None - this indicates the first segment so the "Beginning of Alignment" name is returned
+    * prev_segment = None and segment != None - this indicates the first segment so the "Beginning of Alignment" name is returned
+    * prev_segment != None and segment == None - this indicates the last segment so the "End of Alignment" name is returned
     * prev_segment != None and segment != None - this indicates an intermediate segment so a name representitive of the transition is returned
 
     Setting any or all of the callbacks to None causes the default naming to be used.
@@ -308,5 +309,7 @@ def _get_segment_start_point_label(prev_segment: entity_instance, segment: entit
             label = _cant_callback(prev_segment, segment)
         else:
             label = _cant_label(prev_segment, segment)
+    else:
+        assert False, s.DesignParameters
 
     return label

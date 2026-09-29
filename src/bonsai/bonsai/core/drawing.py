@@ -98,7 +98,6 @@ def edit_assigned_product(
     # Temporarily accomodate existing bug and check for multiple products.
     existing_products = drawing.get_assigned_product_workaround(element)
     if existing_products != [product]:
-
         if product in existing_products:
             assert product is not None
             existing_products.remove(product)
@@ -411,6 +410,37 @@ def duplicate_drawing(
     return new_drawing
 
 
+def copy_annotations_to_drawing(
+    ifc: type[tool.Ifc],
+    collector: type[tool.Collector],
+    drawing_tool: type[tool.Drawing],
+    geometry: type[tool.Geometry],
+    annotations: list[ifcopenshell.entity_instance],
+    target_drawing: ifcopenshell.entity_instance,
+) -> list[ifcopenshell.entity_instance]:
+    """Duplicate annotations into another drawing, leaving the originals untouched."""
+    target_group = drawing_tool.get_drawing_group(target_drawing)
+    if not target_group:
+        return []
+    annotations = [a for a in annotations if drawing_tool.get_annotation_drawing(a) != target_drawing]
+    annotation_objs = [obj for a in annotations if (obj := ifc.get_object(a))]
+    if not annotation_objs:
+        return []
+    camera = ifc.get_object(target_drawing) or drawing_tool.import_drawing(target_drawing)
+    old_to_new, _ = geometry.duplicate_ifc_objects(annotation_objs)
+    copied: list[ifcopenshell.entity_instance] = []
+    for new_elements in old_to_new.values():
+        for new_element in new_elements:
+            if old_group := drawing_tool.get_drawing_group(new_element):
+                ifc.run("group.unassign_group", group=old_group, products=[new_element])
+            ifc.run("group.assign_group", group=target_group, products=[new_element])
+            new_obj = ifc.get_object(new_element)
+            drawing_tool.ensure_annotation_in_drawing_plane(new_obj, camera)
+            collector.assign(new_obj, should_clean_users_collection=True)
+            copied.append(new_element)
+    return copied
+
+
 def remove_drawing(
     ifc: type[tool.Ifc], drawing_tool: type[tool.Drawing], drawing: ifcopenshell.entity_instance
 ) -> None:
@@ -495,6 +525,7 @@ def add_annotation(
         context = drawing_tool.create_annotation_context(target_view, object_type)
 
     drawing_tool.show_decorations()
+    relating_type_rep = None
     obj = drawing_tool.create_annotation_object(drawing, object_type)
     element = ifc.get_entity(obj)
     if not element:  # Brand new annotation
