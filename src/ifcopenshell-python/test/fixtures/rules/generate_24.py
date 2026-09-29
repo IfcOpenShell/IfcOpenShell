@@ -2,6 +2,8 @@ import time
 
 import ifcopenshell
 
+from ...fixture_generate import normalize_header, pass_if, write_fixture
+
 for ents in [
     ("IfcWall",),
     ("IfcSpace",),
@@ -55,4 +57,5 @@ for ents in [
         ifcopenshell.guid.new(), ownerhist, RelatingObject=proj, RelatedObjects=f.by_type("IfcSpace")
     )
     valid = not (set(ents) - {"IfcZone", "IfcSpace"})
-    f.write(f"{'pass' if valid else 'fail'}-zone-with-{'-'.join(ents)}-{f.schema.lower()}.ifc")
+    normalize_header(f)
+    write_fixture(f, __file__, pass_if(valid), f"zone-with-{'-'.join(ents)}-{f.schema.lower()}")
