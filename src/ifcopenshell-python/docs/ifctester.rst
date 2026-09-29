@@ -66,6 +66,12 @@ Alternatively, you can use Python:
     report.report()
     report.to_file("report.json")
 
+    # Or to a SQLite database. Unlike JSON, entities are stored once and
+    # referenced by ID, so this stays small on large models and can be queried
+    # instead of parsed. Recommended for anything but small audits. Results are
+    # written directly to the file, so there is no report() step.
+    reporter.Sqlite(specs).to_file("report.db")
+
     # Or to ODS spreadsheet
     report = reporter.Ods(specs)
     report.report()
