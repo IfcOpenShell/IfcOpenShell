@@ -145,7 +145,6 @@ class TestWeightQuantities:
             ],
         )
 
-        # Steel density: 7850 kg/m3, so density-based gross weight would be 314kg,
         material = ifcopenshell.api.material.add_material(f, name="Steel")
         ifcopenshell.api.material.assign_material(f, products=[beam], material=material)
         material_pset = ifcopenshell.api.pset.add_pset(f, product=material, name="Pset_MaterialCommon")
