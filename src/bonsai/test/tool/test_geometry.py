@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import math
 from typing import Union
 
 import bpy
@@ -26,7 +25,6 @@ import ifcopenshell.api.material
 import ifcopenshell.api.root
 import ifcopenshell.api.type
 import numpy as np
-from mathutils import Vector
 
 import bonsai.core.tool
 import bonsai.tool as tool
