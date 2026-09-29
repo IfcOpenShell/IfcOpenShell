@@ -2965,21 +2965,13 @@ class Drawing(bonsai.core.tool.Drawing):
             finalize_dxf()
             return
 
-        # A full SVG number: optional sign, integer and/or fractional part, optional
-        # scientific-notation exponent. The IfcOpenShell SVG serializer prints coordinates
-        # with std::setprecision(max_digits10) and default float formatting, so a coordinate
-        # can be a bare integer ("5"), a long float ("199.99999999999997"), or scientific
-        # notation for near-zero values ("1.5e-13"). The previous pattern (-?\d+\.?\d+) failed
-        # on single-digit integers and split scientific values into two tokens, silently
-        # dropping or scrambling whole polylines, which shows up as misplaced/missing geometry
-        # in the exported DXF. See #4703.
+        # SVG coordinates can be bare integers or scientific notation, e.g. "5" or "1.5e-13". See #4703.
         NUMBER = r"[-+]?(?:\d*\.\d+|\d+\.?\d*)(?:[eE][-+]?\d+)?"
         COORD = rf"{NUMBER},{NUMBER}"
         POLYLINE_PATTERN = rf"M{COORD} (?:L{COORD} ?)+Z? ?"
         MULTI_POLYLINE_PATTERN = rf"^({POLYLINE_PATTERN})+$"
 
-        # A drawing SVG may contain more than one named group (e.g. a section that cuts
-        # through several storeys). Export all of them, not just the first.
+        # Export every named drawing group, not just the first.
         for drawing in drawings:
             for element_g in drawing.findall(f"{SVG}g"):
                 paths = element_g.findall(f"{SVG}path")
