@@ -68,39 +68,33 @@ def _run(context, body, extrusion, old_profile, new_profile, element, obj, ifc_f
 
     op = Mock()
 
-    with patch("bonsai.bim.module.model.slab.ProfileDecorator"), patch(
-        "bonsai.bim.module.model.slab.bpy.ops.object.mode_set"
-    ), patch("bonsai.bim.module.model.slab.ifcopenshell.util.unit.calculate_unit_scale", return_value=1.0), patch(
-        "bonsai.bim.module.model.slab.tool.Ifc.get_entity", return_value=element
-    ), patch(
-        "bonsai.bim.module.model.slab.tool.Ifc.get", return_value=ifc_file
-    ), patch(
-        "bonsai.bim.module.model.slab.tool.Ifc.get_object",
-        side_effect=lambda e: {element: obj, **sharing_elements}.get(e),
-    ), patch(
-        "bonsai.bim.module.model.slab.ifcopenshell.util.representation.get_representation", return_value=body
-    ), patch(
-        "bonsai.bim.module.model.slab.ifcopenshell.util.representation.resolve_representation", return_value=body
-    ), patch(
-        "bonsai.bim.module.model.slab.tool.Model.get_extrusion", return_value=extrusion
-    ), patch(
-        "bonsai.bim.module.model.slab.tool.Model.get_existing_x_angle", return_value=0
-    ), patch(
-        "bonsai.bim.module.model.slab.tool.Model.get_material_layer_parameters", return_value={"offset": 0}
-    ), patch(
-        "bonsai.bim.module.model.slab.tool.Model.export_profile", return_value=new_profile
-    ), patch(
-        "bonsai.bim.module.model.slab.ifcopenshell.util.element.get_elements_by_profile",
-        return_value=set(sharing_elements) | {element},
-    ) as get_elements_by_profile, patch(
-        "bonsai.bim.module.model.slab.ifcopenshell.util.element.replace_attribute"
-    ), patch(
-        "bonsai.bim.module.model.slab.ifcopenshell.util.element.remove_deep2"
-    ), patch(
-        "bonsai.bim.module.model.slab.bonsai.core.geometry.switch_representation"
-    ) as switch_representation, patch(
-        "bonsai.bim.module.model.slab.tool.Geometry.reload_representation"
-    ) as reload_representation:
+    with (
+        patch("bonsai.bim.module.model.slab.ProfileDecorator"),
+        patch("bonsai.bim.module.model.slab.bpy.ops.object.mode_set"),
+        patch("bonsai.bim.module.model.slab.ifcopenshell.util.unit.calculate_unit_scale", return_value=1.0),
+        patch("bonsai.bim.module.model.slab.tool.Ifc.get_entity", return_value=element),
+        patch("bonsai.bim.module.model.slab.tool.Ifc.get", return_value=ifc_file),
+        patch(
+            "bonsai.bim.module.model.slab.tool.Ifc.get_object",
+            side_effect=lambda e: {element: obj, **sharing_elements}.get(e),
+        ),
+        patch("bonsai.bim.module.model.slab.ifcopenshell.util.representation.get_representation", return_value=body),
+        patch(
+            "bonsai.bim.module.model.slab.ifcopenshell.util.representation.resolve_representation", return_value=body
+        ),
+        patch("bonsai.bim.module.model.slab.tool.Model.get_extrusion", return_value=extrusion),
+        patch("bonsai.bim.module.model.slab.tool.Model.get_existing_x_angle", return_value=0),
+        patch("bonsai.bim.module.model.slab.tool.Model.get_material_layer_parameters", return_value={"offset": 0}),
+        patch("bonsai.bim.module.model.slab.tool.Model.export_profile", return_value=new_profile),
+        patch(
+            "bonsai.bim.module.model.slab.ifcopenshell.util.element.get_elements_by_profile",
+            return_value=set(sharing_elements) | {element},
+        ) as get_elements_by_profile,
+        patch("bonsai.bim.module.model.slab.ifcopenshell.util.element.replace_attribute"),
+        patch("bonsai.bim.module.model.slab.ifcopenshell.util.element.remove_deep2"),
+        patch("bonsai.bim.module.model.slab.bonsai.core.geometry.switch_representation") as switch_representation,
+        patch("bonsai.bim.module.model.slab.tool.Geometry.reload_representation") as reload_representation,
+    ):
         element.is_a = Mock(return_value="IfcBuildingElementPart")
         EditExtrusionProfile._execute(op, context)
 
@@ -133,16 +127,11 @@ def test_edit_extrusion_profile_reloads_other_elements_sharing_profile():
         {sibling_a: obj_a, sibling_b: obj_b},
     )
 
-    # Sibling discovery must happen against the OLD profile, before it is
-    # replaced/removed.
     get_elements_by_profile.assert_called_once_with(old_profile)
 
-    # The edited object always gets switch_representation for itself.
     switch_representation.assert_called_once()
     assert switch_representation.call_args.kwargs["obj"] is obj
 
-    # The two siblings (and only the siblings, not the edited obj again)
-    # get reloaded.
     reload_representation.assert_called_once()
     (reloaded_objs,), _ = reload_representation.call_args
     assert set(reloaded_objs) == {obj_a, obj_b}
