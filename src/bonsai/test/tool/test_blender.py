@@ -23,7 +23,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import bpy
-import ifcopenshell
 import numpy as np
 import pytest
 
