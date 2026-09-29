@@ -32,10 +32,6 @@ FIXTURES = os.path.join(os.path.dirname(__file__), "fixtures")
 
 class TestToleranceAbsoluteComponentFixture:
     def test_reals_within_the_documented_tolerance_pass(self):
-        # IDS tolerance.md defines the interval as
-        # (v - abs(v) * 1e-6 - 1e-6) .. (v + abs(v) * 1e-6 + 1e-6).
-        # 1.0000015 is inside the interval for 1.0 and 5e-7 is inside the
-        # interval for 0.0, which has no relative component at all.
         directory = os.path.join(FIXTURES, "tolerance_absolute_component")
         specs = ids.open(os.path.join(directory, "tolerance_absolute_component.ids"))
         ifc = ifcopenshell.open(os.path.join(directory, "tolerance_absolute_component.ifc"))
