@@ -232,10 +232,7 @@ class Bsdd(bonsai.core.tool.Bsdd):
                 )
                 dictionary_name = response.get("name", "")
                 dictionary_namespace_uri = response.get("uri", "")
-                # `referenceCode`, `name` and `uri` are all optional in the bSDD API
-                # response (see bsdd.ClassListItemContractV1), so classes missing them
-                # must not crash the search. Sort classes with a reference code first,
-                # keeping those without one at the end in their original order.
+                # referenceCode, name and uri are optional in the API response; sort classes without a reference code last.
                 classes = sorted(
                     response.get("classes", []),
                     key=lambda c: (c.get("referenceCode") is None, c.get("referenceCode") or ""),
