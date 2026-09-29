@@ -110,6 +110,7 @@ unsupported-dynamic-base = "ignore"
 unsupported-operator = "ignore"
 redundant-condition = "ignore"
 redundant-condition-strict = "ignore"
+truthiness-test-of-iterable = "ignore"
 # `@persistent` is incorrectly annotated as `Any` in fake-bpy, needs to be resolved upstream.
 dynamic-function-decorator-return = "ignore"
 
