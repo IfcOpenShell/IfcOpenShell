@@ -25,10 +25,6 @@ from test.bim.bootstrap import NewFile
 
 class TestSearchClass(NewFile):
     def test_classes_missing_reference_code_do_not_crash_the_search(self):
-        # Regression test for #9034: the bSDD API marks `referenceCode` (and
-        # `name`, `uri`) as optional on a class, so a bare subscript on any
-        # of them raised KeyError for dictionaries (e.g. NL-SfB) that return
-        # such a class.
         class FakeClient:
             def get_classes(self, **kwargs):
                 return {
@@ -57,7 +53,5 @@ class TestSearchClass(NewFile):
 
         props = subject.get_bsdd_props()
         assert total == 3
-        # Classes with a reference code sort first (by code), the class
-        # missing one is kept, sorted last, instead of being dropped.
         assert [c.name for c in props.classifications] == ["Fundering", "Kolom", "No Reference Code"]
         assert [c.reference_code for c in props.classifications] == ["16", "17", ""]
