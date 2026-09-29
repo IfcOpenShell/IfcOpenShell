@@ -21,9 +21,9 @@
                 "cwd": "${config:bonsai.blenderPath}"
             },
             "args": [
-                "--python-expr",
-                "import debugpy; debugpy.listen(5678)"
+                "--python", "${workspaceFolder}/.vscode/debugpy_port.py"
             ],
+            "isBackground": true,
             "problemMatcher": []
         },
         {
@@ -36,7 +36,7 @@
             "args": [
                 "--background",
                 "--python-expr",
-                "import os, sys, subprocess; path=os.path.abspath(sys.executable); subprocess.call([path, '-m', 'ensurepip']); subprocess.call([path, '-m', 'pip', 'install', '--upgrade', 'debugpy'])"
+                "import os, sys, subprocess; path=os.path.abspath(sys.executable); subprocess.call([path, \"-m\", \"ensurepip\"]); subprocess.call([path, \"-m\", \"pip\", \"install\", \"--upgrade\", \"debugpy\"])"
             ],
             "problemMatcher": []
         }
