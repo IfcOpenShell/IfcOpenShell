@@ -359,9 +359,9 @@ def the_object_name_has_an_ifc_location_of_value(name, location):
     element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
     matrix = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
     ifc_location = Vector(matrix[:3, 3])
-    assert (
-        ifc_location - Vector([float(co) for co in location.split(",")])
-    ).length < 0.1, f"IFC placement is at {ifc_location}"
+    assert (ifc_location - Vector([float(co) for co in location.split(",")])).length < 0.1, (
+        f"IFC placement is at {ifc_location}"
+    )
 
 
 def the_variable_key_is_value(key, value):
