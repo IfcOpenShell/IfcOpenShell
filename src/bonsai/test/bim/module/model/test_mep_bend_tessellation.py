@@ -29,10 +29,8 @@ upstream IfcSweptDiskSolid round-trip is broken:
 - ``initial_basis`` override that aligns the cross-section with the
   source segment's local +X / +Y axes (the asymmetric-rectangle fix)"""
 
-from math import cos, pi, sin
 from unittest.mock import Mock
 
-import bpy
 import pytest
 from mathutils import Vector
 

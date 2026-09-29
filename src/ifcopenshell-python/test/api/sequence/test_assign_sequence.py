@@ -1,5 +1,5 @@
 # IfcOpenShell - IFC toolkit and geometry engine
-# Copyright (C) 2026 Petru Conduraru <petru@bimvoice.com>
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of IfcOpenShell.
 #
@@ -16,34 +16,76 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-# This file was generated with the assistance of an AI coding tool.
-
-import ifcopenshell.api.root
 import ifcopenshell.api.sequence
 import test.bootstrap
 
 
+# NOTE: sequence module features rely on entities introduced in IFC4
+# therefore no IFC2X3 tests
 class TestAssignSequence(test.bootstrap.IFC4):
-    def test_assign_a_sequence(self, monkeypatch):
-        # cascade_schedule() reads IfcTask.TaskTime, an attribute that does not
-        # exist on IFC2X3.IfcTask at all. That is a pre-existing, unrelated bug
-        # in cascade_schedule(), not something this test is about, so it is
-        # stubbed out here to isolate assign_sequence()'s own behaviour.
-        monkeypatch.setattr(ifcopenshell.api.sequence, "cascade_schedule", lambda *a, **k: None)
-        task1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTask")
-        task2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTask")
-        rel = ifcopenshell.api.sequence.assign_sequence(self.file, relating_process=task1, related_process=task2)
-        assert rel.RelatingProcess == task1
-        assert rel.RelatedProcess == task2
+    def test_assigning_a_sequence(self):
+        predecessor = ifcopenshell.api.sequence.add_task(self.file)
+        successor = ifcopenshell.api.sequence.add_task(self.file)
+        rel = ifcopenshell.api.sequence.assign_sequence(
+            self.file, relating_process=predecessor, related_process=successor
+        )
+        assert rel.is_a("IfcRelSequence")
+        assert rel.RelatingProcess == predecessor
+        assert rel.RelatedProcess == successor
+        assert rel.SequenceType == "FINISH_START"
 
-    def test_setting_time_lag_default_for_ifc2x3(self, monkeypatch):
-        monkeypatch.setattr(ifcopenshell.api.sequence, "cascade_schedule", lambda *a, **k: None)
-        task1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTask")
-        task2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTask")
-        rel = ifcopenshell.api.sequence.assign_sequence(self.file, relating_process=task1, related_process=task2)
-        if self.file.schema == "IFC2X3":
-            assert rel.TimeLag == 0.0
+    def test_assigning_a_sequence_of_a_chosen_type(self):
+        predecessor = ifcopenshell.api.sequence.add_task(self.file)
+        successor = ifcopenshell.api.sequence.add_task(self.file)
+        rel = ifcopenshell.api.sequence.assign_sequence(
+            self.file,
+            relating_process=predecessor,
+            related_process=successor,
+            sequence_type="START_START",
+        )
+        assert rel.SequenceType == "START_START"
 
+    def test_not_assigning_the_same_sequence_twice(self):
+        predecessor = ifcopenshell.api.sequence.add_task(self.file)
+        successor = ifcopenshell.api.sequence.add_task(self.file)
+        rel1 = ifcopenshell.api.sequence.assign_sequence(
+            self.file, relating_process=predecessor, related_process=successor
+        )
+        rel2 = ifcopenshell.api.sequence.assign_sequence(
+            self.file, relating_process=predecessor, related_process=successor
+        )
+        assert rel1 == rel2
+        assert len(self.file.by_type("IfcRelSequence")) == 1
 
-class TestAssignSequenceIFC2X3(test.bootstrap.IFC2X3, TestAssignSequence):
-    pass
+    def test_assigning_two_sequences_of_different_types_to_the_same_pair(self):
+        # A "ladder": the follower may start once the leader has started, and
+        # may not finish before the leader finishes. Both constraints are real
+        # and neither implies the other, so both relationships must survive.
+        predecessor = ifcopenshell.api.sequence.add_task(self.file)
+        successor = ifcopenshell.api.sequence.add_task(self.file)
+        start = ifcopenshell.api.sequence.assign_sequence(
+            self.file,
+            relating_process=predecessor,
+            related_process=successor,
+            sequence_type="START_START",
+        )
+        finish = ifcopenshell.api.sequence.assign_sequence(
+            self.file,
+            relating_process=predecessor,
+            related_process=successor,
+            sequence_type="FINISH_FINISH",
+        )
+        assert start != finish
+        assert len(self.file.by_type("IfcRelSequence")) == 2
+        assert {rel.SequenceType for rel in successor.IsSuccessorFrom} == {
+            "START_START",
+            "FINISH_FINISH",
+        }
+
+    def test_not_confusing_the_two_directions_of_a_pair(self):
+        task1 = ifcopenshell.api.sequence.add_task(self.file)
+        task2 = ifcopenshell.api.sequence.add_task(self.file)
+        forwards = ifcopenshell.api.sequence.assign_sequence(self.file, relating_process=task1, related_process=task2)
+        backwards = ifcopenshell.api.sequence.assign_sequence(self.file, relating_process=task2, related_process=task1)
+        assert forwards != backwards
+        assert len(self.file.by_type("IfcRelSequence")) == 2

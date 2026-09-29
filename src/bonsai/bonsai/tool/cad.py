@@ -1085,8 +1085,8 @@ class Cad:
                     break
 
                 v1 = v2
-        assert new_verts is not None
 
+        assert new_verts is not None
         return new_verts
 
     @classmethod
