@@ -898,14 +898,23 @@ class Geometry(bonsai.core.tool.Geometry):
         """The representation a voided host should be re-tessellated from.
 
         The host's active representation, i.e. the one the viewport is already
-        showing. Falls back to the first representation sharing the active
-        context when the host has no active `IfcShapeRepresentation`."""
+        showing. Falls back to the Body representation sharing the active
+        context, then to the first one in it."""
         representation = cls.get_active_representation(obj)
         if representation is not None and representation.is_a("IfcShapeRepresentation"):
             return representation
         if not (element := tool.Ifc.get_entity(obj)):
             return None
-        return cls.get_representation_by_context(element, cls.get_active_representation_context(obj))
+        context = cls.get_active_representation_context(obj)
+        fallback = None
+        for candidate in cls.get_representations_iter(element):
+            if candidate.ContextOfItems != context:
+                continue
+            if candidate.RepresentationIdentifier == "Body":
+                return candidate
+            if fallback is None:
+                fallback = candidate
+        return fallback
 
     @classmethod
     def get_cartesian_point_offset(cls, obj: bpy.types.Object) -> npt.NDArray[np.float64] | None:

@@ -99,10 +99,10 @@ def test_returns_active_representation_not_first_in_context(single_context_wall)
     assert _run(single_context_wall, single_context_wall["body"]) == single_context_wall["body"]
 
 
-def test_falls_back_to_context_lookup_without_active_representation(single_context_wall):
-    assert _run(single_context_wall, None) == single_context_wall["axis"]
+def test_falls_back_to_the_body_in_the_context_without_active_representation(single_context_wall):
+    assert _run(single_context_wall, None) == single_context_wall["body"]
 
 
-def test_falls_back_to_context_lookup_for_an_active_item(single_context_wall):
+def test_falls_back_to_the_body_in_the_context_for_an_active_item(single_context_wall):
     item = single_context_wall["ifc"].create_entity("IfcFacetedBrep")
-    assert _run(single_context_wall, item) == single_context_wall["axis"]
+    assert _run(single_context_wall, item) == single_context_wall["body"]
