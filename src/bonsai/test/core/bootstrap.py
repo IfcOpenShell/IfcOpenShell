@@ -24,6 +24,14 @@ import pytest
 
 import bonsai.core.tool
 
+# All fixture imports like `from test.core.bootstrap import ifc, unit`
+# need to have `ruff: ignore[unused-import]` as ruff currently is incapable
+# of detecting pytest fixtures and recognizing whether they're actually used in the file.
+# Alternatively, we can define `conftest.py` and list all fixtures there,
+# but keeping import just to keep it more explicit about which file is using which fixtures.
+#
+# See https://github.com/astral-sh/ruff/issues/3295
+
 
 @pytest.fixture
 def ifc():

@@ -429,9 +429,9 @@ class BIM_PT_structural_load_cases(Panel):
         elif self.props.active_load_case_id:
             row.operator("bim.remove_structural_load_case", text="", icon="X").load_case = load_case["id"]
         else:
-            row.operator("bim.enable_editing_structural_load_case_groups", text="", icon="GHOST_ENABLED").load_case = (
-                load_case["id"]
-            )
+            row.operator(
+                "bim.enable_editing_structural_load_case_groups", text="", icon="GHOST_ENABLED"
+            ).load_case = load_case["id"]
             row.operator("bim.enable_editing_structural_load_case", text="", icon="GREASEPENCIL").load_case = load_case[
                 "id"
             ]
@@ -637,9 +637,9 @@ class BIM_PT_boundary_conditions(Panel):
 
             row = self.layout.row(align=True)
             prop_with_search(row, self.props, "boundary_condition_types", text="")
-            row.operator("bim.add_boundary_condition", text="", icon="ADD").ifc_class = (
-                self.props.boundary_condition_types
-            )
+            row.operator(
+                "bim.add_boundary_condition", text="", icon="ADD"
+            ).ifc_class = self.props.boundary_condition_types
         else:
             row.operator("bim.load_boundary_conditions", text="", icon="GREASEPENCIL")
 
