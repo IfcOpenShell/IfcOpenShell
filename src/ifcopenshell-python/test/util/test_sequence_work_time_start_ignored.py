@@ -24,10 +24,6 @@ import test.bootstrap
 
 class TestIsDayInWorkTime(test.bootstrap.IFC4):
     def test_a_day_before_the_work_times_start_is_excluded(self):
-        # Per the schema docs, Start is "0:00" of that date and Finish is
-        # "24:00" of that date, so a work time with both set is only valid
-        # for [Start, Finish] inclusive. A day before Start must never be
-        # considered part of the work time, no matter how far before Finish.
         work_time = self.file.create_entity("IfcWorkTime", Start="2024-06-01", Finish="2024-12-31")
         day_before_start = datetime.date(2024, 1, 1)
         assert subject.is_day_in_work_time(day_before_start, work_time) is False
