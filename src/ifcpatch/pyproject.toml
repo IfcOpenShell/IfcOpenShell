@@ -15,7 +15,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
 ]
-dependencies = ["ifcopenshell", "toposort", "numpy"]
+dependencies = ["ifcopenshell", "numpy"]
 
 [project.scripts]
 ifcpatch = "ifcpatch.__main__:main"
@@ -37,8 +37,3 @@ exclude = ["test*"]
 
 [tool.ruff]
 extend = "../../pyproject.toml"
-
-[tool.ruff.lint]
-select = [
-    "F401", # unused imports
-]
