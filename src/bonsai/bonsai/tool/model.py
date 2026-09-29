@@ -2368,7 +2368,6 @@ class Model(bonsai.core.tool.Model):
         # Convert all loops into IFC curves
         curves: list[ifcopenshell.entity_instance] = []
         for loop in loops:
-
             if len(loop) == 1 and all([is_in_group(v, "IFCCIRCLE") for v in loop[0].verts]):
                 v1, v2 = loop[0].verts
                 mid = v1.co.lerp(v2.co, 0.5)
@@ -2463,7 +2462,7 @@ class Model(bonsai.core.tool.Model):
         polygons = {}
         for curve in curves:
             geometry = ifcopenshell.geom.create_shape(settings, curve)
-            assert isinstance(geometry, W.Triangulation)
+            assert isinstance(geometry, W.triangulation)
             v = ifcopenshell.util.shape.get_vertices(geometry, is_2d=True)
             v = np.round(v, 4)  # Round to nearest 0.1mm, otherwise things like circles don't polygonise reliably
             edges = ifcopenshell.util.shape.get_edges(geometry)
@@ -2597,7 +2596,6 @@ class Model(bonsai.core.tool.Model):
         # Convert all loops into IFC curves
         curves = []
         for loop in loops:
-
             if len(loop) == 1 and all([is_in_group(v, "IFCCIRCLE") for v in loop[0].verts]):
                 v1, v2 = loop[0].verts
                 mid = v1.co.lerp(v2.co, 0.5)
