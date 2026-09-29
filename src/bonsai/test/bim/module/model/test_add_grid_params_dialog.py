@@ -24,7 +24,6 @@ button, instead of silently creating a default 3x3 / 10m grid that only
 surfaces its parameters in the easy-to-miss F9 redo panel."""
 
 import bpy
-import ifcopenshell
 import pytest
 
 import bonsai.tool as tool
@@ -36,16 +35,10 @@ pytestmark = pytest.mark.model
 
 class TestAddGridParamsDialog(NewFile):
     def test_operator_has_invoke_that_raises_a_props_dialog(self):
-        # The whole point of the fix: clicking "Add Grids" must invoke a
-        # dialog rather than fall straight through to execute() with the
-        # class defaults.
         assert "invoke" in vars(BIM_OT_add_object)
         assert "draw" in vars(BIM_OT_add_object)
 
     def test_execute_with_custom_params_creates_matching_axes(self):
-        # Scripted / EXEC_DEFAULT callers (macros, other operators) must be
-        # unaffected by the new invoke(): execute() still runs the same
-        # underlying logic with whatever properties are passed to it.
         bpy.ops.bim.create_project()
         ifc = tool.Ifc.get()
 
@@ -53,12 +46,9 @@ class TestAddGridParamsDialog(NewFile):
 
         assert result == {"FINISHED"}
         grid = ifc.by_type("IfcGrid")[0]
-        # UAxes / VAxes inverse relationships live on the grid itself.
         assert len(grid.UAxes) == 5
         assert len(grid.VAxes) == 2
 
-        # U axes are horizontal segments (both endpoints share the same Y);
-        # their shared Y coordinate is the axis's position, spaced u_spacing apart.
         u_positions = sorted(
             obj.data.vertices[0].co.y
             for obj in bpy.data.objects
@@ -66,7 +56,6 @@ class TestAddGridParamsDialog(NewFile):
             and obj.data
             and obj.data.vertices[0].co.y == obj.data.vertices[1].co.y
         )
-        # 5 U axes at 5-unit spacing: 0, 5, 10, 15, 20.
         expected = [0.0, 5.0, 10.0, 15.0, 20.0]
         assert u_positions == pytest.approx(expected)
 
