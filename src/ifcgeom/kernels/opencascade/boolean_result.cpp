@@ -1,59 +1,19 @@
-#include "OpenCascadeKernel.h"
+#include "opencascade_kernel.h"
 
 #include "boolean_utils.h"
 #include "base_utils.h"
 
-using namespace IfcGeom;
-using namespace ifcopenshell::geometry;
-using namespace ifcopenshell::geometry::kernels;
-
-// @todo should we reapply the technique to apply openings in batches?
-namespace {
-	struct opening_sorter {
-		bool operator()(const std::pair<double, TopoDS_Shape>& a, const std::pair<double, TopoDS_Shape>& b) const {
-			return a.first > b.first;
-		}
-	};
- 
-	bool apply_in_batches(IfcGeom::util::boolean_settings bst, const TopoDS_Shape& first_operand, std::vector< std::pair<double, TopoDS_Shape> >& opening_vector, BOPAlgo_Operation occ_op, TopoDS_Shape& result) {
-		auto it = opening_vector.begin();
-		auto jt = it;
- 
-		result = first_operand;
-		for (;; ++it) {
-			if (it == opening_vector.end() || jt->first / it->first > 10.) {
- 
-				NCollection_List<TopoDS_Shape> opening_list;
-				for (auto kt = jt; kt < it; ++kt) {
-					opening_list.Append(kt->second);
-				}
- 
-				TopoDS_Shape intermediate_result;
-				if (IfcGeom::util::boolean_operation(bst, result, opening_list, occ_op, intermediate_result)) {
-					result = intermediate_result;
-				} else {
-					return false;
-				}
- 
-				jt = it;
-			}
- 
-			if (it == opening_vector.end()) {
-				break;
-			}
-		}
- 
-		return true;
-	}
-} 
+using namespace ifcopenshell::geom;
+using namespace ifcopenshell::geom::kernels;
 
 namespace {
-	BOPAlgo_Operation op_to_occt(taxonomy::boolean_result::operation_t t) {
+	BOPAlgo_Operation op_to_occt(taxonomy::boolean_result::operation_type t) {
 		switch (t) {
 		case taxonomy::boolean_result::UNION: return BOPAlgo_FUSE;
 		case taxonomy::boolean_result::INTERSECTION: return BOPAlgo_COMMON;
 		case taxonomy::boolean_result::SUBTRACTION: return BOPAlgo_CUT;
 		}
+		throw std::invalid_argument("Unsupported boolean operation");
 	}
 
 	bool get_single_child(const TopoDS_Shape& s, TopoDS_Shape& child) {
@@ -83,7 +43,7 @@ namespace {
 	}
 }
 
-bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, ConversionResults& results) {
+bool open_cascade_kernel::convert_impl(const taxonomy::boolean_result::ptr br, std::vector<conversion_result>& results) {
     return handle_occt_exception([&]() -> bool {
 	bool valid_result = false;
 	bool first = true;
@@ -95,11 +55,11 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 	taxonomy::style::ptr first_item_style;
 
 	for (auto& c : br->children) {
-		IfcGeom::ConversionResults cr;
-		AbstractKernel::convert(c, cr);
+		std::vector<ifcopenshell::geom::conversion_result> cr;
+		abstract_kernel::convert(c, cr);
 		if (first && br->operation == taxonomy::boolean_result::SUBTRACTION) {
 			// @todo A will be null on union/intersection, intended?
-			IfcGeom::util::flatten_shape_list(cr, a, false, true, settings_.get<settings::Precision>().get());
+			ifcopenshell::geom::util::flatten_shape_list(cr, a, false, true, settings_.get<settings::Precision>().get());
 			first_item_style = c->surface_style;
 			if (!first_item_style && c->kind() == taxonomy::COLLECTION) {
 				// @todo recursively right?
@@ -107,10 +67,10 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 			}
 
 			if (settings_.get<settings::DisableBooleanResult>().get()) {
-				results.emplace_back(IfcGeom::ConversionResult(
-					br->instance->as<IfcUtil::IfcBaseEntity>()->id(),
+				results.emplace_back(ifcopenshell::geom::conversion_result(
+					br->instance.id(),
 					br->matrix,
-					new OpenCascadeShape(a),
+					new open_cascade_shape(a),
 					br->surface_style ? br->surface_style : first_item_style
 				));
 				return true;
@@ -118,18 +78,18 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 
 			const double first_operand_volume = util::shape_volume(a);
 			if (first_operand_volume <= ALMOST_ZERO) {
-				Logger::Root().Message(Logger::LOG_WARNING, "GEO", 119, "Empty solid for:", c->instance);
+				logger_.message(ifcopenshell::logger::LOG_WARNING, "GEO", 119, "Empty solid for:", c->instance);
 			}
 		} else {
 
 			for (auto& r : cr) {
-				auto S = std::static_pointer_cast<OpenCascadeShape>(r.Shape())->shape();
+				auto S = std::static_pointer_cast<open_cascade_shape>(r.shape())->shape();
 				if (S.IsNull()) {
-					Logger::Root().Error("GEO", 120, "Null operand");
+					logger_.error("GEO", 120, "Null operand");
 					continue;
 				}
 				gp_GTrsf trsf;
-				convert(r.Placement(), trsf);
+				convert(r.placement(), trsf);
 				// @todo it really confuses me why I cannot use Moved() here instead
 				S.Location(S.Location() * trsf.Trsf());
 
@@ -140,7 +100,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 					// #2665 we also set a precision-independent threshold, because in the boolean op routine
 					// the working fuzziness might still be increased.
 					if (d < tol * 20. || d < 0.00002) {
-						Logger::Root().Message(Logger::LOG_WARNING, "GEO", 121, "Halfspace subtraction yields unchanged volume:", c->instance);
+						logger_.message(ifcopenshell::logger::LOG_WARNING, "GEO", 121, "Halfspace subtraction yields unchanged volume:", c->instance);
 						continue;
 					} else {
 						S = result;
@@ -159,6 +119,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 	bst.attempt_2d = settings_.get<settings::BooleanAttempt2d>().get();
 	bst.debug = settings_.get<settings::DebugBooleanOperations>().get();
 	bst.precision = settings_.get<settings::Precision>().get();
+	bst.logger = &logger_;
 
 	TopoDS_Shape r;
 
@@ -189,10 +150,10 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 		std::swap(r, a);
 	}
 
-	results.emplace_back(IfcGeom::ConversionResult(
-		br->instance->as<IfcUtil::IfcBaseEntity>()->id(),
+	results.emplace_back(ifcopenshell::geom::conversion_result(
+		br->instance.id(),
 		br->matrix,
-		new OpenCascadeShape(a),
+		new open_cascade_shape(a),
 		br->surface_style ? br->surface_style : first_item_style
 	));
 
