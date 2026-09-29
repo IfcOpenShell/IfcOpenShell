@@ -1261,9 +1261,8 @@ class FacetTransformer(lark.Transformer):
         elif isinstance(value, str):
             try:
                 if isinstance(element_value, bool):
-                    # bool subclasses int, so handle it before the numeric
-                    # branches. A boolean property should match every common
-                    # spelling ("True"/"False") the same way "1"/"0" already do.
+                    # bool subclasses int, so it is handled before the numeric
+                    # branches.
                     if value in ("True", "true", "TRUE", "1"):
                         value = True
                     elif value in ("False", "false", "FALSE", "0"):
