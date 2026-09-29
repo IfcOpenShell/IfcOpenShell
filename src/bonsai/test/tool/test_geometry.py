@@ -772,7 +772,6 @@ class TestSyncShapeAspectsWithConstituentRename(NewFile):
         subject.sync_shape_aspects_with_constituent_rename(constituent, "Concrete Constituent")
 
         assert shape_aspect.Name == "Renamed Constituent"
-        # Same coincidental name, but on a different material set: must be left alone.
         assert other_shape_aspect.Name == "Concrete Constituent"
 
     def test_noop_when_name_is_unchanged_or_absent(self):
