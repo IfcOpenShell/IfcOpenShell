@@ -258,7 +258,7 @@ ifcedit quantify run model.ifc IFC4QtoBaseQuantities -o model_qto.ifc
 
 Options:
 
-- `--selector <query>` -- ifcopenshell selector to restrict elements (default: all `IfcElement`)
+- `--selector <query>` -- ifcopenshell selector to restrict elements (default: all `IfcElement` and `IfcSpace`)
 - `-o, --output <path>` -- write to a different file instead of overwriting the input
 
 Note: `quantify run` writes geometry-based measurements and requires the
