@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bonsai.core.patch as subject
-from test.core.bootstrap import patch
+from test.core.bootstrap import patch  # ruff: ignore[unused-import]
 
 
 class TestRunMigratePatch:
