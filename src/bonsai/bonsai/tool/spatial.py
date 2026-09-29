@@ -937,12 +937,9 @@ class Spatial(bonsai.core.tool.Spatial):
     def get_boundary_elements(cls, selected_objects: list[bpy.types.Object]) -> list[ifcopenshell.entity_instance]:
         boundary_elements = []
         for obj in selected_objects:
-            subelement = tool.Ifc.get_entity(obj)
-            if not subelement:
+            if not (subelement := tool.Ifc.get_entity(obj)):
                 continue
-            # Use the same bounding classes as get_space_polygon_from_context_visible_objects
-            # (is_bounding_class) so curtain wall members/plates can close a room boundary
-            # just like walls and columns do.
+            # Share is_bounding_class so curtain wall members and plates close a room boundary.
             if cls.is_bounding_class(subelement):
                 boundary_elements.append(subelement)
         return boundary_elements
