@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bonsai.core.unit as subject
-from test.core.bootstrap import ifc, unit
+from test.core.bootstrap import ifc, unit  # ruff: ignore[unused-import]
 
 
 class TestAssignSceneUnits:
