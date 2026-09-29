@@ -2421,10 +2421,7 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
             try:
                 props.mode = "EDIT"
             except TypeError:
-                # The mode enum is built dynamically (ViewportData.mode) and
-                # does not offer EDIT for every element, so syncing the UI
-                # mode can fail even though Blender's edit mode toggled fine.
-                # Keep the current mode instead of crashing TAB (#8066).
+                # The dynamic mode enum may not offer EDIT for every element; keep the current mode (#8066).
                 pass
         props.is_changing_mode = False
 
@@ -2716,10 +2713,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             try:
                 props.mode = "EDIT"
             except TypeError:
-                # The mode enum is built dynamically (ViewportData.mode) and
-                # does not offer EDIT for every element, so syncing the UI
-                # mode can fail even though Blender's edit mode toggled fine.
-                # Keep the current mode instead of crashing TAB (#8066).
+                # The dynamic mode enum may not offer EDIT for every element; keep the current mode (#8066).
                 pass
         props.is_changing_mode = False
 
