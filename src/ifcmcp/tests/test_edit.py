@@ -4,7 +4,7 @@ import json
 import ifcopenshell
 import pytest
 
-from ifcmcp.core import IfcSession, IfcSessionError
+from ifcmcp.core import IfcSessionError
 
 
 class TestNoModel:
