@@ -938,8 +938,7 @@ def get_attribute_data(
 
 
 def get_unit_type_name(ifc_file: ifcopenshell.file, unit_type: str) -> Union[str, None]:
-    unit_assignments = ifc_file.by_type("IfcUnitAssignment")
-    if not unit_assignments:
+    if not (unit_assignments := ifc_file.by_type("IfcUnitAssignment")):
         return None
     for unit in unit_assignments[0].Units:
         if unit.is_a("IfcNamedUnit") and unit.UnitType == unit_type:
