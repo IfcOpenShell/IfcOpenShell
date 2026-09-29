@@ -800,6 +800,21 @@ class TestAppendAssetIFC4(test.bootstrap.IFC4, TestAppendAssetIFC2X3):
         styles = self.file.by_type("IfcSurfaceStyle")
         assert len(styles) == 2 and all(s.Name == "TestStyle" for s in styles)
 
+    def test_a_guid_collision_with_an_unrelated_class_is_not_reused_as_the_same_asset(self):
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        occurrence = ifcopenshell.api.root.create_entity(library, ifc_class="IfcSanitaryTerminal")
+        occurrence_type = ifcopenshell.api.root.create_entity(library, ifc_class="IfcSanitaryTerminalType")
+        ifcopenshell.api.type.assign_type(library, related_objects=[occurrence], relating_type=occurrence_type)
+
+        unrelated = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcFlowTerminal")
+        unrelated.GlobalId = occurrence_type.GlobalId
+
+        result = ifcopenshell.api.project.append_asset(self.file, library=library, element=occurrence)
+        assert result.is_a("IfcSanitaryTerminal")
+        result_type = ifcopenshell.util.element.get_type(result)
+        assert result_type.is_a("IfcSanitaryTerminalType")
+        assert result_type != unrelated
+
     def test_not_duplicate_material_sets_based_on_name(self):
         # Setup library.
         library = ifcopenshell.api.project.create_file(version=self.file.schema)
@@ -843,18 +858,3 @@ class TestAppendAssetIFC4(test.bootstrap.IFC4, TestAppendAssetIFC2X3):
         ifcopenshell.api.material.add_material_set(self.file, set_type="IfcMaterialProfileSet", name="TestProfileSet")
         ifcopenshell.api.project.append_asset(self.file, library, column_type, assume_asset_uniqueness_by_name=False)
         assert len(self.file.by_type("IfcMaterialProfileSet")) == 2
-
-    def test_a_guid_collision_with_an_unrelated_class_is_not_reused_as_the_same_asset(self):
-        library = ifcopenshell.api.project.create_file(version=self.file.schema)
-        occurrence = ifcopenshell.api.root.create_entity(library, ifc_class="IfcSanitaryTerminal")
-        occurrence_type = ifcopenshell.api.root.create_entity(library, ifc_class="IfcSanitaryTerminalType")
-        ifcopenshell.api.type.assign_type(library, related_objects=[occurrence], relating_type=occurrence_type)
-
-        unrelated = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcFlowTerminal")
-        unrelated.GlobalId = occurrence_type.GlobalId
-
-        result = ifcopenshell.api.project.append_asset(self.file, library=library, element=occurrence)
-        assert result.is_a("IfcSanitaryTerminal")
-        result_type = ifcopenshell.util.element.get_type(result)
-        assert result_type.is_a("IfcSanitaryTerminalType")
-        assert result_type != unrelated
