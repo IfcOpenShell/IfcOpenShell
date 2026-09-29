@@ -90,7 +90,7 @@ class PrintIfcFile(bpy.types.Operator):
         return tool.Ifc.get()
 
     def execute(self, context):
-        print(tool.Ifc.get().wrapped_data.to_string())
+        print(tool.Ifc.get().to_string())
         return {"FINISHED"}
 
 
@@ -313,11 +313,11 @@ class CreateAllShapes(bpy.types.Operator):
                     failures.append(element)
                     print("***** FAILURE *****")
             if shape:
-                assert isinstance(shape, W.TriangulationElement)
+                assert isinstance(shape, W.triangulation_element)
                 geom = shape.geometry
                 print(
                     f"Success {time.time() - start:.3f}s "
-                    f"V:{(len(geom.verts)//3)} E:{(len(geom.edges)//2)} F:{(len(geom.faces)//3)}"
+                    f"V:{(len(geom.verts) // 3)} E:{(len(geom.edges) // 2)} F:{(len(geom.faces) // 3)}"
                 )
         self.report({"INFO"}, f"Failed shapes: {len(failures)}, check the system console for details.")
         for failure in failures:
@@ -567,17 +567,6 @@ class SelectExpressFile(bpy.types.Operator, ImportHelper):
         props = tool.Debug.get_debug_props()
         if os.path.exists(self.filepath) and "exp" in os.path.splitext(self.filepath)[1]:
             props.express_file = self.filepath
-        return {"FINISHED"}
-
-
-class PurgeHdf5Cache(bpy.types.Operator):
-    bl_idname = "bim.purge_hdf5_cache"
-    bl_label = "Purge HDF5 Cache"
-    bl_description = "Clean up HDF5 cache files except the ones that currently loaded"
-
-    def execute(self, context):
-        core.purge_hdf5_cache(tool.Debug)
-        self.report({"INFO"}, "HDF5 cache purged.")
         return {"FINISHED"}
 
 
@@ -1012,7 +1001,9 @@ class DebugActiveDrawing(bpy.types.Operator):
                             print(f"{GREEN}Excluding element fixed the drawing: {END}")
                             print(element)
                 else:
-                    print(f"{CYAN}Will try to reshuffle elements and try again, attempt {ATTEMPS-attempts+1}/{ATTEMPS}")
+                    print(
+                        f"{CYAN}Will try to reshuffle elements and try again, attempt {ATTEMPS - attempts + 1}/{ATTEMPS}"
+                    )
                     attempts -= 1
                     random.shuffle(elements)
                     test_elements(elements, attempts)
