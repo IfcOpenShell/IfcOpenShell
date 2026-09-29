@@ -442,12 +442,7 @@ class Classification(Facet):
                 return ClassificationResult(True, {"type": "PROHIBITED"})
             return ClassificationResult(False, reason)
 
-        # A requested value and a requested system must both hold on the
-        # same reference: a wall classified as "ExpectedValue" under system
-        # "SystemB" must not pass a requirement for "ExpectedValue" under
-        # system "SystemA" just because some other, unrelated reference on
-        # the wall happens to use system "SystemA". self.value/self.system
-        # being unset (falsy) means that side of the pair is not checked.
+        # Value and system must both hold on the same reference; an unset side is not checked.
         values = []
         systems = []
         is_pass = False
@@ -940,13 +935,7 @@ class Property(Facet):
         elif pset.is_a("IfcMaterialProperties") or pset.is_a("IfcProfileProperties"):
             return pset.Properties
         else:
-            # Predefined property sets (e.g. IfcDoorLiningProperties) store their
-            # values as direct attributes rather than IfcProperty entities. In
-            # IFC4 these are IfcPreDefinedPropertySet subtypes, but that abstract
-            # supertype does not exist in IFC2X3, so the same kind of entity
-            # (e.g. IfcWindowLiningProperties) falls straight through to here
-            # instead. ifcopenshell.util.element.get_property_definition() already
-            # treats this as its unconditional fallback, so mirror that here.
+            # Predefined property sets store values as attributes. IFC2X3 lacks IfcPreDefinedPropertySet.
             return [
                 type("", (object,), {"Name": k, "Value": v})()
                 for k, v in pset.get_info().items()

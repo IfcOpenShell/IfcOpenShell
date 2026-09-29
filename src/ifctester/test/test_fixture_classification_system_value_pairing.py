@@ -36,12 +36,6 @@ FIXTURES = os.path.join(os.path.dirname(__file__), "fixtures")
 
 class TestClassificationSystemValuePairingFixture:
     def test_system_and_value_must_match_on_the_same_reference(self):
-        # The wall has two classification references: SystemA/WRONG and
-        # SystemB/ExpectedValue. The requirement asks for SystemA with
-        # value ExpectedValue. Neither single reference satisfies both, so
-        # the specification must fail, even though "SystemA" appears
-        # somewhere on the wall and "ExpectedValue" appears somewhere else
-        # on the wall.
         specs = ids.open(
             os.path.join(
                 FIXTURES,

@@ -1403,11 +1403,6 @@ class TestProperty:
     def test_ifc2x3_predefined_property_sets_expose_direct_attributes(self):
         set_facet("property")
 
-        # IfcPreDefinedPropertySet does not exist in IFC2X3, so its former
-        # subtypes (e.g. IfcDoorLiningProperties) fall straight through to
-        # IfcPropertySetDefinition, storing values as direct attributes
-        # rather than IfcProperty entities. This used to crash with a
-        # TypeError instead of correctly matching (or failing) the value.
         ifc = ifcopenshell.file(schema="IFC2X3")
         door = ifc.create_entity("IfcDoor", GlobalId=ifcopenshell.guid.new())
         lining = ifc.create_entity(
