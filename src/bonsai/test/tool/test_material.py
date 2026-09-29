@@ -16,9 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.material
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
@@ -137,6 +135,17 @@ class TestImportMaterialDefinitions(NewFile):
         assert props.materials[0].ifc_definition_id == material.id()
         assert props.materials[0].name == "Unnamed"
         assert props.materials[0].total_elements == 0
+
+
+class TestRefresh(NewFile):
+    def test_run(self):
+        from bonsai.bim.module.material.data import MaterialsData, ObjectMaterialData
+
+        MaterialsData.is_loaded = True
+        ObjectMaterialData.is_loaded = True
+        subject.refresh()
+        assert MaterialsData.is_loaded is False
+        assert ObjectMaterialData.is_loaded is False
 
 
 class TestIsEditingMaterials(NewFile):
