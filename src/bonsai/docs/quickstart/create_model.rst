@@ -77,18 +77,3 @@ the image below. Three simple open source online viewers you can test with are
 <https://3dviewer.net/>`__.
 
 .. image:: images/ifc-pipeline.png
-
-Placing occurrences of an element type
---------------------------------------
-
-TODO
-
-Changing the locations of elements
-----------------------------------
-
-TODO
-
-Modeling a simple building
---------------------------
-
-TODO
