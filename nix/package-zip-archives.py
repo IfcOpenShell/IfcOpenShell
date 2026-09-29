@@ -19,7 +19,7 @@ from common import REPO_ROOT, logger, run
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "packaging"))
 
-import check_runtime_plugins
+import check_runtime_plugins  # ty: ignore[unresolved-import]
 
 VERSION = "v" + (REPO_ROOT / "VERSION").read_text().strip()
 

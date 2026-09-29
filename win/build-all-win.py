@@ -24,7 +24,7 @@ from vs_cfg import VsCfg, get_vs_var
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "packaging"))
 
-import check_runtime_plugins
+import check_runtime_plugins  # ty: ignore[unresolved-import]
 
 
 class Args(NamedTuple):
