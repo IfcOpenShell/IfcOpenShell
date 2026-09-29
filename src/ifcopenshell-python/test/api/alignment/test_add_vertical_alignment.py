@@ -17,19 +17,29 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import pytest
+
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 import ifcopenshell.api.unit
 
+try:
+    ifcopenshell.file(schema="IFC4X3_ADD2")
+    IFC4X3_AVAILABLE = True
+except RuntimeError:
+    IFC4X3_AVAILABLE = False
 
+
+@pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
 def test_add_vertical_alignment():
-    file = ifcopenshell.file(schema="IFC4X3")
+    file = ifcopenshell.file(schema="IFC4X3_ADD2")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
     length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
     ifcopenshell.api.unit.assign_unit(file, units=[length])
     geometric_representation_context = ifcopenshell.api.context.add_context(file, context_type="Model")
 
     alignment = ifcopenshell.api.alignment.create(file, "A1", include_vertical=False)
+    ifcopenshell.api.alignment.add_stationing_referent(file, "0+00.00", alignment, distance_along=0.0, station=0.0)
 
     assert len(alignment.IsDecomposedBy) == 0  # no child alignments
     assert len(alignment.IsNestedBy) == 2  # nests for layout and referents
@@ -72,6 +82,3 @@ def test_add_vertical_alignment():
     assert len(alignment.IsNestedBy) == 2
     assert len(layout_nest.RelatedObjects) == 1
     assert layout_nest.RelatedObjects[0].is_a("IfcAlignmentHorizontal")
-
-
-test_add_vertical_alignment()
