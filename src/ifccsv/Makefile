@@ -22,4 +22,4 @@ include ../common.mk
 
 .PHONY: qa
 qa:
-	black .
+	ruff format

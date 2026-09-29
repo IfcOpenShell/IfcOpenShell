@@ -1,0 +1,35 @@
+name: Publish IfcDiff PyPI
+
+on:
+  workflow_dispatch:
+
+jobs:
+  upstream-only:
+    runs-on: ubuntu-latest
+    if: |
+      github.repository == 'IfcOpenShell/IfcOpenShell'
+    steps:
+    - name: Set env
+      run: echo ok go
+
+  publish:
+    needs: upstream-only
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7 # https://github.com/actions/setup-python
+        with:
+          python-version: '3.11' # Version range or exact version of a Python version to use, using SemVer's version range syntax
+      - name: Compile
+        run: |
+          pip install build
+          cd src/ifcdiff &&
+          make dist IS_STABLE=TRUE
+      - name: Publish a Python distribution to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          packages_dir: src/ifcdiff/dist
