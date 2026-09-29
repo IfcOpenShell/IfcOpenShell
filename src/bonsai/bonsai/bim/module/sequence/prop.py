@@ -327,14 +327,6 @@ def updateAssignedResourceUsage(self: "TaskResource", context: object) -> None:
     bonsai.bim.module.pset.data.refresh()
 
 
-def get_task_resource_schedule_usage(self: "TaskResource") -> float:
-    return float(self.get("schedule_usage", 0.0))
-
-
-def set_task_resource_schedule_usage(self: "TaskResource", value: float) -> None:
-    self["schedule_usage"] = value
-
-
 def update_task_bar_list(self: "Task", context: bpy.types.Context) -> None:
     props = tool.Sequence.get_work_schedule_props()
     if not props.is_task_update_enabled:
@@ -398,12 +390,7 @@ class WorkPlan(PropertyGroup):
 class TaskResource(PropertyGroup):
     name: StringProperty(name="Name", update=updateAssignedResourceName)
     ifc_definition_id: IntProperty(name="IFC Definition ID")
-    schedule_usage: FloatProperty(
-        name="Schedule Usage",
-        update=updateAssignedResourceUsage,
-        get=get_task_resource_schedule_usage,
-        set=set_task_resource_schedule_usage,
-    )
+    schedule_usage: FloatProperty(name="Schedule Usage", update=updateAssignedResourceUsage)
 
     if TYPE_CHECKING:
         name: str
