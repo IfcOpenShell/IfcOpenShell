@@ -1275,6 +1275,7 @@ class SectionLevelDecorator(BaseDecorator):
             add_verts_sequence([v0 + gap, v1 - gap], start_i, **out_kwargs)
 
         self.draw_lines(context, obj, output_verts, output_edges)
+        assert text_position is not None and text_dir is not None
         self.draw_labels(context, obj, self.get_splines(obj), text_position.to_2d(), text_dir.to_2d())
 
     def draw_labels(self, context, obj, splines, text_position, text_dir):
@@ -1598,6 +1599,7 @@ class SectionDecorator(BaseDecorator):
                 start_i = add_verts_sequence([v + v1 for v in circle_head], start_i, **out_kwargs, closed=True)
                 # circle middle divider
                 if not display_end_symbol:
+                    assert divider_offset is not None
                     start_i = add_verts_sequence(
                         [v1 + divider_offset[1], v1 - divider_offset[0]], start_i, **out_kwargs
                     )
