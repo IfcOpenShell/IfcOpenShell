@@ -63,10 +63,8 @@ def unassign_object(
 ) -> None:
     related_element = ifc.get_entity(related_obj)
     container = aggregate.get_container(related_element)
-    if not relating_obj:
-        relating_element = aggregate.get_relating_object(related_element)
-        if related_element:
-            relating_obj = ifc.get_object(relating_element)
+    if not relating_obj and (relating_element := aggregate.get_relating_object(related_element)):
+        relating_obj = ifc.get_object(relating_element)
     if relating_obj:
         ifc.run("aggregate.unassign_object", products=[related_element])
         if container:

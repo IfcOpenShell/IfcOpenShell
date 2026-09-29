@@ -16,13 +16,21 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import pytest
+
 import ifcopenshell
 import ifcopenshell.api.unit
 import ifcopenshell.util.alignment as sta
 
+try:
+    ifcopenshell.file(schema="IFC4X3")
+    IFC4X3_AVAILABLE = True
+except RuntimeError:
+    IFC4X3_AVAILABLE = False
+
 
 def _test_si_stations():
-    file = ifcopenshell.file(schema="IFC4X3_ADD2")
+    file = ifcopenshell.file(schema="IFC4X3")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
     length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")  # meter
     ifcopenshell.api.unit.assign_unit(file, units=[length])
@@ -44,7 +52,7 @@ def _test_si_stations():
 
 
 def _test_si_stations_millimeter():
-    file = ifcopenshell.file(schema="IFC4X3_ADD2")
+    file = ifcopenshell.file(schema="IFC4X3")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
     ifcopenshell.api.unit.assign_unit(file)
 
@@ -56,7 +64,7 @@ def _test_si_stations_millimeter():
 
 
 def _test_us_stations():
-    file = ifcopenshell.file(schema="IFC4X3_ADD2")
+    file = ifcopenshell.file(schema="IFC4X3")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
     length = ifcopenshell.api.unit.add_conversion_based_unit(file, name="foot")
     ifcopenshell.api.unit.assign_unit(file, units=[length])
@@ -77,6 +85,7 @@ def _test_us_stations():
     assert s == "-1234+56.79"
 
 
+@pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
 def _test_custom_named_conversion_based_unit_stations():
     """Regression test: station_as_string() must work for an
     IfcConversionBasedUnit whose Name isn't one of the fixed set
@@ -143,6 +152,3 @@ def test_station_as_string():
     _test_si_stations_millimeter()
     _test_us_stations()
     _test_custom_named_conversion_based_unit_stations()
-
-
-test_station_as_string()
