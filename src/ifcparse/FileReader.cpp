@@ -64,6 +64,7 @@ struct FullBufferImpl final : FileReader::Impl {
         if (pos >= buf_.size()) throw std::out_of_range("get out of range");
         return buf_[pos];
     }
+    const char* contiguous_data() const override { return buf_.data(); }
 };
 
 struct PagedFileImpl final : FileReader::Impl {
@@ -180,6 +181,8 @@ struct MMapImpl final : FileReader::Impl {
         if (pos >= size_) throw std::out_of_range("get out of range");
         return map_.data()[pos];
     }
+
+    const char* contiguous_data() const override { return map_.data(); }
 };
 #endif
 
@@ -251,6 +254,7 @@ IfcParse::FileReader::FileReader(const std::string& fn)
     : cursor_(0)
 {
 	impl_ = std::make_shared<FullBufferImpl>(fn);
+	init_contiguous_();
 }
 
 IfcParse::FileReader::FileReader(const std::string& fn, const mmap_tag&)
@@ -258,6 +262,7 @@ IfcParse::FileReader::FileReader(const std::string& fn, const mmap_tag&)
 {
 #ifdef USE_MMAP
 	impl_ = std::make_shared<MMapImpl>(fn);
+	init_contiguous_();
 #else
     (void)fn;
     throw std::runtime_error("IfcParse::FileReader: mmap_tag specified but library not compiled with USE_MMAP");
@@ -268,43 +273,37 @@ IfcParse::FileReader::FileReader(const caller_fed_tag&)
     : cursor_(0)
 {
 	impl_ = std::make_shared<PushedSequentialImpl>();
+	init_contiguous_();
 }
 
 IfcParse::FileReader::FileReader(const std::string& content, const caller_fed_tag&)
 {
     impl_ = std::make_shared<PushedSequentialImpl>();
 	impl_->pushNextPage(content);
+	init_contiguous_();
 }
 
 IfcParse::FileReader::FileReader(const std::string& fn, size_t page_size, size_t page_capacity)
     : cursor_(0)
 {
 	impl_ = std::make_shared<PagedFileImpl>(fn, page_size, page_capacity);
+	init_contiguous_();
+}
+
+void IfcParse::FileReader::init_contiguous_() {
+    contiguous_ = impl_->contiguous_data();
+    contiguous_size_ = contiguous_ != nullptr ? impl_->size() : 0;
+}
+
+char IfcParse::FileReader::peek_paged_() const {
+    if (cursor_ >= impl_->size()) throw std::out_of_range("peek at EOF");
+    return impl_->get(cursor_);
 }
 
 FileReader FileReader::clone() const {
     FileReader c(*this);
     c.cursor_ = this->cursor_;
     return c;
-}
-
-void FileReader::seek(size_t pos) {
-    if (pos > impl_->size()) throw std::out_of_range("seek out of range");
-    cursor_ = pos;
-}
-
-size_t FileReader::tell() const { return cursor_; }
-
-size_t FileReader::size() const { return impl_->size(); }
-
-char FileReader::peek() const {
-    if (cursor_ >= impl_->size()) throw std::out_of_range("peek at EOF");
-    return impl_->get(cursor_);
-}
-
-void FileReader::increment(size_t n) {
-    if (cursor_ + n > impl_->size()) throw std::out_of_range("increment past EOF");
-    cursor_ += n;
 }
 
 void IfcParse::FileReader::pushNextPage(const std::string& data)
@@ -322,19 +321,3 @@ void IfcParse::FileReader::dropPages(size_t up_to_pos)
     impl_->dropPages(up_to_pos);
 }
 
-bool IfcParse::FileReader::eof() const
-{
-    return cursor_ >= impl_->size();
-}
-
-char IfcParse::FileReader::read()
-{
-	auto c = peek();
-	increment(1);
-	return c;
-}
-
-char IfcParse::FileReader::get(size_t offset) const
-{
-	return impl_->get(offset);
-}
