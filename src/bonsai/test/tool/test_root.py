@@ -90,15 +90,6 @@ class TestCopyRepresentation(NewFile):
         assert len(ifc.by_type("IfcRepresentationMap")) == 1
 
 
-class TestDoesTypeHaveRepresentations(NewFile):
-    def test_run(self):
-        ifc = ifcopenshell.file()
-        element = ifc.createIfcWallType()
-        assert subject.does_type_have_representations(element) is False
-        element.RepresentationMaps = [ifc.createIfcRepresentationMap()]
-        assert subject.does_type_have_representations(element) is True
-
-
 class TestMappedRepresentations(NewFile):
     def create_occurrence(self, ifc, mapping_target):
         item = ifc.createIfcMappedItem(ifc.createIfcRepresentationMap(), mapping_target)
@@ -172,6 +163,15 @@ class TestMappedRepresentations(NewFile):
         target.Scale = 1.0
         element = self.create_occurrence(ifc, target)
         assert subject.has_transformed_mapped_representation(element) is False
+
+
+class TestDoesTypeHaveRepresentations(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        element = ifc.createIfcWallType()
+        assert subject.does_type_have_representations(element) is False
+        element.RepresentationMaps = [ifc.createIfcRepresentationMap()]
+        assert subject.does_type_have_representations(element) is True
 
 
 class TestGetDecompositionRelationships(NewFile):
