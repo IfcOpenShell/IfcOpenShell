@@ -262,16 +262,6 @@ class Usecase:
             self.target_class = "IfcPresentationStyle"
             return self.append_presentation_style()
 
-    def map_reuse_identity(self, identity: int, new: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
-        """Record ``identity -> new`` in ``reuse_identities`` and index it by
-        ``new``'s id in ``new_reuse_identities`` so ``SafeRemovalContext`` can
-        find a removed element's identity directly. All writes to
-        ``reuse_identities`` must go through this method to keep the index
-        in sync."""
-        self.reuse_identities[identity] = new
-        self.new_reuse_identities[new.id()] = identity
-        return new
-
     def by_guid(self, guid: str) -> Union[ifcopenshell.entity_instance, None]:
         try:
             return self.file.by_guid(guid)
@@ -676,6 +666,16 @@ class Usecase:
             )
         self.existing_contexts.append(context)
         return context
+
+    def map_reuse_identity(self, identity: int, new: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        """Record ``identity -> new`` in ``reuse_identities`` and index it by
+        ``new``'s id in ``new_reuse_identities`` so ``SafeRemovalContext`` can
+        find a removed element's identity directly. All writes to
+        ``reuse_identities`` must go through this method to keep the index
+        in sync."""
+        self.reuse_identities[identity] = new
+        self.new_reuse_identities[new.id()] = identity
+        return new
 
     def file_add(
         self, element: ifcopenshell.entity_instance, conversion_factor: Optional[float] = None
