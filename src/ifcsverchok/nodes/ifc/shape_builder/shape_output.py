@@ -53,7 +53,7 @@ class SvSbShapeOutput(bpy.types.Node, SverchCustomTreeNode, helper.SvIfcCore):
         settings = ifcopenshell.geom.settings()
         settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
         shape = ifcopenshell.geom.create_shape(settings, entity)
-        assert isinstance(shape, W.Triangulation)
+        assert isinstance(shape, W.triangulation)
         self.verts = ifcopenshell.util.shape.get_vertices(shape).tolist()
         self.edges = ifcopenshell.util.shape.get_edges(shape).tolist()
         self.polys = ifcopenshell.util.shape.get_faces(shape).tolist()

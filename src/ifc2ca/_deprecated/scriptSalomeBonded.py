@@ -18,7 +18,6 @@
 
 import itertools
 import json
-import os
 import time
 from pathlib import Path
 
@@ -156,10 +155,9 @@ class MODEL:
         ###
         ### GEOM component
         ###
-        import math
-
-        import GEOM
-        import SALOMEDS
+        # Unused, but unsure if they have side effects (Salome module registration).
+        import GEOM  # ruff: ignore[unused-import]
+        import SALOMEDS  # ruff: ignore[unused-import]
         from salome.geom import geomBuilder
 
         gg = salome.ImportComponentGUI("GEOM")
