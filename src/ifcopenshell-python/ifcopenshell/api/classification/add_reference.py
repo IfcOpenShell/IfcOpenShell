@@ -182,6 +182,8 @@ class Usecase:
         if not reference:
             migrator = ifcopenshell.util.schema.Migrator()
 
+            old_referenced_source = ...
+            existing_classification = None
             if self.settings["is_lightweight"]:
                 old_referenced_source = self.settings["reference"].ReferencedSource
                 self.settings["reference"].ReferencedSource = None
@@ -194,6 +196,7 @@ class Usecase:
             reference = migrator.migrate(self.settings["reference"], self.file)
 
             if self.settings["is_lightweight"]:
+                assert old_referenced_source is not ...
                 reference.ReferencedSource = self.settings["classification"]
                 self.settings["reference"].ReferencedSource = old_referenced_source
             elif existing_classification:
