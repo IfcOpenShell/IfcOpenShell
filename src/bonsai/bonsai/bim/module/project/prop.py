@@ -374,14 +374,6 @@ class BIMProjectProperties(PropertyGroup):
         ),
         default=False,
     )
-    should_cache: BoolProperty(
-        name="Cache",
-        description=(
-            "Cache loaded geometry to .h5 file in your cache directory (see in preferences) "
-            "for faster imports and geometry reloads."
-        ),
-        default=False,
-    )
     deflection_tolerance: FloatProperty(name="Deflection Tolerance", default=0.05)
     angular_tolerance: FloatProperty(name="Angular Tolerance", default=0.5)
     void_limit: IntProperty(
@@ -552,7 +544,6 @@ class BIMProjectProperties(PropertyGroup):
         should_merge_materials_by_colour: bool
         should_load_geometry: bool
         should_clean_mesh: bool
-        should_cache: bool
         deflection_tolerance: float
         angular_tolerance: float
         void_limit: int

@@ -17,9 +17,10 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 import os
-import sys
 import subprocess
+import sys
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:

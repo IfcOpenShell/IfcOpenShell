@@ -69,6 +69,10 @@ def draw_single_property(prop: IfcProperty, layout: bpy.types.UILayout, copy_ope
     if prop.metadata.special_type == "URI":
         op = layout.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")
         op.attribute_data_path = tool.Blender.get_full_data_path(prop.metadata)
+    if tool.Pset.is_measurable_special_type(prop.metadata.special_type):
+        unit_row = layout.row(align=True)
+        unit_row.scale_x = 0.5
+        prop_with_search(unit_row, prop.metadata, "unit_id_enum", text="")
     if prop.metadata.is_optional:
         layout.prop(prop.metadata, "is_null", icon="RADIOBUT_OFF" if prop.metadata.is_null else "RADIOBUT_ON", text="")
     if copy_operator:
@@ -101,8 +105,7 @@ def draw_bounded_property(prop: IfcProperty, layout: bpy.types.UILayout, copy_op
         (prop.bounded_value.upper_bound_value, "Upper"),
         (prop.bounded_value.set_point_value, "Set Point"),
     ):
-        value_name = attr.get_value_name(display_only=True)
-        if not value_name:
+        if not (value_name := attr.get_value_name(display_only=True)):
             continue
         row = grid.row(align=True)
         row.prop(attr, value_name, text=label)
@@ -149,7 +152,7 @@ def draw_psetqto_ui(
         op.obj = obj_name
         op.obj_type = obj_type
     elif not props.active_pset_id:
-        row.label(text=f'{pset["Name"]}', icon="COPY_ID")
+        row.label(text=f"{pset['Name']}", icon="COPY_ID")
 
         if (shared := pset["shared_pset_uses"]) > 1:
             unshare_pset_row = row.row(align=True)
@@ -224,9 +227,10 @@ def draw_psetqto_ui(
                 row = box.row(align=True)
                 row.scale_y = 0.8
                 row.label(text=prop["Name"])
-                op = row.operator(
-                    "bim.select_similar", text=get_display_value(nominal_value), icon="NONE", emboss=False
-                )
+                display_value = get_display_value(nominal_value)
+                if unit_symbol := prop["UnitSymbol"]:
+                    display_value = f"{display_value} {unit_symbol}"
+                op = row.operator("bim.select_similar", text=display_value, icon="NONE", emboss=False)
                 op.key = '"' + pset["Name"].replace('"', '\\"') + '"."' + prop["Name"].replace('"', '\\"') + '"'
                 # calculate sum of all selected objects
                 if active_operator:
@@ -501,6 +505,7 @@ class BIM_PT_material_psets(Panel):
     def draw(self, context):
         assert self.layout
         props = tool.Material.get_material_props()
+        ifc_definition_id = None
         if material := props.active_material:
             ifc_definition_id = material.ifc_definition_id
 
