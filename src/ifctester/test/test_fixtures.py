@@ -36,11 +36,6 @@ FIXTURES = os.path.join(os.path.dirname(__file__), "fixtures")
 
 class TestProhibitedRequirementStatusFixture:
     def test_a_violated_prohibition_marks_its_requirement_failed(self):
-        # A prohibited specification (no walls allowed) violated by one
-        # wall. Specification.validate skips per-element requirement
-        # checks for a prohibited specification, so requirement.failures
-        # stays empty, but the requirement's own status must still be
-        # False, matching the specification it belongs to.
         specs = ids.open(os.path.join(FIXTURES, "prohibited_requirement_status", "prohibited_requirement_status.ids"))
         ifc = ifcopenshell.open(
             os.path.join(FIXTURES, "prohibited_requirement_status", "prohibited_requirement_status.ifc")
