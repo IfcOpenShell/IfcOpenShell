@@ -56,7 +56,7 @@ jobs:
           submodules: recursive
       - uses: actions/setup-python@v7
         with:
-          python-version: '3.11'
+          python-version: '3.x'
       - name: Compile
         run: |
           cp -r src/ifcopenshell-python src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
