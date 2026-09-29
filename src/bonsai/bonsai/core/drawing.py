@@ -457,9 +457,7 @@ def remove_drawing(
             drawing_tool.delete_object(reference_obj)
         ifc.run("root.remove_product", product=reference)
 
-    # A corrupt drawing may have no associated document; skip the document and
-    # file cleanup in that case so the drawing can still be removed instead of
-    # crashing on None.ReferencedDocument. See #6518.
+    # A corrupt drawing may have no document; skip the document and file cleanup (#6518).
     drawing_document = drawing_tool.get_drawing_document(drawing)
     information = drawing_tool.get_reference_document(drawing_document) if drawing_document else None
     if information:
