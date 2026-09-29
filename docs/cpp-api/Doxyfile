@@ -2375,6 +2375,8 @@ PREDEFINED             = IFC_PARSE_API= \
                          IFC_GEOM_API= \
                          IFC_GEOMLIBRARY_API= \
                          IFC_GEOMSERIALIZATION_API= \
+                         IFC_SWAR_INLINE= \
+                         IFC_READER_INLINE= \
                          SERIALIZERS_API= \
                          "POSTFIX_SCHEMA(name)=name##_Schema" \
                          "Handle(name):=opencascade::handle<name>" \
