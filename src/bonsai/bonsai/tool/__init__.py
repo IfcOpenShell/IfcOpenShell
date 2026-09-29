@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 #
 # Ignore unused imports.
-# ruff: noqa: F401
+# ruff: file-ignore[unused-import]
 
 from bonsai.tool.aggregate import Aggregate
 from bonsai.tool.array import Array
@@ -80,3 +80,6 @@ from bonsai.tool.type import Type
 from bonsai.tool.unit import Unit
 from bonsai.tool.wall import Wall
 from bonsai.tool.web import Web
+
+# Have to move after import of tool.drawing
+from bonsai.tool.autosave import Autosave  # isort: skip

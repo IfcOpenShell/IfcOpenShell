@@ -156,7 +156,6 @@ class Material(PropertyGroup):
 
 
 class BIMMaterialProperties(PropertyGroup):
-
     def update_active_material_index(self, context: bpy.types.Context) -> None:
         if not MaterialClassificationsData.is_loaded:
             return
