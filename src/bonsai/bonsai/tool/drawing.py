@@ -1855,15 +1855,8 @@ class Drawing(bonsai.core.tool.Drawing):
         else:
             return
 
-        # Orient the cut line so the section's view direction lies on the marker side.
-        # The SVG marker is always drawn on the +90 CCW side of the start->end edge, so
-        # the endpoints must be ordered to put the view direction on that side. This runs
-        # AFTER clip/elevate on purpose: elevate_segment (section/elevation views) rebuilds
-        # the segment in a fixed ymin->ymax order and discards any upstream ordering, and
-        # for a vertical section line the pre-clip edge is along camera Z so the X-Y signed
-        # area is degenerate (0). Testing the FINAL projected edge is non-degenerate for
-        # every target view, and clip_segment preserves direction so plan views are
-        # unchanged. See #4103.
+        # The marker is drawn on the +90 CCW side of start->end, so order the final points to face the view.
+        # Done after clip/elevate as elevate_segment discards any upstream ordering.
         view_dir = im.to_3x3() @ Vector(-m[:3, 2])
         edge_dir = points[1] - points[0]
         if edge_dir.x * view_dir.y - edge_dir.y * view_dir.x < 0:
@@ -1935,12 +1928,7 @@ class Drawing(bonsai.core.tool.Drawing):
                 else:
                     new_points = points
 
-        # Enforce the corrected marker orientation. generate_section_reference_points now
-        # orders `points` so the marker faces the section view direction. The collinear
-        # "no change" path above would otherwise preserve the stored (possibly reversed)
-        # order, leaving annotations authored before this fix pointing the wrong way, so
-        # reverse when the stored/candidate order faces opposite the corrected direction.
-        # See #4103.
+        # Also reverse a stored or collinear candidate order that faces opposite to the corrected direction.
         corrected_dir = points[1] - points[0]
         if new_points is None:
             if len(existing_verts) == 2 and (existing_verts[1] - existing_verts[0]).dot(corrected_dir) < 0:
