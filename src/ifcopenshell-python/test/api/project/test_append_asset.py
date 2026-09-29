@@ -24,6 +24,7 @@ import ifcopenshell.api.cost
 import ifcopenshell.api.feature
 import ifcopenshell.api.geometry
 import ifcopenshell.api.georeference
+import ifcopenshell.api.group
 import ifcopenshell.api.layer
 import ifcopenshell.api.material
 import ifcopenshell.api.owner.settings
@@ -340,6 +341,20 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
         ifcopenshell.api.project.append_asset(self.file, library=library, element=element)
         assert len(self.file.by_type("IfcWall")) == 1
+
+    def test_append_a_group_with_its_members(self):
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        walls = [ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall") for _ in range(3)]
+        group = ifcopenshell.api.group.add_group(library, name="Walls")
+        ifcopenshell.api.group.assign_group(library, products=walls, group=group)
+        ifcopenshell.api.project.append_asset(self.file, library=library, element=group)
+        ifcopenshell.api.project.append_asset(self.file, library=library, element=group)
+        assert len(self.file.by_type("IfcGroup")) == 1
+        assert len(self.file.by_type("IfcWall")) == 3
+        rels = self.file.by_type("IfcRelAssignsToGroup")
+        assert len(rels) == 1
+        assert rels[0].RelatingGroup.Name == "Walls"
+        assert len(rels[0].RelatedObjects) == 3
 
     def test_append_a_product_with_all_properties(self):
         library = ifcopenshell.api.project.create_file(version=self.file.schema)
