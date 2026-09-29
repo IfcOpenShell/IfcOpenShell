@@ -165,8 +165,12 @@ else
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION_DAILY)"/' build/ifcopenshell/__init__.py
 endif
 
-	cd build && $(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && $(PIP) install build
-	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m build --wheel
+	cd build && if command -v uv >/dev/null 2>&1; then \
+		uv build --wheel; \
+	else \
+		$(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && $(PIP) install build && \
+		$(PYTHON) -m build --wheel; \
+	fi
 
 ifeq ($(IS_STABLE), TRUE)
 	mv build/dist/ifcopenshell-*.whl dist/ifcopenshell-$(VERSION_PYTHON)-$(PYVERSION)-none-$(PLATFORMTAG).whl
