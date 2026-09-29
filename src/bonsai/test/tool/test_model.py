@@ -150,25 +150,6 @@ class TestUnmarkManualBooleans(NewFile):
         assert set(value) == {boolean2.id()}
 
 
-class TestApplyIfcMaterialChangesToleratesStaleIfcDefinitionId(NewFile):
-    def test_run(self):
-        from unittest import mock
-
-        ifc_file = ifcopenshell.file()
-        tool.Ifc.set(ifc_file)
-        element = ifc_file.createIfcWall()
-        representation = ifc_file.createIfcShapeRepresentation()
-        obj = bpy.data.objects.new("Object", (mesh := bpy.data.meshes.new("Mesh")))
-        tool.Ifc.link(element, obj)
-        stale_id = representation.id()
-        tool.Geometry.get_mesh_props(mesh).ifc_definition_id = stale_id
-        ifc_file.remove(representation)
-
-        with mock.patch("bonsai.core.geometry.switch_representation") as switch_representation:
-            subject.apply_ifc_material_changes([element])
-        switch_representation.assert_not_called()
-
-
 class TestStairCalculatedParams(NewFile):
     def compare_data(self, pset_data, expected_calculated_data):
         calculated_data = subject.get_active_stair_calculated_params(pset_data)
@@ -605,6 +586,25 @@ class TestGenerateStair2DProfile(NewFile):
         expected_profile = (verts_data, edges_data, faces_data)
         generated_profile = subject.generate_stair_2d_profile(**kwargs)
         self.compare_data(generated_profile, expected_profile)
+
+
+class TestApplyIfcMaterialChangesToleratesStaleIfcDefinitionId(NewFile):
+    def test_run(self):
+        from unittest import mock
+
+        ifc_file = ifcopenshell.file()
+        tool.Ifc.set(ifc_file)
+        element = ifc_file.createIfcWall()
+        representation = ifc_file.createIfcShapeRepresentation()
+        obj = bpy.data.objects.new("Object", (mesh := bpy.data.meshes.new("Mesh")))
+        tool.Ifc.link(element, obj)
+        stale_id = representation.id()
+        tool.Geometry.get_mesh_props(mesh).ifc_definition_id = stale_id
+        ifc_file.remove(representation)
+
+        with mock.patch("bonsai.core.geometry.switch_representation") as switch_representation:
+            subject.apply_ifc_material_changes([element])
+        switch_representation.assert_not_called()
 
 
 class TestUsingArrays(NewFile):
