@@ -31,9 +31,12 @@ from typing import Literal, NamedTuple, NoReturn
 
 from common import (
     ADD_COMMIT_SHA_DEFAULT,
+    BUILD_CFG_DEFAULT,
+    BUILD_CFGS,
     OFF_ON,
     PROJECT_NAME,
     REPO_ROOT,
+    BuildCfg,
     C,
     HelpStrings,
     colorize,
@@ -57,41 +60,55 @@ class Dep(NamedTuple):
     required: bool = True
     """Whether to error out if the dep's value can't be resolved."""
     base: Literal["DEPS", "INSTALL"] = "INSTALL"
-    """Which base dir `rel_path` is relative to."""
+    """Which base dir `rel_path` (or `fallback_rel_path`) is relative to."""
+    fallback_rel_path: Path | None = None
+    """Used in place of a missing deps-cache entry, for transition periods after a dep
+    moves from a fixed `rel_path` to a cache-provided one."""
 
 
 class Deps:
     DEPS: dict[str, Dep] = {
         "boost": Dep("BOOST_INSTALL_DIR", None),
         "occ": Dep("OCC_INSTALL_DIR", None),
-        "opencollada": Dep("OPENCOLLADA_INSTALL_DIR", Path("OpenCOLLADA")),
+        # TODO: drop fallback_rel_path once everyone has re-run build-deps.py with versioned OpenCOLLADA support.
+        "opencollada": Dep("OPENCOLLADA_INSTALL_DIR", None, fallback_rel_path=Path("OpenCOLLADA")),
         # We don't install Eigen currently,
         # so there's no Eigen3config.cmake and therefore we provide path explicitly.
         "eigen": Dep("EIGEN_DIR", Path("Eigen"), cmake_prefix=False, pass_as_cmake_arg=True),
-        "cgal": Dep("CGAL_INSTALL_DIR", Path("cgal")),
+        "cgal": Dep("CGAL_INSTALL_DIR", None),
         "gmp": Dep("GMP_INSTALL_DIR", Path("mpir")),
         "mpfr": Dep("MPFR_INSTALL_DIR", Path("mpfr")),
         # CCACHE_INSTALL_DIR is only set when ccache wasn't found on PATH.
         "ccache": Dep("CCACHE_INSTALL_DIR", None, required=False),
-        "zstd": Dep("ZSTD_INSTALL_DIR", Path("zstd")),
+        # TODO: drop fallback_rel_path once everyone has re-run build-deps.py with versioned zstd support.
+        "zstd": Dep("ZSTD_INSTALL_DIR", None, fallback_rel_path=Path("zstd")),
+        # TODO: drop this transition check once everyone has re-run build-deps.py with sqlite3 cache entry support.
+        "sqlite3": Dep("SQLITE3_INSTALL_DIR", None, required=False),
         "swig": Dep("SWIG_INSTALL_DIR", None),
-        "rocksdb": Dep("ROCKSDB_INSTALL_DIR", Path("rocksdb")),
+        # TODO: drop fallback_rel_path once everyone has re-run build-deps.py with versioned rocksdb support.
+        "rocksdb": Dep("ROCKSDB_INSTALL_DIR", None, fallback_rel_path=Path("rocksdb")),
         "json": Dep("JSON_INCLUDE_DIR", Path("json"), cmake_prefix=False, pass_as_cmake_arg=True),
+        # TODO: drop fallback_rel_path once everyone has re-run build-deps.py with versioned OpenCOLLADA support.
         "libxml2_libraries": Dep(
             "LIBXML2_LIBRARIES",
-            Path("OpenCOLLADA/lib/opencollada/xml.lib"),
+            None,
             cmake_prefix=False,
             pass_as_cmake_arg=True,
+            fallback_rel_path=Path("OpenCOLLADA/lib/opencollada/xml.lib"),
         ),
+        # TODO: drop fallback_rel_path once everyone has re-run build-deps.py with versioned OpenCOLLADA support.
         "libxml2_include_dir": Dep(
             "LIBXML2_INCLUDE_DIR",
-            Path("OpenCOLLADA/Externals/LibXML/include"),
+            None,
             cmake_prefix=False,
             pass_as_cmake_arg=True,
             base="DEPS",
+            fallback_rel_path=Path("OpenCOLLADA/Externals/LibXML/include"),
         ),
         # TODO: drop this TRANSITION check once everyone has re-run build-deps.py with manifold support.
         "manifold": Dep("MANIFOLD_INSTALL_PATH", None, required=False),
+        # TODO: drop this TRANSITION check once everyone has re-run build-deps.py with proj support.
+        "proj": Dep("PROJ_INSTALL_DIR", None, required=False),
         "pythonhome": Dep("PYTHONHOME", None, cmake_prefix=False),
     }
 
@@ -115,6 +132,9 @@ class Deps:
                 value = get_var(deps_cache, dep.env_var, deps_cache_only=True)
                 if isinstance(value, str):
                     value = Path(value)
+                if value is None and dep.fallback_rel_path is not None:
+                    base_dir = vs_cfg_vars.install_dir if dep.base == "INSTALL" else vs_cfg_vars.deps_dir
+                    value = base_dir / dep.fallback_rel_path
             if dep.required:
                 if value is None:
                     logger.error(f"{dep.env_var} is required but could not be resolved.")
@@ -148,6 +168,7 @@ class Args(NamedTuple):
     generator: str | None
     add_commit_sha: bool
     use_ninja: bool
+    build_cfg: BuildCfg
     clean: bool
     extra_args: list[str]
 
@@ -186,16 +207,21 @@ def parse_args() -> Args:
         default=argparse.SUPPRESS,
         help=HelpStrings.ADD_COMMIT_SHA,
     )
-    USE_NINJA_DEFAULT = False
     parser.add_argument(
         "--use-ninja",
         dest="use_ninja",
         action=argparse.BooleanOptionalAction,
-        default=argparse.SUPPRESS,
+        default=False,
+        help=HelpStrings.USE_NINJA,
+    )
+    parser.add_argument(
+        "--build-cfg",
+        dest="build_cfg",
+        default=BUILD_CFG_DEFAULT,
+        choices=BUILD_CFGS,
         help=(
-            "Use the Ninja generator instead of the MSVC generator/platform. "
-            "Also can be specified by using USE_NINJA env variable. "
-            f"(default: {USE_NINJA_DEFAULT})"
+            f"{HelpStrings.BUILD_CFG} Only relevant with --use-ninja (sets CMAKE_BUILD_TYPE); "
+            "ignored for the (multi-config) MSVC generator."
         ),
     )
     parser.add_argument(
@@ -220,12 +246,11 @@ def parse_args() -> Args:
     add_commit_sha = resolve_cli_or_env(
         getattr(args, "add_commit_sha", None), "ADD_COMMIT_SHA", ADD_COMMIT_SHA_DEFAULT, arg_type="bool"
     )
-    use_ninja = resolve_cli_or_env(getattr(args, "use_ninja", None), "USE_NINJA", USE_NINJA_DEFAULT, arg_type="bool")
-
     return Args(
         generator=generator,
         add_commit_sha=add_commit_sha,
-        use_ninja=use_ninja,
+        use_ninja=args.use_ninja,
+        build_cfg=args.build_cfg,
         clean=args.clean,
         extra_args=extra_args,
     )
@@ -306,15 +331,18 @@ def main() -> None:
     if ARGS.use_ninja:
         cmake_generator = "Ninja"
         arch_option = ()
+        build_type_option = (f"-DCMAKE_BUILD_TYPE={ARGS.build_cfg}",)
     else:
         cmake_generator = vs_cfg_vars.generator.name
         arch_option = ("-A", vs_cfg_vars.vs_platform)
+        build_type_option = ()
 
     cmake_args = [
         str(cmakelists_dir),
         "-G",
         cmake_generator,
         *arch_option,
+        *build_type_option,
         f"-DCMAKE_INSTALL_PREFIX={cmake_install_prefix}",
         "-DWITH_ROCKSDB=ON",
         "-DWITH_ZSTD=ON",

@@ -55,7 +55,7 @@ express::base ifcopenshell::impl::rocks_db_file_storage::assert_existance(size_t
 
     std::string v;
 
-    rocksdb::Status s = db->Get(rocksdb::ReadOptions{}, (r == entityinstance_ref ? "i|" : "t|") + std::to_string(number) + "|_", &v);
+    rocksdb::Status s = db->Get(rocksdb::ReadOptions{}, rocksdb_key::type_record(r == entityinstance_ref, number), &v);
     if (s.ok()) {
         size_t s;
         memcpy(&s, v.data(), sizeof(size_t));
@@ -207,22 +207,20 @@ void ifcopenshell::impl::rocks_db_file_storage::process_deletion_inverse(const e
     auto id = inst.id();
 
     {
-        // compute next prefix that does not start with v|{id}|
-        auto prefix = "v|" + std::to_string(id) + "|";
-        auto it = std::unique_ptr<rocksdb::Iterator>(db->NewIterator(rocksdb::ReadOptions()));
-        it->Seek(prefix);
-        while (it->Valid()) {
-            it->Next();
-            if (!it->key().starts_with(prefix)) {
-                break;
-            }
-        }
+        // Delete every record referencing inst: all keys under v|<id>|. The
+        // exclusive upper bound is the same prefix with its separator
+        // incremented, so no iterator is needed to find the range end.
+        const auto prefix = rocksdb_key::inverse_prefix(id);
+        const auto upper_bound = rocksdb_key::upper_bound(prefix);
 
         rocksdb::WriteBatch batch;
-        batch.DeleteRange(prefix, it->key());
+        batch.DeleteRange(prefix, upper_bound);
         db->Write(wopts, &batch);
     }
 
+    // Delete the records inst contributed through its own attributes: drop
+    // its id from the value lists of every instance it references. The values
+    // are uint32_t ids, as written by the serializer and register_inverse().
     // This is based on traversal which needs instances to still be contained in the map.
     // another option would be to keep byid intact for the remainder of this loop
     auto entity_attributes = traverse(inst, 1);
@@ -233,28 +231,47 @@ void ifcopenshell::impl::rocks_db_file_storage::process_deletion_inverse(const e
         const unsigned int name = entity_attribute.id();
         // Do not update inverses for simple types (which have id()==0 in IfcOpenShell).
         if (name != 0) {
-            // Find instances entity -> other
-            // and update inverses from entity into other
+            auto prefix = rocksdb_key::inverse_prefix(name);
+            auto it = std::unique_ptr<rocksdb::Iterator>(db->NewIterator(rocksdb::ReadOptions()));
+            it->Seek(prefix);
+            while (it->Valid() && it->key().starts_with(prefix)) {
+                std::string s = it->value().ToString();
 
-            {
-                auto prefix = "v|" + std::to_string(name) + "|";
-                auto it = std::unique_ptr<rocksdb::Iterator>(db->NewIterator(rocksdb::ReadOptions()));
-                it->Seek(prefix);
-                while (it->Valid() && it->key().starts_with(prefix)) {
-                    std::string s = it->value().ToString();
-
-                    // Iterator are snapshotted? So don't get invalidated?
-                    std::vector<size_t> vals(s.size() / sizeof(size_t));
-                    memcpy(vals.data(), s.data(), s.size());
-                    vals.erase(std::find(vals.begin(), vals.end(), (size_t)id));
-                    s.resize(vals.size() * sizeof(size_t));
+                // Iterator are snapshotted? So don't get invalidated?
+                std::vector<uint32_t> vals(s.size() / sizeof(uint32_t));
+                memcpy(vals.data(), s.data(), s.size());
+                auto removed = std::remove(vals.begin(), vals.end(), (uint32_t)id);
+                if (removed != vals.end()) {
+                    vals.erase(removed, vals.end());
+                    s.resize(vals.size() * sizeof(uint32_t));
                     memcpy(s.data(), vals.data(), s.size());
                     db->Put(wopts, it->key(), s);
-
-                    it->Next();
                 }
+
+                it->Next();
             }
         }
+    }
+#endif
+}
+
+void ifcopenshell::impl::rocks_db_file_storage::erase_instances(const std::vector<uint32_t>& ids)
+{
+#ifndef IFOPSH_WITH_ROCKSDB
+    (void)ids;
+#endif
+#ifdef IFOPSH_WITH_ROCKSDB
+    // One write for every instance's keys, one lock for their cached handles.
+    rocksdb::WriteBatch batch;
+    for (auto id : ids) {
+        const auto prefix = rocksdb_key::instance(true, id);
+        batch.DeleteRange(prefix, rocksdb_key::upper_bound(prefix));
+    }
+    db->Write(wopts, &batch);
+
+    std::lock_guard<std::mutex> lock(instance_cache_mutex_);
+    for (auto id : ids) {
+        instance_cache_.erase(id);
     }
 #endif
 }
@@ -314,19 +331,47 @@ ifcopenshell::filetype ifcopenshell::guess_file_type(const std::string& fn) {
 }
 
 express::base ifcopenshell::impl::rocks_db_file_storage::create(const ifcopenshell::declaration* decl, int id) {
+#ifndef IFOPSH_WITH_ROCKSDB
     (void)decl;
     (void)id;
-    return express::base{};
-    /*
-    if (decl->as_entity() || decl->as_type_declaration()) {
-        auto* inst = file->schema()->instantiate(decl, rocks_db_attribute_storage{});
-		// @todo maybe this needs to be set to file? In order to have a context (ie. rocksdb::db*) to write to?
-        inst->file_ = nullptr;
-        return file->add_entity(inst);
+    throw exception("RocksDB support not compiled in");
+#else
+    // Mirrors in_memory_file_storage::create(). The instance's attributes
+    // live in the database (written by set_attribute_value(), read back on
+    // access), so the cache only has to keep the identity of the handle
+    // stable: assert_existance() can reload it from the type record that
+    // add_type_ref() writes.
+    uint32_t instance_name;
+    if (decl->as_entity() != nullptr) {
+        if (id == -1) {
+            if (!id_counter_recalculated_) {
+                file->recalculate_id_counter();
+                id_counter_recalculated_ = true;
+            }
+            instance_name = file->fresh_id();
+        } else {
+            instance_name = id;
+        }
+    } else if (decl->as_type_declaration() != nullptr) {
+        instance_name = 0;
     } else {
         throw std::runtime_error("Requires and entity or type declaration");
     }
-    */
+    auto data = ifcopenshell::make_pointer_type<instance_data>(file, decl, instance_name, rocks_db_attribute_storage{});
+    {
+        std::lock_guard<std::mutex> lock(instance_cache_mutex_);
+        if (instance_name) {
+            instance_cache_.insert({instance_name, data});
+        } else {
+            type_instance_cache_.insert({data->identity(), data});
+        }
+    }
+
+    express::base inst(data);
+    add_type_ref(inst);
+
+    return inst;
+#endif
 }
 
 express::base ifcopenshell::impl::in_memory_file_storage::create(const ifcopenshell::declaration* decl, int id) {

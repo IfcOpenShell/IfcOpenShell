@@ -22,14 +22,21 @@ from typing import Literal
 CACHE_PREFIX = "cache-"
 
 
-def get_install_dir() -> Path:
+def find_install_dir() -> Path | None:
     if platform.system() == "Darwin":
         pattern = "Darwin/*/*/install"
     else:
         pattern = "*/*/install"
     for data in Path.cwd().glob(pattern):
         return data
-    raise Exception("No install dir found")
+    return None
+
+
+def get_install_dir() -> Path:
+    install_dir = find_install_dir()
+    if install_dir is None:
+        raise Exception("No install dir found")
+    return install_dir
 
 
 def run(cmd: str) -> None:
@@ -72,10 +79,15 @@ if __name__ == "__main__":
         print(__doc__)
         sys.exit(1)
 
-    install_dir = get_install_dir()
-    print(f"Found install dir: '{install_dir}'")
-
     if action == "pack":
+        install_dir = get_install_dir()
+        print(f"Found install dir: '{install_dir}'")
         pack_dependencies(install_dir)
     else:
-        unpack_dependencies(install_dir)
+        # A cache branch that no build has pushed to yet has nothing to unpack.
+        install_dir = find_install_dir()
+        if install_dir is None:
+            print("No install dir found, nothing to unpack.")
+        else:
+            print(f"Found install dir: '{install_dir}'")
+            unpack_dependencies(install_dir)

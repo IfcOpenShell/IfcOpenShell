@@ -1,5 +1,0 @@
-pytest
-pytest-blender
-pytest-bdd
-fake-bpy-module-latest
-brickschema[persistence]

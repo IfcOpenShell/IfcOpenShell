@@ -19,7 +19,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Generator, Iterable
+from collections.abc import Generator, Iterable, Sequence
 from os import PathLike, fspath
 from typing import TYPE_CHECKING, Any, Literal, Optional, TypeVar, Union, cast, overload
 
@@ -393,13 +393,25 @@ CLASH_TYPE_ITEMS = ("protrusion", "pierce", "collision", "clearance")
 
 
 class tree(ifcopenshell_wrapper.tree):
-    def __init__(self, file: Optional[file] = None, settings: Optional[settings] = None):
-        args = [self]
+    def __init__(
+        self,
+        file: Optional[file] = None,
+        settings: Optional[settings] = None,
+        backend: str | None = "opencascade.brep",
+    ):
+        if hasattr(ifcopenshell_wrapper, "create_tree"):
+            # The object is constructed by the tree registry; adopt its pointer.
+            # SWIG does not generate keyword argument handling for overloaded
+            # methods, hence the select() and select_box() dispatchers below.
+            constructed = ifcopenshell_wrapper.create_tree(backend)
+            self.this = constructed.this
+            self.thisown = True
+            constructed.thisown = False
+        else:
+            ifcopenshell_wrapper.tree.__init__(self)
+
         if file is not None:
-            args.append(file)
-            if settings is not None:
-                args.append(settings)
-        ifcopenshell_wrapper.tree.__init__(*args)
+            self.add_file(file, settings if settings is not None else ifcopenshell_wrapper.settings())
 
     def add_file(self, file: file, settings: settings) -> None:
         ifcopenshell_wrapper.tree.add_file(self, file, settings)
@@ -408,18 +420,9 @@ class tree(ifcopenshell_wrapper.tree):
         ifcopenshell_wrapper.tree.add_file(self, iterator)
 
     def select(
-        self,
-        value: Union[entity_instance, ifcopenshell_wrapper.native_element, tuple[float, float, float]],
-        **kwargs,
+        self, value: Union[entity_instance, ifcopenshell_wrapper.native_element, tuple[float, float, float]], **kwargs
     ) -> list[entity_instance]:
-        def unwrap(value):
-            if isinstance(value, entity_instance):
-                return value
-            elif all(map(lambda v: hasattr(value, v), "XYZ")):
-                return value.X(), value.Y(), value.Z()
-            return value
-
-        args = [self, unwrap(value)]
+        args = [self, value]
         if isinstance(value, (entity_instance, ifcopenshell_wrapper.native_element)):
             args.append(kwargs.get("completely_within", False))
             if "extend" in kwargs:
@@ -430,29 +433,12 @@ class tree(ifcopenshell_wrapper.tree):
         return ifcopenshell_wrapper.tree.select(*args)
 
     def select_box(self, value, **kwargs) -> list[entity_instance]:
-        def unwrap(value):
-            if isinstance(value, entity_instance):
-                return value
-            elif hasattr(value, "Get"):
-                return value.Get()[:3], value.Get()[3:]
-            return value
-
-        args = [self, unwrap(value)]
+        args = [self, value]
         if "extend" in kwargs or "completely_within" in kwargs:
             args.append(kwargs.get("completely_within", False))
         if "extend" in kwargs:
             args.append(kwargs.get("extend", -1.0e-5))
         return ifcopenshell_wrapper.tree.select_box(*args)
-
-    def clash_intersection_many(
-        self,
-        set_a: Iterable[entity_instance],
-        set_b: Iterable[entity_instance],
-        tolerance: float = 0.002,
-        check_all: bool = True,
-    ) -> tuple[ifcopenshell_wrapper.clash, ...]:
-        args = [self, set_a, set_b, tolerance, check_all]
-        return ifcopenshell_wrapper.tree.clash_intersection_many(*args)
 
     def clash_collision_many(
         self, set_a: Iterable[entity_instance], set_b: Iterable[entity_instance], allow_touching=False
@@ -469,6 +455,22 @@ class tree(ifcopenshell_wrapper.tree):
     ) -> tuple[ifcopenshell_wrapper.clash, ...]:
         args = [self, set_a, set_b, clearance, check_all]
         return ifcopenshell_wrapper.tree.clash_clearance_many(*args)
+
+    def clash_intersection_many(
+        self,
+        set_a: Iterable[entity_instance],
+        set_b: Iterable[entity_instance],
+        tolerance: float = 0.002,
+        check_all: bool = True,
+    ) -> tuple[ifcopenshell_wrapper.clash, ...]:
+        args = [self, set_a, set_b, tolerance, check_all]
+        return ifcopenshell_wrapper.tree.clash_intersection_many(*args)
+
+    def select_ray(
+        self, origin: Sequence[float], direction: Sequence[float], length: float = 1000.0
+    ) -> ifcopenshell_wrapper.ray_intersection_results:
+        args = [self, origin, direction, length]
+        return ifcopenshell_wrapper.tree.select_ray(*args)
 
     @staticmethod
     def get_clash_type(clash_type_i: int) -> ClashType:

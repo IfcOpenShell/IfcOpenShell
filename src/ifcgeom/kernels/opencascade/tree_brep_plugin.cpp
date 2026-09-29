@@ -18,7 +18,7 @@
  ********************************************************************************/
 
 #include "../../tree_plugin.h"
-#include "tree_backends.h"
+#include "ub_tree.h"
 
 #include <boost/dll/alias.hpp>
 
@@ -35,8 +35,8 @@ namespace ifcopenshell {
 					return tree_plugin_metadata("opencascade.brep");
 				}
 
-				abstract_tree* create_tree() {
-					return new opencascade_tree_backends::brep_tree();
+				ifcopenshell::geom::tree* create_tree() {
+					return new ifcopenshell::geom::impl::ub_tree<express::base>();
 				}
 
 				void register_plugin(tree_registry& registry, const plugin::module& module) {

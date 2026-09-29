@@ -27,11 +27,6 @@ endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON) # not necessary, but encouraged
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# The VERSION file in the repository root is the single source of truth for the
-# release version. Read it unconditionally so a plain source build reports the
-# real version through buildinfo.cpp instead of the stale hardcoded 0.8.0
-# fallback (see #8164). VERSION_OVERRIDE still controls the branch name used
-# when ADD_COMMIT_SHA embeds a commit sha.
 file(READ "../VERSION" "RELEASE_VERSION_")
 string(STRIP "${RELEASE_VERSION_}" RELEASE_VERSION)
 message(STATUS "Detected version '${RELEASE_VERSION}'")
@@ -46,6 +41,10 @@ endif()
 
 add_definitions(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
 
+if(POLICY CMP0135) # 3.24
+  # FetchContent/ExternalProject URL downloads use extraction-time timestamps.
+  cmake_policy(SET CMP0135 NEW)
+endif()
 if(POLICY CMP0141) # 3.25+
   cmake_policy(SET CMP0141 NEW) # Support for `CMAKE_MSVC_DEBUG_INFORMATION_FORMAT`.
 endif()
@@ -53,6 +52,7 @@ if(POLICY CMP0144) # 3.27
     cmake_policy(SET CMP0144 NEW) # find_package() uses upper-case <PACKAGENAME>_ROOT variables.
 endif()
 if(POLICY CMP0167) # 3.30
+    # find_package(Boost) to use BoostConfig instead of FindBoost.
     cmake_policy(SET CMP0167 OLD)
 endif()
 
@@ -83,7 +83,7 @@ option(MSVC_PARALLEL_BUILD "Multi-threaded compilation in Microsoft Visual Studi
 option(USE_VLD "Use Visual Leak Detector for debugging memory leaks, MSVC-only." OFF)
 option(USE_MMAP "Adds a command line options to parse IFC files from memory mapped files using Boost.Iostreams" OFF)
 option(NO_WARN "Disable all warnings" OFF)
-option(CREATE_BUNDLE "Copy .so files and don't create RPATHS or SOVERSION symlinks" )
+option(CREATE_BUNDLE "Copy .so files and don't create RPATHS or SOVERSION symlinks" OFF)
 
 option(BUILD_IFCGEOM "Build IfcGeom." ON)
 option(BUILD_IFCPYTHON "Build IfcPython." ON)
@@ -93,7 +93,6 @@ option(BUILD_DOCUMENTATION "Build IfcOpenShell Documentation." OFF)
 option(BUILD_EXAMPLES "Build example applications." ON)
 option(BUILD_GEOMSERVER "Build IfcGeomServer executable (Open CASCADE is required)." ON)
 option(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
-option(BUILD_IFCMODEL_UI "Build minimal Qt IFC model UI prototype" OFF)
 option(BUILD_BONSAIVIEWER "Build Bonsai Viewer" OFF) # Requires Qt6 + OpenGL 4.5
 option(BUILD_IFCOPENSHELL_PARSE_TESTS "Build C++ unit tests for IfcParse (fetches Catch2 v3)" OFF)
 option(BUILD_IFCOPENSHELL_GEOMETRY_TESTS "Build C++ unit tests for IfcGeom (fetches Catch2 v3)" OFF)
@@ -107,7 +106,8 @@ if(BUILD_BONSAIVIEWER AND NOT BUILD_BONSAIVIEWER_WGPU)
                    "(SceneLoader uses ViewportWindow); auto-enabling.")
     set(BUILD_BONSAIVIEWER_WGPU ON)
 endif()
-option(BUILD_PACKAGE "" OFF)
+# TODO: still needed?
+option(BUILD_PACKAGE "Install the Python module to lib/python3/dist-packages under the install prefix" OFF)
 
 option(
     BUILD_FUZZERS
@@ -234,6 +234,12 @@ if(NOT IS_ABSOLUTE ${INCLUDEDIR})
 endif()
 message(STATUS "INCLUDEDIR: ${INCLUDEDIR}")
 
+# On Windows Release and Debug binaries are not compatible.
+# So we add a postfix to avoid issues and allow release and debug installations to coexist.
+if(WIN32)
+    set(CMAKE_DEBUG_POSTFIX "_d")
+endif()
+
 if(MSVC)
     # C4521: 'identifier' : class 'type' needs to have dll-interface to be used by clients of class 'type2'
     # There will be couple hundreds of these so suppress them away, https://msdn.microsoft.com/en-us/library/esew7y1w.aspx
@@ -272,7 +278,11 @@ if(WITH_CGAL)
 endif()
 
 if(BUILD_IFCGEOM AND WITH_OPENCASCADE)
+    # 7.5.1 is the version shipped with Ubuntu 22.04.
+    set(OPENCASCADE_MIN_VERSION 7.5.1)
     find_package(OpenCASCADE REQUIRED)
+    # OpenCASCADEConfigVersion.cmake only accepts an exact version match.
+    check_min_version(OpenCASCADE "${OpenCASCADE_VERSION}" "${OPENCASCADE_MIN_VERSION}")
     # Map OpenCASCADE_LIBRARIES variable from OpenCASCADEConfig.cmake to OpenCASCADE_LIBRARIES used by kernel generic cmake file
     set(OpenCASCADE_LIBRARIES ${OpenCASCADE_LIBRARIES})
     set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_OPENCASCADE)
@@ -282,7 +292,8 @@ endif()
 message(STATUS "BUILD_IFCGEOM WITH_MANIFOLD: ${BUILD_IFCGEOM} ${WITH_MANIFOLD}")
 
 if(BUILD_IFCGEOM AND WITH_MANIFOLD)
-    find_package(manifold CONFIG REQUIRED)
+    set(MANIFOLD_MIN_VERSION 3.2.1)
+    find_package(manifold ${MANIFOLD_MIN_VERSION} CONFIG REQUIRED)
     if(TARGET manifold::manifold)
         set(MANIFOLD_LIBRARIES manifold::manifold)
     elseif(TARGET manifold)
@@ -303,12 +314,23 @@ if(GLTF_SUPPORT)
     find_package(nlohmann_json 3.6.1 REQUIRED)
 endif()
 
+if(WITH_PROJ)
+    set(PROJ_MIN_VERSION 9.4.1)
+endif()
+
 # Add USD support to serializers
 if(USD_SUPPORT)
     find_package(USD REQUIRED)
 endif(USD_SUPPORT)
 
 if (WITH_ROCKSDB)
+    # 1.5.5 is the version shipped with Ubuntu 24.04.
+    # Not referencing the zstd/RocksDB versions from 22.04 as they lack CMake configs.
+    set(ZSTD_MIN_VERSION 1.5.5)
+
+    # 8.9.1 is the version shipped with Ubuntu 24.04.
+    set(ROCKSDB_MIN_VERSION 8.9.1)
+
     # Temporaily mess with CMAKE_FIND_PACKAGE_PREFER_CONFIG to help RocksDB
     # find it's zstd dependency on Windows.
     # Only do it on Windows, otherwise it might create problems as
@@ -321,8 +343,9 @@ if (WITH_ROCKSDB)
     if(WIN32)
         set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ${TEMP})
     endif()
-
     message(STATUS "RocksDB: found at '${RocksDB_DIR}'.")
+    # RocksDBConfigVersion.cmake only accepts a compatible version within the same major version.
+    check_min_version(RocksDB "${RocksDB_VERSION}" "${ROCKSDB_MIN_VERSION}")
     add_library(IFCOPENSHELL_RocksDB INTERFACE)
     set(IFCOPENSHELL_ROCKSDB_TARGET IFCOPENSHELL_RocksDB)
     set(ROCKSDB_LIBRARIES "IFCOPENSHELL_RocksDB")
@@ -343,17 +366,17 @@ if (WITH_ROCKSDB)
         # @todo do we actually need the zstd include dir or rather just pass
         # the libzstd.a along with the rocksdb library when needed and feature
         # detect based on rocksdb API?
+        # Same exact-major-version caveat as RocksDB above.
         find_package(zstd CONFIG REQUIRED)
         message(STATUS "zstd: found at '${zstd_DIR}'.")
+        check_min_version(zstd "${zstd_VERSION}" "${ZSTD_MIN_VERSION}")
     endif()
 
     install(TARGETS IFCOPENSHELL_RocksDB EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
 endif()
 
-# Find Boost: On win32 the (hardcoded) default is to use static libraries and
-# runtime, when doing running conda-build we pick what conda prepared for us.
+# When running conda-build we pick what conda prepared for us.
 if(WIN32 AND NOT DEFINED ENV{CONDA_BUILD})
-    set(Boost_USE_STATIC_LIBS ON)
     set(Boost_USE_STATIC_RUNTIME OFF)
     set(Boost_USE_MULTITHREADED ON)
 
@@ -362,20 +385,12 @@ if(WIN32 AND NOT DEFINED ENV{CONDA_BUILD})
     # compiled with a toolset different from default.
     if(MSVC)
         add_definitions(-DBOOST_ALL_NO_LIB)
-
-        # Necessary for boost version >= 1.67
-        set(BCRYPT_LIBRARIES "bcrypt.lib")
     endif()
 else()
     # Disable Boost's autolinking as the libraries to be linked to are supplied
     # already by CMake, and it's going to conflict if there are multiple, as is
     # the case in conda-forge's libboost feedstock.
     add_definitions(-DBOOST_ALL_NO_LIB)
-
-    if(WIN32)
-        # Necessary for boost version >= 1.67
-        set(BCRYPT_LIBRARIES "bcrypt.lib")
-    endif()
 endif()
 
 if(WASM_BUILD)
@@ -383,19 +398,16 @@ if(WASM_BUILD)
 else()
     set(BOOST_COMPONENTS "")
     if(BUILD_IFCGEOM OR BUILD_CONVERT)
-        # TODO: drop `regex` once BOOST_MIN_VERSION >= 1.76, where its matcher engine
-        # became header-only (boostorg/regex@49e8067b) and no longer needs linking.
-        set(BOOST_COMPONENTS ${BOOST_COMPONENTS} program_options regex)
+        set(BOOST_COMPONENTS ${BOOST_COMPONENTS} program_options)
+    endif()
+    # TODO: drop `regex` once BOOST_MIN_VERSION >= 1.76, since then it became header-only.
+    if(BUILD_IFCGEOM)
+        set(BOOST_COMPONENTS ${BOOST_COMPONENTS} regex)
     endif()
 endif()
 
 if(USE_MMAP)
-    if(MSVC)
-        # filesystem is necessary for the utf-16 wpath
-        set(BOOST_COMPONENTS ${BOOST_COMPONENTS} iostreams filesystem)
-    else()
-        set(BOOST_COMPONENTS ${BOOST_COMPONENTS} iostreams)
-    endif()
+    set(BOOST_COMPONENTS ${BOOST_COMPONENTS} iostreams)
 endif()
 
 # 3.3.9 is the version currently used on the Windows build.
@@ -421,6 +433,9 @@ message(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
 message(STATUS "Boost libraries found in ${Boost_LIBRARIES}")
 
 if(COLLADA_SUPPORT)
+    # OpenCOLLADA is ancient and never properly hardcodes its version to any of the installed files.
+    # Version used in header is partial, -version.cmake hardcodes "0.1.0".
+    # So we don't set any minimal version and just take whatever there is.
     find_package(OpenCOLLADA REQUIRED)
 endif()
 
@@ -447,13 +462,6 @@ if(ENABLE_BUILD_OPTIMIZATIONS)
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
         set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} -O3")
     endif()
-else()
-    # @tfk I commented this out as this kind of defeats the purpose of RelWithDebInfo. For the
-    # best debugging experience simply use Debug. Note that in MSVC you can selectively toggle
-    # optimization on a specific file if you're investigating a specific issue.
-    # if(MSVC)
-    #     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /Od")
-    # endif()
 endif(ENABLE_BUILD_OPTIMIZATIONS)
 
 if(MSVC)
@@ -693,9 +701,6 @@ if(ADD_COMMIT_SHA)
     endif()
 endif(ADD_COMMIT_SHA)
 
-# Always expose the release version (from the VERSION file) to buildinfo.cpp so
-# that a build without commit-sha info reports the correct version instead of a
-# stale hardcoded fallback. See #8164.
 target_compile_definitions(IfcParse PRIVATE IFCOPENSHELL_VERSION_STRING=${RELEASE_VERSION})
 
 if(MSVC)
@@ -724,10 +729,6 @@ endif()
 
 if(BUILD_IFCPYTHON)
     add_subdirectory(../src/ifcwrap ifcwrap)
-endif()
-
-if(BUILD_IFCMODEL_UI)
-    add_subdirectory(../src/ifcmodel-ui ifcmodel-ui)
 endif()
 
 if(BUILD_IFCGEOM)

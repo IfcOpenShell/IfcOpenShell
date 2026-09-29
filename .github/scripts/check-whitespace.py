@@ -301,7 +301,7 @@ def existing_path(value: str) -> Path:
     return path
 
 
-# Python files are covered by `black`.
+# Python files are covered by `ruff format`.
 # Rust files (*.rs) are covered by `cargo fmt`.
 PATTERNS = (
     "*.cpp",

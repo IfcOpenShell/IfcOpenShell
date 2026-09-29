@@ -131,9 +131,9 @@ class BIM_PT_debug(Panel):
                 op = row.operator("bim.print_object_placement", icon="OBJECT_ORIGIN", text="")
                 op.step_id = attribute.int_value
             if attribute.int_value:
-                row.operator("bim.inspect_from_step_id", icon="DISCLOSURE_TRI_RIGHT", text="").step_id = (
-                    attribute.int_value
-                )
+                row.operator(
+                    "bim.inspect_from_step_id", icon="DISCLOSURE_TRI_RIGHT", text=""
+                ).step_id = attribute.int_value
 
         if props.inverse_attributes:
             layout.label(text="Inverse attributes:")
@@ -143,9 +143,9 @@ class BIM_PT_debug(Panel):
             row.prop(attribute, "name", text="")
             row.prop(attribute, "string_value", text="")
             if attribute.int_value:
-                row.operator("bim.inspect_from_step_id", icon="DISCLOSURE_TRI_RIGHT", text="").step_id = (
-                    attribute.int_value
-                )
+                row.operator(
+                    "bim.inspect_from_step_id", icon="DISCLOSURE_TRI_RIGHT", text=""
+                ).step_id = attribute.int_value
 
         if props.inverse_references:
             layout.label(text="Inverse references:")
@@ -154,6 +154,6 @@ class BIM_PT_debug(Panel):
             row = layout.row(align=True)
             row.prop(attribute, "string_value", text="")
             if attribute.int_value:
-                row.operator("bim.inspect_from_step_id", icon="DISCLOSURE_TRI_RIGHT", text="").step_id = (
-                    attribute.int_value
-                )
+                row.operator(
+                    "bim.inspect_from_step_id", icon="DISCLOSURE_TRI_RIGHT", text=""
+                ).step_id = attribute.int_value

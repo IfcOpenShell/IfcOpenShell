@@ -309,7 +309,7 @@ IF EXIST "%INSTALL_DIR%\mpir" (
 set DEPENDENCY_NAME=mpir
 :: `mpfr` depends on relative path `..\mpir\config.h`, so dependency name should match exactly.
 set DEPENDENCY_DIR=%DEPS_DIR%\mpir
-call :GitCloneAndCheckoutRevision https://github.com/Andrej730/mpir-vs2026.git "%DEPENDENCY_DIR%"
+call :GitCloneAndCheckoutRevision https://github.com/BrianGladman/mpir.git "%DEPENDENCY_DIR%" 5e0c2061af105c151970d41c8394ce956f77e455
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 pushd "%DEPENDENCY_DIR%"
 git reset --hard
@@ -320,11 +320,6 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpir_gc\"}" | git apply --unidiff-zero --ignore-whitespace
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 git apply "%~dp0patches\mpir_runtime.patch" --unidiff-zero --ignore-whitespace
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-IF /I "%VS_PLATFORM%"=="ARM64" (
-    echo "Applying ARM64 Patches for Mpir"
-    git apply "%~dp0patches\mpir-arm64-changes.patch" --unidiff-zero --ignore-whitespace
-)
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd msvc
 cd vs%VS_VER:~2,2%
@@ -345,19 +340,15 @@ IF EXIST "%INSTALL_DIR%\mpfr" (
 
 set DEPENDENCY_NAME=mpfr
 set DEPENDENCY_DIR=%DEPS_DIR%\mpfr
-call :GitCloneAndCheckoutRevision https://github.com/aothms/mpfr.git "%DEPENDENCY_DIR%" 2ebbe10fd029a480cf6e8a64c493afa9f3654251
+set MPFR_REVISION=ifcopenshell
+IF /I "%VS_PLATFORM%"=="ARM64" set MPFR_REVISION=ifcopenshell-arm64
+call :GitCloneAndCheckoutRevision https://github.com/Andrej730/mpfr.git "%DEPENDENCY_DIR%" %MPFR_REVISION%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 pushd "%DEPENDENCY_DIR%"
 git reset --hard
 git clean -fdx
 powershell -c "get-content %~dp0patches\mpfr.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpfr\"}" | git apply --unidiff-zero --ignore-whitespace
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-git apply "%~dp0patches\mpfr_runtime.patch" --unidiff-zero --ignore-whitespace
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-IF /I "%VS_PLATFORM%"=="ARM64" (
-    echo "Applying ARM64 Patches for Mpfr"
-    git apply "%~dp0patches\mpfr-arm64-changes.patch" --unidiff-zero --ignore-whitespace
-)
 if "%VS_VER%"=="2017" (
   set mpfr_sln=build.vc15
   set orig_platform_toolset=v141
@@ -421,7 +412,7 @@ if /I "%VS_PLATFORM%"=="x64" (
     echo "Failed to identify architecture"
     GOTO :Error
 )
-set BOOST_LIBS=--with-regex --with-program_options --with-iostreams --with-filesystem
+set BOOST_LIBS=--with-regex --with-program_options --with-iostreams
 :: NOTE Boost is fast to build with limited set of libraries so build it always.
 cd "%DEPENDENCY_DIR%"
 call cecho.cmd 0 13 "Building %DEPENDENCY_NAME% %BOOST_LIBS% Please be patient, this will take a while."

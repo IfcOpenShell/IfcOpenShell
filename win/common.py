@@ -70,9 +70,10 @@ def run(
     *cmd: str,
     cwd: Path | None = None,
     env: dict[str, str] | None = None,
+    stderr: int | None = None,
 ) -> str:
     logger.debug(f"$ {shlex.join(cmd)}")
-    return subprocess.check_output(cmd, cwd=cwd, env=env, text=True)
+    return subprocess.check_output(cmd, cwd=cwd, env=env, stderr=stderr, text=True)
 
 
 def run_streamed(
@@ -148,6 +149,8 @@ class HelpStrings:
     GENERATOR_FLAG = (
         "Alternative way to specify the generator, instead of the positional argument. See above for accepted forms."
     )
+
+    USE_NINJA = "Use the Ninja generator instead of the MSVC generator/platform."
 
     BUILD_CFG = f"Build configuration type. (default: {BUILD_CFG_DEFAULT})"
     BUILD_CFG_FLAG = "Alternative way to specify the build configuration type, instead of the positional argument."
