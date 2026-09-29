@@ -64,7 +64,6 @@ jobs:
         run: echo "::set-output name=date::$(date +'%y%m%d')"
       - name: Compile
         run: |
-          pip install build
           cp -r src/ifcopenshell-python src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
           cd src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
           make dist PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }} IS_STABLE=TRUE

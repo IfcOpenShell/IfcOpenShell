@@ -22,7 +22,6 @@ jobs:
           python-version: '3.11'
       - name: Compile
         run: |
-          pip install build
           cd src/ifcquery &&
           make dist IS_STABLE=TRUE
       - name: Publish a Python distribution to PyPI
