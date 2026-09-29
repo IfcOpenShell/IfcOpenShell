@@ -460,7 +460,7 @@ class ActivateExternalStyle(bpy.types.Operator):
 
         db = tool.Blender.append_data_block(str(style_path), data_block_type, data_block)
         if not db["data_block"]:
-            self.report({"ERROR"}, f"Error loading external style for \"{material.name}\" - {db['msg']}")
+            self.report({"ERROR"}, f'Error loading external style for "{material.name}" - {db["msg"]}')
             return {"CANCELLED"}
 
         ext_mat = db["data_block"]
@@ -1413,8 +1413,6 @@ class AssignStyleToSelected(bpy.types.Operator, tool.Ifc.Operator):
         if has_items:
             gprops = tool.Geometry.get_geometry_props()
             tool.Geometry.reload_representation(gprops.representation_obj)
-            bpy.ops.bim.disable_editing_representation_items()
-            bpy.ops.bim.enable_editing_representation_items()
 
         for representation in representations:
             ifcopenshell.api.style.assign_representation_styles(
