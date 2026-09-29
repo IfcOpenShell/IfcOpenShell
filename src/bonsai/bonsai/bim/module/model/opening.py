@@ -325,12 +325,12 @@ class FilledOpeningGenerator:
                 new_matrix = voided_obj.matrix_world.copy()
                 point_on_base_axis = tool.Cad.point_on_edge(target, axis_base)
                 point_on_side_axis = tool.Cad.point_on_edge(target, axis_side)
-                if (point_on_base_axis - target).length <= (point_on_side_axis - target).length:
-                    new_matrix.translation.x = point_on_base_axis.x
-                    new_matrix.translation.y = point_on_base_axis.y
-                else:
-                    new_matrix.translation.x = point_on_side_axis.x
-                    new_matrix.translation.y = point_on_side_axis.y
+                on_side = (point_on_base_axis - target).length > (point_on_side_axis - target).length
+                on_axis = point_on_side_axis if on_side else point_on_base_axis
+                new_matrix.translation.x = on_axis.x
+                new_matrix.translation.y = on_axis.y
+                # The filling faces into the body, which a NEGATIVE direction sense puts on local -Y.
+                if on_side != (layers["direction_sense"] == "NEGATIVE"):
                     new_matrix = new_matrix @ Matrix.Rotation(radians(180.0), 4, "Z")
 
                 if should_set_z_level:

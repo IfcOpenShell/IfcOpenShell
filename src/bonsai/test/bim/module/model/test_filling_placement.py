@@ -218,3 +218,36 @@ class TestFillingPreview(NewFile):
         preview = _centroid(data["verts"][: len(door_obj.data.vertices)])
         assert (preview - placed).length < 0.05
         assert bpy.context.active_object == wall_obj
+
+
+def _faces_into_body(filling_obj, wall_obj):
+    corners = [wall_obj.matrix_world @ Vector(c) for c in wall_obj.bound_box]
+    centre = sum(corners, Vector()) / len(corners)
+    inward = centre - filling_obj.matrix_world.translation
+    local_y = filling_obj.matrix_world.to_3x3() @ Vector((0.0, 1.0, 0.0))
+    return local_y.to_2d().dot(inward.to_2d()) > 0
+
+
+class TestFillingDirectionSense(NewFile):
+    @pytest.mark.parametrize("direction_sense", ["POSITIVE", "NEGATIVE"])
+    @pytest.mark.parametrize("face_y", ["min", "max"])
+    def test_the_door_faces_into_the_wall_body(self, direction_sense, face_y):
+        bpy.ops.bim.create_project()
+        wall_obj = _add_wall(Vector((0.0, 0.0, 0.0)), Vector((5.0, 0.0, 0.0)))
+        if direction_sense == "NEGATIVE":
+            tool.Blender.select_and_activate_single_object(bpy.context, wall_obj)
+            bpy.ops.bim.flip_wall()
+        wall = tool.Ifc.get_entity(wall_obj)
+        assert tool.Model.get_material_layer_parameters(wall)["direction_sense"] == direction_sense
+        corners = [wall_obj.matrix_world @ Vector(c) for c in wall_obj.bound_box]
+        y = min(c.y for c in corners) if face_y == "min" else max(c.y for c in corners)
+        door_type = _add_door_type()
+        point = Vector((2.0, y, 1.0))
+        data = _preview_data(door_type, wall_obj, point)
+        door = _place_door(wall_obj, door_type, point)
+        assert door.FillsVoids
+        door_obj = tool.Ifc.get_object(door)
+        assert _faces_into_body(door_obj, wall_obj)
+        placed = _centroid([door_obj.matrix_world @ v.co for v in door_obj.data.vertices])
+        preview = _centroid(data["verts"][: len(door_obj.data.vertices)])
+        assert (preview - placed).length < 0.05

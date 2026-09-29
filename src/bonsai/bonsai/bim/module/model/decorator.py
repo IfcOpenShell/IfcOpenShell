@@ -1564,8 +1564,11 @@ class ProductDecorator(tool.Blender.ViewportDecorator):
             point_on_side_axis = tool.Cad.point_on_edge(mouse_point, axis_side)
             # Rotation only: translate_mouse positions the preview.
             rot_quat = snap_obj.matrix_world.to_quaternion()
-            if (point_on_base_axis - mouse_point).length_squared > (point_on_side_axis - mouse_point).length_squared:
-                # mouse is snapped to the side axis, the preview is inverted, rotate it now and correct x position later
+            on_side = (point_on_base_axis - mouse_point).length_squared > (
+                point_on_side_axis - mouse_point
+            ).length_squared
+            # Match FilledOpeningGenerator.generate: the filling faces into the body.
+            if on_side != (layers["direction_sense"] == "NEGATIVE"):
                 rot_quat = rot_quat @ Quaternion(Vector((0, 0, 1)), radians(180))
             rot_mat = rot_quat.to_matrix().to_4x4()
 
