@@ -150,43 +150,6 @@ class Bsdd(bonsai.core.tool.Bsdd):
         return list(filter(lambda d: d["status"] in statuses, dicts))
 
     @classmethod
-    def get_class_properties(
-        cls, class_data: Union[bsdd.ClassContractV1, dict]
-    ) -> Union[dict[str, dict[str, Any]], None]:
-        properties = class_data.get("classProperties", None)
-        if not properties:
-            return {}
-
-        ifc_class = class_data.get("relatedIfcEntityNames") or ""
-        if ifc_class:
-            ifc_class = ifc_class[0]
-
-        psets = {}
-        for prop in properties:
-            prop_dictionary = prop.get("propertyDictionaryName") or ""
-            pset = prop.get("propertySet", None)
-            if not pset:
-                continue
-            psets.setdefault(pset, {})
-
-            predefined_value = prop.get("predefinedValue")
-            if predefined_value:
-                possible_values = [predefined_value]
-            else:
-                possible_values = prop.get("allowedValues", []) or []
-                possible_values = [v["value"] for v in possible_values]
-
-            description = prop.get("description", "")
-            psets[pset][prop["name"]] = {
-                "data_type": prop.get("dataType"),
-                "possible_values": possible_values,
-                "description": description,
-                "ifc_class": ifc_class,
-                "dictionary": prop_dictionary,
-            }
-        return psets
-
-    @classmethod
     def get_related_ifc_entities(cls) -> list[str]:
         active_object = bpy.context.active_object
         related_ifc_entities: list[str] = []
@@ -266,6 +229,13 @@ class Bsdd(bonsai.core.tool.Bsdd):
         return bsdd_class
 
     @classmethod
+    def get_bsdd_class_properties(cls, uri: str) -> dict[str, Any]:
+        if not (bsdd_class_properties := cls.bsdd_properties.get(uri, {})):
+            bsdd_class_properties = cls.client.get_class_properties(uri)
+            cls.bsdd_properties[uri] = bsdd_class_properties
+        return bsdd_class_properties
+
+    @classmethod
     def get_bsdd_property(cls, uri: str) -> dict:
         if not (bsdd_property := cls.bsdd_properties.get(uri, {})):
             # Cache miss occurs for keyword search mode, for classes cache is prepopulated.
@@ -314,9 +284,9 @@ class Bsdd(bonsai.core.tool.Bsdd):
         props.properties.clear()
         if not (active_class := props.active_class):
             return
-        if not (bsdd_class := cls.get_bsdd_class(active_class.uri)):
+        if not (bsdd_class_properties := cls.get_bsdd_class_properties(active_class.uri)):
             return
-        for bsdd_prop in bsdd_class.get("classProperties", []):
+        for bsdd_prop in bsdd_class_properties.get("classProperties", []):
             if not bsdd_prop.get("propertySet", None):
                 continue
             cls.bsdd_properties[bsdd_prop["uri"]] = bsdd_prop
