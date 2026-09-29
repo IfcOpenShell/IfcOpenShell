@@ -166,7 +166,7 @@ else
 endif
 
 	cd build && $(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && $(PIP) install build
-	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m build
+	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m build --wheel
 
 ifeq ($(IS_STABLE), TRUE)
 	mv build/dist/ifcopenshell-*.whl dist/ifcopenshell-$(VERSION_PYTHON)-$(PYVERSION)-none-$(PLATFORMTAG).whl

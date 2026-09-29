@@ -48,6 +48,6 @@ else
 endif
 endif
 	cd build && $(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && $(PIP) install build
-	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m build
+	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m build --wheel
 	cp build/dist/*.whl dist/
 	rm -rf build
