@@ -64,22 +64,22 @@ def create_representation(
 
     # if the alignment is created without geometry it's stationing referent isn't related to the alignment geometry.
     # the stationing referent needs to be updated to have an IfcLinearPlacement that references the basis curve geometry
-    referent_nest = ifcopenshell.api.alignment.get_referent_nest(file, alignment)
+    stationing_nest = ifcopenshell.api.alignment.get_stationing_nest(file, alignment)
     if (
-        referent_nest
-        and 0 < len(referent_nest.RelatedObjects)
-        and referent_nest.RelatedObjects[0].ObjectPlacement
-        and not referent_nest.RelatedObjects[0].ObjectPlacement.is_a("IfcLinearPlacement")
+        stationing_nest
+        and 0 < len(stationing_nest.RelatedObjects)
+        and stationing_nest.RelatedObjects[0].ObjectPlacement
+        and not stationing_nest.RelatedObjects[0].ObjectPlacement.is_a("IfcLinearPlacement")
     ):
         basis_curve = ifcopenshell.api.alignment.get_basis_curve(alignment)
 
-        if referent_nest.RelatedObjects[0].ObjectPlacement:
-            if referent_nest.RelatedObjects[0].ObjectPlacement.RelativePlacement.Location:
-                file.remove(referent_nest.RelatedObjects[0].ObjectPlacement.RelativePlacement.Location)
-            if referent_nest.RelatedObjects[0].ObjectPlacement.RelativePlacement.RefDirection:
-                file.remove(referent_nest.RelatedObjects[0].ObjectPlacement.RelativePlacement.RefDirection)
-            file.remove(referent_nest.RelatedObjects[0].ObjectPlacement.RelativePlacement)
-            file.remove(referent_nest.RelatedObjects[0].ObjectPlacement)
+        if stationing_nest.RelatedObjects[0].ObjectPlacement:
+            if stationing_nest.RelatedObjects[0].ObjectPlacement.RelativePlacement.Location:
+                file.remove(stationing_nest.RelatedObjects[0].ObjectPlacement.RelativePlacement.Location)
+            if stationing_nest.RelatedObjects[0].ObjectPlacement.RelativePlacement.RefDirection:
+                file.remove(stationing_nest.RelatedObjects[0].ObjectPlacement.RelativePlacement.RefDirection)
+            file.remove(stationing_nest.RelatedObjects[0].ObjectPlacement.RelativePlacement)
+            file.remove(stationing_nest.RelatedObjects[0].ObjectPlacement)
 
         lp = file.createIfcLinearPlacement(
             RelativePlacement=file.createIfcAxis2PlacementLinear(
@@ -93,4 +93,4 @@ def create_representation(
             )
         )
         update_fallback_position(file, lp)
-        referent_nest.RelatedObjects[0].ObjectPlacement = lp
+        stationing_nest.RelatedObjects[0].ObjectPlacement = lp
