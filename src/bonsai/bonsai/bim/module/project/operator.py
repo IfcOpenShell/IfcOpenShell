@@ -639,9 +639,8 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
             # NOTE: Non-types are not exposed in UI directly
             # but the code is still used when appending products by query.
             if element.is_a("IfcAnnotation") and ifcopenshell.util.element.get_predefined_type(element) == "DRAWING":
-                # Drawings (views) are cameras grouped in a DRAWING group. append_asset does
-                # not carry over the group nor the grouped annotations, so import them here
-                # instead of creating a generic mesh object for the camera.
+                # Drawings are cameras in a DRAWING group; append_asset carries over neither the group
+                # nor its annotations, and a generic mesh would be created for the camera.
                 self.import_drawing_from_ifc(element, library_file.by_id(self.definition))
             else:
                 self.import_product_from_ifc(element, context)
