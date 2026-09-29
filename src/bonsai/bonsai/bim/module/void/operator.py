@@ -230,7 +230,6 @@ class RemoveOpening(bpy.types.Operator, tool.Ifc.Operator):
                 assert representation
                 tool.Geometry.recut_host(building_obj, representation)
         tool.Geometry.unlock_scale_object_with_openings(obj)
-        tool.Geometry.clear_cache(element)
         return {"FINISHED"}
 
 
