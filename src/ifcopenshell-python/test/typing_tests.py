@@ -148,7 +148,7 @@ def multi_schema_instance_narrowing_test(f: ifcopenshell.file):
     # expressions), so narrowing `inst` itself needs a user-defined `TypeIs`
     # predicate per entity/schema pair rather than inference alone.
     insts = cast(
-        "list[Union[ifc4.IfcCartesianPointList3D, ifc4x3.IfcCartesianPointList3D]]",
+        "tuple[Union[ifc4.IfcCartesianPointList3D, ifc4x3.IfcCartesianPointList3D], ...]",
         f.by_type("IfcCartesianPointList3D"),
     )
     for inst in insts:
