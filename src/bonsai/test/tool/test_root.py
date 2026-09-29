@@ -128,10 +128,6 @@ class TestGetObjectRepresentation(NewFile):
         assert subject.get_object_representation(obj) == representation
 
     def test_returns_none_instead_of_raising_for_a_stale_ifc_definition_id(self):
-        # Regression test for #7909: a duplicated wall's mesh can keep an
-        # ifc_definition_id whose representation was already removed earlier
-        # in the same operation (e.g. during a wall split), and this must not
-        # abort the whole operator with a RuntimeError.
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         representation = ifc.createIfcShapeRepresentation()

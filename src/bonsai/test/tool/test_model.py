@@ -922,11 +922,6 @@ class TestApplyIfcMaterialChanges(NewFile):
 
 class TestApplyIfcMaterialChangesToleratesStaleIfcDefinitionId(NewFile):
     def test_run(self):
-        # Regression test for #7909's bug class: apply_ifc_material_changes
-        # iterates several elements and can invalidate a shared representation
-        # while reloading an earlier one, so a later element's cached
-        # ifc_definition_id can go stale mid-loop. It must be skipped instead
-        # of raising.
         from unittest import mock
 
         ifc_file = ifcopenshell.file()
