@@ -149,7 +149,7 @@ endif
 	cp -r ifcopenshell build/
 
 	mkdir build/botbuild
-	cd build/botbuild && wget $(IOS_URL) && unzip ifcopenshell-python*
+	cd build/botbuild && wget --no-verbose $(IOS_URL) && unzip ifcopenshell-python*
 	cp -r build/botbuild/ifcopenshell/*ifcopenshell_wrapper* build/ifcopenshell/
 	# v0.9.0 splits IfcOpenShell into shared libraries loaded from next to the
 	# wrapper (libifcopenshell.parse, ifcopenshell_document_rdb, ...). Copy
