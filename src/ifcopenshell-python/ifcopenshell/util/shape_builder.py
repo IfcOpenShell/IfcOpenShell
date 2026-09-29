@@ -771,13 +771,7 @@ class ShapeBuilder:
         return profile
 
     def _ensure_position(self, item: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
-        """Get item.Position, assigning a default identity placement if unset.
-
-        IfcExtrudedAreaSolid.Position is optional since IFC4, unlike IfcCircle
-        and IfcEllipse where it is mandatory, so callers relying on Position
-        being present need to fill in the IFC4 default (identity placement)
-        before mutating it in place.
-        """
+        """Get item.Position, assigning an identity placement if unset (optional on IfcExtrudedAreaSolid since IFC4)."""
         if item.Position is None:
             item.Position = self.create_axis2_placement_3d()
         return item.Position
