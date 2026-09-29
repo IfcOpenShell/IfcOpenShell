@@ -1,0 +1,121 @@
+name: Publish IfcOpenShell Docker
+
+on:
+  workflow_dispatch:
+  schedule:
+  #         ┌───────────── minute (0 - 59)
+  #         │  ┌───────────── hour (0 - 23)
+  #         │  │ ┌───────────── day of the month (1 - 31)
+  #         │  │ │ ┌───────────── month (1 - 12 or JAN-DEC)
+  #         │  │ │ │ ┌───────────── day of the week (0 - 6 or SUN-SAT)
+  #         *  * * * *
+  - cron: "49 23 * * *" # 11min before utc midnight every day
+
+jobs:
+
+  upstream-only:
+    runs-on: ubuntu-22.04
+    if: |
+      github.repository == 'IfcOpenShell/IfcOpenShell' &&
+      !startsWith(github.event.head_commit.message, 'Release ') &&
+      !contains(github.event.head_commit.message, 'ci skip')
+    steps:
+    - run: echo ok go
+
+  build:
+    runs-on: ubuntu-22.04
+    needs: upstream-only
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        submodules: recursive
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt-get install --no-install-recommends \
+        git cmake gcc g++ libboost-all-dev python3-all-dev swig libpcre3-dev libxml2-dev \
+        libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev libocct-ocaf-dev libocct-visualization-dev libocct-data-exchange-dev \
+        occt-misc libocct-draw-dev tcl-dev tk-dev libxi-dev \
+        libcgal-dev nlohmann-json3-dev libeigen3-dev libtbb-dev
+
+    - name: ccache
+      uses: hendrikmuhs/ccache-action@v1.2.24
+
+    # TODO: reuse nix/build-all.py for this.
+    - name: build swig
+      run: |
+        # Remove default swig to avoid conflicts.
+        sudo apt remove --purge swig swig4.0
+        sudo apt-get install -y libpcre2-dev bison
+        git clone https://github.com/swig/swig --branch v4.2.1 --depth 1
+        cd swig
+        mkdir build && cd build
+        cmake .. \
+          -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+        sudo cmake --build . --target install -j $(nproc)
+
+    - name: Build ifcopenshell
+      run: |
+        mkdir build && cd build
+        cmake ../cmake \
+         -G Ninja \
+         -DCMAKE_INSTALL_PREFIX=$PWD/install/ \
+         -DCMAKE_BUILD_TYPE=Release \
+         "-DSCHEMA_VERSIONS=2x3;4;4x3_add2" \
+         -DUSE_CCACHE=ON \
+         -DBUILD_PACKAGE=On \
+         -DPYTHON_EXECUTABLE:FILEPATH=$(which python) \
+         -DPYTHON_INCLUDE_DIR:PATH=$(python -c "import sysconfig; print(sysconfig.get_path('include'))") \
+         -DCOLLADA_SUPPORT=Off \
+         -DBUILD_EXAMPLES=OFF \
+         -DGLTF_SUPPORT=ON
+        cmake --build . --target install -j $(nproc)
+    - name: Package
+      run: |
+        cmake --build . --target package
+      working-directory: build
+    - name: Upload
+      uses: actions/upload-artifact@v7
+      with:
+        # Artifact name
+        name: ifcos-artifacts
+        # Directory containing files to upload
+        path: build/assets/Ifc*
+
+  publish:
+    runs-on: ubuntu-22.04
+    needs: build
+    name: Docker Build, Tag, Push
+
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        lfs: true
+
+    - name: Download
+      uses: actions/download-artifact@v8.0.1
+      with:
+        # Artifact name
+        name: ifcos-artifacts
+        path: artifacts/
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v4
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v4
+    - name: Login to Dockerhub
+      uses: docker/login-action@v4
+      with:
+        username: aecgeeks
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
+    - name: Build container image
+      uses: docker/build-push-action@v7
+      with:
+        context: artifacts
+        repository: aecgeeks/ifcopenshell
+        tags: aecgeeks/ifcopenshell:daily
+        file: ./Dockerfile
+        push: true
