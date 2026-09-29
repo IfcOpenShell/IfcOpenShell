@@ -225,10 +225,7 @@ class Usecase:
             else:
                 if reference.Identification != identification:
                     continue
-            # Matching on identification alone is not enough: two different
-            # classification systems may reuse the same identification (or
-            # both leave it unset), so scope the match to the classification
-            # being referenced to avoid reusing an unrelated reference.
+            # Scope the match to the referenced classification, as identifications may repeat across systems.
             if (
                 classification is not None
                 and ifcopenshell.util.classification.get_classification(reference) != classification
