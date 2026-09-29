@@ -51,6 +51,7 @@ Or call it as a library:
 
 ```python
 from generate_heavy_model import generate_heavy_model
+
 stats = generate_heavy_model("/tmp/heavy.ifc", wall_count=5000, storeys=15)
 ```
 
