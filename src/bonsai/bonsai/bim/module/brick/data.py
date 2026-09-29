@@ -63,7 +63,8 @@ class BrickschemaData:
         if namespace == "https://brickschema.org/schema/Brick":
             return []
         results = []
-        query = BrickStore.graph.query("""
+        query = BrickStore.graph.query(
+            """
             PREFIX brick: <https://brickschema.org/schema/Brick#>
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -80,7 +81,8 @@ class BrickschemaData:
                 }
             }
             GROUP BY ?object
-        """.replace("{uri}", uri))
+        """.replace("{uri}", uri)
+        )
         for row in query:
             predicate_uri = row.get("predicate")
             predicate_name = predicate_uri.toPython().split("#")[-1]
@@ -156,16 +158,13 @@ class BrickschemaReferencesData:
         for rel in getattr(tool.Ifc.get_entity(bpy.context.active_object), "HasAssociations", []):
             if rel.is_a("IfcRelAssociatesLibrary"):
                 reference = rel.RelatingLibrary
-                if tool.Ifc.get_schema() == "IFC2X3" and "#" not in reference.ItemReference:
-                    continue
-                if tool.Ifc.get_schema() != "IFC2X3" and "#" not in reference.Identification:
+                identification = tool.Document.get_external_reference_id(reference)
+                if not identification or "#" not in identification:
                     continue
                 results.append(
                     {
                         "id": reference.id(),
-                        "identification": (
-                            reference.ItemReference if tool.Ifc.get_schema() == "IFC2X3" else reference.Identification
-                        ),
+                        "identification": identification,
                         "name": reference.Name or "Unnamed",
                     }
                 )
