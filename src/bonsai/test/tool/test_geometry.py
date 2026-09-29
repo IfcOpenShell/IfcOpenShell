@@ -672,6 +672,50 @@ class TestRemoveRepresentationItem(NewFile):
         assert tool.Ifc.get_entity_by_id(curve_set_id) is None
         assert representation.Items == (other,)
 
+    def test_remove_an_item_nested_in_a_shell_based_surface_model(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+
+        context = ifc.createIfcGeometricRepresentationContext()
+        element = ifc.createIfcBuildingElementProxy()
+        points = [ifc.createIfcCartesianPoint(p) for p in ((0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0))]
+        shells = []
+        for _ in range(2):
+            face = ifc.createIfcFace([ifc.createIfcFaceOuterBound(ifc.createIfcPolyLoop(points), True)])
+            shells.append(ifc.createIfcOpenShell([face]))
+        model = ifc.createIfcShellBasedSurfaceModel(shells)
+        other = ifc.createIfcShellBasedSurfaceModel([ifc.createIfcOpenShell([ifc.createIfcFace()])])
+        representation = ifc.createIfcShapeRepresentation(Items=[model, other], ContextOfItems=context)
+        ifcopenshell.api.geometry.assign_representation(ifc, product=element, representation=representation)
+        shell_id = shells[0].id()
+        model_id = model.id()
+
+        subject.remove_representation_item(shells[0], element)
+        assert tool.Ifc.get_entity_by_id(shell_id) is None
+        assert model.SbsmBoundary == (shells[1],)
+
+        subject.remove_representation_item(shells[1], element)
+        assert tool.Ifc.get_entity_by_id(model_id) is None
+        assert representation.Items == (other,)
+
+    def test_remove_an_item_nested_in_a_csg_solid(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+
+        context = ifc.createIfcGeometricRepresentationContext()
+        element = ifc.createIfcBuildingElementProxy()
+        placement = ifc.createIfcAxis2Placement3D(ifc.createIfcCartesianPoint((0.0, 0.0, 0.0)))
+        block = ifc.createIfcBlock(placement, 1.0, 1.0, 1.0)
+        csg = ifc.createIfcCsgSolid(block)
+        other = ifc.createIfcCsgSolid(ifc.createIfcBlock(placement, 2.0, 2.0, 2.0))
+        representation = ifc.createIfcShapeRepresentation(Items=[csg, other], ContextOfItems=context)
+        ifcopenshell.api.geometry.assign_representation(ifc, product=element, representation=representation)
+        csg_id = csg.id()
+
+        subject.remove_representation_item(block, element)
+        assert tool.Ifc.get_entity_by_id(csg_id) is None
+        assert representation.Items == (other,)
+
 
 class TestCreateShapeAspect(NewFile):
     def test_run(self):
