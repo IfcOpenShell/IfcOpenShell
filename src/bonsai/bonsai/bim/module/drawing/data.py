@@ -1025,11 +1025,11 @@ class ElementValuesData:
                 for i, layer in enumerate(layer_set.MaterialLayers):
                     if layer.Material and layer.Material.Name:
                         keys.append(
-                            (f"material.item.Material.Name.{i}", f"Layer {i+1} Material Name: {layer.Material.Name}")
+                            (f"material.item.Material.Name.{i}", f"Layer {i + 1} Material Name: {layer.Material.Name}")
                         )
                     if hasattr(layer, "LayerThickness") and layer.LayerThickness:
                         keys.append(
-                            (f"material.item.{i}.LayerThickness", f"Layer {i+1} Thickness: {layer.LayerThickness}")
+                            (f"material.item.{i}.LayerThickness", f"Layer {i + 1} Thickness: {layer.LayerThickness}")
                         )
 
         elif material.is_a("IfcMaterialLayerSet") and hasattr(material, "MaterialLayers"):
@@ -1037,17 +1037,19 @@ class ElementValuesData:
             for i, layer in enumerate(material.MaterialLayers):
                 if layer.Material and layer.Material.Name:
                     keys.append(
-                        (f"material.item.Material.Name.{i}", f"Layer {i+1} Material Name: {layer.Material.Name}")
+                        (f"material.item.Material.Name.{i}", f"Layer {i + 1} Material Name: {layer.Material.Name}")
                     )
                 if hasattr(layer, "LayerThickness") and layer.LayerThickness:
-                    keys.append((f"material.item.{i}.LayerThickness", f"Layer {i+1} Thickness: {layer.LayerThickness}"))
+                    keys.append(
+                        (f"material.item.{i}.LayerThickness", f"Layer {i + 1} Thickness: {layer.LayerThickness}")
+                    )
 
         elif material.is_a("IfcMaterialProfileSet") and hasattr(material, "MaterialProfiles"):
             material_count = len(material.MaterialProfiles)
             for i, profile in enumerate(material.MaterialProfiles):
                 if profile.Material and profile.Material.Name:
                     keys.append(
-                        (f"material.item.Material.Name.{i}", f"Profile {i+1} Material Name: {profile.Material.Name}")
+                        (f"material.item.Material.Name.{i}", f"Profile {i + 1} Material Name: {profile.Material.Name}")
                     )
 
         elif material.is_a("IfcMaterialConstituentSet") and hasattr(material, "MaterialConstituents"):
@@ -1057,7 +1059,7 @@ class ElementValuesData:
                     keys.append(
                         (
                             f"material.item.Material.Name.{i}",
-                            f"Constituent {i+1} Material Name: {constituent.Material.Name}",
+                            f"Constituent {i + 1} Material Name: {constituent.Material.Name}",
                         )
                     )
 
@@ -1079,7 +1081,7 @@ class ElementValuesData:
             keys.append(("styles.count", f"Style Count: {len(styles)}"))
             for i, style in enumerate(styles):
                 if hasattr(style, "Name") and style.Name:
-                    keys.append((f"styles.{i}.Name", f"Style {i+1} Name: {style.Name}"))
+                    keys.append((f"styles.{i}.Name", f"Style {i + 1} Name: {style.Name}"))
                 if style.is_a("IfcSurfaceStyle") and hasattr(style, "Styles"):
                     for surface_style_elem in style.Styles:
                         if surface_style_elem.is_a("IfcSurfaceStyleRendering"):
@@ -1087,7 +1089,7 @@ class ElementValuesData:
                                 color = surface_style_elem.SurfaceColour
                                 if hasattr(color, "Red") and hasattr(color, "Green") and hasattr(color, "Blue"):
                                     rgb = f"RGB({color.Red:.2f}, {color.Green:.2f}, {color.Blue:.2f})"
-                                    keys.append((f"styles.{i}.Color", f"Style {i+1} Color: {rgb}"))
+                                    keys.append((f"styles.{i}.Color", f"Style {i + 1} Color: {rgb}"))
 
         return keys
 
@@ -1238,12 +1240,12 @@ class ElementValuesData:
         if classifications:
             for i, classification in enumerate(classifications):
                 if hasattr(classification, "Name") and classification.Name:
-                    keys.append((f"classification.{i}.Name", f"Classification {i+1}: {classification.Name}"))
+                    keys.append((f"classification.{i}.Name", f"Classification {i + 1}: {classification.Name}"))
                 if hasattr(classification, "Identification") and classification.Identification:
                     keys.append(
                         (
                             f"classification.{i}.Identification",
-                            f"Classification {i+1} ID: {classification.Identification}",
+                            f"Classification {i + 1} ID: {classification.Identification}",
                         )
                     )
 
@@ -1279,9 +1281,9 @@ class ElementValuesData:
                 keys.append(("profiles.count", f"Profile Count: {len(profiles)}"))
                 for i, profile in enumerate(profiles):
                     if hasattr(profile, "ProfileName") and profile.ProfileName:
-                        keys.append((f"profiles.{i}.ProfileName", f"Profile {i+1} Name: {profile.ProfileName}"))
+                        keys.append((f"profiles.{i}.ProfileName", f"Profile {i + 1} Name: {profile.ProfileName}"))
                     if hasattr(profile, "ProfileType") and profile.ProfileType:
-                        keys.append((f"profiles.{i}.ProfileType", f"Profile {i+1} Type: {profile.ProfileType}"))
+                        keys.append((f"profiles.{i}.ProfileType", f"Profile {i + 1} Type: {profile.ProfileType}"))
 
         if hasattr(element, "Representation") and element.Representation:
             for representation in element.Representation.Representations:

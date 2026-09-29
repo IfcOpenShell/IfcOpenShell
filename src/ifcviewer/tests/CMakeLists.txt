@@ -93,7 +93,7 @@ add_ifcviewer_unit_test(test_sidecar_layout
 # InstanceCompose: matrix composition + cross-model object_id lookup.
 # Pulls in wgpu_native for the WGPUBuffer typedef via ModelGpuData.h
 # (never touched at runtime). Eigen for Matrix4d.
-find_package(Eigen3 REQUIRED)
+find_package(Eigen3 ${EIGEN_MIN_VERSION} REQUIRED)
 add_ifcviewer_unit_test(test_instance_compose
     SOURCES ${IFCVIEWER_SRC}/InstanceCompose.cpp
     LIBS wgpu_native Eigen3::Eigen
@@ -150,7 +150,7 @@ endif()
 # directly and enable AUTOMOC for the Q_OBJECT moc-generation.
 find_package(Qt${QT_VERSION} COMPONENTS Core Gui Test REQUIRED PATHS ${QT_DIR})
 
-find_package(Eigen3 REQUIRED)
+find_package(Eigen3 ${EIGEN_MIN_VERSION} REQUIRED)
 
 add_executable(test_federation
     test_federation.cpp

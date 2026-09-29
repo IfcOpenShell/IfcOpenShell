@@ -45,7 +45,7 @@ impl ApsClient {
             .and_then(|v| v.as_array())
             .map(|arr| arr.iter().map(hub_from_jsonapi).collect())
             .unwrap_or_default();
-        hubs.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+        hubs.sort_by_key(|a| a.name.to_lowercase());
         Ok(hubs)
     }
 
@@ -64,7 +64,7 @@ impl ApsClient {
                 _ => break,
             }
         }
-        projects.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+        projects.sort_by_key(|a| a.name.to_lowercase());
         Ok(projects)
     }
 
