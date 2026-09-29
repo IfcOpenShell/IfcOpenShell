@@ -226,8 +226,6 @@ function addTableElement(blenderId, csvData, filename) {
           .updateDefinition({ topCalc: calc, topCalcFormatterParams: calc }),
     }));
 
-    // topCalc defaults to "sum" for every column (see columnDefaults below)
-    // with no way to turn it off. Add an explicit option to hide it.
     menu.push({
       label: `Hide calculation for ${field}`,
       action: (e, cell) =>
