@@ -2491,9 +2491,7 @@ class Model(bonsai.core.tool.Model):
                     outer_inner.setdefault(curve, []).append(curve2)
                     inner_outer.setdefault(curve2, []).append(curve)
 
-        # Odd-even rule for nested curves. Only curves that actually resolved to a
-        # polygon above are candidates: a curve outside `polygons` traced no closed
-        # area and must not be promoted to its own outer profile.
+        # Odd-even rule for nested curves; only curves that resolved to a polygon are candidates.
         nested_level = {c: len(inner_outer[c]) if c in inner_outer else 0 for c in polygons}
         for curve in sorted(polygons, key=lambda c: nested_level[c]):
             level = nested_level[curve]
