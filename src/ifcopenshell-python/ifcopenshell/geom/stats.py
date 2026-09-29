@@ -129,7 +129,7 @@ class BooleanResultCounter:
 
 
 class StatsCollector:
-    streamer: ifcopenshell_wrapper.InstanceStreamer
+    streamer: ifcopenshell_wrapper.instance_streamer
     page_size: Optional[int]
     file_stream: Optional[IO[str]]
 
@@ -141,7 +141,7 @@ class StatsCollector:
     num_semis: int = 0
 
     def __init__(self):
-        self.streamer = ifcopenshell_wrapper.InstanceStreamer()
+        self.streamer = ifcopenshell_wrapper.instance_streamer()
         self.needs_data = True
         self.counters = [ProductCounter(), BooleanResultCounter()]
 
@@ -151,9 +151,9 @@ class StatsCollector:
         self.feed(self.file_stream.read(self.page_size))
 
     def feed(self, data: str):
-        self.streamer.pushPage(data)
+        self.streamer.push_page(data)
         self.needs_data = False
-        self.num_semis = self.streamer.semicolonCount()
+        self.num_semis = self.streamer.semicolon_count()
 
     @staticmethod
     def fromFilePath(fn, page_size: int = 102400):
@@ -164,7 +164,7 @@ class StatsCollector:
 
     def next(self):
         if self.num_semis > 0:
-            if inst := self.streamer.readInstancePy(True):
+            if inst := self.streamer.read_instance_py(True):
                 self.num_semis -= 1
                 return inst["type"], dict(list(inst.items())[2:])
             else:

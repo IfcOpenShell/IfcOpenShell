@@ -21,9 +21,7 @@ from typing import Union
 import numpy as np
 
 import ifcopenshell
-import ifcopenshell.api.alignment
-import ifcopenshell.geom
-from ifcopenshell import entity_instance, ifcopenshell_wrapper
+from ifcopenshell import entity_instance
 from ifcopenshell.api.alignment._add_segment_to_layout import _add_segment_to_layout
 
 
