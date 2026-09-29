@@ -193,9 +193,6 @@ class TestIsRelatingTypeCompatible(NewFile):
         assert subject.is_relating_type_compatible(door, door_style) is True
 
     def test_legacy_style_pairing_refused_in_ifc4x3(self):
-        # IfcDoorStyle was removed in IFC4X3, so the legacy style/occurrence
-        # pairing is refused at the schema level: the entity cannot even be
-        # constructed, and is_relating_type_compatible() is never consulted.
         ifc = ifcopenshell.file(schema="IFC4X3")
         with pytest.raises(RuntimeError):
             ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcDoorStyle")
