@@ -43,7 +43,9 @@ class Group(bonsai.core.tool.System):
     GroupType = Literal["IfcGroup", "IfcSystem"]
 
     @classmethod
-    def get_groups_data(cls, group_type: GroupType) -> Union[
+    def get_groups_data(
+        cls, group_type: GroupType
+    ) -> Union[
         tuple[BIMGroupProperties, bpy.types.bpy_prop_collection_idprop[GroupProp]],
         tuple[BIMSystemProperties, bpy.types.bpy_prop_collection_idprop[System]],
     ]:
