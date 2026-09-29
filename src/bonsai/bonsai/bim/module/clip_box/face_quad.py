@@ -322,7 +322,9 @@ def _shared_edge_corner_keys(
     )
 
 
-def _face_corner_keys(axis: int, is_max: bool) -> tuple[
+def _face_corner_keys(
+    axis: int, is_max: bool
+) -> tuple[
     tuple[int, int, int],
     tuple[int, int, int],
     tuple[int, int, int],
@@ -516,7 +518,7 @@ def _world_segment_to_screen_pixels(
 # ---------------------------------------------------------------------------
 
 
-class BIM_GT_box_face_quad(bpy.types.Gizmo):  # noqa: N801 — Blender bl_idname convention
+class BIM_GT_box_face_quad(bpy.types.Gizmo):
     """Near-invisible face-quad click target with drag-to-resize modal.
 
     Geometry: a unit quad in the local XY plane at z=0. The adapter
@@ -620,7 +622,7 @@ class BIM_GT_box_face_quad(bpy.types.Gizmo):  # noqa: N801 — Blender bl_idname
         return {"RUNNING_MODAL"}
 
 
-class BIM_GT_box_face_outline(bpy.types.Gizmo):  # noqa: N801 — Blender bl_idname convention
+class BIM_GT_box_face_outline(bpy.types.Gizmo):
     """Thin non-interactive colored edge outline for one face.
 
     Drawn as 4 line segments in the face plane. The layout helper
