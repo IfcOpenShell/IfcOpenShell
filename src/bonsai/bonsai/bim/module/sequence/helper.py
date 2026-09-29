@@ -55,10 +55,8 @@ def parse_duration_as_blender_props(dt: Union[Any, str]) -> dict[str, int]:
             try:
                 dt = ifcopenshell.util.date.ifc2datetime(dt)
             except (ValueError, TypeError):
-                # A malformed or partial IfcDuration (e.g. "1D" without the leading
-                # "P", "WORKTIME", or an empty string) makes ifc2datetime misparse it
-                # as a date/time and raise. Don't take down the task time editor and
-                # don't fabricate a wrong value: warn clearly and treat it as empty.
+                # A malformed IfcDuration (e.g. "1D", "") makes ifc2datetime raise.
+                # Warn and treat it as empty.
                 print(f"WARNING: could not parse duration value {dt!r}, treating it as empty.")
                 dt = None
 
