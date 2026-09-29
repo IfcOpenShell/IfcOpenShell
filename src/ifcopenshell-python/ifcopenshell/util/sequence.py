@@ -226,17 +226,18 @@ def _recurrence_base_match(recurrence: ifcopenshell.entity_instance, recurrence_
     if recurrence_type == "DAILY":
         return True
     elif recurrence_type == "WEEKLY":
-        return (day.weekday() + 1) in recurrence.WeekdayComponent
+        return (day.weekday() + 1) in (recurrence.WeekdayComponent or ())
     elif recurrence_type == "MONTHLY_BY_DAY_OF_MONTH":
-        return day.day in recurrence.DayComponent
+        return day.day in (recurrence.DayComponent or ())
     elif recurrence_type == "MONTHLY_BY_POSITION":
-        return (day.weekday() + 1) in recurrence.WeekdayComponent and floor(day.day / 7) + 1 == recurrence.Position
+        position = floor(day.day / 7) + 1
+        return (day.weekday() + 1) in (recurrence.WeekdayComponent or ()) and position == recurrence.Position
     elif recurrence_type == "YEARLY_BY_DAY_OF_MONTH":
-        return day.month in recurrence.MonthComponent and day.day in recurrence.DayComponent
+        return day.month in (recurrence.MonthComponent or ()) and day.day in (recurrence.DayComponent or ())
     elif recurrence_type == "YEARLY_BY_POSITION":
         return (
-            day.month in recurrence.MonthComponent
-            and (day.weekday() + 1) in recurrence.WeekdayComponent
+            day.month in (recurrence.MonthComponent or ())
+            and (day.weekday() + 1) in (recurrence.WeekdayComponent or ())
             and floor(day.day / 7) + 1 == recurrence.Position
         )
     return False
@@ -302,54 +303,12 @@ def is_work_time_applicable_to_day(work_time: ifcopenshell.entity_instance, day)
         day = datetime.date(day.year, day.month, day.day)
     recurrence = work_time.RecurrencePattern
     recurrence_type: RECURRENCE_TYPE = recurrence.RecurrenceType
-    if recurrence_type == "DAILY":
-        if not recurrence.Interval and not recurrence.Occurrences:
-            return True
-        # 4 IfcWorktime Start
-        if not work_time[4]:
-            return False
-        return _is_recurring_day_applicable(work_time, day, recurrence, recurrence_type)
-    elif recurrence_type == "WEEKLY":
-        if not recurrence.Interval and not recurrence.Occurrences:
-            return (day.weekday() + 1) in recurrence.WeekdayComponent
-        # 4 IfcWorktime Start
-        if not work_time[4]:
-            return False
-        return _is_recurring_day_applicable(work_time, day, recurrence, recurrence_type)
-    elif recurrence_type == "MONTHLY_BY_DAY_OF_MONTH":
-        if not recurrence.Interval and not recurrence.Occurrences:
-            return day.day in recurrence.DayComponent
-        # 4 IfcWorktime Start
-        if not work_time[4]:
-            return False
-        return _is_recurring_day_applicable(work_time, day, recurrence, recurrence_type)
-    elif recurrence_type == "MONTHLY_BY_POSITION":
-        if not recurrence.Interval and not recurrence.Occurrences:
-            return (day.weekday() + 1) in recurrence.WeekdayComponent and floor(day.day / 7) + 1 == recurrence[
-                "Position"
-            ]
-        # 4 IfcWorktime Start
-        if not work_time[4]:
-            return False
-        return _is_recurring_day_applicable(work_time, day, recurrence, recurrence_type)
-    elif recurrence_type == "YEARLY_BY_DAY_OF_MONTH":
-        if not recurrence.Interval and not recurrence.Occurrences:
-            return day.month in recurrence.MonthComponent and day.day in recurrence.DayComponent
-        # 4 IfcWorktime Start
-        if not work_time[4]:
-            return False
-        return _is_recurring_day_applicable(work_time, day, recurrence, recurrence_type)
-    elif recurrence_type == "YEARLY_BY_POSITION":
-        if not recurrence.Interval and not recurrence.Occurrences:
-            return (
-                day.month in recurrence.MonthComponent
-                and (day.weekday() + 1) in recurrence.WeekdayComponent
-                and floor(day.day / 7) + 1 == recurrence.Position
-            )
-        # 4 IfcWorktime Start
-        if not work_time[4]:
-            return False
-        return _is_recurring_day_applicable(work_time, day, recurrence, recurrence_type)
+    if not recurrence.Interval and not recurrence.Occurrences:
+        return _recurrence_base_match(recurrence, recurrence_type, day)
+    # 4 IfcWorktime Start
+    if not work_time[4]:
+        return False
+    return _is_recurring_day_applicable(work_time, day, recurrence, recurrence_type)
 
 
 def get_task_work_schedule(task: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:

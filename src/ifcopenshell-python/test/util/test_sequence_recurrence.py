@@ -20,16 +20,11 @@
 
 import datetime
 
-import test.bootstrap
 import ifcopenshell.util.sequence as subject
+import test.bootstrap
 
 
 class TestIsWorkTimeApplicableToDayRecurrenceInterval(test.bootstrap.IFC4):
-    # All Interval/Occurrences tests anchor Start one cycle before the day
-    # under test. IfcWorkTime's own Start day is separately excluded by
-    # is_day_in_work_time's strict `>` check (a pre-existing, unrelated
-    # issue), so asserting on the Start day itself would conflate the two.
-
     def test_daily_interval_matches_every_other_day_not_the_days_between(self):
         recurrence = self.file.create_entity("IfcRecurrencePattern", RecurrenceType="DAILY", Interval=2)
         work_time = self.file.create_entity("IfcWorkTime", RecurrencePattern=recurrence, Start="2026-01-01")
@@ -53,7 +48,6 @@ class TestIsWorkTimeApplicableToDayRecurrenceInterval(test.bootstrap.IFC4):
         assert subject.is_work_time_applicable_to_day(work_time, datetime.date(2026, 1, 5)) is False
 
     def test_weekly_interval_matches_every_other_saturday_not_the_saturday_between(self):
-        # Docstring's WEEKLY example: "every other saturday".
         recurrence = self.file.create_entity(
             "IfcRecurrencePattern", RecurrenceType="WEEKLY", WeekdayComponent=[6], Interval=2
         )
@@ -69,7 +63,6 @@ class TestIsWorkTimeApplicableToDayRecurrenceInterval(test.bootstrap.IFC4):
         assert subject.is_work_time_applicable_to_day(work_time, datetime.date(2026, 7, 11)) is True
 
     def test_monthly_by_day_of_month_interval_matches_docstring_example(self):
-        # The maintenance task must occur every 6 months, on the 1st.
         recurrence = self.file.create_entity(
             "IfcRecurrencePattern", RecurrenceType="MONTHLY_BY_DAY_OF_MONTH", DayComponent=[1], Interval=6
         )
@@ -87,7 +80,6 @@ class TestIsWorkTimeApplicableToDayRecurrenceInterval(test.bootstrap.IFC4):
         assert subject.is_work_time_applicable_to_day(work_time, datetime.date(2026, 7, 1)) is True
 
     def test_monthly_by_position_interval_matches_every_other_month(self):
-        # Second Tuesday of every other month.
         recurrence = self.file.create_entity(
             "IfcRecurrencePattern",
             RecurrenceType="MONTHLY_BY_POSITION",
@@ -122,7 +114,6 @@ class TestIsWorkTimeApplicableToDayRecurrenceInterval(test.bootstrap.IFC4):
         assert subject.is_work_time_applicable_to_day(work_time, datetime.date(2027, 12, 25)) is True
 
     def test_yearly_by_position_occurrences_stops_matching_after_the_right_number(self):
-        # Third Wednesday of January, for 2 occurrences.
         recurrence = self.file.create_entity(
             "IfcRecurrencePattern",
             RecurrenceType="YEARLY_BY_POSITION",
@@ -159,3 +150,47 @@ class TestIsWorkTimeApplicableToDayRecurrenceInterval(test.bootstrap.IFC4):
         )
         work_time = self.file.create_entity("IfcWorkTime", RecurrencePattern=recurrence)
         assert subject.is_work_time_applicable_to_day(work_time, datetime.date(2026, 3, 1)) is False
+
+
+class TestIsWorkTimeApplicableToDayRecurrenceComponents(test.bootstrap.IFC4):
+    def test_unimplemented_recurrence_types_return_false(self):
+        work_time = self.file.create_entity("IfcWorkTime")
+        for recurrence_type in ("BY_DAY_COUNT", "BY_WEEKDAY_COUNT"):
+            work_time.RecurrencePattern = self.file.create_entity(
+                "IfcRecurrencePattern", RecurrenceType=recurrence_type
+            )
+            assert subject.is_work_time_applicable_to_day(work_time, datetime.date(2026, 7, 30)) is False, (
+                recurrence_type
+            )
+
+    def test_every_recurrence_type_survives_absent_optional_components(self):
+        work_time = self.file.create_entity("IfcWorkTime")
+        for recurrence_type in subject.RECURRENCE_TYPE.__args__:
+            work_time.RecurrencePattern = self.file.create_entity(
+                "IfcRecurrencePattern", RecurrenceType=recurrence_type
+            )
+            result = subject.is_work_time_applicable_to_day(work_time, datetime.date(2026, 7, 30))
+            assert isinstance(result, bool), recurrence_type
+
+    def test_absent_optional_components_survive_an_interval(self):
+        work_time = self.file.create_entity("IfcWorkTime", Start="2026-01-01")
+        for recurrence_type in subject.RECURRENCE_TYPE.__args__:
+            work_time.RecurrencePattern = self.file.create_entity(
+                "IfcRecurrencePattern", RecurrenceType=recurrence_type, Interval=2
+            )
+            result = subject.is_work_time_applicable_to_day(work_time, datetime.date(2026, 7, 30))
+            assert isinstance(result, bool), recurrence_type
+
+    def test_a_populated_weekday_component_still_decides_the_day(self):
+        recurrence = self.file.create_entity("IfcRecurrencePattern", RecurrenceType="WEEKLY", WeekdayComponent=[4])
+        work_time = self.file.create_entity("IfcWorkTime", RecurrencePattern=recurrence)
+        assert subject.is_work_time_applicable_to_day(work_time, datetime.date(2026, 7, 30)) is True
+        assert subject.is_work_time_applicable_to_day(work_time, datetime.date(2026, 7, 31)) is False
+
+    def test_monthly_by_position_without_interval_matches_the_position(self):
+        recurrence = self.file.create_entity(
+            "IfcRecurrencePattern", RecurrenceType="MONTHLY_BY_POSITION", WeekdayComponent=[4], Position=5
+        )
+        work_time = self.file.create_entity("IfcWorkTime", RecurrencePattern=recurrence)
+        assert subject.is_work_time_applicable_to_day(work_time, datetime.date(2026, 7, 30)) is True
+        assert subject.is_work_time_applicable_to_day(work_time, datetime.date(2026, 7, 23)) is False
