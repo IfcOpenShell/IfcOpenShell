@@ -558,7 +558,7 @@ class IntegerInputDialogMixin:
             return None
         return props
 
-    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> set[str]:  # noqa: ARG002
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> set[str]:
         props = self._resolve_props(context)
         if props is None:
             return {"CANCELLED"}
