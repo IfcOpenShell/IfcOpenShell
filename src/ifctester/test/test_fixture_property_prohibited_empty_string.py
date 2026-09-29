@@ -61,8 +61,6 @@ class TestPropertyProhibitedEmptyStringFixture:
         assert spec.requirements[0].status is False
 
     def test_required_cardinality_still_treats_empty_string_as_no_value(self):
-        # REQUIRED and OPTIONAL legitimately treat an empty value as not
-        # populated, unlike PROHIBITED. This must stay unchanged.
         ifc = ifcopenshell.open(os.path.join(FIXTURES, "fail-foo_empty_string.ifc"))
         wall = ifc.by_type("IfcWall")[0]
 
