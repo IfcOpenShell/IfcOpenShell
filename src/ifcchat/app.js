@@ -99,29 +99,29 @@ const PROVIDERS = {
         baseUrlPlaceholder: "https://openrouter.ai/api/v1",
         baseUrlDefault: "https://openrouter.ai/api/v1",
         models: [
-            { 
+            {
                 value: "openai/gpt-oss-20b",
-                label: "gpt-oss-20b" 
+                label: "gpt-oss-20b"
             },
-            { 
+            {
                 value: "openai/gpt-oss-120b",
-                label: "gpt-oss-120b" 
+                label: "gpt-oss-120b"
             },
-            { 
+            {
                 value: "mistralai/mistral-small-3.2-24b-instruct",
-                label: "mistral-small-3.2" 
+                label: "mistral-small-3.2"
             },
-            { 
-                value: "openai/gpt-4.1",                    
-                label: "gpt-4.1" 
+            {
+                value: "openai/gpt-4.1",
+                label: "gpt-4.1"
             },
-            { 
-                value: "anthropic/claude-sonnet-4-5",       
-                label: "claude-sonnet-4-5" 
+            {
+                value: "anthropic/claude-sonnet-4-5",
+                label: "claude-sonnet-4-5"
             },
-            { 
-                value: "google/gemini-2.5-pro-preview",     
-                label: "gemini-2.5-pro" 
+            {
+                value: "google/gemini-2.5-pro-preview",
+                label: "gemini-2.5-pro"
             },
         ],
     },
