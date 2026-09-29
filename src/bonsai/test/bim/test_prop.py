@@ -263,9 +263,7 @@ class TestImportPsetFromExistingWithAGenericNumericValueAndAnExplicitUnit(NewFil
         length_mm = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="LENGTHUNIT", prefix="MILLI")
 
         element = ifc.createIfcWall()
-        prop = ifc.createIfcPropertySingleValue(
-            Name="Foo", NominalValue=ifc.createIfcReal(150.0), Unit=length_mm
-        )
+        prop = ifc.createIfcPropertySingleValue(Name="Foo", NominalValue=ifc.createIfcReal(150.0), Unit=length_mm)
         metadata = import_single_property(ifc, element, prop)
 
         assert metadata.special_type == "LENGTH"
@@ -291,9 +289,7 @@ class TestImportPsetFromExistingWithAStrayUnitOnANonMeasureProperty(NewFile):
         length_m = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="LENGTHUNIT")
 
         element = ifc.createIfcWall()
-        prop = ifc.createIfcPropertySingleValue(
-            Name="Foo", NominalValue=ifc.createIfcLabel("Bar"), Unit=length_m
-        )
+        prop = ifc.createIfcPropertySingleValue(Name="Foo", NominalValue=ifc.createIfcLabel("Bar"), Unit=length_m)
         metadata = import_single_property(ifc, element, prop)  # must not raise
 
         assert metadata.special_type == ""

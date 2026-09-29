@@ -34,7 +34,7 @@ message("Running CMakeLists.txt in /src/helpers")
 #                   (ifcopenshell.util.element)
 #   * Element     — get_predefined_type (ifcopenshell.util.element)
 
-find_package(Eigen3 REQUIRED)
+find_package(Eigen3 ${EIGEN_MIN_VERSION} REQUIRED)
 
 # helpers_math: the schema-free subset — unit conversion tables and Helmert
 # matrix math over plain numbers. No IfcParse, no Qt, no schema dispatch, so it

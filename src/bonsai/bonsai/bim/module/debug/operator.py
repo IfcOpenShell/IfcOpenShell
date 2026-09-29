@@ -317,7 +317,7 @@ class CreateAllShapes(bpy.types.Operator):
                 geom = shape.geometry
                 print(
                     f"Success {time.time() - start:.3f}s "
-                    f"V:{(len(geom.verts)//3)} E:{(len(geom.edges)//2)} F:{(len(geom.faces)//3)}"
+                    f"V:{(len(geom.verts) // 3)} E:{(len(geom.edges) // 2)} F:{(len(geom.faces) // 3)}"
                 )
         self.report({"INFO"}, f"Failed shapes: {len(failures)}, check the system console for details.")
         for failure in failures:
@@ -1001,7 +1001,9 @@ class DebugActiveDrawing(bpy.types.Operator):
                             print(f"{GREEN}Excluding element fixed the drawing: {END}")
                             print(element)
                 else:
-                    print(f"{CYAN}Will try to reshuffle elements and try again, attempt {ATTEMPS-attempts+1}/{ATTEMPS}")
+                    print(
+                        f"{CYAN}Will try to reshuffle elements and try again, attempt {ATTEMPS - attempts + 1}/{ATTEMPS}"
+                    )
                     attempts -= 1
                     random.shuffle(elements)
                     test_elements(elements, attempts)
