@@ -23,11 +23,6 @@ Accessing the Tool
    :guilabel:`IFC Element`, set the IFC Class to ``IfcRailing`` (or
    ``IfcRailingType``) and set Representation to :guilabel:`Railing`.
 
-.. note::
-
-   The older ``mesh.add_railing`` operator has been removed. Both the toolbar tool
-   and the Add menu now go through the same unified element creation flow.
-
 Key Features
 ------------
 

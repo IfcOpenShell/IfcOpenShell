@@ -28,11 +28,6 @@ Accessing the Tool
    :guilabel:`IFC Element`, set the IFC Class to ``IfcRoof`` (or ``IfcRoofType``) and
    set Representation to :guilabel:`Roof`.
 
-.. note::
-
-   The older ``mesh.add_roof`` operator has been removed. Both the toolbar tool and
-   the Add menu now go through the same unified element creation flow.
-
 Key Features
 ------------
 

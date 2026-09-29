@@ -33,11 +33,6 @@ There are two ways to create a stair:
 Both paths end up calling the same parametric stair generator, so the resulting
 geometry and IFC data are identical either way.
 
-.. note::
-
-   The older ``mesh.add_stair`` operator has been removed. Both the toolbar tool and
-   the Add menu now go through the same unified element creation flow.
-
 Key Features
 ------------
 
