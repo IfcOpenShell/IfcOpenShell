@@ -21,7 +21,7 @@ from __future__ import annotations
 import csv
 import locale
 from pathlib import Path
-from typing import Optional, TypedDict, Union
+from typing import NotRequired, Optional, TypedDict, Union
 
 import ifcopenshell
 import ifcopenshell.api.control
@@ -31,7 +31,6 @@ import ifcopenshell.util.cost
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
 import ifcopenshell.util.unit
-from typing_extensions import NotRequired
 
 
 class CsvHeader(TypedDict):
@@ -57,7 +56,8 @@ class CsvHeader(TypedDict):
 
     # Formula
     Formula: NotRequired[str]
-    #QuantityClass: NotRequired[str]
+    # QuantityClass: NotRequired[str]
+
 
 # Currently we assume that if column is not part of the main header,
 # then it is a cost value category. So here we list any additional column
@@ -81,6 +81,11 @@ MAIN_CSV_HEADER_COLUMNS.extend(
 )
 
 
+class CostRate(TypedDict):
+    Schedule: str | None
+    RateID: str | None
+
+
 class CostItem(TypedDict):
     children: list[CostItem]
     ifc: NotRequired[ifcopenshell.entity_instance]
@@ -96,8 +101,10 @@ class CostItem(TypedDict):
     Property: Union[str, None]
     Query: Union[str, None]
 
+    CostRate: CostRate | None
     Formula: Union[str, None]
-    #QuantityClass: Union[str, None]
+    # QuantityClass: Union[str, None]
+
 
 class Csv2Ifc:
     # Inputs.
@@ -237,7 +244,7 @@ class Csv2Ifc:
             cost_values = float(cost_values) if cost_values else None
 
         if self.has_rates:
-            cost_rate = {
+            cost_rate: CostRate = {
                 "Schedule": row[(self.headers["RateSchedule"])] if "RateSchedule" in self.headers else None,
                 "RateID": row[(self.headers["RateID"])] if "RateID" in self.headers else None,
             }
@@ -420,7 +427,7 @@ class Csv2Ifc:
                     products=results,
                     formula=cost_item["Formula"],
                     ifc_class=ifc_quantity_class,
-                    )
+                )
 
         self.create_cost_items(cost_item["children"], cost_item["ifc"])
 

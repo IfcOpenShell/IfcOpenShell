@@ -25,7 +25,7 @@
 #include <iomanip>
 #include <limits>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 namespace util {
 	class string_buffer {
@@ -56,12 +56,12 @@ namespace util {
 			virtual ~float_item() {};
 		};
 	private:
-		std::vector< boost::shared_ptr<item> > items;
+		std::vector< std::shared_ptr<item> > items;
 		void clear();
-		void assign(const std::vector< boost::shared_ptr<item> >& other);
+		void assign(const std::vector< std::shared_ptr<item> >& other);
 	public:
-		boost::shared_ptr<string_item> add(const std::string& s);
-		boost::shared_ptr<float_item> add(const double& d);
+		std::shared_ptr<string_item> add(const std::string& s);
+		std::shared_ptr<float_item> add(const double& d);
 		bool empty() const { return items.empty(); }
 		std::string str() const;
 	};
