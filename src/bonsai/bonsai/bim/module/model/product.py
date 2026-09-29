@@ -221,8 +221,7 @@ class DrawOccurrence(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
 
         if not self.relating_type:
             self.report({"WARNING"}, "You need to select a type.")
-            PolylineDecorator.uninstall()
-            tool.Blender.update_viewport()
+            self.cleanup(context)
             return {"FINISHED"}
 
         PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
@@ -239,11 +238,7 @@ class DrawOccurrence(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
 
         if not self.tool_state.is_input_on and event.value == "RELEASE" and event.type in {"RIGHTMOUSE"}:
             self.tool_state.axis_method = None
-            context.workspace.status_text_set(text=None)
-            ProductDecorator.uninstall()
-            PolylineDecorator.uninstall()
-            tool.Polyline.clear_polyline()
-            tool.Blender.update_viewport()
+            self.cleanup(context)
             return {"FINISHED"}
 
         if event.value == "RELEASE" and event.type == "LEFTMOUSE":
@@ -251,7 +246,6 @@ class DrawOccurrence(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
 
         cancel = self.handle_cancelation(context, event)
         if cancel is not None:
-            ProductDecorator.uninstall()
             return cancel
 
         return {"RUNNING_MODAL"}
@@ -325,7 +319,7 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
         if self.from_invoke and str(self.relating_type_id) in AuthoringData.data["relating_type_id"]:
             props.relating_type_id = str(self.relating_type_id)
 
-        building_obj = None
+        building_obj, building_element = None, None
         if len(context.selected_objects) == 1 and context.active_object:
             building_obj = context.active_object
             building_element = tool.Ifc.get_entity(building_obj)
