@@ -17,8 +17,9 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import nodes
 import collections
+
+import nodes
 import pyparsing
 
 
