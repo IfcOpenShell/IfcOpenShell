@@ -26,11 +26,6 @@ import test.bootstrap
 # therefore no IFC2X3 tests
 class TestAddTask(test.bootstrap.IFC4):
     def test_task_is_named_by_default(self):
-        # IfcTask carries a WHERE rule (exists(SELF.Name)) that plain schema
-        # validation does not check but ifcopenshell.validate.validate(...,
-        # express_rules=True) does. Bonsai's "Add Task" / "Add Summary Task"
-        # operators call this api with no name= argument at all, so an
-        # unnamed default here means a real, silently invalid IfcTask.
         task = ifcopenshell.api.sequence.add_task(self.file)
         assert task.Name is not None
         assert task.Name == "Unnamed"
