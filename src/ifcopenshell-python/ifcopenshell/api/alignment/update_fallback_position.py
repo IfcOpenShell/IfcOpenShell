@@ -16,8 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import numpy as np
-
 import ifcopenshell
 import ifcopenshell.util.placement
 from ifcopenshell import entity_instance
@@ -36,7 +34,7 @@ def update_fallback_position(file: ifcopenshell.file, lp: entity_instance):
     if not lp.CartesianPosition:
         lp.CartesianPosition = file.createIfcAxis2Placement3D(Location=file.createIfcCartesianPoint((0.0, 0.0, 0.0)))
 
-    p = np.array(ifcopenshell.util.placement.get_axis2placement(lp.RelativePlacement))
+    p = ifcopenshell.util.placement.get_local_placement(lp)
 
     x = float(p[0, 3])
     y = float(p[1, 3])

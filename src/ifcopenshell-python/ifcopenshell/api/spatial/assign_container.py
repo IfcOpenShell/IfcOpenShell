@@ -171,7 +171,7 @@ def assign_container(
                 "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
                 "RelatedElements": list(products_set),
                 "RelatingStructure": relating_structure,
-            }
+            },
         )
 
     # localize placement relative to a new container for affected products

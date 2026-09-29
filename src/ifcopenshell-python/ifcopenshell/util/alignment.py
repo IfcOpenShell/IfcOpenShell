@@ -25,7 +25,7 @@ import ifcopenshell.util.unit
 def add_linear_placement_fallback_position(file: ifcopenshell.file) -> ifcopenshell.file:
     import ifcopenshell.api.alignment
 
-    patched_file = ifcopenshell.file.from_string(file.wrapped_data.to_string())
+    patched_file = ifcopenshell.file.from_string(file.to_string())
 
     linear_placements = patched_file.by_type("IfcLinearPlacement")
     for lp in linear_placements:
@@ -37,7 +37,7 @@ def add_linear_placement_fallback_position(file: ifcopenshell.file) -> ifcopensh
 def create_alignment_geometry(file: ifcopenshell.file) -> ifcopenshell.file:
     import ifcopenshell.api.alignment
 
-    patched_file = ifcopenshell.file.from_string(file.wrapped_data.to_string())
+    patched_file = ifcopenshell.file.from_string(file.to_string())
 
     alignments = patched_file.by_type("IfcAlignment")
     for alignment in alignments:
@@ -50,13 +50,13 @@ def append_zero_length_segments(file: ifcopenshell.file) -> ifcopenshell.file:
     """Appends zero length segments to all alignment layouts and layout geometry, if missing."""
     import ifcopenshell.api.alignment
 
-    patched_file = ifcopenshell.file.from_string(file.wrapped_data.to_string())
+    patched_file = ifcopenshell.file.from_string(file.to_string())
 
     alignments = patched_file.by_type("IfcAlignment")
     for alignment in alignments:
         layouts = ifcopenshell.api.alignment.get_alignment_layouts(alignment)
         for layout in layouts:
-            ifcopenshell.api.alignment.add_zero_length_segment(patched_file, layout, include_referent=False)
+            ifcopenshell.api.alignment.add_zero_length_segment(patched_file, layout)
             curve = ifcopenshell.api.alignment.get_layout_curve(layout)
             if curve:
                 ifcopenshell.api.alignment.add_zero_length_segment(patched_file, curve)
@@ -69,21 +69,21 @@ def station_as_string(file: ifcopenshell.file, sta: float):
     Returns a stringized version of a station. Example 100.0 is 1+00.00 as a stationing string.
     If the project units are SI-based, the string is in the format xxx+yyy.zzz
     If the project units are Emperial-based, the string is in the format xx+yy.zz
+
     :param station: the station to be stringized
     :return: stringized station
     """
 
     unit_type = ifcopenshell.util.unit.get_project_unit(file, "LENGTHUNIT")
+    project_unit_to_metres = ifcopenshell.util.unit.calculate_unit_scale(file)
     if unit_type.is_a("IfcConversionBasedUnit"):
-        station = ifcopenshell.util.unit.convert(
-            sta, from_unit=unit_type.Name, from_prefix=None, to_unit="foot", to_prefix=None
-        )
+        # xx+yy.zz display is inherently foot-based, regardless of which foot variant
+        # (international vs. US survey, etc.) the project's own unit actually is.
+        station = sta * project_unit_to_metres / 0.3048
         plus_seperator = 2
         precision = 2
     else:
-        station = ifcopenshell.util.unit.convert(
-            sta, from_unit=unit_type.Name, from_prefix=unit_type.Prefix, to_unit="meter", to_prefix=None
-        )
+        station = sta * project_unit_to_metres
         plus_seperator = 3
         precision = 3
 

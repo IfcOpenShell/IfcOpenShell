@@ -189,14 +189,20 @@ def format_distance(
             if hasattr(length_unit, "Prefix") and length_unit.Prefix:
                 unit_length = length_unit.Prefix + length_unit.Name
             unit_length_mapping = {
+                "MILE": "MILES",
                 "FOOT": "FEET",
                 "INCH": "INCHES",
+                "KILOMETRE": "KILOMETERS",
                 "METRE": "METERS",
                 "DECIMETRE": "DECIMETERS",
                 "CENTIMETRE": "CENTIMETERS",
                 "MILLIMETRE": "MILLIMETERS",
+                "MICROMETRE": "MICROMETERS",
             }
-            unit_length = unit_length_mapping[unit_length]
+            # Fall through for units without a dedicated formatter (e.g.
+            # HECTOMETRE) so they use the adaptive branch instead of a
+            # KeyError (#8255).
+            unit_length = unit_length_mapping.get(unit_length, unit_length)
         # For now we only format area in IFC Units
         if area_unit := ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "AREAUNIT"):
             area_unit_symbol = " " + ifcopenshell.util.unit.get_unit_symbol(area_unit)
@@ -219,9 +225,11 @@ def format_distance(
             unit_system, unit_length, unit_fraction = unit_mapping[custom_unit]
 
     value *= unit_scale
+    tx_dist = None
 
     # Imperial Formatting
     if unit_system == "IMPERIAL":
+        toInches = None
         if in_unit_length:
             if unit_length == "INCHES":
                 toInches = 1
@@ -235,6 +243,7 @@ def format_distance(
             toInches = 1550
             inPerFoot = 144
 
+        assert toInches is not None
         decInches = value * toInches
         decFeet = decInches / 12
 
@@ -377,6 +386,7 @@ def format_distance(
         if precision and isinstance(precision, float):
             value = precision * round(float(value) / precision)
 
+        fmt = None
         if decimal_places is not None:
             fmt = "%1." + str(decimal_places) + "f"
 
@@ -459,6 +469,7 @@ def format_distance(
         assert f"Unexpected unit_system - '{unit_system}'."
         # tx_dist = fmt % value
 
+    assert tx_dist is not None
     return tx_dist
 
 
