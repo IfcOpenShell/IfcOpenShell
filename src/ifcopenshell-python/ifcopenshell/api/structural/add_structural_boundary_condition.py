@@ -61,6 +61,8 @@ def add_structural_boundary_condition(
             boundary_class = "IfcBoundaryEdgeCondition"
         elif related_connection.is_a("IfcStructuralSurfaceConnection"):
             boundary_class = "IfcBoundaryFaceCondition"
+        else:
+            assert False, related_connection
 
         condition = file.create_entity(boundary_class, Name=name)
         connection.AppliedCondition = condition

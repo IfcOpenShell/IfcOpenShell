@@ -223,9 +223,9 @@ class BIM_PT_work_schedules(Panel):
                     row1.label(text="Schedule tools")
                     row1 = col.row(align=True)
                     row1.alignment = "RIGHT"
-                    row1.operator("bim.generate_gantt_chart", text="Generate Gantt", icon="NLA").work_schedule = (
-                        work_schedule_id
-                    )
+                    row1.operator(
+                        "bim.generate_gantt_chart", text="Generate Gantt", icon="NLA"
+                    ).work_schedule = work_schedule_id
                     row1.operator(
                         "bim.recalculate_schedule", text="Re-calculate Schedule", icon="FILE_REFRESH"
                     ).work_schedule = work_schedule_id
@@ -262,12 +262,12 @@ class BIM_PT_work_schedules(Panel):
                 col2 = grid.column()
                 row = col2.row(align=True)
                 row.alignment = "RIGHT"
-                row.operator("bim.enable_editing_work_schedule_tasks", text="", icon="ACTION").work_schedule = (
-                    work_schedule_id
-                )
-                row.operator("bim.enable_editing_work_schedule", text="", icon="GREASEPENCIL").work_schedule = (
-                    work_schedule_id
-                )
+                row.operator(
+                    "bim.enable_editing_work_schedule_tasks", text="", icon="ACTION"
+                ).work_schedule = work_schedule_id
+                row.operator(
+                    "bim.enable_editing_work_schedule", text="", icon="GREASEPENCIL"
+                ).work_schedule = work_schedule_id
                 row.operator("bim.copy_work_schedule", text="", icon="DUPLICATE").work_schedule = work_schedule_id
                 row.operator("bim.remove_work_schedule", text="", icon="X").work_schedule = work_schedule_id
             if self.props.active_work_schedule_id == work_schedule_id:
@@ -281,11 +281,11 @@ class BIM_PT_work_schedules(Panel):
     def draw_task_operators(self) -> None:
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
-        ifc_definition_id = None
+        task, ifc_definition_id = None, None
         if self.tprops.tasks and self.props.active_task_index < len(self.tprops.tasks):
             task = self.tprops.tasks[self.props.active_task_index]
             ifc_definition_id = task.ifc_definition_id
-        if ifc_definition_id:
+        if task and ifc_definition_id:
             if self.props.active_task_id:
                 if self.props.editing_task_type == "TASKTIME":
                     row.operator("bim.edit_task_time", text="", icon="CHECKMARK")
@@ -311,12 +311,12 @@ class BIM_PT_work_schedules(Panel):
                     row_.prop(self.props, "enable_reorder", text="", icon="SORTALPHA")
                     row_.operator("bim.enable_editing_task_sequence", text="", icon="TRACKING")
                     row_.operator("bim.enable_editing_task_time", text="", icon="TIME").task = ifc_definition_id
-                    row_.operator("bim.enable_editing_task_calendar", text="", icon="VIEW_ORTHO").task = (
-                        ifc_definition_id
-                    )
-                    row_.operator("bim.enable_editing_task_attributes", text="", icon="GREASEPENCIL").task = (
-                        ifc_definition_id
-                    )
+                    row_.operator(
+                        "bim.enable_editing_task_calendar", text="", icon="VIEW_ORTHO"
+                    ).task = ifc_definition_id
+                    row_.operator(
+                        "bim.enable_editing_task_attributes", text="", icon="GREASEPENCIL"
+                    ).task = ifc_definition_id
                 row.operator("bim.add_task", text="Add", icon="ADD").task = ifc_definition_id
                 row.operator("bim.duplicate_task", text="Copy", icon="DUPLICATE").task = ifc_definition_id
                 row.operator("bim.remove_task", text="Delete", icon="X").task = ifc_definition_id
@@ -341,6 +341,8 @@ class BIM_PT_work_schedules(Panel):
             row.prop(self.props, "other_columns", text="")
             column_type, name = self.props.other_columns.split(".")
             data_type = "string"
+        else:
+            assert False, column_type
         row.operator("bim.set_task_sort_column", text="", icon="SORTALPHA").column = f"{column_type}.{name}"
         row.prop(
             self.props, "is_sort_reversed", text="", icon="SORT_DESC" if self.props.is_sort_reversed else "SORT_ASC"
@@ -970,13 +972,13 @@ class BIM_UL_tasks(UIList):
             row.label(text="", icon="BLANK1")
         if item.has_children:
             if item.is_expanded:
-                row.operator("bim.contract_task", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN").task = (
-                    item.ifc_definition_id
-                )
+                row.operator(
+                    "bim.contract_task", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN"
+                ).task = item.ifc_definition_id
             else:
-                row.operator("bim.expand_task", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT").task = (
-                    item.ifc_definition_id
-                )
+                row.operator(
+                    "bim.expand_task", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT"
+                ).task = item.ifc_definition_id
         else:
             row.label(text="", icon="DOT")
 

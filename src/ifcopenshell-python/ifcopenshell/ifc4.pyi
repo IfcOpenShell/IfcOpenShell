@@ -28,7 +28,7 @@
 from typing import Literal, TypeAlias, TypeVar, Union, overload
 
 import ifcopenshell
-from ifcopenshell.entity_instance import entity_instance
+from ifcopenshell import entity_instance
 
 _T = TypeVar("_T", bound=entity_instance)
 
