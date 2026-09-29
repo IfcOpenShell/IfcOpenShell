@@ -308,9 +308,6 @@ class TestGetSimilarOpenings:
         assert subject.get_similar_openings(ifc, opening) == [other_opening]
 
     def test_openings_with_no_placement_yet_are_not_similar(self, ifc):
-        # ObjectPlacement is optional. Two freshly created openings both
-        # having ObjectPlacement == None must not be treated as "similar",
-        # since None == None would otherwise match every unplaced opening.
         file = ifcopenshell.file(schema="IFC4")
         opening = ifcopenshell.api.root.create_entity(file, ifc_class="IfcOpeningElement")
         ifcopenshell.api.root.create_entity(file, ifc_class="IfcOpeningElement")
@@ -321,9 +318,6 @@ class TestGetSimilarOpenings:
 
 class TestGetSimilarOpeningsBuildingObjs:
     def test_run(self, ifc):
-        # `ifc.get_object` is called with a real entity_instance, which the
-        # Prophecy mock can't serialize as a predicted call, so a plain stub
-        # is used here instead.
         class FakeIfc:
             requested_elements = []
 
@@ -341,9 +335,6 @@ class TestGetSimilarOpeningsBuildingObjs:
         assert FakeIfc.requested_elements == [wall]
 
     def test_openings_that_have_not_voided_anything_yet_are_skipped(self, ifc):
-        # VoidsElements is an inverse relationship and may be empty, e.g. for
-        # an opening that hasn't voided a building element yet. Indexing into
-        # it unconditionally used to raise IndexError.
         file = ifcopenshell.file(schema="IFC4")
         opening = ifcopenshell.api.root.create_entity(file, ifc_class="IfcOpeningElement")
         assert opening.VoidsElements == ()
