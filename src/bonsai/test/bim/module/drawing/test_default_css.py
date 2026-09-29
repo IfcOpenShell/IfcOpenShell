@@ -57,20 +57,14 @@ class TestDefaultCss:
             )
 
     def test_furniture_and_geographic_rule_wins_the_cascade_over_cut(self):
-        # A cut/projection SVG element carries BOTH the base class (e.g. "cut") and the IFC
-        # class (e.g. "IfcFurniture") on the same element (see SvgSerializer.cpp's
-        # `class="cut IfcFurniture ..."` prefixing). Since `.IfcFurniture` and `.cut` are both
-        # single-class selectors, they have equal specificity, so whichever is declared LATER
-        # in the stylesheet wins for the properties it sets. The fine-weight rule must therefore
-        # appear after both `.cut` and `.projection` or it will be silently overridden.
         css_text = self.css_text()
         cut_pos = css_text.index(".cut {")
         projection_pos = css_text.index(".projection {")
         furniture_pos = css_text.index(".IfcFurniture")
 
-        assert (
-            furniture_pos > cut_pos
-        ), ".IfcFurniture/.IfcGeographicElement rule must come after .cut to win the cascade"
-        assert (
-            furniture_pos > projection_pos
-        ), ".IfcFurniture/.IfcGeographicElement rule must come after .projection to win the cascade"
+        assert furniture_pos > cut_pos, (
+            ".IfcFurniture/.IfcGeographicElement rule must come after .cut to win the cascade"
+        )
+        assert furniture_pos > projection_pos, (
+            ".IfcFurniture/.IfcGeographicElement rule must come after .projection to win the cascade"
+        )
