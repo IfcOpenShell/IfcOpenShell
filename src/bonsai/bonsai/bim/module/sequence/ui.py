@@ -84,7 +84,7 @@ class BIM_PT_status(Panel):
             row.label(text=status.name)
             if status.name in StatusData.data["active_element_status"]:
                 row.label(text="", icon="OBJECT_DATA")
-            if status.name in StatusData.data["statuses_with_elements"]:
+            if status.has_elements:
                 row.label(text="", icon="ASSET_MANAGER")
             row.prop(status, "is_visible", text="", emboss=False, icon="HIDE_OFF" if status.is_visible else "HIDE_ON")
             row.operator("bim.select_status_filter", icon="RESTRICT_SELECT_OFF", text="").status = status.name
