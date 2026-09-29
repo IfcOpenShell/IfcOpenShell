@@ -972,13 +972,7 @@ class Raycast(bonsai.core.tool.Raycast):
             is_visible = cls.point_is_visible_in_clipping_plane(vertex)
 
         elif obj.type == "CURVE":
-            # Test the curve's own control points instead of converting the
-            # whole curve to a tessellated mesh (obj.to_mesh().copy()): that
-            # conversion cost scales with the curve's point count (and
-            # resolution) and used to run on every snap event without ever
-            # freeing the generated mesh/object datablocks, so moving the
-            # mouse over a curve with many points while adding a wall pegged
-            # a CPU core (#7525).
+            # Test the curve's control points; to_mesh() on every snap event pegged a CPU core (#7525).
             matrix = obj.matrix_world
             for spline in obj.data.splines:
                 points = spline.bezier_points if spline.bezier_points else spline.points
