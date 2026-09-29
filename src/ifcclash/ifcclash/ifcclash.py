@@ -94,7 +94,7 @@ class Clasher:
             self.process_clash_set(clash_set)
 
     def process_clash_set(self, clash_set: ClashSet) -> None:
-        self.tree = ifcopenshell.geom.tree()
+        self.tree = ifcopenshell.geom.tree(backend="opencascade.trianglebvh")
         self.create_group("a")
         for source in clash_set["a"]:
             source["ifc"] = self.load_ifc(source["file"])
@@ -148,7 +148,7 @@ class Clasher:
                 b_ifc_class=element2.is_a(),
                 a_name=element1.get_argument(2),
                 b_name=element2.get_argument(2),
-                type=self.tree.get_clash_type(result.clash_type),
+                type=ifcopenshell.geom.tree.get_clash_type(result.clash_type),
                 p1=list(result.p1),
                 p2=list(result.p2),
                 distance=result.distance,
@@ -230,7 +230,7 @@ class Clasher:
         for i, clash_set in enumerate(self.clash_sets):
             bcfxml = BcfXml.create_new(clash_set["name"])
             for clash in clash_set["clashes"].values():
-                title = f'{clash["a_ifc_class"]}/{clash["a_name"]} and {clash["b_ifc_class"]}/{clash["b_name"]}'
+                title = f"{clash['a_ifc_class']}/{clash['a_name']} and {clash['b_ifc_class']}/{clash['b_name']}"
                 topic = bcfxml.add_topic(title, title, "IfcClash")
                 viewpoint = topic.add_viewpoint_from_point_and_guids(
                     np.array(clash["p1"]),
