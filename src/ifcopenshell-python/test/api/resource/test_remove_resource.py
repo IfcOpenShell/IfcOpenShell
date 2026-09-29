@@ -50,5 +50,5 @@ class TestRemoveResource(test.bootstrap.IFC4):
 
         ifcopenshell.api.resource.remove_resource(self.file, resource=crew1)
 
-        assert self.file.by_type("IfcRelDeclares") == [rel]
+        assert self.file.by_type("IfcRelDeclares") == (rel,)
         assert rel.RelatedDefinitions == (crew2,)
