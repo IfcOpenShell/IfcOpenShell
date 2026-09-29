@@ -1452,10 +1452,7 @@ class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
             props = tool.Project.get_project_props()
             filepath = tool.Ifc.get_uri(filepath, use_relative_path=self.use_relative_path)
 
-            # A queued repeat click (or any other repeat invocation) that lands
-            # after this same file was already linked with this same query used
-            # to add a second, identical row and reload the whole model again
-            # from scratch (#9029). Skip instead of silently duplicating.
+            # A repeat invocation for an already linked file and query would duplicate the row (#9029).
             if any(link.filepath == filepath and link.query == self.query for link in props.links):
                 self.report({"INFO"}, f"'{Path(filepath).name}' is already linked, skipping duplicate.")
                 continue
