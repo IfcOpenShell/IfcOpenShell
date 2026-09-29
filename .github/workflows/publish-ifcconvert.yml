@@ -14,7 +14,7 @@ jobs:
 
   publish:
     needs: upstream-only
-    name: ${{ matrix.config.name }}-${{ matrix.pyver }}
+    name: ${{ matrix.config.name }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
