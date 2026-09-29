@@ -20,8 +20,7 @@ from __future__ import annotations
 
 import json
 import re
-from collections.abc import Generator, Iterable
-from contextlib import contextmanager
+from collections.abc import Iterable
 from datetime import datetime
 from datetime import time as datetime_time
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union
@@ -1876,51 +1875,30 @@ class Sequence(bonsai.core.tool.Sequence):
 
         cls.apply_visibility_to_voids(visible_elements)
 
-    _hidden_opening_reps: dict[int, int] = {}
-    """Voiding openings hidden by the status filter: opening id -> stashed
-    IfcProductDefinitionShape id. While stashed, ``opening.Representation`` is
-    None in the in-memory model so the geometry kernel skips the boolean
-    subtraction. Restored on unhide/disable, and around IFC writes by
-    ``opening_representations_restored``."""
-
-    _hidden_opening_reps_file: Optional[ifcopenshell.file] = None
+    _status_hidden_openings: set[int] = set()
+    _status_hidden_openings_file: Optional[ifcopenshell.file] = None
 
     @classmethod
     def apply_visibility_to_voids(cls, visible_elements: set[ifcopenshell.entity_instance]) -> None:
-        """Sync voiding opening representations with the status filter.
+        """Record the voiding openings hidden by the status filter and recut their hosts.
 
-        Hidden openings get their Representation temporarily set to None in the
-        in-memory model (so their boolean cut disappears from hosts and from any
-        drawing generated while the filter is active); openings visible again
-        get it restored. Affected hosts are recut."""
+        The IFC model is not modified, see ``get_geometry_file``."""
         ifc_file = tool.Ifc.get()
-        if cls._hidden_opening_reps_file is not ifc_file:
-            cls._hidden_opening_reps.clear()
-        cls._hidden_opening_reps_file = ifc_file
-
-        affected_hosts: set[ifcopenshell.entity_instance] = set()
-        openings = {o.id(): o for o in ifc_file.by_type("IfcOpeningElement")}
-        for opening_id in set(cls._hidden_opening_reps) - set(openings):
-            del cls._hidden_opening_reps[opening_id]
-        for opening_id, opening in openings.items():
-            rels = opening.VoidsElements
-            if not rels:
+        previous = cls._status_hidden_openings if cls._status_hidden_openings_file is ifc_file else set()
+        hosts: dict[int, ifcopenshell.entity_instance] = {}
+        hidden: set[int] = set()
+        for opening in ifc_file.by_type("IfcOpeningElement"):
+            if not opening.Representation or not (rels := opening.VoidsElements):
                 continue
-            host = rels[0].RelatingBuildingElement
-            if host is None:
+            if not (host := rels[0].RelatingBuildingElement):
                 continue
+            hosts[opening.id()] = host
             if opening not in visible_elements:
-                if opening.Representation is not None:
-                    cls._hidden_opening_reps[opening_id] = opening.Representation.id()
-                    opening.Representation = None
-                    affected_hosts.add(host)
-            elif opening_id in cls._hidden_opening_reps:
-                opening.Representation = ifc_file.by_id(cls._hidden_opening_reps.pop(opening_id))
-                affected_hosts.add(host)
+                hidden.add(opening.id())
 
-        if not cls._hidden_opening_reps:
-            cls._hidden_opening_reps_file = None
-        if not affected_hosts:
+        cls._status_hidden_openings = hidden
+        cls._status_hidden_openings_file = ifc_file if hidden else None
+        if not (affected_hosts := {hosts[i] for i in hidden ^ previous if i in hosts}):
             return
         with tool.Geometry.batch_host_recut():
             for host in affected_hosts:
@@ -1932,26 +1910,26 @@ class Sequence(bonsai.core.tool.Sequence):
                     tool.Geometry.recut_host(host_obj, representation)
 
     @classmethod
-    @contextmanager
-    def opening_representations_restored(cls) -> Generator[None, None, None]:
-        """Temporarily restore status-hidden opening representations, so IFC
-        data written to disk is unaffected by the viewport status filter."""
-        ifc_file = tool.Ifc.get()
-        restored: list[int] = []
-        if cls._hidden_opening_reps_file is ifc_file:
-            for opening_id, rep_id in cls._hidden_opening_reps.items():
-                try:
-                    opening = ifc_file.by_id(opening_id)
-                    rep = ifc_file.by_id(rep_id)
-                except RuntimeError:
-                    continue
-                opening.Representation = rep
-                restored.append(opening_id)
-        try:
-            yield
-        finally:
-            for opening_id in restored:
-                ifc_file.by_id(opening_id).Representation = None
+    def get_geometry_file(
+        cls, ifc_file: ifcopenshell.file, elements: Iterable[ifcopenshell.entity_instance]
+    ) -> ifcopenshell.file:
+        """File for the geometry kernel: a copy without the cuts of status-hidden
+        openings if any of the elements has one, else ``ifc_file`` itself."""
+        if ifc_file is not cls._status_hidden_openings_file:
+            return ifc_file
+        if not (
+            hidden := {
+                opening_id
+                for element in elements
+                for rel in getattr(element, "HasOpenings", ())
+                if (opening_id := rel.RelatedOpeningElement.id()) in cls._status_hidden_openings
+            }
+        ):
+            return ifc_file
+        geometry_file = ifcopenshell.file.from_string(ifc_file.to_string())
+        for opening_id in hidden:
+            geometry_file.by_id(opening_id).Representation = None
+        return geometry_file
 
     @classmethod
     def copy_work_schedule(cls, work_schedule: ifcopenshell.entity_instance) -> None:
