@@ -112,6 +112,8 @@ def sum_child_root_elements(root_element: ifcopenshell.entity_instance, category
                 values = new_child_root_element.CostValues
             elif root_element.is_a("IfcConstructionResource"):
                 values = child_root_element.BaseCosts
+            else:
+                assert False, root_element
             for child_cost_value in values or []:
                 if category_filter and child_cost_value.Category != category_filter:
                     continue

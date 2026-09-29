@@ -147,6 +147,12 @@ class Material(bonsai.core.tool.Material):
         MaterialsData.data["material_styles_data"] = MaterialsData.material_styles_data()
 
     @classmethod
+    def refresh(cls) -> None:
+        from bonsai.bim.module.material.data import refresh as refresh_material_data
+
+        refresh_material_data()
+
+    @classmethod
     def is_editing_materials(cls) -> bool:
         props = tool.Material.get_material_props()
         return props.is_editing
@@ -214,9 +220,14 @@ class Material(bonsai.core.tool.Material):
 
     @classmethod
     def get_material(
-        cls, element: ifcopenshell.entity_instance, should_inherit: bool = False
+        cls,
+        element: ifcopenshell.entity_instance,
+        should_inherit: bool = False,
+        should_skip_usage: bool = False,
     ) -> Union[ifcopenshell.entity_instance, None]:
-        return ifcopenshell.util.element.get_material(element, should_inherit=should_inherit)
+        return ifcopenshell.util.element.get_material(
+            element, should_inherit=should_inherit, should_skip_usage=should_skip_usage
+        )
 
     @classmethod
     def is_a_material_set(cls, material: ifcopenshell.entity_instance) -> bool:
@@ -320,6 +331,10 @@ class Material(bonsai.core.tool.Material):
 
     @classmethod
     def get_style(cls, material: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+        if not material.is_a("IfcMaterial"):
+            # material may also be an IfcMaterialConstituentSet / IfcMaterialLayerSet /
+            # IfcMaterialProfileSet / IfcMaterialList, none of which have HasRepresentation.
+            return None
         for material_representation in material.HasRepresentation:
             for representation in material_representation.Representations:
                 for item in representation.Items:

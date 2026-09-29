@@ -1,0 +1,55 @@
+name: Publish Docs Unstable
+
+# Publishes into subdirectories of docs.bonsaibim.org. The stable docs and the
+# landing page in the same repository are published by the bonsai-docs
+# workflow of https://github.com/IfcOpenShell/website on release.
+
+on:
+  push:
+    branches:
+      - v0.9.0
+    paths:
+      - 'src/bonsai/docs/**'
+      - 'src/bonsaiviewer/docs/**'
+      - '.github/workflows/publish-docs-unstable.yml'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    name: ${{ matrix.destination }}
+    runs-on: ubuntu-latest
+    strategy:
+      # Both jobs push to the same repository.
+      max-parallel: 1
+      matrix:
+        include:
+          - docs: src/bonsai/docs
+            destination: studio-unstable
+          - docs: src/bonsaiviewer/docs
+            destination: viewer-unstable
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install -r ${{ matrix.docs }}/requirements.txt
+
+      - name: Build documentation
+        run: make -C ${{ matrix.docs }} html
+
+      - name: Deploy to GitHub Pages (Unstable)
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          # IfcOpenBot's token, which also publishes the stable docs and Bonsai unstable.
+          personal_token: ${{ secrets.IFCOPENBOT_TOKEN }}
+          external_repository: IfcOpenShell/bonsaibim_org_docs
+          publish_branch: main
+          publish_dir: ${{ matrix.docs }}/_build/html
+          # Only this subdirectory is replaced.
+          destination_dir: ${{ matrix.destination }}

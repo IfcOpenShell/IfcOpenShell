@@ -72,11 +72,10 @@ class ExportOBJ(bpy.types.Operator):
         # Conversion from IFC to OBJ
         # Settings for obj
         settings = ifcopenshell.geom.settings()
-        serializer_settings = ifcopenshell.geom.serializer_settings()
 
         settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.SURFACES_AND_SOLIDS)
         settings.set("apply-default-materials", True)
-        serializer_settings.set("use-element-guids", True)
+        settings.set("use-element-guids", True)
         settings.set("use-world-coords", True)
 
         ifc_file: ifcopenshell.file
@@ -90,7 +89,7 @@ class ExportOBJ(bpy.types.Operator):
         obj_file_path = os.path.join(output_dir, "model.obj")
         mtl_file_path = os.path.join(output_dir, "model.mtl")
 
-        serialiser = ifcopenshell.geom.serializers.obj(obj_file_path, mtl_file_path, settings, serializer_settings)
+        serialiser = ifcopenshell.geom.serializers.obj(obj_file_path, mtl_file_path, settings)
         serialiser.setFile(ifc_file)
         serialiser.setUnitNameAndMagnitude("METER", 1.0)
         serialiser.writeHeader()
@@ -107,7 +106,7 @@ class ExportOBJ(bpy.types.Operator):
         if iterator.initialize():
             while True:
                 shape = iterator.get()
-                assert isinstance(shape, W.TriangulationElement)
+                assert isinstance(shape, W.triangulation_element)
                 materials = shape.geometry.materials
 
                 for material in materials:
@@ -156,6 +155,7 @@ class RadianceRender(bpy.types.Operator):
         print(f"Quality: {quality}, Detail: {detail}, Variability: {variability}")
         print(f"Output directory: {output_dir}")
 
+        hdr_image_path, hdr_mask_path, sky_map_cal_path = None, None, None
         if use_hdr:
             hdr_image = "noon_grass_2k.hdr"
             hdr_mask = "noon_grass_2k_mask.hdr"
@@ -254,6 +254,9 @@ class RadianceRender(bpy.types.Operator):
         # 4 0 0 -1 180
 
         if use_hdr and choose_hdr_image == "Noon":
+            assert hdr_image_path is not None
+            assert hdr_mask_path is not None
+            assert sky_map_cal_path is not None
 
             with open(sky_file_path, "w") as f:
                 f.write(sky_description_str)
