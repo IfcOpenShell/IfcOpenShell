@@ -18,12 +18,10 @@
 
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.feature
 import ifcopenshell.api.group
 import ifcopenshell.api.spatial
-import ifcopenshell.util.element
 
 import bonsai.core.tool
 import bonsai.tool as tool
