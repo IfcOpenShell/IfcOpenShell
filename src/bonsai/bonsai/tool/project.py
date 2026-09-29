@@ -370,49 +370,33 @@ class Project(bonsai.core.tool.Project):
         props = cls.get_project_props()
         active_library_breadcrumb = props.get_active_library_breadcrumb()
         change_back = False
-        breadcrumb = None
+        name = breadcrumb_type = library_id = None
         if active_library_breadcrumb:
             name = active_library_breadcrumb.name
             breadcrumb_type = active_library_breadcrumb.breadcrumb_type
             library_id = active_library_breadcrumb.library_id
-            breadcrumb = (name, breadcrumb_type, library_id)
             change_back = True
 
         bpy.ops.bim.rewind_library()
         if change_back:
-            assert breadcrumb
+            assert name is not None and breadcrumb_type is not None and library_id is not None
             bpy.ops.bim.change_library_element(
-                element_name=breadcrumb[0],
-                breadcrumb_type=breadcrumb[1],
-                library_id=breadcrumb[2],
+                element_name=name,
+                breadcrumb_type=breadcrumb_type,
+                library_id=library_id,
             )
 
     @classmethod
     def get_parent_library(
         cls, project_library: ifcopenshell.entity_instance
     ) -> Union[ifcopenshell.entity_instance, None]:
-        """Return the IfcContext that declares or nests ``project_library``.
-
-        Returns ``None`` when ``project_library`` is itself the root of a
-        library-only file (no IfcRelNests, no IfcRelDeclares).
-        """
+        """Return the IfcContext that declares or nests ``project_library``, or ``None``
+        if neither relationship is present."""
         if nests := project_library.Nests:
             return nests[0].RelatingObject
         if has_context := project_library.HasContext:
             return has_context[0].RelatingContext
         return None
-
-    @classmethod
-    def get_root_context(cls, ifc_file: ifcopenshell.file) -> ifcopenshell.entity_instance:
-        """Return the file's root IfcContext.
-
-        Prefers IfcProject if present, otherwise falls back to IfcProjectLibrary —
-        library-only files are valid per IFC4+ and contain no IfcProject. Caller is
-        responsible for the IFC2X3 guard; IfcContext does not exist in that schema.
-        """
-        if projects := ifc_file.by_type("IfcProject"):
-            return projects[0]
-        return ifc_file.by_type("IfcProjectLibrary")[0]
 
     @classmethod
     def get_project_hierarchy(cls, ifc_file: ifcopenshell.file) -> HiearchyDict:
