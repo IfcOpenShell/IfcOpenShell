@@ -433,12 +433,13 @@ namespace {
 			const double span = std::fabs(a - b);
 			// CircleSegments controls how conics (circles, ellipses, arcs) are approximated
 			// in the CGAL kernel. Two modes, one or the other:
-			//  - CircleSegments == 0 (the default): the segment count is derived from
-			//    MesherLinearDeflection, so the chord deviation stays within the mesher's
-			//    linear deflection regardless of radius. This matches the deflection based
-			//    meshing the OpenCascade kernel already does and fixes issue #8051, where
-			//    large radius arcs (curved curtain wall mullions) collapsed to straight chords
-			//    because a fixed segment count is radius agnostic.
+			//  - CircleSegments == 0 (the default): the segment count is derived from the
+			//    mesher deflection settings, matching the dual linear+angular deflection
+			//    meshing the OpenCascade kernel already gets from BRepMesh_IncrementalMesh
+			//    (see MesherLinearDeflection/MesherAngularDeflection usage in
+			//    OpenCascadeConversionResult.cpp), and fixes issue #8051, where large radius
+			//    arcs (curved curtain wall mullions) collapsed to straight chords because a
+			//    fixed segment count is radius agnostic.
 			//  - CircleSegments > 0: it is used directly as the number of segments for a full
 			//    circle, giving deterministic, radius independent output.
 			int num_segments;
@@ -447,15 +448,32 @@ namespace {
 				num_segments = (int)std::ceil(span / (2 * M_PI) * circle_segments);
 			} else {
 				const double radius = conic_radius(t);
-				const double deflection = settings_.get<settings::MesherLinearDeflection>().get();
-				if (deflection > 0. && radius > deflection) {
-					const double max_segment_angle = 2.0 * std::acos(1.0 - deflection / radius);
-					num_segments = (int)std::ceil(span / max_segment_angle);
-				} else {
-					// Radius within the deflection tolerance (or no deflection set): a chord per
-					// quarter turn already keeps the deviation within tolerance.
-					num_segments = (int)std::ceil(span / (M_PI / 2.));
+				const double linear_deflection = settings_.get<settings::MesherLinearDeflection>().get();
+				const double angular_deflection = settings_.get<settings::MesherAngularDeflection>().get();
+
+				// Sagitta-based cap on the angular step needed to keep each chord's
+				// deviation within linear_deflection. The acos argument is clamped
+				// (rather than only applying this term when radius > linear_deflection)
+				// so small-radius conics still derive a segment count from the linear
+				// deflection instead of bypassing it altogether.
+				int num_segments_linear = 1;
+				if (linear_deflection > 0. && radius > 0.) {
+					const double half_step = std::acos((std::max)(-1.0, 1.0 - linear_deflection / radius));
+					if (half_step > 1.e-9) {
+						num_segments_linear = (int)std::ceil(span / (2 * half_step));
+					}
 				}
+
+				// Independent smoothness floor: without this, small-radius conics (where
+				// the linear deflection term above degenerates towards a single chord
+				// because their whole size is already within tolerance) would never get
+				// enough segments to look like a circle at all.
+				int num_segments_angular = 1;
+				if (angular_deflection > 1.e-9) {
+					num_segments_angular = (int)std::ceil(span / angular_deflection);
+				}
+
+				num_segments = (std::max)(num_segments_linear, num_segments_angular);
 			}
 			if (num_segments < 1) {
 				num_segments = 1;
