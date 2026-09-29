@@ -24,7 +24,6 @@ import bmesh
 import bpy
 import ifcopenshell.api.library
 import ifcopenshell.api.style
-import ifcopenshell.geom
 import ifcopenshell.guid
 import ifcopenshell.util.schema
 import numpy as np

@@ -816,8 +816,7 @@ class Loader(bonsai.core.tool.Loader):
                 error = e
         if error is not None:
             print(
-                f"WARNING. Failed to create geometry for {element} using Geometry Library "
-                f"'{geometry_library}': {error}"
+                f"WARNING. Failed to create geometry for {element} using Geometry Library '{geometry_library}': {error}"
             )
 
     @classmethod

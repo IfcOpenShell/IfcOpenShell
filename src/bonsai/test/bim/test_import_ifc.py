@@ -20,7 +20,6 @@ import logging
 from unittest import mock
 
 import bpy
-import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.guid
 import ifcopenshell.util.representation
