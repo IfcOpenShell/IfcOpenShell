@@ -154,8 +154,7 @@ class IfcGit(bonsai.core.tool.IfcGit):
     @classmethod
     def get_project_asset_paths(cls, path_ifc: str) -> list[str]:
         """Drawing asset files referenced by the loaded IFC, as absolute normalised paths"""
-        ifc_file = tool.Ifc.get()
-        if not ifc_file:
+        if not (ifc_file := tool.Ifc.get()):
             return []
         base_dir = cls.get_path_dir(path_ifc)
         assets: set[str] = set()
