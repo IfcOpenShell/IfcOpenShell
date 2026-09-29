@@ -282,6 +282,62 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                 )
                 continue
 
+            # A collection-instance Empty (e.g. dropped in from the Asset Browser, which
+            # wraps a dragged-in collection asset in an instancing Empty) has no mesh
+            # data of its own, so it would otherwise silently end up with no IFC
+            # representation. If every object it instances is a mesh, realize them into
+            # real local mesh objects and join them into one, so the existing
+            # split-by-loose-parts tessellation path (which already handles multi-part
+            # furniture like this) can take over normally.
+            if (
+                self.should_add_representation
+                and not is_structural
+                and obj.type == "EMPTY"
+                and obj.instance_type == "COLLECTION"
+                and obj.instance_collection
+            ):
+                instanced_objects = list(obj.instance_collection.all_objects)
+                mesh_children = [o for o in instanced_objects if o.type == "MESH"]
+                if mesh_children and len(mesh_children) == len(instanced_objects):
+                    empty_name = obj.name
+                    tool.Blender.select_and_activate_single_object(context, obj)
+                    bpy.ops.object.duplicates_make_real(use_base_parent=False, use_hierarchy=False)
+                    realized = [o for o in context.selected_objects if o.type == "MESH"]
+                    if realized:
+                        # Realized parts may still point at the source library's mesh
+                        # data. object.join() (and editing in general) refuses to touch
+                        # external library data, so make each part's data local first.
+                        for r in realized:
+                            if r.data.library is not None or r.data.users > 1:
+                                r.data = r.data.copy()
+                        if len(realized) > 1:
+                            tool.Blender.set_objects_selection(context, active_object=realized[0], selected_objects=realized)
+                            bpy.ops.object.join()
+                        new_obj = realized[0]
+                        new_obj.name = empty_name
+                        bpy.data.objects.remove(obj)
+                        obj = new_obj
+                        self.report(
+                            {"INFO"},
+                            f"Object '{empty_name}' was a collection instance (e.g. from the Asset Browser) "
+                            "and has been converted to a standalone local mesh to assign it an IFC class. "
+                            "It will no longer update if the source asset/collection changes.",
+                        )
+                    else:
+                        self.report(
+                            {"WARNING"},
+                            f"Object '{empty_name}' is a collection instance and could not be "
+                            "automatically converted to a mesh; no IFC representation was created. "
+                            "Try Object > Apply > Make Instances Real manually, then assign the class again.",
+                        )
+                else:
+                    self.report(
+                        {"WARNING"},
+                        f"Object '{obj.name}' is a collection instance containing non-mesh objects, "
+                        "which isn't supported yet, so no IFC representation was created. Try Object > Apply "
+                        "> Make Instances Real manually, then assign the class again.",
+                    )
+
             if (
                 self.should_add_representation
                 and not is_structural
