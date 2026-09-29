@@ -1002,8 +1002,7 @@ class OverrideDelete(bpy.types.Operator):
         deleted_aggregates = []
         for aggregate_id in aggregates_to_check:
             # Re-resolve by id: it may have been deleted earlier in this batch.
-            aggregate = tool.Ifc.get_entity_by_id(aggregate_id)
-            if aggregate is None:
+            if (aggregate := tool.Ifc.get_entity_by_id(aggregate_id)) is None:
                 continue
 
             # Skip spatial elements - they should not be deleted even if empty
