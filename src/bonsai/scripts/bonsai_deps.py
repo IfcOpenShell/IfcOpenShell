@@ -1,3 +1,5 @@
+# /// script
+# ///
 """Clone or update Bonsai external dependencies.
 
 Must be run from the repository root.
