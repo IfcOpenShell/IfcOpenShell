@@ -216,8 +216,7 @@ class MaterialPsetsData(Data):
         props = tool.Material.get_material_props()
         if material := props.active_material:
             if material.ifc_definition_id:
-                material = tool.Ifc.get_entity_by_id(material.ifc_definition_id)
-                if material is None:
+                if (material := tool.Ifc.get_entity_by_id(material.ifc_definition_id)) is None:
                     return []
                 category = getattr(material, "Category", None) or None
                 psets = bonsai.bim.schema.ifc.psetqto.get_applicable(
