@@ -497,7 +497,7 @@ class RemoveWindow(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Remove Window"
     bl_options = {"REGISTER"}
 
-    def _execute(self, context: bpy.types.Context) -> set[str]:  # noqa: ARG002
+    def _execute(self, context: bpy.types.Context) -> set[str]:
         obj = context.active_object
         assert obj
         element = tool.Ifc.get_entity(obj)
@@ -528,7 +528,9 @@ class PickWindowType(bpy.types.Operator, tool.Ifc.Operator, PickTypeMixin):
 
 
 # Frame accessor factory - creates callbacks that delegate to BIMWindowProperties methods
-def _make_frame_accessors(attr_name: str, panel_index: int) -> tuple[
+def _make_frame_accessors(
+    attr_name: str, panel_index: int
+) -> tuple[
     "collections.abc.Callable[[BIMWindowProperties], float]",
     "collections.abc.Callable[[BIMWindowProperties, float], None]",
 ]:

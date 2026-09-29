@@ -19,7 +19,7 @@ class Generator:
                 "Description": "",
                 "Location": "https://brickschema.org/schema/Brick",
                 "ReferenceTokens": [],
-            }
+            },
         )
 
         query = self.schema.query("""
@@ -70,17 +70,19 @@ class Generator:
             # create the reference
             ref = self.file.create_entity(
                 "IfcClassificationReference",
-                **{"Location": location, "Description": description, "Identification": name, "Name": name}
+                **{"Location": location, "Description": description, "Identification": name, "Name": name},
             )
 
             # get all parents of the entity
-            query = self.schema.query("""
+            query = self.schema.query(
+                """
                 PREFIX brick: <https://brickschema.org/schema/Brick#>
                 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
                 SELECT ?parent WHERE {
                     brick:{entity} rdfs:subClassOf ?parent .
                 }
-                """.replace("{entity}", location.split("#")[-1]))
+                """.replace("{entity}", location.split("#")[-1])
+            )
             # filter parents for the brick entity
             parent = None
             for row in query:
