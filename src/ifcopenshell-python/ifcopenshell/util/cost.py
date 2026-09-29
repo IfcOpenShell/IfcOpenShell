@@ -112,6 +112,8 @@ def sum_child_root_elements(root_element: ifcopenshell.entity_instance, category
                 values = new_child_root_element.CostValues
             elif root_element.is_a("IfcConstructionResource"):
                 values = child_root_element.BaseCosts
+            else:
+                assert False, root_element
             for child_cost_value in values or []:
                 if category_filter and child_cost_value.Category != category_filter:
                     continue
@@ -355,8 +357,7 @@ def get_cost_rate(
 
 class CostValueUnserialiser:
     def parse(self, formula: str):
-        l = lark.Lark(
-            """start: formula
+        l = lark.Lark("""start: formula
                     formula: operand (operator operand)*
                     operand: value | category "(" formula ")"
                     value: NUMBER?
@@ -393,8 +394,7 @@ class CostValueUnserialiser:
                     NEWLINE: (CR? LF)+
 
                     %ignore WS // Disregard spaces in text
-                 """
-        )
+                 """)
         start = l.parse(formula)
         return self.get_formula(start.children[0])
 

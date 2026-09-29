@@ -50,6 +50,12 @@ def disconnect_path(
             for r in relating_element.ConnectedTo
             if r.is_a("IfcRelConnectsPathElements") and r.RelatedElement == related_element
         ]
+    else:
+        raise ValueError(
+            "Either provide `element` and `connection_type`, or provide `relating_element` and `related_element`. "
+            f"Got: element={element}, connection_type={connection_type}, "
+            f"relating_element={relating_element}, related_element={related_element}."
+        )
 
     for connection in set(connections):
         history = connection.OwnerHistory
