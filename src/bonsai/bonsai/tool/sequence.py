@@ -55,7 +55,6 @@ if TYPE_CHECKING:
 
 
 class Sequence(bonsai.core.tool.Sequence):
-
     RELATED_OBJECT_TYPE = Literal["RESOURCE", "PRODUCT", "CONTROL"]
 
     @classmethod
@@ -1158,16 +1157,18 @@ class Sequence(bonsai.core.tool.Sequence):
         props.task_input_colors.clear()
         for group, data in groups.items():
             for predefined_type in data["PredefinedType"]:
-                if group in ["CREATION", "OPERATION", "MOVEMENT_TO"]:
+                predefined_type_item = None
+                if group in ("CREATION", "OPERATION", "MOVEMENT_TO"):
                     predefined_type_item = props.task_output_colors.add()
-                elif group in ["MOVEMENT_FROM"]:
+                elif group in ("MOVEMENT_FROM",):
                     predefined_type_item = props.task_input_colors.add()
-                elif group in ["USERDEFINED", "DESTRUCTION"]:
+                elif group in ("USERDEFINED", "DESTRUCTION"):
                     predefined_type_item = props.task_input_colors.add()
                     predefined_type_item2 = props.task_output_colors.add()
                     predefined_type_item2.name = predefined_type
                     predefined_type_item2.color = data["Color"]
                 # TO DO: consider cases where users confuses inputs and outputs
+                assert predefined_type_item is not None
                 predefined_type_item.name = predefined_type
                 predefined_type_item.color = data["Color"]
 

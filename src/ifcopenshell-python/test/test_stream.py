@@ -18,6 +18,8 @@
 
 from pathlib import Path
 
+import pytest
+
 import ifcopenshell
 
 TEST_FILE = Path(__file__).parent / "files" / "basic.ifc"
@@ -48,3 +50,10 @@ class TestEntity:
         stream_file = ifcopenshell.open(TEST_FILE, should_stream=True)
         assert (element := stream_file.by_id(1))
         assert element.Name == "My Project"
+
+    def test_getattr_derive(self):
+        stream_file: ifcopenshell.stream
+        stream_file = ifcopenshell.open(TEST_FILE, should_stream=True)
+        assert (units := stream_file.by_type("IfcSIUnit"))
+        with pytest.raises(RuntimeError):
+            units[0].Dimensions
