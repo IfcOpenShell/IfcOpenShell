@@ -329,9 +329,9 @@ Scenario: See the current frame date as text
     And I set "scene.BIMWorkScheduleProperties.speed_real_duration" to "1 w"
     And I press "bim.visualise_work_schedule_date_range(work_schedule={work_schedule})"
     When I am on frame "1"
-    Then the object "Timeline" has a body of "2021-01-01"
+    Then the object "Timeline" has a body of "01/01/21"
     When I am on frame "2"
-    Then the object "Timeline" has a body of "2021-01-02"
+    Then the object "Timeline" has a body of "02/01/21"
 
 Scenario: Animate the construction of a wall
     Given an empty IFC project
