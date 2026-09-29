@@ -44,9 +44,6 @@ class TestFormatDistanceNamelessLengthUnit(NewFile):
         ifc = ifcopenshell.file(schema="IFC4")
         ifc.create_entity("IfcProject", GlobalId=ifcopenshell.guid.new())
         tool.Ifc.set(ifc)
-        # A schema-non-conformant LENGTHUNIT with no Name, as produced by some
-        # third-party exporters (#8885). ifcopenshell.file permits this on
-        # creation even though IfcSIUnit.Name is not officially optional.
         length_unit = ifc.create_entity("IfcSIUnit", UnitType="LENGTHUNIT")
         ifcopenshell.api.unit.assign_unit(ifc, units=[length_unit])
         helper._warned_nameless_length_units.clear()
