@@ -36,9 +36,6 @@ FIXTURES = os.path.join(os.path.dirname(__file__), "fixtures")
 
 class TestAttributeOptionalUnsetFixture:
     def test_optional_attribute_passes_when_genuinely_unset(self):
-        # IfcWall.Description is never set. cardinality="optional" means
-        # "if provided, check it; if absent, that is fine", so an unset
-        # Description must not fail the specification.
         specs = ids.open(os.path.join(FIXTURES, "attribute_optional_unset", "attribute_optional_unset.ids"))
         ifc = ifcopenshell.open(os.path.join(FIXTURES, "attribute_optional_unset", "attribute_optional_unset.ifc"))
         specs.validate(ifc)

@@ -36,10 +36,6 @@ FIXTURES = os.path.join(os.path.dirname(__file__), "fixtures")
 
 class TestAttributeLogicalUnknownFixture:
     def test_prohibited_attribute_fails_when_set_to_logical_unknown(self):
-        # IfcPresentationLayerWithStyle.LayerOn is an IFCLOGICAL set to the
-        # tri-state value UNKNOWN, which is a genuinely present value, not
-        # an absent one. A cardinality="prohibited" requirement on it must
-        # fail, since the attribute is provided.
         specs = ids.open(os.path.join(FIXTURES, "attribute_logical_unknown", "attribute_logical_unknown.ids"))
         ifc = ifcopenshell.open(os.path.join(FIXTURES, "attribute_logical_unknown", "attribute_logical_unknown.ifc"))
         specs.validate(ifc)
