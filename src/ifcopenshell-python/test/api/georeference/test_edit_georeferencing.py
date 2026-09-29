@@ -87,20 +87,6 @@ class TestEditGeoreferencingIFC2X3(test.bootstrap.IFC2X3):
             assert self.file.by_id(conversion[name]["id"]).NominalValue.is_a("IfcReal")
 
     def test_editing_a_map_conversion_property_never_seeded_by_add_georeferencing(self):
-        # XAxisAbscissa and Scale above are not seeded by add_georeferencing
-        # either, but that assertion alone cannot prove the loop wraps values
-        # correctly: a raw, unwrapped Python float also falls back to
-        # IfcReal in edit_pset's own type inference, so it passes whether or
-        # not edit_georeferencing wraps the value at all.
-        #
-        # Eastings takes the IfcLengthMeasure branch instead, so an unwrapped
-        # float would fall back to IfcReal, not IfcLengthMeasure, and this
-        # assertion actually distinguishes the two. This simulates an
-        # IFC2X3 file authored by another tool: the ePSet_MapConversion
-        # pset exists (so edit_georeferencing's own lookup succeeds) but
-        # Eastings itself was never seeded by add_georeferencing, so
-        # edit_pset must add it as a brand new property instead of
-        # inheriting the type of an existing one.
         project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         ifcopenshell.api.pset.add_pset(self.file, project, "ePSet_MapConversion")
         ifcopenshell.api.georeference.edit_georeferencing(self.file, coordinate_operation={"Eastings": 100.0})
