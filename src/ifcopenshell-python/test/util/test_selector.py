@@ -164,7 +164,6 @@ class TestGetElementValue(test.bootstrap.IFC4):
         assert subject.get_element_value(element, "mat.i.Name") == ["L1", "L2"]
 
     def test_selecting_referenced_structures(self):
-        # Structures referenced via IfcRelReferencedInSpatialStructure (#7806).
         storey = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey", name="L1")
         space = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSpace", name="Kitchen")
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDoor")
