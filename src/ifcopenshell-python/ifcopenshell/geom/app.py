@@ -25,21 +25,14 @@ import time
 import ifcopenshell.ifcopenshell_wrapper as W
 
 try:
-    from OCC.Core import AIS  # noqa: F401
+    from OCC.Core import AIS  # ruff: ignore[unused-import]
 
     USE_OCCT_HANDLE = False
 except ImportError:
-
     USE_OCCT_HANDLE = True
 
 from collections import OrderedDict, defaultdict
 from collections.abc import Iterable
-
-try:
-    QString = unicode
-except NameError:
-    # Python 3
-    QString = str
 
 os.environ["QT_API"] = "pyqt5"
 try:
@@ -54,7 +47,6 @@ from .code_editor_pane import code_edit
 try:
     from OCC.Display.pyqt5Display import qtViewer3d
 except BaseException:
-
     try:
         import OCC.Display.backend
     except BaseException:
@@ -145,7 +137,8 @@ class configuration:
             config.set(
                 "snippets",
                 "print all wall ids",
-                self.config_encode("""
+                self.config_encode(
+                    """
 ###########################################################################
 # A simple script that iterates over all walls in the current model       #
 # and prints their Globally unique IDs (GUIDS) to the console window      #
@@ -153,13 +146,15 @@ class configuration:
 
 for wall in model.by_type("IfcWall"):
     print ("wall with global id: "+str(wall.GlobalId))
-""".lstrip()),
+""".lstrip()
+                ),
             )
 
             config.set(
                 "snippets",
                 "print properties of current selection",
-                self.config_encode("""
+                self.config_encode(
+                    """
 ###########################################################################
 # A simple script that iterates over all IfcPropertySets of the currently #
 # selected object and prints them to the console                          #
@@ -177,7 +172,8 @@ if selection:
              for prop in relDefinesByProperties.RelatingPropertyDefinition.HasProperties:
                  print ("{:<20} :{}".format(prop.Name,prop.NominalValue.wrappedValue))
          print ("\\n")
-""".lstrip()),
+""".lstrip()
+                ),
             )
             with open(conf_file, "w") as configfile:
                 config.write(configfile)
@@ -303,7 +299,7 @@ class application(QtWidgets.QApplication):
                     s = get_supertype(t)
                     if s:
                         add(s)
-                    s2, t2 = map(QString, (s, t))
+                    s2, t2 = map(str, (s, t))
                     if t2 not in items:
                         itm = items[t2] = QtWidgets.QTreeWidgetItem(items.get(s2, self), [t2])
                         itm.setData(0, QtCore.Qt.UserRole, t2)
@@ -313,7 +309,7 @@ class application(QtWidgets.QApplication):
                     add(t)
 
             for p in products:
-                t = QString(p.is_a())
+                t = str(p.is_a())
                 itm = items[p] = QtWidgets.QTreeWidgetItem(items.get(t, self), [p.Name or "<no name>"])
                 itm.setData(0, QtCore.Qt.UserRole, t)
                 self.children[t].append(p)
@@ -366,10 +362,7 @@ class application(QtWidgets.QApplication):
                         if hasattr(value_str, "wrappedValue"):
                             value_str = value_str.wrappedValue
 
-                        if isinstance(value_str, unicode):
-                            value_str = value_str.encode("utf-8")
-                        else:
-                            value_str = str(value_str)
+                        value_str = str(value_str)
 
                         if hasattr(value, "is_a"):
                             type_str = " <i>(%s)</i>" % value.is_a()
@@ -431,7 +424,6 @@ class application(QtWidgets.QApplication):
             print("property set dictionary has {} entries".format(len(self.prop_dict)))
 
     class viewer(qtViewer3d):
-
         instanceSelected = QtCore.pyqtSignal([object])
 
         #         @staticmethod
@@ -577,7 +569,6 @@ class application(QtWidgets.QApplication):
                     self.instanceSelected.emit(inst)
 
     class window(QtWidgets.QMainWindow):
-
         TITLE = "IfcOpenShell IFC viewer"
 
         window_closed = QtCore.pyqtSignal([])
