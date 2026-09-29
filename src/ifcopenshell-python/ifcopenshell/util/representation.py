@@ -512,11 +512,7 @@ def get_reference_line(wall: ifcopenshell.entity_instance, fallback_length: floa
             profile = extrusion.SweptArea
             curve = getattr(profile, "OuterCurve", None)
             if curve is None:
-                # Parametric rectangle profiles (IfcRectangleProfileDef and its
-                # subtypes) have no OuterCurve but a plain XDim centred on the
-                # profile Position. Walls authored by other software commonly use
-                # them, so recover the length here rather than falling back to the
-                # 1m default.
+                # Rectangle profiles have no OuterCurve, only an XDim centred on Position.
                 if profile.is_a("IfcRectangleProfileDef"):
                     half_x = profile.XDim / 2
                     center_x = profile.Position.Location.Coordinates[0] if profile.Position else 0.0
