@@ -30,7 +30,6 @@ silently dropped out of the decorated list for the whole Item/Edit mode
 session, and its arrow/text decoration disappeared from the viewport."""
 
 import bpy
-import ifcopenshell
 import ifcopenshell.api.group
 import pytest
 
@@ -91,8 +90,6 @@ class TestObjectDecoratorsSurviveItemModeHide(NewFile):
             decorated = [o for o, _ in DecoratorData.object_decorators(handler)]
             assert obj in decorated, "sanity check: a visible dimension should be decorated"
 
-            # Simulate entering IFC Item/Edit mode: the original object gets
-            # hidden while its representation items are edited (#9262).
             gprops = tool.Geometry.get_geometry_props()
             gprops.representation_obj = obj
             obj.hide_set(True)
