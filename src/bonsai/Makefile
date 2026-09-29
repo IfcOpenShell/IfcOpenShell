@@ -97,7 +97,8 @@ OLD:=8c614fa
 .PHONY: bump
 bump:
 ifndef NEW
-	$(error ERROR: 'NEW' variable is not set (should be set with new commmit hash). Example use for 'bump' command: 'make bump NEW=0123456'.)
+	$(error ERROR: 'NEW' variable is not set (should be set with new commit hash). \
+		Example use for 'bump' command: 'make bump NEW=0123456')
 endif
 	cd . && $(SED) -b "s/$(OLD)/$(NEW)/" Makefile
 	cd ../ifcopenshell-python/ && $(SED) -b "s/$(OLD)/$(NEW)/" Makefile
@@ -105,10 +106,10 @@ endif
 .PHONY: dist
 dist:
 ifndef PLATFORM
-	$(error PLATFORM is not set. Example values: $(SUPPORTED_PLATFORMS).)
+	$(error PLATFORM is not set. Example values: $(SUPPORTED_PLATFORMS))
 endif
 ifndef PYVERSION
-	$(error PYVERSION is not set. Example values: $(SUPPORTED_PYVERSIONS). )
+	$(error PYVERSION is not set. Example values: $(SUPPORTED_PYVERSIONS))
 endif
 	rm -rf build
 	mkdir -p build
