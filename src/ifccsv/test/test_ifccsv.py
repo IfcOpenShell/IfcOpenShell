@@ -106,7 +106,7 @@ class TestSplitBy:
         wall_sheet = workbook["IfcWall"]
         rows = list(wall_sheet.iter_rows(values_only=True))
         assert rows[0] == ("GlobalId", "class", "Name")
-        assert len(rows) == 3  # header + 2 walls
+        assert len(rows) == 3
 
     def test_export_ods_writes_one_worksheet_per_split_value(self, tmp_path: Path):
         ifc_file = build_ifc_file()
@@ -140,7 +140,7 @@ class TestSplitBy:
         with wall_csv.open(newline="", encoding="utf-8") as f:
             rows = list(csv.reader(f))
         assert rows[0] == ["GlobalId", "class", "Name"]
-        assert len(rows) == 3  # header + 2 walls
+        assert len(rows) == 3
 
     def test_export_csv_without_split_writes_single_file(self, tmp_path: Path):
         ifc_file = build_ifc_file()
@@ -153,7 +153,7 @@ class TestSplitBy:
         assert output.exists()
         with output.open(newline="", encoding="utf-8") as f:
             rows = list(csv.reader(f))
-        assert len(rows) == 5  # header + 4 elements
+        assert len(rows) == 5
 
 
 class TestSanitizeSplitKey:
