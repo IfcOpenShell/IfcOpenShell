@@ -3,9 +3,7 @@
 
 #include "../ifcgeom/taxonomy.h"
 
-#include <boost/function.hpp>
-
-namespace ifcopenshell { namespace geometry {
+namespace ifcopenshell { namespace geom {
 
 /// @brief Computes a point on a helmert curve at s.
 /// Returns (x,y,theta) at L/2. The results are in a vector so they can be returned to python
@@ -15,15 +13,15 @@ IFC_GEOM_API std::vector<double> helmert_curve_point(double A0, double A1, doubl
 /// This is intended to be used from python side. Polylines are mapped to a loop, but when
 /// representing an alignment they need to be a function_item so the can be evaluated by function_item_evaluator.
 /// On the C++ side, the dcast operator take care of this, but dcast is not accessible on the python side.
-/// @param loop 
-/// @return 
-static taxonomy::function_item::ptr convert_loop_to_function_item(taxonomy::loop::ptr loop) {
-    return ifcopenshell::geometry::taxonomy::dcast<taxonomy::function_item>(loop);
+/// @param loop
+/// @return
+inline taxonomy::function_item::ptr convert_loop_to_function_item(taxonomy::loop::ptr loop) {
+    return ifcopenshell::geom::taxonomy::dcast<taxonomy::function_item>(loop);
 }
 
 /// @brief Abstract class for evaluating a function_item. This class is specialized for each of the function_item types.
 struct IFC_GEOM_API fn_evaluator {
-    fn_evaluator(const ifcopenshell::geometry::Settings& settings, Logger& logger = Logger::Root()) : settings_(settings), logger_(logger) {
+    fn_evaluator(const ifcopenshell::geom::settings& settings, ifcopenshell::logger& logger = ifcopenshell::logger::root()) : settings_(settings), logger_(logger) {
     }
     fn_evaluator(const fn_evaluator& other) = default;
     virtual ~fn_evaluator() = default;
@@ -35,16 +33,16 @@ struct IFC_GEOM_API fn_evaluator {
     virtual double end() const = 0;
     double length() const { return end() - start(); }
 
-    ifcopenshell::geometry::Settings settings_;
+    ifcopenshell::geom::settings settings_;
 
   protected:
-    Logger& logger_;
+    ifcopenshell::logger& logger_;
 };
 
 /// @brief utility class to evaluate function_item objects.
 class IFC_GEOM_API function_item_evaluator {
   public:
-    function_item_evaluator(const ifcopenshell::geometry::Settings& settings, taxonomy::function_item::const_ptr fn, Logger& logger = Logger::Root());
+    function_item_evaluator(const ifcopenshell::geom::settings& settings, taxonomy::function_item::const_ptr fn, ifcopenshell::logger& logger = ifcopenshell::logger::root());
     function_item_evaluator(const function_item_evaluator& other);
     ~function_item_evaluator();
 
@@ -79,8 +77,8 @@ class IFC_GEOM_API function_item_evaluator {
     taxonomy::item::ptr evaluate(const std::vector<double>& dist) const;
     fn_evaluator* fn_evaluator_ = nullptr;
 
-    mutable boost::optional<std::vector<double>> eval_points_; // cache evaluation points
-    Logger& logger_;
+    mutable std::optional<std::vector<double>> eval_points_; // cache evaluation points
+    ifcopenshell::logger& logger_;
 };
 
 }}

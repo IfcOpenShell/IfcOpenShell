@@ -46,7 +46,7 @@ def unassign_recurrence_pattern(file: ifcopenshell.file, recurrence_pattern: ifc
             parent=work_time, recurrence_type="WEEKLY")
 
         # Change our mind, let's just maintain it whenever we feel like it.
-        ifcopenshell.api.sequence.unassign_recurrence_pattern(recurrence_pattern=pattern)
+        ifcopenshell.api.sequence.unassign_recurrence_pattern(model, recurrence_pattern=pattern)
     """
     for time_period in recurrence_pattern.TimePeriods or []:
         file.remove(time_period)
