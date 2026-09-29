@@ -72,8 +72,7 @@ def edit_attributes(file: ifcopenshell.file, product: ifcopenshell.entity_instan
 
         elif (object_type := getattr_safe(product, "ObjectType")) is not ...:
             relating_type = ifcopenshell.util.element.get_type(product)
-            # The relating type may be a type product that has no PredefinedType
-            # attribute at all (e.g. IfcFurnishingElementType), so access it safely.
+            # Some type products have no PredefinedType at all (e.g. IfcFurnishingElementType).
             relating_type_predefined_type = getattr_safe(relating_type, "PredefinedType") if relating_type else ...
             # Allow for None due to https://github.com/buildingSMART/IFC4.3.x-development/issues/818
             if relating_type and relating_type_predefined_type not in ("NOTDEFINED", None, ...):
