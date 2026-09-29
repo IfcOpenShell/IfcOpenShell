@@ -68,9 +68,7 @@ def calculate_orthogonal_path(
     needs a minimum run length that this function does not have.
     """
     delta = (end[0] - start[0], end[1] - start[1], end[2] - start[2])
-    active_axes = [i for i in range(3) if abs(delta[i]) > _EPSILON]
-
-    if not active_axes:
+    if not (active_axes := [i for i in range(3) if abs(delta[i]) > _EPSILON]):
         return [tuple(start)]
 
     def _require_axis(direction: Point, role: str) -> int:
