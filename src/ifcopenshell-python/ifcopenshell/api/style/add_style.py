@@ -53,9 +53,7 @@ def add_style(
 
     .. code:: python
 
-        # Create a new surface style. Note that on its own this style is not
-        # yet valid: it must be given at least one presentation item, such
-        # as via ifcopenshell.api.style.add_surface_style.
+        # Create a new surface style. It needs at least one presentation item, e.g. via add_surface_style.
         style = ifcopenshell.api.style.add_style(model)
 
         # Create a simple shading colour and transparency.
