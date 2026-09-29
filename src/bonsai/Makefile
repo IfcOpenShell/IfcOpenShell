@@ -138,9 +138,7 @@ BUNDLED_WHEELS += isodate
 # Provides networkx graph analysis for project dependency calculations
 BUNDLED_WHEELS += networkx
 # Required by IFCDiff
-# Pinned <9.1: deepdiff 9.1.0 adds the compiled dependency cachebox<6,>=5.2,
-# which this platformless download cannot provide for every target platform.
-BUNDLED_WHEELS += "deepdiff<9.1"
+BUNDLED_WHEELS += deepdiff
 # Required by IFCCSV and ifcopenshell.util.selector
 BUNDLED_WHEELS += lark
 # Required by IFC4D
