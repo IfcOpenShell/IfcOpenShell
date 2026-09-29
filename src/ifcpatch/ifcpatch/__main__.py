@@ -24,6 +24,7 @@ import ifcopenshell
 
 import ifcpatch
 
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Patches IFC files to fix badly formatted data")
     parser.add_argument("-i", "--input", type=str, required=True, help="The IFC file to patch")
