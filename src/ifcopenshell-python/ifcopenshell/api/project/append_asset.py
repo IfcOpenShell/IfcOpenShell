@@ -170,13 +170,8 @@ class SafeRemovalContext:
         self.file = ifc_file
         self.reuse_identities = reuse_identities
         self.assume_asset_uniqueness_by_name = assume_asset_uniqueness_by_name
-        # Reverse index (new element id -> identity) of entries `reuse_identities`
-        # gained during the current `append_asset()` call. Lets `__exit__` find a
-        # removed element's identity in O(1) instead of scanning the whole
-        # `reuse_identities` dict, which otherwise grows with every past call
-        # sharing the same accumulator and makes each call O(n) regardless of how
-        # few elements it actually removes. Falls back to the full scan for any
-        # element it doesn't cover, so behaviour is unchanged either way.
+        # Reverse index (new element id -> identity) of entries added during this call,
+        # so __exit__ finds a removed element's identity without scanning `reuse_identities`.
         self.new_reuse_identities = {} if new_reuse_identities is None else new_reuse_identities
 
     def __enter__(self):
