@@ -39,14 +39,9 @@ class TestDuplicateTask(test.bootstrap.IFC4):
         assert duplicate_lag is not None
         assert duplicate_lag.LagValue.is_a("IfcDuration")
         assert duplicate_lag.LagValue.wrappedValue == "P2D"
-        # the original relationship and lag are untouched
         assert lag.LagValue.wrappedValue == "P2D"
 
     def test_duplicating_a_predecessor_with_a_ratio_lag(self):
-        # A lag time may also be expressed as a ratio of the predecessor's
-        # own duration (e.g. "50% of task 1's duration") instead of a fixed
-        # IfcDuration. Duplicating the predecessor must not crash and must
-        # preserve the ratio, not silently turn it into a duration lag.
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         schedule = ifcopenshell.api.sequence.add_work_schedule(self.file, name="Schedule")
         task1 = ifcopenshell.api.sequence.add_task(self.file, work_schedule=schedule, name="Task 1")

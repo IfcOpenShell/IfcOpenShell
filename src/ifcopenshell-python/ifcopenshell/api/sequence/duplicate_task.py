@@ -155,13 +155,10 @@ class Usecase:
                             self.file,
                             relating_process=relating_process,
                             related_process=related_process,
+                            sequence_type=inverse.SequenceType,
                         )
                         if inverse.TimeLag and inverse.TimeLag.LagValue is not None:
-                            # LagValue may be an IfcDuration (ISO 8601 string) or an
-                            # IfcRatioMeasure (a plain float, e.g. a percentage of the
-                            # predecessor's duration). assign_lag_time only creates
-                            # duration-typed lags, so create a placeholder and let
-                            # edit_lag_time set the value with the correct type.
+                            # LagValue may be an IfcDuration or an IfcRatioMeasure, so let edit_lag_time set the typed value.
                             new_lag_time = ifcopenshell.api.sequence.assign_lag_time(
                                 self.file,
                                 rel_sequence=rel,
@@ -193,6 +190,6 @@ class Usecase:
                     "OwnerHistory": ifcopenshell.api.owner.create_owner_history(self.file),
                     "RelatedObjects": [related_object],
                     "RelatingObject": relating_object,
-                }
+                },
             )
         return referenced_by

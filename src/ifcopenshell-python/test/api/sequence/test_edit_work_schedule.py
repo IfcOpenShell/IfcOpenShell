@@ -22,15 +22,11 @@ import ifcopenshell.api.sequence
 import test.bootstrap
 
 
-# NOTE: sequence module features relies on entities introduced in IFC4
-# therefore no IFC2X3 tests
 class TestEditWorkSchedule(test.bootstrap.IFC4):
     def test_editing_duration_to_a_zero_length_value(self):
         self.file.create_entity("IfcProject")
         work_schedule = ifcopenshell.api.sequence.add_work_schedule(self.file)
 
-        # A zero-length duration is a legitimate, falsy value and must still
-        # be serialised as IfcDuration, not written raw.
         ifcopenshell.api.sequence.edit_work_schedule(
             self.file, work_schedule=work_schedule, attributes={"Duration": datetime.timedelta(0)}
         )
