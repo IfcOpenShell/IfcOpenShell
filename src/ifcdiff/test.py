@@ -16,9 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
+import os
+import tempfile
+
 import ifcopenshell
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
+import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
 import ifcopenshell.util.representation
@@ -93,6 +98,29 @@ class TestIfcDiff:
         assert ifc_diff.added_elements == set()
         assert ifc_diff.deleted_elements == set()
         assert ifc_diff.change_register == {wall.GlobalId: {"attributes_changed": True}}
+
+    def test_property_diff_exports_to_json(self):
+        # Regression test for #8905: comparing "property" relationships makes
+        # DeepDiff report a dictionary_item_added as a SetOrdered, which
+        # json.dump couldn't serialise, crashing export() with no results.
+        ifc_file = setup_project()
+        wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall", name="Foo")
+
+        new_file = ifc_file.from_string(ifc_file.to_string())
+        wall_new = new_file.by_id(wall.id())
+        pset = ifcopenshell.api.pset.add_pset(new_file, product=wall_new, name="Pset_WallCommon")
+        ifcopenshell.api.pset.edit_pset(new_file, pset=pset, properties={"FireRating": "2HR"})
+
+        ifc_diff = ifcdiff.IfcDiff(ifc_file, new_file, relationships=["property"])
+        ifc_diff.diff()
+        assert ifc_diff.change_register[wall.GlobalId]["properties_changed"]
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            output = os.path.join(tmp_dir, "diff.json")
+            ifc_diff.export(output)
+            with open(output) as f:
+                results = json.load(f)
+            assert "Pset_WallCommon" in str(results["changed"][wall.GlobalId]["properties_changed"])
 
     def test_changed_geometry(self):
         ifc_file = setup_project()
