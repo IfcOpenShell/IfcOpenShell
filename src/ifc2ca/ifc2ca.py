@@ -283,7 +283,7 @@ class Ifc2CA:
             geometry = [x.EdgeStart.VertexGeometry.Coordinates for x in repr_item.Bounds[0].Bound.EdgeList]
 
         else:
-            print(representation)
+            assert False, representation
         return geometry
 
     def parse_material(self, material: ios.entity_instance):
@@ -399,6 +399,9 @@ class Ifc2CA:
         elif element.is_a("IfcStructuralSurfaceMember"):
             placement = ifcopenshell.util.placement.get_axis2placement(repr_item.FaceSurface.Position)
 
+        else:
+            assert False, element
+
         origin, orientation = self.parse_transformation_matrix(placement)
         data["origin"] = origin
         data["orientation"] = orientation
@@ -436,7 +439,7 @@ class Ifc2CA:
                 for i, v in enumerate(placement[:3]):
                     v[3] = data["geometry"][i]
 
-        if connection.is_a("IfcStructuralCurveConnection"):
+        elif connection.is_a("IfcStructuralCurveConnection"):
             placement = ifcopenshell.util.placement.a2p(
                 data["geometry"][0],
                 connection.Axis.DirectionRatios,
@@ -445,6 +448,9 @@ class Ifc2CA:
 
         elif connection.is_a("IfcStructuralSurfaceConnection"):
             placement = ifcopenshell.util.placement.get_axis2placement(repr_item.FaceSurface.Position)
+
+        else:
+            assert False, connection
 
         origin, orientation = self.parse_transformation_matrix(placement)
         data["origin"] = origin
@@ -552,6 +558,9 @@ class Ifc2CA:
                 },
             }
 
+        else:
+            assert False, element["geometry_type"]
+
         for action in actions:
             self.add_action_loads(element, action, data, load_cases)
 
@@ -586,6 +595,7 @@ class Ifc2CA:
 
         data["actions"].append(action.get_info() | {"AppliedLoad": action.AppliedLoad.get_info()})
         if element["geometry_type"] in ["Vertex", "Edge"]:
+            force_projection_coeff, moment_projection_coeff = None, None
             if action.is_a("IfcStructuralPointAction") and load.is_a("IfcStructuralLoadSingleForce"):
                 FX = tempFX = load.ForceX if load.ForceX is not None else 0.0
                 FY = tempFY = load.ForceY if load.ForceY is not None else 0.0
@@ -639,8 +649,12 @@ class Ifc2CA:
                         force_projection_coeff = 1.0
                         moment_projection_coeff = 1.0
 
+            else:
+                assert False, action
+
             for iLC, load_case in enumerate(load_cases):
                 if load_case.id() in active_load_case_ids:
+                    assert force_projection_coeff is not None and moment_projection_coeff is not None
                     load_case_coeff = 1.0 if load_case.Coefficient is None else load_case.Coefficient
                     data["loadGroups"].append(load_group.Name)
                     data["loadsLC"]["FX"][iLC] += FX * load_group_coeff * load_case_coeff * force_projection_coeff
@@ -671,6 +685,9 @@ class Ifc2CA:
                             force_projection_coeff = 1.0
                     else:
                         force_projection_coeff = 1.0
+
+            else:
+                assert False, action
 
             for iLC, load_case in enumerate(load_cases):
                 if load_case.id() in active_load_case_ids:
@@ -803,7 +820,7 @@ class Ifc2CA:
             self.folder_path.mkdir()
 
         template = self.env.get_template("salome/scriptSalome.py")
-        mesh_name = f'Model_{model_id}_v{parameters["mesh_size"]}'
+        mesh_name = f"Model_{model_id}_v{parameters['mesh_size']}"
 
         med_path = self.folder_path / f"{mesh_name}.med"
         json_path = self.folder_path / f"Model_{model_id}.json"
@@ -818,7 +835,7 @@ class Ifc2CA:
         )
 
         # Write the rendered script to the new location
-        script_path = self.folder_path / f'ScriptSalome_Model_{model_id}_v{parameters["mesh_size"]}.py'
+        script_path = self.folder_path / f"ScriptSalome_Model_{model_id}_v{parameters['mesh_size']}.py"
         with open(script_path, "w") as f:
             f.write(rendered_script)
 
@@ -862,7 +879,7 @@ class Ifc2CA:
         cases = self.get_run_case_labels(data, target)
         run_label = "_".join(cases)
 
-        comm_path = self.folder_path / f'{mesh["name"]}_{run_label}.comm'
+        comm_path = self.folder_path / f"{mesh['name']}_{run_label}.comm"
 
         constructor = CommandFileConstructor(data)
         constructor.create_comm(comm_path, cases=cases)

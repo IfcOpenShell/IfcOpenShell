@@ -1,5 +1,0 @@
-<RCC>
-    <qresource prefix="/">
-        <file alias="icon">ifcopenshell_logo.png</file>
-    </qresource>
-</RCC>
