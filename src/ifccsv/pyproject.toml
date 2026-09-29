@@ -10,6 +10,7 @@ authors = [
 ]
 description = "IFC import and export from CSV, XLSX, ODS, and Pandas Dataframes"
 readme = "README.md"
+requires-python = ">=3.11"
 keywords = ["IFC", "CSV", "XLS", "XLSX", "ODS", "BIM"]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -29,6 +30,3 @@ py-modules = ["ifccsv"]
 
 [tool.ruff]
 extend = "../../pyproject.toml"
-lint.select = [
-  "F401",  # unused imports
-]
