@@ -16,17 +16,21 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from math import pi
 from typing import TYPE_CHECKING
 
 import bpy
 import ifcopenshell.api.attribute
 import ifcopenshell.api.system
+import ifcopenshell.util.element
 import ifcopenshell.util.system
+from mathutils import Quaternion, Vector
 
 import bonsai.bim.helper
 import bonsai.core.system as core
 import bonsai.tool as tool
 from bonsai.bim.module.system.data import PortData, SystemData
+from bonsai.tool.system import direction_from_port_pair
 
 
 class LoadSystems(bpy.types.Operator):
@@ -373,6 +377,165 @@ class MEPConnectElements(bpy.types.Operator, tool.Ifc.Operator):
         direction = closest_ports[0].FlowDirection or "NOTDEFINED"
         core.connect_port(tool.Ifc, *closest_ports, direction=direction)
         bpy.ops.bim.regenerate_distribution_element()
+        return {"FINISHED"}
+
+
+class MEPConnectPorts(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.mep_connect_ports"
+    bl_label = "Connect Ports With Segment"
+    bl_description = (
+        "Connect two selected free ports with a new flow segment.\n"
+        "A transition fitting is inserted when the joined segment profiles differ.\n"
+        "The segment type is taken from a port's flow segment, "
+        "or from the active relating type when neither port belongs to one"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if len(context.selected_objects) != 2:
+            cls.poll_message_set("Select two port objects")
+            return False
+        return True
+
+    @staticmethod
+    def get_profiled_segment_type(element):
+        if element is None:
+            return None
+        element_type = ifcopenshell.util.element.get_type(element)
+        if element_type and element_type.is_a("IfcFlowSegmentType"):
+            material = ifcopenshell.util.element.get_material(element_type)
+            if material and material.is_a("IfcMaterialProfileSet"):
+                return element_type
+        return None
+
+    @staticmethod
+    def profiles_match(profile1, profile2):
+        if profile1 is None or profile2 is None:
+            return True
+        if profile1 == profile2:
+            return True
+        if profile1.is_a() != profile2.is_a():
+            return False
+        if profile1.is_a("IfcCircleProfileDef"):
+            return tool.Cad.is_x(profile1.Radius, profile2.Radius)
+        if profile1.is_a("IfcRectangleProfileDef"):
+            return tool.Cad.is_x(profile1.XDim, profile2.XDim) and tool.Cad.is_x(profile1.YDim, profile2.YDim)
+        return True
+
+    def _execute(self, context):
+        # Lazy imports to avoid a circular dependency at addon load.
+        from bonsai.bim.module.model.mep import MEPGenerator
+        from bonsai.bim.module.model.profile import DumbProfileGenerator
+
+        obj1 = context.active_object
+        obj2 = next((o for o in context.selected_objects if o != obj1), None)
+        port1 = tool.Ifc.get_entity(obj1) if obj1 else None
+        port2 = tool.Ifc.get_entity(obj2) if obj2 else None
+        if not port1 or not port2 or not port1.is_a("IfcDistributionPort") or not port2.is_a("IfcDistributionPort"):
+            self.report({"ERROR"}, "Select exactly two ports (use Show Ports on MEP elements first).")
+            return {"CANCELLED"}
+        if tool.System.get_connected_port(port1) or tool.System.get_connected_port(port2):
+            self.report({"ERROR"}, "Both ports need to be free to connect them.")
+            return {"CANCELLED"}
+
+        element1 = tool.System.get_port_relating_element(port1)
+        element2 = tool.System.get_port_relating_element(port2)
+        if element1 == element2:
+            self.report({"ERROR"}, "Both ports belong to the same element.")
+            return {"CANCELLED"}
+
+        tool.Model.sync_object_ifc_position(obj1)
+        tool.Model.sync_object_ifc_position(obj2)
+        p1 = obj1.matrix_world.translation.copy()
+        p2 = obj2.matrix_world.translation.copy()
+
+        if (p2 - p1).length < 1e-5:
+            direction = direction_from_port_pair(port1, port2)
+            core.connect_port(tool.Ifc, port1=port1, port2=port2, direction=direction)
+            PortData.is_loaded = False
+            return {"FINISHED"}
+
+        relating_type = self.get_profiled_segment_type(element1)
+        if not relating_type and (relating_type := self.get_profiled_segment_type(element2)):
+            obj1, obj2 = obj2, obj1
+            port1, port2 = port2, port1
+            element1, element2 = element2, element1
+            p1, p2 = p2, p1
+        if not relating_type:
+            props = tool.Model.get_model_props()
+            if props.relating_type_id:
+                candidate = tool.Ifc.get().by_id(int(props.relating_type_id))
+                if candidate.is_a("IfcFlowSegmentType"):
+                    material = ifcopenshell.util.element.get_material(candidate)
+                    if material and material.is_a("IfcMaterialProfileSet"):
+                        relating_type = candidate
+        if not relating_type:
+            self.report(
+                {"ERROR"},
+                "No flow segment type with a profile found on either port. "
+                "Select a pipe or duct type in the Add tool first.",
+            )
+            return {"CANCELLED"}
+
+        data = DumbProfileGenerator(relating_type).generate(coords=(p1, p2))
+        if not data or not data.get("obj"):
+            self.report({"ERROR"}, "Failed to generate a connecting segment.")
+            return {"CANCELLED"}
+        segment_obj = data["obj"]
+        segment = tool.Ifc.get_entity(segment_obj)
+
+        # When the run continues a parallel segment, match its roll so a transition can be fitted.
+        element2_obj = tool.Ifc.get_object(element2)
+        direction_vec = (p2 - p1).normalized()
+        if element2 is not None and element2.is_a("IfcFlowSegment") and element2_obj:
+            element2_quat = element2_obj.matrix_world.to_quaternion()
+            element2_axis = element2_quat @ Vector((0.0, 0.0, 1.0))
+            dot = element2_axis.dot(direction_vec)
+            if abs(abs(dot) - 1) < 1e-4:
+                quat = element2_quat if dot > 0 else element2_quat @ Quaternion((1.0, 0.0, 0.0), pi)
+                matrix = quat.to_matrix().to_4x4()
+                matrix.translation = p1
+                segment_obj.matrix_world = matrix
+                bpy.context.view_layer.update()
+                tool.System.run_geometry_edit_object_placement(segment_obj)
+
+        MEPGenerator(relating_type).setup_ports(segment_obj)
+        segment_data = MEPGenerator.get_segment_data(segment)
+        start_port = segment_data.get("start_port")
+        end_port = segment_data.get("end_port")
+        if not start_port or not end_port:
+            self.report({"ERROR"}, "Generated segment is missing ports.")
+            return {"CANCELLED"}
+
+        core.connect_port(
+            tool.Ifc, port1=start_port, port2=port1, direction=direction_from_port_pair(start_port, port1)
+        )
+
+        profile1 = tool.Model.get_flow_segment_profile(segment)
+        profile2 = (
+            tool.Model.get_flow_segment_profile(element2)
+            if element2 is not None and element2.is_a("IfcFlowSegment")
+            else None
+        )
+        if profile2 is not None and not self.profiles_match(profile1, profile2) and element2_obj:
+            axes_parallel = tool.Cad.are_edges_parallel(
+                tool.Model.get_flow_segment_axis(segment_obj), tool.Model.get_flow_segment_axis(element2_obj)
+            )
+            if axes_parallel:
+                try:
+                    result = bpy.ops.bim.mep_add_transition(start_segment_id=segment.id(), end_segment_id=element2.id())
+                except RuntimeError:
+                    result = {"CANCELLED"}
+                if "FINISHED" in result:
+                    PortData.is_loaded = False
+                    return {"FINISHED"}
+            self.report(
+                {"INFO"}, "Segment profiles differ but no transition could be fitted; ports connected directly."
+            )
+
+        core.connect_port(tool.Ifc, port1=end_port, port2=port2, direction=direction_from_port_pair(end_port, port2))
+        PortData.is_loaded = False
         return {"FINISHED"}
 
 
