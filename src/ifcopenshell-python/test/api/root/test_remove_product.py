@@ -509,7 +509,6 @@ class TestRemoveProduct(test.bootstrap.IFC4):
         assert not self.file.by_type("IfcRelAssignsToProcess")
 
     def test_removing_referenced_spatial_structure_relationships(self):
-        # IfcRelReferencedInSpatialStructure was introduced in IFC4.
         if self.file.schema == "IFC2X3":
             return
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcMechanicalFastener")
@@ -524,7 +523,6 @@ class TestRemoveProduct(test.bootstrap.IFC4):
         assert not self.file.by_type("IfcRelReferencedInSpatialStructure")
 
     def test_removing_interference_relationships(self):
-        # IfcRelInterferesElements was introduced in IFC4.
         if self.file.schema == "IFC2X3":
             return
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcMechanicalFastener")
