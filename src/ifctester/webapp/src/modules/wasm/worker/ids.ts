@@ -16,7 +16,7 @@ let PartOf: any;
 
 export async function init(pdide: any) {
     pyodide = pdide;
-    
+
     await pyodide.loadPackagesFromImports(`
         import ifctester.ids
         import ifctester.facet
@@ -25,7 +25,7 @@ export async function init(pdide: any) {
     // Import the core IDS classes
     Ids = pyodide.pyimport("ifctester.ids").Ids;
     Specification = pyodide.pyimport("ifctester.ids").Specification;
-    
+
     // Import facet classes
     Entity = pyodide.pyimport("ifctester.facet").Entity;
     Attribute = pyodide.pyimport("ifctester.facet").Attribute;
@@ -56,13 +56,13 @@ export function validateIDS(idsObj: Record<string, unknown>): boolean {
     const ids_raw = _idsToInstance(idsObj)
     const tempFilename = `temp_${Date.now()}.xml`;
     const isValid = ids_raw.to_xml(tempFilename); // to_xml validates the XML as well, as far as I understand
-  
+
     pyodide.runPython(`
         import os
         if os.path.exists("${tempFilename}"):
             os.remove("${tempFilename}")
     `);
-    
+
     return isValid;
 }
 
