@@ -524,11 +524,8 @@ class IfcOpenShell(QtoCalculator):
                                 value = cls.get_covering_area(element, geometry)
                                 value = cls.unit_converter.convert(value, "IfcAreaMeasure")
                             else:
-                                # An element can be included by the iterator yet still
-                                # produce empty geometry (no vertices). Bounding-box and
-                                # elevation helpers can't be evaluated on it, and emitting
-                                # a fabricated value (e.g. 0.0) would silently corrupt the
-                                # quantity, so skip it instead.
+                                # Empty geometry has no bounding box or elevation; skip it
+                                # rather than emit a fabricated value such as 0.0.
                                 if len(geometry.verts) == 0:
                                     continue
                                 value = formula_functions[formula](geometry)
