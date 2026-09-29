@@ -1,0 +1,11 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION((''),'2;1');
+FILE_NAME('schema_visitor_demo_2x3.ifc','2026-07-19T00:00:00',(''),(''),'IfcOpenShell','IfcOpenShell','');
+FILE_SCHEMA(('IFC2X3'));
+ENDSEC;
+DATA;
+#1=IFCSPACE('1YHntSGZL5FhdY1nlqZa0',$,'Kitchen (2X3)',$,$,$,$,$,.ELEMENT.,.INTERNAL.,$);
+#2=IFCSPACE('1YHntSGZL5FhdY1nlqZa1',$,'Lounge (2X3)',$,$,$,$,$,.ELEMENT.,.INTERNAL.,$);
+ENDSEC;
+END-ISO-10303-21;
