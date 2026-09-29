@@ -36,10 +36,6 @@ FIXTURES = os.path.join(os.path.dirname(__file__), "fixtures")
 
 class TestSpecificationIdentifierRoundtripFixture:
     def test_identifier_is_parsed_from_ids_file(self):
-        # buildingSMART/IDS#339: "identifier" is the documented place for a
-        # short reference code such as "SP01". If ids.open() does not parse
-        # it, every downstream consumer silently loses a value the author
-        # explicitly provided.
         specs = ids.open(
             os.path.join(
                 FIXTURES,
@@ -73,9 +69,6 @@ class TestSpecificationIdentifierRoundtripFixture:
         assert 'identifier="SP01"' in specs.to_string()
 
     def test_identifier_is_not_dropped_from_json_report(self):
-        # A value the author sets on the schema must reach the structured
-        # report dict every downstream reporter (Json, Html, Ods, Bcf) is
-        # built on, not just the in-memory Specification object.
         specs = ids.open(
             os.path.join(
                 FIXTURES,
