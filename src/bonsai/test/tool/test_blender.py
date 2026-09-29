@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import bpy
+import ifcopenshell
 import numpy as np
 import pytest
 
@@ -210,6 +211,14 @@ class TestGetDebugInfo(NewFile):
     def test_failed_to_load_returns_only_base_keys(self):
         info = bonsai.get_debug_info(bonsai_failed_to_load=True)
         assert set(info.keys()) == self.EXPECTED_KEYS
+
+
+class TestFormatDebugInfo(NewFile):
+    def test_raw_settings_are_serialised_when_formatted(self):
+        wall = ifcopenshell.file().createIfcWall()
+        action = {"type": "ifcopenshell.api", "name": "root.create_entity", "settings": {"product": wall}}
+        text = bonsai.format_debug_info({"last_actions": [action]})
+        assert '"cast_type": "entity_instance"' in text
 
 
 class TestNpFrombufferLegacy(NewFile):
