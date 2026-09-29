@@ -1036,6 +1036,7 @@ class LibraryGenerator:
             seat_width_offset = 0.7 * width / 2 if cistern_depth else width / 2
             seat_start_width_offset = 0.6 * width
 
+            cistern_3d = None
             if cistern_height:
                 cistern = builder.rectangle(size=V(width, cistern_depth), position=shift_to_center)
                 cistern_3d = ifcopenshell.util.element.copy_deep(self.file, cistern)
@@ -1118,6 +1119,7 @@ class LibraryGenerator:
 
             # cistern
             if cistern_height:
+                assert cistern_3d
                 cistern_3d = builder.extrude(
                     cistern_3d, cistern_height + seat_level / 2, position=V(0, 0, seat_level / 2)
                 )

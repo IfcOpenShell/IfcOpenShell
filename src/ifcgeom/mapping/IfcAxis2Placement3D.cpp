@@ -21,30 +21,30 @@
 
 #define mapping POSTFIX_SCHEMA(mapping)
 
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcAxis2Placement3D* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcAxis2Placement3D& inst) {
 	Eigen::Vector3d o(0, 0, 0), axis(0, 0, 1), refDirection, X(1, 0, 0);
 	try {
-		taxonomy::point3::ptr v = taxonomy::cast<taxonomy::point3>(map(inst->Location()));
+		taxonomy::point3::ptr v = taxonomy::cast<taxonomy::point3>(map(inst.Location()));
 		o = *v->components_;
 	} catch (const std::exception&) {
-		logger_.Warning("GEO", 234, "Placement with invalid Location:", inst);
+		logger_.warning("GEO", 234, "Placement with invalid Location:", inst);
 	}
-	const bool hasAxis = !!inst->Axis();
-	const bool hasRef = !!inst->RefDirection();
+	const bool hasAxis = !!inst.Axis();
+	const bool hasRef = !!inst.RefDirection();
 
 	if (hasAxis != hasRef) {
-		logger_.Warning("GEO", 235, "Axis and RefDirection should be specified together", inst);
+		logger_.warning("GEO", 235, "Axis and RefDirection should be specified together", inst);
 	}
 
 	if (hasAxis) {
-		taxonomy::direction3::ptr v = taxonomy::cast<taxonomy::direction3>(map(inst->Axis()));
+		taxonomy::direction3::ptr v = taxonomy::cast<taxonomy::direction3>(map(inst.Axis()));
 		axis = *v->components_;
 	}
 
 	if (hasRef) {
-		taxonomy::direction3::ptr v = taxonomy::cast<taxonomy::direction3>(map(inst->RefDirection()));
+		taxonomy::direction3::ptr v = taxonomy::cast<taxonomy::direction3>(map(inst.RefDirection()));
 		refDirection = *v->components_;
 	} else {
 		if (acos(axis.dot(X)) > 1.e-5) {

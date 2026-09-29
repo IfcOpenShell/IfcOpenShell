@@ -29,6 +29,7 @@ from typing import TYPE_CHECKING, Any, Union
 
 import bpy
 
+import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim import import_ifc
 from bonsai.bim.ifc import IfcStore
@@ -50,7 +51,7 @@ if TYPE_CHECKING:
     from bonsai.bim.module.ifcgit.prop import IfcGitProperties
 
 
-class IfcGit:
+class IfcGit(bonsai.core.tool.IfcGit):
     STEP_IDS = dict[str, set[int]]
 
     @classmethod
@@ -232,7 +233,6 @@ class IfcGit:
             return len(commit.parents) > 1 and any(p in commits_relevant for p in commit.parents)
 
         for commit in commits:
-
             if props.ifcgit_filter == "tagged" and commit.hexsha not in lookup:
                 continue
             elif props.ifcgit_filter == "relevant" and not is_relevant(commit):
@@ -547,7 +547,9 @@ class IfcGit:
     @classmethod
     def config_push(cls, repo: git.Repo) -> None:
         """Set push.autoSetupRemote"""
-        config_reader = repo.config_reader()
+        # Repository level only - a global push.* setting must not stop us
+        # configuring this repo.
+        config_reader = repo.config_reader("repository")
         if not config_reader.has_section("push"):
             with repo.config_writer() as config_writer:
                 config_writer.set_value("push", "default", "current")
