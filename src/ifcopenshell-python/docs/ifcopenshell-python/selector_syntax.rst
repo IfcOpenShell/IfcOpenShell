@@ -52,15 +52,17 @@ Filtering is typically used to select any IFC element or type.
 
     "``IfcDoor, Name=D01``", "Any doors named D01, notice how attributes match the IFC Attribute naming exactly"
 
-    "``IfcDoor, Name=/D[0-9]{2}/``", "Any doors with the naming scheme of D followed by two numbers:"
+    "``IfcDoor, Name=/D[0-9]{2}$/``", "Any doors with the naming scheme of D followed by two numbers. The trailing ``$`` matters: without it ``D123`` would match too, because a regex is only anchored at the start. See `Regex values are anchored at the start`_."
 
     "``IfcWall, Pset_WallCommon.FireRating=2HR``", "Any 2 hour fire rated wall"
+
+    "``IfcWall, Pset_WallCommon.ThermalTransmittance=1.5``", "Any wall with a U-value of 1.5. A decimal number is the one kind of value that may contain a ``.`` unquoted. See `Quoting values in filters`_."
 
     "``IfcWall, IfcColumn, IfcBeam, IfcFooting, /Pset_.*Common/.LoadBearing=TRUE``", "Any load bearing structure"
 
     "``IfcElement, /Pset_.*Common/.FireRating != NULL``", "Any element with a fire rating property"
 
-    "``IfcWall, type=WT01, location=""Level 3""``", "Any walls of wall type WT01 on level 3 (we quote Level 3 since it has a space)"
+    "``IfcWall, type=WT01, location=""Level 3""``", "Any walls of wall type WT01 on level 3. We quote ``Level 3`` because it contains a space, but a space is only one of several characters that force quoting - see `Quoting values in filters`_."
 
     "``IfcElement, classification=/Pr_.*/``", "Any maintainable product according to Uniclass tables"
 
@@ -89,6 +91,23 @@ The filters are chained and apply from left to right.
 
     filter[, filter]*
 
+Each group is evaluated independently, so a filter narrows only the group it is
+written in. Criteria that should apply to the whole result must be repeated in
+every group:
+
+.. code-block::
+
+    IfcWall, location="Level 3" + IfcSlab, location="Level 3"
+
+Written as ``IfcWall, location="Level 3" + IfcSlab``, the second group would
+contribute slabs from every level. There is no parenthesis syntax to factor a
+shared filter out of several groups.
+
+Any part of a query may be commented out using a ``/* ... */`` block comment.
+This lets you temporarily disable part of a query without deleting the text, for
+example ``IfcWall + /* IfcSlab, material=concrete */`` selects only walls while
+keeping the slab criteria on hand. Block comments may span multiple lines.
+
 Below is the table of filters to choose from. Most of these filters will filter
 previously added elements in your filter group based on their criteria.
 
@@ -105,13 +124,13 @@ will search through all IfcTypeProducts and IfcProducts in the IFC project.
     "Class", "Add", "``[!] {{ifc_class_name}}``", "``IfcWall`` adds all IfcWall elements and their subclasses. ``! IfcWall`` subtracts all non-IfcWall elements from the filter group."
     "GlobalId", "Add", "``[!] {{global_id}}``", "``325Q7Fhnf67OZC$$r43uzK`` adds the single element with that GlobalId attribute. ``! 325Q7Fhnf67OZC$$r43uzK`` subtracts that single element."
     "Attribute", "Filter", "``{{name}}{{=}}{{value}}``", "``Name=Foo`` specifies the criteria that elements must have a ``Name`` attribute with a value of ``Foo``. Attribute names must be spelled exactly the same as in IFC, which means that they must start with an uppercase character. For convenience, ``PredefinedType`` will be get using :func:`ifcopenshell.util.element.get_predefined_type` instead of getting the attribute directly."
-    "Property", "Filter", "``{{pset}}.{{prop}}{{=}}{{value}}``", "``Pset_WallCommon.FireRating=2HR`` specifies the criteria that elements must have a ``Pset_WallCommon`` property set, with a ``FireRating`` property within it with a value of ``2HR``. The property set name and the property name are separated by a ``.``."
+    "Property", "Filter", "``{{pset}}.{{prop}}{{=}}{{value}}``", "``Pset_WallCommon.FireRating=2HR`` specifies the criteria that elements must have a ``Pset_WallCommon`` property set, with a ``FireRating`` property within it with a value of ``2HR``. The property set name and the property name are separated by a ``.``. A property may hold more than one value, in which case the check applies to the list as a whole - see `Properties with multiple values`_."
     "Type", "Filter", "``type{{=}}{{value}}``", "``type=Foo`` specifies the criteria that elements must have a type which has a ``Name`` attribute with a value of ``Foo``."
     "Material", "Filter", "``material{{=}}{{value}}``", "``material=Foo`` specifies the criteria that elements must have a IfcMaterial assigned directly or indirectly (such as within a layer set). That IfcMaterial must have either a ``Name`` or ``Category`` attribute with a value of ``Foo``."
     "Classification", "Filter", "``classification{{=}}{{value}}``", "``classification=Foo`` specifies the criteria that elements must have an IfcClassificationReference with an ``Identification`` attribute with a value of ``Foo``."
     "Location", "Filter", "``location{{=}}{{value}}``", "``location=Foo`` specifies the criteria that elements must be contained directly or indirectly in a spatial element with a ``Name`` attribute with a value of ``Foo``."
     "Parent", "Filter", "``parent{{=}}{{value}}``", "``parent=Foo`` specifies the criteria that elements must be a direct or indirect child in the spatial hierarchy to an element with a ``Name`` attribute with a value of ``Foo``."
-    "Query", "Filter", "``query:{{keys}}{{=}}{{value}}``", "``query:types.count=0`` specifies the criteria that elements must have zero type occurrences. The query keys corresponds to the syntax used in the `Getting element values`_ section"
+    "Query", "Filter", "``query:{{keys}}{{=}}{{value}}``", "``query:""types.count""=0`` specifies the criteria that elements must have zero type occurrences. The query keys corresponds to the syntax used in the `Getting element values`_ section. Note that the keys are quoted: they usually contain a ``.``, which an unquoted string may not. See `Quoting values in filters`_."
 
 .. note::
 
@@ -144,8 +163,140 @@ three ways you can do so:
    :header: "Value Type", "Example", "Description"
 
     "Quoted string", "``""foo \""bar\"" baz""``", "The value must be in double quotes. The value may contain spaces, symbols, and other characters. If you need to use a double quote, you can escape it with a backslash. This is the safest, most general way to specify a value."
-    "Unquoted string", "``foobarbaz``", "For convenience, if you have a simple value which contains no spaces or special characters, you are free to specify it as an unquoted string."
-    "Regex string", "``/foo.*baz/``", "You may specify a Python-compatible regex pattern delimited by forward slashes. You can learn more about regular expressions from `Beginners Regex tutorial <https://regexone.com/>`_ and `Online Regex testing website <https://regex101.com/>`_."
+    "Unquoted string", "``foobarbaz``", "For convenience, if your value contains none of the characters listed under `Quoting values in filters`_ below, you are free to specify it as an unquoted string."
+    "Regex string", "``/foo.*baz/``", "You may specify a Python-compatible regex pattern delimited by forward slashes. The pattern is anchored at the start but not at the end - see `Regex values are anchored at the start`_. You can learn more about regular expressions from `Beginners Regex tutorial <https://regexone.com/>`_ and `Online Regex testing website <https://regex101.com/>`_."
+
+Regex values are anchored at the start
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A regex value is matched with :func:`re.match`, which anchors the pattern at the
+start of the value but not at its end. A pattern therefore matches any value
+that *begins* with it, which is a prefix match rather than a full one:
+
+.. code-block::
+
+    Name=/D[0-9]{2}/     # matches D01, but also D123 and D01A
+    Name=/D[0-9]{2}$/    # matches D01 only
+
+Add a trailing ``$`` whenever you mean an exact match. This is easy to miss with
+values drawn from an enumeration, where ``/DEMOLISH/`` also picks up
+``DEMOLISHED``.
+
+Quoting values in filters
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+An unquoted ``{{pset}}``, ``{{prop}}``, ``{{keys}}``, or ``{{value}}`` may not
+contain any of the following characters:
+
+.. code-block::
+
+    ,  .  =  >  <  *  !  and whitespace
+
+There is one exception, and it is only for a ``{{value}}``: a value that is a
+plain decimal number may contain the ``.`` unquoted, so
+``ThermalTransmittance=1.5`` is fine. A ``{{pset}}``, ``{{prop}}``, or
+``{{keys}}`` containing a ``.`` always needs quoting.
+
+Otherwise, if yours contains one of these characters, quote it. Every one of
+them except ``,`` is a syntax error when left unquoted. The ``,`` is the more
+dangerous case, because it does not error: it is read as the separator between
+two filters. So ``Name=Foo,IfcWall`` does not look for the literal name
+``Foo,IfcWall``, it quietly means "named ``Foo`` **and** an ``IfcWall``".
+Write ``Name="Foo,IfcWall"`` to match the literal value.
+
+The ``.`` still separates a property set from a property, so outside of a
+number it cannot appear in an unquoted value:
+
+.. code-block::
+
+    Pset_WallCommon.ThermalTransmittance=1.5    # a number, no quotes needed
+    Pset_WallCommon.ThermalTransmittance>-.5    # signed and leading dot too
+    Name=v1.2                                   # syntax error, not a number
+    Name="v1.2"                                 # correct
+
+Quoting a number is still allowed and means exactly the same thing. Either way
+the check is not a text comparison - ``>``, ``>=``, ``<``, and ``<=`` compare
+numerically, so ``ThermalTransmittance>0.9`` does match a value of ``1.5``.
+
+.. note::
+
+    Query keys obey this same rule, and they nearly always contain a ``.``, so
+    in practice they always need quoting. Write ``query:"types.count"=0``.
+    Written as ``query:types.count=0`` it does not error, it is silently read
+    as a *property* filter looking for a ``count`` property inside a property
+    set named ``query:types``, which is not what you asked for.
+
+Properties with multiple values
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Not every property holds a single value. An ``IfcPropertyEnumeratedValue`` or
+``IfcPropertyListValue`` holds a list of them, and this is common in practice:
+the ``Status`` property in the standard common property sets is an enumerated
+value, so an element that is existing *and* scheduled for demolition carries
+both ``EXISTING`` and ``DEMOLISH`` at once.
+
+When a property holds a list, the comparison is applied to the list as a whole
+rather than to a single value:
+
+.. csv-table::
+   :header: "Comparison", "Matches when"
+
+    "``=``", "**Any** item in the list equals the value."
+    "``!=``", "**No** item in the list equals the value."
+
+The same applies to the other comparisons: ``*=`` matches if any item contains
+the value, ``!*=`` if none do. Negation always applies to the list as a whole,
+so ``!=`` stays the exact complement of ``=``.
+
+This means you match on the presence of one value and ignore whatever else sits
+alongside it. Given a ``Status`` of ``EXISTING, DEMOLISH``:
+
+.. code-block::
+
+    IfcDoor, /Pset_.*Common/.Status=DEMOLISH     # matches, EXISTING is ignored
+    IfcDoor, /Pset_.*Common/.Status!=DEMOLISH    # does not match
+
+Note that a regex value is *not* a way to test several values at once, because
+it is matched against each item separately. ``Status=/(EXISTING|DEMOLISH)/``
+matches an element whose status is only ``EXISTING``, which is rarely what is
+intended.
+
+Requiring a combination of values
+`````````````````````````````````
+
+Because ``,`` chains filters, repeating the same property gives you a
+combination. This selects only elements carrying *both* values, and so excludes
+one that is merely ``EXISTING``:
+
+.. code-block::
+
+    IfcDoor, /Pset_.*Common/.Status=EXISTING, /Pset_.*Common/.Status=DEMOLISH
+
+Excluding a combination is the inverse, and needs a union. There is no
+parenthesis syntax, so apply De Morgan's law by hand - ``not (A and B)`` is
+``(not A) or (not B)``:
+
+.. code-block::
+
+    IfcDoor, /Pset_.*Common/.Status!=EXISTING + IfcDoor, /Pset_.*Common/.Status!=DEMOLISH
+
+That returns every door except those that are both existing and demolished. A
+door that is ``TEMPORARY, DEMOLISH`` is kept, because it satisfies the first
+group.
+
+.. warning::
+
+    A ``+`` unions whole filter groups, so a filter written in one group does
+    not constrain any other. Any criteria that should apply to the whole result
+    has to be repeated in every group:
+
+    .. code-block::
+
+        IfcDoor, /Pset_.*Common/.Status!=EXISTING, location!="Level 3"
+         + IfcDoor, /Pset_.*Common/.Status!=DEMOLISH, location!="Level 3"
+
+    Leaving ``location`` off the second group would let doors on Level 3 back
+    in through that group.
 
 Getting element values
 ----------------------
@@ -217,6 +368,9 @@ Valid keys are:
     "``easting``", "Gets the map easting of the element's placement"
     "``northing``", "Gets the map northing of the element's placement"
     "``elevation``", "Gets the map elevation of the element's placement"
+    "``rotation_x``", "Gets the X Euler rotation of the element's placement in degrees"
+    "``rotation_y``", "Gets the Y Euler rotation of the element's placement in degrees"
+    "``rotation_z``", "Gets the Z Euler rotation of the element's placement in degrees (e.g. plan rotation of a symbol)"
     "``count``", "If the previous key returns multiple things, count that list. Otherwise, return 1."
     "``{{number}}``", "If the previous key returns multiple things, fetch the ``{{number}}`` index (e.g. 0, 1, 2, 3, etc) item in that list."
 
@@ -227,8 +381,30 @@ do so:
    :header: "Value Type", "Example", "Description"
 
     "Quoted string", "``""foo \""bar\"" baz""``", "The value must be in double quotes. The value may contain spaces, symbols, and other characters. If you need to use a double quote, you can escape it with a backslash. This is the safest, most general way to specify a value."
-    "Unquoted string", "``foobarbaz``", "For convenience, if you have a simple value which contains no spaces or special characters, you are free to specify it as an unquoted string."
+    "Unquoted string", "``foobarbaz``", "For convenience, if your key contains none of the characters listed under `Quoting keys in value queries`_ below, you are free to specify it as an unquoted string."
     "Regex string", "``/foo.*baz/``", "You may specify a Python-compatible regex pattern delimited by forward slashes. You can learn more about regular expressions from `Beginners Regex tutorial <https://regexone.com/>`_ and `Online Regex testing website <https://regex101.com/>`_."
+
+Quoting keys in value queries
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The characters that need quoting here are not the same set as in
+`Quoting values in filters`_. An unquoted key may not contain any of:
+
+.. code-block::
+
+    .  =  /  and whitespace
+
+All four are a syntax error when left unquoted, so there is no silent
+misreading to worry about in this position. The ``.`` is the key separator and
+the ``/`` delimits a regex, so a property set or property whose own name
+contains either - or a space - has to be quoted:
+
+.. code-block::
+
+    "Fire Rating Data".FireRating
+
+The remaining characters that force quoting in a filter - ``,``, ``>``, ``<``,
+``*``, and ``!`` - are accepted unquoted here.
 
 Formatting
 ----------

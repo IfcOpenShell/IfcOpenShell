@@ -1,0 +1,15 @@
+name: ifcopenshell-${UNIQUE_ID}
+services:
+  ifcopenshell:
+    container_name: ifcopenshell-${UNIQUE_ID}
+    image: ifcopenshell-build-env:updated
+    platform: linux/amd64
+    volumes:
+      - type: bind
+        source: ../
+        target: /__w/IfcOpenShell/IfcOpenShell
+      - ccache:/ccache
+
+volumes:
+  ccache:
+    name: ifcopenshell-ccache-shared
