@@ -18,7 +18,7 @@
 
 import json
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import bpy
 import ifcopenshell
@@ -122,8 +122,8 @@ class ExecuteIfcPatch(bpy.types.Operator):
         if props.should_load_from_memory and tool.Ifc.get():
             args["file"] = tool.Ifc.get()
         else:
-            args["input"] = cast(str, props.ifc_patch_input)
-            args["file"] = cast(ifcopenshell.file, ifcopenshell.open(props.ifc_patch_input))
+            args["input"] = props.ifc_patch_input
+            args["file"] = ifcopenshell.open(props.ifc_patch_input)
 
         # Store this in case the patch recipe resets the Blender session, such as by loading a new project.
         ifc_patch_output = props.ifc_patch_output or props.ifc_patch_input

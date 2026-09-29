@@ -9,25 +9,25 @@
       type="image/x-icon"
       href="https://bonsaibim.org/assets/images/favicon-blender.png"
     />
-    <link rel="stylesheet" type="text/css" href="/jsgantt/jsgantt.css" />
-    <link rel="stylesheet" href="/static/css/gantt.css" id="gantt-stylesheet" />
+    <link rel="stylesheet" type="text/css" href="/jsgantt/jsgantt.css?v={{v}}" />
+    <link rel="stylesheet" href="/static/css/gantt.css?v={{v}}" id="gantt-stylesheet" />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
     />
     <script
       type="text/javascript"
-      src="/static/js/jquery.min.js"
+      src="/static/js/jquery.min.js?v={{v}}"
     ></script>
     <script
       type="text/javascript"
       src="https://cdn.socket.io/4.0.0/socket.io.min.js"
     ></script>
-    <script type="text/javascript" src="./jsgantt/jsgantt.js"></script>
+    <script type="text/javascript" src="./jsgantt/jsgantt.js?v={{v}}"></script>
     <script>
       var SOCKET_PORT = {{port}};
     </script>
-    <script type="module" defer src="./static/js/gantt.js"></script>
+    <script type="module" defer src="./static/js/gantt.js?v={{v}}"></script>
   </head>
   <body>
     <nav class="no-print">
