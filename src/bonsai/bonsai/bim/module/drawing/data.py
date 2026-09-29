@@ -126,8 +126,9 @@ class DrawingsData:
         props = tool.Drawing.get_document_props()
         if props.target_view in ["PLAN_VIEW", "REFLECTED_PLAN_VIEW"]:
             origin = ("0", "Origin", "")
-            storeys = [(str(s.id()), s.Name or "Unnamed", "") for s in tool.Ifc.get().by_type("IfcBuildingStorey")]
-            if not storeys:
+            if not (
+                storeys := [(str(s.id()), s.Name or "Unnamed", "") for s in tool.Ifc.get().by_type("IfcBuildingStorey")]
+            ):
                 return [origin]
             default_container = tool.Root.get_default_container()
             if default_container and default_container.is_a("IfcBuildingStorey"):
