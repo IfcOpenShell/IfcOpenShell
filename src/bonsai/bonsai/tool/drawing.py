@@ -414,6 +414,27 @@ class Drawing(bonsai.core.tool.Drawing):
         return applicable_occurrence.split("/", 1)[1]
 
     @classmethod
+    def is_reference_image(cls, element: ifcopenshell.entity_instance) -> bool:
+        return cls.is_annotation_object_type(element, "IMAGE")
+
+    @classmethod
+    def get_reference_image_texture(
+        cls, element: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        """Return the first image texture of a reference image annotation.
+
+        The texture lives on an IfcSurfaceStyleWithTextures assigned to the
+        element's body representation.
+        """
+        for style in ifcopenshell.util.element.get_styles(element):
+            for surface_style in getattr(style, "Styles", None) or []:
+                if surface_style.is_a("IfcSurfaceStyleWithTextures"):
+                    for texture in surface_style.Textures or []:
+                        if texture.is_a("IfcImageTexture") or texture.is_a("IfcBlobTexture"):
+                            return texture
+        return None
+
+    @classmethod
     def get_annotation_representation(
         cls, element: ifcopenshell.entity_instance
     ) -> Union[ifcopenshell.entity_instance, None]:
