@@ -15,14 +15,21 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import ifcopenshell
+
+if TYPE_CHECKING:
+    from ifcopenshell.util.unit import DimensionalExponents
 
 
 def add_context_dependent_unit(
     file: ifcopenshell.file,
     unit_type: str = "USERDEFINED",
     name: str = "THINGAMAJIG",
-    dimensions: tuple[int, int, int, int, int, int, int] = (0, 0, 0, 0, 0, 0, 0),
+    dimensions: DimensionalExponents = (0, 0, 0, 0, 0, 0, 0),
 ) -> ifcopenshell.entity_instance:
     """Add a new arbitrary unit that can only be interpreted in a project specific context
 
