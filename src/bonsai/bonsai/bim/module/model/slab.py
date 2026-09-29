@@ -508,6 +508,7 @@ class EditSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         converter.run()
 
         profile = tool.Ifc.get().createIfcArbitraryClosedProfileDef("AREA")
+        curve = None
         for path in converter.paths:
             points = []
             lines = path[0]
@@ -517,6 +518,7 @@ class EditSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
                 points.append(tool.Ifc.get().createIfcCartesianPoint(local_point))
             points.append(points[0])
             curve = tool.Ifc.get().createIfcPolyline(points)
+        assert curve
         profile.OuterCurve = curve
 
         old_profile = extrusion.SweptArea
@@ -911,8 +913,7 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
     def _modal(self, context, event):
         if not self.relating_type:
             self.report({"WARNING"}, "You need to select a slab type.")
-            PolylineDecorator.uninstall()
-            tool.Blender.update_viewport()
+            self.cleanup(context)
             return {"FINISHED"}
 
         PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
@@ -958,11 +959,7 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
             and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}
         ):
             self.create_slab_from_polyline(context)
-            context.workspace.status_text_set(text=None)
-            ProductDecorator.uninstall()
-            PolylineDecorator.uninstall()
-            tool.Polyline.clear_polyline()
-            tool.Blender.update_viewport()
+            self.cleanup(context)
             return {"FINISHED"}
 
         self.handle_keyboard_input(context, event)
@@ -970,7 +967,6 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
 
         cancel = self.handle_cancelation(context, event)
         if cancel is not None:
-            ProductDecorator.uninstall()
             return cancel
 
         return {"RUNNING_MODAL"}

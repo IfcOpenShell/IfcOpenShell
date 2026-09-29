@@ -96,10 +96,10 @@ class FoundationClient:
                 webbrowser.open(f"{auth_endpoint}?{query}")
             server.timeout = 100
             server.handle_request()
-            if server.auth_code and server.auth_state == state:  # pylint: disable=E1101
+            if server.auth_code and server.auth_state == state:
                 data = {
                     "grant_type": "authorization_code",
-                    "code": server.auth_code,  # pylint: disable=E1101 type:ignore
+                    "code": server.auth_code,
                     "redirect_uri": f"http://localhost:{server.server_address[1]}/{self.redirect_subdir}",
                 }
                 headers = self._get_access_token_headers()
@@ -171,7 +171,7 @@ class BcfClient:
                 return response.json()
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            print(f"message: {response.reason}'   '{response.status_code}'   '{ e }")
+            print(f"message: {response.reason}'   '{response.status_code}'   '{e}")
 
     def post(self, endpoint: str, data: Any = None, params: Any = None) -> tuple[int, str]:
         headers = {
@@ -188,6 +188,8 @@ class BcfClient:
                 response.raise_for_status()
             return response.status_code, response.text
         except requests.exceptions.HTTPError as errh:
+            response = errh.response
+            assert response is not None
             print(f"message: {response.reason}'  '{response.status_code}, {errh}")
             return response.status_code, response.reason
 
@@ -206,6 +208,8 @@ class BcfClient:
                 response.raise_for_status()
             return response.status_code, response.text
         except requests.exceptions.HTTPError as errh:
+            response = errh.response
+            assert response is not None
             print(f"message: {response.reason}'  '{response.status_code}, {errh}")
             return response.status_code, response.reason
 
@@ -222,6 +226,8 @@ class BcfClient:
                 response.raise_for_status()
             return response.status_code, response.text
         except requests.exceptions.HTTPError as errh:
+            response = errh.response
+            assert response is not None
             print(f"message: {response.reason}'  '{response.status_code}, {errh}")
             return response.status_code, response.reason
 

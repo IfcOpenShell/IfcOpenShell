@@ -47,7 +47,7 @@ def assign_work_plan(
         schedule = ifcopenshell.api.sequence.add_work_schedule(model, name="Construction Schedule A")
 
         # ... you can assign the work plan afterwards.
-        ifcopenshell.api.sequence.assign_work_plan(work_schedule=schedule, work_plan=work_plan)
+        ifcopenshell.api.sequence.assign_work_plan(model, work_schedule=schedule, work_plan=work_plan)
     """
     # TODO: this is an ambiguity by buildingSMART
     # See https://forums.buildingsmart.org/t/is-the-ifcworkschedule-project-declaration-mutually-exclusive-to-aggregation-within-a-relating-ifcworkplan/3510
