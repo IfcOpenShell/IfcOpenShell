@@ -596,6 +596,31 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
         with pytest.raises(RuntimeError):
             self.file.by_id(previous_placement_id)
 
+    @staticmethod
+    def np_translation(translation) -> numpy.ndarray:
+        (matrix := numpy.eye(4))[:3, 3] = translation
+        return matrix
+
+    def setup_detached_opening(self):
+        """A wall at (1,1,1) voided by an opening at (1,2,3) placed relative to the site, not the wall."""
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(self.file)
+        site = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSite")
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
+        ifcopenshell.api.spatial.assign_container(self.file, products=[wall], relating_structure=site)
+        ifcopenshell.api.feature.add_feature(self.file, feature=opening, element=wall)
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=site, matrix=numpy.eye(4), is_si=False)
+        ifcopenshell.api.geometry.edit_object_placement(
+            self.file, product=wall, matrix=self.np_translation((1, 1, 1)), is_si=False
+        )
+        opening.ObjectPlacement = self.file.createIfcLocalPlacement(
+            PlacementRelTo=site.ObjectPlacement,
+            RelativePlacement=self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((1.0, 2.0, 3.0))),
+        )
+        assert opening.ObjectPlacement.PlacementRelTo == site.ObjectPlacement
+        return site, wall, opening
+
     def test_moving_a_host_moves_an_opening_placed_outside_the_host_placement_tree(self):
         site, wall, opening = self.setup_detached_opening()
         ifcopenshell.api.geometry.edit_object_placement(
@@ -744,31 +769,6 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
         # subchildren are unaffected, exception is not raised
         self.file.by_id(wall_placement_id)
         assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(wall.ObjectPlacement), matrix)
-
-    @staticmethod
-    def np_translation(translation) -> numpy.ndarray:
-        (matrix := numpy.eye(4))[:3, 3] = translation
-        return matrix
-
-    def setup_detached_opening(self):
-        """A wall at (1,1,1) voided by an opening at (1,2,3) placed relative to the site, not the wall."""
-        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
-        ifcopenshell.api.unit.assign_unit(self.file)
-        site = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSite")
-        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
-        opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
-        ifcopenshell.api.spatial.assign_container(self.file, products=[wall], relating_structure=site)
-        ifcopenshell.api.feature.add_feature(self.file, feature=opening, element=wall)
-        ifcopenshell.api.geometry.edit_object_placement(self.file, product=site, matrix=numpy.eye(4), is_si=False)
-        ifcopenshell.api.geometry.edit_object_placement(
-            self.file, product=wall, matrix=self.np_translation((1, 1, 1)), is_si=False
-        )
-        opening.ObjectPlacement = self.file.createIfcLocalPlacement(
-            PlacementRelTo=site.ObjectPlacement,
-            RelativePlacement=self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((1.0, 2.0, 3.0))),
-        )
-        assert opening.ObjectPlacement.PlacementRelTo == site.ObjectPlacement
-        return site, wall, opening
 
 
 class TestEditObjectPlacementIFC2X3(test.bootstrap.IFC2X3, TestEditObjectPlacement):
