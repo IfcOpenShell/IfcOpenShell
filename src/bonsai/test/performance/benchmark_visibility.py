@@ -95,7 +95,7 @@ def _load_bonsai_from(src_bonsai: str):
     sys.path.insert(0, src_bonsai)
 
     bpy.ops.preferences.addon_enable(module="bl_ext.raw_githubusercontent_com.bonsai")
-    import bonsai  # noqa: F401
+    import bonsai
 
     assert bonsai.__file__.startswith(src_bonsai), f"bonsai loaded from {bonsai.__file__}, expected {src_bonsai}"
 

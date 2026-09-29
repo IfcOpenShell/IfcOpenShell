@@ -55,12 +55,10 @@ import math
 import time
 from dataclasses import dataclass, field
 
-import ifcopenshell
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.context
 import ifcopenshell.api.feature
 import ifcopenshell.api.geometry
-import ifcopenshell.api.owner
 import ifcopenshell.api.project
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
