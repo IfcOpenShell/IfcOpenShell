@@ -130,10 +130,7 @@ class IfcCsv:
             else:
                 self.headers.append(attribute)
 
-        # Summarise before grouping: a summary column need not be one of the
-        # group's aggregated columns, and grouping collapses rows, so summing
-        # post-group would silently total only the surviving representative
-        # rows instead of every exported element.
+        # Summarise before grouping so totals cover every exported element.
         self.summarise_results(summaries, attributes)
         self.group_results(groups, attributes)
         self.sort_results(sort, attributes, include_global_id)
@@ -490,13 +487,8 @@ class IfcCsv:
         bool_false: str,
         concat: str,
     ) -> None:
-        # Read-only pseudo-attributes to skip during import. These are exact
-        # path segments recognised by ifcopenshell.util.selector (e.g. the
-        # "count" in "type.count", or "material"/"mat" in "material.Name"),
-        # not substrings of an ordinary attribute name. Matching on substring
-        # instead of segment previously skipped unrelated attributes such as
-        # "Country", "Discount", "AccountNumber", or "MaterialCost".
-        SKIP_SEGMENTS = {"count", "material", "mat"}
+        # Read-only selector pseudo-attributes, matched as whole path segments.
+        SKIP_SEGMENTS = {"count", "material", "materials", "mat", "mats"}
 
         try:
             element = ifc_file.by_guid(row[0])
@@ -516,7 +508,6 @@ class IfcCsv:
                 value = False
             key = attributes[i] or headers[i]
 
-            # Skip read-only pseudo-attributes (matched as whole path segments).
             if any(segment in SKIP_SEGMENTS for segment in key.lower().split(".")):
                 continue
 
