@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import json
 from datetime import datetime
 from types import SimpleNamespace
 
@@ -118,6 +119,45 @@ class TestGetAnimationProductFrames(NewFile):
         }
         frames = subject.get_animation_product_frames(schedule, settings)
         assert [(f["type"], f["object_type"]) for f in frames[wall.id()]] == [("USERDEFINED", "COLORRED")]
+
+
+class TestGetAnimationProductFramesAggregation(NewFile):
+    def _setup(self, should_aggregate: bool):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        work_schedule = ifcopenshell.api.sequence.add_work_schedule(ifc, name="Schedule")
+        parent = ifcopenshell.api.sequence.add_task(ifc, work_schedule=work_schedule, name="Parent")
+        walls = []
+        dates = ((datetime(2026, 1, 1), datetime(2026, 1, 3)), (datetime(2026, 1, 8), datetime(2026, 1, 10)))
+        for i, (start, finish) in enumerate(dates):
+            child = ifcopenshell.api.sequence.add_task(ifc, parent_task=parent, name=f"Child {i}")
+            task_time = ifcopenshell.api.sequence.add_task_time(ifc, task=child)
+            ifcopenshell.api.sequence.edit_task_time(
+                ifc, task_time=task_time, attributes={"ScheduleStart": start, "ScheduleFinish": finish}
+            )
+            wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+            ifcopenshell.api.sequence.assign_product(ifc, relating_product=wall, related_object=child)
+            walls.append(wall)
+        props = tool.Sequence.get_work_schedule_props()
+        props.should_aggregate_contracted_tasks = should_aggregate
+        props.contracted_tasks = json.dumps([parent.id()])
+        settings = {
+            "start": datetime(2026, 1, 1),
+            "finish": datetime(2026, 1, 10),
+            "duration": datetime(2026, 1, 10) - datetime(2026, 1, 1),
+            "start_frame": 1,
+            "total_frames": 100,
+        }
+        return subject.get_animation_product_frames(work_schedule, settings), walls
+
+    def test_contracted_task_animates_all_products_over_its_derived_range(self):
+        frames, walls = self._setup(should_aggregate=True)
+        assert frames[walls[0].id()] == frames[walls[1].id()]
+        assert frames[walls[0].id()][0]["COMPLETED"] - frames[walls[0].id()][0]["STARTED"] > 100
+
+    def test_products_keep_their_own_task_range_when_not_aggregating(self):
+        frames, walls = self._setup(should_aggregate=False)
+        assert frames[walls[0].id()][0]["COMPLETED"] < frames[walls[1].id()][0]["STARTED"]
 
 
 class TestGetAnimationColor(NewFile):
