@@ -3,48 +3,92 @@
 using namespace ifcopenshell::geometry;
 
 taxonomy::loop::ptr ifcopenshell::geometry::fillet_loop(taxonomy::loop::ptr loop, double radius) {
-	std::vector<profile_point_with_edges_3d> pps(loop->children.size());
-	for (int b = 0; b < loop->children.size(); ++b) {
-		int c = (b - 1) % loop->children.size();
-		pps[b] = { 
-			boost::get<taxonomy::point3::ptr>(loop->children[c]->start)->ccomponents(), 
+	const size_t n = loop->children.size();
+	if (n < 2) {
+		return loop;
+	}
+
+	// FilletRadius is only meaningful for a polygonal (straight segmented)
+	// directrix. If any segment carries a curved basis or is parameterised rather
+	// than defined by its end points, the directrix is not polyhedral: leave it
+	// untouched instead of misinterpreting arc segments as corners.
+	if (!loop->is_polyhedron()) {
+		Logger::Root().Warning("GEO", 328, "Directrix is not polyhedral, ignoring FilletRadius");
+		return loop;
+	}
+	for (const auto& e : loop->children) {
+		// which() == 1 selects the point3::ptr alternative of the start/end variant.
+		if (e->start.which() != 1 || e->end.which() != 1) {
+			Logger::Root().Warning("GEO", 328, "Directrix is not polyhedral, ignoring FilletRadius");
+			return loop;
+		}
+	}
+
+	// polygon_from_points() shares a single point instance between the end of one
+	// edge and the start of the next. Filleting insets those two vertices in
+	// opposite directions, so break the sharing first by giving every edge its own
+	// end point (mirrors what profile_helper() does for the 2d case).
+	for (auto& e : loop->children) {
+		e->end = taxonomy::make<taxonomy::point3>(*boost::get<taxonomy::point3::ptr>(e->end)->components_);
+	}
+
+	// A directrix built from an open IfcPolyline is not a closed loop: its two end
+	// vertices are genuine endpoints, not corners, and must not be filleted.
+	// polygon_from_points() does not set the closed flag, so detect closure
+	// geometrically from the first and last vertex.
+	const auto& first_pt = boost::get<taxonomy::point3::ptr>(loop->children.front()->start)->ccomponents();
+	const auto& last_pt = boost::get<taxonomy::point3::ptr>(loop->children.back()->end)->ccomponents();
+	const bool closed = (first_pt - last_pt).norm() < 1.e-9;
+
+	std::vector<profile_point_with_edges_3d> pps(n);
+	for (size_t b = 0; b < n; ++b) {
+		size_t c = (b + n - 1) % n;
+		pps[b] = {
+			boost::get<taxonomy::point3::ptr>(loop->children[c]->start)->ccomponents(),
 			radius, loop->children[c], loop->children[b]
 		};
 	}
 	size_t i = pps.size();
 	while (i--) {
+		// The first vertex of an open loop is an endpoint shared with no preceding
+		// edge; skip it (pps[0].previous would wrap to the last edge).
+		if (!closed && i == 0) {
+			continue;
+		}
 		const auto& p = pps[i];
 		if (p.radius && *p.radius > 0.) {
 
 			auto p0 = boost::get<taxonomy::point3::ptr>(p.previous->start)->ccomponents();
-			auto p1a = boost::get<taxonomy::point3::ptr>(p.previous->end)->ccomponents();
+			auto corner = boost::get<taxonomy::point3::ptr>(p.previous->end)->ccomponents();
 			auto p2 = boost::get<taxonomy::point3::ptr>(p.next->end)->ccomponents();
-			auto p1b = boost::get<taxonomy::point3::ptr>(p.next->start)->ccomponents();
 
-			auto ba_ = p0 - p1a;
-			auto bc_ = p2 - p1b;
+			auto ba = (p0 - corner).normalized();
+			auto bc = (p2 - corner).normalized();
 
-			auto ba = ba_.normalized();
-			auto bc = bc_.normalized();
-
-			const double angle = std::acos(ba.dot(bc));
+			const double dot = std::max(-1., std::min(1., ba.dot(bc)));
+			const double angle = std::acos(dot);
 			const double inset = *p.radius / std::tan(angle / 2.);
 
 			boost::get<taxonomy::point3::ptr>(p.previous->end)->components() += ba * inset;
 			boost::get<taxonomy::point3::ptr>(p.next->start)->components() += bc * inset;
 
+			auto A = boost::get<taxonomy::point3::ptr>(p.previous->end)->ccomponents();
+			auto B = boost::get<taxonomy::point3::ptr>(p.next->start)->ccomponents();
+
 			auto e = taxonomy::make<taxonomy::edge>();
 			e->start = p.previous->end;
 			e->end = p.next->start;
 
-			// @todo untested from here.
-
-			auto ab = ba.cross(bc);
-
-			auto O = boost::get<taxonomy::point3::ptr>(p.previous->end)->ccomponents().head<3>() + ab * *p.radius;
+			// Arc centre lies on the interior bisector at radius / sin(angle/2) from
+			// the original corner. Orient the arc axis from the two tangent points so
+			// the swept arc is the minor (fillet) arc from start to end, not its major
+			// complement.
+			auto bisector = (ba + bc).normalized();
+			auto O = corner.head<3>() + bisector * (*p.radius / std::sin(angle / 2.));
+			auto normal = (A - O).cross(B - O);
 
 			auto c = taxonomy::make<taxonomy::circle>();
-			c->matrix = taxonomy::make<taxonomy::matrix4>(O, ab);
+			c->matrix = taxonomy::make<taxonomy::matrix4>(O, normal);
 			c->radius = *p.radius;
 			e->basis = c;
 
