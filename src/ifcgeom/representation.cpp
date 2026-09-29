@@ -117,7 +117,7 @@ bool ifcopenshell::geom::native::calculate_projected_surface_area(const ifcopens
 }
 
 ifcopenshell::geom::triangulation::triangulation(const native& shape_model)
-	: representation(shape_model.settings(), shape_model.entity(), shape_model.id())
+	: representation(shape_model.settings(), shape_model.entity(), shape_model.id(), shape_model.declaration())
 	, weld_offset_(0)
 {
 	for (std::vector<ifcopenshell::geom::conversion_result>::const_iterator iit = shape_model.begin(); iit != shape_model.end(); ++iit) {
@@ -137,7 +137,7 @@ ifcopenshell::geom::triangulation::triangulation(const native& shape_model)
 		}
 
 		if (settings().get<ifcopenshell::geom::settings::ApplyDefaultMaterials>().get() && surface_style_id == -1) {
-			const auto& material = ifcopenshell::geom::get_default_style(shape_model.entity());
+			const auto& material = ifcopenshell::geom::get_default_style(shape_model.entity(), shape_model.declaration());
 			auto mit = std::find(materials_.begin(), materials_.end(), material);
 			if (mit == materials_.end()) {
 				surface_style_id = (int)materials_.size();
