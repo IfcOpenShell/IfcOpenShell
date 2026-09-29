@@ -25,11 +25,6 @@ from ifctester import ids, reporter
 
 class TestJson:
     def test_a_forced_failed_requirement_without_failures_is_not_reported_as_100_percent_pass(self):
-        # A violated prohibited specification (or a required specification with
-        # no applicable entities) forces requirement.status to False without
-        # ever populating requirement.failures, since per-element requirement
-        # checks are skipped in both cases. The reporter must not derive a
-        # pass count from the empty failures list in that situation.
         specs = ids.Ids(title="Title")
         spec = ids.Specification(name="No walls allowed")
         spec.applicability.append(ids.Entity(name="IFCWALL"))
@@ -43,7 +38,7 @@ class TestJson:
         specs.validate(model)
 
         assert requirement.failures == []
-        requirement.status = False  # As forced by a violated prohibited specification
+        requirement.status = False
 
         results = reporter.Json(specs).report()
         requirement_result = results["specifications"][0]["requirements"][0]
@@ -55,9 +50,6 @@ class TestJson:
 
 class TestConsole:
     def test_a_violated_prohibited_specification_does_not_show_all_successes(self, capsys):
-        # specification.failed_entities is never populated for a prohibited
-        # specification, since per-element requirement checks are skipped.
-        # The success counter must not read that empty set as "all passed".
         specs = ids.Ids(title="Title")
         spec = ids.Specification(name="No walls allowed")
         spec.applicability.append(ids.Entity(name="IFCWALL"))
@@ -80,10 +72,6 @@ class TestConsole:
 
 class TestTxt:
     def test_a_failed_specification_shows_the_fail_label_and_reason(self):
-        # Txt.print used "txt + '\\n' if end is None else end", which due to
-        # operator precedence discarded txt and kept only end whenever a
-        # caller passed an explicit end=. That silently dropped the
-        # [PASS]/[FAIL] label, the pass count, and every failure reason.
         specs = ids.Ids(title="Title")
         spec = ids.Specification(name="Walls need a Name")
         spec.applicability.append(ids.Entity(name="IFCWALL"))
