@@ -348,20 +348,13 @@ class FilledOpeningGenerator:
             elif layers["layer_set_direction"] == "AXIS3":
                 local_position_on_voided_obj = raycast[1]
                 if layers["offset"] or layers["thickness"]:
-                    # A real material layer set to read a "top of layers" elevation from:
-                    # keep the exact existing flat-host behaviour (host's own rotation,
-                    # twisted -90 around X; equivalent to "side Z" for a wall axis, so
-                    # that stuff like skylights appear on the top).
+                    # A real layer set gives a flat top elevation: keep the host's own rotation (skylights on top).
                     local_position_on_voided_obj.z = layers["offset"] + layers["thickness"]
                     new_matrix = voided_obj.matrix_world.copy()
                     new_matrix.translation.xyz = voided_obj.matrix_world @ local_position_on_voided_obj
                     new_matrix @= Matrix.Rotation(radians(-90), 4, "X")
                 else:
-                    # No material layer set (eg. a parametric roof, which never gets
-                    # one): there's no single flat elevation to snap to, and the host
-                    # object itself usually isn't rotated even though individual faces
-                    # are sloped, so fall back to the actual raycasted point and its
-                    # face normal instead of assuming a flat top face.
+                    # No layer set (eg. a parametric roof): use the raycast point and face normal, not a flat top.
                     new_translation = voided_obj.matrix_world @ local_position_on_voided_obj
                     new_matrix = Matrix.Translation(new_translation) @ get_surface_aligned_rotation(
                         voided_obj.matrix_world, raycast[2]

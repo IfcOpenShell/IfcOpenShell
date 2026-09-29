@@ -787,11 +787,7 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def get_material_layer_parameters(cls, element: ifcopenshell.entity_instance) -> MaterialLayerParameters:
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        # Without an actual IfcMaterialLayerSetUsage to read LayerSetDirection
-        # from (eg. a parametric IfcRoof, which never gets one), fall back to
-        # the same class-based inference get_usage_type() uses, rather than
-        # always guessing the wall-like AXIS2. Anything not recognised keeps
-        # defaulting to AXIS2, matching prior behaviour.
+        # Without a layer set usage (eg. a parametric IfcRoof), infer the direction from the class as get_usage_type() does.
         if element.is_a() in cls.AXIS3_HOST_CLASSES:
             layer_set_direction = "AXIS3"
         else:
