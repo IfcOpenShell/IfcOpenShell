@@ -193,6 +193,18 @@ class TestInitRepo(NewFile):
                 assert "*.ifc text" in f.read()
             IfcGitRepo.repo = None
 
+    @requires_git
+    def test_defaults_to_main_when_no_global_default_branch_is_set(self, monkeypatch):
+        def unset(*args, **kwargs):
+            raise git.exc.GitCommandError("config", 1)
+
+        monkeypatch.setattr(git.Git, "config", unset, raising=False)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            IfcGitRepo.repo = None
+            IfcGit.init_repo(tmpdir)
+            assert IfcGitRepo.repo.head.reference.name == "main"
+            IfcGitRepo.repo = None
+
 
 class TestRepoFromPath(NewFile):
     @requires_git
