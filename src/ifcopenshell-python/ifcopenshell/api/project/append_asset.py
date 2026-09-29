@@ -341,21 +341,15 @@ class Usecase:
                 return None
             return next((e for e in self.file.by_type(element.is_a()) if e.Name == name), None)
 
-        # Not really an asset, but a single classification system is shared by
-        # the IfcClassificationReferences of many assets. If we don't reuse an
-        # existing one, every appended asset that points at the same
-        # classification spawns a duplicate IfcClassification (see #7150).
+        # Not really an asset, but reuse it so assets sharing a classification do not duplicate it. See #7150.
         elif element.is_a("IfcClassification"):
-            name = element.Name
-            if name is None:
+            if not (name := element.Name):
                 return None
             return next(
                 (
                     e
                     for e in self.file.by_type("IfcClassification")
-                    if e.Name == name
-                    and e.Source == element.Source
-                    and e.Edition == element.Edition
+                    if e.Name == name and e.Source == element.Source and e.Edition == element.Edition
                 ),
                 None,
             )

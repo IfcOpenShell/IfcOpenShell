@@ -188,7 +188,6 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         new1 = ifcopenshell.api.project.append_asset(self.file, library=library, element=element1)
         new2 = ifcopenshell.api.project.append_asset(self.file, library=library, element=element2)
 
-        # The shared classification system must be reused, not duplicated (#7150).
         classifications = self.file.by_type("IfcClassification")
         assert len(classifications) == 1
         references = self.file.by_type("IfcClassificationReference")
