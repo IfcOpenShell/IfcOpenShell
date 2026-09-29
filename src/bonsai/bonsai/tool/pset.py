@@ -164,14 +164,7 @@ class Pset(bonsai.core.tool.Pset):
 
     @classmethod
     def is_editable(cls, pset: ifcopenshell.entity_instance) -> bool:
-        """Whether bim.edit_pset can edit this pset or qto.
-
-        IfcPreDefinedPropertySet occurrences (eg. IfcDoorPanelProperties,
-        IfcDoorLiningProperties) store their data as direct entity attributes
-        instead of a list of IfcProperty or IfcPhysicalQuantity entities, so
-        the generic pset/qto editor does not support them yet and they are
-        shown as read only.
-        """
+        """Whether bim.edit_pset supports this pset; IfcPreDefinedPropertySet is read only."""
         return not pset.is_a("IfcPreDefinedPropertySet")
 
     @classmethod
