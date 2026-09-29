@@ -23,9 +23,6 @@ from ifc4d.wpattern import AstaCalendarWorkPattern
 
 class TestAstaCalendarWorkPatternMissingDays:
     def test_non_english_partial_week_fills_missing_days_in_english(self) -> None:
-        # A French calendar naming only 5 weekdays. day_names is already
-        # translated to English, so the missing days must be computed
-        # against the English day set, not the source language's set.
         pattern = '<"Lundi">0,0<"Mardi">0,0<"Mercredi">0,0<"Jeudi">0,0<"Vendredi">0,0'
         wp = AstaCalendarWorkPattern(pattern, work_type_ids=[1])
 
