@@ -144,8 +144,10 @@ class BIM_PT_type_attributes(Panel):
 
             bonsai.bim.helper.draw_attributes(props.type_attributes, layout)
         else:
-            row = layout.row()
+            row = layout.row(align=True)
             row.operator("bim.enable_editing_type_attributes", icon="GREASEPENCIL", text="Edit")
+            op = row.operator("bim.remove_type", icon="TRASH", text="")
+            op.element = TypeData.data["relating_type"]["id"]
 
             for attribute in TypeData.data["relating_type_attributes"]:
                 row = layout.row(align=True)
