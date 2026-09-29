@@ -1,11 +1,3 @@
-"""Offline tests for bsdd.Client.
-
-These run against stubbed responses instead of calling the live bSDD API, so
-they run without network access and are safe to collect and run in CI. For
-tests against the real bSDD API, see test_bsdd_live.py (opt-in, `network`
-marker, never runs by default).
-"""
-
 import types
 
 import pytest

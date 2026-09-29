@@ -46,9 +46,6 @@ py-modules = ["bsdd","bsdd_json","type_hints"]
 
 [tool.ruff]
 extend = "../../pyproject.toml"
-lint.select = [
-  "F401",  # unused imports
-]
 
 [tool.pytest.ini_options]
 markers = [

@@ -1,15 +1,4 @@
-"""Live tests for bsdd.Client against the real bSDD API.
-
-These hit the network and are opt-in only: every test in this module carries
-the `network` marker, which is deselected by default (see pyproject.toml).
-Run explicitly with:
-
-    python -m pytest tests/test_bsdd_live.py -m network
-
-All fetches happen lazily inside fixtures, not at module import time, so this
-file can still be collected without network access; only running a test in
-it requires the network.
-"""
+"""Live bSDD API tests, deselected by default: run with `pytest -m network`."""
 
 import pytest
 
@@ -70,7 +59,6 @@ def test_get_nbs_classes(nbs_classes):
 
 
 def test_get_class(client, light_fixture_uri):
-    # TODO: fix deprecation warning.
     ifc4x3_light_fixture = client.get_class(light_fixture_uri)
     names = [l["name"] for l in ifc4x3_light_fixture["classProperties"]]
     assert "Maintenance Factor" in names
@@ -94,9 +82,7 @@ def test_get_class_properties(client, light_fixture_uri):
 def test_search_class(client, nbs_uri):
     ss_heat_pump_sys = client.search_class("Ss_60_40_36", [nbs_uri])
     li = [l + "source heat pump systems" for l in ["Air ", "Ground ", "Water "]]
-    assert (
-        len(li) < 8
-    )  # I think it should be 4 but just validating it isn't overfetching with some space for future change
+    assert len(li) < 8
     for l in li:
         assert l in [_["name"] for _ in ss_heat_pump_sys["classes"]]
 
