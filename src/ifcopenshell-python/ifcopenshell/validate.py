@@ -112,11 +112,7 @@ class json_logger:
     def set_state(self, key: StateItem, value: Any) -> None:
         self.state[key] = value
 
-    def log(self, level, message, *args):
-        # Like logging.LogRecord.getMessage(): only %-format when args are given,
-        # as pre-built messages can contain a literal "%".
-        if args:
-            message = message % args
+    def log(self, level, message):
         self.statements.append({"level": level, "message": message, **self.state})
 
     def __getattr__(self, level):
@@ -363,7 +359,7 @@ def log_internal_cpp_errors(
                 if isinstance(logger, json_logger):
                     logger.set_state("instance", line)
                     logger.set_state("attribute", None)
-                    logger.error("%s:\n\n%s" % (m, line))
+                    logger.error(f"{m}:\n\n{line}")
                 else:
                     logger.error("For instance:\n    %s\n%s", line, m)
 
@@ -502,12 +498,8 @@ def validate(f: ifcopenshell.file | str | Path, logger: Logger | json_logger, ex
                 rule = "Rule IfcRoot.UR1:\n    The attribute GlobalId should be unique"
                 previous_element = used_guids[guid]
                 logger.error(
-                    "On instance:\n    %s\n    %s\n%s\nViolated by:\n    %s\n    %s",
-                    inst,
-                    annotate_inst_attr_pos(inst, 0),
-                    rule,
-                    previous_element,
-                    annotate_inst_attr_pos(previous_element, 0),
+                    f"On instance:\n    {inst}\n    {annotate_inst_attr_pos(inst, 0)}\n{rule}\n"
+                    f"Violated by:\n    {previous_element}\n    {annotate_inst_attr_pos(previous_element, 0)}"
                 )
             else:
                 if guid is not None:
@@ -517,11 +509,8 @@ def validate(f: ifcopenshell.file | str | Path, logger: Logger | json_logger, ex
                         rule = "IfcGloballyUniqueId base64 validation:\n    The attribute GlobalId should be valid base64 encoded 128-bit number."
                         previous_element = None
                         logger.error(
-                            "On instance:\n    %s\n    %s\n%s\nViolated by:\n    %s\n",
-                            inst,
-                            annotate_inst_attr_pos(inst, 0),
-                            rule,
-                            validation_error,
+                            f"On instance:\n    {inst}\n    {annotate_inst_attr_pos(inst, 0)}\n{rule}\n"
+                            f"Violated by:\n    {validation_error}\n"
                         )
 
         entity, attrs = get_entity_attributes(schema, inst.is_a())
@@ -685,17 +674,11 @@ def validate_ifc_header(
         expected_type: str,
         provided_type: str,
     ) -> None:
+        s = to_string_header_entity(header_entity)
         logger.error(
-            (
-                "For instance:\n    %s\n    %s\n"
-                "Attribute '%s' has invalid type:\n"
-                "    Expected: %s\n    Current value type: %s\n"
-            ),
-            (s := to_string_header_entity(header_entity)),
-            annotate_inst_attr_pos(header_entity, index, s),
-            name,
-            expected_type,
-            provided_type,
+            f"For instance:\n    {s}\n    {annotate_inst_attr_pos(header_entity, index, s)}\n"
+            f"Attribute '{name}' has invalid type:\n"
+            f"    Expected: {expected_type}\n    Current value type: {provided_type}\n"
         )
 
     def validate_attribute(
@@ -759,12 +742,8 @@ def validate_ifc_applications(f: ifcopenshell.file, logger: Union[Logger, json_l
                 rule = "Rule IfcApplication.UR2:\n    The combination of attributes ApplicationFullName and Version should be unique"
                 previous_element = used_names[app_name]
                 logger.error(
-                    "On instance:\n    %s\n    %s\n%s\nViolated by:\n    %s\n    %s",
-                    inst,
-                    annotate_inst_attr_pos(inst, (1, 2)),
-                    rule,
-                    previous_element,
-                    annotate_inst_attr_pos(previous_element, (1, 2)),
+                    f"On instance:\n    {inst}\n    {annotate_inst_attr_pos(inst, (1, 2))}\n{rule}\n"
+                    f"Violated by:\n    {previous_element}\n    {annotate_inst_attr_pos(previous_element, (1, 2))}"
                 )
 
         if app_id is not None:
@@ -776,12 +755,8 @@ def validate_ifc_applications(f: ifcopenshell.file, logger: Union[Logger, json_l
                 rule = "Rule IfcApplication.UR1:\n    The attribute ApplicationIdentifier should be unique"
                 previous_element = used_ids[app_id]
                 logger.error(
-                    "On instance:\n    %s\n    %s\n%s\nViolated by:\n    %s\n    %s",
-                    inst,
-                    annotate_inst_attr_pos(inst, 3),
-                    rule,
-                    previous_element,
-                    annotate_inst_attr_pos(previous_element, 3),
+                    f"On instance:\n    {inst}\n    {annotate_inst_attr_pos(inst, 3)}\n{rule}\n"
+                    f"Violated by:\n    {previous_element}\n    {annotate_inst_attr_pos(previous_element, 3)}"
                 )
 
 
