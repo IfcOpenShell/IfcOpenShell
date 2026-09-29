@@ -70,6 +70,14 @@ def update_material_type(self, context):
     MaterialsData.data["total_materials"] = MaterialsData.total_materials()
 
 
+def update_material_filter(self, context):
+    is_filter_active = bool(self.material_filter.strip())
+    if is_filter_active == self.is_material_filter_active:
+        return
+    self.is_material_filter_active = is_filter_active
+    tool.Material.import_material_definitions(self.material_type)
+
+
 def get_profiles(self, context):
     if not MaterialsData.is_loaded:
         MaterialsData.load()
@@ -165,6 +173,8 @@ class BIMMaterialProperties(PropertyGroup):
     material_type: EnumProperty(items=get_material_types, update=update_material_type, name="Material Type")
     materials: CollectionProperty(name="Materials", type=Material)
     active_material_index: IntProperty(name="Active Material Index", update=update_active_material_index)
+    material_filter: StringProperty(name="Material Filter", update=update_material_filter, options={"TEXTEDIT_UPDATE"})
+    is_material_filter_active: BoolProperty(name="Is Material Filter Active", default=False)
     profiles: EnumProperty(items=get_profiles, name="Profiles")
     active_material_id: IntProperty(name="Active Material ID")
     material_attributes: CollectionProperty(name="Material Attributes", type=Attribute)
@@ -181,6 +191,8 @@ class BIMMaterialProperties(PropertyGroup):
         material_type: str
         materials: bpy.types.bpy_prop_collection_idprop[Material]
         active_material_index: int
+        material_filter: str
+        is_material_filter_active: bool
         profiles: str
         active_material_id: int
         material_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
