@@ -44,20 +44,7 @@ def toggle_decorations_on_load(*args):
 
 
 def restart_clipping_planes_refresh() -> None:
-    """Restart the modal that keeps the viewport clip planes in sync.
-
-    See #4641. Clip planes are applied to the viewport by the modal
-    ``bim.refresh_clipping_planes`` operator. Modal operators do not survive a
-    ``.blend`` reload, so after reopening a saved file the clip is "stuck": the
-    model stays clipped by the last-applied planes (that viewport state is saved
-    in the .blend) but moving a plane no longer updates the view, until the user
-    creates a new clipping plane which relaunches the modal. Relaunch it here so
-    a saved clip works again on reopen without recreating a plane.
-
-    The operator is launched from a timer (not directly in the load_post
-    handler) because a modal operator needs a running event loop with a valid
-    window, which is not guaranteed inside a load_post handler.
-    """
+    """Relaunch the clipping planes modal, which does not survive a .blend reload (#4641)."""
     if bpy.app.background:
         return
 
