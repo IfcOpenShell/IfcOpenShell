@@ -30,10 +30,7 @@ import sys
 import zipfile
 from pathlib import Path
 
-# Plugin basenames carry no platform prefix and use underscores, see
-# decorated_basename() in src/plugin/plugin.cpp. Core shared libraries instead
-# keep the dotted `ifcopenshell.` names and the platform `lib` prefix.
-#
+# Plugin basenames use underscores and no platform prefix; core libraries keep the dotted `ifcopenshell.` names.
 # Family name -> filename prefix, one entry per per-schema plugin family.
 PER_SCHEMA_FAMILIES = {
     "parse_schema": "ifcopenshell_parse_schema_ifc",
