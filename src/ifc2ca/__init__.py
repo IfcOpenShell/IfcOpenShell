@@ -17,3 +17,7 @@
 # along with Ifc2CA.  If not, see <http://www.gnu.org/licenses/>.
 
 from .ifc2ca import Ifc2CA
+
+__all__ = [
+    "Ifc2CA",
+]
