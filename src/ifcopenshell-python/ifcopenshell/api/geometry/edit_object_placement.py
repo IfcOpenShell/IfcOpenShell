@@ -115,11 +115,7 @@ class Usecase:
         return new_placement
 
     def convert_matrix_to_si(self, matrix: NPArrayOfFloats) -> NPArrayOfFloats:
-        # Return a converted copy rather than mutating in place: callers may
-        # reuse the same matrix object across several edit_object_placement()
-        # calls (e.g. multiple elements sharing one IfcLocalPlacement), and an
-        # in-place mutation would silently apply the unit conversion twice on
-        # the second call.
+        # Return a copy: callers may reuse one matrix across several calls.
         matrix = np.array(matrix, dtype=float, copy=True)
         matrix[0][3] *= self.unit_scale
         matrix[1][3] *= self.unit_scale

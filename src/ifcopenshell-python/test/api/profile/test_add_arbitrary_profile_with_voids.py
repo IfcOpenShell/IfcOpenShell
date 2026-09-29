@@ -16,19 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+# This file was generated with the assistance of an AI coding tool.
+
 import ifcopenshell.api.profile
 import test.bootstrap
 
 
 class TestAddArbitraryProfileWithVoidsIFC4(test.bootstrap.IFC4):
     def test_2d_profile_uses_a_2d_point_list_for_the_outer_curve(self):
-        # Regression test for #4240: a previous fix made the inner curves
-        # respect the coordinate dimensionality, but left the outer curve
-        # hardcoded to IfcCartesianPointList3D. Passing 2D coordinates (as
-        # documented) then wrote 2-tuples into a list typed for 3-tuples,
-        # violating IfcCartesianPointList3D.CoordList, and made the profile's
-        # OuterCurve.Dim resolve to 3, violating
-        # IfcArbitraryClosedProfileDef.WR1 (outercurve.Dim == 2).
         profile = ifcopenshell.api.profile.add_arbitrary_profile_with_voids(
             self.file,
             outer_profile=[(0.0, 0.0), (0.4, 0.0), (0.4, 0.4), (0.0, 0.4), (0.0, 0.0)],

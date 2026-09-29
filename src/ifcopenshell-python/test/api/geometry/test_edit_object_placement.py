@@ -78,11 +78,6 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
         )
 
     def test_reusing_the_same_matrix_object_for_multiple_elements_does_not_double_convert_units(self):
-        # Regression test: convert_matrix_to_si used to mutate the caller's
-        # matrix object in place. Reusing that same object across a second
-        # edit_object_placement() call (e.g. multiple elements sharing one
-        # IfcLocalPlacement) applied the unit scale a second time, silently
-        # writing a corrupted placement for every element after the first.
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         ifcopenshell.api.unit.assign_unit(self.file)
         element1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
