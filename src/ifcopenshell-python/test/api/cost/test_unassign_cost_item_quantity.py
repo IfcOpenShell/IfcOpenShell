@@ -38,8 +38,6 @@ class TestUnassignCostItemQuantity(test.bootstrap.IFC4):
 
         ifcopenshell.api.cost.unassign_cost_item_quantity(self.file, cost_item=item, products=[slab])
 
-        # An empty list is not a valid value: CostQuantities is either unset
-        # or has at least one member.
         assert item.CostQuantities is None
 
         logger = ifcopenshell.validate.json_logger()

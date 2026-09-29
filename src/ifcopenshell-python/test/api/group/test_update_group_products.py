@@ -44,8 +44,6 @@ class TestUpdateGroupProductsIFC2X3(test.bootstrap.IFC2X3):
         result = ifcopenshell.api.group.update_group_products(self.file, products=[], group=group)
 
         assert result is None
-        # An empty RelatedObjects is not a valid value: the relationship
-        # must be removed instead of left with zero related objects.
         assert not self.file.by_type("IfcRelAssignsToGroup")
         assert ifcopenshell.util.element.get_grouped_by(group) == []
 

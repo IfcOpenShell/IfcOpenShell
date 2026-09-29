@@ -34,8 +34,6 @@ class TestRemoveResource(test.bootstrap.IFC4):
 
         ifcopenshell.api.resource.remove_resource(self.file, resource=crew)
 
-        # An empty RelatedDefinitions is not a valid value: the declaration
-        # must be removed instead of left pointing at nothing.
         assert not self.file.by_type("IfcRelDeclares")
 
         logger = ifcopenshell.validate.json_logger()
