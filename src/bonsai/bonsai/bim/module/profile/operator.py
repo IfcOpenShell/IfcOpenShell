@@ -250,11 +250,7 @@ class CreateFillAreaFromProfile(bpy.types.Operator, tool.Ifc.Operator):
         assert profile_item
         profile = ifc_file.by_id(profile_item.ifc_definition_id)
 
-        # Profiles with voids or more than one boundary curve cannot be
-        # converted yet: the outer/inner curve detection they need relies on
-        # a containment check that currently mishandles closed polylines,
-        # so it never rebuilds a proper void relationship. Fail early with a
-        # clear message instead of silently producing the wrong shape.
+        # Multi-boundary profiles are unsupported: auto_detect_profiles mishandles closed polylines.
         if profile.is_a("IfcArbitraryProfileDefWithVoids") or (
             profile.is_a("IfcCompositeProfileDef") and len(profile.Profiles) > 1
         ):
