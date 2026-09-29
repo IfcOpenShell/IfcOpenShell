@@ -120,6 +120,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2.24
         with:
           key: ubuntu-22.04-${{ runner.arch }}
+          # The prebuilt ccache 4.13.6 handles native CPU flags correctly across runners.
+          install: binary
 
       # RTTI is only enabled by default in Debug builds of rocksdb.
       # Distros are using Release builds, so we're compiling it ourselves with RTTI forced on.
@@ -142,6 +144,7 @@ jobs:
             -DWITH_CORE_TOOLS=OFF \
             -DWITH_TRACE_TOOLS=OFF \
             -DROCKSDB_BUILD_SHARED=Off \
+            -DPORTABLE=1 \
             -DCMAKE_POSITION_INDEPENDENT_CODE=On \
             -DUSE_RTTI=On
           sudo cmake --build . --target install -j $(nproc)
