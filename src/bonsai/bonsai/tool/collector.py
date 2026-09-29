@@ -80,12 +80,7 @@ class Collector(bonsai.core.tool.Collector):
             collection = cls._create_project_child_collection("IfcStructuralItem")
             cls.link_collection_object_safe(collection, obj)
         elif element.is_a("IfcRelSpaceBoundary"):
-            # A boundary's geometry is only valid when its object origin
-            # matches its RelatingSpace's origin (see #2621). There is no
-            # legitimate reason to translate/rotate a boundary object in
-            # Object Mode, so always lock it to prevent silently desyncing
-            # the boundary geometry from its space. This doesn't affect
-            # entering Edit Mode to edit the boundary's mesh/geometry.
+            # Boundary geometry is only valid at the RelatingSpace origin; lock it in Object Mode (#2621).
             tool.Geometry.lock_object(obj)
             collection = cls._create_project_child_collection("IfcRelSpaceBoundary")
             cls.link_collection_object_safe(collection, obj)
