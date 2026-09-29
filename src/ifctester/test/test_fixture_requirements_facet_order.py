@@ -51,9 +51,6 @@ FIXTURES = os.path.join(os.path.dirname(__file__), "fixtures")
 
 class TestRequirementsFacetOrderFixture:
     def test_requirements_are_reported_in_canonical_facet_order(self):
-        # The .ids file writes <property> before <attribute>, which the XSD
-        # permits (buildingSMART/IDS#344) but which is not the canonical
-        # entity/partOf/classification/attribute/property/material order.
         specs = ids.open(os.path.join(FIXTURES, "requirements_facet_order", "requirements_facet_order.ids"))
         ifc = ifcopenshell.open(os.path.join(FIXTURES, "requirements_facet_order", "requirements_facet_order.ifc"))
         specs.validate(ifc)
