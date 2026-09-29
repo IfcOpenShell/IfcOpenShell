@@ -66,9 +66,9 @@ class SvIfcAddSpatialElement(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
         self.node_dict[hash(self)] = {}
 
     def draw_buttons(self, context, layout):
-        layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = (
-            "Add IfcElements to an IfcSpatialElement."
-        )
+        layout.operator(
+            "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
+        ).tooltip = "Add IfcElements to an IfcSpatialElement."
 
     def process(self):
         self.sv_input_names = [i.name for i in self.inputs]
@@ -205,7 +205,7 @@ class SvIfcAddSpatialElement(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
         input = repeat_last_for_length(input, count, deepcopy=False)
         if input[0]:
             input = [
-                a if not (s := sum(j == a for j in input[:i])) else f"{a}-{s+1}" for i, a in enumerate(input)
+                a if not (s := sum(j == a for j in input[:i])) else f"{a}-{s + 1}" for i, a in enumerate(input)
             ]  # add number to duplicates
         return input
 

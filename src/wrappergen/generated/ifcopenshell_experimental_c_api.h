@@ -1,0 +1,241 @@
+#ifndef IFCOPENSHELL_EXPERIMENTAL_C_API_H
+#define IFCOPENSHELL_EXPERIMENTAL_C_API_H
+
+#include <stdbool.h>
+#include <stddef.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef struct ifcopenshell_exception_t ifcopenshell_exception_t;
+typedef struct ifcopenshell_attribute_out_of_range_exception_t ifcopenshell_attribute_out_of_range_exception_t;
+typedef struct ifcopenshell_invalid_token_exception_t ifcopenshell_invalid_token_exception_t;
+typedef struct ifcopenshell_parameter_type_t ifcopenshell_parameter_type_t;
+typedef struct ifcopenshell_named_type_t ifcopenshell_named_type_t;
+typedef struct ifcopenshell_simple_type_t ifcopenshell_simple_type_t;
+typedef struct ifcopenshell_aggregation_type_t ifcopenshell_aggregation_type_t;
+typedef struct ifcopenshell_declaration_t ifcopenshell_declaration_t;
+typedef struct ifcopenshell_type_declaration_t ifcopenshell_type_declaration_t;
+typedef struct ifcopenshell_select_type_t ifcopenshell_select_type_t;
+typedef struct ifcopenshell_enumeration_type_t ifcopenshell_enumeration_type_t;
+typedef struct ifcopenshell_attribute_t ifcopenshell_attribute_t;
+typedef struct ifcopenshell_inverse_attribute_t ifcopenshell_inverse_attribute_t;
+typedef struct ifcopenshell_entity_t ifcopenshell_entity_t;
+typedef struct ifcopenshell_schema_definition_t ifcopenshell_schema_definition_t;
+typedef struct ifcopenshell_express_base_t ifcopenshell_express_base_t;
+typedef struct ifcopenshell_express_entity_t ifcopenshell_express_entity_t;
+typedef struct ifcopenshell_express_select_t ifcopenshell_express_select_t;
+typedef struct ifcopenshell_express_declared_type_t ifcopenshell_express_declared_type_t;
+typedef struct ifcopenshell_full_buffer_impl_t ifcopenshell_full_buffer_impl_t;
+typedef struct ifcopenshell_paged_file_impl_t ifcopenshell_paged_file_impl_t;
+typedef struct ifcopenshell_pushed_sequential_impl_t ifcopenshell_pushed_sequential_impl_t;
+typedef struct ifcopenshell_character_encoder_t ifcopenshell_character_encoder_t;
+typedef struct ifcopenshell_file_open_status_t ifcopenshell_file_open_status_t;
+typedef struct ifcopenshell_spf_header_t ifcopenshell_spf_header_t;
+typedef struct ifcopenshell_file_t ifcopenshell_file_t;
+typedef struct ifcopenshell_global_id_t ifcopenshell_global_id_t;
+
+typedef struct ifcopenshell_declaration_list_t ifcopenshell_declaration_list_t;
+typedef struct ifcopenshell_entity_list_t ifcopenshell_entity_list_t;
+typedef struct ifcopenshell_attribute_list_t ifcopenshell_attribute_list_t;
+typedef struct ifcopenshell_inverse_attribute_list_t ifcopenshell_inverse_attribute_list_t;
+typedef struct ifcopenshell_type_declaration_list_t ifcopenshell_type_declaration_list_t;
+typedef struct ifcopenshell_select_type_list_t ifcopenshell_select_type_list_t;
+typedef struct ifcopenshell_enumeration_type_list_t ifcopenshell_enumeration_type_list_t;
+typedef struct ifcopenshell_express_entity_list_t ifcopenshell_express_entity_list_t;
+typedef struct ifcopenshell_express_base_list_t ifcopenshell_express_base_list_t;
+
+typedef enum ifcopenshell_file_type_t {
+    IFCOPENSHELL_FILE_TYPE_T_FT_IFCSPF = 0,
+    IFCOPENSHELL_FILE_TYPE_T_FT_IFCXML = 1,
+    IFCOPENSHELL_FILE_TYPE_T_FT_IFCZIP = 2,
+    IFCOPENSHELL_FILE_TYPE_T_FT_ROCKSDB = 3,
+    IFCOPENSHELL_FILE_TYPE_T_FT_UNKNOWN = 4,
+    IFCOPENSHELL_FILE_TYPE_T_FT_AUTODETECT = 5,
+} ifcopenshell_file_type_t;
+
+const char* ifcopenshell_last_error_message(void);
+void ifcopenshell_last_error_clear(void);
+void ifcopenshell_string_free(char* value);
+
+ifcopenshell_exception_t* ifcopenshell_exception_new_with_message(const char* message);
+ifcopenshell_attribute_out_of_range_exception_t* ifcopenshell_attribute_out_of_range_exception_new_with_message(const char* message);
+ifcopenshell_invalid_token_exception_t* ifcopenshell_invalid_token_exception_new_with_token_start_token_string_expected_type(int token_start, const char* token_string, const char* expected_type);
+ifcopenshell_named_type_t* ifcopenshell_parameter_type_as_named_type(ifcopenshell_parameter_type_t* handle);
+ifcopenshell_simple_type_t* ifcopenshell_parameter_type_as_simple_type(ifcopenshell_parameter_type_t* handle);
+ifcopenshell_aggregation_type_t* ifcopenshell_parameter_type_as_aggregation_type(ifcopenshell_parameter_type_t* handle);
+bool ifcopenshell_parameter_type_is(ifcopenshell_parameter_type_t* handle, const char* arg0);
+ifcopenshell_declaration_t* ifcopenshell_named_type_declared_type(ifcopenshell_named_type_t* handle);
+ifcopenshell_named_type_t* ifcopenshell_named_type_as_named_type(ifcopenshell_named_type_t* handle);
+bool ifcopenshell_named_type_is(ifcopenshell_named_type_t* handle, const char* name);
+ifcopenshell_simple_type_t* ifcopenshell_simple_type_as_simple_type(ifcopenshell_simple_type_t* handle);
+int ifcopenshell_aggregation_type_bound1(ifcopenshell_aggregation_type_t* handle);
+int ifcopenshell_aggregation_type_bound2(ifcopenshell_aggregation_type_t* handle);
+ifcopenshell_parameter_type_t* ifcopenshell_aggregation_type_type_of_element(ifcopenshell_aggregation_type_t* handle);
+ifcopenshell_aggregation_type_t* ifcopenshell_aggregation_type_as_aggregation_type(ifcopenshell_aggregation_type_t* handle);
+ifcopenshell_declaration_t* ifcopenshell_declaration_new_with_name_index_in_schema(const char* name, int index_in_schema);
+char* ifcopenshell_declaration_name(ifcopenshell_declaration_t* handle);
+char* ifcopenshell_declaration_name_uc(ifcopenshell_declaration_t* handle);
+ifcopenshell_type_declaration_t* ifcopenshell_declaration_as_type_declaration(ifcopenshell_declaration_t* handle);
+ifcopenshell_select_type_t* ifcopenshell_declaration_as_select_type(ifcopenshell_declaration_t* handle);
+ifcopenshell_enumeration_type_t* ifcopenshell_declaration_as_enumeration_type(ifcopenshell_declaration_t* handle);
+ifcopenshell_entity_t* ifcopenshell_declaration_as_entity(ifcopenshell_declaration_t* handle);
+bool ifcopenshell_declaration_is(ifcopenshell_declaration_t* handle, const char* name);
+int ifcopenshell_declaration_index_in_schema(ifcopenshell_declaration_t* handle);
+int ifcopenshell_declaration_type(ifcopenshell_declaration_t* handle);
+ifcopenshell_schema_definition_t* ifcopenshell_declaration_schema(ifcopenshell_declaration_t* handle);
+ifcopenshell_parameter_type_t* ifcopenshell_type_declaration_declared_type(ifcopenshell_type_declaration_t* handle);
+ifcopenshell_type_declaration_t* ifcopenshell_type_declaration_as_type_declaration(ifcopenshell_type_declaration_t* handle);
+ifcopenshell_declaration_list_t* ifcopenshell_select_type_select_list(ifcopenshell_select_type_t* handle);
+ifcopenshell_select_type_t* ifcopenshell_select_type_as_select_type(ifcopenshell_select_type_t* handle);
+int ifcopenshell_enumeration_type_lookup_enum_offset(ifcopenshell_enumeration_type_t* handle, const char* value_name);
+ifcopenshell_enumeration_type_t* ifcopenshell_enumeration_type_as_enumeration_type(ifcopenshell_enumeration_type_t* handle);
+char* ifcopenshell_attribute_name(ifcopenshell_attribute_t* handle);
+ifcopenshell_parameter_type_t* ifcopenshell_attribute_type_of_attribute(ifcopenshell_attribute_t* handle);
+bool ifcopenshell_attribute_optional(ifcopenshell_attribute_t* handle);
+char* ifcopenshell_inverse_attribute_name(ifcopenshell_inverse_attribute_t* handle);
+int ifcopenshell_inverse_attribute_bound1(ifcopenshell_inverse_attribute_t* handle);
+int ifcopenshell_inverse_attribute_bound2(ifcopenshell_inverse_attribute_t* handle);
+ifcopenshell_entity_t* ifcopenshell_inverse_attribute_entity_reference(ifcopenshell_inverse_attribute_t* handle);
+ifcopenshell_attribute_t* ifcopenshell_inverse_attribute_attribute_reference(ifcopenshell_inverse_attribute_t* handle);
+bool ifcopenshell_entity_is_abstract(ifcopenshell_entity_t* handle);
+ifcopenshell_entity_list_t* ifcopenshell_entity_subtypes(ifcopenshell_entity_t* handle);
+ifcopenshell_attribute_list_t* ifcopenshell_entity_attributes(ifcopenshell_entity_t* handle);
+ifcopenshell_attribute_list_t* ifcopenshell_entity_all_attributes(ifcopenshell_entity_t* handle);
+ifcopenshell_inverse_attribute_list_t* ifcopenshell_entity_all_inverse_attributes(ifcopenshell_entity_t* handle);
+ifcopenshell_attribute_t* ifcopenshell_entity_attribute_by_index(ifcopenshell_entity_t* handle, int index);
+int ifcopenshell_entity_attribute_count(ifcopenshell_entity_t* handle);
+ifcopenshell_entity_t* ifcopenshell_entity_supertype(ifcopenshell_entity_t* handle);
+ifcopenshell_entity_t* ifcopenshell_entity_as_entity(ifcopenshell_entity_t* handle);
+ifcopenshell_declaration_t* ifcopenshell_schema_definition_declaration_by_name_with_name(ifcopenshell_schema_definition_t* handle, const char* name);
+ifcopenshell_declaration_t* ifcopenshell_schema_definition_declaration_by_name_with_declaration_index(ifcopenshell_schema_definition_t* handle, int declaration_index);
+ifcopenshell_declaration_list_t* ifcopenshell_schema_definition_declarations(ifcopenshell_schema_definition_t* handle);
+ifcopenshell_type_declaration_list_t* ifcopenshell_schema_definition_type_declarations(ifcopenshell_schema_definition_t* handle);
+ifcopenshell_select_type_list_t* ifcopenshell_schema_definition_select_types(ifcopenshell_schema_definition_t* handle);
+ifcopenshell_enumeration_type_list_t* ifcopenshell_schema_definition_enumeration_types(ifcopenshell_schema_definition_t* handle);
+ifcopenshell_entity_list_t* ifcopenshell_schema_definition_entities(ifcopenshell_schema_definition_t* handle);
+char* ifcopenshell_schema_definition_name(ifcopenshell_schema_definition_t* handle);
+ifcopenshell_express_base_t* ifcopenshell_base_new();
+ifcopenshell_declaration_t* ifcopenshell_base_declaration(ifcopenshell_express_base_t* handle);
+void ifcopenshell_base_unset_attribute_value(ifcopenshell_express_base_t* handle, int attribute_index);
+int ifcopenshell_base_identity(ifcopenshell_express_base_t* handle);
+int ifcopenshell_base_id(ifcopenshell_express_base_t* handle);
+ifcopenshell_express_entity_t* ifcopenshell_entity_new();
+ifcopenshell_express_entity_list_t* ifcopenshell_entity_get_inverse(ifcopenshell_express_entity_t* handle, const char* attribute_name);
+ifcopenshell_express_select_t* ifcopenshell_select_new();
+ifcopenshell_express_base_t* ifcopenshell_select_concrete(ifcopenshell_express_select_t* handle);
+ifcopenshell_express_declared_type_t* ifcopenshell_declared_type_new();
+ifcopenshell_full_buffer_impl_t* ifcopenshell_full_buffer_impl_new();
+ifcopenshell_full_buffer_impl_t* ifcopenshell_full_buffer_impl_new_with_path(const char* path);
+int ifcopenshell_full_buffer_impl_size(ifcopenshell_full_buffer_impl_t* handle);
+int ifcopenshell_full_buffer_impl_get_u32(ifcopenshell_full_buffer_impl_t* handle, int position);
+void ifcopenshell_full_buffer_impl_push_next_page(ifcopenshell_full_buffer_impl_t* handle, const char* page_data);
+void ifcopenshell_full_buffer_impl_drop_pages(ifcopenshell_full_buffer_impl_t* handle, int up_to_position);
+ifcopenshell_paged_file_impl_t* ifcopenshell_paged_file_impl_new_with_path_page_size_page_capacity(const char* path, int page_size, int page_capacity);
+int ifcopenshell_paged_file_impl_size(ifcopenshell_paged_file_impl_t* handle);
+int ifcopenshell_paged_file_impl_get_u32(ifcopenshell_paged_file_impl_t* handle, int position);
+void ifcopenshell_paged_file_impl_push_next_page(ifcopenshell_paged_file_impl_t* handle, const char* page_data);
+void ifcopenshell_paged_file_impl_drop_pages(ifcopenshell_paged_file_impl_t* handle, int up_to_position);
+int ifcopenshell_pushed_sequential_impl_size(ifcopenshell_pushed_sequential_impl_t* handle);
+int ifcopenshell_pushed_sequential_impl_get_u32(ifcopenshell_pushed_sequential_impl_t* handle, int position);
+void ifcopenshell_pushed_sequential_impl_push_next_page(ifcopenshell_pushed_sequential_impl_t* handle, const char* page_data);
+void ifcopenshell_pushed_sequential_impl_drop_pages(ifcopenshell_pushed_sequential_impl_t* handle, int up_to_position);
+ifcopenshell_character_encoder_t* ifcopenshell_character_encoder_new_with_input(const char* input);
+ifcopenshell_file_t* ifcopenshell_file_new_with_path(const char* path);
+ifcopenshell_file_t* ifcopenshell_file_new_with_path_with_filetype(const char* path, ifcopenshell_file_type_t filetype);
+ifcopenshell_file_t* ifcopenshell_file_new_with_path_with_filetype_readonly(const char* path, ifcopenshell_file_type_t filetype, bool readonly);
+bool ifcopenshell_file_initialize(ifcopenshell_file_t* handle, const char* path);
+bool ifcopenshell_file_initialize_with_filetype(ifcopenshell_file_t* handle, const char* path, ifcopenshell_file_type_t filetype);
+bool ifcopenshell_file_initialize_with_filetype_readonly(ifcopenshell_file_t* handle, const char* path, ifcopenshell_file_type_t filetype, bool readonly);
+void ifcopenshell_file_bypass_type(ifcopenshell_file_t* handle, const char* type_name);
+ifcopenshell_file_open_status_t* ifcopenshell_file_good(ifcopenshell_file_t* handle);
+ifcopenshell_express_base_list_t* ifcopenshell_file_instances_by_type(ifcopenshell_file_t* handle, const char* type_name);
+ifcopenshell_express_base_list_t* ifcopenshell_file_instances_by_type_excl_subtypes(ifcopenshell_file_t* handle, const char* type_name);
+ifcopenshell_express_base_list_t* ifcopenshell_file_instances_by_reference(ifcopenshell_file_t* handle, int reference_id);
+ifcopenshell_express_base_t* ifcopenshell_file_instance_by_id(ifcopenshell_file_t* handle, int instance_id);
+ifcopenshell_express_base_t* ifcopenshell_file_instance_by_guid(ifcopenshell_file_t* handle, const char* global_id);
+int ifcopenshell_file_get_total_inverses(ifcopenshell_file_t* handle, int instance_id);
+int ifcopenshell_file_fresh_id(ifcopenshell_file_t* handle);
+int ifcopenshell_file_get_max_id(ifcopenshell_file_t* handle);
+ifcopenshell_declaration_t* ifcopenshell_file_ifcroot_type(ifcopenshell_file_t* handle);
+void ifcopenshell_file_recalculate_id_counter(ifcopenshell_file_t* handle);
+ifcopenshell_spf_header_t* ifcopenshell_file_header(ifcopenshell_file_t* handle);
+ifcopenshell_schema_definition_t* ifcopenshell_file_schema(ifcopenshell_file_t* handle);
+void ifcopenshell_file_build_inverses(ifcopenshell_file_t* handle);
+void ifcopenshell_file_batch(ifcopenshell_file_t* handle);
+void ifcopenshell_file_unbatch(ifcopenshell_file_t* handle);
+void ifcopenshell_file_reset_identity_cache(ifcopenshell_file_t* handle);
+ifcopenshell_global_id_t* ifcopenshell_global_id_new();
+ifcopenshell_global_id_t* ifcopenshell_global_id_new_with_value(const char* value);
+char* ifcopenshell_global_id_formatted(ifcopenshell_global_id_t* handle);
+
+int ifcopenshell_declaration_list_size(const ifcopenshell_declaration_list_t* handle);
+ifcopenshell_declaration_t* ifcopenshell_declaration_list_get(const ifcopenshell_declaration_list_t* handle, int index);
+void ifcopenshell_declaration_list_free(ifcopenshell_declaration_list_t* handle);
+
+int ifcopenshell_entity_list_size(const ifcopenshell_entity_list_t* handle);
+ifcopenshell_entity_t* ifcopenshell_entity_list_get(const ifcopenshell_entity_list_t* handle, int index);
+void ifcopenshell_entity_list_free(ifcopenshell_entity_list_t* handle);
+
+int ifcopenshell_attribute_list_size(const ifcopenshell_attribute_list_t* handle);
+ifcopenshell_attribute_t* ifcopenshell_attribute_list_get(const ifcopenshell_attribute_list_t* handle, int index);
+void ifcopenshell_attribute_list_free(ifcopenshell_attribute_list_t* handle);
+
+int ifcopenshell_inverse_attribute_list_size(const ifcopenshell_inverse_attribute_list_t* handle);
+ifcopenshell_inverse_attribute_t* ifcopenshell_inverse_attribute_list_get(const ifcopenshell_inverse_attribute_list_t* handle, int index);
+void ifcopenshell_inverse_attribute_list_free(ifcopenshell_inverse_attribute_list_t* handle);
+
+int ifcopenshell_type_declaration_list_size(const ifcopenshell_type_declaration_list_t* handle);
+ifcopenshell_type_declaration_t* ifcopenshell_type_declaration_list_get(const ifcopenshell_type_declaration_list_t* handle, int index);
+void ifcopenshell_type_declaration_list_free(ifcopenshell_type_declaration_list_t* handle);
+
+int ifcopenshell_select_type_list_size(const ifcopenshell_select_type_list_t* handle);
+ifcopenshell_select_type_t* ifcopenshell_select_type_list_get(const ifcopenshell_select_type_list_t* handle, int index);
+void ifcopenshell_select_type_list_free(ifcopenshell_select_type_list_t* handle);
+
+int ifcopenshell_enumeration_type_list_size(const ifcopenshell_enumeration_type_list_t* handle);
+ifcopenshell_enumeration_type_t* ifcopenshell_enumeration_type_list_get(const ifcopenshell_enumeration_type_list_t* handle, int index);
+void ifcopenshell_enumeration_type_list_free(ifcopenshell_enumeration_type_list_t* handle);
+
+int ifcopenshell_express_entity_list_size(const ifcopenshell_express_entity_list_t* handle);
+ifcopenshell_express_entity_t* ifcopenshell_express_entity_list_get(const ifcopenshell_express_entity_list_t* handle, int index);
+void ifcopenshell_express_entity_list_free(ifcopenshell_express_entity_list_t* handle);
+
+int ifcopenshell_express_base_list_size(const ifcopenshell_express_base_list_t* handle);
+ifcopenshell_express_base_t* ifcopenshell_express_base_list_get(const ifcopenshell_express_base_list_t* handle, int index);
+void ifcopenshell_express_base_list_free(ifcopenshell_express_base_list_t* handle);
+
+void ifcopenshell_exception_free(ifcopenshell_exception_t* handle);
+void ifcopenshell_attribute_out_of_range_exception_free(ifcopenshell_attribute_out_of_range_exception_t* handle);
+void ifcopenshell_invalid_token_exception_free(ifcopenshell_invalid_token_exception_t* handle);
+void ifcopenshell_parameter_type_free(ifcopenshell_parameter_type_t* handle);
+void ifcopenshell_named_type_free(ifcopenshell_named_type_t* handle);
+void ifcopenshell_simple_type_free(ifcopenshell_simple_type_t* handle);
+void ifcopenshell_aggregation_type_free(ifcopenshell_aggregation_type_t* handle);
+void ifcopenshell_declaration_free(ifcopenshell_declaration_t* handle);
+void ifcopenshell_type_declaration_free(ifcopenshell_type_declaration_t* handle);
+void ifcopenshell_select_type_free(ifcopenshell_select_type_t* handle);
+void ifcopenshell_enumeration_type_free(ifcopenshell_enumeration_type_t* handle);
+void ifcopenshell_attribute_free(ifcopenshell_attribute_t* handle);
+void ifcopenshell_inverse_attribute_free(ifcopenshell_inverse_attribute_t* handle);
+void ifcopenshell_entity_free(ifcopenshell_entity_t* handle);
+void ifcopenshell_schema_definition_free(ifcopenshell_schema_definition_t* handle);
+void ifcopenshell_express_base_free(ifcopenshell_express_base_t* handle);
+void ifcopenshell_express_entity_free(ifcopenshell_express_entity_t* handle);
+void ifcopenshell_express_select_free(ifcopenshell_express_select_t* handle);
+void ifcopenshell_express_declared_type_free(ifcopenshell_express_declared_type_t* handle);
+void ifcopenshell_full_buffer_impl_free(ifcopenshell_full_buffer_impl_t* handle);
+void ifcopenshell_paged_file_impl_free(ifcopenshell_paged_file_impl_t* handle);
+void ifcopenshell_pushed_sequential_impl_free(ifcopenshell_pushed_sequential_impl_t* handle);
+void ifcopenshell_character_encoder_free(ifcopenshell_character_encoder_t* handle);
+void ifcopenshell_file_open_status_free(ifcopenshell_file_open_status_t* handle);
+void ifcopenshell_spf_header_free(ifcopenshell_spf_header_t* handle);
+void ifcopenshell_file_free(ifcopenshell_file_t* handle);
+void ifcopenshell_global_id_free(ifcopenshell_global_id_t* handle);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
