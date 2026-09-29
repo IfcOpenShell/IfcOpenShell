@@ -41,7 +41,7 @@ def test_iter_path_connections_uses_path_connectable_predicate():
     poll. Strict ``is_wall`` rejects fillet-corner walls (which have no
     LAYER2 usage by IFC spec), so a regression to ``is_wall`` would silently
     drop fillet partners from the connection list — visible to the user as
-    "the corner looks unconnected from the adjacent wall's selection.\" """
+    "the corner looks unconnected from the adjacent wall's selection.\""""
     from bonsai.bim.module.model.wall import _iter_path_connections
 
     source = inspect.getsource(_iter_path_connections)
