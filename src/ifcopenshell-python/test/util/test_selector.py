@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import lark
 import numpy as np
 import pytest
 
@@ -55,6 +56,9 @@ class TestFormat(test.bootstrap.IFC4):
         assert subject.format("round(123, 5)") == "125"
         assert subject.format('round("123", 5)') == "125"
         assert subject.format("round(-123, 5)") == "-125"
+        # Non-numeric values must pass through unchanged instead of crashing (#6776).
+        assert subject.format('round("Level 1", 0.01)') == "Level 1"
+        assert subject.format('round("12.5 m", 0.01)') == "12.5 m"
         assert subject.format("int(123.123)") == "123"
         assert subject.format("int(123)") == "123"
         assert subject.format("number(123)") == "123"
@@ -122,6 +126,22 @@ class TestGetElementValue(test.bootstrap.IFC4):
         element.Name = "Foobar"
         assert subject.get_element_value(element, "Name") == "Foobar"
 
+    def test_selecting_an_elements_rotation_using_a_query(self):
+        # Feature test for #6262: rotation_x/y/z value keys expose the
+        # placement's Euler angles in degrees, e.g. for GIS symbol placement.
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(self.file)
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        theta = np.radians(30)
+        matrix = np.eye(4)
+        matrix[:2, :2] = [[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]]
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=element, matrix=matrix, is_si=False)
+        assert subject.get_element_value(element, "rotation_x") == pytest.approx(0.0)
+        assert subject.get_element_value(element, "rotation_y") == pytest.approx(0.0)
+        assert subject.get_element_value(element, "rotation_z") == pytest.approx(30.0)
+        element_without_placement = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        assert subject.get_element_value(element_without_placement, "rotation_z") is None
+
     def test_selecting_using_a_multiple_key_query(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         material = ifcopenshell.api.material.add_material(self.file, name="CON01")
@@ -175,6 +195,37 @@ class TestGetElementValue(test.bootstrap.IFC4):
         ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Status": ["New"]})
         assert subject.get_element_value(element, "/Pset_.*Common/.Status") == ["New"]
         assert subject.get_element_value(element, "/Pset_.*Common/.Status.0") == "New"
+
+    def test_selecting_a_nested_complex_quantity(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        complex_quantity = self.file.create_entity(
+            "IfcPhysicalComplexQuantity",
+            Name="Layer1",
+            Discrimination="layer",
+            HasQuantities=[
+                self.file.create_entity("IfcQuantityLength", Name="Width", LengthValue=0.1),
+                self.file.create_entity("IfcQuantityLength", Name="Height", LengthValue=2.5),
+            ],
+        )
+        quantity = self.file.create_entity(
+            "IfcElementQuantity",
+            GlobalId=ifcopenshell.guid.new(),
+            Name="Qto_Custom",
+            Quantities=[complex_quantity, self.file.create_entity("IfcQuantityArea", Name="NetArea", AreaValue=5.0)],
+        )
+        self.file.create_entity(
+            "IfcRelDefinesByProperties",
+            GlobalId=ifcopenshell.guid.new(),
+            RelatedObjects=[element],
+            RelatingPropertyDefinition=quantity,
+        )
+        # A simple quantity in the same set still resolves normally.
+        assert subject.get_element_value(element, "Qto_Custom.NetArea") == 5.0
+        # Nested quantities of a complex quantity are reachable with the natural path.
+        assert subject.get_element_value(element, "Qto_Custom.Layer1.Width") == 0.1
+        assert subject.get_element_value(element, "Qto_Custom.Layer1.Height") == 2.5
+        # The explicit "properties" path is preserved for backwards compatibility.
+        assert subject.get_element_value(element, "Qto_Custom.Layer1.properties.Width") == 0.1
 
 
 class TestFilterElements(test.bootstrap.IFC4):
@@ -257,9 +308,17 @@ class TestFilterElements(test.bootstrap.IFC4):
         ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Baz": 123})
         assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz=123") == {element}
         ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Bay": 123.3})
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Bay=123.3") == {element}
+        assert subject.filter_elements(self.file, 'IfcWall, Foobar.Bay="123.3"') == {element}
         pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Pset_WallCommon")
         ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Status": ["New"]})
         assert subject.filter_elements(self.file, "IfcWall, Pset_WallCommon.Status=New") == {element}
+        # On multi-valued properties, != means "no value equals" and stays the
+        # complement of = (#8129).
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Status": ["New", "Demolish"]})
+        assert subject.filter_elements(self.file, "IfcWall, Pset_WallCommon.Status=New") == {element}
+        assert subject.filter_elements(self.file, "IfcWall, Pset_WallCommon.Status!=New") == {element2}
+        assert subject.filter_elements(self.file, "IfcWall, Pset_WallCommon.Status!=Temporary") == {element, element2}
 
     def test_selecting_by_property_with_comparisons(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
@@ -274,6 +333,35 @@ class TestFilterElements(test.bootstrap.IFC4):
         assert subject.filter_elements(self.file, "IfcWall, Foobar.Foo*=ar") == {element}
         assert subject.filter_elements(self.file, "IfcWall, Foobar.Foo!*=ar") == {element2}
         assert subject.filter_elements(self.file, "IfcWall, Foobar.Foo*=Foo") == set()
+
+    def test_selecting_by_property_with_an_unquoted_decimal(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Foobar")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Baz": 1.5})
+        # A decimal needs no quotes. The pset/prop separator has already been
+        # consumed by the comparison, so a "." is unambiguous in a value.
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz=1.5") == {element}
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz>1") == {element}
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz>1.4") == {element}
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz<1.4") == set()
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz>=1.5") == {element}
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz<=1.5") == {element}
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz!=1.5") == {element2}
+        # Signed and leading dot forms.
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz>-1.5") == {element}
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz>+1.4") == {element}
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz>.5") == {element}
+        # Quoting a decimal stays legal and means exactly the same thing.
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz=1.5") == subject.filter_elements(
+            self.file, 'IfcWall, Foobar.Baz="1.5"'
+        )
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz>1.4") == subject.filter_elements(
+            self.file, 'IfcWall, Foobar.Baz>"1.4"'
+        )
+        # A dot in a value is still only a number. Anything else needs quotes.
+        with pytest.raises(lark.exceptions.UnexpectedInput):
+            subject.filter_elements(self.file, "IfcWall, Foobar.Baz=v1.2")
 
     def test_selecting_by_classification(self):
         project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
@@ -350,6 +438,22 @@ class TestFilterElements(test.bootstrap.IFC4):
         assert subject.filter_elements(self.file, "IfcWall, IfcSlab, Name=Foo") == {element}
         assert subject.filter_elements(self.file, "IfcWall, Name=Foo + IfcSlab") == {element, element2}
         assert subject.filter_elements(self.file, "IfcWall, Name=Foo + IfcSlab, Name=Bar") == {element, element2}
+
+    def test_block_comments_are_ignored(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element.Name = "Foo"
+        element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSlab")
+        element2.Name = "Bar"
+        # A /* ... */ block comment lets a query be toggled off without deleting the text.
+        assert subject.filter_elements(self.file, "IfcWall /* + IfcSlab */") == {element}
+        assert subject.filter_elements(self.file, "IfcWall + /* IfcSlab */") == {element}
+        assert subject.filter_elements(self.file, "/* IfcWall + */ IfcSlab") == {element2}
+        assert subject.filter_elements(self.file, "IfcWall /* commented */ + IfcSlab") == {element, element2}
+        # Comments may span multiple lines.
+        assert subject.filter_elements(self.file, "IfcWall + /* multi\nline\ncomment */ IfcSlab") == {element, element2}
+        # A /* sequence inside a quoted string is not treated as a comment.
+        element.Name = "a/*b"
+        assert subject.filter_elements(self.file, 'IfcWall, Name="a/*b"') == {element}
 
     def test_using_elements_argument(self):
         wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")

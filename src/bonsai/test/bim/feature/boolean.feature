@@ -12,16 +12,19 @@ Scenario: Ensure added booleans are marked as manual
     And I click "OK"
     And the object "IfcFurniture/Unnamed" exists
     And I toggle edit mode
-    And the object "Item/IfcExtrudedAreaSolid/77" exists
+    And the variable "extrusion" is "{ifc}.by_type('IfcExtrudedAreaSolid')[0].id()"
+    And the object "Item/IfcExtrudedAreaSolid/{extrusion}" exists
     And I open the "Add Item" menu
     When I click "Half Space Solid"
-    And the object "Item/IfcHalfSpaceSolid/90" exists
+    And the variable "half_space" is "{ifc}.by_type('IfcHalfSpaceSolid')[0].id()"
+    And the variable "boolean" is "{ifc}.by_type('IfcBooleanResult')[0].id()"
+    And the object "Item/IfcHalfSpaceSolid/{half_space}" exists
     And I deselect all objects
     And I toggle edit mode
     And I select the object "IfcFurniture/Unnamed"
     And I look at the "Property Sets" panel
     Then I see "BBIM_Boolean"
-    And I see "[91]"
+    And I see "[{boolean}]"
 
 Scenario: Ensure removed booleans are unmarked as manual
     Given an empty IFC project
@@ -33,17 +36,20 @@ Scenario: Ensure removed booleans are unmarked as manual
     And I click "OK"
     And the object "IfcFurniture/Unnamed" exists
     And I toggle edit mode
-    And the object "Item/IfcExtrudedAreaSolid/77" exists
+    And the variable "extrusion" is "{ifc}.by_type('IfcExtrudedAreaSolid')[0].id()"
+    And the object "Item/IfcExtrudedAreaSolid/{extrusion}" exists
     And I open the "Add Item" menu
     And I click "Half Space Solid"
+    And the variable "half_space" is "{ifc}.by_type('IfcHalfSpaceSolid')[0].id()"
+    And the variable "boolean" is "{ifc}.by_type('IfcBooleanResult')[0].id()"
     And I deselect all objects
     And I toggle edit mode
     And I select the object "IfcFurniture/Unnamed"
     And I toggle edit mode
-    And I select the object "Item/IfcHalfSpaceSolid/90"
+    And I select the object "Item/IfcHalfSpaceSolid/{half_space}"
     When I delete the selected objects
     And I toggle edit mode
     And I select the object "IfcFurniture/Unnamed"
     And I look at the "Property Sets" panel
     Then I don't see "BBIM_Boolean"
-    And I don't see "[91]"
+    And I don't see "[{boolean}]"
