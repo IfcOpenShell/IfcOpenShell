@@ -139,8 +139,6 @@ endif
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download typing_extensions --dest=./wheels
 	# Required by IfcCSV
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pandas $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
-	# Pandas ships with very heavy tests
-	# cd build/site-packages/pandas && rm -rf tests
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download openpyxl --dest=./wheels
 	# odfpy doesn't come with its own wheel, so whee'l (get it?) create it ourselves!
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) wheel odfpy --wheel-dir=./wheels
