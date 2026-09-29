@@ -45,10 +45,6 @@ class TestRegenerateGlobalIds(test.bootstrap.IFC4):
         assert len(new_guids.intersection(used_guids)) == 2
 
     def test_only_duplicates_does_not_overcount_valid_unique_guids(self, capsys):
-        # Regression test: the "Replaced N invalid GlobalIds" summary must
-        # only count GlobalIds that were actually replaced. It previously
-        # counted every element that reached the length/prefix check,
-        # whether or not ifcopenshell.guid.expand() raised.
         project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         guids_before = {project.GlobalId, wall.GlobalId}

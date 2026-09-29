@@ -45,11 +45,6 @@ class TestMergeStyles(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcPresentationStyle")) == 1
 
     def test_summary_reports_the_requested_class_not_the_last_elements_subtype(self, capsys):
-        # Regression test: the loop rebound the outer "ifc_class" loop
-        # variable to each element's concrete subtype (e.g. IfcSurfaceStyle
-        # for an IfcPresentationStyle element), so the final summary line
-        # reported that subtype instead of the class that was actually
-        # requested.
         self._add_shading_style()
         self._add_shading_style()
 
