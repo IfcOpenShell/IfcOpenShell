@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+# This file was generated with the assistance of an AI coding tool.
+
 """Relationship-set helpers for the Diff panel. Deliberately bpy-free so this
 logic can be unit tested without Blender."""
 

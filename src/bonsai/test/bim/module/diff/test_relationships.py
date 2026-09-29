@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+# This file was generated with the assistance of an AI coding tool.
+
 """Regression test for the Diff panel silently reporting zero changes.
 
 ifcdiff.IfcDiff only compares attributes and geometry when the caller's
@@ -53,7 +55,7 @@ IFCDIFF_DIR = Path(__file__).resolve().parents[5] / "ifcdiff"
 if str(IFCDIFF_DIR) not in sys.path:
     sys.path.insert(0, str(IFCDIFF_DIR))
 
-import ifcdiff  # noqa: E402
+import ifcdiff
 
 
 def _load_bonsai_diff_relationships_module():
@@ -81,8 +83,6 @@ class TestGetSkippedDefaultRelationships:
     the fix, since neither the module nor the function existed."""
 
     def test_empty_selection_skips_nothing(self):
-        # An empty list makes ifcdiff.IfcDiff apply its own default
-        # (attributes + geometry), so nothing is silently skipped.
         get_skipped = _load_bonsai_diff_relationships_module().get_skipped_default_relationships
         assert get_skipped([]) == []
 
@@ -101,9 +101,6 @@ class TestGetSkippedDefaultRelationships:
 
 class TestDiffPanelDefaultRelationships:
     def test_selected_relationship_alone_misses_attribute_changes(self):
-        # Documents *why* the warning matters: exactly what ExecuteIfcDiff
-        # sends to ifcdiff.IfcDiff when a user selects only "property" (its
-        # own selection, unmodified) misses a real attribute change.
         relationships_module = _load_bonsai_diff_relationships_module()
         assert relationships_module.get_skipped_default_relationships(["property"]) == [
             "attributes",
@@ -124,9 +121,8 @@ class TestDiffPanelDefaultRelationships:
         diff.diff()
         changes = diff.change_register.get(wall.GlobalId, {})
         assert changes.get("properties_changed")
-        assert "attributes_changed" not in changes  # the cleared PredefinedType is missed
+        assert "attributes_changed" not in changes
 
-        # Following the warning and adding "attributes"/"geometry" catches it.
         fixed_relationships = [*relationships_module.DEFAULT_RELATIONSHIPS, "property"]
         assert relationships_module.get_skipped_default_relationships(fixed_relationships) == []
         fixed_diff = ifcdiff.IfcDiff(ifc_file, new_file, relationships=fixed_relationships, is_shallow=False)

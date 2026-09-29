@@ -35,11 +35,7 @@ def update_diff_json_file(self: "DiffProperties", context: bpy.types.Context) ->
     DiffData.data["diff_json"] = DiffData.diff_json()
 
 
-# Mirrors ifcdiff.RELATIONSHIP_TYPE. "attributes" and "geometry" used to be
-# missing here, so they could never be selected in the UI: the moment a user
-# added any other relationship (eg. "property"), the list passed to
-# ifcdiff.IfcDiff became non-empty and its own attributes+geometry default
-# never kicked in, silently hiding changes such as a cleared PredefinedType.
+# Mirrors ifcdiff.RELATIONSHIP_TYPE. Selecting any other relationship skips the attributes+geometry default.
 RelationshipType = Literal["attributes", "geometry", "type", "property", "container", "aggregate", "classification"]
 
 
