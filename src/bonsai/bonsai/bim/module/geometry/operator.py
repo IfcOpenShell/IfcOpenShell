@@ -748,8 +748,7 @@ class UpdateParametricRepresentation(bpy.types.Operator):
                 continue
             other_props = tool.Geometry.get_mesh_props(other.data)
             core.get_representation_ifc_parameters(tool.Geometry, obj=other)
-            other_parameter = self.find_parameter(other_props.ifc_parameters, name, occurrence)
-            if other_parameter is None:
+            if not (other_parameter := self.find_parameter(other_props.ifc_parameters, name, occurrence)):
                 continue
             self.apply_parameter(other, other_parameter, value)
             updated_objects += 1
