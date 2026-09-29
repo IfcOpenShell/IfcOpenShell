@@ -478,10 +478,7 @@ class ChangeClassificationLevel(bpy.types.Operator):
         try:
             references = parent.HasReferences
         except AttributeError:
-            # HasReferences is only defined on IfcClassification/IfcClassificationReference
-            # from IFC4 onwards. A user-supplied IFC2X3 classification library has no way
-            # to look up a level's child references, so browsing it level by level isn't
-            # supported.
+            # HasReferences only exists from IFC4 onwards, so IFC2X3 libraries cannot be browsed by level.
             self.report(
                 {"ERROR"},
                 "This classification library uses the IFC2X3 schema, which does not support "
