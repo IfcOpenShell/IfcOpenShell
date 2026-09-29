@@ -100,7 +100,6 @@ class TestAddReference(test.bootstrap.IFC4):
         classification1 = ifcopenshell.api.classification.add_classification(self.file, classification="Uniclass")
         classification2 = ifcopenshell.api.classification.add_classification(self.file, classification="MyCustom")
 
-        # Same identification, different classification systems: must not be merged.
         reference1 = ifcopenshell.api.classification.add_reference(
             self.file,
             products=[element],
@@ -119,7 +118,6 @@ class TestAddReference(test.bootstrap.IFC4):
         assert reference2.Name == "Bar"
         assert reference2.ReferencedSource == classification2
 
-        # No identification at all also must not collide across classifications.
         element3 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         reference3 = ifcopenshell.api.classification.add_reference(
             self.file,
