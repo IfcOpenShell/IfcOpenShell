@@ -113,7 +113,6 @@ def test_massive_bcf(xml_handler) -> None:
         bcf.save(file_path)
 
 
-# 1x1 transparent PNG, used to attach a snapshot to a viewpoint.
 BLANK_PNG = (
     b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
     b"\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\rIDAT\x08\xd7c\x90\x8a"
@@ -131,13 +130,11 @@ def _make_visinfo(xml_handler):
 
 
 def test_bcf21_viewpoint_and_snapshot_filenames(xml_handler, build_sample) -> None:
-    """BCF 2.1 requires the primary viewpoint/snapshot to be named viewpoint.bcfv/snapshot.png (issue #7152)."""
     bcf, th = build_sample
     primary = th.add_visinfo_handler(_make_visinfo(xml_handler))
     assert primary.viewpoint == "viewpoint.bcfv"
     assert primary.snapshot == "snapshot.png"
 
-    # Additional viewpoints keep guid based names so only one viewpoint.bcfv exists.
     extra_handler = _make_visinfo(xml_handler)
     extra = th.add_visinfo_handler(extra_handler)
     assert extra.viewpoint == f"{extra_handler.guid}.bcfv"
