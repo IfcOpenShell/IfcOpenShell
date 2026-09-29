@@ -17,10 +17,14 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from types import SimpleNamespace
+
 import bpy
 import ifcopenshell
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
+import pytest
+from mathutils import Color
 
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -69,3 +73,38 @@ class TestAssignStatus(NewFile):
 
         bpy.ops.bim.assign_status(status="EXISTING", should_unassign_status=True)
         assert subject.get_element_status(element) == set()
+
+
+class TestAnimateInputOutput(NewFile):
+    def add_object(self):
+        obj = bpy.data.objects.new("Object", None)
+        bpy.context.scene.collection.objects.link(obj)
+        subject.earliest_frame = None
+        return obj
+
+    def test_input_of_a_type_without_a_configured_color(self):
+        obj = self.add_object()
+        subject.animate_input(obj, 0, {"type": "USERDEFINED", "STARTED": 1, "COMPLETED": 10}, "snapshot")
+        assert obj.animation_data.action
+
+    def test_output_of_a_type_without_a_configured_color(self):
+        obj = self.add_object()
+        subject.animate_output(obj, 0, {"type": "USERDEFINED", "STARTED": 1, "COMPLETED": 10}, "snapshot")
+        assert obj.animation_data.action
+
+
+class TestGetAnimationColor(NewFile):
+    def test_using_the_color_of_the_predefined_type(self):
+        colors = {
+            "CONSTRUCTION": SimpleNamespace(color=Color((1.0, 0.0, 0.0))),
+            "NOTDEFINED": SimpleNamespace(color=Color((0.0, 1.0, 0.0))),
+        }
+        assert subject.get_animation_color(colors, "CONSTRUCTION")[:] == (1.0, 0.0, 0.0)
+
+    def test_falling_back_to_the_notdefined_color_for_a_missing_predefined_type(self):
+        colors = {"NOTDEFINED": SimpleNamespace(color=Color((0.0, 1.0, 0.0)))}
+        assert subject.get_animation_color(colors, "USERDEFINED")[:] == (0.0, 1.0, 0.0)
+        assert subject.get_animation_color(colors, None)[:] == (0.0, 1.0, 0.0)
+
+    def test_falling_back_to_grey_without_any_matching_color(self):
+        assert subject.get_animation_color({}, "USERDEFINED")[:] == pytest.approx((0.2, 0.2, 0.2))

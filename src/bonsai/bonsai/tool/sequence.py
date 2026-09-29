@@ -1417,12 +1417,12 @@ class Sequence(bonsai.core.tool.Sequence):
         bpy.context.scene.frame_end = int(settings["start_frame"] + settings["total_frames"] + 1)
 
     @classmethod
-    def get_animation_color(cls, colors, predefined_type):
+    def get_animation_color(cls, colors: Any, predefined_type: Optional[str]) -> Color:
         if predefined_type and predefined_type in colors:
             return colors[predefined_type].color
         if "NOTDEFINED" in colors:
             return colors["NOTDEFINED"].color
-        return (0.2, 0.2, 0.2)
+        return Color((0.2, 0.2, 0.2))
 
     @classmethod
     def animate_input(cls, obj, start_frame, product_frame, animation_type):
