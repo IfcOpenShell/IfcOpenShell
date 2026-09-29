@@ -1,8 +1,11 @@
 import types
 
+import ifcopenshell
+import ifcopenshell.api.root
+import ifcopenshell.util.element
 import pytest
 
-from bsdd import Client
+from bsdd import Client, apply_ifc_classification_properties
 
 IFC4X3_URI = "https://identifier.buildingsmart.org/uri/buildingsmart/ifc/4.3"
 NBS_URI = "https://identifier.buildingsmart.org/uri/nbs/uniclass/2015"
@@ -100,6 +103,14 @@ def test_get_class(client):
     names = [l["name"] for l in ifc4x3_light_fixture["classProperties"]]
     assert "Maintenance Factor" in names
     assert "Light Fixture Mounting Type" in names
+
+
+def test_apply_ifc_classification_properties_skips_a_property_without_a_property_set():
+    ifc_file = ifcopenshell.file(schema="IFC4")
+    wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall")
+    properties = [{"name": "Mark", "predefinedValue": "A1", "propertyDomainName": "IFC"}]
+    apply_ifc_classification_properties(ifc_file, wall, properties)
+    assert ifcopenshell.util.element.get_psets(wall) == {}
 
 
 def test_get_class_relations(client):
