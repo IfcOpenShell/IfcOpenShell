@@ -50,11 +50,13 @@ from bonsai.bim.module.drawing.data import refresh as refresh_drawing_data
 from bonsai.bim.prop import Attribute, BIMFilterGroup
 
 diagram_scales_enum = []
+diagram_scales_enum_system = None
 
 
 def purge():
-    global diagram_scales_enum
+    global diagram_scales_enum, diagram_scales_enum_system
     diagram_scales_enum = []
+    diagram_scales_enum_system = None
 
 
 def update_target_view_doc(self: "DocProperties", context: bpy.types.Context) -> None:
@@ -123,14 +125,12 @@ def update_is_nts(self: "BIMCameraProperties", context: bpy.types.Context) -> No
 
 
 def get_diagram_scales(self: "BIMCameraProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
-    global diagram_scales_enum
+    global diagram_scales_enum, diagram_scales_enum_system
     assert context.scene
-    if (
-        len(diagram_scales_enum) < 1
-        or (context.scene.unit_settings.system == "IMPERIAL" and len(diagram_scales_enum) == 13)
-        or (context.scene.unit_settings.system == "METRIC" and len(diagram_scales_enum) == 31)
-    ):
-        if context.scene.unit_settings.system == "IMPERIAL":
+    system = context.scene.unit_settings.system
+    if len(diagram_scales_enum) < 1 or diagram_scales_enum_system != system:
+        diagram_scales_enum_system = system
+        if system == "IMPERIAL":
             diagram_scales_enum = [
                 ("CUSTOM", "Custom", ""),
                 ("1'=1'-0\"|1/1", "1'=1'-0\"", ""),
@@ -144,21 +144,21 @@ def get_diagram_scales(self: "BIMCameraProperties", context: bpy.types.Context) 
                 ('1/4"=1\'-0"|1/48', '1/4"=1\'-0"', ""),
                 ('3/16"=1\'-0"|1/64', '3/16"=1\'-0"', ""),
                 ('1/8"=1\'-0"|1/96', '1/8"=1\'-0"', ""),
+                ("1\"=10'|1/120", "1\"=10'", ""),
                 ('3/32"=1\'-0"|1/128', '3/32"=1\'-0"', ""),
                 ('1/16"=1\'-0"|1/192', '1/16"=1\'-0"', ""),
-                ('1/32"=1\'-0"|1/384', '1/32"=1\'-0"', ""),
-                ('1/64"=1\'-0"|1/768', '1/64"=1\'-0"', ""),
-                ('1/128"=1\'-0"|1/1536', '1/128"=1\'-0"', ""),
-                ("1\"=10'|1/120", "1\"=10'", ""),
                 ("1\"=20'|1/240", "1\"=20'", ""),
                 ("1\"=30'|1/360", "1\"=30'", ""),
+                ('1/32"=1\'-0"|1/384', '1/32"=1\'-0"', ""),
                 ("1\"=40'|1/480", "1\"=40'", ""),
                 ("1\"=50'|1/600", "1\"=50'", ""),
                 ("1\"=60'|1/720", "1\"=60'", ""),
+                ('1/64"=1\'-0"|1/768', '1/64"=1\'-0"', ""),
                 ("1\"=70'|1/840", "1\"=70'", ""),
                 ("1\"=80'|1/960", "1\"=80'", ""),
                 ("1\"=90'|1/1080", "1\"=90'", ""),
                 ("1\"=100'|1/1200", "1\"=100'", ""),
+                ('1/128"=1\'-0"|1/1536', '1/128"=1\'-0"', ""),
                 ("1\"=150'|1/1800", "1\"=150'", ""),
                 ("1\"=200'|1/2400", "1\"=200'", ""),
                 ("1\"=300'|1/3600", "1\"=300'", ""),
@@ -409,6 +409,12 @@ class DocProperties(PropertyGroup):
         options=set(),
     )
     is_editing_drawings: BoolProperty(name="Is Editing Drawings", default=False)
+    show_drawings_on_sheets_only: BoolProperty(
+        name="Show Only Drawings on Sheets",
+        description="Only show drawings that are placed on a sheet",
+        default=False,
+        options=set(),
+    )
     is_editing_schedules: BoolProperty(name="Is Editing Schedules", default=False)
     is_editing_references: BoolProperty(name="Is Editing References", default=False)
     target_view: EnumProperty(
@@ -439,6 +445,7 @@ class DocProperties(PropertyGroup):
         should_use_annotation_cache: bool
         should_draw_linked_projects: bool
         is_editing_drawings: bool
+        show_drawings_on_sheets_only: bool
         is_editing_schedules: bool
         is_editing_references: bool
         target_view: Literal["PLAN_VIEW", "ELEVATION_VIEW", "SECTION_VIEW", "REFLECTED_PLAN_VIEW", "MODEL_VIEW"]
@@ -535,6 +542,50 @@ class BIMCameraProperties(PropertyGroup):
         name="Annotation",
         default=True,
         update=get_update_layer_callback("has_annotation", "HasAnnotation"),
+    )
+    use_edge_classification: BoolProperty(
+        name="Use Edge Classification",
+        description="Classify projection edges into boundary/outline/sharp/crease/flush "
+        "instead of drawing all linework identically. See edge-classification.md",
+        default=False,
+        update=get_update_layer_callback("use_edge_classification", "UseEdgeClassification"),
+    )
+    render_creases: BoolProperty(
+        name="Render Creases",
+        description="Render 'crease' (concave) projection edges",
+        default=True,
+        update=get_update_layer_callback("render_creases", "RenderCreases"),
+    )
+    valley_angle_min_degrees: FloatProperty(
+        name="Valley Angle Minimum",
+        description="Minimum concave dihedral deviation from flat, in degrees, for a projection "
+        "edge to be classified as 'crease' rather than 'flush'",
+        default=12.0,
+        min=0.0,
+        max=180.0,
+        update=get_update_layer_callback("valley_angle_min_degrees", "ValleyAngleMinDegrees"),
+    )
+    render_sharp: BoolProperty(
+        name="Render Sharp",
+        description="Render 'sharp' (convex) projection edges",
+        default=True,
+        update=get_update_layer_callback("render_sharp", "RenderSharp"),
+    )
+    ridge_angle_min_degrees: FloatProperty(
+        name="Ridge Angle Minimum",
+        description="Minimum convex dihedral deviation from flat, in degrees, for a projection "
+        "edge to be classified as 'sharp' rather than 'flush'",
+        default=45.0,
+        min=0.0,
+        max=180.0,
+        update=get_update_layer_callback("ridge_angle_min_degrees", "RidgeAngleMinDegrees"),
+    )
+    render_flush: BoolProperty(
+        name="Render Flush",
+        description="Render 'flush' projection edges (dihedral deviation below both ridge/valley "
+        "thresholds). Omitted by default",
+        default=False,
+        update=get_update_layer_callback("render_flush", "RenderFlush"),
     )
     target_view: EnumProperty(
         name="Target View",

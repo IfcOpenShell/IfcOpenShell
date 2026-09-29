@@ -90,9 +90,9 @@ def add_boolean(
 
     booleans = []
     for second_item in second_items:
-        if first.is_a("IfcTesselatedFaceSet"):
+        if first.is_a("IfcTessellatedFaceSet"):
             first.Closed = True  # For now, trust the user to do the right thing.
-        if second_item.is_a("IfcTesselatedFaceSet"):
+        if second_item.is_a("IfcTessellatedFaceSet"):
             second_item.Closed = True  # For now, trust the user to do the right thing.
         if (
             operator == "DIFFERENCE"
