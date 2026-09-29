@@ -34,7 +34,6 @@ was ever used."""
 
 from unittest.mock import MagicMock, Mock, patch
 
-import bpy
 import pytest
 
 pytestmark = pytest.mark.model
@@ -68,25 +67,19 @@ def test_hotkey_s_e_does_not_crash_on_object_without_representation():
     ctx.selected_objects = [obj]
     ctx.active_object = obj
 
-    # `wraps=` keeps the *real* resolve_mapped_representation implementation
-    # live (only get_active_representation is stubbed to return None, which
-    # is the real-world return value for a no-representation object) so this
-    # test reproduces the actual AttributeError on unfixed code instead of
-    # masking it behind a mock.
-    with patch.object(workspace.bpy, "context", ctx), patch.object(
-        workspace.tool.Ifc, "get_entity", return_value=element
-    ), patch.object(workspace.tool.Model, "get_usage_type", return_value=None), patch.object(
-        workspace.tool.Geometry, "get_active_representation", return_value=None
-    ), patch.object(
-        workspace.tool.Geometry,
-        "resolve_mapped_representation",
-        wraps=workspace.tool.Geometry.resolve_mapped_representation,
-    ) as resolve_mapped:
-        # Must not raise (this is what "crashed" before the fix).
+    with (
+        patch.object(workspace.bpy, "context", ctx),
+        patch.object(workspace.tool.Ifc, "get_entity", return_value=element),
+        patch.object(workspace.tool.Model, "get_usage_type", return_value=None),
+        patch.object(workspace.tool.Geometry, "get_active_representation", return_value=None),
+        patch.object(
+            workspace.tool.Geometry,
+            "resolve_mapped_representation",
+            wraps=workspace.tool.Geometry.resolve_mapped_representation,
+        ) as resolve_mapped,
+    ):
         workspace.Hotkey.hotkey_S_E(op)
 
-    # The dead computation is gone entirely - nothing should call
-    # resolve_mapped_representation() from this code path any more.
     resolve_mapped.assert_not_called()
 
 
@@ -105,12 +98,12 @@ def test_hotkey_s_e_still_dispatches_layer2_extend_to_cursor():
     ctx.active_object = obj
     ctx.scene.cursor.location = (0, 0, 0)
 
-    with patch.object(workspace.bpy, "context", ctx), patch.object(
-        workspace.tool.Ifc, "get_entity", return_value=element
-    ), patch.object(workspace.tool.Model, "get_usage_type", return_value="LAYER2"), patch.object(
-        workspace, "core"
-    ) as core_mock, patch.object(
-        workspace, "DumbWallJoiner"
+    with (
+        patch.object(workspace.bpy, "context", ctx),
+        patch.object(workspace.tool.Ifc, "get_entity", return_value=element),
+        patch.object(workspace.tool.Model, "get_usage_type", return_value="LAYER2"),
+        patch.object(workspace, "core") as core_mock,
+        patch.object(workspace, "DumbWallJoiner"),
     ):
         workspace.Hotkey.hotkey_S_E(op)
 
