@@ -2066,10 +2066,7 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         # gizmo polls gate on each preview's is_active flag, and a stuck flag
         # persisted through the save would silently hide them on reload.
         preview_base.discard_pending_previews(context.scene)
-        # Flush any pending drawing camera bounds (zoom / crop) into the IFC
-        # representation. These are otherwise only written when a drawing is
-        # (re)activated, so saving while staying in a drawing lost the zoom and
-        # crop on reload. See #8205.
+        # Flush pending drawing camera zoom and crop into the IFC representation (#8205).
         for cam_obj in context.scene.objects:
             if cam_obj.type != "CAMERA":
                 continue
@@ -2077,10 +2074,7 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
             if not cam_element or not cam_element.is_a("IfcAnnotation"):
                 continue
             cam_props = tool.Drawing.get_camera_props(cam_obj.data)
-            # Skip cameras without an active representation: bim.update_representation
-            # asserts on one (geometry/operator.py) and would otherwise abort the whole
-            # save. update_representation() may report a bounds change on a camera whose
-            # representation isn't (yet) set up, e.g. one never activated this session.
+            # bim.update_representation asserts on a camera without an active representation.
             if not tool.Geometry.get_active_representation(cam_obj):
                 continue
             if cam_props.update_representation(cam_obj.matrix_world):
