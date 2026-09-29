@@ -56,8 +56,8 @@ Scenario: Edit pset - multiple objects applies a new pset to the whole selection
     And I press "bim.add_pset(obj='IfcWall/Cube', obj_type='Object')"
     And I set "active_object.PsetProperties.properties['FireRating'].metadata.string_value" to "2HR"
     When I press "bim.edit_pset(obj='IfcWall/Cube', obj_type='Object')"
-    And the variable "other_wall" is "tool.Ifc.get_entity(bpy.data.objects['IfcWall/Cube.001'])"
-    And the variable "fire_rating" is "ifcopenshell.util.element.get_pset({other_wall}, 'Pset_WallCommon', 'FireRating', should_inherit=False)"
+    And the variable "other_wall" is "tool.Ifc.get_entity(bpy.data.objects['IfcWall/Cube.001']).id()"
+    And the variable "fire_rating" is "ifcopenshell.util.element.get_pset({ifc}.by_id({other_wall}), 'Pset_WallCommon', 'FireRating', should_inherit=False)"
     Then the variable "fire_rating" equals "'2HR'"
 
 Scenario: Edit pset - multiple objects does not clobber an element's own existing pset
@@ -86,9 +86,9 @@ Scenario: Edit pset - multiple objects does not clobber an element's own existin
     And I press "bim.add_pset(obj='IfcWall/Cube', obj_type='Object')"
     And I set "active_object.PsetProperties.properties['FireRating'].metadata.string_value" to "1HR"
     When I press "bim.edit_pset(obj='IfcWall/Cube', obj_type='Object')"
-    And the variable "other_wall" is "tool.Ifc.get_entity(bpy.data.objects['IfcWall/Cube.001'])"
-    And the variable "other_reference" is "ifcopenshell.util.element.get_pset({other_wall}, 'Pset_WallCommon', 'Reference', should_inherit=False)"
-    And the variable "other_fire_rating" is "ifcopenshell.util.element.get_pset({other_wall}, 'Pset_WallCommon', 'FireRating', should_inherit=False)"
+    And the variable "other_wall" is "tool.Ifc.get_entity(bpy.data.objects['IfcWall/Cube.001']).id()"
+    And the variable "other_reference" is "ifcopenshell.util.element.get_pset({ifc}.by_id({other_wall}), 'Pset_WallCommon', 'Reference', should_inherit=False)"
+    And the variable "other_fire_rating" is "ifcopenshell.util.element.get_pset({ifc}.by_id({other_wall}), 'Pset_WallCommon', 'FireRating', should_inherit=False)"
     Then the variable "other_reference" equals "'EXISTING'"
     And the variable "other_fire_rating" equals "None"
 
