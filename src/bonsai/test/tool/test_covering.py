@@ -100,8 +100,6 @@ class TestGetWallSideFacingCursor(NewFile):
         obj = _make_wall_obj()
         obj.location = (10.0, 10.0, 0.0)
         bpy.context.view_layer.update()
-        # World cursor sits on the wall's local +Y side once translation is
-        # accounted for.
         bpy.context.scene.cursor.location = (11.0, 10.0 + THICKNESS + 1.0, 1.0)
         assert subject.get_wall_side_facing_cursor(obj) == 1.0
 

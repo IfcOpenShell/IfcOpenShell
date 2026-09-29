@@ -102,8 +102,7 @@ class Covering(bonsai.core.tool.Covering):
     def get_relating_type_layer_thickness(cls) -> float:
         """Total material layer thickness of the active relating type, in project units."""
         props = tool.Model.get_model_props()
-        relating_type_id = tool.Blender.get_enum_safe(props, "relating_type_id")
-        if relating_type_id is None:
+        if not (relating_type_id := tool.Blender.get_enum_safe(props, "relating_type_id")):
             return 0.0
         relating_type = tool.Ifc.get().by_id(int(relating_type_id))
         material = ifcopenshell.util.element.get_material(relating_type, should_skip_usage=True)
@@ -129,8 +128,7 @@ class Covering(bonsai.core.tool.Covering):
         """
         mesh = wall_obj.data
         assert isinstance(mesh, bpy.types.Mesh)
-        candidates = [p for p in mesh.polygons if p.normal.y * side > 0.99]
-        if not candidates:
+        if not (candidates := [p for p in mesh.polygons if p.normal.y * side > 0.99]):
             return None
         face_y = max(p.center.y * side for p in candidates) * side
         polys = []
@@ -145,8 +143,7 @@ class Covering(bonsai.core.tool.Covering):
             return None
         union = shapely.ops.unary_union(polys)
         geoms = union.geoms if union.geom_type == "MultiPolygon" else [union]
-        face_polys = [g.simplify(1e-5) for g in geoms if g.geom_type == "Polygon" and g.area > 1e-6]
-        if not face_polys:
+        if not (face_polys := [g.simplify(1e-5) for g in geoms if g.geom_type == "Polygon" and g.area > 1e-6]):
             return None
         return face_polys, face_y
 
@@ -156,8 +153,7 @@ class Covering(bonsai.core.tool.Covering):
         side = cls.get_wall_side_facing_cursor(wall_obj)
         if not facing_cursor:
             side = -side
-        face = cls.get_wall_side_face(wall_obj, side)
-        if face is None:
+        if not (face := cls.get_wall_side_face(wall_obj, side)):
             return None
         face_polys, face_y = face
         centroid = shapely.ops.unary_union(face_polys).centroid
