@@ -125,6 +125,6 @@ def assign_process(
                 "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
                 "RelatedObjects": [related_object],
                 "RelatingProcess": relating_process,
-            }
+            },
         )
     return operates_on
