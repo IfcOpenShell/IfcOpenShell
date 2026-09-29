@@ -3,7 +3,7 @@ from __future__ import annotations
 
 # inside ifcmcp/core.py
 import json
-from collections.abc import Callable  # noqa: F401 — Callable used in helpers below
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 

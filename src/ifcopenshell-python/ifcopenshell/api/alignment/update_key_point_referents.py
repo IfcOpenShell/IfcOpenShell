@@ -22,29 +22,14 @@ import ifcopenshell
 import ifcopenshell.api.alignment
 import ifcopenshell.api.pset
 import ifcopenshell.guid
-import ifcopenshell.util.alignment
 import ifcopenshell.util.element
 from ifcopenshell import entity_instance
+from ifcopenshell.api.alignment._get_key_point_tag import _get_key_point_tag
 from ifcopenshell.api.alignment._get_segment_start_point_label import (
     _get_segment_start_point_label,
 )
 from ifcopenshell.api.alignment._sort_nest import _sort_nest
 from ifcopenshell.api.alignment.update_fallback_position import update_fallback_position
-
-
-def _get_key_point_referent_nest(layout: entity_instance) -> Optional[entity_instance]:
-    """
-    Searches layout.IsNestedBy for the IfcRelNests whose RelatedObjects are IfcReferent.
-
-    This is distinct from both get_stationing_nest (scoped to the parent IfcAlignment, and
-    specifically the STATION/station-equation nest) and get_alignment_segment_nest (the *segment*
-    nest that also lives on layout.IsNestedBy, holding IfcAlignmentSegment, never IfcReferent).
-    """
-    for nest in layout.IsNestedBy:
-        for related_object in nest.RelatedObjects:
-            if related_object.is_a("IfcReferent"):
-                return nest
-    return None
 
 
 def _remove_referent(file: ifcopenshell.file, referent: entity_instance) -> None:
@@ -91,7 +76,7 @@ def _create_key_point_referent(
             ),
         )
 
-    name = f"{label} ({ifcopenshell.util.alignment.station_as_string(file, station)})"
+    name = f"{alignment.Name} {_get_key_point_tag(file, label, station)}"
 
     referent = file.createIfcReferent(
         GlobalId=ifcopenshell.guid.new(),
@@ -120,7 +105,8 @@ def update_key_point_referents(
     Creates IfcReferent key-point markers for every segment transition in an alignment layout.
 
     Labels are derived from _get_segment_start_point_label (e.g. "P.C.", "P.T.", "P.O.B.",
-    "P.V.C.", ...), with the station appended, e.g. "P.C. (145+98.32)". Different jurisdictions use
+    "P.V.C.", ...), and combined with the alignment name and station to build the Name, e.g.
+    "MyAlignment 145+98.32 (P.C.)". Different jurisdictions use
     different naming systems for these key points -- register_referent_name_callback() lets a
     caller override the default horizontal/vertical/cant labeling before calling this function; if
     a callback is registered, its output is used here instead of the built-in labels. Referents are
@@ -129,9 +115,19 @@ def update_key_point_referents(
     get_stationing_nest) -- key-point referents never belong in either of those.
 
     :param layout: IfcAlignmentHorizontal, IfcAlignmentVertical, or IfcAlignmentCant
-    :param rel_nests: an existing IfcRelNests to (re)populate. May live anywhere (e.g. the parent
-        IfcAlignment, the layout, or elsewhere) -- the caller decides. If omitted, an existing
-        referent-nest already on `layout` is reused, or a new one is created and related to `layout`.
+    :param rel_nests: an existing IfcRelNests to (re)populate; its RelatingObject must be an
+        IfcAlignment (TypeError is raised otherwise), but need not be the IfcAlignment that
+        directly nests `layout` -- passing an ancestor's own IfcRelNests is supported
+        specifically so that a vertical/cant layout living under a child IfcAlignment (per CT
+        4.1.4.4.1.2, once a second vertical layout is added) can still have its key-point
+        referents named after and nested to the top-level parent alignment, matching how the
+        alignment's horizontal key points are named, rather than a generic "Child of X" name.
+        When `rel_nests` is given, `rel_nests.RelatingObject` -- not `layout`'s own direct
+        parent -- is used for both the created referents' Name and the returned IfcRelNests. If
+        omitted, a new IfcRelNests is always created and related to `layout`'s own direct
+        parent alignment -- there is no implicit search for or reuse of a previously created
+        nest. Callers who want to regenerate into an existing nest must pass it back in
+        explicitly via `rel_nests`.
     :param clear: if True, deletes all IfcReferent currently in rel_nests.RelatedObjects (and their
         Pset_Stationing) before regenerating. If False (default), new referents are appended to
         whatever already exists -- no deduplication.
@@ -158,7 +154,7 @@ def update_key_point_referents(
         ifcopenshell.api.alignment.register_referent_name_callback(horizontal=my_horizontal_labels)
         horizontal = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
         nest = ifcopenshell.api.alignment.update_key_point_referents(model, horizontal)
-        # nest.RelatedObjects[0].Name starts with "Start (" instead of the default "P.O.B. ("
+        # nest.RelatedObjects[0].Name ends with "(Start)" instead of the default "(P.O.B.)"
     """
 
     expected_types = ["IfcAlignmentHorizontal", "IfcAlignmentVertical", "IfcAlignmentCant"]
@@ -167,12 +163,28 @@ def update_key_point_referents(
             f"Expected entity type to be one of {[_ for _ in expected_types]}, instead received {layout.is_a()}"
         )
 
-    if rel_nests is None:
-        rel_nests = _get_key_point_referent_nest(layout)
-        if rel_nests is None:
-            rel_nests = file.createIfcRelNests(
-                GlobalId=ifcopenshell.guid.new(), RelatingObject=layout, RelatedObjects=()
+    layout_alignment = ifcopenshell.api.alignment.get_alignment(layout)
+    if layout_alignment is None:
+        raise ValueError(f"{layout.is_a()} #{layout.id()} is not nested under an IfcAlignment.")
+
+    # `alignment` is used below for referent naming (and as the fallback-placement basis) --
+    # it defaults to layout's own direct parent, but an explicitly passed rel_nests overrides
+    # it with rel_nests.RelatingObject instead (see the rel_nests docstring above). Station
+    # computation always uses layout_alignment, unaffected by this -- get_alignment_start_station
+    # already walks up to the true top-level alignment's own stationing referent regardless of
+    # which (possibly child) alignment it's given.
+    if rel_nests is not None:
+        if not rel_nests.RelatingObject.is_a("IfcAlignment"):
+            raise TypeError(
+                f"Expected rel_nests.RelatingObject to be IfcAlignment, instead received "
+                f"{rel_nests.RelatingObject.is_a()}"
             )
+        alignment = rel_nests.RelatingObject
+    else:
+        alignment = layout_alignment
+        rel_nests = file.createIfcRelNests(
+            GlobalId=ifcopenshell.guid.new(), RelatingObject=alignment, RelatedObjects=()
+        )
 
     if clear:
         for referent in list(rel_nests.RelatedObjects):
@@ -189,8 +201,7 @@ def update_key_point_referents(
         )
         return rel_nests
 
-    alignment = ifcopenshell.api.alignment.get_alignment(layout)
-    start_station = ifcopenshell.api.alignment.get_alignment_start_station(file, alignment)
+    start_station = ifcopenshell.api.alignment.get_alignment_start_station(file, layout_alignment)
     curve = ifcopenshell.api.alignment.get_layout_curve(layout)
     is_horizontal = layout.is_a("IfcAlignmentHorizontal")
 
