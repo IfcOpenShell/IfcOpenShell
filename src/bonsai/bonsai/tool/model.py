@@ -1032,17 +1032,8 @@ class Model(bonsai.core.tool.Model):
     def remap_manual_booleans(
         cls, element: ifcopenshell.entity_instance, id_map: dict[int, ifcopenshell.entity_instance]
     ) -> None:
-        """Repoint ``element``'s 'BBIM_Boolean' pset onto freshly copied booleans.
-
-        When an element is duplicated the pset is copied verbatim, so its ids
-        still refer to the source's booleans while the copy owns brand new
-        boolean entities from the deep-copied representation. ``id_map`` is the
-        source-id to new-entity mapping produced by the representation copy;
-        replace every stored id that was copied with the id of its new entity so
-        the copy tracks its own manual booleans.
-        """
-        pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
-        if not pset_data:
+        """Repoint the 'BBIM_Boolean' pset ids of a duplicated element onto its copied booleans."""
+        if not (pset_data := ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")):
             return
         stored_ids = json.loads(pset_data["Data"])
         remapped = [id_map[i].id() if i in id_map else i for i in stored_ids]
