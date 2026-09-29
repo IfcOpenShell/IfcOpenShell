@@ -200,10 +200,6 @@ class TestMergeProjects(test.bootstrap.IFC4):
         assert len(output.by_type("IfcGeometricRepresentationContext")) == 2
 
     def test_regenerating_global_ids_that_collide_with_the_original_project(self):
-        # Regression test: some authoring tools emit a constant GlobalId for
-        # IfcProject and IfcBuilding across unrelated exports, so merging two of
-        # their models used to produce two IfcRoot entities sharing one
-        # GlobalId, which is invalid IFC.
         self.file = self.setup_project(self.file)
         second_file = self.setup_project()
 
@@ -215,14 +211,12 @@ class TestMergeProjects(test.bootstrap.IFC4):
 
         output = ifcpatch.execute({"file": self.file, "recipe": "MergeProjects", "arguments": [second_file]})
 
-        # Both walls are kept as distinct objects, as merging does no further processing.
         walls = output.by_type("IfcWall")
         assert len(walls) == 2
         assert len(output.by_type("IfcProject")) == 1
 
         guids = [e.GlobalId for e in output.by_type("IfcRoot")]
         assert len(guids) == len(set(guids))
-        # The main model keeps its own identifiers, only the incoming one is reissued.
         assert original_wall.GlobalId == shared_guid
         assert {w.GlobalId for w in walls} != {shared_guid}
 
