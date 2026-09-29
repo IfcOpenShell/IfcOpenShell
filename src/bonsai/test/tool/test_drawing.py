@@ -451,6 +451,19 @@ class TestGetBodyContext(NewFile):
         assert subject.get_body_context() == context
 
 
+class TestGetDrawingSpaces(NewFile):
+    def test_include_filter_applies_to_spaces(self, monkeypatch):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        space_a = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcSpace", name="A")
+        space_b = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcSpace", name="B")
+        drawing = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcAnnotation", name="Plan")
+        pset = ifcopenshell.api.pset.add_pset(ifc, product=drawing, name="EPset_Drawing")
+        ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"Include": "IfcSpace, Name=A"})
+        monkeypatch.setattr(subject, "get_elements_in_camera_view", lambda camera, objs: {space_a, space_b})
+        assert subject.get_drawing_spaces(drawing) == {space_a}
+
+
 class TestGetDocumentUri(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
