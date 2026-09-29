@@ -210,6 +210,8 @@ def np_rotation_matrix(
             matrix = np.array([[cos_theta, 0, sin_theta], [0, 1, 0], [-sin_theta, 0, cos_theta]])
         elif axis == "Z":
             matrix = np.array([[cos_theta, -sin_theta, 0], [sin_theta, cos_theta, 0], [0, 0, 1]])
+        else:
+            assert False, axis
     else:
         # Assume axis is a vector.
         axis = axis / np.linalg.norm(axis)
