@@ -36,8 +36,8 @@ pytestmark = pytest.mark.cad
 
 
 def _select_verts(bm, indices):
-    for v in bm.verts:
-        v.select = False
+    for elem in [*bm.verts, *bm.edges, *bm.faces]:
+        elem.select = False
     bm.verts.ensure_lookup_table()
     for i in indices:
         bm.verts[i].select = True
