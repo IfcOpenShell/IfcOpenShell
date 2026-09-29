@@ -45,6 +45,8 @@ jobs:
           architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
           python-version: '3.11'
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+      - name: Install lbzip2
+        run: sudo apt-get install -y lbzip2
       - name: Get current version
         id: version
         run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
