@@ -251,7 +251,6 @@ class TestEditTaskTime(test.bootstrap.IFC4):
             recurrence_pattern=pattern,
             attributes={"WeekdayComponent": [1, 2, 3, 4, 5]},
         )
-        # The calendar declares an 8am to 4pm working day, not the default 9 to 5.
         ifcopenshell.api.sequence.add_time_period(
             self.file, recurrence_pattern=pattern, start_time="08:00", end_time="16:00"
         )
@@ -276,7 +275,6 @@ class TestEditTaskTime(test.bootstrap.IFC4):
         ifcopenshell.api.control.assign_control(self.file, relating_control=calendar, related_objects=[task])
         task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=task)
 
-        # A calendar exists and declares working weekdays, but no explicit time periods.
         work_time = ifcopenshell.api.sequence.add_work_time(self.file, work_calendar=calendar, time_type="WorkingTimes")
         pattern = ifcopenshell.api.sequence.assign_recurrence_pattern(
             self.file, parent=work_time, recurrence_type="WEEKLY"
