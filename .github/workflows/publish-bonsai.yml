@@ -1,6 +1,6 @@
 name: Publish Bonsai
 
-# Differences from ci-bonsai-daily.yml:
+# Differences from publish-bonsai-unstable.yml:
 # - make has IS_STABLE=TRUE
 # - action is never triggered and executed only manually
 # - doesn't add a current date to the release and tag

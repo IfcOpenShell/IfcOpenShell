@@ -117,7 +117,7 @@ jobs:
 
       - name: Update index.json on extensions repo
         # Pulls the zips of the release published above and regenerates the
-        # extension index. Testing the build happens in ci-bonsai-test.yml.
+        # extension index. Testing the build happens in test-bonsai.yml.
         run: |
           set -x -e
           blender --version
