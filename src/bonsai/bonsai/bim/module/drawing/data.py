@@ -126,14 +126,19 @@ class DrawingsData:
         props = tool.Drawing.get_document_props()
         if props.target_view in ["PLAN_VIEW", "REFLECTED_PLAN_VIEW"]:
             ifc = tool.Ifc.get()
-            results = [("0", "Origin", "")]
-            results.extend([(str(s.id()), s.Name or "Unnamed", "") for s in ifc.by_type("IfcBuildingStorey")])
+            origin = ("0", "Origin", "")
+            storeys = [(str(s.id()), s.Name or "Unnamed", "") for s in ifc.by_type("IfcBuildingStorey")]
+            default_container = tool.Root.get_default_container()
+            if default_container and default_container.is_a("IfcBuildingStorey"):
+                default_id = str(default_container.id())
+                storeys.sort(key=lambda s: s[0] != default_id)
             # Also offer non-storey spatial containers that directly contain elements (roads, sites, ...).
-            for s in ifc.by_type("IfcSpatialStructureElement"):
-                if s.is_a("IfcBuildingStorey") or not getattr(s, "ContainsElements", None):
-                    continue
-                results.append((str(s.id()), f"{s.Name or 'Unnamed'} ({s.is_a()})", ""))
-            return results
+            containers = [
+                (str(s.id()), f"{s.Name or 'Unnamed'} ({s.is_a()})", "")
+                for s in ifc.by_type("IfcSpatialStructureElement")
+                if not s.is_a("IfcBuildingStorey") and getattr(s, "ContainsElements", None)
+            ]
+            return storeys + containers + [origin]
         elif props.target_view in ["MODEL_VIEW"]:
             return [(h.upper(), h, "") for h in ["Orthographic", "Perspective"]]
         return [(h.upper(), h, "") for h in ["North", "South", "East", "West"]]
