@@ -938,9 +938,8 @@ class Client:
         This version uses new naming and returns one Dictionary instead of a list with always one Dictionary.
         This API replaces SearchList.
         """
-        # The SearchInDictionary endpoint ignores RelatedIfcEntity server side and always returns zero
-        # Classes, so route IFC entity filtering through Dictionary/Classes, which honours it, and reshape
-        # the reply into the SearchInDictionary contract.
+        # SearchInDictionary ignores RelatedIfcEntity server side, so filter through
+        # Dictionary/Classes and reshape the reply into the SearchInDictionary contract.
         if related_ifc_entity:
             classes = self.get_classes(
                 dictionary_uri=dictionary_uri,
