@@ -788,8 +788,6 @@ class TestRecalculateWallsWithNewConnections(NewFile):
         assert self.recalculated_walls(wall) == [tool.Ifc.get_object(wall)]
 
     def test_a_wall_backed_by_type_representation_maps_keeps_its_authored_body(self):
-        # Recalculating rebuilds the body from a layer set and axis, which
-        # discards authored geometry such as ArchiCAD roof clips (issue #7487).
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         wall = self.create_connected_wall(ifc, type_has_maps=True)

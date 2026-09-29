@@ -43,10 +43,6 @@ class TestCopyClass:
     def test_copy_keeps_authored_geometry_when_occurrence_has_independent_representation(
         self, ifc, collector, geometry, root
     ):
-        # Some exporters (e.g. ArchiCAD) give a type one IfcRepresentationMap
-        # per occurrence, so an occurrence with its own authored body must
-        # copy that body instead of being remapped onto a sibling's geometry
-        # (issue #7487, issue #7996).
         ifc.get_entity("obj").should_be_called().will_return("original_element")
         root.is_element_a("original_element", "IfcRelSpaceBoundary").should_be_called().will_return(False)
         root.get_object_representation("obj").should_be_called().will_return("representation")

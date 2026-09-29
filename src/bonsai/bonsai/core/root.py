@@ -45,11 +45,7 @@ def copy_class(
     new = ifc.run("root.copy_class", product=element)
     ifc.link(new, obj)
     relating_type = root.get_element_type(new)
-    # Only remap the type's geometry when the occurrence actually derives its
-    # body from the type. If the occurrence carries its own authored geometry
-    # (has_independent_representation), keep and copy that: some exporters emit
-    # one RepresentationMap per occurrence on the shared type, so remapping
-    # would graft every sibling's geometry onto the copy (issue #7487).
+    # Copy an occurrence's own authored geometry instead of remapping the type's maps (#7487).
     if (
         relating_type
         and root.does_type_have_representations(relating_type)
