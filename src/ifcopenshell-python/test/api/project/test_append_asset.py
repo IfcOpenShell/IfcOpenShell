@@ -845,9 +845,6 @@ class TestAppendAssetIFC4(test.bootstrap.IFC4, TestAppendAssetIFC2X3):
         assert len(self.file.by_type("IfcMaterialProfileSet")) == 2
 
     def test_a_guid_collision_with_an_unrelated_class_is_not_reused_as_the_same_asset(self):
-        # Regression test for #8667: get_existing_element used to match an
-        # IfcRoot purely by GlobalId, so a colliding GlobalId on an unrelated
-        # class (e.g. Revit-style reused GUIDs) got treated as the same asset.
         library = ifcopenshell.api.project.create_file(version=self.file.schema)
         occurrence = ifcopenshell.api.root.create_entity(library, ifc_class="IfcSanitaryTerminal")
         occurrence_type = ifcopenshell.api.root.create_entity(library, ifc_class="IfcSanitaryTerminalType")
