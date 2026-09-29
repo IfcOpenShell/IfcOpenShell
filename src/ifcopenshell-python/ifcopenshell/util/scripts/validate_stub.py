@@ -259,6 +259,7 @@ def get_names_tree(tree: ast.Module) -> dict[str, set[SubnameType]]:
                             assert rebuilt is not None, bound.attr
                             rebuilt = rebuilt.replace(f"def {bound.attr}(", f"def {subname_}(", 1)
                             subnames.add(("@staticmethod", rebuilt) if is_static else rebuilt)
+                            functions_by_name.setdefault(subname_, []).append(rebuilt)
                             continue
                         if not isinstance(func, ast.Name) or ((func_id := func.id) not in ("property", "staticmethod")):
                             continue
