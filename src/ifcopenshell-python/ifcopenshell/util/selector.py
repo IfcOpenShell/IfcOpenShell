@@ -354,9 +354,7 @@ class FormatTransformer(lark.Transformer):
             # length is meaningless. Return it unchanged instead of crashing
             # the whole expression (#5297).
             return value
-        return ifcopenshell.util.unit.format_length(
-            value, float(precision), int(decimal_places), unit_system="metric"
-        )
+        return ifcopenshell.util.unit.format_length(value, float(precision), int(decimal_places), unit_system="metric")
 
     def imperial_length(self, args):
         args = list(filter(lambda x: x is not None, args))
