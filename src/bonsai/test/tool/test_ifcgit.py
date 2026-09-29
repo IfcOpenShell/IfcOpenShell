@@ -595,141 +595,7 @@ class TestStageAssetFiles(NewFile):
 
 
 # ---------------------------------------------------------------------------
-# Merge conflict report — store / clear / get
-# ---------------------------------------------------------------------------
-
-
-class TestStoreClearGetMergeConflicts(NewFile):
-    def test_round_trip(self):
-        conflicts = [{"type": "attribute_conflict", "entity_id": 42}]
-        IfcGit.store_merge_conflicts(conflicts)
-        result = IfcGit.get_merge_conflicts()
-        assert result == conflicts
-
-    def test_get_returns_none_when_empty(self):
-        IfcGit.clear_merge_conflicts()
-        assert IfcGit.get_merge_conflicts() is None
-
-    def test_clear_removes_stored_conflicts(self):
-        IfcGit.store_merge_conflicts([{"type": "class_changed"}])
-        IfcGit.clear_merge_conflicts()
-        assert IfcGit.get_merge_conflicts() is None
-
-    def test_get_returns_none_on_corrupt_json(self):
-        import bpy
-
-        bpy.context.scene.IfcGitProperties.merge_conflicts = "not valid json {"
-        assert IfcGit.get_merge_conflicts() is None
-
-
-# ---------------------------------------------------------------------------
-# git_mergetool — report file reading
-# ---------------------------------------------------------------------------
-
-
-class TestGitMergetool:
-    @requires_git
-    def test_returns_none_when_report_file_absent(self):
-        import unittest.mock as mock
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            ifc_path = os.path.join(tmpdir, "model.ifc")
-            mock_repo = mock.MagicMock()
-            # A clean mergetool resolution leaves no unmerged blobs in the index.
-            mock_repo.index.unmerged_blobs.return_value = {}
-            IfcGitRepo.repo = mock_repo
-            result = IfcGit.git_mergetool("ifcmerge", ifc_path)
-            assert result is None
-            IfcGitRepo.repo = None
-
-    @requires_git
-    def test_returns_none_when_report_file_empty(self):
-        import unittest.mock as mock
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            ifc_path = os.path.join(tmpdir, "model.ifc")
-            report_path = ifc_path + ".ifcmerge"
-            open(report_path, "w").close()
-            mock_repo = mock.MagicMock()
-            # A clean mergetool resolution leaves no unmerged blobs in the index.
-            mock_repo.index.unmerged_blobs.return_value = {}
-            IfcGitRepo.repo = mock_repo
-            result = IfcGit.git_mergetool("ifcmerge", ifc_path)
-            assert result is None
-            assert not os.path.exists(report_path)
-            IfcGitRepo.repo = None
-
-    @requires_git
-    def test_parses_conflict_report_and_deletes_file(self):
-        import json
-        import unittest.mock as mock
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            ifc_path = os.path.join(tmpdir, "model.ifc")
-            report_path = ifc_path + ".ifcmerge"
-            conflicts = [{"type": "attribute_conflict", "entity_id": 5}]
-            with open(report_path, "w") as f:
-                json.dump({"status": "failed", "conflicts": conflicts}, f)
-            mock_repo = mock.MagicMock()
-            mock_repo.git.mergetool.side_effect = git.exc.GitCommandError("mergetool", 1)
-            IfcGitRepo.repo = mock_repo
-            result = IfcGit.git_mergetool("ifcmerge", ifc_path)
-            assert result == conflicts
-            assert not os.path.exists(report_path)
-            IfcGitRepo.repo = None
-
-
-# ---------------------------------------------------------------------------
-# config_ifcmerge — cmd format and update
-# ---------------------------------------------------------------------------
-
-
-class TestConfigIfcmerge:
-    @requires_git
-    def test_writes_redirect_cmd_on_first_call(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            repo = _make_repo(tmpdir)
-            IfcGitRepo.repo = repo
-            IfcGit.config_ifcmerge()
-            reader = repo.config_reader()
-            cmd = reader.get_value('mergetool "ifcmerge"', "cmd")
-            assert "> $MERGED.ifcmerge" in cmd
-            IfcGitRepo.repo = None
-
-    @requires_git
-    def test_updates_cmd_missing_redirect(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            repo = _make_repo(tmpdir)
-            IfcGitRepo.repo = repo
-            with repo.config_writer() as w:
-                w.set_value('mergetool "ifcmerge"', "cmd", "ifcmerge $BASE $LOCAL $REMOTE $MERGED")
-                w.set_value('mergetool "ifcmerge"', "trustExitCode", True)
-            IfcGit.config_ifcmerge()
-            reader = repo.config_reader()
-            cmd = reader.get_value('mergetool "ifcmerge"', "cmd")
-            assert "> $MERGED.ifcmerge" in cmd
-            IfcGitRepo.repo = None
-
-    @requires_git
-    def test_forward_tool_writes_redirect_cmd(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            repo = _make_repo(tmpdir)
-            IfcGitRepo.repo = repo
-            IfcGit.config_ifcmerge()
-            reader = repo.config_reader()
-            cmd = reader.get_value('mergetool "ifcmerge-forward"', "cmd")
-            assert "--prioritise-local" in cmd
-            assert "> $MERGED.ifcmerge" in cmd
-            IfcGitRepo.repo = None
-
-
-# ---------------------------------------------------------------------------
-# Real-world integration coverage (#8687 review feedback from brunopostle):
-# drive the actual Bonsai authoring operators and the real commit_changes
-# core flow against a real git repo, instead of hand-written psets and a
-# mocked git object. Regression coverage for the three scenarios manually
-# verified live: a project with a full drawing + sheet, a project with no
-# drawings configured at all, and an asset referenced outside the repo.
+# Integration coverage: real authoring operators and commit_changes against a real repository
 # ---------------------------------------------------------------------------
 
 
@@ -860,3 +726,130 @@ class TestCommitChangesRealProject(NewFile):
                 assert "shared_system_stylesheet.css" in operator.reports[0][1]
             finally:
                 IfcGitRepo.repo = None
+
+
+# ---------------------------------------------------------------------------
+# Merge conflict report — store / clear / get
+# ---------------------------------------------------------------------------
+
+
+class TestStoreClearGetMergeConflicts(NewFile):
+    def test_round_trip(self):
+        conflicts = [{"type": "attribute_conflict", "entity_id": 42}]
+        IfcGit.store_merge_conflicts(conflicts)
+        result = IfcGit.get_merge_conflicts()
+        assert result == conflicts
+
+    def test_get_returns_none_when_empty(self):
+        IfcGit.clear_merge_conflicts()
+        assert IfcGit.get_merge_conflicts() is None
+
+    def test_clear_removes_stored_conflicts(self):
+        IfcGit.store_merge_conflicts([{"type": "class_changed"}])
+        IfcGit.clear_merge_conflicts()
+        assert IfcGit.get_merge_conflicts() is None
+
+    def test_get_returns_none_on_corrupt_json(self):
+        import bpy
+
+        bpy.context.scene.IfcGitProperties.merge_conflicts = "not valid json {"
+        assert IfcGit.get_merge_conflicts() is None
+
+
+# ---------------------------------------------------------------------------
+# git_mergetool — report file reading
+# ---------------------------------------------------------------------------
+
+
+class TestGitMergetool:
+    @requires_git
+    def test_returns_none_when_report_file_absent(self):
+        import unittest.mock as mock
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ifc_path = os.path.join(tmpdir, "model.ifc")
+            mock_repo = mock.MagicMock()
+            mock_repo.index.unmerged_blobs.return_value = {}
+            IfcGitRepo.repo = mock_repo
+            result = IfcGit.git_mergetool("ifcmerge", ifc_path)
+            assert result is None
+            IfcGitRepo.repo = None
+
+    @requires_git
+    def test_returns_none_when_report_file_empty(self):
+        import unittest.mock as mock
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ifc_path = os.path.join(tmpdir, "model.ifc")
+            report_path = ifc_path + ".ifcmerge"
+            open(report_path, "w").close()
+            mock_repo = mock.MagicMock()
+            mock_repo.index.unmerged_blobs.return_value = {}
+            IfcGitRepo.repo = mock_repo
+            result = IfcGit.git_mergetool("ifcmerge", ifc_path)
+            assert result is None
+            assert not os.path.exists(report_path)
+            IfcGitRepo.repo = None
+
+    @requires_git
+    def test_parses_conflict_report_and_deletes_file(self):
+        import json
+        import unittest.mock as mock
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ifc_path = os.path.join(tmpdir, "model.ifc")
+            report_path = ifc_path + ".ifcmerge"
+            conflicts = [{"type": "attribute_conflict", "entity_id": 5}]
+            with open(report_path, "w") as f:
+                json.dump({"status": "failed", "conflicts": conflicts}, f)
+            mock_repo = mock.MagicMock()
+            mock_repo.git.mergetool.side_effect = git.exc.GitCommandError("mergetool", 1)
+            IfcGitRepo.repo = mock_repo
+            result = IfcGit.git_mergetool("ifcmerge", ifc_path)
+            assert result == conflicts
+            assert not os.path.exists(report_path)
+            IfcGitRepo.repo = None
+
+
+# ---------------------------------------------------------------------------
+# config_ifcmerge — cmd format and update
+# ---------------------------------------------------------------------------
+
+
+class TestConfigIfcmerge:
+    @requires_git
+    def test_writes_redirect_cmd_on_first_call(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo = _make_repo(tmpdir)
+            IfcGitRepo.repo = repo
+            IfcGit.config_ifcmerge()
+            reader = repo.config_reader()
+            cmd = reader.get_value('mergetool "ifcmerge"', "cmd")
+            assert "> $MERGED.ifcmerge" in cmd
+            IfcGitRepo.repo = None
+
+    @requires_git
+    def test_updates_cmd_missing_redirect(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo = _make_repo(tmpdir)
+            IfcGitRepo.repo = repo
+            with repo.config_writer() as w:
+                w.set_value('mergetool "ifcmerge"', "cmd", "ifcmerge $BASE $LOCAL $REMOTE $MERGED")
+                w.set_value('mergetool "ifcmerge"', "trustExitCode", True)
+            IfcGit.config_ifcmerge()
+            reader = repo.config_reader()
+            cmd = reader.get_value('mergetool "ifcmerge"', "cmd")
+            assert "> $MERGED.ifcmerge" in cmd
+            IfcGitRepo.repo = None
+
+    @requires_git
+    def test_forward_tool_writes_redirect_cmd(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo = _make_repo(tmpdir)
+            IfcGitRepo.repo = repo
+            IfcGit.config_ifcmerge()
+            reader = repo.config_reader()
+            cmd = reader.get_value('mergetool "ifcmerge-forward"', "cmd")
+            assert "--prioritise-local" in cmd
+            assert "> $MERGED.ifcmerge" in cmd
+            IfcGitRepo.repo = None
