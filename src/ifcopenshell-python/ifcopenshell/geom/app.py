@@ -560,10 +560,7 @@ class application(QtWidgets.QApplication):
 
         def HandleSelection(self, X, Y):
             v = self._display.Context
-            # AIS_InteractiveContext.Select() has no true zero-argument overload in the
-            # SWIG bindings (the C++ default for `theToUpdateViewer` isn't carried over),
-            # so the argument must be passed explicitly. This mirrors pythonocc-core's own
-            # OCCViewer.Select() implementation, which calls self.Context.Select(True).
+            # The SWIG binding of AIS_InteractiveContext.Select() has no zero-argument overload.
             v.Select(True)
             v.InitSelected()
             if v.MoreSelected():
