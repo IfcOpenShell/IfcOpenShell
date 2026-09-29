@@ -2349,6 +2349,9 @@ class Geometry(bonsai.core.tool.Geometry):
             obj.data.from_pydata([co], [], [])
         else:
             geometry = tool.Loader.create_generic_shape(item)
+            if geometry is None:
+                logging.getLogger("ImportIFC").error(f"Failed to regenerate geometry for item #{item.id()}.")
+                return
             verts = ifcopenshell.util.shape.get_vertices(geometry)
             if (cartesian_point_offset := cls.get_cartesian_point_offset(rep_obj)) is not None:
                 verts = verts - cartesian_point_offset
