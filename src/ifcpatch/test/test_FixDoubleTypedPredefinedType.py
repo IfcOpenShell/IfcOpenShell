@@ -72,7 +72,6 @@ class TestFixDoubleTypedPredefinedType(test.bootstrap.IFC4):
         assert wall.ObjectType == "Untyped value"
 
     def test_userdefined_type_with_custom_description_clears_occurrence(self):
-        # Mirrors ifcopenshell.api.type.assign_type: a USERDEFINED type only
         wall_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType", name="WT1")
         wall_type.PredefinedType = "USERDEFINED"
         wall_type.ElementType = "MyCustomWall"
