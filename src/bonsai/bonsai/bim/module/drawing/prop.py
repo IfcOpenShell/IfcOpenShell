@@ -242,8 +242,7 @@ def update_has_status_classes(self: "BIMCameraProperties", context: bpy.types.Co
         return
     if not context.scene.camera or context.scene.camera.data != self.id_data:
         return
-    element = tool.Ifc.get_entity(context.scene.camera)
-    if not element:
+    if not (element := tool.Ifc.get_entity(context.scene.camera)):
         return
     query = tool.Drawing.STATUS_METADATA_QUERY
     metadata = tool.Drawing.get_drawing_metadata(element)
