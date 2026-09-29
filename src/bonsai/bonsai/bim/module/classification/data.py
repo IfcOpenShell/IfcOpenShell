@@ -54,12 +54,7 @@ class ClassificationsData:
 
     @classmethod
     def builtin_classification_libraries(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
-        """Enumerate classification libraries bundled with Bonsai (and any user-provided ones),
-        so a built-in library can be picked directly without browsing for a file.
-
-        See how ``bonsai.bim.module.project.data.ProjectData.library_file`` does the same
-        for the project's built-in libraries.
-        """
+        """Bundled classification libraries, mirroring ``ProjectData.library_file``."""
         results: tool.Blender.BLENDER_ENUM_ITEMS = [("0", "Custom File", "")]
         for filepath in sorted(tool.Blender.get_data_dir_paths("classifications", "*.ifc*"), key=lambda p: p.stem):
             results.append((filepath.name, filepath.stem, "Built-in Classification Library"))
