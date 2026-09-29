@@ -66,8 +66,7 @@ class TestRegistryContract:
         for attr, op_name in _registry():
             op = getattr(bpy.ops.bim, op_name, None)
             assert op is not None and callable(op), (
-                f"Preview '{attr}' in PREVIEW_CANCEL_OPS points to bim.{op_name} "
-                f"but no such operator is registered."
+                f"Preview '{attr}' in PREVIEW_CANCEL_OPS points to bim.{op_name} but no such operator is registered."
             )
 
 
