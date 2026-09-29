@@ -987,7 +987,7 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
     @classmethod
     def poll(cls, context):
         try:
-            import typst  # noqa: F401
+            import typst  # ruff: ignore[unused-import]
 
             return True
         except ModuleNotFoundError:

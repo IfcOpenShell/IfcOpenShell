@@ -162,7 +162,7 @@ class ProjectLibraryData:
         library_file = IfcStore.library_file
         if library_file is None or library_file.schema == "IFC2X3":
             return results
-        root = tool.Project.get_root_context(library_file)
+        root = library_file.by_type("IfcProject")[0]
         results.append((str(root.id()), f"{root.is_a()} {root.Name or 'Unnamed'}", root.Description or ""))
         for library_id, data in cls.data["project_libraries"].items():
             results.append((str(library_id), data["Name"] or "Unnamed", data["Description"] or ""))
