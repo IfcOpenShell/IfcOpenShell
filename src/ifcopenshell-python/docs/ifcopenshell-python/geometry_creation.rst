@@ -511,7 +511,6 @@ Here is an example which generates a parametric table.
 
 .. code-block:: python
 
-    # The shape_builder module depends on mathutils
     from ifcopenshell.util.shape_builder import V
 
     builder = ifcopenshell.util.shape_builder.ShapeBuilder(model)
