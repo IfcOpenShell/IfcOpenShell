@@ -30,7 +30,6 @@ jobs:
         run: echo "::set-output name=date::$(date +'%y%m%d')"
       - name: Compile
         run: |
-          pip install build
           cd src/bcf &&
           make dist IS_STABLE=TRUE
       - name: Publish a Python distribution to PyPI

@@ -22,7 +22,6 @@ jobs:
           python-version: '3.11' # Version range or exact version of a Python version to use, using SemVer's version range syntax
       - name: Compile
         run: |
-          pip install build
           cd src/ifcpatch &&
           make dist IS_STABLE=TRUE
       - name: Publish a Python distribution to PyPI
