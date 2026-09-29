@@ -385,8 +385,6 @@ def test_mep_add_bend_cancels_cleanly_when_axes_do_not_cross():
     The commit operator must instead report an ERROR and return CANCELLED,
     matching the None-guard ``compute_bend_preview_polylines`` already uses
     and the ERROR+CANCELLED contract ``FinishBendPreview`` relies on."""
-    from types import SimpleNamespace
-
     import ifcopenshell.util.element
     import ifcopenshell.util.unit
     from mathutils import Matrix, Vector
@@ -406,9 +404,6 @@ def test_mep_add_bend_cancels_cleanly_when_axes_do_not_cross():
         def __init__(self):
             self.report = MagicMock()
 
-    # Two parallel segments (both along +Z, offset in X) — identity rotation
-    # so the rotation-difference precheck passes and execution reaches the
-    # axis-intersection step.
     start_obj = MagicMock(name="start_obj")
     start_obj.matrix_world = Matrix.Identity(4)
     start_obj.location = Vector((0, 0, 0))
@@ -425,8 +420,6 @@ def test_mep_add_bend_cancels_cleanly_when_axes_do_not_cross():
     circle.is_a = lambda c: c == "IfcCircleProfileDef"
 
     def _seg_data(_element):
-        # start_point / end_point must be distinct Vector objects — _execute
-        # keys a ports map by id() of these vectors.
         return {
             "start_point": Vector((0, 0, 0)),
             "end_point": Vector((0, 0, 1)),
