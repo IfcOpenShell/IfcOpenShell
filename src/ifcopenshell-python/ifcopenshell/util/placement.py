@@ -77,8 +77,7 @@ def get_axis2placement(placement: ifcopenshell.entity_instance) -> MatrixType:
     elif ifc_class == "IfcAxis2Placement2D":
         z = np.array((0, 0, 1))
         if placement.RefDirection:
-            x = np.array(placement.RefDirection.DirectionRatios)
-            x.resize(3)
+            x = np.array((*placement.RefDirection.DirectionRatios, 0.0))
         else:
             x = np.array((1, 0, 0))
         o = (*placement.Location.Coordinates, 0.0)
