@@ -122,6 +122,57 @@ def get_attribute_enum_values(prop: "Attribute", context: bpy.types.Context) -> 
     return items
 
 
+def get_unit_enum_items_for_special_type(
+    special_type: str, ifc_file: Union[ifcopenshell.file, None]
+) -> tool.Blender.BLENDER_ENUM_ITEMS:
+    """Items for a unit-override picker: "Default (<symbol>)" plus every candidate unit
+    matching `special_type`, filtered per-caller since candidates depend on the measure type
+    in question (unlike the globally-shared lists in `bonsai.bim.ui.EnumData`).
+    """
+    if not ifc_file or not tool.Pset.is_measurable_special_type(special_type):
+        return [(cache_string("0"), cache_string("Default"), "")]
+
+    default_symbol = tool.Pset.get_unit_symbol_for_special_type(special_type, ifc_file)
+    items: list[tuple[str, str, str]] = [
+        (cache_string("0"), cache_string(f"Default ({default_symbol})" if default_symbol else "Default"), "")
+    ]
+    for unit in tool.Pset.get_candidate_units_for_special_type(special_type, ifc_file):
+        name = getattr(unit, "Name", None) or unit.is_a()
+        symbol = ifcopenshell.util.unit.get_unit_symbol(unit)
+        label = f"{name} ({symbol})" if symbol else name
+        items.append((cache_string(str(unit.id())), cache_string(label), ""))
+    return items
+
+
+def get_attribute_unit_enum_items(prop: "Attribute", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
+    """Items for `Attribute.unit_id_enum`. Wraps `get_unit_enum_items_for_special_type` with a
+    defensive addition: real-world files sometimes carry a Unit that doesn't cleanly match our
+    candidate-matching logic (e.g. a mismatched UnitType). Always keep the attribute's own
+    current override selectable/representable, however unusual, so setting unit_id_enum to
+    match an already-seeded unit_id can never raise "enum not found".
+    """
+    ifc_file = tool.Ifc.get()
+    items = get_unit_enum_items_for_special_type(prop.special_type, ifc_file)
+
+    if prop.unit_id and prop.unit_id not in {int(i[0]) for i in items}:
+        own_unit = ifc_file.by_id(prop.unit_id)
+        name = getattr(own_unit, "Name", None) or own_unit.is_a()
+        symbol = ifcopenshell.util.unit.get_unit_symbol(own_unit)
+        label = f"{name} ({symbol})" if symbol else name
+        items.append((cache_string(str(prop.unit_id)), cache_string(label), ""))
+
+    return items
+
+
+def update_attribute_unit_id(self: "Attribute", context: bpy.types.Context) -> None:
+    new_unit_id = int(tool.Blender.get_enum_safe(self, "unit_id_enum") or "0")
+    if ifc_file := tool.Ifc.get():
+        # Must run before self.unit_id is overwritten: convert_attribute_unit needs the OLD
+        # unit_id to know what unit the current value is expressed in.
+        tool.Pset.convert_attribute_unit(self, new_unit_id, ifc_file)
+    self.unit_id = new_unit_id
+
+
 def update_schema_dir(self: "BIMProperties", context: bpy.types.Context) -> None:
     import bonsai.bim.schema
 
@@ -250,44 +301,33 @@ def set_numerical_value(self: "Attribute", value_name: str, new_value: Union[flo
     self[value_name] = new_value
 
 
-def get_length_value(self: "Attribute") -> float:
-    si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-    return self.float_value * si_conversion
-
-
-def set_length_value(self: "Attribute", value: float) -> None:
-    si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-    self.float_value = value / si_conversion
-
-
 def get_display_name(self: "Attribute") -> str:
-    DISPLAY_UNIT_TYPES = ("AREA", "VOLUME", "FORCE")
     name = self.name
-    if not self.special_type or self.special_type not in DISPLAY_UNIT_TYPES:
+    if not self.unit_symbol:
         return name
+    return f"{name}, {self.unit_symbol}"
 
-    unit_type = f"{self.special_type}UNIT"
-    project_unit = ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), unit_type)
-    if not project_unit:
-        return name
 
-    unit_symbol = ifcopenshell.util.unit.get_unit_symbol(project_unit)
-    return f"{name}, {unit_symbol}"
+def get_unit_symbol(self: "Attribute") -> str:
+    """The symbol for whatever unit the value is currently expressed in: this property's own
+    override (`unit_id`) if set, else the project default for `special_type`. Computed fresh on
+    every access (rather than cached at import time) so it stays correct immediately after the
+    unit picker changes `unit_id`, and after the project's own default units are edited.
+    """
+    if not tool.Pset.is_measurable_special_type(self.special_type):
+        return ""
+    if not (ifc_file := tool.Ifc.get()):
+        return ""
+    unit = tool.Pset.resolve_effective_unit(self.special_type, self.unit_id, ifc_file)
+    return ifcopenshell.util.unit.get_unit_symbol(unit) if unit else ""
 
 
 AttributeDataType = Literal["string", "integer", "float", "boolean", "enum", "file", "list[string]"]
-AttributeSpecialType = Literal[
-    "",
-    "DATE",
-    "DATETIME",
-    "LENGTH",
-    "AREA",
-    "VOLUME",
-    "FORCE",
-    "LOGICAL",
-    "URI",
-    "DURATION",
-]
+# Either "", "DATE", "DATETIME", "LOGICAL", "URI", "DURATION", or an
+# IfcUnitEnum/IfcDerivedUnitEnum value with the "UNIT" suffix stripped (e.g.
+# "LENGTH", "PRESSURE", "MODULUSOFELASTICITY") as returned by
+# tool.Pset.get_special_type_for_prop().
+AttributeSpecialType = str
 
 
 class Attribute(PropertyGroup):
@@ -318,9 +358,6 @@ class Attribute(PropertyGroup):
         get=lambda self: float(self.get("float_value", 0.0)),
         set=set_float_value,
     )
-    length_value: FloatProperty(
-        name="Value", description=tooltip, get=get_length_value, set=set_length_value, unit="LENGTH"
-    )
     enum_items: StringProperty(name="Value")
     """Json serialized mapping of enum items:
         Typically a dictionary of string identifiers to item names.
@@ -342,6 +379,10 @@ class Attribute(PropertyGroup):
     value_max: FloatProperty(description="This is used to validate int_value and float_value")
     value_max_constraint: BoolProperty(default=False, description="True if the numerical value has an upper bound")
     special_type: StringProperty(name="Special Value Type", default="")
+    unit_symbol: StringProperty(name="Unit Symbol", get=get_unit_symbol)
+    unit_id: IntProperty(name="Unit Override", default=0)
+    """STEP id of this property/quantity's own Unit override. 0 means "use the project default"."""
+    unit_id_enum: EnumProperty(items=get_attribute_unit_enum_items, name="Unit", update=update_attribute_unit_id)
     use_explorer_ui: BoolProperty()
     metadata: StringProperty(name="Metadata", description="For storing some additional information about the attribute")
     update: StringProperty(name="Update", description="Custom update function to be executed")
@@ -357,7 +398,6 @@ class Attribute(PropertyGroup):
         bool_value: bool
         int_value: int
         float_value: float
-        length_value: float
         enum_items: str
         enum_items_dynamic: str
         enum_descriptions: bpy.types.bpy_prop_collection_idprop[StrProperty]
@@ -373,6 +413,9 @@ class Attribute(PropertyGroup):
         value_min_constraint: bool
         value_max: float
         value_max_constraint: bool
+        unit_symbol: str
+        unit_id: int
+        unit_id_enum: str
         use_explorer_ui: bool
         metadata: str
         update: str
@@ -430,8 +473,6 @@ class Attribute(PropertyGroup):
         elif data_type == "integer":
             return "int_value"
         elif data_type == "float":
-            if display_only and self.special_type == "LENGTH":
-                return "length_value"
             return "float_value"
         elif data_type == "enum":
             return "enum_value"

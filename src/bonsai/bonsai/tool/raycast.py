@@ -39,13 +39,15 @@ from mathutils import Matrix, Vector
 
 import bonsai.core.tool
 import bonsai.tool as tool
+from bonsai.bim.decorator_cache import get_decorator_cache_token
 from bonsai.bim.module.drawing.data import DecoratorData
 from bonsai.bim.module.drawing.decoration import CutDecorator
 
-_wireframe_batch_cache: dict[int, dict[str, tuple[GPUBatch, int, list]]] = {}
+_wireframe_batch_cache: dict[tuple[int, int], dict[str, tuple[GPUBatch, int, list]]] = {}
 _wireframe_vert_fmt: GPUVertFormat | None = None
-_triangle_batch_cache: dict[int, tuple[GPUBatch, int]] = {}
+_triangle_batch_cache: dict[tuple[int, int], tuple[GPUBatch, int]] = {}
 _triangle_vert_fmt: GPUVertFormat | None = None
+_last_decorator_cache_token: int | None = None
 _encoding_shader: gpu.types.GPUShader | None = None
 _offscreen: GPUOffScreen | None = None
 _obj_list: list[[bpy.types.Object, bool]] = []
@@ -66,9 +68,7 @@ def _create_encoding_shader() -> gpu.types.GPUShader:
     shader_info.vertex_out(iface)
     shader_info.fragment_out(0, "VEC4", "FragColor")
 
-    shader_info.vertex_source(
-        "void main() {\n" "  slot_id = vert_slot;\n" "  gl_Position = MVP * vec4(pos, 1.0);\n" "}\n"
-    )
+    shader_info.vertex_source("void main() {\n  slot_id = vert_slot;\n  gl_Position = MVP * vec4(pos, 1.0);\n}\n")
     shader_info.fragment_source(
         "vec4 encode(float f) {\n"
         "  ivec4 c;\n"
@@ -99,6 +99,16 @@ def _create_vert_format() -> GPUVertFormat:
     fmt.attr_add(id="pos", comp_type="F32", len=3, fetch_mode="FLOAT")
     fmt.attr_add(id="vert_slot", comp_type="F32", len=1, fetch_mode="FLOAT")
     return fmt
+
+
+def _discard_stale_batches_if_token_changed() -> None:
+    """Clear GPU batches when the decorator cache token is bumped on file load, undo, redo, or depsgraph changes."""
+    global _last_decorator_cache_token
+    token = get_decorator_cache_token()
+    if token != _last_decorator_cache_token:
+        _triangle_batch_cache.clear()
+        _wireframe_batch_cache.clear()
+        _last_decorator_cache_token = token
 
 
 def _find_closest_wireframe_pixel(buffer_data, cx, cy):
@@ -203,7 +213,8 @@ def _ensure_triangle_batches(obj: bpy.types.Object) -> tuple[GPUBatch | None, bo
     if _triangle_vert_fmt is None:
         _triangle_vert_fmt = _create_vert_format()
 
-    cache_key = id(obj)
+    _discard_stale_batches_if_token_changed()
+    cache_key = (obj.session_uid, get_decorator_cache_token())
     if cache_key in _triangle_batch_cache:
         return _triangle_batch_cache[cache_key]
 
@@ -355,7 +366,8 @@ def _ensure_wireframe_batches(obj: bpy.types.Object) -> dict[str, tuple[GPUBatch
     if _wireframe_vert_fmt is None:
         _wireframe_vert_fmt = _create_vert_format()
 
-    cache_key = id(obj)
+    _discard_stale_batches_if_token_changed()
+    cache_key = (obj.session_uid, get_decorator_cache_token())
 
     # Cache hit
     if cache_key in _wireframe_batch_cache:
@@ -1108,6 +1120,13 @@ class Raycast(bonsai.core.tool.Raycast):
         if _offscreen is None:
             _offscreen = GPUOffScreen(max(w, 1), max(h, 1), format="RGBA8")
 
+        # Save GPU state so it can be restored even if readback fails.
+        prev_depth_mask = gpu.state.depth_mask_get()
+        prev_depth_test = gpu.state.depth_test_get()
+        prev_blend = gpu.state.blend_get()
+        face_culling_get = getattr(gpu.state, "face_culling_get", None)
+        prev_face_culling = face_culling_get() if face_culling_get is not None else None
+
         _encoding_shader.bind()
 
         if xray_mode:
@@ -1137,27 +1156,30 @@ class Raycast(bonsai.core.tool.Raycast):
 
         buffers_list = []
         last_buf = None
-        with _offscreen.bind():
-            fb = gpu.state.active_framebuffer_get()
-            fb.clear(color=(0.0, 0.0, 0.0, 0.0), depth=1.0)
+        try:
+            with _offscreen.bind():
+                fb = gpu.state.active_framebuffer_get()
+                fb.clear(color=(0.0, 0.0, 0.0, 0.0), depth=1.0)
 
-            for batch, world_mat, slot_base in render_ops:
-                mvp = rv3d.perspective_matrix @ world_mat
-                _encoding_shader.uniform_float("MVP", mvp)
-                _encoding_shader.uniform_float("slot_base", float(slot_base))
-                with gpu.matrix.push_pop():
-                    gpu.matrix.load_matrix(Matrix.Identity(4))
-                    batch.draw(_encoding_shader)
+                for batch, world_mat, slot_base in render_ops:
+                    mvp = rv3d.perspective_matrix @ world_mat
+                    _encoding_shader.uniform_float("MVP", mvp)
+                    _encoding_shader.uniform_float("slot_base", float(slot_base))
+                    with gpu.matrix.push_pop():
+                        gpu.matrix.load_matrix(Matrix.Identity(4))
+                        batch.draw(_encoding_shader)
 
-                if read_per_object:  # gets all buffers
-                    buf = fb.read_color(int(read_x), int(read_y), read_size, read_size, 4, 0, "UBYTE")
-                    buffers_list.append(buf)
-            if not read_per_object:
-                last_buf = fb.read_color(int(read_x), int(read_y), read_size, read_size, 4, 0, "UBYTE")
-
-        # Restore state
-        gpu.state.depth_mask_set(True)
-        gpu.state.depth_test_set("LESS")
+                    if read_per_object:  # gets all buffers
+                        buf = fb.read_color(int(read_x), int(read_y), read_size, read_size, 4, 0, "UBYTE")
+                        buffers_list.append(buf)
+                if not read_per_object:
+                    last_buf = fb.read_color(int(read_x), int(read_y), read_size, read_size, 4, 0, "UBYTE")
+        finally:
+            gpu.state.depth_mask_set(prev_depth_mask)
+            gpu.state.depth_test_set(prev_depth_test)
+            gpu.state.blend_set(prev_blend)
+            if prev_face_culling is not None:
+                gpu.state.face_culling_set(prev_face_culling)
 
         mouse_read_rect = (w, h, mx, my, read_x, read_y)
         if tris:
@@ -1174,8 +1196,30 @@ class Raycast(bonsai.core.tool.Raycast):
         return cls.get_gpu_detection_snaps(context, event, objs_to_raycast)
 
     @classmethod
+    def detect_gpu_snaps(cls, context, event, request):
+        """GPU snap detection callback for ``GpuSnapDecorator``."""
+        if bpy.app.background:
+            return None
+
+        objs_to_raycast = request["objs_to_raycast"]
+        if not objs_to_raycast:
+            return None
+
+        solid_snaps, closest_obj = cls.get_gpu_solid_snaps(context, event, objs_to_raycast)
+        wireframe_snaps, _ = cls.get_gpu_wireframe_snaps(context, event, objs_to_raycast)
+        return solid_snaps, closest_obj, wireframe_snaps
+
+    @classmethod
     def clear_cache(cls):
-        global _wireframe_batch_cache, _wireframe_vert_fmt, _triangle_batch_cache, _triangle_vert_fmt, _encoding_shader, _offscreen, _obj_list
+        global \
+            _wireframe_batch_cache, \
+            _wireframe_vert_fmt, \
+            _triangle_batch_cache, \
+            _triangle_vert_fmt, \
+            _encoding_shader, \
+            _offscreen, \
+            _obj_list, \
+            _last_decorator_cache_token
         _wireframe_batch_cache = {}
         _wireframe_vert_fmt = None
         _triangle_batch_cache = {}
@@ -1183,6 +1227,7 @@ class Raycast(bonsai.core.tool.Raycast):
         _encoding_shader = None
         _offscreen = None
         _obj_list = []
+        _last_decorator_cache_token = None
 
     @classmethod
     def ray_cast_by_proximity(
