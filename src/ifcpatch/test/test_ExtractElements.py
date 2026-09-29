@@ -118,15 +118,6 @@ class TestExtractElements(test.bootstrap.IFC4):
         assert wall_new.ObjectPlacement.RelativePlacement.Location.Coordinates == (5.0, 10.0, 2.0)
 
     def test_preserving_georeferencing_ifc2x3(self):
-        # Regression test: IFC2X3 has no IfcMapConversion. Georeferencing is instead
-        # stored as ePSet_MapConversion / ePSet_ProjectedCRS property sets on
-        # IfcProject, reached only via the inverse IsDefinedBy relationship, so they
-        # were dropped by the same forward-attribute-only IfcProject copy that
-        # originally lost IfcMapConversion for #8199 (that fix only covered IFC4+).
-        # Losing them is worse than silent data loss: append_asset() still globalises
-        # each element's placement using the source's georeferencing and, finding
-        # none on the target, leaves the globalised (Eastings/Northings-scale)
-        # coordinates in place, corrupting every extracted element's placement.
         if self.file.schema != "IFC2X3":
             pytest.skip("ePSet_MapConversion is an IFC2X3-only convention")
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
@@ -145,11 +136,6 @@ class TestExtractElements(test.bootstrap.IFC4):
         matrix[:3, 3] = [5.0, 10.0, 2.0]
         ifcopenshell.api.geometry.edit_object_placement(self.file, product=wall, matrix=matrix)
 
-        # ePSet_MapConversion / ePSet_ProjectedCRS are added by add_georeferencing.
-        # The other IFC2X3-legal georeferencing psets have no dedicated API and are
-        # added directly, as a real-world producer that doesn't use IfcOpenShell
-        # would. See https://github.com/buildingSMART/validate/issues/310#issuecomment-5076630963
-        # for the complete list this recipe must preserve.
         other_names = ("ePSet_GeographicCRS", "ePSet_MapConversionScaled", "ePSet_RigidOperation")
         for name in other_names:
             pset = ifcopenshell.api.pset.add_pset(self.file, self.file.by_type("IfcProject")[0], name)
@@ -166,19 +152,11 @@ class TestExtractElements(test.bootstrap.IFC4):
             pset_new = ifcopenshell.util.element.get_pset(project_new, name)
             assert pset_new is not None, f"{name} was dropped"
             assert pset_new["Name"] == name
-        # Placements must be copied verbatim: extraction must not bake map
-        # coordinates (or any other georeferencing transform) into the local
-        # placements of the extracted elements.
         wall_new = output.by_type("IfcWall")[0]
         coords = wall_new.ObjectPlacement.RelativePlacement.Location.Coordinates
         assert coords == pytest.approx((5.0, 10.0, 2.0))
 
     def test_preserving_georeferencing_ifc2x3_on_site(self):
-        # Regression test: several real-world tools (see JoostGevaert's comment on
-        # https://github.com/buildingSMART/validate/issues/310#issuecomment-4867354635)
-        # attach the IFC2X3 georeferencing psets to IfcSite rather than IfcProject.
-        # ExtractElements must preserve them from either location, without
-        # duplicating the IfcRelDefinesByProperties relationship.
         if self.file.schema != "IFC2X3":
             pytest.skip("ePSet_MapConversion is an IFC2X3-only convention")
         project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")

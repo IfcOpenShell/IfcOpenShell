@@ -27,11 +27,8 @@ import ifcopenshell.util.selector
 
 import ifcpatch
 
-# IFC2X3 has no IfcMapConversion / IfcProjectedCRS. Georeferencing is instead
-# stored as extension property sets, historically attached to IfcProject or
-# IfcSite depending on the authoring tool. See
+# IFC2X3 has no IfcMapConversion; georeferencing lives in these psets, see
 # https://github.com/buildingSMART/validate/issues/310#issuecomment-5076630963
-# for the complete set of names accepted across IFC2X3, IFC4 and IFC4X3_ADD2.
 IFC2X3_GEOREFERENCING_PSETS = (
     "ePSet_GeographicCRS",
     "ePSet_MapConversion",
@@ -144,13 +141,7 @@ class Patcher(ifcpatch.BasePatcher):
     def copy_ifc2x3_georeferencing_psets(
         self, element: ifcopenshell.entity_instance, new_element: ifcopenshell.entity_instance
     ) -> None:
-        """Relink IFC2X3 georeferencing property sets missed by forward-attribute-only copies.
-
-        IfcProject is copied with self.new.add(), a forward-attribute-only deep
-        copy, so any pset reached only via the inverse IsDefinedBy is dropped.
-        IfcSite is copied through ifcopenshell.api.project.append_asset(), which
-        already carries IsDefinedBy psets, so this is a no-op safety net there.
-        """
+        """Relink IFC2X3 georeferencing psets, which the forward-only copy of IfcProject misses."""
         for rel in element.IsDefinedBy:
             pset = rel.RelatingPropertyDefinition
             if (
