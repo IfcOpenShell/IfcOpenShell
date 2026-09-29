@@ -121,7 +121,6 @@ class TestWeightQuantities:
     def test_gross_weight_prefers_profile_mass_over_density_when_voided(self):
         f = self.file
 
-        # 0.1 x 0.2m rectangular profile extruded 2m along local Z: a beam.
         profile = f.createIfcRectangleProfileDef("AREA", "RectProfile", None, 0.1, 0.2)
         position = f.createIfcAxis2Placement3D(f.createIfcCartesianPoint((0.0, 0.0, 0.0)), None, None)
         solid = f.createIfcExtrudedAreaSolid(profile, position, f.createIfcDirection((0.0, 0.0, 1.0)), 2.0)
@@ -133,7 +132,6 @@ class TestWeightQuantities:
         )
         beam.Representation = f.createIfcProductDefinitionShape(None, None, [rep])
 
-        # Authored manufacturer mass: 50 kg/m, deliberately different to density*area.
         f.create_entity(
             "IfcProfileProperties",
             Name="Pset_ProfileMechanical",
@@ -148,13 +146,11 @@ class TestWeightQuantities:
         )
 
         # Steel density: 7850 kg/m3, so density-based gross weight would be 314kg,
-        # clearly distinguishable from the 100kg profile-based value.
         material = ifcopenshell.api.material.add_material(f, name="Steel")
         ifcopenshell.api.material.assign_material(f, products=[beam], material=material)
         material_pset = ifcopenshell.api.pset.add_pset(f, product=material, name="Pset_MaterialCommon")
         ifcopenshell.api.pset.edit_pset(f, pset=material_pset, properties={"MassDensity": 7850.0})
 
-        # A through-hole bolt hole voiding the beam, so has_openings(beam) is True.
         opening = ifcopenshell.api.root.create_entity(f, ifc_class="IfcOpeningElement", name="Hole")
         opening.ObjectPlacement = f.createIfcLocalPlacement(
             None, f.createIfcAxis2Placement3D(f.createIfcCartesianPoint((0.0, 0.0, 0.0)), None, None)
@@ -185,11 +181,7 @@ class TestWeightQuantities:
         results = ifc5d.qto.quantify(self.file, {beam}, rules)
         quantities = results[beam]["Qto_BeamBaseQuantities"]
 
-        # GROSS ignores openings entirely: it must use the authored MassPerLength
-        # (50 kg/m * 2m = 100kg), not density * un-subtracted volume (314kg).
         assert quantities["GrossWeight"] == pytest.approx(100.0)
-        # NET has an opening, so it correctly falls back to density * true net
-        # volume (openings are not supported for the profile-based NET path).
         assert quantities["NetWeight"] == pytest.approx(7850.0 * (0.1 * 0.2 * 2 - 0.02 * 0.02 * 0.1))
 
 
