@@ -97,10 +97,6 @@ class TestCascadeSchedule(test.bootstrap.IFC4):
         assert task3.TaskTime.ScheduleFinish == "2000-01-04T17:00:00"
 
     def test_milestone_with_stray_duration_cascades_as_zero_duration(self):
-        # Regression test for #6834: per the IFC documentation a task with
-        # IsMilestone shall have no duration. If the data nevertheless carries
-        # a ScheduleDuration, the cascade must ignore it instead of stretching
-        # the milestone and pushing its successors.
         task = self._create_task("P2D")
         milestone = self._create_task("P2D")
         milestone.IsMilestone = True
