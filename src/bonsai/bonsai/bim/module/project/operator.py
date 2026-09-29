@@ -1141,12 +1141,8 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
             if not self.is_advanced and not self.should_start_fresh_session:
                 bpy.ops.bim.convert_to_blender()
 
-            # #8611: In Advanced mode the picked file is parsed here only to populate the
-            # preview/filter UI (element counts, decomposition tree, class/type lists).
-            # tool.Ifc.set_path() also rebinds the Save target (bim_props.ifc_file) to it,
-            # which must NOT happen until the user actually commits by clicking
-            # "Load Project Elements". Remember the current Save target so it can be
-            # restored below for the (uncommitted) Advanced preview.
+            # #8611: set_path() rebinds the Save target; in Advanced mode that must wait for
+            # "Load Project Elements", so remember the current one.
             bim_props = tool.Blender.get_bim_props()
             previous_ifc_file = bim_props.ifc_file
             tool.Ifc.set_path(filepath)
@@ -1183,10 +1179,7 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
                 tool.Project.add_recent_ifc_project(self.get_filepath_abs())
 
             if self.is_advanced:
-                # #8611: This is only a preview so the filter UI can be reviewed. Roll back
-                # the Save-target rebind done by set_path() above and stash the file path;
-                # LoadProjectElements commits the Save target for real once the user clicks
-                # "Load Project Elements".
+                # #8611: preview only; roll back the Save target and stash the path for LoadProjectElements.
                 bim_props.ifc_file = previous_ifc_file
                 props.advanced_load_filepath = str(filepath)
             elif len(tool.Ifc.get().by_type("IfcElement")) > 30000:
@@ -1268,11 +1261,7 @@ class LoadProjectElements(bpy.types.Operator):
             level=logging.DEBUG,
         )
         props = tool.Blender.get_bim_props()
-        # #8611: Advanced import defers binding the Save target until this real commit
-        # point. If a preview is pending, bind the Save target to the previewed file now
-        # (clicking "Load Project Elements" is the user's explicit commitment) and use it
-        # as the import source. For every other caller advanced_load_filepath is empty and
-        # the already-bound props.ifc_file is used, exactly as before.
+        # #8611: a pending Advanced preview binds the Save target here, on the explicit commit.
         pending_filepath = self.props.advanced_load_filepath
         if pending_filepath:
             self.props.advanced_load_filepath = ""

@@ -329,11 +329,7 @@ class BIMProjectProperties(PropertyGroup):
     is_loading: BoolProperty(name="Is Loading", default=False)
     advanced_load_filepath: StringProperty(
         name="Advanced Load Pending Filepath",
-        description=(
-            "Transient path of the file being previewed in Advanced import mode. The Save target is deliberately "
-            "left unchanged while this is set, and is only committed to this path once the user clicks "
-            '"Load Project Elements" (see #8611)'
-        ),
+        description="Path of the file previewed in Advanced import mode, committed as the Save target on Load Project Elements",
         options={"SKIP_SAVE"},
     )
     mvd: StringProperty(name="MVD")
