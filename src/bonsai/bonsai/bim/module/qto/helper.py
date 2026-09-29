@@ -37,33 +37,12 @@ def calculate_faces_areas(objs: list[bpy.types.Object], context: bpy.types.Conte
 
 
 def is_manifold(bm: bmesh.types.BMesh) -> bool:
-    """Checks whether a bmesh is a closed, consistently oriented manifold.
-
-    bm.calc_volume() sums signed tetrahedra via the divergence theorem, which
-    assumes a watertight mesh with matching face winding across every edge.
-    A non-manifold mesh (open, or with inconsistent winding) gives a
-    plausible-looking but wrong volume instead of an error, see
-    https://github.com/IfcOpenShell/IfcOpenShell/issues/6125.
-
-    :param bm: A bmesh instance.
-    :return: True if every edge is shared by exactly two faces with matching winding.
-    """
+    """True if every edge is shared by exactly two faces with matching winding (see #6125)."""
     return all(edge.is_contiguous for edge in bm.edges)
 
 
 def calculate_volumes(objs: list[bpy.types.Object], context: bpy.types.Context) -> tuple[float, list[str]]:
-    """Sum the bmesh volume of the given mesh objects.
-
-    Non-manifold objects are excluded from the sum, since bm.calc_volume()
-    silently returns a wrong number for them instead of failing loudly
-    (#6125). Their names are returned so the caller can warn the user
-    rather than reporting an incomplete total without saying so.
-
-    :param objs: iterable of mesh objects
-    :param context: current execution context
-    :returns: total volume of the manifold objects, and the names of any
-        objects skipped for being non-manifold.
-    """
+    """Sum the volume of the manifold mesh objects; return it with the names of the non-manifold ones skipped (#6125)."""
     result = 0.0
     non_manifold_names = []
     edit_mode = context.active_object.mode == "EDIT"
