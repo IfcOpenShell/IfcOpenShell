@@ -56,8 +56,6 @@ class TestAssignMaterialStyleIFC2X3(test.bootstrap.IFC2X3):
         if self.file.schema != "IFC2X3":
             assert representation.Items[0].Styles == (style2,)
         else:
-            # IfcStyledItem.Styles is SET OF IfcPresentationStyleAssignment in IFC2X3,
-            # so the reused item must keep wrapping the style, not hold it directly.
             assert len(representation.Items[0].Styles) == 1
             assert representation.Items[0].Styles[0].is_a("IfcPresentationStyleAssignment")
             assert representation.Items[0].Styles[0].Styles == (style2,)

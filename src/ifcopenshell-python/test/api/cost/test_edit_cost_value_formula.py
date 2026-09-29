@@ -26,9 +26,6 @@ class TestEditCostValueFormula(test.bootstrap.IFC4):
         item = ifcopenshell.api.cost.add_cost_item(self.file, cost_schedule=schedule)
         value = ifcopenshell.api.cost.add_cost_value(self.file, parent=item)
 
-        # A formula of exactly "0" is a legitimate, explicit cost of zero
-        # (e.g. "included at no extra cost"). It must not be silently
-        # dropped down to an unset (None) applied value.
         ifcopenshell.api.cost.edit_cost_value_formula(self.file, cost_value=value, formula="0")
         assert value.AppliedValue is not None
         assert value.AppliedValue.wrappedValue == 0.0
@@ -49,6 +46,5 @@ class TestEditCostValueFormula(test.bootstrap.IFC4):
         ifcopenshell.api.cost.edit_cost_value_formula(self.file, cost_value=value, formula="42")
         assert value.AppliedValue is not None
 
-        # An intentionally blank formula clears the applied value back to unset.
         ifcopenshell.api.cost.edit_cost_value_formula(self.file, cost_value=value, formula="")
         assert value.AppliedValue is None

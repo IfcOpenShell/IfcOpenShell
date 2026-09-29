@@ -52,13 +52,8 @@ class TestSetShapeAspectConstituents(test.bootstrap.IFC4):
         assert material_set.is_a("IfcMaterialConstituentSet")
         constituents = {c.Name: c for c in material_set.MaterialConstituents}
 
-        # Simulate the user (or another API call) customising a constituent,
-        # e.g. setting a quantity fraction, after the set was first created.
         constituents["Framing"].Fraction = 0.42
 
-        # Calling the function again with the exact same materials must reuse
-        # the existing constituent set rather than tearing it down and
-        # rebuilding it, otherwise any such customisation is silently lost.
         ifcopenshell.api.material.set_shape_aspect_constituents(
             self.file, element=element, context=body, materials=materials
         )
@@ -79,8 +74,6 @@ class TestSetShapeAspectConstituents(test.bootstrap.IFC4):
         )
         material_set = ifcopenshell.util.element.get_material(element)
         old_framing = next(c for c in material_set.MaterialConstituents if c.Name == "Framing")
-        # Tag the original constituent so we can tell, regardless of any STEP
-        # id recycling, whether it is the same instance after the next call.
         old_framing.Description = "ORIGINAL_TAG"
 
         ifcopenshell.api.material.set_shape_aspect_constituents(
@@ -88,6 +81,4 @@ class TestSetShapeAspectConstituents(test.bootstrap.IFC4):
         )
         material_set_again = ifcopenshell.util.element.get_material(element)
         assert {c.Name for c in material_set_again.MaterialConstituents} == {"Framing", "Glazing"}
-        # The names differ from the original set, so it must have been torn
-        # down and rebuilt: the tagged constituent must not survive.
         assert all(c.Description != "ORIGINAL_TAG" for c in material_set_again.MaterialConstituents)
