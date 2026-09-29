@@ -16,9 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
-import ifcopenshell.api.root
-import ifcopenshell.guid
+from types import SimpleNamespace
 
 import bonsai.core.geometry as subject
 from test.core.bootstrap import geometry, ifc, style, surveyor  # ruff: ignore[unused-import]
@@ -297,46 +295,27 @@ class TestRemoveConnection:
 
 class TestGetSimilarOpenings:
     def test_two_openings_sharing_the_same_placement_are_similar(self, ifc):
-        file = ifcopenshell.file(schema="IFC4")
-        placement = file.createIfcLocalPlacement()
-        opening = ifcopenshell.api.root.create_entity(file, ifc_class="IfcOpeningElement")
-        other_opening = ifcopenshell.api.root.create_entity(file, ifc_class="IfcOpeningElement")
-        opening.ObjectPlacement = placement
-        other_opening.ObjectPlacement = placement
+        placement = "placement"
+        opening = SimpleNamespace(id=1, ObjectPlacement=placement)
+        other_opening = SimpleNamespace(id=2, ObjectPlacement=placement)
+        model = SimpleNamespace(by_type=lambda ifc_class: [opening, other_opening])
 
-        ifc.get().should_be_called().will_return(file)
+        ifc.get().should_be_called().will_return(model)
         assert subject.get_similar_openings(ifc, opening) == [other_opening]
 
     def test_openings_with_no_placement_yet_are_not_similar(self, ifc):
-        file = ifcopenshell.file(schema="IFC4")
-        opening = ifcopenshell.api.root.create_entity(file, ifc_class="IfcOpeningElement")
-        ifcopenshell.api.root.create_entity(file, ifc_class="IfcOpeningElement")
-        assert opening.ObjectPlacement is None
-
+        opening = SimpleNamespace(ObjectPlacement=None)
         assert subject.get_similar_openings(ifc, opening) == []
 
 
 class TestGetSimilarOpeningsBuildingObjs:
     def test_run(self, ifc):
-        class FakeIfc:
-            requested_elements = []
+        wall = "wall"
+        opening = SimpleNamespace(VoidsElements=[SimpleNamespace(RelatingBuildingElement=wall)])
 
-            @classmethod
-            def get_object(cls, element):
-                cls.requested_elements.append(element)
-                return "wall_obj"
-
-        file = ifcopenshell.file(schema="IFC4")
-        wall = ifcopenshell.api.root.create_entity(file, ifc_class="IfcWall")
-        opening = ifcopenshell.api.root.create_entity(file, ifc_class="IfcOpeningElement")
-        file.create_entity("IfcRelVoidsElement", ifcopenshell.guid.new(), None, None, None, wall, opening)
-
-        assert subject.get_similar_openings_building_objs(FakeIfc, [opening]) == ["wall_obj"]
-        assert FakeIfc.requested_elements == [wall]
+        ifc.get_object(wall).should_be_called().will_return("wall_obj")
+        assert subject.get_similar_openings_building_objs(ifc, [opening]) == ["wall_obj"]
 
     def test_openings_that_have_not_voided_anything_yet_are_skipped(self, ifc):
-        file = ifcopenshell.file(schema="IFC4")
-        opening = ifcopenshell.api.root.create_entity(file, ifc_class="IfcOpeningElement")
-        assert opening.VoidsElements == ()
-
+        opening = SimpleNamespace(VoidsElements=())
         assert subject.get_similar_openings_building_objs(ifc, [opening]) == []
