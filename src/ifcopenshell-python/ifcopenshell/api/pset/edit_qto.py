@@ -136,9 +136,31 @@ def edit_qto(
     return usecase.execute()
 
 
+# Sentinel distinguishing "no Unit dict was passed at all" from "a Unit dict was passed
+# with Unit explicitly set to None" (i.e. explicitly clear an existing override).
+_NO_UNIT = object()
+
+
 class Usecase:
     file: ifcopenshell.file
     settings: dict[str, Any]
+
+    @staticmethod
+    def unpack_unit_value(value_candidate):
+        """
+        Returns tuple of the format: (Unit, NominalValue)
+
+        NOTE: a dict value_candidate is ambiguous with the IfcPhysicalComplexQuantity spec
+        convention ({"Discrimination": ..., "HasQuantities": ...}) used elsewhere in this
+        module -- callers must check for that case (absence of a "Unit" key) before calling
+        this. Unit is the module-level _NO_UNIT sentinel when no Unit was specified at all
+        (bare value, or a dict without a "Unit" key), so that callers can distinguish "leave
+        the existing Unit untouched" from an explicit `{"Unit": None, ...}` (clear the
+        existing Unit override, falling back to the project default).
+        """
+        if isinstance(value_candidate, dict) and "Unit" in value_candidate:
+            return (value_candidate["Unit"], value_candidate["NominalValue"])
+        return (_NO_UNIT, value_candidate)
 
     def execute(self):
         self.qto_idx = 5
@@ -173,16 +195,19 @@ class Usecase:
         name = prop.Name
         if value is None:
             self.file.remove(prop)
-        elif prop.is_a("IfcPhysicalComplexQuantity") and isinstance(value, dict):
+        elif prop.is_a("IfcPhysicalComplexQuantity") and isinstance(value, dict) and "Unit" not in value:
             prop.Discrimination = value.get("Discrimination", prop.Discrimination)
             ifcopenshell.api.pset.edit_qto(self.file, qto=prop, properties=value["HasQuantities"])
         elif prop.is_a("IfcPhysicalSimpleQuantity"):
+            unit, value = self.unpack_unit_value(value)
             value = value.wrappedValue if isinstance(value, ifcopenshell.entity_instance) else value
             # 3 IfcPhysicalSimpleQuantity.XXXValue
             if self.file.schema == "IFC4X3" and prop.is_a("IfcQuantityCount"):
                 prop[3] = int(value)
             else:
                 prop[3] = float(value)
+            if unit is not _NO_UNIT:
+                prop.Unit = unit
         del self.settings["properties"][name]
 
     def add_new_properties(self) -> list[ifcopenshell.entity_instance]:
@@ -190,21 +215,20 @@ class Usecase:
         for name, value in self.settings["properties"].items():
             if value is None:
                 continue
-            if isinstance(value, dict):
+            if isinstance(value, dict) and "Unit" not in value:
                 complex_qto = self.file.create_entity(
                     "IfcPhysicalComplexQuantity", Name=name, Discrimination=value["Discrimination"]
                 )
                 properties.append(complex_qto)
                 ifcopenshell.api.pset.edit_qto(self.file, qto=complex_qto, properties=value["HasQuantities"])
             else:
+                unit, value = self.unpack_unit_value(value)
                 property_type = self.get_canonical_property_type(name, value)
                 value = value.wrappedValue if isinstance(value, ifcopenshell.entity_instance) else value
-                properties.append(
-                    self.file.create_entity(
-                        "IfcQuantity{}".format(property_type),
-                        **{"Name": name, "{}Value".format(property_type): value},
-                    )
-                )
+                kwargs = {"Name": name, "{}Value".format(property_type): value}
+                if unit is not None and unit is not _NO_UNIT:
+                    kwargs["Unit"] = unit
+                properties.append(self.file.create_entity("IfcQuantity{}".format(property_type), **kwargs))
         return properties
 
     def extend_qto_with_new_properties(self, new_properties: list[ifcopenshell.entity_instance]) -> None:

@@ -30,6 +30,12 @@ class TestServerRegistration:
         for name in expected:
             assert name in tools, f"Tool {name} not registered"
 
+    def test_all_tools_have_descriptions(self):
+        server = build_server()
+        tools = server._tool_manager.list_tools()
+        missing = [t.name for t in tools if not (t.description or "").strip()]
+        assert not missing, f"Tools with no description: {missing}"
+
 
 @pytest.fixture
 def tool_fns():
