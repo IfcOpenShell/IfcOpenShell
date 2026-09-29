@@ -33,7 +33,7 @@ LENGTHS = [1600.0, 1200.0, 2000.0, 800.0]
 
 
 def _new_file():
-    file = ifcopenshell.file(schema="IFC4X3")
+    file = ifcopenshell.file(schema="IFC4X3_ADD2")
     file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
     length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
     ifcopenshell.api.unit.assign_unit(file, units=[length])
@@ -49,7 +49,7 @@ def _new_file():
 
 
 def _new_file_no_context():
-    file = ifcopenshell.file(schema="IFC4X3")
+    file = ifcopenshell.file(schema="IFC4X3_ADD2")
     file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
     length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
     ifcopenshell.api.unit.assign_unit(file, units=[length])
@@ -341,7 +341,8 @@ def test_single_real_segment_produces_only_boundary_labels():
 
 def test_start_station_composes_for_child_alignment():
     file = _new_file()
-    alignment = ifcopenshell.api.alignment.create(file, "A1", include_vertical=False, start_station=100.0)
+    alignment = ifcopenshell.api.alignment.create(file, "A1", include_vertical=False)
+    ifcopenshell.api.alignment.add_stationing_referent(file, "A1 1+00.00", alignment, distance_along=0.0, station=100.0)
     ifcopenshell.api.alignment.add_vertical_layout(file, alignment)
     ifcopenshell.api.alignment.add_vertical_layout(file, alignment)  # forces the child-alignment split
 
@@ -373,6 +374,42 @@ def test_start_station_composes_for_child_alignment():
     assert stations == pytest.approx([100.0, 600.0, 900.0])
 
 
+def test_rel_nests_from_ancestor_used_for_naming_and_nesting():
+    """A vertical layout living under a child alignment (once a second vertical layout is
+    added, per CT 4.1.4.4.1.2) can still have its key-point referents named after and nested
+    to an ancestor alignment's own rel_nests -- e.g. the same one already holding that
+    ancestor's horizontal key points -- rather than the child's generic "Child of X" name."""
+    file = _new_file()
+    alignment = ifcopenshell.api.alignment.create(file, "A1", include_vertical=False)
+    ifcopenshell.api.alignment.add_stationing_referent(file, "A1 1+00.00", alignment, distance_along=0.0, station=100.0)
+    horizontal = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+    horizontal_nest = ifcopenshell.api.alignment.update_key_point_referents(file, horizontal)
+    horizontal_count = len(horizontal_nest.RelatedObjects)
+
+    ifcopenshell.api.alignment.add_vertical_layout(file, alignment)
+    ifcopenshell.api.alignment.add_vertical_layout(file, alignment)  # forces the child-alignment split
+    child_alignment = alignment.IsDecomposedBy[0].RelatedObjects[-1]
+    child_vertical = ifcopenshell.api.alignment.get_vertical_layout(child_alignment)
+
+    dp = file.createIfcAlignmentVerticalSegment(
+        StartDistAlong=0.0,
+        HorizontalLength=500.0,
+        StartHeight=10.0,
+        StartGradient=0.01,
+        EndGradient=0.01,
+        PredefinedType="CONSTANTGRADIENT",
+    )
+    ifcopenshell.api.alignment.create_layout_segment(file, child_vertical, dp)
+
+    result = ifcopenshell.api.alignment.update_key_point_referents(file, child_vertical, rel_nests=horizontal_nest)
+
+    assert result == horizontal_nest
+    assert result.RelatingObject == alignment
+    assert len(result.RelatedObjects) == horizontal_count + 2
+    assert all(r.Name.startswith("A1 ") for r in result.RelatedObjects)
+    assert not any("Child of" in r.Name for r in result.RelatedObjects)
+
+
 def test_returns_ifc_rel_nests():
     file = _new_file()
     alignment = _build_alignment(file)
@@ -399,4 +436,5 @@ test_cant_layout_boundary_labels()
 test_no_real_segments_produces_no_referents()
 test_single_real_segment_produces_only_boundary_labels()
 test_start_station_composes_for_child_alignment()
+test_rel_nests_from_ancestor_used_for_naming_and_nesting()
 test_returns_ifc_rel_nests()
