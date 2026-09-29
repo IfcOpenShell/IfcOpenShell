@@ -441,11 +441,12 @@ namespace {
 			// CircleSegments controls how conics (circles, ellipses, arcs) are approximated
 			// in the CGAL kernel. Two modes, one or the other:
 			//  - CircleSegments == 0 (the default): the segment count is derived from
-			//    MesherLinearDeflection, so the chord deviation stays within the mesher's
-			//    linear deflection regardless of radius. This matches the deflection based
-			//    meshing the OpenCascade kernel already does and fixes issue #8051, where
-			//    large radius arcs (curved curtain wall mullions) collapsed to straight chords
-			//    because a fixed segment count is radius agnostic.
+			//    MesherLinearDeflection and MesherAngularDeflection, whichever is stricter,
+			//    matching the deflection based meshing in the OpenCascade kernel.
+			//    Use the strictest angular bound: min(pi/2, sagitta-derived linear bound,
+			//    angular deflection). The sagitta is the maximum arc-to-chord deviation;
+			//    pi/2 guarantees at least 4 parts per circle and acts as fallback when
+			//    radius <= linear deflection.
 			//  - CircleSegments > 0: it is used directly as the number of segments for a full
 			//    circle, giving deterministic, radius independent output.
 			int num_segments;
@@ -455,14 +456,19 @@ namespace {
 			} else {
 				const double radius = conic_radius(t);
 				const double deflection = settings_.get<settings::MesherLinearDeflection>().get();
+				const double angular_deflection = settings_.get<settings::MesherAngularDeflection>().get();
+				// Widest turn a single chord may span, in radians.
+				double max_segment_angle = M_PI / 2.;
 				if (deflection > 0. && radius > deflection) {
-					const double max_segment_angle = 2.0 * std::acos(1.0 - deflection / radius);
-					num_segments = (int)std::ceil(span / max_segment_angle);
-				} else {
-					// Radius within the deflection tolerance (or no deflection set): a chord per
-					// quarter turn already keeps the deviation within tolerance.
-					num_segments = (int)std::ceil(span / (M_PI / 2.));
+					const double linear_bound = 2.0 * std::acos(1.0 - deflection / radius);
+					if (linear_bound > 0. && linear_bound < max_segment_angle) {
+						max_segment_angle = linear_bound;
+					}
 				}
+				if (angular_deflection > 0. && angular_deflection < max_segment_angle) {
+					max_segment_angle = angular_deflection;
+				}
+				num_segments = (int)std::ceil(span / max_segment_angle);
 			}
 			if (num_segments < 1) {
 				num_segments = 1;

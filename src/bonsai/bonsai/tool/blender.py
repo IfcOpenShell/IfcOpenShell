@@ -2161,7 +2161,7 @@ class Blender(bonsai.core.tool.Blender):
         return cls.get_internal_data_dir() / relative_path
 
     @classmethod
-    def get_data_dir_paths(cls, relative_dir_path: Union[str, Path], glob_pattern: str) -> Generator[Path, None, None]:
+    def get_data_dir_paths(cls, relative_dir_path: str | Path, glob_pattern: str) -> Generator[Path]:
         """Return paths based on glob pattern from the provided path in data folder.
         Return paths from internal data folder first and then paths from the user data folder (if it exists)."""
         custom_path = cls.get_user_data_dir() / relative_dir_path
@@ -2681,7 +2681,7 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     @contextlib.contextmanager
-    def bonsai_crash_txt(cls, s: str = "") -> Generator[Path, Any, None]:
+    def bonsai_crash_txt(cls, s: str = "") -> Generator[Path, Any]:
         """Create a temporary bonsai.crash.txt file the with current traceback.
 
         Useful in case Blender crash might occur too unexpectedly (e.g. #6686),

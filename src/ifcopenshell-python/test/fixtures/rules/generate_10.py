@@ -11,7 +11,6 @@ widths = [0.2, 0.3]
 Girth, Depth, WallThickness, Width = 0.0, 0.0, 0.0, 0.0
 
 for d, w in itertools.product(depths, widths):
-
     D = dict(defaults, Depth=d, Width=w)
     globals().update(D)
 

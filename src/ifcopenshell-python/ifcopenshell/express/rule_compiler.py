@@ -1,19 +1,18 @@
 import ast
+import functools
+import hashlib
+import itertools
+import json
+import operator
 import os
 import re
 import sys
-import json
-import hashlib
-import operator
-import functools
-import itertools
+
+import networkx as nx
+from codegen import indent
 
 import ifcopenshell.express
 import ifcopenshell.express.express_parser
-
-import networkx as nx
-
-from codegen import indent
 
 DEBUG = False
 
@@ -115,7 +114,7 @@ def write_dot(fn, g):
 
             if g.nodes[n].get("is_terminal"):
                 attrs["shape"] = "rect"
-                attrs["label"] = f"\\\"{attrs['label']}\\\""
+                attrs["label"] = f'\\"{attrs["label"]}\\"'
             else:
                 attrs["shape"] = "none"
 
@@ -254,7 +253,7 @@ class context:
             )
         )
         assert len(set(parts)) == 1
-        return [x for x in parts[0][::-1] if x != "n"][0]
+        return next(x for x in parts[0][::-1] if x != "n")
 
 
 # @todo
@@ -296,7 +295,7 @@ class {context.rule_head.rule_id}:
     def __call__(file):
         {context.rule_head.entity_ref} = file.by_type("{context.rule_head.entity_ref}")
 {indent(8, context.algorithm_head.local_decl)}
-{indent(8, context.stmt.branches()) if context.stmt else ''}
+{indent(8, context.stmt.branches()) if context.stmt else ""}
 {indent(8, context.where_clause.domain_rule)}
 """
 
@@ -337,7 +336,7 @@ class {class_name}_{domain_rule.rule_label_id}:
 
     @staticmethod
     def __call__(self):
-{indent(8, (f"{a.lower()} = self.{a}" for a in attributes if re.search(f'{wb}{a.lower()}{wb}', str(domain_rule))))}
+{indent(8, (f"{a.lower()} = self.{a}" for a in attributes if re.search(f"{wb}{a.lower()}{wb}", str(domain_rule))))}
 {indent(8, domain_rule)}
 """
 
@@ -355,7 +354,7 @@ class {class_name}_{domain_rule.rule_label_id}:
             slash = "\\"
             return f"""
 def calc_{class_name}_{str(derived_attr.attribute_decl.redeclared_attribute.qualified_attribute.attribute_qualifier)[1:] if derived_attr.attribute_decl.redeclared_attribute else derived_attr.attribute_decl}(self):
-{indent(4, (f"{a.lower()} = self.{a}" for a in attributes if re.search(f'{wb}{a.lower()}{wb}', str(derived_attr.expression))))}
+{indent(4, (f"{a.lower()} = self.{a}" for a in attributes if re.search(f"{wb}{a.lower()}{wb}", str(derived_attr.expression))))}
 {indent(4, f"return {slash}")}
 {indent(4, derived_attr.expression)}
 """
@@ -794,9 +793,9 @@ class AttributeGetattrTransformer(ast.NodeTransformer):
 
 if __name__ == "__main__":
     import io
-    import sys
     import shutil
     import subprocess
+    import sys
 
     schema = ifcopenshell.express.express_parser.parse(sys.argv[1]).schema
 
