@@ -555,11 +555,7 @@ class AddBcfViewpoint(bpy.types.Operator):
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
 
-        # BCF viewpoints are stored in global (map) coordinates. On a
-        # georeferenced model the Blender camera is in the local, offset space,
-        # so convert it to global here, mirroring the global2local applied on
-        # restore in setup_camera(). Without this the saved viewpoint holds
-        # local coordinates and reloading shifts the camera by the offset. See #8205.
+        # BCF viewpoints are stored in global coordinates, mirroring the global2local in setup_camera().
         camera_matrix = blender_camera.matrix_world
         geo_props = tool.Georeference.get_georeference_props()
         if geo_props.has_blender_offset:
@@ -582,9 +578,7 @@ class AddBcfViewpoint(bpy.types.Operator):
         assert isinstance(blender_camera.data, bpy.types.Camera)
         visinfo_guid = str(uuid.uuid4())
         if bcf_v2:
-            camera_view_point = bcf.v2.model.Point(
-                x=camera_location.x, y=camera_location.y, z=camera_location.z
-            )
+            camera_view_point = bcf.v2.model.Point(x=camera_location.x, y=camera_location.y, z=camera_location.z)
             camera_direction = bcf.v2.model.Direction(x=direction.x, y=direction.y, z=direction.z)
             camera_up_vector = bcf.v2.model.Direction(x=up.x, y=up.y, z=up.z)
             if blender_camera.data.type == "ORTHO":
@@ -607,9 +601,7 @@ class AddBcfViewpoint(bpy.types.Operator):
                 self.report({"INFO"}, f"Unsupported camera type: '{blender_camera.data.type}'.")
                 return {"FINISHED"}
         else:
-            camera_view_point = bcf.v3.model.Point(
-                x=camera_location.x, y=camera_location.y, z=camera_location.z
-            )
+            camera_view_point = bcf.v3.model.Point(x=camera_location.x, y=camera_location.y, z=camera_location.z)
             camera_direction = bcf.v3.model.Direction(x=direction.x, y=direction.y, z=direction.z)
             camera_up_vector = bcf.v3.model.Direction(x=up.x, y=up.y, z=up.z)
             cam_aspect = blender_render.resolution_x / blender_render.resolution_y
