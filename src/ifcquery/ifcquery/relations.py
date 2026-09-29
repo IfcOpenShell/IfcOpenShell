@@ -182,7 +182,22 @@ def _collect_elements(data: Any, seen: set[int], result: list[dict[str, Any]]) -
 def relations(
     model: ifcopenshell.file, element: ifcopenshell.entity_instance, traverse: str | None = None
 ) -> dict[str, Any] | list[dict[str, Any]]:
-    """Return relationships for an element, or hierarchy chain if traverse='up'."""
+    """Show how an element relates to the rest of the model.
+
+    By default returns a dict whose optional blocks are ``hierarchy`` (parent,
+    container, aggregate, nest, filled void, voided element), ``children``
+    (contained, parts, components, openings), ``type_relationship``,
+    ``groups``, ``systems``, ``zones``, ``material``, ``referenced_structures``
+    and ``connections`` (connected to/from, ports), plus a de-duplicated flat
+    ``elements`` list of everything referenced. Blocks with nothing to report
+    are omitted.
+
+    :param model: The IFC model.
+    :param element: The element to examine.
+    :param traverse: Set to ``'up'`` to instead return the chain of ancestors
+        from the element to ``IfcProject`` as a flat list. Any other value
+        gives the default behaviour.
+    """
     if traverse == "up":
         return _traverse_up(element)
     result = _all_relations(model, element)
