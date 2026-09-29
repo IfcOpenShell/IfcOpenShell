@@ -902,10 +902,8 @@ def set_element_value(
                 except IndexError:
                     return
             elif isinstance(keys[-1], str) and keys[-1].isnumeric() and i != len(keys) - 1:
-                # get_element_value maps the remaining attribute keys over the
-                # list and applies a trailing numeric index to the mapped result
-                # (e.g. "item.Material.Name.0"). To stay consistent, select that
-                # element up front and set the attribute chain on it (#4687).
+                # A trailing index selects the element first, as in
+                # get_element_value (#4687).
                 try:
                     selected = list(element)[int(keys[-1])]
                 except IndexError:
