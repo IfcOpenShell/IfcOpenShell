@@ -1954,9 +1954,7 @@ class OpenLayout(bpy.types.Operator, tool.Ifc.Operator):
         sheet_item = tool.Drawing.get_active_sheet_item()
         assert sheet_item
         sheet = tool.Ifc.get().by_id(sheet_item.ifc_definition_id)
-        # The layout SVG may be missing from disk (e.g. deleted by removing the
-        # sheet in another IFC file that shared the same layouts folder, #5881).
-        # Report it cleanly instead of crashing in ET.parse below.
+        # The layout SVG may be gone (e.g. removed by another IFC file sharing the folder), see #5881.
         missing = [w for w in tool.Drawing.validate_sheet_files(sheet) if w.warning_type == "MISSING_LAYOUT"]
         if missing:
             self.report({"ERROR"}, "; ".join(str(w) for w in missing))
@@ -3083,10 +3081,7 @@ class RemoveSheet(bpy.types.Operator, tool.Ifc.Operator):
     sheet: bpy.props.IntProperty()
 
     def invoke(self, context, event):
-        # Removing a sheet permanently deletes its layout, sheet and revision
-        # files from disk. Those files may be shared with other IFC files saved
-        # in the same folder, and the deletion cannot be undone, so confirm
-        # first to avoid unintentional data loss. See #5881.
+        # Removing a sheet permanently deletes its files from disk, which may be shared with other IFC files.
         return context.window_manager.invoke_confirm(
             self,
             event,
