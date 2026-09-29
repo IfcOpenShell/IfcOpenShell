@@ -160,7 +160,6 @@ class TestFixArchiCADToRevitDoorSwings(test.bootstrap.IFC4):
 
         ifcpatch.execute({"file": self.file, "recipe": "FixArchiCADToRevitDoorSwings", "arguments": []})
 
-        # The door must be left untouched: no accessory copy, footprint kept.
         assert not self.file.by_type("IfcDiscreteAccessory")
         assert any(r.RepresentationIdentifier == "FootPrint" for r in door.Representation.Representations)
 
