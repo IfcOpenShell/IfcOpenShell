@@ -160,9 +160,6 @@ class Georeference(bonsai.core.tool.Georeference):
 
     @classmethod
     def import_true_north(cls) -> None:
-        # TrueNorth is a plain IfcGeometricRepresentationContext attribute in
-        # both IFC2X3 and IFC4+, unlike CRS/MapConversion, so no schema
-        # branch is needed here.
         props = cls.get_georeference_props()
         props.is_changing_angle = True
         props.true_north_abscissa = "0"

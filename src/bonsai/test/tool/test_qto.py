@@ -238,8 +238,6 @@ class TestGetBaseQto(test.bim.bootstrap.NewFile):
         assert not subject.get_base_qto(product) == True
 
     def test_ifc2x3_typed_product(self):
-        # In IFC2X3, IsDefinedBy also carries IfcRelDefinesByType (no
-        # separate IsTypedBy inverse), so a typed product must not crash.
         ifc = ifcopenshell.file(schema="IFC2X3")
         tool.Ifc.set(ifc)
         wall_type = ifc.createIfcWallType()
