@@ -2185,12 +2185,7 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def resync_hosted_fillings(cls, elements: Iterable[ifcopenshell.entity_instance]) -> None:
-        """Refresh every filled opening voiding any of ``elements``.
-
-        Meant to run after a host's layer thickness changed (e.g. an edit to
-        an ``IfcWallType``'s ``IfcMaterialLayerSet``), so doors and windows
-        already placed in that host keep cutting all the way through its new
-        body instead of being left at their old depth."""
+        """Refresh every filled opening voiding any of ``elements``, e.g. after a host's thickness changed."""
         fillings = []
         for element in elements:
             for rel in getattr(element, "HasOpenings", None) or []:
