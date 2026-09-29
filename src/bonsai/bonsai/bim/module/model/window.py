@@ -55,8 +55,9 @@ def has_shared_model_body(
 ) -> bool:
     """Whether the occurrence's Model/Body geometry resolves to the
     representation the modifier just rebuilt (i.e. is not its own)."""
-    representation = ifcopenshell.util.representation.get_representation(occurrence, "Model", "Body", "MODEL_VIEW")
-    if representation is None:
+    if (
+        representation := ifcopenshell.util.representation.get_representation(occurrence, "Model", "Body", "MODEL_VIEW")
+    ) is None:
         return True
     return tool.Geometry.resolve_mapped_representation(representation) == base_representation
 
