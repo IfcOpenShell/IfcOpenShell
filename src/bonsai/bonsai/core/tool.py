@@ -21,7 +21,6 @@ import inspect
 from typing import Optional
 
 # fmt: off
-# pylint: skip-file
 
 # This interface class and decorator is magic syntactic sugar to allow concise interface definitions
 # If we didn't do this, Python is unnecessarily verbose, which I find distracting. Don't black this file :)
@@ -254,7 +253,6 @@ class Cost:
     def get_cost_schedule(cls, cost_schedule): pass
     def get_cost_value_attributes(cls): pass
     def get_cost_value_unit_component(cls): pass
-    def get_direct_cost_item_products(cls): pass
     def get_highlighted_cost_item(cls): pass
     def get_products(cls, related_object_type): pass
     def get_schedule_cost_items(cls, cost_schedule): pass
@@ -291,7 +289,6 @@ class Cost:
 class Debug:
     def add_schema_identifier(cls, schema): pass
     def load_express(cls, filename): pass
-    def purge_hdf5_cache(cls): pass
 
 
 @interface
@@ -355,6 +352,9 @@ class Drawing:
     def enable_editing_schedules(cls): pass
     def enable_editing_sheets(cls): pass
     def enable_editing_text(cls, obj): pass
+    def ensure_annotation_in_drawing_plane(cls, obj, camera=None): pass
+    def ensure_drawings_parent_document(cls): pass
+    def ensure_drawings_parent_group(cls): pass
     def ensure_unique_drawing_name(cls, name): pass
     def ensure_unique_identification(cls, identification): pass
     def export_font_size(cls, obj): pass
@@ -366,6 +366,7 @@ class Drawing:
     def generate_reference_attributes(cls, reference, **attributes): pass
     def generate_sheet_identification(cls): pass
     def get_annotation_context(cls, target_view, object_type=None): pass
+    def get_annotation_drawing(cls, element): pass
     def get_annotation_representation(cls, element_type): pass
     def get_assigned_product(cls, element): pass
     def get_assigned_product_workaround(cls, element): pass
@@ -383,6 +384,7 @@ class Drawing:
     def get_drawing_group(cls, drawing): pass
     def get_drawing_references(cls, drawing): pass
     def get_drawing_target_view(cls, drawing): pass
+    def get_group_drawing(cls, group): pass
     def get_group_elements(cls, group): pass
     def get_ifc_representation_class(cls, object_type): pass
     def get_name(cls, element): pass
@@ -396,6 +398,7 @@ class Drawing:
     def get_unit_system(cls): pass
     def import_assigned_product(cls, obj): pass
     def import_documents(cls, document_type): pass
+    def import_drawing(cls, drawing): pass
     def import_drawings(cls): pass
     def import_sheets(cls): pass
     def import_text_attributes(cls, obj): pass
@@ -441,7 +444,6 @@ class Feature:
 @interface
 class Geometry:
     def change_object_data(cls, obj, data, is_global=False): pass
-    def clear_cache(cls, element): pass
     def clear_modifiers(cls, obj): pass
     def clear_scale(cls, obj): pass
     def copy_data_links(cls, data, copied_entities) -> None: pass
@@ -649,7 +651,7 @@ class Material:
     def get_default_material(cls): pass
     def get_elements_by_material(cls, material): pass
     def get_material_attributes(cls): pass
-    def get_material(cls, element, should_inherit: bool = False): pass
+    def get_material(cls, element, should_inherit: bool = False, should_skip_usage: bool = False): pass
     def get_object_ui_active_material(cls): pass
     def get_object_ui_material_type(cls): pass
     def get_style(cls, material): pass
@@ -662,6 +664,7 @@ class Material:
     def is_editing_materials(cls): pass
     def is_material_used_in_sets(cls, material): pass
     def load_material_attributes(cls, material): pass
+    def refresh(cls): pass
     def replace_material_with_material_profile(cls, element): pass
     def update_elements_using_material(cls, material): pass
 
@@ -804,7 +807,7 @@ class Profile:
 
 @interface
 class Parametric:
-    def get_geom_generation(cls) -> int: pass
+    def get_geom_generation(cls): pass
     def refresh_post_commit(cls, operator) -> None: pass
 
 
@@ -1170,8 +1173,6 @@ class Style:
 @interface
 class Surveyor:
     def get_absolute_matrix(cls, obj): pass
-    def get_z_rotation(cls, obj): pass
-    def set_z_rotation(cls, obj, z): pass
 
 
 @interface
