@@ -45,14 +45,14 @@ def test_text_formatter_defaults_to_none():
 
 
 def test_text_formatter_field_stores_callable():
-    formatter = lambda props, value: f"{value:.2f}m"  # noqa: E731
+    formatter = lambda props, value: f"{value:.2f}m"
     config = DimensionGizmoConfig(attr_name="length", axis=(1, 0, 0), text_formatter=formatter)
     assert config.text_formatter is not None
     assert callable(config.text_formatter)
 
 
 def test_text_formatter_receives_props_and_value():
-    formatter = lambda props, value: f"{props.label}={value}"  # noqa: E731
+    formatter = lambda props, value: f"{props.label}={value}"
     config = DimensionGizmoConfig(attr_name="length", axis=(1, 0, 0), text_formatter=formatter)
     props = SimpleNamespace(label="L")
     assert config.text_formatter(props, 3.14) == "L=3.14"

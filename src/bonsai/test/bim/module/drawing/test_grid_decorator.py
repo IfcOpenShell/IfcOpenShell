@@ -70,8 +70,6 @@ def _rendered_text(obj, monkeypatch, element=None):
 
 
 def _fake_obj(name):
-    # Mock's constructor special-cases the ``name`` kwarg for its own repr,
-    # so the ``.name`` attribute has to be assigned after construction.
     obj = Mock(spec=["name"])
     obj.name = name
     return obj
@@ -91,30 +89,22 @@ def test_letter_and_numeric_suffixes_render_in_full(monkeypatch, tag):
 
 
 def test_object_name_is_never_consulted_when_the_entity_is_reachable(monkeypatch):
-    # The Blender object name is a red herring here (looks pre-truncated);
-    # the element's AxisTag must still win.
     element = Mock(AxisTag="a.1")
     text = _rendered_text(_fake_obj("IfcGridAxis/a"), monkeypatch, element=element)
     assert text == "a.1"
 
 
 def test_missing_element_falls_back_to_object_name_untouched(monkeypatch):
-    # No linked IFC entity: fall back to the object name. A dotted tag with
-    # no real Blender duplicate suffix must be left exactly as-is.
     text = _rendered_text(_fake_obj("IfcGridAxis/a.1"), monkeypatch, element=None)
     assert text == "a.1"
 
 
 def test_missing_element_fallback_strips_only_a_real_blender_suffix(monkeypatch):
-    # Blender appended ".001" for a name collision; the fallback must strip
-    # only that trailing suffix, not the axis tag's own dot.
     text = _rendered_text(_fake_obj("IfcGridAxis/a.1.001"), monkeypatch, element=None)
     assert text == "a.1"
 
 
 def test_missing_element_fallback_does_not_strip_a_single_digit_suffix(monkeypatch):
-    # A single trailing digit is legitimate axis-tag content, not a
-    # Blender-generated ".001"-style duplicate suffix.
     text = _rendered_text(_fake_obj("IfcGridAxis/a.5"), monkeypatch, element=None)
     assert text == "a.5"
 
