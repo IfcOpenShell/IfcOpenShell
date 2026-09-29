@@ -44,6 +44,20 @@ class TestImplementsTool(NewFile):
         assert isinstance(subject(), bonsai.core.tool.Model)
 
 
+class TestExportCurves(NewFile):
+    def _make_curve_object(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        mesh = bpy.data.meshes.new("Curve")
+        mesh.from_pydata([(0.0, 0.0, 0.0), (1.0, 0.0, 0.5), (2.0, 0.0, 1.0)], [(0, 1), (1, 2)], [])
+        return bpy.data.objects.new("Curve", mesh)
+
+    def test_z_is_kept_when_preserved(self):
+        curves = subject.export_curves(self._make_curve_object(), preserve_z=True)
+        assert curves[0].Points.is_a("IfcCartesianPointList3D")
+        assert sorted(p[2] for p in curves[0].Points.CoordList) == [0.0, 0.5, 1.0]
+
+
 class TestGenerateOccurrenceName(NewFile):
     def test_generating_based_on_class(self):
         ifc = ifcopenshell.file()
