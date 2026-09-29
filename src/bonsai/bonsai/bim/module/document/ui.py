@@ -87,13 +87,13 @@ class BIM_PT_documents(Panel):
                 ifc_definition_id = active_document.ifc_definition_id
 
                 if active_document.document_type != "PROJECT":
-                    row.operator("bim.select_document_objects", text="", icon="RESTRICT_SELECT_OFF").document = (
-                        ifc_definition_id
-                    )
+                    row.operator(
+                        "bim.select_document_objects", text="", icon="RESTRICT_SELECT_OFF"
+                    ).document = ifc_definition_id
                     row.operator("bim.assign_document", text="", icon="BRUSH_DATA").document = ifc_definition_id
-                    row.operator("bim.enable_editing_document", text="", icon="GREASEPENCIL").document = (
-                        ifc_definition_id
-                    )
+                    row.operator(
+                        "bim.enable_editing_document", text="", icon="GREASEPENCIL"
+                    ).document = ifc_definition_id
                     row.operator("bim.remove_document", text="", icon="X").document = ifc_definition_id
         self.layout.template_list("BIM_UL_documents", "", self.props, "documents", self.props, "active_document_index")
 
