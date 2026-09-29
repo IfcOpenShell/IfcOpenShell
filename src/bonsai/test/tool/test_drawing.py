@@ -215,11 +215,6 @@ class TestCreateSvgSheet(NewFile):
 
 
 class TestConvertSvgToDxf(NewFile):
-    # A minimal SVG standing in for a real printed drawing: a `<g ifc:name="Drawing">`
-    # group with straight-line building geometry (as IfcConvert's SVG serializer emits it),
-    # plus annotation content (as bonsai's SvgWriter emits it) added as siblings of that
-    # group: plain text, multiline text with tspans, an SVG arc (angle annotation), a leader
-    # line, a revision cloud boundary polyline, and a path mixing straight and curved segments.
     SVG = """<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:ifc="http://www.ifcopenshell.org/ns" viewBox="0 0 210 297">
 <defs>
@@ -259,19 +254,15 @@ text.ANGLE, tspan.ANGLE {{ font-size: 3.0px; }}
             msp = doc.modelspace()
             entity_types = [e.dxftype() for e in msp]
 
-        # The straight-line wall from the linework group still converts as before.
         assert "LWPOLYLINE" in entity_types
 
-        # Annotation text (labels, multiline dimension text) is no longer dropped.
         texts = {e.dxf.text for e in msp if e.dxftype() == "TEXT"}
         assert texts == {"Wall Tag W1", "3000", "Dimension line"}
 
-        # A circular angle-annotation arc becomes a real DXF ARC, not a dropped path.
         arcs = [e for e in msp if e.dxftype() == "ARC"]
         assert len(arcs) == 1
         assert arcs[0].dxf.radius == pytest.approx(5.0)
 
-        # The leader `<line>` and revision cloud `<polyline>` are no longer dropped either.
         assert entity_types.count("LINE") >= 1
         assert entity_types.count("LWPOLYLINE") >= 2
 

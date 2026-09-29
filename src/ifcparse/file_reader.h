@@ -1,0 +1,426 @@
+/********************************************************************************
+ *                                                                              *
+ * This file is part of IfcOpenShell.                                           *
+ *                                                                              *
+ * IfcOpenShell is free software: you can redistribute it and/or modify         *
+ * it under the terms of the Lesser GNU General Public License as published by  *
+ * the Free Software Foundation, either version 3.0 of the License, or          *
+ * (at your option) any later version.                                          *
+ *                                                                              *
+ * IfcOpenShell is distributed in the hope that it will be useful,              *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of               *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                 *
+ * Lesser GNU General Public License for more details.                          *
+ *                                                                              *
+ * You should have received a copy of the Lesser GNU General Public License     *
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.         *
+ *                                                                              *
+ ********************************************************************************/
+
+/*********************************************************************************
+ *                                                                               *
+ * Reads a file and provides functions to access its                             *
+ * contents randomly and character by character                                  *
+ *                                                                               *
+ ********************************************************************************/
+
+#ifndef IFCSPFSTREAM_H
+#define IFCSPFSTREAM_H
+
+#include "ifc_parse_api.h"
+
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
+#include <deque>
+#include <list>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <cstring>
+#include <type_traits>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+#ifdef USE_MMAP
+#include <boost/iostreams/device/mapped_file.hpp>
+#endif
+
+// The cursor accessors sit on the tokenizer's innermost loop, one call per
+// byte; left to the compiler's heuristics some of them end up as calls.
+#if defined(_MSC_VER)
+#define IFC_READER_INLINE __forceinline
+#else
+#define IFC_READER_INLINE inline __attribute__((always_inline))
+#endif
+
+namespace ifcopenshell {
+
+struct file_reader_page {
+    std::vector<char> data;
+};
+
+struct caller_fed_tag {};
+
+template <typename>
+inline constexpr bool file_reader_dependent_false_v = false;
+
+class IFC_PARSE_API full_buffer_impl;
+class IFC_PARSE_API paged_file_impl;
+#ifdef USE_MMAP
+class IFC_PARSE_API mmap_impl;
+#endif
+class IFC_PARSE_API pushed_sequential_impl;
+
+template <typename Impl>
+class file_reader {
+public:
+    using impl_type = Impl;
+    using page = file_reader_page;
+
+    file_reader() = default;
+
+    explicit file_reader(const std::string& path)
+        : cursor_(0) {
+        if constexpr (std::is_same_v<Impl, full_buffer_impl>
+#ifdef USE_MMAP
+            || std::is_same_v<Impl, mmap_impl>
+#endif
+        ) {
+            impl_ = std::make_shared<Impl>(path);
+        } else {
+            static_assert(file_reader_dependent_false_v<Impl>, "This file_reader constructor is not supported for the selected backend");
+        }
+    }
+
+    explicit file_reader(const caller_fed_tag& tag)
+        : cursor_(0) {
+        static_cast<void>(tag);
+        if constexpr (std::is_same_v<Impl, full_buffer_impl>) {
+            impl_ = std::make_shared<Impl>(caller_fed_tag{});
+        } else if constexpr (std::is_same_v<Impl, pushed_sequential_impl>) {
+            impl_ = std::make_shared<Impl>();
+        } else {
+            static_assert(file_reader_dependent_false_v<Impl>, "This file_reader constructor is not supported for the selected backend");
+        }
+    }
+
+    file_reader(const std::string& content, const caller_fed_tag& tag)
+        : file_reader(caller_fed_tag{}) {
+        static_cast<void>(tag);
+        if constexpr (std::is_same_v<Impl, full_buffer_impl>
+            || std::is_same_v<Impl, pushed_sequential_impl>) {
+            impl_->push_next_page(content);
+        } else {
+            static_assert(file_reader_dependent_false_v<Impl>, "This file_reader constructor is not supported for the selected backend");
+        }
+    }
+
+    file_reader(const std::string& path, size_t page_size, size_t page_capacity)
+        : cursor_(0) {
+        if constexpr (std::is_same_v<Impl, paged_file_impl>) {
+            impl_ = std::make_shared<Impl>(path, page_size, page_capacity);
+        } else {
+            static_assert(file_reader_dependent_false_v<Impl>, "This file_reader constructor is not supported for the selected backend");
+        }
+    }
+
+    file_reader clone() const {
+        file_reader c(*this);
+        c.cursor_ = cursor_;
+        return c;
+    }
+
+    void seek(size_t position) {
+        if (position > size()) {
+            throw std::out_of_range("seek out of range");
+        }
+        cursor_ = position;
+    }
+
+    size_t tell() const { return cursor_; }
+
+    size_t size() const { return impl_->size(); }
+    IFC_READER_INLINE size_t remaining() const { return size() - cursor_; }
+
+    // The current contiguous bytes, valid until the shared page cache evicts
+    // them. An empty span asks callers to use the regular reader operations.
+    IFC_READER_INLINE std::pair<const char*, size_t> span() const {
+        if (eof()) {
+            return {nullptr, 0};
+        }
+        if constexpr (std::is_same_v<Impl, paged_file_impl>) {
+            const char* data = cached_(cursor_, 1);
+            return {data, cached_end_ - cursor_};
+        } else if constexpr (std::is_same_v<Impl, pushed_sequential_impl>) {
+            return {nullptr, 0};
+        } else {
+            return {impl_->data() + cursor_, remaining()};
+        }
+    }
+
+    IFC_READER_INLINE char peek() const {
+        if (cursor_ >= size()) {
+            throw std::out_of_range("peek at EOF");
+        }
+        if (const char* p = cached_(cursor_, 1)) {
+            return *p;
+        }
+        return impl_->get(cursor_);
+    }
+
+    IFC_READER_INLINE uint64_t peek_u64() const {
+        if (remaining() < sizeof(uint64_t)) {
+            throw std::out_of_range("peek_u64 at EOF");
+        }
+        if (const char* p = cached_(cursor_, sizeof(uint64_t))) {
+            uint64_t value;
+            std::memcpy(&value, p, sizeof(value));
+            return value;
+        }
+        return impl_->get_u64(cursor_);
+    }
+
+    IFC_READER_INLINE uint32_t peek_u32() const {
+        if (remaining() < sizeof(uint32_t)) {
+            throw std::out_of_range("peek_u32 at EOF");
+        }
+        if (const char* p = cached_(cursor_, sizeof(uint32_t))) {
+            uint32_t value;
+            std::memcpy(&value, p, sizeof(value));
+            return value;
+        }
+        return impl_->get_u32(cursor_);
+    }
+
+    IFC_READER_INLINE void increment(size_t count = 1) {
+        if (cursor_ + count > size()) {
+            throw std::out_of_range("increment past EOF");
+        }
+        cursor_ += count;
+    }
+
+    void push_next_page(const std::string& page_data) {
+        impl_->push_next_page(page_data);
+    }
+
+    void drop_pages() {
+        impl_->drop_pages(0);
+    }
+
+    void drop_pages(size_t up_to_position) {
+        impl_->drop_pages(up_to_position);
+    }
+
+    IFC_READER_INLINE bool eof() const {
+        return cursor_ >= size();
+    }
+
+    IFC_READER_INLINE char read() {
+        auto c = peek();
+        increment(1);
+        return c;
+    }
+
+    IFC_READER_INLINE char get(size_t position) const {
+        if (const char* p = cached_(position, 1)) {
+            return *p;
+        }
+        return impl_->get(position);
+    }
+
+private:
+    std::shared_ptr<Impl> impl_;
+    size_t cursor_ = 0;
+
+    // For the paged implementation: the page the cursor was last on, so
+    // consecutive reads don't each go through the page cache. The pointer
+    // is revalidated against the cache's eviction count.
+    mutable const char* cached_data_ = nullptr;
+    mutable size_t cached_begin_ = 0;
+    mutable size_t cached_end_ = 0;
+    mutable size_t cached_evictions_ = 0;
+
+    // A pointer to `count` bytes at `position` if they lie in one page,
+    // else nullptr. Always nullptr for a contiguous implementation, whose
+    // get() is already direct.
+    IFC_READER_INLINE const char* cached_(size_t position, size_t count) const {
+        if constexpr (std::is_same_v<Impl, paged_file_impl>) {
+            if (cached_data_ != nullptr && position >= cached_begin_ && position + count <= cached_end_ && cached_evictions_ == impl_->evictions()) {
+                return cached_data_ + (position - cached_begin_);
+            }
+            return cached_refresh_(position, count);
+        } else {
+            (void)position;
+            (void)count;
+            return nullptr;
+        }
+    }
+
+    // The slow half of cached_(): fetches the page and re-points the cache.
+    // Kept out of line so the check above inlines into every peek.
+#if defined(_MSC_VER)
+    __declspec(noinline)
+#else
+    __attribute__((noinline))
+#endif
+    const char* cached_refresh_(size_t position, size_t count) const {
+        if constexpr (std::is_same_v<Impl, paged_file_impl>) {
+            const size_t page_size = impl_->page_size();
+            const size_t index = position / page_size;
+            const auto page = impl_->page(index);
+            cached_data_ = page.first;
+            cached_begin_ = index * page_size;
+            cached_end_ = cached_begin_ + page.second;
+            cached_evictions_ = impl_->evictions();
+            if (position + count <= cached_end_) {
+                return cached_data_ + (position - cached_begin_);
+            }
+            return nullptr;
+        } else {
+            (void)position;
+            (void)count;
+            return nullptr;
+        }
+    }
+};
+
+class IFC_PARSE_API full_buffer_impl {
+public:
+    full_buffer_impl() = default;
+    explicit full_buffer_impl(const std::string& path);
+    explicit full_buffer_impl(const caller_fed_tag& tag);
+    full_buffer_impl(const std::string& content, const caller_fed_tag& tag);
+
+    size_t size() const { return size_; }
+    const char* data() const { return buf_.data(); }
+    char get(size_t position) const {
+        if (position >= size_) {
+            throw std::out_of_range("get out of range");
+        }
+        return buf_.data()[position];
+    }
+    uint32_t get_u32(size_t position) const {
+        if (position + sizeof(uint32_t) > size_) {
+            throw std::out_of_range("get_u32 out of range");
+        }
+        uint32_t value;
+        std::memcpy(&value, buf_.data() + position, sizeof(value));
+        return value;
+    }
+    uint64_t get_u64(size_t position) const {
+        if (position + sizeof(uint64_t) > size_) {
+            throw std::out_of_range("get_u64 out of range");
+        }
+        uint64_t value;
+        std::memcpy(&value, buf_.data() + position, sizeof(value));
+        return value;
+    }
+    void push_next_page(const std::string& page_data);
+    void drop_pages(size_t up_to_position);
+
+private:
+    std::vector<char> buf_;
+    size_t size_ = 0;
+};
+
+class IFC_PARSE_API paged_file_impl {
+public:
+    struct entry {
+        file_reader_page page;
+        std::list<size_t>::iterator it;
+    };
+
+    paged_file_impl(const std::string& path, size_t page_size, size_t page_capacity);
+    ~paged_file_impl();
+
+    // One page's bytes; the page stays valid until capacity() further pages
+    // have been fetched.
+    std::pair<const char*, size_t> page(size_t index) const {
+        const auto& p = fetchPage_(index);
+        return {p.data.data(), p.data.size()};
+    }
+    size_t page_size() const { return page_size_; }
+    size_t capacity() const { return capacity_; }
+    const std::string& path() const { return fn_; }
+    // Incremented whenever a page leaves the cache, so a pointer into a
+    // page can be checked for validity cheaply.
+    size_t evictions() const { return evictions_; }
+    size_t size() const { return file_size_; }
+    char get(size_t position) const;
+    uint32_t get_u32(size_t position) const;
+    uint64_t get_u64(size_t position) const;
+    void push_next_page(const std::string& page_data);
+    void drop_pages(size_t up_to_position);
+
+private:
+    const file_reader_page& fetchPage_(size_t page_index) const;
+    void touch_(std::unordered_map<size_t, entry>::iterator entry_it) const;
+    void evict_() const;
+
+    std::string fn_;
+    FILE* fp_ = nullptr;
+    size_t file_size_ = 0;
+    size_t page_size_ = 4096;
+    size_t capacity_ = 8;
+    mutable std::list<size_t> lru_;
+    mutable std::unordered_map<size_t, entry> map_;
+    mutable size_t evictions_ = 0;
+};
+
+#ifdef USE_MMAP
+class IFC_PARSE_API mmap_impl {
+public:
+    explicit mmap_impl(const std::string& path);
+
+    size_t size() const { return size_; }
+    const char* data() const { return map_.data(); }
+    char get(size_t position) const {
+        if (position >= size_) {
+            throw std::out_of_range("get out of range");
+        }
+        return map_.data()[position];
+    }
+    uint32_t get_u32(size_t position) const {
+        if (position + sizeof(uint32_t) > size_) {
+            throw std::out_of_range("get_u32 out of range");
+        }
+        uint32_t value;
+        std::memcpy(&value, map_.data() + position, sizeof(value));
+        return value;
+    }
+    uint64_t get_u64(size_t position) const {
+        if (position + sizeof(uint64_t) > size_) {
+            throw std::out_of_range("get_u64 out of range");
+        }
+        uint64_t value;
+        std::memcpy(&value, map_.data() + position, sizeof(value));
+        return value;
+    }
+    void push_next_page(const std::string& page_data);
+    void drop_pages(size_t up_to_position);
+
+private:
+    boost::iostreams::mapped_file_source map_;
+    size_t size_ = 0;
+};
+#endif
+
+class IFC_PARSE_API pushed_sequential_impl {
+public:
+    size_t size() const;
+    char get(size_t position) const;
+    uint32_t get_u32(size_t position) const;
+    uint64_t get_u64(size_t position) const;
+    void push_next_page(const std::string& page_data);
+    void drop_pages(size_t up_to_position);
+
+private:
+    std::deque<file_reader_page> pages_;
+    size_t discarded_page_bytes_ = 0;
+};
+
+} // namespace ifcopenshell
+
+#endif

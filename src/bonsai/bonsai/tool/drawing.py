@@ -1321,7 +1321,7 @@ class Drawing(bonsai.core.tool.Drawing):
             commands = json.loads(user_command)
             replacements = {"path": path}
             for command in commands:
-                command[0] = shutil.which(command[0]) or command[0]
+                command[0] = shutil.which(str(command[0])) or command[0]
                 subprocess.Popen([replacements.get(c, c) for c in command])
         else:
             if platform.system() == "Darwin":
@@ -2609,10 +2609,12 @@ class Drawing(bonsai.core.tool.Drawing):
                 subcontext = current_representation.ContextOfItems
                 current_representation_subcontext = tool.Geometry.get_subcontext_parameters(subcontext)
 
+            has_context = False
             for subcontext in subcontexts:
                 # prioritize already active representation if it matches the subcontext
                 # (element could have multiple representations in the same subcontext)
-                if current_representation_subcontext and subcontext == current_representation_subcontext:
+                if current_representation and subcontext == current_representation_subcontext:
+                    has_context = True
                     break
                 priority_representation = ifcopenshell.util.representation.get_representation(element, *subcontext)
                 if priority_representation:
@@ -2622,6 +2624,7 @@ class Drawing(bonsai.core.tool.Drawing):
                         obj=obj,
                         representation=priority_representation,
                     )
+                    has_context = True
                     break
 
         linked_handles: set[bpy.types.Object] = set()
@@ -2942,75 +2945,6 @@ class Drawing(bonsai.core.tool.Drawing):
         return mathutils.Matrix.Translation(location) @ rotation.to_matrix().to_4x4()
 
     @classmethod
-    def convert_svg_to_dxf(cls, svg_filepath: Path, dxf_filepath: Path) -> None:
-        import xml.etree.ElementTree as ET
-
-        import ezdxf
-
-        SVG = "{http://www.w3.org/2000/svg}"
-        IFC = "{http://www.ifcopenshell.org/ns}"
-
-        doc = ezdxf.new("R2010")
-        msp = doc.modelspace()
-        svg = ET.parse(svg_filepath).getroot()
-
-        def finalize_dxf():
-            doc.saveas(dxf_filepath)
-
-        drawing = svg.findall(f"{SVG}g[@{IFC}name]")
-        if not drawing:
-            finalize_dxf()
-            return
-        drawing = drawing[0]
-
-        NUMBER = r"-?\d+\.?\d+"
-        COORD = rf"{NUMBER},{NUMBER}"
-        POLYLINE_PATTERN = rf"M{COORD} (?:L{COORD} ?)+Z? ?"
-        MULTI_POLYLINE_PATTERN = rf"^({POLYLINE_PATTERN})+$"
-
-        for element_g in drawing.findall(f"{SVG}g"):
-            paths = element_g.findall(f"{SVG}path")
-
-            for path in paths:
-                # For some reason `<path/>` without "d" attribute can occur too. See #6871.
-                # It's unclear whether this issue is still present with the updated ifcopenshell core,
-                # but adding this fix for now. Could be reveted later.
-                if "d" not in path.attrib:
-                    continue
-                path = path.attrib["d"]
-
-                if not re.match(MULTI_POLYLINE_PATTERN, path):
-                    # print(f'Path "{path}" doesn\'t match expected pattern {MULTI_POLYLINE_PATTERN}')
-                    continue
-
-                for polyline_path in re.findall(POLYLINE_PATTERN, path):
-                    points = re.findall(rf"{NUMBER}", polyline_path)
-                    points = [float(p) for p in points]
-                    POINT_SIZE = 2
-
-                    grouped_points = []
-                    for i in range(0, len(points), POINT_SIZE):
-                        point = points[i : i + POINT_SIZE]
-                        point[1] *= -1
-                        grouped_points.append(point)
-                    points = grouped_points
-
-                    # Z marks closed polylines
-                    is_closed_polyline = polyline_path.rstrip().endswith("Z")
-                    if is_closed_polyline or len(points) > 2:
-                        msp.add_lwpolyline(points, close=is_closed_polyline)
-                    else:  # LINE
-                        msp.add_line(*points)
-
-        # Annotations (text labels/tags/dimension text, leaders, angle/radius annotations,
-        # revision clouds, etc.) are drawn as siblings of `drawing` above (not nested inside
-        # it), and can use curved path commands (e.g. SVG arcs for angle annotations), so they
-        # need their own, more general walk of the document.
-        cls._convert_svg_annotations_to_dxf(svg, msp, drawing, SVG)
-
-        finalize_dxf()
-
-    @classmethod
     def _convert_svg_annotations_to_dxf(cls, svg, msp, drawing, SVG: str) -> None:
         """Emit DXF TEXT entities and curved/straight geometry for SVG annotation content.
 
@@ -3058,8 +2992,7 @@ class Drawing(bonsai.core.tool.Drawing):
                 return IDENTITY
             matrix = IDENTITY
             for name, args in re.findall(r"(\w+)\s*\(([^)]*)\)", transform_str):
-                values = [float(v) for v in re.findall(NUMBER_RE, args)]
-                if not values:
+                if not (values := [float(v) for v in re.findall(NUMBER_RE, args)]):
                     continue
                 if name == "translate":
                     tx = values[0]
@@ -3103,8 +3036,7 @@ class Drawing(bonsai.core.tool.Drawing):
             default_size = 4.13  # matches default.css `text, tspan` font-size (2.5mm), used as a fallback.
             for match in re.finditer(r"([^{}]+)\{([^{}]*)\}", style_text):
                 selector, body = match.group(1), match.group(2)
-                size_match = re.search(rf"font-size:\s*({NUMBER_RE})", body)
-                if not size_match:
+                if not (size_match := re.search(rf"font-size:\s*({NUMBER_RE})", body)):
                     continue
                 size = float(size_match.group(1))
                 for selector_part in selector.split(","):
@@ -3148,8 +3080,7 @@ class Drawing(bonsai.core.tool.Drawing):
             lines = tspans if tspans else [element]
 
             for tspan in lines:
-                text_content = (tspan.text or "").strip()
-                if not text_content:
+                if not (text_content := (tspan.text or "").strip()):
                     continue
                 local_x = get_number(tspan.get("x"), base_x)
                 dy_em = get_number(tspan.get("dy"), 0.0)
@@ -3175,8 +3106,7 @@ class Drawing(bonsai.core.tool.Drawing):
             emit_straight_points(points, closed=False)
 
         def emit_polyline(element, matrix) -> None:
-            points_str = (element.get("points") or "").strip()
-            if not points_str:
+            if not (points_str := (element.get("points") or "").strip()):
                 return
             numbers = [float(n) for n in re.findall(NUMBER_RE, points_str)]
             points = [to_dxf(matrix_apply(matrix, (numbers[i], numbers[i + 1]))) for i in range(0, len(numbers) - 1, 2)]
@@ -3268,8 +3198,7 @@ class Drawing(bonsai.core.tool.Drawing):
         PATH_TOKEN_RE = re.compile(rf"([MLHVCSQTAZmlhvcsqtaz])|({NUMBER_RE})")
 
         def emit_path(element, matrix) -> None:
-            d = element.get("d")
-            if not d:
+            if not (d := element.get("d")):
                 return
             tokens = [(t[0] or None, t[1]) for t in PATH_TOKEN_RE.findall(d)]
 
@@ -3410,6 +3339,73 @@ class Drawing(bonsai.core.tool.Drawing):
                 walk(child, own_matrix)
 
         walk(svg, IDENTITY)
+
+    @classmethod
+    def convert_svg_to_dxf(cls, svg_filepath: Path, dxf_filepath: Path) -> None:
+        import xml.etree.ElementTree as ET
+
+        import ezdxf
+
+        SVG = "{http://www.w3.org/2000/svg}"
+        IFC = "{http://www.ifcopenshell.org/ns}"
+
+        doc = ezdxf.new("R2010")
+        msp = doc.modelspace()
+        svg = ET.parse(svg_filepath).getroot()
+
+        def finalize_dxf():
+            doc.saveas(dxf_filepath)
+
+        drawing = svg.findall(f"{SVG}g[@{IFC}name]")
+        if not drawing:
+            finalize_dxf()
+            return
+        drawing = drawing[0]
+
+        NUMBER = r"-?\d+\.?\d+"
+        COORD = rf"{NUMBER},{NUMBER}"
+        POLYLINE_PATTERN = rf"M{COORD} (?:L{COORD} ?)+Z? ?"
+        MULTI_POLYLINE_PATTERN = rf"^({POLYLINE_PATTERN})+$"
+
+        for element_g in drawing.findall(f"{SVG}g"):
+            paths = element_g.findall(f"{SVG}path")
+
+            for path in paths:
+                # For some reason `<path/>` without "d" attribute can occur too. See #6871.
+                # It's unclear whether this issue is still present with the updated ifcopenshell core,
+                # but adding this fix for now. Could be reveted later.
+                if "d" not in path.attrib:
+                    continue
+                path = path.attrib["d"]
+
+                if not re.match(MULTI_POLYLINE_PATTERN, path):
+                    # print(f'Path "{path}" doesn\'t match expected pattern {MULTI_POLYLINE_PATTERN}')
+                    continue
+
+                for polyline_path in re.findall(POLYLINE_PATTERN, path):
+                    points = re.findall(rf"{NUMBER}", polyline_path)
+                    points = [float(p) for p in points]
+                    POINT_SIZE = 2
+
+                    grouped_points = []
+                    for i in range(0, len(points), POINT_SIZE):
+                        point = points[i : i + POINT_SIZE]
+                        point[1] *= -1
+                        grouped_points.append(point)
+                    points = grouped_points
+
+                    # Z marks closed polylines
+                    is_closed_polyline = polyline_path.rstrip().endswith("Z")
+                    if is_closed_polyline or len(points) > 2:
+                        msp.add_lwpolyline(points, close=is_closed_polyline)
+                    else:  # LINE
+                        msp.add_line(*points)
+
+        # Annotations are siblings of `drawing` and can use curved path commands (e.g. SVG arcs),
+        # so they need their own, more general walk of the document.
+        cls._convert_svg_annotations_to_dxf(svg, msp, drawing, SVG)
+
+        finalize_dxf()
 
     @classmethod
     def remove_drawing_from_sheet(cls, reference: ifcopenshell.entity_instance) -> None:
