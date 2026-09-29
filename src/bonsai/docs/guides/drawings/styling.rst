@@ -167,18 +167,17 @@ above regardless of which loads first.
    * - Selector
      - Controls
    * - ``path.outline``
-     - The silhouette edge of an object, its outer boundary as seen from
-       the camera. Drawn heaviest of the four.
+     - The silhouette of an object as seen from the camera, including both
+       outer boundaries and contours. Drawn heaviest of the four.
    * - ``path.boundary``
-     - A strong edge between two clearly different faces (for example
-       where a wall meets a roof).
+     - An edge with only one adjacent face, indicating a non-manifold mesh.
    * - ``path.crease``
-     - A moderate edge, a visible but softer change in surface direction.
+     - A valley where two faces form an angle steep enough to exceed the threshold.
    * - ``path.sharp``
-     - A minor edge, a small but real change in direction.
+     - A ridge where two faces form an angle steep enough to exceed the threshold.
    * - ``path.flush``
-     - An edge between two faces that are nearly coplanar. Drawn
-       lightest, often barely visible.
+     - An edge between two non-coplanar faces that do not pass the angle
+       threshold for crease (valley) or sharp (ridge). Drawn lightest.
 
 Line weights
 ^^^^^^^^^^^^
