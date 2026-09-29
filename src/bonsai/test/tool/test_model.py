@@ -588,25 +588,6 @@ class TestGenerateStair2DProfile(NewFile):
         self.compare_data(generated_profile, expected_profile)
 
 
-class TestApplyIfcMaterialChangesToleratesStaleIfcDefinitionId(NewFile):
-    def test_run(self):
-        from unittest import mock
-
-        ifc_file = ifcopenshell.file()
-        tool.Ifc.set(ifc_file)
-        element = ifc_file.createIfcWall()
-        representation = ifc_file.createIfcShapeRepresentation()
-        obj = bpy.data.objects.new("Object", (mesh := bpy.data.meshes.new("Mesh")))
-        tool.Ifc.link(element, obj)
-        stale_id = representation.id()
-        tool.Geometry.get_mesh_props(mesh).ifc_definition_id = stale_id
-        ifc_file.remove(representation)
-
-        with mock.patch("bonsai.core.geometry.switch_representation") as switch_representation:
-            subject.apply_ifc_material_changes([element])
-        switch_representation.assert_not_called()
-
-
 class TestUsingArrays(NewFile):
     @staticmethod
     def _array_objects() -> list[bpy.types.Object]:
@@ -715,6 +696,25 @@ class TestUsingArrays(NewFile):
 
         bpy.ops.bim.remove_array(item=0)
         assert ifcopenshell.util.element.get_pset(parent_element, "BBIM_Array") is None
+
+
+class TestApplyIfcMaterialChangesToleratesStaleIfcDefinitionId(NewFile):
+    def test_run(self):
+        from unittest import mock
+
+        ifc_file = ifcopenshell.file()
+        tool.Ifc.set(ifc_file)
+        element = ifc_file.createIfcWall()
+        representation = ifc_file.createIfcShapeRepresentation()
+        obj = bpy.data.objects.new("Object", (mesh := bpy.data.meshes.new("Mesh")))
+        tool.Ifc.link(element, obj)
+        stale_id = representation.id()
+        tool.Geometry.get_mesh_props(mesh).ifc_definition_id = stale_id
+        ifc_file.remove(representation)
+
+        with mock.patch("bonsai.core.geometry.switch_representation") as switch_representation:
+            subject.apply_ifc_material_changes([element])
+        switch_representation.assert_not_called()
 
 
 class TestApplyIfcMaterialChanges(NewFile):
