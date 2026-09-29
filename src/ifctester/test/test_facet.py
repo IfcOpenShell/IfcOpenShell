@@ -345,6 +345,31 @@ class TestAttribute:
         )
 
         ifc = ifcopenshell.file()
+        facet = Attribute(name="Description", value="Foobar", cardinality="optional")
+        run(
+            "An optional facet with a null attribute value should pass",
+            facet=facet,
+            inst=ifc.createIfcWall(Name="Waldo"),
+            expected=True,
+        )
+        ifc = ifcopenshell.file()
+        facet = Attribute(name="Name", cardinality="optional")
+        run(
+            "An optional facet with an empty string attribute value should pass",
+            facet=facet,
+            inst=ifc.createIfcWall(Name=""),
+            expected=True,
+        )
+        ifc = ifcopenshell.file()
+        facet = Attribute(name="Description", value="Foobar", cardinality="optional")
+        run(
+            "An optional facet with a present but non-matching value should fail",
+            facet=facet,
+            inst=ifc.createIfcWall(Name="Waldo", Description="NotFoobar"),
+            expected=False,
+        )
+
+        ifc = ifcopenshell.file()
         facet = Attribute(name="Name")
         run("Attributes with null values always fail", facet=facet, inst=ifc.createIfcWall(), expected=False)
         # The logic is that unfortunately most BIM users cannot differentiate between the two.
@@ -1563,6 +1588,16 @@ class TestPartOf:
         run("A required facet checks all parameters as normal", facet=facet, inst=subelement, expected=True)
         facet = PartOf(name="IFCELEMENTASSEMBLY", relation="IFCRELAGGREGATES", cardinality="prohibited")
         run("A prohibited facet returns the opposite of a required facet", facet=facet, inst=subelement, expected=False)
+
+        ifc = ifcopenshell.file()
+        standalone = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        facet = PartOf(name="IFCELEMENTASSEMBLY", relation="IFCRELAGGREGATES", cardinality="optional")
+        run(
+            "An optional facet with no relationship should pass",
+            facet=facet,
+            inst=standalone,
+            expected=True,
+        )
 
         ifc = ifcopenshell.file()
         element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcSlab")
