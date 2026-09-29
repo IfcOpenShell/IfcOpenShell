@@ -40,6 +40,10 @@ dev = [
 "Homepage" = "http://ifcopenshell.org"
 "Bug Tracker" = "https://github.com/ifcopenshell/ifcopenshell/issues"
 
+[project.scripts]
+ifcopenshell-draw = "ifcopenshell.draw:cli"
+ifcopenshell-validate = "ifcopenshell.validate:main"
+
 [tool.setuptools.packages.find]
 include = ["ifcopenshell*"]
 

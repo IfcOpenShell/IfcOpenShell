@@ -20,10 +20,10 @@ You can execute IfcTester using a CLI.
 .. code-block:: console
 
     # Validate an IFC with an IDS and report to console
-    python -m ifctester example.ids example.ifc
+    ifctester example.ids example.ifc
 
     # Generate a HTML report instead
-    python -m ifctester example.ids example.ifc -r Html -o report.html
+    ifctester example.ids example.ifc -r Html -o report.html
 
 Alternatively, you can use Python:
 
@@ -40,10 +40,10 @@ Alternatively, you can use Python:
     spec.applicability.append(ids.Entity(name="IFCWALL"))
     requirement = ids.Property(
         baseName="IsExternal",
-        value="TRUE", 
-        propertySet="Pset_WallCommon", 
+        value="TRUE",
+        propertySet="Pset_WallCommon",
         dataType="IfcBoolean",
-        uri="https://identifier.buildingsmart.org/uri/.../prop/LoadBearing", 
+        uri="https://identifier.buildingsmart.org/uri/.../prop/LoadBearing",
         instructions="Walls need to be load bearing.",
         cardinality="required")
     spec.requirements.append(requirement)
@@ -86,9 +86,9 @@ CLI manual
 
 .. code-block:: console
 
-    $ python -m ifctester -h
+    $ ifctester -h
 
-    usage: __main__.py [-h] [-r REPORTER] [--no-color] [--excel-safe] [-o OUTPUT] ids [ifc]
+    usage: ifctester [-h] [-r REPORTER] [--no-color] [--excel-safe] [-o OUTPUT] ids [ifc]
 
     Uses an IDS to audit an IFC
 
