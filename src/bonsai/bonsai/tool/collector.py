@@ -114,6 +114,21 @@ class Collector(bonsai.core.tool.Collector):
                 cls.link_collection_child_safe(tool.Blender.get_object_bim_props(project_obj).collection, collection)
             if not tool.Spatial.get_spatial_props().is_visible:
                 obj.hide_viewport = True
+        elif element.is_a("IfcSpatialZone") and (parent := ifcopenshell.util.element.get_aggregate(element)):
+            # Spatial zones are non-hierarchical so they don't get their own
+            # collection, but when aggregated in the spatial tree they belong
+            # in the collection of their spatial parent.
+            if tool.Geometry.is_locked(element):
+                tool.Geometry.lock_object(obj)
+            while parent.is_a("IfcSpace") or parent.is_a("IfcSpatialZone"):
+                parent = ifcopenshell.util.element.get_aggregate(parent)
+            parent_obj = tool.Ifc.get_object(parent)
+            if not (collection := tool.Blender.get_object_bim_props(parent_obj).collection):
+                cls.assign(parent_obj)
+                collection = tool.Blender.get_object_bim_props(parent_obj).collection
+            cls.link_collection_object_safe(collection, obj)
+            if not tool.Spatial.get_spatial_props().is_visible:
+                obj.hide_viewport = True
         elif element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
             if collection := cls._create_own_collection(obj):
                 cls.link_collection_object_safe(collection, obj)
