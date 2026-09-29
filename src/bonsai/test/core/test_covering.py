@@ -28,7 +28,7 @@ leaving the user with no error and no created object. See NoPolygonFound.
 import pytest
 
 import bonsai.core.covering as subject
-from test.core.bootstrap import covering, ifc, root, spatial
+from test.core.bootstrap import covering, ifc, root, spatial  # ruff: ignore[unused-import]
 
 
 class TestAddInstanceFlooringCoveringFromCursorNoPolygon:
