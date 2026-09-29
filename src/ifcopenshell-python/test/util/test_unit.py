@@ -636,7 +636,7 @@ class TestConvertFileLengthUnits(test.bootstrap.IFC2X3):
             assert parameters
             assert parameters.e == 10
             assert parameters.n == 0
-            assert parameters.scale == 1
+            assert parameters.scale == 0.001
             crs = ifcopenshell.util.element.get_pset(output.by_type("IfcProject")[0], name="ePSet_ProjectedCRS")
             assert crs["MapUnit"] == "METRE"
         else:
