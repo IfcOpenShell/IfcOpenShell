@@ -202,11 +202,8 @@ def get_names_tree(tree: ast.Module) -> dict[str, set[SubnameType]]:
     names_tree: dict[str, set[SubnameType]] = {}
     for node in tree.body:
         subnames: set[SubnameType] = set()
-        # Raw function definitions seen so far in this class, keyed by short
-        # name, in source order. Used to resolve which definition a
-        # `property(getter, setter)` / `staticmethod(func)` wrapper refers
-        # to without depending on `set` iteration order, which is randomized
-        # per-process and previously made this lookup nondeterministic.
+        # Function definitions in source order, keyed by name, so wrappers
+        # resolve deterministically.
         functions_by_name: dict[str, list[str]] = {}
         node_name = None
         if isinstance(node, ast.ClassDef):
@@ -268,23 +265,14 @@ def get_names_tree(tree: ast.Module) -> dict[str, set[SubnameType]]:
                         if len_args in (1, 2):
 
                             def claim_function(name: str, prefer_min_arity: bool) -> Union[str, None]:
-                                candidates = functions_by_name.get(name)
-                                if not candidates:
+                                if not (candidates := functions_by_name.get(name)):
                                     return None
                                 picked = (min if prefer_min_arity else max)(candidates, key=_count_params)
                                 candidates.remove(picked)
                                 subnames.discard(picked)
                                 return picked
 
-                            # `args` preserves declaration order: the first distinct name is the
-                            # getter (or the sole wrapped function for `staticmethod`), the
-                            # second, when present, is the setter (e.g. `description =
-                            # property(description, description)` only names one distinct
-                            # function and is claimed once, same as before). Resolving by
-                            # position, and preferring the lower-arity definition for the
-                            # getter, disambiguates getter/setter pairs that share a name,
-                            # instead of picking whichever same-named definition a
-                            # hash-ordered lookup happened to yield first.
+                            # Getter is the first distinct name (lowest arity), setter the second.
                             distinct_names = list(dict.fromkeys(args))
                             wrapped_function = None
                             for i, name in enumerate(distinct_names):
@@ -331,9 +319,7 @@ def get_names_tree(tree: ast.Module) -> dict[str, set[SubnameType]]:
                     if text.startswith("def "):
                         functions_by_name.setdefault(text[len("def ") :].split("(", 1)[0], []).append(text)
 
-            # Function definitions that are still underscore-prefixed at this point
-            # were never claimed by a `property()`/`staticmethod()` wrapper above,
-            # so they're genuinely private and can be hidden from the output.
+            # Underscore-prefixed definitions not claimed by a wrapper are private.
             subnames = {s for s in subnames if not _is_hidden_def(s)}
             if not subnames:
                 node_name += " ..."
