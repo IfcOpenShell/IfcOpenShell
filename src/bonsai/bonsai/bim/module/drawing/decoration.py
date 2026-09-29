@@ -430,10 +430,12 @@ class BaseDecorator:
 
         blf.size(font_id, font_size_px)
 
+        w, h = None, None
         if box_alignment or center or vcenter:
             w, h = blf.dimensions(font_id, text)
 
         if box_alignment:
+            assert w is not None and h is not None
             box_alignment_offset = Vector((0, 0))
             if "bottom" in box_alignment:
                 pass
@@ -455,10 +457,12 @@ class BaseDecorator:
         else:
             # horizontal centering
             if center:
+                assert w is not None
                 pos -= Vector((cos, sin)) * w * 0.5
 
             # vertical centering
             if vcenter:
+                assert h is not None
                 pos -= Vector((-sin, cos)) * h * 0.5
 
             # side-shifting
@@ -1006,6 +1010,8 @@ class FallDecorator(BaseDecorator):
             O = A.copy()
             O.z = B.z
             run = (B - O).length
+
+            angle_tg = None
             if run != 0:
                 angle_tg = rise / run
                 angle = round(degrees(atan(angle_tg)))
@@ -1023,6 +1029,7 @@ class FallDecorator(BaseDecorator):
             elif object_type == "SLOPE_PERCENT":
                 if angle == 90:
                     return "-"
+                assert angle_tg is not None
                 return f"{round(angle_tg * 100)} %"
             return "NO DATA"
 
@@ -1254,6 +1261,7 @@ class SectionLevelDecorator(BaseDecorator):
         }
 
         # process edges
+        text_position, text_dir = None, None
         for edge in edges_original:
             v0, v1 = winspace_verts[edge[0]], winspace_verts[edge[1]]
             start_i = len(output_verts)
@@ -1272,6 +1280,7 @@ class SectionLevelDecorator(BaseDecorator):
             add_verts_sequence([v0 + gap, v1 - gap], start_i, **out_kwargs)
 
         self.draw_lines(context, obj, output_verts, output_edges)
+        assert text_position is not None and text_dir is not None
         self.draw_labels(context, obj, self.get_splines(obj), text_position.to_2d(), text_dir.to_2d())
 
     def draw_labels(self, context, obj, splines, text_position, text_dir):
@@ -1559,43 +1568,53 @@ class SectionDecorator(BaseDecorator):
             v0, v1 = winspace_verts[edge[0]], winspace_verts[edge[1]]
             start_i = len(output_verts)
 
+            circle_head = None
             if display_start_circle or display_end_circle:
                 circle_head = get_circle_head(circle_size)
 
-            if display_start_symbol or display_end_symbol or connect_markers:
+            triangle_head, divider_offset, edge_dir_circle = None, None, None
+            display_symbol = display_start_symbol or display_end_symbol
+            if display_symbol or connect_markers:
                 edge_dir = (v1 - v0).normalized()
                 side = (edge_dir.yx * Vector((1, -1))).to_3d()
                 edge_dir_circle = edge_dir * circle_size
 
-            if display_start_symbol or display_end_symbol:
-                triangle_head = get_triangle_head(edge_dir, -side, triangle_length, triangle_width)
-                divider_offset = []
-                divider_offset.append(edge_dir_circle if connect_markers else edge_dir_circle * 3)
-                divider_offset.append(edge_dir_circle)
+                if display_symbol:
+                    triangle_head = get_triangle_head(edge_dir, -side, triangle_length, triangle_width)
+                    divider_offset = []
+                    divider_offset.append(edge_dir_circle if connect_markers else edge_dir_circle * 3)
+                    divider_offset.append(edge_dir_circle)
 
             if display_start_circle:
+                assert circle_head is not None
                 start_i = add_verts_sequence([v + v0 for v in circle_head], start_i, **out_kwargs, closed=True)
                 # circle middle divider
                 if not display_start_symbol:
+                    assert divider_offset is not None
                     start_i = add_verts_sequence(
                         [v0 + divider_offset[0], v0 - divider_offset[1]], start_i, **out_kwargs
                     )
 
             if display_start_symbol:
+                assert triangle_head is not None
                 start_i = add_verts_sequence([v + v0 for v in triangle_head], start_i, **out_kwargs, closed=True)
 
             if display_end_circle:
+                assert circle_head is not None
                 start_i = add_verts_sequence([v + v1 for v in circle_head], start_i, **out_kwargs, closed=True)
                 # circle middle divider
                 if not display_end_symbol:
+                    assert divider_offset is not None
                     start_i = add_verts_sequence(
                         [v1 + divider_offset[1], v1 - divider_offset[0]], start_i, **out_kwargs
                     )
 
             if display_end_symbol:
+                assert triangle_head is not None
                 start_i = add_verts_sequence([v + v1 for v in triangle_head], start_i, **out_kwargs, closed=True)
 
             if connect_markers:
+                assert edge_dir_circle is not None
                 gap = []
                 gap.append(edge_dir_circle if display_start_symbol else Vector((0, 0, 0)))
                 gap.append(edge_dir_circle if display_end_symbol else Vector((0, 0, 0)))
@@ -1681,6 +1700,12 @@ class CutDecorator:
         self.addon_prefs = tool.Blender.get_addon_preferences()
         selected_elements_color = self.addon_prefs.decorator_color_selected
         self.fallback_colour = (0.3, 0.3, 0.3, 1)
+
+        # Evaluate camera movement once per redraw rather than twice per object: is_camera_moved()
+        # runs eval()/numpy on the camera matrix and, as a side effect, refreshes the stored
+        # checksum on the first True result - so calling it per object also made the second call
+        # (fill) see an already-updated checksum and skip recalculating when it shouldn't.
+        self.camera_moved = self.is_camera_moved()
 
         all_vertices = []
         all_edges = []
@@ -1807,23 +1832,35 @@ class CutDecorator:
 
         # Currently selected objects must be recalculated as they may be being moved / edited.
         # If the camera is selected, we also recalculate as the user may be moving the camera.
+        is_selected = obj.select_get()
+        recalc_cut = not has_cut_cache or is_selected or self.camera_moved
+        recalc_fill = not has_fill_cache or is_selected or self.camera_moved
+        if not (recalc_cut or recalc_fill):
+            return
 
-        if not has_cut_cache or obj.select_get() or self.is_camera_moved():
-            self.recalculate_cut(context, obj, element)
-        if not has_fill_cache or obj.select_get() or self.is_camera_moved():
-            self.recalculate_fill(context, obj, element)
+        # The intersection test builds a bmesh and scans every vertex; both recalculations need
+        # the same answer, so compute it once here rather than once in each.
+        is_intersecting = tool.Drawing.is_intersecting_camera(obj, context.scene.camera)
+        if recalc_cut:
+            self.recalculate_cut(context, obj, element, is_intersecting)
+        if recalc_fill:
+            self.recalculate_fill(context, obj, element, is_intersecting)
 
-    def recalculate_cut(self, context, obj: bpy.types.Object, element: ifcopenshell.entity_instance) -> None:
-        if tool.Drawing.is_intersecting_camera(obj, context.scene.camera):
+    def recalculate_cut(
+        self, context, obj: bpy.types.Object, element: ifcopenshell.entity_instance, is_intersecting: bool
+    ) -> None:
+        if is_intersecting:
             verts, edges = tool.Drawing.bisect_mesh(obj, context.scene.camera)
             DecoratorData.cut_cache[element.id()] = (verts, edges)
         else:
             DecoratorData.cut_cache[element.id()] = (False, False)
 
-    def recalculate_fill(self, context, obj: bpy.types.Object, element: ifcopenshell.entity_instance) -> None:
+    def recalculate_fill(
+        self, context, obj: bpy.types.Object, element: ifcopenshell.entity_instance, is_intersecting: bool
+    ) -> None:
         element_id = element.id()
 
-        if not tool.Drawing.is_intersecting_camera(obj, context.scene.camera):
+        if not is_intersecting:
             DecoratorData.fill_cache[element_id] = {}
             return
 
@@ -1876,6 +1913,8 @@ class CutDecorator:
             layer_set = material
             offset = 0
             sense_factor = 1
+        else:
+            assert False, material
 
         if len(layer_set.MaterialLayers) == 1:
             material = layer_set.MaterialLayers[0].Material
@@ -1902,6 +1941,8 @@ class CutDecorator:
             co = Vector((0.0, 0.0, offset))
             no = tool.Drawing.get_extrusion_vector(element).normalized()
             no = Vector([1.0, 0.0, 0.0])
+        else:
+            assert False, usage
         no *= sense_factor
         last_i = len(layer_set.MaterialLayers) - 1
 

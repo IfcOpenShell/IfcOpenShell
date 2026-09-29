@@ -23,7 +23,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import bpy
-import ifcopenshell
 import numpy as np
 import pytest
 
@@ -203,6 +202,7 @@ class TestGetDebugInfo(NewFile):
         "bonsai_version",
         "bonsai_commit_hash",
         "bonsai_commit_date",
+        "bonsai_git_branch",
         "last_actions",
         "last_error",
     }
