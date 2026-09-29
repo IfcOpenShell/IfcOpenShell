@@ -226,13 +226,12 @@ def test_intersection_past_near_tolerance_admits_miter_overhang():
     from bonsai.bim.module.model.mep import _intersection_past_near
 
     intersection = Vector((5, 0, 0))
-    near = Vector((5.2, 0, 0))  # 0.2 overhang past the intersection
+    near = Vector((5.2, 0, 0))
     far = Vector((0, 0, 0))
 
     assert _intersection_past_near(intersection, near, far) is False
     assert _intersection_past_near(intersection, near, far, tolerance=0.25) is True
     assert _intersection_past_near(intersection, near, far, tolerance=0.1) is False
-    # A genuinely in-segment intersection stays rejected.
     assert _intersection_past_near(Vector((2.5, 0, 0)), near, far, tolerance=0.25) is False
 
 
@@ -249,8 +248,6 @@ def test_compute_bend_preview_polylines_mitred_overhang_within_tolerance():
     from bonsai import tool
     from bonsai.bim.module.model.mep import compute_bend_preview_polylines
 
-    # Seg1 runs +X and overhangs the corner at (5,0,0) by 0.2; Seg2 runs +Y
-    # with its mitred origin pulled back to (5,-0.2,0).
     start_obj, start_pair = _mock_obj_with_axis((0, 0, 0), (5.2, 0, 0))
     end_obj, end_pair = _mock_obj_with_axis((5, -0.2, 0), (5, 5, 0))
     intersection = (Vector((5, 0, 0)), Vector((5, 0, 0)))
@@ -270,7 +267,6 @@ def test_compute_bend_preview_polylines_mitred_overhang_within_tolerance():
     assert result["valid"] is True
     _leg_a_far, leg_a_endpoint = result["leg_a"]
     _leg_b_far, leg_b_endpoint = result["leg_b"]
-    # tangent_offset = radius * tan(90deg / 2) = 0.2; legs are 0.5 long.
     assert isclose(leg_a_endpoint.x, 5 - 0.7, abs_tol=1e-6)
     assert isclose(leg_a_endpoint.y, 0.0, abs_tol=1e-6)
     assert isclose(leg_b_endpoint.x, 5.0, abs_tol=1e-6)
