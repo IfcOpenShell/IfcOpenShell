@@ -327,7 +327,6 @@ class TestFilterElements(test.bootstrap.IFC4):
         ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"LoadBearing": True})
         pset2 = ifcopenshell.api.pset.add_pset(self.file, product=element2, name="Pset_WallCommon")
         ifcopenshell.api.pset.edit_pset(self.file, pset=pset2, properties={"LoadBearing": False})
-        # A boolean property must match every common spelling, not just "1"/"0".
         for true_value in ("TRUE", "True", "true", "1"):
             assert subject.filter_elements(self.file, f"IfcWall, Pset_WallCommon.LoadBearing={true_value}") == {
                 element
