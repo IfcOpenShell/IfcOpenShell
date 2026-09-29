@@ -1573,13 +1573,7 @@ class Blender(bonsai.core.tool.Blender):
             elif feature := tool.Parametric.is_object_editing(obj):
                 tool.Parametric.run_bim_op(feature.finish_op)
             else:
-                # A fresh LAYER2 wall deliberately falls through here so the
-                # caller routes TAB to item mode (see issue #8330). Wall
-                # parametric edit is entered from the pen icon on the wall
-                # gizmo, not from TAB, so TAB stays the universal item/edit
-                # mode key it has always been across every element type. The
-                # finish leg above still fires when a wall is already editing,
-                # so TAB continues to close an in-progress parametric edit.
+                # A fresh LAYER2 wall falls through so TAB routes to item mode (#8330).
                 return False
             return True
 

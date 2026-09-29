@@ -64,10 +64,6 @@ def _add_layer2_wall_occurrence():
 
 class TestTabOnFreshLayer2WallRoutesToItemMode(NewFile):
     def test_dispatch_falls_through_for_fresh_layer2_wall(self):
-        """A fresh LAYER2 wall is a parametric-edit target, but TAB must not
-        enter parametric edit (issue #8330). The dispatch returns False so the
-        caller routes the TAB to item mode; parametric edit is reached from the
-        pen icon on the wall gizmo instead."""
         wall, obj = _add_layer2_wall_occurrence()
         assert tool.Parametric.is_wall(wall) is True
         assert obj.BIMWallProperties.is_editing is False
