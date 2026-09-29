@@ -851,11 +851,8 @@ class EnableEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
 def cancel_editing_roof_path(context: bpy.types.Context) -> set[str]:
     ProfileDecorator.uninstall()
 
-    # This is also used as the decorator's exit_edit_mode_callback, which
-    # can fire with no active object (e.g. the user deselected everything
-    # while editing). See #9006.
-    obj = context.active_object
-    if obj is None:
+    # Also the decorator exit callback, which can fire with no active object (#9006).
+    if not (obj := context.active_object):
         return {"CANCELLED"}
     props = tool.Model.get_roof_props(obj)
     props.is_editing_path = False

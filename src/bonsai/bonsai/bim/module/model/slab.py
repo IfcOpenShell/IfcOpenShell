@@ -583,12 +583,8 @@ class DisableEditingSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator
 def disable_editing_extrusion_profile(context):
     ProfileDecorator.uninstall()
 
-    # This is also used as the decorator's exit_edit_mode_callback, which
-    # can fire with no active object (e.g. the user deselected everything
-    # while editing). mode_set requires an active object to poll, so guard
-    # both that call and the rest of the cleanup below. See #9006.
-    obj = context.active_object
-    if obj is None:
+    # Also the decorator exit callback, which can fire with no active object (#9006).
+    if not (obj := context.active_object):
         return {"CANCELLED"}
     if obj.mode == "EDIT":
         bpy.ops.object.mode_set(mode="OBJECT")
