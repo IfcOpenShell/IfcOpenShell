@@ -534,7 +534,7 @@ class Client:
         self.session.mount("http://", HTTPAdapter(max_retries=retries))
 
     def get(self, endpoint, params=None, is_auth_required=False):
-        headers = {"User-Agent": "IfcOpenShell.bSDD.py/0.8.0"}
+        headers = {"User-Agent": "IfcOpenShell.bSDD.py/0.9.0"}
         if is_auth_required:
             headers["Authorization"] = "Bearer " + self.get_access_token()
         response = self.session.get(f"{self.baseurl}{endpoint}", timeout=10, headers=headers, params=params or None)
@@ -550,7 +550,7 @@ class Client:
         return response.json()
 
     def _get_deprecated(self, endpoint, params=None, is_auth_required=False):
-        headers = {"User-Agent": "IfcOpenShell.bSDD.py/0.8.0"}
+        headers = {"User-Agent": "IfcOpenShell.bSDD.py/0.9.0"}
         old_baseurl = "https://bs-dd-api-prototype.azurewebsites.net/"
         if is_auth_required:
             headers["Authorization"] = "Bearer " + self.get_access_token()

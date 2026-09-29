@@ -31,7 +31,7 @@ jobs:
       - name: Install dependencies
         run: cat requirements-tools.txt | xargs -L1 uv tool install
 
-      # black doesn't catch all syntax errors, so we check them explicitly.
+      # The formatter doesn't catch all syntax errors, so we check them explicitly.
       - name: Check syntax errors
         id: syntax-errors
         run: |
@@ -43,17 +43,12 @@ jobs:
           exit $ERROR
         continue-on-error: true
 
-      - name: Black formatter
-        id: black
-        uses: psf/black@stable
-        continue-on-error: true
-
-      # Same check as above, but just for creating github annotations.
-      - name: Black formatter annotations
-        id: black-annotations
+      - name: Ruff format
+        id: ruff-format
         run: |
-          uv tool install black-codeclimate
-          black --diff --check . | black-codeclimate | uv run .github/scripts/black_to_github_annotations.py
+          # Once for the GitHub annotations, once for the diff in the log.
+          poe ruff-format --check --output-format=github || true
+          poe ruff-format --check --diff
         continue-on-error: true
 
       - name: ty check (venv setup)
@@ -115,8 +110,8 @@ jobs:
           if [ "${{ steps.syntax-errors.outcome }}" != "success" ]; then
             echo "::error::Syntax errors check failed, see 'syntax-errors' step for the details." && ERROR=1
           fi
-          if [ "${{ steps.black.outcome }}" != "success" ]; then
-            echo "::error::Black formatting check failed, see Summary or 'black' step for the details." && ERROR=1
+          if [ "${{ steps.ruff-format.outcome }}" != "success" ]; then
+            echo "::error::Ruff format check failed, see 'Ruff format' step for the details." && ERROR=1
           fi
           if [ "${{ steps.ruff.outcome }}" != "success" ]; then
             echo "::error::Ruff check failed, see Summary or 'ruff' step for the details." && ERROR=1

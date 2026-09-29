@@ -25,8 +25,16 @@ jobs:
             short_name: win64,
           }
           - {
+            name: "Windows ARM 64bit",
+            short_name: win-arm64
+          }
+          - {
             name: "Linux 64bit",
             short_name: linux64
+          }
+          - {
+            name: "Linux ARM 64bit",
+            short_name: linuxarm64
           }
           - {
             name: "MacOS Intel 64bit",

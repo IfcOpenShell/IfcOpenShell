@@ -27,11 +27,6 @@ endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON) # not necessary, but encouraged
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# The VERSION file in the repository root is the single source of truth for the
-# release version. Read it unconditionally so a plain source build reports the
-# real version through buildinfo.cpp instead of the stale hardcoded 0.8.0
-# fallback (see #8164). VERSION_OVERRIDE still controls the branch name used
-# when ADD_COMMIT_SHA embeds a commit sha.
 file(READ "../VERSION" "RELEASE_VERSION_")
 string(STRIP "${RELEASE_VERSION_}" RELEASE_VERSION)
 message(STATUS "Detected version '${RELEASE_VERSION}'")
@@ -88,7 +83,7 @@ option(MSVC_PARALLEL_BUILD "Multi-threaded compilation in Microsoft Visual Studi
 option(USE_VLD "Use Visual Leak Detector for debugging memory leaks, MSVC-only." OFF)
 option(USE_MMAP "Adds a command line options to parse IFC files from memory mapped files using Boost.Iostreams" OFF)
 option(NO_WARN "Disable all warnings" OFF)
-option(CREATE_BUNDLE "Copy .so files and don't create RPATHS or SOVERSION symlinks" )
+option(CREATE_BUNDLE "Copy .so files and don't create RPATHS or SOVERSION symlinks" OFF)
 
 option(BUILD_IFCGEOM "Build IfcGeom." ON)
 option(BUILD_IFCPYTHON "Build IfcPython." ON)
@@ -111,7 +106,8 @@ if(BUILD_BONSAIVIEWER AND NOT BUILD_BONSAIVIEWER_WGPU)
                    "(SceneLoader uses ViewportWindow); auto-enabling.")
     set(BUILD_BONSAIVIEWER_WGPU ON)
 endif()
-option(BUILD_PACKAGE "" OFF)
+# TODO: still needed?
+option(BUILD_PACKAGE "Install the Python module to lib/python3/dist-packages under the install prefix" OFF)
 
 option(
     BUILD_FUZZERS
@@ -237,6 +233,12 @@ if(NOT IS_ABSOLUTE ${INCLUDEDIR})
     set(INCLUDEDIR ${CMAKE_INSTALL_INCLUDEDIR})
 endif()
 message(STATUS "INCLUDEDIR: ${INCLUDEDIR}")
+
+# On Windows Release and Debug binaries are not compatible.
+# So we add a postfix to avoid issues and allow release and debug installations to coexist.
+if(WIN32)
+    set(CMAKE_DEBUG_POSTFIX "_d")
+endif()
 
 if(MSVC)
     # C4521: 'identifier' : class 'type' needs to have dll-interface to be used by clients of class 'type2'
@@ -373,10 +375,8 @@ if (WITH_ROCKSDB)
     install(TARGETS IFCOPENSHELL_RocksDB EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
 endif()
 
-# Find Boost: On win32 the (hardcoded) default is to use static libraries and
-# runtime, when doing running conda-build we pick what conda prepared for us.
+# When running conda-build we pick what conda prepared for us.
 if(WIN32 AND NOT DEFINED ENV{CONDA_BUILD})
-    set(Boost_USE_STATIC_LIBS ON)
     set(Boost_USE_STATIC_RUNTIME OFF)
     set(Boost_USE_MULTITHREADED ON)
 
@@ -385,20 +385,12 @@ if(WIN32 AND NOT DEFINED ENV{CONDA_BUILD})
     # compiled with a toolset different from default.
     if(MSVC)
         add_definitions(-DBOOST_ALL_NO_LIB)
-
-        # Necessary for boost version >= 1.67
-        set(BCRYPT_LIBRARIES "bcrypt.lib")
     endif()
 else()
     # Disable Boost's autolinking as the libraries to be linked to are supplied
     # already by CMake, and it's going to conflict if there are multiple, as is
     # the case in conda-forge's libboost feedstock.
     add_definitions(-DBOOST_ALL_NO_LIB)
-
-    if(WIN32)
-        # Necessary for boost version >= 1.67
-        set(BCRYPT_LIBRARIES "bcrypt.lib")
-    endif()
 endif()
 
 if(WASM_BUILD)
@@ -470,13 +462,6 @@ if(ENABLE_BUILD_OPTIMIZATIONS)
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
         set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} -O3")
     endif()
-else()
-    # @tfk I commented this out as this kind of defeats the purpose of RelWithDebInfo. For the
-    # best debugging experience simply use Debug. Note that in MSVC you can selectively toggle
-    # optimization on a specific file if you're investigating a specific issue.
-    # if(MSVC)
-    #     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /Od")
-    # endif()
 endif(ENABLE_BUILD_OPTIMIZATIONS)
 
 if(MSVC)
@@ -716,9 +701,6 @@ if(ADD_COMMIT_SHA)
     endif()
 endif(ADD_COMMIT_SHA)
 
-# Always expose the release version (from the VERSION file) to buildinfo.cpp so
-# that a build without commit-sha info reports the correct version instead of a
-# stale hardcoded fallback. See #8164.
 target_compile_definitions(IfcParse PRIVATE IFCOPENSHELL_VERSION_STRING=${RELEASE_VERSION})
 
 if(MSVC)

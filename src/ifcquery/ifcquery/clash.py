@@ -70,7 +70,7 @@ def _build_tree(model: ifcopenshell.file, elements: set[ifcopenshell.entity_inst
     """
     geom_settings = ifcopenshell.geom.settings()
     geom_settings.set("use-world-coords", True)
-    geom_tree = ifcopenshell.geom.tree()
+    geom_tree = ifcopenshell.geom.tree(backend="opencascade.trianglebvh")
     iterator = ifcopenshell.geom.iterator(geom_settings, model, multiprocessing.cpu_count(), include=list(elements))
     if not iterator.initialize():
         return None
@@ -81,14 +81,16 @@ def _build_tree(model: ifcopenshell.file, elements: set[ifcopenshell.entity_inst
     return geom_tree
 
 
-def _format_clash(clash_result, geom_tree: ifcopenshell.geom.tree, model: ifcopenshell.file) -> dict[str, Any]:
+def _format_clash(
+    clash_result, geom_tree: ifcopenshell.ifcopenshell_wrapper.tree, model: ifcopenshell.file
+) -> dict[str, Any]:
     """Format a single clash result to dict."""
     # clash result .a/.b are C++ wrapper entity_instances without .Name;
     # look up the Python entity from the model by id for proper serialization
     other = model.by_id(clash_result.b.id())
     return {
         "element": _ref(other),
-        "type": geom_tree.get_clash_type(clash_result.clash_type),
+        "type": ifcopenshell.geom.tree.get_clash_type(clash_result.clash_type),
         "distance": clash_result.distance,
         "p1": list(clash_result.p1),
         "p2": list(clash_result.p2),

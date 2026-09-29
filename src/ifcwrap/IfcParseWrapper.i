@@ -108,6 +108,8 @@
 // _add() because mixin defined add which adds transaction logic
 %rename("_add") add_entity;
 %rename("_remove") remove_entity;
+%rename("_batch") batch;
+%rename("_unbatch") unbatch;
 %rename("_traverse") traverse;
 %rename("_traverse_breadth_first") traverse_breadth_first;
 
@@ -319,10 +321,10 @@ private:
 
 	// True iff every instance referencing e has an id in ids. Stops at the
 	// first referencing instance outside the set, without materializing any.
-	bool _all_inverses_within(const express::base& e, const std::vector<int>& ids) {
+	bool _is_referenced_only_in(const express::base& e, const std::vector<int>& ids) {
 		auto e_ = e.as<express::entity>();
 		if (!e_) {
-			throw ifcopenshell::exception("Only entities with ids are supported for _all_inverses_within. Provided entity: '" + e.declaration().name() + "'.");
+			throw ifcopenshell::exception("Only entities with ids are supported for _is_referenced_only_in. Provided entity: '" + e.declaration().name() + "'.");
 		}
 		const std::unordered_set<uint32_t> allowed(ids.begin(), ids.end());
 		return $self->all_referencing_instances(e_.id(), [&allowed](uint32_t source_id) {

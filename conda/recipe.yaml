@@ -12,6 +12,7 @@ source:
 
 build:
   number: ${{ build }}
+  script: build.py
   dynamic_linking:
     binary_relocation: ${{ true if osx }}
 
@@ -38,6 +39,20 @@ requirements:
     - nlohmann_json
     - gmp
     - zlib
+    # bug upstream: https://github.com/conda-forge/vtk-feedstock/issues/459
+    - xorg-xorgproto
+    # TODO: Drop once occt is bumped to vtk >=9.4.2.
+    # Only needed because of old occt, which pins vtk-base <9.4.2: vtk built with TBB on Windows
+    # doesn't declare tbb-devel needed for find_package(VTK).
+    - if: win
+      then:
+        - tbb-devel
+    # TODO: Drop once occt is bumped to >=7.9.1.
+    # occt <7.9.1 CMake config lists bare `GL` in TKOpenGl/TKV3d link libraries,
+    # but doesn't depend on libgl-devel, which provides libGL.so for linking.
+    - if: linux
+      then:
+        - libgl-devel
   run:
     - python
     - shapely
@@ -125,10 +140,6 @@ about:
         <tr>
           <td>ArchLinux AUR Package git</td>
           <td><a href="https://aur.archlinux.org/packages/ifcopenshell-git"><img src="https://img.shields.io/aur/version/ifcopenshell-git" alt="AUR Badge"></a></td>
-        </tr>
-        <tr>
-          <td>BlenderBIM Add-on Chocolatey (under moderation)</td>
-          <td><a href="https://community.chocolatey.org/packages/blenderbim-nightly/"><img src="https://img.shields.io/chocolatey/v/blenderbim-nightly" alt="Chocolatey Badge"></a></td>
         </tr>
         <tr>
           <td>Sponsor development on OpenCollective</td>

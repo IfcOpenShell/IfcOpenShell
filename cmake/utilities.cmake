@@ -89,6 +89,26 @@ function(ifcopenshell_wasm_plugin_link_options TARGET REGISTRATION_SYMBOL)
     endforeach()
 endfunction()
 
+# Install the shared third-party runtime DLLs the given targets depend on (e.g. OCCT, PROJ).
+# Static library targets are skipped, as $<TARGET_RUNTIME_DLLS> doesn't support them.
+function(ifcopenshell_install_runtime_dlls)
+    cmake_parse_arguments(ARG "" "DESTINATION" "TARGETS" ${ARGN})
+    # Conda packages get these DLLs from their dependencies.
+    if(NOT MSVC OR DEFINED ENV{CONDA_BUILD})
+        return()
+    endif()
+    if(NOT ARG_DESTINATION)
+        set(ARG_DESTINATION ${CMAKE_INSTALL_BINDIR})
+    endif()
+
+    foreach(target ${ARG_TARGETS})
+        get_target_property(target_type ${target} TYPE)
+        if(target_type STREQUAL "SHARED_LIBRARY" OR target_type STREQUAL "MODULE_LIBRARY" OR target_type STREQUAL "EXECUTABLE")
+            install(FILES $<TARGET_RUNTIME_DLLS:${target}> DESTINATION "${ARG_DESTINATION}")
+        endif()
+    endforeach()
+endfunction()
+
 function(ifcopenshell_deploy_qt_runtime TARGET)
     if(NOT IFCOPENSHELL_DEPLOY_QT_RUNTIME)
         return()
@@ -140,6 +160,8 @@ function(ifcopenshell_deploy_qt_runtime TARGET)
         TARGET ${TARGET}
         OUTPUT_SCRIPT deploy_script
         NO_UNSUPPORTED_PLATFORM_ERROR
+        # Don't deploy vc_redist.exe with windeployqt.
+        NO_COMPILER_RUNTIME
     )
 
     if(NOT IFCOPENSHELL_DEPLOY_QT_TRANSLATIONS)

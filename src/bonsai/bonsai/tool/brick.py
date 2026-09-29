@@ -37,7 +37,6 @@ import bonsai.core.tool
 import bonsai.tool as tool
 
 try:
-
     import brickschema
     import brickschema.persistent
     from brickschema.namespaces import REF, A
@@ -165,13 +164,15 @@ class Brick(bonsai.core.tool.Brick):
 
     @classmethod
     def export_brick_attributes(cls, brick_uri: str) -> dict[str, Any]:
-        query = BrickStore.graph.query("""
+        query = BrickStore.graph.query(
+            """
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             SELECT ?label {
                 <{brick_uri}> rdfs:label ?label .
             }
             LIMIT 1
-        """.replace("{brick_uri}", brick_uri))
+        """.replace("{brick_uri}", brick_uri)
+        )
         name = None
         for row in query:
             name = str(row.get("label"))
@@ -214,14 +215,16 @@ class Brick(bonsai.core.tool.Brick):
     @classmethod
     def get_brickifc_project(cls) -> Union[str, None]:
         project = tool.Ifc.get().by_type("IfcProject")[0]
-        query = BrickStore.graph.query("""
+        query = BrickStore.graph.query(
+            """
             PREFIX ref: <https://brickschema.org/schema/Brick/ref#>
             SELECT ?proj WHERE {
                 ?proj a ref:ifcProject .
                 ?proj ref:ifcProjectID "{project_globalid}" .
             }
             LIMIT 1
-        """.replace("{project_globalid}", project.GlobalId))
+        """.replace("{project_globalid}", project.GlobalId)
+        )
         results = list(query)
         if results:
             return results[0][0].toPython()
@@ -267,13 +270,15 @@ class Brick(bonsai.core.tool.Brick):
 
     @classmethod
     def get_item_class(cls, item: str) -> Union[str, None]:
-        query = BrickStore.graph.query("""
+        query = BrickStore.graph.query(
+            """
             PREFIX brick: <https://brickschema.org/schema/Brick#>
             SELECT ?class WHERE {
                <{item}> a ?class .
             }
             LIMIT 1
-        """.replace("{item}", item))
+        """.replace("{item}", item)
+        )
         for row in query:
             return row.get("class").toPython().split("#")[-1]
 
@@ -296,7 +301,8 @@ class Brick(bonsai.core.tool.Brick):
 
     @classmethod
     def import_brick_classes(cls, brick_class: str, split_screen: bool = False) -> None:
-        query = BrickStore.graph.query("""
+        query = BrickStore.graph.query(
+            """
             PREFIX brick: <https://brickschema.org/schema/Brick#>
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -309,7 +315,8 @@ class Brick(bonsai.core.tool.Brick):
             }
             GROUP BY ?group
             ORDER BY asc(?group)
-        """.replace("{brick_class}", brick_class))
+        """.replace("{brick_class}", brick_class)
+        )
         props = tool.Brick.get_brick_props()
         if split_screen:
             bricks = props.split_screen_bricks
@@ -326,7 +333,8 @@ class Brick(bonsai.core.tool.Brick):
 
     @classmethod
     def import_brick_items(cls, brick_class: str, split_screen: bool = False) -> None:
-        query = BrickStore.graph.query("""
+        query = BrickStore.graph.query(
+            """
             PREFIX brick: <https://brickschema.org/schema/Brick#>
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -337,7 +345,8 @@ class Brick(bonsai.core.tool.Brick):
                 }
             }
             ORDER BY asc(?item)
-        """.replace("{brick_class}", brick_class))
+        """.replace("{brick_class}", brick_class)
+        )
         props = tool.Brick.get_brick_props()
         if split_screen:
             bricks = props.split_screen_bricks
@@ -536,7 +545,8 @@ class BrickStore:
     @classmethod
     def load_entity_classes(cls) -> None:
         for root_class in BrickStore.root_classes:
-            query = BrickStore.graph.query("""
+            query = BrickStore.graph.query(
+                """
                 PREFIX brick: <https://brickschema.org/schema/Brick#>
                 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
                 PREFIX owl: <http://www.w3.org/2002/07/owl#>
@@ -546,7 +556,8 @@ class BrickStore:
                         ?class owl:deprecated true .
                     }
                 }
-            """.replace("{root_class}", root_class))
+            """.replace("{root_class}", root_class)
+            )
             BrickStore.entity_classes[root_class] = []
             for uri in sorted([x[0].toPython() for x in query]):
                 BrickStore.entity_classes[root_class].append(uri)

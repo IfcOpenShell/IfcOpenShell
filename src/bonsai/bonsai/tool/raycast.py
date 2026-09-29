@@ -68,9 +68,7 @@ def _create_encoding_shader() -> gpu.types.GPUShader:
     shader_info.vertex_out(iface)
     shader_info.fragment_out(0, "VEC4", "FragColor")
 
-    shader_info.vertex_source(
-        "void main() {\n" "  slot_id = vert_slot;\n" "  gl_Position = MVP * vec4(pos, 1.0);\n" "}\n"
-    )
+    shader_info.vertex_source("void main() {\n  slot_id = vert_slot;\n  gl_Position = MVP * vec4(pos, 1.0);\n}\n")
     shader_info.fragment_source(
         "vec4 encode(float f) {\n"
         "  ivec4 c;\n"
@@ -1213,7 +1211,15 @@ class Raycast(bonsai.core.tool.Raycast):
 
     @classmethod
     def clear_cache(cls):
-        global _wireframe_batch_cache, _wireframe_vert_fmt, _triangle_batch_cache, _triangle_vert_fmt, _encoding_shader, _offscreen, _obj_list, _last_decorator_cache_token
+        global \
+            _wireframe_batch_cache, \
+            _wireframe_vert_fmt, \
+            _triangle_batch_cache, \
+            _triangle_vert_fmt, \
+            _encoding_shader, \
+            _offscreen, \
+            _obj_list, \
+            _last_decorator_cache_token
         _wireframe_batch_cache = {}
         _wireframe_vert_fmt = None
         _triangle_batch_cache = {}

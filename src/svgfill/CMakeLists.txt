@@ -11,7 +11,6 @@ if(POLICY CMP0167) # 3.30 find_package(Boost) to use BoostConfig instead of Find
 endif()
 
 if(WIN32 AND NOT DEFINED ENV{CONDA_BUILD})
-    set(Boost_USE_STATIC_LIBS ON)
     set(Boost_USE_STATIC_RUNTIME OFF)
     set(Boost_USE_MULTITHREADED ON)
 else()
@@ -19,10 +18,6 @@ else()
     # already by CMake, and it's going to conflict if there are multiple, as is
     # the case in conda-forge's libboost feedstock.
     add_definitions(-DBOOST_ALL_NO_LIB)
-    if(WIN32)
-        # Necessary for boost version >= 1.67
-        set(BCRYPT_LIBRARIES "bcrypt.lib")
-    endif()
 endif()
 
 if(MSVC)
@@ -57,7 +52,7 @@ target_compile_definitions(svgfill PRIVATE BOOST_DLL_USE_STD_FS)
 if(NOT WASM_BUILD)
     target_link_libraries(svgfill PRIVATE plugin)
 endif()
-target_link_libraries(svgfill PRIVATE ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES} LibXml2::LibXml2 IFCOPENSHELL_CGAL IfcParse)
+target_link_libraries(svgfill PRIVATE ${Boost_LIBRARIES} LibXml2::LibXml2 IFCOPENSHELL_CGAL IfcParse)
 # `IFC_SHARED_BUILD` definition only exists since we have part of svgfill
 # compiled directly inside `ifcwrap` (linework_processing_facade.cpp).
 # It needs to be able to compile those symbols without dllimport attributes,

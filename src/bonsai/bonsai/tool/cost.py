@@ -44,7 +44,6 @@ if TYPE_CHECKING:
 
 
 class Cost(bonsai.core.tool.Cost):
-
     RELATED_OBJECT_TYPE = Literal["PRODUCT", "PROCESS", "RESOURCE"]
 
     # TODO: Do we really need them cached as class attributes?

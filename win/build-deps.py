@@ -36,7 +36,6 @@ from common import (
     BUILD_TYPES,
     PROJECT_NAME,
     REPO_ROOT,
-    SCRIPT_DIR,
     BuildCfg,
     BuildType,
     C,
@@ -50,6 +49,7 @@ from common import (
 )
 from common_win import BuildDepsCache
 from installers import (
+    CMakeGenCfg,
     install_boost,
     install_ccache,
     install_cgal,
@@ -76,6 +76,8 @@ class Args(NamedTuple):
     build_cfg: BuildCfg
     build_type: BuildType
     reuse_boost: bool
+    use_ninja: bool
+    shared: bool
     num_build_procs: int
     install_python: bool
     python_version: str
@@ -200,6 +202,20 @@ def parse_args() -> Args:
         ),
     )
     parser.add_argument(
+        "--use-ninja",
+        dest="use_ninja",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help=HelpStrings.USE_NINJA,
+    )
+    parser.add_argument(
+        "--shared",
+        dest="shared",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Build dependencies as shared libraries instead of static.",
+    )
+    parser.add_argument(
         "--num-build-procs",
         dest="num_build_procs",
         type=int,
@@ -288,6 +304,8 @@ def parse_args() -> Args:
         build_cfg=build_cfg,
         build_type=build_type,
         reuse_boost=args.reuse_boost,
+        use_ninja=args.use_ninja,
+        shared=args.shared,
         num_build_procs=num_build_procs,
         install_python=install_python,
         python_version=python_version,
@@ -326,18 +344,12 @@ def main() -> None:
     vs_cfg_vars.install_dir.mkdir(parents=True, exist_ok=True)
 
     # Note BUILD_TYPE not passed, Clean e.g. wouldn't delete the installed files.
-    # TODO: consider inlining.
-    MSBUILD_MULTIPROC = (
-        "/m",
-        f"/p:CL_MPCount={ARGS.num_build_procs}",
-        "/p:UseMultiToolTask=true",
-        "/p:EnforceProcessCountAcrossBuilds=true",
-    )
-    MSBUILD_CMD = ("MSBuild.exe", "/nologo", *MSBUILD_MULTIPROC)
 
     # Check that required tools are in PATH.
     # TODO: drop "powershell" later.
     REQUIRED_COMMANDS = ("powershell", "git", "cmake", "7z")
+    if ARGS.use_ninja:
+        REQUIRED_COMMANDS += ("ninja",)
     for command in REQUIRED_COMMANDS:
         require_command(command)
 
@@ -366,23 +378,31 @@ def main() -> None:
 
     nuget_exe = install_nuget(vs_cfg_vars.deps_dir)
     install_ccache(vs_cfg_vars.deps_dir, nuget_exe, build_deps_cache)
-    install_proj(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.build_cfg, MSBUILD_MULTIPROC)
+    generator_cfg = CMakeGenCfg(build_cfg=ARGS.build_cfg, use_ninja=ARGS.use_ninja)
+    install_proj(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.num_build_procs, generator_cfg)
     install_mpir(vs_cfg_vars, vs_cfg_vars.deps_dir, vs_cfg_vars.install_dir, ARGS.build_cfg)
     install_mpfr(
-        vs_cfg_vars, vs_cfg_vars.deps_dir, vs_cfg_vars.install_dir, ARGS.build_cfg, ARGS.build_type, MSBUILD_CMD
+        vs_cfg_vars,
+        vs_cfg_vars.deps_dir,
+        vs_cfg_vars.install_dir,
+        ARGS.build_cfg,
+        ARGS.build_type,
+        ARGS.num_build_procs,
     )
-    install_boost(vs_cfg_vars, build_deps_cache, ARGS.build_cfg, ARGS.num_build_procs, ARGS.reuse_boost)
+    install_boost(vs_cfg_vars, build_deps_cache, ARGS.build_cfg, ARGS.num_build_procs, ARGS.reuse_boost, ARGS.shared)
     install_json(vs_cfg_vars.install_dir)
-    install_opencollada(vs_cfg_vars, ARGS.build_type, ARGS.build_cfg, MSBUILD_MULTIPROC)
-    install_occt(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.build_cfg, MSBUILD_MULTIPROC)
+    install_opencollada(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.num_build_procs, generator_cfg)
+    install_occt(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.num_build_procs, generator_cfg)
     pythonhome = install_python(vs_cfg_vars, ARGS.install_python, ARGS.python_version, build_deps_cache, nuget_exe)
-    install_swig(vs_cfg_vars, ARGS.build_type, build_deps_cache, MSBUILD_MULTIPROC)
-    install_cgal(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.build_cfg, MSBUILD_MULTIPROC)
+    install_swig(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.num_build_procs, generator_cfg)
+    install_cgal(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.num_build_procs, generator_cfg)
     install_eigen(vs_cfg_vars)
-    install_zstd(vs_cfg_vars, ARGS.build_type, ARGS.build_cfg, MSBUILD_MULTIPROC)
-    install_rocksdb(vs_cfg_vars, ARGS.build_type, ARGS.build_cfg, MSBUILD_MULTIPROC)
+    zstd_install_dir = install_zstd(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.num_build_procs, generator_cfg)
+    install_rocksdb(
+        vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.num_build_procs, generator_cfg, zstd_install_dir
+    )
     install_qt6(vs_cfg_vars, build_deps_cache, ARGS.build_cfg, ARGS.install_qt6, ARGS.qt6_version, pythonhome)
-    install_manifold(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.build_cfg, MSBUILD_MULTIPROC)
+    install_manifold(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.num_build_procs, generator_cfg, ARGS.shared)
 
     print_success(START_TIME)
 

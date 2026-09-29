@@ -322,7 +322,9 @@ def _shared_edge_corner_keys(
     )
 
 
-def _face_corner_keys(axis: int, is_max: bool) -> tuple[
+def _face_corner_keys(
+    axis: int, is_max: bool
+) -> tuple[
     tuple[int, int, int],
     tuple[int, int, int],
     tuple[int, int, int],

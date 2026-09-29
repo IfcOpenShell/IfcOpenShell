@@ -70,6 +70,8 @@ jobs:
         run: |
           pwd
           if [[ "$RUNNER_OS" == "Windows" ]]; then
+            # Keep forward slashes - backslashes would break "upload to anaconda"
+            # as bash would treat them as escape characters.
             echo "ARTIFACTS_DIR=D:/a/artifacts" >> $GITHUB_ENV
           elif [[ "$RUNNER_OS" == "macOS" ]]; then
             echo "ARTIFACTS_DIR=/Users/runner/work/artifacts" >> $GITHUB_ENV
@@ -105,11 +107,20 @@ jobs:
           VERSION_OVERRIDE: ${{ needs.resolve-version.outputs.verdate }}
 
       - name: upload to anaconda
-        if: ${{ matrix.platform.name == 'win' }}
-        run: |
-          anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user ifcopenshell '${{ env.ARTIFACTS_DIR }}/${{ matrix.platform.pkg_dir }}/*.conda'
-
-      - name: upload to anaconda
-        if: ${{ matrix.platform.name != 'win' }}
         run: |
           anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user ifcopenshell ${{ env.ARTIFACTS_DIR }}/${{ matrix.platform.pkg_dir }}/*.conda
+
+  clean:
+    needs: publish
+    runs-on: ubuntu-latest
+    env:
+      ANACONDA_TOKEN: ${{ secrets.ANACONDA_TOKEN }}
+      NUM_SUPPORTED_VERSIONS: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+
+      - name: Run conda cleaner
+        run: uv run --script conda/clean-old-versions.py

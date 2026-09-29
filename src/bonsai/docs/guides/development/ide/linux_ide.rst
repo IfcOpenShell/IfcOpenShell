@@ -610,17 +610,17 @@ Now let's find out how to interact with GitHub in order to make changes to the B
 
        .. note::
 
-          Bonsai uses "Black" as the code formatter. You can install it by running the following command in the terminal:
+          Bonsai uses ``ruff`` as the code formatter. You can install it by running the following command in the terminal:
 
           .. code-block:: bash
 
-             python3.11 -m pip install black
+             python3.11 -m pip install ruff
 
           Please make sure that before you commit the changes you run the following command in the terminal in the IfcOpenShell root folder:
           
           .. code-block:: bash
 
-             black .
+             ruff format
 
     g. Commit the changes.
        First provide your user name and email to Git.

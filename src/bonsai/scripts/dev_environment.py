@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# /// script
+# ///
 """Setup Bonsai Development Environment.
 
 Script links existing Bonsai installation to the provided IfcOpenShell repository.
@@ -15,39 +17,84 @@ Example usage:
 
 """
 
+import argparse
 import shutil
 import subprocess
 import sys
 import urllib.request
 from pathlib import Path
+from typing import NamedTuple
 
 available_platforms = ("win32", "darwin", "linux")
 if sys.platform not in available_platforms:
     print(f"Currently only available on {', '.join(available_platforms)}. Not available on {sys.platform}.")
     exit(1)
 
+if sys.platform == "win32":
+    BLENDER_CONFIG_PATH = Path.home() / "AppData/Roaming/Blender Foundation/Blender"
+elif sys.platform == "darwin":
+    BLENDER_CONFIG_PATH = Path.home() / "Library/Application Support/Blender"
+elif sys.platform == "linux":
+    BLENDER_CONFIG_PATH = Path.home() / ".config/blender"
+else:
+    raise RuntimeError(f"Unsupported platform: {sys.platform}")
+
+existing_versions = []
+if BLENDER_CONFIG_PATH.exists():
+    existing_versions = sorted((p.name for p in BLENDER_CONFIG_PATH.iterdir() if p.is_dir()), reverse=True)
+
+if not existing_versions:
+    print(f"No existing Blender versions found in '{BLENDER_CONFIG_PATH}'. Install Blender first.")
+    exit(1)
+
+
+BINARIES_SOURCE_DESCRIPTIONS = {
+    "installed": "From the installed Bonsai. They will be copied to the repo, replacing the ones already there.",
+    "compiled": "I compile IfcOpenShell myself. The binaries in the repo will be used as they are.",
+}
+
+
+class Args(NamedTuple):
+    blender_version: str | None
+    binaries_source: str | None
+    repo_path: str | None
+
+
+def parse_args() -> Args:
+    arg_parser = argparse.ArgumentParser(description=__doc__)
+    arg_parser.add_argument(
+        "--blender-version",
+        choices=existing_versions,
+        help="Blender version. Will be prompted if not set.",
+    )
+    arg_parser.add_argument(
+        "--binaries-source",
+        choices=tuple(BINARIES_SOURCE_DESCRIPTIONS),
+        help="Where the IfcOpenShell binaries come from ({}). Will be prompted if not set.".format(
+            "; ".join(f"{k}: {v}" for k, v in BINARIES_SOURCE_DESCRIPTIONS.items())
+        ),
+    )
+    arg_parser.add_argument(
+        "--repo-path",
+        help="Path to your local IfcOpenShell repository. Deduced from this script's location if not set.",
+    )
+    namespace = arg_parser.parse_args()
+    return Args(**vars(namespace))
+
+
+ARGS = parse_args()
+
 # ---------------------------
 # SETTINGS.
 # ---------------------------
-# REPO_PATH: Path to your local IfcOpenShell repository.
-# By default, this script will automatically detect the repository path based on its own location,
-# so you usually do NOT need to set this manually.
-# If you want to specify it explicitly, set it to the full absolute path, e.g.:
-# > REPO_PATH = r"C:\Path\To\Your\IfcOpenShell\Repository"
-REPO_PATH = r""
-
 # BLENDER_PATH: Path to Blender's configuration folder.
-# User will be prompted for the Blender version.
-BLENDER_VERSION = input("Enter your Blender version (e.g., 4.5, 4.2, 3.6): ").strip()
+# User will be prompted for the Blender version, unless provided via --blender-version.
+BLENDER_VERSION: str | None = ARGS.blender_version
+if not BLENDER_VERSION:
+    print(f"Existing Blender versions found: {', '.join(existing_versions)}")
+    BLENDER_VERSION = input("Enter your Blender version: ").strip()
 
-if sys.platform == "win32":
-    BLENDER_PATH = Path.home() / f"AppData/Roaming/Blender Foundation/Blender/{BLENDER_VERSION}"
-elif sys.platform == "darwin":
-    BLENDER_PATH = Path.home() / f"Library/Application Support/Blender/{BLENDER_VERSION}"
-elif sys.platform == "linux":
-    BLENDER_PATH = Path.home() / f".config/blender/{BLENDER_VERSION}"
-else:
-    raise RuntimeError(f"Unsupported platform: {sys.platform}")
+BLENDER_PATH = BLENDER_CONFIG_PATH / BLENDER_VERSION
 
 
 BONSAI_PATH_CANDIDATES = (
@@ -75,10 +122,15 @@ def find_bonsai_path() -> Path | None:
 BONSAI_PATH = find_bonsai_path()
 
 
-print("Where do the compiled IfcOpenShell binaries (e.g. ifcopenshell_wrapper) come from?")
-print("1. From the installed Bonsai. They will be copied to the repo, replacing the ones already there.")
-print("2. I compile IfcOpenShell myself. The binaries in the repo will be used as they are.")
-should_copy_binaries = input("Enter 1 or 2: ").strip() == "1"
+binaries_source = ARGS.binaries_source
+if binaries_source is None:
+    print("Where do the compiled IfcOpenShell binaries (e.g. ifcopenshell_wrapper) come from?")
+    for i, description in enumerate(BINARIES_SOURCE_DESCRIPTIONS.values(), start=1):
+        print(f"{i}. {description}")
+    choice = input("Enter 1 or 2: ").strip()
+    binaries_source = list(BINARIES_SOURCE_DESCRIPTIONS)[int(choice) - 1]
+
+should_copy_binaries = binaries_source == "installed"
 
 
 # ---------------------------
@@ -90,11 +142,11 @@ PACKAGE_PATH = BLENDER_PATH / rf"extensions/.local/lib/python{PYTHON_VERSION}/si
 
 
 def main() -> None:
-    global REPO_PATH
+    REPO_PATH = Path(ARGS.repo_path) if ARGS.repo_path else None
 
-    if not REPO_PATH:
+    if REPO_PATH is None:
         script_path = Path(__file__)
-        print(f"REPO_PATH is not set, deducing it from {script_path.name} location...")
+        print(f"--repo-path is not set, deducing it from {script_path.name} location...")
         repo_bonsai_path = script_path.parent.parent
         assert repo_bonsai_path.name == "bonsai", (
             "Failed to deduce REPO_PATH from the script's location. "
@@ -110,13 +162,13 @@ def main() -> None:
     print(f"BONSAI_PATH={BONSAI_PATH}")
     print("-" * 10)
 
-    assert REPO_PATH.exists(), f"Path '{REPO_PATH=!s}' doesn't exist, ensure variable is set correctly."
+    assert REPO_PATH.exists(), f"Path '{REPO_PATH=!s}' doesn't exist, ensure --repo-path is set correctly."
     assert BLENDER_PATH.exists(), f"Path '{BLENDER_PATH=!s}' doesn't exist, ensure variable is set correctly."
     assert PACKAGE_PATH.exists(), f"Path '{PACKAGE_PATH=!s}' doesn't exist, ensure variable is set correctly."
-    assert (
-        BONSAI_PATH is not None
-    ), "Couldn't find BONSAI_PATH in any of the paths candidates. Example paths: {}".format(
-        "\n".join(str(p) for p in BONSAI_PATH_CANDIDATES)
+    assert BONSAI_PATH is not None, (
+        "Couldn't find BONSAI_PATH in any of the paths candidates. Example paths: {}".format(
+            "\n".join(str(p) for p in BONSAI_PATH_CANDIDATES)
+        )
     )
 
     input("Confirm the settings above and press Enter to continue or Ctrl-C to cancel...")

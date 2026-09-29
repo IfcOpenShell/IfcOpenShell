@@ -30,7 +30,12 @@ dev = [
   "pytest-blender",
   "pytest-bdd",
   "fake-bpy-module-latest",
-  "brickschema[persistence]",
+  # Brick support: brickschema with its persistence extra spelled out. The SQLAlchemy store
+  # must be 0.7.1 or later: that is where SQLAlchemy 2.1 and rdflib 7 work, and where the
+  # store.transaction() that brickschema 0.8 runs its persistent graph through lives.
+  "brickschema",
+  "brickschema-rdflib-sqlalchemy>=0.7.1",
+  "alembic",
 ]
 # Everything the type checker needs to resolve; see `poe ty-venv` in the repo root.
 type-check = [
@@ -86,9 +91,6 @@ exclude = ["test*"]
 
 [tool.ruff]
 extend = "../../pyproject.toml"
-lint.extend-select = [
-  "unused-import",
-]
 
 [tool.ruff.lint.isort]
 known-first-party = [

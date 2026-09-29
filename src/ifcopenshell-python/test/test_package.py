@@ -22,8 +22,8 @@ from urllib.parse import urlparse
 
 from typing_extensions import assert_never
 
-SUPPORTED_PY_VERSIONS = ("310", "311", "312", "313", "314")
-SUPPORTED_PLATFORMS = ("win64", "linux64", "macosm164")
+SUPPORTED_PY_VERSIONS = ("310", "311", "312", "313", "314", "315")
+SUPPORTED_PLATFORMS = ("win64", "win-arm64", "linux64", "linuxarm64", "macos64", "macosm164")
 
 WASM_SUPPORTED_PY_VERSIONS = ("313",)
 # The platform tag pyodide-build stamps on the wheel; it changed from pyodide_* to pyemscripten_* in 2025.
@@ -50,9 +50,9 @@ class TestPackageSupportedPlatforms:
         BINARY_VERSION = find_make_var("BINARY_VERSION")
         BUILD_COMMIT = find_make_var("BUILD_COMMIT")
         # Build workflows upload artifacts using a 7-char short SHA.
-        assert (
-            l := len(BUILD_COMMIT)
-        ) == 7, f"BUILD_COMMIT must be a 7-char short SHA, got {BUILD_COMMIT!r} (length {l})"
+        assert (l := len(BUILD_COMMIT)) == 7, (
+            f"BUILD_COMMIT must be a 7-char short SHA, got {BUILD_COMMIT!r} (length {l})"
+        )
 
         required_urls: list[str] = []
 
