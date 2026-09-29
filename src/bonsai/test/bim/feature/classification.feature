@@ -72,12 +72,12 @@ Scenario: Add classification reference - object
     And I press "bim.add_classification"
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And I press "bim.change_classification_level(parent_id={classification})"
     And the variable "reference" is "{classification_ifc}.by_type('IfcClassificationReference')[0].id()"
-    When I press "bim.add_classification_reference(reference={reference}, obj='IfcWallType/Cube', obj_type='Object')"
+    When I press "bim.add_classification_reference(reference={reference}, obj='IfcWall/Cube', obj_type='Object')"
     Then nothing happens
 
 Scenario: Change classification level
@@ -88,8 +88,8 @@ Scenario: Change classification level
     And I press "bim.add_classification"
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And I press "bim.change_classification_level(parent_id={classification})"
     And the variable "reference" is "{classification_ifc}.by_type('IfcClassificationReference')[0].id()"
@@ -104,8 +104,8 @@ Scenario: Disable editing classification references
     And I press "bim.add_classification"
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And I press "bim.change_classification_level(parent_id={classification})"
     When I press "bim.disable_editing_classification_references"
@@ -119,12 +119,12 @@ Scenario: Enable editing classification reference
     And I press "bim.add_classification"
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And I press "bim.change_classification_level(parent_id={classification})"
     And the variable "reference" is "{classification_ifc}.by_type('IfcClassificationReference')[0].id()"
-    And I press "bim.add_classification_reference(reference={reference}, obj='IfcWallType/Cube', obj_type='Object')"
+    And I press "bim.add_classification_reference(reference={reference}, obj='IfcWall/Cube', obj_type='Object')"
     And the variable "reference" is "{ifc}.by_type('IfcClassificationReference')[0].id()"
     When I press "bim.enable_editing_classification_reference(reference={reference})"
     Then nothing happens
@@ -137,12 +137,12 @@ Scenario: Disable editing classification reference
     And I press "bim.add_classification"
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And I press "bim.change_classification_level(parent_id={classification})"
     And the variable "reference" is "{classification_ifc}.by_type('IfcClassificationReference')[0].id()"
-    And I press "bim.add_classification_reference(reference={reference}, obj='IfcWallType/Cube', obj_type='Object')"
+    And I press "bim.add_classification_reference(reference={reference}, obj='IfcWall/Cube', obj_type='Object')"
     And the variable "reference" is "{ifc}.by_type('IfcClassificationReference')[0].id()"
     And I press "bim.enable_editing_classification_reference(reference={reference})"
     When I press "bim.disable_editing_classification_reference"
@@ -156,15 +156,15 @@ Scenario: Remove classification reference - object
     And I press "bim.add_classification"
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And I press "bim.change_classification_level(parent_id={classification})"
     And the variable "reference" is "{classification_ifc}.by_type('IfcClassificationReference')[0].id()"
-    And I press "bim.add_classification_reference(reference={reference}, obj='IfcWallType/Cube', obj_type='Object')"
+    And I press "bim.add_classification_reference(reference={reference}, obj='IfcWall/Cube', obj_type='Object')"
     And the variable "reference" is "{ifc}.by_type('IfcClassificationReference')[0].id()"
     And I press "bim.enable_editing_classification_reference(reference={reference})"
-    When I press "bim.remove_classification_reference(reference={reference}, obj='IfcWallType/Cube', obj_type='Object')"
+    When I press "bim.remove_classification_reference(reference={reference}, obj='IfcWall/Cube', obj_type='Object')"
     Then nothing happens
 
 Scenario: Edit classification reference
@@ -175,12 +175,12 @@ Scenario: Edit classification reference
     And I press "bim.add_classification"
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And I press "bim.change_classification_level(parent_id={classification})"
     And the variable "reference" is "{classification_ifc}.by_type('IfcClassificationReference')[0].id()"
-    And I press "bim.add_classification_reference(reference={reference}, obj='IfcWallType/Cube', obj_type='Object')"
+    And I press "bim.add_classification_reference(reference={reference}, obj='IfcWall/Cube', obj_type='Object')"
     And the variable "reference" is "{ifc}.by_type('IfcClassificationReference')[0].id()"
     And I press "bim.enable_editing_classification_reference(reference={reference})"
     When I press "bim.edit_classification_reference"

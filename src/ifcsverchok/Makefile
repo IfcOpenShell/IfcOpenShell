@@ -19,9 +19,10 @@
 VERSION:=`date '+%y%m%d'`
 IS_STABLE:=FALSE
 VERSION:=$(shell cat ../../VERSION)
-VERSION_MAJOR:=$(shell cat '../../VERSION' | cut -d '.' -f 1)
-VERSION_MINOR:=$(shell cat '../../VERSION' | cut -d '.' -f 2)
-VERSION_PATCH:=$(shell cat '../../VERSION' | cut -d '.' -f 3)
+VERSION_BASE:=$(shell sed -E 's/[[:alpha:]]+[0-9]+$$//' ../../VERSION)
+VERSION_MAJOR:=$(shell echo '$(VERSION_BASE)' | cut -d '.' -f 1)
+VERSION_MINOR:=$(shell echo '$(VERSION_BASE)' | cut -d '.' -f 2)
+VERSION_PATCH:=$(shell echo '$(VERSION_BASE)' | cut -d '.' -f 3)
 VERSION_DATE:=$(shell date '+%y%m%d')
 
 SED:=sed -i
@@ -40,7 +41,7 @@ ifeq ($(IS_STABLE), TRUE)
 	cd dist && zip -r ifcsverchok-$(VERSION).zip ./*
 else
 	cd dist/ifcsverchok && $(SED) "s/0, 0, 0/$(VERSION_MAJOR), $(VERSION_MINOR), $(VERSION_PATCH), $(VERSION_DATE)/" __init__.py
-	cd dist && zip -r ifcsverchok-$(VERSION).$(VERSION_DATE).zip ./*
+	cd dist && zip -r ifcsverchok-$(VERSION_BASE).$(VERSION_DATE).zip ./*
 endif
 	rm -rf dist/ifcsverchok
 
