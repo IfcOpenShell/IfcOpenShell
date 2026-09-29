@@ -99,7 +99,7 @@ class ColourByPropertyData:
         obj = bpy.context.active_object
         element = tool.Ifc.get_entity(obj) if obj else None
         if element:
-            keys.update(a.name() for a in element.wrapped_data.declaration().as_entity().all_attributes())
+            keys.update(a.name() for a in element.declaration.as_entity().all_attributes())
 
         # Regardless of selection, offer every property and quantity set defined
         # anywhere in the loaded IFC file, not just the ones on the active object.
@@ -142,11 +142,18 @@ class SelectSimilarData:
         element = tool.Ifc.get_entity(obj)
         if not element:
             return []
-        keys = [a.name() for a in element.wrapped_data.declaration().as_entity().all_attributes()]
+        keys = [a.name() for a in element.declaration.as_entity().all_attributes()]
         psets = ifcopenshell.util.element.get_psets(element, psets_only=True)
         for pset, properties in psets.items():
             if pset.endswith("Common"):
                 keys.extend([f'/.*Common/."{name}"' for name in properties.keys() if name != "id"])
             else:
-                keys.extend([f"{pset}.{name}" for name in properties.keys() if name != "id"])
+                pset_part = f'"{pset}"' if " " in pset else pset
+                keys.extend(
+                    [
+                        f'{pset_part}."{name}"' if " " in name else f"{pset_part}.{name}"
+                        for name in properties.keys()
+                        if name != "id"
+                    ]
+                )
         return [(k, k, "") for k in keys]
