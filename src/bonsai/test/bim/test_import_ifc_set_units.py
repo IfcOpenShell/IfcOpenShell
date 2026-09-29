@@ -43,7 +43,6 @@ import ifcopenshell.api.group
 import ifcopenshell.api.root
 
 import bonsai.bim.import_ifc as import_ifc
-import bonsai.tool as tool
 from test.bim.bootstrap import NewFile
 
 NAMELESS_LENGTH_UNIT_IFC = """ISO-10303-21;
@@ -80,7 +79,6 @@ class TestSetUnitsNamelessUnit(NewFile):
         importer = import_ifc.IfcImporter(settings)
         importer.file = ifc
 
-        # Must not raise AttributeError on the None .Name.
         importer.set_units()
 
 
@@ -97,5 +95,4 @@ class TestUpdateLinkedAggregatesNamelessMember(NewFile):
         importer = import_ifc.IfcImporter(settings)
         importer.file = ifc
 
-        # Must not raise AttributeError on the None .Name.
         importer.update_linked_aggregates()
