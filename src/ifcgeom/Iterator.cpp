@@ -54,13 +54,23 @@ bool IfcGeom::Iterator::initialize() {
 		tasks_.push_back(res);
 	}
 
-	if (settings_.get<ifcopenshell::geometry::settings::NoParallelMapping>().get() && settings_.get<ifcopenshell::geometry::settings::PermissiveShapeReuse>().get()) {
-		std::unordered_map<
-			ifcopenshell::geometry::taxonomy::item::ptr,
-			std::vector<std::pair<IfcUtil::IfcBaseEntity*, ifcopenshell::geometry::taxonomy::matrix4::ptr>>> folded;
+	if (settings_.get<ifcopenshell::geometry::settings::NoParallelMapping>().get() && settings_.get<ifcopenshell::geometry::settings::PermissiveShapeReuse>().get() &&
+		// With world coords enabled, product placements are baked into the BRep, so
+		// geometries cannot be shared between products, same as in mapping::reuse_ok_().
+		!settings_.get<ifcopenshell::geometry::settings::UseWorldCoords>().get()) {
+		// Tasks are folded based on the innermost shared taxonomy node combined with the
+		// effective surface style hoisted from the traversed wrappers, so that occurrences
+		// of the same mapped representation with different styles keep their own style.
+		typedef std::pair<ifcopenshell::geometry::taxonomy::item::ptr, ifcopenshell::geometry::taxonomy::style::ptr> fold_key_t;
+		struct fold_group_t {
+			ifcopenshell::geometry::taxonomy::item::ptr original;
+			std::vector<std::pair<IfcUtil::IfcBaseEntity*, ifcopenshell::geometry::taxonomy::matrix4::ptr>> products;
+		};
+		std::map<fold_key_t, fold_group_t> folded;
 
 		for (auto& r : tasks_) {
 			auto i = r.item;
+			ifcopenshell::geometry::taxonomy::style::ptr style;
 
 			Eigen::Matrix4d m4 = Eigen::Matrix4d::Identity();
 
@@ -69,16 +79,24 @@ bool IfcGeom::Iterator::initialize() {
 					if (col->matrix) {
 						m4 *= col->matrix->ccomponents();
 					}
+					if (col->surface_style) {
+						style = col->surface_style;
+					}
 					i = col->children[0];
 				} else {
 					break;
 				}
 			}
 
+			auto& group = folded[{ i, style }];
+			if (!group.original) {
+				group.original = r.item;
+			}
+
 			for (auto& p : r.products) {
 				auto pl = ifcopenshell::geometry::taxonomy::matrix4::ptr(p.second->clone_());
 				pl->components() *= m4;
-				folded[i].push_back(
+				group.products.push_back(
 					{ p.first, pl }
 				);
 			}
@@ -89,10 +107,20 @@ bool IfcGeom::Iterator::initialize() {
 			tasks_.clear();
 			size_t i = 0;
 			for (auto& p : folded) {
+				auto item = p.first.first;
+				if (item != p.second.original) {
+					// Reattach the hoisted style and a representation instance for downstream use.
+					auto wrap = ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::collection>();
+					wrap->children.push_back(std::dynamic_pointer_cast<ifcopenshell::geometry::taxonomy::geom_item>(item));
+					wrap->matrix = ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>();
+					wrap->surface_style = p.first.second;
+					wrap->instance = p.second.original->instance;
+					item = wrap;
+				}
 				tasks_.emplace_back();
 				tasks_.back().index = i++;
-				tasks_.back().item = p.first;
-				tasks_.back().products = p.second;
+				tasks_.back().item = item;
+				tasks_.back().products = std::move(p.second.products);
 			}
 			logger_.Notice("SYS", 26, "Merged " + std::to_string(old_size) + " tasks into " + std::to_string(tasks_.size()) + " tasks due to permissive shape reuse");
 		}
