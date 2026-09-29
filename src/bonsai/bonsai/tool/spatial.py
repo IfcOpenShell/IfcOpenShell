@@ -757,7 +757,7 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def is_bounding_class(cls, visible_element: ifcopenshell.entity_instance) -> bool:
-        for ifc_class in ["IfcWall", "IfcColumn", "IfcMember", "IfcVirtualElement", "IfcPlate"]:
+        for ifc_class in ["IfcWall", "IfcColumn", "IfcMember", "IfcVirtualElement", "IfcPlate", "IfcCurtainWall"]:
             if visible_element.is_a(ifc_class):
                 return True
         return False

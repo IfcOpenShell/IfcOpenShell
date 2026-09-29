@@ -232,6 +232,12 @@ class TestGetBoundaryElements(NewFile):
         tool.Ifc.link(element, obj)
         return element, obj
 
+    def test_standalone_curtain_walls_are_boundary_elements(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        curtain_wall, curtain_wall_obj = self.add_element(ifc, "IfcCurtainWall")
+        assert subject.get_boundary_elements([curtain_wall_obj]) == [curtain_wall]
+
     def test_curtain_wall_members_and_plates_are_boundary_elements(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
