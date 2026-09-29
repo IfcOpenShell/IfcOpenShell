@@ -23,7 +23,6 @@ import test.bootstrap
 
 
 class TestRemoveProfile(test.bootstrap.IFC4):
-    # IfcMaterialProfileSet does not exist in IFC2X3.
     def test_removing_a_non_last_profile(self):
         profile_set = ifcopenshell.api.material.add_material_set(self.file, set_type="IfcMaterialProfileSet")
         material = ifcopenshell.api.material.add_material(self.file)
