@@ -112,9 +112,9 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
         self.outputs.new("SvMatrixSocket", "Locations")
 
     def draw_buttons(self, context, layout):
-        layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = (
-            "Blender mesh to Ifc Shape Representation. \nTakes one or multiple geometries.\nDeconstructs joined geometries and creates a separate representation for each."
-        )
+        layout.operator(
+            "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
+        ).tooltip = "Blender mesh to Ifc Shape Representation. \nTakes one or multiple geometries.\nDeconstructs joined geometries and creates a separate representation for each."
 
         row = layout.row(align=True)
         row.prop(self, "is_interactive", icon="SCENE_DATA", icon_only=True)
