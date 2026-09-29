@@ -370,15 +370,8 @@ class Usecase:
         clip_end = self.settings["geometry"].clip_end
         clip_start = self.settings["geometry"].clip_start
 
-        # Width and Height are independent camera framing properties set by the
-        # user (`props.width` / `props.height`), just like Depth (`clip_end`).
-        # They must be used directly as the pyramid's base dimensions instead of
-        # being derived from the camera's field of view (`camera.angle`) and
-        # `clip_end`, otherwise editing Depth alone rescales Width/Height on the
-        # next representation regeneration (#6322). The field of view itself is
-        # only needed for Blender's perspective viewport preview, so it's the
-        # derived quantity here, computed the same way as on import (see
-        # `Loader.create_camera`).
+        # Width/Height drive the pyramid base; the field of view is derived from them
+        # (as in Loader.create_camera), so editing Depth no longer rescales them.
         x_length = props.width
         y_length = props.height
         half_width = x_length / 2
