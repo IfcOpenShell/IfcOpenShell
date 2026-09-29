@@ -18,17 +18,6 @@
 
 # This file was generated with the assistance of an AI coding tool.
 
-"""End-to-end regression test for a specific reported defect.
-
-buildingSMART/IDS developer-guide.md explicitly excludes the XSD
-totalDigits and fractionDigits facets from IDS. ifctester used to accept
-and round-trip a fractionDigits restriction from an .ids file but never
-enforced it and never told the author, so the constraint silently did
-nothing. It now still does not enforce it (IDS does not ask it to), but it
-must warn once the restriction is loaded, so the author learns the facet
-has no effect instead of finding out the hard way.
-"""
-
 import os
 import warnings
 
@@ -49,9 +38,6 @@ class TestRestrictionUnsupportedFractionDigitsFixture:
         assert any("fractionDigits" in str(w.message) for w in caught)
 
     def test_restriction_is_not_enforced(self):
-        # 42.123456 has 6 fraction digits and would fail a fractionDigits=2
-        # restriction if it were enforced. IDS does not support this facet,
-        # so the wall must still pass.
         specs = ids.open(SPEC)
         ifc = ifcopenshell.open(MODEL)
         specs.validate(ifc)
