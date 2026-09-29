@@ -109,6 +109,8 @@ class ifc5D2json:
             values = root_element.CostValues
         elif root_element.is_a("IfcConstructionResource"):
             values = root_element.BaseCosts
+        else:
+            assert False, root_element
         for cost_value in values or []:
             self.extract_cost_value(root_element, data, cost_value)
             # data["CostValues"].append(cost_value.id())
@@ -168,12 +170,7 @@ class ifc5D2json:
                 data["UnitSymbol"] = ifcopenshell.util.unit.get_unit_symbol(unit)
             if quantity.is_a("IfcPhysicalSimpleQuantity"):
                 measure_class = (
-                    quantity.wrapped_data.declaration()
-                    .as_entity()
-                    .attribute_by_index(3)
-                    .type_of_attribute()
-                    .declared_type()
-                    .name()
+                    quantity.declaration.as_entity().attribute_by_index(3).type_of_attribute().declared_type().name()
                 )
                 if "Count" in measure_class:
                     data["UnitSymbol"] = "U"
