@@ -206,6 +206,7 @@ ifcopenshell::geom::native_element* ifcopenshell::geom::converter::create_brep_f
 			caught_error = true;
 		} catch (...) {
 			logger_.message(ifcopenshell::logger::LOG_ERROR, "GEO", 34, "Error processing openings for:", product);
+			caught_error = true;
 		}
 
 		if (!(caught_error && opened_shapes.size() < shapes.size())) {
