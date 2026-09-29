@@ -53,9 +53,9 @@ def iter_documented_api_functions():
             # e.g. sequence.recalculate_schedule requires the optional networkx
             # dependency; skip modules we cannot even import.
             continue
-        submodule_dir = [module.__path__[0]] if hasattr(module, "__path__") else None
-        if submodule_dir is None:
+        if not hasattr(module, "__path__"):
             continue
+        submodule_dir = [module.__path__[0]]
         for usecase_info in sorted(pkgutil.iter_modules(submodule_dir), key=lambda m: m.name):
             if usecase_info.ispkg:
                 continue
