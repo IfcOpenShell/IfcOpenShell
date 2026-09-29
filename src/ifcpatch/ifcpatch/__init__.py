@@ -233,9 +233,9 @@ def _extract_docs(cls: type, method_name: str, boilerplate_args: Union[Sequence[
     doc = inspect.getdoc(method)
 
     def is_valid_param_name(param_name: str) -> bool:
-        assert (
-            param_name in inputs
-        ), f"Unexpected param name '{param_name}' in {cls.__name__} docstring (missing from signature)."
+        assert param_name in inputs, (
+            f"Unexpected param name '{param_name}' in {cls.__name__} docstring (missing from signature)."
+        )
         return True
 
     def is_valid_filter_glob(filter_glob: str) -> bool:
