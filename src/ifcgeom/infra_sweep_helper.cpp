@@ -2,7 +2,9 @@
 #include "infra_sweep_helper.h"
 #include "function_item_evaluator.h"
 
+#include <algorithm>
 #include <boost/range/combine.hpp>
+#include <cassert>
 
 using namespace ifcopenshell::geom;
 
@@ -72,6 +74,53 @@ taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::sett
 			longitudes.push_back(x.dist_along);
 		}
 		longitudes.push_back(std::numeric_limits<double>::infinity());
+
+		// Directrix frame (col0 = tangent, col1 = lateral, col2 = up, col3 = position) at
+		// every cross section station. Only needed to reconcile a cross section's own
+		// Axis / RefDirection against the curve; skip the work when no placement has one.
+		std::vector<Eigen::Matrix4d> section_directrix_frames;
+		if (std::any_of(cross_sections.begin(), cross_sections.end(),
+				[](const cross_section& cs) { return cs.rotation.has_value(); })) {
+			section_directrix_frames.reserve(cross_sections.size());
+			for (const auto& cs : cross_sections) {
+				section_directrix_frames.push_back(evaluator.evaluate(std::min(std::max(cs.dist_along, start), end)));
+			}
+		}
+
+		// The frame a cross section is placed in, given the directrix frame at its station
+		// and its own IfcAxis2PlacementLinear: profile X, profile Y = Axis, profile normal
+		// = RefDirection -- or, when RefDirection was not authored, the curve tangent, so
+		// the section stays perpendicular to the path (buildingSMART IFC4.x-IF #147). When
+		// the placement carries no direction vectors the section just follows the curve
+		// (lateral, up, tangent).
+		const auto profile_basis =
+			[](const std::optional<Eigen::Matrix3d>& rotation,
+			   const std::optional<Eigen::Vector3d>& ref_direction,
+			   const Eigen::Matrix4d& directrix_frame) -> Eigen::Matrix3d {
+			const Eigen::Vector3d tangent = directrix_frame.col(0).head<3>().normalized();
+			const Eigen::Vector3d lateral = directrix_frame.col(1).head<3>().normalized();
+			const Eigen::Vector3d up = directrix_frame.col(2).head<3>().normalized();
+			Eigen::Matrix3d B;
+			if (!rotation) {
+				B.col(0) = lateral;
+				B.col(1) = up;
+				B.col(2) = tangent;
+				return B;
+			}
+			const Eigen::Vector3d axis = rotation->col(2).normalized();
+			const Eigen::Vector3d normal = ref_direction ? ref_direction->normalized() : tangent;
+			Eigen::Vector3d x = axis.cross(normal);
+			if (x.norm() < 1.e-9) {
+				// Axis parallel to the normal: fall back to the curve's own lateral.
+				x = lateral - lateral.dot(axis) * axis;
+			}
+			x.normalize();
+			B.col(0) = x;
+			B.col(1) = axis;
+			B.col(2) = x.cross(axis);
+			return B;
+		};
+
 		auto profile_index = longitudes.begin();
 		for (size_t i = 0; i <= num_steps; ++i) {
             auto dist_along = start + delta_step * i;
@@ -88,6 +137,7 @@ taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::sett
 			const auto& profile_a = cross_sections[std::distance(longitudes.begin(), profile_index)].section_geometry;
 			const auto& offset_a = cross_sections[std::distance(longitudes.begin(), profile_index)].offset;
 			const auto& rotation_a = cross_sections[std::distance(longitudes.begin(), profile_index)].rotation;
+			const auto& ref_direction_a = cross_sections[std::distance(longitudes.begin(), profile_index)].ref_direction;
 
 			taxonomy::geom_item::ptr interpolated = nullptr;
 
@@ -98,26 +148,37 @@ taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::sett
 				(profile_index + 1 < longitudes.end()) &&
 				(relative_dist_along >= 1.e-9 || offset_a.cwiseAbs().maxCoeff() > 0. || rotation_a);
 
+			// When both bracketing placements ask for the same orientation, drive the sweep
+			// frame from it directly (relative to the curve). When they disagree, keep the
+			// sweep frame on the curve and fold each section's own orientation into its
+			// profile points via section_basis_a / section_basis_b so the ends still land
+			// exactly as authored without twisting the body between them.
 			std::optional<Eigen::Matrix3d> interpolated_rotation;
+			std::optional<Eigen::Vector3d> interpolated_ref_direction;
+			Eigen::Matrix3d section_basis_a = Eigen::Matrix3d::Identity();
+			Eigen::Matrix3d section_basis_b = Eigen::Matrix3d::Identity();
 
 			if (should_interpolate) {
 				taxonomy::geom_item::ptr profile_b;
 				Eigen::Vector3d offset_b;
 				std::optional<Eigen::Matrix3d> rotation_b;
+				std::optional<Eigen::Vector3d> ref_direction_b;
 				if ((profile_index + 1 < longitudes.end())) {
 					profile_b = cross_sections[std::distance(longitudes.begin(), profile_index) + 1].section_geometry;
 					offset_b = cross_sections[std::distance(longitudes.begin(), profile_index) + 1].offset;
 					rotation_b = cross_sections[std::distance(longitudes.begin(), profile_index) + 1].rotation;
+					ref_direction_b = cross_sections[std::distance(longitudes.begin(), profile_index) + 1].ref_direction;
 				} else {
 					profile_b = profile_a;
 					offset_b = offset_a;
 					rotation_b = rotation_a;
+					ref_direction_b = ref_direction_a;
 				}
 
 				// Only interpolate if the profiles are different or either of the offsets is non-zero
 				bool should_interpolate2 =
 					(profile_a->instance != profile_b->instance) ||
-					(offset_a.cwiseAbs().maxCoeff() > 0. || offset_b.cwiseAbs().maxCoeff() > 0. || rotation_b);
+					(offset_a.cwiseAbs().maxCoeff() > 0. || offset_b.cwiseAbs().maxCoeff() > 0. || rotation_a || rotation_b);
 
 				if (should_interpolate2) {
 
@@ -160,12 +221,33 @@ taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::sett
 					}
 
 					auto interpolated_offset = lerp(offset_a, offset_b, relative_dist_along);
-                    if (rotation_a == rotation_b && rotation_a) {
-                        // @todo we don't support an overridden rotation on only one of the placements
-                        // in which case we would need to lerp with the rotation component below in m4b.
-                        interpolated_rotation = lerp(*rotation_a, *rotation_b, relative_dist_along);
-                    } else if (rotation_a != rotation_b) {
-                        logger.error("GEO", 42, "Direction vectors on cross section placements only supported when used consistently");
+					if (rotation_a == rotation_b) {
+						// Same orientation on both placements (including both absent): the
+						// sweep frame carries it, built against the curve just below.
+						interpolated_rotation = rotation_a;
+						interpolated_ref_direction = ref_direction_a;
+					} else if (rotation_a || rotation_b) {
+						// The two placements disagree -- in practice they share an Axis but
+						// only one carries a RefDirection (a raked end against a square run).
+						// Drive the sweep frame from the shared Axis with the profile normal
+						// on the curve tangent -- identical to the neighbouring consistent
+						// segments, so m4b stays continuous across the boundary and the body
+						// never flips -- then fold each section's *own* authored orientation
+						// into its profile points through section_basis_a / section_basis_b,
+						// so each end cap still lands exactly as authored.
+						const auto ia = static_cast<std::size_t>(std::distance(longitudes.begin(), profile_index));
+						assert(ia + 1 < section_directrix_frames.size());
+						const std::optional<Eigen::Vector3d> no_ref;
+						const auto base_a = profile_basis(rotation_a, no_ref, section_directrix_frames[ia]);
+						const auto base_b = profile_basis(rotation_b, no_ref, section_directrix_frames[ia + 1]);
+						section_basis_a =
+							base_a.transpose() *
+							profile_basis(rotation_a, ref_direction_a, section_directrix_frames[ia]);
+						section_basis_b =
+							base_b.transpose() *
+							profile_basis(rotation_b, ref_direction_b, section_directrix_frames[ia + 1]);
+						interpolated_rotation = rotation_a ? rotation_a : rotation_b;
+						interpolated_ref_direction = no_ref;
 					}
 
 					taxonomy::loop::ptr w1, w2;
@@ -337,7 +419,9 @@ taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::sett
                                 const auto& tagged_point_on_w1 = tag_to_point_on_w1[t];
                                 const auto& tagged_point_on_w2 = tag_to_point_on_w2[t];
 
-                                auto p3 = (lerp(tagged_point_on_w1->ccomponents(), tagged_point_on_w2->ccomponents(), relative_dist_along) + interpolated_offset).eval();
+                                const Eigen::Vector3d rebased_w1 = section_basis_a * tagged_point_on_w1->ccomponents();
+                                const Eigen::Vector3d rebased_w2 = section_basis_b * tagged_point_on_w2->ccomponents();
+                                auto p3 = (lerp(rebased_w1, rebased_w2, relative_dist_along) + interpolated_offset).eval();
 
                                 std::set<std::string> tags_for_this_point_on_subsequent_profile = {t};
 
@@ -357,7 +441,9 @@ taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::sett
                         } else {
                             for (auto tmp__ : boost::combine(w1_points, w2_points)) {
                                 boost::tie(p1, p2) = tmp__;
-                                auto p3 = (lerp(p1->ccomponents(), p2->ccomponents(), relative_dist_along) + interpolated_offset).eval();
+                                const Eigen::Vector3d rebased_1 = section_basis_a * p1->ccomponents();
+                                const Eigen::Vector3d rebased_2 = section_basis_b * p2->ccomponents();
+                                auto p3 = (lerp(rebased_1, rebased_2, relative_dist_along) + interpolated_offset).eval();
                                 points.push_back(taxonomy::make<taxonomy::point3>(p3));
                             }
                         }
@@ -399,17 +485,13 @@ taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::sett
 				std::wcout << "#" << pwf->instance.data().id() << " " << dist_along << ": " << m4.col(3).row(2).value() << std::endl;
 			}*/
 
+			// Sweep frame at this station: the profile orientation asked for by the
+			// (consistent) placements, built against the curve here so it follows the
+			// directrix. Falls back to the plain curve frame (lateral, up, tangent) when
+			// no placement carries direction vectors. Inconsistent placements keep this
+			// on the curve and are reconciled through section_basis_a / section_basis_b.
 			Eigen::Matrix4d m4b = Eigen::Matrix4d::Identity();
-			if (interpolated_rotation) {
-				// direction vectors on the linear placement overwrite the placement otherwise inferred from the tangent
-				m4b.col(0).head<3>() = interpolated_rotation->col(1);
-				m4b.col(1).head<3>() = interpolated_rotation->col(2);
-				m4b.col(2).head<3>() = interpolated_rotation->col(0);
-			} else {
-				m4b.col(0).head<3>() = m4.col(1).head<3>().normalized();
-				m4b.col(1).head<3>() = m4.col(2).head<3>().normalized();
-				m4b.col(2).head<3>() = m4.col(0).head<3>().normalized();
-			}
+			m4b.block<3, 3>(0, 0) = profile_basis(interpolated_rotation, interpolated_ref_direction, m4);
 			m4b.col(3).head<3>() = m4.col(3).head<3>();
 
 			if (interpolated) {

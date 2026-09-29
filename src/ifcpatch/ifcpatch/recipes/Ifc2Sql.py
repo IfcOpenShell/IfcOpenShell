@@ -605,7 +605,7 @@ class Patcher(ifcpatch.BasePatcher):
 
         if self.sql_type == "sqlite":
             if rows:
-                self.c.executemany(f"INSERT INTO {ifc_class} VALUES ({','.join(['?']*len(rows[0]))});", rows)
+                self.c.executemany(f"INSERT INTO {ifc_class} VALUES ({','.join(['?'] * len(rows[0]))});", rows)
                 self.c.executemany("INSERT INTO id_map VALUES (?, ?);", id_map_rows)
             if pset_rows:
                 self.c.executemany("INSERT INTO psets VALUES (?, ?, ?, ?);", pset_rows)
@@ -618,7 +618,7 @@ class Patcher(ifcpatch.BasePatcher):
                             if (value := row[attr_i]) is None:
                                 continue
                             row[attr_i] = str(row[attr_i])
-                self.c.executemany(f"INSERT INTO {ifc_class} VALUES ({','.join(['%s']*len(rows[0]))});", rows)
+                self.c.executemany(f"INSERT INTO {ifc_class} VALUES ({','.join(['%s'] * len(rows[0]))});", rows)
                 self.c.executemany("INSERT INTO id_map VALUES (%s, %s);", id_map_rows)
             if pset_rows:
                 self.c.executemany("INSERT INTO psets VALUES (%s, %s, %s, %s);", pset_rows)

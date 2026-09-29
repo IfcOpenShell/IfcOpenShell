@@ -18,7 +18,6 @@
 
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
-import ifcopenshell.api.unit
 import test.bootstrap
 
 

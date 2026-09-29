@@ -107,8 +107,6 @@ public:
     }
 
     size_t erase(const key_type& key) {
-        static_cast<void>(key);
-        // @todo
-        return 0;
+        return base_map_->erase(key);
     }
 };

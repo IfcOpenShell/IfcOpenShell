@@ -63,7 +63,6 @@ IfcOpenShell is a modular ecosystem of tools that work together, where each tool
     "IfcViewerWeb", "A WebAssembly and WebGPU viewer target for viewing IFC models in a web browser."
     "`BCF <https://docs.ifcopenshell.org/bcf.html>`_", "BIM Collaboration Format (BCF) is a standard to manage and exchange coordination topics between disciplines collaborating on a project by changing XML files or querying an API."
     "`BIMServer-Plugin <https://docs.ifcopenshell.org/bimserver-plugin.html>`_", "A plugin to the open source BIMServer CDE to allow you to use IfcOpenShell to parse, view, and audit models."
-    "`BIMTester <https://docs.ifcopenshell.org/bimtester.html>`_", "A utility that allows you to write Gherkin-based tests for models."
     "`bSDD <https://docs.ifcopenshell.org/bsdd.html>`_", "A Python library to query the buildingSMART Data Dictionary API to search for standardised classifications and properties."
     "`Ifc2CA <https://docs.ifcopenshell.org/ifc2ca.html>`_", "Converts IFC models to FEM structural analytical models to be used in Code_Aster."
     "`Ifc4D <https://docs.ifcopenshell.org/ifc4d.html>`_", "A series of utilities for converting to and from various 4D software like MS Project, PowerProject, and Oracle P6."
