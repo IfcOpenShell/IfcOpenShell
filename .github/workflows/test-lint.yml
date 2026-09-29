@@ -9,7 +9,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     env:
-      MIN_IOS_PY_VERSION: "3.10"
+      MIN_IOS_PY_VERSION: "3.11"
       MIN_BLENDER_PY_VERSION: "3.11"
     steps:
       - name: Action - checkout repository

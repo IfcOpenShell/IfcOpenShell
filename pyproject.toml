@@ -200,7 +200,7 @@ ty-venv-bonsai.sequence = [
 ]
 
 ty-venv-ios.sequence = [
-    {cmd = "uv venv src/ifcopenshell-python/.venv --python=3.10 --allow-existing"},
+    {cmd = "uv venv src/ifcopenshell-python/.venv --python=3.11 --allow-existing"},
     {cmd = "uv pip install --group src/ifcopenshell-python/pyproject.toml:type-check --python=src/ifcopenshell-python/.venv"},
 ]
 
