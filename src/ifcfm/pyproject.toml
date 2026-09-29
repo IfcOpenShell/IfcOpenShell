@@ -10,6 +10,7 @@ authors = [
 ]
 description = "Extract data from IFC following facility management standards"
 readme = "README.md"
+requires-python = ">=3.11"
 keywords = ["IFC", "FM", "BIM"]
 classifiers = [
     "Programming Language :: Python :: 3",

@@ -10,6 +10,7 @@ authors = [
 ]
 description = "CLI tool for querying and inspecting IFC building models"
 readme = "README.md"
+requires-python = ">=3.11"
 keywords = ["IFC", "BIM", "Query"]
 classifiers = [
     "Programming Language :: Python :: 3",

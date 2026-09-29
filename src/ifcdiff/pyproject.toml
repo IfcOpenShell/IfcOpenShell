@@ -10,6 +10,7 @@ authors = [
 ]
 description = "Compare IFC models for changes to geometry, properties, and structure"
 readme = "README.md"
+requires-python = ">=3.11"
 keywords = ["IFC", "Diff"]
 classifiers = [
     "Programming Language :: Python :: 3",

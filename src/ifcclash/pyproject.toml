@@ -10,6 +10,7 @@ authors = [
 ]
 description = "IFC clash detection library to handle intersections, collisions, and clearance checks"
 readme = "README.md"
+requires-python = ">=3.11"
 keywords = ["IFC", "clash", "BIM"]
 classifiers = [
     "Programming Language :: Python :: 3",
