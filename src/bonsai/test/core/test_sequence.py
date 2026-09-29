@@ -18,7 +18,7 @@
 
 
 import bonsai.core.sequence as subject
-from test.core.bootstrap import ifc, sequence
+from test.core.bootstrap import ifc, sequence  # ruff: ignore[unused-import]
 
 
 class TestAddWorkPlan:
