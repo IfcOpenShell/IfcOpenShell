@@ -181,8 +181,6 @@ class TestCascadeSchedule(test.bootstrap.IFC4):
 
 class TestCascadeScheduleIfc2X3(test.bootstrap.IFC2X3):
     def test_doing_nothing_since_ifctasktime_does_not_exist_in_ifc2x3(self):
-        # IfcTask has no TaskTime attribute at all in IFC2X3 (IfcTaskTime was
-        # only introduced in IFC4), so there is nothing to cascade.
         task = ifcopenshell.api.sequence.add_task(self.file)
         assert not hasattr(task, "TaskTime")
         ifcopenshell.api.sequence.cascade_schedule(self.file, task=task)
