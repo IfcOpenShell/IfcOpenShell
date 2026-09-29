@@ -1,12 +1,10 @@
 # This file was generated with the assistance of an AI coding tool.
-import ifcopenshell
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
 import ifcopenshell.api.project
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
 import ifcopenshell.util.representation
-import ifcopenshell.util.shape_builder
 
 from ifcquery.info import info
 

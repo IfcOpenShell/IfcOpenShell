@@ -38,7 +38,6 @@ import ifcopenshell.api.sequence
 import ifcopenshell.api.spatial
 import ifcopenshell.api.style
 import ifcopenshell.api.type
-import ifcopenshell.api.feature
 import ifcopenshell.guid
 import ifcopenshell.util.element as subject
 import test.bootstrap
@@ -1274,6 +1273,22 @@ class TestReplaceAttributeIFC4(test.bootstrap.IFC4):
         subject.replace_attribute(rel, old, new)
         assert rel.RelatedObjects == (new,)
 
+    def test_replacing_into_a_set_deduplicates_the_survivor(self):
+        old = self.file.createIfcWall()
+        new = self.file.createIfcWall()
+        rel = self.file.createIfcRelAggregates()
+        rel.RelatedObjects = [old, new]
+        subject.replace_attribute(rel, old, new)
+        assert rel.RelatedObjects == (new,)
+
+    def test_replacing_into_a_list_keeps_legitimate_duplicates(self):
+        p1 = self.file.createIfcCartesianPoint((0.0, 0.0, 0.0))
+        p2 = self.file.createIfcCartesianPoint((1.0, 0.0, 0.0))
+        p3 = self.file.createIfcCartesianPoint((2.0, 0.0, 0.0))
+        polyline = self.file.createIfcPolyline([p1, p2, p3, p1])
+        subject.replace_attribute(polyline, p2, p3)
+        assert polyline.Points == (p1, p3, p3, p1)
+
 
 class TestHasElementReferenceIFC4(test.bootstrap.IFC4):
     def test_if_a_element_attribute_references_another_element(self):
@@ -1296,13 +1311,13 @@ class TestRemoveDeepIFC4(test.bootstrap.IFC4):
 
     def test_removing_an_element_recursively_except_if_an_element_is_referenced_elsewhere(self):
         owner = self.file.createIfcOwnerHistory()
-        element = self.file.createIfcWall(GlobalId="id1", OwnerHistory=owner)
-        element2 = self.file.createIfcWall(GlobalId="id2", OwnerHistory=owner)
+        element = self.file.createIfcWall(GlobalId="0YvctVUKr0kugbFTf53O9L", OwnerHistory=owner)
+        element2 = self.file.createIfcWall(GlobalId="1F$7lN9$r5MOA_lpAoNM52", OwnerHistory=owner)
         subject.remove_deep(self.file, element)
         with pytest.raises(RuntimeError):
-            self.file.by_guid("id1")
+            self.file.by_guid("0YvctVUKr0kugbFTf53O9L")
         assert self.file.by_id(1)
-        assert self.file.by_guid("id2")
+        assert self.file.by_guid("1F$7lN9$r5MOA_lpAoNM52")
 
 
 class TestRemoveDeep2IFC4(test.bootstrap.IFC4):
@@ -1316,20 +1331,102 @@ class TestRemoveDeep2IFC4(test.bootstrap.IFC4):
 
     def test_removing_an_element_recursively_except_if_an_element_is_referenced_elsewhere(self):
         owner = self.file.createIfcOwnerHistory()
-        element = self.file.createIfcWall(GlobalId="id1", OwnerHistory=owner)
-        element2 = self.file.createIfcWall(GlobalId="id2", OwnerHistory=owner)
+        element = self.file.createIfcWall(GlobalId="0YvctVUKr0kugbFTf53O9L", OwnerHistory=owner)
+        element2 = self.file.createIfcWall(GlobalId="1F$7lN9$r5MOA_lpAoNM52", OwnerHistory=owner)
         subject.remove_deep2(self.file, element)
         with pytest.raises(RuntimeError):
-            self.file.by_guid("id1")
+            self.file.by_guid("0YvctVUKr0kugbFTf53O9L")
         assert self.file.by_id(1)
-        assert self.file.by_guid("id2")
+        assert self.file.by_guid("1F$7lN9$r5MOA_lpAoNM52")
 
     def test_not_removing_an_element_still_referenced_somewhere(self):
         owner = self.file.createIfcOwnerHistory()
-        element = self.file.createIfcWall(GlobalId="id1", OwnerHistory=owner)
+        element = self.file.createIfcWall(GlobalId="0YvctVUKr0kugbFTf53O9L", OwnerHistory=owner)
         subject.remove_deep2(self.file, owner)
         assert self.file.by_id(1)
-        assert self.file.by_guid("id1")
+        assert self.file.by_guid("0YvctVUKr0kugbFTf53O9L")
+
+    def test_keeping_what_a_kept_subgraph_member_still_references(self):
+        # Two walls map the same representation map; wall 1's own polyline
+        # shares a point with the polyline inside the map. Removing wall 1's
+        # representation must leave the map, its polyline and that point
+        # intact for wall 2, and remove only what wall 1 alone used.
+        ctx = self.file.createIfcGeometricRepresentationContext(None, "Model", 3, 1e-5)
+        shared_point = self.file.createIfcCartesianPoint((1.0, 1.0, 0.0))
+        map_point = self.file.createIfcCartesianPoint((2.0, 2.0, 0.0))
+        own_point = self.file.createIfcCartesianPoint((3.0, 3.0, 0.0))
+        map_polyline = self.file.createIfcPolyline([shared_point, map_point])
+        representation_map = self.file.createIfcRepresentationMap(
+            self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((0.0, 0.0, 0.0))),
+            self.file.createIfcShapeRepresentation(ctx, "Body", "Curve3D", [map_polyline]),
+        )
+
+        def wall(name, own_items):
+            mapped_item = self.file.createIfcMappedItem(
+                representation_map,
+                self.file.createIfcCartesianTransformationOperator3D(
+                    None, None, self.file.createIfcCartesianPoint((0.0, 0.0, 0.0)), 1.0
+                ),
+            )
+            representation = self.file.createIfcShapeRepresentation(ctx, "Body", "Curve3D", own_items + [mapped_item])
+            return self.file.createIfcWall(
+                ifcopenshell.guid.new(),
+                Name=name,
+                Representation=self.file.createIfcProductDefinitionShape(None, None, [representation]),
+            )
+
+        own_polyline = self.file.createIfcPolyline([shared_point, own_point])
+        wall1 = wall("wall 1", [own_polyline])
+        wall2 = wall("wall 2", [])
+
+        subject.remove_deep2(self.file, wall1.Representation, also_consider=[wall1])
+
+        assert wall1.Representation is None
+        for gone in (own_polyline, own_point):
+            with pytest.raises(RuntimeError):
+                self.file.by_id(gone.id())
+        assert self.file.by_id(representation_map.id())
+        assert map_polyline.Points == (shared_point, map_point)
+        assert wall2.Representation.Representations[0].Items[0].MappingSource == representation_map
+
+    def test_keeping_the_chain_behind_a_kept_subgraph_member(self):
+        # The map's origin placement is also the position of wall 1's own
+        # solid, and the placement's location point is referenced by nothing
+        # else. Keeping the placement for the map means keeping its point too.
+        ctx = self.file.createIfcGeometricRepresentationContext(None, "Model", 3, 1e-5)
+        location = self.file.createIfcCartesianPoint((0.0, 0.0, 0.0))
+        placement = self.file.createIfcAxis2Placement3D(location)
+        representation_map = self.file.createIfcRepresentationMap(
+            placement, self.file.createIfcShapeRepresentation(ctx, "Body", "Curve3D", [])
+        )
+
+        def wall(name, own_items):
+            mapped_item = self.file.createIfcMappedItem(
+                representation_map,
+                self.file.createIfcCartesianTransformationOperator3D(
+                    None, None, self.file.createIfcCartesianPoint((0.0, 0.0, 0.0)), 1.0
+                ),
+            )
+            representation = self.file.createIfcShapeRepresentation(ctx, "Body", "Curve3D", own_items + [mapped_item])
+            return self.file.createIfcWall(
+                ifcopenshell.guid.new(),
+                Name=name,
+                Representation=self.file.createIfcProductDefinitionShape(None, None, [representation]),
+            )
+
+        profile = self.file.createIfcRectangleProfileDef("AREA", None, None, 1.0, 1.0)
+        solid = self.file.createIfcExtrudedAreaSolid(
+            profile, placement, self.file.createIfcDirection((0.0, 0.0, 1.0)), 1.0
+        )
+        wall1 = wall("wall 1", [solid])
+        wall("wall 2", [])
+
+        subject.remove_deep2(self.file, wall1.Representation, also_consider=[wall1])
+
+        with pytest.raises(RuntimeError):
+            self.file.by_id(solid.id())
+        assert representation_map.MappingOrigin == placement
+        assert placement.Location == location
 
 
 class TestBatchRemoveDeep2IFC4(test.bootstrap.IFC4):
