@@ -145,8 +145,7 @@ class BIMSearchProperties(PropertyGroup):
             (
                 "property",
                 "Property",
-                "Search by Pset property value.\n\n"
-                "Example values: 'Pset_WallCommon', 'FireRating', 'equal to', '2HR'.",
+                "Search by Pset property value.\n\nExample values: 'Pset_WallCommon', 'FireRating', 'equal to', '2HR'.",
                 "PROPERTIES",
                 2,
             ),

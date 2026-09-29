@@ -1207,7 +1207,7 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
                         name = suggestion.get("name")
                         self.add_item(
                             identifier=key,
-                            name=f"{key} > {name if name else predefined_type }",
+                            name=f"{key} > {name if name else predefined_type}",
                             predefined_type=predefined_type,
                         )
 
@@ -1439,7 +1439,7 @@ class ClippingPlaneCutWithCappings(bpy.types.Operator):
             objects_processed += 1
             wm.progress_update(obj_i)
 
-        self.report({"INFO"}, f"{objects_processed} processed - {time.time()-t0:.3f} sec")
+        self.report({"INFO"}, f"{objects_processed} processed - {time.time() - t0:.3f} sec")
 
         return {"FINISHED"}
 
@@ -1484,7 +1484,7 @@ class RevertClippingPlaneCut(bpy.types.Operator):
             wm.progress_update(obj_i)
         wm.progress_end()
 
-        self.report({"INFO"}, f"{objects_processed} processed - {time.time()-t0:.3f} sec")
+        self.report({"INFO"}, f"{objects_processed} processed - {time.time() - t0:.3f} sec")
         return {"FINISHED"}
 
     def revert_object_mesh(self, obj: bpy.types.Object) -> None:
