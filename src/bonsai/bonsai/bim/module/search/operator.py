@@ -131,13 +131,7 @@ class FilterValueSuggestions(Operator):
 
     @staticmethod
     def value_to_query_string(value: Any) -> str:
-        """Stringify a raw IFC value for use as a filter query suggestion.
-
-        Booleans are rendered as the query language's TRUE / FALSE keywords
-        rather than Python's str(bool) capitalisation ("True" / "False"),
-        since the filter grammar only accepts the former as a literal and
-        would otherwise silently fail to match the property (#6116, #8100).
-        """
+        """Stringify a raw IFC value as a filter query suggestion, with booleans as TRUE / FALSE."""
         if isinstance(value, bool):
             return "TRUE" if value else "FALSE"
         return str(value)
