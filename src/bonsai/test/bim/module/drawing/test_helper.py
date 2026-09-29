@@ -50,8 +50,6 @@ class TestOrthoViewFrame(NewFile):
         assert ymin == pytest.approx(-ymax)
 
     def test_the_paper_space_margin_is_the_same_at_a_smaller_drawing_scale(self):
-        # A fixed physical symbol size on paper needs more world space to be
-        # left clear the smaller the drawing scale is (e.g. 1:200 vs 1:100).
         camera = self.make_camera(ortho_scale=100.0, diagram_scale="1:200|1/200")
 
         xmin, xmax, ymin, ymax = helper.ortho_view_frame(camera.data)[:4]
