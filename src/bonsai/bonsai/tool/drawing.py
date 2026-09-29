@@ -1045,11 +1045,7 @@ class Drawing(bonsai.core.tool.Drawing):
         cls.import_camera_props(drawing, camera)
         tool.Ifc.link(drawing, obj)
 
-        # Apply the georeferencing/model offset like every other imported object
-        # (see import_ifc.py). Without this the drawing camera keeps absolute map
-        # coordinates while the rest of the scene is shifted to Blender-local, so
-        # on a georeferenced model the camera lands far away and drifts further on
-        # each save/reopen. See #8205.
+        # Apply the blender offset like other imported objects (#8205).
         obj.matrix_world = tool.Loader.apply_blender_offset_to_matrix_world(
             obj, np.array(cls.get_camera_shape_matrix(drawing, shape))
         )
@@ -1073,8 +1069,7 @@ class Drawing(bonsai.core.tool.Drawing):
         else:
             obj = bpy.data.objects.new(tool.Loader.get_name(drawing), camera)
 
-        # Match the georeferencing offset applied to every other imported object
-        # so the camera is not misplaced on georeferenced models. See #8205.
+        # Apply the blender offset like other imported objects (#8205).
         obj.matrix_world = tool.Loader.apply_blender_offset_to_matrix_world(
             obj, np.array(cls.get_camera_shape_matrix(drawing, shape))
         )
