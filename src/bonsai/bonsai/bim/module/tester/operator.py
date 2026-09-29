@@ -351,9 +351,7 @@ class StartIfcTesterWebapp(bpy.types.Operator):
             env["BONSAI_LIB_PATH"] = str(bonsai_lib_path)
             env["BONSAI_VERSION"] = tool.Blender.get_bonsai_version()
 
-            # Start the Flask server as subprocess. Capture stdout/stderr so that if the
-            # server fails to start (missing dependency, bad build, port/firewall issue)
-            # we have something to show the user instead of a silent failure.
+            # Start the Flask server as subprocess, capturing its output to diagnose startup failures.
             webapp_process = subprocess.Popen(
                 [sys.executable, webapp_serve_path, "--host", "127.0.0.1", "--port", str(webapp_port)],
                 env=env,
@@ -367,10 +365,9 @@ class StartIfcTesterWebapp(bpy.types.Operator):
             props.websocket_server_port = websocket_port
             props.webapp_is_running = True
 
-            # Poll until the webapp is actually listening (or has died / timed out) before
-            # opening a browser tab. Opening the browser on a dead server just produces a
-            # confusing "Unable to connect" tab with no diagnostics.
+            # Open the browser only once the webapp is listening.
             def wait_for_webapp_and_open_browser():
+                global webapp_process, websocket_server_thread, websocket_app
                 process = webapp_process
                 deadline = time.monotonic() + 10.0
                 connected = False
@@ -389,11 +386,14 @@ class StartIfcTesterWebapp(bpy.types.Operator):
 
                 if connected:
                     webbrowser.open(f"http://127.0.0.1:{webapp_port}?bonsai_server={websocket_port}")
+                    try:
+                        for line in process.stdout:
+                            print(line, end="")
+                    except (ValueError, OSError):
+                        pass
                     return
 
-                # Something went wrong: do NOT open a dead browser tab. Print diagnostics
-                # to the console, since this runs in a daemon thread after execute() has
-                # already returned and self.report() is no longer usable.
+                # Runs after execute() returned, so report to the console instead.
                 exit_code = process.poll()
                 if exit_code is not None:
                     try:
@@ -412,7 +412,13 @@ class StartIfcTesterWebapp(bpy.types.Operator):
                         "if the port is blocked."
                     )
 
-                props.webapp_is_running = False
+                if process.stdout:
+                    process.stdout.close()
+                if webapp_process is process:
+                    if websocket_app:
+                        websocket_app.stop_server()
+                    webapp_process = websocket_server_thread = websocket_app = None
+                    props.webapp_is_running = False
 
             browser_thread = threading.Thread(target=wait_for_webapp_and_open_browser, daemon=True)
             browser_thread.start()
