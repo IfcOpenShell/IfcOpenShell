@@ -111,9 +111,11 @@ def test_rocks():
         assert f[139].RelatingPropertyDefinition.is_a("IfcPropertySetDefinitionSet")
         assert {x.id() for x in f[139].RelatingPropertyDefinition[0]} == {136, 138}
 
-        b = f.key_value_store_query("i|139|5")[2:]
+        # Numeric key segments are fixed-width hex: i|<id>|<attribute>,
+        # t|<identity>|<attribute>. See rocksdb_map_adapter.h.
+        b = f.key_value_store_query(f"i|{139:016x}|{5:016x}")[2:]
         iden = struct.unpack("Q", b)[0]
-        b = f.key_value_store_query(f"t|{iden}|0")[1:]
+        b = f.key_value_store_query(f"t|{iden:016x}|{0:016x}")[1:]
         assert set(struct.unpack("Q", b[i : i + 8])[0] for i in range(1, len(b), 9)) == {136, 138}
 
         g = ifcopenshell.open(fn)
@@ -121,6 +123,39 @@ def test_rocks():
             assert f.by_guid(inst.GlobalId).id() == inst.id()
 
         del g
+        del f
+        gc.collect()
+
+
+def test_rocks_storage_getattr_invalid_attribute():
+    with tempfile.TemporaryDirectory() as d:
+        rfn = os.path.join(d, os.path.basename(fn))
+        ifcopenshell.convert_path_to_rocksdb(fn, rfn)
+
+        f = ifcopenshell.open(rfn)
+        inst = f.storage.by_id(139)
+        with pytest.raises(AttributeError):
+            inst.NotARealAttribute
+
+        del f
+        gc.collect()
+
+
+def test_rocks_storage_ids_and_type_lookups():
+    with tempfile.TemporaryDirectory() as d:
+        rfn = os.path.join(d, os.path.basename(fn))
+        ifcopenshell.convert_path_to_rocksdb(fn, rfn)
+
+        f = ifcopenshell.open(rfn)
+        m = ifcopenshell.open(fn)
+        assert sorted(i.id() for i in f.storage) == sorted(i.id() for i in m)
+        inst = f.storage.by_id(139)
+        assert inst.id() == 139
+        assert len(inst) == 6
+        assert repr(inst).startswith("#139=IfcRelDefinesByProperties(")
+        assert [i.id() for i in f.storage.by_type("IfcColumn")] == [93]
+        assert [i.id() for i in f.storage.by_id(93).IsDefinedBy] == [101, 102, 103, 139]
+
         del f
         gc.collect()
 

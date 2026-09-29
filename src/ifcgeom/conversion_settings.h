@@ -346,7 +346,7 @@ namespace ifcopenshell {
 
 			struct CircleSegments : public SettingBase<CircleSegments, int> {
 				static constexpr const char* const name = "circle-segments";
-				static constexpr const char* const description = "Number of segments to approximate full circles in the CGAL kernel. When 0 (the default) the segment count is derived from mesher-linear-deflection instead, so curves stay within the deflection tolerance regardless of radius.";
+				static constexpr const char* const description = "Number of segments to approximate full circles in the CGAL kernel. When 0 (the default) the segment count is derived from mesher-linear-deflection and mesher-angular-deflection instead, whichever is stricter, so curves stay within tolerance regardless of radius.";
 				static constexpr int defaultvalue = 0;
 			};
 

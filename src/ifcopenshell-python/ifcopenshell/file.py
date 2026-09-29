@@ -257,9 +257,11 @@ binary_deserializers = (
     lambda __, val: struct.unpack("@d", val)[0],
     lambda __, val: val.decode("utf-8"),
     lambda __, val: val.decode("utf-8"),
-    lambda storage, val: ifcopenshell_wrapper.schema_by_name(storage.schema_identifier)
-    .declarations()[struct.unpack("@q", val[:8])[0]]
-    .enumeration_items()[struct.unpack("@q", val[8:])[0]],
+    lambda storage, val: (
+        ifcopenshell_wrapper.schema_by_name(storage.schema_identifier)
+        .declarations()[struct.unpack("@q", val[:8])[0]]
+        .enumeration_items()[struct.unpack("@q", val[8:])[0]]
+    ),
     lambda storage, val: storage.by_id((val[0] == 105, struct.unpack("@q", val[1:])[0])),
     lambda __, _: (),
     lambda __, val: struct.unpack("@" + "i" * (len(val) // 4), val),
@@ -337,29 +339,31 @@ class rocksdb_lazy_instance:
         attr = attribute_lookup(self.storage.schema_identifier, self.is_a()).get(name)
         if isinstance(attr, int):
             return self[attr]
+        elif attr is None:
+            raise AttributeError("entity instance of type '%s' has no attribute '%s'" % (self.is_a(), name))
         else:
             entity_indices, attribute_index = attr
 
             def _():
                 for index_in_schema in entity_indices:
-                    buffer = self.storage.read(f"v|{self.name[2:]}|{index_in_schema}|{attribute_index}") or b""
+                    buffer = (
+                        self.storage.read(f"v|{self.name[2:]}|{index_in_schema:016x}|{attribute_index:016x}") or b""
+                    )
                     yield from map(self.storage.by_id, struct.unpack("<" + "I" * (len(buffer) // 4), buffer))
 
             return list(_())
 
     def __getitem__(self, index):
-        return self._transform_value(self.storage.read(f"{self.name}|{index}"))
+        return self._transform_value(self.storage.read(f"{self.name}|{index:016x}"))
 
     @functools.cache
     def __len__(self):
         return (
             max(
-                map(
-                    int,
-                    filter(
-                        lambda s: s.isdigit(),
-                        (k.split(b"|")[2] for k, v in self.storage.prefix(f"{self.name}|").items()),
-                    ),
+                (
+                    int(k.split(b"|")[2], 16)
+                    for k, v in self.storage.prefix(f"{self.name}|").items()
+                    if k.split(b"|")[2] != b"_"
                 ),
                 default=-1,
             )
@@ -371,26 +375,26 @@ class rocksdb_lazy_instance:
             yield self[i]
 
     def __repr__(self):
-        pre = f"#{self.name[2:]}=" if self.name.startswith("i|") else ""
+        pre = f"#{self.id()}=" if self.name.startswith("i|") else ""
 
         def val_repr(val):
             if isinstance(val, rocksdb_lazy_instance):
                 if val.name[0] == "i":
-                    return f"#{val.name[2:]}"
+                    return f"#{val.id()}"
                 else:
                     return repr(val)
             elif isinstance(val, (tuple, list)):
-                return f'({",".join(map(val_repr, val))})'
+                return f"({','.join(map(val_repr, val))})"
             elif val is None:
                 return "$"
             else:
                 return repr(val)
 
-        return f'{pre}{self.is_a()}({",".join(map(val_repr, self))})'
+        return f"{pre}{self.is_a()}({','.join(map(val_repr, self))})"
 
     def id(self):
         if self.name.startswith("i|"):
-            return int(self.name[2:])
+            return int(self.name[2:], 16)
         else:
             # compatibility with C++
             return 0
@@ -427,9 +431,9 @@ class rocksdb_file_storage:
 
     def by_id(self, name):
         if isinstance(name, tuple):
-            inst = rocksdb_lazy_instance(self, f'{"i" if name[0] else "t"}|{name[1]}')
+            inst = rocksdb_lazy_instance(self, f"{'i' if name[0] else 't'}|{name[1]:016x}")
         else:
-            inst = rocksdb_lazy_instance(self, f"i|{name}")
+            inst = rocksdb_lazy_instance(self, f"i|{name:016x}")
         if not inst:
             raise KeyError(f"Instance with name {name} not found in file")
         return inst
@@ -444,7 +448,7 @@ class rocksdb_file_storage:
 
         def _():
             for index in visit(decl):
-                buff = self.read(f"t|{index}") or b""
+                buff = self.read(f"t|{index:016x}") or b""
                 yield from map(self.by_id, struct.unpack("@" + "q" * (len(buff) // 8), buff))
 
         return list(_())
@@ -455,10 +459,10 @@ class rocksdb_file_storage:
         previous = None
         for k, v in self.items():
             if k.startswith(b"i|"):
-                name = int(k[2:].split(b"|")[0])
+                name = int(k[2:].split(b"|")[0], 16)
                 if name != previous:
                     previous = name
-                    yield rocksdb_lazy_instance(self, f"i|{name}")
+                    yield rocksdb_lazy_instance(self, f"i|{name:016x}")
 
     def prefix(self, prefix):
         return rocksdb_file_storage(self.file, self._prefix + prefix)
@@ -843,17 +847,26 @@ class file_mixin:
             self.transaction.store_delete(inst)
         return self._remove(inst)
 
-    def batch(self):
-        """Low-level mechanism to speed up deletion of large subgraphs"""
+    def batch(self) -> None:
+        """Enable batch mode, a low-level mechanism to speed up deleting large subgraphs.
+
+        In batch mode ``remove(entity)`` marks the entity for deletion instead
+        of deleting it, and ``unbatch()`` deletes everything marked in one
+        operation. The difference from usual removal: normally, removing an
+        entity immediately edits it out of every entity that references it; in
+        batch mode a referencing entity that is itself marked is left alone,
+        so removing a face set and its thousands of faces does not rewrite the
+        face set's list once per face.
+        """
         if self.transaction:
             self.transaction.batch()
-        return self.batch()
+        self._batch()
 
-    def unbatch(self):
-        """Low-level mechanism to speed up deletion of large subgraphs"""
+    def unbatch(self) -> None:
+        """Exit batch mode, deleting everything marked since ``batch()``."""
         if self.transaction:
             self.transaction.unbatch()
-        return self.unbatch()
+        self._unbatch()
 
     def __iter__(self) -> Generator[ifcopenshell.entity_instance]:
         return iter(self[id] for id in self.entity_names())

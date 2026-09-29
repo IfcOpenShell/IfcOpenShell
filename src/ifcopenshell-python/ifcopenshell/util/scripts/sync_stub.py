@@ -396,7 +396,7 @@ def main() -> None:
 
     if write:
         stub_path.write_text(new_source)
-        print(f"\nWrote {stub_path}. Run `black` on it, then validate_stub.py to see what's left.")
+        print(f"\nWrote {stub_path}. Run `ruff format` on it, then validate_stub.py to see what's left.")
     else:
         print("\nDry run - nothing written. Re-run with --write to apply the safe edits above.")
         if new_source != stub_source:

@@ -309,7 +309,7 @@ IF EXIST "%INSTALL_DIR%\mpir" (
 set DEPENDENCY_NAME=mpir
 :: `mpfr` depends on relative path `..\mpir\config.h`, so dependency name should match exactly.
 set DEPENDENCY_DIR=%DEPS_DIR%\mpir
-call :GitCloneAndCheckoutRevision https://github.com/Andrej730/mpir-vs2026.git "%DEPENDENCY_DIR%"
+call :GitCloneAndCheckoutRevision https://github.com/BrianGladman/mpir.git "%DEPENDENCY_DIR%" 5e0c2061af105c151970d41c8394ce956f77e455
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 pushd "%DEPENDENCY_DIR%"
 git reset --hard
@@ -320,11 +320,6 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpir_gc\"}" | git apply --unidiff-zero --ignore-whitespace
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 git apply "%~dp0patches\mpir_runtime.patch" --unidiff-zero --ignore-whitespace
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-IF /I "%VS_PLATFORM%"=="ARM64" (
-    echo "Applying ARM64 Patches for Mpir"
-    git apply "%~dp0patches\mpir-arm64-changes.patch" --unidiff-zero --ignore-whitespace
-)
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd msvc
 cd vs%VS_VER:~2,2%
@@ -345,19 +340,15 @@ IF EXIST "%INSTALL_DIR%\mpfr" (
 
 set DEPENDENCY_NAME=mpfr
 set DEPENDENCY_DIR=%DEPS_DIR%\mpfr
-call :GitCloneAndCheckoutRevision https://github.com/aothms/mpfr.git "%DEPENDENCY_DIR%" 2ebbe10fd029a480cf6e8a64c493afa9f3654251
+set MPFR_REVISION=ifcopenshell
+IF /I "%VS_PLATFORM%"=="ARM64" set MPFR_REVISION=ifcopenshell-arm64
+call :GitCloneAndCheckoutRevision https://github.com/Andrej730/mpfr.git "%DEPENDENCY_DIR%" %MPFR_REVISION%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 pushd "%DEPENDENCY_DIR%"
 git reset --hard
 git clean -fdx
 powershell -c "get-content %~dp0patches\mpfr.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpfr\"}" | git apply --unidiff-zero --ignore-whitespace
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-git apply "%~dp0patches\mpfr_runtime.patch" --unidiff-zero --ignore-whitespace
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-IF /I "%VS_PLATFORM%"=="ARM64" (
-    echo "Applying ARM64 Patches for Mpfr"
-    git apply "%~dp0patches\mpfr-arm64-changes.patch" --unidiff-zero --ignore-whitespace
-)
 if "%VS_VER%"=="2017" (
   set mpfr_sln=build.vc15
   set orig_platform_toolset=v141
@@ -421,7 +412,7 @@ if /I "%VS_PLATFORM%"=="x64" (
     echo "Failed to identify architecture"
     GOTO :Error
 )
-set BOOST_LIBS=--with-system --with-regex --with-thread --with-program_options --with-date_time --with-iostreams --with-filesystem
+set BOOST_LIBS=--with-regex --with-program_options --with-iostreams
 :: NOTE Boost is fast to build with limited set of libraries so build it always.
 cd "%DEPENDENCY_DIR%"
 call cecho.cmd 0 13 "Building %DEPENDENCY_NAME% %BOOST_LIBS% Please be patient, this will take a while."
@@ -805,12 +796,11 @@ IF DEFINED QT6_HOST_INSTALL_DIR (
 IF "%QT6_TARGET_INSTALLED%"=="TRUE" IF "%QT6_HOST_INSTALLED%"=="TRUE" (
     echo Found existing "%QT6_INSTALL_DIR%" for %BUILD_CFG%, skipping
     IF DEFINED QT6_HOST_INSTALL_DIR echo Found existing Qt host tools at "%QT6_HOST_INSTALL_DIR%", skipping
-    call :MarkInstallation
     goto %NEXT_DEPENDENCY_LABEL%
 )
 
 set AQT_PYTHON=python
-IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" IF EXIST "%PYTHONHOME%\python.exe" set AQT_PYTHON="%PYTHONHOME%\python.exe"
+IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" set AQT_PYTHON="%PYTHONHOME%\python.exe"
 
 %AQT_PYTHON% -m pip install --upgrade aqtinstall
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -819,6 +809,9 @@ IF NOT "%QT6_TARGET_INSTALLED%"=="TRUE" (
     REM Keep the install lean by filtering archives: qtbase provides
     REM Core/Gui/Widgets (and the Qt6::CorePrivate target), qtsvg provides
     REM Qt6::Svg. Both are base-Qt archives, not add-on modules.
+    REM Qt's official archives always bundle both RelWithDebInfo and Debug builds together.
+    REM aqtinstall has no option to download only one of them, or other configs
+    REM (Release/MinSizeRel) instead.
     %AQT_PYTHON% -m aqt install-qt windows desktop %QT6_VERSION% %QT6_ARCH% -O "%QT6_AQT_OUTPUT_DIR%" --archives qtbase qtsvg
     IF ERRORLEVEL 1 GOTO :Error
 )
@@ -862,23 +855,19 @@ IF DEFINED QT6_HOST_INSTALL_DIR (
     )
 )
 
-call :MarkInstallation
 goto %NEXT_DEPENDENCY_LABEL%
 
 :manifold
 set DEPENDENCY_NAME=manifold
 set MANIFOLD_VERSION=3.2.1
 set DEPENDENCY_DIR=%DEPS_DIR%\manifold-%MANIFOLD_VERSION%
-set DEPENDENCY_INSTALL_DIR=%INSTALL_DIR%\manifold-%MANIFOLD_VERSION%
+set DEPENDENCY_INSTALL_NAME=manifold-%MANIFOLD_VERSION%
+set DEPENDENCY_INSTALL_DIR=%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%
 set NEXT_DEPENDENCY_LABEL=Successful
-:: TODO: test whether manifold links the debug CRT for Debug builds and needs separate
-:: Release/Debug install dirs instead of sharing one.
 echo MANIFOLD_INSTALL_PATH=%DEPENDENCY_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 
-IF EXIST "%DEPENDENCY_INSTALL_DIR%" (
-    echo Found existing "%DEPENDENCY_INSTALL_DIR%", skipping
-    goto %NEXT_DEPENDENCY_LABEL%
-)
+call :CheckInstallation
+if %ERRORLEVEL%==200 GOTO %NEXT_DEPENDENCY_LABEL%
 
 call :GitCloneAndCheckoutRevision https://github.com/elalish/manifold.git "%DEPENDENCY_DIR%" v%MANIFOLD_VERSION%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -893,12 +882,14 @@ call :RunCMake -DCMAKE_INSTALL_PREFIX="%DEPENDENCY_INSTALL_DIR%" ^
                -DMANIFOLD_CBIND=OFF ^
                -DMANIFOLD_TEST=OFF ^
                -DMANIFOLD_EXPORT=OFF ^
-               -DMANIFOLD_DOWNLOADS=OFF
+               -DMANIFOLD_DOWNLOADS=OFF ^
+               -DCMAKE_DEBUG_POSTFIX="_d"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :BuildCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :MarkInstallation
 goto %NEXT_DEPENDENCY_LABEL%
 
 :: :tbb

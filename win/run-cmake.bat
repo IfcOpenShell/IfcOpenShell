@@ -56,21 +56,15 @@ if (%1)==() (
 call vs-cfg.cmd %GENERATOR%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
-:: If cached variables are still undefined,
-:: read them from the specific BuildDepsCache-XXX.txt.
-set "_test=0"
-if not defined OCC_INCLUDE_DIR set _test=1
-if not defined OCC_LIBRARY_DIR set _test=1
-if %_test% EQU 1 (
-	IF DEFINED VS_TOOLSET (
-		set "BUILD_DEPS_CACHE_PATH=BuildDepsCache-%VS_PLATFORM%-%VS_TOOLSET%.txt"
-	) ELSE (
-		set "BUILD_DEPS_CACHE_PATH=BuildDepsCache-%VS_PLATFORM%.txt"
-	)
+:: Read the rest of the cached variables from the specific BuildDepsCache-XXX.txt.
+IF DEFINED VS_TOOLSET (
+	set "BUILD_DEPS_CACHE_PATH=BuildDepsCache-%VS_PLATFORM%-%VS_TOOLSET%.txt"
+) ELSE (
+	set "BUILD_DEPS_CACHE_PATH=BuildDepsCache-%VS_PLATFORM%.txt"
+)
 
-	for /f "tokens=*" %%f in ('dir !BUILD_DEPS_CACHE_PATH! /o:-n /t:a /b') do (
-		for /f "delims== tokens=1,2" %%G in (%%f) do set %%G=%%H
-	)
+for /f "tokens=*" %%f in ('dir !BUILD_DEPS_CACHE_PATH! /o:-n /t:a /b') do (
+	for /f "delims== tokens=1,2" %%G in (%%f) do set %%G=%%H
 )
 
 :: As CMake options are typically of format -DSOMETHING:BOOL=ON or -DSOMETHING=1, i.e. they contain an equal sign,
@@ -87,11 +81,6 @@ popd
 
 IF NOT EXIST ..\%BUILD_DIR%. mkdir ..\%BUILD_DIR%
 pushd ..\%BUILD_DIR%
-
-:: Legacy setup.
-if not defined BOOST_INSTALL_DIR (
-    set BOOST_INSTALL_DIR=%DEPS_DIR%\boost_1_86_0\stage\%GEN_SHORTHAND%
-)
 
 set OPENCOLLADA_INSTALL_DIR=%INSTALL_DIR%\OpenCOLLADA
 set LIBXML2_INCLUDE_DIR=%DEPS_DIR%\OpenCOLLADA\Externals\LibXML\include
@@ -135,9 +124,6 @@ echo   Arguments    = %ARGUMENTS%
 echo.
 call cecho.cmd 0 10 "Dependency Environment Variables for %PROJECT_NAME%:"
 echo    BOOST_INSTALL_DIR       = %BOOST_INSTALL_DIR%
-:: OCC_INCLUDE_DIR / OCC_LIBRARY_DIR are legacy vars, they're not defined by build-deps.py anymore.
-echo    OCC_INCLUDE_DIR         = %OCC_INCLUDE_DIR%
-echo    OCC_LIBRARY_DIR         = %OCC_LIBRARY_DIR%
 echo    OCC_INSTALL_DIR         = %OCC_INSTALL_DIR%
 echo    OPENCOLLADA_INSTALL_DIR = %OPENCOLLADA_INSTALL_DIR%
 echo    LIBXML2_INCLUDE_DIR     = %LIBXML2_INCLUDE_DIR%
@@ -150,7 +136,6 @@ echo    SWIG_INSTALL_DIR        = %SWIG_INSTALL_DIR%
 echo    JSON_INCLUDE_DIR        = %JSON_INCLUDE_DIR%
 echo.
 echo    CGAL_INSTALL_DIR        = %CGAL_INSTALL_DIR%
-:: echo    CGAL_LIBRARY_DIR        = %CGAL_LIBRARY_DIR%
 echo    GMP_INSTALL_DIR         = %GMP_INSTALL_DIR%
 echo    MPFR_INSTALL_DIR        = %MPFR_INSTALL_DIR%
 echo    EIGEN_DIR               = %EIGEN_DIR%
@@ -164,6 +149,11 @@ echo    QT_HOST_PATH            = %QT_HOST_PATH%
 echo    CCACHE_INSTALL_DIR      = %CCACHE_INSTALL_DIR%
 echo.
 echo    CMAKE_INSTALL_PREFIX    = %CMAKE_INSTALL_PREFIX%
+echo.
+
+call cecho.cmd 0 12 "WARNING: run-cmake.bat is deprecated since 11 Sep 2026 and will be removed very shortly."
+call cecho.cmd 0 12 "Use `python run-cmake.py` instead. It's intended to be a drop-in replacement, so exactly the same args apply,"
+call cecho.cmd 0 12 "except CMake args now need to be passed after `"--`", e.g. `python run-cmake.py vs2022-x64 -- -DGLTF_SUPPORT=ON`."
 echo.
 
 set CMAKELISTS_DIR=..\cmake

@@ -1,4 +1,4 @@
-find_package(Eigen3 REQUIRED)
+find_package(Eigen3 ${EIGEN_MIN_VERSION} REQUIRED)
 
 set(mapping_plugin_runtime_dir "$<TARGET_FILE_DIR:IfcGeom>")
 

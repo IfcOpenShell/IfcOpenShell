@@ -4,27 +4,6 @@ version = "0.0.0"
 # Don't provide requires-python explicitly
 # allowing pyprojects to set their own (e.g. bonsai and general ifcopenshell version differ).
 
-[tool.black]
-line-length = 120
-extend-exclude = '''
-    src/ifcopenshell-python/ifcopenshell/express/rules/*
-    |src/ifcopenshell-python/ifcopenshell/express/express_parser.py
-    |src/ifcopenshell-python/ifcopenshell/mvd/*
-    |src/ifcopenshell-python/ifcopenshell/simple_spf/*
-    |src/ifc2ca/templates/*
-    |src/svgfill
-    |src/exterior-shell-extractor
-    |choco/bonsai/tools/enable_blenderbim_addon.py
-    |choco/bonsai/tools/disable_blenderbim_addon.py
-    |docs/conf.py
-    |docs/generate_docs.py
-    |aws/lambda/example_handler/__init__.py
-    |conda/update_version_init.py
-    |test/bpy.py
-    |test/tests.py
-    |test/run.py
-'''
-
 [tool.pyright]
 reportInvalidTypeForm = false
 disableBytesTypePromotions = true
@@ -46,16 +25,17 @@ exclude = [
 line-length = 120
 exclude = [
     # Submodules.
-    "src/ifcopenshell-python/ifcopenshell/express",
     "src/ifcopenshell-python/ifcopenshell/mvd",
     "src/ifcopenshell-python/ifcopenshell/simple_spf",
     "src/svgfill",
-    #
-    # Unformatted.
-    "src/exterior-shell-extractor",
+    "src/pyodide/demo-app/wheels",
+    # Generated.
+    "src/ifcopenshell-python/ifcopenshell/express/express_parser.py",
+    "src/ifcopenshell-python/ifcopenshell/express/rules",
     # Incompatible with linter.
     "src/ifc2ca/templates",
 ]
+
 [tool.ruff.lint]
 preview = true
 select = [
@@ -65,6 +45,7 @@ select = [
     "E9",          # io errors
     # "F",         # pyflakes
     #
+    "unused-import",
     "FA",          # future annotations
     "UP",          # pyupgrade
     "unnecessary-iterable-allocation-for-first-element",
@@ -182,11 +163,22 @@ dev-setup.sequence = [
     {cmd = "uv sync --python 3.13"},
     {cmd = "uv pip install -e ./src/bsdd/"},
     {cmd = "uv pip install -e ./src/ifcopenshell-python/[advanced,dev]"},
-    {cmd = "uv pip install -e ./src/ifcedit/"},
+    # Ordered so that packages come after the repo packages they depend on,
+    # otherwise uv would pull those dependencies from PyPI instead.
+    {cmd = "uv pip install -e ./src/bcf/"},
+    {cmd = "uv pip install -e ./src/ifc4d/"},
+    {cmd = "uv pip install -e ./src/ifc5d/"},
+    {cmd = "uv pip install -e ./src/ifccityjson/"},
+    {cmd = "uv pip install -e ./src/ifcclash/"},
+    {cmd = "uv pip install -e ./src/ifccsv/"},
+    {cmd = "uv pip install -e ./src/ifcdiff/"},
+    {cmd = "uv pip install -e ./src/ifcfm/"},
     {cmd = "uv pip install -e ./src/ifcpatch/"},
+    {cmd = "uv pip install -e ./src/ifctester/"},
+    {cmd = "uv pip install -e ./src/ifcedit/"},
     {cmd = "uv pip install -e ./src/ifcquery/"},
     {cmd = "uv pip install -e './src/ifcmcp/[mcp]'"},
-    {cmd = "uv pip install -r src/bonsai/requirements-dev.txt"},
+    {cmd = "uv pip install --group src/bonsai/pyproject.toml:dev"},
 ]
 dev-setup.help = "Install repo packages in editable mode"
 
@@ -194,7 +186,7 @@ ruff = "ruff check"
 
 check-whitespace = "uv run .github/scripts/check-whitespace.py"
 
-black = "black ."
+ruff-format = "ruff format"
 
 ty.sequence = ["ty-bonsai", "ty-ios"]
 ty.help = "Run ty type checker. Requires ty-venv to be set up first."
@@ -204,22 +196,24 @@ ty-venv.sequence = ["bonsai-deps", "ty-venv-bonsai", "ty-venv-ios"]
 
 ty-venv-bonsai.sequence = [
     {cmd = "uv venv src/bonsai/.venv --python=3.11 --allow-existing"},
-    {cmd = "uv pip install -r src/bonsai/type-check-requirements.txt --python=src/bonsai/.venv"},
+    {cmd = "uv pip install --group src/bonsai/pyproject.toml:type-check --python=src/bonsai/.venv"},
 ]
 
 ty-venv-ios.sequence = [
     {cmd = "uv venv src/ifcopenshell-python/.venv --python=3.10 --allow-existing"},
-    {cmd = "uv pip install -r src/ifcopenshell-python/type-check-requirements.txt --python=src/ifcopenshell-python/.venv"},
+    {cmd = "uv pip install --group src/ifcopenshell-python/pyproject.toml:type-check --python=src/ifcopenshell-python/.venv"},
 ]
 
-format.sequence = ["black", "ruff"]
+format.sequence = ["ruff-format", "ruff"]
 
 cmake-format = "gersemi . --in-place"
 
 [tool.poe.tasks.ty-ios]
 cmd = """
     ty check
+    conda/
     nix/
+    win/
     src/bcf
     src/bsdd
     src/ifc2ca

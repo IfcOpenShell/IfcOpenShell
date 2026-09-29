@@ -24,11 +24,9 @@
 #
 import argparse
 import multiprocessing
-import os
 import shutil
 import sys
 from datetime import datetime
-from pathlib import Path
 from typing import NamedTuple
 
 from common import (
@@ -38,18 +36,20 @@ from common import (
     BUILD_TYPES,
     PROJECT_NAME,
     REPO_ROOT,
-    SCRIPT_DIR,
     BuildCfg,
-    BuildDepsCache,
     BuildType,
     C,
+    HelpStrings,
     colorize,
-    is_on_off,
+    ensure_script_dir,
     logger,
     require_command,
+    resolve_cli_or_env,
     validate_cmake_version,
 )
+from common_win import BuildDepsCache
 from installers import (
+    CMakeGenCfg,
     install_boost,
     install_ccache,
     install_cgal,
@@ -73,14 +73,22 @@ from vs_cfg import VsCfgResult, get_vs_var, vs_cfg
 
 class Args(NamedTuple):
     generator: str | None
-    build_type_cfg: BuildCfg
+    build_cfg: BuildCfg
     build_type: BuildType
     reuse_boost: bool
+    use_ninja: bool
+    shared: bool
+    num_build_procs: int
+    install_python: bool
+    python_version: str
+    install_qt6: bool
+    qt6_version: str
+    yes: bool
 
 
 def print_build_config(
     vs_cfg_vars: VsCfgResult,
-    build_type_cfg: BuildCfg,
+    build_cfg: BuildCfg,
     build_type: BuildType,
     ifcos_install_python: bool,
     ifcos_install_qt6: bool,
@@ -100,10 +108,10 @@ def print_build_config(
     logger.info(f"  - The directory where {PROJECT_NAME} dependencies are fetched and built.")
     logger.info(field(f"* Installation Directory = {vs_cfg_vars.install_dir}"))
     logger.info(f"  - The directory where {PROJECT_NAME} dependencies are installed.")
-    logger.info(field(f"* Build Config Type\t= {build_type_cfg}"))
+    logger.info(field(f"* Build Config Type\t= {build_cfg}"))
     logger.info("  - The used build configuration type for the dependencies.")
     logger.info("    Defaults to RelWithDebInfo if not specified.")
-    if build_type_cfg == "MinSizeRel":
+    if build_cfg == "MinSizeRel":
         logger.warning("     WARNING: MinSizeRel build can suffer from a significant performance loss.")
     logger.info(field(f"* Build Type\t\t= {build_type}"))
     logger.info("  - The used build type for the dependencies (Build, Rebuild, Clean).")
@@ -112,14 +120,14 @@ def print_build_config(
     logger.info("  - Download and install Python.")
     logger.info("    Set to something other than TRUE if you wish to use an already installed version of Python.")
     logger.info(
-        "    But then you'll need to set PYTHONHOME env variable to your Python installation before running run-cmake.bat"
+        "    But then you'll need to set PYTHONHOME env variable to your Python installation before running run-cmake.py"
     )
     logger.info("    to your Python installation path.")
     logger.info(field(f"* IFCOS_INSTALL_QT6\t= {ifcos_install_qt6}"))
     logger.info("  - Download and install Qt6 using aqtinstall.")
     logger.info("    Set to something other than TRUE if you wish to use an already installed version of Qt6.")
     logger.info(
-        "    But then you'll need to set QT_DIR env variable to your Qt6 installation before running run-cmake.bat."
+        "    But then you'll need to set QT_DIR env variable to your Qt6 installation before running run-cmake.py."
     )
     logger.info(field(f"* IFCOS_NUM_BUILD_PROCS\t= {ifcos_num_build_procs}"))
     logger.info("  - How many MSBuild.exe processes may be run in parallel.")
@@ -136,37 +144,52 @@ def print_success(start_time: datetime) -> None:
 
 
 def parse_args() -> Args:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
         "generator",
         nargs="?",
         default=None,
-        help=(
-            "CMake generator to use. Accepts 3 forms: "
-            "(1) omitted - deduced from the active Visual Studio environment; "
-            "(2) shorthand, e.g. 'vs2022', 'vs2022-x64', 'vs2019-x86-v141' - optionally provide platform/toolset "
-            "using the suffix; "
-            "(3) full CMake generator name, e.g. 'Visual Studio 17 2022'."
-        ),
+        help=HelpStrings.generator("deduced from the active Visual Studio environment"),
     )
     parser.add_argument(
-        "build_type_cfg",
+        "--generator",
+        dest="generator_flag",
+        default=None,
+        help=HelpStrings.GENERATOR_FLAG,
+    )
+    # SUPPRESS avoids a misleading "(default: None)" in `--help`,
+    # though then arg might not be set and we use `getattr` to get it.
+    parser.add_argument(
+        "build_cfg",
         nargs="?",
+        default=argparse.SUPPRESS,
+        choices=BUILD_CFGS,
+        help=HelpStrings.BUILD_CFG,
+    )
+    parser.add_argument(
+        "--build-cfg",
+        dest="build_cfg_flag",
         default=BUILD_CFG_DEFAULT,
         choices=BUILD_CFGS,
-        help="Build configuration type. Uses default if not provided.",
+        help=HelpStrings.BUILD_CFG_FLAG,
     )
     parser.add_argument(
         "build_type",
         nargs="?",
+        default=argparse.SUPPRESS,
+        choices=BUILD_TYPES,
+        help=f"Build type. (default: {BUILD_TYPE_DEFAULT})",
+    )
+    parser.add_argument(
+        "--build-type",
+        dest="build_type_flag",
         default=BUILD_TYPE_DEFAULT,
         choices=BUILD_TYPES,
-        help="Build type.",
+        help="Alternative way to specify the build type, instead of the positional argument.",
     )
     parser.add_argument(
         "--log-level",
-        # TODO: relax default to INFO once things get more stable.
-        default="DEBUG",
+        default="INFO",
         choices=("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"),
         help="Logging verbosity.",
     )
@@ -178,13 +201,117 @@ def parse_args() -> Args:
             "Speeds up the build a bit when iterating/debugging this script."
         ),
     )
+    parser.add_argument(
+        "--use-ninja",
+        dest="use_ninja",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help=HelpStrings.USE_NINJA,
+    )
+    parser.add_argument(
+        "--shared",
+        dest="shared",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Build dependencies as shared libraries instead of static.",
+    )
+    parser.add_argument(
+        "--num-build-procs",
+        dest="num_build_procs",
+        type=int,
+        default=argparse.SUPPRESS,
+        help=HelpStrings.NUM_BUILD_PROCS,
+    )
+    INSTALL_PYTHON_DEFAULT = True
+    parser.add_argument(
+        "--install-python",
+        dest="install_python",
+        action=argparse.BooleanOptionalAction,
+        default=argparse.SUPPRESS,
+        help=(
+            "Download and install Python. If disabled, an already installed Python is used - "
+            "set the PYTHONHOME env variable to its installation path before running run-cmake.py. "
+            "Also can be specified by using IFCOS_INSTALL_PYTHON env variable. "
+            f"(default: {INSTALL_PYTHON_DEFAULT})"
+        ),
+    )
+    PYTHON_VERSION_DEFAULT = "3.11.7"
+    parser.add_argument(
+        "--python-version",
+        dest="python_version",
+        default=None,
+        help=(
+            "Python version to download and install. Also can be specified by using PYTHON_VERSION env variable. "
+            f"(default: {PYTHON_VERSION_DEFAULT})"
+        ),
+    )
+    INSTALL_QT6_DEFAULT = True
+    parser.add_argument(
+        "--install-qt6",
+        dest="install_qt6",
+        action=argparse.BooleanOptionalAction,
+        default=argparse.SUPPRESS,
+        help=(
+            "Download and install Qt6 using aqtinstall. If disabled, an already installed Qt6 is used - "
+            "set the QT_DIR env variable to its installation path before running run-cmake.py. "
+            "Also can be specified by using IFCOS_INSTALL_QT6 env variable. "
+            f"(default: {INSTALL_QT6_DEFAULT})"
+        ),
+    )
+    QT6_VERSION_DEFAULT = "6.8.3"
+    parser.add_argument(
+        "--qt6-version",
+        dest="qt6_version",
+        default=None,
+        help=(
+            "Qt6 version to download and install. Also can be specified by using QT6_VERSION env variable. "
+            f"(default: {QT6_VERSION_DEFAULT})"
+        ),
+    )
+    parser.add_argument(
+        "-y",
+        "--yes",
+        action="store_true",
+        help="Skip the confirmation prompt before proceeding with the build.",
+    )
     args = parser.parse_args()
     logger.setLevel(args.log_level)
+
+    if args.generator is not None and args.generator_flag is not None:
+        parser.error("generator was specified both as a positional argument and as --generator.")
+    generator = args.generator or args.generator_flag
+
+    build_cfg = getattr(args, "build_cfg", None) or args.build_cfg_flag
+    build_type = getattr(args, "build_type", None) or args.build_type_flag
+
+    num_build_procs = resolve_cli_or_env(
+        getattr(args, "num_build_procs", None),
+        "IFCOS_NUM_BUILD_PROCS",
+        multiprocessing.cpu_count(),
+        arg_type="int",
+    )
+    install_python = resolve_cli_or_env(
+        getattr(args, "install_python", None), "IFCOS_INSTALL_PYTHON", INSTALL_PYTHON_DEFAULT, arg_type="bool"
+    )
+    python_version = resolve_cli_or_env(args.python_version, "PYTHON_VERSION", PYTHON_VERSION_DEFAULT, arg_type="str")
+    install_qt6 = resolve_cli_or_env(
+        getattr(args, "install_qt6", None), "IFCOS_INSTALL_QT6", INSTALL_QT6_DEFAULT, arg_type="bool"
+    )
+    qt6_version = resolve_cli_or_env(args.qt6_version, "QT6_VERSION", QT6_VERSION_DEFAULT, arg_type="str")
+
     return Args(
-        generator=args.generator,
-        build_type_cfg=args.build_type_cfg,
-        build_type=args.build_type,
+        generator=generator,
+        build_cfg=build_cfg,
+        build_type=build_type,
         reuse_boost=args.reuse_boost,
+        use_ninja=args.use_ninja,
+        shared=args.shared,
+        num_build_procs=num_build_procs,
+        install_python=install_python,
+        python_version=python_version,
+        install_qt6=install_qt6,
+        qt6_version=qt6_version,
+        yes=args.yes,
     )
 
 
@@ -193,9 +320,7 @@ def main() -> None:
 
     logger.info(f"This script fetches and builds all {PROJECT_NAME} dependencies\n")
 
-    if Path.cwd() != SCRIPT_DIR:
-        logger.error(f"This script must be run from '{SCRIPT_DIR}'.")
-        sys.exit(1)
+    ensure_script_dir()
 
     # Make sure vcvarsall.bat is called and dev env set is up.
     get_vs_var("VSINSTALLDIR")
@@ -218,25 +343,13 @@ def main() -> None:
     vs_cfg_vars.deps_dir.mkdir(parents=True, exist_ok=True)
     vs_cfg_vars.install_dir.mkdir(parents=True, exist_ok=True)
 
-    # User-configurable build options.
-    # TODO: add as cli options to make them appear in --help.
-    IFCOS_INSTALL_PYTHON = is_on_off(os.getenv("IFCOS_INSTALL_PYTHON"), default=True)
-    IFCOS_INSTALL_QT6 = is_on_off(os.getenv("IFCOS_INSTALL_QT6"), default=True)
-    IFCOS_NUM_BUILD_PROCS = int(os.getenv("IFCOS_NUM_BUILD_PROCS") or multiprocessing.cpu_count())
-
     # Note BUILD_TYPE not passed, Clean e.g. wouldn't delete the installed files.
-    # TODO: consider inlining.
-    MSBUILD_MULTIPROC = (
-        "/m",
-        f"/p:CL_MPCount={IFCOS_NUM_BUILD_PROCS}",
-        "/p:UseMultiToolTask=true",
-        "/p:EnforceProcessCountAcrossBuilds=true",
-    )
-    MSBUILD_CMD = ("MSBuild.exe", "/nologo", *MSBUILD_MULTIPROC)
 
     # Check that required tools are in PATH.
     # TODO: drop "powershell" later.
     REQUIRED_COMMANDS = ("powershell", "git", "cmake", "7z")
+    if ARGS.use_ninja:
+        REQUIRED_COMMANDS += ("ninja",)
     for command in REQUIRED_COMMANDS:
         require_command(command)
 
@@ -244,44 +357,52 @@ def main() -> None:
 
     print_build_config(
         vs_cfg_vars,
-        ARGS.build_type_cfg,
+        ARGS.build_cfg,
         ARGS.build_type,
-        IFCOS_INSTALL_PYTHON,
-        IFCOS_INSTALL_QT6,
-        IFCOS_NUM_BUILD_PROCS,
+        ARGS.install_python,
+        ARGS.install_qt6,
+        ARGS.num_build_procs,
     )
 
     logger.warning("Warning: You will need roughly 8 GB of disk space to proceed.\n")
-    logger.info(
-        "If you are not ready with the above: type 'n' in the prompt below. Build proceeds on all other inputs!"
-    )
-    # TODO: add a `-y` option to skip this prompt.
-    do_continue = input("> ")
-    if do_continue == "n":
-        sys.exit(0)
+    if not ARGS.yes:
+        logger.info(
+            "If you are not ready with the above: type 'n' in the prompt below. Build proceeds on all other inputs!"
+        )
+        do_continue = input("> ")
+        if do_continue == "n":
+            sys.exit(0)
 
     START_TIME = datetime.now().replace(microsecond=0)
     logger.info(f"Build started at {START_TIME}.")
 
     nuget_exe = install_nuget(vs_cfg_vars.deps_dir)
     install_ccache(vs_cfg_vars.deps_dir, nuget_exe, build_deps_cache)
-    install_proj(vs_cfg_vars, ARGS.build_type, ARGS.build_type_cfg, MSBUILD_MULTIPROC)
-    install_mpir(vs_cfg_vars, vs_cfg_vars.deps_dir, vs_cfg_vars.install_dir, ARGS.build_type_cfg)
+    generator_cfg = CMakeGenCfg(build_cfg=ARGS.build_cfg, use_ninja=ARGS.use_ninja)
+    install_proj(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.num_build_procs, generator_cfg)
+    install_mpir(vs_cfg_vars, vs_cfg_vars.deps_dir, vs_cfg_vars.install_dir, ARGS.build_cfg)
     install_mpfr(
-        vs_cfg_vars, vs_cfg_vars.deps_dir, vs_cfg_vars.install_dir, ARGS.build_type_cfg, ARGS.build_type, MSBUILD_CMD
+        vs_cfg_vars,
+        vs_cfg_vars.deps_dir,
+        vs_cfg_vars.install_dir,
+        ARGS.build_cfg,
+        ARGS.build_type,
+        ARGS.num_build_procs,
     )
-    install_boost(vs_cfg_vars, build_deps_cache, ARGS.build_type_cfg, IFCOS_NUM_BUILD_PROCS, ARGS.reuse_boost)
+    install_boost(vs_cfg_vars, build_deps_cache, ARGS.build_cfg, ARGS.num_build_procs, ARGS.reuse_boost, ARGS.shared)
     install_json(vs_cfg_vars.install_dir)
-    install_opencollada(vs_cfg_vars, ARGS.build_type, ARGS.build_type_cfg, MSBUILD_MULTIPROC)
-    install_occt(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.build_type_cfg, MSBUILD_MULTIPROC)
-    pythonhome = install_python(vs_cfg_vars, IFCOS_INSTALL_PYTHON, build_deps_cache, nuget_exe)
-    install_swig(vs_cfg_vars, ARGS.build_type, build_deps_cache, MSBUILD_MULTIPROC)
-    install_cgal(vs_cfg_vars, ARGS.build_type, ARGS.build_type_cfg, MSBUILD_MULTIPROC)
+    install_opencollada(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.num_build_procs, generator_cfg)
+    install_occt(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.num_build_procs, generator_cfg)
+    pythonhome = install_python(vs_cfg_vars, ARGS.install_python, ARGS.python_version, build_deps_cache, nuget_exe)
+    install_swig(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.num_build_procs, generator_cfg)
+    install_cgal(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.num_build_procs, generator_cfg)
     install_eigen(vs_cfg_vars)
-    install_zstd(vs_cfg_vars, ARGS.build_type, ARGS.build_type_cfg, MSBUILD_MULTIPROC)
-    install_rocksdb(vs_cfg_vars, ARGS.build_type, ARGS.build_type_cfg, MSBUILD_MULTIPROC)
-    install_qt6(vs_cfg_vars, build_deps_cache, ARGS.build_type_cfg, IFCOS_INSTALL_QT6, pythonhome)
-    install_manifold(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.build_type_cfg, MSBUILD_MULTIPROC)
+    zstd_install_dir = install_zstd(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.num_build_procs, generator_cfg)
+    install_rocksdb(
+        vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.num_build_procs, generator_cfg, zstd_install_dir
+    )
+    install_qt6(vs_cfg_vars, build_deps_cache, ARGS.build_cfg, ARGS.install_qt6, ARGS.qt6_version, pythonhome)
+    install_manifold(vs_cfg_vars, ARGS.build_type, build_deps_cache, ARGS.num_build_procs, generator_cfg, ARGS.shared)
 
     print_success(START_TIME)
 

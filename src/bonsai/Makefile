@@ -54,7 +54,7 @@ LAST_GIT_BRANCH:=$(shell git rev-parse --abbrev-ref HEAD)
 PYPI_IMP:=cp
 
 ifdef PYVERSION
-SUPPORTED_PYVERSIONS := py311 py312 py313
+SUPPORTED_PYVERSIONS := py311 py313
 
 ifeq ($(filter $(PYVERSION),$(SUPPORTED_PYVERSIONS)),)
 $(error Unsupported PYVERSION=$(PYVERSION). Must be one of $(SUPPORTED_PYVERSIONS))
@@ -93,7 +93,7 @@ endif
 endif # def PLATFORM
 
 # Current build commit hash.
-OLD:=ad113e1
+OLD:=8c614fa
 .PHONY: bump
 bump:
 ifndef NEW
@@ -151,7 +151,9 @@ endif
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pytest --dest=./wheels
 	# Provides Brickschema functionality
 	# Is not platform specific but has platform specific dependencies.
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download "brickschema[persistence]" $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+	# The SQLAlchemy store must be 0.7.1 or later (SQLAlchemy 2.1, rdflib 7, and the
+	# store.transaction() that brickschema 0.8 runs its persistent graph through).
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download brickschema "brickschema-rdflib-sqlalchemy>=0.7.1" alembic $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 	# Required for SVG to DXF conversion
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download ezdxf $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 	# Required by bcf
@@ -211,9 +213,9 @@ endif
 	cd build/bonsai/bim/data/gantt/ && wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js
 	cd build/bonsai/bim/data/gantt/ && wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css
 
-	# Provides IFCJSON functionality
-	# TODO: Use official repo, once https://github.com/IFCJSON-Team/IFC2JSON_python/pull/8 is merged.
-	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m pip wheel "git+https://github.com/Andrej730/IFC2JSON_python.git@pyproject_toml" --no-deps -w wheels/
+	# Provides IFCJSON functionality. Upstream (IFCJSON-Team) is dormant and has no wheel
+	# packaging, so we maintain our own fork under the IfcOpenShell organisation.
+	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m pip wheel "git+https://github.com/IfcOpenShell/IFC2JSON_python.git@main" --no-deps -w wheels/
 
 	# Brickschema requires pkg_resources which is provided by Blender.
 	# Provides Brickschema functionality

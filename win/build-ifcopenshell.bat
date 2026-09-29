@@ -58,6 +58,11 @@ if not defined IFCOS_NUM_BUILD_PROCS set IFCOS_NUM_BUILD_PROCS=%NUMBER_OF_PROCES
 call cecho.cmd 0 13 "* IFCOS_NUM_BUILD_PROCS`t= %IFCOS_NUM_BUILD_PROCS%"
 echo.
 
+call cecho.cmd 0 12 "WARNING: build-ifcopenshell.bat is deprecated since 11 Sep 2026 and will be removed very shortly."
+call cecho.cmd 0 12 "Use `python build-ifcopenshell.py` instead. It's intended to be a drop-in replacement, so exactly the same args apply,"
+call cecho.cmd 0 12 "except MSBuild args now need to be passed after `"--`", e.g. `python build-ifcopenshell.py vs2022-x64 -- /p:Foo=bar`."
+echo.
+
 call cecho.cmd 0 13 "Building %VS_PLATFORM% %BUILD_CFG% %PROJECT_NAME%"
 set MSBUILD_MULTIPROC=/m /p:CL_MPCount=%IFCOS_NUM_BUILD_PROCS% /p:UseMultiToolTask=true /p:EnforceProcessCountAcrossBuilds=true
 cmake --build ..\%BUILD_DIR% -- /nologo %MSBUILD_MULTIPROC% /p:Platform=%VS_PLATFORM% /p:Configuration=%BUILD_CFG% ^

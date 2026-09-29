@@ -21,6 +21,7 @@
 #                                                                             #
 ###############################################################################
 #
+import functools
 import os
 import sys
 from pathlib import Path
@@ -95,6 +96,11 @@ class VsCfgResult(NamedTuple):
         """Compare against `vs_platform`, just to prevent typos."""
         return self.vs_platform == platform
 
+    @property
+    def vs_toolset(self) -> str:
+        """Effective toolset: `vs_toolset_override` if set, else the generator's default."""
+        return self.vs_toolset_override or self.generator.vs_toolset
+
 
 VS_TOOLSET_TO_VC_VER = {info.vs_toolset: info.vc_ver for info in CMAKE_GENERATORS.values()}
 """E.g. "v142" -> "14.2"."""
@@ -123,6 +129,8 @@ VSVar = Literal[
     "VisualStudioVersion",
     "VSCMD_ARG_TGT_ARCH",
     "UCRTVersion",
+    # E.g. "14.44.35207".
+    "VCToolsVersion",
 ]
 
 
@@ -195,18 +203,19 @@ class VsCfg:
         return result
 
     @staticmethod
-    def _generator_from_visual_studio_version() -> str:
+    @functools.cache
+    def generator_from_visual_studio_version() -> CMakeGeneratorInfo:
         # E.g. '17.0' -> 17.
         vs_version = get_vs_var("VisualStudioVersion")
         generator_num = int(vs_version.replace(".0", ""))
 
-        for candidate, info in CMAKE_GENERATORS.items():
+        for info in CMAKE_GENERATORS.values():
             if info.generator_num == generator_num:
                 logger.info(
                     f"Generator not passed, but VisualStudioVersion={vs_version} environment variable detected:"
                 )
-                logger.info(f"using '{candidate}' as the generator.")
-                return candidate
+                logger.info(f"using '{info.name}' as the generator.")
+                return info
 
         logger.error(
             f"Generator is not provided and VisualStudioVersion='{vs_version}' is not supported - cannot proceed."
@@ -278,7 +287,7 @@ class VsCfg:
                 logger.error(f"Supported CMake generator strings: {supported_generators}")
                 sys.exit(1)
         else:
-            generator = VsCfg._generator_from_visual_studio_version()
+            generator = VsCfg.generator_from_visual_studio_version().name
 
         return generator, vs_platform, vs_toolset, boost_toolset_ver
 

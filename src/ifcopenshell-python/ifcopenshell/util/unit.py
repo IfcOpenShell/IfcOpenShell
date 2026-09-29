@@ -1006,7 +1006,9 @@ def is_attr_type(
 FloatOrSequenceOfFloats = Union[float, tuple["FloatOrSequenceOfFloats", ...]]
 
 
-def iter_element_and_attributes_per_type(ifc_file: ifcopenshell.file, attr_type_name: str) -> Generator[
+def iter_element_and_attributes_per_type(
+    ifc_file: ifcopenshell.file, attr_type_name: str
+) -> Generator[
     tuple[
         ifcopenshell.entity_instance,
         ifcopenshell_wrapper.attribute,
