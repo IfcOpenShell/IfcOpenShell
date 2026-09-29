@@ -48,9 +48,9 @@ class SvIfcGetProperty(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.
         self.outputs.new("SvStringsSocket", "value")
 
     def draw_buttons(self, context, layout):
-        layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = (
-            "Get the value of a property of an IfcEntity. Can take multiple entity ids."
-        )
+        layout.operator(
+            "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
+        ).tooltip = "Get the value of a property of an IfcEntity. Can take multiple entity ids."
 
     def process(self):
         self.sv_input_names = ["entity_ids", "pset_name", "prop_name"]

@@ -115,7 +115,9 @@ class SvIfcByType(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfc
         self.width = 200
 
     def draw_buttons(self, context, layout):
-        layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = (
+        layout.operator(
+            "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
+        ).tooltip = (
             "Get IFC element(s) in file by type. \nPick an IfcProduct and an IfcClass or give a custom IfcClass."
         )
 
