@@ -56,7 +56,7 @@ def update_group_products(
                 "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
                 "RelatedObjects": products,
                 "RelatingGroup": group,
-            }
+            },
         )
     else:
         rels = group.IsGroupedBy
