@@ -125,11 +125,7 @@ def get_start_or_finish_date(
     total_duration = duration.days + months * 30 + years * 12 * 30
 
     if not total_duration:
-        # Pure sub-day (intraday) duration such as PT5H or PT10H30M. Preserve the
-        # anchor's clock time and offset by the exact hours/minutes/seconds, so a
-        # PT5H task from a 09:00 start finishes at 14:00, and an overnight PT8H
-        # from 22:00 finishes at 06:00 the next day, instead of collapsing to a
-        # milestone or occupying a whole day. See #8245.
+        # Pure sub-day duration such as PT5H: offset the anchor's clock time by the exact seconds. See #8245.
         if isinstance(start, datetime.datetime):
             anchor = start
         else:

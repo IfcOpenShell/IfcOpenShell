@@ -157,9 +157,6 @@ class TestCascadeSchedule(test.bootstrap.IFC4):
         assert task3.TaskTime.ScheduleFinish == "2000-01-01T17:00:00"
 
     def test_sub_day_durations_produce_an_intraday_finish(self):
-        # #8245: a sub-day duration such as PT5H must produce a real intraday
-        # finish (09:00 + 5h = 14:00) instead of collapsing to a milestone or
-        # occupying the whole day.
         task = self._create_task("PT5H")
         ifcopenshell.api.sequence.cascade_schedule(self.file, task=task)
         assert task.TaskTime.ScheduleStart == "2000-01-01T09:00:00"
@@ -169,7 +166,6 @@ class TestCascadeSchedule(test.bootstrap.IFC4):
         ifcopenshell.api.sequence.cascade_schedule(self.file, task=task2)
         assert task2.TaskTime.ScheduleFinish == "2000-01-01T19:30:00"
 
-        # Whole-day durations remain day-granular.
         task3 = self._create_task("P2D")
         ifcopenshell.api.sequence.cascade_schedule(self.file, task=task3)
         assert task3.TaskTime.ScheduleFinish == "2000-01-02T17:00:00"
