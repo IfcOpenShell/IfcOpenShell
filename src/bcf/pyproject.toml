@@ -1,8 +1,5 @@
 [build-system]
-requires = [
-    "setuptools>=61",
-    "wheel"
-]
+requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -20,7 +17,7 @@ dependencies = [
 ]
 version = "0.0.0"
 classifiers = [
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Topic :: Scientific/Engineering",
