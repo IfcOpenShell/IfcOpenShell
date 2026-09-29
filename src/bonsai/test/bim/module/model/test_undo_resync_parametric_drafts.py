@@ -56,8 +56,9 @@ def test_resync_skips_objects_not_in_parametric_edit():
     def fake_dispatch(obj):
         captured.append(obj)
 
-    with patch.dict(parametric_lifecycle.UNDO_REGENERATORS, {"wall": fake_dispatch}, clear=False), patch.object(
-        tool.Parametric, "is_object_editing", return_value=None
+    with (
+        patch.dict(parametric_lifecycle.UNDO_REGENERATORS, {"wall": fake_dispatch}, clear=False),
+        patch.object(tool.Parametric, "is_object_editing", return_value=None),
     ):
         parametric_lifecycle.resync_parametric_drafts_after_undo()
 
@@ -79,9 +80,12 @@ def test_resync_dispatches_to_registered_regenerator_for_editing_object():
 
     obj = bpy.data.objects.new("test_wall_obj", bpy.data.meshes.new("test_wall_mesh"))
     try:
-        with patch.dict(
-            parametric_lifecycle.UNDO_REGENERATORS, {"wall": fake_wall_regenerator}, clear=False
-        ), patch.object(tool.Parametric, "is_object_editing", side_effect=lambda o: fake_feature if o is obj else None):
+        with (
+            patch.dict(parametric_lifecycle.UNDO_REGENERATORS, {"wall": fake_wall_regenerator}, clear=False),
+            patch.object(
+                tool.Parametric, "is_object_editing", side_effect=lambda o: fake_feature if o is obj else None
+            ),
+        ):
             parametric_lifecycle.resync_parametric_drafts_after_undo()
     finally:
         bpy.data.objects.remove(obj, do_unlink=True)
