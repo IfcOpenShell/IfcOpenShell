@@ -18,7 +18,7 @@
 
 import re
 from collections.abc import Iterable
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from types import EllipsisType
 from typing import Any, Optional, Union
 
@@ -321,10 +321,10 @@ class FormatTransformer(lark.Transformer):
     def round(self, args):
         try:
             value = Decimal(0.0 if args[0] == "None" else args[0] or 0.0)
-        except (ArithmeticError, TypeError, ValueError):
-            # A non-numeric value (a text property, or a value carrying a unit
-            # suffix like "12.5 m") cannot be rounded. Pass it through unchanged
-            # rather than failing the whole format expression (#6776).
+        except InvalidOperation:
+            # The value is not numeric (e.g. a text property, or a value with
+            # a unit suffix like "12.5 m"). Rounding is meaningless here, so
+            # return it unchanged instead of crashing the whole expression.
             return args[0]
         nearest = Decimal(args[1])
         result = round(value / nearest) * nearest
