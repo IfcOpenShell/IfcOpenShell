@@ -28,4 +28,4 @@ properties are shown. Alternatively, a dropdown list may also be used.
 - **Facility Management**: Facility management integration, Brickschema integration.
 - **Quality and Coordination**: Model auditing and fixing, clash detection, BCF collaboration, and debugging.
 - **Blender Properties**: (Only visible at the bottom of the dropdown menu) Shows default Blender panels for Blender users who do not want to see IFC information.
-- **Switch Tab** (:kbd:`Ctrl` + :kbd:`Tab`): (Only visible at the end of the tab icons) Toggles between the two last active tabs.
+- **Switch Tab** (:kbd:`Ctrl+Tab`): (Only visible at the end of the tab icons) Toggles between the two last active tabs.

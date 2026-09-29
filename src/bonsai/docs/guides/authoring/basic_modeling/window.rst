@@ -14,10 +14,10 @@ Adding a Window
 1. Select the wall where you want to place the window.
 2. Set the 3D cursor on the wall at the desired window location.
 3. Click on the "Create Window" tool in the Bonsai toolbar.
-4. In the top bar, you'll see "[No IfcWindowType Found] | Name [TYPEX] | + Add IfcWindowType".
-5. Edit [TYPEX] to use a window type name of your choice (e.g., WINDOW001).
+4. In the top bar, you'll see "``No IfcWindowType Found`` | Name ``TYPEX`` | + Add IfcWindowType".
+5. Edit ``TYPEX`` to use a window type name of your choice (e.g., ``WINDOW001``).
 6. Click "+ Add IfcWindowType". The top bar will update with additional options.
-7. Click "Add" (or press SHIFT+A) to create a window with its own type.
+7. Click "Add" (or press :kbd:`Shift+A`) to create a window with its own type.
 8. Adjust the window's width and height using the parameters in the top bar.
 
 Placing a Window and Changing its Configuration
@@ -31,14 +31,14 @@ Placing a Window and Changing its Configuration
 
 2. Add a Window:
    - Use the "Create Window" tool from the toolbar.
-   - Press SHIFT+A or click "Add" to place the window on the selected wall.
+   - Press :kbd:`Shift+A` or click "Add" to place the window on the selected wall.
 
 **Applying Void**
 
 If you forgot to select the wall before placing the window, you'll need to manually create the void relation:
 
    - Select both the wall and the window.
-   - Click "Apply Void" (Shift+O) button.
+   - Click "Apply Void" (:kbd:`Shift+O`) button.
 
 .. important::
    If you need to use "Apply Void", do this before making any modifications to the window,
@@ -51,7 +51,7 @@ If you forgot to select the wall before placing the window, you'll need to manua
 
 4. Regenerate the Wall Geometry:
    - Select the wall.
-   - Press Shift+G to regenerate the wall geometry, incorporating the window opening.
+   - Press :kbd:`Shift+G` to regenerate the wall geometry, incorporating the window opening.
 
    .. note::
       This step ensures the wall geometry is updated to include the window opening.
@@ -62,13 +62,13 @@ If you forgot to select the wall before placing the window, you'll need to manua
 
 5. Change Window Configuration:
    - Select only the window.
-   - Locate the "Parametric Geometry" panel in the `Scene Properties > Geometry and Materials` subtab.
+   - Locate the ::menuselection:`Scene Properties --> Geometry and Materials --> Parametric Geometry` panel.
    - Find the "Window" section within this panel.
-   - Change the "Operation Type" to the desired configuration (e.g., "DOUBLE_PANEL").
+   - Change the "Operation Type" to the desired configuration (e.g., ``DOUBLE_PANEL``).
 
 6. Final Wall Geometry Regeneration:
    - Select the wall again.
-   - Press Shift+G one more time to ensure all changes are properly applied.
+   - Press :kbd:`Shift+G` one more time to ensure all changes are properly applied.
 
 Modifying Windows
 -----------------
@@ -86,12 +86,12 @@ You can modify windows using various tools:
    After moving a window, you need to recalculate the void in the wall. To do this:
 
 - Select the wall containing the moved window.
-- Click on the "Regen" (:kbd:`Shift` + :kbd:`G`) button in the top bar or use the appropriate shortcut.
+- Click on the "Regen" (:kbd:`Shift+G`) button in the top bar or use the appropriate shortcut.
 - This ensures that the opening in the wall is correctly positioned after moving the window.
 
 If Regen operation doesn't achieve the required result, use Apply Void function:
 
-- Click on the "Apply Void" (:kbd:`Shift` + :kbd:`O`) button in the top bar or use the appropriate shortcut.
+- Click on the "Apply Void" (:kbd:`Shift O`) button in the top bar or use the appropriate shortcut.
 - This ensures that the opening is linked to the wall.
 
 Window Properties
@@ -125,7 +125,7 @@ To create multiple windows of the same type:
 1. Select the desired window type from the dropdown menu in the top bar.
 2. Set the 3D cursor on a wall where you want to place the new window.
 3. Select the wall
-4. Click "Add" (or press SHIFT+A) for each new window you want to create.
+4. Click "Add" (or press :kbd:`Shift+A`) for each new window you want to create.
 5. Adjust the 3D cursor, position and parameters for each new window as needed.
 
 Calculating Quantities
@@ -134,7 +134,7 @@ Calculating Quantities
 After creating windows, you can calculate quantities:
 
 1. Select the window(s) you want to measure.
-2. Press Q or click "Calculate All Quantities" in the top bar.
+2. Press :kbd:`Q` or click "Calculate All Quantities" in the top bar.
 
 This will update the quantity information for the selected elements.
 

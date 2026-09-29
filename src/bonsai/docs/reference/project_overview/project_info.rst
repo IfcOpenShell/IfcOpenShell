@@ -21,7 +21,7 @@ Project Info
 Overview
 --------
 
-The "Project Info" panel in the "Project Overview" tab of "Scene Properties" of "Properties Editor"
+The "Project Info" panel in :menuselection:`Properties Editor --> Scene Properties --> Project Overview`
 provides an overview of the essential information about the currently loaded IFC file or allows users to create a new or load an existing IFC project.
 
 The "Project Info" panel has four distinct modes depending on the state of the IFC project:
@@ -133,10 +133,10 @@ Fields
 ^^^^^^
 
 |FILE_CACHE| **IFC Schema** (read-only)
-  Indicates the version of the Industry Foundation Classes (IFC) schema used by the created file. This would usually be "IFC4".
+  Indicates the version of the Industry Foundation Classes (IFC) schema used by the created file. This would usually be ``IFC4``.
 
 |FILE_HIDDEN| **IFC MVD**
-  Specifies the Model View Definition (MVD) used by the loaded IFC file. An MVD defines a subset of the IFC schema for a specific data exchange purpose. By default this is "DesignTransferView".
+  Specifies the Model View Definition (MVD) used by the loaded IFC file. An MVD defines a subset of the IFC schema for a specific data exchange purpose. By default this is ``DesignTransferView``.
 
 Buttons
 ^^^^^^^
@@ -154,7 +154,7 @@ Fields
 ^^^^^^
 
 |FILE| **Filename**
-  Displays the name of the loaded IFC file. Example: "demo.ifc"
+  Displays the name of the loaded IFC file. Example: ``demo.ifc``
 
 |FILE_CACHE| **IFC Schema** (read-only)
   Same as in `Project Unsaved Mode`_.
@@ -163,10 +163,10 @@ Fields
   Same as in `Project Unsaved Mode`_.
 
 |EXPORT| **Saved**
-  Displays the last saved date and time of the loaded IFC file. Example: "2024-06-10 13:15"
+  Displays the last saved date and time of the loaded IFC file. Example: ``2024-06-10 13:15``
 
 **IFC File**
-  Shows the location of the loaded IFC file on the user's file system. Example: "/home/user/Docum...lenderbim/demo.ifc". If part of the path is hidden by ellipsis, hovering over it will reveal the full file path.
+  Shows the location of the loaded IFC file on the user's file system. Example: ``/home/user/Docum...lenderbim/demo.ifc``. If part of the path is hidden by ellipsis, hovering over it will reveal the full file path.
 
 Buttons
 ^^^^^^^
@@ -203,10 +203,10 @@ Fields
 
 |FILE_CACHE| **IFC Schema** (read only)
 
-  Indicates the version of the Industry Foundation Classes (IFC) schema used by the loaded file. Example: "IFC4"
+  Indicates the version of the Industry Foundation Classes (IFC) schema used by the loaded file. Example: ``IFC4``
 
 **IFC MVD**
-  Specifies the Model View Definition (MVD) used by the loaded IFC file. An MVD defines a subset of the IFC schema for a specific data exchange purpose. Example: "DesignTransferView"
+  Specifies the Model View Definition (MVD) used by the loaded IFC file. An MVD defines a subset of the IFC schema for a specific data exchange purpose. Example: ``DesignTransferView``
 
 **Author**
   Displays the author of the IFC file.
@@ -221,7 +221,7 @@ Fields
   Displays the email address of the organization.
 
 **Authoriser**
-  Shows the authoriser of the IFC file. Example: "Nobody". The authoriser typically represents the person or entity responsible for approving the IFC file and its contents. 
+  Shows the authoriser of the IFC file. Example: ``Nobody``. The authoriser typically represents the person or entity responsible for approving the IFC file and its contents. 
 
 Buttons
 ^^^^^^^
@@ -281,12 +281,12 @@ Fields
   Options:
 
   - **Decomposition**: filter the IFC elements based on their decomposition within the building hierarchy, such as Level 1 or Building A.
-  - **IFC Class**: Filter elements by their IFC class, such as "IfcWall", "IfcColumn", or "IfcDoor".
-  - **IFC Type**: Filter elements by their IFC type, which represents the specific subtype or predefined type of an element, such as "IfcSlabType/100mmConcrete".
+  - **IFC Class**: Filter elements by their IFC class, such as ``IfcWall``, ``IfcColumn``, or ``IfcDoor``.
+  - **IFC Type**: Filter elements by their IFC type, which represents the specific subtype or predefined type of an element, such as ``IfcSlabType/100mmConcrete``.
   - **Whitelist**: Filter elements based on a custom query, where only elements matching the query are included in the loaded model.
   - **Blacklist**: Filter elements based on a custom query, where elements matching the query are excluded from the loaded model.
 
-  When "Whitelist" or "Blacklist" is chosen, users can input a custom query in the "Filter Query" field to define the specific criteria for filtering elements.
+  When ``Whitelist`` or ``Blacklist`` is chosen, users can input a custom query in the "Filter Query" field to define the specific criteria for filtering elements.
 
 **Deflection Tolerance**
   Maximum distance between a curved surface and its tessellation (mesh approximation).
@@ -332,7 +332,7 @@ Fields
     This mode is suitable when the model's coordinates are within the standard Blender coordinate range and do not require any origin shifting.
 
   When the "Manual" mode is selected, an additional field **False Origin** will appear,
-  allowing you to enter the desired false origin coordinates in the project's units, separated by commas (e.g., "20.1,10.9,-3.1").
+  allowing you to enter the desired false origin coordinates in the project's units, separated by commas (e.g., ``20.1,10.9,-3.1``).
 
   Applying a false origin can help prevent precision issues and ensure accurate positioning and scaling of the model within the Blender scene,
   especially when working with large-scale projects or models with coordinates outside the typical Blender range.
