@@ -26,7 +26,6 @@ import ifcopenshell.api.unit
 
 import bonsai.core.tool
 import bonsai.tool as tool
-import test.bim.bootstrap
 from bonsai.tool.cost import Cost as subject
 from test.bim.bootstrap import NewFile
 
@@ -64,7 +63,6 @@ class TestLoadProductCostItems(NewFile):
         schedule = ifcopenshell.api.cost.add_cost_schedule(ifc)
         item = ifcopenshell.api.cost.add_cost_item(ifc, cost_schedule=schedule)
         qto = ifcopenshell.api.pset.add_qto(ifc, product=wall, name="Qto_WallBaseQuantities")
-        # A wall fully covered by openings can legitimately have a NetArea of 0.
         ifcopenshell.api.pset.edit_qto(ifc, qto=qto, properties={"NetArea": 0.0})
         ifcopenshell.api.cost.assign_cost_item_quantity(ifc, cost_item=item, products=[wall], prop_name="NetArea")
 
