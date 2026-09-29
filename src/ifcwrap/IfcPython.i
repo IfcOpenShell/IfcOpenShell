@@ -47,6 +47,10 @@
 // TODO add '# pragma warning(pop)' to the very end of the file
 %}
 
+// Before the SWIG library includes, so their classes (iterators, std::vector and
+// std::array wrappers) get prototype docstrings too; validate_stub reads them.
+%feature("autodoc", "1");
+
 %include "stdint.i"
 %include "std_array.i"
 %include "std_vector.i"
@@ -269,7 +273,6 @@
 %}
 
 // Create docstrings for generated python code.
-%feature("autodoc", "1");
 
 %include "utils/type_conversion.i"
 

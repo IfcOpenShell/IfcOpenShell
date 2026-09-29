@@ -1,10 +1,10 @@
 #include "opencascade_kernel.h"
 
-#include "tree.h"
+#include "ub_tree.h"
 #include "wire_utils.h"
 
 namespace {
-	void find_neighbours(ifcopenshell::geom::impl::tree<int>& tree, std::vector<std::unique_ptr<gp_Pnt>>& pnts, std::set<int>& visited, int p, double eps) {
+	void find_neighbours(ifcopenshell::geom::impl::ub_tree<int>& tree, std::vector<std::unique_ptr<gp_Pnt>>& pnts, std::set<int>& visited, int p, double eps) {
 		visited.insert(p);
 
 		Bnd_Box b;
@@ -56,7 +56,7 @@ ifcopenshell::geom::open_cascade_kernel::faceset_helper::faceset_helper(
 	std::vector<std::unique_ptr<gp_Pnt>> pnts(points.size());
 	std::vector<TopoDS_Vertex> vertices(pnts.size());
 
-	ifcopenshell::geom::impl::tree<int> tree;
+	ifcopenshell::geom::impl::ub_tree<int> tree;
 
 	BRep_Builder B;
 
@@ -108,6 +108,7 @@ ifcopenshell::geom::open_cascade_kernel::faceset_helper::faceset_helper(
 
 		vertex_mapping_.clear();
 		duplicates_.clear();
+		duplicate_identities_built_.clear();
 
 		edge_use.clear();
 
@@ -251,8 +252,13 @@ bool ifcopenshell::geom::open_cascade_kernel::faceset_helper::wire(const ifcopen
 }
 
 bool ifcopenshell::geom::open_cascade_kernel::faceset_helper::wires(const ifcopenshell::geom::taxonomy::loop::ptr loop, NCollection_List<TopoDS_Shape>& wires) {
+	// A loop whose edge set duplicates another's is skipped. When the duplicates
+	// share one identity (the same IfcFace listed repeatedly, #418), set semantics
+	// keep exactly one copy: the first occurrence builds, the rest are skipped.
 	if (duplicates_.find(loop->identity()) != duplicates_.end()) {
-		return false;
+		if (!duplicate_identities_built_.insert(loop->identity()).second) {
+			return false;
+		}
 	}
 	TopoDS_Wire wire;
 	BRep_Builder builder;

@@ -18,13 +18,11 @@
 
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.context
 import ifcopenshell.api.cost
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
-import ifcopenshell.util.pset
 
 import bonsai.bim.import_ifc as import_ifc
 import bonsai.core.root

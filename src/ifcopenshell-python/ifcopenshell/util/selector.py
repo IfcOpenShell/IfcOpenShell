@@ -66,8 +66,10 @@ filter_elements_grammar = lark.Lark("""start: filter_group
     attribute_name: /[A-Z]\\w+/
     ifc_class: /Ifc\\w+/
 
-    value: special | quoted_string | regex_string | unquoted_string
+    value: special | quoted_string | regex_string | decimal_string | unquoted_string
     unquoted_string: /[^,.=><*!\\s]+/
+    decimal_string: SIGNED_DECIMAL
+    SIGNED_DECIMAL: ["+"|"-"] (INT "." INT | "." INT)
     regex_string: "/" /[^\\/]+/ "/"
     quoted_string: ESCAPED_STRING
 
@@ -1232,6 +1234,8 @@ class FacetTransformer(lark.Transformer):
 
     def value(self, args):
         if args[0].data == "unquoted_string":
+            return args[0].children[0].value
+        elif args[0].data == "decimal_string":
             return args[0].children[0].value
         elif args[0].data == "quoted_string":
             return args[0].children[0].value[1:-1].replace('\\"', '"')
