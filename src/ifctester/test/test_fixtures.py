@@ -36,10 +36,6 @@ FIXTURES = os.path.join(os.path.dirname(__file__), "fixtures")
 
 class TestPropertyTableDatatypeFixture:
     def test_table_property_with_a_real_value_passes_without_a_datatype_constraint(self):
-        # An IfcPropertyTableValue carrying a real value, checked by a
-        # Property requirement with no dataType constraint at all. With
-        # nothing to match against, the property's presence alone must be
-        # enough to pass.
         specs = ids.open(os.path.join(FIXTURES, "property_table_datatype", "property_table_datatype.ids"))
         ifc = ifcopenshell.open(os.path.join(FIXTURES, "property_table_datatype", "property_table_datatype.ifc"))
         specs.validate(ifc)
