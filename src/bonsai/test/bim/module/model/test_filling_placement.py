@@ -18,6 +18,8 @@
 #
 # This file was generated with the assistance of an AI coding tool.
 
+import math
+
 import bpy
 import ifcopenshell
 import ifcopenshell.api.aggregate
@@ -28,7 +30,9 @@ import pytest
 from mathutils import Vector
 
 import bonsai.tool as tool
+from bonsai.bim.module.geometry.decorator import ItemDecorator
 from bonsai.bim.module.model import opening as model_opening
+from bonsai.bim.module.model.decorator import ProductDecorator
 from bonsai.bim.module.model.wall import DumbWallGenerator
 from test.bim.bootstrap import NewFile
 
@@ -61,13 +65,15 @@ def _add_wall(start, end):
 
 
 def _add_door_type():
+    ifc_class = "IfcDoorStyle" if tool.Ifc.get().schema == "IFC2X3" else "IfcDoorType"
     rprops = tool.Root.get_root_props()
     rprops.ifc_product = "IfcElementType"
-    rprops.ifc_class = "IfcDoorType"
-    rprops.ifc_predefined_type = "DOOR"
+    rprops.ifc_class = ifc_class
+    if ifc_class == "IfcDoorType":
+        rprops.ifc_predefined_type = "DOOR"
     rprops.representation_template = "DOOR"
     bpy.ops.bim.add_element()
-    return tool.Ifc.get().by_type("IfcDoorType")[-1]
+    return tool.Ifc.get().by_type(ifc_class)[-1]
 
 
 def _place_door(wall_obj, door_type, location):
@@ -170,3 +176,45 @@ class TestFillingHostFromPart(NewFile):
         beam = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcBeam")
         assert model_opening.get_filling_host(beam) is None
         assert model_opening.get_filling_host(None) is None
+
+
+def _preview_data(door_type, wall_obj, point):
+    polyline_props = tool.Model.get_polyline_props()
+    if not polyline_props.snap_mouse_point:
+        polyline_props.snap_mouse_point.add()
+    snap_vertex = polyline_props.snap_mouse_point[0]
+    snap_vertex.x, snap_vertex.y, snap_vertex.z = point
+    snap_vertex.snap_type = "EDGE"
+    snap_vertex.snap_object = wall_obj.name
+    door_type_obj = tool.Ifc.get_object(door_type)
+    handler = ProductDecorator()
+    handler.relating_type = door_type
+    handler.preview_mode = "GENERIC"
+    handler.obj_data = ItemDecorator.get_obj_data(door_type_obj)
+    handler.obj_data["raw_verts"] = [Vector(v) for v in handler.obj_data["verts"]]
+    handler.obj_matrix_i = door_type_obj.matrix_world.inverted()
+    return handler.get_generic_preview_data()
+
+
+def _centroid(points):
+    return sum((Vector(p) for p in points), Vector()) / len(points)
+
+
+class TestFillingPreview(NewFile):
+    @pytest.mark.parametrize("schema", ["IFC2X3", "IFC4"])
+    @pytest.mark.parametrize("wall_angle", [0, 30, 90, 135])
+    def test_the_preview_lands_where_the_door_is_placed(self, schema, wall_angle):
+        tool.Project.get_project_props().export_schema = schema
+        bpy.ops.bim.create_project()
+        tool.Model.get_model_props().rl1 = 0.3
+        start = Vector((5.0, 3.0, 0.0))
+        direction = Vector((math.cos(math.radians(wall_angle)), math.sin(math.radians(wall_angle)), 0.0))
+        wall_obj = _add_wall(start, start + direction * 3.0)
+        door_type = _add_door_type()
+        point = start + direction * 1.5
+        data = _preview_data(door_type, wall_obj, point)
+        door_obj = tool.Ifc.get_object(_place_door(wall_obj, door_type, point))
+        placed = _centroid([door_obj.matrix_world @ v.co for v in door_obj.data.vertices])
+        preview = _centroid(data["verts"][: len(door_obj.data.vertices)])
+        assert (preview - placed).length < 0.05
+        assert bpy.context.active_object == wall_obj
