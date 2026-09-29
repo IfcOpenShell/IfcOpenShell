@@ -19,10 +19,10 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeProfileDef* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeProfileDef& inst) {
 	// @todo double check that this is actually supported
-	IfcSchema::IfcProfileDef::list::ptr profiles = inst->Profiles();
+	std::vector<IfcSchema::IfcProfileDef> profiles = inst.Profiles();
 	return map_to_collection<>(this, profiles);
 }

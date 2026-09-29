@@ -302,7 +302,6 @@ class IfcGit(bonsai.core.tool.IfcGit):
             return len(commit.parents) > 1 and any(p in commits_relevant for p in commit.parents)
 
         for commit in commits:
-
             if props.ifcgit_filter == "tagged" and commit.hexsha not in lookup:
                 continue
             elif props.ifcgit_filter == "relevant" and not is_relevant(commit):
@@ -617,7 +616,9 @@ class IfcGit(bonsai.core.tool.IfcGit):
     @classmethod
     def config_push(cls, repo: git.Repo) -> None:
         """Set push.autoSetupRemote"""
-        config_reader = repo.config_reader()
+        # Repository level only - a global push.* setting must not stop us
+        # configuring this repo.
+        config_reader = repo.config_reader("repository")
         if not config_reader.has_section("push"):
             with repo.config_writer() as config_writer:
                 config_writer.set_value("push", "default", "current")
