@@ -53,8 +53,6 @@ def assert_orthonormal(matrix):
 
 class TestA2P(test.bootstrap.IFC4):
     def test_deriving_the_x_axis_by_projection_when_it_is_not_perpendicular_to_z(self):
-        # IfcBuildAxes derives the X axis by projecting RefDirection onto the
-        # plane normal to Axis, so (1, 0, 1) against Z becomes (1, 0, 0).
         matrix = subject.a2p((0.0, 0.0, 0.0), (0.0, 0.0, 1.0), (1.0, 0.0, 1.0))
         assert np.allclose(matrix[:3, 0], (1.0, 0.0, 0.0))
         assert np.allclose(matrix[:3, 1], (0.0, 1.0, 0.0))
@@ -84,8 +82,6 @@ class TestGetAxis2PlacementOrthonormalityIFC4(test.bootstrap.IFC4):
         assert_orthonormal(matrix)
 
     def test_axis2placement3d_along_x_without_a_ref_direction(self):
-        # A valid file: RefDirection is optional, so the X axis is ours to pick
-        # and it must not be parallel to Axis.
         for axis in ((1.0, 0.0, 0.0), (-1.0, 0.0, 0.0)):
             matrix = subject.get_axis2placement(self.placement_3d(axis))
             assert np.allclose(matrix[:3, 2], axis)
@@ -98,8 +94,6 @@ class TestGetAxis2PlacementOrthonormalityIFC4(test.bootstrap.IFC4):
             assert_orthonormal(matrix)
 
     def test_axis1placement_along_x(self):
-        # IfcAxis1Placement has no RefDirection attribute at all, so an axis of
-        # (1, 0, 0) is perfectly valid and must not produce NaN.
         placement = self.file.createIfcAxis1Placement(
             self.file.createIfcCartesianPoint((0.0, 0.0, 0.0)),
             self.file.createIfcDirection((1.0, 0.0, 0.0)),
