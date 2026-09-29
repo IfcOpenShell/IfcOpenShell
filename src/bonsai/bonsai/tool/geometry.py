@@ -1188,10 +1188,7 @@ class Geometry(bonsai.core.tool.Geometry):
                     mesh = meshes.get(mesh_name)
                     if mesh is None:
                         if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
-                            existing_camera = obj.data if isinstance(obj.data, bpy.types.Camera) else None
-                            mesh = tool.Loader.create_camera(
-                                element, representation, shape, existing_camera=existing_camera
-                            )
+                            mesh = tool.Loader.create_camera(element, representation, shape)
                         elif element.is_a("IfcAnnotation") and ifc_importer.is_curve_annotation(element):
                             mesh = ifc_importer.create_curve(element, shape)
                         elif shape:
