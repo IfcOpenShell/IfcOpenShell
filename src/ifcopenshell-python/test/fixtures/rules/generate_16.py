@@ -2,6 +2,8 @@ import time
 
 import ifcopenshell
 
+from ...fixture_generate import normalize_header, pass_if, write_fixture
+
 names = [("Same", "Same"), ("Different", "SomethingElse")]
 
 make_prop = lambda f: lambda nm: f.createIfcPropertySingleValue(Name=nm)
@@ -18,5 +20,5 @@ for nms in names:
     units = f.createIfcUnitAssignment(Units=[f.createIfcSIUnit(None, "LENGTHUNIT", None, "METRE")])
     ownerhist = f.createIfcOwnerHistory(pando, appl, ChangeAction="ADDED", CreationDate=int(time.time()))
     f.createIfcPropertySet(ifcopenshell.guid.new(), ownerhist, "MyPset", HasProperties=map(make_prop(f), nms))
-    f.write(f"{'pass' if len(set(nms)) == len(nms) else 'fail'}-property-{'-'.join(map(str.lower, nms))}-ifc2x3.ifc")
-15
+    normalize_header(f)
+    write_fixture(f, __file__, pass_if(len(set(nms)) == len(nms)), f"property-{'-'.join(map(str.lower, nms))}-ifc2x3")
