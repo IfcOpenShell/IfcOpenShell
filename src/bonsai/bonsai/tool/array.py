@@ -94,9 +94,7 @@ class Array(bonsai.core.tool.Array):
         return array_objects
 
     @classmethod
-    def get_all_children_objects(
-        cls, parent_element: ifcopenshell.entity_instance
-    ) -> Generator[bpy.types.Object, None, None]:
+    def get_all_children_objects(cls, parent_element: ifcopenshell.entity_instance) -> Generator[bpy.types.Object]:
         for array_modifier in cls.get_modifiers_data(parent_element):
             yield from cls.get_children_objects(array_modifier)
 
@@ -128,12 +126,12 @@ class Array(bonsai.core.tool.Array):
         return tool.Ifc.get_object(parent_element)
 
     @classmethod
-    def get_modifiers_data(cls, parent_element: ifcopenshell.entity_instance) -> Generator[dict[str, Any], None, None]:
+    def get_modifiers_data(cls, parent_element: ifcopenshell.entity_instance) -> Generator[dict[str, Any]]:
         array_pset = ifcopenshell.util.element.get_pset(parent_element, "BBIM_Array")
         yield from json.loads(array_pset["Data"])
 
     @classmethod
-    def get_children_objects(cls, modifier_data: dict[str, Any]) -> Generator[bpy.types.Object, None, None]:
+    def get_children_objects(cls, modifier_data: dict[str, Any]) -> Generator[bpy.types.Object]:
         child_guid: str
         for child_guid in modifier_data["children"]:
             child_obj = tool.Blender.get_object_from_guid(child_guid)

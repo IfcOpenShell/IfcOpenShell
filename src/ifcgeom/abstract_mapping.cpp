@@ -1,55 +1,61 @@
 #include "abstract_mapping.h"
 
-#include "../ifcparse/IfcFile.h"
+#include "../ifcparse/file.h"
+#include "../ifcgeom/mapping_plugin.h"
 
-#include <boost/preprocessor/stringize.hpp>
-#include <boost/preprocessor/seq/for_each.hpp>
+#include <boost/algorithm/string/case_conv.hpp>
 
-#ifndef SCHEMA_SEQ
-static_assert(false, "A boost preprocessor sequence of schema identifiers is needed for this file to compile.");
-#endif
+namespace {
+	std::string mapping_key(const std::string& schema_name) {
+		return boost::to_lower_copy(schema_name);
+	}
 
-ifcopenshell::geometry::impl::MappingFactoryImplementation& ifcopenshell::geometry::impl::mapping_implementations() {
-	static MappingFactoryImplementation impl;
+}
+
+ifcopenshell::geom::impl::mapping_registry& ifcopenshell::geom::impl::mapping_registry_instance() {
+	static mapping_registry registry;
+	return registry;
+}
+
+void ifcopenshell::geom::impl::mapping_registry::bind(const std::string& schema_name, ifcopenshell::geom::impl::mapping_fn fn, const plugin::module& module) {
+	auto& entry = entries_[mapping_key(schema_name)];
+	entry.fn_ = fn;
+	entry.module_ = module.meta().id.empty() ? plugin::module(mapping_plugin_metadata(schema_name)) : module;
+}
+
+ifcopenshell::geom::abstract_mapping* ifcopenshell::geom::impl::mapping_registry::construct(ifcopenshell::file* file, ifcopenshell::geom::settings& settings, ifcopenshell::logger& log) {
+	const std::string schema_name_lower = boost::to_lower_copy(file->schema()->name());
+	auto it = entries_.find(schema_name_lower);
+	if (it == entries_.end()) {
+		load_mapping_plugin(*this, file->schema()->name());
+		it = entries_.find(schema_name_lower);
+	}
+	if (it == entries_.end()) {
+		throw ifcopenshell::exception("No geometry mapping registered for " + schema_name_lower);
+	}
+	auto new_mapping = it->second.fn_(file, settings, log);
+	try {
+		new_mapping->initialize_settings();
+	} catch (const std::exception& e) {
+		log.error("GEO", 400, e);
+		log.error("GEO", 401, "Unable to initialize conversion settings");
+	}
+	return new_mapping;
+}
+
+ifcopenshell::geom::impl::mapping_factory_implementation& ifcopenshell::geom::impl::mapping_implementations() {
+	static mapping_factory_implementation impl;
 	return impl;
 }
 
-// Declares the schema-based external kernel initialization routines:
-// - extern void init_MappingImplementation_Ifc2x3(IfcGeom::impl::MappingFactoryImplementation*);
-// - ...
-#define EXTERNAL_DEFS(r, data, elem) \
-	extern void BOOST_PP_CAT(init_MappingImplementation_Ifc, elem)(ifcopenshell::geometry::impl::MappingFactoryImplementation*);
-
-// Declares the schema-based external iterator initialization routines:
-// - init_MappingImplementation_Ifc2x3(this);
-// - ...
-#define CALL_DEFS(r, data, elem) \
-	BOOST_PP_CAT(init_MappingImplementation_Ifc, elem)(this);
-
-BOOST_PP_SEQ_FOR_EACH(EXTERNAL_DEFS, , SCHEMA_SEQ)
-
-ifcopenshell::geometry::impl::MappingFactoryImplementation::MappingFactoryImplementation() {
-	BOOST_PP_SEQ_FOR_EACH(CALL_DEFS, , SCHEMA_SEQ)
+ifcopenshell::geom::impl::mapping_factory_implementation::mapping_factory_implementation() {
+	mapping_registry_instance();
 }
 
-void ifcopenshell::geometry::impl::MappingFactoryImplementation::bind(const std::string& schema_name, ifcopenshell::geometry::impl::mapping_fn fn) {
-	const std::string schema_name_lower = boost::to_lower_copy(schema_name);
-	this->insert(std::make_pair(schema_name_lower, fn));
+void ifcopenshell::geom::impl::mapping_factory_implementation::bind(const std::string& schema_name, ifcopenshell::geom::impl::mapping_fn fn) {
+	mapping_registry_instance().bind(schema_name, fn, plugin::module(mapping_plugin_metadata(schema_name)));
 }
 
-ifcopenshell::geometry::abstract_mapping* ifcopenshell::geometry::impl::MappingFactoryImplementation::construct(IfcParse::IfcFile* file, Settings& s, Logger& logger) {
-	const std::string schema_name_lower = boost::to_lower_copy(file->schema()->name());
-	std::map<std::string, ifcopenshell::geometry::impl::mapping_fn>::const_iterator it;
-	it = this->find(schema_name_lower);
-	if (it == end()) {
-		throw IfcParse::IfcException("No geometry mapping registered for " + schema_name_lower);
-	}
-	auto new_mapping = it->second(file, s, logger);
-    try {
-        new_mapping->initialize_settings();
-    } catch (const std::exception& e) {
-        logger.Error("GEO", 400, e);
-        logger.Error("GEO", 401, "Unable to initialize conversion settings");
-	}
-	return new_mapping;
+ifcopenshell::geom::abstract_mapping* ifcopenshell::geom::impl::mapping_factory_implementation::construct(ifcopenshell::file* file, ifcopenshell::geom::settings& settings, ifcopenshell::logger& log) {
+	return mapping_registry_instance().construct(file, settings, log);
 }
