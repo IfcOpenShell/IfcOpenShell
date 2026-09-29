@@ -639,8 +639,7 @@ class Cad:
                     far2 = edge2[1] if v2 == edge2[0] else edge2[0]
                     return v1.copy(), v1, far1, v2, far2
 
-        intersection = cls.intersect_edges(edge1, edge2)
-        if intersection is None:
+        if not (intersection := cls.intersect_edges(edge1, edge2)):
             return None  # parallel edges, no intersection
         c1, c2 = intersection
         if (c1 - c2).length > VTX_PRECISION:
