@@ -56,6 +56,9 @@ jobs:
         with:
           python-version: '3.13'
 
+      # Speeds up the build: common.mk builds bundled packages with `uv build` if available.
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+
       - name: Build the Bonsai extension from this checkout
         run: |
           cd src/bonsai && make dist PLATFORM=linux PYVERSION=${{ env.PYVERSION }}

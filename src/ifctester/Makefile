@@ -100,7 +100,11 @@ else
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION_DAILY)"/' $(WEBAPP_IFCTESTER_BUILD_DIR)/pyproject.toml
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION_DAILY)"/' $(WEBAPP_IFCTESTER_BUILD_DIR)/$(PACKAGE_NAME)/__init__.py
 endif
-	cd $(WEBAPP_IFCTESTER_BUILD_DIR) && $(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && python -m pip install build && python -m build --wheel
+	cd $(WEBAPP_IFCTESTER_BUILD_DIR) && if command -v uv >/dev/null 2>&1; then \
+		uv build --wheel; \
+	else \
+		$(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && python -m pip install build && python -m build --wheel; \
+	fi
 	mkdir -p $(WEBAPP_GENERATED_DIR)
 	wheel=$$(basename $(WEBAPP_IFCTESTER_BUILD_DIR)/dist/$(PACKAGE_NAME)-*.whl); \
 	cp "$(WEBAPP_IFCTESTER_BUILD_DIR)/dist/$$wheel" "$(WEBAPP_GENERATED_DIR)/$$wheel"; \

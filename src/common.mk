@@ -47,7 +47,12 @@ else
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION_DAILY)"/' build/$(PACKAGE_NAME)/__init__.py
 endif
 endif
-	cd build && $(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && $(PIP) install build
-	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m build --wheel
+	# Prefer uv when available - it's faster, as it skips creating a venv and installing build.
+	cd build && if command -v uv >/dev/null 2>&1; then \
+		uv build --wheel; \
+	else \
+		$(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && $(PIP) install build && \
+		$(PYTHON) -m build --wheel; \
+	fi
 	cp build/dist/*.whl dist/
 	rm -rf build

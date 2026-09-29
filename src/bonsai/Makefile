@@ -274,7 +274,11 @@ ifeq ($(IS_STABLE), TRUE)
 else
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION_DAILY)"/' build/pyproject.toml
 endif
-	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m build --wheel
+	cd build && if command -v uv >/dev/null 2>&1; then \
+		uv build --wheel; \
+	else \
+		. env/$(VENV_ACTIVATE) && $(PYTHON) -m build --wheel; \
+	fi
 	cp build/dist/*.whl build/wheels/
 
 	# Safeguard for non-wheel dependencies slipping in.
