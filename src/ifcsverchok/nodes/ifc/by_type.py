@@ -127,9 +127,7 @@ class SvIfcByType(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfc
             self.ifc_products = get_ifc_products(self, bpy.context)
             self.ifc_classes = get_ifc_classes(self, bpy.context)
         self.sv_input_names = ["ifc_product", "ifc_class", "custom_ifc_class"]
-        # Accumulated across every process_ifc() call below, since a linked
-        # socket can carry more than one ifc_class/custom_ifc_class value and
-        # each call must contribute to the output, not replace it.
+        # Accumulate over every process_ifc() call; a linked socket can carry several classes.
         self.entities_out = []
         self.entity_ids_out = []
         super().process()
