@@ -19,17 +19,12 @@
 
 import inspect
 import os
-import sys
-import time
 
 import bpy
-import ifcopenshell
 import ifcopenshell.util.element
-import pytest
 
 from bonsai import tool as tool
 from bonsai.bim.ifc import IfcStore
-from bonsai.bim.module.model.data import AuthoringData as Model
 
 GREEN = "\033[32m"
 RED = "\033[31m"

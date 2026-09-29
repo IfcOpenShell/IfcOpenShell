@@ -17,15 +17,10 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import nodes
-import platform
 import collections
+
+import nodes
 import pyparsing
-
-if tuple(map(int, platform.python_version_tuple())) < (2, 7):
-    import ordereddict
-
-    collections.OrderedDict = ordereddict.OrderedDict
 
 
 # According to ISO 10303-11 7.1.2: Letters: "... The case of
