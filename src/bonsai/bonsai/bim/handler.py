@@ -344,8 +344,7 @@ def has_unsaved_ifc_changes() -> bool:
 def save_pre(_) -> None:
     if not has_unsaved_ifc_changes():
         return
-    window = bpy.context.window
-    if not window:
+    if not bpy.context.window:
         return
 
     def draw(menu_self: bpy.types.Menu, _context: bpy.types.Context) -> None:

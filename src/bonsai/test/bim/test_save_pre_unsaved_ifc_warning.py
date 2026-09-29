@@ -54,8 +54,9 @@ def test_no_warning_when_ifc_loaded_and_clean():
     """IFC loaded but nothing changed since the last "Save IFC Project"."""
     from bonsai.bim import handler
 
-    with mock.patch("bonsai.bim.handler.tool.Ifc.get", return_value=mock.Mock()), mock.patch(
-        "bonsai.bim.handler.tool.Blender.get_bim_props", return_value=mock.Mock(is_dirty=False)
+    with (
+        mock.patch("bonsai.bim.handler.tool.Ifc.get", return_value=mock.Mock()),
+        mock.patch("bonsai.bim.handler.tool.Blender.get_bim_props", return_value=mock.Mock(is_dirty=False)),
     ):
         assert handler.has_unsaved_ifc_changes() is False
 
@@ -66,8 +67,9 @@ def test_warns_when_ifc_loaded_and_dirty():
     the user saves the .blend and reopens without an explicit IFC save."""
     from bonsai.bim import handler
 
-    with mock.patch("bonsai.bim.handler.tool.Ifc.get", return_value=mock.Mock()), mock.patch(
-        "bonsai.bim.handler.tool.Blender.get_bim_props", return_value=mock.Mock(is_dirty=True)
+    with (
+        mock.patch("bonsai.bim.handler.tool.Ifc.get", return_value=mock.Mock()),
+        mock.patch("bonsai.bim.handler.tool.Blender.get_bim_props", return_value=mock.Mock(is_dirty=True)),
     ):
         assert handler.has_unsaved_ifc_changes() is True
 
@@ -79,8 +81,9 @@ def test_save_pre_pops_up_warning_when_dirty():
     from bonsai.bim import handler
 
     fake_window_manager = mock.Mock()
-    with mock.patch("bonsai.bim.handler.has_unsaved_ifc_changes", return_value=True), mock.patch(
-        "bonsai.bim.handler.bpy.context", window=mock.Mock(), window_manager=fake_window_manager
+    with (
+        mock.patch("bonsai.bim.handler.has_unsaved_ifc_changes", return_value=True),
+        mock.patch("bonsai.bim.handler.bpy.context", window=mock.Mock(), window_manager=fake_window_manager),
     ):
         handler.save_pre(None)
 
@@ -94,8 +97,9 @@ def test_save_pre_does_not_pop_up_when_clean():
     from bonsai.bim import handler
 
     fake_window_manager = mock.Mock()
-    with mock.patch("bonsai.bim.handler.has_unsaved_ifc_changes", return_value=False), mock.patch(
-        "bonsai.bim.handler.bpy.context", window=mock.Mock(), window_manager=fake_window_manager
+    with (
+        mock.patch("bonsai.bim.handler.has_unsaved_ifc_changes", return_value=False),
+        mock.patch("bonsai.bim.handler.bpy.context", window=mock.Mock(), window_manager=fake_window_manager),
     ):
         handler.save_pre(None)
 
@@ -107,8 +111,9 @@ def test_save_pre_skips_popup_without_a_window():
     from bonsai.bim import handler
 
     fake_window_manager = mock.Mock()
-    with mock.patch("bonsai.bim.handler.has_unsaved_ifc_changes", return_value=True), mock.patch(
-        "bonsai.bim.handler.bpy.context", window=None, window_manager=fake_window_manager
+    with (
+        mock.patch("bonsai.bim.handler.has_unsaved_ifc_changes", return_value=True),
+        mock.patch("bonsai.bim.handler.bpy.context", window=None, window_manager=fake_window_manager),
     ):
         handler.save_pre(None)
 
