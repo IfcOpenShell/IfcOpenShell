@@ -25,21 +25,14 @@ import time
 import ifcopenshell.ifcopenshell_wrapper as W
 
 try:
-    from OCC.Core import AIS  # noqa: F401
+    from OCC.Core import AIS  # ruff: ignore[unused-import]
 
     USE_OCCT_HANDLE = False
 except ImportError:
-
     USE_OCCT_HANDLE = True
 
 from collections import OrderedDict, defaultdict
 from collections.abc import Iterable
-
-try:
-    QString = unicode
-except NameError:
-    # Python 3
-    QString = str
 
 os.environ["QT_API"] = "pyqt5"
 try:
@@ -54,7 +47,6 @@ from .code_editor_pane import code_edit
 try:
     from OCC.Display.pyqt5Display import qtViewer3d
 except BaseException:
-
     try:
         import OCC.Display.backend
     except BaseException:
@@ -307,7 +299,7 @@ class application(QtWidgets.QApplication):
                     s = get_supertype(t)
                     if s:
                         add(s)
-                    s2, t2 = map(QString, (s, t))
+                    s2, t2 = map(str, (s, t))
                     if t2 not in items:
                         itm = items[t2] = QtWidgets.QTreeWidgetItem(items.get(s2, self), [t2])
                         itm.setData(0, QtCore.Qt.UserRole, t2)
@@ -317,7 +309,7 @@ class application(QtWidgets.QApplication):
                     add(t)
 
             for p in products:
-                t = QString(p.is_a())
+                t = str(p.is_a())
                 itm = items[p] = QtWidgets.QTreeWidgetItem(items.get(t, self), [p.Name or "<no name>"])
                 itm.setData(0, QtCore.Qt.UserRole, t)
                 self.children[t].append(p)
@@ -370,10 +362,7 @@ class application(QtWidgets.QApplication):
                         if hasattr(value_str, "wrappedValue"):
                             value_str = value_str.wrappedValue
 
-                        if isinstance(value_str, unicode):
-                            value_str = value_str.encode("utf-8")
-                        else:
-                            value_str = str(value_str)
+                        value_str = str(value_str)
 
                         if hasattr(value, "is_a"):
                             type_str = " <i>(%s)</i>" % value.is_a()
@@ -435,7 +424,6 @@ class application(QtWidgets.QApplication):
             print("property set dictionary has {} entries".format(len(self.prop_dict)))
 
     class viewer(qtViewer3d):
-
         instanceSelected = QtCore.pyqtSignal([object])
 
         #         @staticmethod
@@ -467,7 +455,6 @@ class application(QtWidgets.QApplication):
             qtViewer3d.__init__(self, widget)
             self.ais_to_product = {}
             self.product_to_ais = {}
-            self.counter = 0
             self.window = widget
             self.thread = None
 
@@ -492,11 +479,11 @@ class application(QtWidgets.QApplication):
                 ais = display_shape(shape, viewer_handle=v)
                 product = f[shape.data.id]
 
-                if USE_OCCT_HANDLE:
-                    ais.GetObject().SetSelectionPriority(self.counter)
-                self.ais_to_product[self.counter] = product
+                # Keyed by the AIS object itself (its __eq__/__hash__ track the
+                # underlying OCCT instance) instead of AIS_InteractiveObject.SetSelectionPriority(),
+                # which no longer exists on general AIS objects in modern pythonocc-core (#1098).
+                self.ais_to_product[ais] = product
                 self.product_to_ais[product] = ais
-                self.counter += 1
 
                 QtWidgets.QApplication.processEvents()
 
@@ -577,11 +564,11 @@ class application(QtWidgets.QApplication):
             v.InitSelected()
             if v.MoreSelected():
                 ais = v.SelectedInteractive()
-                inst = self.ais_to_product[ais.GetObject().SelectionPriority()]
-                self.instanceSelected.emit(inst)
+                inst = self.ais_to_product.get(ais)
+                if inst is not None:
+                    self.instanceSelected.emit(inst)
 
     class window(QtWidgets.QMainWindow):
-
         TITLE = "IfcOpenShell IFC viewer"
 
         window_closed = QtCore.pyqtSignal([])

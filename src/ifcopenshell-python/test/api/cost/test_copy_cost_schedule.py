@@ -40,6 +40,9 @@ class TestCopyCostSchedule(test.bootstrap.IFC4):
         assert len(new_cost_items) == 2
         assert len(new_cost_items.intersection(old_cost_items)) == 0
 
+        # The copies should be removed from the original schedule.
+        assert set(ifcopenshell.util.cost.get_schedule_cost_items(schedule)) == old_cost_items
+
 
 class TestCopyCostScheduleIFC2X3(test.bootstrap.IFC2X3, TestCopyCostSchedule):
     pass
