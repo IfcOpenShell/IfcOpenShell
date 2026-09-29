@@ -581,11 +581,12 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
         if has_openings and not self.apply_openings:
             # Meshlike things with openings can only be updated without openings applied.
             if self.from_ui:
-                self.report({"ERROR"}, f"Object '{obj.name}' has openings - representation cannot be updated.")
+                self.report(
+                    {"ERROR"},
+                    f"Object '{obj.name}' has openings. "
+                    "ALT+click the button to bake the openings into the new representation.",
+                )
             return
-
-        if not product.is_a("IfcGridAxis"):
-            tool.Geometry.clear_cache(product)
 
         if product.is_a("IfcGridAxis"):
             # Grid geometry does not follow the "representation" paradigm and needs to be treated specially
@@ -798,7 +799,7 @@ def lock_error_message(name: str) -> str:
 
 
 def calc_delete_is_batch(ifc_file: ifcopenshell.file, context: bpy.types.Context) -> bool:
-    total_elements = len(tool.Ifc.get().wrapped_data.entity_names())
+    total_elements = len(tool.Ifc.get().entity_names())
     total_polygons = sum([len(o.data.polygons) for o in context.selected_objects if o.type == "MESH"])
     # These numbers are a bit arbitrary, but basically batching is only
     # really necessary on large models and large geometry removals.
@@ -2527,20 +2528,6 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 else:
                     bpy.ops.bim.edit_extrusion_profile()
                 return self.execute(context)
-            elif representation := tool.Geometry.get_active_representation(obj):
-                if not tool.Geometry.is_geometric_data(obj.data):
-                    self.is_valid = False
-                    self.should_save = False
-                assert tool.Geometry.has_mesh_properties(obj.data)
-                mesh_props = tool.Geometry.get_mesh_props(obj.data)
-                if tool.Geometry.is_meshlike(
-                    representation
-                ) and mesh_props.mesh_checksum != tool.Geometry.get_mesh_checksum(obj.data):
-                    self.edited_objs.append(obj)
-                elif getattr(element, "HasOpenings", None):
-                    self.unchanged_objs_with_openings.append(obj)
-                else:
-                    tool.Ifc.finish_edit(obj)
             elif element.is_a("IfcGridAxis"):
                 if not tool.Geometry.is_geometric_data(obj.data):
                     self.is_valid = False
@@ -3185,81 +3172,7 @@ class EnableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         for obj in tool.Geometry.get_selected_objects_with_representations():
-            self.process_obj(obj)
-
-    def process_obj(self, obj: bpy.types.Object) -> None:
-        props = tool.Geometry.get_object_geometry_props(obj)
-        props.is_editing = True
-
-        props.items.clear()
-
-        def add_tag(item, tag: str) -> None:
-            if item.tags:
-                item.tags += ","
-            item.tags += tag
-
-        if tool.Geometry.has_mesh_properties(data := obj.data):
-            representation = tool.Geometry.get_data_representation(data)
-            assert representation
-
-            # Shape aspects must be considered from the PartOfProductDefinitionShape level
-            element = tool.Ifc.get_entity(obj)
-            assert element
-            product_reps = []
-            if element.is_a("IfcProduct"):
-                product_reps = [element.Representation]
-                if element_type := ifcopenshell.util.element.get_type(element):
-                    product_reps.extend(element_type.RepresentationMaps or [])
-            elif element.is_a("IfcTypeProduct"):
-                product_reps = element.RepresentationMaps
-            item_aspect = {}
-            for product_rep in product_reps:
-                for aspect in getattr(product_rep, "HasShapeAspects", ()):
-                    for aspect_rep in aspect.ShapeRepresentations:
-                        if aspect_rep.ContextOfItems != representation.ContextOfItems:
-                            continue
-                        for item in aspect_rep.Items:
-                            item_aspect[item] = aspect
-
-            # IfcShapeRepresentation or IfcTopologyRepresentation.
-            if not representation.is_a("IfcShapeModel"):
-                return
-            queue = list(representation.Items)
-            while queue:
-                item = queue.pop()
-                if item.is_a("IfcMappedItem"):
-                    queue.extend(item.MappingSource.MappedRepresentation.Items)
-                else:
-                    new = props.items.add()
-                    new.name = item.is_a()
-                    new.ifc_definition_id = item.id()
-
-                    styles = []
-                    for inverse in tool.Ifc.get().get_inverse(item):
-                        if inverse.is_a("IfcStyledItem"):
-                            styles = inverse.Styles
-                            if styles and styles[0].is_a("IfcPresentationStyleAssignment"):
-                                styles = styles[0].Styles
-                            for style in styles:
-                                if style.is_a("IfcSurfaceStyle"):
-                                    new.surface_style = style.Name or "Unnamed"
-                                    new.surface_style_id = style.id()
-                        elif inverse.is_a("IfcPresentationLayerAssignment"):
-                            new.layer = inverse.Name or "Unnamed"
-                            new.layer_id = inverse.id()
-                        elif inverse.is_a("IfcIndexedTextureMap"):
-                            add_tag(new, "UV")
-                        elif inverse.is_a("IfcIndexedColourMap"):
-                            add_tag(new, "Colour")
-
-                    if aspect := item_aspect.get(item, None):
-                        new.shape_aspect = aspect.Name
-                        new.shape_aspect_id = aspect.id()
-
-            # sort created items
-            sorted_items = sorted(props.items[:], key=lambda i: (not i.shape_aspect, i.shape_aspect))
-            for i, item in enumerate(sorted_items[:-1]):  # last item is sorted automatically
-                props.items.move(props.items[:].index(item), i)
+            tool.Geometry.enable_editing_representation_items(obj)
 
 
 class DisableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
@@ -3270,8 +3183,7 @@ class DisableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         for obj in tool.Geometry.get_selected_objects_with_representations():
-            props = tool.Geometry.get_object_geometry_props(obj)
-            props.is_editing = False
+            tool.Geometry.disable_editing_representation_items(obj)
 
 
 class RemoveRepresentationItem(bpy.types.Operator, tool.Ifc.Operator):
@@ -3302,10 +3214,6 @@ class RemoveRepresentationItem(bpy.types.Operator, tool.Ifc.Operator):
         representation_item = ifc_file.by_id(self.representation_item_id)
         tool.Geometry.remove_representation_item(representation_item, element)
         tool.Geometry.reload_representation(obj)
-
-        # reload items ui
-        bpy.ops.bim.disable_editing_representation_items()
-        bpy.ops.bim.enable_editing_representation_items()
 
 
 class SelectRepresentationItem(bpy.types.Operator):
@@ -3424,9 +3332,6 @@ class EditRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator):
 
         tool.Style.assign_style_to_representation_item(representation_item, surface_style)
         tool.Geometry.reload_representation(obj)
-        # reload items ui
-        bpy.ops.bim.disable_editing_representation_items()
-        bpy.ops.bim.enable_editing_representation_items()
 
 
 class DisableEditingRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator):
@@ -3508,10 +3413,6 @@ class UnassignRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator):
                         tool.Geometry.reload_representation(obj)
                         break  # No need to check further if one matching style is found
 
-        # Reload UI items
-        bpy.ops.bim.disable_editing_representation_items()
-        bpy.ops.bim.enable_editing_representation_items()
-
 
 class EnableEditingRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_representation_item_shape_aspect"
@@ -3551,6 +3452,7 @@ class EditRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Operator):
         if props.representation_item_shape_aspect == "NEW":
             active_representation = tool.Geometry.get_active_representation(obj)
             # find IfcProductRepresentationSelect based on current representation
+            product_shape = None
             if hasattr(element, "Representation"):  # IfcProduct
                 product_shape = element.Representation
             else:  # IfcTypeProduct
@@ -3560,6 +3462,7 @@ class EditRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Operator):
             previous_shape_aspect_id = props.active_item.shape_aspect_id
             # will be None if item didn't had a shape aspect
             previous_shape_aspect = tool.Ifc.get_entity_by_id(previous_shape_aspect_id)
+            assert product_shape is not None
             shape_aspect = tool.Geometry.create_shape_aspect(
                 product_shape, active_representation, [representation_item], previous_shape_aspect
             )
@@ -3585,10 +3488,6 @@ class EditRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Operator):
             styles=styles,
         )
         tool.Geometry.reload_representation(obj)
-
-        # reload items ui
-        bpy.ops.bim.disable_editing_representation_items()
-        bpy.ops.bim.enable_editing_representation_items()
 
 
 class DisableEditingRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Operator):
@@ -3628,10 +3527,6 @@ class RemoveRepresentationItemFromShapeAspect(bpy.types.Operator, tool.Ifc.Opera
             tool.Geometry.reload_representation(obj)
 
         tool.Geometry.remove_representation_items_from_shape_aspect([representation_item], shape_aspect)
-
-        # reload items ui
-        bpy.ops.bim.disable_editing_representation_items()
-        bpy.ops.bim.enable_editing_representation_items()
 
     def remove_styles_from_item(self, representation_item, styles):
         ifc_file = tool.Ifc.get()
@@ -3906,6 +3801,8 @@ class AddSweptAreaSolidItem(bpy.types.Operator, tool.Ifc.Operator):
             curve = builder.rectangle(size=Vector((0.5, 0.5)) / unit_scale)
         elif self.shape == "CYLINDER":
             curve = builder.circle(radius=0.25 / unit_scale)
+        else:
+            assert False, self.shape
         item = builder.extrude(
             curve,
             magnitude=0.5 / unit_scale,
@@ -4143,6 +4040,31 @@ class OverrideMoveSelect(bpy.types.Operator):
                 self.new_active_obj = obj
             return {"FINISHED"}
 
+        # Get arrays
+        ifc_file = tool.Ifc.get()
+        array_parents_to_move: list[bpy.types.Object] = []
+        for obj in list(context.selected_objects):
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+            if not pset:
+                continue
+            parent_element = ifc_file.by_guid(pset["Parent"])
+            parent_obj = tool.Ifc.get_object(parent_element)
+            if parent_obj not in array_parents_to_move:
+                array_parents_to_move.append(parent_obj)
+            if element.GlobalId != pset["Parent"]:
+                obj.select_set(False)
+
+        if array_parents_to_move:
+            for parent_obj in array_parents_to_move:
+                parent_element = tool.Ifc.get_entity(parent_obj)
+                for array_obj in tool.Array.get_all_objects(parent_element):
+                    array_obj.select_set(True)
+                self.new_active_obj = parent_obj
+            return {"FINISHED"}
+
         # Get nests
         props = tool.Nest.get_nest_props()
         not_editing_objs = [o.obj for o in props.not_editing_objects]
@@ -4208,7 +4130,6 @@ class EditRepresentationItemLayer(bpy.types.Operator, tool.Ifc.Operator):
 
         ifcopenshell.api.layer.assign_layer(ifc_file, [item], new_layer)
         props.is_editing_item_layer = False
-        bpy.ops.bim.enable_editing_representation_items()
         return {"FINISHED"}
 
 
@@ -4226,7 +4147,6 @@ class UnassignRepresentationItemLayer(bpy.types.Operator, tool.Ifc.Operator):
         item = ifc_file.by_id(props.active_item.ifc_definition_id)
         layer = item.LayerAssignment[0]  # If there is no layer, then button is not visible in UI.
         ifcopenshell.api.layer.unassign_layer(ifc_file, [item], layer)
-        bpy.ops.bim.enable_editing_representation_items()
         return {"FINISHED"}
 
 

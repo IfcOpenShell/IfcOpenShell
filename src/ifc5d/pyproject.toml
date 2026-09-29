@@ -10,6 +10,7 @@ authors = [
 ]
 description = "IFC 5D costing library for quantity take-off and schedule production"
 readme = "README.md"
+requires-python = ">=3.11"
 keywords = ["IFC", "5D", "BIM"]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -17,12 +18,17 @@ classifiers = [
 ]
 dependencies = [
     "ifcopenshell",
+    "typing_extensions",
 ]
 
- [project.optional-dependencies] 
- advanced = [ 
-   "typst", 
- ] 
+ [project.optional-dependencies]
+ advanced = [
+   "typst",
+ ]
+ spreadsheet = [
+   "odfpy",
+   "openpyxl",
+ ]
 
 [project.urls]
 Homepage = "http://ifcopenshell.org"
@@ -38,6 +44,3 @@ exclude = ["test*"]
 
 [tool.ruff]
 extend = "../../pyproject.toml"
-lint.select = [
-  "F401",  # unused imports
-]
