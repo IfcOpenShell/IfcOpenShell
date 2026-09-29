@@ -191,9 +191,7 @@ def load_library_file(filepath: str, target_schema_identifier: str) -> ifcopensh
         return library_file
     import ifcpatch
 
-    migrated = ifcpatch.execute(
-        {"file": library_file, "recipe": "Migrate", "arguments": [target_schema_identifier]}
-    )
+    migrated = ifcpatch.execute({"file": library_file, "recipe": "Migrate", "arguments": [target_schema_identifier]})
     assert isinstance(migrated, ifcopenshell.file)
     return migrated
 
