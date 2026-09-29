@@ -131,10 +131,10 @@ test georeferencing features: ``Edit > Preferences > Add-ons`` and install
 Code styling
 ------------
 
-`Black <https://black.readthedocs.io/en/stable/index.html>`__ is used for code
-formatting. The settings for black are configured in the ``pyproject.toml`` at
-the project root. At the project root, just run:
+The `ruff formatter <https://docs.astral.sh/ruff/formatter/>`__ is used for
+code formatting. Its settings are configured in the ``pyproject.toml`` at the
+project root. At the project root, just run:
 
 .. code-block:: bash
 
-    black .
+    ruff format
