@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=77.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -11,10 +11,10 @@ authors = [
 description = "CLI wrapper for ifcopenshell.api IFC model mutation functions"
 readme = "README.md"
 requires-python = ">=3.11"
+license = "LGPL-3.0-or-later"
 keywords = ["IFC", "BIM", "API"]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
 ]
 dependencies = ["ifcopenshell", "ifc5d"]
 
