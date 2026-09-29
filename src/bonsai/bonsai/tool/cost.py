@@ -44,7 +44,6 @@ if TYPE_CHECKING:
 
 
 class Cost(bonsai.core.tool.Cost):
-
     RELATED_OBJECT_TYPE = Literal["PRODUCT", "PROCESS", "RESOURCE"]
 
     # TODO: Do we really need them cached as class attributes?
@@ -280,6 +279,8 @@ class Cost(bonsai.core.tool.Cost):
                     new = props.cost_item_processes.add()
                 elif related_object.is_a("IfcResource"):
                     new = props.cost_item_resources.add()
+                else:
+                    assert False, related_object
                 new.ifc_definition_id = related_object.id()
                 new.name = related_object.Name or "Unnamed"
 
@@ -560,7 +561,7 @@ class Cost(bonsai.core.tool.Cost):
     @classmethod
     def get_schedule_cost_items(
         cls, cost_schedule: ifcopenshell.entity_instance
-    ) -> Generator[ifcopenshell.entity_instance, None, None]:
+    ) -> Generator[ifcopenshell.entity_instance]:
         return ifcopenshell.util.cost.get_schedule_cost_items(cost_schedule)
 
     @classmethod
