@@ -42,13 +42,7 @@ class IfcClassData:
 
     @classmethod
     def load(cls):
-        # is_loaded must be set True *before* the helpers below read the ifc_product /
-        # ifc_class enum values. Reading a dynamic EnumProperty runs its items= callback
-        # (get_ifc_products / get_ifc_classes), which calls load() again whenever
-        # is_loaded is False. With the flag still False that nested call re-enters here,
-        # resets cls.data mid-populate, and surfaces as KeyError 'ifc_products'. Setting
-        # it up-front makes those nested lookups resolve against the dict we are building
-        # (ifc_products is filled first, before any enum value is read).
+        # is_loaded is set before the helpers run, as reading their enums calls load() again when it is False.
         cls.is_loaded = True
         cls.data = {}
         try:
@@ -66,10 +60,7 @@ class IfcClassData:
             cls.data["can_reassign_class"] = cls.can_reassign_class()
             cls.data["profile"] = cls.profile()
         except Exception:
-            # A populate call genuinely failed (e.g. before a file is fully ready). Don't
-            # leave a half-built dict cached: clear the flag so the next access retries a
-            # full load instead of returning incomplete data (KeyError 'ifc_products' was
-            # the symptom that motivated deferring the flag in the first place). See #6398.
+            # Clear the flag on a failed populate so the next access retries a full load (see #6398).
             cls.is_loaded = False
             raise
 
@@ -86,12 +77,7 @@ class IfcClassData:
         try:
             declaration = tool.Ifc.schema().declaration_by_name(ifc_product)
         except RuntimeError:
-            # ifc_product is a dynamic EnumProperty whose stored value can be stale or
-            # out of range for the active schema (e.g. after a schema change), in which
-            # case declaration_by_name raises. Returning empty keeps load() from raising
-            # so is_loaded still gets set; otherwise, since this is a persistent failure
-            # on an already-loaded file, the enum items= callbacks would re-run load() on
-            # every UI redraw, freezing text input across all panels. See #6398.
+            # The stored ifc_product can be stale for the active schema, so declaration_by_name may raise; return empty (see #6398).
             return []
         declarations = ifcopenshell.util.schema.get_subtypes(declaration)
         names = [d.name() for d in declarations]
@@ -116,10 +102,7 @@ class IfcClassData:
         try:
             declaration = tool.Ifc.schema().declaration_by_name(ifc_class).as_entity()
         except RuntimeError:
-            # See ifc_classes: ifc_class is a dynamic EnumProperty whose stored value can
-            # be stale/empty (e.g. when ifc_classes above returned no items), so
-            # declaration_by_name may raise. Return empty rather than raising, so load()
-            # completes and is_loaded is set instead of retrying on every redraw. See #6398.
+            # ifc_class can be stale or empty, so declaration_by_name may raise; return empty (see #6398).
             return types_enum
         assert declaration
         version = tool.Ifc.get_schema()
