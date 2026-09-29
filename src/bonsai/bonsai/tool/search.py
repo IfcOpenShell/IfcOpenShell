@@ -505,6 +505,8 @@ class Search(bonsai.core.tool.Search):
                 (0.773, 0.922, 0.816),
                 (0.871, 0.957, 0.894),
             ]
+        else:
+            assert False, theme
 
         if value < min_val:
             value = min_val
@@ -574,8 +576,10 @@ class ImportFilterQueryTransformer(lark.Transformer):
         new = self.filter_groups.add()
         global_ids = []
         is_first_group = len(self.filter_groups) == 1
+        new2 = None
         for filter_index, arg in enumerate(args):
             if arg["type"] == "instance" and global_ids:
+                assert new2
                 if "bpy.data.texts" in new2.value:
                     data_name = new2.value.split("bpy.data.texts")[1][2:-2]
                     bpy.data.texts[data_name].write("," + arg["value"])

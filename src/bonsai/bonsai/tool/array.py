@@ -94,9 +94,7 @@ class Array(bonsai.core.tool.Array):
         return array_objects
 
     @classmethod
-    def get_all_children_objects(
-        cls, parent_element: ifcopenshell.entity_instance
-    ) -> Generator[bpy.types.Object, None, None]:
+    def get_all_children_objects(cls, parent_element: ifcopenshell.entity_instance) -> Generator[bpy.types.Object]:
         for array_modifier in cls.get_modifiers_data(parent_element):
             yield from cls.get_children_objects(array_modifier)
 
@@ -128,12 +126,12 @@ class Array(bonsai.core.tool.Array):
         return tool.Ifc.get_object(parent_element)
 
     @classmethod
-    def get_modifiers_data(cls, parent_element: ifcopenshell.entity_instance) -> Generator[dict[str, Any], None, None]:
+    def get_modifiers_data(cls, parent_element: ifcopenshell.entity_instance) -> Generator[dict[str, Any]]:
         array_pset = ifcopenshell.util.element.get_pset(parent_element, "BBIM_Array")
         yield from json.loads(array_pset["Data"])
 
     @classmethod
-    def get_children_objects(cls, modifier_data: dict[str, Any]) -> Generator[bpy.types.Object, None, None]:
+    def get_children_objects(cls, modifier_data: dict[str, Any]) -> Generator[bpy.types.Object]:
         child_guid: str
         for child_guid in modifier_data["children"]:
             child_obj = tool.Blender.get_object_from_guid(child_guid)
@@ -177,6 +175,25 @@ class Array(bonsai.core.tool.Array):
             return [o for o in occurrences if not ifcopenshell.util.element.get_pset(o, "BBIM_Array")]
         element_root = cls.get_array_root_guid(element)
         return [o for o in occurrences if cls.get_array_root_guid(o) == element_root]
+
+    @classmethod
+    def select_only_parent(cls, parent_obj: bpy.types.Object, context: bpy.types.Context) -> None:
+        """Post-condition for the user-facing regenerate and finish-edit paths:
+        only ``parent_obj`` is selected + active. Grow and shrink otherwise
+        diverge on which objects stay selected, surfacing an inconsistency."""
+        tool.Blender.select_and_activate_single_object(context, parent_obj)
+
+    @classmethod
+    def is_array_child(cls, element: entity_instance) -> bool:
+        """True when ``element`` is a child of a parametric array — has a
+        BBIM_Array pset whose Parent GUID points to a different element.
+        Lighter than ``get_child_layer_index`` (no ``by_guid`` lookup, no
+        Data parse); suitable for per-element checks in draw handlers."""
+        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+        if not pset:
+            return False
+        parent_guid = pset.get("Parent")
+        return bool(parent_guid) and parent_guid != element.GlobalId
 
     @classmethod
     def get_child_layer_index(cls, child_element: entity_instance) -> int | None:
