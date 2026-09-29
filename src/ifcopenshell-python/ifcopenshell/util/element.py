@@ -1164,12 +1164,7 @@ def get_decomposition(element: ifcopenshell.entity_instance, is_recursive=True) 
             filling = fill_rel.RelatedBuildingElement
             filling_container = get_container(filling, should_get_direct=True)
             if host_container is not None and filling_container is not None and filling_container != host_container:
-                # A single opening may void multiple elements across different
-                # containers, e.g. a continuous opening cutting through walls
-                # on separate storeys. The filling element's (e.g. a window's)
-                # own explicit container is authoritative and takes priority
-                # over an unrelated container that the shared opening also
-                # happens to void. See #6770.
+                # The filling's own container wins over other hosts of a shared opening.
                 continue
             queue.append(filling)
             results.add(filling)
