@@ -24,32 +24,6 @@ import ifcopenshell.util.cost as subject
 import test.bootstrap
 
 
-class TestGetCostItemForProduct(test.bootstrap.IFC4):
-    def test_run(self):
-        model = self.file
-        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
-        cost_schedule = ifcopenshell.api.cost.add_cost_schedule(model)
-        item1 = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=cost_schedule)
-        ifcopenshell.api.control.assign_control(model, related_objects=[element], relating_control=item1)
-        assert list(subject.get_cost_items_for_product(element)) == [item1]
-
-    def test_remove_cost_item(self):
-        model = self.file
-        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
-        cost_schedule = ifcopenshell.api.cost.add_cost_schedule(model)
-        item1 = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=cost_schedule)
-        ifcopenshell.api.control.assign_control(model, related_objects=[element], relating_control=item1)
-        ifcopenshell.api.cost.remove_cost_item(model, cost_item=item1)
-        assert list(subject.get_cost_items_for_product(element)) == []
-
-    def test_no_assigned_cost_items(self):
-        model = self.file
-        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
-        cost_schedule = ifcopenshell.api.cost.add_cost_schedule(model)
-        item1 = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=cost_schedule)
-        assert list(subject.get_cost_items_for_product(element)) == []
-
-
 class TestCalculateTotalAppliedValue(test.bootstrap.IFC4):
     def test_run(self):
         model = self.file
@@ -75,3 +49,29 @@ class TestCalculateTotalAppliedValue(test.bootstrap.IFC4):
         cost_schedule = ifcopenshell.api.cost.add_cost_schedule(model)
         item = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=cost_schedule)
         assert subject.calculate_total_applied_value(item) == 0.0
+
+
+class TestGetCostItemForProduct(test.bootstrap.IFC4):
+    def test_run(self):
+        model = self.file
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        cost_schedule = ifcopenshell.api.cost.add_cost_schedule(model)
+        item1 = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=cost_schedule)
+        ifcopenshell.api.control.assign_control(model, related_objects=[element], relating_control=item1)
+        assert list(subject.get_cost_items_for_product(element)) == [item1]
+
+    def test_remove_cost_item(self):
+        model = self.file
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        cost_schedule = ifcopenshell.api.cost.add_cost_schedule(model)
+        item1 = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=cost_schedule)
+        ifcopenshell.api.control.assign_control(model, related_objects=[element], relating_control=item1)
+        ifcopenshell.api.cost.remove_cost_item(model, cost_item=item1)
+        assert list(subject.get_cost_items_for_product(element)) == []
+
+    def test_no_assigned_cost_items(self):
+        model = self.file
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        cost_schedule = ifcopenshell.api.cost.add_cost_schedule(model)
+        item1 = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=cost_schedule)
+        assert list(subject.get_cost_items_for_product(element)) == []
