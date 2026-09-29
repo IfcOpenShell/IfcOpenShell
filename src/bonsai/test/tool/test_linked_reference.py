@@ -22,7 +22,6 @@ import math
 
 import bpy
 import ifcopenshell
-import ifcopenshell.api.document
 import pytest
 from mathutils import Matrix
 
