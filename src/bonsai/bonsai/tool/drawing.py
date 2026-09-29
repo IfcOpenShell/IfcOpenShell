@@ -1090,9 +1090,9 @@ class Drawing(bonsai.core.tool.Drawing):
         camera_props.render_sharp = True
         camera_props.ridge_angle_min_degrees = 45.0
         camera_props.render_flush = False
-        camera_props.has_status_classes = False
         camera.shift_x = 0.0
         camera.shift_y = 0.0
+        camera_props.has_status_classes = False
 
         pset = ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing")
         if pset:
