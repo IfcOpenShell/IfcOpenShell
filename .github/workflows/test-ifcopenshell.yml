@@ -131,7 +131,8 @@ jobs:
           git clone https://github.com/facebook/rocksdb --branch v9.11.2
           cd rocksdb
           mkdir build && cd build
-          # rocksdb is using ccache automatically.
+          # rocksdb autodetects ccache on PATH and uses it as a compiler launcher,
+          # so no need to pass CMAKE_<LANG>_COMPILER_LAUNCHER=ccache here.
           cmake .. \
             -G Ninja \
             -DFAIL_ON_WARNINGS=Off \
