@@ -113,11 +113,8 @@ class json_logger:
         self.state[key] = value
 
     def log(self, level, message, *args):
-        # Mirror logging.LogRecord.getMessage(): only apply %-formatting when args
-        # are actually supplied. Several call sites pass a pre-built message (e.g.
-        # str(ValidationError), which can embed arbitrary IFC content such as a
-        # Name containing a literal "%s"). Unconditionally formatting with an
-        # empty args tuple would raise instead of logging the error.
+        # Like logging.LogRecord.getMessage(): only %-format when args are given,
+        # as pre-built messages can contain a literal "%".
         if args:
             message = message % args
         self.statements.append({"level": level, "message": message, **self.state})
