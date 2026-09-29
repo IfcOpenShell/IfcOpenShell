@@ -537,11 +537,7 @@ class DumbProfileJoiner:
         else:
             ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), product=element, representation=new_body)
 
-        # Re-applying the manual booleans through add_profile_representation created
-        # fresh IfcBooleanResults, so the BBIM_Boolean pset still references the ids of
-        # the now-removed originals. Repoint it at the rebuilt booleans so the next
-        # regeneration still recognises them, otherwise the manual half space solids
-        # are silently dropped on the following profile edit.
+        # Re-adding the manual booleans creates new ids; repoint BBIM_Boolean at them (#7640).
         if manual_boolean_ids:
             new_booleans = tool.Model.get_booleans(representation=new_body)
             tool.Model.unmark_manual_booleans(element, manual_boolean_ids)
