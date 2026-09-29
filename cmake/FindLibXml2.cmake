@@ -43,5 +43,11 @@ else()
     endif()
 endif()
 
+# Neither libxml2-config.cmake nor CMake's builtin FindLibXml2 module sets `LibXml2_VERSION`,
+# both only set `LIBXML2_VERSION_STRING`, so mirror it for `check_min_version`.
+if(NOT LibXml2_VERSION)
+    set(LibXml2_VERSION "${LIBXML2_VERSION_STRING}")
+endif()
+
 # Restore module path.
 list(PREPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR})
