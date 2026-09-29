@@ -22,10 +22,9 @@ import ifcopenshell.api.control
 import ifcopenshell.api.cost
 import ifcopenshell.api.resource
 import ifcopenshell.api.root
-import test.bootstrap
-
 import ifcopenshell.util.cost
 import ifcopenshell.util.resource as subject
+import test.bootstrap
 
 
 # NOTE: resource module features relies on entities introduced in IFC4
