@@ -1014,7 +1014,13 @@ class EditObjectUI:
             op_text = "" if IS_TOOL_HEADER else "Edit Openings"
             row.operator("bim.edit_openings", icon="CHECKMARK", text=op_text)
             row.operator("bim.hide_openings", icon="CANCEL", text="")
-            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+
+        if (
+            AuthoringData.data["active_class"] in ("IfcOpeningElement",)
+            or "IfcOpeningElement" in AuthoringData.data["selected_classes"]
+        ):
+            if ui_context != "TOOL_HEADER":
+                row = cls.layout.row(align=True)
             add_layout_hotkey_operator(row, "Clone Opening", "S_L", "", ui_context, operator="bim.clone_opening")
 
     @classmethod
