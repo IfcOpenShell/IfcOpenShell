@@ -978,7 +978,7 @@ def get_elements_by_profile(profile: ifcopenshell.entity_instance) -> set[ifcope
     :return: The elements using the profile.
     """
     ifc_file = profile.file
-    queue = ifc_file.get_inverse(profile)
+    queue = set(ifc_file.get_inverse(profile))
     processed: set[ifcopenshell.entity_instance] = set()
     representations: set[ifcopenshell.entity_instance] = set()
     while queue:
@@ -1733,8 +1733,9 @@ def remove_deep2(
     it is used elsewhere.
 
     For simple subgraphs, traverse() is sufficient to fully represent all
-    related subelements. When it isn't, the ``also_consider`` argument may be
-    used. These are typically inverses futher down the subelement chain.
+    related subelements. If it doesn't, you can specify these outside inverses
+    with ``also_consider``. These are typically inverses futher down the
+    subelement chain. (e.g. a IfcStyledItem)
 
     Note that remove_deep2 will _not_ remove elements in also_consider. Instead,
     it is only used as a consideration for whether or not an element has all
@@ -1744,36 +1745,30 @@ def remove_deep2(
     subgraph but are protected from deletion.
 
     :param ifc_file: The IFC file object
-    :param also_consider: elements to also consider as a part of a subgraph
-        Order could matter for perfomance - elements that reference `element`
-        directly should go first for the better performance.
+    :param also_consider: elements that are considered to be part of the
+        subgraph even though traverse() doesn't reach them.  Order could matter
+        for performance - elements that reference `element` directly should go
+        first for the better performance.
     :param do_not_delete: elements to protect from deletion
     :param element: The starting element that defines the subgraph
     """
-    # ifc_file.batch()
     if not ifc_file:
         ifc_file = element.file
-    total_inverses = ifc_file.get_total_inverses(element)
-    if total_inverses > 0:
 
-        def are_inverses_contained() -> bool:
-            also_considered_inverses = 0
+    # A set of ints is more efficient than hashed elements
+    also_consider_ids = {e.id() for e in also_consider if e.id()}
+    do_not_delete_ids = {e.id() for e in do_not_delete if e.id()}
 
-            for considered_element in also_consider:
-                traverse = ifc_file.traverse(considered_element, max_levels=1)
-                if element in traverse:
-                    also_considered_inverses += 1
-                    if total_inverses == also_considered_inverses:
-                        return True
-            return False
-
-        if not are_inverses_contained():
-            return
+    # The starting element must either has no inverses, or "safe" inverses in also_consider ...
+    if not ifc_file._is_referenced_only_in(element, list(also_consider_ids)):
+        return  # ... the starting element itself has inverses, we can't safely delete anything!
 
     to_delete: set[ifcopenshell.entity_instance] = set()
     subgraph = list(ifc_file.traverse(element, breadth_first=True))
     subgraph.extend(also_consider)
-    subgraph_set = set(subgraph)
+    subgraph_ids = set([e.id() for e in subgraph if e.id()])
+    # The IDs in the subgraph that have no inverses outside the subgraph (i.e. fully contained)
+    fully_contained_subgraph_ids = set(ifc_file._ids_referenced_only_within(list(subgraph_ids)))
     subelement_queue = [element]
 
     # Cache already processed entities to avoid traversing them multiple time.
@@ -1782,42 +1777,53 @@ def remove_deep2(
 
     while subelement_queue:
         subelement = subelement_queue.pop(0)
-        subelement_id = subelement.id()
         if (
-            subelement_id
+            (subelement_id := subelement.id())
             and subelement_id not in processed_ids
-            and subelement not in do_not_delete
-            and (
-                # 0 or 1 inverses guarantees that the subelement only exists in this subgraph
-                ifc_file.get_total_inverses(subelement) < 2
-                # Alternatively, let's ensure all inverses are within the subgraph
-                or len(set(ifc_file.get_inverse(subelement)) - subgraph_set) == 0
-            )
+            and subelement_id not in do_not_delete_ids
+            and subelement_id in fully_contained_subgraph_ids
         ):
             to_delete.add(subelement)
             subelement_queue.extend(ifc_file.traverse(subelement, max_levels=1)[1:])
-            # See #3052. IfcOpenShell is extremely slow in removing elements if
-            # the element has an inverse, and that inverse references that
-            # element in a big list. The most common example is an
-            # IfcPolygonalFaceSet with a Faces attribute of tens of thousands
-            # of IfcIndexedPolygonalFace. In this situation, removing a
-            # IfcIndexedPolygonalFace will take very, very long. If we are
-            # going to delete an element (i.e. added to the to_delete set), we
-            # clear any large lists (10 is an arbitrary threshold) to prevent
-            # this issue.
-            for i, attribute in enumerate(subelement):
-                if isinstance(attribute, tuple) and len(attribute) > 10:
-                    subelement[i] = []
         processed_ids.add(subelement_id)
+
+    # Nothing may be deleted while something that survives still references it:
+    # re-check the candidates against what actually goes, and repeat until the
+    # check stops finding anything.
+    #
+    # Who may reference a candidate without stopping its deletion: the candidates
+    # themselves (they go too) and also_consider (referrers we were told to tolerate).
+    allowed_referrer_ids = {e.id() for e in to_delete}
+    allowed_referrer_ids.update(e.id() for e in also_consider if e.id())
+
+    # Repeat because keeping one candidate can force keeping its children.
+    while to_delete:
+        # Ask C++: which of these ids have ALL their referrers inside this set?
+        still_fully_contained_ids = set(ifc_file._ids_referenced_only_within(list(allowed_referrer_ids)))
+
+        # Any candidate not in that answer has a referrer that survives, so it must survive too.
+        newly_kept = [e for e in to_delete if e.id() not in still_fully_contained_ids]
+
+        # Nothing dropped out this round: the remaining candidates are safe to delete.
+        if not newly_kept:
+            break
+
+        for e in newly_kept:
+            # It stays, so it is no longer scheduled for deletion ...
+            to_delete.remove(e)
+            # ... and no longer counts as an allowed referrer: its children get re-judged next round.
+            allowed_referrer_ids.discard(e.id())
 
     if ifc_file.to_delete is not None:
         ifc_file.to_delete.update(to_delete)
         return
 
-    # We delete elements from subgraph in reverse order to allow batching to work
-    for subelement in filter(lambda e: e in to_delete, subgraph[::-1]):
-        ifc_file.remove(subelement)
-    # ifc_file.unbatch()
+    ifc_file.batch()
+    try:
+        for subelement in to_delete:
+            ifc_file.remove(subelement)
+    finally:
+        ifc_file.unbatch()
 
 
 def copy(
@@ -1939,7 +1945,7 @@ def has_property(product: ifcopenshell.entity_instance, property_name: str) -> b
     return any(property_name in quantities.keys() for quantities in qtos.values())
 
 
-def get_openings(element: ifcopenshell.entity_instance) -> Generator[ifcopenshell.entity_instance, None, None]:
+def get_openings(element: ifcopenshell.entity_instance) -> Generator[ifcopenshell.entity_instance]:
     """Get element openings as IfcRelVoidsElements.
 
     Use `.RelatedOpeningElement` to get the opening element.
