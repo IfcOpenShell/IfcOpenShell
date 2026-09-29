@@ -24,7 +24,7 @@ import ifcopenshell.api.context
 import ifcopenshell.api.unit
 
 try:
-    ifcopenshell.file(schema="IFC4X3")
+    ifcopenshell.file(schema="IFC4X3_ADD2")
     IFC4X3_AVAILABLE = True
 except RuntimeError:
     IFC4X3_AVAILABLE = False
@@ -35,7 +35,7 @@ except RuntimeError:
 # compound curve (no tangent between curves)
 @pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
 def test_horizontal_layout_by_pi_method():
-    file = ifcopenshell.file(schema="IFC4X3")
+    file = ifcopenshell.file(schema="IFC4X3_ADD2")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
     length = ifcopenshell.api.unit.add_conversion_based_unit(file, name="foot")
     ifcopenshell.api.unit.assign_unit(file, units=[length])
@@ -51,7 +51,9 @@ def test_horizontal_layout_by_pi_method():
     coordinates = [(838.760, 224.745), (965.926, 258.819), (1226.296, 258.819), (1350.817, 291.415)]
     radii = [(1000.0), (1000.0)]
 
-    alignment = ifcopenshell.api.alignment.create_by_pi_method(file, "TestAlignment", coordinates, radii)
+    alignment = ifcopenshell.api.alignment.create_by_pi_method(
+        file, "TestAlignment", coordinates, radii, start_station=10000.0
+    )
 
     assert len(alignment.IsDecomposedBy) == 0  # no child alignments
     assert len(alignment.IsNestedBy) == 2

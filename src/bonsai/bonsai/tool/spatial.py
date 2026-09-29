@@ -258,14 +258,14 @@ class Spatial(bonsai.core.tool.Spatial):
         ]
 
     @classmethod
-    def get_selected_products(cls) -> Generator[ifcopenshell.entity_instance, None, None]:
+    def get_selected_products(cls) -> Generator[ifcopenshell.entity_instance]:
         for obj in bpy.context.selected_objects:
             entity = tool.Ifc.get_entity(obj)
             if entity and entity.is_a("IfcProduct"):
                 yield entity
 
     @classmethod
-    def get_selected_product_types(cls) -> Generator[ifcopenshell.entity_instance, None, None]:
+    def get_selected_product_types(cls) -> Generator[ifcopenshell.entity_instance]:
         for obj in tool.Blender.get_selected_objects():
             entity = tool.Ifc.get_entity(obj)
             if entity and entity.is_a("IfcTypeProduct"):

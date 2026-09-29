@@ -703,7 +703,7 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                 if representation_template == "FLOW_SEGMENT_RECTANGULAR":
                     default_x_dim = 0.4
                     default_y_dim = 0.2
-                    profile_name = f"{props.ifc_class}-{default_x_dim*1000}x{default_y_dim*1000}"
+                    profile_name = f"{props.ifc_class}-{default_x_dim * 1000}x{default_y_dim * 1000}"
                     profile = tool.Ifc.get().create_entity(
                         "IfcRectangleProfileDef",
                         ProfileName=profile_name,
@@ -718,7 +718,7 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                     default_inner_fillet_radius = 0.005
                     default_outer_fillet_radius = 0.005
                     profile_name = (
-                        f"{props.ifc_class}-{default_x_dim*1000}x{default_y_dim*1000}x{default_thickness*1000}"
+                        f"{props.ifc_class}-{default_x_dim * 1000}x{default_y_dim * 1000}x{default_thickness * 1000}"
                     )
                     profile = tool.Ifc.get().create_entity(
                         "IfcRectangleHollowProfileDef",
@@ -733,7 +733,7 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
 
                 elif representation_template == "FLOW_SEGMENT_CIRCULAR":
                     default_diameter = 0.1
-                    profile_name = f"{props.ifc_class}-{default_diameter*1000}"
+                    profile_name = f"{props.ifc_class}-{default_diameter * 1000}"
                     profile = tool.Ifc.get().create_entity(
                         "IfcCircleProfileDef",
                         ProfileName=profile_name,
@@ -743,7 +743,7 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                 elif representation_template == "FLOW_SEGMENT_CIRCULAR_HOLLOW":
                     default_diameter = 0.15
                     default_thickness = 0.005
-                    profile_name = f"{props.ifc_class}-{default_diameter*1000}x{default_thickness*1000}"
+                    profile_name = f"{props.ifc_class}-{default_diameter * 1000}x{default_thickness * 1000}"
                     profile = tool.Ifc.get().create_entity(
                         "IfcCircleHollowProfileDef",
                         ProfileName=profile_name,
@@ -756,7 +756,7 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                     default_flange_width = 0.2
                     default_web_thickness = 0.005
                     default_flange_thickness = 0.005
-                    profile_name = f"{props.ifc_class}-{default_depth*1000}x{default_flange_width*1000}x{default_web_thickness*1000}x{default_flange_thickness*1000}"
+                    profile_name = f"{props.ifc_class}-{default_depth * 1000}x{default_flange_width * 1000}x{default_web_thickness * 1000}x{default_flange_thickness * 1000}"
                     profile = tool.Ifc.get().create_entity(
                         "IfcUShapeProfileDef",
                         ProfileName=profile_name,

@@ -140,9 +140,10 @@ class variant_array {
 public:
     using types_tuple = ::impl::mapped_types<Types...>;
 
+    // The size byte, the per-slot type indices and the slots live in one
+    // allocation: [size][index * size][padding][slot * size].
     variant_array(size_t size)
-        : size_and_indices_(size ? new uint8_t[size + 1] : nullptr)
-        , storage_(size ? new storage_type[size] : nullptr)
+        : size_and_indices_(size ? new uint8_t[block_bytes_(size)] : nullptr)
     {
         if (size) {
             size_and_indices_[0] = (uint8_t)size;
@@ -156,10 +157,8 @@ public:
 
     variant_array(variant_array&& other) noexcept
         : size_and_indices_(other.size_and_indices_)
-        , storage_(other.storage_)
     {
         other.size_and_indices_ = nullptr;
-        other.storage_ = nullptr;
     }
 
     variant_array& operator=(variant_array&& other) noexcept {
@@ -167,10 +166,7 @@ public:
             free_();
 
             size_and_indices_ = other.size_and_indices_;
-            storage_ = other.storage_;
-
             other.size_and_indices_ = nullptr;
-            other.storage_ = nullptr;
         }
         return *this;
     }
@@ -192,9 +188,9 @@ public:
         size_and_indices_[index + 1] = ::impl::TypeIndex_v<u, Types...>;
         using v = typename std::tuple_element<::impl::TypeIndex_v<u, Types...>, ::impl::mapped_types<Types... >>::type;
         if constexpr (::impl::is_unique_ptr<v>::value) {
-            new(&storage_[index]) v(new u(value));
+            new(&slots_()[index]) v(new u(value));
         } else {
-            new(&storage_[index]) u(std::forward<T>(value));
+            new(&slots_()[index]) u(std::forward<T>(value));
         }
     }
 
@@ -223,9 +219,9 @@ public:
         }
         using v = typename std::tuple_element<::impl::TypeIndex_v<T, Types...>, ::impl::mapped_types<Types... >>::type;
         if constexpr (::impl::is_unique_ptr<v>::value) {
-            return **reinterpret_cast<v*>(&storage_[index]);
+            return **reinterpret_cast<v*>(&slots_()[index]);
         } else {
-            return *reinterpret_cast<v*>(&storage_[index]);
+            return *reinterpret_cast<v*>(&slots_()[index]);
         }
     }
 
@@ -251,9 +247,9 @@ public:
         }
         using v = typename std::tuple_element<::impl::TypeIndex_v<T, Types...>, ::impl::mapped_types<Types... >>::type;
         if constexpr (::impl::is_unique_ptr<v>::value) {
-            return **reinterpret_cast<const v*>(&storage_[index]);
+            return **reinterpret_cast<const v*>(&slots_()[index]);
         } else {
-            return *reinterpret_cast<const v*>(&storage_[index]);
+            return *reinterpret_cast<const v*>(&slots_()[index]);
         }
     }
 
@@ -273,9 +269,20 @@ public:
 
 private:
     using storage_type = typename ::impl::make_union_from_tuple<::impl::mapped_types<Types...>>::type;
-
+    static_assert(alignof(storage_type) <= __STDCPP_DEFAULT_NEW_ALIGNMENT__, "slots must fit the alignment new[] guarantees");
     uint8_t* size_and_indices_;
-    storage_type* storage_;
+
+    // The slots follow the index bytes in the same block.
+    storage_type* slots_() const {
+        return reinterpret_cast<storage_type*>(size_and_indices_ + slots_offset_(size_and_indices_[0]));
+    }
+
+    static constexpr size_t slots_offset_(size_t size) {
+        return (size + 1 + alignof(storage_type) - 1) / alignof(storage_type) * alignof(storage_type);
+    }
+    static constexpr size_t block_bytes_(size_t size) {
+        return slots_offset_(size) + size * sizeof(storage_type);
+    }
 
     void destroy_at_index(std::size_t index) {
         destroy_type_at_index(index, std::integral_constant<std::size_t, sizeof...(Types)>{});
@@ -287,7 +294,6 @@ private:
                 destroy_at_index(i);
             }
             delete[] size_and_indices_;
-            delete[] storage_;
         }
     }
 
@@ -296,7 +302,7 @@ private:
         if (size_and_indices_[index + 1] == Index - 1) {
             using t = typename std::tuple_element_t<Index - 1, ::impl::mapped_types<Types...>>;
             if constexpr (!std::is_trivially_destructible<t>::value) {
-                reinterpret_cast<t*>(&storage_[index])->~t();
+                reinterpret_cast<t*>(&slots_()[index])->~t();
             }
             size_and_indices_[index + 1] = sizeof...(Types);
         } else {
@@ -313,9 +319,9 @@ private:
         if (size_and_indices_[index + 1] == Index - 1) {
             using t = typename std::tuple_element_t<Index - 1, ::impl::mapped_types<Types...>>;
             if constexpr (::impl::is_unique_ptr<t>::value) {
-                return visitor(**reinterpret_cast<t*>(&storage_[index]));
+                return visitor(**reinterpret_cast<t*>(&slots_()[index]));
             } else {
-                return visitor(*reinterpret_cast<t*>(&storage_[index]));
+                return visitor(*reinterpret_cast<t*>(&slots_()[index]));
             }
         }
         return apply_visitor_impl(std::forward<Visitor>(visitor), index, std::integral_constant<std::size_t, Index - 1>{});

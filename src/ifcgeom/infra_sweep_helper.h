@@ -14,7 +14,13 @@ namespace ifcopenshell {
 			double dist_along;
 			taxonomy::geom_item::ptr section_geometry;
 			Eigen::Vector3d offset;
+			// rotation: the IfcAxis2PlacementLinear basis [X | Y | Axis], or nullopt when
+			// the placement carries neither Axis nor RefDirection.
 			std::optional<Eigen::Matrix3d> rotation;
+			// ref_direction: the raw RefDirection, only when it was actually authored on the
+			// placement (rotation carries a default otherwise). When absent the profile
+			// normal comes from the directrix tangent -- see buildingSMART IFC4.x-IF #147.
+			std::optional<Eigen::Vector3d> ref_direction;
 
 			bool operator <(const cross_section& other) const {
 				return dist_along < other.dist_along;
