@@ -624,12 +624,16 @@ class ShaderInfo:
                 "my": (
                     z_axis
                     if is_local
-                    else Vector((-1, 0, 1)) if y_match else Vector((0, 1, 0)).cross(x_axis).normalized()
+                    else Vector((-1, 0, 1))
+                    if y_match
+                    else Vector((0, 1, 0)).cross(x_axis).normalized()
                 ),
                 "mz": (
                     y_axis
                     if is_local
-                    else Vector((-1, 1, 0)) if z_match else Vector((0, 0, 1)).cross(x_axis).normalized()
+                    else Vector((-1, 1, 0))
+                    if z_match
+                    else Vector((0, 0, 1)).cross(x_axis).normalized()
                 ),
             }
             match_dict = {"fx": x_match or is_local, "fy": y_match, "fz": z_match}
@@ -807,7 +811,6 @@ class ShaderInfo:
                 if any([sinus[component], quad[component], const[component]]) or any(
                     item for item in array[:, component + 1]
                 ):
-
                     for currentitem in final_list:
                         polyline.append([currentitem[0], currentitem[component + 1]])
                         max_load = max(
@@ -849,16 +852,15 @@ class ShaderInfo:
         v = l1[1] + fac * (pos - l1[0])
         return v
 
-    def interpolate(self, pos: float, loadinfo: list[LoadConfigItem], start: int, end: int) -> np.ndarray:
+    def interpolate(
+        self, pos: float, loadinfo: list[LoadConfigItem], start: int, end: int, key: Literal["load values"]
+    ) -> np.ndarray:
         """interpolate the result vectors between load poits"""
         result = np.zeros(6)
         for i in range(6):
-            # [position, force_component]
-            value1 = [loadinfo[start]["pos"], loadinfo[start]["load values"][i]]
-            # [position, force_component]
-            value2 = [loadinfo[end]["pos"], loadinfo[end]["load values"][i]]
-            # interpolated [position, force_component]
-            result[i] = self.interp1d(value1, value2, pos)
+            value1 = [loadinfo[start]["pos"], loadinfo[start][key][i]]  # [position, force_component]
+            value2 = [loadinfo[end]["pos"], loadinfo[end][key][i]]  #      [position, force_component]
+            result[i] = self.interp1d(value1, value2, pos)  #             interpolated [position, force_component]
         return result
 
     def get_before_and_after(self, pos: float, load_config_list: list[list[LoadConfigItem]]) -> dict[str, list[float]]:
@@ -902,8 +904,8 @@ class ShaderInfo:
                         load_before += config[end]["load values"]
 
                 elif end - start == 1:
-                    load_before += self.interpolate(pos, config, start, end)
-                    load_after += self.interpolate(pos, config, start, end)
+                    load_before += self.interpolate(pos, config, start, end, "load values")
+                    load_after += self.interpolate(pos, config, start, end, "load values")
                 start += 1
                 end -= 1
         return_value = {"before": load_before.tolist(), "after": load_after.tolist()}
