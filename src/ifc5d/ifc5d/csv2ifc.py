@@ -234,12 +234,7 @@ class Csv2Ifc:
             query = row[(self.headers["Query"])] if "Query" in self.headers else None
 
         if self.has_categories:
-            # Plain float(), not locale.atof(): our own exporter always writes
-            # period-decimal numbers regardless of the machine's locale (see
-            # ifc5Dspreadsheet.py), and the "Value"/"Quantity" columns below
-            # already parse with plain float() for the same reason. Using
-            # locale.atof() here silently corrupted every re-import on a
-            # comma-decimal locale (e.g. "1234.56" read back as 123456.0).
+            # Plain float(), not locale.atof(): our exporter always writes period-decimal numbers.
             cost_values = {col_name: float(row[col_i]) for col_name, col_i in self.categories.items() if row[col_i]}
         else:
             assert "Value" in self.headers

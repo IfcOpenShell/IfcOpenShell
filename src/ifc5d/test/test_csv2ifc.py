@@ -66,7 +66,7 @@ class TestCsv2Ifc:
         all_nested_items = [i for item in root_items for i in ifcopenshell.util.cost.get_all_nested_cost_items(item)]
         assert len(all_nested_items + root_items) == len(all_cost_items)
 
-    @pytest.mark.parametrize("csv_filepath", Path(__file__).parent.parent.glob("*.csv"))
+    @pytest.mark.parametrize("csv_filepath", tuple(Path(__file__).parent.parent.glob("*.csv")))
     def test_import_sample_files(self, csv_filepath: Path):
         ifc_file = self.setup_ifc_file()
         ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcProject")
@@ -193,9 +193,6 @@ class TestSerialiseCostQuantities:
 
 class TestCostCategoryTotals:
     def test_two_cost_values_sharing_a_category_are_summed_not_overwritten(self):
-        # Two cost values with no Category set both default to "General". The
-        # per-category "General Cost" column must sum both, matching
-        # RateSubtotal (which already sums every non-"*" cost value).
         ifc_file = ifcopenshell.file()
         ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcProject", name="Test")
         ifcopenshell.api.unit.assign_unit(ifc_file)
@@ -216,14 +213,6 @@ class TestCostCategoryTotals:
 
 class TestLocaleIndependentCostValueImport:
     def test_category_cost_values_parse_with_plain_float_not_locale_atof(self, monkeypatch):
-        # Regression test: locale.atof() previously parsed the categories
-        # column, but our own exporter always writes period-decimal numbers
-        # regardless of the machine's locale (see ifc5Dspreadsheet.py), the
-        # same way the "Value"/"Quantity" columns already do with plain
-        # float(). On a comma-decimal locale (e.g. de_DE), locale.atof()
-        # silently multiplied every imported cost value by up to 1000x.
-        # Asserting locale.atof is never called keeps the test deterministic
-        # regardless of which locales happen to be installed on the runner.
         import locale
 
         def fail_if_called(*args, **kwargs):

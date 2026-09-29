@@ -18,10 +18,10 @@
 
 import ifcopenshell
 import ifcopenshell.api.alignment
-from ifcopenshell.api.alignment.update_fallback_position import update_fallback_position
 import ifcopenshell.api.pset
 import ifcopenshell.guid
 from ifcopenshell import entity_instance
+from ifcopenshell.api.alignment.update_fallback_position import update_fallback_position
 
 
 def add_positioning_referent(
