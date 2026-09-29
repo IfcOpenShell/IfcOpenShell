@@ -31,7 +31,7 @@ from math import radians
 import bmesh
 import bpy
 import pytest
-from mathutils import Matrix, Vector
+from mathutils import Matrix
 
 import bonsai.tool as tool
 from bonsai.bim import decorator_cache

@@ -16,41 +16,59 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import glob
-import os
 import tempfile
+from pathlib import Path
 
 import pytest
+import tabulate
 
 import ifcopenshell
 import ifcopenshell.validate
 
+from .fixture_generate import FailObj, Result, parse_result
+
+_filepaths = list((Path(__file__).parent / "fixtures/validate").glob("*.ifc"))
+
 
 @pytest.mark.parametrize(
-    "file",
-    glob.glob(os.path.join(os.path.dirname(__file__), "fixtures/validate/*.ifc")),
+    "filepath,expected_result",
+    [(fp, parse_result(fp)) for fp in _filepaths],
+    ids=[fp.name for fp in _filepaths],
 )
-def test_file(file):
+def test_file(filepath: Path, expected_result: Result):
     logger = ifcopenshell.validate.json_logger()
     try:
-        ifcopenshell.validate.validate(file, logger)
-    except ifcopenshell.SchemaError as e:
+        ifcopenshell.validate.validate(filepath, logger)
+    except ifcopenshell.SchemaError:
         pytest.skip()
-    file = os.path.basename(file)
-    if file.startswith("fail-"):
-        assert len(logger.statements) > 0
-    if file.startswith("pass-"):
-        assert len(logger.statements) == 0
+    results = logger.statements
+
+    print()
+    print(filepath.name)
+    print()
+    print(f"{len(results)} errors")
+
+    if results:
+        print(
+            tabulate.tabulate(
+                [[c or "" for c in r.values()] for r in results],
+                maxcolwidths=[20, 100, 20],
+                tablefmt="simple_grid",
+                headers=results[0].keys(),
+            )
+        )
+
+    match expected_result:
+        case FailObj(expected_count=expected_count):
+            assert len(results) == expected_count
+        case "pass":
+            assert len(results) == 0
 
 
 def test_validate_rejects_sqlite_file_instead_of_crashing():
-    # ifcopenshell.sqlite only keeps a partial, query-oriented header (see
-    # ifcopenshell.sql.sqlite.header), so it cannot be validated. Regression
-    # test for validate() previously raising an unguarded AttributeError
-    # deep inside validate_ifc_header() instead of failing cleanly.
     from ifcpatch.recipes import Ifc2Sql
 
-    ifc_path = os.path.join(os.path.dirname(__file__), "files", "basic.ifc")
+    ifc_path = Path(__file__).parent / "files" / "basic.ifc"
     ifc_file = ifcopenshell.open(ifc_path)
     with tempfile.NamedTemporaryFile(suffix=".ifcsqlite") as tmp:
         Ifc2Sql.Patcher(ifc_file, database=tmp.name).patch()
