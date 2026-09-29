@@ -106,9 +106,9 @@ class TestMirrorElementsResyncsOpenings(NewFile):
         wall_min_x = new_wall_obj.matrix_world.translation.x + wall_min_x
         wall_max_x = new_wall_obj.matrix_world.translation.x + wall_max_x
 
-        assert opening_x == pytest.approx(
-            door_x, abs=0.01
-        ), "the mirrored opening must sit where the mirrored door now is, not at the door's pre-mirror position"
+        assert opening_x == pytest.approx(door_x, abs=0.01), (
+            "the mirrored opening must sit where the mirrored door now is, not at the door's pre-mirror position"
+        )
         assert wall_min_x <= opening_x <= wall_max_x, "the mirrored opening must land inside its new host wall's span"
 
     def test_recalculate_walls_is_skipped_when_no_wall_is_mirrored(self):
