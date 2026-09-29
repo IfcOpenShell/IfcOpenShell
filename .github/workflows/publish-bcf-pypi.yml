@@ -16,10 +16,10 @@ jobs:
     needs: upstream-only
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7 # https://github.com/actions/checkout
-      - uses: actions/setup-python@v7 # https://github.com/actions/setup-python
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
-          python-version: '3.11' # Version range or exact version of a Python version to use, using SemVer's version range syntax
+          python-version: '3.11'
       - name: Compile
         run: |
           cd src/bcf &&
