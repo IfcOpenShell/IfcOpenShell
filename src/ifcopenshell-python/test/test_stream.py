@@ -26,11 +26,6 @@ TEST_FILE = Path(__file__).parent / "files" / "basic.ifc"
 
 
 def build_ifc_with_many_points(num_points: int = 600) -> tuple[bytes, int, tuple[float, float, float]]:
-    """Return LF-terminated IFC bytes with extra IfcCartesianPoints appended near the end.
-
-    Also returns the step id and expected coordinates of the last appended point, which
-    is used to detect any accumulated per-line byte offset drift.
-    """
     lines = TEST_FILE.read_text().split("\n")
     endsec_index = lines.index("ENDSEC;")
     next_id = 1000
