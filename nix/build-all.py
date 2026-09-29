@@ -157,7 +157,7 @@ USE_CURRENT_PYTHON_VERSION = is_on_off(os.getenv("USE_CURRENT_PYTHON_VERSION"), 
 IFCOS_BUILD_PYTHON_WRAPPER = is_on_off(os.getenv("IFCOS_BUILD_PYTHON_WRAPPER"), default=True)
 PYTHON_USER_SITE = is_on_off(os.getenv("PYTHON_USER_SITE"), default=False)
 
-PYTHON_VERSIONS = ["3.10.3", "3.11.8", "3.12.1", "3.13.6", "3.14.0", "3.15.0"]
+PYTHON_VERSIONS = ["3.11.8", "3.12.1", "3.13.6", "3.14.0", "3.15.0"]
 JSON_VERSION = "3.11.3"
 OCCT_VERSION = "7.8.1"
 BOOST_VERSION = "1.86.0"

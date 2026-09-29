@@ -10,7 +10,7 @@ name = "bcf-client"
 # author = "IfcOpenShell"
 description = "BCF-XML file handler."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 keywords = ["IFC", "BCF", "BIM"]
 dependencies = [
     "xsdata>=24.4",

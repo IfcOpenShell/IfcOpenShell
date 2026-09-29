@@ -30,7 +30,7 @@ SED:=sed -i '' -e
 endif
 endif
 
-SUPPORTED_PYVERSIONS := py310 py311 py312 py313 py314 py315
+SUPPORTED_PYVERSIONS := py311 py312 py313 py314 py315
 
 ifeq ($(filter $(PYVERSION),$(SUPPORTED_PYVERSIONS)),)
 $(error Unsupported PYVERSION=$(PYVERSION). Must be one of $(SUPPORTED_PYVERSIONS))
