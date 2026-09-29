@@ -17,9 +17,11 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 from collections.abc import Sequence
+from typing import Optional
 
 import ifcopenshell
 import ifcopenshell.api.alignment
+import ifcopenshell.util.alignment
 from ifcopenshell import entity_instance
 
 
@@ -30,7 +32,7 @@ def create_by_pi_method(
     radii: Sequence[float],
     vpoints: Sequence[Sequence[float]] = None,
     lengths: Sequence[float] = None,
-    start_station: float = 0.0,
+    start_station: Optional[float] = None,
 ) -> entity_instance:
     """
     Create an alignment using the PI layout method for both horizontal and vertical alignments.
@@ -41,16 +43,21 @@ def create_by_pi_method(
     :param radii: radii values to use for transition
     :param vpoints: (distance_along, Z_height) pairs denoting the location of the vertical PIs, including start and end.
     :param lengths: parabolic vertical curve horizontal length values to use for transition
+    :param start_station: if given, the starting station value. A STATION IfcReferent named
+        "<name> <station string>" is added at distance along 0.0 once the geometry exists. If None
+        (the default), no stationing referent is created and get_alignment_start_station() reports 0.0.
     :return: Returns an IfcAlignment
     """
     include_vertical = True if vpoints and lengths else False
-    alignment = ifcopenshell.api.alignment.create(
-        file, name, include_vertical=include_vertical, start_station=start_station
-    )
+    alignment = ifcopenshell.api.alignment.create(file, name, include_vertical=include_vertical)
     horizontal_layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
     ifcopenshell.api.alignment.layout_horizontal_alignment_by_pi_method(file, horizontal_layout, hpoints, radii)
     if include_vertical:
         vertical_layout = ifcopenshell.api.alignment.get_vertical_layout(alignment)
         ifcopenshell.api.alignment.layout_vertical_alignment_by_pi_method(file, vertical_layout, vpoints, lengths)
+
+    if start_station is not None:
+        referent_name = f"{name} {ifcopenshell.util.alignment.station_as_string(file, start_station)}"
+        ifcopenshell.api.alignment.add_stationing_referent(file, referent_name, alignment, 0.0, start_station)
 
     return alignment
