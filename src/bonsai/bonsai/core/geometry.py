@@ -44,7 +44,6 @@ def edit_object_placement(
     element = ifc.get_entity(obj)
     if not element:
         return
-    geometry.clear_cache(element)
     if apply_scale:
         geometry.clear_scale(obj)
     geometry.get_blender_offset_type(obj)
@@ -125,7 +124,6 @@ def switch_representation(
 
     element = ifc.get_entity(obj)
     assert element
-    geometry.clear_cache(element)
     geometry.reimport_element_representations(obj, representation, apply_openings=apply_openings)
 
 
