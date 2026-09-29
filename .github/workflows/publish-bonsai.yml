@@ -40,7 +40,7 @@ jobs:
           }
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7 # https://github.com/actions/setup-python
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.11'
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
