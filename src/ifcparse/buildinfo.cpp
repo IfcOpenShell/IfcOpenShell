@@ -25,11 +25,13 @@
  ********************************************************************************/
 
 #include <string>
+#include "ifc_parse_api.h"
 #include "macros.h"
 
 
 #if defined(IFCOPENSHELL_BRANCH) && defined(IFCOPENSHELL_COMMIT)
-const char *IFCOPENSHELL_VERSION = STRINGIFY(IFCOPENSHELL_BRANCH) "-" STRINGIFY(IFCOPENSHELL_COMMIT);
+IFC_PARSE_API const char *IFCOPENSHELL_VERSION = STRINGIFY(IFCOPENSHELL_BRANCH) "-" STRINGIFY(IFCOPENSHELL_COMMIT);
 #else
-const char *IFCOPENSHELL_VERSION = "0.8.0";
+// Set from CMake's RELEASE_VERSION (the repository VERSION file).
+IFC_PARSE_API const char *IFCOPENSHELL_VERSION = STRINGIFY(IFCOPENSHELL_VERSION_STRING);
 #endif

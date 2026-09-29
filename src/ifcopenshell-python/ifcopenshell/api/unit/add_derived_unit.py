@@ -59,10 +59,10 @@ def add_derived_unit(
         time = ifcopenshell.api.unit.add_si_unit(model, unit_type="TIMEUNIT")
         #4=IfcSIUnit(*,.TIMEUNIT.,$,.SECOND.)
 
-        linear_velocity = ifcopenshell.api.unit.add_derived_unit(model, 'LINEARVELOCITY', None, {length : 1, time : -1})
+        linear_velocity = ifcopenshell.api.unit.add_derived_unit(model, 'LINEARVELOCITYUNIT', None, {length : 1, time : -1})
         #10=IfcDerivedUnitElement(#2, 1)
         #11=IfcDerivedUnitElement(#4, -1)
-        #12=IfcDerivedUnit((#10,#11),.LINEARVELOCITY.,$)
+        #12=IfcDerivedUnit((#10,#11),.LINEARVELOCITYUNIT.,$)
 
     """
     derive_unit_elements = []
