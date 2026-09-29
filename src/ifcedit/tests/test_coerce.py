@@ -1,5 +1,4 @@
 # This file was generated with the assistance of an AI coding tool.
-import json
 from typing import Literal, Optional, Union
 
 import ifcopenshell
@@ -56,6 +55,16 @@ class TestOptionalCoercion:
 
     def test_optional_int(self):
         assert coerce_value("42", Optional[int]) == 42
+
+    def test_optional_entity_native_int(self, model):
+        # MCP callers pass JSON-decoded native types (int), not CLI strings.
+        wall = model.by_type("IfcWall")[0]
+        result = coerce_value(wall.id(), Optional[ifcopenshell.entity_instance], model)
+        assert result == wall
+
+    def test_optional_entity_native_none(self, model):
+        # JSON null decodes to Python None, not the string "none".
+        assert coerce_value(None, Optional[ifcopenshell.entity_instance], model) is None
 
 
 class TestUnionCoercion:

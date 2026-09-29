@@ -30,6 +30,7 @@ import bonsai.tool as tool
 from bonsai.bim.helper import draw_attributes, prop_with_search
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.project.data import LinksData, ProjectData
+from bonsai.bim.ui import draw_multiline_text
 
 if TYPE_CHECKING:
     from bonsai.bim.module.project.prop import (
@@ -175,6 +176,21 @@ class BIM_PT_project(Panel):
                 op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html#saving-and-loading-blend-files"
                 row.operator("bim.close_blend_warning", text="", icon="CANCEL")
 
+            if pending := pprops.pending_opening_recut:
+                box = self.layout.box()
+                box.alert = True
+                box.label(text="Opening Cuts Skipped", icon="ERROR")
+                draw_multiline_text(
+                    box.column(align=True),
+                    f"{len(pending)} element(s) had too many openings to cut during load. "
+                    f"Apply to recompute their meshes, or dismiss to leave them as they are.",
+                    context=context,
+                )
+                row = box.row(align=True)
+                row.operator("bim.select_pending_opening_cuts", text="Select Elements", icon="RESTRICT_SELECT_OFF")
+                row.operator("bim.apply_pending_opening_cuts", text="Apply Openings", icon="PLAY")
+                row.operator("bim.dismiss_pending_opening_cuts", text="", icon="CANCEL")
+
             if props.ifc_file:
                 self.draw_loaded_project_ui(context)
             else:
@@ -206,8 +222,6 @@ class BIM_PT_project(Panel):
         row.prop(pprops, "should_use_cpu_multiprocessing")
         row = self.layout.row()
         row.prop(pprops, "should_clean_mesh")
-        row = self.layout.row()
-        row.prop(pprops, "should_cache")
         row = self.layout.row()
         row.prop(pprops, "should_load_geometry")
         row = self.layout.row()

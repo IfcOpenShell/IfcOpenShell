@@ -38,9 +38,9 @@ class SvIfcReadEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.S
         self.outputs.new("SvStringsSocket", "is_a")
 
     def draw_buttons(self, context, layout):
-        layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = (
-            "Decompose an IfcEntity into its attributes. Takes one entity id as input"
-        )
+        layout.operator(
+            "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
+        ).tooltip = "Decompose an IfcEntity into its attributes. Takes one entity id as input"
 
     def process(self):
         self.sv_input_names = ["entity"]
