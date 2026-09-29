@@ -44,7 +44,6 @@ if TYPE_CHECKING:
 
 
 class Cost(bonsai.core.tool.Cost):
-
     RELATED_OBJECT_TYPE = Literal["PRODUCT", "PROCESS", "RESOURCE"]
 
     # TODO: Do we really need them cached as class attributes?
@@ -562,7 +561,7 @@ class Cost(bonsai.core.tool.Cost):
     @classmethod
     def get_schedule_cost_items(
         cls, cost_schedule: ifcopenshell.entity_instance
-    ) -> Generator[ifcopenshell.entity_instance, None, None]:
+    ) -> Generator[ifcopenshell.entity_instance]:
         return ifcopenshell.util.cost.get_schedule_cost_items(cost_schedule)
 
     @classmethod
