@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=77.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -12,10 +12,10 @@ authors = [
 description = "Converter for CityJSON files and IFC"
 readme = "README.md"
 requires-python = ">=3.11"
+license = "LGPL-3.0-or-later"
 keywords = ["IFC", "CityJSON", "BIM"]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
 ]
 dependencies = [
     "ifcopenshell",

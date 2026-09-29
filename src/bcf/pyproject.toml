@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=77.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,6 +8,7 @@ name = "bcf-client"
 description = "BCF-XML file handler."
 readme = "README.md"
 requires-python = ">=3.11"
+license = "LGPL-3.0-or-later"
 keywords = ["IFC", "BCF", "BIM"]
 dependencies = [
     "xsdata>=24.4",
@@ -17,7 +18,6 @@ dependencies = [
 ]
 version = "0.0.0"
 classifiers = [
-    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Topic :: Scientific/Engineering",
