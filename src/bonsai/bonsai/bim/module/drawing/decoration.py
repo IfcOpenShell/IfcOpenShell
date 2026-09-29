@@ -2068,10 +2068,7 @@ class DecorationsHandler:
             drawing_font_path = tool.Blender.get_data_dir_path(Path("fonts") / drawing_font)
 
             if not drawing_font_path.is_file():
-                # 2 — Fallback search: the OS's own font directories, so users can
-                # point this preference at any font already installed on their
-                # system (for example, one with broader glyph coverage than the
-                # bundled default).
+                # 2 — Fallback search: the OS's own font directories.
                 found_font = find_system_font(drawing_font)
 
                 if found_font:
