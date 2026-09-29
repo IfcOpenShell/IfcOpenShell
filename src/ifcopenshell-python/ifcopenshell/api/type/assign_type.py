@@ -220,11 +220,7 @@ class Usecase:
                 allowed_occurrences.add(occurrence_class)
             except RuntimeError:
                 pass
-        # Membership must be subtype aware: allowed_occurrences holds the
-        # abstract occurrence class from the implementer agreement (e.g.
-        # IfcDistributionElement), while o.is_a() returns the concrete
-        # subtype (e.g. IfcFlowTerminal). An exact name match would wrongly
-        # reject valid subtype occurrences. See #9247.
+        # Allowed occurrences are abstract classes, so match subtypes too (#9247).
         mismatched_classes = sorted(
             {o.is_a() for o in related_objects if not any(o.is_a(allowed) for allowed in allowed_occurrences)}
         )
