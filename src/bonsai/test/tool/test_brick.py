@@ -18,17 +18,13 @@
 
 import os
 
-import bpy
-import brickschema
 import brickschema.persistent
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.root
 import ifcopenshell.guid
 from brickschema.namespaces import REF, A
-from rdflib import Literal, Namespace, URIRef
-from rdflib.namespace import RDF
+from rdflib import Literal, URIRef
 
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -148,10 +144,10 @@ class TestAddBrickifcReference(NewFile):
         project = URIRef(f"http://example.org/digitaltwin#{tool.Ifc.get().by_type('IfcProject')[0].GlobalId}")
         subject.add_brickifc_reference("http://example.org/digitaltwin#foo", element, project)
         brick = URIRef("http://example.org/digitaltwin#foo")
-        bnode = list(BrickStore.graph.triples((brick, A, REF.IFCReference)))
-        assert list(BrickStore.graph.triples((bnode, REF.hasIfcProjectReference, URIRef(project))))
-        assert list(BrickStore.graph.triples((bnode, REF.ifcGlobalID, Literal(element.GlobalId))))
-        assert list(BrickStore.graph.triples((bnode, REF.ifcName, Literal(element.Name))))
+        bnode = next(BrickStore.graph.triples((brick, REF.hasExternalReference, None)))[2]
+        assert len(list(BrickStore.graph.triples((bnode, REF.hasIfcProjectReference, URIRef(project))))) == 1
+        assert len(list(BrickStore.graph.triples((bnode, REF.ifcGlobalID, Literal(element.GlobalId))))) == 1
+        assert len(list(BrickStore.graph.triples((bnode, REF.ifcName, Literal(element.Name))))) == 1
 
 
 class TestAddRelation(NewFile):
