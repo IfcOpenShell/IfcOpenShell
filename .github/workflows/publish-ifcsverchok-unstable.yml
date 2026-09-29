@@ -24,10 +24,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7 # https://github.com/actions/setup-python
-        with:
-          architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
-          python-version: '3.11'
       - name: Get current version
         id: version
         run: echo "version=$(sed -E 's/[[:alpha:]]+[0-9]+$//' VERSION)" >> $GITHUB_OUTPUT
