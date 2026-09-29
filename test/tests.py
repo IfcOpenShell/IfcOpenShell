@@ -35,7 +35,7 @@ assert f[1].is_a() == "IfcCartesianPoint"
 assert f.by_id(1).is_a("IfcCartesianPoint")
 assert f["28pa2ppDf1IA$BaQrvAf48"].is_a("IfcProject")
 assert f.by_guid("28pa2ppDf1IA$BaQrvAf48").is_a("IfcProject")
-assert f.createIfcCartesianPoint((0., 0., 0.)).is_a("IfcCartesianPoint")
+assert f.createIfcCartesianPoint((0.0, 0.0, 0.0)).is_a("IfcCartesianPoint")
 assert f.by_type("IfcProject")[0].is_a("IfcProject")
 assert f.traverse(f[16])[-1].is_a("IFCSIUNIT")
 assert len(f.traverse(f[35], 1)) == 2
@@ -76,18 +76,18 @@ assert "Version" in dir(app)
 
 # Enumeration of entity type names
 g = ifcopenshell.file(schema=f.schema)
-p = g.createIfcCartesianPoint((0.,0.))
+p = g.createIfcCartesianPoint((0.0, 0.0))
 assert len(g.types()) == 1
 g.remove(p)
 assert len(g.types()) == 0
 
 # Some operations on ifcopenshell.entity_instance
-assert f[22].Id == ''
+assert f[22].Id == ""
 assert f[22].Addresses is None
 assert f[23] in f[22].EngagedIn
-f[22].Id = '123'
-assert '123' in str(f[22])
-f[22].MiddleNames = 'John', 'Matthew'
+f[22].Id = "123"
+assert "123" in str(f[22])
+f[22].MiddleNames = "John", "Matthew"
 assert "('John','Matthew')" in str(f[22])
 assert ("Id", "123") in list(f[22].get_info().items())
 
@@ -117,5 +117,5 @@ assert len(t.select_box(f[48], extend=0.1)) == 3
 # Test serialization
 f.write("output.ifc")
 with open("output.ifc") as txt:
-    assert '123' in txt.read()
+    assert "123" in txt.read()
 os.unlink("output.ifc")

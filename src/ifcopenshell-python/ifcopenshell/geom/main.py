@@ -19,7 +19,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Generator, Iterable
+from collections.abc import Generator, Iterable, Sequence
 from os import PathLike, fspath
 from typing import TYPE_CHECKING, Any, Literal, Optional, TypeVar, Union, cast, overload
 
@@ -345,7 +345,7 @@ class iterator(ifcopenshell_wrapper.iterator):
             include_or_exclude_type = set(x.__class__.__name__ for x in include_or_exclude)
 
             if include_or_exclude_type == {"entity_instance"}:
-                include_or_exclude = cast(set[entity_instance], include_or_exclude)
+                include_or_exclude = cast(list[entity_instance], include_or_exclude)
 
                 for inst in include_or_exclude:
                     if not inst.is_a("IfcProduct"):
@@ -377,7 +377,7 @@ class iterator(ifcopenshell_wrapper.iterator):
         def get(self):
             return wrap_shape_creation(self.settings, ifcopenshell_wrapper.iterator.get(self))
 
-    def __iter__(self) -> Generator[IteratorOutput, None, None]:
+    def __iter__(self) -> Generator[IteratorOutput]:
         if self.initialize():
             while True:
                 yield self.get()
@@ -393,13 +393,25 @@ CLASH_TYPE_ITEMS = ("protrusion", "pierce", "collision", "clearance")
 
 
 class tree(ifcopenshell_wrapper.tree):
-    def __init__(self, file: Optional[file] = None, settings: Optional[settings] = None):
-        args = [self]
+    def __init__(
+        self,
+        file: Optional[file] = None,
+        settings: Optional[settings] = None,
+        backend: str | None = "opencascade.brep",
+    ):
+        if hasattr(ifcopenshell_wrapper, "create_tree"):
+            # The object is constructed by the tree registry; adopt its pointer.
+            # SWIG does not generate keyword argument handling for overloaded
+            # methods, hence the select() and select_box() dispatchers below.
+            constructed = ifcopenshell_wrapper.create_tree(backend)
+            self.this = constructed.this
+            self.thisown = True
+            constructed.thisown = False
+        else:
+            ifcopenshell_wrapper.tree.__init__(self)
+
         if file is not None:
-            args.append(file)
-            if settings is not None:
-                args.append(settings)
-        ifcopenshell_wrapper.tree.__init__(*args)
+            self.add_file(file, settings if settings is not None else ifcopenshell_wrapper.settings())
 
     def add_file(self, file: file, settings: settings) -> None:
         ifcopenshell_wrapper.tree.add_file(self, file, settings)
@@ -408,18 +420,9 @@ class tree(ifcopenshell_wrapper.tree):
         ifcopenshell_wrapper.tree.add_file(self, iterator)
 
     def select(
-        self,
-        value: Union[entity_instance, ifcopenshell_wrapper.native_element, tuple[float, float, float]],
-        **kwargs,
+        self, value: Union[entity_instance, ifcopenshell_wrapper.native_element, tuple[float, float, float]], **kwargs
     ) -> list[entity_instance]:
-        def unwrap(value):
-            if isinstance(value, entity_instance):
-                return value
-            elif all(map(lambda v: hasattr(value, v), "XYZ")):
-                return value.X(), value.Y(), value.Z()
-            return value
-
-        args = [self, unwrap(value)]
+        args = [self, value]
         if isinstance(value, (entity_instance, ifcopenshell_wrapper.native_element)):
             args.append(kwargs.get("completely_within", False))
             if "extend" in kwargs:
@@ -430,29 +433,12 @@ class tree(ifcopenshell_wrapper.tree):
         return ifcopenshell_wrapper.tree.select(*args)
 
     def select_box(self, value, **kwargs) -> list[entity_instance]:
-        def unwrap(value):
-            if isinstance(value, entity_instance):
-                return value
-            elif hasattr(value, "Get"):
-                return value.Get()[:3], value.Get()[3:]
-            return value
-
-        args = [self, unwrap(value)]
+        args = [self, value]
         if "extend" in kwargs or "completely_within" in kwargs:
             args.append(kwargs.get("completely_within", False))
         if "extend" in kwargs:
             args.append(kwargs.get("extend", -1.0e-5))
         return ifcopenshell_wrapper.tree.select_box(*args)
-
-    def clash_intersection_many(
-        self,
-        set_a: Iterable[entity_instance],
-        set_b: Iterable[entity_instance],
-        tolerance: float = 0.002,
-        check_all: bool = True,
-    ) -> tuple[ifcopenshell_wrapper.clash, ...]:
-        args = [self, set_a, set_b, tolerance, check_all]
-        return ifcopenshell_wrapper.tree.clash_intersection_many(*args)
 
     def clash_collision_many(
         self, set_a: Iterable[entity_instance], set_b: Iterable[entity_instance], allow_touching=False
@@ -469,6 +455,22 @@ class tree(ifcopenshell_wrapper.tree):
     ) -> tuple[ifcopenshell_wrapper.clash, ...]:
         args = [self, set_a, set_b, clearance, check_all]
         return ifcopenshell_wrapper.tree.clash_clearance_many(*args)
+
+    def clash_intersection_many(
+        self,
+        set_a: Iterable[entity_instance],
+        set_b: Iterable[entity_instance],
+        tolerance: float = 0.002,
+        check_all: bool = True,
+    ) -> tuple[ifcopenshell_wrapper.clash, ...]:
+        args = [self, set_a, set_b, tolerance, check_all]
+        return ifcopenshell_wrapper.tree.clash_intersection_many(*args)
+
+    def select_ray(
+        self, origin: Sequence[float], direction: Sequence[float], length: float = 1000.0
+    ) -> ifcopenshell_wrapper.ray_intersection_results:
+        args = [self, origin, direction, length]
+        return ifcopenshell_wrapper.tree.select_ray(*args)
 
     @staticmethod
     def get_clash_type(clash_type_i: int) -> ClashType:
@@ -549,6 +551,63 @@ def create_shape(
     )
 
 
+class kernel:
+    """A reusable geometry kernel bound to a (geometry library, file, settings) triple.
+
+    ``ifcopenshell.geom.create_shape`` constructs a new geometry kernel on every
+    call, which repeats the backend resolution (including plugin discovery for
+    hybrid kernels) and discards the mapping and conversion caches afterwards.
+    This class performs that construction once so that converting many products
+    one by one reuses the same kernel, mapping and caches, similar to what
+    ``ifcopenshell.geom.iterator`` does internally.
+
+    The kernel is bound at construction: the settings are copied and the file
+    reference is kept, so later changes to the settings object do not affect an
+    existing kernel and instances passed to :meth:`create_shape` must belong to
+    the bound file.
+
+    Example:
+
+    .. code:: python
+
+        settings = ifcopenshell.geom.settings()
+        k = ifcopenshell.geom.kernel(settings, ifc_file, geometry_library="hybrid-cgal-simple-opencascade")
+        for product in ifc_file.by_type("IfcProduct"):
+            if product.Representation:
+                shape = k.create_shape(product)
+    """
+
+    def __init__(
+        self,
+        settings: settings,
+        file: file,
+        geometry_library: GEOMETRY_LIBRARY = "opencascade",
+        logger: Optional[ifcopenshell.logger] = None,
+    ):
+        self.settings = settings
+        self.file = file
+        self.wrapped = ifcopenshell_wrapper.geometry_kernel(
+            geometry_library, file, settings, *ifcopenshell.optional_logger_args(logger)
+        )
+
+    def create_shape(
+        self,
+        inst: entity_instance,
+        repr: Optional[entity_instance] = None,
+    ) -> Union[
+        ShapeType, ShapeElementType, ifcopenshell_wrapper.transformation, utils.shape_tuple, TopoDS.TopoDS_Shape
+    ]:
+        """Identical to :func:`create_shape` but reuses this kernel across calls.
+
+        See :func:`create_shape` for the possible return types; the settings and
+        geometry library bound at construction are used for every call.
+        """
+        return wrap_shape_creation(
+            self.settings,
+            self.wrapped.create_shape(inst, repr) if repr else self.wrapped.create_shape(inst),
+        )
+
+
 def map_shape(settings: settings, inst: entity_instance) -> ifcopenshell_wrapper.item:
     """
     Returns an interpretation of the geometry encoded as per IfcOpenShell's taxonomy layer.
@@ -564,18 +623,14 @@ def map_shape(settings: settings, inst: entity_instance) -> ifcopenshell_wrapper
 
 
 @overload
-def consume_iterator(it: iterator, with_progress: Literal[False] = False) -> Generator[IteratorOutput, None, None]: ...
+def consume_iterator(it: iterator, with_progress: Literal[False] = False) -> Generator[IteratorOutput]: ...
 @overload
-def consume_iterator(
-    it: iterator, with_progress: Literal[True]
-) -> Generator[tuple[int, IteratorOutput], None, None]: ...
+def consume_iterator(it: iterator, with_progress: Literal[True]) -> Generator[tuple[int, IteratorOutput]]: ...
 @overload
-def consume_iterator(
-    it: iterator, with_progress: bool
-) -> Generator[Union[IteratorOutput, tuple[int, IteratorOutput]], None, None]: ...
+def consume_iterator(it: iterator, with_progress: bool) -> Generator[IteratorOutput | tuple[int, IteratorOutput]]: ...
 def consume_iterator(
     it: iterator, with_progress: bool = False
-) -> Generator[Union[IteratorOutput, tuple[int, IteratorOutput]], None, None]:
+) -> Generator[IteratorOutput | tuple[int, IteratorOutput]]:
     if it.initialize():
         while True:
             if with_progress:
@@ -599,7 +654,7 @@ def iterate(
     with_progress: Literal[False] = False,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
     logger=None,
-) -> Generator[IteratorOutput, None, None]: ...
+) -> Generator[IteratorOutput]: ...
 @overload
 def iterate(
     settings: settings,
@@ -611,7 +666,7 @@ def iterate(
     with_progress: Literal[True] = True,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
     logger=None,
-) -> Generator[tuple[int, IteratorOutput], None, None]: ...
+) -> Generator[tuple[int, IteratorOutput]]: ...
 @overload
 def iterate(
     settings: settings,
@@ -623,7 +678,7 @@ def iterate(
     with_progress: bool = False,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
     logger=None,
-) -> Generator[Union[IteratorOutput, tuple[int, IteratorOutput]], None, None]: ...
+) -> Generator[IteratorOutput | tuple[int, IteratorOutput]]: ...
 def iterate(
     settings: settings,
     file_or_filename: Union[file, str],
@@ -634,7 +689,7 @@ def iterate(
     with_progress: bool = False,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
     logger=None,
-) -> Generator[Union[IteratorOutput, tuple[int, IteratorOutput]], None, None]:
+) -> Generator[IteratorOutput | tuple[int, IteratorOutput]]:
     """Get a geometry iterator for the provided file."""
     it = iterator(settings, file_or_filename, num_threads, include, exclude, geometry_library)
     yield from consume_iterator(it, with_progress=with_progress)

@@ -21,6 +21,7 @@ import os
 from typing import TYPE_CHECKING, Any, Literal, Union, assert_never, get_args
 
 import bpy
+import ifcopenshell.util.unit
 from bpy.props import (
     BoolProperty,
     CollectionProperty,
@@ -32,8 +33,6 @@ from bpy.props import (
     StringProperty,
 )
 from bpy.types import PropertyGroup
-
-import ifcopenshell.util.unit
 
 import bonsai.bim
 import bonsai.bim.handler
@@ -871,6 +870,7 @@ class BIMSnapGroups(PropertyGroup):
 
 
 class BIMSnapProperties(PropertyGroup):
+    use_gpu_snapping: BoolProperty(name="Use GPU Snapping", default=False)
     vertex: BoolProperty(name="Vertex", default=True)
     edge: BoolProperty(name="Edge", default=True)
     edge_center: BoolProperty(name="Edge Center", default=True)
@@ -878,6 +878,7 @@ class BIMSnapProperties(PropertyGroup):
     face: BoolProperty(name="Face", default=True)
 
     if TYPE_CHECKING:
+        use_gpu_snapping: bool
         vertex: bool
         edge: bool
         edge_center: bool

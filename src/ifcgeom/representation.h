@@ -141,29 +141,21 @@ namespace ifcopenshell::geom {
 			triangulation(const native& shape_model);
 
 			triangulation(
-				const ifcopenshell::geom::settings& settings,
-				const std::string& entity,
-				const std::string& id,
-				const std::vector<double>& verts,
-				const std::vector<int>& faces,
-				const std::vector<int>& edges,
-				const std::vector<double>& normals,
-				const std::vector<double>& uvs,
-				const std::vector<int>& material_ids,
-				const std::vector<ifcopenshell::geom::taxonomy::style::ptr>& materials,
-				const std::vector<int>& item_ids
-				, const std::vector<int>& edges_item_ids
-			)
-				: representation(settings, entity, id)
-				, verts_(verts)
-				, faces_(faces)
-				, edges_(edges)
-				, normals_(normals)
-				, uvs_(uvs)
-				, material_ids_(material_ids)
-				, materials_(materials)
-				, item_ids_(item_ids)
-				, edges_item_ids_(edges_item_ids)
+                const ifcopenshell::geom::settings& settings,
+                const std::string& entity,
+                const std::string& id,
+                const std::vector<double>& verts,
+                const std::vector<int>& faces,
+                const std::vector<int>& edges,
+                const std::vector<double>& normals,
+                const std::vector<double>& uvs,
+                const std::vector<int>& material_ids,
+                const std::vector<ifcopenshell::geom::taxonomy::style::ptr>& materials,
+                const std::vector<int>& item_ids,
+                const std::vector<int>& edges_item_ids)
+                : representation(settings, entity, id), verts_(verts), faces_(faces), edges_(edges),
+					normals_(normals), uvs_(uvs), material_ids_(material_ids), materials_(materials),
+					item_ids_(item_ids), edges_item_ids_(edges_item_ids), weld_offset_(0)
 			{}
 
 			virtual ~triangulation() {}

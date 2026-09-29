@@ -28,80 +28,6 @@ namespace {
 	std::string tree_key(const std::string& backend_id) {
 		return boost::to_lower_copy(backend_id);
 	}
-
-	[[noreturn]] void unsupported_tree_operation(const std::string& backend_id, const std::string& operation) {
-		throw ifcopenshell::exception("Tree backend '" + backend_id + "' does not support " + operation);
-	}
-}
-
-ifcopenshell::geom::trees::abstract_tree::~abstract_tree() = default;
-
-void ifcopenshell::geom::trees::abstract_tree::add_file(ifcopenshell::file&, const ifcopenshell::geom::settings&) {
-	unsupported_tree_operation(std::string(backend_id()), "add_file()");
-}
-
-void ifcopenshell::geom::trees::abstract_tree::add_element(ifcopenshell::geom::element*) {
-	unsupported_tree_operation(std::string(backend_id()), "add_element()");
-}
-
-std::vector<express::entity> ifcopenshell::geom::trees::abstract_tree::select_box(const express::entity&, bool, double) const {
-	unsupported_tree_operation(std::string(backend_id()), "select_box(entity)");
-}
-
-std::vector<express::entity> ifcopenshell::geom::trees::abstract_tree::select_box(const ifcopenshell::geom::tree_point&) const {
-	unsupported_tree_operation(std::string(backend_id()), "select_box(point)");
-}
-
-std::vector<express::entity> ifcopenshell::geom::trees::abstract_tree::select_box(const ifcopenshell::geom::tree_box&, bool) const {
-	unsupported_tree_operation(std::string(backend_id()), "select_box(bounds)");
-}
-
-std::vector<express::entity> ifcopenshell::geom::trees::abstract_tree::select(const express::entity&, bool, double) const {
-	unsupported_tree_operation(std::string(backend_id()), "select(entity)");
-}
-
-std::vector<express::entity> ifcopenshell::geom::trees::abstract_tree::select(const ifcopenshell::geom::element*, bool, double) const {
-	unsupported_tree_operation(std::string(backend_id()), "select(element)");
-}
-
-std::vector<express::entity> ifcopenshell::geom::trees::abstract_tree::select(const ifcopenshell::geom::tree_point&, double) const {
-	unsupported_tree_operation(std::string(backend_id()), "select(point)");
-}
-
-std::vector<ifcopenshell::geom::ray_intersection_result> ifcopenshell::geom::trees::abstract_tree::select_ray(const ifcopenshell::geom::tree_point&, const ifcopenshell::geom::tree_point&, double) const {
-	unsupported_tree_operation(std::string(backend_id()), "select_ray()");
-}
-
-std::vector<ifcopenshell::geom::clash> ifcopenshell::geom::trees::abstract_tree::clash_intersection_many(const std::vector<express::entity>&, const std::vector<express::entity>&, double, bool) const {
-	unsupported_tree_operation(std::string(backend_id()), "clash_intersection_many()");
-}
-
-std::vector<ifcopenshell::geom::clash> ifcopenshell::geom::trees::abstract_tree::clash_collision_many(const std::vector<express::entity>&, const std::vector<express::entity>&, bool) const {
-	unsupported_tree_operation(std::string(backend_id()), "clash_collision_many()");
-}
-
-std::vector<ifcopenshell::geom::clash> ifcopenshell::geom::trees::abstract_tree::clash_clearance_many(const std::vector<express::entity>&, const std::vector<express::entity>&, double, bool) const {
-	unsupported_tree_operation(std::string(backend_id()), "clash_clearance_many()");
-}
-
-const std::vector<double>& ifcopenshell::geom::trees::abstract_tree::distances() const {
-	unsupported_tree_operation(std::string(backend_id()), "distances()");
-}
-
-const std::vector<double>& ifcopenshell::geom::trees::abstract_tree::protrusion_distances() const {
-	unsupported_tree_operation(std::string(backend_id()), "protrusion_distances()");
-}
-
-bool ifcopenshell::geom::trees::abstract_tree::enable_face_styles() const {
-	unsupported_tree_operation(std::string(backend_id()), "enable_face_styles()");
-}
-
-void ifcopenshell::geom::trees::abstract_tree::enable_face_styles(bool) {
-	unsupported_tree_operation(std::string(backend_id()), "enable_face_styles(bool)");
-}
-
-const std::vector<ifcopenshell::geom::taxonomy::style::ptr>& ifcopenshell::geom::trees::abstract_tree::styles() const {
-	unsupported_tree_operation(std::string(backend_id()), "styles()");
 }
 
 void ifcopenshell::geom::trees::tree_registry::bind(const tree_info& info, create_fn create, const plugin::module& module) {
@@ -116,12 +42,12 @@ bool ifcopenshell::geom::trees::tree_registry::has(const std::string& backend_id
 	return entries_.find(tree_key(backend_id)) != entries_.end();
 }
 
-std::unique_ptr<ifcopenshell::geom::trees::abstract_tree> ifcopenshell::geom::trees::tree_registry::create(const std::string& backend_id) const {
+std::unique_ptr<ifcopenshell::geom::tree> ifcopenshell::geom::trees::tree_registry::create(const std::string& backend_id) const {
 	const auto iter = entries_.find(tree_key(backend_id));
 	if (iter == entries_.end()) {
 		throw ifcopenshell::exception("No geometry tree registered for " + backend_id);
 	}
-	return std::unique_ptr<abstract_tree>(iter->second.create_());
+	return std::unique_ptr<ifcopenshell::geom::tree>(iter->second.create_());
 }
 
 ifcopenshell::geom::trees::tree_registry& ifcopenshell::geom::trees::tree_registry_instance() {
@@ -129,7 +55,7 @@ ifcopenshell::geom::trees::tree_registry& ifcopenshell::geom::trees::tree_regist
 	return registry;
 }
 
-std::unique_ptr<ifcopenshell::geom::trees::abstract_tree> ifcopenshell::geom::trees::construct(const std::string& backend_id) {
+std::unique_ptr<ifcopenshell::geom::tree> ifcopenshell::geom::trees::construct(const std::string& backend_id) {
 	auto& registry = tree_registry_instance();
 	if (!registry.has(backend_id)) {
 		load_tree_plugin(registry, backend_id);

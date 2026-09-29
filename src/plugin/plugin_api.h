@@ -21,15 +21,14 @@
 #define PLUGIN_API_H
 
 #ifdef SWIG
-#define PLUGIN_API
+  #define PLUGIN_API
 #elif defined(_WIN32)
-#ifdef PLUGIN_EXPORTS
-#define PLUGIN_API __declspec(dllexport)
-#else
-#define PLUGIN_API __declspec(dllimport)
-#endif
-#else
-#define PLUGIN_API __attribute__((visibility("default")))
-#endif
-
-#endif
+  #ifdef PLUGIN_EXPORTS
+    #define PLUGIN_API __declspec(dllexport)
+  #else
+    #define PLUGIN_API __declspec(dllimport)
+  #endif
+#else // *nix + GCC-like compiler
+  #define PLUGIN_API __attribute__((visibility("default")))
+#endif // SWIG
+#endif // PLUGIN_API_H

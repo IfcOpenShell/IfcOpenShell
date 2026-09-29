@@ -42,6 +42,9 @@ foreach(kernel ${GEOMETRY_KERNELS})
     target_link_libraries(${KERNEL_TARGET} PRIVATE ${plugin_when_not_wasm} IfcGeom ${${KERNEL_UPPER}_LIBRARIES} Eigen3::Eigen)
 
     install(TARGETS ${KERNEL_TARGET})
+    # Every OCCT consumer links the same toolkit list, so the kernel's
+    # runtime DLL set covers the tree and serializer plug-ins too.
+    ifcopenshell_install_runtime_dlls(TARGETS ${KERNEL_TARGET})
 
     if(${kernel} STREQUAL "cgal")
         set_property(TARGET ${KERNEL_TARGET} APPEND_STRING PROPERTY COMPILE_FLAGS " -DCGAL_HAS_THREADS")
@@ -76,9 +79,14 @@ foreach(kernel ${GEOMETRY_KERNELS})
 	if (NOT WASM_BUILD)
         foreach(tree_backend brep trianglebvh)
             set(TREE_TARGET "geometry_tree_opencascade_${tree_backend}")
+            if(${tree_backend} STREQUAL "brep")
+                set(TREE_IMPLEMENTATION ub_tree.h)
+            else()
+                set(TREE_IMPLEMENTATION bvh_tree.h)
+            endif()
             add_library(${TREE_TARGET} SHARED
                 ${kernel}/tree_${tree_backend}_plugin.cpp
-                ${kernel}/tree_backends.h
+                ${kernel}/${TREE_IMPLEMENTATION}
             )
             if((NOT WIN32) AND NOT CREATE_BUNDLE AND NOT CMAKE_INSTALL_RPATH AND COMMAND SET_INSTALL_SELF_RPATH)
                 SET_INSTALL_SELF_RPATH(${TREE_TARGET})
