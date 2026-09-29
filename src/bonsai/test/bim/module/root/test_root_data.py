@@ -27,8 +27,6 @@ pytestmark = pytest.mark.root
 
 class TestIfcClassDataLoad(NewIfc):
     def test_load_populates_classes_for_a_valid_product(self):
-        # Baseline: a valid ifc_product resolves to a real schema declaration, so
-        # load() completes and the class list is populated.
         tool.Root.get_root_props().ifc_product = "IfcElement"
 
         IfcClassData.is_loaded = False
@@ -39,21 +37,12 @@ class TestIfcClassDataLoad(NewIfc):
         assert IfcClassData.data["ifc_classes"]
 
     def test_load_survives_a_stale_enum_index(self):
-        # Regression for the per-redraw freeze / KeyError 'ifc_products'. ifc_product and
-        # ifc_class are dynamic EnumProperties; a reloaded file can carry a stored index
-        # that matches no current item (Blender warns "matches no enum"). Assigning the
-        # raw ID-property int bypasses enum validation and reproduces that stale state.
-        #
-        # Reading such an enum during load() runs its items= callback, which re-enters
-        # load() unless is_loaded is already set, resetting cls.data mid-build; and
-        # declaration_by_name() on the unresolved value raises. load() must survive both:
-        # complete, keep the fully-built dict, and cache (is_loaded True). See #6398.
         props = tool.Root.get_root_props()
         props["ifc_product"] = 9999
         props["ifc_class"] = 9999
 
         IfcClassData.is_loaded = False
-        IfcClassData.load()  # must not raise, KeyError, or leave is_loaded False
+        IfcClassData.load()
 
         assert IfcClassData.is_loaded is True
         assert "ifc_products" in IfcClassData.data
