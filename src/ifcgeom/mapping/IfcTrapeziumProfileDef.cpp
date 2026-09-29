@@ -19,7 +19,7 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 #include "../profile_helper.h"
 
@@ -36,7 +36,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrapeziumProfileDef& inst) {
 	const double tol = settings_.get<settings::Precision>().get();
 
 	if (x1 < tol || w < tol || y < tol) {
-		logger_.message(::logger::LOG_NOTICE, "GEO", 294, "Skipping zero sized profile:", inst);
+		logger_.message(ifcopenshell::logger::LOG_NOTICE, "GEO", 294, "Skipping zero sized profile:", inst);
 		return nullptr;
 	}
 

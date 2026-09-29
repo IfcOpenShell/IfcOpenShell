@@ -32,6 +32,7 @@
 #undef Handle
 
 #include <rocksdb/db.h>
+#include <tuple>
 
 #pragma pop_macro("Handle")
 
@@ -41,9 +42,12 @@
 #include <cstring>
 
 #include <boost/optional.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
+#include <optional>
 #include <boost/logic/tribool.hpp>
 #include <boost/dynamic_bitset.hpp>
+
+namespace ifcopenshell {
 
 class IFC_PARSE_API enumeration_reference {
 private:
@@ -70,80 +74,99 @@ public:
 };
 class IFC_PARSE_API blank {};
 class IFC_PARSE_API derived {};
-class IFC_PARSE_API empty_aggregate_t {};
-class IFC_PARSE_API empty_aggregate_of_aggregate_t {};
+class IFC_PARSE_API empty_aggregate {};
+class IFC_PARSE_API empty_aggregate_of_aggregate {};
+
+} // namespace ifcopenshell
 
 namespace impl {
     template <>
-    struct VariantTypeName<blank> {
+    struct variant_type_name<ifcopenshell::blank> {
         static std::string get() { return "null"; }
     };
 
     template <>
-    struct VariantTypeName<derived> {
+    struct variant_type_name<ifcopenshell::derived> {
         static std::string get() { return "derived"; }
     };
 
     template <>
-    struct VariantTypeName<int> {
+    struct variant_type_name<ifcopenshell::instance_reference> {
+        static std::string get() { return "unresolved reference"; }
+    };
+
+    template <>
+    struct variant_type_name<std::vector<ifcopenshell::reference_or_simple_type>> {
+        static std::string get() { return "unresolved reference aggregate"; }
+    };
+
+    template <>
+    struct variant_type_name<std::vector<std::vector<ifcopenshell::reference_or_simple_type>>> {
+        static std::string get() { return "unresolved reference aggregate of aggregates"; }
+    };
+
+    template <>
+    struct variant_type_name<int> {
         static std::string get() { return "int"; }
     };
 
     template <>
-    struct VariantTypeName<int64_t> {
+    struct variant_type_name<int64_t> {
         static std::string get() { return "int"; }
     };
 
     template <>
-    struct VariantTypeName<bool> {
+    struct variant_type_name<bool> {
         static std::string get() { return "bool"; }
     };
 
     template <>
-    struct VariantTypeName<boost::logic::tribool> {
+    struct variant_type_name<boost::logic::tribool> {
         static std::string get() { return "logical"; }
     };
 
     template <>
-    struct VariantTypeName<double> {
+    struct variant_type_name<double> {
         static std::string get() { return "real"; }
     };
 
     template <>
-    struct VariantTypeName<std::string> {
+    struct variant_type_name<std::string> {
         static std::string get() { return "string"; }
     };
 
     template <>
-    struct VariantTypeName<boost::dynamic_bitset<>> {
+    struct variant_type_name<boost::dynamic_bitset<>> {
         static std::string get() { return "binary"; }
     };
 
     template <>
-    struct VariantTypeName<enumeration_reference> {
+    struct variant_type_name<ifcopenshell::enumeration_reference> {
         static std::string get() { return "enumeration"; }
     };
 
     template <>
-    struct VariantTypeName<express::Base> {
+    struct variant_type_name<express::base> {
         static std::string get() { return "instance"; }
     };
 
     template <>
-    struct VariantTypeName<empty_aggregate_t> {
+    struct variant_type_name<ifcopenshell::empty_aggregate> {
         static std::string get() { return "aggregate"; }
     };
 
     template <typename T, typename Allocator>
-    struct VariantTypeName<std::vector<T, Allocator>> {
-        static std::string get() { return "aggregate of " + VariantTypeName<T>::get(); }
+    struct variant_type_name<std::vector<T, Allocator>> {
+        static std::string get() { return "aggregate of " + variant_type_name<T>::get(); }
     };
 
     template <>
-    struct VariantTypeName<empty_aggregate_of_aggregate_t> {
+    struct variant_type_name<ifcopenshell::empty_aggregate_of_aggregate> {
         static std::string get() { return "aggregate of aggregate"; }
     };
 }
+
+namespace ifcopenshell {
 
 template<typename... Args>
 struct parameter_pack {
@@ -182,10 +205,10 @@ typedef parameter_pack <
     // An entity instance argument. It will either serialize to
     // e.g. #123 or datatype identifier for simple types, e.g.
     // IFCREAL(12.3)
-    express::Base,
+    express::base,
 
     // AGGREGATES:
-    empty_aggregate_t,
+    empty_aggregate,
     // An aggregate of integers, e.g. (1,2,3). Stored as int64_t for the
     // same reason as the scalar int64_t above.
     std::vector<int64_t>,
@@ -198,16 +221,24 @@ typedef parameter_pack <
     // An aggregate of entity instances. It will either serialize to
     // e.g. (#1,#2,#3) or datatype identifier for simple types,
     // e.g. (IFCREAL(1.2),IFCINTEGER(3.))
-    std::vector<express::Base>,
+    std::vector<express::base>,
 
     // AGGREGATES OF AGGREGATES:
-    empty_aggregate_of_aggregate_t,
+    empty_aggregate_of_aggregate,
     // An aggregate of an aggregate of ints. E.g. ((1, 2), (3))
     std::vector<std::vector<int64_t>>,
     // An aggregate of an aggregate of floats. E.g. ((1., 2.3), (4.))
     std::vector<std::vector<double>>,
     // An aggregate of an aggregate of entities. E.g. ((#1, #2), (#3))
-    std::vector<std::vector<express::Base>>>
+    std::vector<std::vector<express::base>>,
+    // PARSE-TIME ONLY: a reference, or an aggregate mixing references and
+    // inline typed values, exactly as the tokenizer produced it, held in
+    // the slot until every instance has been read and then replaced by the
+    // three forms above. Never present once a file is loaded. Their indices
+    // match the Argument_UNRESOLVED_* members of argument_type.
+    instance_reference,
+    std::vector<reference_or_simple_type>,
+    std::vector<std::vector<reference_or_simple_type>>>
 type_variant_parameter_pack;
 
 template<typename Pack>
@@ -220,18 +251,36 @@ struct pack_to_variant_array<parameter_pack<Args...>> {
 
 using in_memory_attribute_storage = pack_to_variant_array<type_variant_parameter_pack>::type;
 
+// argument_type enumerates the members of type_variant_parameter_pack in
+// order, so a member maps back to the type stored for it.
 template <typename Pack>
-struct TypeEncoder_t;
+struct pack_element;
+
+template <typename... Args>
+struct pack_element<parameter_pack<Args...>> {
+    template <size_t I>
+    using type = std::tuple_element_t<I, std::tuple<Args...>>;
+};
+
+template <argument_type A>
+using argument_storage_type_t = typename pack_element<type_variant_parameter_pack>::template type<A>;
+
+static_assert(std::is_same_v<argument_storage_type_t<Argument_INT>, int64_t>, "argument_type must enumerate type_variant_parameter_pack in order");
+static_assert(std::is_same_v<argument_storage_type_t<Argument_AGGREGATE_OF_INT>, std::vector<int64_t>>, "argument_type must enumerate type_variant_parameter_pack in order");
+static_assert(std::is_same_v<argument_storage_type_t<Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE>, std::vector<std::vector<express::base>>>, "argument_type must enumerate type_variant_parameter_pack in order");
+
+template <typename Pack>
+struct type_encoder_impl;
 
 template <typename... Types>
-struct TypeEncoder_t<parameter_pack<Types...>> {
+struct type_encoder_impl<parameter_pack<Types...>> {
     template <typename U>
     static char encode_type() {
         return 'A' + ::impl::TypeIndex_v<U, Types...>;
     }
 };
 
-using TypeEncoder = TypeEncoder_t<type_variant_parameter_pack>;
+using type_encoder = type_encoder_impl<type_variant_parameter_pack>;
 
 class IFC_PARSE_API mutable_attribute_value {
   public:
@@ -239,11 +288,7 @@ class IFC_PARSE_API mutable_attribute_value {
     uint8_t index_;
 };
 
-namespace ifcopenshell {
-    namespace impl {
-        class IFC_PARSE_API rocks_db_file_storage;
-    }
-}
+} // namespace ifcopenshell
 
 #ifdef IFOPSH_WITH_ROCKSDB
 
@@ -261,14 +306,14 @@ namespace impl {
     bool serialize(std::string& buffer, const T& value) {
         auto byte_count = sizeof(typename T::value_type) * value.size();
         buffer.resize(byte_count + 1);
-        buffer[0] = TypeEncoder::encode_type<T>();
+        buffer[0] = ifcopenshell::type_encoder::encode_type<T>();
         memcpy(buffer.data() + 1, value.data(), byte_count);
         return true;
     }
 
     template <typename T, typename std::enable_if<is_contiguous_container<T>::value&& is_contiguous_container<typename T::value_type>::value, int>::type = 0>
     bool serialize(std::string& buffer, const T& value) {
-        buffer = std::string(1, TypeEncoder::encode_type<T>());
+        buffer = std::string(1, ifcopenshell::type_encoder::encode_type<T>());
         for (auto& nested_value : value) {
             std::string nested_buffer;
             serialize(nested_buffer, nested_value);
@@ -285,33 +330,33 @@ namespace impl {
     template <typename T, typename std::enable_if<std::is_integral_v<T> || std::is_floating_point_v<T>, int>::type = 0>
     bool serialize(std::string& buffer, const T& value) {
         buffer.resize(sizeof(T) + 1);
-        buffer[0] = TypeEncoder::encode_type<T>();
+        buffer[0] = ifcopenshell::type_encoder::encode_type<T>();
         memcpy(buffer.data() + 1, &value, sizeof(T));
         return true;
     }
 
-    bool serialize(std::string& buffer, const blank& value);
+    bool serialize(std::string& buffer, const ifcopenshell::blank& value);
 
-    bool serialize(std::string& buffer, const derived& value);
-    bool serialize(std::string& buffer, const empty_aggregate_t& value);
-    bool serialize(std::string& buffer, const empty_aggregate_of_aggregate_t& value);
+    bool serialize(std::string& buffer, const ifcopenshell::derived& value);
+    bool serialize(std::string& buffer, const ifcopenshell::empty_aggregate& value);
+    bool serialize(std::string& buffer, const ifcopenshell::empty_aggregate_of_aggregate& value);
 
     bool serialize(std::string& buffer, const boost::logic::tribool& value);
 
     bool serialize(std::string& buffer, const boost::dynamic_bitset<>& value);
-    
-    bool serialize(std::string& buffer, const express::Base& value);
 
-    bool serialize(std::string& buffer, const enumeration_reference& value);
+    bool serialize(std::string& buffer, const express::base& value);
 
-    bool serialize(std::string& buffer, const std::vector<express::Base>& value);
+    bool serialize(std::string& buffer, const ifcopenshell::enumeration_reference& value);
 
-    bool serialize(std::string& buffer, const std::vector<std::vector<express::Base>>& value);
+    bool serialize(std::string& buffer, const std::vector<express::base>& value);
+
+    bool serialize(std::string& buffer, const std::vector<std::vector<express::base>>& value);
 
     template <typename T, typename std::enable_if<is_contiguous_container<T>::value && !is_contiguous_container<typename T::value_type>::value, int>::type = 0>
     bool deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& buffer, T& value, bool has_type_prefix = true) {
         static_cast<void>(storage);
-        if (has_type_prefix && buffer[0] != TypeEncoder::encode_type<T>()) {
+        if (has_type_prefix && buffer[0] != ifcopenshell::type_encoder::encode_type<T>()) {
             return false;
         }
         auto element_count = (buffer.size() - (has_type_prefix ? 1 : 0)) / sizeof(typename T::value_type);
@@ -324,7 +369,7 @@ namespace impl {
     bool deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& buffer, T& value) {
         // @todo
         auto ptr = buffer.data();
-        if (*ptr != TypeEncoder::encode_type<T>()) {
+        if (*ptr != ifcopenshell::type_encoder::encode_type<T>()) {
             return false;
         }
         ptr++;
@@ -345,7 +390,7 @@ namespace impl {
     template <typename T, typename std::enable_if<std::is_integral_v<T> || std::is_floating_point_v<T>, int>::type = 0>
     bool deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& buffer, T& value) {
         static_cast<void>(storage);
-        if (buffer[0] != TypeEncoder::encode_type<T>()) {
+        if (buffer[0] != ifcopenshell::type_encoder::encode_type<T>()) {
             return false;
         }
         memcpy(&value, buffer.data() + 1, sizeof(T));
@@ -356,12 +401,14 @@ namespace impl {
 
     bool deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& buffer, boost::dynamic_bitset<>& value);
 
-    bool deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& buffer, std::vector<express::Base>& value);
+    bool deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& buffer, std::vector<express::base>& value);
 
-    bool deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& buffer, std::vector<std::vector<express::Base>>& value);
+    bool deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& buffer, std::vector<std::vector<express::base>>& value);
     }
 
 #endif
+
+namespace ifcopenshell {
 
 // short lived
 class IFC_PARSE_API attribute_value {
@@ -408,22 +455,22 @@ public:
     operator double() const;
     operator std::string() const;
     operator boost::dynamic_bitset<>() const;
-    operator express::Base() const;
+    operator express::base() const;
 
     operator std::vector<int64_t>() const;
     operator std::vector<double>() const;
     operator std::vector<std::string>() const;
     operator std::vector<boost::dynamic_bitset<>>() const;
-    operator std::vector<express::Base>() const;
+    operator std::vector<express::base>() const;
 
     operator std::vector<std::vector<int64_t>>() const;
     operator std::vector<std::vector<double>>() const;
-    operator std::vector<std::vector<express::Base>>() const;
+    operator std::vector<std::vector<express::base>>() const;
 
     operator enumeration_reference() const;
 
     bool isNull() const;
-    unsigned int size() const;
+    size_t size() const;
 
     ifcopenshell::argument_type type() const;
 
@@ -449,7 +496,7 @@ public:
             case ifcopenshell::Argument_ENUMERATION:
                 return visitor((enumeration_reference)*this);
             case ifcopenshell::Argument_ENTITY_INSTANCE:
-                return visitor((express::Base) * this);
+                return visitor((express::base) * this);
             case ifcopenshell::Argument_AGGREGATE_OF_INT:
                 return visitor((std::vector<int64_t>)*this);
             case ifcopenshell::Argument_AGGREGATE_OF_DOUBLE:
@@ -459,17 +506,17 @@ public:
             case ifcopenshell::Argument_AGGREGATE_OF_BINARY:
                 return visitor((std::vector<boost::dynamic_bitset<>>)*this);
             case ifcopenshell::Argument_AGGREGATE_OF_ENTITY_INSTANCE:
-                return visitor((std::vector<express::Base>)*this);
+                return visitor((std::vector<express::base>)*this);
             case ifcopenshell::Argument_AGGREGATE_OF_AGGREGATE_OF_INT:
                 return visitor((std::vector<std::vector<int64_t>>)*this);
             case ifcopenshell::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE:
                 return visitor((std::vector<std::vector<double>>)*this);
             case ifcopenshell::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE:
-                return visitor((std::vector<std::vector<express::Base>>)*this);
+                return visitor((std::vector<std::vector<express::base>>)*this);
             case ifcopenshell::Argument_EMPTY_AGGREGATE:
-                return visitor(empty_aggregate_t{});
+                return visitor(empty_aggregate{});
             case ifcopenshell::Argument_AGGREGATE_OF_EMPTY_AGGREGATE:
-                return visitor(empty_aggregate_of_aggregate_t{});
+                return visitor(empty_aggregate_of_aggregate{});
             default:
                 return visitor(blank{});
         }
@@ -505,8 +552,21 @@ class IFC_PARSE_API instance_data {
     void populate_derived_();
 
   public:
-      // Since rocks_db_attribute_storage has no members this is not a variant<in_memory, rocks> but in_memory*, where nullptr means a rocks_db_attribute_storage is constructed on the fly given the context from instance data.
-      in_memory_attribute_storage* storage_;
+      // Since rocks_db_attribute_storage has no members this is not a variant<in_memory, rocks> but an optional in_memory storage, where an empty optional means a rocks_db_attribute_storage is constructed on the fly given the context from instance data.
+      mutable std::optional<in_memory_attribute_storage> storage_;
+
+      // Lazy loading: parses the attributes from the file's retained source
+      // if this instance was indexed lazily and has not been accessed yet.
+      // No-op otherwise (loaded, created, or RocksDB-backed).
+      void ensure_loaded() const;
+      // A lazily indexed instance: the attributes, including the derived
+      // markers, are filled in by the file storage on first access.
+      struct lazy_tag {};
+      instance_data(ifcopenshell::file* file, const ifcopenshell::declaration* declaration, uint32_t id, lazy_tag)
+          : file_(file), declaration_(declaration), identity_(counter_++), id_(id), storage_(std::nullopt)
+      {
+      }
+      friend struct ifcopenshell::impl::in_memory_file_storage;
 
       const ifcopenshell::declaration* declaration() const {
           return declaration_;
@@ -525,13 +585,13 @@ class IFC_PARSE_API instance_data {
       }
 
       instance_data(ifcopenshell::file* file, const ifcopenshell::declaration* declaration, uint32_t id, in_memory_attribute_storage&& storage)
-          : file_(file), declaration_(declaration), identity_(counter_++), id_(id), storage_(new in_memory_attribute_storage(std::move(storage)))
+          : file_(file), declaration_(declaration), identity_(counter_++), id_(id), storage_(std::move(storage))
       {
             populate_derived_();
       }
 
       instance_data(ifcopenshell::file* file, const ifcopenshell::declaration* declaration, uint32_t id, rocks_db_attribute_storage&& storage)
-          : file_(file), declaration_(declaration), identity_(counter_++), id_(id), storage_(nullptr)
+          : file_(file), declaration_(declaration), identity_(counter_++), id_(id), storage_(std::nullopt)
       {
           static_cast<void>(storage);
           populate_derived_();
@@ -540,7 +600,7 @@ class IFC_PARSE_API instance_data {
       /*
       // now that there are referenced as shared_ptr there is no move constructor anymore
       instance_data(instance_data&& other) noexcept
-          : file_(other.file_), id_(other.id_), declaration_(other.declaration_), storage_(std::exchange(other.storage_, nullptr))
+          : file_(other.file_), id_(other.id_), declaration_(other.declaration_), storage_(std::move(other.storage_))
       {}
       */
 
@@ -554,33 +614,38 @@ class IFC_PARSE_API instance_data {
       // same
       instance_data& operator=(instance_data&& other) noexcept {
           if (this != &other) {
-              delete storage_;
-              storage_ = std::exchange(other.storage_, nullptr);
+              storage_ = std::move(other.storage_);
+              other.storage_.reset();
           }
           return *this;
       }
       */
 
       ~instance_data() {
-          delete storage_;
+          storage_.reset();
       }
 
     attribute_value get_attribute_value(size_t attribute_index) const;
 
     template<typename T>
     void set_attribute_value(std::size_t attribute_index, T&& value) {
+        ensure_loaded();
         if (storage_) {
             storage_->set(attribute_index, value);
+            return;
         }
 #ifdef IFOPSH_WITH_ROCKSDB
         else {
             rocks_db_attribute_storage{}.set(get_storage_of_type<ifcopenshell::impl::rocks_db_file_storage>(), declaration_, id_ ? id_ : identity_, attribute_index, value);
+            return;
         }
 #endif
+        throw std::logic_error("RocksDB storage is unavailable");
     }
 
     template<typename T>
     bool has_attribute_value(std::size_t attribute_index) const {
+        ensure_loaded();
         if (storage_) {
             return storage_->has<T>(attribute_index);
         }
@@ -589,9 +654,12 @@ class IFC_PARSE_API instance_data {
             return rocks_db_attribute_storage{}.has<T>(get_storage_of_type<ifcopenshell::impl::rocks_db_file_storage>(), declaration_, id_ ? id_ : identity_, attribute_index);
         }
 #endif
+        throw std::logic_error("RocksDB storage is unavailable");
     }
 
     void to_string(std::ostream& stream, bool uppercase = false) const;
 };
+
+} // namespace ifcopenshell
 
 #endif

@@ -175,8 +175,8 @@ def geometry_classes_introduced_after(target_schema: IFC_SCHEMA, source_schema: 
     B-splines, advanced surfaces, alignment curves on IFC4X3 → 2X3, …) or
     purge. Defaults match the IFC4 → IFC2X3 case for backwards compatibility
     with the original caller."""
-    source = ifcopenshell_wrapper.schema_by_name(source_schema)
-    target = ifcopenshell_wrapper.schema_by_name(target_schema)
+    source = ifcopenshell.schema_by_name(source_schema)
+    target = ifcopenshell.schema_by_name(target_schema)
     target_names = {decl.name() for decl in target.entities()}
     result: set[str] = set()
     for decl in source.entities():
@@ -239,7 +239,7 @@ def reassign_class(
     for attribute in declaration.all_attributes():
         name = attribute.name()
         old_attribute = info.get(name, None)
-        if old_attribute:
+        if old_attribute is not None:
             if ifcopenshell.util.attribute.get_primitive_type(attribute) == "enum":
                 if old_attribute in ifcopenshell.util.attribute.get_enum_items(attribute):
                     new_attributes[name] = old_attribute
@@ -400,9 +400,9 @@ class Migrator:
                 for inverse, attribute_index in old_file.get_inverse(
                     element, allow_duplicate=True, with_attribute_indices=True
                 ):
-                    self.attribute_overrides.setdefault(inverse.id(), {})[
-                        attribute_index
-                    ] = f"{element[2]}-{element[1]}-{element[0]}"
+                    self.attribute_overrides.setdefault(inverse.id(), {})[attribute_index] = (
+                        f"{element[2]}-{element[1]}-{element[0]}"
+                    )
                 to_delete.add(element)
 
         if old_file.schema == "IFC4" and new_file.schema == "IFC4X3":
@@ -487,13 +487,13 @@ class Migrator:
         # IFC2X3 stand-in; non-element IFC4-only classes (rels, geometry items,
         # materials, times) still raise below.
         if not equivalent and new_file.schema == "IFC2X3" and self.fallback_element_to_proxy:
-            if self._is_subclass_of(ifc_class, "IfcElement", element.wrapped_data.file):
+            if self._is_subclass_of(ifc_class, "IfcElement", element.file):
                 equivalent = "IfcBuildingElementProxy"
-            elif self._is_subclass_of(ifc_class, "IfcElementType", element.wrapped_data.file):
+            elif self._is_subclass_of(ifc_class, "IfcElementType", element.file):
                 equivalent = "IfcBuildingElementProxyType"
 
         if not equivalent:
-            inverses = element.wrapped_data.file.get_inverse(element)
+            inverses = element.file.get_inverse(element)
             inverse_hint = ", ".join(f"#{i.id()}={i.is_a()}" for i in list(inverses)[:3])
             if len(inverses) > 3:
                 inverse_hint += f", … (+{len(inverses) - 3} more)"
@@ -569,6 +569,7 @@ class Migrator:
         # NOTE: `attribute` is an attribute in new file schema
         # print("Migrating attribute", element, new_element, attribute.name())
         old_file = element.file
+        value = ...
         if hasattr(element, attribute.name()):
             value = getattr(element, attribute.name())
             # print("Attribute names matched", value)
@@ -607,9 +608,7 @@ class Migrator:
             except:  # We tried our best
                 return
 
-        try:
-            value
-        except UnboundLocalError:
+        if value is ...:
             print(
                 f"Couldn't match attribute {attribute.name()} by name to migrate from {element} "
                 f"to {new_element} and there is no special mapping to handle migration "

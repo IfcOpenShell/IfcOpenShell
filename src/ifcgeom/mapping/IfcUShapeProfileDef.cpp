@@ -19,7 +19,7 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 #include "../profile_helper.h"
 
@@ -33,7 +33,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcUShapeProfileDef& inst) {
 	const double d1 = inst.WebThickness() * length_unit_;
 	const double d2 = inst.FlangeThickness() * length_unit_;
 	const double slope = inst.FlangeSlope().value_or(0.) * angle_unit_;
-	
+
 	double dy1 = 0.0f;
 	double dy2 = 0.0f;
 	double f1 = 0.0f;
@@ -54,7 +54,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcUShapeProfileDef& inst) {
 	const double tol = settings_.get<settings::Precision>().get();
 
 	if (x < tol || y < tol || d1 < tol || d2 < tol) {
-		logger_.message(::logger::LOG_NOTICE, "GEO", 298, "Skipping zero sized profile:", inst);
+		logger_.message(ifcopenshell::logger::LOG_NOTICE, "GEO", 298, "Skipping zero sized profile:", inst);
 		return nullptr;
 	}
 

@@ -21,7 +21,7 @@
 
 #define mapping POSTFIX_SCHEMA(mapping)
 
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcAnnotationFillArea& inst) {
 	auto loop = taxonomy::cast<taxonomy::loop>(map(inst.OuterBoundary()));

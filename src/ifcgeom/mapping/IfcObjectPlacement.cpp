@@ -19,14 +19,14 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 #include <deque>
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement& inst) {
 	if (placement_rel_to_type_ || placement_rel_to_instance_) {
-		using QueueItem = std::pair<IfcSchema::IfcObjectPlacement, int>;
-		std::deque<QueueItem> q = {{inst, 0}};
+		using queue_item = std::pair<IfcSchema::IfcObjectPlacement, int>;
+		std::deque<queue_item> q = {{inst, 0}};
 		while (!q.empty()) {
 			auto [placement, depth] = q.front();
 			q.pop_front();
@@ -53,13 +53,13 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement& inst) {
 				}
 			}
 #else
-			::logger::root().warning("Using --site-local-placement or --building-local-placement on IFC4.2 might have issues");
+			ifcopenshell::logger::root().warning("Using --site-local-placement or --building-local-placement on IFC4.2 might have issues");
 #endif
 		}
 	}
 
 	IfcSchema::IfcObjectPlacement relative_to;
-	express::Base transform;
+	express::base transform;
 
 	IfcSchema::IfcAxis2Placement3D fallback;
 
@@ -126,7 +126,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement& inst) {
 	if (fallback) {
         auto mapped_fallback = taxonomy::cast<taxonomy::matrix4>(map(fallback));
         if (!result->ccomponents().isApprox(mapped_fallback->ccomponents())) {
-            ::logger::root().warning("Computed placement differs from fallback", inst);
+            ifcopenshell::logger::root().warning("Computed placement differs from fallback", inst);
         }
     }
 
@@ -134,7 +134,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement& inst) {
 
 	auto abs_det = std::abs(result->ccomponents().determinant());
 	if (abs_det < 1.e-7) {
-		::logger::root().warning("Ignoring singular matrix:", inst);
+		ifcopenshell::logger::root().warning("Ignoring singular matrix:", inst);
 		return nullptr;
 	}
 

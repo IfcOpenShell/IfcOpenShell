@@ -19,13 +19,13 @@
 
 from __future__ import annotations
 
-from collections.abc import Generator, Iterable
+from collections.abc import Generator, Iterable, Sequence
 from os import PathLike, fspath
 from typing import TYPE_CHECKING, Any, Literal, Optional, TypeVar, Union, cast, overload
 
-from .. import ifcopenshell_wrapper, open
-from .. import entity_instance
-from .. import file
+import ifcopenshell
+
+from .. import entity_instance, file, ifcopenshell_wrapper, open
 from . import has_occ
 
 if TYPE_CHECKING:
@@ -35,9 +35,11 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 ShapeElementType = Union[
-    ifcopenshell_wrapper.BRepElement, ifcopenshell_wrapper.TriangulationElement, ifcopenshell_wrapper.SerializedElement
+    ifcopenshell_wrapper.native_element,
+    ifcopenshell_wrapper.triangulation_element,
+    ifcopenshell_wrapper.serialized_element,
 ]
-ShapeType = Union[ifcopenshell_wrapper.BRep, ifcopenshell_wrapper.Triangulation, ifcopenshell_wrapper.Serialization]
+ShapeType = Union[ifcopenshell_wrapper.native, ifcopenshell_wrapper.triangulation, ifcopenshell_wrapper.serialization]
 
 
 def wrap_shape_creation(settings, shape):
@@ -52,7 +54,7 @@ if has_occ:
     except ImportError:
         from OCC import TopoDS  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
-    def wrap_shape_creation(settings: settings, shape: ifcopenshell_wrapper.Element):
+    def wrap_shape_creation(settings: settings, shape: ifcopenshell_wrapper.element):
         if getattr(settings, "use_python_opencascade", False):
             return utils.create_shape_from_serialization(shape)
         else:
@@ -63,8 +65,12 @@ SETTING = Literal[
     "angle-unit",
     "apply-default-materials",
     "apply-offset",
+    "auto-elevation",
+    "auto-section",
+    "base-uri",
     "boolean-attempt-2d",
     "building-local-placement",
+    "bounds",
     "cache-shapes",
     "cgal-original-edges",
     "cgal-smooth-angle-degrees",
@@ -72,14 +78,19 @@ SETTING = Literal[
     "compute-curvature",
     "context-identifiers",
     "context-ids",
+    "context-priorities",
     "context-types",
     "convert-back-units",
     "debug",
     "defer-processing-first-element",
     "dimensionality",
+    "digits",
     "disable-boolean-result",
     "disable-opening-subtractions",
     "edge-arrows",
+    "ecef",
+    "elevation-ref",
+    "elevation-ref-guid",
     "element-hierarchy",
     "enable-layerset-slicing",
     "force-space-transparency",
@@ -93,6 +104,7 @@ SETTING = Literal[
     "make-volume",
     "max-offset-deviation",
     "max-offset",
+    "max-voids-per-element",
     "mesher-angular-deflection",
     "mesher-linear-deflection",
     "model-offset",
@@ -103,37 +115,67 @@ SETTING = Literal[
     "no-wire-intersection-check",
     "no-wire-intersection-tolerance",
     "permissive-shape-reuse",
+    "print-space-areas",
+    "print-space-names",
     "precision-factor",
     "precision",
+    "profile-threshold",
     "reorient-shells",
     "site-local-placement",
+    "scale",
+    "section-height",
+    "section-height-from-storeys",
+    "section-ref",
+    "separate-z-up-node",
+    "space-name-transform",
+    "storey-height-line-length",
     "surface-colour",
+    "svg-emit-flush-edges",
+    "svg-mirror-x",
+    "svg-mirror-y",
+    "svg-no-css",
+    "svg-poly",
+    "svg-prefilter",
+    "svg-project",
+    "svg-render-crease-edges",
+    "svg-render-sharp-edges",
+    "svg-ridge-angle-min-degrees",
+    "svg-segment-projection",
+    "svg-subtract-before",
+    "svg-unify-inputs",
+    "svg-use-edge-classification",
+    "svg-valley-angle-min-degrees",
+    "svg-without-storeys",
+    "svg-write-poly",
+    "svg-xmlns",
     "triangulation-type",
     "unify-shapes",
     "use-material-names",
+    "use-element-guids",
+    "use-element-names",
+    "use-element-step-ids",
+    "use-element-types",
     "use-python-opencascade",
     "use-world-coords",
     "validate",
     "weld-vertices",
-]
-SERIALIZER_SETTING = Literal[
-    "base-uri",
-    "use-element-names",
-    "use-element-guids",
-    "use-element-step-ids",
-    "use-element-types",
     "y-up",
-    "ecef",
-    "digits",
     "wkt-use-section",
-    "separate-z-up-node",
+    "center",
+    "draw-storey-heights",
+    "door-arcs",
 ]
 
 # NOTE: hybrid-cgal-simple-opencascade is added just as an example
 # It's possible to use any hybrid combination by the format below:
 # "hybrid-library1-library2".
-# List is updated from AbstractKernel.cpp.
-GEOMETRY_LIBRARY = Literal["cgal", "cgal-simple", "opencascade", "hybrid-cgal-simple-opencascade"]
+# List is updated from abstract_kernel.cpp.
+GEOMETRY_LIBRARY = Literal["cgal", "cgal-simple", "manifold", "opencascade", "hybrid-cgal-simple-opencascade"]
+
+
+def has_geometry_library(geometry_library: str) -> bool:
+    """Return whether a geometry kernel library can be loaded."""
+    return ifcopenshell_wrapper.has_geometry_library(geometry_library)
 
 
 class missing_setting:
@@ -164,17 +206,13 @@ class settings_mixin:
         return "%s(%s)" % (type(self).__name__, ", ".join(map(fmt_pair, self.setting_names())))
 
     @staticmethod
-    def name(k: str) -> Union[SETTING, SERIALIZER_SETTING]:
+    def name(k: str) -> SETTING:
         return k.lower().replace("_", "-")
 
     @staticmethod
-    def rname(k: Union[SETTING, SERIALIZER_SETTING]) -> str:
+    def rname(k: SETTING) -> str:
         return k.upper().replace("-", "_")
 
-    @overload
-    def set(self: settings, k: SETTING, v: Any) -> None: ...
-    @overload
-    def set(self: serializer_settings, k: SERIALIZER_SETTING, v: Any) -> None: ...
     def set(self, k: SETTING, v: Any) -> None:
         """
         Set value of the setting named `k` to `v`.
@@ -192,10 +230,6 @@ class settings_mixin:
         else:
             self.set_(self.name(k), v)
 
-    @overload
-    def get(self: settings, k: SETTING) -> Any: ...
-    @overload
-    def get(self: serializer_settings, k: SERIALIZER_SETTING) -> Any: ...
     def get(self, k: str) -> Any:
         """
         Return value of the setting named `k`.
@@ -207,20 +241,12 @@ class settings_mixin:
             return self.use_python_opencascade
         return self.get_(k)
 
-    @overload
-    def setting_names(self: settings) -> tuple[SETTING, ...]: ...
-    @overload
-    def setting_names(self: serializer_settings) -> tuple[SERIALIZER_SETTING, ...]: ...
     def setting_names(self) -> tuple[str, ...]:
         setting_names = super().setting_names()
         if isinstance(self, settings):
             setting_names += ("use-python-opencascade",)
         return setting_names
 
-    @overload
-    def __getattr__(self: settings, k: str) -> SETTING: ...
-    @overload
-    def __getattr__(self: serializer_settings, k: str) -> SERIALIZER_SETTING: ...
     def __getattr__(self, k: str) -> str:
         # Swig wrapper will try to access "this",
         # ensure we won't accidentally call any c-extension methods
@@ -231,7 +257,7 @@ class settings_mixin:
         if k in map(self.rname, self.setting_names()):
             return k
         else:
-            raise AttributeError("'Settings' object has no attribute '%s'" % k)
+            raise AttributeError("'settings' object has no attribute '%s'" % k)
 
     def build_parser(self, parser) -> None:
         """
@@ -253,7 +279,7 @@ class settings_mixin:
         }
         for nm in self.setting_names():
             if nm == "use-python-opencascade":
-                ty == "bool"
+                ty = "bool"
             else:
                 ty = self.get_type(nm)
             if ty == "bool":
@@ -283,15 +309,11 @@ class settings_mixin:
                 self.set(k.replace("_", "-"), v)
 
 
-class serializer_settings(settings_mixin, ifcopenshell_wrapper.SerializerSettings):
-    pass
-
-
-class settings(settings_mixin, ifcopenshell_wrapper.Settings):
+class settings(settings_mixin, ifcopenshell_wrapper.settings):
     use_python_opencascade = False
 
 
-class iterator(ifcopenshell_wrapper.Iterator):
+class iterator(ifcopenshell_wrapper.iterator):
     def __init__(
         self,
         settings: settings,
@@ -303,8 +325,7 @@ class iterator(ifcopenshell_wrapper.Iterator):
         logger=None,
     ):
         self.settings = settings
-        if logger is None and (logger_type := getattr(ifcopenshell_wrapper, "logger", None)):
-            logger = logger_type.Root()
+        logger = ifcopenshell.logger_or_root(logger)
         if isinstance(file_or_filename, file):
             self.file = file
             file_or_filename = file_or_filename
@@ -324,12 +345,13 @@ class iterator(ifcopenshell_wrapper.Iterator):
             include_or_exclude_type = set(x.__class__.__name__ for x in include_or_exclude)
 
             if include_or_exclude_type == {"entity_instance"}:
-                include_or_exclude = cast(set[entity_instance], include_or_exclude)
+                include_or_exclude = cast(list[entity_instance], include_or_exclude)
 
-                if not all((last_inst := inst).is_a("IfcProduct") for inst in include_or_exclude):
-                    raise ValueError(
-                        f"include and exclude need to be an aggregate of IfcProduct. Violating element: '{last_inst}'."
-                    )
+                for inst in include_or_exclude:
+                    if not inst.is_a("IfcProduct"):
+                        raise ValueError(
+                            f"include and exclude need to be an aggregate of IfcProduct. Violating element: '{inst}'."
+                        )
 
                 initializer = ifcopenshell_wrapper.construct_iterator_with_include_exclude_id
 
@@ -345,17 +367,17 @@ class iterator(ifcopenshell_wrapper.Iterator):
                 include is not None,
                 num_threads,
             )
-            self.this = initializer(*args, *((logger,) if logger is not None else ()))
+            self.this = initializer(*args, *ifcopenshell.optional_logger_args(logger))
         else:
             args = (geometry_library, self.settings, file_or_filename, num_threads)
-            self.this = ifcopenshell_wrapper.construct_iterator(*args, *((logger,) if logger is not None else ()))
+            self.this = ifcopenshell_wrapper.construct_iterator(*args, *ifcopenshell.optional_logger_args(logger))
 
     if has_occ:
 
         def get(self):
-            return wrap_shape_creation(self.settings, ifcopenshell_wrapper.Iterator.get(self))
+            return wrap_shape_creation(self.settings, ifcopenshell_wrapper.iterator.get(self))
 
-    def __iter__(self) -> Generator[IteratorOutput, None, None]:
+    def __iter__(self) -> Generator[IteratorOutput]:
         if self.initialize():
             while True:
                 yield self.get()
@@ -363,7 +385,7 @@ class iterator(ifcopenshell_wrapper.Iterator):
                     break
 
     def get_task_products(self):
-        return entity_instance.wrap_value(ifcopenshell_wrapper.Iterator.get_task_products(self), self.file)
+        return entity_instance.wrap_value(ifcopenshell_wrapper.iterator.get_task_products(self), self.file)
 
 
 ClashType = Literal["protrusion", "pierce", "collision", "clearance"]
@@ -371,13 +393,25 @@ CLASH_TYPE_ITEMS = ("protrusion", "pierce", "collision", "clearance")
 
 
 class tree(ifcopenshell_wrapper.tree):
-    def __init__(self, file: Optional[file] = None, settings: Optional[settings] = None):
-        args = [self]
+    def __init__(
+        self,
+        file: Optional[file] = None,
+        settings: Optional[settings] = None,
+        backend: str | None = "opencascade.brep",
+    ):
+        if hasattr(ifcopenshell_wrapper, "create_tree"):
+            # The object is constructed by the tree registry; adopt its pointer.
+            # SWIG does not generate keyword argument handling for overloaded
+            # methods, hence the select() and select_box() dispatchers below.
+            constructed = ifcopenshell_wrapper.create_tree(backend)
+            self.this = constructed.this
+            self.thisown = True
+            constructed.thisown = False
+        else:
+            ifcopenshell_wrapper.tree.__init__(self)
+
         if file is not None:
-            args.append(file)
-            if settings is not None:
-                args.append(settings)
-        ifcopenshell_wrapper.tree.__init__(*args)
+            self.add_file(file, settings if settings is not None else ifcopenshell_wrapper.settings())
 
     def add_file(self, file: file, settings: settings) -> None:
         ifcopenshell_wrapper.tree.add_file(self, file, settings)
@@ -386,19 +420,10 @@ class tree(ifcopenshell_wrapper.tree):
         ifcopenshell_wrapper.tree.add_file(self, iterator)
 
     def select(
-        self,
-        value: Union[entity_instance, ifcopenshell_wrapper.BRepElement, tuple[float, float, float]],
-        **kwargs,
+        self, value: Union[entity_instance, ifcopenshell_wrapper.native_element, tuple[float, float, float]], **kwargs
     ) -> list[entity_instance]:
-        def unwrap(value):
-            if isinstance(value, entity_instance):
-                return value
-            elif all(map(lambda v: hasattr(value, v), "XYZ")):
-                return value.X(), value.Y(), value.Z()
-            return value
-
-        args = [self, unwrap(value)]
-        if isinstance(value, (entity_instance, ifcopenshell_wrapper.BRepElement)):
+        args = [self, value]
+        if isinstance(value, (entity_instance, ifcopenshell_wrapper.native_element)):
             args.append(kwargs.get("completely_within", False))
             if "extend" in kwargs:
                 args.append(kwargs["extend"])
@@ -408,29 +433,12 @@ class tree(ifcopenshell_wrapper.tree):
         return ifcopenshell_wrapper.tree.select(*args)
 
     def select_box(self, value, **kwargs) -> list[entity_instance]:
-        def unwrap(value):
-            if isinstance(value, entity_instance):
-                return value
-            elif hasattr(value, "Get"):
-                return value.Get()[:3], value.Get()[3:]
-            return value
-
-        args = [self, unwrap(value)]
+        args = [self, value]
         if "extend" in kwargs or "completely_within" in kwargs:
             args.append(kwargs.get("completely_within", False))
         if "extend" in kwargs:
             args.append(kwargs.get("extend", -1.0e-5))
         return ifcopenshell_wrapper.tree.select_box(*args)
-
-    def clash_intersection_many(
-        self,
-        set_a: Iterable[entity_instance],
-        set_b: Iterable[entity_instance],
-        tolerance: float = 0.002,
-        check_all: bool = True,
-    ) -> tuple[ifcopenshell_wrapper.clash, ...]:
-        args = [self, set_a, set_b, tolerance, check_all]
-        return ifcopenshell_wrapper.tree.clash_intersection_many(*args)
 
     def clash_collision_many(
         self, set_a: Iterable[entity_instance], set_b: Iterable[entity_instance], allow_touching=False
@@ -448,6 +456,22 @@ class tree(ifcopenshell_wrapper.tree):
         args = [self, set_a, set_b, clearance, check_all]
         return ifcopenshell_wrapper.tree.clash_clearance_many(*args)
 
+    def clash_intersection_many(
+        self,
+        set_a: Iterable[entity_instance],
+        set_b: Iterable[entity_instance],
+        tolerance: float = 0.002,
+        check_all: bool = True,
+    ) -> tuple[ifcopenshell_wrapper.clash, ...]:
+        args = [self, set_a, set_b, tolerance, check_all]
+        return ifcopenshell_wrapper.tree.clash_intersection_many(*args)
+
+    def select_ray(
+        self, origin: Sequence[float], direction: Sequence[float], length: float = 1000.0
+    ) -> ifcopenshell_wrapper.ray_intersection_results:
+        args = [self, origin, direction, length]
+        return ifcopenshell_wrapper.tree.select_ray(*args)
+
     @staticmethod
     def get_clash_type(clash_type_i: int) -> ClashType:
         """Convert clash type index to a readable string format.
@@ -463,12 +487,12 @@ def create_shape(
     repr: Optional[entity_instance] = None,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
     logger: Optional[ifcopenshell.logger] = None,
-) -> Union[ShapeType, ShapeElementType, ifcopenshell_wrapper.Transformation, utils.shape_tuple, TopoDS.TopoDS_Shape]:
+) -> Union[ShapeType, ShapeElementType, ifcopenshell_wrapper.transformation, utils.shape_tuple, TopoDS.TopoDS_Shape]:
     """
     Returns a geometric interpretation of the IFC entity instance
 
-    Note that in Python, you must store a reference to the element returned by this function to prevent garbage
-    collection when you access its children. See #1124.
+    The returned element's ``geometry`` keeps a reference to its owning element, so accessing children
+    (e.g. ``create_shape(...).geometry.verts``) no longer requires holding onto the element. See #1124.
 
     :raises RuntimeError: If failed to process shape. You can turn detailed logging to get more details.
 
@@ -477,7 +501,7 @@ def create_shape(
         - `inst` is IfcRepresentation and `repr` is None -> ShapeType\n
         - `inst` is IfcRepresentationItem and `repr` is None -> ShapeType\n
         - `inst` is IfcProfileDef and `repr` is None -> ShapeType\n
-        - `inst` is IfcPlacement / IfcObjectPlacement -> Transformation\n
+        - `inst` is IfcPlacement / IfcObjectPlacement -> transformation\n
         - `inst` is IfcTypeProduct and `repr` is None -> None\n
         - `inst` is IfcTypeProduct and `repr` is provided -> RuntimeError
         (for IfcTypeProducts provide just IfcRepresentation as `inst`).\n
@@ -509,11 +533,79 @@ def create_shape(
     return wrap_shape_creation(
         settings,
         (
-            ifcopenshell_wrapper.create_shape(settings, inst, repr, geometry_library, *((logger,) if logger is not None else ()),)
+            ifcopenshell_wrapper.create_shape(
+                settings,
+                inst,
+                repr,
+                geometry_library,
+                *ifcopenshell.optional_logger_args(logger),
+            )
             if repr
-            else ifcopenshell_wrapper.create_shape(settings, inst, geometry_library, *((logger,) if logger is not None else ()),)
+            else ifcopenshell_wrapper.create_shape(
+                settings,
+                inst,
+                geometry_library,
+                *ifcopenshell.optional_logger_args(logger),
+            )
         ),
     )
+
+
+class kernel:
+    """A reusable geometry kernel bound to a (geometry library, file, settings) triple.
+
+    ``ifcopenshell.geom.create_shape`` constructs a new geometry kernel on every
+    call, which repeats the backend resolution (including plugin discovery for
+    hybrid kernels) and discards the mapping and conversion caches afterwards.
+    This class performs that construction once so that converting many products
+    one by one reuses the same kernel, mapping and caches, similar to what
+    ``ifcopenshell.geom.iterator`` does internally.
+
+    The kernel is bound at construction: the settings are copied and the file
+    reference is kept, so later changes to the settings object do not affect an
+    existing kernel and instances passed to :meth:`create_shape` must belong to
+    the bound file.
+
+    Example:
+
+    .. code:: python
+
+        settings = ifcopenshell.geom.settings()
+        k = ifcopenshell.geom.kernel(settings, ifc_file, geometry_library="hybrid-cgal-simple-opencascade")
+        for product in ifc_file.by_type("IfcProduct"):
+            if product.Representation:
+                shape = k.create_shape(product)
+    """
+
+    def __init__(
+        self,
+        settings: settings,
+        file: file,
+        geometry_library: GEOMETRY_LIBRARY = "opencascade",
+        logger: Optional[ifcopenshell.logger] = None,
+    ):
+        self.settings = settings
+        self.file = file
+        self.wrapped = ifcopenshell_wrapper.geometry_kernel(
+            geometry_library, file, settings, *ifcopenshell.optional_logger_args(logger)
+        )
+
+    def create_shape(
+        self,
+        inst: entity_instance,
+        repr: Optional[entity_instance] = None,
+    ) -> Union[
+        ShapeType, ShapeElementType, ifcopenshell_wrapper.transformation, utils.shape_tuple, TopoDS.TopoDS_Shape
+    ]:
+        """Identical to :func:`create_shape` but reuses this kernel across calls.
+
+        See :func:`create_shape` for the possible return types; the settings and
+        geometry library bound at construction are used for every call.
+        """
+        return wrap_shape_creation(
+            self.settings,
+            self.wrapped.create_shape(inst, repr) if repr else self.wrapped.create_shape(inst),
+        )
 
 
 def map_shape(settings: settings, inst: entity_instance) -> ifcopenshell_wrapper.item:
@@ -531,18 +623,14 @@ def map_shape(settings: settings, inst: entity_instance) -> ifcopenshell_wrapper
 
 
 @overload
-def consume_iterator(it: iterator, with_progress: Literal[False] = False) -> Generator[IteratorOutput, None, None]: ...
+def consume_iterator(it: iterator, with_progress: Literal[False] = False) -> Generator[IteratorOutput]: ...
 @overload
-def consume_iterator(
-    it: iterator, with_progress: Literal[True]
-) -> Generator[tuple[int, IteratorOutput], None, None]: ...
+def consume_iterator(it: iterator, with_progress: Literal[True]) -> Generator[tuple[int, IteratorOutput]]: ...
 @overload
-def consume_iterator(
-    it: iterator, with_progress: bool
-) -> Generator[Union[IteratorOutput, tuple[int, IteratorOutput]], None, None]: ...
+def consume_iterator(it: iterator, with_progress: bool) -> Generator[IteratorOutput | tuple[int, IteratorOutput]]: ...
 def consume_iterator(
     it: iterator, with_progress: bool = False
-) -> Generator[Union[IteratorOutput, tuple[int, IteratorOutput]], None, None]:
+) -> Generator[IteratorOutput | tuple[int, IteratorOutput]]:
     if it.initialize():
         while True:
             if with_progress:
@@ -566,7 +654,7 @@ def iterate(
     with_progress: Literal[False] = False,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
     logger=None,
-) -> Generator[IteratorOutput, None, None]: ...
+) -> Generator[IteratorOutput]: ...
 @overload
 def iterate(
     settings: settings,
@@ -578,7 +666,7 @@ def iterate(
     with_progress: Literal[True] = True,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
     logger=None,
-) -> Generator[tuple[int, IteratorOutput], None, None]: ...
+) -> Generator[tuple[int, IteratorOutput]]: ...
 @overload
 def iterate(
     settings: settings,
@@ -590,7 +678,7 @@ def iterate(
     with_progress: bool = False,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
     logger=None,
-) -> Generator[Union[IteratorOutput, tuple[int, IteratorOutput]], None, None]: ...
+) -> Generator[IteratorOutput | tuple[int, IteratorOutput]]: ...
 def iterate(
     settings: settings,
     file_or_filename: Union[file, str],
@@ -601,7 +689,7 @@ def iterate(
     with_progress: bool = False,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
     logger=None,
-) -> Generator[Union[IteratorOutput, tuple[int, IteratorOutput]], None, None]:
+) -> Generator[IteratorOutput | tuple[int, IteratorOutput]]:
     """Get a geometry iterator for the provided file."""
     it = iterator(settings, file_or_filename, num_threads, include, exclude, geometry_library)
     yield from consume_iterator(it, with_progress=with_progress)
@@ -636,19 +724,19 @@ class _serializer_factory:
         self.extension = extension
         self.__name__ = name
 
-    def __call__(self, out_filename: Union[str, PathLike[str]], *args: Any) -> ifcopenshell_wrapper.GeometrySerializer:
-        if self.name == "obj" and len(args) == 3:
+    def __call__(self, out_filename: Union[str, PathLike[str]], *args: Any) -> ifcopenshell_wrapper.geometry_serializer:
+        if self.name == "obj" and len(args) == 2:
             output_filename = args[0]
             output_temp_filename = out_filename
-            geometry_settings, serializer_settings = args[1], args[2]
-        elif len(args) == 2:
+            settings = args[1]
+        elif len(args) == 1:
             output_filename = out_filename
             output_temp_filename = out_filename
-            geometry_settings, serializer_settings = args
+            settings = args[0]
         else:
-            obj_signature = " or (out_filename, mtl_filename, geometry_settings, serializer_settings)"
+            obj_signature = " or (out_filename, mtl_filename, settings)"
             raise TypeError(
-                f"serializers.{self.name}() expects (out_filename, geometry_settings, serializer_settings)"
+                f"serializers.{self.name}() expects (out_filename, settings)"
                 + (obj_signature if self.name == "obj" else "")
             )
 
@@ -662,7 +750,7 @@ class _serializer_factory:
             output_temp_filename = self._path(output_temp_filename)
 
         return ifcopenshell_wrapper.create_geometry_serializer(
-            self.extension, output_filename, output_temp_filename, geometry_settings, serializer_settings
+            self.extension, output_filename, output_temp_filename, settings
         )
 
     def _is_buffer(self, value: Any) -> bool:

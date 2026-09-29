@@ -30,6 +30,7 @@
 
 #include "ViewportCore.h"
 #include "WebViewportHost.h"
+#include "WebFederation.h"
 #include "Log.h"
 
 #include <emscripten/emscripten.h>
@@ -38,8 +39,11 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string>
+#include <unordered_set>
 #include <vector>
 
 namespace {
@@ -54,6 +58,9 @@ enum class NavKind { None, Orbit, Pan, Select };
 struct AppState {
     WebViewportHost host{ kCanvasSelector };
     ViewportCore    core{ &host };
+    // Federation concepts (unit, false origin, per-model transforms) that the
+    // host page drives via the ifcv_federation_* exports below.
+    WebFederation   federation{ core };
     int             last_w = 0;
     int             last_h = 0;
     // Set true by the init callback once the device + pipelines are up.
@@ -156,6 +163,64 @@ void canvasClientOrigin(double& left, double& top) {
     });
 }
 
+// Tell the page the selection changed; it pulls the new id set back through
+// ifcv_get_selection_c. Every wasm-side mutation (single pick, marquee, hide-
+// selected) fires this, so a host UI tracking multi-selection never has to poll.
+// The JS API layer (web/ifcviewer.js) also fires it after its own programmatic
+// mutations, so listeners see one event stream regardless of the source.
+void notifySelectionChanged() {
+    EM_ASM({ if (Module.__ifcvOnSelectionChange) Module.__ifcvOnSelectionChange(); });
+}
+
+// The (pointer, count) id array the JS side marshals into the wasm heap. A null
+// pointer with a zero count is a legitimate empty list — "clear the selection"
+// arrives that way — so it must not be turned into pointer arithmetic on null.
+std::vector<std::uint32_t> idsFrom(const std::uint32_t* ids, int n) {
+    if (!ids || n <= 0) return {};
+    return std::vector<std::uint32_t>(ids, ids + n);
+}
+
+// The reading half of the same convention: write `ids` ascending into `out`
+// (at most `max` of them) and return the TOTAL, so a caller that passed a
+// too-small buffer — or none at all — knows what to allocate and can ask again.
+int fillIdsAscending(const std::unordered_set<std::uint32_t>& ids,
+                     std::uint32_t* out, int max) {
+    std::vector<std::uint32_t> sorted(ids.begin(), ids.end());
+    std::sort(sorted.begin(), sorted.end());
+    const int n = std::min(int(sorted.size()), std::max(0, max));
+    if (out && n > 0) std::copy_n(sorted.begin(), n, out);
+    return int(sorted.size());
+}
+
+// Quote `s` as a JSON string literal. IFC names come straight from the model
+// and can hold quotes, backslashes and control characters; UTF-8 continuation
+// bytes are already legal JSON and pass through untouched.
+void appendJsonString(std::string& out, const char* data, std::uint32_t length) {
+    out += '"';
+    for (std::uint32_t i = 0; i < length; ++i) {
+        const unsigned char c = (unsigned char)data[i];
+        switch (c) {
+            case '"':  out += "\\\""; break;
+            case '\\': out += "\\\\"; break;
+            case '\b': out += "\\b";  break;
+            case '\f': out += "\\f";  break;
+            case '\n': out += "\\n";  break;
+            case '\r': out += "\\r";  break;
+            case '\t': out += "\\t";  break;
+            default:
+                if (c < 0x20) {
+                    char esc[7];
+                    std::snprintf(esc, sizeof(esc), "\\u%04x", c);
+                    out += esc;
+                } else {
+                    out += char(c);
+                }
+        }
+    }
+    out += '"';
+}
+
+
 NavKind classifyPress(const ViewportCore::NavBindings& b, int em_button,
                       bool shift, bool ctrl, bool alt) {
     using MB = ViewportCore::MouseBtn; using M = ViewportCore::NavMod;
@@ -190,6 +255,10 @@ EM_BOOL onMouseDown(int, const EmscriptenMouseEvent* e, void* user) {
         app->nav_drag_px = 0.0f;
         app->down_x      = e->targetX;  // canvas-relative CSS px
         app->down_y      = e->targetY;
+        // Show the pivot triad for the duration of an orbit / pan drag, so
+        // it's visible what the camera turns around (matches the desktop).
+        if (kind == NavKind::Orbit || kind == NavKind::Pan)
+            app->core.setPivotIndicatorVisible(true);
     }
     return EM_TRUE;
 }
@@ -234,6 +303,10 @@ EM_BOOL onMouseUp(int, const EmscriptenMouseEvent* e, void* user) {
     const NavKind kind       = app->nav_kind;
     app->nav_active = false;
     app->nav_kind   = NavKind::None;
+    // Drag is over — hide the pivot indicator without afterglow. Only for the
+    // gesture that raised it; a stray mouseup must not cut a wheel afterglow.
+    if (was_active && (kind == NavKind::Orbit || kind == NavKind::Pan))
+        app->core.setPivotIndicatorVisible(false);
 
     // End a section-gizmo drag (took over the press; no pick/orbit on release).
     if (app->section_dragging) {
@@ -274,6 +347,7 @@ EM_BOOL onMouseUp(int, const EmscriptenMouseEvent* e, void* user) {
             app->core.picksInRectAsync(rx, ry, rw, rh,
                 [app, add, remove](std::vector<std::uint32_t> ids) {
                     app->core.applyMarqueeToSelection(ids, add, remove);
+                    notifySelectionChanged();
                     app->host.requestFrame();
                 });
         } else {
@@ -281,12 +355,13 @@ EM_BOOL onMouseUp(int, const EmscriptenMouseEvent* e, void* user) {
             const int px = int(app->down_x * dpr), py = int(app->down_y * dpr);
             app->core.pickObjectAtAsync(px, py, [app, add, remove](std::uint32_t id) {
                 app->core.applyPickToSelection(id, add, remove);
+                notifySelectionChanged();
                 // Surface the pick to JS: resolve + emit the GUID for a real hit;
                 // emit an empty selection when a plain click deselects (id 0).
                 if (id != 0) {
                     app->core.logSelectedObjectGuidWeb(id);
                 } else if (!add && !remove) {
-                    EM_ASM({ if (Module.__ifcvOnSelect) Module.__ifcvOnSelect(0, '', -1); });
+                    EM_ASM({ if (Module.__ifcvOnSelect) Module.__ifcvOnSelect(0, '', -1, -1); });
                 }
                 app->host.requestFrame();
             });
@@ -308,6 +383,9 @@ EM_BOOL onWheel(int, const EmscriptenWheelEvent* e, void* user) {
     // In fly mode the wheel tunes move speed (Blender convention), not zoom.
     if (app->fly_mode) { app->core.flyAdjustSpeed(-float(dy) / 100.0f); return EM_TRUE; }
     app->core.dollyBy(-float(dy) / 100.0f);
+    // Pivot afterglow on wheel — visible for 600 ms so the user can see what
+    // they're zooming around without holding a drag.
+    app->core.setPivotIndicatorVisible(true, 600);
     return EM_TRUE;  // consume so the page doesn't scroll
 }
 
@@ -484,7 +562,23 @@ extern "C" EMSCRIPTEN_KEEPALIVE void raf_tick_c(void* user) {
 // completion callback. Call clear_scene_c first to replace instead of append.
 extern "C" EMSCRIPTEN_KEEPALIVE void load_sidecar_from_source_c(int source_id) {
     if (!g_app || !g_app->ready) return;
-    g_app->core.loadSidecarMetadataWeb(source_id, "source");
+    // Label the model with whatever name the host page set for this source, so
+    // logs identify it rather than saying "source" five times over.
+    std::string label = g_app->federation.modelName(source_id);
+    if (label.empty()) label = "source " + std::to_string(source_id);
+
+    g_app->core.loadSidecarMetadataWeb(source_id, std::move(label),
+        [source_id](std::uint32_t session_model_id) {
+            if (!g_app) return;
+            // Binds source -> session model, applies any transform staged
+            // before the load finished, and guesses the false origin off the
+            // first model. Only then tell JS, so a handler that reacts sees a
+            // fully placed model.
+            g_app->federation.onModelLoaded(source_id, session_model_id);
+            EM_ASM({
+                if (Module.__ifcvOnModelLoaded) Module.__ifcvOnModelLoaded($0, $1);
+            }, source_id, int(session_model_id));
+        });
 }
 
 // Drop all loaded models (used by the host page (web/ifcviewer.js) to replace the embedded sample /
@@ -492,6 +586,9 @@ extern "C" EMSCRIPTEN_KEEPALIVE void load_sidecar_from_source_c(int source_id) {
 extern "C" EMSCRIPTEN_KEEPALIVE void clear_scene_c() {
     if (!g_app || !g_app->ready) return;
     g_app->core.resetScene();
+    // Source ids are re-minted from zero by the host page's next registration
+    // pass, so stale per-source transforms would land on the wrong models.
+    g_app->federation.clear();
 }
 
 // Viewport-navigation entry points for the the host page (web/ifcviewer.js) toolbar (buttons that
@@ -521,11 +618,257 @@ extern "C" EMSCRIPTEN_KEEPALIVE int fly_is_active_c() {
 }
 
 // Visibility + X-ray, for the toolbar (same ops as the H/Shift+H/Alt+H/Alt+X keys).
-extern "C" EMSCRIPTEN_KEEPALIVE void hide_selected_c()    { if (g_app && g_app->ready) g_app->core.hideSelected(); }
+extern "C" EMSCRIPTEN_KEEPALIVE void hide_selected_c() {
+    if (!g_app || !g_app->ready) return;
+    g_app->core.hideSelected();   // hiding deselects
+    notifySelectionChanged();
+}
 extern "C" EMSCRIPTEN_KEEPALIVE void isolate_selected_c() { if (g_app && g_app->ready) g_app->core.isolateSelected(); }
 extern "C" EMSCRIPTEN_KEEPALIVE void show_all_c()         { if (g_app && g_app->ready) g_app->core.showAll(); }
+extern "C" EMSCRIPTEN_KEEPALIVE void hide_all_c()         { if (g_app && g_app->ready) g_app->core.hideAll(); }
 extern "C" EMSCRIPTEN_KEEPALIVE void toggle_xray_c()      { if (g_app && g_app->ready) g_app->core.toggleXray(); }
 extern "C" EMSCRIPTEN_KEEPALIVE int  xray_is_active_c()   { return (g_app && g_app->ready && g_app->core.xrayActive()) ? 1 : 0; }
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_selection_outline_c(int on) {
+    if (!g_app || !g_app->ready) return;
+    g_app->core.setSelectionOutlineEnabled(on != 0);
+    g_app->host.requestFrame();
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int  ifcv_selection_outline_is_on_c() {
+    return (g_app && g_app->ready && g_app->core.selectionOutlineEnabled()) ? 1 : 0;
+}
+
+// ===========================================================================
+// Scripting API (web/ifcviewer.js wraps these into the IfcViewer object)
+// ===========================================================================
+//
+// Arrays cross the boundary as (pointer, count) into the wasm heap; JS
+// allocates with _malloc, fills HEAPU32, calls, frees. The getters follow the
+// "ask twice" convention: they always return the TOTAL count and fill at most
+// `max` entries, so a caller can size a buffer with (null, 0) and call again.
+// Ids are object_ids — globally unique across federated models. The JS layer
+// maps IFC GUIDs onto them from the element table (ifcv_request_objects_c).
+
+// Camera state, as 9 floats: target xyz, distance, yaw°, pitch°, eye xyz. Eye
+// comes from the core rather than being re-derived in JS, so the orbit
+// convention has exactly one definition.
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_get_camera_c(float* out) {
+    if (!g_app || !g_app->ready || !out) return;
+    const ViewportCore::CameraState s = g_app->core.cameraState();
+    const Eigen::Vector3f eye = g_app->core.cameraEye();
+    out[0] = s.target.x(); out[1] = s.target.y(); out[2] = s.target.z();
+    out[3] = s.distance;   out[4] = s.yaw;        out[5] = s.pitch;
+    out[6] = eye.x();      out[7] = eye.y();      out[8] = eye.z();
+}
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_camera_c(float tx, float ty, float tz,
+                                                       float dist, float yaw, float pitch) {
+    if (!g_app || !g_app->ready) return;
+    g_app->core.setCamera(tx, ty, tz, dist, yaw, pitch);
+}
+// toggleProjection is the only projection mutator in the core; drive it to the
+// requested state so JS doesn't have to read-then-toggle.
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_ortho_c(int on) {
+    if (!g_app || !g_app->ready) return;
+    if (bool(on) != g_app->core.projectionOrtho()) g_app->core.toggleProjection();
+}
+
+// Background colour, RGBA in [0..1]. Alpha 0 clears the canvas to nothing, so
+// whatever the host page has stacked behind it shows through. See
+// ViewportCore::setBackgroundColor.
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_background_c(float r, float g,
+                                                           float b, float a) {
+    if (!g_app || !g_app->ready) return;
+    g_app->core.setBackgroundColor(r, g, b, a);
+}
+
+// Mouse navigation scheme: "blender" | "rhino" | "revit" | "web". The preset
+// only rewrites the button/modifier table classifyPress reads, so unlike the
+// rest of the scripting API it does not need the GPU app to be live — a host
+// page can pick its scheme the moment the module resolves. Unknown names fall
+// back to blender inside the core; web/ifcviewer.js rejects them before they
+// get here so a typo is an error rather than a silent scheme change.
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_nav_preset_c(const char* name) {
+    if (!g_app || !name) return;
+    g_app->core.setNavPreset(name);
+}
+
+// Selection.
+extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_get_selection_c(std::uint32_t* out, int max) {
+    if (!g_app || !g_app->ready) return 0;
+    return fillIdsAscending(g_app->core.selection().selectionIds(), out, max);
+}
+extern "C" EMSCRIPTEN_KEEPALIVE std::uint32_t ifcv_get_active_object_c() {
+    return (g_app && g_app->ready) ? g_app->core.selection().activeId() : 0u;
+}
+// mode: 0 replace (n == 0 clears), 1 add, 2 remove. applyMarqueeToSelection is
+// the core's selection primitive and already means exactly this.
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_apply_selection_c(const std::uint32_t* ids,
+                                                            int n, int mode) {
+    if (!g_app || !g_app->ready) return;
+    g_app->core.applyMarqueeToSelection(idsFrom(ids, n), mode == 1, mode == 2);
+}
+
+// Per-object visibility. show_all_c / hide_all_c above cover the bulk cases.
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_visible_c(const std::uint32_t* ids,
+                                                        int n, int visible) {
+    if (!g_app || !g_app->ready) return;
+    g_app->core.setObjectsVisible(idsFrom(ids, n), visible != 0);
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_get_hidden_c(std::uint32_t* out, int max) {
+    if (!g_app || !g_app->ready) return 0;
+    return fillIdsAscending(g_app->core.hiddenIds(), out, max);
+}
+
+// Colour override. rgba8 is packed 0xAABBGGRR; 0 restores the baked colour.
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_color_c(const std::uint32_t* ids, int n,
+                                                      std::uint32_t rgba8) {
+    if (!g_app || !g_app->ready) return;
+    g_app->core.setObjectsColor(idsFrom(ids, n), rgba8);
+}
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_clear_colors_c() {
+    if (g_app && g_app->ready) g_app->core.clearObjectColors();
+}
+
+// ---- Federation ---------------------------------------------------------
+//
+// The concepts an .ifcfed carries, minus the file format: a federation unit, a
+// false origin, and a per-model transform + display name. A host page that
+// wants to read .ifcfed JSON (or a cloud manifest) parses it in JS and drives
+// these. Models are addressed by the JS source id — the value registered
+// before loading — so a transform can be set before the model has streamed.
+//
+// Angles are degrees, xyz/b/pivot are in the federation unit and `a` is in the
+// model's project or map unit depending on a_frame, matching the desktop
+// authoring model exactly (see FederationMath.h).
+
+// Federation unit, e.g. ("METRE","") or ("foot",""), or ("METRE","MILLI").
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_federation_unit_c(const char* name,
+                                                                const char* prefix) {
+    if (!g_app || !name) return;
+    FederationConfig cfg;
+    cfg.unit_name   = name;
+    cfg.unit_prefix = prefix ? prefix : "";
+    g_app->federation.setConfig(cfg);
+}
+
+// Nominate xyz (federation unit) as the origin, with an optional grid-north
+// heading. Setting this suppresses the automatic first-model guess.
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_false_origin_c(double x, double y, double z,
+                                                             double rz_deg) {
+    if (!g_app) return;
+    FederatedFalseOrigin origin;
+    origin.xyz    = Eigen::Vector3d(x, y, z);
+    origin.rz_deg = rz_deg;
+    g_app->federation.setFalseOrigin(origin);
+}
+
+// Reads back the active origin — including one the guess produced — as
+// [x, y, z, rz_deg, explicit]. `explicit` is 1 when a host set it.
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_get_false_origin_c(double* out) {
+    if (!g_app || !out) return;
+    const FederatedFalseOrigin& o = g_app->federation.falseOrigin();
+    out[0] = o.xyz.x(); out[1] = o.xyz.y(); out[2] = o.xyz.z();
+    out[3] = o.rz_deg;
+    out[4] = g_app->federation.falseOriginIsExplicit() ? 1.0 : 0.0;
+}
+
+// "Rotate about pivot, then translate so point a lands on point b."
+// a_frame: 0 = ModelLocal (a is pre-CoordinateOperation, project units),
+//          1 = ModelGlobal (a is post-CoordinateOperation, map units).
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_model_transform_c(
+        int source_id, int a_frame,
+        double ax, double ay, double az,
+        double bx, double by, double bz,
+        double rx, double ry, double rz,
+        double px, double py, double pz) {
+    if (!g_app) return;
+    ModelTransformation xf;
+    xf.a_frame  = (a_frame == 0) ? AFrame::ModelLocal : AFrame::ModelGlobal;
+    xf.a        = Eigen::Vector3d(ax, ay, az);
+    xf.b        = Eigen::Vector3d(bx, by, bz);
+    xf.rxyz_deg = Eigen::Vector3d(rx, ry, rz);
+    xf.pivot    = Eigen::Vector3d(px, py, pz);
+    g_app->federation.setModelTransformation(source_id, xf);
+}
+
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_clear_model_transform_c(int source_id) {
+    if (g_app) g_app->federation.clearModelTransformation(source_id);
+}
+
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_set_model_name_c(int source_id, const char* name) {
+    if (g_app && name) g_app->federation.setModelName(source_id, name);
+}
+
+// The model's CoordinateOperation as baked into its sidecar, so a host can see
+// what georeferencing a model actually carries: out[0] is 1 when the model has
+// one, out[1..16] the 4x4 in metres (column-major), out[17] the project length
+// unit scale and out[18] the map unit scale. Returns 0 when the source has not
+// finished loading.
+extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_get_model_georef_c(int source_id, double* out) {
+    if (!g_app || !out) return 0;
+    const std::uint32_t session_model_id = g_app->federation.sessionModelId(source_id);
+    if (session_model_id == 0) return 0;
+    ModelGeoref georef;
+    if (!g_app->core.modelGeoref(session_model_id, georef)) return 0;
+    out[0] = georef.has_coordinate_operation ? 1.0 : 0.0;
+    const Eigen::Matrix4d& m = georef.coordinate_operation_meters;
+    for (int i = 0; i < 16; ++i) out[1 + i] = m.data()[i];
+    out[17] = georef.units.project_length_to_meters;
+    out[18] = georef.units.map_unit_to_meters;
+    return 1;
+}
+
+// Every object in the scene, as JSON. Asynchronous: the element tables are
+// fetched lazily per model on web (first paint must not wait on them), so this
+// makes sure they are all resident and only then hands the page its array via
+// Module.__ifcvOnObjects(token, json). `token` correlates the reply with the
+// Promise the JS layer is holding.
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_request_objects_c(int token) {
+    if (!g_app || !g_app->ready) {
+        EM_ASM({ if (Module.__ifcvOnObjectsDone) Module.__ifcvOnObjectsDone($0); }, token);
+        return;
+    }
+    g_app->core.loadAllElementMetadataWeb([token](bool) {
+        // Partial failures are not fatal: a model whose element block failed to
+        // fetch simply contributes no rows, and the rest still resolve.
+        //
+        // Serialised one model per batch, straight from string-table slices.
+        // The whole-scene single-string version materialised three string
+        // copies per element plus a scene-sized JSON blob simultaneously —
+        // a 400+ MB transient at ~600k elements, and the wasm heap never
+        // returns pages, so that peak became the session's floor. Peak is
+        // now one model's JSON; the string keeps its capacity across models
+        // so it reallocates only up to the largest one.
+        std::string json;
+        const int model_count = g_app->core.streamingModelCount();
+        for (int model_index = 0; model_index < model_count; ++model_index) {
+            json.clear();
+            json += '[';
+            bool first = true;
+            g_app->core.visitModelElements(model_index,
+                [&](const ViewportCore::ElementSlices& e) {
+                    if (!first) json += ',';
+                    first = false;
+                    json += "{\"objectId\":";
+                    json += std::to_string(e.object_id);
+                    json += ",\"model\":";
+                    json += std::to_string(model_index);
+                    json += ",\"sourceId\":";
+                    json += std::to_string(e.source_id);
+                    json += ",\"guid\":";
+                    appendJsonString(json, e.guid, e.guid_len);
+                    json += ",\"name\":";
+                    appendJsonString(json, e.name, e.name_len);
+                    json += ",\"type\":";
+                    appendJsonString(json, e.type, e.type_len);
+                    json += '}';
+                });
+            json += ']';
+            EM_ASM({ if (Module.__ifcvOnObjectsBatch) Module.__ifcvOnObjectsBatch($0, UTF8ToString($1)); },
+                   token, json.c_str());
+        }
+        EM_ASM({ if (Module.__ifcvOnObjectsDone) Module.__ifcvOnObjectsDone($0); }, token);
+    });
+}
 
 // Section-cut tool: toggle the drop-a-plane mode, clear all planes, query state.
 extern "C" EMSCRIPTEN_KEEPALIVE void toggle_section_c() {
@@ -607,10 +950,68 @@ extern "C" EMSCRIPTEN_KEEPALIVE double ifcv_bytes_loaded_c() {
     return double(loaded_bytes);
 }
 
+// ---- Frame stats + GPU residency ------------------------------------------
+
+// The latest FrameStats as doubles, in this order (see FrameStats.h):
+//  0 fps, 1 frame_time_ms, 2 total_objects, 3 visible_objects,
+//  4 total_triangles, 5 visible_triangles, 6 draw_calls,
+//  7 vram_used_bytes, 8 vram_capacity_bytes, 9 vram_budget_bytes,
+// 10 chunks_wanted, 11 chunks_wanted_missing, 12 wanted_missing_bytes.
+// Device-wide VRAM is not included: there is no query for it on web.
+// Returns the number of values written (0 before the first frame).
+constexpr int kFrameStatsValues = 13;
+extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_get_frame_stats_c(double* out, int capacity) {
+    if (!g_app || !out || capacity < kFrameStatsValues) return 0;
+    const FrameStats& s = g_app->host.lastFrameStats();
+    out[0]  = s.fps;
+    out[1]  = s.frame_time_ms;
+    out[2]  = s.total_objects;
+    out[3]  = s.visible_objects;
+    out[4]  = s.total_triangles;
+    out[5]  = s.visible_triangles;
+    out[6]  = s.gl_draw_calls;
+    out[7]  = double(s.vram_used_bytes);
+    out[8]  = double(s.vram_capacity_bytes);
+    out[9]  = double(s.vram_budget_bytes);
+    out[10] = s.chunks_wanted;
+    out[11] = s.chunks_wanted_missing;
+    out[12] = double(s.wanted_missing_bytes);
+    return kFrameStatsValues;
+}
+
+// Per-model GPU residency, keyed by source id like the other per-model
+// exports. Unload frees everything the model holds on the GPU while it stays
+// in the scene; load brings it back (0 if the device cannot fit its buffers).
+// Neither touches visibility.
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_unload_model_c(int source_id) {
+    if (!g_app) return;
+    const std::uint32_t session_model_id = g_app->federation.sessionModelId(source_id);
+    if (session_model_id == 0) return;
+    g_app->core.unloadModel(session_model_id);
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_load_model_c(int source_id) {
+    if (!g_app) return 0;
+    const std::uint32_t session_model_id = g_app->federation.sessionModelId(source_id);
+    if (session_model_id == 0) return 0;
+    return g_app->core.loadModel(session_model_id) ? 1 : 0;
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_model_unloaded_c(int source_id) {
+    if (!g_app) return 0;
+    const std::uint32_t session_model_id = g_app->federation.sessionModelId(source_id);
+    return session_model_id != 0 && g_app->core.isModelUnloaded(session_model_id) ? 1 : 0;
+}
+extern "C" EMSCRIPTEN_KEEPALIVE double ifcv_model_vram_bytes_c(int source_id) {
+    if (!g_app) return 0.0;
+    const std::uint32_t session_model_id = g_app->federation.sessionModelId(source_id);
+    return session_model_id == 0 ? 0.0 : double(g_app->core.modelVramBytes(session_model_id));
+}
+
 int main(int /*argc*/, char** /*argv*/) {
     Log::info() << "ifcviewer-web: starting";
     g_app = new AppState();
     // Default to the web mouse scheme: LMB orbit, MMB pan, RMB select/marquee.
+    // Host pages override it with ifcv_set_nav_preset_c (IfcViewer.create's
+    // `navPreset` option) — e.g. "blender" for MMB-orbit.
     g_app->core.setNavPreset("web");
     g_app->core.initWgpuAsyncWeb([](bool ok) {
         if (!ok) {
@@ -628,13 +1029,19 @@ int main(int /*argc*/, char** /*argv*/) {
         g_app->core.buildHizPipeline();
         g_app->core.buildEdgePipeline();
         g_app->core.buildPickPipeline();
+        g_app->core.buildSelectionOutlinePipelines();
 
         // Load the embedded sample sidecar (mounted into MEMFS via
         // --embed-file in CMakeLists.txt). The sample stays on the
         // synchronous MEMFS read; user-picked files go through the
         // Blob.slice byte-range path (load_sidecar_from_blob_c) so large
         // sidecars never enter the wasm heap.
-        if (!g_app->core.loadSidecarFromPath("/sample.ifcview")) {
+        if (const std::uint32_t sample_id = g_app->core.loadSidecarFromPath("/sample.ifcview")) {
+            // Bypasses the source registry, so tell the federation directly —
+            // otherwise the first-model false-origin guess never runs for a
+            // page that only ever shows the sample.
+            g_app->federation.onModelLoadedWithoutSource(sample_id);
+        } else {
             Log::warn() << "ifcviewer-web: sample sidecar load failed";
         }
 

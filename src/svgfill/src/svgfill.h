@@ -21,19 +21,21 @@
 #ifndef SVGFILL_H
 #define SVGFILL_H
 
-#ifdef IFC_SHARED_BUILD
-#ifdef _WIN32
-#ifdef svgfill_EXPORTS
-#define SVGFILL_API __declspec(dllexport)
+#ifdef SWIG
+  #define SVGFILL_API
+#elif defined(IFC_SHARED_BUILD)
+  #ifdef _WIN32
+    #ifdef svgfill_EXPORTS
+      #define SVGFILL_API __declspec(dllexport)
+    #else
+      #define SVGFILL_API __declspec(dllimport)
+    #endif
+  #else // *nix + GCC-like compiler
+    #define SVGFILL_API __attribute__((visibility("default")))
+  #endif
 #else
-#define SVGFILL_API __declspec(dllimport)
-#endif
-#else // simply assume *nix + GCC-like compiler
-#define SVGFILL_API __attribute__((visibility("default")))
-#endif
-#else
-#define SVGFILL_API
-#endif
+  #define SVGFILL_API
+#endif // SWIG
 
 #include <array>
 #include <string>
@@ -41,7 +43,7 @@
 #include <optional>
 #include <functional>
 
-class logger;
+namespace ifcopenshell { class logger; }
 
 namespace svgfill {
 	typedef std::array<double, 2> point_2;
@@ -134,7 +136,7 @@ namespace svgfill {
         double subdivision_factor = 16.;
     };
 
-	SVGFILL_API bool arrange_polygons(arrange_polygon_settings settings, const std::vector<polygon_2>& polygons, std::vector<polygon_2>& arranged, logger& logger);
+	SVGFILL_API bool arrange_polygons(arrange_polygon_settings settings, const std::vector<polygon_2>& polygons, std::vector<polygon_2>& arranged, ifcopenshell::logger& logger);
     }
 
 #endif

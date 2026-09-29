@@ -6,12 +6,20 @@
 
 namespace ifcopenshell {
 
-	namespace geometry {
+	namespace geom {
 		struct profile_point {
 			std::array<double, 2> xy;
 			std::optional<double> radius;
 
 			profile_point(const std::array<double, 2>& p, const std::optional<double>& r = std::nullopt)
+				: xy(p), radius(r) {
+			}
+
+			// Recent Boost makes optional's converting constructor explicit,
+			// and an explicit constructor cannot be used in copy-initialization
+			// - which is what `{{x, y}, {radius}}` in the profile mappings is.
+			// Taking the double directly keeps every call site working.
+			profile_point(const std::array<double, 2>& p, double r)
 				: xy(p), radius(r) {
 			}
 		};

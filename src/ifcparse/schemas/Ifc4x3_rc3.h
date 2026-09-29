@@ -19,7 +19,7 @@
 
 /********************************************************************************
  *                                                                              *
- * This file has been generated from IFC4x3_RC2.exp. Do not make modifications  *
+ * This file has been generated from IFC4x3_RC3.exp. Do not make modifications  *
  * but instead modify the python script that has been used to generate this.    *
  *                                                                              *
  ********************************************************************************/
@@ -52,7 +52,7 @@ IFC_SCHEMA_API static void clear_schema();
 static const char* const Identifier;
 
 // Forward definitions
-class IfcActionRequest; class IfcActor; class IfcActorRole; class IfcActuator; class IfcActuatorType; class IfcAddress; class IfcAdvancedBrep; class IfcAdvancedBrepWithVoids; class IfcAdvancedFace; class IfcAirTerminal; class IfcAirTerminalBox; class IfcAirTerminalBoxType; class IfcAirTerminalType; class IfcAirToAirHeatRecovery; class IfcAirToAirHeatRecoveryType; class IfcAlarm; class IfcAlarmType; class IfcAlignment; class IfcAlignmentCant; class IfcAlignmentCantSegment; class IfcAlignmentHorizontal; class IfcAlignmentHorizontalSegment; class IfcAlignmentParameterSegment; class IfcAlignmentSegment; class IfcAlignmentVertical; class IfcAlignmentVerticalSegment; class IfcAnnotation; class IfcAnnotationFillArea; class IfcApplication; class IfcAppliedValue; class IfcApproval; class IfcApprovalRelationship; class IfcArbitraryClosedProfileDef; class IfcArbitraryOpenProfileDef; class IfcArbitraryProfileDefWithVoids; class IfcAsset; class IfcAsymmetricIShapeProfileDef; class IfcAudioVisualAppliance; class IfcAudioVisualApplianceType; class IfcAxis1Placement; class IfcAxis2Placement2D; class IfcAxis2Placement3D; class IfcAxis2PlacementLinear; class IfcBSplineCurve; class IfcBSplineCurveWithKnots; class IfcBSplineSurface; class IfcBSplineSurfaceWithKnots; class IfcBeam; class IfcBeamStandardCase; class IfcBeamType; class IfcBearing; class IfcBearingType; class IfcBlobTexture; class IfcBlock; class IfcBoiler; class IfcBoilerType; class IfcBooleanClippingResult; class IfcBooleanResult; class IfcBorehole; class IfcBoundaryCondition; class IfcBoundaryCurve; class IfcBoundaryEdgeCondition; class IfcBoundaryFaceCondition; class IfcBoundaryNodeCondition; class IfcBoundaryNodeConditionWarping; class IfcBoundedCurve; class IfcBoundedSurface; class IfcBoundingBox; class IfcBoxedHalfSpace; class IfcBridge; class IfcBuilding; class IfcBuildingElementPart; class IfcBuildingElementPartType; class IfcBuildingElementProxy; class IfcBuildingElementProxyType; class IfcBuildingStorey; class IfcBuildingSystem; class IfcBuiltElement; class IfcBuiltElementType; class IfcBuiltSystem; class IfcBurner; class IfcBurnerType; class IfcCShapeProfileDef; class IfcCableCarrierFitting; class IfcCableCarrierFittingType; class IfcCableCarrierSegment; class IfcCableCarrierSegmentType; class IfcCableFitting; class IfcCableFittingType; class IfcCableSegment; class IfcCableSegmentType; class IfcCaissonFoundation; class IfcCaissonFoundationType; class IfcCartesianPoint; class IfcCartesianPointList; class IfcCartesianPointList2D; class IfcCartesianPointList3D; class IfcCartesianTransformationOperator; class IfcCartesianTransformationOperator2D; class IfcCartesianTransformationOperator2DnonUniform; class IfcCartesianTransformationOperator3D; class IfcCartesianTransformationOperator3DnonUniform; class IfcCenterLineProfileDef; class IfcChiller; class IfcChillerType; class IfcChimney; class IfcChimneyType; class IfcCircle; class IfcCircleHollowProfileDef; class IfcCircleProfileDef; class IfcCivilElement; class IfcCivilElementType; class IfcClassification; class IfcClassificationReference; class IfcClosedShell; class IfcClothoid; class IfcCoil; class IfcCoilType; class IfcColourRgb; class IfcColourRgbList; class IfcColourSpecification; class IfcColumn; class IfcColumnStandardCase; class IfcColumnType; class IfcCommunicationsAppliance; class IfcCommunicationsApplianceType; class IfcComplexProperty; class IfcComplexPropertyTemplate; class IfcCompositeCurve; class IfcCompositeCurveOnSurface; class IfcCompositeCurveSegment; class IfcCompositeProfileDef; class IfcCompressor; class IfcCompressorType; class IfcCondenser; class IfcCondenserType; class IfcConic; class IfcConnectedFaceSet; class IfcConnectionCurveGeometry; class IfcConnectionGeometry; class IfcConnectionPointEccentricity; class IfcConnectionPointGeometry; class IfcConnectionSurfaceGeometry; class IfcConnectionVolumeGeometry; class IfcConstraint; class IfcConstructionEquipmentResource; class IfcConstructionEquipmentResourceType; class IfcConstructionMaterialResource; class IfcConstructionMaterialResourceType; class IfcConstructionProductResource; class IfcConstructionProductResourceType; class IfcConstructionResource; class IfcConstructionResourceType; class IfcContext; class IfcContextDependentUnit; class IfcControl; class IfcController; class IfcControllerType; class IfcConversionBasedUnit; class IfcConversionBasedUnitWithOffset; class IfcConveyorSegment; class IfcConveyorSegmentType; class IfcCooledBeam; class IfcCooledBeamType; class IfcCoolingTower; class IfcCoolingTowerType; class IfcCoordinateOperation; class IfcCoordinateReferenceSystem; class IfcCosine; class IfcCostItem; class IfcCostSchedule; class IfcCostValue; class IfcCourse; class IfcCourseType; class IfcCovering; class IfcCoveringType; class IfcCrewResource; class IfcCrewResourceType; class IfcCsgPrimitive3D; class IfcCsgSolid; class IfcCurrencyRelationship; class IfcCurtainWall; class IfcCurtainWallType; class IfcCurve; class IfcCurveBoundedPlane; class IfcCurveBoundedSurface; class IfcCurveSegment; class IfcCurveStyle; class IfcCurveStyleFont; class IfcCurveStyleFontAndScaling; class IfcCurveStyleFontPattern; class IfcCylindricalSurface; class IfcDamper; class IfcDamperType; class IfcDeepFoundation; class IfcDeepFoundationType; class IfcDerivedProfileDef; class IfcDerivedUnit; class IfcDerivedUnitElement; class IfcDimensionalExponents; class IfcDirection; class IfcDirectrixCurveSweptAreaSolid; class IfcDirectrixDerivedReferenceSweptAreaSolid; class IfcDirectrixDistanceSweptAreaSolid; class IfcDiscreteAccessory; class IfcDiscreteAccessoryType; class IfcDistributionBoard; class IfcDistributionBoardType; class IfcDistributionChamberElement; class IfcDistributionChamberElementType; class IfcDistributionCircuit; class IfcDistributionControlElement; class IfcDistributionControlElementType; class IfcDistributionElement; class IfcDistributionElementType; class IfcDistributionFlowElement; class IfcDistributionFlowElementType; class IfcDistributionPort; class IfcDistributionSystem; class IfcDocumentInformation; class IfcDocumentInformationRelationship; class IfcDocumentReference; class IfcDoor; class IfcDoorLiningProperties; class IfcDoorPanelProperties; class IfcDoorStandardCase; class IfcDoorStyle; class IfcDoorType; class IfcDraughtingPreDefinedColour; class IfcDraughtingPreDefinedCurveFont; class IfcDuctFitting; class IfcDuctFittingType; class IfcDuctSegment; class IfcDuctSegmentType; class IfcDuctSilencer; class IfcDuctSilencerType; class IfcEarthworksCut; class IfcEarthworksElement; class IfcEarthworksFill; class IfcEdge; class IfcEdgeCurve; class IfcEdgeLoop; class IfcElectricAppliance; class IfcElectricApplianceType; class IfcElectricDistributionBoard; class IfcElectricDistributionBoardType; class IfcElectricFlowStorageDevice; class IfcElectricFlowStorageDeviceType; class IfcElectricFlowTreatmentDevice; class IfcElectricFlowTreatmentDeviceType; class IfcElectricGenerator; class IfcElectricGeneratorType; class IfcElectricMotor; class IfcElectricMotorType; class IfcElectricTimeControl; class IfcElectricTimeControlType; class IfcElement; class IfcElementAssembly; class IfcElementAssemblyType; class IfcElementComponent; class IfcElementComponentType; class IfcElementQuantity; class IfcElementType; class IfcElementarySurface; class IfcEllipse; class IfcEllipseProfileDef; class IfcEnergyConversionDevice; class IfcEnergyConversionDeviceType; class IfcEngine; class IfcEngineType; class IfcEvaporativeCooler; class IfcEvaporativeCoolerType; class IfcEvaporator; class IfcEvaporatorType; class IfcEvent; class IfcEventTime; class IfcEventType; class IfcExtendedProperties; class IfcExternalInformation; class IfcExternalReference; class IfcExternalReferenceRelationship; class IfcExternalSpatialElement; class IfcExternalSpatialStructureElement; class IfcExternallyDefinedHatchStyle; class IfcExternallyDefinedSurfaceStyle; class IfcExternallyDefinedTextFont; class IfcExtrudedAreaSolid; class IfcExtrudedAreaSolidTapered; class IfcFace; class IfcFaceBasedSurfaceModel; class IfcFaceBound; class IfcFaceOuterBound; class IfcFaceSurface; class IfcFacetedBrep; class IfcFacetedBrepWithVoids; class IfcFacility; class IfcFacilityPart; class IfcFailureConnectionCondition; class IfcFan; class IfcFanType; class IfcFastener; class IfcFastenerType; class IfcFeatureElement; class IfcFeatureElementAddition; class IfcFeatureElementSubtraction; class IfcFillAreaStyle; class IfcFillAreaStyleHatching; class IfcFillAreaStyleTiles; class IfcFilter; class IfcFilterType; class IfcFireSuppressionTerminal; class IfcFireSuppressionTerminalType; class IfcFixedReferenceSweptAreaSolid; class IfcFlowController; class IfcFlowControllerType; class IfcFlowFitting; class IfcFlowFittingType; class IfcFlowInstrument; class IfcFlowInstrumentType; class IfcFlowMeter; class IfcFlowMeterType; class IfcFlowMovingDevice; class IfcFlowMovingDeviceType; class IfcFlowSegment; class IfcFlowSegmentType; class IfcFlowStorageDevice; class IfcFlowStorageDeviceType; class IfcFlowTerminal; class IfcFlowTerminalType; class IfcFlowTreatmentDevice; class IfcFlowTreatmentDeviceType; class IfcFooting; class IfcFootingType; class IfcFurnishingElement; class IfcFurnishingElementType; class IfcFurniture; class IfcFurnitureType; class IfcGeographicElement; class IfcGeographicElementType; class IfcGeometricCurveSet; class IfcGeometricRepresentationContext; class IfcGeometricRepresentationItem; class IfcGeometricRepresentationSubContext; class IfcGeometricSet; class IfcGeomodel; class IfcGeoslice; class IfcGeotechnicalAssembly; class IfcGeotechnicalElement; class IfcGeotechnicalStratum; class IfcGradientCurve; class IfcGrid; class IfcGridAxis; class IfcGridPlacement; class IfcGroup; class IfcHalfSpaceSolid; class IfcHeatExchanger; class IfcHeatExchangerType; class IfcHumidifier; class IfcHumidifierType; class IfcIShapeProfileDef; class IfcImageTexture; class IfcImpactProtectionDevice; class IfcImpactProtectionDeviceType; class IfcInclinedReferenceSweptAreaSolid; class IfcIndexedColourMap; class IfcIndexedPolyCurve; class IfcIndexedPolygonalFace; class IfcIndexedPolygonalFaceWithVoids; class IfcIndexedTextureMap; class IfcIndexedTriangleTextureMap; class IfcInterceptor; class IfcInterceptorType; class IfcIntersectionCurve; class IfcInventory; class IfcIrregularTimeSeries; class IfcIrregularTimeSeriesValue; class IfcJunctionBox; class IfcJunctionBoxType; class IfcKerb; class IfcKerbType; class IfcLShapeProfileDef; class IfcLaborResource; class IfcLaborResourceType; class IfcLagTime; class IfcLamp; class IfcLampType; class IfcLibraryInformation; class IfcLibraryReference; class IfcLightDistributionData; class IfcLightFixture; class IfcLightFixtureType; class IfcLightIntensityDistribution; class IfcLightSource; class IfcLightSourceAmbient; class IfcLightSourceDirectional; class IfcLightSourceGoniometric; class IfcLightSourcePositional; class IfcLightSourceSpot; class IfcLine; class IfcLinearElement; class IfcLinearPlacement; class IfcLinearPositioningElement; class IfcLiquidTerminal; class IfcLiquidTerminalType; class IfcLocalPlacement; class IfcLoop; class IfcManifoldSolidBrep; class IfcMapConversion; class IfcMappedItem; class IfcMarineFacility; class IfcMaterial; class IfcMaterialClassificationRelationship; class IfcMaterialConstituent; class IfcMaterialConstituentSet; class IfcMaterialDefinition; class IfcMaterialDefinitionRepresentation; class IfcMaterialLayer; class IfcMaterialLayerSet; class IfcMaterialLayerSetUsage; class IfcMaterialLayerWithOffsets; class IfcMaterialList; class IfcMaterialProfile; class IfcMaterialProfileSet; class IfcMaterialProfileSetUsage; class IfcMaterialProfileSetUsageTapering; class IfcMaterialProfileWithOffsets; class IfcMaterialProperties; class IfcMaterialRelationship; class IfcMaterialUsageDefinition; class IfcMeasureWithUnit; class IfcMechanicalFastener; class IfcMechanicalFastenerType; class IfcMedicalDevice; class IfcMedicalDeviceType; class IfcMember; class IfcMemberStandardCase; class IfcMemberType; class IfcMetric; class IfcMirroredProfileDef; class IfcMobileTelecommunicationsAppliance; class IfcMobileTelecommunicationsApplianceType; class IfcMonetaryUnit; class IfcMooringDevice; class IfcMooringDeviceType; class IfcMotorConnection; class IfcMotorConnectionType; class IfcNamedUnit; class IfcNavigationElement; class IfcNavigationElementType; class IfcObject; class IfcObjectDefinition; class IfcObjectPlacement; class IfcObjective; class IfcOccupant; class IfcOffsetCurve; class IfcOffsetCurve2D; class IfcOffsetCurve3D; class IfcOffsetCurveByDistances; class IfcOpenCrossProfileDef; class IfcOpenShell; class IfcOpeningElement; class IfcOpeningStandardCase; class IfcOrganization; class IfcOrganizationRelationship; class IfcOrientedEdge; class IfcOuterBoundaryCurve; class IfcOutlet; class IfcOutletType; class IfcOwnerHistory; class IfcParameterizedProfileDef; class IfcPath; class IfcPavement; class IfcPavementType; class IfcPcurve; class IfcPerformanceHistory; class IfcPermeableCoveringProperties; class IfcPermit; class IfcPerson; class IfcPersonAndOrganization; class IfcPhysicalComplexQuantity; class IfcPhysicalQuantity; class IfcPhysicalSimpleQuantity; class IfcPile; class IfcPileType; class IfcPipeFitting; class IfcPipeFittingType; class IfcPipeSegment; class IfcPipeSegmentType; class IfcPixelTexture; class IfcPlacement; class IfcPlanarBox; class IfcPlanarExtent; class IfcPlane; class IfcPlant; class IfcPlate; class IfcPlateStandardCase; class IfcPlateType; class IfcPoint; class IfcPointByDistanceExpression; class IfcPointOnCurve; class IfcPointOnSurface; class IfcPolyLoop; class IfcPolygonalBoundedHalfSpace; class IfcPolygonalFaceSet; class IfcPolyline; class IfcPolynomialCurve; class IfcPort; class IfcPositioningElement; class IfcPostalAddress; class IfcPreDefinedColour; class IfcPreDefinedCurveFont; class IfcPreDefinedItem; class IfcPreDefinedProperties; class IfcPreDefinedPropertySet; class IfcPreDefinedTextFont; class IfcPresentationItem; class IfcPresentationLayerAssignment; class IfcPresentationLayerWithStyle; class IfcPresentationStyle; class IfcProcedure; class IfcProcedureType; class IfcProcess; class IfcProduct; class IfcProductDefinitionShape; class IfcProductRepresentation; class IfcProfileDef; class IfcProfileProperties; class IfcProject; class IfcProjectLibrary; class IfcProjectOrder; class IfcProjectedCRS; class IfcProjectionElement; class IfcProperty; class IfcPropertyAbstraction; class IfcPropertyBoundedValue; class IfcPropertyDefinition; class IfcPropertyDependencyRelationship; class IfcPropertyEnumeratedValue; class IfcPropertyEnumeration; class IfcPropertyListValue; class IfcPropertyReferenceValue; class IfcPropertySet; class IfcPropertySetDefinition; class IfcPropertySetTemplate; class IfcPropertySingleValue; class IfcPropertyTableValue; class IfcPropertyTemplate; class IfcPropertyTemplateDefinition; class IfcProtectiveDevice; class IfcProtectiveDeviceTrippingUnit; class IfcProtectiveDeviceTrippingUnitType; class IfcProtectiveDeviceType; class IfcProxy; class IfcPump; class IfcPumpType; class IfcQuantityArea; class IfcQuantityCount; class IfcQuantityLength; class IfcQuantitySet; class IfcQuantityTime; class IfcQuantityVolume; class IfcQuantityWeight; class IfcRail; class IfcRailType; class IfcRailing; class IfcRailingType; class IfcRailway; class IfcRamp; class IfcRampFlight; class IfcRampFlightType; class IfcRampType; class IfcRationalBSplineCurveWithKnots; class IfcRationalBSplineSurfaceWithKnots; class IfcRectangleHollowProfileDef; class IfcRectangleProfileDef; class IfcRectangularPyramid; class IfcRectangularTrimmedSurface; class IfcRecurrencePattern; class IfcReference; class IfcReferent; class IfcRegularTimeSeries; class IfcReinforcedSoil; class IfcReinforcementBarProperties; class IfcReinforcementDefinitionProperties; class IfcReinforcingBar; class IfcReinforcingBarType; class IfcReinforcingElement; class IfcReinforcingElementType; class IfcReinforcingMesh; class IfcReinforcingMeshType; class IfcRelAggregates; class IfcRelAssigns; class IfcRelAssignsToActor; class IfcRelAssignsToControl; class IfcRelAssignsToGroup; class IfcRelAssignsToGroupByFactor; class IfcRelAssignsToProcess; class IfcRelAssignsToProduct; class IfcRelAssignsToResource; class IfcRelAssociates; class IfcRelAssociatesApproval; class IfcRelAssociatesClassification; class IfcRelAssociatesConstraint; class IfcRelAssociatesDocument; class IfcRelAssociatesLibrary; class IfcRelAssociatesMaterial; class IfcRelAssociatesProfileDef; class IfcRelConnects; class IfcRelConnectsElements; class IfcRelConnectsPathElements; class IfcRelConnectsPortToElement; class IfcRelConnectsPorts; class IfcRelConnectsStructuralActivity; class IfcRelConnectsStructuralMember; class IfcRelConnectsWithEccentricity; class IfcRelConnectsWithRealizingElements; class IfcRelContainedInSpatialStructure; class IfcRelCoversBldgElements; class IfcRelCoversSpaces; class IfcRelDeclares; class IfcRelDecomposes; class IfcRelDefines; class IfcRelDefinesByObject; class IfcRelDefinesByProperties; class IfcRelDefinesByTemplate; class IfcRelDefinesByType; class IfcRelFillsElement; class IfcRelFlowControlElements; class IfcRelInterferesElements; class IfcRelNests; class IfcRelPositions; class IfcRelProjectsElement; class IfcRelReferencedInSpatialStructure; class IfcRelSequence; class IfcRelServicesBuildings; class IfcRelSpaceBoundary; class IfcRelSpaceBoundary1stLevel; class IfcRelSpaceBoundary2ndLevel; class IfcRelVoidsElement; class IfcRelationship; class IfcReparametrisedCompositeCurveSegment; class IfcRepresentation; class IfcRepresentationContext; class IfcRepresentationItem; class IfcRepresentationMap; class IfcResource; class IfcResourceApprovalRelationship; class IfcResourceConstraintRelationship; class IfcResourceLevelRelationship; class IfcResourceTime; class IfcRevolvedAreaSolid; class IfcRevolvedAreaSolidTapered; class IfcRightCircularCone; class IfcRightCircularCylinder; class IfcRoad; class IfcRoof; class IfcRoofType; class IfcRoot; class IfcRoundedRectangleProfileDef; class IfcSIUnit; class IfcSanitaryTerminal; class IfcSanitaryTerminalType; class IfcSchedulingTime; class IfcSeamCurve; class IfcSecondOrderPolynomialSpiral; class IfcSectionProperties; class IfcSectionReinforcementProperties; class IfcSectionedSolid; class IfcSectionedSolidHorizontal; class IfcSectionedSpine; class IfcSectionedSurface; class IfcSegment; class IfcSegmentedReferenceCurve; class IfcSensor; class IfcSensorType; class IfcShadingDevice; class IfcShadingDeviceType; class IfcShapeAspect; class IfcShapeModel; class IfcShapeRepresentation; class IfcShellBasedSurfaceModel; class IfcSign; class IfcSignType; class IfcSignal; class IfcSignalType; class IfcSimpleProperty; class IfcSimplePropertyTemplate; class IfcSine; class IfcSite; class IfcSlab; class IfcSlabElementedCase; class IfcSlabStandardCase; class IfcSlabType; class IfcSlippageConnectionCondition; class IfcSolarDevice; class IfcSolarDeviceType; class IfcSolidModel; class IfcSolidStratum; class IfcSpace; class IfcSpaceHeater; class IfcSpaceHeaterType; class IfcSpaceType; class IfcSpatialElement; class IfcSpatialElementType; class IfcSpatialStructureElement; class IfcSpatialStructureElementType; class IfcSpatialZone; class IfcSpatialZoneType; class IfcSphere; class IfcSphericalSurface; class IfcSpiral; class IfcStackTerminal; class IfcStackTerminalType; class IfcStair; class IfcStairFlight; class IfcStairFlightType; class IfcStairType; class IfcStructuralAction; class IfcStructuralActivity; class IfcStructuralAnalysisModel; class IfcStructuralConnection; class IfcStructuralConnectionCondition; class IfcStructuralCurveAction; class IfcStructuralCurveConnection; class IfcStructuralCurveMember; class IfcStructuralCurveMemberVarying; class IfcStructuralCurveReaction; class IfcStructuralItem; class IfcStructuralLinearAction; class IfcStructuralLoad; class IfcStructuralLoadCase; class IfcStructuralLoadConfiguration; class IfcStructuralLoadGroup; class IfcStructuralLoadLinearForce; class IfcStructuralLoadOrResult; class IfcStructuralLoadPlanarForce; class IfcStructuralLoadSingleDisplacement; class IfcStructuralLoadSingleDisplacementDistortion; class IfcStructuralLoadSingleForce; class IfcStructuralLoadSingleForceWarping; class IfcStructuralLoadStatic; class IfcStructuralLoadTemperature; class IfcStructuralMember; class IfcStructuralPlanarAction; class IfcStructuralPointAction; class IfcStructuralPointConnection; class IfcStructuralPointReaction; class IfcStructuralReaction; class IfcStructuralResultGroup; class IfcStructuralSurfaceAction; class IfcStructuralSurfaceConnection; class IfcStructuralSurfaceMember; class IfcStructuralSurfaceMemberVarying; class IfcStructuralSurfaceReaction; class IfcStyleModel; class IfcStyledItem; class IfcStyledRepresentation; class IfcSubContractResource; class IfcSubContractResourceType; class IfcSubedge; class IfcSurface; class IfcSurfaceCurve; class IfcSurfaceCurveSweptAreaSolid; class IfcSurfaceFeature; class IfcSurfaceOfLinearExtrusion; class IfcSurfaceOfRevolution; class IfcSurfaceReinforcementArea; class IfcSurfaceStyle; class IfcSurfaceStyleLighting; class IfcSurfaceStyleRefraction; class IfcSurfaceStyleRendering; class IfcSurfaceStyleShading; class IfcSurfaceStyleWithTextures; class IfcSurfaceTexture; class IfcSweptAreaSolid; class IfcSweptDiskSolid; class IfcSweptDiskSolidPolygonal; class IfcSweptSurface; class IfcSwitchingDevice; class IfcSwitchingDeviceType; class IfcSystem; class IfcSystemFurnitureElement; class IfcSystemFurnitureElementType; class IfcTShapeProfileDef; class IfcTable; class IfcTableColumn; class IfcTableRow; class IfcTank; class IfcTankType; class IfcTask; class IfcTaskTime; class IfcTaskTimeRecurring; class IfcTaskType; class IfcTelecomAddress; class IfcTendon; class IfcTendonAnchor; class IfcTendonAnchorType; class IfcTendonConduit; class IfcTendonConduitType; class IfcTendonType; class IfcTessellatedFaceSet; class IfcTessellatedItem; class IfcTextLiteral; class IfcTextLiteralWithExtent; class IfcTextStyle; class IfcTextStyleFontModel; class IfcTextStyleForDefinedFont; class IfcTextStyleTextModel; class IfcTextureCoordinate; class IfcTextureCoordinateGenerator; class IfcTextureMap; class IfcTextureVertex; class IfcTextureVertexList; class IfcThirdOrderPolynomialSpiral; class IfcTimePeriod; class IfcTimeSeries; class IfcTimeSeriesValue; class IfcTopologicalRepresentationItem; class IfcTopologyRepresentation; class IfcToroidalSurface; class IfcTrackElement; class IfcTrackElementType; class IfcTransformer; class IfcTransformerType; class IfcTransportElement; class IfcTransportElementType; class IfcTrapeziumProfileDef; class IfcTriangulatedFaceSet; class IfcTriangulatedIrregularNetwork; class IfcTrimmedCurve; class IfcTubeBundle; class IfcTubeBundleType; class IfcTypeObject; class IfcTypeProcess; class IfcTypeProduct; class IfcTypeResource; class IfcUShapeProfileDef; class IfcUnitAssignment; class IfcUnitaryControlElement; class IfcUnitaryControlElementType; class IfcUnitaryEquipment; class IfcUnitaryEquipmentType; class IfcValve; class IfcValveType; class IfcVector; class IfcVertex; class IfcVertexLoop; class IfcVertexPoint; class IfcVibrationDamper; class IfcVibrationDamperType; class IfcVibrationIsolator; class IfcVibrationIsolatorType; class IfcVienneseBend; class IfcVirtualElement; class IfcVirtualGridIntersection; class IfcVoidStratum; class IfcVoidingFeature; class IfcWall; class IfcWallElementedCase; class IfcWallStandardCase; class IfcWallType; class IfcWasteTerminal; class IfcWasteTerminalType; class IfcWaterStratum; class IfcWindow; class IfcWindowLiningProperties; class IfcWindowPanelProperties; class IfcWindowStandardCase; class IfcWindowStyle; class IfcWindowType; class IfcWorkCalendar; class IfcWorkControl; class IfcWorkPlan; class IfcWorkSchedule; class IfcWorkTime; class IfcZShapeProfileDef; class IfcZone; class IfcAbsorbedDoseMeasure; class IfcAccelerationMeasure; class IfcAmountOfSubstanceMeasure; class IfcAngularVelocityMeasure; class IfcArcIndex; class IfcAreaDensityMeasure; class IfcAreaMeasure; class IfcBinary; class IfcBoolean; class IfcBoxAlignment; class IfcCardinalPointReference; class IfcComplexNumber; class IfcCompoundPlaneAngleMeasure; class IfcContextDependentMeasure; class IfcCountMeasure; class IfcCurvatureMeasure; class IfcDate; class IfcDateTime; class IfcDayInMonthNumber; class IfcDayInWeekNumber; class IfcDescriptiveMeasure; class IfcDimensionCount; class IfcDoseEquivalentMeasure; class IfcDuration; class IfcDynamicViscosityMeasure; class IfcElectricCapacitanceMeasure; class IfcElectricChargeMeasure; class IfcElectricConductanceMeasure; class IfcElectricCurrentMeasure; class IfcElectricResistanceMeasure; class IfcElectricVoltageMeasure; class IfcEnergyMeasure; class IfcFontStyle; class IfcFontVariant; class IfcFontWeight; class IfcForceMeasure; class IfcFrequencyMeasure; class IfcGloballyUniqueId; class IfcHeatFluxDensityMeasure; class IfcHeatingValueMeasure; class IfcIdentifier; class IfcIlluminanceMeasure; class IfcInductanceMeasure; class IfcInteger; class IfcIntegerCountRateMeasure; class IfcIonConcentrationMeasure; class IfcIsothermalMoistureCapacityMeasure; class IfcKinematicViscosityMeasure; class IfcLabel; class IfcLanguageId; class IfcLengthMeasure; class IfcLineIndex; class IfcLinearForceMeasure; class IfcLinearMomentMeasure; class IfcLinearStiffnessMeasure; class IfcLinearVelocityMeasure; class IfcLogical; class IfcLuminousFluxMeasure; class IfcLuminousIntensityDistributionMeasure; class IfcLuminousIntensityMeasure; class IfcMagneticFluxDensityMeasure; class IfcMagneticFluxMeasure; class IfcMassDensityMeasure; class IfcMassFlowRateMeasure; class IfcMassMeasure; class IfcMassPerLengthMeasure; class IfcModulusOfElasticityMeasure; class IfcModulusOfLinearSubgradeReactionMeasure; class IfcModulusOfRotationalSubgradeReactionMeasure; class IfcModulusOfSubgradeReactionMeasure; class IfcMoistureDiffusivityMeasure; class IfcMolecularWeightMeasure; class IfcMomentOfInertiaMeasure; class IfcMonetaryMeasure; class IfcMonthInYearNumber; class IfcNonNegativeLengthMeasure; class IfcNormalisedRatioMeasure; class IfcNumericMeasure; class IfcPHMeasure; class IfcParameterValue; class IfcPlanarForceMeasure; class IfcPlaneAngleMeasure; class IfcPositiveInteger; class IfcPositiveLengthMeasure; class IfcPositivePlaneAngleMeasure; class IfcPositiveRatioMeasure; class IfcPowerMeasure; class IfcPresentableText; class IfcPressureMeasure; class IfcPropertySetDefinitionSet; class IfcRadioActivityMeasure; class IfcRatioMeasure; class IfcReal; class IfcRotationalFrequencyMeasure; class IfcRotationalMassMeasure; class IfcRotationalStiffnessMeasure; class IfcSectionModulusMeasure; class IfcSectionalAreaIntegralMeasure; class IfcShearModulusMeasure; class IfcSolidAngleMeasure; class IfcSoundPowerLevelMeasure; class IfcSoundPowerMeasure; class IfcSoundPressureLevelMeasure; class IfcSoundPressureMeasure; class IfcSpecificHeatCapacityMeasure; class IfcSpecularExponent; class IfcSpecularRoughness; class IfcTemperatureGradientMeasure; class IfcTemperatureRateOfChangeMeasure; class IfcText; class IfcTextAlignment; class IfcTextDecoration; class IfcTextFontName; class IfcTextTransformation; class IfcThermalAdmittanceMeasure; class IfcThermalConductivityMeasure; class IfcThermalExpansionCoefficientMeasure; class IfcThermalResistanceMeasure; class IfcThermalTransmittanceMeasure; class IfcThermodynamicTemperatureMeasure; class IfcTime; class IfcTimeMeasure; class IfcTimeStamp; class IfcTorqueMeasure; class IfcURIReference; class IfcVaporPermeabilityMeasure; class IfcVolumeMeasure; class IfcVolumetricFlowRateMeasure; class IfcWarpingConstantMeasure; class IfcWarpingMomentMeasure; class IfcActorSelect; class IfcAppliedValueSelect; class IfcAxis2Placement; class IfcBendingParameterSelect; class IfcBooleanOperand; class IfcClassificationReferenceSelect; class IfcClassificationSelect; class IfcColour; class IfcColourOrFactor; class IfcCoordinateReferenceSystemSelect; class IfcCsgSelect; class IfcCurveFontOrScaledCurveFontSelect; class IfcCurveMeasureSelect; class IfcCurveOnSurface; class IfcCurveOrEdgeCurve; class IfcCurveStyleFontSelect; class IfcDefinitionSelect; class IfcDerivedMeasureValue; class IfcDocumentSelect; class IfcFacilityPartTypeSelect; class IfcFillStyleSelect; class IfcGeometricSetSelect; class IfcGridPlacementDirectionSelect; class IfcHatchLineDistanceSelect; class IfcImpactProtectionDeviceTypeSelect; class IfcInterferenceSelect; class IfcLayeredItem; class IfcLibrarySelect; class IfcLightDistributionDataSourceSelect; class IfcMaterialSelect; class IfcMeasureValue; class IfcMetricValueSelect; class IfcModulusOfRotationalSubgradeReactionSelect; class IfcModulusOfSubgradeReactionSelect; class IfcModulusOfTranslationalSubgradeReactionSelect; class IfcObjectReferenceSelect; class IfcPointOrVertexPoint; class IfcProcessSelect; class IfcProductRepresentationSelect; class IfcProductSelect; class IfcPropertySetDefinitionSelect; class IfcResourceObjectSelect; class IfcResourceSelect; class IfcRotationalStiffnessSelect; class IfcSegmentIndexSelect; class IfcShell; class IfcSimpleValue; class IfcSizeSelect; class IfcSolidOrShell; class IfcSpaceBoundarySelect; class IfcSpatialReferenceSelect; class IfcSpecularHighlightSelect; class IfcStructuralActivityAssignmentSelect; class IfcSurfaceOrFaceSurface; class IfcSurfaceStyleElementSelect; class IfcTextFontSelect; class IfcTimeOrRatioSelect; class IfcTranslationalStiffnessSelect; class IfcTransportElementTypeSelect; class IfcTrimmingSelect; class IfcUnit; class IfcValue; class IfcVectorOrDirection; class IfcWarpingStiffnessSelect; class IfcActionRequestTypeEnum; class IfcActionSourceTypeEnum; class IfcActionTypeEnum; class IfcActuatorTypeEnum; class IfcAddressTypeEnum; class IfcAirTerminalBoxTypeEnum; class IfcAirTerminalTypeEnum; class IfcAirToAirHeatRecoveryTypeEnum; class IfcAlarmTypeEnum; class IfcAlignmentCantSegmentTypeEnum; class IfcAlignmentHorizontalSegmentTypeEnum; class IfcAlignmentTypeEnum; class IfcAlignmentVerticalSegmentTypeEnum; class IfcAnalysisModelTypeEnum; class IfcAnalysisTheoryTypeEnum; class IfcAnnotationTypeEnum; class IfcArithmeticOperatorEnum; class IfcAssemblyPlaceEnum; class IfcAudioVisualApplianceTypeEnum; class IfcBSplineCurveForm; class IfcBSplineSurfaceForm; class IfcBeamTypeEnum; class IfcBearingTypeDisplacementEnum; class IfcBearingTypeEnum; class IfcBenchmarkEnum; class IfcBoilerTypeEnum; class IfcBooleanOperator; class IfcBridgePartTypeEnum; class IfcBridgeTypeEnum; class IfcBuildingElementPartTypeEnum; class IfcBuildingElementProxyTypeEnum; class IfcBuildingSystemTypeEnum; class IfcBuiltSystemTypeEnum; class IfcBurnerTypeEnum; class IfcCableCarrierFittingTypeEnum; class IfcCableCarrierSegmentTypeEnum; class IfcCableFittingTypeEnum; class IfcCableSegmentTypeEnum; class IfcCaissonFoundationTypeEnum; class IfcChangeActionEnum; class IfcChillerTypeEnum; class IfcChimneyTypeEnum; class IfcCoilTypeEnum; class IfcColumnTypeEnum; class IfcCommunicationsApplianceTypeEnum; class IfcComplexPropertyTemplateTypeEnum; class IfcCompressorTypeEnum; class IfcCondenserTypeEnum; class IfcConnectionTypeEnum; class IfcConstraintEnum; class IfcConstructionEquipmentResourceTypeEnum; class IfcConstructionMaterialResourceTypeEnum; class IfcConstructionProductResourceTypeEnum; class IfcControllerTypeEnum; class IfcConveyorSegmentTypeEnum; class IfcCooledBeamTypeEnum; class IfcCoolingTowerTypeEnum; class IfcCostItemTypeEnum; class IfcCostScheduleTypeEnum; class IfcCourseTypeEnum; class IfcCoveringTypeEnum; class IfcCrewResourceTypeEnum; class IfcCurtainWallTypeEnum; class IfcCurveInterpolationEnum; class IfcDamperTypeEnum; class IfcDataOriginEnum; class IfcDerivedUnitEnum; class IfcDirectionSenseEnum; class IfcDiscreteAccessoryTypeEnum; class IfcDistributionBoardTypeEnum; class IfcDistributionChamberElementTypeEnum; class IfcDistributionPortTypeEnum; class IfcDistributionSystemEnum; class IfcDocumentConfidentialityEnum; class IfcDocumentStatusEnum; class IfcDoorPanelOperationEnum; class IfcDoorPanelPositionEnum; class IfcDoorStyleConstructionEnum; class IfcDoorStyleOperationEnum; class IfcDoorTypeEnum; class IfcDoorTypeOperationEnum; class IfcDuctFittingTypeEnum; class IfcDuctSegmentTypeEnum; class IfcDuctSilencerTypeEnum; class IfcEarthworksCutTypeEnum; class IfcEarthworksFillTypeEnum; class IfcElectricApplianceTypeEnum; class IfcElectricDistributionBoardTypeEnum; class IfcElectricFlowStorageDeviceTypeEnum; class IfcElectricFlowTreatmentDeviceTypeEnum; class IfcElectricGeneratorTypeEnum; class IfcElectricMotorTypeEnum; class IfcElectricTimeControlTypeEnum; class IfcElementAssemblyTypeEnum; class IfcElementCompositionEnum; class IfcEngineTypeEnum; class IfcEvaporativeCoolerTypeEnum; class IfcEvaporatorTypeEnum; class IfcEventTriggerTypeEnum; class IfcEventTypeEnum; class IfcExternalSpatialElementTypeEnum; class IfcFacilityPartCommonTypeEnum; class IfcFacilityUsageEnum; class IfcFanTypeEnum; class IfcFastenerTypeEnum; class IfcFilterTypeEnum; class IfcFireSuppressionTerminalTypeEnum; class IfcFlowDirectionEnum; class IfcFlowInstrumentTypeEnum; class IfcFlowMeterTypeEnum; class IfcFootingTypeEnum; class IfcFurnitureTypeEnum; class IfcGeographicElementTypeEnum; class IfcGeometricProjectionEnum; class IfcGlobalOrLocalEnum; class IfcGridTypeEnum; class IfcHeatExchangerTypeEnum; class IfcHumidifierTypeEnum; class IfcImpactProtectionDeviceTypeEnum; class IfcInterceptorTypeEnum; class IfcInternalOrExternalEnum; class IfcInventoryTypeEnum; class IfcJunctionBoxTypeEnum; class IfcKnotType; class IfcLaborResourceTypeEnum; class IfcLampTypeEnum; class IfcLayerSetDirectionEnum; class IfcLightDistributionCurveEnum; class IfcLightEmissionSourceEnum; class IfcLightFixtureTypeEnum; class IfcLiquidTerminalTypeEnum; class IfcLoadGroupTypeEnum; class IfcLogicalOperatorEnum; class IfcMarineFacilityTypeEnum; class IfcMarinePartTypeEnum; class IfcMechanicalFastenerTypeEnum; class IfcMedicalDeviceTypeEnum; class IfcMemberTypeEnum; class IfcMobileTelecommunicationsApplianceTypeEnum; class IfcMooringDeviceTypeEnum; class IfcMotorConnectionTypeEnum; class IfcNavigationElementTypeEnum; class IfcObjectTypeEnum; class IfcObjectiveEnum; class IfcOccupantTypeEnum; class IfcOpeningElementTypeEnum; class IfcOutletTypeEnum; class IfcPavementTypeEnum; class IfcPerformanceHistoryTypeEnum; class IfcPermeableCoveringOperationEnum; class IfcPermitTypeEnum; class IfcPhysicalOrVirtualEnum; class IfcPileConstructionEnum; class IfcPileTypeEnum; class IfcPipeFittingTypeEnum; class IfcPipeSegmentTypeEnum; class IfcPlateTypeEnum; class IfcPreferredSurfaceCurveRepresentation; class IfcProcedureTypeEnum; class IfcProfileTypeEnum; class IfcProjectOrderTypeEnum; class IfcProjectedOrTrueLengthEnum; class IfcProjectionElementTypeEnum; class IfcPropertySetTemplateTypeEnum; class IfcProtectiveDeviceTrippingUnitTypeEnum; class IfcProtectiveDeviceTypeEnum; class IfcPumpTypeEnum; class IfcRailTypeEnum; class IfcRailingTypeEnum; class IfcRailwayPartTypeEnum; class IfcRailwayTypeEnum; class IfcRampFlightTypeEnum; class IfcRampTypeEnum; class IfcRecurrenceTypeEnum; class IfcReferentTypeEnum; class IfcReflectanceMethodEnum; class IfcReinforcedSoilTypeEnum; class IfcReinforcingBarRoleEnum; class IfcReinforcingBarSurfaceEnum; class IfcReinforcingBarTypeEnum; class IfcReinforcingMeshTypeEnum; class IfcRoadPartTypeEnum; class IfcRoadTypeEnum; class IfcRoleEnum; class IfcRoofTypeEnum; class IfcSIPrefix; class IfcSIUnitName; class IfcSanitaryTerminalTypeEnum; class IfcSectionTypeEnum; class IfcSensorTypeEnum; class IfcSequenceEnum; class IfcShadingDeviceTypeEnum; class IfcSignTypeEnum; class IfcSignalTypeEnum; class IfcSimplePropertyTemplateTypeEnum; class IfcSlabTypeEnum; class IfcSolarDeviceTypeEnum; class IfcSpaceHeaterTypeEnum; class IfcSpaceTypeEnum; class IfcSpatialZoneTypeEnum; class IfcStackTerminalTypeEnum; class IfcStairFlightTypeEnum; class IfcStairTypeEnum; class IfcStateEnum; class IfcStructuralCurveActivityTypeEnum; class IfcStructuralCurveMemberTypeEnum; class IfcStructuralSurfaceActivityTypeEnum; class IfcStructuralSurfaceMemberTypeEnum; class IfcSubContractResourceTypeEnum; class IfcSurfaceFeatureTypeEnum; class IfcSurfaceSide; class IfcSwitchingDeviceTypeEnum; class IfcSystemFurnitureElementTypeEnum; class IfcTankTypeEnum; class IfcTaskDurationEnum; class IfcTaskTypeEnum; class IfcTendonAnchorTypeEnum; class IfcTendonConduitTypeEnum; class IfcTendonTypeEnum; class IfcTextPath; class IfcTimeSeriesDataTypeEnum; class IfcTrackElementTypeEnum; class IfcTransformerTypeEnum; class IfcTransitionCode; class IfcTransportElementFixedTypeEnum; class IfcTransportElementNonFixedTypeEnum; class IfcTrimmingPreference; class IfcTubeBundleTypeEnum; class IfcUnitEnum; class IfcUnitaryControlElementTypeEnum; class IfcUnitaryEquipmentTypeEnum; class IfcValveTypeEnum; class IfcVibrationDamperTypeEnum; class IfcVibrationIsolatorTypeEnum; class IfcVoidingFeatureTypeEnum; class IfcWallTypeEnum; class IfcWasteTerminalTypeEnum; class IfcWindowPanelOperationEnum; class IfcWindowPanelPositionEnum; class IfcWindowStyleConstructionEnum; class IfcWindowStyleOperationEnum; class IfcWindowTypeEnum; class IfcWindowTypePartitioningEnum; class IfcWorkCalendarTypeEnum; class IfcWorkPlanTypeEnum; class IfcWorkScheduleTypeEnum; 
+class IfcActionRequest; class IfcActor; class IfcActorRole; class IfcActuator; class IfcActuatorType; class IfcAddress; class IfcAdvancedBrep; class IfcAdvancedBrepWithVoids; class IfcAdvancedFace; class IfcAirTerminal; class IfcAirTerminalBox; class IfcAirTerminalBoxType; class IfcAirTerminalType; class IfcAirToAirHeatRecovery; class IfcAirToAirHeatRecoveryType; class IfcAlarm; class IfcAlarmType; class IfcAlignment; class IfcAlignmentCant; class IfcAlignmentCantSegment; class IfcAlignmentHorizontal; class IfcAlignmentHorizontalSegment; class IfcAlignmentParameterSegment; class IfcAlignmentSegment; class IfcAlignmentVertical; class IfcAlignmentVerticalSegment; class IfcAnnotation; class IfcAnnotationFillArea; class IfcApplication; class IfcAppliedValue; class IfcApproval; class IfcApprovalRelationship; class IfcArbitraryClosedProfileDef; class IfcArbitraryOpenProfileDef; class IfcArbitraryProfileDefWithVoids; class IfcAsset; class IfcAsymmetricIShapeProfileDef; class IfcAudioVisualAppliance; class IfcAudioVisualApplianceType; class IfcAxis1Placement; class IfcAxis2Placement2D; class IfcAxis2Placement3D; class IfcAxis2PlacementLinear; class IfcBSplineCurve; class IfcBSplineCurveWithKnots; class IfcBSplineSurface; class IfcBSplineSurfaceWithKnots; class IfcBeam; class IfcBeamStandardCase; class IfcBeamType; class IfcBearing; class IfcBearingType; class IfcBlobTexture; class IfcBlock; class IfcBoiler; class IfcBoilerType; class IfcBooleanClippingResult; class IfcBooleanResult; class IfcBorehole; class IfcBoundaryCondition; class IfcBoundaryCurve; class IfcBoundaryEdgeCondition; class IfcBoundaryFaceCondition; class IfcBoundaryNodeCondition; class IfcBoundaryNodeConditionWarping; class IfcBoundedCurve; class IfcBoundedSurface; class IfcBoundingBox; class IfcBoxedHalfSpace; class IfcBridge; class IfcBuilding; class IfcBuildingElementPart; class IfcBuildingElementPartType; class IfcBuildingElementProxy; class IfcBuildingElementProxyType; class IfcBuildingStorey; class IfcBuildingSystem; class IfcBuiltElement; class IfcBuiltElementType; class IfcBuiltSystem; class IfcBurner; class IfcBurnerType; class IfcCShapeProfileDef; class IfcCableCarrierFitting; class IfcCableCarrierFittingType; class IfcCableCarrierSegment; class IfcCableCarrierSegmentType; class IfcCableFitting; class IfcCableFittingType; class IfcCableSegment; class IfcCableSegmentType; class IfcCaissonFoundation; class IfcCaissonFoundationType; class IfcCartesianPoint; class IfcCartesianPointList; class IfcCartesianPointList2D; class IfcCartesianPointList3D; class IfcCartesianTransformationOperator; class IfcCartesianTransformationOperator2D; class IfcCartesianTransformationOperator2DnonUniform; class IfcCartesianTransformationOperator3D; class IfcCartesianTransformationOperator3DnonUniform; class IfcCenterLineProfileDef; class IfcChiller; class IfcChillerType; class IfcChimney; class IfcChimneyType; class IfcCircle; class IfcCircleHollowProfileDef; class IfcCircleProfileDef; class IfcCivilElement; class IfcCivilElementType; class IfcClassification; class IfcClassificationReference; class IfcClosedShell; class IfcClothoid; class IfcCoil; class IfcCoilType; class IfcColourRgb; class IfcColourRgbList; class IfcColourSpecification; class IfcColumn; class IfcColumnStandardCase; class IfcColumnType; class IfcCommunicationsAppliance; class IfcCommunicationsApplianceType; class IfcComplexProperty; class IfcComplexPropertyTemplate; class IfcCompositeCurve; class IfcCompositeCurveOnSurface; class IfcCompositeCurveSegment; class IfcCompositeProfileDef; class IfcCompressor; class IfcCompressorType; class IfcCondenser; class IfcCondenserType; class IfcConic; class IfcConnectedFaceSet; class IfcConnectionCurveGeometry; class IfcConnectionGeometry; class IfcConnectionPointEccentricity; class IfcConnectionPointGeometry; class IfcConnectionSurfaceGeometry; class IfcConnectionVolumeGeometry; class IfcConstraint; class IfcConstructionEquipmentResource; class IfcConstructionEquipmentResourceType; class IfcConstructionMaterialResource; class IfcConstructionMaterialResourceType; class IfcConstructionProductResource; class IfcConstructionProductResourceType; class IfcConstructionResource; class IfcConstructionResourceType; class IfcContext; class IfcContextDependentUnit; class IfcControl; class IfcController; class IfcControllerType; class IfcConversionBasedUnit; class IfcConversionBasedUnitWithOffset; class IfcConveyorSegment; class IfcConveyorSegmentType; class IfcCooledBeam; class IfcCooledBeamType; class IfcCoolingTower; class IfcCoolingTowerType; class IfcCoordinateOperation; class IfcCoordinateReferenceSystem; class IfcCosine; class IfcCostItem; class IfcCostSchedule; class IfcCostValue; class IfcCourse; class IfcCourseType; class IfcCovering; class IfcCoveringType; class IfcCrewResource; class IfcCrewResourceType; class IfcCsgPrimitive3D; class IfcCsgSolid; class IfcCurrencyRelationship; class IfcCurtainWall; class IfcCurtainWallType; class IfcCurve; class IfcCurveBoundedPlane; class IfcCurveBoundedSurface; class IfcCurveSegment; class IfcCurveStyle; class IfcCurveStyleFont; class IfcCurveStyleFontAndScaling; class IfcCurveStyleFontPattern; class IfcCylindricalSurface; class IfcDamper; class IfcDamperType; class IfcDeepFoundation; class IfcDeepFoundationType; class IfcDerivedProfileDef; class IfcDerivedUnit; class IfcDerivedUnitElement; class IfcDimensionalExponents; class IfcDirection; class IfcDirectrixCurveSweptAreaSolid; class IfcDirectrixDistanceSweptAreaSolid; class IfcDiscreteAccessory; class IfcDiscreteAccessoryType; class IfcDistributionBoard; class IfcDistributionBoardType; class IfcDistributionChamberElement; class IfcDistributionChamberElementType; class IfcDistributionCircuit; class IfcDistributionControlElement; class IfcDistributionControlElementType; class IfcDistributionElement; class IfcDistributionElementType; class IfcDistributionFlowElement; class IfcDistributionFlowElementType; class IfcDistributionPort; class IfcDistributionSystem; class IfcDocumentInformation; class IfcDocumentInformationRelationship; class IfcDocumentReference; class IfcDoor; class IfcDoorLiningProperties; class IfcDoorPanelProperties; class IfcDoorStandardCase; class IfcDoorStyle; class IfcDoorType; class IfcDraughtingPreDefinedColour; class IfcDraughtingPreDefinedCurveFont; class IfcDuctFitting; class IfcDuctFittingType; class IfcDuctSegment; class IfcDuctSegmentType; class IfcDuctSilencer; class IfcDuctSilencerType; class IfcEarthworksCut; class IfcEarthworksElement; class IfcEarthworksFill; class IfcEdge; class IfcEdgeCurve; class IfcEdgeLoop; class IfcElectricAppliance; class IfcElectricApplianceType; class IfcElectricDistributionBoard; class IfcElectricDistributionBoardType; class IfcElectricFlowStorageDevice; class IfcElectricFlowStorageDeviceType; class IfcElectricFlowTreatmentDevice; class IfcElectricFlowTreatmentDeviceType; class IfcElectricGenerator; class IfcElectricGeneratorType; class IfcElectricMotor; class IfcElectricMotorType; class IfcElectricTimeControl; class IfcElectricTimeControlType; class IfcElement; class IfcElementAssembly; class IfcElementAssemblyType; class IfcElementComponent; class IfcElementComponentType; class IfcElementQuantity; class IfcElementType; class IfcElementarySurface; class IfcEllipse; class IfcEllipseProfileDef; class IfcEnergyConversionDevice; class IfcEnergyConversionDeviceType; class IfcEngine; class IfcEngineType; class IfcEvaporativeCooler; class IfcEvaporativeCoolerType; class IfcEvaporator; class IfcEvaporatorType; class IfcEvent; class IfcEventTime; class IfcEventType; class IfcExtendedProperties; class IfcExternalInformation; class IfcExternalReference; class IfcExternalReferenceRelationship; class IfcExternalSpatialElement; class IfcExternalSpatialStructureElement; class IfcExternallyDefinedHatchStyle; class IfcExternallyDefinedSurfaceStyle; class IfcExternallyDefinedTextFont; class IfcExtrudedAreaSolid; class IfcExtrudedAreaSolidTapered; class IfcFace; class IfcFaceBasedSurfaceModel; class IfcFaceBound; class IfcFaceOuterBound; class IfcFaceSurface; class IfcFacetedBrep; class IfcFacetedBrepWithVoids; class IfcFacility; class IfcFacilityPart; class IfcFailureConnectionCondition; class IfcFan; class IfcFanType; class IfcFastener; class IfcFastenerType; class IfcFeatureElement; class IfcFeatureElementAddition; class IfcFeatureElementSubtraction; class IfcFillAreaStyle; class IfcFillAreaStyleHatching; class IfcFillAreaStyleTiles; class IfcFilter; class IfcFilterType; class IfcFireSuppressionTerminal; class IfcFireSuppressionTerminalType; class IfcFixedReferenceSweptAreaSolid; class IfcFlowController; class IfcFlowControllerType; class IfcFlowFitting; class IfcFlowFittingType; class IfcFlowInstrument; class IfcFlowInstrumentType; class IfcFlowMeter; class IfcFlowMeterType; class IfcFlowMovingDevice; class IfcFlowMovingDeviceType; class IfcFlowSegment; class IfcFlowSegmentType; class IfcFlowStorageDevice; class IfcFlowStorageDeviceType; class IfcFlowTerminal; class IfcFlowTerminalType; class IfcFlowTreatmentDevice; class IfcFlowTreatmentDeviceType; class IfcFooting; class IfcFootingType; class IfcFurnishingElement; class IfcFurnishingElementType; class IfcFurniture; class IfcFurnitureType; class IfcGeographicElement; class IfcGeographicElementType; class IfcGeometricCurveSet; class IfcGeometricRepresentationContext; class IfcGeometricRepresentationItem; class IfcGeometricRepresentationSubContext; class IfcGeometricSet; class IfcGeomodel; class IfcGeoslice; class IfcGeotechnicalAssembly; class IfcGeotechnicalElement; class IfcGeotechnicalStratum; class IfcGradientCurve; class IfcGrid; class IfcGridAxis; class IfcGridPlacement; class IfcGroup; class IfcHalfSpaceSolid; class IfcHeatExchanger; class IfcHeatExchangerType; class IfcHumidifier; class IfcHumidifierType; class IfcIShapeProfileDef; class IfcImageTexture; class IfcImpactProtectionDevice; class IfcImpactProtectionDeviceType; class IfcInclinedReferenceSweptAreaSolid; class IfcIndexedColourMap; class IfcIndexedPolyCurve; class IfcIndexedPolygonalFace; class IfcIndexedPolygonalFaceWithVoids; class IfcIndexedTextureMap; class IfcIndexedTriangleTextureMap; class IfcInterceptor; class IfcInterceptorType; class IfcIntersectionCurve; class IfcInventory; class IfcIrregularTimeSeries; class IfcIrregularTimeSeriesValue; class IfcJunctionBox; class IfcJunctionBoxType; class IfcKerb; class IfcKerbType; class IfcLShapeProfileDef; class IfcLaborResource; class IfcLaborResourceType; class IfcLagTime; class IfcLamp; class IfcLampType; class IfcLibraryInformation; class IfcLibraryReference; class IfcLightDistributionData; class IfcLightFixture; class IfcLightFixtureType; class IfcLightIntensityDistribution; class IfcLightSource; class IfcLightSourceAmbient; class IfcLightSourceDirectional; class IfcLightSourceGoniometric; class IfcLightSourcePositional; class IfcLightSourceSpot; class IfcLine; class IfcLinearElement; class IfcLinearPlacement; class IfcLinearPositioningElement; class IfcLiquidTerminal; class IfcLiquidTerminalType; class IfcLocalPlacement; class IfcLoop; class IfcManifoldSolidBrep; class IfcMapConversion; class IfcMappedItem; class IfcMarineFacility; class IfcMaterial; class IfcMaterialClassificationRelationship; class IfcMaterialConstituent; class IfcMaterialConstituentSet; class IfcMaterialDefinition; class IfcMaterialDefinitionRepresentation; class IfcMaterialLayer; class IfcMaterialLayerSet; class IfcMaterialLayerSetUsage; class IfcMaterialLayerWithOffsets; class IfcMaterialList; class IfcMaterialProfile; class IfcMaterialProfileSet; class IfcMaterialProfileSetUsage; class IfcMaterialProfileSetUsageTapering; class IfcMaterialProfileWithOffsets; class IfcMaterialProperties; class IfcMaterialRelationship; class IfcMaterialUsageDefinition; class IfcMeasureWithUnit; class IfcMechanicalFastener; class IfcMechanicalFastenerType; class IfcMedicalDevice; class IfcMedicalDeviceType; class IfcMember; class IfcMemberStandardCase; class IfcMemberType; class IfcMetric; class IfcMirroredProfileDef; class IfcMobileTelecommunicationsAppliance; class IfcMobileTelecommunicationsApplianceType; class IfcMonetaryUnit; class IfcMooringDevice; class IfcMooringDeviceType; class IfcMotorConnection; class IfcMotorConnectionType; class IfcNamedUnit; class IfcNavigationElement; class IfcNavigationElementType; class IfcObject; class IfcObjectDefinition; class IfcObjectPlacement; class IfcObjective; class IfcOccupant; class IfcOffsetCurve; class IfcOffsetCurve2D; class IfcOffsetCurve3D; class IfcOffsetCurveByDistances; class IfcOpenCrossProfileDef; class IfcOpenShell; class IfcOpeningElement; class IfcOpeningStandardCase; class IfcOrganization; class IfcOrganizationRelationship; class IfcOrientedEdge; class IfcOuterBoundaryCurve; class IfcOutlet; class IfcOutletType; class IfcOwnerHistory; class IfcParameterizedProfileDef; class IfcPath; class IfcPavement; class IfcPavementType; class IfcPcurve; class IfcPerformanceHistory; class IfcPermeableCoveringProperties; class IfcPermit; class IfcPerson; class IfcPersonAndOrganization; class IfcPhysicalComplexQuantity; class IfcPhysicalQuantity; class IfcPhysicalSimpleQuantity; class IfcPile; class IfcPileType; class IfcPipeFitting; class IfcPipeFittingType; class IfcPipeSegment; class IfcPipeSegmentType; class IfcPixelTexture; class IfcPlacement; class IfcPlanarBox; class IfcPlanarExtent; class IfcPlane; class IfcPlant; class IfcPlate; class IfcPlateStandardCase; class IfcPlateType; class IfcPoint; class IfcPointByDistanceExpression; class IfcPointOnCurve; class IfcPointOnSurface; class IfcPolyLoop; class IfcPolygonalBoundedHalfSpace; class IfcPolygonalFaceSet; class IfcPolyline; class IfcPolynomialCurve; class IfcPort; class IfcPositioningElement; class IfcPostalAddress; class IfcPreDefinedColour; class IfcPreDefinedCurveFont; class IfcPreDefinedItem; class IfcPreDefinedProperties; class IfcPreDefinedPropertySet; class IfcPreDefinedTextFont; class IfcPresentationItem; class IfcPresentationLayerAssignment; class IfcPresentationLayerWithStyle; class IfcPresentationStyle; class IfcProcedure; class IfcProcedureType; class IfcProcess; class IfcProduct; class IfcProductDefinitionShape; class IfcProductRepresentation; class IfcProfileDef; class IfcProfileProperties; class IfcProject; class IfcProjectLibrary; class IfcProjectOrder; class IfcProjectedCRS; class IfcProjectionElement; class IfcProperty; class IfcPropertyAbstraction; class IfcPropertyBoundedValue; class IfcPropertyDefinition; class IfcPropertyDependencyRelationship; class IfcPropertyEnumeratedValue; class IfcPropertyEnumeration; class IfcPropertyListValue; class IfcPropertyReferenceValue; class IfcPropertySet; class IfcPropertySetDefinition; class IfcPropertySetTemplate; class IfcPropertySingleValue; class IfcPropertyTableValue; class IfcPropertyTemplate; class IfcPropertyTemplateDefinition; class IfcProtectiveDevice; class IfcProtectiveDeviceTrippingUnit; class IfcProtectiveDeviceTrippingUnitType; class IfcProtectiveDeviceType; class IfcProxy; class IfcPump; class IfcPumpType; class IfcQuantityArea; class IfcQuantityCount; class IfcQuantityLength; class IfcQuantitySet; class IfcQuantityTime; class IfcQuantityVolume; class IfcQuantityWeight; class IfcRail; class IfcRailType; class IfcRailing; class IfcRailingType; class IfcRailway; class IfcRamp; class IfcRampFlight; class IfcRampFlightType; class IfcRampType; class IfcRationalBSplineCurveWithKnots; class IfcRationalBSplineSurfaceWithKnots; class IfcRectangleHollowProfileDef; class IfcRectangleProfileDef; class IfcRectangularPyramid; class IfcRectangularTrimmedSurface; class IfcRecurrencePattern; class IfcReference; class IfcReferent; class IfcRegularTimeSeries; class IfcReinforcedSoil; class IfcReinforcementBarProperties; class IfcReinforcementDefinitionProperties; class IfcReinforcingBar; class IfcReinforcingBarType; class IfcReinforcingElement; class IfcReinforcingElementType; class IfcReinforcingMesh; class IfcReinforcingMeshType; class IfcRelAggregates; class IfcRelAssigns; class IfcRelAssignsToActor; class IfcRelAssignsToControl; class IfcRelAssignsToGroup; class IfcRelAssignsToGroupByFactor; class IfcRelAssignsToProcess; class IfcRelAssignsToProduct; class IfcRelAssignsToResource; class IfcRelAssociates; class IfcRelAssociatesApproval; class IfcRelAssociatesClassification; class IfcRelAssociatesConstraint; class IfcRelAssociatesDocument; class IfcRelAssociatesLibrary; class IfcRelAssociatesMaterial; class IfcRelAssociatesProfileDef; class IfcRelConnects; class IfcRelConnectsElements; class IfcRelConnectsPathElements; class IfcRelConnectsPortToElement; class IfcRelConnectsPorts; class IfcRelConnectsStructuralActivity; class IfcRelConnectsStructuralMember; class IfcRelConnectsWithEccentricity; class IfcRelConnectsWithRealizingElements; class IfcRelContainedInSpatialStructure; class IfcRelCoversBldgElements; class IfcRelCoversSpaces; class IfcRelDeclares; class IfcRelDecomposes; class IfcRelDefines; class IfcRelDefinesByObject; class IfcRelDefinesByProperties; class IfcRelDefinesByTemplate; class IfcRelDefinesByType; class IfcRelFillsElement; class IfcRelFlowControlElements; class IfcRelInterferesElements; class IfcRelNests; class IfcRelPositions; class IfcRelProjectsElement; class IfcRelReferencedInSpatialStructure; class IfcRelSequence; class IfcRelServicesBuildings; class IfcRelSpaceBoundary; class IfcRelSpaceBoundary1stLevel; class IfcRelSpaceBoundary2ndLevel; class IfcRelVoidsElement; class IfcRelationship; class IfcReparametrisedCompositeCurveSegment; class IfcRepresentation; class IfcRepresentationContext; class IfcRepresentationItem; class IfcRepresentationMap; class IfcResource; class IfcResourceApprovalRelationship; class IfcResourceConstraintRelationship; class IfcResourceLevelRelationship; class IfcResourceTime; class IfcRevolvedAreaSolid; class IfcRevolvedAreaSolidTapered; class IfcRightCircularCone; class IfcRightCircularCylinder; class IfcRoad; class IfcRoof; class IfcRoofType; class IfcRoot; class IfcRoundedRectangleProfileDef; class IfcSIUnit; class IfcSanitaryTerminal; class IfcSanitaryTerminalType; class IfcSchedulingTime; class IfcSeamCurve; class IfcSecondOrderPolynomialSpiral; class IfcSectionProperties; class IfcSectionReinforcementProperties; class IfcSectionedSolid; class IfcSectionedSolidHorizontal; class IfcSectionedSpine; class IfcSectionedSurface; class IfcSegment; class IfcSegmentedReferenceCurve; class IfcSensor; class IfcSensorType; class IfcShadingDevice; class IfcShadingDeviceType; class IfcShapeAspect; class IfcShapeModel; class IfcShapeRepresentation; class IfcShellBasedSurfaceModel; class IfcSign; class IfcSignType; class IfcSignal; class IfcSignalType; class IfcSimpleProperty; class IfcSimplePropertyTemplate; class IfcSine; class IfcSite; class IfcSlab; class IfcSlabElementedCase; class IfcSlabStandardCase; class IfcSlabType; class IfcSlippageConnectionCondition; class IfcSolarDevice; class IfcSolarDeviceType; class IfcSolidModel; class IfcSolidStratum; class IfcSpace; class IfcSpaceHeater; class IfcSpaceHeaterType; class IfcSpaceType; class IfcSpatialElement; class IfcSpatialElementType; class IfcSpatialStructureElement; class IfcSpatialStructureElementType; class IfcSpatialZone; class IfcSpatialZoneType; class IfcSphere; class IfcSphericalSurface; class IfcSpiral; class IfcStackTerminal; class IfcStackTerminalType; class IfcStair; class IfcStairFlight; class IfcStairFlightType; class IfcStairType; class IfcStructuralAction; class IfcStructuralActivity; class IfcStructuralAnalysisModel; class IfcStructuralConnection; class IfcStructuralConnectionCondition; class IfcStructuralCurveAction; class IfcStructuralCurveConnection; class IfcStructuralCurveMember; class IfcStructuralCurveMemberVarying; class IfcStructuralCurveReaction; class IfcStructuralItem; class IfcStructuralLinearAction; class IfcStructuralLoad; class IfcStructuralLoadCase; class IfcStructuralLoadConfiguration; class IfcStructuralLoadGroup; class IfcStructuralLoadLinearForce; class IfcStructuralLoadOrResult; class IfcStructuralLoadPlanarForce; class IfcStructuralLoadSingleDisplacement; class IfcStructuralLoadSingleDisplacementDistortion; class IfcStructuralLoadSingleForce; class IfcStructuralLoadSingleForceWarping; class IfcStructuralLoadStatic; class IfcStructuralLoadTemperature; class IfcStructuralMember; class IfcStructuralPlanarAction; class IfcStructuralPointAction; class IfcStructuralPointConnection; class IfcStructuralPointReaction; class IfcStructuralReaction; class IfcStructuralResultGroup; class IfcStructuralSurfaceAction; class IfcStructuralSurfaceConnection; class IfcStructuralSurfaceMember; class IfcStructuralSurfaceMemberVarying; class IfcStructuralSurfaceReaction; class IfcStyleModel; class IfcStyledItem; class IfcStyledRepresentation; class IfcSubContractResource; class IfcSubContractResourceType; class IfcSubedge; class IfcSurface; class IfcSurfaceCurve; class IfcSurfaceCurveSweptAreaSolid; class IfcSurfaceFeature; class IfcSurfaceOfLinearExtrusion; class IfcSurfaceOfRevolution; class IfcSurfaceReinforcementArea; class IfcSurfaceStyle; class IfcSurfaceStyleLighting; class IfcSurfaceStyleRefraction; class IfcSurfaceStyleRendering; class IfcSurfaceStyleShading; class IfcSurfaceStyleWithTextures; class IfcSurfaceTexture; class IfcSweptAreaSolid; class IfcSweptDiskSolid; class IfcSweptDiskSolidPolygonal; class IfcSweptSurface; class IfcSwitchingDevice; class IfcSwitchingDeviceType; class IfcSystem; class IfcSystemFurnitureElement; class IfcSystemFurnitureElementType; class IfcTShapeProfileDef; class IfcTable; class IfcTableColumn; class IfcTableRow; class IfcTank; class IfcTankType; class IfcTask; class IfcTaskTime; class IfcTaskTimeRecurring; class IfcTaskType; class IfcTelecomAddress; class IfcTendon; class IfcTendonAnchor; class IfcTendonAnchorType; class IfcTendonConduit; class IfcTendonConduitType; class IfcTendonType; class IfcTessellatedFaceSet; class IfcTessellatedItem; class IfcTextLiteral; class IfcTextLiteralWithExtent; class IfcTextStyle; class IfcTextStyleFontModel; class IfcTextStyleForDefinedFont; class IfcTextStyleTextModel; class IfcTextureCoordinate; class IfcTextureCoordinateGenerator; class IfcTextureMap; class IfcTextureVertex; class IfcTextureVertexList; class IfcThirdOrderPolynomialSpiral; class IfcTimePeriod; class IfcTimeSeries; class IfcTimeSeriesValue; class IfcTopologicalRepresentationItem; class IfcTopologyRepresentation; class IfcToroidalSurface; class IfcTrackElement; class IfcTrackElementType; class IfcTransformer; class IfcTransformerType; class IfcTransportElement; class IfcTransportElementType; class IfcTrapeziumProfileDef; class IfcTriangulatedFaceSet; class IfcTriangulatedIrregularNetwork; class IfcTrimmedCurve; class IfcTubeBundle; class IfcTubeBundleType; class IfcTypeObject; class IfcTypeProcess; class IfcTypeProduct; class IfcTypeResource; class IfcUShapeProfileDef; class IfcUnitAssignment; class IfcUnitaryControlElement; class IfcUnitaryControlElementType; class IfcUnitaryEquipment; class IfcUnitaryEquipmentType; class IfcValve; class IfcValveType; class IfcVector; class IfcVertex; class IfcVertexLoop; class IfcVertexPoint; class IfcVibrationDamper; class IfcVibrationDamperType; class IfcVibrationIsolator; class IfcVibrationIsolatorType; class IfcVienneseBend; class IfcVirtualElement; class IfcVirtualGridIntersection; class IfcVoidStratum; class IfcVoidingFeature; class IfcWall; class IfcWallElementedCase; class IfcWallStandardCase; class IfcWallType; class IfcWasteTerminal; class IfcWasteTerminalType; class IfcWaterStratum; class IfcWindow; class IfcWindowLiningProperties; class IfcWindowPanelProperties; class IfcWindowStandardCase; class IfcWindowStyle; class IfcWindowType; class IfcWorkCalendar; class IfcWorkControl; class IfcWorkPlan; class IfcWorkSchedule; class IfcWorkTime; class IfcZShapeProfileDef; class IfcZone; class IfcAbsorbedDoseMeasure; class IfcAccelerationMeasure; class IfcAmountOfSubstanceMeasure; class IfcAngularVelocityMeasure; class IfcArcIndex; class IfcAreaDensityMeasure; class IfcAreaMeasure; class IfcBinary; class IfcBoolean; class IfcBoxAlignment; class IfcCardinalPointReference; class IfcComplexNumber; class IfcCompoundPlaneAngleMeasure; class IfcContextDependentMeasure; class IfcCountMeasure; class IfcCurvatureMeasure; class IfcDate; class IfcDateTime; class IfcDayInMonthNumber; class IfcDayInWeekNumber; class IfcDescriptiveMeasure; class IfcDimensionCount; class IfcDoseEquivalentMeasure; class IfcDuration; class IfcDynamicViscosityMeasure; class IfcElectricCapacitanceMeasure; class IfcElectricChargeMeasure; class IfcElectricConductanceMeasure; class IfcElectricCurrentMeasure; class IfcElectricResistanceMeasure; class IfcElectricVoltageMeasure; class IfcEnergyMeasure; class IfcFontStyle; class IfcFontVariant; class IfcFontWeight; class IfcForceMeasure; class IfcFrequencyMeasure; class IfcGloballyUniqueId; class IfcHeatFluxDensityMeasure; class IfcHeatingValueMeasure; class IfcIdentifier; class IfcIlluminanceMeasure; class IfcInductanceMeasure; class IfcInteger; class IfcIntegerCountRateMeasure; class IfcIonConcentrationMeasure; class IfcIsothermalMoistureCapacityMeasure; class IfcKinematicViscosityMeasure; class IfcLabel; class IfcLanguageId; class IfcLengthMeasure; class IfcLineIndex; class IfcLinearForceMeasure; class IfcLinearMomentMeasure; class IfcLinearStiffnessMeasure; class IfcLinearVelocityMeasure; class IfcLogical; class IfcLuminousFluxMeasure; class IfcLuminousIntensityDistributionMeasure; class IfcLuminousIntensityMeasure; class IfcMagneticFluxDensityMeasure; class IfcMagneticFluxMeasure; class IfcMassDensityMeasure; class IfcMassFlowRateMeasure; class IfcMassMeasure; class IfcMassPerLengthMeasure; class IfcModulusOfElasticityMeasure; class IfcModulusOfLinearSubgradeReactionMeasure; class IfcModulusOfRotationalSubgradeReactionMeasure; class IfcModulusOfSubgradeReactionMeasure; class IfcMoistureDiffusivityMeasure; class IfcMolecularWeightMeasure; class IfcMomentOfInertiaMeasure; class IfcMonetaryMeasure; class IfcMonthInYearNumber; class IfcNonNegativeLengthMeasure; class IfcNormalisedRatioMeasure; class IfcNumericMeasure; class IfcPHMeasure; class IfcParameterValue; class IfcPlanarForceMeasure; class IfcPlaneAngleMeasure; class IfcPositiveInteger; class IfcPositiveLengthMeasure; class IfcPositivePlaneAngleMeasure; class IfcPositiveRatioMeasure; class IfcPowerMeasure; class IfcPresentableText; class IfcPressureMeasure; class IfcPropertySetDefinitionSet; class IfcRadioActivityMeasure; class IfcRatioMeasure; class IfcReal; class IfcRotationalFrequencyMeasure; class IfcRotationalMassMeasure; class IfcRotationalStiffnessMeasure; class IfcSectionModulusMeasure; class IfcSectionalAreaIntegralMeasure; class IfcShearModulusMeasure; class IfcSolidAngleMeasure; class IfcSoundPowerLevelMeasure; class IfcSoundPowerMeasure; class IfcSoundPressureLevelMeasure; class IfcSoundPressureMeasure; class IfcSpecificHeatCapacityMeasure; class IfcSpecularExponent; class IfcSpecularRoughness; class IfcTemperatureGradientMeasure; class IfcTemperatureRateOfChangeMeasure; class IfcText; class IfcTextAlignment; class IfcTextDecoration; class IfcTextFontName; class IfcTextTransformation; class IfcThermalAdmittanceMeasure; class IfcThermalConductivityMeasure; class IfcThermalExpansionCoefficientMeasure; class IfcThermalResistanceMeasure; class IfcThermalTransmittanceMeasure; class IfcThermodynamicTemperatureMeasure; class IfcTime; class IfcTimeMeasure; class IfcTimeStamp; class IfcTorqueMeasure; class IfcURIReference; class IfcVaporPermeabilityMeasure; class IfcVolumeMeasure; class IfcVolumetricFlowRateMeasure; class IfcWarpingConstantMeasure; class IfcWarpingMomentMeasure; class IfcActorSelect; class IfcAppliedValueSelect; class IfcAxis2Placement; class IfcBendingParameterSelect; class IfcBooleanOperand; class IfcClassificationReferenceSelect; class IfcClassificationSelect; class IfcColour; class IfcColourOrFactor; class IfcCoordinateReferenceSystemSelect; class IfcCsgSelect; class IfcCurveFontOrScaledCurveFontSelect; class IfcCurveMeasureSelect; class IfcCurveOnSurface; class IfcCurveOrEdgeCurve; class IfcCurveStyleFontSelect; class IfcDefinitionSelect; class IfcDerivedMeasureValue; class IfcDocumentSelect; class IfcFacilityPartTypeSelect; class IfcFillStyleSelect; class IfcGeometricSetSelect; class IfcGridPlacementDirectionSelect; class IfcHatchLineDistanceSelect; class IfcImpactProtectionDeviceTypeSelect; class IfcInterferenceSelect; class IfcLayeredItem; class IfcLibrarySelect; class IfcLightDistributionDataSourceSelect; class IfcMaterialSelect; class IfcMeasureValue; class IfcMetricValueSelect; class IfcModulusOfRotationalSubgradeReactionSelect; class IfcModulusOfSubgradeReactionSelect; class IfcModulusOfTranslationalSubgradeReactionSelect; class IfcObjectReferenceSelect; class IfcPointOrVertexPoint; class IfcProcessSelect; class IfcProductRepresentationSelect; class IfcProductSelect; class IfcPropertySetDefinitionSelect; class IfcResourceObjectSelect; class IfcResourceSelect; class IfcRotationalStiffnessSelect; class IfcSegmentIndexSelect; class IfcShell; class IfcSimpleValue; class IfcSizeSelect; class IfcSolidOrShell; class IfcSpaceBoundarySelect; class IfcSpatialReferenceSelect; class IfcSpecularHighlightSelect; class IfcStructuralActivityAssignmentSelect; class IfcSurfaceOrFaceSurface; class IfcSurfaceStyleElementSelect; class IfcTextFontSelect; class IfcTimeOrRatioSelect; class IfcTranslationalStiffnessSelect; class IfcTransportElementTypeSelect; class IfcTrimmingSelect; class IfcUnit; class IfcValue; class IfcVectorOrDirection; class IfcWarpingStiffnessSelect; class IfcActionRequestTypeEnum; class IfcActionSourceTypeEnum; class IfcActionTypeEnum; class IfcActuatorTypeEnum; class IfcAddressTypeEnum; class IfcAirTerminalBoxTypeEnum; class IfcAirTerminalTypeEnum; class IfcAirToAirHeatRecoveryTypeEnum; class IfcAlarmTypeEnum; class IfcAlignmentCantSegmentTypeEnum; class IfcAlignmentHorizontalSegmentTypeEnum; class IfcAlignmentTypeEnum; class IfcAlignmentVerticalSegmentTypeEnum; class IfcAnalysisModelTypeEnum; class IfcAnalysisTheoryTypeEnum; class IfcAnnotationTypeEnum; class IfcArithmeticOperatorEnum; class IfcAssemblyPlaceEnum; class IfcAudioVisualApplianceTypeEnum; class IfcBSplineCurveForm; class IfcBSplineSurfaceForm; class IfcBeamTypeEnum; class IfcBearingTypeDisplacementEnum; class IfcBearingTypeEnum; class IfcBenchmarkEnum; class IfcBoilerTypeEnum; class IfcBooleanOperator; class IfcBridgePartTypeEnum; class IfcBridgeTypeEnum; class IfcBuildingElementPartTypeEnum; class IfcBuildingElementProxyTypeEnum; class IfcBuildingSystemTypeEnum; class IfcBuiltSystemTypeEnum; class IfcBurnerTypeEnum; class IfcCableCarrierFittingTypeEnum; class IfcCableCarrierSegmentTypeEnum; class IfcCableFittingTypeEnum; class IfcCableSegmentTypeEnum; class IfcCaissonFoundationTypeEnum; class IfcChangeActionEnum; class IfcChillerTypeEnum; class IfcChimneyTypeEnum; class IfcCoilTypeEnum; class IfcColumnTypeEnum; class IfcCommunicationsApplianceTypeEnum; class IfcComplexPropertyTemplateTypeEnum; class IfcCompressorTypeEnum; class IfcCondenserTypeEnum; class IfcConnectionTypeEnum; class IfcConstraintEnum; class IfcConstructionEquipmentResourceTypeEnum; class IfcConstructionMaterialResourceTypeEnum; class IfcConstructionProductResourceTypeEnum; class IfcControllerTypeEnum; class IfcConveyorSegmentTypeEnum; class IfcCooledBeamTypeEnum; class IfcCoolingTowerTypeEnum; class IfcCostItemTypeEnum; class IfcCostScheduleTypeEnum; class IfcCourseTypeEnum; class IfcCoveringTypeEnum; class IfcCrewResourceTypeEnum; class IfcCurtainWallTypeEnum; class IfcCurveInterpolationEnum; class IfcDamperTypeEnum; class IfcDataOriginEnum; class IfcDerivedUnitEnum; class IfcDirectionSenseEnum; class IfcDiscreteAccessoryTypeEnum; class IfcDistributionBoardTypeEnum; class IfcDistributionChamberElementTypeEnum; class IfcDistributionPortTypeEnum; class IfcDistributionSystemEnum; class IfcDocumentConfidentialityEnum; class IfcDocumentStatusEnum; class IfcDoorPanelOperationEnum; class IfcDoorPanelPositionEnum; class IfcDoorStyleConstructionEnum; class IfcDoorStyleOperationEnum; class IfcDoorTypeEnum; class IfcDoorTypeOperationEnum; class IfcDuctFittingTypeEnum; class IfcDuctSegmentTypeEnum; class IfcDuctSilencerTypeEnum; class IfcEarthworksCutTypeEnum; class IfcEarthworksFillTypeEnum; class IfcElectricApplianceTypeEnum; class IfcElectricDistributionBoardTypeEnum; class IfcElectricFlowStorageDeviceTypeEnum; class IfcElectricFlowTreatmentDeviceTypeEnum; class IfcElectricGeneratorTypeEnum; class IfcElectricMotorTypeEnum; class IfcElectricTimeControlTypeEnum; class IfcElementAssemblyTypeEnum; class IfcElementCompositionEnum; class IfcEngineTypeEnum; class IfcEvaporativeCoolerTypeEnum; class IfcEvaporatorTypeEnum; class IfcEventTriggerTypeEnum; class IfcEventTypeEnum; class IfcExternalSpatialElementTypeEnum; class IfcFacilityPartCommonTypeEnum; class IfcFacilityUsageEnum; class IfcFanTypeEnum; class IfcFastenerTypeEnum; class IfcFilterTypeEnum; class IfcFireSuppressionTerminalTypeEnum; class IfcFlowDirectionEnum; class IfcFlowInstrumentTypeEnum; class IfcFlowMeterTypeEnum; class IfcFootingTypeEnum; class IfcFurnitureTypeEnum; class IfcGeographicElementTypeEnum; class IfcGeometricProjectionEnum; class IfcGlobalOrLocalEnum; class IfcGridTypeEnum; class IfcHeatExchangerTypeEnum; class IfcHumidifierTypeEnum; class IfcImpactProtectionDeviceTypeEnum; class IfcInterceptorTypeEnum; class IfcInternalOrExternalEnum; class IfcInventoryTypeEnum; class IfcJunctionBoxTypeEnum; class IfcKnotType; class IfcLaborResourceTypeEnum; class IfcLampTypeEnum; class IfcLayerSetDirectionEnum; class IfcLightDistributionCurveEnum; class IfcLightEmissionSourceEnum; class IfcLightFixtureTypeEnum; class IfcLiquidTerminalTypeEnum; class IfcLoadGroupTypeEnum; class IfcLogicalOperatorEnum; class IfcMarineFacilityTypeEnum; class IfcMarinePartTypeEnum; class IfcMechanicalFastenerTypeEnum; class IfcMedicalDeviceTypeEnum; class IfcMemberTypeEnum; class IfcMobileTelecommunicationsApplianceTypeEnum; class IfcMooringDeviceTypeEnum; class IfcMotorConnectionTypeEnum; class IfcNavigationElementTypeEnum; class IfcObjectTypeEnum; class IfcObjectiveEnum; class IfcOccupantTypeEnum; class IfcOpeningElementTypeEnum; class IfcOutletTypeEnum; class IfcPerformanceHistoryTypeEnum; class IfcPermeableCoveringOperationEnum; class IfcPermitTypeEnum; class IfcPhysicalOrVirtualEnum; class IfcPileConstructionEnum; class IfcPileTypeEnum; class IfcPipeFittingTypeEnum; class IfcPipeSegmentTypeEnum; class IfcPlateTypeEnum; class IfcPreferredSurfaceCurveRepresentation; class IfcProcedureTypeEnum; class IfcProfileTypeEnum; class IfcProjectOrderTypeEnum; class IfcProjectedOrTrueLengthEnum; class IfcProjectionElementTypeEnum; class IfcPropertySetTemplateTypeEnum; class IfcProtectiveDeviceTrippingUnitTypeEnum; class IfcProtectiveDeviceTypeEnum; class IfcPumpTypeEnum; class IfcRailTypeEnum; class IfcRailingTypeEnum; class IfcRailwayPartTypeEnum; class IfcRailwayTypeEnum; class IfcRampFlightTypeEnum; class IfcRampTypeEnum; class IfcRecurrenceTypeEnum; class IfcReferentTypeEnum; class IfcReflectanceMethodEnum; class IfcReinforcedSoilTypeEnum; class IfcReinforcingBarRoleEnum; class IfcReinforcingBarSurfaceEnum; class IfcReinforcingBarTypeEnum; class IfcReinforcingMeshTypeEnum; class IfcRoadPartTypeEnum; class IfcRoadTypeEnum; class IfcRoleEnum; class IfcRoofTypeEnum; class IfcSIPrefix; class IfcSIUnitName; class IfcSanitaryTerminalTypeEnum; class IfcSectionTypeEnum; class IfcSensorTypeEnum; class IfcSequenceEnum; class IfcShadingDeviceTypeEnum; class IfcSignTypeEnum; class IfcSignalTypeEnum; class IfcSimplePropertyTemplateTypeEnum; class IfcSlabTypeEnum; class IfcSolarDeviceTypeEnum; class IfcSpaceHeaterTypeEnum; class IfcSpaceTypeEnum; class IfcSpatialZoneTypeEnum; class IfcStackTerminalTypeEnum; class IfcStairFlightTypeEnum; class IfcStairTypeEnum; class IfcStateEnum; class IfcStructuralCurveActivityTypeEnum; class IfcStructuralCurveMemberTypeEnum; class IfcStructuralSurfaceActivityTypeEnum; class IfcStructuralSurfaceMemberTypeEnum; class IfcSubContractResourceTypeEnum; class IfcSurfaceFeatureTypeEnum; class IfcSurfaceSide; class IfcSwitchingDeviceTypeEnum; class IfcSystemFurnitureElementTypeEnum; class IfcTankTypeEnum; class IfcTaskDurationEnum; class IfcTaskTypeEnum; class IfcTendonAnchorTypeEnum; class IfcTendonConduitTypeEnum; class IfcTendonTypeEnum; class IfcTextPath; class IfcTimeSeriesDataTypeEnum; class IfcTrackElementTypeEnum; class IfcTransformerTypeEnum; class IfcTransitionCode; class IfcTransportElementFixedTypeEnum; class IfcTransportElementNonFixedTypeEnum; class IfcTrimmingPreference; class IfcTubeBundleTypeEnum; class IfcUnitEnum; class IfcUnitaryControlElementTypeEnum; class IfcUnitaryEquipmentTypeEnum; class IfcValveTypeEnum; class IfcVibrationDamperTypeEnum; class IfcVibrationIsolatorTypeEnum; class IfcVoidingFeatureTypeEnum; class IfcWallTypeEnum; class IfcWasteTerminalTypeEnum; class IfcWindowPanelOperationEnum; class IfcWindowPanelPositionEnum; class IfcWindowStyleConstructionEnum; class IfcWindowStyleOperationEnum; class IfcWindowTypeEnum; class IfcWindowTypePartitioningEnum; class IfcWorkCalendarTypeEnum; class IfcWorkPlanTypeEnum; class IfcWorkScheduleTypeEnum; 
 
 /// The actor select type allows a person, or an organization, or a person associated with an organization to be referenced.
 /// 
@@ -65,28 +65,28 @@ class IfcActionRequest; class IfcActor; class IfcActorRole; class IfcActuator; c
 /// IfcOrganization An organization. 
 /// IfcPerson A person. 
 /// IfcPersonAndOrganization A person related to an organization.
-class IFC_SCHEMA_API IfcActorSelect : public express::Select {
+class IFC_SCHEMA_API IfcActorSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcOrganization>, int> = 0>
-    // IfcOrganization as() const { return express::Base::as<IfcOrganization>(); }
+    // IfcOrganization as() const { return express::base::as<IfcOrganization>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPerson>, int> = 0>
-    // IfcPerson as() const { return express::Base::as<IfcPerson>(); }
+    // IfcPerson as() const { return express::base::as<IfcPerson>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPersonAndOrganization>, int> = 0>
-    // IfcPersonAndOrganization as() const { return express::Base::as<IfcPersonAndOrganization>(); }
+    // IfcPersonAndOrganization as() const { return express::base::as<IfcPersonAndOrganization>(); }
 
-    IfcActorSelect(const IfcOrganization& c) : express::Select(c) {};
+    IfcActorSelect(const IfcOrganization& c) : express::select(c) {};
 
-    IfcActorSelect(const IfcPerson& c) : express::Select(c) {};
+    IfcActorSelect(const IfcPerson& c) : express::select(c) {};
 
-    IfcActorSelect(const IfcPersonAndOrganization& c) : express::Select(c) {};
+    IfcActorSelect(const IfcPersonAndOrganization& c) : express::select(c) {};
 
 };
 /// IfcAppliedValueSelect defines the selection of whether a value (expressed as a ratio) or an amount should be used as the value for an IfcAppliedValue. 
@@ -103,694 +103,694 @@ public:
 /// Selecting IfcMeasureWithUnit allows the specification of both the actual figure for the value together with the currency in which the value is represented. 
 /// Selecting IfcMonetaryMeasure allows the specification only of the value, the currency being as set by the global context 
 /// Selecting IfcRatioMeasure assumes that the amount is a percentage or other REAL number. Note that if the amount is normally specified as -20%, then this figure will need to be converted to a multiplier of 0.8
-class IFC_SCHEMA_API IfcAppliedValueSelect : public express::Select {
+class IFC_SCHEMA_API IfcAppliedValueSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMeasureWithUnit>, int> = 0>
-    // IfcMeasureWithUnit as() const { return express::Base::as<IfcMeasureWithUnit>(); }
+    // IfcMeasureWithUnit as() const { return express::base::as<IfcMeasureWithUnit>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcReference>, int> = 0>
-    // IfcReference as() const { return express::Base::as<IfcReference>(); }
+    // IfcReference as() const { return express::base::as<IfcReference>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcValue>, int> = 0>
-    // IfcValue as() const { return express::Base::as<IfcValue>(); }
+    // IfcValue as() const { return express::base::as<IfcValue>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDerivedMeasureValue>, int> = 0>
-    // IfcDerivedMeasureValue as() const { return express::Base::as<IfcDerivedMeasureValue>(); }
+    // IfcDerivedMeasureValue as() const { return express::base::as<IfcDerivedMeasureValue>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAbsorbedDoseMeasure>, int> = 0>
-    // IfcAbsorbedDoseMeasure as() const { return express::Base::as<IfcAbsorbedDoseMeasure>(); }
+    // IfcAbsorbedDoseMeasure as() const { return express::base::as<IfcAbsorbedDoseMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAccelerationMeasure>, int> = 0>
-    // IfcAccelerationMeasure as() const { return express::Base::as<IfcAccelerationMeasure>(); }
+    // IfcAccelerationMeasure as() const { return express::base::as<IfcAccelerationMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAngularVelocityMeasure>, int> = 0>
-    // IfcAngularVelocityMeasure as() const { return express::Base::as<IfcAngularVelocityMeasure>(); }
+    // IfcAngularVelocityMeasure as() const { return express::base::as<IfcAngularVelocityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAreaDensityMeasure>, int> = 0>
-    // IfcAreaDensityMeasure as() const { return express::Base::as<IfcAreaDensityMeasure>(); }
+    // IfcAreaDensityMeasure as() const { return express::base::as<IfcAreaDensityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcCompoundPlaneAngleMeasure>, int> = 0>
-    // IfcCompoundPlaneAngleMeasure as() const { return express::Base::as<IfcCompoundPlaneAngleMeasure>(); }
+    // IfcCompoundPlaneAngleMeasure as() const { return express::base::as<IfcCompoundPlaneAngleMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcCurvatureMeasure>, int> = 0>
-    // IfcCurvatureMeasure as() const { return express::Base::as<IfcCurvatureMeasure>(); }
+    // IfcCurvatureMeasure as() const { return express::base::as<IfcCurvatureMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDoseEquivalentMeasure>, int> = 0>
-    // IfcDoseEquivalentMeasure as() const { return express::Base::as<IfcDoseEquivalentMeasure>(); }
+    // IfcDoseEquivalentMeasure as() const { return express::base::as<IfcDoseEquivalentMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDynamicViscosityMeasure>, int> = 0>
-    // IfcDynamicViscosityMeasure as() const { return express::Base::as<IfcDynamicViscosityMeasure>(); }
+    // IfcDynamicViscosityMeasure as() const { return express::base::as<IfcDynamicViscosityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricCapacitanceMeasure>, int> = 0>
-    // IfcElectricCapacitanceMeasure as() const { return express::Base::as<IfcElectricCapacitanceMeasure>(); }
+    // IfcElectricCapacitanceMeasure as() const { return express::base::as<IfcElectricCapacitanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricChargeMeasure>, int> = 0>
-    // IfcElectricChargeMeasure as() const { return express::Base::as<IfcElectricChargeMeasure>(); }
+    // IfcElectricChargeMeasure as() const { return express::base::as<IfcElectricChargeMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricConductanceMeasure>, int> = 0>
-    // IfcElectricConductanceMeasure as() const { return express::Base::as<IfcElectricConductanceMeasure>(); }
+    // IfcElectricConductanceMeasure as() const { return express::base::as<IfcElectricConductanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricResistanceMeasure>, int> = 0>
-    // IfcElectricResistanceMeasure as() const { return express::Base::as<IfcElectricResistanceMeasure>(); }
+    // IfcElectricResistanceMeasure as() const { return express::base::as<IfcElectricResistanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricVoltageMeasure>, int> = 0>
-    // IfcElectricVoltageMeasure as() const { return express::Base::as<IfcElectricVoltageMeasure>(); }
+    // IfcElectricVoltageMeasure as() const { return express::base::as<IfcElectricVoltageMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcEnergyMeasure>, int> = 0>
-    // IfcEnergyMeasure as() const { return express::Base::as<IfcEnergyMeasure>(); }
+    // IfcEnergyMeasure as() const { return express::base::as<IfcEnergyMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcForceMeasure>, int> = 0>
-    // IfcForceMeasure as() const { return express::Base::as<IfcForceMeasure>(); }
+    // IfcForceMeasure as() const { return express::base::as<IfcForceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcFrequencyMeasure>, int> = 0>
-    // IfcFrequencyMeasure as() const { return express::Base::as<IfcFrequencyMeasure>(); }
+    // IfcFrequencyMeasure as() const { return express::base::as<IfcFrequencyMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcHeatFluxDensityMeasure>, int> = 0>
-    // IfcHeatFluxDensityMeasure as() const { return express::Base::as<IfcHeatFluxDensityMeasure>(); }
+    // IfcHeatFluxDensityMeasure as() const { return express::base::as<IfcHeatFluxDensityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcHeatingValueMeasure>, int> = 0>
-    // IfcHeatingValueMeasure as() const { return express::Base::as<IfcHeatingValueMeasure>(); }
+    // IfcHeatingValueMeasure as() const { return express::base::as<IfcHeatingValueMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcIlluminanceMeasure>, int> = 0>
-    // IfcIlluminanceMeasure as() const { return express::Base::as<IfcIlluminanceMeasure>(); }
+    // IfcIlluminanceMeasure as() const { return express::base::as<IfcIlluminanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcInductanceMeasure>, int> = 0>
-    // IfcInductanceMeasure as() const { return express::Base::as<IfcInductanceMeasure>(); }
+    // IfcInductanceMeasure as() const { return express::base::as<IfcInductanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcIntegerCountRateMeasure>, int> = 0>
-    // IfcIntegerCountRateMeasure as() const { return express::Base::as<IfcIntegerCountRateMeasure>(); }
+    // IfcIntegerCountRateMeasure as() const { return express::base::as<IfcIntegerCountRateMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcIonConcentrationMeasure>, int> = 0>
-    // IfcIonConcentrationMeasure as() const { return express::Base::as<IfcIonConcentrationMeasure>(); }
+    // IfcIonConcentrationMeasure as() const { return express::base::as<IfcIonConcentrationMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcIsothermalMoistureCapacityMeasure>, int> = 0>
-    // IfcIsothermalMoistureCapacityMeasure as() const { return express::Base::as<IfcIsothermalMoistureCapacityMeasure>(); }
+    // IfcIsothermalMoistureCapacityMeasure as() const { return express::base::as<IfcIsothermalMoistureCapacityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcKinematicViscosityMeasure>, int> = 0>
-    // IfcKinematicViscosityMeasure as() const { return express::Base::as<IfcKinematicViscosityMeasure>(); }
+    // IfcKinematicViscosityMeasure as() const { return express::base::as<IfcKinematicViscosityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearForceMeasure>, int> = 0>
-    // IfcLinearForceMeasure as() const { return express::Base::as<IfcLinearForceMeasure>(); }
+    // IfcLinearForceMeasure as() const { return express::base::as<IfcLinearForceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearMomentMeasure>, int> = 0>
-    // IfcLinearMomentMeasure as() const { return express::Base::as<IfcLinearMomentMeasure>(); }
+    // IfcLinearMomentMeasure as() const { return express::base::as<IfcLinearMomentMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearStiffnessMeasure>, int> = 0>
-    // IfcLinearStiffnessMeasure as() const { return express::Base::as<IfcLinearStiffnessMeasure>(); }
+    // IfcLinearStiffnessMeasure as() const { return express::base::as<IfcLinearStiffnessMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearVelocityMeasure>, int> = 0>
-    // IfcLinearVelocityMeasure as() const { return express::Base::as<IfcLinearVelocityMeasure>(); }
+    // IfcLinearVelocityMeasure as() const { return express::base::as<IfcLinearVelocityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousFluxMeasure>, int> = 0>
-    // IfcLuminousFluxMeasure as() const { return express::Base::as<IfcLuminousFluxMeasure>(); }
+    // IfcLuminousFluxMeasure as() const { return express::base::as<IfcLuminousFluxMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousIntensityDistributionMeasure>, int> = 0>
-    // IfcLuminousIntensityDistributionMeasure as() const { return express::Base::as<IfcLuminousIntensityDistributionMeasure>(); }
+    // IfcLuminousIntensityDistributionMeasure as() const { return express::base::as<IfcLuminousIntensityDistributionMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMagneticFluxDensityMeasure>, int> = 0>
-    // IfcMagneticFluxDensityMeasure as() const { return express::Base::as<IfcMagneticFluxDensityMeasure>(); }
+    // IfcMagneticFluxDensityMeasure as() const { return express::base::as<IfcMagneticFluxDensityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMagneticFluxMeasure>, int> = 0>
-    // IfcMagneticFluxMeasure as() const { return express::Base::as<IfcMagneticFluxMeasure>(); }
+    // IfcMagneticFluxMeasure as() const { return express::base::as<IfcMagneticFluxMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassDensityMeasure>, int> = 0>
-    // IfcMassDensityMeasure as() const { return express::Base::as<IfcMassDensityMeasure>(); }
+    // IfcMassDensityMeasure as() const { return express::base::as<IfcMassDensityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassFlowRateMeasure>, int> = 0>
-    // IfcMassFlowRateMeasure as() const { return express::Base::as<IfcMassFlowRateMeasure>(); }
+    // IfcMassFlowRateMeasure as() const { return express::base::as<IfcMassFlowRateMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassPerLengthMeasure>, int> = 0>
-    // IfcMassPerLengthMeasure as() const { return express::Base::as<IfcMassPerLengthMeasure>(); }
+    // IfcMassPerLengthMeasure as() const { return express::base::as<IfcMassPerLengthMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfElasticityMeasure>, int> = 0>
-    // IfcModulusOfElasticityMeasure as() const { return express::Base::as<IfcModulusOfElasticityMeasure>(); }
+    // IfcModulusOfElasticityMeasure as() const { return express::base::as<IfcModulusOfElasticityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfLinearSubgradeReactionMeasure>, int> = 0>
-    // IfcModulusOfLinearSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfLinearSubgradeReactionMeasure>(); }
+    // IfcModulusOfLinearSubgradeReactionMeasure as() const { return express::base::as<IfcModulusOfLinearSubgradeReactionMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfRotationalSubgradeReactionMeasure>, int> = 0>
-    // IfcModulusOfRotationalSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfRotationalSubgradeReactionMeasure>(); }
+    // IfcModulusOfRotationalSubgradeReactionMeasure as() const { return express::base::as<IfcModulusOfRotationalSubgradeReactionMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfSubgradeReactionMeasure>, int> = 0>
-    // IfcModulusOfSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfSubgradeReactionMeasure>(); }
+    // IfcModulusOfSubgradeReactionMeasure as() const { return express::base::as<IfcModulusOfSubgradeReactionMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMoistureDiffusivityMeasure>, int> = 0>
-    // IfcMoistureDiffusivityMeasure as() const { return express::Base::as<IfcMoistureDiffusivityMeasure>(); }
+    // IfcMoistureDiffusivityMeasure as() const { return express::base::as<IfcMoistureDiffusivityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMolecularWeightMeasure>, int> = 0>
-    // IfcMolecularWeightMeasure as() const { return express::Base::as<IfcMolecularWeightMeasure>(); }
+    // IfcMolecularWeightMeasure as() const { return express::base::as<IfcMolecularWeightMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMomentOfInertiaMeasure>, int> = 0>
-    // IfcMomentOfInertiaMeasure as() const { return express::Base::as<IfcMomentOfInertiaMeasure>(); }
+    // IfcMomentOfInertiaMeasure as() const { return express::base::as<IfcMomentOfInertiaMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMonetaryMeasure>, int> = 0>
-    // IfcMonetaryMeasure as() const { return express::Base::as<IfcMonetaryMeasure>(); }
+    // IfcMonetaryMeasure as() const { return express::base::as<IfcMonetaryMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPHMeasure>, int> = 0>
-    // IfcPHMeasure as() const { return express::Base::as<IfcPHMeasure>(); }
+    // IfcPHMeasure as() const { return express::base::as<IfcPHMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPlanarForceMeasure>, int> = 0>
-    // IfcPlanarForceMeasure as() const { return express::Base::as<IfcPlanarForceMeasure>(); }
+    // IfcPlanarForceMeasure as() const { return express::base::as<IfcPlanarForceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPowerMeasure>, int> = 0>
-    // IfcPowerMeasure as() const { return express::Base::as<IfcPowerMeasure>(); }
+    // IfcPowerMeasure as() const { return express::base::as<IfcPowerMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPressureMeasure>, int> = 0>
-    // IfcPressureMeasure as() const { return express::Base::as<IfcPressureMeasure>(); }
+    // IfcPressureMeasure as() const { return express::base::as<IfcPressureMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcRadioActivityMeasure>, int> = 0>
-    // IfcRadioActivityMeasure as() const { return express::Base::as<IfcRadioActivityMeasure>(); }
+    // IfcRadioActivityMeasure as() const { return express::base::as<IfcRadioActivityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalFrequencyMeasure>, int> = 0>
-    // IfcRotationalFrequencyMeasure as() const { return express::Base::as<IfcRotationalFrequencyMeasure>(); }
+    // IfcRotationalFrequencyMeasure as() const { return express::base::as<IfcRotationalFrequencyMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalMassMeasure>, int> = 0>
-    // IfcRotationalMassMeasure as() const { return express::Base::as<IfcRotationalMassMeasure>(); }
+    // IfcRotationalMassMeasure as() const { return express::base::as<IfcRotationalMassMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalStiffnessMeasure>, int> = 0>
-    // IfcRotationalStiffnessMeasure as() const { return express::Base::as<IfcRotationalStiffnessMeasure>(); }
+    // IfcRotationalStiffnessMeasure as() const { return express::base::as<IfcRotationalStiffnessMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSectionModulusMeasure>, int> = 0>
-    // IfcSectionModulusMeasure as() const { return express::Base::as<IfcSectionModulusMeasure>(); }
+    // IfcSectionModulusMeasure as() const { return express::base::as<IfcSectionModulusMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSectionalAreaIntegralMeasure>, int> = 0>
-    // IfcSectionalAreaIntegralMeasure as() const { return express::Base::as<IfcSectionalAreaIntegralMeasure>(); }
+    // IfcSectionalAreaIntegralMeasure as() const { return express::base::as<IfcSectionalAreaIntegralMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcShearModulusMeasure>, int> = 0>
-    // IfcShearModulusMeasure as() const { return express::Base::as<IfcShearModulusMeasure>(); }
+    // IfcShearModulusMeasure as() const { return express::base::as<IfcShearModulusMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPowerLevelMeasure>, int> = 0>
-    // IfcSoundPowerLevelMeasure as() const { return express::Base::as<IfcSoundPowerLevelMeasure>(); }
+    // IfcSoundPowerLevelMeasure as() const { return express::base::as<IfcSoundPowerLevelMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPowerMeasure>, int> = 0>
-    // IfcSoundPowerMeasure as() const { return express::Base::as<IfcSoundPowerMeasure>(); }
+    // IfcSoundPowerMeasure as() const { return express::base::as<IfcSoundPowerMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPressureLevelMeasure>, int> = 0>
-    // IfcSoundPressureLevelMeasure as() const { return express::Base::as<IfcSoundPressureLevelMeasure>(); }
+    // IfcSoundPressureLevelMeasure as() const { return express::base::as<IfcSoundPressureLevelMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPressureMeasure>, int> = 0>
-    // IfcSoundPressureMeasure as() const { return express::Base::as<IfcSoundPressureMeasure>(); }
+    // IfcSoundPressureMeasure as() const { return express::base::as<IfcSoundPressureMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSpecificHeatCapacityMeasure>, int> = 0>
-    // IfcSpecificHeatCapacityMeasure as() const { return express::Base::as<IfcSpecificHeatCapacityMeasure>(); }
+    // IfcSpecificHeatCapacityMeasure as() const { return express::base::as<IfcSpecificHeatCapacityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTemperatureGradientMeasure>, int> = 0>
-    // IfcTemperatureGradientMeasure as() const { return express::Base::as<IfcTemperatureGradientMeasure>(); }
+    // IfcTemperatureGradientMeasure as() const { return express::base::as<IfcTemperatureGradientMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTemperatureRateOfChangeMeasure>, int> = 0>
-    // IfcTemperatureRateOfChangeMeasure as() const { return express::Base::as<IfcTemperatureRateOfChangeMeasure>(); }
+    // IfcTemperatureRateOfChangeMeasure as() const { return express::base::as<IfcTemperatureRateOfChangeMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalAdmittanceMeasure>, int> = 0>
-    // IfcThermalAdmittanceMeasure as() const { return express::Base::as<IfcThermalAdmittanceMeasure>(); }
+    // IfcThermalAdmittanceMeasure as() const { return express::base::as<IfcThermalAdmittanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalConductivityMeasure>, int> = 0>
-    // IfcThermalConductivityMeasure as() const { return express::Base::as<IfcThermalConductivityMeasure>(); }
+    // IfcThermalConductivityMeasure as() const { return express::base::as<IfcThermalConductivityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalExpansionCoefficientMeasure>, int> = 0>
-    // IfcThermalExpansionCoefficientMeasure as() const { return express::Base::as<IfcThermalExpansionCoefficientMeasure>(); }
+    // IfcThermalExpansionCoefficientMeasure as() const { return express::base::as<IfcThermalExpansionCoefficientMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalResistanceMeasure>, int> = 0>
-    // IfcThermalResistanceMeasure as() const { return express::Base::as<IfcThermalResistanceMeasure>(); }
+    // IfcThermalResistanceMeasure as() const { return express::base::as<IfcThermalResistanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalTransmittanceMeasure>, int> = 0>
-    // IfcThermalTransmittanceMeasure as() const { return express::Base::as<IfcThermalTransmittanceMeasure>(); }
+    // IfcThermalTransmittanceMeasure as() const { return express::base::as<IfcThermalTransmittanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTorqueMeasure>, int> = 0>
-    // IfcTorqueMeasure as() const { return express::Base::as<IfcTorqueMeasure>(); }
+    // IfcTorqueMeasure as() const { return express::base::as<IfcTorqueMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcVaporPermeabilityMeasure>, int> = 0>
-    // IfcVaporPermeabilityMeasure as() const { return express::Base::as<IfcVaporPermeabilityMeasure>(); }
+    // IfcVaporPermeabilityMeasure as() const { return express::base::as<IfcVaporPermeabilityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcVolumetricFlowRateMeasure>, int> = 0>
-    // IfcVolumetricFlowRateMeasure as() const { return express::Base::as<IfcVolumetricFlowRateMeasure>(); }
+    // IfcVolumetricFlowRateMeasure as() const { return express::base::as<IfcVolumetricFlowRateMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcWarpingConstantMeasure>, int> = 0>
-    // IfcWarpingConstantMeasure as() const { return express::Base::as<IfcWarpingConstantMeasure>(); }
+    // IfcWarpingConstantMeasure as() const { return express::base::as<IfcWarpingConstantMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcWarpingMomentMeasure>, int> = 0>
-    // IfcWarpingMomentMeasure as() const { return express::Base::as<IfcWarpingMomentMeasure>(); }
+    // IfcWarpingMomentMeasure as() const { return express::base::as<IfcWarpingMomentMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMeasureValue>, int> = 0>
-    // IfcMeasureValue as() const { return express::Base::as<IfcMeasureValue>(); }
+    // IfcMeasureValue as() const { return express::base::as<IfcMeasureValue>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAmountOfSubstanceMeasure>, int> = 0>
-    // IfcAmountOfSubstanceMeasure as() const { return express::Base::as<IfcAmountOfSubstanceMeasure>(); }
+    // IfcAmountOfSubstanceMeasure as() const { return express::base::as<IfcAmountOfSubstanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAreaMeasure>, int> = 0>
-    // IfcAreaMeasure as() const { return express::Base::as<IfcAreaMeasure>(); }
+    // IfcAreaMeasure as() const { return express::base::as<IfcAreaMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcComplexNumber>, int> = 0>
-    // IfcComplexNumber as() const { return express::Base::as<IfcComplexNumber>(); }
+    // IfcComplexNumber as() const { return express::base::as<IfcComplexNumber>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcContextDependentMeasure>, int> = 0>
-    // IfcContextDependentMeasure as() const { return express::Base::as<IfcContextDependentMeasure>(); }
+    // IfcContextDependentMeasure as() const { return express::base::as<IfcContextDependentMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcCountMeasure>, int> = 0>
-    // IfcCountMeasure as() const { return express::Base::as<IfcCountMeasure>(); }
+    // IfcCountMeasure as() const { return express::base::as<IfcCountMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDescriptiveMeasure>, int> = 0>
-    // IfcDescriptiveMeasure as() const { return express::Base::as<IfcDescriptiveMeasure>(); }
+    // IfcDescriptiveMeasure as() const { return express::base::as<IfcDescriptiveMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricCurrentMeasure>, int> = 0>
-    // IfcElectricCurrentMeasure as() const { return express::Base::as<IfcElectricCurrentMeasure>(); }
+    // IfcElectricCurrentMeasure as() const { return express::base::as<IfcElectricCurrentMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLengthMeasure>, int> = 0>
-    // IfcLengthMeasure as() const { return express::Base::as<IfcLengthMeasure>(); }
+    // IfcLengthMeasure as() const { return express::base::as<IfcLengthMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousIntensityMeasure>, int> = 0>
-    // IfcLuminousIntensityMeasure as() const { return express::Base::as<IfcLuminousIntensityMeasure>(); }
+    // IfcLuminousIntensityMeasure as() const { return express::base::as<IfcLuminousIntensityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassMeasure>, int> = 0>
-    // IfcMassMeasure as() const { return express::Base::as<IfcMassMeasure>(); }
+    // IfcMassMeasure as() const { return express::base::as<IfcMassMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcNonNegativeLengthMeasure>, int> = 0>
-    // IfcNonNegativeLengthMeasure as() const { return express::Base::as<IfcNonNegativeLengthMeasure>(); }
+    // IfcNonNegativeLengthMeasure as() const { return express::base::as<IfcNonNegativeLengthMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcNormalisedRatioMeasure>, int> = 0>
-    // IfcNormalisedRatioMeasure as() const { return express::Base::as<IfcNormalisedRatioMeasure>(); }
+    // IfcNormalisedRatioMeasure as() const { return express::base::as<IfcNormalisedRatioMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcNumericMeasure>, int> = 0>
-    // IfcNumericMeasure as() const { return express::Base::as<IfcNumericMeasure>(); }
+    // IfcNumericMeasure as() const { return express::base::as<IfcNumericMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcParameterValue>, int> = 0>
-    // IfcParameterValue as() const { return express::Base::as<IfcParameterValue>(); }
+    // IfcParameterValue as() const { return express::base::as<IfcParameterValue>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPlaneAngleMeasure>, int> = 0>
-    // IfcPlaneAngleMeasure as() const { return express::Base::as<IfcPlaneAngleMeasure>(); }
+    // IfcPlaneAngleMeasure as() const { return express::base::as<IfcPlaneAngleMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveLengthMeasure>, int> = 0>
-    // IfcPositiveLengthMeasure as() const { return express::Base::as<IfcPositiveLengthMeasure>(); }
+    // IfcPositiveLengthMeasure as() const { return express::base::as<IfcPositiveLengthMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositivePlaneAngleMeasure>, int> = 0>
-    // IfcPositivePlaneAngleMeasure as() const { return express::Base::as<IfcPositivePlaneAngleMeasure>(); }
+    // IfcPositivePlaneAngleMeasure as() const { return express::base::as<IfcPositivePlaneAngleMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveRatioMeasure>, int> = 0>
-    // IfcPositiveRatioMeasure as() const { return express::Base::as<IfcPositiveRatioMeasure>(); }
+    // IfcPositiveRatioMeasure as() const { return express::base::as<IfcPositiveRatioMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcRatioMeasure>, int> = 0>
-    // IfcRatioMeasure as() const { return express::Base::as<IfcRatioMeasure>(); }
+    // IfcRatioMeasure as() const { return express::base::as<IfcRatioMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSolidAngleMeasure>, int> = 0>
-    // IfcSolidAngleMeasure as() const { return express::Base::as<IfcSolidAngleMeasure>(); }
+    // IfcSolidAngleMeasure as() const { return express::base::as<IfcSolidAngleMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermodynamicTemperatureMeasure>, int> = 0>
-    // IfcThermodynamicTemperatureMeasure as() const { return express::Base::as<IfcThermodynamicTemperatureMeasure>(); }
+    // IfcThermodynamicTemperatureMeasure as() const { return express::base::as<IfcThermodynamicTemperatureMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeMeasure>, int> = 0>
-    // IfcTimeMeasure as() const { return express::Base::as<IfcTimeMeasure>(); }
+    // IfcTimeMeasure as() const { return express::base::as<IfcTimeMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcVolumeMeasure>, int> = 0>
-    // IfcVolumeMeasure as() const { return express::Base::as<IfcVolumeMeasure>(); }
+    // IfcVolumeMeasure as() const { return express::base::as<IfcVolumeMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSimpleValue>, int> = 0>
-    // IfcSimpleValue as() const { return express::Base::as<IfcSimpleValue>(); }
+    // IfcSimpleValue as() const { return express::base::as<IfcSimpleValue>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcBinary>, int> = 0>
-    // IfcBinary as() const { return express::Base::as<IfcBinary>(); }
+    // IfcBinary as() const { return express::base::as<IfcBinary>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcBoolean>, int> = 0>
-    // IfcBoolean as() const { return express::Base::as<IfcBoolean>(); }
+    // IfcBoolean as() const { return express::base::as<IfcBoolean>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDate>, int> = 0>
-    // IfcDate as() const { return express::Base::as<IfcDate>(); }
+    // IfcDate as() const { return express::base::as<IfcDate>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDateTime>, int> = 0>
-    // IfcDateTime as() const { return express::Base::as<IfcDateTime>(); }
+    // IfcDateTime as() const { return express::base::as<IfcDateTime>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDuration>, int> = 0>
-    // IfcDuration as() const { return express::Base::as<IfcDuration>(); }
+    // IfcDuration as() const { return express::base::as<IfcDuration>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcIdentifier>, int> = 0>
-    // IfcIdentifier as() const { return express::Base::as<IfcIdentifier>(); }
+    // IfcIdentifier as() const { return express::base::as<IfcIdentifier>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcInteger>, int> = 0>
-    // IfcInteger as() const { return express::Base::as<IfcInteger>(); }
+    // IfcInteger as() const { return express::base::as<IfcInteger>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLabel>, int> = 0>
-    // IfcLabel as() const { return express::Base::as<IfcLabel>(); }
+    // IfcLabel as() const { return express::base::as<IfcLabel>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLogical>, int> = 0>
-    // IfcLogical as() const { return express::Base::as<IfcLogical>(); }
+    // IfcLogical as() const { return express::base::as<IfcLogical>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveInteger>, int> = 0>
-    // IfcPositiveInteger as() const { return express::Base::as<IfcPositiveInteger>(); }
+    // IfcPositiveInteger as() const { return express::base::as<IfcPositiveInteger>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcReal>, int> = 0>
-    // IfcReal as() const { return express::Base::as<IfcReal>(); }
+    // IfcReal as() const { return express::base::as<IfcReal>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcText>, int> = 0>
-    // IfcText as() const { return express::Base::as<IfcText>(); }
+    // IfcText as() const { return express::base::as<IfcText>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTime>, int> = 0>
-    // IfcTime as() const { return express::Base::as<IfcTime>(); }
+    // IfcTime as() const { return express::base::as<IfcTime>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeStamp>, int> = 0>
-    // IfcTimeStamp as() const { return express::Base::as<IfcTimeStamp>(); }
+    // IfcTimeStamp as() const { return express::base::as<IfcTimeStamp>(); }
 
-    IfcAppliedValueSelect(const IfcMeasureWithUnit& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcMeasureWithUnit& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcReference& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcReference& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcValue& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcValue& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcDerivedMeasureValue& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcDerivedMeasureValue& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcAbsorbedDoseMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcAbsorbedDoseMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcAccelerationMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcAccelerationMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcAngularVelocityMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcAngularVelocityMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcAreaDensityMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcAreaDensityMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcCompoundPlaneAngleMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcCompoundPlaneAngleMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcCurvatureMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcCurvatureMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcDoseEquivalentMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcDoseEquivalentMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcDynamicViscosityMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcDynamicViscosityMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcElectricCapacitanceMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcElectricCapacitanceMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcElectricChargeMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcElectricChargeMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcElectricConductanceMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcElectricConductanceMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcElectricResistanceMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcElectricResistanceMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcElectricVoltageMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcElectricVoltageMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcEnergyMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcEnergyMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcForceMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcForceMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcFrequencyMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcFrequencyMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcHeatFluxDensityMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcHeatFluxDensityMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcHeatingValueMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcHeatingValueMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcIlluminanceMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcIlluminanceMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcInductanceMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcInductanceMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcIntegerCountRateMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcIntegerCountRateMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcIonConcentrationMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcIonConcentrationMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcIsothermalMoistureCapacityMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcIsothermalMoistureCapacityMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcKinematicViscosityMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcKinematicViscosityMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcLinearForceMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcLinearForceMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcLinearMomentMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcLinearMomentMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcLinearStiffnessMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcLinearStiffnessMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcLinearVelocityMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcLinearVelocityMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcLuminousFluxMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcLuminousFluxMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcLuminousIntensityDistributionMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcLuminousIntensityDistributionMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcMagneticFluxDensityMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcMagneticFluxDensityMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcMagneticFluxMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcMagneticFluxMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcMassDensityMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcMassDensityMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcMassFlowRateMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcMassFlowRateMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcMassPerLengthMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcMassPerLengthMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcModulusOfElasticityMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcModulusOfElasticityMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcModulusOfLinearSubgradeReactionMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcModulusOfLinearSubgradeReactionMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcModulusOfRotationalSubgradeReactionMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcModulusOfRotationalSubgradeReactionMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcModulusOfSubgradeReactionMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcModulusOfSubgradeReactionMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcMoistureDiffusivityMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcMoistureDiffusivityMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcMolecularWeightMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcMolecularWeightMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcMomentOfInertiaMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcMomentOfInertiaMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcMonetaryMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcMonetaryMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcPHMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcPHMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcPlanarForceMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcPlanarForceMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcPowerMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcPowerMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcPressureMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcPressureMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcRadioActivityMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcRadioActivityMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcRotationalFrequencyMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcRotationalFrequencyMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcRotationalMassMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcRotationalMassMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcRotationalStiffnessMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcRotationalStiffnessMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcSectionModulusMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcSectionModulusMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcSectionalAreaIntegralMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcSectionalAreaIntegralMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcShearModulusMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcShearModulusMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcSoundPowerLevelMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcSoundPowerLevelMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcSoundPowerMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcSoundPowerMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcSoundPressureLevelMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcSoundPressureLevelMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcSoundPressureMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcSoundPressureMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcSpecificHeatCapacityMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcSpecificHeatCapacityMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcTemperatureGradientMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcTemperatureGradientMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcTemperatureRateOfChangeMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcTemperatureRateOfChangeMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcThermalAdmittanceMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcThermalAdmittanceMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcThermalConductivityMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcThermalConductivityMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcThermalExpansionCoefficientMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcThermalExpansionCoefficientMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcThermalResistanceMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcThermalResistanceMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcThermalTransmittanceMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcThermalTransmittanceMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcTorqueMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcTorqueMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcVaporPermeabilityMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcVaporPermeabilityMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcVolumetricFlowRateMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcVolumetricFlowRateMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcWarpingConstantMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcWarpingConstantMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcWarpingMomentMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcWarpingMomentMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcMeasureValue& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcMeasureValue& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcAmountOfSubstanceMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcAmountOfSubstanceMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcAreaMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcAreaMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcComplexNumber& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcComplexNumber& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcContextDependentMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcContextDependentMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcCountMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcCountMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcDescriptiveMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcDescriptiveMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcElectricCurrentMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcElectricCurrentMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcLengthMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcLengthMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcLuminousIntensityMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcLuminousIntensityMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcMassMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcMassMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcNonNegativeLengthMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcNonNegativeLengthMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcNormalisedRatioMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcNormalisedRatioMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcNumericMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcNumericMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcParameterValue& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcParameterValue& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcPlaneAngleMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcPlaneAngleMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcPositiveLengthMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcPositiveLengthMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcPositivePlaneAngleMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcPositivePlaneAngleMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcPositiveRatioMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcPositiveRatioMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcRatioMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcRatioMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcSolidAngleMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcSolidAngleMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcThermodynamicTemperatureMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcThermodynamicTemperatureMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcTimeMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcTimeMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcVolumeMeasure& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcVolumeMeasure& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcSimpleValue& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcSimpleValue& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcBinary& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcBinary& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcBoolean& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcBoolean& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcDate& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcDate& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcDateTime& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcDateTime& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcDuration& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcDuration& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcIdentifier& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcIdentifier& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcInteger& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcInteger& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcLabel& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcLabel& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcLogical& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcLogical& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcPositiveInteger& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcPositiveInteger& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcReal& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcReal& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcText& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcText& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcTime& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcTime& c) : express::select(c) {};
 
-    IfcAppliedValueSelect(const IfcTimeStamp& c) : express::Select(c) {};
+    IfcAppliedValueSelect(const IfcTimeStamp& c) : express::select(c) {};
 
 };
 /// Definition from ISO/CD 10303-42:1992: This select type collects together both versions of the placement as used in two dimensional or in three dimensional Cartesian space. This enables entities requiring this information to reference them without specifying the space dimensionality.  
@@ -798,43 +798,43 @@ public:
 /// NOTE: Corresponding STEP type: axis2_placement, please refer to ISO/IS 10303-42:1994, p. 19 for the final definition of the formal standard.
 /// 
 /// HISTORY: New type in IFC Release 1.5
-class IFC_SCHEMA_API IfcAxis2Placement : public express::Select {
+class IFC_SCHEMA_API IfcAxis2Placement : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAxis2Placement2D>, int> = 0>
-    // IfcAxis2Placement2D as() const { return express::Base::as<IfcAxis2Placement2D>(); }
+    // IfcAxis2Placement2D as() const { return express::base::as<IfcAxis2Placement2D>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAxis2Placement3D>, int> = 0>
-    // IfcAxis2Placement3D as() const { return express::Base::as<IfcAxis2Placement3D>(); }
+    // IfcAxis2Placement3D as() const { return express::base::as<IfcAxis2Placement3D>(); }
 
-    IfcAxis2Placement(const IfcAxis2Placement2D& c) : express::Select(c) {};
+    IfcAxis2Placement(const IfcAxis2Placement2D& c) : express::select(c) {};
 
-    IfcAxis2Placement(const IfcAxis2Placement3D& c) : express::Select(c) {};
+    IfcAxis2Placement(const IfcAxis2Placement3D& c) : express::select(c) {};
 
 };
 /// Definition from IAI: A select type for selecting between simple measure types for reinforcement bending parameters.
 /// 
 /// HISTORY New type in IFC Release 2x4
-class IFC_SCHEMA_API IfcBendingParameterSelect : public express::Select {
+class IFC_SCHEMA_API IfcBendingParameterSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLengthMeasure>, int> = 0>
-    // IfcLengthMeasure as() const { return express::Base::as<IfcLengthMeasure>(); }
+    // IfcLengthMeasure as() const { return express::base::as<IfcLengthMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPlaneAngleMeasure>, int> = 0>
-    // IfcPlaneAngleMeasure as() const { return express::Base::as<IfcPlaneAngleMeasure>(); }
+    // IfcPlaneAngleMeasure as() const { return express::base::as<IfcPlaneAngleMeasure>(); }
 
-    IfcBendingParameterSelect(const IfcLengthMeasure& c) : express::Select(c) {};
+    IfcBendingParameterSelect(const IfcLengthMeasure& c) : express::select(c) {};
 
-    IfcBendingParameterSelect(const IfcPlaneAngleMeasure& c) : express::Select(c) {};
+    IfcBendingParameterSelect(const IfcPlaneAngleMeasure& c) : express::select(c) {};
 
 };
 /// Definition from ISO/CD 10303-42:1992: This select type identifies
@@ -853,40 +853,40 @@ public:
 ///   (IfcSolidModel) are defined for being valid Boolean operands.
 /// 
 /// HISTORY: New Type in IFC Release 1.5.1
-class IFC_SCHEMA_API IfcBooleanOperand : public express::Select {
+class IFC_SCHEMA_API IfcBooleanOperand : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcBooleanResult>, int> = 0>
-    // IfcBooleanResult as() const { return express::Base::as<IfcBooleanResult>(); }
+    // IfcBooleanResult as() const { return express::base::as<IfcBooleanResult>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcCsgPrimitive3D>, int> = 0>
-    // IfcCsgPrimitive3D as() const { return express::Base::as<IfcCsgPrimitive3D>(); }
+    // IfcCsgPrimitive3D as() const { return express::base::as<IfcCsgPrimitive3D>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcHalfSpaceSolid>, int> = 0>
-    // IfcHalfSpaceSolid as() const { return express::Base::as<IfcHalfSpaceSolid>(); }
+    // IfcHalfSpaceSolid as() const { return express::base::as<IfcHalfSpaceSolid>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSolidModel>, int> = 0>
-    // IfcSolidModel as() const { return express::Base::as<IfcSolidModel>(); }
+    // IfcSolidModel as() const { return express::base::as<IfcSolidModel>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTessellatedFaceSet>, int> = 0>
-    // IfcTessellatedFaceSet as() const { return express::Base::as<IfcTessellatedFaceSet>(); }
+    // IfcTessellatedFaceSet as() const { return express::base::as<IfcTessellatedFaceSet>(); }
 
-    IfcBooleanOperand(const IfcBooleanResult& c) : express::Select(c) {};
+    IfcBooleanOperand(const IfcBooleanResult& c) : express::select(c) {};
 
-    IfcBooleanOperand(const IfcCsgPrimitive3D& c) : express::Select(c) {};
+    IfcBooleanOperand(const IfcCsgPrimitive3D& c) : express::select(c) {};
 
-    IfcBooleanOperand(const IfcHalfSpaceSolid& c) : express::Select(c) {};
+    IfcBooleanOperand(const IfcHalfSpaceSolid& c) : express::select(c) {};
 
-    IfcBooleanOperand(const IfcSolidModel& c) : express::Select(c) {};
+    IfcBooleanOperand(const IfcSolidModel& c) : express::select(c) {};
 
-    IfcBooleanOperand(const IfcTessellatedFaceSet& c) : express::Select(c) {};
+    IfcBooleanOperand(const IfcTessellatedFaceSet& c) : express::select(c) {};
 
 };
 /// IfcClassificationReferenceSelect enables selection of whether a classification reference is a subset of another classification reference or is a top level entry of a classification source. 
@@ -897,22 +897,22 @@ public:
 /// 
 /// IfcClassification (for classification information)  
 /// IfcClassificationReference (for reference into a classification source)
-class IFC_SCHEMA_API IfcClassificationReferenceSelect : public express::Select {
+class IFC_SCHEMA_API IfcClassificationReferenceSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcClassification>, int> = 0>
-    // IfcClassification as() const { return express::Base::as<IfcClassification>(); }
+    // IfcClassification as() const { return express::base::as<IfcClassification>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcClassificationReference>, int> = 0>
-    // IfcClassificationReference as() const { return express::Base::as<IfcClassificationReference>(); }
+    // IfcClassificationReference as() const { return express::base::as<IfcClassificationReference>(); }
 
-    IfcClassificationReferenceSelect(const IfcClassification& c) : express::Select(c) {};
+    IfcClassificationReferenceSelect(const IfcClassification& c) : express::select(c) {};
 
-    IfcClassificationReferenceSelect(const IfcClassificationReference& c) : express::Select(c) {};
+    IfcClassificationReferenceSelect(const IfcClassificationReference& c) : express::select(c) {};
 
 };
 /// IfcClassificationSelect enables selection of whether a classification reference is to be referenced from an external source, or whether a classification is referenced as such.
@@ -928,22 +928,22 @@ public:
 /// 
 /// IfcClassification (for referencing a classification system)
 /// IfcClassificationReference (for referencing a classification item (or facet) inside a classification system)
-class IFC_SCHEMA_API IfcClassificationSelect : public express::Select {
+class IFC_SCHEMA_API IfcClassificationSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcClassification>, int> = 0>
-    // IfcClassification as() const { return express::Base::as<IfcClassification>(); }
+    // IfcClassification as() const { return express::base::as<IfcClassification>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcClassificationReference>, int> = 0>
-    // IfcClassificationReference as() const { return express::Base::as<IfcClassificationReference>(); }
+    // IfcClassificationReference as() const { return express::base::as<IfcClassificationReference>(); }
 
-    IfcClassificationSelect(const IfcClassification& c) : express::Select(c) {};
+    IfcClassificationSelect(const IfcClassification& c) : express::select(c) {};
 
-    IfcClassificationSelect(const IfcClassificationReference& c) : express::Select(c) {};
+    IfcClassificationSelect(const IfcClassificationReference& c) : express::select(c) {};
 
 };
 /// Definition from ISO/CD 10303-46:1992: The colour entity defines a basic appearance of elements which shall be visualized in a picture.
@@ -951,64 +951,64 @@ public:
 /// NOTE  Corresponding STEP name: colour. It has been made into a SELECT type in IFC to avoid multiple inheritance for pre defined colour. Please refer to ISO/IS 10303-46:1994, p. 138 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IFC_SCHEMA_API IfcColour : public express::Select {
+class IFC_SCHEMA_API IfcColour : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcColourSpecification>, int> = 0>
-    // IfcColourSpecification as() const { return express::Base::as<IfcColourSpecification>(); }
+    // IfcColourSpecification as() const { return express::base::as<IfcColourSpecification>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPreDefinedColour>, int> = 0>
-    // IfcPreDefinedColour as() const { return express::Base::as<IfcPreDefinedColour>(); }
+    // IfcPreDefinedColour as() const { return express::base::as<IfcPreDefinedColour>(); }
 
-    IfcColour(const IfcColourSpecification& c) : express::Select(c) {};
+    IfcColour(const IfcColourSpecification& c) : express::select(c) {};
 
-    IfcColour(const IfcPreDefinedColour& c) : express::Select(c) {};
+    IfcColour(const IfcPreDefinedColour& c) : express::select(c) {};
 
 };
 /// The IfcColourOrFactor enables the selection of either a RGB colour value or a scalar factor value for the use as values of the reflectance components.
 /// 
 /// HISTORY: New type in IFC2x2.
-class IFC_SCHEMA_API IfcColourOrFactor : public express::Select {
+class IFC_SCHEMA_API IfcColourOrFactor : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcColourRgb>, int> = 0>
-    // IfcColourRgb as() const { return express::Base::as<IfcColourRgb>(); }
+    // IfcColourRgb as() const { return express::base::as<IfcColourRgb>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcNormalisedRatioMeasure>, int> = 0>
-    // IfcNormalisedRatioMeasure as() const { return express::Base::as<IfcNormalisedRatioMeasure>(); }
+    // IfcNormalisedRatioMeasure as() const { return express::base::as<IfcNormalisedRatioMeasure>(); }
 
-    IfcColourOrFactor(const IfcColourRgb& c) : express::Select(c) {};
+    IfcColourOrFactor(const IfcColourRgb& c) : express::select(c) {};
 
-    IfcColourOrFactor(const IfcNormalisedRatioMeasure& c) : express::Select(c) {};
+    IfcColourOrFactor(const IfcNormalisedRatioMeasure& c) : express::select(c) {};
 
 };
 /// IfcCoordinateReferenceSystemSelect is a select between either the local engineering coordinate system, represented by the IfcGeometricRepresentationContext, or another coordinate reference system, represented by IfcCoordinateReferenceSystem, to be the source of a coordinate operation.
 /// 
 /// HISTORY  New select type in IFC2x4.
-class IFC_SCHEMA_API IfcCoordinateReferenceSystemSelect : public express::Select {
+class IFC_SCHEMA_API IfcCoordinateReferenceSystemSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcCoordinateReferenceSystem>, int> = 0>
-    // IfcCoordinateReferenceSystem as() const { return express::Base::as<IfcCoordinateReferenceSystem>(); }
+    // IfcCoordinateReferenceSystem as() const { return express::base::as<IfcCoordinateReferenceSystem>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcGeometricRepresentationContext>, int> = 0>
-    // IfcGeometricRepresentationContext as() const { return express::Base::as<IfcGeometricRepresentationContext>(); }
+    // IfcGeometricRepresentationContext as() const { return express::base::as<IfcGeometricRepresentationContext>(); }
 
-    IfcCoordinateReferenceSystemSelect(const IfcCoordinateReferenceSystem& c) : express::Select(c) {};
+    IfcCoordinateReferenceSystemSelect(const IfcCoordinateReferenceSystem& c) : express::select(c) {};
 
-    IfcCoordinateReferenceSystemSelect(const IfcGeometricRepresentationContext& c) : express::Select(c) {};
+    IfcCoordinateReferenceSystemSelect(const IfcGeometricRepresentationContext& c) : express::select(c) {};
 
 };
 /// Definition from ISO/CD 10303-42:1992: This type identifies the types of entity which may be selected as the root of a CSG tree including a single CSG primitive as a special case.
@@ -1017,22 +1017,22 @@ public:
 /// NOTE Corresponding ISO 10303-42 type: csg_select, please refer to ISO/IS 10303-42:1994, p.168 for the final definition of the formal standard.
 /// 
 /// HISTORY New Type in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcCsgSelect : public express::Select {
+class IFC_SCHEMA_API IfcCsgSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcBooleanResult>, int> = 0>
-    // IfcBooleanResult as() const { return express::Base::as<IfcBooleanResult>(); }
+    // IfcBooleanResult as() const { return express::base::as<IfcBooleanResult>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcCsgPrimitive3D>, int> = 0>
-    // IfcCsgPrimitive3D as() const { return express::Base::as<IfcCsgPrimitive3D>(); }
+    // IfcCsgPrimitive3D as() const { return express::base::as<IfcCsgPrimitive3D>(); }
 
-    IfcCsgSelect(const IfcBooleanResult& c) : express::Select(c) {};
+    IfcCsgSelect(const IfcBooleanResult& c) : express::select(c) {};
 
-    IfcCsgSelect(const IfcCsgPrimitive3D& c) : express::Select(c) {};
+    IfcCsgSelect(const IfcCsgPrimitive3D& c) : express::select(c) {};
 
 };
 /// Definition from ISO/CD 10303-46:1992: The curve font or scaled curve font select is a selection of either a curve font style select (being either a predefined curve font or an explicitly defined curve font) or a curve style font and scaling. 
@@ -1040,78 +1040,78 @@ public:
 /// NOTE Corresponding ISO 10303 name: curve_font_or_scaled_curve_font_select. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC2x2.
-class IFC_SCHEMA_API IfcCurveFontOrScaledCurveFontSelect : public express::Select {
+class IFC_SCHEMA_API IfcCurveFontOrScaledCurveFontSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcCurveStyleFontAndScaling>, int> = 0>
-    // IfcCurveStyleFontAndScaling as() const { return express::Base::as<IfcCurveStyleFontAndScaling>(); }
+    // IfcCurveStyleFontAndScaling as() const { return express::base::as<IfcCurveStyleFontAndScaling>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcCurveStyleFontSelect>, int> = 0>
-    // IfcCurveStyleFontSelect as() const { return express::Base::as<IfcCurveStyleFontSelect>(); }
+    // IfcCurveStyleFontSelect as() const { return express::base::as<IfcCurveStyleFontSelect>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcCurveStyleFont>, int> = 0>
-    // IfcCurveStyleFont as() const { return express::Base::as<IfcCurveStyleFont>(); }
+    // IfcCurveStyleFont as() const { return express::base::as<IfcCurveStyleFont>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPreDefinedCurveFont>, int> = 0>
-    // IfcPreDefinedCurveFont as() const { return express::Base::as<IfcPreDefinedCurveFont>(); }
+    // IfcPreDefinedCurveFont as() const { return express::base::as<IfcPreDefinedCurveFont>(); }
 
-    IfcCurveFontOrScaledCurveFontSelect(const IfcCurveStyleFontAndScaling& c) : express::Select(c) {};
+    IfcCurveFontOrScaledCurveFontSelect(const IfcCurveStyleFontAndScaling& c) : express::select(c) {};
 
-    IfcCurveFontOrScaledCurveFontSelect(const IfcCurveStyleFontSelect& c) : express::Select(c) {};
+    IfcCurveFontOrScaledCurveFontSelect(const IfcCurveStyleFontSelect& c) : express::select(c) {};
 
-    IfcCurveFontOrScaledCurveFontSelect(const IfcCurveStyleFont& c) : express::Select(c) {};
+    IfcCurveFontOrScaledCurveFontSelect(const IfcCurveStyleFont& c) : express::select(c) {};
 
-    IfcCurveFontOrScaledCurveFontSelect(const IfcPreDefinedCurveFont& c) : express::Select(c) {};
+    IfcCurveFontOrScaledCurveFontSelect(const IfcPreDefinedCurveFont& c) : express::select(c) {};
 
 };
 
-class IFC_SCHEMA_API IfcCurveMeasureSelect : public express::Select {
+class IFC_SCHEMA_API IfcCurveMeasureSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcNonNegativeLengthMeasure>, int> = 0>
-    // IfcNonNegativeLengthMeasure as() const { return express::Base::as<IfcNonNegativeLengthMeasure>(); }
+    // IfcNonNegativeLengthMeasure as() const { return express::base::as<IfcNonNegativeLengthMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcParameterValue>, int> = 0>
-    // IfcParameterValue as() const { return express::Base::as<IfcParameterValue>(); }
+    // IfcParameterValue as() const { return express::base::as<IfcParameterValue>(); }
 
-    IfcCurveMeasureSelect(const IfcNonNegativeLengthMeasure& c) : express::Select(c) {};
+    IfcCurveMeasureSelect(const IfcNonNegativeLengthMeasure& c) : express::select(c) {};
 
-    IfcCurveMeasureSelect(const IfcParameterValue& c) : express::Select(c) {};
+    IfcCurveMeasureSelect(const IfcParameterValue& c) : express::select(c) {};
 
 };
 
-class IFC_SCHEMA_API IfcCurveOnSurface : public express::Select {
+class IFC_SCHEMA_API IfcCurveOnSurface : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcCompositeCurveOnSurface>, int> = 0>
-    // IfcCompositeCurveOnSurface as() const { return express::Base::as<IfcCompositeCurveOnSurface>(); }
+    // IfcCompositeCurveOnSurface as() const { return express::base::as<IfcCompositeCurveOnSurface>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPcurve>, int> = 0>
-    // IfcPcurve as() const { return express::Base::as<IfcPcurve>(); }
+    // IfcPcurve as() const { return express::base::as<IfcPcurve>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSurfaceCurve>, int> = 0>
-    // IfcSurfaceCurve as() const { return express::Base::as<IfcSurfaceCurve>(); }
+    // IfcSurfaceCurve as() const { return express::base::as<IfcSurfaceCurve>(); }
 
-    IfcCurveOnSurface(const IfcCompositeCurveOnSurface& c) : express::Select(c) {};
+    IfcCurveOnSurface(const IfcCompositeCurveOnSurface& c) : express::select(c) {};
 
-    IfcCurveOnSurface(const IfcPcurve& c) : express::Select(c) {};
+    IfcCurveOnSurface(const IfcPcurve& c) : express::select(c) {};
 
-    IfcCurveOnSurface(const IfcSurfaceCurve& c) : express::Select(c) {};
+    IfcCurveOnSurface(const IfcSurfaceCurve& c) : express::select(c) {};
 
 };
 /// IfcCurveOrEdgeCurve provides the option to either select a geometric curve (IfcCurve
@@ -1122,22 +1122,22 @@ public:
 ///   IfcEdgeCurve
 /// 
 /// HISTORY  New select type in IFC2x Edition 3.
-class IFC_SCHEMA_API IfcCurveOrEdgeCurve : public express::Select {
+class IFC_SCHEMA_API IfcCurveOrEdgeCurve : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcBoundedCurve>, int> = 0>
-    // IfcBoundedCurve as() const { return express::Base::as<IfcBoundedCurve>(); }
+    // IfcBoundedCurve as() const { return express::base::as<IfcBoundedCurve>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcEdgeCurve>, int> = 0>
-    // IfcEdgeCurve as() const { return express::Base::as<IfcEdgeCurve>(); }
+    // IfcEdgeCurve as() const { return express::base::as<IfcEdgeCurve>(); }
 
-    IfcCurveOrEdgeCurve(const IfcBoundedCurve& c) : express::Select(c) {};
+    IfcCurveOrEdgeCurve(const IfcBoundedCurve& c) : express::select(c) {};
 
-    IfcCurveOrEdgeCurve(const IfcEdgeCurve& c) : express::Select(c) {};
+    IfcCurveOrEdgeCurve(const IfcEdgeCurve& c) : express::select(c) {};
 
 };
 /// Definition from ISO/CD 10303-46:1992: The curve style font select is a selection of a curve style font or a predefined curve style font. 
@@ -1145,22 +1145,22 @@ public:
 /// NOTE Corresponding ISO 10303 name: curve_style_font_select. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC2x2.
-class IFC_SCHEMA_API IfcCurveStyleFontSelect : public express::Select {
+class IFC_SCHEMA_API IfcCurveStyleFontSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcCurveStyleFont>, int> = 0>
-    // IfcCurveStyleFont as() const { return express::Base::as<IfcCurveStyleFont>(); }
+    // IfcCurveStyleFont as() const { return express::base::as<IfcCurveStyleFont>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPreDefinedCurveFont>, int> = 0>
-    // IfcPreDefinedCurveFont as() const { return express::Base::as<IfcPreDefinedCurveFont>(); }
+    // IfcPreDefinedCurveFont as() const { return express::base::as<IfcPreDefinedCurveFont>(); }
 
-    IfcCurveStyleFontSelect(const IfcCurveStyleFont& c) : express::Select(c) {};
+    IfcCurveStyleFontSelect(const IfcCurveStyleFont& c) : express::select(c) {};
 
-    IfcCurveStyleFontSelect(const IfcPreDefinedCurveFont& c) : express::Select(c) {};
+    IfcCurveStyleFontSelect(const IfcPreDefinedCurveFont& c) : express::select(c) {};
 
 };
 /// IfcDefinitionSelectprovides the option to either select an object or type object IfcObjectDefinition, or a property set template or property set, IfcPropertyDefinition.
@@ -1170,22 +1170,22 @@ public:
 /// IfcPropertyDefinition
 /// 
 /// HISTORY New select type in IFC2x4.
-class IFC_SCHEMA_API IfcDefinitionSelect : public express::Select {
+class IFC_SCHEMA_API IfcDefinitionSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcObjectDefinition>, int> = 0>
-    // IfcObjectDefinition as() const { return express::Base::as<IfcObjectDefinition>(); }
+    // IfcObjectDefinition as() const { return express::base::as<IfcObjectDefinition>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPropertyDefinition>, int> = 0>
-    // IfcPropertyDefinition as() const { return express::Base::as<IfcPropertyDefinition>(); }
+    // IfcPropertyDefinition as() const { return express::base::as<IfcPropertyDefinition>(); }
 
-    IfcDefinitionSelect(const IfcObjectDefinition& c) : express::Select(c) {};
+    IfcDefinitionSelect(const IfcObjectDefinition& c) : express::select(c) {};
 
-    IfcDefinitionSelect(const IfcPropertyDefinition& c) : express::Select(c) {};
+    IfcDefinitionSelect(const IfcPropertyDefinition& c) : express::select(c) {};
 
 };
 /// IfcDerivedMeasureValue is a select type for selecting between derived measure types.
@@ -1262,436 +1262,436 @@ public:
 /// HISTORY New type in IFC Release 2x.
 /// 
 /// IFC2x4 change: added IfcTemperatureRateOfChangeMeasure.
-class IFC_SCHEMA_API IfcDerivedMeasureValue : public express::Select {
+class IFC_SCHEMA_API IfcDerivedMeasureValue : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAbsorbedDoseMeasure>, int> = 0>
-    // IfcAbsorbedDoseMeasure as() const { return express::Base::as<IfcAbsorbedDoseMeasure>(); }
+    // IfcAbsorbedDoseMeasure as() const { return express::base::as<IfcAbsorbedDoseMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAccelerationMeasure>, int> = 0>
-    // IfcAccelerationMeasure as() const { return express::Base::as<IfcAccelerationMeasure>(); }
+    // IfcAccelerationMeasure as() const { return express::base::as<IfcAccelerationMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAngularVelocityMeasure>, int> = 0>
-    // IfcAngularVelocityMeasure as() const { return express::Base::as<IfcAngularVelocityMeasure>(); }
+    // IfcAngularVelocityMeasure as() const { return express::base::as<IfcAngularVelocityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAreaDensityMeasure>, int> = 0>
-    // IfcAreaDensityMeasure as() const { return express::Base::as<IfcAreaDensityMeasure>(); }
+    // IfcAreaDensityMeasure as() const { return express::base::as<IfcAreaDensityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcCompoundPlaneAngleMeasure>, int> = 0>
-    // IfcCompoundPlaneAngleMeasure as() const { return express::Base::as<IfcCompoundPlaneAngleMeasure>(); }
+    // IfcCompoundPlaneAngleMeasure as() const { return express::base::as<IfcCompoundPlaneAngleMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcCurvatureMeasure>, int> = 0>
-    // IfcCurvatureMeasure as() const { return express::Base::as<IfcCurvatureMeasure>(); }
+    // IfcCurvatureMeasure as() const { return express::base::as<IfcCurvatureMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDoseEquivalentMeasure>, int> = 0>
-    // IfcDoseEquivalentMeasure as() const { return express::Base::as<IfcDoseEquivalentMeasure>(); }
+    // IfcDoseEquivalentMeasure as() const { return express::base::as<IfcDoseEquivalentMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDynamicViscosityMeasure>, int> = 0>
-    // IfcDynamicViscosityMeasure as() const { return express::Base::as<IfcDynamicViscosityMeasure>(); }
+    // IfcDynamicViscosityMeasure as() const { return express::base::as<IfcDynamicViscosityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricCapacitanceMeasure>, int> = 0>
-    // IfcElectricCapacitanceMeasure as() const { return express::Base::as<IfcElectricCapacitanceMeasure>(); }
+    // IfcElectricCapacitanceMeasure as() const { return express::base::as<IfcElectricCapacitanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricChargeMeasure>, int> = 0>
-    // IfcElectricChargeMeasure as() const { return express::Base::as<IfcElectricChargeMeasure>(); }
+    // IfcElectricChargeMeasure as() const { return express::base::as<IfcElectricChargeMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricConductanceMeasure>, int> = 0>
-    // IfcElectricConductanceMeasure as() const { return express::Base::as<IfcElectricConductanceMeasure>(); }
+    // IfcElectricConductanceMeasure as() const { return express::base::as<IfcElectricConductanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricResistanceMeasure>, int> = 0>
-    // IfcElectricResistanceMeasure as() const { return express::Base::as<IfcElectricResistanceMeasure>(); }
+    // IfcElectricResistanceMeasure as() const { return express::base::as<IfcElectricResistanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricVoltageMeasure>, int> = 0>
-    // IfcElectricVoltageMeasure as() const { return express::Base::as<IfcElectricVoltageMeasure>(); }
+    // IfcElectricVoltageMeasure as() const { return express::base::as<IfcElectricVoltageMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcEnergyMeasure>, int> = 0>
-    // IfcEnergyMeasure as() const { return express::Base::as<IfcEnergyMeasure>(); }
+    // IfcEnergyMeasure as() const { return express::base::as<IfcEnergyMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcForceMeasure>, int> = 0>
-    // IfcForceMeasure as() const { return express::Base::as<IfcForceMeasure>(); }
+    // IfcForceMeasure as() const { return express::base::as<IfcForceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcFrequencyMeasure>, int> = 0>
-    // IfcFrequencyMeasure as() const { return express::Base::as<IfcFrequencyMeasure>(); }
+    // IfcFrequencyMeasure as() const { return express::base::as<IfcFrequencyMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcHeatFluxDensityMeasure>, int> = 0>
-    // IfcHeatFluxDensityMeasure as() const { return express::Base::as<IfcHeatFluxDensityMeasure>(); }
+    // IfcHeatFluxDensityMeasure as() const { return express::base::as<IfcHeatFluxDensityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcHeatingValueMeasure>, int> = 0>
-    // IfcHeatingValueMeasure as() const { return express::Base::as<IfcHeatingValueMeasure>(); }
+    // IfcHeatingValueMeasure as() const { return express::base::as<IfcHeatingValueMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcIlluminanceMeasure>, int> = 0>
-    // IfcIlluminanceMeasure as() const { return express::Base::as<IfcIlluminanceMeasure>(); }
+    // IfcIlluminanceMeasure as() const { return express::base::as<IfcIlluminanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcInductanceMeasure>, int> = 0>
-    // IfcInductanceMeasure as() const { return express::Base::as<IfcInductanceMeasure>(); }
+    // IfcInductanceMeasure as() const { return express::base::as<IfcInductanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcIntegerCountRateMeasure>, int> = 0>
-    // IfcIntegerCountRateMeasure as() const { return express::Base::as<IfcIntegerCountRateMeasure>(); }
+    // IfcIntegerCountRateMeasure as() const { return express::base::as<IfcIntegerCountRateMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcIonConcentrationMeasure>, int> = 0>
-    // IfcIonConcentrationMeasure as() const { return express::Base::as<IfcIonConcentrationMeasure>(); }
+    // IfcIonConcentrationMeasure as() const { return express::base::as<IfcIonConcentrationMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcIsothermalMoistureCapacityMeasure>, int> = 0>
-    // IfcIsothermalMoistureCapacityMeasure as() const { return express::Base::as<IfcIsothermalMoistureCapacityMeasure>(); }
+    // IfcIsothermalMoistureCapacityMeasure as() const { return express::base::as<IfcIsothermalMoistureCapacityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcKinematicViscosityMeasure>, int> = 0>
-    // IfcKinematicViscosityMeasure as() const { return express::Base::as<IfcKinematicViscosityMeasure>(); }
+    // IfcKinematicViscosityMeasure as() const { return express::base::as<IfcKinematicViscosityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearForceMeasure>, int> = 0>
-    // IfcLinearForceMeasure as() const { return express::Base::as<IfcLinearForceMeasure>(); }
+    // IfcLinearForceMeasure as() const { return express::base::as<IfcLinearForceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearMomentMeasure>, int> = 0>
-    // IfcLinearMomentMeasure as() const { return express::Base::as<IfcLinearMomentMeasure>(); }
+    // IfcLinearMomentMeasure as() const { return express::base::as<IfcLinearMomentMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearStiffnessMeasure>, int> = 0>
-    // IfcLinearStiffnessMeasure as() const { return express::Base::as<IfcLinearStiffnessMeasure>(); }
+    // IfcLinearStiffnessMeasure as() const { return express::base::as<IfcLinearStiffnessMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearVelocityMeasure>, int> = 0>
-    // IfcLinearVelocityMeasure as() const { return express::Base::as<IfcLinearVelocityMeasure>(); }
+    // IfcLinearVelocityMeasure as() const { return express::base::as<IfcLinearVelocityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousFluxMeasure>, int> = 0>
-    // IfcLuminousFluxMeasure as() const { return express::Base::as<IfcLuminousFluxMeasure>(); }
+    // IfcLuminousFluxMeasure as() const { return express::base::as<IfcLuminousFluxMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousIntensityDistributionMeasure>, int> = 0>
-    // IfcLuminousIntensityDistributionMeasure as() const { return express::Base::as<IfcLuminousIntensityDistributionMeasure>(); }
+    // IfcLuminousIntensityDistributionMeasure as() const { return express::base::as<IfcLuminousIntensityDistributionMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMagneticFluxDensityMeasure>, int> = 0>
-    // IfcMagneticFluxDensityMeasure as() const { return express::Base::as<IfcMagneticFluxDensityMeasure>(); }
+    // IfcMagneticFluxDensityMeasure as() const { return express::base::as<IfcMagneticFluxDensityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMagneticFluxMeasure>, int> = 0>
-    // IfcMagneticFluxMeasure as() const { return express::Base::as<IfcMagneticFluxMeasure>(); }
+    // IfcMagneticFluxMeasure as() const { return express::base::as<IfcMagneticFluxMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassDensityMeasure>, int> = 0>
-    // IfcMassDensityMeasure as() const { return express::Base::as<IfcMassDensityMeasure>(); }
+    // IfcMassDensityMeasure as() const { return express::base::as<IfcMassDensityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassFlowRateMeasure>, int> = 0>
-    // IfcMassFlowRateMeasure as() const { return express::Base::as<IfcMassFlowRateMeasure>(); }
+    // IfcMassFlowRateMeasure as() const { return express::base::as<IfcMassFlowRateMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassPerLengthMeasure>, int> = 0>
-    // IfcMassPerLengthMeasure as() const { return express::Base::as<IfcMassPerLengthMeasure>(); }
+    // IfcMassPerLengthMeasure as() const { return express::base::as<IfcMassPerLengthMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfElasticityMeasure>, int> = 0>
-    // IfcModulusOfElasticityMeasure as() const { return express::Base::as<IfcModulusOfElasticityMeasure>(); }
+    // IfcModulusOfElasticityMeasure as() const { return express::base::as<IfcModulusOfElasticityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfLinearSubgradeReactionMeasure>, int> = 0>
-    // IfcModulusOfLinearSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfLinearSubgradeReactionMeasure>(); }
+    // IfcModulusOfLinearSubgradeReactionMeasure as() const { return express::base::as<IfcModulusOfLinearSubgradeReactionMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfRotationalSubgradeReactionMeasure>, int> = 0>
-    // IfcModulusOfRotationalSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfRotationalSubgradeReactionMeasure>(); }
+    // IfcModulusOfRotationalSubgradeReactionMeasure as() const { return express::base::as<IfcModulusOfRotationalSubgradeReactionMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfSubgradeReactionMeasure>, int> = 0>
-    // IfcModulusOfSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfSubgradeReactionMeasure>(); }
+    // IfcModulusOfSubgradeReactionMeasure as() const { return express::base::as<IfcModulusOfSubgradeReactionMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMoistureDiffusivityMeasure>, int> = 0>
-    // IfcMoistureDiffusivityMeasure as() const { return express::Base::as<IfcMoistureDiffusivityMeasure>(); }
+    // IfcMoistureDiffusivityMeasure as() const { return express::base::as<IfcMoistureDiffusivityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMolecularWeightMeasure>, int> = 0>
-    // IfcMolecularWeightMeasure as() const { return express::Base::as<IfcMolecularWeightMeasure>(); }
+    // IfcMolecularWeightMeasure as() const { return express::base::as<IfcMolecularWeightMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMomentOfInertiaMeasure>, int> = 0>
-    // IfcMomentOfInertiaMeasure as() const { return express::Base::as<IfcMomentOfInertiaMeasure>(); }
+    // IfcMomentOfInertiaMeasure as() const { return express::base::as<IfcMomentOfInertiaMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMonetaryMeasure>, int> = 0>
-    // IfcMonetaryMeasure as() const { return express::Base::as<IfcMonetaryMeasure>(); }
+    // IfcMonetaryMeasure as() const { return express::base::as<IfcMonetaryMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPHMeasure>, int> = 0>
-    // IfcPHMeasure as() const { return express::Base::as<IfcPHMeasure>(); }
+    // IfcPHMeasure as() const { return express::base::as<IfcPHMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPlanarForceMeasure>, int> = 0>
-    // IfcPlanarForceMeasure as() const { return express::Base::as<IfcPlanarForceMeasure>(); }
+    // IfcPlanarForceMeasure as() const { return express::base::as<IfcPlanarForceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPowerMeasure>, int> = 0>
-    // IfcPowerMeasure as() const { return express::Base::as<IfcPowerMeasure>(); }
+    // IfcPowerMeasure as() const { return express::base::as<IfcPowerMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPressureMeasure>, int> = 0>
-    // IfcPressureMeasure as() const { return express::Base::as<IfcPressureMeasure>(); }
+    // IfcPressureMeasure as() const { return express::base::as<IfcPressureMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcRadioActivityMeasure>, int> = 0>
-    // IfcRadioActivityMeasure as() const { return express::Base::as<IfcRadioActivityMeasure>(); }
+    // IfcRadioActivityMeasure as() const { return express::base::as<IfcRadioActivityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalFrequencyMeasure>, int> = 0>
-    // IfcRotationalFrequencyMeasure as() const { return express::Base::as<IfcRotationalFrequencyMeasure>(); }
+    // IfcRotationalFrequencyMeasure as() const { return express::base::as<IfcRotationalFrequencyMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalMassMeasure>, int> = 0>
-    // IfcRotationalMassMeasure as() const { return express::Base::as<IfcRotationalMassMeasure>(); }
+    // IfcRotationalMassMeasure as() const { return express::base::as<IfcRotationalMassMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalStiffnessMeasure>, int> = 0>
-    // IfcRotationalStiffnessMeasure as() const { return express::Base::as<IfcRotationalStiffnessMeasure>(); }
+    // IfcRotationalStiffnessMeasure as() const { return express::base::as<IfcRotationalStiffnessMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSectionModulusMeasure>, int> = 0>
-    // IfcSectionModulusMeasure as() const { return express::Base::as<IfcSectionModulusMeasure>(); }
+    // IfcSectionModulusMeasure as() const { return express::base::as<IfcSectionModulusMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSectionalAreaIntegralMeasure>, int> = 0>
-    // IfcSectionalAreaIntegralMeasure as() const { return express::Base::as<IfcSectionalAreaIntegralMeasure>(); }
+    // IfcSectionalAreaIntegralMeasure as() const { return express::base::as<IfcSectionalAreaIntegralMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcShearModulusMeasure>, int> = 0>
-    // IfcShearModulusMeasure as() const { return express::Base::as<IfcShearModulusMeasure>(); }
+    // IfcShearModulusMeasure as() const { return express::base::as<IfcShearModulusMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPowerLevelMeasure>, int> = 0>
-    // IfcSoundPowerLevelMeasure as() const { return express::Base::as<IfcSoundPowerLevelMeasure>(); }
+    // IfcSoundPowerLevelMeasure as() const { return express::base::as<IfcSoundPowerLevelMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPowerMeasure>, int> = 0>
-    // IfcSoundPowerMeasure as() const { return express::Base::as<IfcSoundPowerMeasure>(); }
+    // IfcSoundPowerMeasure as() const { return express::base::as<IfcSoundPowerMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPressureLevelMeasure>, int> = 0>
-    // IfcSoundPressureLevelMeasure as() const { return express::Base::as<IfcSoundPressureLevelMeasure>(); }
+    // IfcSoundPressureLevelMeasure as() const { return express::base::as<IfcSoundPressureLevelMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPressureMeasure>, int> = 0>
-    // IfcSoundPressureMeasure as() const { return express::Base::as<IfcSoundPressureMeasure>(); }
+    // IfcSoundPressureMeasure as() const { return express::base::as<IfcSoundPressureMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSpecificHeatCapacityMeasure>, int> = 0>
-    // IfcSpecificHeatCapacityMeasure as() const { return express::Base::as<IfcSpecificHeatCapacityMeasure>(); }
+    // IfcSpecificHeatCapacityMeasure as() const { return express::base::as<IfcSpecificHeatCapacityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTemperatureGradientMeasure>, int> = 0>
-    // IfcTemperatureGradientMeasure as() const { return express::Base::as<IfcTemperatureGradientMeasure>(); }
+    // IfcTemperatureGradientMeasure as() const { return express::base::as<IfcTemperatureGradientMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTemperatureRateOfChangeMeasure>, int> = 0>
-    // IfcTemperatureRateOfChangeMeasure as() const { return express::Base::as<IfcTemperatureRateOfChangeMeasure>(); }
+    // IfcTemperatureRateOfChangeMeasure as() const { return express::base::as<IfcTemperatureRateOfChangeMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalAdmittanceMeasure>, int> = 0>
-    // IfcThermalAdmittanceMeasure as() const { return express::Base::as<IfcThermalAdmittanceMeasure>(); }
+    // IfcThermalAdmittanceMeasure as() const { return express::base::as<IfcThermalAdmittanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalConductivityMeasure>, int> = 0>
-    // IfcThermalConductivityMeasure as() const { return express::Base::as<IfcThermalConductivityMeasure>(); }
+    // IfcThermalConductivityMeasure as() const { return express::base::as<IfcThermalConductivityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalExpansionCoefficientMeasure>, int> = 0>
-    // IfcThermalExpansionCoefficientMeasure as() const { return express::Base::as<IfcThermalExpansionCoefficientMeasure>(); }
+    // IfcThermalExpansionCoefficientMeasure as() const { return express::base::as<IfcThermalExpansionCoefficientMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalResistanceMeasure>, int> = 0>
-    // IfcThermalResistanceMeasure as() const { return express::Base::as<IfcThermalResistanceMeasure>(); }
+    // IfcThermalResistanceMeasure as() const { return express::base::as<IfcThermalResistanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalTransmittanceMeasure>, int> = 0>
-    // IfcThermalTransmittanceMeasure as() const { return express::Base::as<IfcThermalTransmittanceMeasure>(); }
+    // IfcThermalTransmittanceMeasure as() const { return express::base::as<IfcThermalTransmittanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTorqueMeasure>, int> = 0>
-    // IfcTorqueMeasure as() const { return express::Base::as<IfcTorqueMeasure>(); }
+    // IfcTorqueMeasure as() const { return express::base::as<IfcTorqueMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcVaporPermeabilityMeasure>, int> = 0>
-    // IfcVaporPermeabilityMeasure as() const { return express::Base::as<IfcVaporPermeabilityMeasure>(); }
+    // IfcVaporPermeabilityMeasure as() const { return express::base::as<IfcVaporPermeabilityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcVolumetricFlowRateMeasure>, int> = 0>
-    // IfcVolumetricFlowRateMeasure as() const { return express::Base::as<IfcVolumetricFlowRateMeasure>(); }
+    // IfcVolumetricFlowRateMeasure as() const { return express::base::as<IfcVolumetricFlowRateMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcWarpingConstantMeasure>, int> = 0>
-    // IfcWarpingConstantMeasure as() const { return express::Base::as<IfcWarpingConstantMeasure>(); }
+    // IfcWarpingConstantMeasure as() const { return express::base::as<IfcWarpingConstantMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcWarpingMomentMeasure>, int> = 0>
-    // IfcWarpingMomentMeasure as() const { return express::Base::as<IfcWarpingMomentMeasure>(); }
+    // IfcWarpingMomentMeasure as() const { return express::base::as<IfcWarpingMomentMeasure>(); }
 
-    IfcDerivedMeasureValue(const IfcAbsorbedDoseMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcAbsorbedDoseMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcAccelerationMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcAccelerationMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcAngularVelocityMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcAngularVelocityMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcAreaDensityMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcAreaDensityMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcCompoundPlaneAngleMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcCompoundPlaneAngleMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcCurvatureMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcCurvatureMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcDoseEquivalentMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcDoseEquivalentMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcDynamicViscosityMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcDynamicViscosityMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcElectricCapacitanceMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcElectricCapacitanceMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcElectricChargeMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcElectricChargeMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcElectricConductanceMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcElectricConductanceMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcElectricResistanceMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcElectricResistanceMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcElectricVoltageMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcElectricVoltageMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcEnergyMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcEnergyMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcForceMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcForceMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcFrequencyMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcFrequencyMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcHeatFluxDensityMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcHeatFluxDensityMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcHeatingValueMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcHeatingValueMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcIlluminanceMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcIlluminanceMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcInductanceMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcInductanceMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcIntegerCountRateMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcIntegerCountRateMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcIonConcentrationMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcIonConcentrationMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcIsothermalMoistureCapacityMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcIsothermalMoistureCapacityMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcKinematicViscosityMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcKinematicViscosityMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcLinearForceMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcLinearForceMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcLinearMomentMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcLinearMomentMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcLinearStiffnessMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcLinearStiffnessMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcLinearVelocityMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcLinearVelocityMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcLuminousFluxMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcLuminousFluxMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcLuminousIntensityDistributionMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcLuminousIntensityDistributionMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcMagneticFluxDensityMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcMagneticFluxDensityMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcMagneticFluxMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcMagneticFluxMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcMassDensityMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcMassDensityMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcMassFlowRateMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcMassFlowRateMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcMassPerLengthMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcMassPerLengthMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcModulusOfElasticityMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcModulusOfElasticityMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcModulusOfLinearSubgradeReactionMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcModulusOfLinearSubgradeReactionMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcModulusOfRotationalSubgradeReactionMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcModulusOfRotationalSubgradeReactionMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcModulusOfSubgradeReactionMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcModulusOfSubgradeReactionMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcMoistureDiffusivityMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcMoistureDiffusivityMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcMolecularWeightMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcMolecularWeightMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcMomentOfInertiaMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcMomentOfInertiaMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcMonetaryMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcMonetaryMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcPHMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcPHMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcPlanarForceMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcPlanarForceMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcPowerMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcPowerMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcPressureMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcPressureMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcRadioActivityMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcRadioActivityMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcRotationalFrequencyMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcRotationalFrequencyMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcRotationalMassMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcRotationalMassMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcRotationalStiffnessMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcRotationalStiffnessMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcSectionModulusMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcSectionModulusMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcSectionalAreaIntegralMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcSectionalAreaIntegralMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcShearModulusMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcShearModulusMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcSoundPowerLevelMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcSoundPowerLevelMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcSoundPowerMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcSoundPowerMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcSoundPressureLevelMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcSoundPressureLevelMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcSoundPressureMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcSoundPressureMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcSpecificHeatCapacityMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcSpecificHeatCapacityMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcTemperatureGradientMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcTemperatureGradientMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcTemperatureRateOfChangeMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcTemperatureRateOfChangeMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcThermalAdmittanceMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcThermalAdmittanceMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcThermalConductivityMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcThermalConductivityMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcThermalExpansionCoefficientMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcThermalExpansionCoefficientMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcThermalResistanceMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcThermalResistanceMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcThermalTransmittanceMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcThermalTransmittanceMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcTorqueMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcTorqueMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcVaporPermeabilityMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcVaporPermeabilityMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcVolumetricFlowRateMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcVolumetricFlowRateMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcWarpingConstantMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcWarpingConstantMeasure& c) : express::select(c) {};
 
-    IfcDerivedMeasureValue(const IfcWarpingMomentMeasure& c) : express::Select(c) {};
+    IfcDerivedMeasureValue(const IfcWarpingMomentMeasure& c) : express::select(c) {};
 
 };
 /// IfcDocumentSelect enables selection of whether document information is to be contained within an IFC model or is to be referenced from an external source. 
@@ -1702,59 +1702,59 @@ public:
 /// 
 /// IfcDocumentInformation (for "metadata" of an external document)  
 /// IfcDocumentReference (for reference within a document)
-class IFC_SCHEMA_API IfcDocumentSelect : public express::Select {
+class IFC_SCHEMA_API IfcDocumentSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDocumentInformation>, int> = 0>
-    // IfcDocumentInformation as() const { return express::Base::as<IfcDocumentInformation>(); }
+    // IfcDocumentInformation as() const { return express::base::as<IfcDocumentInformation>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDocumentReference>, int> = 0>
-    // IfcDocumentReference as() const { return express::Base::as<IfcDocumentReference>(); }
+    // IfcDocumentReference as() const { return express::base::as<IfcDocumentReference>(); }
 
-    IfcDocumentSelect(const IfcDocumentInformation& c) : express::Select(c) {};
+    IfcDocumentSelect(const IfcDocumentInformation& c) : express::select(c) {};
 
-    IfcDocumentSelect(const IfcDocumentReference& c) : express::Select(c) {};
+    IfcDocumentSelect(const IfcDocumentReference& c) : express::select(c) {};
 
 };
 
-class IFC_SCHEMA_API IfcFacilityPartTypeSelect : public express::Select {
+class IFC_SCHEMA_API IfcFacilityPartTypeSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcBridgePartTypeEnum>, int> = 0>
-    // IfcBridgePartTypeEnum as() const { return express::Base::as<IfcBridgePartTypeEnum>(); }
+    // IfcBridgePartTypeEnum as() const { return express::base::as<IfcBridgePartTypeEnum>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcFacilityPartCommonTypeEnum>, int> = 0>
-    // IfcFacilityPartCommonTypeEnum as() const { return express::Base::as<IfcFacilityPartCommonTypeEnum>(); }
+    // IfcFacilityPartCommonTypeEnum as() const { return express::base::as<IfcFacilityPartCommonTypeEnum>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMarinePartTypeEnum>, int> = 0>
-    // IfcMarinePartTypeEnum as() const { return express::Base::as<IfcMarinePartTypeEnum>(); }
+    // IfcMarinePartTypeEnum as() const { return express::base::as<IfcMarinePartTypeEnum>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcRailwayPartTypeEnum>, int> = 0>
-    // IfcRailwayPartTypeEnum as() const { return express::Base::as<IfcRailwayPartTypeEnum>(); }
+    // IfcRailwayPartTypeEnum as() const { return express::base::as<IfcRailwayPartTypeEnum>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcRoadPartTypeEnum>, int> = 0>
-    // IfcRoadPartTypeEnum as() const { return express::Base::as<IfcRoadPartTypeEnum>(); }
+    // IfcRoadPartTypeEnum as() const { return express::base::as<IfcRoadPartTypeEnum>(); }
 
-    IfcFacilityPartTypeSelect(const IfcBridgePartTypeEnum& c) : express::Select(c) {};
+    IfcFacilityPartTypeSelect(const IfcBridgePartTypeEnum& c) : express::select(c) {};
 
-    IfcFacilityPartTypeSelect(const IfcFacilityPartCommonTypeEnum& c) : express::Select(c) {};
+    IfcFacilityPartTypeSelect(const IfcFacilityPartCommonTypeEnum& c) : express::select(c) {};
 
-    IfcFacilityPartTypeSelect(const IfcMarinePartTypeEnum& c) : express::Select(c) {};
+    IfcFacilityPartTypeSelect(const IfcMarinePartTypeEnum& c) : express::select(c) {};
 
-    IfcFacilityPartTypeSelect(const IfcRailwayPartTypeEnum& c) : express::Select(c) {};
+    IfcFacilityPartTypeSelect(const IfcRailwayPartTypeEnum& c) : express::select(c) {};
 
-    IfcFacilityPartTypeSelect(const IfcRoadPartTypeEnum& c) : express::Select(c) {};
+    IfcFacilityPartTypeSelect(const IfcRoadPartTypeEnum& c) : express::select(c) {};
 
 };
 /// Definition from ISO/CD 10303-46:1992: The fill style select is a selection between different fill area styles.
@@ -1763,46 +1763,46 @@ public:
 /// the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_SCHEMA_API IfcFillStyleSelect : public express::Select {
+class IFC_SCHEMA_API IfcFillStyleSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcColour>, int> = 0>
-    // IfcColour as() const { return express::Base::as<IfcColour>(); }
+    // IfcColour as() const { return express::base::as<IfcColour>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcColourSpecification>, int> = 0>
-    // IfcColourSpecification as() const { return express::Base::as<IfcColourSpecification>(); }
+    // IfcColourSpecification as() const { return express::base::as<IfcColourSpecification>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPreDefinedColour>, int> = 0>
-    // IfcPreDefinedColour as() const { return express::Base::as<IfcPreDefinedColour>(); }
+    // IfcPreDefinedColour as() const { return express::base::as<IfcPreDefinedColour>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcExternallyDefinedHatchStyle>, int> = 0>
-    // IfcExternallyDefinedHatchStyle as() const { return express::Base::as<IfcExternallyDefinedHatchStyle>(); }
+    // IfcExternallyDefinedHatchStyle as() const { return express::base::as<IfcExternallyDefinedHatchStyle>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcFillAreaStyleHatching>, int> = 0>
-    // IfcFillAreaStyleHatching as() const { return express::Base::as<IfcFillAreaStyleHatching>(); }
+    // IfcFillAreaStyleHatching as() const { return express::base::as<IfcFillAreaStyleHatching>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcFillAreaStyleTiles>, int> = 0>
-    // IfcFillAreaStyleTiles as() const { return express::Base::as<IfcFillAreaStyleTiles>(); }
+    // IfcFillAreaStyleTiles as() const { return express::base::as<IfcFillAreaStyleTiles>(); }
 
-    IfcFillStyleSelect(const IfcColour& c) : express::Select(c) {};
+    IfcFillStyleSelect(const IfcColour& c) : express::select(c) {};
 
-    IfcFillStyleSelect(const IfcColourSpecification& c) : express::Select(c) {};
+    IfcFillStyleSelect(const IfcColourSpecification& c) : express::select(c) {};
 
-    IfcFillStyleSelect(const IfcPreDefinedColour& c) : express::Select(c) {};
+    IfcFillStyleSelect(const IfcPreDefinedColour& c) : express::select(c) {};
 
-    IfcFillStyleSelect(const IfcExternallyDefinedHatchStyle& c) : express::Select(c) {};
+    IfcFillStyleSelect(const IfcExternallyDefinedHatchStyle& c) : express::select(c) {};
 
-    IfcFillStyleSelect(const IfcFillAreaStyleHatching& c) : express::Select(c) {};
+    IfcFillStyleSelect(const IfcFillAreaStyleHatching& c) : express::select(c) {};
 
-    IfcFillStyleSelect(const IfcFillAreaStyleTiles& c) : express::Select(c) {};
+    IfcFillStyleSelect(const IfcFillAreaStyleTiles& c) : express::select(c) {};
 
 };
 /// Definition from ISO/CD 10303-42:1992: This select type identifies the types of entities which can occur in a geometric set. 
@@ -1810,28 +1810,28 @@ public:
 /// NOTE: Corresponding ISO 10303 type: geometric_set_select. Please refer to ISO/IS 10303-42:1994, p. 169 for the final definition of the formal standard.
 /// 
 /// HISTORY: New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcGeometricSetSelect : public express::Select {
+class IFC_SCHEMA_API IfcGeometricSetSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcCurve>, int> = 0>
-    // IfcCurve as() const { return express::Base::as<IfcCurve>(); }
+    // IfcCurve as() const { return express::base::as<IfcCurve>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPoint>, int> = 0>
-    // IfcPoint as() const { return express::Base::as<IfcPoint>(); }
+    // IfcPoint as() const { return express::base::as<IfcPoint>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSurface>, int> = 0>
-    // IfcSurface as() const { return express::Base::as<IfcSurface>(); }
+    // IfcSurface as() const { return express::base::as<IfcSurface>(); }
 
-    IfcGeometricSetSelect(const IfcCurve& c) : express::Select(c) {};
+    IfcGeometricSetSelect(const IfcCurve& c) : express::select(c) {};
 
-    IfcGeometricSetSelect(const IfcPoint& c) : express::Select(c) {};
+    IfcGeometricSetSelect(const IfcPoint& c) : express::select(c) {};
 
-    IfcGeometricSetSelect(const IfcSurface& c) : express::Select(c) {};
+    IfcGeometricSetSelect(const IfcSurface& c) : express::select(c) {};
 
 };
 /// IfcGridPlacementDirectionSelect enables the choice of defining a grid placement be either an explicit direction, or by referencing a second grid intersection to provide the direction.
@@ -1842,87 +1842,87 @@ public:
 /// IfcVirtualGridIntersection
 /// 
 /// HISTORY New select type in IFC2x4.
-class IFC_SCHEMA_API IfcGridPlacementDirectionSelect : public express::Select {
+class IFC_SCHEMA_API IfcGridPlacementDirectionSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDirection>, int> = 0>
-    // IfcDirection as() const { return express::Base::as<IfcDirection>(); }
+    // IfcDirection as() const { return express::base::as<IfcDirection>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcVirtualGridIntersection>, int> = 0>
-    // IfcVirtualGridIntersection as() const { return express::Base::as<IfcVirtualGridIntersection>(); }
+    // IfcVirtualGridIntersection as() const { return express::base::as<IfcVirtualGridIntersection>(); }
 
-    IfcGridPlacementDirectionSelect(const IfcDirection& c) : express::Select(c) {};
+    IfcGridPlacementDirectionSelect(const IfcDirection& c) : express::select(c) {};
 
-    IfcGridPlacementDirectionSelect(const IfcVirtualGridIntersection& c) : express::Select(c) {};
+    IfcGridPlacementDirectionSelect(const IfcVirtualGridIntersection& c) : express::select(c) {};
 
 };
 /// The IfcHatchLineDistanceSelect is a selection between different ways to determine the distance and potentially start point of hatch lines, either by an offset distance length measure or by a vector.
 /// 
 /// HISTORY  New type in IFC2x3.
-class IFC_SCHEMA_API IfcHatchLineDistanceSelect : public express::Select {
+class IFC_SCHEMA_API IfcHatchLineDistanceSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveLengthMeasure>, int> = 0>
-    // IfcPositiveLengthMeasure as() const { return express::Base::as<IfcPositiveLengthMeasure>(); }
+    // IfcPositiveLengthMeasure as() const { return express::base::as<IfcPositiveLengthMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcVector>, int> = 0>
-    // IfcVector as() const { return express::Base::as<IfcVector>(); }
+    // IfcVector as() const { return express::base::as<IfcVector>(); }
 
-    IfcHatchLineDistanceSelect(const IfcPositiveLengthMeasure& c) : express::Select(c) {};
+    IfcHatchLineDistanceSelect(const IfcPositiveLengthMeasure& c) : express::select(c) {};
 
-    IfcHatchLineDistanceSelect(const IfcVector& c) : express::Select(c) {};
+    IfcHatchLineDistanceSelect(const IfcVector& c) : express::select(c) {};
 
 };
 
-class IFC_SCHEMA_API IfcImpactProtectionDeviceTypeSelect : public express::Select {
+class IFC_SCHEMA_API IfcImpactProtectionDeviceTypeSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcImpactProtectionDeviceTypeEnum>, int> = 0>
-    // IfcImpactProtectionDeviceTypeEnum as() const { return express::Base::as<IfcImpactProtectionDeviceTypeEnum>(); }
+    // IfcImpactProtectionDeviceTypeEnum as() const { return express::base::as<IfcImpactProtectionDeviceTypeEnum>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcVibrationDamperTypeEnum>, int> = 0>
-    // IfcVibrationDamperTypeEnum as() const { return express::Base::as<IfcVibrationDamperTypeEnum>(); }
+    // IfcVibrationDamperTypeEnum as() const { return express::base::as<IfcVibrationDamperTypeEnum>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcVibrationIsolatorTypeEnum>, int> = 0>
-    // IfcVibrationIsolatorTypeEnum as() const { return express::Base::as<IfcVibrationIsolatorTypeEnum>(); }
+    // IfcVibrationIsolatorTypeEnum as() const { return express::base::as<IfcVibrationIsolatorTypeEnum>(); }
 
-    IfcImpactProtectionDeviceTypeSelect(const IfcImpactProtectionDeviceTypeEnum& c) : express::Select(c) {};
+    IfcImpactProtectionDeviceTypeSelect(const IfcImpactProtectionDeviceTypeEnum& c) : express::select(c) {};
 
-    IfcImpactProtectionDeviceTypeSelect(const IfcVibrationDamperTypeEnum& c) : express::Select(c) {};
+    IfcImpactProtectionDeviceTypeSelect(const IfcVibrationDamperTypeEnum& c) : express::select(c) {};
 
-    IfcImpactProtectionDeviceTypeSelect(const IfcVibrationIsolatorTypeEnum& c) : express::Select(c) {};
+    IfcImpactProtectionDeviceTypeSelect(const IfcVibrationIsolatorTypeEnum& c) : express::select(c) {};
 
 };
 
-class IFC_SCHEMA_API IfcInterferenceSelect : public express::Select {
+class IFC_SCHEMA_API IfcInterferenceSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcElement>, int> = 0>
-    // IfcElement as() const { return express::Base::as<IfcElement>(); }
+    // IfcElement as() const { return express::base::as<IfcElement>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSpatialElement>, int> = 0>
-    // IfcSpatialElement as() const { return express::Base::as<IfcSpatialElement>(); }
+    // IfcSpatialElement as() const { return express::base::as<IfcSpatialElement>(); }
 
-    IfcInterferenceSelect(const IfcElement& c) : express::Select(c) {};
+    IfcInterferenceSelect(const IfcElement& c) : express::select(c) {};
 
-    IfcInterferenceSelect(const IfcSpatialElement& c) : express::Select(c) {};
+    IfcInterferenceSelect(const IfcSpatialElement& c) : express::select(c) {};
 
 };
 /// Definition from ISO/CD 10303-46:1992: The layered things type selects those things, which can be grouped in layers. 
@@ -1932,22 +1932,22 @@ public:
 /// NOTE: Corresponding ISO 10303 name: layered_item. It was called layered_things in the ISO/CD version and had been renamed to layered_item in the ISO/IS final version. Please refer to ISO/IS 10303-46:1994, p. 13 for the final definition of the formal standard.
 /// 
 /// HISTORY: New type in IFC2x2.
-class IFC_SCHEMA_API IfcLayeredItem : public express::Select {
+class IFC_SCHEMA_API IfcLayeredItem : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcRepresentation>, int> = 0>
-    // IfcRepresentation as() const { return express::Base::as<IfcRepresentation>(); }
+    // IfcRepresentation as() const { return express::base::as<IfcRepresentation>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcRepresentationItem>, int> = 0>
-    // IfcRepresentationItem as() const { return express::Base::as<IfcRepresentationItem>(); }
+    // IfcRepresentationItem as() const { return express::base::as<IfcRepresentationItem>(); }
 
-    IfcLayeredItem(const IfcRepresentation& c) : express::Select(c) {};
+    IfcLayeredItem(const IfcRepresentation& c) : express::select(c) {};
 
-    IfcLayeredItem(const IfcRepresentationItem& c) : express::Select(c) {};
+    IfcLayeredItem(const IfcRepresentationItem& c) : express::select(c) {};
 
 };
 /// IfcLibrarySelect enables selection of whether library information is to be contained within an IFC model or is to be referenced from an external source. 
@@ -1960,22 +1960,22 @@ public:
 /// IfcLibraryReference (for reference into a library of information by location)  
 /// 
 /// Generally, it is expected that selection will be IfcLibraryReference and only rarely IfcLibraryInformation. IfcLibraryInformation should only be selected in circumstances where there could be a need to indicate the libraries that will be used without making individual references. This may occur for higher level objects such as a project or building.
-class IFC_SCHEMA_API IfcLibrarySelect : public express::Select {
+class IFC_SCHEMA_API IfcLibrarySelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLibraryInformation>, int> = 0>
-    // IfcLibraryInformation as() const { return express::Base::as<IfcLibraryInformation>(); }
+    // IfcLibraryInformation as() const { return express::base::as<IfcLibraryInformation>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLibraryReference>, int> = 0>
-    // IfcLibraryReference as() const { return express::Base::as<IfcLibraryReference>(); }
+    // IfcLibraryReference as() const { return express::base::as<IfcLibraryReference>(); }
 
-    IfcLibrarySelect(const IfcLibraryInformation& c) : express::Select(c) {};
+    IfcLibrarySelect(const IfcLibraryInformation& c) : express::select(c) {};
 
-    IfcLibrarySelect(const IfcLibraryReference& c) : express::Select(c) {};
+    IfcLibrarySelect(const IfcLibraryReference& c) : express::select(c) {};
 
 };
 /// A goniometric light gets its intensity distribution function (how much light goes in any one direction) from one of two sources: (i) an industry-standard file, (ii) from distribution data passed directly via the IfcLightIntensityDistribution. 
@@ -2000,22 +2000,22 @@ public:
 ///   directions covers all cases.  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_SCHEMA_API IfcLightDistributionDataSourceSelect : public express::Select {
+class IFC_SCHEMA_API IfcLightDistributionDataSourceSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcExternalReference>, int> = 0>
-    // IfcExternalReference as() const { return express::Base::as<IfcExternalReference>(); }
+    // IfcExternalReference as() const { return express::base::as<IfcExternalReference>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLightIntensityDistribution>, int> = 0>
-    // IfcLightIntensityDistribution as() const { return express::Base::as<IfcLightIntensityDistribution>(); }
+    // IfcLightIntensityDistribution as() const { return express::base::as<IfcLightIntensityDistribution>(); }
 
-    IfcLightDistributionDataSourceSelect(const IfcExternalReference& c) : express::Select(c) {};
+    IfcLightDistributionDataSourceSelect(const IfcExternalReference& c) : express::select(c) {};
 
-    IfcLightDistributionDataSourceSelect(const IfcLightIntensityDistribution& c) : express::Select(c) {};
+    IfcLightDistributionDataSourceSelect(const IfcLightIntensityDistribution& c) : express::select(c) {};
 
 };
 /// IfcMaterialSelect provides selection of either a material
@@ -2044,28 +2044,28 @@ public:
 /// 
 /// IFC2x4 CHANGE The select now includes two new abstract entities IfcMaterialDefinition
 /// and IfcMaterialUsageDefinition with upward compatibility.  The use of IfcMaterialList is deprecated from IFC2x4 onwards.
-class IFC_SCHEMA_API IfcMaterialSelect : public express::Select {
+class IFC_SCHEMA_API IfcMaterialSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMaterialDefinition>, int> = 0>
-    // IfcMaterialDefinition as() const { return express::Base::as<IfcMaterialDefinition>(); }
+    // IfcMaterialDefinition as() const { return express::base::as<IfcMaterialDefinition>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMaterialList>, int> = 0>
-    // IfcMaterialList as() const { return express::Base::as<IfcMaterialList>(); }
+    // IfcMaterialList as() const { return express::base::as<IfcMaterialList>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMaterialUsageDefinition>, int> = 0>
-    // IfcMaterialUsageDefinition as() const { return express::Base::as<IfcMaterialUsageDefinition>(); }
+    // IfcMaterialUsageDefinition as() const { return express::base::as<IfcMaterialUsageDefinition>(); }
 
-    IfcMaterialSelect(const IfcMaterialDefinition& c) : express::Select(c) {};
+    IfcMaterialSelect(const IfcMaterialDefinition& c) : express::select(c) {};
 
-    IfcMaterialSelect(const IfcMaterialList& c) : express::Select(c) {};
+    IfcMaterialSelect(const IfcMaterialList& c) : express::select(c) {};
 
-    IfcMaterialSelect(const IfcMaterialUsageDefinition& c) : express::Select(c) {};
+    IfcMaterialSelect(const IfcMaterialUsageDefinition& c) : express::select(c) {};
 
 };
 /// Definition from ISO/CD 10303-41:1992: A measure value is a value as defined in ISO 31-0 (clause 2).
@@ -2077,148 +2077,148 @@ public:
 /// HISTORY New type in IFC Release 1.5.1.
 /// 
 /// IFC 2x4 change: added IfcNonNegativeLengthMeasure
-class IFC_SCHEMA_API IfcMeasureValue : public express::Select {
+class IFC_SCHEMA_API IfcMeasureValue : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAmountOfSubstanceMeasure>, int> = 0>
-    // IfcAmountOfSubstanceMeasure as() const { return express::Base::as<IfcAmountOfSubstanceMeasure>(); }
+    // IfcAmountOfSubstanceMeasure as() const { return express::base::as<IfcAmountOfSubstanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAreaMeasure>, int> = 0>
-    // IfcAreaMeasure as() const { return express::Base::as<IfcAreaMeasure>(); }
+    // IfcAreaMeasure as() const { return express::base::as<IfcAreaMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcComplexNumber>, int> = 0>
-    // IfcComplexNumber as() const { return express::Base::as<IfcComplexNumber>(); }
+    // IfcComplexNumber as() const { return express::base::as<IfcComplexNumber>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcContextDependentMeasure>, int> = 0>
-    // IfcContextDependentMeasure as() const { return express::Base::as<IfcContextDependentMeasure>(); }
+    // IfcContextDependentMeasure as() const { return express::base::as<IfcContextDependentMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcCountMeasure>, int> = 0>
-    // IfcCountMeasure as() const { return express::Base::as<IfcCountMeasure>(); }
+    // IfcCountMeasure as() const { return express::base::as<IfcCountMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDescriptiveMeasure>, int> = 0>
-    // IfcDescriptiveMeasure as() const { return express::Base::as<IfcDescriptiveMeasure>(); }
+    // IfcDescriptiveMeasure as() const { return express::base::as<IfcDescriptiveMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricCurrentMeasure>, int> = 0>
-    // IfcElectricCurrentMeasure as() const { return express::Base::as<IfcElectricCurrentMeasure>(); }
+    // IfcElectricCurrentMeasure as() const { return express::base::as<IfcElectricCurrentMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLengthMeasure>, int> = 0>
-    // IfcLengthMeasure as() const { return express::Base::as<IfcLengthMeasure>(); }
+    // IfcLengthMeasure as() const { return express::base::as<IfcLengthMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousIntensityMeasure>, int> = 0>
-    // IfcLuminousIntensityMeasure as() const { return express::Base::as<IfcLuminousIntensityMeasure>(); }
+    // IfcLuminousIntensityMeasure as() const { return express::base::as<IfcLuminousIntensityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassMeasure>, int> = 0>
-    // IfcMassMeasure as() const { return express::Base::as<IfcMassMeasure>(); }
+    // IfcMassMeasure as() const { return express::base::as<IfcMassMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcNonNegativeLengthMeasure>, int> = 0>
-    // IfcNonNegativeLengthMeasure as() const { return express::Base::as<IfcNonNegativeLengthMeasure>(); }
+    // IfcNonNegativeLengthMeasure as() const { return express::base::as<IfcNonNegativeLengthMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcNormalisedRatioMeasure>, int> = 0>
-    // IfcNormalisedRatioMeasure as() const { return express::Base::as<IfcNormalisedRatioMeasure>(); }
+    // IfcNormalisedRatioMeasure as() const { return express::base::as<IfcNormalisedRatioMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcNumericMeasure>, int> = 0>
-    // IfcNumericMeasure as() const { return express::Base::as<IfcNumericMeasure>(); }
+    // IfcNumericMeasure as() const { return express::base::as<IfcNumericMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcParameterValue>, int> = 0>
-    // IfcParameterValue as() const { return express::Base::as<IfcParameterValue>(); }
+    // IfcParameterValue as() const { return express::base::as<IfcParameterValue>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPlaneAngleMeasure>, int> = 0>
-    // IfcPlaneAngleMeasure as() const { return express::Base::as<IfcPlaneAngleMeasure>(); }
+    // IfcPlaneAngleMeasure as() const { return express::base::as<IfcPlaneAngleMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveLengthMeasure>, int> = 0>
-    // IfcPositiveLengthMeasure as() const { return express::Base::as<IfcPositiveLengthMeasure>(); }
+    // IfcPositiveLengthMeasure as() const { return express::base::as<IfcPositiveLengthMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositivePlaneAngleMeasure>, int> = 0>
-    // IfcPositivePlaneAngleMeasure as() const { return express::Base::as<IfcPositivePlaneAngleMeasure>(); }
+    // IfcPositivePlaneAngleMeasure as() const { return express::base::as<IfcPositivePlaneAngleMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveRatioMeasure>, int> = 0>
-    // IfcPositiveRatioMeasure as() const { return express::Base::as<IfcPositiveRatioMeasure>(); }
+    // IfcPositiveRatioMeasure as() const { return express::base::as<IfcPositiveRatioMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcRatioMeasure>, int> = 0>
-    // IfcRatioMeasure as() const { return express::Base::as<IfcRatioMeasure>(); }
+    // IfcRatioMeasure as() const { return express::base::as<IfcRatioMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSolidAngleMeasure>, int> = 0>
-    // IfcSolidAngleMeasure as() const { return express::Base::as<IfcSolidAngleMeasure>(); }
+    // IfcSolidAngleMeasure as() const { return express::base::as<IfcSolidAngleMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermodynamicTemperatureMeasure>, int> = 0>
-    // IfcThermodynamicTemperatureMeasure as() const { return express::Base::as<IfcThermodynamicTemperatureMeasure>(); }
+    // IfcThermodynamicTemperatureMeasure as() const { return express::base::as<IfcThermodynamicTemperatureMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeMeasure>, int> = 0>
-    // IfcTimeMeasure as() const { return express::Base::as<IfcTimeMeasure>(); }
+    // IfcTimeMeasure as() const { return express::base::as<IfcTimeMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcVolumeMeasure>, int> = 0>
-    // IfcVolumeMeasure as() const { return express::Base::as<IfcVolumeMeasure>(); }
+    // IfcVolumeMeasure as() const { return express::base::as<IfcVolumeMeasure>(); }
 
-    IfcMeasureValue(const IfcAmountOfSubstanceMeasure& c) : express::Select(c) {};
+    IfcMeasureValue(const IfcAmountOfSubstanceMeasure& c) : express::select(c) {};
 
-    IfcMeasureValue(const IfcAreaMeasure& c) : express::Select(c) {};
+    IfcMeasureValue(const IfcAreaMeasure& c) : express::select(c) {};
 
-    IfcMeasureValue(const IfcComplexNumber& c) : express::Select(c) {};
+    IfcMeasureValue(const IfcComplexNumber& c) : express::select(c) {};
 
-    IfcMeasureValue(const IfcContextDependentMeasure& c) : express::Select(c) {};
+    IfcMeasureValue(const IfcContextDependentMeasure& c) : express::select(c) {};
 
-    IfcMeasureValue(const IfcCountMeasure& c) : express::Select(c) {};
+    IfcMeasureValue(const IfcCountMeasure& c) : express::select(c) {};
 
-    IfcMeasureValue(const IfcDescriptiveMeasure& c) : express::Select(c) {};
+    IfcMeasureValue(const IfcDescriptiveMeasure& c) : express::select(c) {};
 
-    IfcMeasureValue(const IfcElectricCurrentMeasure& c) : express::Select(c) {};
+    IfcMeasureValue(const IfcElectricCurrentMeasure& c) : express::select(c) {};
 
-    IfcMeasureValue(const IfcLengthMeasure& c) : express::Select(c) {};
+    IfcMeasureValue(const IfcLengthMeasure& c) : express::select(c) {};
 
-    IfcMeasureValue(const IfcLuminousIntensityMeasure& c) : express::Select(c) {};
+    IfcMeasureValue(const IfcLuminousIntensityMeasure& c) : express::select(c) {};
 
-    IfcMeasureValue(const IfcMassMeasure& c) : express::Select(c) {};
+    IfcMeasureValue(const IfcMassMeasure& c) : express::select(c) {};
 
-    IfcMeasureValue(const IfcNonNegativeLengthMeasure& c) : express::Select(c) {};
+    IfcMeasureValue(const IfcNonNegativeLengthMeasure& c) : express::select(c) {};
 
-    IfcMeasureValue(const IfcNormalisedRatioMeasure& c) : express::Select(c) {};
+    IfcMeasureValue(const IfcNormalisedRatioMeasure& c) : express::select(c) {};
 
-    IfcMeasureValue(const IfcNumericMeasure& c) : express::Select(c) {};
+    IfcMeasureValue(const IfcNumericMeasure& c) : express::select(c) {};
 
-    IfcMeasureValue(const IfcParameterValue& c) : express::Select(c) {};
+    IfcMeasureValue(const IfcParameterValue& c) : express::select(c) {};
 
-    IfcMeasureValue(const IfcPlaneAngleMeasure& c) : express::Select(c) {};
+    IfcMeasureValue(const IfcPlaneAngleMeasure& c) : express::select(c) {};
 
-    IfcMeasureValue(const IfcPositiveLengthMeasure& c) : express::Select(c) {};
+    IfcMeasureValue(const IfcPositiveLengthMeasure& c) : express::select(c) {};
 
-    IfcMeasureValue(const IfcPositivePlaneAngleMeasure& c) : express::Select(c) {};
+    IfcMeasureValue(const IfcPositivePlaneAngleMeasure& c) : express::select(c) {};
 
-    IfcMeasureValue(const IfcPositiveRatioMeasure& c) : express::Select(c) {};
+    IfcMeasureValue(const IfcPositiveRatioMeasure& c) : express::select(c) {};
 
-    IfcMeasureValue(const IfcRatioMeasure& c) : express::Select(c) {};
+    IfcMeasureValue(const IfcRatioMeasure& c) : express::select(c) {};
 
-    IfcMeasureValue(const IfcSolidAngleMeasure& c) : express::Select(c) {};
+    IfcMeasureValue(const IfcSolidAngleMeasure& c) : express::select(c) {};
 
-    IfcMeasureValue(const IfcThermodynamicTemperatureMeasure& c) : express::Select(c) {};
+    IfcMeasureValue(const IfcThermodynamicTemperatureMeasure& c) : express::select(c) {};
 
-    IfcMeasureValue(const IfcTimeMeasure& c) : express::Select(c) {};
+    IfcMeasureValue(const IfcTimeMeasure& c) : express::select(c) {};
 
-    IfcMeasureValue(const IfcVolumeMeasure& c) : express::Select(c) {};
+    IfcMeasureValue(const IfcVolumeMeasure& c) : express::select(c) {};
 
 };
 /// IfcMetricValueSelect is a select type that enables selection of the data type for the value component of an IfcMetric. 
@@ -2233,838 +2233,838 @@ public:
 ///   IfcTable 
 ///   IfcText 
 ///   IfcTimeSeries
-class IFC_SCHEMA_API IfcMetricValueSelect : public express::Select {
+class IFC_SCHEMA_API IfcMetricValueSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAppliedValue>, int> = 0>
-    // IfcAppliedValue as() const { return express::Base::as<IfcAppliedValue>(); }
+    // IfcAppliedValue as() const { return express::base::as<IfcAppliedValue>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMeasureWithUnit>, int> = 0>
-    // IfcMeasureWithUnit as() const { return express::Base::as<IfcMeasureWithUnit>(); }
+    // IfcMeasureWithUnit as() const { return express::base::as<IfcMeasureWithUnit>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcReference>, int> = 0>
-    // IfcReference as() const { return express::Base::as<IfcReference>(); }
+    // IfcReference as() const { return express::base::as<IfcReference>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTable>, int> = 0>
-    // IfcTable as() const { return express::Base::as<IfcTable>(); }
+    // IfcTable as() const { return express::base::as<IfcTable>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeSeries>, int> = 0>
-    // IfcTimeSeries as() const { return express::Base::as<IfcTimeSeries>(); }
+    // IfcTimeSeries as() const { return express::base::as<IfcTimeSeries>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcValue>, int> = 0>
-    // IfcValue as() const { return express::Base::as<IfcValue>(); }
+    // IfcValue as() const { return express::base::as<IfcValue>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDerivedMeasureValue>, int> = 0>
-    // IfcDerivedMeasureValue as() const { return express::Base::as<IfcDerivedMeasureValue>(); }
+    // IfcDerivedMeasureValue as() const { return express::base::as<IfcDerivedMeasureValue>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAbsorbedDoseMeasure>, int> = 0>
-    // IfcAbsorbedDoseMeasure as() const { return express::Base::as<IfcAbsorbedDoseMeasure>(); }
+    // IfcAbsorbedDoseMeasure as() const { return express::base::as<IfcAbsorbedDoseMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAccelerationMeasure>, int> = 0>
-    // IfcAccelerationMeasure as() const { return express::Base::as<IfcAccelerationMeasure>(); }
+    // IfcAccelerationMeasure as() const { return express::base::as<IfcAccelerationMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAngularVelocityMeasure>, int> = 0>
-    // IfcAngularVelocityMeasure as() const { return express::Base::as<IfcAngularVelocityMeasure>(); }
+    // IfcAngularVelocityMeasure as() const { return express::base::as<IfcAngularVelocityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAreaDensityMeasure>, int> = 0>
-    // IfcAreaDensityMeasure as() const { return express::Base::as<IfcAreaDensityMeasure>(); }
+    // IfcAreaDensityMeasure as() const { return express::base::as<IfcAreaDensityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcCompoundPlaneAngleMeasure>, int> = 0>
-    // IfcCompoundPlaneAngleMeasure as() const { return express::Base::as<IfcCompoundPlaneAngleMeasure>(); }
+    // IfcCompoundPlaneAngleMeasure as() const { return express::base::as<IfcCompoundPlaneAngleMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcCurvatureMeasure>, int> = 0>
-    // IfcCurvatureMeasure as() const { return express::Base::as<IfcCurvatureMeasure>(); }
+    // IfcCurvatureMeasure as() const { return express::base::as<IfcCurvatureMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDoseEquivalentMeasure>, int> = 0>
-    // IfcDoseEquivalentMeasure as() const { return express::Base::as<IfcDoseEquivalentMeasure>(); }
+    // IfcDoseEquivalentMeasure as() const { return express::base::as<IfcDoseEquivalentMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDynamicViscosityMeasure>, int> = 0>
-    // IfcDynamicViscosityMeasure as() const { return express::Base::as<IfcDynamicViscosityMeasure>(); }
+    // IfcDynamicViscosityMeasure as() const { return express::base::as<IfcDynamicViscosityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricCapacitanceMeasure>, int> = 0>
-    // IfcElectricCapacitanceMeasure as() const { return express::Base::as<IfcElectricCapacitanceMeasure>(); }
+    // IfcElectricCapacitanceMeasure as() const { return express::base::as<IfcElectricCapacitanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricChargeMeasure>, int> = 0>
-    // IfcElectricChargeMeasure as() const { return express::Base::as<IfcElectricChargeMeasure>(); }
+    // IfcElectricChargeMeasure as() const { return express::base::as<IfcElectricChargeMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricConductanceMeasure>, int> = 0>
-    // IfcElectricConductanceMeasure as() const { return express::Base::as<IfcElectricConductanceMeasure>(); }
+    // IfcElectricConductanceMeasure as() const { return express::base::as<IfcElectricConductanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricResistanceMeasure>, int> = 0>
-    // IfcElectricResistanceMeasure as() const { return express::Base::as<IfcElectricResistanceMeasure>(); }
+    // IfcElectricResistanceMeasure as() const { return express::base::as<IfcElectricResistanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricVoltageMeasure>, int> = 0>
-    // IfcElectricVoltageMeasure as() const { return express::Base::as<IfcElectricVoltageMeasure>(); }
+    // IfcElectricVoltageMeasure as() const { return express::base::as<IfcElectricVoltageMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcEnergyMeasure>, int> = 0>
-    // IfcEnergyMeasure as() const { return express::Base::as<IfcEnergyMeasure>(); }
+    // IfcEnergyMeasure as() const { return express::base::as<IfcEnergyMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcForceMeasure>, int> = 0>
-    // IfcForceMeasure as() const { return express::Base::as<IfcForceMeasure>(); }
+    // IfcForceMeasure as() const { return express::base::as<IfcForceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcFrequencyMeasure>, int> = 0>
-    // IfcFrequencyMeasure as() const { return express::Base::as<IfcFrequencyMeasure>(); }
+    // IfcFrequencyMeasure as() const { return express::base::as<IfcFrequencyMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcHeatFluxDensityMeasure>, int> = 0>
-    // IfcHeatFluxDensityMeasure as() const { return express::Base::as<IfcHeatFluxDensityMeasure>(); }
+    // IfcHeatFluxDensityMeasure as() const { return express::base::as<IfcHeatFluxDensityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcHeatingValueMeasure>, int> = 0>
-    // IfcHeatingValueMeasure as() const { return express::Base::as<IfcHeatingValueMeasure>(); }
+    // IfcHeatingValueMeasure as() const { return express::base::as<IfcHeatingValueMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcIlluminanceMeasure>, int> = 0>
-    // IfcIlluminanceMeasure as() const { return express::Base::as<IfcIlluminanceMeasure>(); }
+    // IfcIlluminanceMeasure as() const { return express::base::as<IfcIlluminanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcInductanceMeasure>, int> = 0>
-    // IfcInductanceMeasure as() const { return express::Base::as<IfcInductanceMeasure>(); }
+    // IfcInductanceMeasure as() const { return express::base::as<IfcInductanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcIntegerCountRateMeasure>, int> = 0>
-    // IfcIntegerCountRateMeasure as() const { return express::Base::as<IfcIntegerCountRateMeasure>(); }
+    // IfcIntegerCountRateMeasure as() const { return express::base::as<IfcIntegerCountRateMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcIonConcentrationMeasure>, int> = 0>
-    // IfcIonConcentrationMeasure as() const { return express::Base::as<IfcIonConcentrationMeasure>(); }
+    // IfcIonConcentrationMeasure as() const { return express::base::as<IfcIonConcentrationMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcIsothermalMoistureCapacityMeasure>, int> = 0>
-    // IfcIsothermalMoistureCapacityMeasure as() const { return express::Base::as<IfcIsothermalMoistureCapacityMeasure>(); }
+    // IfcIsothermalMoistureCapacityMeasure as() const { return express::base::as<IfcIsothermalMoistureCapacityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcKinematicViscosityMeasure>, int> = 0>
-    // IfcKinematicViscosityMeasure as() const { return express::Base::as<IfcKinematicViscosityMeasure>(); }
+    // IfcKinematicViscosityMeasure as() const { return express::base::as<IfcKinematicViscosityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearForceMeasure>, int> = 0>
-    // IfcLinearForceMeasure as() const { return express::Base::as<IfcLinearForceMeasure>(); }
+    // IfcLinearForceMeasure as() const { return express::base::as<IfcLinearForceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearMomentMeasure>, int> = 0>
-    // IfcLinearMomentMeasure as() const { return express::Base::as<IfcLinearMomentMeasure>(); }
+    // IfcLinearMomentMeasure as() const { return express::base::as<IfcLinearMomentMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearStiffnessMeasure>, int> = 0>
-    // IfcLinearStiffnessMeasure as() const { return express::Base::as<IfcLinearStiffnessMeasure>(); }
+    // IfcLinearStiffnessMeasure as() const { return express::base::as<IfcLinearStiffnessMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearVelocityMeasure>, int> = 0>
-    // IfcLinearVelocityMeasure as() const { return express::Base::as<IfcLinearVelocityMeasure>(); }
+    // IfcLinearVelocityMeasure as() const { return express::base::as<IfcLinearVelocityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousFluxMeasure>, int> = 0>
-    // IfcLuminousFluxMeasure as() const { return express::Base::as<IfcLuminousFluxMeasure>(); }
+    // IfcLuminousFluxMeasure as() const { return express::base::as<IfcLuminousFluxMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousIntensityDistributionMeasure>, int> = 0>
-    // IfcLuminousIntensityDistributionMeasure as() const { return express::Base::as<IfcLuminousIntensityDistributionMeasure>(); }
+    // IfcLuminousIntensityDistributionMeasure as() const { return express::base::as<IfcLuminousIntensityDistributionMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMagneticFluxDensityMeasure>, int> = 0>
-    // IfcMagneticFluxDensityMeasure as() const { return express::Base::as<IfcMagneticFluxDensityMeasure>(); }
+    // IfcMagneticFluxDensityMeasure as() const { return express::base::as<IfcMagneticFluxDensityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMagneticFluxMeasure>, int> = 0>
-    // IfcMagneticFluxMeasure as() const { return express::Base::as<IfcMagneticFluxMeasure>(); }
+    // IfcMagneticFluxMeasure as() const { return express::base::as<IfcMagneticFluxMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassDensityMeasure>, int> = 0>
-    // IfcMassDensityMeasure as() const { return express::Base::as<IfcMassDensityMeasure>(); }
+    // IfcMassDensityMeasure as() const { return express::base::as<IfcMassDensityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassFlowRateMeasure>, int> = 0>
-    // IfcMassFlowRateMeasure as() const { return express::Base::as<IfcMassFlowRateMeasure>(); }
+    // IfcMassFlowRateMeasure as() const { return express::base::as<IfcMassFlowRateMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassPerLengthMeasure>, int> = 0>
-    // IfcMassPerLengthMeasure as() const { return express::Base::as<IfcMassPerLengthMeasure>(); }
+    // IfcMassPerLengthMeasure as() const { return express::base::as<IfcMassPerLengthMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfElasticityMeasure>, int> = 0>
-    // IfcModulusOfElasticityMeasure as() const { return express::Base::as<IfcModulusOfElasticityMeasure>(); }
+    // IfcModulusOfElasticityMeasure as() const { return express::base::as<IfcModulusOfElasticityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfLinearSubgradeReactionMeasure>, int> = 0>
-    // IfcModulusOfLinearSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfLinearSubgradeReactionMeasure>(); }
+    // IfcModulusOfLinearSubgradeReactionMeasure as() const { return express::base::as<IfcModulusOfLinearSubgradeReactionMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfRotationalSubgradeReactionMeasure>, int> = 0>
-    // IfcModulusOfRotationalSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfRotationalSubgradeReactionMeasure>(); }
+    // IfcModulusOfRotationalSubgradeReactionMeasure as() const { return express::base::as<IfcModulusOfRotationalSubgradeReactionMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfSubgradeReactionMeasure>, int> = 0>
-    // IfcModulusOfSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfSubgradeReactionMeasure>(); }
+    // IfcModulusOfSubgradeReactionMeasure as() const { return express::base::as<IfcModulusOfSubgradeReactionMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMoistureDiffusivityMeasure>, int> = 0>
-    // IfcMoistureDiffusivityMeasure as() const { return express::Base::as<IfcMoistureDiffusivityMeasure>(); }
+    // IfcMoistureDiffusivityMeasure as() const { return express::base::as<IfcMoistureDiffusivityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMolecularWeightMeasure>, int> = 0>
-    // IfcMolecularWeightMeasure as() const { return express::Base::as<IfcMolecularWeightMeasure>(); }
+    // IfcMolecularWeightMeasure as() const { return express::base::as<IfcMolecularWeightMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMomentOfInertiaMeasure>, int> = 0>
-    // IfcMomentOfInertiaMeasure as() const { return express::Base::as<IfcMomentOfInertiaMeasure>(); }
+    // IfcMomentOfInertiaMeasure as() const { return express::base::as<IfcMomentOfInertiaMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMonetaryMeasure>, int> = 0>
-    // IfcMonetaryMeasure as() const { return express::Base::as<IfcMonetaryMeasure>(); }
+    // IfcMonetaryMeasure as() const { return express::base::as<IfcMonetaryMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPHMeasure>, int> = 0>
-    // IfcPHMeasure as() const { return express::Base::as<IfcPHMeasure>(); }
+    // IfcPHMeasure as() const { return express::base::as<IfcPHMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPlanarForceMeasure>, int> = 0>
-    // IfcPlanarForceMeasure as() const { return express::Base::as<IfcPlanarForceMeasure>(); }
+    // IfcPlanarForceMeasure as() const { return express::base::as<IfcPlanarForceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPowerMeasure>, int> = 0>
-    // IfcPowerMeasure as() const { return express::Base::as<IfcPowerMeasure>(); }
+    // IfcPowerMeasure as() const { return express::base::as<IfcPowerMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPressureMeasure>, int> = 0>
-    // IfcPressureMeasure as() const { return express::Base::as<IfcPressureMeasure>(); }
+    // IfcPressureMeasure as() const { return express::base::as<IfcPressureMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcRadioActivityMeasure>, int> = 0>
-    // IfcRadioActivityMeasure as() const { return express::Base::as<IfcRadioActivityMeasure>(); }
+    // IfcRadioActivityMeasure as() const { return express::base::as<IfcRadioActivityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalFrequencyMeasure>, int> = 0>
-    // IfcRotationalFrequencyMeasure as() const { return express::Base::as<IfcRotationalFrequencyMeasure>(); }
+    // IfcRotationalFrequencyMeasure as() const { return express::base::as<IfcRotationalFrequencyMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalMassMeasure>, int> = 0>
-    // IfcRotationalMassMeasure as() const { return express::Base::as<IfcRotationalMassMeasure>(); }
+    // IfcRotationalMassMeasure as() const { return express::base::as<IfcRotationalMassMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalStiffnessMeasure>, int> = 0>
-    // IfcRotationalStiffnessMeasure as() const { return express::Base::as<IfcRotationalStiffnessMeasure>(); }
+    // IfcRotationalStiffnessMeasure as() const { return express::base::as<IfcRotationalStiffnessMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSectionModulusMeasure>, int> = 0>
-    // IfcSectionModulusMeasure as() const { return express::Base::as<IfcSectionModulusMeasure>(); }
+    // IfcSectionModulusMeasure as() const { return express::base::as<IfcSectionModulusMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSectionalAreaIntegralMeasure>, int> = 0>
-    // IfcSectionalAreaIntegralMeasure as() const { return express::Base::as<IfcSectionalAreaIntegralMeasure>(); }
+    // IfcSectionalAreaIntegralMeasure as() const { return express::base::as<IfcSectionalAreaIntegralMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcShearModulusMeasure>, int> = 0>
-    // IfcShearModulusMeasure as() const { return express::Base::as<IfcShearModulusMeasure>(); }
+    // IfcShearModulusMeasure as() const { return express::base::as<IfcShearModulusMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPowerLevelMeasure>, int> = 0>
-    // IfcSoundPowerLevelMeasure as() const { return express::Base::as<IfcSoundPowerLevelMeasure>(); }
+    // IfcSoundPowerLevelMeasure as() const { return express::base::as<IfcSoundPowerLevelMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPowerMeasure>, int> = 0>
-    // IfcSoundPowerMeasure as() const { return express::Base::as<IfcSoundPowerMeasure>(); }
+    // IfcSoundPowerMeasure as() const { return express::base::as<IfcSoundPowerMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPressureLevelMeasure>, int> = 0>
-    // IfcSoundPressureLevelMeasure as() const { return express::Base::as<IfcSoundPressureLevelMeasure>(); }
+    // IfcSoundPressureLevelMeasure as() const { return express::base::as<IfcSoundPressureLevelMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPressureMeasure>, int> = 0>
-    // IfcSoundPressureMeasure as() const { return express::Base::as<IfcSoundPressureMeasure>(); }
+    // IfcSoundPressureMeasure as() const { return express::base::as<IfcSoundPressureMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSpecificHeatCapacityMeasure>, int> = 0>
-    // IfcSpecificHeatCapacityMeasure as() const { return express::Base::as<IfcSpecificHeatCapacityMeasure>(); }
+    // IfcSpecificHeatCapacityMeasure as() const { return express::base::as<IfcSpecificHeatCapacityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTemperatureGradientMeasure>, int> = 0>
-    // IfcTemperatureGradientMeasure as() const { return express::Base::as<IfcTemperatureGradientMeasure>(); }
+    // IfcTemperatureGradientMeasure as() const { return express::base::as<IfcTemperatureGradientMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTemperatureRateOfChangeMeasure>, int> = 0>
-    // IfcTemperatureRateOfChangeMeasure as() const { return express::Base::as<IfcTemperatureRateOfChangeMeasure>(); }
+    // IfcTemperatureRateOfChangeMeasure as() const { return express::base::as<IfcTemperatureRateOfChangeMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalAdmittanceMeasure>, int> = 0>
-    // IfcThermalAdmittanceMeasure as() const { return express::Base::as<IfcThermalAdmittanceMeasure>(); }
+    // IfcThermalAdmittanceMeasure as() const { return express::base::as<IfcThermalAdmittanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalConductivityMeasure>, int> = 0>
-    // IfcThermalConductivityMeasure as() const { return express::Base::as<IfcThermalConductivityMeasure>(); }
+    // IfcThermalConductivityMeasure as() const { return express::base::as<IfcThermalConductivityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalExpansionCoefficientMeasure>, int> = 0>
-    // IfcThermalExpansionCoefficientMeasure as() const { return express::Base::as<IfcThermalExpansionCoefficientMeasure>(); }
+    // IfcThermalExpansionCoefficientMeasure as() const { return express::base::as<IfcThermalExpansionCoefficientMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalResistanceMeasure>, int> = 0>
-    // IfcThermalResistanceMeasure as() const { return express::Base::as<IfcThermalResistanceMeasure>(); }
+    // IfcThermalResistanceMeasure as() const { return express::base::as<IfcThermalResistanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalTransmittanceMeasure>, int> = 0>
-    // IfcThermalTransmittanceMeasure as() const { return express::Base::as<IfcThermalTransmittanceMeasure>(); }
+    // IfcThermalTransmittanceMeasure as() const { return express::base::as<IfcThermalTransmittanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTorqueMeasure>, int> = 0>
-    // IfcTorqueMeasure as() const { return express::Base::as<IfcTorqueMeasure>(); }
+    // IfcTorqueMeasure as() const { return express::base::as<IfcTorqueMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcVaporPermeabilityMeasure>, int> = 0>
-    // IfcVaporPermeabilityMeasure as() const { return express::Base::as<IfcVaporPermeabilityMeasure>(); }
+    // IfcVaporPermeabilityMeasure as() const { return express::base::as<IfcVaporPermeabilityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcVolumetricFlowRateMeasure>, int> = 0>
-    // IfcVolumetricFlowRateMeasure as() const { return express::Base::as<IfcVolumetricFlowRateMeasure>(); }
+    // IfcVolumetricFlowRateMeasure as() const { return express::base::as<IfcVolumetricFlowRateMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcWarpingConstantMeasure>, int> = 0>
-    // IfcWarpingConstantMeasure as() const { return express::Base::as<IfcWarpingConstantMeasure>(); }
+    // IfcWarpingConstantMeasure as() const { return express::base::as<IfcWarpingConstantMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcWarpingMomentMeasure>, int> = 0>
-    // IfcWarpingMomentMeasure as() const { return express::Base::as<IfcWarpingMomentMeasure>(); }
+    // IfcWarpingMomentMeasure as() const { return express::base::as<IfcWarpingMomentMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMeasureValue>, int> = 0>
-    // IfcMeasureValue as() const { return express::Base::as<IfcMeasureValue>(); }
+    // IfcMeasureValue as() const { return express::base::as<IfcMeasureValue>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAmountOfSubstanceMeasure>, int> = 0>
-    // IfcAmountOfSubstanceMeasure as() const { return express::Base::as<IfcAmountOfSubstanceMeasure>(); }
+    // IfcAmountOfSubstanceMeasure as() const { return express::base::as<IfcAmountOfSubstanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAreaMeasure>, int> = 0>
-    // IfcAreaMeasure as() const { return express::Base::as<IfcAreaMeasure>(); }
+    // IfcAreaMeasure as() const { return express::base::as<IfcAreaMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcComplexNumber>, int> = 0>
-    // IfcComplexNumber as() const { return express::Base::as<IfcComplexNumber>(); }
+    // IfcComplexNumber as() const { return express::base::as<IfcComplexNumber>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcContextDependentMeasure>, int> = 0>
-    // IfcContextDependentMeasure as() const { return express::Base::as<IfcContextDependentMeasure>(); }
+    // IfcContextDependentMeasure as() const { return express::base::as<IfcContextDependentMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcCountMeasure>, int> = 0>
-    // IfcCountMeasure as() const { return express::Base::as<IfcCountMeasure>(); }
+    // IfcCountMeasure as() const { return express::base::as<IfcCountMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDescriptiveMeasure>, int> = 0>
-    // IfcDescriptiveMeasure as() const { return express::Base::as<IfcDescriptiveMeasure>(); }
+    // IfcDescriptiveMeasure as() const { return express::base::as<IfcDescriptiveMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricCurrentMeasure>, int> = 0>
-    // IfcElectricCurrentMeasure as() const { return express::Base::as<IfcElectricCurrentMeasure>(); }
+    // IfcElectricCurrentMeasure as() const { return express::base::as<IfcElectricCurrentMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLengthMeasure>, int> = 0>
-    // IfcLengthMeasure as() const { return express::Base::as<IfcLengthMeasure>(); }
+    // IfcLengthMeasure as() const { return express::base::as<IfcLengthMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousIntensityMeasure>, int> = 0>
-    // IfcLuminousIntensityMeasure as() const { return express::Base::as<IfcLuminousIntensityMeasure>(); }
+    // IfcLuminousIntensityMeasure as() const { return express::base::as<IfcLuminousIntensityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassMeasure>, int> = 0>
-    // IfcMassMeasure as() const { return express::Base::as<IfcMassMeasure>(); }
+    // IfcMassMeasure as() const { return express::base::as<IfcMassMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcNonNegativeLengthMeasure>, int> = 0>
-    // IfcNonNegativeLengthMeasure as() const { return express::Base::as<IfcNonNegativeLengthMeasure>(); }
+    // IfcNonNegativeLengthMeasure as() const { return express::base::as<IfcNonNegativeLengthMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcNormalisedRatioMeasure>, int> = 0>
-    // IfcNormalisedRatioMeasure as() const { return express::Base::as<IfcNormalisedRatioMeasure>(); }
+    // IfcNormalisedRatioMeasure as() const { return express::base::as<IfcNormalisedRatioMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcNumericMeasure>, int> = 0>
-    // IfcNumericMeasure as() const { return express::Base::as<IfcNumericMeasure>(); }
+    // IfcNumericMeasure as() const { return express::base::as<IfcNumericMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcParameterValue>, int> = 0>
-    // IfcParameterValue as() const { return express::Base::as<IfcParameterValue>(); }
+    // IfcParameterValue as() const { return express::base::as<IfcParameterValue>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPlaneAngleMeasure>, int> = 0>
-    // IfcPlaneAngleMeasure as() const { return express::Base::as<IfcPlaneAngleMeasure>(); }
+    // IfcPlaneAngleMeasure as() const { return express::base::as<IfcPlaneAngleMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveLengthMeasure>, int> = 0>
-    // IfcPositiveLengthMeasure as() const { return express::Base::as<IfcPositiveLengthMeasure>(); }
+    // IfcPositiveLengthMeasure as() const { return express::base::as<IfcPositiveLengthMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositivePlaneAngleMeasure>, int> = 0>
-    // IfcPositivePlaneAngleMeasure as() const { return express::Base::as<IfcPositivePlaneAngleMeasure>(); }
+    // IfcPositivePlaneAngleMeasure as() const { return express::base::as<IfcPositivePlaneAngleMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveRatioMeasure>, int> = 0>
-    // IfcPositiveRatioMeasure as() const { return express::Base::as<IfcPositiveRatioMeasure>(); }
+    // IfcPositiveRatioMeasure as() const { return express::base::as<IfcPositiveRatioMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcRatioMeasure>, int> = 0>
-    // IfcRatioMeasure as() const { return express::Base::as<IfcRatioMeasure>(); }
+    // IfcRatioMeasure as() const { return express::base::as<IfcRatioMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSolidAngleMeasure>, int> = 0>
-    // IfcSolidAngleMeasure as() const { return express::Base::as<IfcSolidAngleMeasure>(); }
+    // IfcSolidAngleMeasure as() const { return express::base::as<IfcSolidAngleMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermodynamicTemperatureMeasure>, int> = 0>
-    // IfcThermodynamicTemperatureMeasure as() const { return express::Base::as<IfcThermodynamicTemperatureMeasure>(); }
+    // IfcThermodynamicTemperatureMeasure as() const { return express::base::as<IfcThermodynamicTemperatureMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeMeasure>, int> = 0>
-    // IfcTimeMeasure as() const { return express::Base::as<IfcTimeMeasure>(); }
+    // IfcTimeMeasure as() const { return express::base::as<IfcTimeMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcVolumeMeasure>, int> = 0>
-    // IfcVolumeMeasure as() const { return express::Base::as<IfcVolumeMeasure>(); }
+    // IfcVolumeMeasure as() const { return express::base::as<IfcVolumeMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSimpleValue>, int> = 0>
-    // IfcSimpleValue as() const { return express::Base::as<IfcSimpleValue>(); }
+    // IfcSimpleValue as() const { return express::base::as<IfcSimpleValue>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcBinary>, int> = 0>
-    // IfcBinary as() const { return express::Base::as<IfcBinary>(); }
+    // IfcBinary as() const { return express::base::as<IfcBinary>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcBoolean>, int> = 0>
-    // IfcBoolean as() const { return express::Base::as<IfcBoolean>(); }
+    // IfcBoolean as() const { return express::base::as<IfcBoolean>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDate>, int> = 0>
-    // IfcDate as() const { return express::Base::as<IfcDate>(); }
+    // IfcDate as() const { return express::base::as<IfcDate>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDateTime>, int> = 0>
-    // IfcDateTime as() const { return express::Base::as<IfcDateTime>(); }
+    // IfcDateTime as() const { return express::base::as<IfcDateTime>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDuration>, int> = 0>
-    // IfcDuration as() const { return express::Base::as<IfcDuration>(); }
+    // IfcDuration as() const { return express::base::as<IfcDuration>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcIdentifier>, int> = 0>
-    // IfcIdentifier as() const { return express::Base::as<IfcIdentifier>(); }
+    // IfcIdentifier as() const { return express::base::as<IfcIdentifier>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcInteger>, int> = 0>
-    // IfcInteger as() const { return express::Base::as<IfcInteger>(); }
+    // IfcInteger as() const { return express::base::as<IfcInteger>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLabel>, int> = 0>
-    // IfcLabel as() const { return express::Base::as<IfcLabel>(); }
+    // IfcLabel as() const { return express::base::as<IfcLabel>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLogical>, int> = 0>
-    // IfcLogical as() const { return express::Base::as<IfcLogical>(); }
+    // IfcLogical as() const { return express::base::as<IfcLogical>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveInteger>, int> = 0>
-    // IfcPositiveInteger as() const { return express::Base::as<IfcPositiveInteger>(); }
+    // IfcPositiveInteger as() const { return express::base::as<IfcPositiveInteger>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcReal>, int> = 0>
-    // IfcReal as() const { return express::Base::as<IfcReal>(); }
+    // IfcReal as() const { return express::base::as<IfcReal>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcText>, int> = 0>
-    // IfcText as() const { return express::Base::as<IfcText>(); }
+    // IfcText as() const { return express::base::as<IfcText>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTime>, int> = 0>
-    // IfcTime as() const { return express::Base::as<IfcTime>(); }
+    // IfcTime as() const { return express::base::as<IfcTime>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeStamp>, int> = 0>
-    // IfcTimeStamp as() const { return express::Base::as<IfcTimeStamp>(); }
+    // IfcTimeStamp as() const { return express::base::as<IfcTimeStamp>(); }
 
-    IfcMetricValueSelect(const IfcAppliedValue& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcAppliedValue& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcMeasureWithUnit& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcMeasureWithUnit& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcReference& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcReference& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcTable& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcTable& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcTimeSeries& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcTimeSeries& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcValue& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcValue& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcDerivedMeasureValue& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcDerivedMeasureValue& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcAbsorbedDoseMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcAbsorbedDoseMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcAccelerationMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcAccelerationMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcAngularVelocityMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcAngularVelocityMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcAreaDensityMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcAreaDensityMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcCompoundPlaneAngleMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcCompoundPlaneAngleMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcCurvatureMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcCurvatureMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcDoseEquivalentMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcDoseEquivalentMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcDynamicViscosityMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcDynamicViscosityMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcElectricCapacitanceMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcElectricCapacitanceMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcElectricChargeMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcElectricChargeMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcElectricConductanceMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcElectricConductanceMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcElectricResistanceMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcElectricResistanceMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcElectricVoltageMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcElectricVoltageMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcEnergyMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcEnergyMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcForceMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcForceMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcFrequencyMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcFrequencyMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcHeatFluxDensityMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcHeatFluxDensityMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcHeatingValueMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcHeatingValueMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcIlluminanceMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcIlluminanceMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcInductanceMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcInductanceMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcIntegerCountRateMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcIntegerCountRateMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcIonConcentrationMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcIonConcentrationMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcIsothermalMoistureCapacityMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcIsothermalMoistureCapacityMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcKinematicViscosityMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcKinematicViscosityMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcLinearForceMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcLinearForceMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcLinearMomentMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcLinearMomentMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcLinearStiffnessMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcLinearStiffnessMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcLinearVelocityMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcLinearVelocityMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcLuminousFluxMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcLuminousFluxMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcLuminousIntensityDistributionMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcLuminousIntensityDistributionMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcMagneticFluxDensityMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcMagneticFluxDensityMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcMagneticFluxMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcMagneticFluxMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcMassDensityMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcMassDensityMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcMassFlowRateMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcMassFlowRateMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcMassPerLengthMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcMassPerLengthMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcModulusOfElasticityMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcModulusOfElasticityMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcModulusOfLinearSubgradeReactionMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcModulusOfLinearSubgradeReactionMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcModulusOfRotationalSubgradeReactionMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcModulusOfRotationalSubgradeReactionMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcModulusOfSubgradeReactionMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcModulusOfSubgradeReactionMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcMoistureDiffusivityMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcMoistureDiffusivityMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcMolecularWeightMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcMolecularWeightMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcMomentOfInertiaMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcMomentOfInertiaMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcMonetaryMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcMonetaryMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcPHMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcPHMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcPlanarForceMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcPlanarForceMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcPowerMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcPowerMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcPressureMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcPressureMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcRadioActivityMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcRadioActivityMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcRotationalFrequencyMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcRotationalFrequencyMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcRotationalMassMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcRotationalMassMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcRotationalStiffnessMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcRotationalStiffnessMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcSectionModulusMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcSectionModulusMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcSectionalAreaIntegralMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcSectionalAreaIntegralMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcShearModulusMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcShearModulusMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcSoundPowerLevelMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcSoundPowerLevelMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcSoundPowerMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcSoundPowerMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcSoundPressureLevelMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcSoundPressureLevelMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcSoundPressureMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcSoundPressureMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcSpecificHeatCapacityMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcSpecificHeatCapacityMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcTemperatureGradientMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcTemperatureGradientMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcTemperatureRateOfChangeMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcTemperatureRateOfChangeMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcThermalAdmittanceMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcThermalAdmittanceMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcThermalConductivityMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcThermalConductivityMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcThermalExpansionCoefficientMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcThermalExpansionCoefficientMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcThermalResistanceMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcThermalResistanceMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcThermalTransmittanceMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcThermalTransmittanceMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcTorqueMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcTorqueMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcVaporPermeabilityMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcVaporPermeabilityMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcVolumetricFlowRateMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcVolumetricFlowRateMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcWarpingConstantMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcWarpingConstantMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcWarpingMomentMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcWarpingMomentMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcMeasureValue& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcMeasureValue& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcAmountOfSubstanceMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcAmountOfSubstanceMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcAreaMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcAreaMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcComplexNumber& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcComplexNumber& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcContextDependentMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcContextDependentMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcCountMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcCountMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcDescriptiveMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcDescriptiveMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcElectricCurrentMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcElectricCurrentMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcLengthMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcLengthMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcLuminousIntensityMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcLuminousIntensityMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcMassMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcMassMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcNonNegativeLengthMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcNonNegativeLengthMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcNormalisedRatioMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcNormalisedRatioMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcNumericMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcNumericMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcParameterValue& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcParameterValue& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcPlaneAngleMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcPlaneAngleMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcPositiveLengthMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcPositiveLengthMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcPositivePlaneAngleMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcPositivePlaneAngleMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcPositiveRatioMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcPositiveRatioMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcRatioMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcRatioMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcSolidAngleMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcSolidAngleMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcThermodynamicTemperatureMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcThermodynamicTemperatureMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcTimeMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcTimeMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcVolumeMeasure& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcVolumeMeasure& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcSimpleValue& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcSimpleValue& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcBinary& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcBinary& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcBoolean& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcBoolean& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcDate& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcDate& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcDateTime& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcDateTime& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcDuration& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcDuration& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcIdentifier& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcIdentifier& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcInteger& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcInteger& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcLabel& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcLabel& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcLogical& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcLogical& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcPositiveInteger& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcPositiveInteger& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcReal& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcReal& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcText& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcText& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcTime& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcTime& c) : express::select(c) {};
 
-    IfcMetricValueSelect(const IfcTimeStamp& c) : express::Select(c) {};
+    IfcMetricValueSelect(const IfcTimeStamp& c) : express::select(c) {};
 
 };
 /// Definition from IAI: A measure for modulus of rotational subgrade reaction which expresses the rotational bedding of a structural curve item per length.  TRUE denotes infinite stiffness (rigidity).  FALSE denotes no stiffness (a release).  A numeric value denotes finite linear-elastic stiffness.
 /// 
 /// HISTORY: New type in IFC 2x4.
-class IFC_SCHEMA_API IfcModulusOfRotationalSubgradeReactionSelect : public express::Select {
+class IFC_SCHEMA_API IfcModulusOfRotationalSubgradeReactionSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcBoolean>, int> = 0>
-    // IfcBoolean as() const { return express::Base::as<IfcBoolean>(); }
+    // IfcBoolean as() const { return express::base::as<IfcBoolean>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfRotationalSubgradeReactionMeasure>, int> = 0>
-    // IfcModulusOfRotationalSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfRotationalSubgradeReactionMeasure>(); }
+    // IfcModulusOfRotationalSubgradeReactionMeasure as() const { return express::base::as<IfcModulusOfRotationalSubgradeReactionMeasure>(); }
 
-    IfcModulusOfRotationalSubgradeReactionSelect(const IfcBoolean& c) : express::Select(c) {};
+    IfcModulusOfRotationalSubgradeReactionSelect(const IfcBoolean& c) : express::select(c) {};
 
-    IfcModulusOfRotationalSubgradeReactionSelect(const IfcModulusOfRotationalSubgradeReactionMeasure& c) : express::Select(c) {};
+    IfcModulusOfRotationalSubgradeReactionSelect(const IfcModulusOfRotationalSubgradeReactionMeasure& c) : express::select(c) {};
 
 };
 /// Definition from IAI: Bedding measure which expresses the bedding of a structural face item per area.  TRUE denotes infinite stiffness (rigidity).  FALSE denotes no stiffness (a release).  A numeric value denotes finite linear-elastic stiffness.
 /// 
 /// HISTORY: New type in IFC 2x4.
-class IFC_SCHEMA_API IfcModulusOfSubgradeReactionSelect : public express::Select {
+class IFC_SCHEMA_API IfcModulusOfSubgradeReactionSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcBoolean>, int> = 0>
-    // IfcBoolean as() const { return express::Base::as<IfcBoolean>(); }
+    // IfcBoolean as() const { return express::base::as<IfcBoolean>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfSubgradeReactionMeasure>, int> = 0>
-    // IfcModulusOfSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfSubgradeReactionMeasure>(); }
+    // IfcModulusOfSubgradeReactionMeasure as() const { return express::base::as<IfcModulusOfSubgradeReactionMeasure>(); }
 
-    IfcModulusOfSubgradeReactionSelect(const IfcBoolean& c) : express::Select(c) {};
+    IfcModulusOfSubgradeReactionSelect(const IfcBoolean& c) : express::select(c) {};
 
-    IfcModulusOfSubgradeReactionSelect(const IfcModulusOfSubgradeReactionMeasure& c) : express::Select(c) {};
+    IfcModulusOfSubgradeReactionSelect(const IfcModulusOfSubgradeReactionMeasure& c) : express::select(c) {};
 
 };
 /// Definition from IAI: A measure for modulus of translational subgrade reaction which expresses the translational bedding of a structural curve item per length.  TRUE denotes infinite stiffness (rigidity).  FALSE denotes no stiffness (a release).  A numeric value denotes finite linear-elastic stiffness.
 /// 
 /// HISTORY: New type in IFC 2x4.
-class IFC_SCHEMA_API IfcModulusOfTranslationalSubgradeReactionSelect : public express::Select {
+class IFC_SCHEMA_API IfcModulusOfTranslationalSubgradeReactionSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcBoolean>, int> = 0>
-    // IfcBoolean as() const { return express::Base::as<IfcBoolean>(); }
+    // IfcBoolean as() const { return express::base::as<IfcBoolean>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfLinearSubgradeReactionMeasure>, int> = 0>
-    // IfcModulusOfLinearSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfLinearSubgradeReactionMeasure>(); }
+    // IfcModulusOfLinearSubgradeReactionMeasure as() const { return express::base::as<IfcModulusOfLinearSubgradeReactionMeasure>(); }
 
-    IfcModulusOfTranslationalSubgradeReactionSelect(const IfcBoolean& c) : express::Select(c) {};
+    IfcModulusOfTranslationalSubgradeReactionSelect(const IfcBoolean& c) : express::select(c) {};
 
-    IfcModulusOfTranslationalSubgradeReactionSelect(const IfcModulusOfLinearSubgradeReactionMeasure& c) : express::Select(c) {};
+    IfcModulusOfTranslationalSubgradeReactionSelect(const IfcModulusOfLinearSubgradeReactionMeasure& c) : express::select(c) {};
 
 };
 /// IfcObjectReferenceSelect is a select type, that holds a list of resource level entities that can be used as properties within a property set. 
 /// 
 /// HISTORY  New select type in IFC Release 2.0.
-class IFC_SCHEMA_API IfcObjectReferenceSelect : public express::Select {
+class IFC_SCHEMA_API IfcObjectReferenceSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAddress>, int> = 0>
-    // IfcAddress as() const { return express::Base::as<IfcAddress>(); }
+    // IfcAddress as() const { return express::base::as<IfcAddress>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAppliedValue>, int> = 0>
-    // IfcAppliedValue as() const { return express::Base::as<IfcAppliedValue>(); }
+    // IfcAppliedValue as() const { return express::base::as<IfcAppliedValue>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcExternalReference>, int> = 0>
-    // IfcExternalReference as() const { return express::Base::as<IfcExternalReference>(); }
+    // IfcExternalReference as() const { return express::base::as<IfcExternalReference>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMaterialDefinition>, int> = 0>
-    // IfcMaterialDefinition as() const { return express::Base::as<IfcMaterialDefinition>(); }
+    // IfcMaterialDefinition as() const { return express::base::as<IfcMaterialDefinition>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcOrganization>, int> = 0>
-    // IfcOrganization as() const { return express::Base::as<IfcOrganization>(); }
+    // IfcOrganization as() const { return express::base::as<IfcOrganization>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPerson>, int> = 0>
-    // IfcPerson as() const { return express::Base::as<IfcPerson>(); }
+    // IfcPerson as() const { return express::base::as<IfcPerson>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPersonAndOrganization>, int> = 0>
-    // IfcPersonAndOrganization as() const { return express::Base::as<IfcPersonAndOrganization>(); }
+    // IfcPersonAndOrganization as() const { return express::base::as<IfcPersonAndOrganization>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTable>, int> = 0>
-    // IfcTable as() const { return express::Base::as<IfcTable>(); }
+    // IfcTable as() const { return express::base::as<IfcTable>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeSeries>, int> = 0>
-    // IfcTimeSeries as() const { return express::Base::as<IfcTimeSeries>(); }
+    // IfcTimeSeries as() const { return express::base::as<IfcTimeSeries>(); }
 
-    IfcObjectReferenceSelect(const IfcAddress& c) : express::Select(c) {};
+    IfcObjectReferenceSelect(const IfcAddress& c) : express::select(c) {};
 
-    IfcObjectReferenceSelect(const IfcAppliedValue& c) : express::Select(c) {};
+    IfcObjectReferenceSelect(const IfcAppliedValue& c) : express::select(c) {};
 
-    IfcObjectReferenceSelect(const IfcExternalReference& c) : express::Select(c) {};
+    IfcObjectReferenceSelect(const IfcExternalReference& c) : express::select(c) {};
 
-    IfcObjectReferenceSelect(const IfcMaterialDefinition& c) : express::Select(c) {};
+    IfcObjectReferenceSelect(const IfcMaterialDefinition& c) : express::select(c) {};
 
-    IfcObjectReferenceSelect(const IfcOrganization& c) : express::Select(c) {};
+    IfcObjectReferenceSelect(const IfcOrganization& c) : express::select(c) {};
 
-    IfcObjectReferenceSelect(const IfcPerson& c) : express::Select(c) {};
+    IfcObjectReferenceSelect(const IfcPerson& c) : express::select(c) {};
 
-    IfcObjectReferenceSelect(const IfcPersonAndOrganization& c) : express::Select(c) {};
+    IfcObjectReferenceSelect(const IfcPersonAndOrganization& c) : express::select(c) {};
 
-    IfcObjectReferenceSelect(const IfcTable& c) : express::Select(c) {};
+    IfcObjectReferenceSelect(const IfcTable& c) : express::select(c) {};
 
-    IfcObjectReferenceSelect(const IfcTimeSeries& c) : express::Select(c) {};
+    IfcObjectReferenceSelect(const IfcTimeSeries& c) : express::select(c) {};
 
 };
 /// IfcPointOrVertexPoint provides the option to either select a geometric point (IfcPoint and subtypes) within a geometric model, or a vertex with associated point coordinates (IfcVertexPoint) within a topological model.
@@ -3074,22 +3074,22 @@ public:
 ///   IfcVertexPoint
 /// 
 /// HISTORY  New select type in IFC2x Edition 3.
-class IFC_SCHEMA_API IfcPointOrVertexPoint : public express::Select {
+class IFC_SCHEMA_API IfcPointOrVertexPoint : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPoint>, int> = 0>
-    // IfcPoint as() const { return express::Base::as<IfcPoint>(); }
+    // IfcPoint as() const { return express::base::as<IfcPoint>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcVertexPoint>, int> = 0>
-    // IfcVertexPoint as() const { return express::Base::as<IfcVertexPoint>(); }
+    // IfcVertexPoint as() const { return express::base::as<IfcVertexPoint>(); }
 
-    IfcPointOrVertexPoint(const IfcPoint& c) : express::Select(c) {};
+    IfcPointOrVertexPoint(const IfcPoint& c) : express::select(c) {};
 
-    IfcPointOrVertexPoint(const IfcVertexPoint& c) : express::Select(c) {};
+    IfcPointOrVertexPoint(const IfcVertexPoint& c) : express::select(c) {};
 
 };
 /// IfcProcessSelectprovides the option to either
@@ -3102,41 +3102,41 @@ public:
 /// IfcTypeProcess
 /// 
 /// HISTORY New select type in IFC2x4.
-class IFC_SCHEMA_API IfcProcessSelect : public express::Select {
+class IFC_SCHEMA_API IfcProcessSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcProcess>, int> = 0>
-    // IfcProcess as() const { return express::Base::as<IfcProcess>(); }
+    // IfcProcess as() const { return express::base::as<IfcProcess>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTypeProcess>, int> = 0>
-    // IfcTypeProcess as() const { return express::Base::as<IfcTypeProcess>(); }
+    // IfcTypeProcess as() const { return express::base::as<IfcTypeProcess>(); }
 
-    IfcProcessSelect(const IfcProcess& c) : express::Select(c) {};
+    IfcProcessSelect(const IfcProcess& c) : express::select(c) {};
 
-    IfcProcessSelect(const IfcTypeProcess& c) : express::Select(c) {};
+    IfcProcessSelect(const IfcTypeProcess& c) : express::select(c) {};
 
 };
 
-class IFC_SCHEMA_API IfcProductRepresentationSelect : public express::Select {
+class IFC_SCHEMA_API IfcProductRepresentationSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcProductDefinitionShape>, int> = 0>
-    // IfcProductDefinitionShape as() const { return express::Base::as<IfcProductDefinitionShape>(); }
+    // IfcProductDefinitionShape as() const { return express::base::as<IfcProductDefinitionShape>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcRepresentationMap>, int> = 0>
-    // IfcRepresentationMap as() const { return express::Base::as<IfcRepresentationMap>(); }
+    // IfcRepresentationMap as() const { return express::base::as<IfcRepresentationMap>(); }
 
-    IfcProductRepresentationSelect(const IfcProductDefinitionShape& c) : express::Select(c) {};
+    IfcProductRepresentationSelect(const IfcProductDefinitionShape& c) : express::select(c) {};
 
-    IfcProductRepresentationSelect(const IfcRepresentationMap& c) : express::Select(c) {};
+    IfcProductRepresentationSelect(const IfcRepresentationMap& c) : express::select(c) {};
 
 };
 /// IfcProductSelectprovides the option to either select a
@@ -3148,152 +3148,152 @@ public:
 /// IfcTypeProduct
 /// 
 /// HISTORY New select type in IFC2x4.
-class IFC_SCHEMA_API IfcProductSelect : public express::Select {
+class IFC_SCHEMA_API IfcProductSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcProduct>, int> = 0>
-    // IfcProduct as() const { return express::Base::as<IfcProduct>(); }
+    // IfcProduct as() const { return express::base::as<IfcProduct>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTypeProduct>, int> = 0>
-    // IfcTypeProduct as() const { return express::Base::as<IfcTypeProduct>(); }
+    // IfcTypeProduct as() const { return express::base::as<IfcTypeProduct>(); }
 
-    IfcProductSelect(const IfcProduct& c) : express::Select(c) {};
+    IfcProductSelect(const IfcProduct& c) : express::select(c) {};
 
-    IfcProductSelect(const IfcTypeProduct& c) : express::Select(c) {};
+    IfcProductSelect(const IfcTypeProduct& c) : express::select(c) {};
 
 };
 
-class IFC_SCHEMA_API IfcPropertySetDefinitionSelect : public express::Select {
+class IFC_SCHEMA_API IfcPropertySetDefinitionSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPropertySetDefinition>, int> = 0>
-    // IfcPropertySetDefinition as() const { return express::Base::as<IfcPropertySetDefinition>(); }
+    // IfcPropertySetDefinition as() const { return express::base::as<IfcPropertySetDefinition>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPropertySetDefinitionSet>, int> = 0>
-    // IfcPropertySetDefinitionSet as() const { return express::Base::as<IfcPropertySetDefinitionSet>(); }
+    // IfcPropertySetDefinitionSet as() const { return express::base::as<IfcPropertySetDefinitionSet>(); }
 
-    IfcPropertySetDefinitionSelect(const IfcPropertySetDefinition& c) : express::Select(c) {};
+    IfcPropertySetDefinitionSelect(const IfcPropertySetDefinition& c) : express::select(c) {};
 
-    IfcPropertySetDefinitionSelect(const IfcPropertySetDefinitionSet& c) : express::Select(c) {};
+    IfcPropertySetDefinitionSelect(const IfcPropertySetDefinitionSet& c) : express::select(c) {};
 
 };
 /// IfcResourceObjectSelect enables selection of resource level objects that are to be related to an resource level relationship object. The use of IfcResourceObjectSelect includes the ability to assign an external reference entity (library, classification, or documentation reference) to entities within the resource level.
 /// 
 /// HISTORY  New Select type in IFC2x4.
-class IFC_SCHEMA_API IfcResourceObjectSelect : public express::Select {
+class IFC_SCHEMA_API IfcResourceObjectSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcActorRole>, int> = 0>
-    // IfcActorRole as() const { return express::Base::as<IfcActorRole>(); }
+    // IfcActorRole as() const { return express::base::as<IfcActorRole>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAppliedValue>, int> = 0>
-    // IfcAppliedValue as() const { return express::Base::as<IfcAppliedValue>(); }
+    // IfcAppliedValue as() const { return express::base::as<IfcAppliedValue>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcApproval>, int> = 0>
-    // IfcApproval as() const { return express::Base::as<IfcApproval>(); }
+    // IfcApproval as() const { return express::base::as<IfcApproval>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcConstraint>, int> = 0>
-    // IfcConstraint as() const { return express::Base::as<IfcConstraint>(); }
+    // IfcConstraint as() const { return express::base::as<IfcConstraint>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcContextDependentUnit>, int> = 0>
-    // IfcContextDependentUnit as() const { return express::Base::as<IfcContextDependentUnit>(); }
+    // IfcContextDependentUnit as() const { return express::base::as<IfcContextDependentUnit>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcConversionBasedUnit>, int> = 0>
-    // IfcConversionBasedUnit as() const { return express::Base::as<IfcConversionBasedUnit>(); }
+    // IfcConversionBasedUnit as() const { return express::base::as<IfcConversionBasedUnit>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcExternalInformation>, int> = 0>
-    // IfcExternalInformation as() const { return express::Base::as<IfcExternalInformation>(); }
+    // IfcExternalInformation as() const { return express::base::as<IfcExternalInformation>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcExternalReference>, int> = 0>
-    // IfcExternalReference as() const { return express::Base::as<IfcExternalReference>(); }
+    // IfcExternalReference as() const { return express::base::as<IfcExternalReference>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMaterialDefinition>, int> = 0>
-    // IfcMaterialDefinition as() const { return express::Base::as<IfcMaterialDefinition>(); }
+    // IfcMaterialDefinition as() const { return express::base::as<IfcMaterialDefinition>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcOrganization>, int> = 0>
-    // IfcOrganization as() const { return express::Base::as<IfcOrganization>(); }
+    // IfcOrganization as() const { return express::base::as<IfcOrganization>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPerson>, int> = 0>
-    // IfcPerson as() const { return express::Base::as<IfcPerson>(); }
+    // IfcPerson as() const { return express::base::as<IfcPerson>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPersonAndOrganization>, int> = 0>
-    // IfcPersonAndOrganization as() const { return express::Base::as<IfcPersonAndOrganization>(); }
+    // IfcPersonAndOrganization as() const { return express::base::as<IfcPersonAndOrganization>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPhysicalQuantity>, int> = 0>
-    // IfcPhysicalQuantity as() const { return express::Base::as<IfcPhysicalQuantity>(); }
+    // IfcPhysicalQuantity as() const { return express::base::as<IfcPhysicalQuantity>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcProfileDef>, int> = 0>
-    // IfcProfileDef as() const { return express::Base::as<IfcProfileDef>(); }
+    // IfcProfileDef as() const { return express::base::as<IfcProfileDef>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPropertyAbstraction>, int> = 0>
-    // IfcPropertyAbstraction as() const { return express::Base::as<IfcPropertyAbstraction>(); }
+    // IfcPropertyAbstraction as() const { return express::base::as<IfcPropertyAbstraction>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcShapeAspect>, int> = 0>
-    // IfcShapeAspect as() const { return express::Base::as<IfcShapeAspect>(); }
+    // IfcShapeAspect as() const { return express::base::as<IfcShapeAspect>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeSeries>, int> = 0>
-    // IfcTimeSeries as() const { return express::Base::as<IfcTimeSeries>(); }
+    // IfcTimeSeries as() const { return express::base::as<IfcTimeSeries>(); }
 
-    IfcResourceObjectSelect(const IfcActorRole& c) : express::Select(c) {};
+    IfcResourceObjectSelect(const IfcActorRole& c) : express::select(c) {};
 
-    IfcResourceObjectSelect(const IfcAppliedValue& c) : express::Select(c) {};
+    IfcResourceObjectSelect(const IfcAppliedValue& c) : express::select(c) {};
 
-    IfcResourceObjectSelect(const IfcApproval& c) : express::Select(c) {};
+    IfcResourceObjectSelect(const IfcApproval& c) : express::select(c) {};
 
-    IfcResourceObjectSelect(const IfcConstraint& c) : express::Select(c) {};
+    IfcResourceObjectSelect(const IfcConstraint& c) : express::select(c) {};
 
-    IfcResourceObjectSelect(const IfcContextDependentUnit& c) : express::Select(c) {};
+    IfcResourceObjectSelect(const IfcContextDependentUnit& c) : express::select(c) {};
 
-    IfcResourceObjectSelect(const IfcConversionBasedUnit& c) : express::Select(c) {};
+    IfcResourceObjectSelect(const IfcConversionBasedUnit& c) : express::select(c) {};
 
-    IfcResourceObjectSelect(const IfcExternalInformation& c) : express::Select(c) {};
+    IfcResourceObjectSelect(const IfcExternalInformation& c) : express::select(c) {};
 
-    IfcResourceObjectSelect(const IfcExternalReference& c) : express::Select(c) {};
+    IfcResourceObjectSelect(const IfcExternalReference& c) : express::select(c) {};
 
-    IfcResourceObjectSelect(const IfcMaterialDefinition& c) : express::Select(c) {};
+    IfcResourceObjectSelect(const IfcMaterialDefinition& c) : express::select(c) {};
 
-    IfcResourceObjectSelect(const IfcOrganization& c) : express::Select(c) {};
+    IfcResourceObjectSelect(const IfcOrganization& c) : express::select(c) {};
 
-    IfcResourceObjectSelect(const IfcPerson& c) : express::Select(c) {};
+    IfcResourceObjectSelect(const IfcPerson& c) : express::select(c) {};
 
-    IfcResourceObjectSelect(const IfcPersonAndOrganization& c) : express::Select(c) {};
+    IfcResourceObjectSelect(const IfcPersonAndOrganization& c) : express::select(c) {};
 
-    IfcResourceObjectSelect(const IfcPhysicalQuantity& c) : express::Select(c) {};
+    IfcResourceObjectSelect(const IfcPhysicalQuantity& c) : express::select(c) {};
 
-    IfcResourceObjectSelect(const IfcProfileDef& c) : express::Select(c) {};
+    IfcResourceObjectSelect(const IfcProfileDef& c) : express::select(c) {};
 
-    IfcResourceObjectSelect(const IfcPropertyAbstraction& c) : express::Select(c) {};
+    IfcResourceObjectSelect(const IfcPropertyAbstraction& c) : express::select(c) {};
 
-    IfcResourceObjectSelect(const IfcShapeAspect& c) : express::Select(c) {};
+    IfcResourceObjectSelect(const IfcShapeAspect& c) : express::select(c) {};
 
-    IfcResourceObjectSelect(const IfcTimeSeries& c) : express::Select(c) {};
+    IfcResourceObjectSelect(const IfcTimeSeries& c) : express::select(c) {};
 
 };
 /// IfcResourceSelectprovides the option to either select a
@@ -3305,62 +3305,62 @@ public:
 /// IfcTypeResource
 /// 
 /// HISTORY New select type in IFC2x4.
-class IFC_SCHEMA_API IfcResourceSelect : public express::Select {
+class IFC_SCHEMA_API IfcResourceSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcResource>, int> = 0>
-    // IfcResource as() const { return express::Base::as<IfcResource>(); }
+    // IfcResource as() const { return express::base::as<IfcResource>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTypeResource>, int> = 0>
-    // IfcTypeResource as() const { return express::Base::as<IfcTypeResource>(); }
+    // IfcTypeResource as() const { return express::base::as<IfcTypeResource>(); }
 
-    IfcResourceSelect(const IfcResource& c) : express::Select(c) {};
+    IfcResourceSelect(const IfcResource& c) : express::select(c) {};
 
-    IfcResourceSelect(const IfcTypeResource& c) : express::Select(c) {};
+    IfcResourceSelect(const IfcTypeResource& c) : express::select(c) {};
 
 };
 /// Definition from IAI: A measure of rotational stiffness.  TRUE denotes infinite stiffness (rigidity).  FALSE denotes no stiffness (a release).  A numeric value denotes finite linear-elastic stiffness.
 /// 
 /// HISTORY: New type in IFC 2x4.
-class IFC_SCHEMA_API IfcRotationalStiffnessSelect : public express::Select {
+class IFC_SCHEMA_API IfcRotationalStiffnessSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcBoolean>, int> = 0>
-    // IfcBoolean as() const { return express::Base::as<IfcBoolean>(); }
+    // IfcBoolean as() const { return express::base::as<IfcBoolean>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalStiffnessMeasure>, int> = 0>
-    // IfcRotationalStiffnessMeasure as() const { return express::Base::as<IfcRotationalStiffnessMeasure>(); }
+    // IfcRotationalStiffnessMeasure as() const { return express::base::as<IfcRotationalStiffnessMeasure>(); }
 
-    IfcRotationalStiffnessSelect(const IfcBoolean& c) : express::Select(c) {};
+    IfcRotationalStiffnessSelect(const IfcBoolean& c) : express::select(c) {};
 
-    IfcRotationalStiffnessSelect(const IfcRotationalStiffnessMeasure& c) : express::Select(c) {};
+    IfcRotationalStiffnessSelect(const IfcRotationalStiffnessMeasure& c) : express::select(c) {};
 
 };
 
-class IFC_SCHEMA_API IfcSegmentIndexSelect : public express::Select {
+class IFC_SCHEMA_API IfcSegmentIndexSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcArcIndex>, int> = 0>
-    // IfcArcIndex as() const { return express::Base::as<IfcArcIndex>(); }
+    // IfcArcIndex as() const { return express::base::as<IfcArcIndex>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLineIndex>, int> = 0>
-    // IfcLineIndex as() const { return express::Base::as<IfcLineIndex>(); }
+    // IfcLineIndex as() const { return express::base::as<IfcLineIndex>(); }
 
-    IfcSegmentIndexSelect(const IfcArcIndex& c) : express::Select(c) {};
+    IfcSegmentIndexSelect(const IfcArcIndex& c) : express::select(c) {};
 
-    IfcSegmentIndexSelect(const IfcLineIndex& c) : express::Select(c) {};
+    IfcSegmentIndexSelect(const IfcLineIndex& c) : express::select(c) {};
 
 };
 /// Definition from ISO/CD 10303-42:1992 This type collects together, for reference when constructing more complex models, the subtypes which have the characteristics of a shell. A shell is a connected object of fixed dimensionality d = 0; 1; or 2, typically used to bound a region. The domain of a shell, if present, includes its bounds and 0 £ X < ¥.  
@@ -3374,22 +3374,22 @@ public:
 /// NOTE  Corresponding ISO 10303 type: shell. Please refer to ISO/IS 10303-42:1994, p. 127 for the final definition of the formal standard. Only the select items closed_shell (IfcClosedShell) and open_shell (IfcOpenShell) have been incorporated in the current IFC release. 
 /// 
 /// HISTORY  New type in IFC2x.
-class IFC_SCHEMA_API IfcShell : public express::Select {
+class IFC_SCHEMA_API IfcShell : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcClosedShell>, int> = 0>
-    // IfcClosedShell as() const { return express::Base::as<IfcClosedShell>(); }
+    // IfcClosedShell as() const { return express::base::as<IfcClosedShell>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcOpenShell>, int> = 0>
-    // IfcOpenShell as() const { return express::Base::as<IfcOpenShell>(); }
+    // IfcOpenShell as() const { return express::base::as<IfcOpenShell>(); }
 
-    IfcShell(const IfcClosedShell& c) : express::Select(c) {};
+    IfcShell(const IfcClosedShell& c) : express::select(c) {};
 
-    IfcShell(const IfcOpenShell& c) : express::Select(c) {};
+    IfcShell(const IfcOpenShell& c) : express::select(c) {};
 
 };
 /// IfcSimpleValue is a select type for selecting between simple value types.
@@ -3411,94 +3411,94 @@ public:
 /// HISTORY New type in IFC Release 2x.
 /// 
 /// IFC2x4 CHANGE Items IfcDateTime, IfcDate, IfcTime, IfcDuration added.
-class IFC_SCHEMA_API IfcSimpleValue : public express::Select {
+class IFC_SCHEMA_API IfcSimpleValue : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcBinary>, int> = 0>
-    // IfcBinary as() const { return express::Base::as<IfcBinary>(); }
+    // IfcBinary as() const { return express::base::as<IfcBinary>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcBoolean>, int> = 0>
-    // IfcBoolean as() const { return express::Base::as<IfcBoolean>(); }
+    // IfcBoolean as() const { return express::base::as<IfcBoolean>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDate>, int> = 0>
-    // IfcDate as() const { return express::Base::as<IfcDate>(); }
+    // IfcDate as() const { return express::base::as<IfcDate>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDateTime>, int> = 0>
-    // IfcDateTime as() const { return express::Base::as<IfcDateTime>(); }
+    // IfcDateTime as() const { return express::base::as<IfcDateTime>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDuration>, int> = 0>
-    // IfcDuration as() const { return express::Base::as<IfcDuration>(); }
+    // IfcDuration as() const { return express::base::as<IfcDuration>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcIdentifier>, int> = 0>
-    // IfcIdentifier as() const { return express::Base::as<IfcIdentifier>(); }
+    // IfcIdentifier as() const { return express::base::as<IfcIdentifier>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcInteger>, int> = 0>
-    // IfcInteger as() const { return express::Base::as<IfcInteger>(); }
+    // IfcInteger as() const { return express::base::as<IfcInteger>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLabel>, int> = 0>
-    // IfcLabel as() const { return express::Base::as<IfcLabel>(); }
+    // IfcLabel as() const { return express::base::as<IfcLabel>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLogical>, int> = 0>
-    // IfcLogical as() const { return express::Base::as<IfcLogical>(); }
+    // IfcLogical as() const { return express::base::as<IfcLogical>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveInteger>, int> = 0>
-    // IfcPositiveInteger as() const { return express::Base::as<IfcPositiveInteger>(); }
+    // IfcPositiveInteger as() const { return express::base::as<IfcPositiveInteger>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcReal>, int> = 0>
-    // IfcReal as() const { return express::Base::as<IfcReal>(); }
+    // IfcReal as() const { return express::base::as<IfcReal>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcText>, int> = 0>
-    // IfcText as() const { return express::Base::as<IfcText>(); }
+    // IfcText as() const { return express::base::as<IfcText>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTime>, int> = 0>
-    // IfcTime as() const { return express::Base::as<IfcTime>(); }
+    // IfcTime as() const { return express::base::as<IfcTime>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeStamp>, int> = 0>
-    // IfcTimeStamp as() const { return express::Base::as<IfcTimeStamp>(); }
+    // IfcTimeStamp as() const { return express::base::as<IfcTimeStamp>(); }
 
-    IfcSimpleValue(const IfcBinary& c) : express::Select(c) {};
+    IfcSimpleValue(const IfcBinary& c) : express::select(c) {};
 
-    IfcSimpleValue(const IfcBoolean& c) : express::Select(c) {};
+    IfcSimpleValue(const IfcBoolean& c) : express::select(c) {};
 
-    IfcSimpleValue(const IfcDate& c) : express::Select(c) {};
+    IfcSimpleValue(const IfcDate& c) : express::select(c) {};
 
-    IfcSimpleValue(const IfcDateTime& c) : express::Select(c) {};
+    IfcSimpleValue(const IfcDateTime& c) : express::select(c) {};
 
-    IfcSimpleValue(const IfcDuration& c) : express::Select(c) {};
+    IfcSimpleValue(const IfcDuration& c) : express::select(c) {};
 
-    IfcSimpleValue(const IfcIdentifier& c) : express::Select(c) {};
+    IfcSimpleValue(const IfcIdentifier& c) : express::select(c) {};
 
-    IfcSimpleValue(const IfcInteger& c) : express::Select(c) {};
+    IfcSimpleValue(const IfcInteger& c) : express::select(c) {};
 
-    IfcSimpleValue(const IfcLabel& c) : express::Select(c) {};
+    IfcSimpleValue(const IfcLabel& c) : express::select(c) {};
 
-    IfcSimpleValue(const IfcLogical& c) : express::Select(c) {};
+    IfcSimpleValue(const IfcLogical& c) : express::select(c) {};
 
-    IfcSimpleValue(const IfcPositiveInteger& c) : express::Select(c) {};
+    IfcSimpleValue(const IfcPositiveInteger& c) : express::select(c) {};
 
-    IfcSimpleValue(const IfcReal& c) : express::Select(c) {};
+    IfcSimpleValue(const IfcReal& c) : express::select(c) {};
 
-    IfcSimpleValue(const IfcText& c) : express::Select(c) {};
+    IfcSimpleValue(const IfcText& c) : express::select(c) {};
 
-    IfcSimpleValue(const IfcTime& c) : express::Select(c) {};
+    IfcSimpleValue(const IfcTime& c) : express::select(c) {};
 
-    IfcSimpleValue(const IfcTimeStamp& c) : express::Select(c) {};
+    IfcSimpleValue(const IfcTimeStamp& c) : express::select(c) {};
 
 };
 /// Definition from ISO/CD 10303-46:1992: The size select is a selection of a specific positive length measure.
@@ -3513,46 +3513,46 @@ public:
 /// HISTORY  New type in IFC2x2.
 /// 
 /// IFC2x3 CHANGE  The SELECT item IfcMeasureWithUnit has been removed from the IfcSizeSelect, the IfcRatioMeasure and IfcDescriptiveMeasure has been added.
-class IFC_SCHEMA_API IfcSizeSelect : public express::Select {
+class IFC_SCHEMA_API IfcSizeSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDescriptiveMeasure>, int> = 0>
-    // IfcDescriptiveMeasure as() const { return express::Base::as<IfcDescriptiveMeasure>(); }
+    // IfcDescriptiveMeasure as() const { return express::base::as<IfcDescriptiveMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLengthMeasure>, int> = 0>
-    // IfcLengthMeasure as() const { return express::Base::as<IfcLengthMeasure>(); }
+    // IfcLengthMeasure as() const { return express::base::as<IfcLengthMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcNormalisedRatioMeasure>, int> = 0>
-    // IfcNormalisedRatioMeasure as() const { return express::Base::as<IfcNormalisedRatioMeasure>(); }
+    // IfcNormalisedRatioMeasure as() const { return express::base::as<IfcNormalisedRatioMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveLengthMeasure>, int> = 0>
-    // IfcPositiveLengthMeasure as() const { return express::Base::as<IfcPositiveLengthMeasure>(); }
+    // IfcPositiveLengthMeasure as() const { return express::base::as<IfcPositiveLengthMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveRatioMeasure>, int> = 0>
-    // IfcPositiveRatioMeasure as() const { return express::Base::as<IfcPositiveRatioMeasure>(); }
+    // IfcPositiveRatioMeasure as() const { return express::base::as<IfcPositiveRatioMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcRatioMeasure>, int> = 0>
-    // IfcRatioMeasure as() const { return express::Base::as<IfcRatioMeasure>(); }
+    // IfcRatioMeasure as() const { return express::base::as<IfcRatioMeasure>(); }
 
-    IfcSizeSelect(const IfcDescriptiveMeasure& c) : express::Select(c) {};
+    IfcSizeSelect(const IfcDescriptiveMeasure& c) : express::select(c) {};
 
-    IfcSizeSelect(const IfcLengthMeasure& c) : express::Select(c) {};
+    IfcSizeSelect(const IfcLengthMeasure& c) : express::select(c) {};
 
-    IfcSizeSelect(const IfcNormalisedRatioMeasure& c) : express::Select(c) {};
+    IfcSizeSelect(const IfcNormalisedRatioMeasure& c) : express::select(c) {};
 
-    IfcSizeSelect(const IfcPositiveLengthMeasure& c) : express::Select(c) {};
+    IfcSizeSelect(const IfcPositiveLengthMeasure& c) : express::select(c) {};
 
-    IfcSizeSelect(const IfcPositiveRatioMeasure& c) : express::Select(c) {};
+    IfcSizeSelect(const IfcPositiveRatioMeasure& c) : express::select(c) {};
 
-    IfcSizeSelect(const IfcRatioMeasure& c) : express::Select(c) {};
+    IfcSizeSelect(const IfcRatioMeasure& c) : express::select(c) {};
 
 };
 /// The IfcSolidOrShell provides the option to either select a geometric volume (IfcSolidModel and subtypes) within a geometric model, or a shell (IfcClosedShell) within a topological model.
@@ -3562,22 +3562,22 @@ public:
 /// IfcClosedShell
 /// 
 /// HISTORY New select type in IFC2x4.
-class IFC_SCHEMA_API IfcSolidOrShell : public express::Select {
+class IFC_SCHEMA_API IfcSolidOrShell : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcClosedShell>, int> = 0>
-    // IfcClosedShell as() const { return express::Base::as<IfcClosedShell>(); }
+    // IfcClosedShell as() const { return express::base::as<IfcClosedShell>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSolidModel>, int> = 0>
-    // IfcSolidModel as() const { return express::Base::as<IfcSolidModel>(); }
+    // IfcSolidModel as() const { return express::base::as<IfcSolidModel>(); }
 
-    IfcSolidOrShell(const IfcClosedShell& c) : express::Select(c) {};
+    IfcSolidOrShell(const IfcClosedShell& c) : express::select(c) {};
 
-    IfcSolidOrShell(const IfcSolidModel& c) : express::Select(c) {};
+    IfcSolidOrShell(const IfcSolidModel& c) : express::select(c) {};
 
 };
 /// Definition from IAI: The
@@ -3592,41 +3592,41 @@ public:
 /// 
 /// HISTORY New select type
 /// in IFC2x4.
-class IFC_SCHEMA_API IfcSpaceBoundarySelect : public express::Select {
+class IFC_SCHEMA_API IfcSpaceBoundarySelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcExternalSpatialElement>, int> = 0>
-    // IfcExternalSpatialElement as() const { return express::Base::as<IfcExternalSpatialElement>(); }
+    // IfcExternalSpatialElement as() const { return express::base::as<IfcExternalSpatialElement>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSpace>, int> = 0>
-    // IfcSpace as() const { return express::Base::as<IfcSpace>(); }
+    // IfcSpace as() const { return express::base::as<IfcSpace>(); }
 
-    IfcSpaceBoundarySelect(const IfcExternalSpatialElement& c) : express::Select(c) {};
+    IfcSpaceBoundarySelect(const IfcExternalSpatialElement& c) : express::select(c) {};
 
-    IfcSpaceBoundarySelect(const IfcSpace& c) : express::Select(c) {};
+    IfcSpaceBoundarySelect(const IfcSpace& c) : express::select(c) {};
 
 };
 
-class IFC_SCHEMA_API IfcSpatialReferenceSelect : public express::Select {
+class IFC_SCHEMA_API IfcSpatialReferenceSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcGroup>, int> = 0>
-    // IfcGroup as() const { return express::Base::as<IfcGroup>(); }
+    // IfcGroup as() const { return express::base::as<IfcGroup>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcProduct>, int> = 0>
-    // IfcProduct as() const { return express::Base::as<IfcProduct>(); }
+    // IfcProduct as() const { return express::base::as<IfcProduct>(); }
 
-    IfcSpatialReferenceSelect(const IfcGroup& c) : express::Select(c) {};
+    IfcSpatialReferenceSelect(const IfcGroup& c) : express::select(c) {};
 
-    IfcSpatialReferenceSelect(const IfcProduct& c) : express::Select(c) {};
+    IfcSpatialReferenceSelect(const IfcProduct& c) : express::select(c) {};
 
 };
 /// The IfcSpecularHighlightSelect defines the selectable types of value for specular highlight sharpness. 
@@ -3639,22 +3639,22 @@ public:
 /// For each surface side style only one of the two methods is needed for calculating the specular part of the equation.
 /// 
 /// HISTORY: New type in IFC2x2.
-class IFC_SCHEMA_API IfcSpecularHighlightSelect : public express::Select {
+class IFC_SCHEMA_API IfcSpecularHighlightSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSpecularExponent>, int> = 0>
-    // IfcSpecularExponent as() const { return express::Base::as<IfcSpecularExponent>(); }
+    // IfcSpecularExponent as() const { return express::base::as<IfcSpecularExponent>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSpecularRoughness>, int> = 0>
-    // IfcSpecularRoughness as() const { return express::Base::as<IfcSpecularRoughness>(); }
+    // IfcSpecularRoughness as() const { return express::base::as<IfcSpecularRoughness>(); }
 
-    IfcSpecularHighlightSelect(const IfcSpecularExponent& c) : express::Select(c) {};
+    IfcSpecularHighlightSelect(const IfcSpecularExponent& c) : express::select(c) {};
 
-    IfcSpecularHighlightSelect(const IfcSpecularRoughness& c) : express::Select(c) {};
+    IfcSpecularHighlightSelect(const IfcSpecularRoughness& c) : express::select(c) {};
 
 };
 /// Definition from IAI: This type definition shall be used to
@@ -3666,22 +3666,22 @@ public:
 /// 
 /// HISTORY: New type in Release IFC2x
 ///   Edition 2.
-class IFC_SCHEMA_API IfcStructuralActivityAssignmentSelect : public express::Select {
+class IFC_SCHEMA_API IfcStructuralActivityAssignmentSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcElement>, int> = 0>
-    // IfcElement as() const { return express::Base::as<IfcElement>(); }
+    // IfcElement as() const { return express::base::as<IfcElement>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcStructuralItem>, int> = 0>
-    // IfcStructuralItem as() const { return express::Base::as<IfcStructuralItem>(); }
+    // IfcStructuralItem as() const { return express::base::as<IfcStructuralItem>(); }
 
-    IfcStructuralActivityAssignmentSelect(const IfcElement& c) : express::Select(c) {};
+    IfcStructuralActivityAssignmentSelect(const IfcElement& c) : express::select(c) {};
 
-    IfcStructuralActivityAssignmentSelect(const IfcStructuralItem& c) : express::Select(c) {};
+    IfcStructuralActivityAssignmentSelect(const IfcStructuralItem& c) : express::select(c) {};
 
 };
 /// IfcSurfaceOrFaceSurface provides the option to either select a geometric surface (IfcSurface
@@ -3693,28 +3693,28 @@ public:
 ///   IfcFaceBasedSurfaceModel (a connected face set, representing a faceted surface as an approximation of a non planar, non rectangular bounded surface)
 /// 
 /// HISTORY  New select type in IFC2x3.
-class IFC_SCHEMA_API IfcSurfaceOrFaceSurface : public express::Select {
+class IFC_SCHEMA_API IfcSurfaceOrFaceSurface : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcFaceBasedSurfaceModel>, int> = 0>
-    // IfcFaceBasedSurfaceModel as() const { return express::Base::as<IfcFaceBasedSurfaceModel>(); }
+    // IfcFaceBasedSurfaceModel as() const { return express::base::as<IfcFaceBasedSurfaceModel>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcFaceSurface>, int> = 0>
-    // IfcFaceSurface as() const { return express::Base::as<IfcFaceSurface>(); }
+    // IfcFaceSurface as() const { return express::base::as<IfcFaceSurface>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSurface>, int> = 0>
-    // IfcSurface as() const { return express::Base::as<IfcSurface>(); }
+    // IfcSurface as() const { return express::base::as<IfcSurface>(); }
 
-    IfcSurfaceOrFaceSurface(const IfcFaceBasedSurfaceModel& c) : express::Select(c) {};
+    IfcSurfaceOrFaceSurface(const IfcFaceBasedSurfaceModel& c) : express::select(c) {};
 
-    IfcSurfaceOrFaceSurface(const IfcFaceSurface& c) : express::Select(c) {};
+    IfcSurfaceOrFaceSurface(const IfcFaceSurface& c) : express::select(c) {};
 
-    IfcSurfaceOrFaceSurface(const IfcSurface& c) : express::Select(c) {};
+    IfcSurfaceOrFaceSurface(const IfcSurface& c) : express::select(c) {};
 
 };
 /// Definition from ISO/CD 10303-46:1992: The surface style element select is a selection of the different surface styles to use in the presentation of the side of a surface. 
@@ -3726,40 +3726,40 @@ public:
 /// NOTE: Corresponding ISO 10303 type: surface_style_element_select. Please refer to ISO/IS 10303-46:1994, p. 85 for the final definition of the formal standard.
 /// 
 /// HISTORY: New Select type in IFC2x2.
-class IFC_SCHEMA_API IfcSurfaceStyleElementSelect : public express::Select {
+class IFC_SCHEMA_API IfcSurfaceStyleElementSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcExternallyDefinedSurfaceStyle>, int> = 0>
-    // IfcExternallyDefinedSurfaceStyle as() const { return express::Base::as<IfcExternallyDefinedSurfaceStyle>(); }
+    // IfcExternallyDefinedSurfaceStyle as() const { return express::base::as<IfcExternallyDefinedSurfaceStyle>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSurfaceStyleLighting>, int> = 0>
-    // IfcSurfaceStyleLighting as() const { return express::Base::as<IfcSurfaceStyleLighting>(); }
+    // IfcSurfaceStyleLighting as() const { return express::base::as<IfcSurfaceStyleLighting>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSurfaceStyleRefraction>, int> = 0>
-    // IfcSurfaceStyleRefraction as() const { return express::Base::as<IfcSurfaceStyleRefraction>(); }
+    // IfcSurfaceStyleRefraction as() const { return express::base::as<IfcSurfaceStyleRefraction>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSurfaceStyleShading>, int> = 0>
-    // IfcSurfaceStyleShading as() const { return express::Base::as<IfcSurfaceStyleShading>(); }
+    // IfcSurfaceStyleShading as() const { return express::base::as<IfcSurfaceStyleShading>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSurfaceStyleWithTextures>, int> = 0>
-    // IfcSurfaceStyleWithTextures as() const { return express::Base::as<IfcSurfaceStyleWithTextures>(); }
+    // IfcSurfaceStyleWithTextures as() const { return express::base::as<IfcSurfaceStyleWithTextures>(); }
 
-    IfcSurfaceStyleElementSelect(const IfcExternallyDefinedSurfaceStyle& c) : express::Select(c) {};
+    IfcSurfaceStyleElementSelect(const IfcExternallyDefinedSurfaceStyle& c) : express::select(c) {};
 
-    IfcSurfaceStyleElementSelect(const IfcSurfaceStyleLighting& c) : express::Select(c) {};
+    IfcSurfaceStyleElementSelect(const IfcSurfaceStyleLighting& c) : express::select(c) {};
 
-    IfcSurfaceStyleElementSelect(const IfcSurfaceStyleRefraction& c) : express::Select(c) {};
+    IfcSurfaceStyleElementSelect(const IfcSurfaceStyleRefraction& c) : express::select(c) {};
 
-    IfcSurfaceStyleElementSelect(const IfcSurfaceStyleShading& c) : express::Select(c) {};
+    IfcSurfaceStyleElementSelect(const IfcSurfaceStyleShading& c) : express::select(c) {};
 
-    IfcSurfaceStyleElementSelect(const IfcSurfaceStyleWithTextures& c) : express::Select(c) {};
+    IfcSurfaceStyleElementSelect(const IfcSurfaceStyleWithTextures& c) : express::select(c) {};
 
 };
 /// IfcTextFontSelect allows for either a predefined text font, a text font model or an externally defined text font to be used to describe the font of a text literal. The definition of the text font model is based on W3C TR Cascading Style Sheet Version 1, whereas the definition of predefined text font is based on ISO 10303.
@@ -3769,82 +3769,82 @@ public:
 /// HISTORY  New type in IFC2x2.
 /// 
 /// IFC2x3 CHANGE  The select type has been renamed from IfcFontSelect.
-class IFC_SCHEMA_API IfcTextFontSelect : public express::Select {
+class IFC_SCHEMA_API IfcTextFontSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcExternallyDefinedTextFont>, int> = 0>
-    // IfcExternallyDefinedTextFont as() const { return express::Base::as<IfcExternallyDefinedTextFont>(); }
+    // IfcExternallyDefinedTextFont as() const { return express::base::as<IfcExternallyDefinedTextFont>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPreDefinedTextFont>, int> = 0>
-    // IfcPreDefinedTextFont as() const { return express::Base::as<IfcPreDefinedTextFont>(); }
+    // IfcPreDefinedTextFont as() const { return express::base::as<IfcPreDefinedTextFont>(); }
 
-    IfcTextFontSelect(const IfcExternallyDefinedTextFont& c) : express::Select(c) {};
+    IfcTextFontSelect(const IfcExternallyDefinedTextFont& c) : express::select(c) {};
 
-    IfcTextFontSelect(const IfcPreDefinedTextFont& c) : express::Select(c) {};
+    IfcTextFontSelect(const IfcPreDefinedTextFont& c) : express::select(c) {};
 
 };
 /// IfcTimeOrRatioSelect allows a value to be selected as being either a ratio or a time measure.
 /// HISTORY New SELECT in IFC2x4
-class IFC_SCHEMA_API IfcTimeOrRatioSelect : public express::Select {
+class IFC_SCHEMA_API IfcTimeOrRatioSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDuration>, int> = 0>
-    // IfcDuration as() const { return express::Base::as<IfcDuration>(); }
+    // IfcDuration as() const { return express::base::as<IfcDuration>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcRatioMeasure>, int> = 0>
-    // IfcRatioMeasure as() const { return express::Base::as<IfcRatioMeasure>(); }
+    // IfcRatioMeasure as() const { return express::base::as<IfcRatioMeasure>(); }
 
-    IfcTimeOrRatioSelect(const IfcDuration& c) : express::Select(c) {};
+    IfcTimeOrRatioSelect(const IfcDuration& c) : express::select(c) {};
 
-    IfcTimeOrRatioSelect(const IfcRatioMeasure& c) : express::Select(c) {};
+    IfcTimeOrRatioSelect(const IfcRatioMeasure& c) : express::select(c) {};
 
 };
 /// Definition from IAI: A measure of linear stiffness.  TRUE denotes infinite stiffness (rigidity).  FALSE denotes no stiffness (a release).  A numeric value denotes finite linear-elastic stiffness.
 /// 
 /// HISTORY: New type in IFC 2x4.
-class IFC_SCHEMA_API IfcTranslationalStiffnessSelect : public express::Select {
+class IFC_SCHEMA_API IfcTranslationalStiffnessSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcBoolean>, int> = 0>
-    // IfcBoolean as() const { return express::Base::as<IfcBoolean>(); }
+    // IfcBoolean as() const { return express::base::as<IfcBoolean>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearStiffnessMeasure>, int> = 0>
-    // IfcLinearStiffnessMeasure as() const { return express::Base::as<IfcLinearStiffnessMeasure>(); }
+    // IfcLinearStiffnessMeasure as() const { return express::base::as<IfcLinearStiffnessMeasure>(); }
 
-    IfcTranslationalStiffnessSelect(const IfcBoolean& c) : express::Select(c) {};
+    IfcTranslationalStiffnessSelect(const IfcBoolean& c) : express::select(c) {};
 
-    IfcTranslationalStiffnessSelect(const IfcLinearStiffnessMeasure& c) : express::Select(c) {};
+    IfcTranslationalStiffnessSelect(const IfcLinearStiffnessMeasure& c) : express::select(c) {};
 
 };
 
-class IFC_SCHEMA_API IfcTransportElementTypeSelect : public express::Select {
+class IFC_SCHEMA_API IfcTransportElementTypeSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTransportElementFixedTypeEnum>, int> = 0>
-    // IfcTransportElementFixedTypeEnum as() const { return express::Base::as<IfcTransportElementFixedTypeEnum>(); }
+    // IfcTransportElementFixedTypeEnum as() const { return express::base::as<IfcTransportElementFixedTypeEnum>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTransportElementNonFixedTypeEnum>, int> = 0>
-    // IfcTransportElementNonFixedTypeEnum as() const { return express::Base::as<IfcTransportElementNonFixedTypeEnum>(); }
+    // IfcTransportElementNonFixedTypeEnum as() const { return express::base::as<IfcTransportElementNonFixedTypeEnum>(); }
 
-    IfcTransportElementTypeSelect(const IfcTransportElementFixedTypeEnum& c) : express::Select(c) {};
+    IfcTransportElementTypeSelect(const IfcTransportElementFixedTypeEnum& c) : express::select(c) {};
 
-    IfcTransportElementTypeSelect(const IfcTransportElementNonFixedTypeEnum& c) : express::Select(c) {};
+    IfcTransportElementTypeSelect(const IfcTransportElementNonFixedTypeEnum& c) : express::select(c) {};
 
 };
 /// Definition from ISO/CD 10303-42:1992: This select type identifies the two possible ways of trimming a parametric curve; by a Cartesian point on the curve, or by a REAL number defining a parameter value within the parametric range of the curve. 
@@ -3852,22 +3852,22 @@ public:
 /// NOTE Corresponding ISO 10303 type: trimming_select, please refer to ISO/IS 10303-42:1994, p. 20 for the final definition of the formal standard.
 /// 
 /// HISTORY New Type in IFC Release 1.0
-class IFC_SCHEMA_API IfcTrimmingSelect : public express::Select {
+class IFC_SCHEMA_API IfcTrimmingSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcCartesianPoint>, int> = 0>
-    // IfcCartesianPoint as() const { return express::Base::as<IfcCartesianPoint>(); }
+    // IfcCartesianPoint as() const { return express::base::as<IfcCartesianPoint>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcParameterValue>, int> = 0>
-    // IfcParameterValue as() const { return express::Base::as<IfcParameterValue>(); }
+    // IfcParameterValue as() const { return express::base::as<IfcParameterValue>(); }
 
-    IfcTrimmingSelect(const IfcCartesianPoint& c) : express::Select(c) {};
+    IfcTrimmingSelect(const IfcCartesianPoint& c) : express::select(c) {};
 
-    IfcTrimmingSelect(const IfcParameterValue& c) : express::Select(c) {};
+    IfcTrimmingSelect(const IfcParameterValue& c) : express::select(c) {};
 
 };
 /// Definition from ISO/CD 10303-41:1992: A unit is a physical quantity, with a value of one, which is used as a standard in terms of which other quantities are expressed.
@@ -3883,28 +3883,28 @@ public:
 /// IfcMonetaryUnit: A unit for defining currencies. 
 /// 
 /// HISTORY: New type in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcUnit : public express::Select {
+class IFC_SCHEMA_API IfcUnit : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDerivedUnit>, int> = 0>
-    // IfcDerivedUnit as() const { return express::Base::as<IfcDerivedUnit>(); }
+    // IfcDerivedUnit as() const { return express::base::as<IfcDerivedUnit>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMonetaryUnit>, int> = 0>
-    // IfcMonetaryUnit as() const { return express::Base::as<IfcMonetaryUnit>(); }
+    // IfcMonetaryUnit as() const { return express::base::as<IfcMonetaryUnit>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcNamedUnit>, int> = 0>
-    // IfcNamedUnit as() const { return express::Base::as<IfcNamedUnit>(); }
+    // IfcNamedUnit as() const { return express::base::as<IfcNamedUnit>(); }
 
-    IfcUnit(const IfcDerivedUnit& c) : express::Select(c) {};
+    IfcUnit(const IfcDerivedUnit& c) : express::select(c) {};
 
-    IfcUnit(const IfcMonetaryUnit& c) : express::Select(c) {};
+    IfcUnit(const IfcMonetaryUnit& c) : express::select(c) {};
 
-    IfcUnit(const IfcNamedUnit& c) : express::Select(c) {};
+    IfcUnit(const IfcNamedUnit& c) : express::select(c) {};
 
 };
 /// IfcValue is a select type for selecting between more specialised select types IfcSimpleValue,
@@ -3917,676 +3917,676 @@ public:
 ///   IfcDerivedMeasureValue A select type for derived measure types.
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcValue : public express::Select {
+class IFC_SCHEMA_API IfcValue : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDerivedMeasureValue>, int> = 0>
-    // IfcDerivedMeasureValue as() const { return express::Base::as<IfcDerivedMeasureValue>(); }
+    // IfcDerivedMeasureValue as() const { return express::base::as<IfcDerivedMeasureValue>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAbsorbedDoseMeasure>, int> = 0>
-    // IfcAbsorbedDoseMeasure as() const { return express::Base::as<IfcAbsorbedDoseMeasure>(); }
+    // IfcAbsorbedDoseMeasure as() const { return express::base::as<IfcAbsorbedDoseMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAccelerationMeasure>, int> = 0>
-    // IfcAccelerationMeasure as() const { return express::Base::as<IfcAccelerationMeasure>(); }
+    // IfcAccelerationMeasure as() const { return express::base::as<IfcAccelerationMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAngularVelocityMeasure>, int> = 0>
-    // IfcAngularVelocityMeasure as() const { return express::Base::as<IfcAngularVelocityMeasure>(); }
+    // IfcAngularVelocityMeasure as() const { return express::base::as<IfcAngularVelocityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAreaDensityMeasure>, int> = 0>
-    // IfcAreaDensityMeasure as() const { return express::Base::as<IfcAreaDensityMeasure>(); }
+    // IfcAreaDensityMeasure as() const { return express::base::as<IfcAreaDensityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcCompoundPlaneAngleMeasure>, int> = 0>
-    // IfcCompoundPlaneAngleMeasure as() const { return express::Base::as<IfcCompoundPlaneAngleMeasure>(); }
+    // IfcCompoundPlaneAngleMeasure as() const { return express::base::as<IfcCompoundPlaneAngleMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcCurvatureMeasure>, int> = 0>
-    // IfcCurvatureMeasure as() const { return express::Base::as<IfcCurvatureMeasure>(); }
+    // IfcCurvatureMeasure as() const { return express::base::as<IfcCurvatureMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDoseEquivalentMeasure>, int> = 0>
-    // IfcDoseEquivalentMeasure as() const { return express::Base::as<IfcDoseEquivalentMeasure>(); }
+    // IfcDoseEquivalentMeasure as() const { return express::base::as<IfcDoseEquivalentMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDynamicViscosityMeasure>, int> = 0>
-    // IfcDynamicViscosityMeasure as() const { return express::Base::as<IfcDynamicViscosityMeasure>(); }
+    // IfcDynamicViscosityMeasure as() const { return express::base::as<IfcDynamicViscosityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricCapacitanceMeasure>, int> = 0>
-    // IfcElectricCapacitanceMeasure as() const { return express::Base::as<IfcElectricCapacitanceMeasure>(); }
+    // IfcElectricCapacitanceMeasure as() const { return express::base::as<IfcElectricCapacitanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricChargeMeasure>, int> = 0>
-    // IfcElectricChargeMeasure as() const { return express::Base::as<IfcElectricChargeMeasure>(); }
+    // IfcElectricChargeMeasure as() const { return express::base::as<IfcElectricChargeMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricConductanceMeasure>, int> = 0>
-    // IfcElectricConductanceMeasure as() const { return express::Base::as<IfcElectricConductanceMeasure>(); }
+    // IfcElectricConductanceMeasure as() const { return express::base::as<IfcElectricConductanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricResistanceMeasure>, int> = 0>
-    // IfcElectricResistanceMeasure as() const { return express::Base::as<IfcElectricResistanceMeasure>(); }
+    // IfcElectricResistanceMeasure as() const { return express::base::as<IfcElectricResistanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricVoltageMeasure>, int> = 0>
-    // IfcElectricVoltageMeasure as() const { return express::Base::as<IfcElectricVoltageMeasure>(); }
+    // IfcElectricVoltageMeasure as() const { return express::base::as<IfcElectricVoltageMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcEnergyMeasure>, int> = 0>
-    // IfcEnergyMeasure as() const { return express::Base::as<IfcEnergyMeasure>(); }
+    // IfcEnergyMeasure as() const { return express::base::as<IfcEnergyMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcForceMeasure>, int> = 0>
-    // IfcForceMeasure as() const { return express::Base::as<IfcForceMeasure>(); }
+    // IfcForceMeasure as() const { return express::base::as<IfcForceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcFrequencyMeasure>, int> = 0>
-    // IfcFrequencyMeasure as() const { return express::Base::as<IfcFrequencyMeasure>(); }
+    // IfcFrequencyMeasure as() const { return express::base::as<IfcFrequencyMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcHeatFluxDensityMeasure>, int> = 0>
-    // IfcHeatFluxDensityMeasure as() const { return express::Base::as<IfcHeatFluxDensityMeasure>(); }
+    // IfcHeatFluxDensityMeasure as() const { return express::base::as<IfcHeatFluxDensityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcHeatingValueMeasure>, int> = 0>
-    // IfcHeatingValueMeasure as() const { return express::Base::as<IfcHeatingValueMeasure>(); }
+    // IfcHeatingValueMeasure as() const { return express::base::as<IfcHeatingValueMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcIlluminanceMeasure>, int> = 0>
-    // IfcIlluminanceMeasure as() const { return express::Base::as<IfcIlluminanceMeasure>(); }
+    // IfcIlluminanceMeasure as() const { return express::base::as<IfcIlluminanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcInductanceMeasure>, int> = 0>
-    // IfcInductanceMeasure as() const { return express::Base::as<IfcInductanceMeasure>(); }
+    // IfcInductanceMeasure as() const { return express::base::as<IfcInductanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcIntegerCountRateMeasure>, int> = 0>
-    // IfcIntegerCountRateMeasure as() const { return express::Base::as<IfcIntegerCountRateMeasure>(); }
+    // IfcIntegerCountRateMeasure as() const { return express::base::as<IfcIntegerCountRateMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcIonConcentrationMeasure>, int> = 0>
-    // IfcIonConcentrationMeasure as() const { return express::Base::as<IfcIonConcentrationMeasure>(); }
+    // IfcIonConcentrationMeasure as() const { return express::base::as<IfcIonConcentrationMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcIsothermalMoistureCapacityMeasure>, int> = 0>
-    // IfcIsothermalMoistureCapacityMeasure as() const { return express::Base::as<IfcIsothermalMoistureCapacityMeasure>(); }
+    // IfcIsothermalMoistureCapacityMeasure as() const { return express::base::as<IfcIsothermalMoistureCapacityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcKinematicViscosityMeasure>, int> = 0>
-    // IfcKinematicViscosityMeasure as() const { return express::Base::as<IfcKinematicViscosityMeasure>(); }
+    // IfcKinematicViscosityMeasure as() const { return express::base::as<IfcKinematicViscosityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearForceMeasure>, int> = 0>
-    // IfcLinearForceMeasure as() const { return express::Base::as<IfcLinearForceMeasure>(); }
+    // IfcLinearForceMeasure as() const { return express::base::as<IfcLinearForceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearMomentMeasure>, int> = 0>
-    // IfcLinearMomentMeasure as() const { return express::Base::as<IfcLinearMomentMeasure>(); }
+    // IfcLinearMomentMeasure as() const { return express::base::as<IfcLinearMomentMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearStiffnessMeasure>, int> = 0>
-    // IfcLinearStiffnessMeasure as() const { return express::Base::as<IfcLinearStiffnessMeasure>(); }
+    // IfcLinearStiffnessMeasure as() const { return express::base::as<IfcLinearStiffnessMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLinearVelocityMeasure>, int> = 0>
-    // IfcLinearVelocityMeasure as() const { return express::Base::as<IfcLinearVelocityMeasure>(); }
+    // IfcLinearVelocityMeasure as() const { return express::base::as<IfcLinearVelocityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousFluxMeasure>, int> = 0>
-    // IfcLuminousFluxMeasure as() const { return express::Base::as<IfcLuminousFluxMeasure>(); }
+    // IfcLuminousFluxMeasure as() const { return express::base::as<IfcLuminousFluxMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousIntensityDistributionMeasure>, int> = 0>
-    // IfcLuminousIntensityDistributionMeasure as() const { return express::Base::as<IfcLuminousIntensityDistributionMeasure>(); }
+    // IfcLuminousIntensityDistributionMeasure as() const { return express::base::as<IfcLuminousIntensityDistributionMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMagneticFluxDensityMeasure>, int> = 0>
-    // IfcMagneticFluxDensityMeasure as() const { return express::Base::as<IfcMagneticFluxDensityMeasure>(); }
+    // IfcMagneticFluxDensityMeasure as() const { return express::base::as<IfcMagneticFluxDensityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMagneticFluxMeasure>, int> = 0>
-    // IfcMagneticFluxMeasure as() const { return express::Base::as<IfcMagneticFluxMeasure>(); }
+    // IfcMagneticFluxMeasure as() const { return express::base::as<IfcMagneticFluxMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassDensityMeasure>, int> = 0>
-    // IfcMassDensityMeasure as() const { return express::Base::as<IfcMassDensityMeasure>(); }
+    // IfcMassDensityMeasure as() const { return express::base::as<IfcMassDensityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassFlowRateMeasure>, int> = 0>
-    // IfcMassFlowRateMeasure as() const { return express::Base::as<IfcMassFlowRateMeasure>(); }
+    // IfcMassFlowRateMeasure as() const { return express::base::as<IfcMassFlowRateMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassPerLengthMeasure>, int> = 0>
-    // IfcMassPerLengthMeasure as() const { return express::Base::as<IfcMassPerLengthMeasure>(); }
+    // IfcMassPerLengthMeasure as() const { return express::base::as<IfcMassPerLengthMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfElasticityMeasure>, int> = 0>
-    // IfcModulusOfElasticityMeasure as() const { return express::Base::as<IfcModulusOfElasticityMeasure>(); }
+    // IfcModulusOfElasticityMeasure as() const { return express::base::as<IfcModulusOfElasticityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfLinearSubgradeReactionMeasure>, int> = 0>
-    // IfcModulusOfLinearSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfLinearSubgradeReactionMeasure>(); }
+    // IfcModulusOfLinearSubgradeReactionMeasure as() const { return express::base::as<IfcModulusOfLinearSubgradeReactionMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfRotationalSubgradeReactionMeasure>, int> = 0>
-    // IfcModulusOfRotationalSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfRotationalSubgradeReactionMeasure>(); }
+    // IfcModulusOfRotationalSubgradeReactionMeasure as() const { return express::base::as<IfcModulusOfRotationalSubgradeReactionMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcModulusOfSubgradeReactionMeasure>, int> = 0>
-    // IfcModulusOfSubgradeReactionMeasure as() const { return express::Base::as<IfcModulusOfSubgradeReactionMeasure>(); }
+    // IfcModulusOfSubgradeReactionMeasure as() const { return express::base::as<IfcModulusOfSubgradeReactionMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMoistureDiffusivityMeasure>, int> = 0>
-    // IfcMoistureDiffusivityMeasure as() const { return express::Base::as<IfcMoistureDiffusivityMeasure>(); }
+    // IfcMoistureDiffusivityMeasure as() const { return express::base::as<IfcMoistureDiffusivityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMolecularWeightMeasure>, int> = 0>
-    // IfcMolecularWeightMeasure as() const { return express::Base::as<IfcMolecularWeightMeasure>(); }
+    // IfcMolecularWeightMeasure as() const { return express::base::as<IfcMolecularWeightMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMomentOfInertiaMeasure>, int> = 0>
-    // IfcMomentOfInertiaMeasure as() const { return express::Base::as<IfcMomentOfInertiaMeasure>(); }
+    // IfcMomentOfInertiaMeasure as() const { return express::base::as<IfcMomentOfInertiaMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMonetaryMeasure>, int> = 0>
-    // IfcMonetaryMeasure as() const { return express::Base::as<IfcMonetaryMeasure>(); }
+    // IfcMonetaryMeasure as() const { return express::base::as<IfcMonetaryMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPHMeasure>, int> = 0>
-    // IfcPHMeasure as() const { return express::Base::as<IfcPHMeasure>(); }
+    // IfcPHMeasure as() const { return express::base::as<IfcPHMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPlanarForceMeasure>, int> = 0>
-    // IfcPlanarForceMeasure as() const { return express::Base::as<IfcPlanarForceMeasure>(); }
+    // IfcPlanarForceMeasure as() const { return express::base::as<IfcPlanarForceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPowerMeasure>, int> = 0>
-    // IfcPowerMeasure as() const { return express::Base::as<IfcPowerMeasure>(); }
+    // IfcPowerMeasure as() const { return express::base::as<IfcPowerMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPressureMeasure>, int> = 0>
-    // IfcPressureMeasure as() const { return express::Base::as<IfcPressureMeasure>(); }
+    // IfcPressureMeasure as() const { return express::base::as<IfcPressureMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcRadioActivityMeasure>, int> = 0>
-    // IfcRadioActivityMeasure as() const { return express::Base::as<IfcRadioActivityMeasure>(); }
+    // IfcRadioActivityMeasure as() const { return express::base::as<IfcRadioActivityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalFrequencyMeasure>, int> = 0>
-    // IfcRotationalFrequencyMeasure as() const { return express::Base::as<IfcRotationalFrequencyMeasure>(); }
+    // IfcRotationalFrequencyMeasure as() const { return express::base::as<IfcRotationalFrequencyMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalMassMeasure>, int> = 0>
-    // IfcRotationalMassMeasure as() const { return express::Base::as<IfcRotationalMassMeasure>(); }
+    // IfcRotationalMassMeasure as() const { return express::base::as<IfcRotationalMassMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcRotationalStiffnessMeasure>, int> = 0>
-    // IfcRotationalStiffnessMeasure as() const { return express::Base::as<IfcRotationalStiffnessMeasure>(); }
+    // IfcRotationalStiffnessMeasure as() const { return express::base::as<IfcRotationalStiffnessMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSectionModulusMeasure>, int> = 0>
-    // IfcSectionModulusMeasure as() const { return express::Base::as<IfcSectionModulusMeasure>(); }
+    // IfcSectionModulusMeasure as() const { return express::base::as<IfcSectionModulusMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSectionalAreaIntegralMeasure>, int> = 0>
-    // IfcSectionalAreaIntegralMeasure as() const { return express::Base::as<IfcSectionalAreaIntegralMeasure>(); }
+    // IfcSectionalAreaIntegralMeasure as() const { return express::base::as<IfcSectionalAreaIntegralMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcShearModulusMeasure>, int> = 0>
-    // IfcShearModulusMeasure as() const { return express::Base::as<IfcShearModulusMeasure>(); }
+    // IfcShearModulusMeasure as() const { return express::base::as<IfcShearModulusMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPowerLevelMeasure>, int> = 0>
-    // IfcSoundPowerLevelMeasure as() const { return express::Base::as<IfcSoundPowerLevelMeasure>(); }
+    // IfcSoundPowerLevelMeasure as() const { return express::base::as<IfcSoundPowerLevelMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPowerMeasure>, int> = 0>
-    // IfcSoundPowerMeasure as() const { return express::Base::as<IfcSoundPowerMeasure>(); }
+    // IfcSoundPowerMeasure as() const { return express::base::as<IfcSoundPowerMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPressureLevelMeasure>, int> = 0>
-    // IfcSoundPressureLevelMeasure as() const { return express::Base::as<IfcSoundPressureLevelMeasure>(); }
+    // IfcSoundPressureLevelMeasure as() const { return express::base::as<IfcSoundPressureLevelMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSoundPressureMeasure>, int> = 0>
-    // IfcSoundPressureMeasure as() const { return express::Base::as<IfcSoundPressureMeasure>(); }
+    // IfcSoundPressureMeasure as() const { return express::base::as<IfcSoundPressureMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSpecificHeatCapacityMeasure>, int> = 0>
-    // IfcSpecificHeatCapacityMeasure as() const { return express::Base::as<IfcSpecificHeatCapacityMeasure>(); }
+    // IfcSpecificHeatCapacityMeasure as() const { return express::base::as<IfcSpecificHeatCapacityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTemperatureGradientMeasure>, int> = 0>
-    // IfcTemperatureGradientMeasure as() const { return express::Base::as<IfcTemperatureGradientMeasure>(); }
+    // IfcTemperatureGradientMeasure as() const { return express::base::as<IfcTemperatureGradientMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTemperatureRateOfChangeMeasure>, int> = 0>
-    // IfcTemperatureRateOfChangeMeasure as() const { return express::Base::as<IfcTemperatureRateOfChangeMeasure>(); }
+    // IfcTemperatureRateOfChangeMeasure as() const { return express::base::as<IfcTemperatureRateOfChangeMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalAdmittanceMeasure>, int> = 0>
-    // IfcThermalAdmittanceMeasure as() const { return express::Base::as<IfcThermalAdmittanceMeasure>(); }
+    // IfcThermalAdmittanceMeasure as() const { return express::base::as<IfcThermalAdmittanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalConductivityMeasure>, int> = 0>
-    // IfcThermalConductivityMeasure as() const { return express::Base::as<IfcThermalConductivityMeasure>(); }
+    // IfcThermalConductivityMeasure as() const { return express::base::as<IfcThermalConductivityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalExpansionCoefficientMeasure>, int> = 0>
-    // IfcThermalExpansionCoefficientMeasure as() const { return express::Base::as<IfcThermalExpansionCoefficientMeasure>(); }
+    // IfcThermalExpansionCoefficientMeasure as() const { return express::base::as<IfcThermalExpansionCoefficientMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalResistanceMeasure>, int> = 0>
-    // IfcThermalResistanceMeasure as() const { return express::Base::as<IfcThermalResistanceMeasure>(); }
+    // IfcThermalResistanceMeasure as() const { return express::base::as<IfcThermalResistanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermalTransmittanceMeasure>, int> = 0>
-    // IfcThermalTransmittanceMeasure as() const { return express::Base::as<IfcThermalTransmittanceMeasure>(); }
+    // IfcThermalTransmittanceMeasure as() const { return express::base::as<IfcThermalTransmittanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTorqueMeasure>, int> = 0>
-    // IfcTorqueMeasure as() const { return express::Base::as<IfcTorqueMeasure>(); }
+    // IfcTorqueMeasure as() const { return express::base::as<IfcTorqueMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcVaporPermeabilityMeasure>, int> = 0>
-    // IfcVaporPermeabilityMeasure as() const { return express::Base::as<IfcVaporPermeabilityMeasure>(); }
+    // IfcVaporPermeabilityMeasure as() const { return express::base::as<IfcVaporPermeabilityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcVolumetricFlowRateMeasure>, int> = 0>
-    // IfcVolumetricFlowRateMeasure as() const { return express::Base::as<IfcVolumetricFlowRateMeasure>(); }
+    // IfcVolumetricFlowRateMeasure as() const { return express::base::as<IfcVolumetricFlowRateMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcWarpingConstantMeasure>, int> = 0>
-    // IfcWarpingConstantMeasure as() const { return express::Base::as<IfcWarpingConstantMeasure>(); }
+    // IfcWarpingConstantMeasure as() const { return express::base::as<IfcWarpingConstantMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcWarpingMomentMeasure>, int> = 0>
-    // IfcWarpingMomentMeasure as() const { return express::Base::as<IfcWarpingMomentMeasure>(); }
+    // IfcWarpingMomentMeasure as() const { return express::base::as<IfcWarpingMomentMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMeasureValue>, int> = 0>
-    // IfcMeasureValue as() const { return express::Base::as<IfcMeasureValue>(); }
+    // IfcMeasureValue as() const { return express::base::as<IfcMeasureValue>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAmountOfSubstanceMeasure>, int> = 0>
-    // IfcAmountOfSubstanceMeasure as() const { return express::Base::as<IfcAmountOfSubstanceMeasure>(); }
+    // IfcAmountOfSubstanceMeasure as() const { return express::base::as<IfcAmountOfSubstanceMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAreaMeasure>, int> = 0>
-    // IfcAreaMeasure as() const { return express::Base::as<IfcAreaMeasure>(); }
+    // IfcAreaMeasure as() const { return express::base::as<IfcAreaMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcComplexNumber>, int> = 0>
-    // IfcComplexNumber as() const { return express::Base::as<IfcComplexNumber>(); }
+    // IfcComplexNumber as() const { return express::base::as<IfcComplexNumber>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcContextDependentMeasure>, int> = 0>
-    // IfcContextDependentMeasure as() const { return express::Base::as<IfcContextDependentMeasure>(); }
+    // IfcContextDependentMeasure as() const { return express::base::as<IfcContextDependentMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcCountMeasure>, int> = 0>
-    // IfcCountMeasure as() const { return express::Base::as<IfcCountMeasure>(); }
+    // IfcCountMeasure as() const { return express::base::as<IfcCountMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDescriptiveMeasure>, int> = 0>
-    // IfcDescriptiveMeasure as() const { return express::Base::as<IfcDescriptiveMeasure>(); }
+    // IfcDescriptiveMeasure as() const { return express::base::as<IfcDescriptiveMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcElectricCurrentMeasure>, int> = 0>
-    // IfcElectricCurrentMeasure as() const { return express::Base::as<IfcElectricCurrentMeasure>(); }
+    // IfcElectricCurrentMeasure as() const { return express::base::as<IfcElectricCurrentMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLengthMeasure>, int> = 0>
-    // IfcLengthMeasure as() const { return express::Base::as<IfcLengthMeasure>(); }
+    // IfcLengthMeasure as() const { return express::base::as<IfcLengthMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLuminousIntensityMeasure>, int> = 0>
-    // IfcLuminousIntensityMeasure as() const { return express::Base::as<IfcLuminousIntensityMeasure>(); }
+    // IfcLuminousIntensityMeasure as() const { return express::base::as<IfcLuminousIntensityMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMassMeasure>, int> = 0>
-    // IfcMassMeasure as() const { return express::Base::as<IfcMassMeasure>(); }
+    // IfcMassMeasure as() const { return express::base::as<IfcMassMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcNonNegativeLengthMeasure>, int> = 0>
-    // IfcNonNegativeLengthMeasure as() const { return express::Base::as<IfcNonNegativeLengthMeasure>(); }
+    // IfcNonNegativeLengthMeasure as() const { return express::base::as<IfcNonNegativeLengthMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcNormalisedRatioMeasure>, int> = 0>
-    // IfcNormalisedRatioMeasure as() const { return express::Base::as<IfcNormalisedRatioMeasure>(); }
+    // IfcNormalisedRatioMeasure as() const { return express::base::as<IfcNormalisedRatioMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcNumericMeasure>, int> = 0>
-    // IfcNumericMeasure as() const { return express::Base::as<IfcNumericMeasure>(); }
+    // IfcNumericMeasure as() const { return express::base::as<IfcNumericMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcParameterValue>, int> = 0>
-    // IfcParameterValue as() const { return express::Base::as<IfcParameterValue>(); }
+    // IfcParameterValue as() const { return express::base::as<IfcParameterValue>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPlaneAngleMeasure>, int> = 0>
-    // IfcPlaneAngleMeasure as() const { return express::Base::as<IfcPlaneAngleMeasure>(); }
+    // IfcPlaneAngleMeasure as() const { return express::base::as<IfcPlaneAngleMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveLengthMeasure>, int> = 0>
-    // IfcPositiveLengthMeasure as() const { return express::Base::as<IfcPositiveLengthMeasure>(); }
+    // IfcPositiveLengthMeasure as() const { return express::base::as<IfcPositiveLengthMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositivePlaneAngleMeasure>, int> = 0>
-    // IfcPositivePlaneAngleMeasure as() const { return express::Base::as<IfcPositivePlaneAngleMeasure>(); }
+    // IfcPositivePlaneAngleMeasure as() const { return express::base::as<IfcPositivePlaneAngleMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveRatioMeasure>, int> = 0>
-    // IfcPositiveRatioMeasure as() const { return express::Base::as<IfcPositiveRatioMeasure>(); }
+    // IfcPositiveRatioMeasure as() const { return express::base::as<IfcPositiveRatioMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcRatioMeasure>, int> = 0>
-    // IfcRatioMeasure as() const { return express::Base::as<IfcRatioMeasure>(); }
+    // IfcRatioMeasure as() const { return express::base::as<IfcRatioMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSolidAngleMeasure>, int> = 0>
-    // IfcSolidAngleMeasure as() const { return express::Base::as<IfcSolidAngleMeasure>(); }
+    // IfcSolidAngleMeasure as() const { return express::base::as<IfcSolidAngleMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcThermodynamicTemperatureMeasure>, int> = 0>
-    // IfcThermodynamicTemperatureMeasure as() const { return express::Base::as<IfcThermodynamicTemperatureMeasure>(); }
+    // IfcThermodynamicTemperatureMeasure as() const { return express::base::as<IfcThermodynamicTemperatureMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeMeasure>, int> = 0>
-    // IfcTimeMeasure as() const { return express::Base::as<IfcTimeMeasure>(); }
+    // IfcTimeMeasure as() const { return express::base::as<IfcTimeMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcVolumeMeasure>, int> = 0>
-    // IfcVolumeMeasure as() const { return express::Base::as<IfcVolumeMeasure>(); }
+    // IfcVolumeMeasure as() const { return express::base::as<IfcVolumeMeasure>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSimpleValue>, int> = 0>
-    // IfcSimpleValue as() const { return express::Base::as<IfcSimpleValue>(); }
+    // IfcSimpleValue as() const { return express::base::as<IfcSimpleValue>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcBinary>, int> = 0>
-    // IfcBinary as() const { return express::Base::as<IfcBinary>(); }
+    // IfcBinary as() const { return express::base::as<IfcBinary>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcBoolean>, int> = 0>
-    // IfcBoolean as() const { return express::Base::as<IfcBoolean>(); }
+    // IfcBoolean as() const { return express::base::as<IfcBoolean>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDate>, int> = 0>
-    // IfcDate as() const { return express::Base::as<IfcDate>(); }
+    // IfcDate as() const { return express::base::as<IfcDate>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDateTime>, int> = 0>
-    // IfcDateTime as() const { return express::Base::as<IfcDateTime>(); }
+    // IfcDateTime as() const { return express::base::as<IfcDateTime>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDuration>, int> = 0>
-    // IfcDuration as() const { return express::Base::as<IfcDuration>(); }
+    // IfcDuration as() const { return express::base::as<IfcDuration>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcIdentifier>, int> = 0>
-    // IfcIdentifier as() const { return express::Base::as<IfcIdentifier>(); }
+    // IfcIdentifier as() const { return express::base::as<IfcIdentifier>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcInteger>, int> = 0>
-    // IfcInteger as() const { return express::Base::as<IfcInteger>(); }
+    // IfcInteger as() const { return express::base::as<IfcInteger>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLabel>, int> = 0>
-    // IfcLabel as() const { return express::Base::as<IfcLabel>(); }
+    // IfcLabel as() const { return express::base::as<IfcLabel>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLogical>, int> = 0>
-    // IfcLogical as() const { return express::Base::as<IfcLogical>(); }
+    // IfcLogical as() const { return express::base::as<IfcLogical>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPositiveInteger>, int> = 0>
-    // IfcPositiveInteger as() const { return express::Base::as<IfcPositiveInteger>(); }
+    // IfcPositiveInteger as() const { return express::base::as<IfcPositiveInteger>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcReal>, int> = 0>
-    // IfcReal as() const { return express::Base::as<IfcReal>(); }
+    // IfcReal as() const { return express::base::as<IfcReal>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcText>, int> = 0>
-    // IfcText as() const { return express::Base::as<IfcText>(); }
+    // IfcText as() const { return express::base::as<IfcText>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTime>, int> = 0>
-    // IfcTime as() const { return express::Base::as<IfcTime>(); }
+    // IfcTime as() const { return express::base::as<IfcTime>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTimeStamp>, int> = 0>
-    // IfcTimeStamp as() const { return express::Base::as<IfcTimeStamp>(); }
+    // IfcTimeStamp as() const { return express::base::as<IfcTimeStamp>(); }
 
-    IfcValue(const IfcDerivedMeasureValue& c) : express::Select(c) {};
+    IfcValue(const IfcDerivedMeasureValue& c) : express::select(c) {};
 
-    IfcValue(const IfcAbsorbedDoseMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcAbsorbedDoseMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcAccelerationMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcAccelerationMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcAngularVelocityMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcAngularVelocityMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcAreaDensityMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcAreaDensityMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcCompoundPlaneAngleMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcCompoundPlaneAngleMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcCurvatureMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcCurvatureMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcDoseEquivalentMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcDoseEquivalentMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcDynamicViscosityMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcDynamicViscosityMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcElectricCapacitanceMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcElectricCapacitanceMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcElectricChargeMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcElectricChargeMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcElectricConductanceMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcElectricConductanceMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcElectricResistanceMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcElectricResistanceMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcElectricVoltageMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcElectricVoltageMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcEnergyMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcEnergyMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcForceMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcForceMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcFrequencyMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcFrequencyMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcHeatFluxDensityMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcHeatFluxDensityMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcHeatingValueMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcHeatingValueMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcIlluminanceMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcIlluminanceMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcInductanceMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcInductanceMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcIntegerCountRateMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcIntegerCountRateMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcIonConcentrationMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcIonConcentrationMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcIsothermalMoistureCapacityMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcIsothermalMoistureCapacityMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcKinematicViscosityMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcKinematicViscosityMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcLinearForceMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcLinearForceMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcLinearMomentMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcLinearMomentMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcLinearStiffnessMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcLinearStiffnessMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcLinearVelocityMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcLinearVelocityMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcLuminousFluxMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcLuminousFluxMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcLuminousIntensityDistributionMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcLuminousIntensityDistributionMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcMagneticFluxDensityMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcMagneticFluxDensityMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcMagneticFluxMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcMagneticFluxMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcMassDensityMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcMassDensityMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcMassFlowRateMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcMassFlowRateMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcMassPerLengthMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcMassPerLengthMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcModulusOfElasticityMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcModulusOfElasticityMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcModulusOfLinearSubgradeReactionMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcModulusOfLinearSubgradeReactionMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcModulusOfRotationalSubgradeReactionMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcModulusOfRotationalSubgradeReactionMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcModulusOfSubgradeReactionMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcModulusOfSubgradeReactionMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcMoistureDiffusivityMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcMoistureDiffusivityMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcMolecularWeightMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcMolecularWeightMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcMomentOfInertiaMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcMomentOfInertiaMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcMonetaryMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcMonetaryMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcPHMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcPHMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcPlanarForceMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcPlanarForceMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcPowerMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcPowerMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcPressureMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcPressureMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcRadioActivityMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcRadioActivityMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcRotationalFrequencyMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcRotationalFrequencyMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcRotationalMassMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcRotationalMassMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcRotationalStiffnessMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcRotationalStiffnessMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcSectionModulusMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcSectionModulusMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcSectionalAreaIntegralMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcSectionalAreaIntegralMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcShearModulusMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcShearModulusMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcSoundPowerLevelMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcSoundPowerLevelMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcSoundPowerMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcSoundPowerMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcSoundPressureLevelMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcSoundPressureLevelMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcSoundPressureMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcSoundPressureMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcSpecificHeatCapacityMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcSpecificHeatCapacityMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcTemperatureGradientMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcTemperatureGradientMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcTemperatureRateOfChangeMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcTemperatureRateOfChangeMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcThermalAdmittanceMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcThermalAdmittanceMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcThermalConductivityMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcThermalConductivityMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcThermalExpansionCoefficientMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcThermalExpansionCoefficientMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcThermalResistanceMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcThermalResistanceMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcThermalTransmittanceMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcThermalTransmittanceMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcTorqueMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcTorqueMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcVaporPermeabilityMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcVaporPermeabilityMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcVolumetricFlowRateMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcVolumetricFlowRateMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcWarpingConstantMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcWarpingConstantMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcWarpingMomentMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcWarpingMomentMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcMeasureValue& c) : express::Select(c) {};
+    IfcValue(const IfcMeasureValue& c) : express::select(c) {};
 
-    IfcValue(const IfcAmountOfSubstanceMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcAmountOfSubstanceMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcAreaMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcAreaMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcComplexNumber& c) : express::Select(c) {};
+    IfcValue(const IfcComplexNumber& c) : express::select(c) {};
 
-    IfcValue(const IfcContextDependentMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcContextDependentMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcCountMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcCountMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcDescriptiveMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcDescriptiveMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcElectricCurrentMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcElectricCurrentMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcLengthMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcLengthMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcLuminousIntensityMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcLuminousIntensityMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcMassMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcMassMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcNonNegativeLengthMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcNonNegativeLengthMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcNormalisedRatioMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcNormalisedRatioMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcNumericMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcNumericMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcParameterValue& c) : express::Select(c) {};
+    IfcValue(const IfcParameterValue& c) : express::select(c) {};
 
-    IfcValue(const IfcPlaneAngleMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcPlaneAngleMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcPositiveLengthMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcPositiveLengthMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcPositivePlaneAngleMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcPositivePlaneAngleMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcPositiveRatioMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcPositiveRatioMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcRatioMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcRatioMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcSolidAngleMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcSolidAngleMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcThermodynamicTemperatureMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcThermodynamicTemperatureMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcTimeMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcTimeMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcVolumeMeasure& c) : express::Select(c) {};
+    IfcValue(const IfcVolumeMeasure& c) : express::select(c) {};
 
-    IfcValue(const IfcSimpleValue& c) : express::Select(c) {};
+    IfcValue(const IfcSimpleValue& c) : express::select(c) {};
 
-    IfcValue(const IfcBinary& c) : express::Select(c) {};
+    IfcValue(const IfcBinary& c) : express::select(c) {};
 
-    IfcValue(const IfcBoolean& c) : express::Select(c) {};
+    IfcValue(const IfcBoolean& c) : express::select(c) {};
 
-    IfcValue(const IfcDate& c) : express::Select(c) {};
+    IfcValue(const IfcDate& c) : express::select(c) {};
 
-    IfcValue(const IfcDateTime& c) : express::Select(c) {};
+    IfcValue(const IfcDateTime& c) : express::select(c) {};
 
-    IfcValue(const IfcDuration& c) : express::Select(c) {};
+    IfcValue(const IfcDuration& c) : express::select(c) {};
 
-    IfcValue(const IfcIdentifier& c) : express::Select(c) {};
+    IfcValue(const IfcIdentifier& c) : express::select(c) {};
 
-    IfcValue(const IfcInteger& c) : express::Select(c) {};
+    IfcValue(const IfcInteger& c) : express::select(c) {};
 
-    IfcValue(const IfcLabel& c) : express::Select(c) {};
+    IfcValue(const IfcLabel& c) : express::select(c) {};
 
-    IfcValue(const IfcLogical& c) : express::Select(c) {};
+    IfcValue(const IfcLogical& c) : express::select(c) {};
 
-    IfcValue(const IfcPositiveInteger& c) : express::Select(c) {};
+    IfcValue(const IfcPositiveInteger& c) : express::select(c) {};
 
-    IfcValue(const IfcReal& c) : express::Select(c) {};
+    IfcValue(const IfcReal& c) : express::select(c) {};
 
-    IfcValue(const IfcText& c) : express::Select(c) {};
+    IfcValue(const IfcText& c) : express::select(c) {};
 
-    IfcValue(const IfcTime& c) : express::Select(c) {};
+    IfcValue(const IfcTime& c) : express::select(c) {};
 
-    IfcValue(const IfcTimeStamp& c) : express::Select(c) {};
+    IfcValue(const IfcTimeStamp& c) : express::select(c) {};
 
 };
 /// Definition from ISO/CD 10303-42:1992: This type is used to
@@ -4597,43 +4597,43 @@ public:
 ///   definition of the formal standard.  
 ///   HISTORY New Type in IFC Release
 ///   1.5
-class IFC_SCHEMA_API IfcVectorOrDirection : public express::Select {
+class IFC_SCHEMA_API IfcVectorOrDirection : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDirection>, int> = 0>
-    // IfcDirection as() const { return express::Base::as<IfcDirection>(); }
+    // IfcDirection as() const { return express::base::as<IfcDirection>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcVector>, int> = 0>
-    // IfcVector as() const { return express::Base::as<IfcVector>(); }
+    // IfcVector as() const { return express::base::as<IfcVector>(); }
 
-    IfcVectorOrDirection(const IfcDirection& c) : express::Select(c) {};
+    IfcVectorOrDirection(const IfcDirection& c) : express::select(c) {};
 
-    IfcVectorOrDirection(const IfcVector& c) : express::Select(c) {};
+    IfcVectorOrDirection(const IfcVector& c) : express::select(c) {};
 
 };
 /// Definition from IAI: A measure of warping stiffness.  TRUE denotes infinite stiffness (rigidity).  FALSE denotes no stiffness (a release).  A numeric value denotes finite linear-elastic stiffness.
 /// 
 /// HISTORY: New type in IFC 2x4.
-class IFC_SCHEMA_API IfcWarpingStiffnessSelect : public express::Select {
+class IFC_SCHEMA_API IfcWarpingStiffnessSelect : public express::select {
 public:
-    using express::Select::Select;
+    using express::select::select;
 
     static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcBoolean>, int> = 0>
-    // IfcBoolean as() const { return express::Base::as<IfcBoolean>(); }
+    // IfcBoolean as() const { return express::base::as<IfcBoolean>(); }
 
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcWarpingMomentMeasure>, int> = 0>
-    // IfcWarpingMomentMeasure as() const { return express::Base::as<IfcWarpingMomentMeasure>(); }
+    // IfcWarpingMomentMeasure as() const { return express::base::as<IfcWarpingMomentMeasure>(); }
 
-    IfcWarpingStiffnessSelect(const IfcBoolean& c) : express::Select(c) {};
+    IfcWarpingStiffnessSelect(const IfcBoolean& c) : express::select(c) {};
 
-    IfcWarpingStiffnessSelect(const IfcWarpingMomentMeasure& c) : express::Select(c) {};
+    IfcWarpingStiffnessSelect(const IfcWarpingMomentMeasure& c) : express::select(c) {};
 
 };
 /// IfcActionRequestTypeEnum defines the types of sources through which a request can be made. 
@@ -4647,9 +4647,9 @@ public:
 /// VERBAL: Request was made verbally in person.  
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcActionRequestTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcActionRequestTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcActionRequestType_EMAIL, IfcActionRequestType_FAX, IfcActionRequestType_PHONE, IfcActionRequestType_POST, IfcActionRequestType_VERBAL, IfcActionRequestType_USERDEFINED, IfcActionRequestType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -4665,9 +4665,9 @@ public:
 /// 
 /// HISTORY: New type in Release IFC2x
 ///   Edition 2.
-class IFC_SCHEMA_API IfcActionSourceTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcActionSourceTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcActionSourceType_DEAD_LOAD_G, IfcActionSourceType_COMPLETION_G1, IfcActionSourceType_LIVE_LOAD_Q, IfcActionSourceType_SNOW_S, IfcActionSourceType_WIND_W, IfcActionSourceType_PRESTRESSING_P, IfcActionSourceType_SETTLEMENT_U, IfcActionSourceType_TEMPERATURE_T, IfcActionSourceType_EARTHQUAKE_E, IfcActionSourceType_FIRE, IfcActionSourceType_IMPULSE, IfcActionSourceType_IMPACT, IfcActionSourceType_TRANSPORT, IfcActionSourceType_ERECTION, IfcActionSourceType_PROPPING, IfcActionSourceType_SYSTEM_IMPERFECTION, IfcActionSourceType_SHRINKAGE, IfcActionSourceType_CREEP, IfcActionSourceType_LACK_OF_FIT, IfcActionSourceType_BUOYANCY, IfcActionSourceType_ICE, IfcActionSourceType_CURRENT, IfcActionSourceType_WAVE, IfcActionSourceType_RAIN, IfcActionSourceType_BRAKES, IfcActionSourceType_USERDEFINED, IfcActionSourceType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -4685,9 +4685,9 @@ public:
 /// 
 /// HISTORY: New type in Release IFC2x
 ///   Edition 2.
-class IFC_SCHEMA_API IfcActionTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcActionTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcActionType_PERMANENT_G, IfcActionType_VARIABLE_Q, IfcActionType_EXTRAORDINARY_A, IfcActionType_USERDEFINED, IfcActionType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -4714,9 +4714,9 @@ public:
 /// 
 /// See property set of actuator common attributes for specification of
 ///   properties for hand operated actuators.
-class IFC_SCHEMA_API IfcActuatorTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcActuatorTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcActuatorType_ELECTRICACTUATOR, IfcActuatorType_HANDOPERATEDACTUATOR, IfcActuatorType_HYDRAULICACTUATOR, IfcActuatorType_PNEUMATICACTUATOR, IfcActuatorType_THERMOSTATICACTUATOR, IfcActuatorType_USERDEFINED, IfcActuatorType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -4738,9 +4738,9 @@ public:
 ///   HOME A home address.
 ///   DISTRIBUTIONPOINT A postal distribution point address.
 ///   USERDEFINED A user defined address type to be provided.
-class IFC_SCHEMA_API IfcAddressTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAddressTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcAddressType_OFFICE, IfcAddressType_SITE, IfcAddressType_HOME, IfcAddressType_DISTRIBUTIONPOINT, IfcAddressType_USERDEFINED} Value;
     static const char* ToString(Value v);
@@ -4762,9 +4762,9 @@ public:
 ///   NOTDEFINED:					  Undefined terminal box.
 /// 
 /// HISTORY: New enumeration in IFC R2.0
-class IFC_SCHEMA_API IfcAirTerminalBoxTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAirTerminalBoxTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcAirTerminalBoxType_CONSTANTFLOW, IfcAirTerminalBoxType_VARIABLEFLOWPRESSUREDEPENDANT, IfcAirTerminalBoxType_VARIABLEFLOWPRESSUREINDEPENDANT, IfcAirTerminalBoxType_USERDEFINED, IfcAirTerminalBoxType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -4788,9 +4788,9 @@ public:
 /// NOTE: Architectural louvres within doors or windows are defined by IfcPermeableCoveringProperties.
 /// 
 /// HISTORY: New enumeration in IFC R2x2.  Modified in IFC R2x4 to add LOUVRE and remove EYEBALL, IRIS, LINEARGRILLE, LINEARDIFFUSER
-class IFC_SCHEMA_API IfcAirTerminalTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAirTerminalTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcAirTerminalType_DIFFUSER, IfcAirTerminalType_GRILLE, IfcAirTerminalType_LOUVRE, IfcAirTerminalType_REGISTER, IfcAirTerminalType_USERDEFINED, IfcAirTerminalType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -4817,9 +4817,9 @@ public:
 ///   NOTDEFINED:  Undefined air to air heat recovery type.
 /// 
 /// HISTORY: New enumeration in IFC R2x.
-class IFC_SCHEMA_API IfcAirToAirHeatRecoveryTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAirToAirHeatRecoveryTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcAirToAirHeatRecoveryType_FIXEDPLATECOUNTERFLOWEXCHANGER, IfcAirToAirHeatRecoveryType_FIXEDPLATECROSSFLOWEXCHANGER, IfcAirToAirHeatRecoveryType_FIXEDPLATEPARALLELFLOWEXCHANGER, IfcAirToAirHeatRecoveryType_ROTARYWHEEL, IfcAirToAirHeatRecoveryType_RUNAROUNDCOILLOOP, IfcAirToAirHeatRecoveryType_HEATPIPE, IfcAirToAirHeatRecoveryType_TWINTOWERENTHALPYRECOVERYLOOPS, IfcAirToAirHeatRecoveryType_THERMOSIPHONSEALEDTUBEHEATEXCHANGERS, IfcAirToAirHeatRecoveryType_THERMOSIPHONCOILTYPEHEATEXCHANGERS, IfcAirToAirHeatRecoveryType_USERDEFINED, IfcAirToAirHeatRecoveryType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -4844,9 +4844,9 @@ public:
 /// WHISTLE: An audible alarm.  
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcAlarmTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAlarmTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcAlarmType_BELL, IfcAlarmType_BREAKGLASSBUTTON, IfcAlarmType_LIGHT, IfcAlarmType_MANUALPULLBOX, IfcAlarmType_SIREN, IfcAlarmType_WHISTLE, IfcAlarmType_RAILWAYCROCODILE, IfcAlarmType_RAILWAYDETONATOR, IfcAlarmType_USERDEFINED, IfcAlarmType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -4858,11 +4858,11 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcAlignmentCantSegmentTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAlignmentCantSegmentTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
-    typedef enum {IfcAlignmentCantSegmentType_CONSTANTCANT, IfcAlignmentCantSegmentType_LINEARTRANSITION, IfcAlignmentCantSegmentType_HELMERTCURVE, IfcAlignmentCantSegmentType_BLOSSCURVE, IfcAlignmentCantSegmentType_COSINECURVE, IfcAlignmentCantSegmentType_SINECURVE, IfcAlignmentCantSegmentType_VIENNESEBEND} Value;
+    typedef enum {IfcAlignmentCantSegmentType_CONSTANTCANT, IfcAlignmentCantSegmentType_LINEARTRANSITION, IfcAlignmentCantSegmentType_BIQUADRATICPARABOLA, IfcAlignmentCantSegmentType_BLOSSCURVE, IfcAlignmentCantSegmentType_COSINECURVE, IfcAlignmentCantSegmentType_SINECURVE, IfcAlignmentCantSegmentType_VIENNESEBEND} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
@@ -4872,11 +4872,11 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcAlignmentHorizontalSegmentTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAlignmentHorizontalSegmentTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
-    typedef enum {IfcAlignmentHorizontalSegmentType_LINE, IfcAlignmentHorizontalSegmentType_CIRCULARARC, IfcAlignmentHorizontalSegmentType_CLOTHOID, IfcAlignmentHorizontalSegmentType_CUBIC, IfcAlignmentHorizontalSegmentType_HELMERTCURVE, IfcAlignmentHorizontalSegmentType_BLOSSCURVE, IfcAlignmentHorizontalSegmentType_CUBICSPIRAL, IfcAlignmentHorizontalSegmentType_COSINECURVE, IfcAlignmentHorizontalSegmentType_SINECURVE, IfcAlignmentHorizontalSegmentType_VIENNESEBEND} Value;
+    typedef enum {IfcAlignmentHorizontalSegmentType_LINE, IfcAlignmentHorizontalSegmentType_CIRCULARARC, IfcAlignmentHorizontalSegmentType_CLOTHOID, IfcAlignmentHorizontalSegmentType_CUBIC, IfcAlignmentHorizontalSegmentType_BIQUADRATICPARABOLA, IfcAlignmentHorizontalSegmentType_BLOSSCURVE, IfcAlignmentHorizontalSegmentType_CUBICSPIRAL, IfcAlignmentHorizontalSegmentType_COSINECURVE, IfcAlignmentHorizontalSegmentType_SINECURVE, IfcAlignmentHorizontalSegmentType_VIENNESEBEND} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
@@ -4886,9 +4886,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcAlignmentTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAlignmentTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcAlignmentType_USERDEFINED, IfcAlignmentType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -4900,9 +4900,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcAlignmentVerticalSegmentTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAlignmentVerticalSegmentTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcAlignmentVerticalSegmentType_CONSTANTGRADIENT, IfcAlignmentVerticalSegmentType_CIRCULARARC, IfcAlignmentVerticalSegmentType_PARABOLICARC, IfcAlignmentVerticalSegmentType_CLOTHOID} Value;
     static const char* ToString(Value v);
@@ -4919,9 +4919,9 @@ public:
 /// 
 /// HISTORY: New type in Release IFC2x
 ///   Edition 2.
-class IFC_SCHEMA_API IfcAnalysisModelTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAnalysisModelTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcAnalysisModelType_IN_PLANE_LOADING_2D, IfcAnalysisModelType_OUT_PLANE_LOADING_2D, IfcAnalysisModelType_LOADING_3D, IfcAnalysisModelType_USERDEFINED, IfcAnalysisModelType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -4939,9 +4939,9 @@ public:
 /// 
 /// HISTORY: New type in Release IFC2x
 ///   Edition 2.
-class IFC_SCHEMA_API IfcAnalysisTheoryTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAnalysisTheoryTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcAnalysisTheoryType_FIRST_ORDER_THEORY, IfcAnalysisTheoryType_SECOND_ORDER_THEORY, IfcAnalysisTheoryType_THIRD_ORDER_THEORY, IfcAnalysisTheoryType_FULL_NONLINEAR_THEORY, IfcAnalysisTheoryType_USERDEFINED, IfcAnalysisTheoryType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -4953,9 +4953,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcAnnotationTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAnnotationTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcAnnotationType_ASSUMEDPOINT, IfcAnnotationType_ASBUILTAREA, IfcAnnotationType_ASBUILTLINE, IfcAnnotationType_NON_PHYSICAL_SIGNAL, IfcAnnotationType_ASSUMEDLINE, IfcAnnotationType_WIDTHEVENT, IfcAnnotationType_ASSUMEDAREA, IfcAnnotationType_SUPERELEVATIONEVENT, IfcAnnotationType_ASBUILTPOINT, IfcAnnotationType_USERDEFINED, IfcAnnotationType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -4978,9 +4978,9 @@ public:
 /// 
 /// Use definitions 
 /// There can be only one arithmetic operator for each applied value relationship. This is to enforce arithmetic consistency. Given this consistency, the cardinality of the IfcAppliedValueRelationship.Components attribute is a set of one to many applied values that are components of an applied value.
-class IFC_SCHEMA_API IfcArithmeticOperatorEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcArithmeticOperatorEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcArithmeticOperator_ADD, IfcArithmeticOperator_DIVIDE, IfcArithmeticOperator_MULTIPLY, IfcArithmeticOperator_SUBTRACT} Value;
     static const char* ToString(Value v);
@@ -5003,9 +5003,9 @@ public:
 /// SITE - this assembly is assembled at site
 /// 
 /// FACTORY - this assembly is assembled in a factory
-class IFC_SCHEMA_API IfcAssemblyPlaceEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAssemblyPlaceEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcAssemblyPlace_SITE, IfcAssemblyPlace_FACTORY, IfcAssemblyPlace_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5030,9 +5030,9 @@ public:
 /// SWITCHER: A device that receives audio and/or video signals, switches sources, and transmits signals to downstream devices. 
 /// TELEPHONE: A telecommunications device that is used to transmit and receive sound, and optionally video. 
 /// TUNER: An electronic receiver that detects, demodulates, and amplifies transmitted signals.
-class IFC_SCHEMA_API IfcAudioVisualApplianceTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAudioVisualApplianceTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcAudioVisualApplianceType_AMPLIFIER, IfcAudioVisualApplianceType_CAMERA, IfcAudioVisualApplianceType_DISPLAY, IfcAudioVisualApplianceType_MICROPHONE, IfcAudioVisualApplianceType_PLAYER, IfcAudioVisualApplianceType_PROJECTOR, IfcAudioVisualApplianceType_RECEIVER, IfcAudioVisualApplianceType_SPEAKER, IfcAudioVisualApplianceType_SWITCHER, IfcAudioVisualApplianceType_TELEPHONE, IfcAudioVisualApplianceType_TUNER, IfcAudioVisualApplianceType_RAILWAY_COMMUNICATION_TERMINAL, IfcAudioVisualApplianceType_USERDEFINED, IfcAudioVisualApplianceType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5057,9 +5057,9 @@ public:
 /// NOTE Corresponding ISO 10303 type: b_spline_curve_form. Please refer to ISO/IS 10303-42:1994, p. 15 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in Release IFC2x2.
-class IFC_SCHEMA_API IfcBSplineCurveForm : public express::DeclaredType {
+class IFC_SCHEMA_API IfcBSplineCurveForm : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcBSplineCurveForm_POLYLINE_FORM, IfcBSplineCurveForm_CIRCULAR_ARC, IfcBSplineCurveForm_ELLIPTIC_ARC, IfcBSplineCurveForm_PARABOLIC_ARC, IfcBSplineCurveForm_HYPERBOLIC_ARC, IfcBSplineCurveForm_UNSPECIFIED} Value;
     static const char* ToString(Value v);
@@ -5071,9 +5071,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcBSplineSurfaceForm : public express::DeclaredType {
+class IFC_SCHEMA_API IfcBSplineSurfaceForm : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcBSplineSurfaceForm_PLANE_SURF, IfcBSplineSurfaceForm_CYLINDRICAL_SURF, IfcBSplineSurfaceForm_CONICAL_SURF, IfcBSplineSurfaceForm_SPHERICAL_SURF, IfcBSplineSurfaceForm_TOROIDAL_SURF, IfcBSplineSurfaceForm_SURF_OF_REVOLUTION, IfcBSplineSurfaceForm_RULED_SURF, IfcBSplineSurfaceForm_GENERALISED_CONE, IfcBSplineSurfaceForm_QUADRIC_SURF, IfcBSplineSurfaceForm_SURF_OF_LINEAR_EXTRUSION, IfcBSplineSurfaceForm_UNSPECIFIED} Value;
     static const char* ToString(Value v);
@@ -5123,9 +5123,9 @@ public:
 /// IFC2x4 CHANGE The enumerators
 /// HOLLOWCORE and SPANDREL have been
 /// added.
-class IFC_SCHEMA_API IfcBeamTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcBeamTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcBeamType_BEAM, IfcBeamType_JOIST, IfcBeamType_HOLLOWCORE, IfcBeamType_LINTEL, IfcBeamType_SPANDREL, IfcBeamType_T_BEAM, IfcBeamType_GIRDER_SEGMENT, IfcBeamType_DIAPHRAGM, IfcBeamType_PIERCAP, IfcBeamType_HATSTONE, IfcBeamType_CORNICE, IfcBeamType_EDGEBEAM, IfcBeamType_USERDEFINED, IfcBeamType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5137,9 +5137,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcBearingTypeDisplacementEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcBearingTypeDisplacementEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcBearingTypeDisplacement_FIXED_MOVEMENT, IfcBearingTypeDisplacement_GUIDED_LONGITUDINAL, IfcBearingTypeDisplacement_GUIDED_TRANSVERSAL, IfcBearingTypeDisplacement_FREE_MOVEMENT, IfcBearingTypeDisplacement_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5151,9 +5151,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcBearingTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcBearingTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcBearingType_CYLINDRICAL, IfcBearingType_SPHERICAL, IfcBearingType_ELASTOMERIC, IfcBearingType_POT, IfcBearingType_GUIDE, IfcBearingType_ROCKER, IfcBearingType_ROLLER, IfcBearingType_DISK, IfcBearingType_USERDEFINED, IfcBearingType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5204,9 +5204,9 @@ public:
 /// 
 /// NOTINCLUDEDIN 
 ///   Identifies that a value (individual item) must not be included (i.e. must be excluded) in the aggregation (set, list or table) set by the constraint.
-class IFC_SCHEMA_API IfcBenchmarkEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcBenchmarkEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcBenchmark_GREATERTHAN, IfcBenchmark_GREATERTHANOREQUALTO, IfcBenchmark_LESSTHAN, IfcBenchmark_LESSTHANOREQUALTO, IfcBenchmark_EQUALTO, IfcBenchmark_NOTEQUALTO, IfcBenchmark_INCLUDES, IfcBenchmark_NOTINCLUDES, IfcBenchmark_INCLUDEDIN, IfcBenchmark_NOTINCLUDEDIN} Value;
     static const char* ToString(Value v);
@@ -5226,9 +5226,9 @@ public:
 ///   NOTDEFINED:  Undefined Boiler type.
 /// 
 /// HISTORY: New enumeration in IFC R2x.
-class IFC_SCHEMA_API IfcBoilerTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcBoilerTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcBoilerType_WATER, IfcBoilerType_STEAM, IfcBoilerType_USERDEFINED, IfcBoilerType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5248,9 +5248,9 @@ public:
 /// NOTE Corresponding STEP type: boolean_operator, please refer to ISO/IS 10303-42:1994, p.167 for the final definition of the formal standard.
 /// 
 /// HISTORY New Type in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcBooleanOperator : public express::DeclaredType {
+class IFC_SCHEMA_API IfcBooleanOperator : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcBooleanOperator_UNION, IfcBooleanOperator_INTERSECTION, IfcBooleanOperator_DIFFERENCE} Value;
     static const char* ToString(Value v);
@@ -5262,9 +5262,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcBridgePartTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcBridgePartTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcBridgePartType_ABUTMENT, IfcBridgePartType_DECK, IfcBridgePartType_DECK_SEGMENT, IfcBridgePartType_FOUNDATION, IfcBridgePartType_PIER, IfcBridgePartType_PIER_SEGMENT, IfcBridgePartType_PYLON, IfcBridgePartType_SUBSTRUCTURE, IfcBridgePartType_SUPERSTRUCTURE, IfcBridgePartType_SURFACESTRUCTURE, IfcBridgePartType_USERDEFINED, IfcBridgePartType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5276,9 +5276,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcBridgeTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcBridgeTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcBridgeType_ARCHED, IfcBridgeType_CABLE_STAYED, IfcBridgeType_CANTILEVER, IfcBridgeType_CULVERT, IfcBridgeType_FRAMEWORK, IfcBridgeType_GIRDER, IfcBridgeType_SUSPENSION, IfcBridgeType_TRUSS, IfcBridgeType_USERDEFINED, IfcBridgeType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5297,9 +5297,9 @@ public:
 /// NOTDEFINED: Undefined accessory
 /// 
 /// HISTORY New Enumeration in IFC 2x4.
-class IFC_SCHEMA_API IfcBuildingElementPartTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcBuildingElementPartTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcBuildingElementPartType_INSULATION, IfcBuildingElementPartType_PRECASTPANEL, IfcBuildingElementPartType_APRON, IfcBuildingElementPartType_ARMOURUNIT, IfcBuildingElementPartType_SAFETYCAGE, IfcBuildingElementPartType_USERDEFINED, IfcBuildingElementPartType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5321,9 +5321,9 @@ public:
 /// USERDEFINED
 /// 
 /// NOTDEFINED
-class IFC_SCHEMA_API IfcBuildingElementProxyTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcBuildingElementProxyTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcBuildingElementProxyType_COMPLEX, IfcBuildingElementProxyType_ELEMENT, IfcBuildingElementProxyType_PARTIAL, IfcBuildingElementProxyType_PROVISIONFORVOID, IfcBuildingElementProxyType_PROVISIONFORSPACE, IfcBuildingElementProxyType_USERDEFINED, IfcBuildingElementProxyType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5348,9 +5348,9 @@ public:
 /// natural sun light,
 /// TRANSPORT: System of all transport elements in a
 /// building that enables the transport of people or goods.
-class IFC_SCHEMA_API IfcBuildingSystemTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcBuildingSystemTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcBuildingSystemType_FENESTRATION, IfcBuildingSystemType_FOUNDATION, IfcBuildingSystemType_LOADBEARING, IfcBuildingSystemType_OUTERSHELL, IfcBuildingSystemType_SHADING, IfcBuildingSystemType_TRANSPORT, IfcBuildingSystemType_REINFORCING, IfcBuildingSystemType_PRESTRESSING, IfcBuildingSystemType_EROSIONPREVENTION, IfcBuildingSystemType_USERDEFINED, IfcBuildingSystemType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5362,9 +5362,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcBuiltSystemTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcBuiltSystemTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcBuiltSystemType_REINFORCING, IfcBuiltSystemType_MOORING, IfcBuiltSystemType_OUTERSHELL, IfcBuiltSystemType_TRACKCIRCUIT, IfcBuiltSystemType_EROSIONPREVENTION, IfcBuiltSystemType_FOUNDATION, IfcBuiltSystemType_LOADBEARING, IfcBuiltSystemType_SHADING, IfcBuiltSystemType_FENESTRATION, IfcBuiltSystemType_MOORINGSYSTEM, IfcBuiltSystemType_TRANSPORT, IfcBuiltSystemType_PRESTRESSING, IfcBuiltSystemType_USERDEFINED, IfcBuiltSystemType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5382,9 +5382,9 @@ public:
 ///   NOTDEFINED:  Undefined burner type.
 /// 
 /// HISTORY: New enumeration in IFC R2x4.
-class IFC_SCHEMA_API IfcBurnerTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcBurnerTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcBurnerType_USERDEFINED, IfcBurnerType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5405,9 +5405,9 @@ public:
 /// TEE: A fitting at which a branch is taken from the main route of the cable carrier. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcCableCarrierFittingTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCableCarrierFittingTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcCableCarrierFittingType_BEND, IfcCableCarrierFittingType_CROSS, IfcCableCarrierFittingType_REDUCER, IfcCableCarrierFittingType_TEE, IfcCableCarrierFittingType_USERDEFINED, IfcCableCarrierFittingType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5428,9 +5428,9 @@ public:
 /// CONDUITSEGMENT: An enclosed tubular carrier segment through which cables are pulled.
 /// USERDEFINED: User-defined type.  
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcCableCarrierSegmentTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCableCarrierSegmentTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcCableCarrierSegmentType_CABLELADDERSEGMENT, IfcCableCarrierSegmentType_CABLETRAYSEGMENT, IfcCableCarrierSegmentType_CABLETRUNKINGSEGMENT, IfcCableCarrierSegmentType_CONDUITSEGMENT, IfcCableCarrierSegmentType_CABLEBRACKET, IfcCableCarrierSegmentType_CATENARYWIRE, IfcCableCarrierSegmentType_DROPPER, IfcCableCarrierSegmentType_USERDEFINED, IfcCableCarrierSegmentType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5452,9 +5452,9 @@ public:
 /// TRANSITION: A fitting that joins two cable segments of different connector types.  
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcCableFittingTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCableFittingTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcCableFittingType_CONNECTOR, IfcCableFittingType_ENTRY, IfcCableFittingType_EXIT, IfcCableFittingType_JUNCTION, IfcCableFittingType_TRANSITION, IfcCableFittingType_FANOUT, IfcCableFittingType_USERDEFINED, IfcCableFittingType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5477,9 +5477,9 @@ public:
 /// CORESEGMENT: A self contained element of a  cable that comprises one or more conductors and sheathing.The core of one lead is normally single wired or multiwired which are intertwined.  
 /// USERDEFINED: User-defined type.  
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcCableSegmentTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCableSegmentTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcCableSegmentType_BUSBARSEGMENT, IfcCableSegmentType_CABLESEGMENT, IfcCableSegmentType_CONDUCTORSEGMENT, IfcCableSegmentType_CORESEGMENT, IfcCableSegmentType_CONTACTWIRESEGMENT, IfcCableSegmentType_FIBERSEGMENT, IfcCableSegmentType_FIBERTUBE, IfcCableSegmentType_OPTICALCABLESEGMENT, IfcCableSegmentType_STITCHWIRE, IfcCableSegmentType_WIREPAIRSEGMENT, IfcCableSegmentType_USERDEFINED, IfcCableSegmentType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5491,9 +5491,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcCaissonFoundationTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCaissonFoundationTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcCaissonFoundationType_WELL, IfcCaissonFoundationType_CAISSON, IfcCaissonFoundationType_USERDEFINED, IfcCaissonFoundationType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5515,9 +5515,9 @@ public:
 /// Consider Application A will create an IFC dataset that it wants to publish to others for modification and have the ability to subsequently merge these changes back into the original model. Before publication, it may want to set the IfcChangeActionEnum to NOCHANGE to establish a baseline so that other application changes can be easily identified. Application B then receives this IFC dataset and adds a new object and sets IfcChangeActionEnum to ADDED with Application B defined as the OwningApplication. Application B then modifies an existing object and (re)defines the LastModifiedDate to the time of the modification, LastModifyingUser to the IfcPersonAndOrganization making the change, and sets the LastModifyingApplication to Application B. When Application A receives this modified dataset, it can determine which objects have been added and modified by Application B and either merge or reject these changes as necessary. Consequently, the intent is that an application only modifies the value of IfcChangeActionEnum when it does something to the object, with the further intent that a model server is responsible for clearing the IfcChangeActionEnum back to NOCHANGE when it is ready to be republished.
 /// 
 /// HISTORY: New enumeration in IFC R2.0. Modified in IFC2x4.
-class IFC_SCHEMA_API IfcChangeActionEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcChangeActionEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcChangeAction_NOCHANGE, IfcChangeAction_MODIFIED, IfcChangeAction_ADDED, IfcChangeAction_DELETED, IfcChangeAction_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5538,9 +5538,9 @@ public:
 ///   NOTDEFINED: Undefined chiller type.
 /// 
 /// HISTORY: New enumeration in IFC R2x.
-class IFC_SCHEMA_API IfcChillerTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcChillerTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcChillerType_AIRCOOLED, IfcChillerType_WATERCOOLED, IfcChillerType_HEATRECOVERY, IfcChillerType_USERDEFINED, IfcChillerType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5561,9 +5561,9 @@ public:
 /// NOTE Currently there are no specific enumerators
 ///   defined, the IfcChimneyTypeEnum has been added
 ///   for future extensions.
-class IFC_SCHEMA_API IfcChimneyTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcChimneyTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcChimneyType_USERDEFINED, IfcChimneyType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5596,9 +5596,9 @@ public:
 /// NOTDEFINED:  Undefined coil type.
 /// 
 /// HISTORY: New enumeration in IFC R2x.
-class IFC_SCHEMA_API IfcCoilTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCoilTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcCoilType_DXCOOLINGCOIL, IfcCoilType_ELECTRICHEATINGCOIL, IfcCoilType_GASHEATINGCOIL, IfcCoilType_HYDRONICCOIL, IfcCoilType_STEAMHEATINGCOIL, IfcCoilType_WATERCOOLINGCOIL, IfcCoilType_WATERHEATINGCOIL, IfcCoilType_USERDEFINED, IfcCoilType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5623,9 +5623,9 @@ public:
 /// future releases of IFC.
 /// HISTORY New Enumeration
 /// in Release IFC2x Edition 2.
-class IFC_SCHEMA_API IfcColumnTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcColumnTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcColumnType_COLUMN, IfcColumnType_PILASTER, IfcColumnType_PIERSTEM, IfcColumnType_PIERSTEM_SEGMENT, IfcColumnType_STANDCOLUMN, IfcColumnType_USERDEFINED, IfcColumnType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5652,9 +5652,9 @@ public:
 /// REPEATER: A repeater is an electronic device that receives a signal and retransmits it at a higher level and/or higher power, or onto the other side of an obstruction, so that the signal can cover longer distances without degradation. 
 /// ROUTER: A router is a networking device whose software and hardware are usually tailored to the tasks of routing and forwarding information. For example, on the Internet, information is directed to various paths by routers. 
 /// SCANNER: A machine that has the primary function of scanning the content of printed matter and converting it to digital format that can be stored in a computer.
-class IFC_SCHEMA_API IfcCommunicationsApplianceTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCommunicationsApplianceTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcCommunicationsApplianceType_ANTENNA, IfcCommunicationsApplianceType_COMPUTER, IfcCommunicationsApplianceType_FAX, IfcCommunicationsApplianceType_GATEWAY, IfcCommunicationsApplianceType_MODEM, IfcCommunicationsApplianceType_NETWORKAPPLIANCE, IfcCommunicationsApplianceType_NETWORKBRIDGE, IfcCommunicationsApplianceType_NETWORKHUB, IfcCommunicationsApplianceType_PRINTER, IfcCommunicationsApplianceType_REPEATER, IfcCommunicationsApplianceType_ROUTER, IfcCommunicationsApplianceType_SCANNER, IfcCommunicationsApplianceType_AUTOMATON, IfcCommunicationsApplianceType_INTELLIGENT_PERIPHERAL, IfcCommunicationsApplianceType_IP_NETWORK_EQUIPMENT, IfcCommunicationsApplianceType_OPTICAL_NETWORK_UNIT, IfcCommunicationsApplianceType_TELECOMMAND, IfcCommunicationsApplianceType_TELEPHONYEXCHANGE, IfcCommunicationsApplianceType_TRANSITIONCOMPONENT, IfcCommunicationsApplianceType_TRANSPONDER, IfcCommunicationsApplianceType_TRANSPORTEQUIPMENT, IfcCommunicationsApplianceType_USERDEFINED, IfcCommunicationsApplianceType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5673,9 +5673,9 @@ public:
 /// 
 /// P_COMPLEX: the properties defined by this IfcComplexPropertyTemplate are of type IfcComplexProperty.
 /// Q_COMPLEX: the properties defined by this IfcComplexPropertyTemplate are of type IfcPhysicalComplexQuantity.
-class IFC_SCHEMA_API IfcComplexPropertyTemplateTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcComplexPropertyTemplateTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcComplexPropertyTemplateType_P_COMPLEX, IfcComplexPropertyTemplateType_Q_COMPLEX} Value;
     static const char* ToString(Value v);
@@ -5708,9 +5708,9 @@ public:
 ///   NOTDEFINED:  Undefined compressor type.
 /// 
 /// HISTORY: New enumeration in IFC R2x.
-class IFC_SCHEMA_API IfcCompressorTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCompressorTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcCompressorType_DYNAMIC, IfcCompressorType_RECIPROCATING, IfcCompressorType_ROTARY, IfcCompressorType_SCROLL, IfcCompressorType_TROCHOIDAL, IfcCompressorType_SINGLESTAGE, IfcCompressorType_BOOSTER, IfcCompressorType_OPENTYPE, IfcCompressorType_HERMETIC, IfcCompressorType_SEMIHERMETIC, IfcCompressorType_WELDEDSHELLHERMETIC, IfcCompressorType_ROLLINGPISTON, IfcCompressorType_ROTARYVANE, IfcCompressorType_SINGLESCREW, IfcCompressorType_TWINSCREW, IfcCompressorType_USERDEFINED, IfcCompressorType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5734,9 +5734,9 @@ public:
 ///   NOTDEFINED:  Undefined condenser type.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.  WATERCOOLED added in IFC 2x4.
-class IFC_SCHEMA_API IfcCondenserTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCondenserTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcCondenserType_AIRCOOLED, IfcCondenserType_EVAPORATIVECOOLED, IfcCondenserType_WATERCOOLED, IfcCondenserType_WATERCOOLEDBRAZEDPLATE, IfcCondenserType_WATERCOOLEDSHELLCOIL, IfcCondenserType_WATERCOOLEDSHELLTUBE, IfcCondenserType_WATERCOOLEDTUBEINTUBE, IfcCondenserType_USERDEFINED, IfcCondenserType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5767,9 +5767,9 @@ public:
 ///   RelatedConnectionType: AtStart 
 /// 
 /// Figure 65 — Connection types</td
-class IFC_SCHEMA_API IfcConnectionTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcConnectionTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcConnectionType_ATPATH, IfcConnectionType_ATSTART, IfcConnectionType_ATEND, IfcConnectionType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5797,9 +5797,9 @@ public:
 /// 
 /// ADVISORY 
 ///   Qualifies a constraint such that it is advised that it is followed within or at the values set.
-class IFC_SCHEMA_API IfcConstraintEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcConstraintEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcConstraint_HARD, IfcConstraint_SOFT, IfcConstraint_ADVISORY, IfcConstraint_USERDEFINED, IfcConstraint_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5824,9 +5824,9 @@ public:
 /// NOTDEFINED: Undefined resource.
 /// 
 /// HISTORY: New enumeration in IFC2x4
-class IFC_SCHEMA_API IfcConstructionEquipmentResourceTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcConstructionEquipmentResourceTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcConstructionEquipmentResourceType_DEMOLISHING, IfcConstructionEquipmentResourceType_EARTHMOVING, IfcConstructionEquipmentResourceType_ERECTING, IfcConstructionEquipmentResourceType_HEATING, IfcConstructionEquipmentResourceType_LIGHTING, IfcConstructionEquipmentResourceType_PAVING, IfcConstructionEquipmentResourceType_PUMPING, IfcConstructionEquipmentResourceType_TRANSPORTING, IfcConstructionEquipmentResourceType_USERDEFINED, IfcConstructionEquipmentResourceType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5852,9 +5852,9 @@ public:
 /// NOTDEFINED: Undefined resource.
 /// 
 /// HISTORY: New enumeration in IFC2x4
-class IFC_SCHEMA_API IfcConstructionMaterialResourceTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcConstructionMaterialResourceTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcConstructionMaterialResourceType_AGGREGATES, IfcConstructionMaterialResourceType_CONCRETE, IfcConstructionMaterialResourceType_DRYWALL, IfcConstructionMaterialResourceType_FUEL, IfcConstructionMaterialResourceType_GYPSUM, IfcConstructionMaterialResourceType_MASONRY, IfcConstructionMaterialResourceType_METAL, IfcConstructionMaterialResourceType_PLASTIC, IfcConstructionMaterialResourceType_WOOD, IfcConstructionMaterialResourceType_NOTDEFINED, IfcConstructionMaterialResourceType_USERDEFINED} Value;
     static const char* ToString(Value v);
@@ -5873,9 +5873,9 @@ public:
 /// NOTDEFINED: Undefined resource.
 /// 
 /// HISTORY: New enumeration in IFC2x4
-class IFC_SCHEMA_API IfcConstructionProductResourceTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcConstructionProductResourceTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcConstructionProductResourceType_ASSEMBLY, IfcConstructionProductResourceType_FORMWORK, IfcConstructionProductResourceType_USERDEFINED, IfcConstructionProductResourceType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5900,9 +5900,9 @@ public:
 /// TWOPOSITION: Output can be either on or off
 /// USERDEFINED: User-defined type.
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcControllerTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcControllerTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcControllerType_FLOATING, IfcControllerType_PROGRAMMABLE, IfcControllerType_PROPORTIONAL, IfcControllerType_MULTIPOSITION, IfcControllerType_TWOPOSITION, IfcControllerType_USERDEFINED, IfcControllerType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5914,9 +5914,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcConveyorSegmentTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcConveyorSegmentTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcConveyorSegmentType_CHUTECONVEYOR, IfcConveyorSegmentType_BELTCONVEYOR, IfcConveyorSegmentType_SCREWCONVEYOR, IfcConveyorSegmentType_BUCKETCONVEYOR, IfcConveyorSegmentType_USERDEFINED, IfcConveyorSegmentType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5946,9 +5946,9 @@ public:
 /// NOTDEFINED:  Undefined cooled beam type.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.
-class IFC_SCHEMA_API IfcCooledBeamTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCooledBeamTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcCooledBeamType_ACTIVE, IfcCooledBeamType_PASSIVE, IfcCooledBeamType_USERDEFINED, IfcCooledBeamType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5971,9 +5971,9 @@ public:
 ///   NOTDEFINED:  Undefined cooling tower type.
 /// 
 /// HISTORY: New enumeration in IFC R2x.
-class IFC_SCHEMA_API IfcCoolingTowerTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCoolingTowerTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcCoolingTowerType_NATURALDRAFT, IfcCoolingTowerType_MECHANICALINDUCEDDRAFT, IfcCoolingTowerType_MECHANICALFORCEDDRAFT, IfcCoolingTowerType_USERDEFINED, IfcCoolingTowerType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -5990,9 +5990,9 @@ public:
 /// 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcCostItemTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCostItemTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcCostItemType_USERDEFINED, IfcCostItemType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -6016,9 +6016,9 @@ public:
 /// SCHEDULEOFRATES: A listing of each type of goods forming construction or installation works with the cost of purchase, construction/installation, overheads and profit assigned so that additional items of that type can be costed.  
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcCostScheduleTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCostScheduleTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcCostScheduleType_BUDGET, IfcCostScheduleType_COSTPLAN, IfcCostScheduleType_ESTIMATE, IfcCostScheduleType_TENDER, IfcCostScheduleType_PRICEDBILLOFQUANTITIES, IfcCostScheduleType_UNPRICEDBILLOFQUANTITIES, IfcCostScheduleType_SCHEDULEOFRATES, IfcCostScheduleType_USERDEFINED, IfcCostScheduleType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -6030,9 +6030,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcCourseTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCourseTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcCourseType_ARMOUR, IfcCourseType_FILTER, IfcCourseType_BALLASTBED, IfcCourseType_CORE, IfcCourseType_PAVEMENT, IfcCourseType_PROTECTION, IfcCourseType_USERDEFINED, IfcCourseType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -6086,9 +6086,9 @@ public:
 /// covering
 /// NOTDEFINED: undefined type of
 /// covering
-class IFC_SCHEMA_API IfcCoveringTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCoveringTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcCoveringType_CEILING, IfcCoveringType_FLOORING, IfcCoveringType_CLADDING, IfcCoveringType_ROOFING, IfcCoveringType_MOLDING, IfcCoveringType_SKIRTINGBOARD, IfcCoveringType_INSULATION, IfcCoveringType_MEMBRANE, IfcCoveringType_SLEEVING, IfcCoveringType_WRAPPING, IfcCoveringType_COPING, IfcCoveringType_USERDEFINED, IfcCoveringType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -6107,9 +6107,9 @@ public:
 /// NOTDEFINED: Undefined resource.
 /// 
 /// HISTORY: New enumeration in IFC2x4
-class IFC_SCHEMA_API IfcCrewResourceTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCrewResourceTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcCrewResourceType_OFFICE, IfcCrewResourceType_SITE, IfcCrewResourceType_USERDEFINED, IfcCrewResourceType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -6129,9 +6129,9 @@ public:
 /// are no specific enumerators defined, the IfcCurtainWallTypeEnum
 /// has
 /// been added for future extensions.
-class IFC_SCHEMA_API IfcCurtainWallTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCurtainWallTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcCurtainWallType_USERDEFINED, IfcCurtainWallType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -6159,9 +6159,9 @@ public:
 /// logarithm (base 10) of the values.
 /// NOTDEFINED: No interpolation information is
 /// provided
-class IFC_SCHEMA_API IfcCurveInterpolationEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCurveInterpolationEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcCurveInterpolation_LINEAR, IfcCurveInterpolation_LOG_LINEAR, IfcCurveInterpolation_LOG_LOG, IfcCurveInterpolation_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -6189,9 +6189,9 @@ public:
 /// NOTDEFINED: Undefined damper.
 /// 
 /// HISTORY: New enumeration in IFC R2.0
-class IFC_SCHEMA_API IfcDamperTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDamperTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcDamperType_BACKDRAFTDAMPER, IfcDamperType_BALANCINGDAMPER, IfcDamperType_BLASTDAMPER, IfcDamperType_CONTROLDAMPER, IfcDamperType_FIREDAMPER, IfcDamperType_FIRESMOKEDAMPER, IfcDamperType_FUMEHOODEXHAUST, IfcDamperType_GRAVITYDAMPER, IfcDamperType_GRAVITYRELIEFDAMPER, IfcDamperType_RELIEFDAMPER, IfcDamperType_SMOKEDAMPER, IfcDamperType_USERDEFINED, IfcDamperType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -6210,9 +6210,9 @@ public:
 ///   NOTDEFINED: The origin of the time data is undefined.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.
-class IFC_SCHEMA_API IfcDataOriginEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDataOriginEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcDataOrigin_MEASURED, IfcDataOrigin_PREDICTED, IfcDataOrigin_SIMULATED, IfcDataOrigin_USERDEFINED, IfcDataOrigin_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -6280,9 +6280,9 @@ public:
 /// HISTORY: New type in IFC Release 2.0.
 /// 
 /// IFC 2x4 change: added TEMPERATURERATEOFCHANGE.
-class IFC_SCHEMA_API IfcDerivedUnitEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDerivedUnitEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcDerivedUnit_ANGULARVELOCITYUNIT, IfcDerivedUnit_AREADENSITYUNIT, IfcDerivedUnit_COMPOUNDPLANEANGLEUNIT, IfcDerivedUnit_DYNAMICVISCOSITYUNIT, IfcDerivedUnit_HEATFLUXDENSITYUNIT, IfcDerivedUnit_INTEGERCOUNTRATEUNIT, IfcDerivedUnit_ISOTHERMALMOISTURECAPACITYUNIT, IfcDerivedUnit_KINEMATICVISCOSITYUNIT, IfcDerivedUnit_LINEARVELOCITYUNIT, IfcDerivedUnit_MASSDENSITYUNIT, IfcDerivedUnit_MASSFLOWRATEUNIT, IfcDerivedUnit_MOISTUREDIFFUSIVITYUNIT, IfcDerivedUnit_MOLECULARWEIGHTUNIT, IfcDerivedUnit_SPECIFICHEATCAPACITYUNIT, IfcDerivedUnit_THERMALADMITTANCEUNIT, IfcDerivedUnit_THERMALCONDUCTANCEUNIT, IfcDerivedUnit_THERMALRESISTANCEUNIT, IfcDerivedUnit_THERMALTRANSMITTANCEUNIT, IfcDerivedUnit_VAPORPERMEABILITYUNIT, IfcDerivedUnit_VOLUMETRICFLOWRATEUNIT, IfcDerivedUnit_ROTATIONALFREQUENCYUNIT, IfcDerivedUnit_TORQUEUNIT, IfcDerivedUnit_MOMENTOFINERTIAUNIT, IfcDerivedUnit_LINEARMOMENTUNIT, IfcDerivedUnit_LINEARFORCEUNIT, IfcDerivedUnit_PLANARFORCEUNIT, IfcDerivedUnit_MODULUSOFELASTICITYUNIT, IfcDerivedUnit_SHEARMODULUSUNIT, IfcDerivedUnit_LINEARSTIFFNESSUNIT, IfcDerivedUnit_ROTATIONALSTIFFNESSUNIT, IfcDerivedUnit_MODULUSOFSUBGRADEREACTIONUNIT, IfcDerivedUnit_ACCELERATIONUNIT, IfcDerivedUnit_CURVATUREUNIT, IfcDerivedUnit_HEATINGVALUEUNIT, IfcDerivedUnit_IONCONCENTRATIONUNIT, IfcDerivedUnit_LUMINOUSINTENSITYDISTRIBUTIONUNIT, IfcDerivedUnit_MASSPERLENGTHUNIT, IfcDerivedUnit_MODULUSOFLINEARSUBGRADEREACTIONUNIT, IfcDerivedUnit_MODULUSOFROTATIONALSUBGRADEREACTIONUNIT, IfcDerivedUnit_PHUNIT, IfcDerivedUnit_ROTATIONALMASSUNIT, IfcDerivedUnit_SECTIONAREAINTEGRALUNIT, IfcDerivedUnit_SECTIONMODULUSUNIT, IfcDerivedUnit_SOUNDPOWERLEVELUNIT, IfcDerivedUnit_SOUNDPOWERUNIT, IfcDerivedUnit_SOUNDPRESSURELEVELUNIT, IfcDerivedUnit_SOUNDPRESSUREUNIT, IfcDerivedUnit_TEMPERATUREGRADIENTUNIT, IfcDerivedUnit_TEMPERATURERATEOFCHANGEUNIT, IfcDerivedUnit_THERMALEXPANSIONCOEFFICIENTUNIT, IfcDerivedUnit_WARPINGCONSTANTUNIT, IfcDerivedUnit_WARPINGMOMENTUNIT, IfcDerivedUnit_USERDEFINED} Value;
     static const char* ToString(Value v);
@@ -6301,9 +6301,9 @@ public:
 /// NEGATIVE: Direction defined to be negative.
 /// 
 /// HISTORY New Type in IFC2x.
-class IFC_SCHEMA_API IfcDirectionSenseEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDirectionSenseEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcDirectionSense_POSITIVE, IfcDirectionSense_NEGATIVE} Value;
     static const char* ToString(Value v);
@@ -6323,11 +6323,11 @@ public:
 /// NOTDEFINED: Undefined accessory
 /// 
 /// HISTORY New Enumeration in IFC 2x4.
-class IFC_SCHEMA_API IfcDiscreteAccessoryTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDiscreteAccessoryTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
-    typedef enum {IfcDiscreteAccessoryType_ANCHORPLATE, IfcDiscreteAccessoryType_BRACKET, IfcDiscreteAccessoryType_SHOE, IfcDiscreteAccessoryType_EXPANSION_JOINT_DEVICE, IfcDiscreteAccessoryType_CABLEARRANGER, IfcDiscreteAccessoryType_INSULATOR, IfcDiscreteAccessoryType_LOCK, IfcDiscreteAccessoryType_TENSIONINGEQUIPMENT, IfcDiscreteAccessoryType_RAILPAD, IfcDiscreteAccessoryType_SLIDINGCHAIR, IfcDiscreteAccessoryType_RAIL_LUBRICATION, IfcDiscreteAccessoryType_PANEL_STRENGTHENING, IfcDiscreteAccessoryType_RAILBRACE, IfcDiscreteAccessoryType_ELASTIC_CUSHION, IfcDiscreteAccessoryType_SOUNDABSORPTION, IfcDiscreteAccessoryType_POINTMACHINEMOUNTINGDEVICE, IfcDiscreteAccessoryType_POINT_MACHINE_LOCKING_DEVICE, IfcDiscreteAccessoryType_RAIL_MECHANICAL_EQUIPMENT, IfcDiscreteAccessoryType_BIRDPROTECTION, IfcDiscreteAccessoryType_USERDEFINED, IfcDiscreteAccessoryType_NOTDEFINED} Value;
+    typedef enum {IfcDiscreteAccessoryType_ANCHORPLATE, IfcDiscreteAccessoryType_BRACKET, IfcDiscreteAccessoryType_SHOE, IfcDiscreteAccessoryType_EXPANSION_JOINT_DEVICE, IfcDiscreteAccessoryType_CABLEARRANGER, IfcDiscreteAccessoryType_INSULATOR, IfcDiscreteAccessoryType_LOCK, IfcDiscreteAccessoryType_TENSIONINGEQUIPMENT, IfcDiscreteAccessoryType_RAILPAD, IfcDiscreteAccessoryType_SLIDINGCHAIR, IfcDiscreteAccessoryType_RAIL_LUBRICATION, IfcDiscreteAccessoryType_PANEL_STRENGTHENING, IfcDiscreteAccessoryType_RAILBRACE, IfcDiscreteAccessoryType_ELASTIC_CUSHION, IfcDiscreteAccessoryType_SOUNDABSORPTION, IfcDiscreteAccessoryType_POINTMACHINEMOUNTINGDEVICE, IfcDiscreteAccessoryType_POINT_MACHINE_LOCKING_DEVICE, IfcDiscreteAccessoryType_RAIL_MECHANICAL_EQUIPMENT, IfcDiscreteAccessoryType_USERDEFINED, IfcDiscreteAccessoryType_NOTDEFINED, IfcDiscreteAccessoryType_BIRDPROTECTION} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
@@ -6337,9 +6337,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcDistributionBoardTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDistributionBoardTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcDistributionBoardType_SWITCHBOARD, IfcDistributionBoardType_CONSUMERUNIT, IfcDistributionBoardType_MOTORCONTROLCENTRE, IfcDistributionBoardType_DISTRIBUTIONFRAME, IfcDistributionBoardType_DISTRIBUTIONBOARD, IfcDistributionBoardType_USERDEFINED, IfcDistributionBoardType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -6366,9 +6366,9 @@ public:
 /// NOTDEFINED: Undefined chamber type.
 /// 
 /// HISTORY: New enumeration in IFC R2x2
-class IFC_SCHEMA_API IfcDistributionChamberElementTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDistributionChamberElementTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcDistributionChamberElementType_FORMEDDUCT, IfcDistributionChamberElementType_INSPECTIONCHAMBER, IfcDistributionChamberElementType_INSPECTIONPIT, IfcDistributionChamberElementType_MANHOLE, IfcDistributionChamberElementType_METERCHAMBER, IfcDistributionChamberElementType_SUMP, IfcDistributionChamberElementType_TRENCH, IfcDistributionChamberElementType_VALVECHAMBER, IfcDistributionChamberElementType_USERDEFINED, IfcDistributionChamberElementType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -6380,9 +6380,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcDistributionPortTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDistributionPortTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcDistributionPortType_CABLE, IfcDistributionPortType_CABLECARRIER, IfcDistributionPortType_DUCT, IfcDistributionPortType_PIPE, IfcDistributionPortType_WIRELESS, IfcDistributionPortType_USERDEFINED, IfcDistributionPortType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -6440,9 +6440,9 @@ public:
 ///   SIGNAL: A raw analog signal, such as modulated data or measurements from sensors.
 ///   TELEPHONE: A transport or network dedicated to telephone system usage.
 ///   TV: A transport of multiple media sources (e.g. analog cable, satellite, over-the-air).
-class IFC_SCHEMA_API IfcDistributionSystemEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDistributionSystemEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcDistributionSystem_AIRCONDITIONING, IfcDistributionSystem_AUDIOVISUAL, IfcDistributionSystem_CHEMICAL, IfcDistributionSystem_CHILLEDWATER, IfcDistributionSystem_COMMUNICATION, IfcDistributionSystem_COMPRESSEDAIR, IfcDistributionSystem_CONDENSERWATER, IfcDistributionSystem_CONTROL, IfcDistributionSystem_CONVEYING, IfcDistributionSystem_DATA, IfcDistributionSystem_DISPOSAL, IfcDistributionSystem_DOMESTICCOLDWATER, IfcDistributionSystem_DOMESTICHOTWATER, IfcDistributionSystem_DRAINAGE, IfcDistributionSystem_EARTHING, IfcDistributionSystem_ELECTRICAL, IfcDistributionSystem_ELECTROACOUSTIC, IfcDistributionSystem_EXHAUST, IfcDistributionSystem_FIREPROTECTION, IfcDistributionSystem_FUEL, IfcDistributionSystem_GAS, IfcDistributionSystem_HAZARDOUS, IfcDistributionSystem_HEATING, IfcDistributionSystem_LIGHTING, IfcDistributionSystem_LIGHTNINGPROTECTION, IfcDistributionSystem_MUNICIPALSOLIDWASTE, IfcDistributionSystem_OIL, IfcDistributionSystem_OPERATIONAL, IfcDistributionSystem_POWERGENERATION, IfcDistributionSystem_RAINWATER, IfcDistributionSystem_REFRIGERATION, IfcDistributionSystem_SECURITY, IfcDistributionSystem_SEWAGE, IfcDistributionSystem_SIGNAL, IfcDistributionSystem_STORMWATER, IfcDistributionSystem_TELEPHONE, IfcDistributionSystem_TV, IfcDistributionSystem_VACUUM, IfcDistributionSystem_VENT, IfcDistributionSystem_VENTILATION, IfcDistributionSystem_WASTEWATER, IfcDistributionSystem_WATERSUPPLY, IfcDistributionSystem_CATENARY_SYSTEM, IfcDistributionSystem_OVERHEAD_CONTACTLINE_SYSTEM, IfcDistributionSystem_RETURN_CIRCUIT, IfcDistributionSystem_USERDEFINED, IfcDistributionSystem_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -6465,9 +6465,9 @@ public:
 /// PERSONAL: Document is personal to the author. 
 /// USERDEFINED 
 /// NOTDEFINED
-class IFC_SCHEMA_API IfcDocumentConfidentialityEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDocumentConfidentialityEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcDocumentConfidentiality_PUBLIC, IfcDocumentConfidentiality_RESTRICTED, IfcDocumentConfidentiality_CONFIDENTIAL, IfcDocumentConfidentiality_PERSONAL, IfcDocumentConfidentiality_USERDEFINED, IfcDocumentConfidentiality_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -6481,9 +6481,9 @@ public:
 /// IfcDocumentStatusEnum enables selection of the status of document information from a list of choices.
 /// 
 /// HISTORY: New enumeration in IFC Release 2x.
-class IFC_SCHEMA_API IfcDocumentStatusEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDocumentStatusEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcDocumentStatus_DRAFT, IfcDocumentStatus_FINALDRAFT, IfcDocumentStatus_FINAL, IfcDocumentStatus_REVISION, IfcDocumentStatus_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -6527,9 +6527,9 @@ public:
 /// Figure 165 — Door panel operations
 /// 
 /// NOTE  Figures (symbolic representation) depend on the national building code.  These figures are only shown as illustrations
-class IFC_SCHEMA_API IfcDoorPanelOperationEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDoorPanelOperationEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcDoorPanelOperation_SWINGING, IfcDoorPanelOperation_DOUBLE_ACTING, IfcDoorPanelOperation_SLIDING, IfcDoorPanelOperation_FOLDING, IfcDoorPanelOperation_REVOLVING, IfcDoorPanelOperation_ROLLINGUP, IfcDoorPanelOperation_FIXEDPANEL, IfcDoorPanelOperation_USERDEFINED, IfcDoorPanelOperation_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -6547,9 +6547,9 @@ public:
 /// Figure 166 shows the designation of a door panel with PanelPosition = LEFT and a door panel with PanelPosition = RIGHT within a door style with OperationType = DOUBLE_DOOR_SINGLE_SWING. The position is given as shown in the XZ plane of the local placement, looking into the direction of the positive Y axis. 
 /// 
 /// Figure 166 — Door panel positions
-class IFC_SCHEMA_API IfcDoorPanelPositionEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDoorPanelPositionEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcDoorPanelPosition_LEFT, IfcDoorPanelPosition_MIDDLE, IfcDoorPanelPosition_RIGHT, IfcDoorPanelPosition_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -6567,9 +6567,9 @@ public:
 /// 
 /// HISTORY New Enumeration in
 ///   IFC Release 2x .
-class IFC_SCHEMA_API IfcDoorStyleConstructionEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDoorStyleConstructionEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcDoorStyleConstruction_ALUMINIUM, IfcDoorStyleConstruction_HIGH_GRADE_STEEL, IfcDoorStyleConstruction_STEEL, IfcDoorStyleConstruction_WOOD, IfcDoorStyleConstruction_ALUMINIUM_WOOD, IfcDoorStyleConstruction_ALUMINIUM_PLASTIC, IfcDoorStyleConstruction_PLASTIC, IfcDoorStyleConstruction_USERDEFINED, IfcDoorStyleConstruction_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -6749,9 +6749,9 @@ public:
 /// defined by the ObjectPlacement at IfcDoor,
 /// and the IfcDoorLiningProperties.LiningOffset
 /// parameter.
-class IFC_SCHEMA_API IfcDoorStyleOperationEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDoorStyleOperationEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcDoorStyleOperation_SINGLE_SWING_LEFT, IfcDoorStyleOperation_SINGLE_SWING_RIGHT, IfcDoorStyleOperation_DOUBLE_DOOR_SINGLE_SWING, IfcDoorStyleOperation_DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_LEFT, IfcDoorStyleOperation_DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_RIGHT, IfcDoorStyleOperation_DOUBLE_SWING_LEFT, IfcDoorStyleOperation_DOUBLE_SWING_RIGHT, IfcDoorStyleOperation_DOUBLE_DOOR_DOUBLE_SWING, IfcDoorStyleOperation_SLIDING_TO_LEFT, IfcDoorStyleOperation_SLIDING_TO_RIGHT, IfcDoorStyleOperation_DOUBLE_DOOR_SLIDING, IfcDoorStyleOperation_FOLDING_TO_LEFT, IfcDoorStyleOperation_FOLDING_TO_RIGHT, IfcDoorStyleOperation_DOUBLE_DOOR_FOLDING, IfcDoorStyleOperation_REVOLVING, IfcDoorStyleOperation_ROLLINGUP, IfcDoorStyleOperation_USERDEFINED, IfcDoorStyleOperation_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -6778,9 +6778,9 @@ public:
 /// 
 /// HISTORY New Enumeration
 /// in IFC2x4.
-class IFC_SCHEMA_API IfcDoorTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDoorTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcDoorType_DOOR, IfcDoorType_GATE, IfcDoorType_TRAPDOOR, IfcDoorType_BOOM_BARRIER, IfcDoorType_TURNSTILE, IfcDoorType_USERDEFINED, IfcDoorType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -6971,9 +6971,9 @@ public:
 /// The location of the panel relative to the wall thickness is
 /// defined by theObjectPlacement at IfcDoor, and the
 /// IfcDoorLiningProperties.LiningOffset parameter.
-class IFC_SCHEMA_API IfcDoorTypeOperationEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDoorTypeOperationEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcDoorTypeOperation_SINGLE_SWING_LEFT, IfcDoorTypeOperation_SINGLE_SWING_RIGHT, IfcDoorTypeOperation_DOUBLE_PANEL_SINGLE_SWING, IfcDoorTypeOperation_DOUBLE_PANEL_SINGLE_SWING_OPPOSITE_LEFT, IfcDoorTypeOperation_DOUBLE_PANEL_SINGLE_SWING_OPPOSITE_RIGHT, IfcDoorTypeOperation_DOUBLE_SWING_LEFT, IfcDoorTypeOperation_DOUBLE_SWING_RIGHT, IfcDoorTypeOperation_DOUBLE_PANEL_DOUBLE_SWING, IfcDoorTypeOperation_SLIDING_TO_LEFT, IfcDoorTypeOperation_SLIDING_TO_RIGHT, IfcDoorTypeOperation_DOUBLE_PANEL_SLIDING, IfcDoorTypeOperation_FOLDING_TO_LEFT, IfcDoorTypeOperation_FOLDING_TO_RIGHT, IfcDoorTypeOperation_DOUBLE_PANEL_FOLDING, IfcDoorTypeOperation_REVOLVING_HORIZONTAL, IfcDoorTypeOperation_ROLLINGUP, IfcDoorTypeOperation_SWING_FIXED_LEFT, IfcDoorTypeOperation_SWING_FIXED_RIGHT, IfcDoorTypeOperation_DOUBLE_PANEL_LIFTING_VERTICAL, IfcDoorTypeOperation_LIFTING_HORIZONTAL, IfcDoorTypeOperation_LIFTING_VERTICAL_LEFT, IfcDoorTypeOperation_LIFTING_VERTICAL_RIGHT, IfcDoorTypeOperation_REVOLVING_VERTICAL, IfcDoorTypeOperation_USERDEFINED, IfcDoorTypeOperation_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7017,9 +7017,9 @@ public:
 ///   NOTDEFINED:  Undefined fitting.
 /// 
 /// HISTORY: New enumeration in IFC 2x2
-class IFC_SCHEMA_API IfcDuctFittingTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDuctFittingTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcDuctFittingType_BEND, IfcDuctFittingType_CONNECTOR, IfcDuctFittingType_ENTRY, IfcDuctFittingType_EXIT, IfcDuctFittingType_JUNCTION, IfcDuctFittingType_OBSTRUCTION, IfcDuctFittingType_TRANSITION, IfcDuctFittingType_USERDEFINED, IfcDuctFittingType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7045,9 +7045,9 @@ public:
 ///   NOTDEFINED:  Undefined segment.
 /// 
 /// HISTORY: New enumeration in IFC 2x2
-class IFC_SCHEMA_API IfcDuctSegmentTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDuctSegmentTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcDuctSegmentType_RIGIDSEGMENT, IfcDuctSegmentType_FLEXIBLESEGMENT, IfcDuctSegmentType_USERDEFINED, IfcDuctSegmentType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7068,9 +7068,9 @@ public:
 ///   NOTDEFINED:  Undefined duct silencer type.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.
-class IFC_SCHEMA_API IfcDuctSilencerTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDuctSilencerTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcDuctSilencerType_FLATOVAL, IfcDuctSilencerType_RECTANGULAR, IfcDuctSilencerType_ROUND, IfcDuctSilencerType_USERDEFINED, IfcDuctSilencerType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7082,9 +7082,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcEarthworksCutTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcEarthworksCutTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcEarthworksCutType_TRENCH, IfcEarthworksCutType_DREDGING, IfcEarthworksCutType_EXCAVATION, IfcEarthworksCutType_OVEREXCAVATION, IfcEarthworksCutType_TOPSOILREMOVAL, IfcEarthworksCutType_STEPEXCAVATION, IfcEarthworksCutType_PAVEMENTMILLING, IfcEarthworksCutType_CUT, IfcEarthworksCutType_BASE_EXCAVATION, IfcEarthworksCutType_USERDEFINED, IfcEarthworksCutType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7096,9 +7096,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcEarthworksFillTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcEarthworksFillTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcEarthworksFillType_BACKFILL, IfcEarthworksFillType_COUNTERWEIGHT, IfcEarthworksFillType_SUBGRADE, IfcEarthworksFillType_EMBANKMENT, IfcEarthworksFillType_TRANSITIONSECTION, IfcEarthworksFillType_SUBGRADEBED, IfcEarthworksFillType_SLOPEFILL, IfcEarthworksFillType_USERDEFINED, IfcEarthworksFillType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7138,9 +7138,9 @@ public:
 /// WASHINGMACHINE: An appliance that has the primary function of washing clothes. 	  
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcElectricApplianceTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcElectricApplianceTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcElectricApplianceType_DISHWASHER, IfcElectricApplianceType_ELECTRICCOOKER, IfcElectricApplianceType_FREESTANDINGELECTRICHEATER, IfcElectricApplianceType_FREESTANDINGFAN, IfcElectricApplianceType_FREESTANDINGWATERHEATER, IfcElectricApplianceType_FREESTANDINGWATERCOOLER, IfcElectricApplianceType_FREEZER, IfcElectricApplianceType_FRIDGE_FREEZER, IfcElectricApplianceType_HANDDRYER, IfcElectricApplianceType_KITCHENMACHINE, IfcElectricApplianceType_MICROWAVE, IfcElectricApplianceType_PHOTOCOPIER, IfcElectricApplianceType_REFRIGERATOR, IfcElectricApplianceType_TUMBLEDRYER, IfcElectricApplianceType_VENDINGMACHINE, IfcElectricApplianceType_WASHINGMACHINE, IfcElectricApplianceType_USERDEFINED, IfcElectricApplianceType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7161,9 +7161,9 @@ public:
 /// SWITCHBOARD: A distribution point at which switching devices are located. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcElectricDistributionBoardTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcElectricDistributionBoardTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcElectricDistributionBoardType_CONSUMERUNIT, IfcElectricDistributionBoardType_DISTRIBUTIONBOARD, IfcElectricDistributionBoardType_MOTORCONTROLCENTRE, IfcElectricDistributionBoardType_SWITCHBOARD, IfcElectricDistributionBoardType_USERDEFINED, IfcElectricDistributionBoardType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7184,9 +7184,9 @@ public:
 /// UPS: A device that provides a time limited alternative source of power supply in the event of failure of the main supply.  
 /// USERDEFINED: User-defined type.  
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcElectricFlowStorageDeviceTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcElectricFlowStorageDeviceTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcElectricFlowStorageDeviceType_BATTERY, IfcElectricFlowStorageDeviceType_CAPACITORBANK, IfcElectricFlowStorageDeviceType_HARMONICFILTER, IfcElectricFlowStorageDeviceType_INDUCTORBANK, IfcElectricFlowStorageDeviceType_UPS, IfcElectricFlowStorageDeviceType_CAPACITOR, IfcElectricFlowStorageDeviceType_COMPENSATOR, IfcElectricFlowStorageDeviceType_INDUCTOR, IfcElectricFlowStorageDeviceType_RECHARGER, IfcElectricFlowStorageDeviceType_USERDEFINED, IfcElectricFlowStorageDeviceType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7198,9 +7198,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcElectricFlowTreatmentDeviceTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcElectricFlowTreatmentDeviceTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcElectricFlowTreatmentDeviceType_ELECTRONICFILTER, IfcElectricFlowTreatmentDeviceType_USERDEFINED, IfcElectricFlowTreatmentDeviceType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7221,9 +7221,9 @@ public:
 /// STANDALONE: Electrical generator which does not include its source of kinetic energy, that is, a motor, engine, or turbine is modeled by a separate object. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcElectricGeneratorTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcElectricGeneratorTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcElectricGeneratorType_CHP, IfcElectricGeneratorType_ENGINEGENERATOR, IfcElectricGeneratorType_STANDALONE, IfcElectricGeneratorType_USERDEFINED, IfcElectricGeneratorType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7245,9 +7245,9 @@ public:
 /// SYNCHRONOUS: A motor that operates at a constant speed up to full load. The rotor speed is equal to the speed of the rotating magnetic field of the stator; there is no slip. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcElectricMotorTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcElectricMotorTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcElectricMotorType_DC, IfcElectricMotorType_INDUCTION, IfcElectricMotorType_POLYPHASE, IfcElectricMotorType_RELUCTANCESYNCHRONOUS, IfcElectricMotorType_SYNCHRONOUS, IfcElectricMotorType_USERDEFINED, IfcElectricMotorType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7267,9 +7267,9 @@ public:
 /// RELAY: Electromagnetically operated contactor for making or breaking a control circuit. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcElectricTimeControlTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcElectricTimeControlTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcElectricTimeControlType_TIMECLOCK, IfcElectricTimeControlType_TIMEDELAY, IfcElectricTimeControlType_RELAY, IfcElectricTimeControlType_USERDEFINED, IfcElectricTimeControlType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7299,9 +7299,9 @@ public:
 ///   TRUSS: A structure built up of members with (quasi) pinned joints
 ///   USERDEFINED: User-defined element assembly
 ///   NOTDEFINED: Undefined element assembly
-class IFC_SCHEMA_API IfcElementAssemblyTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcElementAssemblyTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcElementAssemblyType_ACCESSORY_ASSEMBLY, IfcElementAssemblyType_ARCH, IfcElementAssemblyType_BEAM_GRID, IfcElementAssemblyType_BRACED_FRAME, IfcElementAssemblyType_GIRDER, IfcElementAssemblyType_REINFORCEMENT_UNIT, IfcElementAssemblyType_RIGID_FRAME, IfcElementAssemblyType_SLAB_FIELD, IfcElementAssemblyType_TRUSS, IfcElementAssemblyType_ABUTMENT, IfcElementAssemblyType_PIER, IfcElementAssemblyType_PYLON, IfcElementAssemblyType_CROSS_BRACING, IfcElementAssemblyType_DECK, IfcElementAssemblyType_MAST, IfcElementAssemblyType_SIGNALASSEMBLY, IfcElementAssemblyType_GRID, IfcElementAssemblyType_SHELTER, IfcElementAssemblyType_SUPPORTINGASSEMBLY, IfcElementAssemblyType_SUSPENSIONASSEMBLY, IfcElementAssemblyType_TRACTION_SWITCHING_ASSEMBLY, IfcElementAssemblyType_TRACKPANEL, IfcElementAssemblyType_TURNOUTPANEL, IfcElementAssemblyType_DILATATIONPANEL, IfcElementAssemblyType_RAIL_MECHANICAL_EQUIPMENT_ASSEMBLY, IfcElementAssemblyType_ENTRANCEWORKS, IfcElementAssemblyType_SUMPBUSTER, IfcElementAssemblyType_TRAFFIC_CALMING_DEVICE, IfcElementAssemblyType_USERDEFINED, IfcElementAssemblyType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7324,9 +7324,9 @@ public:
 /// 
 /// HISTORY New enumeration in
 ///   IFC Release 2.x
-class IFC_SCHEMA_API IfcElementCompositionEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcElementCompositionEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcElementComposition_COMPLEX, IfcElementComposition_ELEMENT, IfcElementComposition_PARTIAL} Value;
     static const char* ToString(Value v);
@@ -7345,9 +7345,9 @@ public:
 ///   NOTDEFINED:  Undefined engine type.
 /// 
 /// HISTORY: New enumeration in IFC 2x4.
-class IFC_SCHEMA_API IfcEngineTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcEngineTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcEngineType_EXTERNALCOMBUSTION, IfcEngineType_INTERNALCOMBUSTION, IfcEngineType_USERDEFINED, IfcEngineType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7374,9 +7374,9 @@ public:
 ///   NOTDEFINED:  Undefined evaporative cooler type.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.
-class IFC_SCHEMA_API IfcEvaporativeCoolerTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcEvaporativeCoolerTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcEvaporativeCoolerType_DIRECTEVAPORATIVERANDOMMEDIAAIRCOOLER, IfcEvaporativeCoolerType_DIRECTEVAPORATIVERIGIDMEDIAAIRCOOLER, IfcEvaporativeCoolerType_DIRECTEVAPORATIVESLINGERSPACKAGEDAIRCOOLER, IfcEvaporativeCoolerType_DIRECTEVAPORATIVEPACKAGEDROTARYAIRCOOLER, IfcEvaporativeCoolerType_DIRECTEVAPORATIVEAIRWASHER, IfcEvaporativeCoolerType_INDIRECTEVAPORATIVEPACKAGEAIRCOOLER, IfcEvaporativeCoolerType_INDIRECTEVAPORATIVEWETCOIL, IfcEvaporativeCoolerType_INDIRECTEVAPORATIVECOOLINGTOWERORCOILCOOLER, IfcEvaporativeCoolerType_INDIRECTDIRECTCOMBINATION, IfcEvaporativeCoolerType_USERDEFINED, IfcEvaporativeCoolerType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7400,9 +7400,9 @@ public:
 ///   NOTDEFINED:  Undefined evaporator type.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.
-class IFC_SCHEMA_API IfcEvaporatorTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcEvaporatorTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcEvaporatorType_DIRECTEXPANSION, IfcEvaporatorType_DIRECTEXPANSIONSHELLANDTUBE, IfcEvaporatorType_DIRECTEXPANSIONTUBEINTUBE, IfcEvaporatorType_DIRECTEXPANSIONBRAZEDPLATE, IfcEvaporatorType_FLOODEDSHELLANDTUBE, IfcEvaporatorType_SHELLANDCOIL, IfcEvaporatorType_USERDEFINED, IfcEvaporatorType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7425,9 +7425,9 @@ public:
 /// EVENTCOMPLEX: An event trigger that is a complex combination of things
 /// USERDEFINED
 /// NOTDEFINED
-class IFC_SCHEMA_API IfcEventTriggerTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcEventTriggerTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcEventTriggerType_EVENTRULE, IfcEventTriggerType_EVENTMESSAGE, IfcEventTriggerType_EVENTTIME, IfcEventTriggerType_EVENTCOMPLEX, IfcEventTriggerType_USERDEFINED, IfcEventTriggerType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7449,9 +7449,9 @@ public:
 /// INTERMEDIATEEVENT: An event that occurs at an intermediate stage of a process
 /// USERDEFINED
 /// NOTDEFINED
-class IFC_SCHEMA_API IfcEventTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcEventTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcEventType_STARTEVENT, IfcEventType_ENDEVENT, IfcEventType_INTERMEDIATEEVENT, IfcEventType_USERDEFINED, IfcEventType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7478,9 +7478,9 @@ public:
 /// 
 /// HISTORY New enumeration
 /// in IFC2x4.
-class IFC_SCHEMA_API IfcExternalSpatialElementTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcExternalSpatialElementTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcExternalSpatialElementType_EXTERNAL, IfcExternalSpatialElementType_EXTERNAL_EARTH, IfcExternalSpatialElementType_EXTERNAL_WATER, IfcExternalSpatialElementType_EXTERNAL_FIRE, IfcExternalSpatialElementType_USERDEFINED, IfcExternalSpatialElementType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7492,9 +7492,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcFacilityPartCommonTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcFacilityPartCommonTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcFacilityPartCommonType_SEGMENT, IfcFacilityPartCommonType_ABOVEGROUND, IfcFacilityPartCommonType_JUNCTION, IfcFacilityPartCommonType_LEVELCROSSING, IfcFacilityPartCommonType_BELOWGROUND, IfcFacilityPartCommonType_SUBSTRUCTURE, IfcFacilityPartCommonType_TERMINAL, IfcFacilityPartCommonType_SUPERSTRUCTURE, IfcFacilityPartCommonType_USERDEFINED, IfcFacilityPartCommonType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7506,9 +7506,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcFacilityUsageEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcFacilityUsageEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcFacilityUsage_LATERAL, IfcFacilityUsage_REGION, IfcFacilityUsage_VERTICAL, IfcFacilityUsage_LONGITUDINAL, IfcFacilityUsage_USERDEFINED, IfcFacilityUsage_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7533,9 +7533,9 @@ public:
 ///   NOTDEFINED: Undefined fan type.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.
-class IFC_SCHEMA_API IfcFanTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcFanTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcFanType_CENTRIFUGALFORWARDCURVED, IfcFanType_CENTRIFUGALRADIAL, IfcFanType_CENTRIFUGALBACKWARDINCLINEDCURVED, IfcFanType_CENTRIFUGALAIRFOIL, IfcFanType_TUBEAXIAL, IfcFanType_VANEAXIAL, IfcFanType_PROPELLORAXIAL, IfcFanType_USERDEFINED, IfcFanType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7555,9 +7555,9 @@ public:
 /// NOTDEFINED: Undefined fastener
 /// 
 /// HISTORY New Enumeration in IFC 2x4.
-class IFC_SCHEMA_API IfcFastenerTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcFastenerTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcFastenerType_GLUE, IfcFastenerType_MORTAR, IfcFastenerType_WELD, IfcFastenerType_USERDEFINED, IfcFastenerType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7581,9 +7581,9 @@ public:
 ///   NOTDEFINED:	Undefined filter type.
 /// 
 /// HISTORY: New enumeration in IFC R2x.  COMPRESSEDAIRFILTER added in IFC2x4.
-class IFC_SCHEMA_API IfcFilterTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcFilterTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcFilterType_AIRPARTICLEFILTER, IfcFilterType_COMPRESSEDAIRFILTER, IfcFilterType_ODORFILTER, IfcFilterType_OILFILTER, IfcFilterType_STRAINER, IfcFilterType_WATERFILTER, IfcFilterType_USERDEFINED, IfcFilterType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7607,9 +7607,9 @@ public:
 /// SPRINKLERDEFLECTOR: Device attached to a sprinkler to deflect the water flow into a spread pattern to cover the required area. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Underined type.
-class IFC_SCHEMA_API IfcFireSuppressionTerminalTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcFireSuppressionTerminalTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcFireSuppressionTerminalType_BREECHINGINLET, IfcFireSuppressionTerminalType_FIREHYDRANT, IfcFireSuppressionTerminalType_HOSEREEL, IfcFireSuppressionTerminalType_SPRINKLER, IfcFireSuppressionTerminalType_SPRINKLERDEFLECTOR, IfcFireSuppressionTerminalType_FIREMONITOR, IfcFireSuppressionTerminalType_USERDEFINED, IfcFireSuppressionTerminalType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7628,9 +7628,9 @@ public:
 ///   NOTDEFINED:    Undefined flow direction.
 /// 
 /// HISTORY: New enumeration in IFC R2.0
-class IFC_SCHEMA_API IfcFlowDirectionEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcFlowDirectionEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcFlowDirection_SOURCE, IfcFlowDirection_SINK, IfcFlowDirection_SOURCEANDSINK, IfcFlowDirection_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7657,9 +7657,9 @@ public:
 /// VOLTMETER_RMS: A device that reads and displays the RMS (mean) voltage in an electrical circuit. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcFlowInstrumentTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcFlowInstrumentTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcFlowInstrumentType_PRESSUREGAUGE, IfcFlowInstrumentType_THERMOMETER, IfcFlowInstrumentType_AMMETER, IfcFlowInstrumentType_FREQUENCYMETER, IfcFlowInstrumentType_POWERFACTORMETER, IfcFlowInstrumentType_PHASEANGLEMETER, IfcFlowInstrumentType_VOLTMETER_PEAK, IfcFlowInstrumentType_VOLTMETER_RMS, IfcFlowInstrumentType_COMBINED, IfcFlowInstrumentType_VOLTMETER, IfcFlowInstrumentType_USERDEFINED, IfcFlowInstrumentType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7685,9 +7685,9 @@ public:
 /// NOTDEFINED:    Undefined meter type
 /// 
 /// HISTORY: New enumeration in IFC 2x2
-class IFC_SCHEMA_API IfcFlowMeterTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcFlowMeterTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcFlowMeterType_ENERGYMETER, IfcFlowMeterType_GASMETER, IfcFlowMeterType_OILMETER, IfcFlowMeterType_WATERMETER, IfcFlowMeterType_USERDEFINED, IfcFlowMeterType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7712,9 +7712,9 @@ public:
 ///   STRIP_FOOTING A linear element that transfers loads into the ground from either a continuous element, such as a wall, or from a series of elements, such as columns.
 ///   USERDEFINED Special types of footings which meet specific local requirements.
 ///   NOTDEFINED The type of footing is not defined.
-class IFC_SCHEMA_API IfcFootingTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcFootingTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcFootingType_CAISSON_FOUNDATION, IfcFootingType_FOOTING_BEAM, IfcFootingType_PAD_FOOTING, IfcFootingType_PILE_CAP, IfcFootingType_STRIP_FOOTING, IfcFootingType_USERDEFINED, IfcFootingType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7738,9 +7738,9 @@ public:
 /// SOFA: Furniture for seating multiple people.  
 /// USERDEFINED: User-defined type.  
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcFurnitureTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcFurnitureTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcFurnitureType_CHAIR, IfcFurnitureType_TABLE, IfcFurnitureType_DESK, IfcFurnitureType_BED, IfcFurnitureType_FILECABINET, IfcFurnitureType_SHELF, IfcFurnitureType_SOFA, IfcFurnitureType_TECHNICALCABINET, IfcFurnitureType_USERDEFINED, IfcFurnitureType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7752,9 +7752,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcGeographicElementTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcGeographicElementTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcGeographicElementType_TERRAIN, IfcGeographicElementType_SOIL_BORING_POINT, IfcGeographicElementType_USERDEFINED, IfcGeographicElementType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7806,9 +7806,9 @@ public:
 /// No specification given.
 /// 
 /// HISTORY: New Type in Release IFC2x2.
-class IFC_SCHEMA_API IfcGeometricProjectionEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcGeometricProjectionEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcGeometricProjection_GRAPH_VIEW, IfcGeometricProjection_SKETCH_VIEW, IfcGeometricProjection_MODEL_VIEW, IfcGeometricProjection_PLAN_VIEW, IfcGeometricProjection_REFLECTED_PLAN_VIEW, IfcGeometricProjection_SECTION_VIEW, IfcGeometricProjection_ELEVATION_VIEW, IfcGeometricProjection_USERDEFINED, IfcGeometricProjection_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7825,9 +7825,9 @@ public:
 /// and is unique within the project. The local (or object) coordinate system is given by IfcProduct.ObjectPlacement and is used by all IfcRepresentation's within the IfcProduct.Representation.
 /// 
 /// HISTORY: New type in IFC2x2.
-class IFC_SCHEMA_API IfcGlobalOrLocalEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcGlobalOrLocalEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcGlobalOrLocal_GLOBAL_COORDS, IfcGlobalOrLocal_LOCAL_COORDS} Value;
     static const char* ToString(Value v);
@@ -7839,9 +7839,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcGridTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcGridTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcGridType_RECTANGULAR, IfcGridType_RADIAL, IfcGridType_TRIANGULAR, IfcGridType_IRREGULAR, IfcGridType_USERDEFINED, IfcGridType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7861,9 +7861,9 @@ public:
 ///   NOTDEFINED:  Undefined heat exchanger type.
 /// 
 /// HISTORY: New enumeration in IFC R2x.
-class IFC_SCHEMA_API IfcHeatExchangerTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcHeatExchangerTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcHeatExchangerType_PLATE, IfcHeatExchangerType_SHELLANDTUBE, IfcHeatExchangerType_TURNOUTHEATING, IfcHeatExchangerType_USERDEFINED, IfcHeatExchangerType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7894,9 +7894,9 @@ public:
 ///   NOTDEFINED:  Undefined humidifier type.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.
-class IFC_SCHEMA_API IfcHumidifierTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcHumidifierTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcHumidifierType_STEAMINJECTION, IfcHumidifierType_ADIABATICAIRWASHER, IfcHumidifierType_ADIABATICPAN, IfcHumidifierType_ADIABATICWETTEDELEMENT, IfcHumidifierType_ADIABATICATOMIZING, IfcHumidifierType_ADIABATICULTRASONIC, IfcHumidifierType_ADIABATICRIGIDMEDIA, IfcHumidifierType_ADIABATICCOMPRESSEDAIRNOZZLE, IfcHumidifierType_ASSISTEDELECTRIC, IfcHumidifierType_ASSISTEDNATURALGAS, IfcHumidifierType_ASSISTEDPROPANE, IfcHumidifierType_ASSISTEDBUTANE, IfcHumidifierType_ASSISTEDSTEAM, IfcHumidifierType_USERDEFINED, IfcHumidifierType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7908,9 +7908,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcImpactProtectionDeviceTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcImpactProtectionDeviceTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcImpactProtectionDeviceType_CRASHCUSHION, IfcImpactProtectionDeviceType_DAMPINGSYSTEM, IfcImpactProtectionDeviceType_FENDER, IfcImpactProtectionDeviceType_BUMPER, IfcImpactProtectionDeviceType_USERDEFINED, IfcImpactProtectionDeviceType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7931,9 +7931,9 @@ public:
 /// PETROL: Two or more chambers with inlet and outlet pipes arranged to allow petrol/gasoline collected on the surface of water drained into them to evaporate through ventilating pipes. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcInterceptorTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcInterceptorTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcInterceptorType_CYCLONIC, IfcInterceptorType_GREASE, IfcInterceptorType_OIL, IfcInterceptorType_PETROL, IfcInterceptorType_USERDEFINED, IfcInterceptorType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -7999,9 +7999,9 @@ public:
 /// applicable to IfcSpace. The following enumerators are
 /// added: EXTERNAL_EARTH, EXTERNAL_WATER,
 /// EXTERNAL_FIRE.
-class IFC_SCHEMA_API IfcInternalOrExternalEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcInternalOrExternalEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcInternalOrExternal_INTERNAL, IfcInternalOrExternal_EXTERNAL, IfcInternalOrExternal_EXTERNAL_EARTH, IfcInternalOrExternal_EXTERNAL_WATER, IfcInternalOrExternal_EXTERNAL_FIRE, IfcInternalOrExternal_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -8021,9 +8021,9 @@ public:
 /// FURNITUREINVENTORY: A collection of furniture instances of type IfcFurnishingElement 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcInventoryTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcInventoryTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcInventoryType_ASSETINVENTORY, IfcInventoryType_SPACEINVENTORY, IfcInventoryType_FURNITUREINVENTORY, IfcInventoryType_USERDEFINED, IfcInventoryType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -8041,9 +8041,9 @@ public:
 /// DATA: Contains cables, outlets, and/or switches for communications use.
 /// USERDEFINED: User-defined type.
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcJunctionBoxTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcJunctionBoxTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcJunctionBoxType_DATA, IfcJunctionBoxType_POWER, IfcJunctionBoxType_USERDEFINED, IfcJunctionBoxType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -8055,9 +8055,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcKnotType : public express::DeclaredType {
+class IFC_SCHEMA_API IfcKnotType : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcKnotType_UNIFORM_KNOTS, IfcKnotType_QUASI_UNIFORM_KNOTS, IfcKnotType_PIECEWISE_BEZIER_KNOTS, IfcKnotType_UNSPECIFIED} Value;
     static const char* ToString(Value v);
@@ -8092,9 +8092,9 @@ public:
 /// NOTDEFINED: Undefined resource.
 /// 
 /// HISTORY: New enumeration in IFC2x4
-class IFC_SCHEMA_API IfcLaborResourceTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLaborResourceTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcLaborResourceType_ADMINISTRATION, IfcLaborResourceType_CARPENTRY, IfcLaborResourceType_CLEANING, IfcLaborResourceType_CONCRETE, IfcLaborResourceType_DRYWALL, IfcLaborResourceType_ELECTRIC, IfcLaborResourceType_FINISHING, IfcLaborResourceType_FLOORING, IfcLaborResourceType_GENERAL, IfcLaborResourceType_HVAC, IfcLaborResourceType_LANDSCAPING, IfcLaborResourceType_MASONRY, IfcLaborResourceType_PAINTING, IfcLaborResourceType_PAVING, IfcLaborResourceType_PLUMBING, IfcLaborResourceType_ROOFING, IfcLaborResourceType_SITEGRADING, IfcLaborResourceType_STEELWORK, IfcLaborResourceType_SURVEYING, IfcLaborResourceType_USERDEFINED, IfcLaborResourceType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -8122,9 +8122,9 @@ public:
 /// TUNGSTENFILAMENT: A lamp that emits light by passing an electrical current through a tungsten wire filament in a near vacuum.
 /// USERDEFINED: User-defined type.
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcLampTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLampTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcLampType_COMPACTFLUORESCENT, IfcLampType_FLUORESCENT, IfcLampType_HALOGEN, IfcLampType_HIGHPRESSUREMERCURY, IfcLampType_HIGHPRESSURESODIUM, IfcLampType_LED, IfcLampType_METALHALIDE, IfcLampType_OLED, IfcLampType_TUNGSTENFILAMENT, IfcLampType_USERDEFINED, IfcLampType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -8144,9 +8144,9 @@ public:
 /// AXIS3: Usually z-axis.
 /// 
 /// HISTORY: New Type in IFC2x.
-class IFC_SCHEMA_API IfcLayerSetDirectionEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLayerSetDirectionEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcLayerSetDirection_AXIS1, IfcLayerSetDirection_AXIS2, IfcLayerSetDirection_AXIS3} Value;
     static const char* ToString(Value v);
@@ -8171,9 +8171,9 @@ public:
 /// Figure 302 — Light distribution curves
 /// 
 /// HISTORY  This is a new enumeration in IFC2x2.
-class IFC_SCHEMA_API IfcLightDistributionCurveEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLightDistributionCurveEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcLightDistributionCurve_TYPE_A, IfcLightDistributionCurve_TYPE_B, IfcLightDistributionCurve_TYPE_C, IfcLightDistributionCurve_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -8201,9 +8201,9 @@ public:
 /// METALHALIDE 
 /// TUNGSTENFILAMENT 
 /// NOTDEFINED
-class IFC_SCHEMA_API IfcLightEmissionSourceEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLightEmissionSourceEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcLightEmissionSource_COMPACTFLUORESCENT, IfcLightEmissionSource_FLUORESCENT, IfcLightEmissionSource_HIGHPRESSUREMERCURY, IfcLightEmissionSource_HIGHPRESSURESODIUM, IfcLightEmissionSource_LIGHTEMITTINGDIODE, IfcLightEmissionSource_LOWPRESSURESODIUM, IfcLightEmissionSource_LOWVOLTAGEHALOGEN, IfcLightEmissionSource_MAINVOLTAGEHALOGEN, IfcLightEmissionSource_METALHALIDE, IfcLightEmissionSource_TUNGSTENFILAMENT, IfcLightEmissionSource_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -8225,9 +8225,9 @@ public:
 /// SECURITYLIGHTING: A light fixture having specific purpose of directing occupants in an emergency, such as an illuminated exit sign or emergency flood light. 
 /// USERDEFINED: User-defined type.
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcLightFixtureTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLightFixtureTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcLightFixtureType_POINTSOURCE, IfcLightFixtureType_DIRECTIONSOURCE, IfcLightFixtureType_SECURITYLIGHTING, IfcLightFixtureType_USERDEFINED, IfcLightFixtureType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -8239,9 +8239,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcLiquidTerminalTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLiquidTerminalTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcLiquidTerminalType_LOADINGARM, IfcLiquidTerminalType_HOSEREEL, IfcLiquidTerminalType_USERDEFINED, IfcLiquidTerminalType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -8273,9 +8273,9 @@ public:
 /// HISTORY: New type in IFC 2x2.
 /// 
 /// IFC 2x4 change:  Obsolete item LOAD_COMBINATION_GROUP removed.  Load cases are directly assigned to load combinations with different factors for each load case—load combination pair by means of IfcRelAssignsToGroupByFactor.
-class IFC_SCHEMA_API IfcLoadGroupTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLoadGroupTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcLoadGroupType_LOAD_GROUP, IfcLoadGroupType_LOAD_CASE, IfcLoadGroupType_LOAD_COMBINATION, IfcLoadGroupType_USERDEFINED, IfcLoadGroupType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -8530,9 +8530,9 @@ public:
 /// F
 /// F
 /// F
-class IFC_SCHEMA_API IfcLogicalOperatorEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLogicalOperatorEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcLogicalOperator_LOGICALAND, IfcLogicalOperator_LOGICALOR, IfcLogicalOperator_LOGICALXOR, IfcLogicalOperator_LOGICALNOTAND, IfcLogicalOperator_LOGICALNOTOR} Value;
     static const char* ToString(Value v);
@@ -8544,11 +8544,11 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcMarineFacilityTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMarineFacilityTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
-    typedef enum {IfcMarineFacilityType_CANAL, IfcMarineFacilityType_WATERWAYSHIPLIFT, IfcMarineFacilityType_REVETMENT, IfcMarineFacilityType_LAUNCHRECOVERY, IfcMarineFacilityType_MARINEDEFENCE, IfcMarineFacilityType_HYDROLIFT, IfcMarineFacilityType_SHIPYARD, IfcMarineFacilityType_SHIPLIFT, IfcMarineFacilityType_PORT, IfcMarineFacilityType_QUAY, IfcMarineFacilityType_FLOATINGDOCK, IfcMarineFacilityType_NAVIGATIONALCHANNEL, IfcMarineFacilityType_BREAKWATER, IfcMarineFacilityType_DRYDOCK, IfcMarineFacilityType_JETTY, IfcMarineFacilityType_SHIPLOCK, IfcMarineFacilityType_BARRIERBEACH, IfcMarineFacilityType_SLIPWAY, IfcMarineFacilityType_WATERWAY, IfcMarineFacilityType_USERDEFINED, IfcMarineFacilityType_NOTDEFINED} Value;
+    typedef enum {IfcMarineFacilityType_CANAL, IfcMarineFacilityType_WATERWAYSHIPLIFT, IfcMarineFacilityType_EMBANKMENT, IfcMarineFacilityType_LAUNCHRECOVERY, IfcMarineFacilityType_MARINEDEFENCE, IfcMarineFacilityType_HYDROLIFT, IfcMarineFacilityType_SHIPYARD, IfcMarineFacilityType_SHIPLIFT, IfcMarineFacilityType_PORT, IfcMarineFacilityType_QUAY, IfcMarineFacilityType_FLOATINGDOCK, IfcMarineFacilityType_NAVIGATIONALCHANNEL, IfcMarineFacilityType_BREAKWATER, IfcMarineFacilityType_DRYDOCK, IfcMarineFacilityType_JETTY, IfcMarineFacilityType_SHIPLOCK, IfcMarineFacilityType_BARRIERBEACH, IfcMarineFacilityType_SLIPWAY, IfcMarineFacilityType_WATERWAY, IfcMarineFacilityType_USERDEFINED, IfcMarineFacilityType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
@@ -8558,9 +8558,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcMarinePartTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMarinePartTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcMarinePartType_CREST, IfcMarinePartType_MANUFACTURING, IfcMarinePartType_LOWWATERLINE, IfcMarinePartType_CORE, IfcMarinePartType_WATERFIELD, IfcMarinePartType_CILL_LEVEL, IfcMarinePartType_BERTHINGSTRUCTURE, IfcMarinePartType_COPELEVEL, IfcMarinePartType_CHAMBER, IfcMarinePartType_STORAGE, IfcMarinePartType_APPROACHCHANNEL, IfcMarinePartType_VEHICLESERVICING, IfcMarinePartType_SHIPTRANSFER, IfcMarinePartType_GATEHEAD, IfcMarinePartType_GUDINGSTRUCTURE, IfcMarinePartType_BELOWWATERLINE, IfcMarinePartType_WEATHERSIDE, IfcMarinePartType_LANDFIELD, IfcMarinePartType_PROTECTION, IfcMarinePartType_LEEWARDSIDE, IfcMarinePartType_ABOVEWATERLINE, IfcMarinePartType_ANCHORAGE, IfcMarinePartType_NAVIGATIONALAREA, IfcMarinePartType_HIGHWATERLINE, IfcMarinePartType_USERDEFINED, IfcMarinePartType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -8588,9 +8588,9 @@ public:
 /// NOTDEFINED: Undefined mechanical fastener
 /// 
 /// HISTORY New Enumeration in IFC 2x4.
-class IFC_SCHEMA_API IfcMechanicalFastenerTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMechanicalFastenerTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcMechanicalFastenerType_ANCHORBOLT, IfcMechanicalFastenerType_BOLT, IfcMechanicalFastenerType_DOWEL, IfcMechanicalFastenerType_NAIL, IfcMechanicalFastenerType_NAILPLATE, IfcMechanicalFastenerType_RIVET, IfcMechanicalFastenerType_SCREW, IfcMechanicalFastenerType_SHEARCONNECTOR, IfcMechanicalFastenerType_STAPLE, IfcMechanicalFastenerType_STUDSHEARCONNECTOR, IfcMechanicalFastenerType_COUPLER, IfcMechanicalFastenerType_RAILJOINT, IfcMechanicalFastenerType_RAILFASTENING, IfcMechanicalFastenerType_CHAIN, IfcMechanicalFastenerType_ROPE, IfcMechanicalFastenerType_USERDEFINED, IfcMechanicalFastenerType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -8614,9 +8614,9 @@ public:
 /// NOTDEFINED:  Undefined medical device type.
 /// 
 /// HISTORY: New enumeration in IFC 2x4.
-class IFC_SCHEMA_API IfcMedicalDeviceTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMedicalDeviceTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcMedicalDeviceType_AIRSTATION, IfcMedicalDeviceType_FEEDAIRUNIT, IfcMedicalDeviceType_OXYGENGENERATOR, IfcMedicalDeviceType_OXYGENPLANT, IfcMedicalDeviceType_VACUUMSTATION, IfcMedicalDeviceType_USERDEFINED, IfcMedicalDeviceType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -8670,9 +8670,9 @@ public:
 /// are added.
 /// IFC2x Edition 3 CHANGE The additional identifier MULLION has
 /// been added.
-class IFC_SCHEMA_API IfcMemberTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMemberTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcMemberType_BRACE, IfcMemberType_CHORD, IfcMemberType_COLLAR, IfcMemberType_MEMBER, IfcMemberType_MULLION, IfcMemberType_PLATE, IfcMemberType_POST, IfcMemberType_PURLIN, IfcMemberType_RAFTER, IfcMemberType_STRINGER, IfcMemberType_STRUT, IfcMemberType_STUD, IfcMemberType_STIFFENING_RIB, IfcMemberType_ARCH_SEGMENT, IfcMemberType_SUSPENSION_CABLE, IfcMemberType_SUSPENDER, IfcMemberType_STAY_CABLE, IfcMemberType_STRUCTURALCABLE, IfcMemberType_TIEBAR, IfcMemberType_USERDEFINED, IfcMemberType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -8684,9 +8684,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcMobileTelecommunicationsApplianceTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMobileTelecommunicationsApplianceTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcMobileTelecommunicationsApplianceType_E_UTRAN_NODE_B, IfcMobileTelecommunicationsApplianceType_REMOTE_RADIO_UNIT, IfcMobileTelecommunicationsApplianceType_ACCESSPOINT, IfcMobileTelecommunicationsApplianceType_BASETRANSCEIVERSTATION, IfcMobileTelecommunicationsApplianceType_REMOTEUNIT, IfcMobileTelecommunicationsApplianceType_BASEBANDUNIT, IfcMobileTelecommunicationsApplianceType_MASTERUNIT, IfcMobileTelecommunicationsApplianceType_USERDEFINED, IfcMobileTelecommunicationsApplianceType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -8698,9 +8698,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcMooringDeviceTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMooringDeviceTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcMooringDeviceType_LINETENSIONER, IfcMooringDeviceType_MAGNETICDEVICE, IfcMooringDeviceType_MOORINGHOOKS, IfcMooringDeviceType_VACUUMDEVICE, IfcMooringDeviceType_BOLLARD, IfcMooringDeviceType_USERDEFINED, IfcMooringDeviceType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -8720,9 +8720,9 @@ public:
 /// DIRECTDRIVE: A direct, physical connection made between the motor and the driven device. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcMotorConnectionTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMotorConnectionTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcMotorConnectionType_BELTDRIVE, IfcMotorConnectionType_COUPLING, IfcMotorConnectionType_DIRECTDRIVE, IfcMotorConnectionType_USERDEFINED, IfcMotorConnectionType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -8734,9 +8734,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcNavigationElementTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcNavigationElementTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcNavigationElementType_BEACON, IfcNavigationElementType_BUOY, IfcNavigationElementType_USERDEFINED, IfcNavigationElementType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -8750,9 +8750,9 @@ public:
 /// This enumeration defines the applicable object categories, that is, the subtypes at the 2nd level of the IFC inheritance tree. Attached to an object, it indicates to which subtype of IfcObject the entity referencing it would otherwise comply with. 
 /// 
 /// HISTORY New entity in IFC Release 1.0, has been renamed from IfcProxyEnum in IFC 2x.
-class IFC_SCHEMA_API IfcObjectTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcObjectTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcObjectType_PRODUCT, IfcObjectType_PROCESS, IfcObjectType_CONTROL, IfcObjectType_RESOURCE, IfcObjectType_ACTOR, IfcObjectType_GROUP, IfcObjectType_PROJECT, IfcObjectType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -8792,9 +8792,9 @@ public:
 /// 
 /// TRIGGERCONDITION 
 ///   A constraint whose objective is to indicate a limiting value beyond which the condition of an object requires a particular form of attention.
-class IFC_SCHEMA_API IfcObjectiveEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcObjectiveEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcObjective_CODECOMPLIANCE, IfcObjective_CODEWAIVER, IfcObjective_DESIGNINTENT, IfcObjective_EXTERNAL, IfcObjective_HEALTHANDSAFETY, IfcObjective_MERGECONFLICT, IfcObjective_MODELVIEW, IfcObjective_PARAMETER, IfcObjective_REQUIREMENT, IfcObjective_SPECIFICATION, IfcObjective_TRIGGERCONDITION, IfcObjective_USERDEFINED, IfcObjective_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -8818,9 +8818,9 @@ public:
 /// TENANT: Actor renting the use of a property fro a period of time  
 /// USERDEFINED: User-defined type.  
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcOccupantTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcOccupantTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcOccupantType_ASSIGNEE, IfcOccupantType_ASSIGNOR, IfcOccupantType_LESSEE, IfcOccupantType_LESSOR, IfcOccupantType_LETTINGAGENT, IfcOccupantType_OWNER, IfcOccupantType_TENANT, IfcOccupantType_USERDEFINED, IfcOccupantType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -8851,9 +8851,9 @@ public:
 /// element
 /// NOTDEFINED: Undefined opening
 /// element
-class IFC_SCHEMA_API IfcOpeningElementTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcOpeningElementTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcOpeningElementType_OPENING, IfcOpeningElementType_RECESS, IfcOpeningElementType_USERDEFINED, IfcOpeningElementType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -8877,9 +8877,9 @@ public:
 /// TELEPHONEOUTLET: An outlet used for connecting telephone communications equipment.  
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcOutletTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcOutletTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcOutletType_AUDIOVISUALOUTLET, IfcOutletType_COMMUNICATIONSOUTLET, IfcOutletType_POWEROUTLET, IfcOutletType_DATAOUTLET, IfcOutletType_TELEPHONEOUTLET, IfcOutletType_USERDEFINED, IfcOutletType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -8890,29 +8890,15 @@ public:
     IfcOutletTypeEnum initialize(const std::string& v);
     operator Value() const;
 };
-
-class IFC_SCHEMA_API IfcPavementTypeEnum : public express::DeclaredType {
-public:
-    using express::DeclaredType::DeclaredType;
-
-    typedef enum {IfcPavementType_FLEXIBLE, IfcPavementType_RIGID, IfcPavementType_USERDEFINED, IfcPavementType_NOTDEFINED} Value;
-    static const char* ToString(Value v);
-    static Value FromString(const std::string& s);
-
-    static const ifcopenshell::enumeration_type& Class();
-    IfcPavementTypeEnum initialize(Value v);
-    IfcPavementTypeEnum initialize(const std::string& v);
-    operator Value() const;
-};
 /// This enumeration is used to identify the primary purpose of performance history.  The IfcPerformanceHistoryTypeEnum contains the following:
 /// 
 /// USERDEFINED: User-defined.
 /// NOTDEFINED: Undefined.
 /// 
 /// HISTORY: New enumeration in IFC2x4
-class IFC_SCHEMA_API IfcPerformanceHistoryTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPerformanceHistoryTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcPerformanceHistoryType_USERDEFINED, IfcPerformanceHistoryType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -8945,9 +8931,9 @@ public:
 ///   no information available
 /// 
 /// HISTORY: New Enumeration in IFC Release 2.0
-class IFC_SCHEMA_API IfcPermeableCoveringOperationEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPermeableCoveringOperationEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcPermeableCoveringOperation_GRILL, IfcPermeableCoveringOperation_LOUVER, IfcPermeableCoveringOperation_SCREEN, IfcPermeableCoveringOperation_USERDEFINED, IfcPermeableCoveringOperation_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -8967,9 +8953,9 @@ public:
 /// WORK: Enables work to be carried out in an identified area. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcPermitTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPermitTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcPermitType_ACCESS, IfcPermitType_BUILDING, IfcPermitType_WORK, IfcPermitType_USERDEFINED, IfcPermitType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -9003,9 +8989,9 @@ public:
 /// 
 /// HISTORY: New enumeration in
 ///   IFC Release 2.0
-class IFC_SCHEMA_API IfcPhysicalOrVirtualEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPhysicalOrVirtualEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcPhysicalOrVirtual_PHYSICAL, IfcPhysicalOrVirtual_VIRTUAL, IfcPhysicalOrVirtual_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -9038,9 +9024,9 @@ public:
 ///   USERDEFINED Special types of pile construction which meet
 ///   specific local requirements. 
 ///   NOTDEFINED The type of pile construction is not defined.
-class IFC_SCHEMA_API IfcPileConstructionEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPileConstructionEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcPileConstruction_CAST_IN_PLACE, IfcPileConstruction_COMPOSITE, IfcPileConstruction_PRECAST_CONCRETE, IfcPileConstruction_PREFAB_STEEL, IfcPileConstruction_USERDEFINED, IfcPileConstruction_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -9064,9 +9050,9 @@ public:
 ///   SUPPORT A support pile.
 ///   USERDEFINED The type of pile function is user defined.
 ///   NOTDEFINED The type of pile function is not defined.
-class IFC_SCHEMA_API IfcPileTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPileTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcPileType_BORED, IfcPileType_DRIVEN, IfcPileType_JETGROUTING, IfcPileType_COHESION, IfcPileType_FRICTION, IfcPileType_SUPPORT, IfcPileType_USERDEFINED, IfcPileType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -9108,9 +9094,9 @@ public:
 ///   NOTDEFINED:  Undefined fitting.
 /// 
 /// HISTORY: New enumeration in IFC 2x2
-class IFC_SCHEMA_API IfcPipeFittingTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPipeFittingTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcPipeFittingType_BEND, IfcPipeFittingType_CONNECTOR, IfcPipeFittingType_ENTRY, IfcPipeFittingType_EXIT, IfcPipeFittingType_JUNCTION, IfcPipeFittingType_OBSTRUCTION, IfcPipeFittingType_TRANSITION, IfcPipeFittingType_USERDEFINED, IfcPipeFittingType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -9136,9 +9122,9 @@ public:
 ///   NOTDEFINED:  Undefined segment.
 /// 
 /// HISTORY: New enumeration in IFC 2x2
-class IFC_SCHEMA_API IfcPipeSegmentTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPipeSegmentTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcPipeSegmentType_CULVERT, IfcPipeSegmentType_FLEXIBLESEGMENT, IfcPipeSegmentType_RIGIDSEGMENT, IfcPipeSegmentType_GUTTER, IfcPipeSegmentType_SPOOL, IfcPipeSegmentType_USERDEFINED, IfcPipeSegmentType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -9167,9 +9153,9 @@ public:
 /// CHANGE  The additional identifiers CURTAIN_PANEL, SHEET have
 /// been
 /// added.
-class IFC_SCHEMA_API IfcPlateTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPlateTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcPlateType_CURTAIN_PANEL, IfcPlateType_SHEET, IfcPlateType_FLANGE_PLATE, IfcPlateType_WEB_PLATE, IfcPlateType_STIFFENER_PLATE, IfcPlateType_GUSSET_PLATE, IfcPlateType_COVER_PLATE, IfcPlateType_SPLICE_PLATE, IfcPlateType_BASE_PLATE, IfcPlateType_USERDEFINED, IfcPlateType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -9181,9 +9167,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcPreferredSurfaceCurveRepresentation : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPreferredSurfaceCurveRepresentation : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcPreferredSurfaceCurveRepresentation_CURVE3D, IfcPreferredSurfaceCurveRepresentation_PCURVE_S1, IfcPreferredSurfaceCurveRepresentation_PCURVE_S2} Value;
     static const char* ToString(Value v);
@@ -9208,9 +9194,9 @@ public:
 /// STARTUP: A procedure undertaken to start up the operation an artifact
 /// USERDEFINED
 /// NOTDEFINED
-class IFC_SCHEMA_API IfcProcedureTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcProcedureTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcProcedureType_ADVICE_CAUTION, IfcProcedureType_ADVICE_NOTE, IfcProcedureType_ADVICE_WARNING, IfcProcedureType_CALIBRATION, IfcProcedureType_DIAGNOSTIC, IfcProcedureType_SHUTDOWN, IfcProcedureType_STARTUP, IfcProcedureType_USERDEFINED, IfcProcedureType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -9229,9 +9215,9 @@ public:
 /// 
 /// CURVE: The resulting geometric item is of type curve and closed (with the only exception of the curve created by the IfcArbitraryOpenProfileDef which resolves into an open curve). The resulting geometry after applying a sweeping operation is a swept surface. This can be used to define shapes with thin sheets, such as ducts, where the thickness is not appropriate for geometric representation.
 /// AREA: The resulting geometric item is of type surface. The resulting geometry after applying a sweeping operation is a swept solid with defined volume.
-class IFC_SCHEMA_API IfcProfileTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcProfileTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcProfileType_CURVE, IfcProfileType_AREA} Value;
     static const char* ToString(Value v);
@@ -9253,9 +9239,9 @@ public:
 /// WORKORDER: A general instruction to carry out work and a description of the work to be done. Note the difference between a work order generally and a maintenance work order. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcProjectOrderTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcProjectOrderTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcProjectOrderType_CHANGEORDER, IfcProjectOrderType_MAINTENANCEWORKORDER, IfcProjectOrderType_MOVEORDER, IfcProjectOrderType_PURCHASEORDER, IfcProjectOrderType_WORKORDER, IfcProjectOrderType_USERDEFINED, IfcProjectOrderType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -9272,9 +9258,9 @@ public:
 /// HISTORY  New type in IFC2x2. 
 /// 
 /// Figure 234 — Projected or true length
-class IFC_SCHEMA_API IfcProjectedOrTrueLengthEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcProjectedOrTrueLengthEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcProjectedOrTrueLength_PROJECTED_LENGTH, IfcProjectedOrTrueLength_TRUE_LENGTH} Value;
     static const char* ToString(Value v);
@@ -9297,9 +9283,9 @@ public:
 /// element
 /// NOTDEFINED: Undefined projection
 /// element
-class IFC_SCHEMA_API IfcProjectionElementTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcProjectionElementTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcProjectionElementType_BLISTER, IfcProjectionElementType_DEVIATOR, IfcProjectionElementType_USERDEFINED, IfcProjectionElementType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -9348,9 +9334,9 @@ public:
 /// restriction provided, the property sets defined by this
 /// IfcPropertySetTemplate can be assigned to any entity, if not
 /// otherwise restricted by the ApplicableEntity attribute.
-class IFC_SCHEMA_API IfcPropertySetTemplateTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPropertySetTemplateTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcPropertySetTemplateType_PSET_TYPEDRIVENONLY, IfcPropertySetTemplateType_PSET_TYPEDRIVENOVERRIDE, IfcPropertySetTemplateType_PSET_OCCURRENCEDRIVEN, IfcPropertySetTemplateType_PSET_PERFORMANCEDRIVEN, IfcPropertySetTemplateType_QTO_TYPEDRIVENONLY, IfcPropertySetTemplateType_QTO_TYPEDRIVENOVERRIDE, IfcPropertySetTemplateType_QTO_OCCURRENCEDRIVEN, IfcPropertySetTemplateType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -9368,9 +9354,9 @@ public:
 /// ELECTROMAGNETIC: A tripping unit activated by electromagnetic action. 
 /// RESIDUALCURRENT: A tripping unit activated by residual current detection. 
 /// THERMAL: A tripping unit activated by thermal action.
-class IFC_SCHEMA_API IfcProtectiveDeviceTrippingUnitTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcProtectiveDeviceTrippingUnitTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcProtectiveDeviceTrippingUnitType_ELECTRONIC, IfcProtectiveDeviceTrippingUnitType_ELECTROMAGNETIC, IfcProtectiveDeviceTrippingUnitType_RESIDUALCURRENT, IfcProtectiveDeviceTrippingUnitType_THERMAL, IfcProtectiveDeviceTrippingUnitType_USERDEFINED, IfcProtectiveDeviceTrippingUnitType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -9396,9 +9382,9 @@ public:
 /// VARISTOR: A high voltage surge protection device.
 /// USERDEFINED: User-defined type.
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcProtectiveDeviceTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcProtectiveDeviceTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcProtectiveDeviceType_CIRCUITBREAKER, IfcProtectiveDeviceType_EARTHLEAKAGECIRCUITBREAKER, IfcProtectiveDeviceType_EARTHINGSWITCH, IfcProtectiveDeviceType_FUSEDISCONNECTOR, IfcProtectiveDeviceType_RESIDUALCURRENTCIRCUITBREAKER, IfcProtectiveDeviceType_RESIDUALCURRENTSWITCH, IfcProtectiveDeviceType_VARISTOR, IfcProtectiveDeviceType_ANTI_ARCING_DEVICE, IfcProtectiveDeviceType_SPARKGAP, IfcProtectiveDeviceType_VOLTAGELIMITER, IfcProtectiveDeviceType_USERDEFINED, IfcProtectiveDeviceType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -9437,9 +9423,9 @@ public:
 /// NOTDEFINED:  Pump type has not been defined.
 /// 
 /// HISTORY: New enumeration in IFC R2x.  SUBMERSIBLEPUMP and SUMPPUMP added in IFC2x4.
-class IFC_SCHEMA_API IfcPumpTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPumpTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcPumpType_CIRCULATOR, IfcPumpType_ENDSUCTION, IfcPumpType_SPLITCASE, IfcPumpType_SUBMERSIBLEPUMP, IfcPumpType_SUMPPUMP, IfcPumpType_VERTICALINLINE, IfcPumpType_VERTICALTURBINE, IfcPumpType_USERDEFINED, IfcPumpType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -9451,9 +9437,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcRailTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcRailTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcRailType_RACKRAIL, IfcRailType_BLADE, IfcRailType_GUARDRAIL, IfcRailType_STOCKRAIL, IfcRailType_CHECKRAIL, IfcRailType_RAIL, IfcRailType_USERDEFINED, IfcRailType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -9484,9 +9470,9 @@ public:
 ///   the user type is given by the attribute IfcRailing.ObjectType. 
 ///   NOTDEFINED: Undefined railing element, no type information
 ///   available.
-class IFC_SCHEMA_API IfcRailingTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcRailingTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcRailingType_HANDRAIL, IfcRailingType_GUARDRAIL, IfcRailingType_BALUSTRADE, IfcRailingType_FENCE, IfcRailingType_USERDEFINED, IfcRailingType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -9498,9 +9484,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcRailwayPartTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcRailwayPartTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcRailwayPartType_TRACKSTRUCTURE, IfcRailwayPartType_TRACKSTRUCTUREPART, IfcRailwayPartType_LINESIDESTRUCTUREPART, IfcRailwayPartType_DILATATIONSUPERSTRUCTURE, IfcRailwayPartType_PLAINTRACKSUPESTRUCTURE, IfcRailwayPartType_LINESIDESTRUCTURE, IfcRailwayPartType_SUPERSTRUCTURE, IfcRailwayPartType_TURNOUTSUPERSTRUCTURE, IfcRailwayPartType_USERDEFINED, IfcRailwayPartType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -9512,9 +9498,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcRailwayTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcRailwayTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcRailwayType_USERDEFINED, IfcRailwayType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -9536,9 +9522,9 @@ public:
 /// 
 /// HISTORY: New Enumeration in
 ///   Release IFC2x Edition 2.
-class IFC_SCHEMA_API IfcRampFlightTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcRampFlightTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcRampFlightType_STRAIGHT, IfcRampFlightType_SPIRAL, IfcRampFlightType_USERDEFINED, IfcRampFlightType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -9597,9 +9583,9 @@ public:
 ///     
 /// 
 /// Figure 67 — Ramp types
-class IFC_SCHEMA_API IfcRampTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcRampTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcRampType_STRAIGHT_RUN_RAMP, IfcRampType_TWO_STRAIGHT_RUN_RAMP, IfcRampType_QUARTER_TURN_RAMP, IfcRampType_TWO_QUARTER_TURN_RAMP, IfcRampType_HALF_TURN_RAMP, IfcRampType_SPIRAL_RAMP, IfcRampType_USERDEFINED, IfcRampType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -9631,9 +9617,9 @@ public:
 /// 
 /// HISTORY: New enumeration in IFC
 ///   Release 2x4.
-class IFC_SCHEMA_API IfcRecurrenceTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcRecurrenceTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcRecurrenceType_DAILY, IfcRecurrenceType_WEEKLY, IfcRecurrenceType_MONTHLY_BY_DAY_OF_MONTH, IfcRecurrenceType_MONTHLY_BY_POSITION, IfcRecurrenceType_BY_DAY_COUNT, IfcRecurrenceType_BY_WEEKDAY_COUNT, IfcRecurrenceType_YEARLY_BY_DAY_OF_MONTH, IfcRecurrenceType_YEARLY_BY_POSITION} Value;
     static const char* ToString(Value v);
@@ -9645,9 +9631,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcReferentTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcReferentTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcReferentType_KILOPOINT, IfcReferentType_MILEPOINT, IfcReferentType_STATION, IfcReferentType_REFERENCEMARKER, IfcReferentType_USERDEFINED, IfcReferentType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -9674,9 +9660,9 @@ public:
 /// PLASTIC: A reflectance model providing a specular effect which is similar to the Phong model. 
 /// STRAUSS: A reflectance model for metallic and non-metallic appearance based on a limited set of control parameter.
 /// NOTDEFINED
-class IFC_SCHEMA_API IfcReflectanceMethodEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcReflectanceMethodEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcReflectanceMethod_BLINN, IfcReflectanceMethod_FLAT, IfcReflectanceMethod_GLASS, IfcReflectanceMethod_MATT, IfcReflectanceMethod_METAL, IfcReflectanceMethod_MIRROR, IfcReflectanceMethod_PHONG, IfcReflectanceMethod_PLASTIC, IfcReflectanceMethod_STRAUSS, IfcReflectanceMethod_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -9688,9 +9674,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcReinforcedSoilTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcReinforcedSoilTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcReinforcedSoilType_SURCHARGEPRELOADED, IfcReinforcedSoilType_VERTICALLYDRAINED, IfcReinforcedSoilType_DYNAMICALLYCOMPACTED, IfcReinforcedSoilType_REPLACED, IfcReinforcedSoilType_ROLLERCOMPACTED, IfcReinforcedSoilType_GROUTED, IfcReinforcedSoilType_USERDEFINED, IfcReinforcedSoilType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -9720,9 +9706,9 @@ public:
 ///   ANCHORING Anchoring reinforcement. 
 ///   USERDEFINED The type of reinforcement is user defined. 
 ///   NOTDEFINED The type of reinforcement is not defined.
-class IFC_SCHEMA_API IfcReinforcingBarRoleEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcReinforcingBarRoleEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcReinforcingBarRole_MAIN, IfcReinforcingBarRole_SHEAR, IfcReinforcingBarRole_LIGATURE, IfcReinforcingBarRole_STUD, IfcReinforcingBarRole_PUNCHING, IfcReinforcingBarRole_EDGE, IfcReinforcingBarRole_RING, IfcReinforcingBarRole_ANCHORING, IfcReinforcingBarRole_USERDEFINED, IfcReinforcingBarRole_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -9742,9 +9728,9 @@ public:
 /// 
 /// PLAIN The reinforcing bar surface is plain. 
 ///   TEXTURED The reinforcing bar surface is textured (ribbed).
-class IFC_SCHEMA_API IfcReinforcingBarSurfaceEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcReinforcingBarSurfaceEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcReinforcingBarSurface_PLAIN, IfcReinforcingBarSurface_TEXTURED} Value;
     static const char* ToString(Value v);
@@ -9756,9 +9742,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcReinforcingBarTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcReinforcingBarTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcReinforcingBarType_ANCHORING, IfcReinforcingBarType_EDGE, IfcReinforcingBarType_LIGATURE, IfcReinforcingBarType_MAIN, IfcReinforcingBarType_PUNCHING, IfcReinforcingBarType_RING, IfcReinforcingBarType_SHEAR, IfcReinforcingBarType_STUD, IfcReinforcingBarType_SPACEBAR, IfcReinforcingBarType_USERDEFINED, IfcReinforcingBarType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -9770,9 +9756,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcReinforcingMeshTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcReinforcingMeshTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcReinforcingMeshType_USERDEFINED, IfcReinforcingMeshType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -9784,9 +9770,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcRoadPartTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcRoadPartTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcRoadPartType_ROADSIDEPART, IfcRoadPartType_BUS_STOP, IfcRoadPartType_HARDSHOULDER, IfcRoadPartType_INTERSECTION, IfcRoadPartType_PASSINGBAY, IfcRoadPartType_ROADWAYPLATEAU, IfcRoadPartType_ROADSIDE, IfcRoadPartType_REFUGEISLAND, IfcRoadPartType_TOLLPLAZA, IfcRoadPartType_CENTRALRESERVE, IfcRoadPartType_SIDEWALK, IfcRoadPartType_PARKINGBAY, IfcRoadPartType_RAILWAYCROSSING, IfcRoadPartType_PEDESTRIAN_CROSSING, IfcRoadPartType_SOFTSHOULDER, IfcRoadPartType_BICYCLECROSSING, IfcRoadPartType_CENTRALISLAND, IfcRoadPartType_SHOULDER, IfcRoadPartType_TRAFFICLANE, IfcRoadPartType_ROADSEGMENT, IfcRoadPartType_ROUNDABOUT, IfcRoadPartType_LAYBY, IfcRoadPartType_CARRIAGEWAY, IfcRoadPartType_TRAFFICISLAND, IfcRoadPartType_USERDEFINED, IfcRoadPartType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -9798,9 +9784,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcRoadTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcRoadTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcRoadType_USERDEFINED, IfcRoadType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -9840,9 +9826,9 @@ public:
 ///   FIELDCONSTRUCTIONMANAGER 
 ///   RESELLER
 ///   USERDEFINED User defined value to be provided.
-class IFC_SCHEMA_API IfcRoleEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcRoleEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcRole_SUPPLIER, IfcRole_MANUFACTURER, IfcRole_CONTRACTOR, IfcRole_SUBCONTRACTOR, IfcRole_ARCHITECT, IfcRole_STRUCTURALENGINEER, IfcRole_COSTENGINEER, IfcRole_CLIENT, IfcRole_BUILDINGOWNER, IfcRole_BUILDINGOPERATOR, IfcRole_MECHANICALENGINEER, IfcRole_ELECTRICALENGINEER, IfcRole_PROJECTMANAGER, IfcRole_FACILITIESMANAGER, IfcRole_CIVILENGINEER, IfcRole_COMMISSIONINGENGINEER, IfcRole_ENGINEER, IfcRole_OWNER, IfcRole_CONSULTANT, IfcRole_CONSTRUCTIONMANAGER, IfcRole_FIELDCONSTRUCTIONMANAGER, IfcRole_RESELLER, IfcRole_USERDEFINED} Value;
     static const char* ToString(Value v);
@@ -9919,9 +9905,9 @@ public:
 ///     
 /// 
 /// Figure 68 — Roof types
-class IFC_SCHEMA_API IfcRoofTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcRoofTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcRoofType_FLAT_ROOF, IfcRoofType_SHED_ROOF, IfcRoofType_GABLE_ROOF, IfcRoofType_HIP_ROOF, IfcRoofType_HIPPED_GABLE_ROOF, IfcRoofType_GAMBREL_ROOF, IfcRoofType_MANSARD_ROOF, IfcRoofType_BARREL_ROOF, IfcRoofType_RAINBOW_ROOF, IfcRoofType_BUTTERFLY_ROOF, IfcRoofType_PAVILION_ROOF, IfcRoofType_DOME_ROOF, IfcRoofType_FREEFORM, IfcRoofType_USERDEFINED, IfcRoofType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -9959,9 +9945,9 @@ public:
 ///   ATTO: 10^-18. 
 /// 
 /// HISTORY New entity in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcSIPrefix : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSIPrefix : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcSIPrefix_EXA, IfcSIPrefix_PETA, IfcSIPrefix_TERA, IfcSIPrefix_GIGA, IfcSIPrefix_MEGA, IfcSIPrefix_KILO, IfcSIPrefix_HECTO, IfcSIPrefix_DECA, IfcSIPrefix_DECI, IfcSIPrefix_CENTI, IfcSIPrefix_MILLI, IfcSIPrefix_MICRO, IfcSIPrefix_NANO, IfcSIPrefix_PICO, IfcSIPrefix_FEMTO, IfcSIPrefix_ATTO} Value;
     static const char* ToString(Value v);
@@ -10011,9 +9997,9 @@ public:
 ///   WEBER: Unit for magnetic flux. 
 /// 
 /// HISTORY New entity in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcSIUnitName : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSIUnitName : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcSIUnitName_AMPERE, IfcSIUnitName_BECQUEREL, IfcSIUnitName_CANDELA, IfcSIUnitName_COULOMB, IfcSIUnitName_CUBIC_METRE, IfcSIUnitName_DEGREE_CELSIUS, IfcSIUnitName_FARAD, IfcSIUnitName_GRAM, IfcSIUnitName_GRAY, IfcSIUnitName_HENRY, IfcSIUnitName_HERTZ, IfcSIUnitName_JOULE, IfcSIUnitName_KELVIN, IfcSIUnitName_LUMEN, IfcSIUnitName_LUX, IfcSIUnitName_METRE, IfcSIUnitName_MOLE, IfcSIUnitName_NEWTON, IfcSIUnitName_OHM, IfcSIUnitName_PASCAL, IfcSIUnitName_RADIAN, IfcSIUnitName_SECOND, IfcSIUnitName_SIEMENS, IfcSIUnitName_SIEVERT, IfcSIUnitName_SQUARE_METRE, IfcSIUnitName_STERADIAN, IfcSIUnitName_TESLA, IfcSIUnitName_VOLT, IfcSIUnitName_WATT, IfcSIUnitName_WEBER} Value;
     static const char* ToString(Value v);
@@ -10043,9 +10029,9 @@ public:
 /// WCSEAT: [Deprecated] Hinged seat that fits on the top of a water closet (WC) pan. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcSanitaryTerminalTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSanitaryTerminalTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcSanitaryTerminalType_BATH, IfcSanitaryTerminalType_BIDET, IfcSanitaryTerminalType_CISTERN, IfcSanitaryTerminalType_SHOWER, IfcSanitaryTerminalType_SINK, IfcSanitaryTerminalType_SANITARYFOUNTAIN, IfcSanitaryTerminalType_TOILETPAN, IfcSanitaryTerminalType_URINAL, IfcSanitaryTerminalType_WASHHANDBASIN, IfcSanitaryTerminalType_WCSEAT, IfcSanitaryTerminalType_USERDEFINED, IfcSanitaryTerminalType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -10066,9 +10052,9 @@ public:
 /// UNIFORM The section is uniform in longitudinal direction.
 /// 
 /// TAPERED The section is tapered in longitudinal direction.
-class IFC_SCHEMA_API IfcSectionTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSectionTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcSectionType_UNIFORM, IfcSectionType_TAPERED} Value;
     static const char* ToString(Value v);
@@ -10107,9 +10093,9 @@ public:
 /// WINDSENSOR: A device that senses or detects airflow speed and direction. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcSensorTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSensorTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcSensorType_COSENSOR, IfcSensorType_CO2SENSOR, IfcSensorType_CONDUCTANCESENSOR, IfcSensorType_CONTACTSENSOR, IfcSensorType_FIRESENSOR, IfcSensorType_FLOWSENSOR, IfcSensorType_FROSTSENSOR, IfcSensorType_GASSENSOR, IfcSensorType_HEATSENSOR, IfcSensorType_HUMIDITYSENSOR, IfcSensorType_IDENTIFIERSENSOR, IfcSensorType_IONCONCENTRATIONSENSOR, IfcSensorType_LEVELSENSOR, IfcSensorType_LIGHTSENSOR, IfcSensorType_MOISTURESENSOR, IfcSensorType_MOVEMENTSENSOR, IfcSensorType_PHSENSOR, IfcSensorType_PRESSURESENSOR, IfcSensorType_RADIATIONSENSOR, IfcSensorType_RADIOACTIVITYSENSOR, IfcSensorType_SMOKESENSOR, IfcSensorType_SOUNDSENSOR, IfcSensorType_TEMPERATURESENSOR, IfcSensorType_WINDSENSOR, IfcSensorType_EARTHQUAKESENSOR, IfcSensorType_FOREIGNOBJECTDETECTIONSENSOR, IfcSensorType_OBSTACLESENSOR, IfcSensorType_RAINSENSOR, IfcSensorType_SNOWDEPTHSENSOR, IfcSensorType_TRAINSENSOR, IfcSensorType_TURNOUTCLOSURESENSOR, IfcSensorType_WHEELSENSOR, IfcSensorType_USERDEFINED, IfcSensorType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -10125,9 +10111,9 @@ public:
 ///   time lag is applied to a sequence between two processes.
 /// 
 /// HISTORY  New entity in IFC 1.0
-class IFC_SCHEMA_API IfcSequenceEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSequenceEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcSequence_START_START, IfcSequence_START_FINISH, IfcSequence_FINISH_START, IfcSequence_FINISH_FINISH, IfcSequence_USERDEFINED, IfcSequence_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -10148,9 +10134,9 @@ public:
 /// 
 /// HISTORY New Enumeration
 /// in ReleaseIFC2x4
-class IFC_SCHEMA_API IfcShadingDeviceTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcShadingDeviceTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcShadingDeviceType_JALOUSIE, IfcShadingDeviceType_SHUTTER, IfcShadingDeviceType_AWNING, IfcShadingDeviceType_USERDEFINED, IfcShadingDeviceType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -10162,9 +10148,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcSignTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSignTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcSignType_MARKER, IfcSignType_PICTORAL, IfcSignType_MIRROR, IfcSignType_USERDEFINED, IfcSignType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -10176,9 +10162,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcSignalTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSignalTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcSignalType_VISUAL, IfcSignalType_AUDIO, IfcSignalType_MIXED, IfcSignalType_USERDEFINED, IfcSignalType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -10207,9 +10193,9 @@ public:
 /// Q_COUNT: the properties defined by this IfcPropertyTemplate are of type IfcQuantityCount.
 /// Q_WEIGHT: the properties defined by this IfcPropertyTemplate are of type IfcQuantityWeight.
 /// Q_TIME: the properties defined by this IfcPropertyTemplate are of type IfcQuantityTime.
-class IFC_SCHEMA_API IfcSimplePropertyTemplateTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSimplePropertyTemplateTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcSimplePropertyTemplateType_P_SINGLEVALUE, IfcSimplePropertyTemplateType_P_ENUMERATEDVALUE, IfcSimplePropertyTemplateType_P_BOUNDEDVALUE, IfcSimplePropertyTemplateType_P_LISTVALUE, IfcSimplePropertyTemplateType_P_TABLEVALUE, IfcSimplePropertyTemplateType_P_REFERENCEVALUE, IfcSimplePropertyTemplateType_Q_LENGTH, IfcSimplePropertyTemplateType_Q_AREA, IfcSimplePropertyTemplateType_Q_VOLUME, IfcSimplePropertyTemplateType_Q_COUNT, IfcSimplePropertyTemplateType_Q_WEIGHT, IfcSimplePropertyTemplateType_Q_TIME} Value;
     static const char* ToString(Value v);
@@ -10252,9 +10238,9 @@ public:
 /// 
 /// IFC2x3 CHANGE
 ///   new enumerator added.
-class IFC_SCHEMA_API IfcSlabTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSlabTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcSlabType_FLOOR, IfcSlabType_ROOF, IfcSlabType_LANDING, IfcSlabType_BASESLAB, IfcSlabType_APPROACH_SLAB, IfcSlabType_PAVING, IfcSlabType_WEARING, IfcSlabType_SIDEWALK, IfcSlabType_TRACKSLAB, IfcSlabType_USERDEFINED, IfcSlabType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -10274,9 +10260,9 @@ public:
 /// SOLARPANEL: A device that converts solar radiation into electric current. 
 /// USERDEFINED: User-defined type.  
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcSolarDeviceTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSolarDeviceTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcSolarDeviceType_SOLARCOLLECTOR, IfcSolarDeviceType_SOLARPANEL, IfcSolarDeviceType_USERDEFINED, IfcSolarDeviceType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -10299,9 +10285,9 @@ public:
 /// NOTE: This enumeration was revised in IFC 2x4 and was renamed from IfcHydronicHeaterTypeEnum in IFC R2x.
 /// 
 /// HISTORY: New enumeration in IFC R2x.
-class IFC_SCHEMA_API IfcSpaceHeaterTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSpaceHeaterTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcSpaceHeaterType_CONVECTOR, IfcSpaceHeaterType_RADIATOR, IfcSpaceHeaterType_USERDEFINED, IfcSpaceHeaterType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -10347,11 +10333,11 @@ public:
 /// NOTE the use is deprecated and
 /// only provided for backward compatibility
 /// purposes.
-class IFC_SCHEMA_API IfcSpaceTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSpaceTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
-    typedef enum {IfcSpaceType_SPACE, IfcSpaceType_PARKING, IfcSpaceType_GFA, IfcSpaceType_INTERNAL, IfcSpaceType_EXTERNAL, IfcSpaceType_BERTH, IfcSpaceType_USERDEFINED, IfcSpaceType_NOTDEFINED} Value;
+    typedef enum {IfcSpaceType_SPACE, IfcSpaceType_PARKING, IfcSpaceType_GFA, IfcSpaceType_INTERNAL, IfcSpaceType_EXTERNAL, IfcSpaceType_USERDEFINED, IfcSpaceType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
@@ -10385,9 +10371,9 @@ public:
 /// zone
 /// NOTDEFINED: undefined type spatial
 /// zone
-class IFC_SCHEMA_API IfcSpatialZoneTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSpatialZoneTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcSpatialZoneType_CONSTRUCTION, IfcSpatialZoneType_FIRESAFETY, IfcSpatialZoneType_LIGHTING, IfcSpatialZoneType_OCCUPANCY, IfcSpatialZoneType_SECURITY, IfcSpatialZoneType_THERMAL, IfcSpatialZoneType_TRANSPORT, IfcSpatialZoneType_VENTILATION, IfcSpatialZoneType_RESERVATION, IfcSpatialZoneType_USERDEFINED, IfcSpatialZoneType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -10407,9 +10393,9 @@ public:
 /// RAINWATERHOPPER: A box placed at the top of a rainwater downpipe to catch rainwater from guttering. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcStackTerminalTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcStackTerminalTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcStackTerminalType_BIRDCAGE, IfcStackTerminalType_COWL, IfcStackTerminalType_RAINWATERHOPPER, IfcStackTerminalType_USERDEFINED, IfcStackTerminalType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -10435,9 +10421,9 @@ public:
 /// 
 /// HISTORY: New Enumeration in
 ///   Release IFC2x Edition 2.
-class IFC_SCHEMA_API IfcStairFlightTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcStairFlightTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcStairFlightType_STRAIGHT, IfcStairFlightType_WINDER, IfcStairFlightType_SPIRAL, IfcStairFlightType_CURVED, IfcStairFlightType_FREEFORM, IfcStairFlightType_USERDEFINED, IfcStairFlightType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -10541,9 +10527,9 @@ public:
 ///     
 /// 
 /// Figure 69 — Stair types
-class IFC_SCHEMA_API IfcStairTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcStairTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcStairType_STRAIGHT_RUN_STAIR, IfcStairType_TWO_STRAIGHT_RUN_STAIR, IfcStairType_QUARTER_WINDING_STAIR, IfcStairType_QUARTER_TURN_STAIR, IfcStairType_HALF_WINDING_STAIR, IfcStairType_HALF_TURN_STAIR, IfcStairType_TWO_QUARTER_WINDING_STAIR, IfcStairType_TWO_QUARTER_TURN_STAIR, IfcStairType_THREE_QUARTER_WINDING_STAIR, IfcStairType_THREE_QUARTER_TURN_STAIR, IfcStairType_SPIRAL_STAIR, IfcStairType_DOUBLE_RETURN_STAIR, IfcStairType_CURVED_RUN_STAIR, IfcStairType_TWO_CURVED_RUN_STAIR, IfcStairType_LADDER, IfcStairType_USERDEFINED, IfcStairType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -10567,9 +10553,9 @@ public:
 /// HISTORY  New enumeration in IFC R2.0.
 /// 
 /// IFC2x3 CHANGE  This concept was initially introduced in IFC 2.0 as IfcModifiedFlag of type BINARY(3) FIXED and has been modified in R2x to an enumeration. It was initially introduced as a first step towards providing facilities for partial model exchange from a server as requested by the IFC implementers. It is intended for use primarily by a model server so that an application can identify the state of the object.
-class IFC_SCHEMA_API IfcStateEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcStateEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcState_READWRITE, IfcState_READONLY, IfcState_LOCKED, IfcState_READWRITELOCKED, IfcState_READONLYLOCKED} Value;
     static const char* ToString(Value v);
@@ -10595,9 +10581,9 @@ public:
 ///   DISCRETE The load is specified as a series of discrete load points.
 ///   USERDEFINED The load distribution is user-defined.
 ///   NOTDEFINED The load distribution is undefined.
-class IFC_SCHEMA_API IfcStructuralCurveActivityTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcStructuralCurveActivityTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcStructuralCurveActivityType_CONST, IfcStructuralCurveActivityType_LINEAR, IfcStructuralCurveActivityType_POLYGONAL, IfcStructuralCurveActivityType_EQUIDISTANT, IfcStructuralCurveActivityType_SINUS, IfcStructuralCurveActivityType_PARABOLA, IfcStructuralCurveActivityType_DISCRETE, IfcStructuralCurveActivityType_USERDEFINED, IfcStructuralCurveActivityType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -10626,9 +10612,9 @@ public:
 /// 
 /// HISTORY New type in IFC 2x2.
 /// IFC 2x4 change:  Renamed from IfcStructuralCurveTypeEnum.
-class IFC_SCHEMA_API IfcStructuralCurveMemberTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcStructuralCurveMemberTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcStructuralCurveMemberType_RIGID_JOINED_MEMBER, IfcStructuralCurveMemberType_PIN_JOINED_MEMBER, IfcStructuralCurveMemberType_CABLE, IfcStructuralCurveMemberType_TENSION_MEMBER, IfcStructuralCurveMemberType_COMPRESSION_MEMBER, IfcStructuralCurveMemberType_USERDEFINED, IfcStructuralCurveMemberType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -10651,9 +10637,9 @@ public:
 ///   ISOCONTOUR The load is specified by a series of iso-curves (level sets), i.e. curves at which the load value is constant.  These curves run perpendicularly to the load gradient.
 ///   USERDEFINED The load distribution is user-defined.
 ///   NOTDEFINED The load distribution is undefined.
-class IFC_SCHEMA_API IfcStructuralSurfaceActivityTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcStructuralSurfaceActivityTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcStructuralSurfaceActivityType_CONST, IfcStructuralSurfaceActivityType_BILINEAR, IfcStructuralSurfaceActivityType_DISCRETE, IfcStructuralSurfaceActivityType_ISOCONTOUR, IfcStructuralSurfaceActivityType_USERDEFINED, IfcStructuralSurfaceActivityType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -10678,9 +10664,9 @@ public:
 /// 
 /// HISTORY New type in IFC 2x2.
 /// IFC 2x4 change:  Renamed from IfcStructuralSurfaceTypeEnum.
-class IFC_SCHEMA_API IfcStructuralSurfaceMemberTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcStructuralSurfaceMemberTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcStructuralSurfaceMemberType_BENDING_ELEMENT, IfcStructuralSurfaceMemberType_MEMBRANE_ELEMENT, IfcStructuralSurfaceMemberType_SHELL, IfcStructuralSurfaceMemberType_USERDEFINED, IfcStructuralSurfaceMemberType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -10699,9 +10685,9 @@ public:
 /// NOTDEFINED: Undefined resource.
 /// 
 /// HISTORY: New enumeration in IFC2x4
-class IFC_SCHEMA_API IfcSubContractResourceTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSubContractResourceTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcSubContractResourceType_PURCHASE, IfcSubContractResourceType_WORK, IfcSubContractResourceType_USERDEFINED, IfcSubContractResourceType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -10723,9 +10709,9 @@ public:
 ///   TREATMENT A subtractive surface feature, e.g. grinding, or an additive surface feature, e.g. coating, or an impregnating treatment, or a series of any of these kinds of treatments.
 ///   USERDEFINED A user-defined type of surface feature.
 ///   NOTDEFINED An undefined type of surface feature.
-class IFC_SCHEMA_API IfcSurfaceFeatureTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSurfaceFeatureTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcSurfaceFeatureType_MARK, IfcSurfaceFeatureType_TAG, IfcSurfaceFeatureType_TREATMENT, IfcSurfaceFeatureType_DEFECT, IfcSurfaceFeatureType_HATCHMARKING, IfcSurfaceFeatureType_LINEMARKING, IfcSurfaceFeatureType_PAVEMENTSURFACEMARKING, IfcSurfaceFeatureType_SYMBOLMARKING, IfcSurfaceFeatureType_NONSKIDSURFACING, IfcSurfaceFeatureType_RUMBLESTRIP, IfcSurfaceFeatureType_TRANSVERSERUMBLESTRIP, IfcSurfaceFeatureType_USERDEFINED, IfcSurfaceFeatureType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -10747,9 +10733,9 @@ public:
 /// NOTE Corresponding ISO 10303 type: surface_side. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY: New Enumeration in IFC 2.0
-class IFC_SCHEMA_API IfcSurfaceSide : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSurfaceSide : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcSurfaceSide_POSITIVE, IfcSurfaceSide_NEGATIVE, IfcSurfaceSide_BOTH} Value;
     static const char* ToString(Value v);
@@ -10776,9 +10762,9 @@ public:
 /// TOGGLESWITCH: A toggle switch has two positions, and may enable or isolate electrical power or other setting (according to the switched port type). 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcSwitchingDeviceTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSwitchingDeviceTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcSwitchingDeviceType_CONTACTOR, IfcSwitchingDeviceType_DIMMERSWITCH, IfcSwitchingDeviceType_EMERGENCYSTOP, IfcSwitchingDeviceType_KEYPAD, IfcSwitchingDeviceType_MOMENTARYSWITCH, IfcSwitchingDeviceType_SELECTORSWITCH, IfcSwitchingDeviceType_STARTER, IfcSwitchingDeviceType_SWITCHDISCONNECTOR, IfcSwitchingDeviceType_TOGGLESWITCH, IfcSwitchingDeviceType_RELAY, IfcSwitchingDeviceType_START_AND_STOP_EQUIPMENT, IfcSwitchingDeviceType_USERDEFINED, IfcSwitchingDeviceType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -10797,9 +10783,9 @@ public:
 /// WORKSURFACE: Workstation countertop.  
 /// USERDEFINED: User-defined type.  
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcSystemFurnitureElementTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSystemFurnitureElementTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcSystemFurnitureElementType_PANEL, IfcSystemFurnitureElementType_WORKSURFACE, IfcSystemFurnitureElementType_SUBRACK, IfcSystemFurnitureElementType_USERDEFINED, IfcSystemFurnitureElementType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -10833,9 +10819,9 @@ public:
 /// NOTDEFINED:  Undefined tank type.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.  BASIN and VESSEL added in IFC2x4.
-class IFC_SCHEMA_API IfcTankTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTankTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcTankType_BASIN, IfcTankType_BREAKPRESSURE, IfcTankType_EXPANSION, IfcTankType_FEEDANDEXPANSION, IfcTankType_PRESSUREVESSEL, IfcTankType_STORAGE, IfcTankType_VESSEL, IfcTankType_OILRETENTIONTRAY, IfcTankType_USERDEFINED, IfcTankType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -10853,9 +10839,9 @@ public:
 ///   NOTDEFINED: The time duration is undefined.
 /// 
 /// HISTORY: New enumeration in IFC2x4.
-class IFC_SCHEMA_API IfcTaskDurationEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTaskDurationEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcTaskDuration_ELAPSEDTIME, IfcTaskDuration_WORKTIME, IfcTaskDuration_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -10884,9 +10870,9 @@ public:
 /// OPERATION: A procedure undertaken to start up the operation an artifact
 /// REMOVAL: Removal of an item from use and taking it from its place of use
 /// RENOVATION: Bringing something to an 'as-new' state
-class IFC_SCHEMA_API IfcTaskTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTaskTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcTaskType_ATTENDANCE, IfcTaskType_CONSTRUCTION, IfcTaskType_DEMOLITION, IfcTaskType_DISMANTLE, IfcTaskType_DISPOSAL, IfcTaskType_INSTALLATION, IfcTaskType_LOGISTIC, IfcTaskType_MAINTENANCE, IfcTaskType_MOVE, IfcTaskType_OPERATION, IfcTaskType_REMOVAL, IfcTaskType_RENOVATION, IfcTaskType_USERDEFINED, IfcTaskType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -10898,9 +10884,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcTendonAnchorTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTendonAnchorTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcTendonAnchorType_COUPLER, IfcTendonAnchorType_FIXED_END, IfcTendonAnchorType_TENSIONING_END, IfcTendonAnchorType_USERDEFINED, IfcTendonAnchorType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -10912,9 +10898,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcTendonConduitTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTendonConduitTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcTendonConduitType_DUCT, IfcTendonConduitType_COUPLER, IfcTendonConduitType_GROUTING_DUCT, IfcTendonConduitType_TRUMPET, IfcTendonConduitType_DIABOLO, IfcTendonConduitType_USERDEFINED, IfcTendonConduitType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -10926,9 +10912,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcTendonTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTendonTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcTendonType_BAR, IfcTendonType_COATED, IfcTendonType_STRAND, IfcTendonType_WIRE, IfcTendonType_USERDEFINED, IfcTendonType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -10946,9 +10932,9 @@ public:
 /// NOTE Corresponding ISO 10303 name:text_path . Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC2x2.
-class IFC_SCHEMA_API IfcTextPath : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTextPath : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcTextPath_LEFT, IfcTextPath_RIGHT, IfcTextPath_UP, IfcTextPath_DOWN} Value;
     static const char* ToString(Value v);
@@ -10970,9 +10956,9 @@ public:
 ///   NOTDEFINED: The time series data is not defined. 
 /// 
 /// HISTORY: New enumeration in IFC2x2.
-class IFC_SCHEMA_API IfcTimeSeriesDataTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTimeSeriesDataTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcTimeSeriesDataType_CONTINUOUS, IfcTimeSeriesDataType_DISCRETE, IfcTimeSeriesDataType_DISCRETEBINARY, IfcTimeSeriesDataType_PIECEWISEBINARY, IfcTimeSeriesDataType_PIECEWISECONSTANT, IfcTimeSeriesDataType_PIECEWISECONTINUOUS, IfcTimeSeriesDataType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -10984,9 +10970,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcTrackElementTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTrackElementTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcTrackElementType_TRACKENDOFALIGNMENT, IfcTrackElementType_BLOCKINGDEVICE, IfcTrackElementType_VEHICLESTOP, IfcTrackElementType_SLEEPER, IfcTrackElementType_HALF_SET_OF_BLADES, IfcTrackElementType_SPEEDREGULATOR, IfcTrackElementType_DERAILER, IfcTrackElementType_FROG, IfcTrackElementType_USERDEFINED, IfcTrackElementType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -11008,9 +10994,9 @@ public:
 /// VOLTAGE: A transformer that changes the voltage between circuits.  
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcTransformerTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTransformerTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcTransformerType_CURRENT, IfcTransformerType_FREQUENCY, IfcTransformerType_INVERTER, IfcTransformerType_RECTIFIER, IfcTransformerType_VOLTAGE, IfcTransformerType_CHOPPER, IfcTransformerType_COMBINED, IfcTransformerType_USERDEFINED, IfcTransformerType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -11037,9 +11023,9 @@ public:
 /// CONTINUOUS: The segments join but no condition on their tangents is implied. 
 /// CONTSAMEGRADIENT: The segments join and their tangent vectors or tangent planes are parallel and have the same direction at the joint: equality of derivatives is not required. 
 /// CONTSAMEGRADIENTSAMECURVATURE: For a curve, the segments join, their tangent vectors are parallel and in the same direction and their curvatures are equal at the joint: equality of derivatives is not required. For a surface this implies that the principle curvatures are the same and the principle directions are coincident along the common boundary.
-class IFC_SCHEMA_API IfcTransitionCode : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTransitionCode : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcTransitionCode_DISCONTINUOUS, IfcTransitionCode_CONTINUOUS, IfcTransitionCode_CONTSAMEGRADIENT, IfcTransitionCode_CONTSAMEGRADIENTSAMECURVATURE} Value;
     static const char* ToString(Value v);
@@ -11051,9 +11037,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcTransportElementFixedTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTransportElementFixedTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcTransportElementFixedType_ELEVATOR, IfcTransportElementFixedType_ESCALATOR, IfcTransportElementFixedType_MOVINGWALKWAY, IfcTransportElementFixedType_CRANEWAY, IfcTransportElementFixedType_LIFTINGGEAR, IfcTransportElementFixedType_HAULINGGEAR, IfcTransportElementFixedType_USERDEFINED, IfcTransportElementFixedType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -11065,9 +11051,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcTransportElementNonFixedTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTransportElementNonFixedTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcTransportElementNonFixedType_VEHICLE, IfcTransportElementNonFixedType_VEHICLETRACKED, IfcTransportElementNonFixedType_ROLLINGSTOCK, IfcTransportElementNonFixedType_VEHICLEWHEELED, IfcTransportElementNonFixedType_VEHICLEAIR, IfcTransportElementNonFixedType_CARGO, IfcTransportElementNonFixedType_VEHICLEMARINE, IfcTransportElementNonFixedType_USERDEFINED, IfcTransportElementNonFixedType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -11089,9 +11075,9 @@ public:
 /// CARTESIAN: Indicates that trimming by Cartesian point is preferred. 
 /// PARAMETER: Indicates the preference for the parameter value. 
 /// UNSPECIFIED: Indicates that no preference is communicated.
-class IFC_SCHEMA_API IfcTrimmingPreference : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTrimmingPreference : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcTrimmingPreference_CARTESIAN, IfcTrimmingPreference_PARAMETER, IfcTrimmingPreference_UNSPECIFIED} Value;
     static const char* ToString(Value v);
@@ -11110,9 +11096,9 @@ public:
 ///   NOTDEFINED:  Undefined tube bundle type.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.
-class IFC_SCHEMA_API IfcTubeBundleTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTubeBundleTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcTubeBundleType_FINNED, IfcTubeBundleType_USERDEFINED, IfcTubeBundleType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -11159,9 +11145,9 @@ public:
 ///   USERDEFINED: User defined unit type. The type of unit is only implied by its name or the usage context.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcUnitEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcUnitEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcUnit_ABSORBEDDOSEUNIT, IfcUnit_AMOUNTOFSUBSTANCEUNIT, IfcUnit_AREAUNIT, IfcUnit_DOSEEQUIVALENTUNIT, IfcUnit_ELECTRICCAPACITANCEUNIT, IfcUnit_ELECTRICCHARGEUNIT, IfcUnit_ELECTRICCONDUCTANCEUNIT, IfcUnit_ELECTRICCURRENTUNIT, IfcUnit_ELECTRICRESISTANCEUNIT, IfcUnit_ELECTRICVOLTAGEUNIT, IfcUnit_ENERGYUNIT, IfcUnit_FORCEUNIT, IfcUnit_FREQUENCYUNIT, IfcUnit_ILLUMINANCEUNIT, IfcUnit_INDUCTANCEUNIT, IfcUnit_LENGTHUNIT, IfcUnit_LUMINOUSFLUXUNIT, IfcUnit_LUMINOUSINTENSITYUNIT, IfcUnit_MAGNETICFLUXDENSITYUNIT, IfcUnit_MAGNETICFLUXUNIT, IfcUnit_MASSUNIT, IfcUnit_PLANEANGLEUNIT, IfcUnit_POWERUNIT, IfcUnit_PRESSUREUNIT, IfcUnit_RADIOACTIVITYUNIT, IfcUnit_SOLIDANGLEUNIT, IfcUnit_THERMODYNAMICTEMPERATUREUNIT, IfcUnit_TIMEUNIT, IfcUnit_VOLUMEUNIT, IfcUnit_USERDEFINED} Value;
     static const char* ToString(Value v);
@@ -11188,9 +11174,9 @@ public:
 /// WEATHERSTATION: A control element that senses multiple climate properties such as temperature, humidity, pressure, wind, and rain. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcUnitaryControlElementTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcUnitaryControlElementTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcUnitaryControlElementType_ALARMPANEL, IfcUnitaryControlElementType_CONTROLPANEL, IfcUnitaryControlElementType_GASDETECTIONPANEL, IfcUnitaryControlElementType_INDICATORPANEL, IfcUnitaryControlElementType_MIMICPANEL, IfcUnitaryControlElementType_HUMIDISTAT, IfcUnitaryControlElementType_THERMOSTAT, IfcUnitaryControlElementType_WEATHERSTATION, IfcUnitaryControlElementType_COMBINED, IfcUnitaryControlElementType_USERDEFINED, IfcUnitaryControlElementType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -11213,9 +11199,9 @@ public:
 ///   NOTDEFINED:  Undefined unitary equipment type.
 /// 
 /// HISTORY: New enumeration in IFC R2x.  DEHUMIDIFIER added in IFC 2x4
-class IFC_SCHEMA_API IfcUnitaryEquipmentTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcUnitaryEquipmentTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcUnitaryEquipmentType_AIRHANDLER, IfcUnitaryEquipmentType_AIRCONDITIONINGUNIT, IfcUnitaryEquipmentType_DEHUMIDIFIER, IfcUnitaryEquipmentType_SPLITSYSTEM, IfcUnitaryEquipmentType_ROOFTOPUNIT, IfcUnitaryEquipmentType_USERDEFINED, IfcUnitaryEquipmentType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -11269,9 +11255,9 @@ public:
 ///   NOTDEFINED: Undefined valve type. 
 /// 
 /// HISTORY: New type in IFC R2.0
-class IFC_SCHEMA_API IfcValveTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcValveTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcValveType_AIRRELEASE, IfcValveType_ANTIVACUUM, IfcValveType_CHANGEOVER, IfcValveType_CHECK, IfcValveType_COMMISSIONING, IfcValveType_DIVERTING, IfcValveType_DRAWOFFCOCK, IfcValveType_DOUBLECHECK, IfcValveType_DOUBLEREGULATING, IfcValveType_FAUCET, IfcValveType_FLUSHING, IfcValveType_GASCOCK, IfcValveType_GASTAP, IfcValveType_ISOLATING, IfcValveType_MIXING, IfcValveType_PRESSUREREDUCING, IfcValveType_PRESSURERELIEF, IfcValveType_REGULATING, IfcValveType_SAFETYCUTOFF, IfcValveType_STEAMTRAP, IfcValveType_STOPCOCK, IfcValveType_USERDEFINED, IfcValveType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -11283,9 +11269,9 @@ public:
     operator Value() const;
 };
 
-class IFC_SCHEMA_API IfcVibrationDamperTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcVibrationDamperTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcVibrationDamperType_BENDING_YIELD, IfcVibrationDamperType_SHEAR_YIELD, IfcVibrationDamperType_AXIAL_YIELD, IfcVibrationDamperType_FRICTION, IfcVibrationDamperType_VISCOUS, IfcVibrationDamperType_RUBBER, IfcVibrationDamperType_USERDEFINED, IfcVibrationDamperType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -11305,9 +11291,9 @@ public:
 ///   NOTDEFINED:  Undefined vibration isolator type.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.
-class IFC_SCHEMA_API IfcVibrationIsolatorTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcVibrationIsolatorTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcVibrationIsolatorType_COMPRESSION, IfcVibrationIsolatorType_SPRING, IfcVibrationIsolatorType_BASE, IfcVibrationIsolatorType_USERDEFINED, IfcVibrationIsolatorType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -11332,9 +11318,9 @@ public:
 ///   EDGE A shape modification along an edge of the element with the edge length as the predominant dimension of the feature, and feature profile dimensions which are typically much smaller than the edge length.  Can for example be a chamfer edge (differentiated from a chamfer by its ratio of dimensions and thus usually manufactured differently), rounded edge (a convex edge feature), or fillet edge (a concave edge feature).
 ///   USERDEFINED A user-defined type of voiding feature.
 ///   NOTDEFINED An undefined type of voiding feature.
-class IFC_SCHEMA_API IfcVoidingFeatureTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcVoidingFeatureTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcVoidingFeatureType_CUTOUT, IfcVoidingFeatureType_NOTCH, IfcVoidingFeatureType_HOLE, IfcVoidingFeatureType_MITER, IfcVoidingFeatureType_CHAMFER, IfcVoidingFeatureType_EDGE, IfcVoidingFeatureType_USERDEFINED, IfcVoidingFeatureType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -11382,9 +11368,9 @@ public:
 /// added.
 /// IFC2x4 CHANGE New enumerator
 /// MOVABLE has been added.
-class IFC_SCHEMA_API IfcWallTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcWallTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcWallType_MOVABLE, IfcWallType_PARAPET, IfcWallType_PARTITIONING, IfcWallType_PLUMBINGWALL, IfcWallType_SHEAR, IfcWallType_SOLIDWALL, IfcWallType_STANDARD, IfcWallType_POLYGONAL, IfcWallType_ELEMENTEDWALL, IfcWallType_RETAININGWALL, IfcWallType_WAVEWALL, IfcWallType_USERDEFINED, IfcWallType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -11409,9 +11395,9 @@ public:
 /// WASTETRAP: Pipe fitting, set adjacent to a sanitary terminal, that retains liquid to prevent the passage of foul air. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_SCHEMA_API IfcWasteTerminalTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcWasteTerminalTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcWasteTerminalType_FLOORTRAP, IfcWasteTerminalType_FLOORWASTE, IfcWasteTerminalType_GULLYSUMP, IfcWasteTerminalType_GULLYTRAP, IfcWasteTerminalType_ROOFDRAIN, IfcWasteTerminalType_WASTEDISPOSALUNIT, IfcWasteTerminalType_WASTETRAP, IfcWasteTerminalType_USERDEFINED, IfcWasteTerminalType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -11506,9 +11492,9 @@ public:
 ///   These figures are only shown as illustrations 
 /// 
 /// Figure 169 — Window panel directions
-class IFC_SCHEMA_API IfcWindowPanelOperationEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcWindowPanelOperationEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcWindowPanelOperation_SIDEHUNGRIGHTHAND, IfcWindowPanelOperation_SIDEHUNGLEFTHAND, IfcWindowPanelOperation_TILTANDTURNRIGHTHAND, IfcWindowPanelOperation_TILTANDTURNLEFTHAND, IfcWindowPanelOperation_TOPHUNG, IfcWindowPanelOperation_BOTTOMHUNG, IfcWindowPanelOperation_PIVOTHORIZONTAL, IfcWindowPanelOperation_PIVOTVERTICAL, IfcWindowPanelOperation_SLIDINGHORIZONTAL, IfcWindowPanelOperation_SLIDINGVERTICAL, IfcWindowPanelOperation_REMOVABLECASEMENT, IfcWindowPanelOperation_FIXEDCASEMENT, IfcWindowPanelOperation_OTHEROPERATION, IfcWindowPanelOperation_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -11583,9 +11569,9 @@ public:
 ///   placement of the window, looking into the direction of the positive Y
 ///   axis. 
 ///   These figures are only shown as illustrations.
-class IFC_SCHEMA_API IfcWindowPanelPositionEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcWindowPanelPositionEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcWindowPanelPosition_LEFT, IfcWindowPanelPosition_MIDDLE, IfcWindowPanelPosition_RIGHT, IfcWindowPanelPosition_BOTTOM, IfcWindowPanelPosition_TOP, IfcWindowPanelPosition_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -11603,9 +11589,9 @@ public:
 /// 
 /// HISTORY New Enumeration in
 ///   IFC Release 2x .
-class IFC_SCHEMA_API IfcWindowStyleConstructionEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcWindowStyleConstructionEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcWindowStyleConstruction_ALUMINIUM, IfcWindowStyleConstruction_HIGH_GRADE_STEEL, IfcWindowStyleConstruction_STEEL, IfcWindowStyleConstruction_WOOD, IfcWindowStyleConstruction_ALUMINIUM_WOOD, IfcWindowStyleConstruction_PLASTIC, IfcWindowStyleConstruction_OTHER_CONSTRUCTION, IfcWindowStyleConstruction_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -11690,9 +11676,9 @@ public:
 ///   placement of the window, looking into the direction of the positive Y
 ///   axis. 
 ///   These figures are only shown as illustrations
-class IFC_SCHEMA_API IfcWindowStyleOperationEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcWindowStyleOperationEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcWindowStyleOperation_SINGLE_PANEL, IfcWindowStyleOperation_DOUBLE_PANEL_VERTICAL, IfcWindowStyleOperation_DOUBLE_PANEL_HORIZONTAL, IfcWindowStyleOperation_TRIPLE_PANEL_VERTICAL, IfcWindowStyleOperation_TRIPLE_PANEL_BOTTOM, IfcWindowStyleOperation_TRIPLE_PANEL_TOP, IfcWindowStyleOperation_TRIPLE_PANEL_LEFT, IfcWindowStyleOperation_TRIPLE_PANEL_RIGHT, IfcWindowStyleOperation_TRIPLE_PANEL_HORIZONTAL, IfcWindowStyleOperation_USERDEFINED, IfcWindowStyleOperation_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -11719,9 +11705,9 @@ public:
 /// 
 /// HISTORY New Enumeration
 /// in IFC2x4.
-class IFC_SCHEMA_API IfcWindowTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcWindowTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcWindowType_WINDOW, IfcWindowType_SKYLIGHT, IfcWindowType_LIGHTDOME, IfcWindowType_USERDEFINED, IfcWindowType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -11803,9 +11789,9 @@ public:
 /// local placement of the window, looking into the direction of the
 /// positive Y axis.
 /// These figures are only shown as illustrations
-class IFC_SCHEMA_API IfcWindowTypePartitioningEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcWindowTypePartitioningEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcWindowTypePartitioning_SINGLE_PANEL, IfcWindowTypePartitioning_DOUBLE_PANEL_VERTICAL, IfcWindowTypePartitioning_DOUBLE_PANEL_HORIZONTAL, IfcWindowTypePartitioning_TRIPLE_PANEL_VERTICAL, IfcWindowTypePartitioning_TRIPLE_PANEL_BOTTOM, IfcWindowTypePartitioning_TRIPLE_PANEL_TOP, IfcWindowTypePartitioning_TRIPLE_PANEL_LEFT, IfcWindowTypePartitioning_TRIPLE_PANEL_RIGHT, IfcWindowTypePartitioning_TRIPLE_PANEL_HORIZONTAL, IfcWindowTypePartitioning_USERDEFINED, IfcWindowTypePartitioning_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -11827,9 +11813,9 @@ public:
 /// THIRDSHIFT: Belongs to the third shift
 /// USERDEFINED
 /// NOTDEFINED
-class IFC_SCHEMA_API IfcWorkCalendarTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcWorkCalendarTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcWorkCalendarType_FIRSTSHIFT, IfcWorkCalendarType_SECONDSHIFT, IfcWorkCalendarType_THIRDSHIFT, IfcWorkCalendarType_USERDEFINED, IfcWorkCalendarType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -11851,9 +11837,9 @@ public:
 /// PLANNED: A control showing planned items.
 /// USERDEFINED
 /// NOTDEFINED
-class IFC_SCHEMA_API IfcWorkPlanTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcWorkPlanTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcWorkPlanType_ACTUAL, IfcWorkPlanType_BASELINE, IfcWorkPlanType_PLANNED, IfcWorkPlanType_USERDEFINED, IfcWorkPlanType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -11875,9 +11861,9 @@ public:
 /// PLANNED: A control showing planned items
 /// USERDEFINED
 /// NOTDEFINED
-class IFC_SCHEMA_API IfcWorkScheduleTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcWorkScheduleTypeEnum : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     typedef enum {IfcWorkScheduleType_ACTUAL, IfcWorkScheduleType_BASELINE, IfcWorkScheduleType_PLANNED, IfcWorkScheduleType_USERDEFINED, IfcWorkScheduleType_NOTDEFINED} Value;
     static const char* ToString(Value v);
@@ -11893,9 +11879,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcAbsorbedDoseMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAbsorbedDoseMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcAbsorbedDoseMeasure initialize(double v);
@@ -11906,9 +11892,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcAccelerationMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAccelerationMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcAccelerationMeasure initialize(double v);
@@ -11922,9 +11908,9 @@ public:
 /// NOTE Corresponding ISO 10303 name: amount_of_substance_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcAmountOfSubstanceMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAmountOfSubstanceMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcAmountOfSubstanceMeasure initialize(double v);
@@ -11935,27 +11921,27 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_SCHEMA_API IfcAngularVelocityMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAngularVelocityMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcAngularVelocityMeasure initialize(double v);
     operator double() const;
 };
 
-class IFC_SCHEMA_API IfcArcIndex : public express::DeclaredType {
+class IFC_SCHEMA_API IfcArcIndex : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcArcIndex initialize(std::vector< int64_t > /*[3:3]*/ v);
     operator std::vector< int64_t > /*[3:3]*/() const;
 };
 
-class IFC_SCHEMA_API IfcAreaDensityMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAreaDensityMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcAreaDensityMeasure initialize(double v);
@@ -11968,18 +11954,18 @@ public:
 /// NOTE Corresponding ISO 10303 name: area_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcAreaMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAreaMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcAreaMeasure initialize(double v);
     operator double() const;
 };
 
-class IFC_SCHEMA_API IfcBinary : public express::DeclaredType {
+class IFC_SCHEMA_API IfcBinary : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcBinary initialize(boost::dynamic_bitset<> v);
@@ -11990,9 +11976,9 @@ public:
 /// Type: BOOLEAN
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcBoolean : public express::DeclaredType {
+class IFC_SCHEMA_API IfcBoolean : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcBoolean initialize(bool v);
@@ -12041,9 +12027,9 @@ public:
 /// Figure 284 illustrates an example extrusion shape with arbitrary profile (IfcArbitraryClosedProfileDef), aligned "mid-depth right" on the member axis. The line of sight follows the extrusion direction Z which points into the drawing plane of above illustration. Hence, "left" is in the positive X direction of the IfcProfileDef. "Top" is in the positive Y direction of the IfcProfileDef.
 /// 
 /// Figure 284 — Cardinal point extrusion
-class IFC_SCHEMA_API IfcCardinalPointReference : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCardinalPointReference : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcCardinalPointReference initialize(int64_t v);
@@ -12060,9 +12046,9 @@ public:
 /// Type: ARRAY [1:2] OF REAL
 /// 
 /// HISTORY New type in IFC Release 2x2.
-class IFC_SCHEMA_API IfcComplexNumber : public express::DeclaredType {
+class IFC_SCHEMA_API IfcComplexNumber : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcComplexNumber initialize(std::vector< double > /*[1:2]*/ v);
@@ -12116,9 +12102,9 @@ public:
 ///      + FORMAT(ABS(c[4]), '##');  -- -50° 58' 33" 110400
 /// 
 /// Another often encountered display format of latitudes and longitudes is to omit the signs and print N, S, E, W indicators instead, for example, 50°58'33"S.  When stored as IfcCompoundPlaneAngleMeasure however, a compound plane angle measure is always signed, with same sign of all components.
-class IFC_SCHEMA_API IfcCompoundPlaneAngleMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCompoundPlaneAngleMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcCompoundPlaneAngleMeasure initialize(std::vector< int64_t > /*[3:4]*/ v);
@@ -12130,9 +12116,9 @@ public:
 /// NOTE Corresponding ISO 10303 name: context_dependent_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcContextDependentMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcContextDependentMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcContextDependentMeasure initialize(double v);
@@ -12144,9 +12130,9 @@ public:
 /// NOTE Corresponding ISO 10303 name: count_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcCountMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCountMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcCountMeasure initialize(double v);
@@ -12159,9 +12145,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_SCHEMA_API IfcCurvatureMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCurvatureMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcCurvatureMeasure initialize(double v);
@@ -12173,9 +12159,9 @@ public:
 /// 
 /// Use definitions
 /// All given values should be provided in context and converted into a Gregorian date context and be shall be processable by a receiving application.
-class IFC_SCHEMA_API IfcDate : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDate : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcDate initialize(std::string v);
@@ -12199,9 +12185,9 @@ public:
 ///   otherwise they are forbidden. The year 0000 is prohibited.
 /// 
 /// HISTORY: New type in IFC2x4
-class IFC_SCHEMA_API IfcDateTime : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDateTime : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcDateTime initialize(std::string v);
@@ -12219,9 +12205,9 @@ public:
 /// Release 1.5.1.
 /// IFC2x4 CHANGE Where rule
 /// ValidRange added.
-class IFC_SCHEMA_API IfcDayInMonthNumber : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDayInMonthNumber : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcDayInMonthNumber initialize(int64_t v);
@@ -12261,9 +12247,9 @@ public:
 /// Type: INTEGER
 /// HISTORY New type in
 /// IFC2x4.
-class IFC_SCHEMA_API IfcDayInWeekNumber : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDayInWeekNumber : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcDayInWeekNumber initialize(int64_t v);
@@ -12275,9 +12261,9 @@ public:
 /// NOTE Corresponding ISO 10303 name:descriptive_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcDescriptiveMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDescriptiveMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcDescriptiveMeasure initialize(std::string v);
@@ -12290,9 +12276,9 @@ public:
 /// NOTE Corresponding ISO 10303 type: dimension_count, please refer to ISO/IS 10303-42:1994, p. 14 for the final definition of the formal standard.
 /// 
 /// HISTORY New Type in IFC Release 1.5
-class IFC_SCHEMA_API IfcDimensionCount : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDimensionCount : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcDimensionCount initialize(int64_t v);
@@ -12303,9 +12289,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcDoseEquivalentMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDoseEquivalentMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcDoseEquivalentMeasure initialize(double v);
@@ -12316,9 +12302,9 @@ public:
 /// EXAMPLE: P0002-10-15T10:30:20 (duration of two years, 10 months, 15 days, 10 hours, 30 minutes and 20 seconds).
 /// 
 /// HISTORY: New type in IFC2x4
-class IFC_SCHEMA_API IfcDuration : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDuration : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcDuration initialize(std::string v);
@@ -12330,9 +12316,9 @@ public:
 /// Type: REAL 
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_SCHEMA_API IfcDynamicViscosityMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDynamicViscosityMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcDynamicViscosityMeasure initialize(double v);
@@ -12343,9 +12329,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcElectricCapacitanceMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcElectricCapacitanceMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcElectricCapacitanceMeasure initialize(double v);
@@ -12356,9 +12342,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcElectricChargeMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcElectricChargeMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcElectricChargeMeasure initialize(double v);
@@ -12369,9 +12355,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcElectricConductanceMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcElectricConductanceMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcElectricConductanceMeasure initialize(double v);
@@ -12384,9 +12370,9 @@ public:
 /// NOTE Corresponding ISO 10303 name: electric_current_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcElectricCurrentMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcElectricCurrentMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcElectricCurrentMeasure initialize(double v);
@@ -12397,9 +12383,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcElectricResistanceMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcElectricResistanceMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcElectricResistanceMeasure initialize(double v);
@@ -12410,9 +12396,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_SCHEMA_API IfcElectricVoltageMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcElectricVoltageMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcElectricVoltageMeasure initialize(double v);
@@ -12423,9 +12409,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_SCHEMA_API IfcEnergyMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcEnergyMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcEnergyMeasure initialize(double v);
@@ -12445,9 +12431,9 @@ public:
 /// NOTE  Corresponding CSS1 definitions is font-style.
 /// 
 /// HISTORY  New type in IFC2x3.
-class IFC_SCHEMA_API IfcFontStyle : public express::DeclaredType {
+class IFC_SCHEMA_API IfcFontStyle : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcFontStyle initialize(std::string v);
@@ -12465,9 +12451,9 @@ public:
 /// NOTE  Corresponding CSS1 definitions is font-variant.
 /// 
 /// HISTORY  New type in IFC2x3.
-class IFC_SCHEMA_API IfcFontVariant : public express::DeclaredType {
+class IFC_SCHEMA_API IfcFontVariant : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcFontVariant initialize(std::string v);
@@ -12496,9 +12482,9 @@ public:
 /// NOTE  Corresponding CSS1 definitions is font-weight.
 /// 
 /// HISTORY  New type in IFC2x2 Addendum 2.
-class IFC_SCHEMA_API IfcFontWeight : public express::DeclaredType {
+class IFC_SCHEMA_API IfcFontWeight : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcFontWeight initialize(std::string v);
@@ -12509,9 +12495,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcForceMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcForceMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcForceMeasure initialize(double v);
@@ -12522,9 +12508,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_SCHEMA_API IfcFrequencyMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcFrequencyMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcFrequencyMeasure initialize(double v);
@@ -12543,9 +12529,9 @@ public:
 /// Refer to the BuildingSMART website (www.buildingsmart-tech.org) for more information and sample encoding algorithms.
 /// 
 /// HISTORY  New type in IFC R1.5.1.
-class IFC_SCHEMA_API IfcGloballyUniqueId : public express::DeclaredType {
+class IFC_SCHEMA_API IfcGloballyUniqueId : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcGloballyUniqueId initialize(std::string v);
@@ -12556,9 +12542,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_SCHEMA_API IfcHeatFluxDensityMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcHeatFluxDensityMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcHeatFluxDensityMeasure initialize(double v);
@@ -12567,9 +12553,9 @@ public:
 /// IfcHeatingValueMeasure defines the amount of energy released (usually in MJ/kg) when a fuel is burned.
 /// 
 /// HISTORY: This is new type in IFC2x2.
-class IFC_SCHEMA_API IfcHeatingValueMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcHeatingValueMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcHeatingValueMeasure initialize(double v);
@@ -12589,9 +12575,9 @@ public:
 /// Per ISO 10303-11, the set of characters that may appear in STRINGs is defined in ISO 10646.  The encoding of characters in case of file-based exchange is defined in ISO 10303-21 (STEP physical files) and ISO 10303-28 (XML files).  Among else, these specifications define the encoding of 8-bit characters from ISO 8859-1...-16 and of 2-byte Unicode characters.
 /// 
 /// Note that while IfcIdentifier is restricted to 255 characters, the size in exchange files after encoding may be considerably larger than 255 octets, depending on the particular encoding and on the contents of the identifier.
-class IFC_SCHEMA_API IfcIdentifier : public express::DeclaredType {
+class IFC_SCHEMA_API IfcIdentifier : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcIdentifier initialize(std::string v);
@@ -12602,9 +12588,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcIlluminanceMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcIlluminanceMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcIlluminanceMeasure initialize(double v);
@@ -12615,9 +12601,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcInductanceMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcInductanceMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcInductanceMeasure initialize(double v);
@@ -12630,9 +12616,9 @@ public:
 /// Type: INTEGER
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcInteger : public express::DeclaredType {
+class IFC_SCHEMA_API IfcInteger : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcInteger initialize(int64_t v);
@@ -12645,9 +12631,9 @@ public:
 /// Type: INTEGER
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_SCHEMA_API IfcIntegerCountRateMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcIntegerCountRateMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcIntegerCountRateMeasure initialize(int64_t v);
@@ -12656,9 +12642,9 @@ public:
 /// IfcIonConcentrationMeasure is a measure of particular ion concentration in a liquid, given in mg/L.
 /// 
 /// HISTORY: New type in IFC2x2.
-class IFC_SCHEMA_API IfcIonConcentrationMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcIonConcentrationMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcIonConcentrationMeasure initialize(double v);
@@ -12669,9 +12655,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcIsothermalMoistureCapacityMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcIsothermalMoistureCapacityMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcIsothermalMoistureCapacityMeasure initialize(double v);
@@ -12682,9 +12668,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_SCHEMA_API IfcKinematicViscosityMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcKinematicViscosityMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcKinematicViscosityMeasure initialize(double v);
@@ -12704,9 +12690,9 @@ public:
 /// Per ISO 10303-11, the set of characters that may appear in STRINGs is defined in ISO 10646.  The encoding of characters in case of file-based exchange is defined in ISO 10303-21 (STEP physical files) and ISO 10303-28 (XML files).  Among else, these specifications define the encoding of 8-bit characters from ISO 8859-1...-16 and of 2-byte Unicode characters.
 /// 
 /// Note that while IfcLabel is restricted to 255 characters, the size in exchange files after encoding may be considerably larger than 255 octets, depending on the particular encoding and on the contents of the label.
-class IFC_SCHEMA_API IfcLabel : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLabel : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcLabel initialize(std::string v);
@@ -12737,18 +12723,18 @@ public:
 /// NOTE Corresponding ISO 10303 name: length_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcLengthMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLengthMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcLengthMeasure initialize(double v);
     operator double() const;
 };
 
-class IFC_SCHEMA_API IfcLineIndex : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLineIndex : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcLineIndex initialize(std::vector< int64_t > /*[2:?]*/ v);
@@ -12759,9 +12745,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcLinearForceMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLinearForceMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcLinearForceMeasure initialize(double v);
@@ -12772,9 +12758,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcLinearMomentMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLinearMomentMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcLinearMomentMeasure initialize(double v);
@@ -12785,9 +12771,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcLinearStiffnessMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLinearStiffnessMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcLinearStiffnessMeasure initialize(double v);
@@ -12798,9 +12784,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_SCHEMA_API IfcLinearVelocityMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLinearVelocityMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcLinearVelocityMeasure initialize(double v);
@@ -12811,9 +12797,9 @@ public:
 /// Type: LOGICAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcLogical : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLogical : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcLogical initialize(boost::logic::tribool v);
@@ -12824,9 +12810,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcLuminousFluxMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLuminousFluxMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcLuminousFluxMeasure initialize(double v);
@@ -12839,9 +12825,9 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_SCHEMA_API IfcLuminousIntensityDistributionMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLuminousIntensityDistributionMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcLuminousIntensityDistributionMeasure initialize(double v);
@@ -12854,9 +12840,9 @@ public:
 /// NOTE Corresponding ISO 10303 name: luminous_intensity_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcLuminousIntensityMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLuminousIntensityMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcLuminousIntensityMeasure initialize(double v);
@@ -12867,9 +12853,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcMagneticFluxDensityMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMagneticFluxDensityMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcMagneticFluxDensityMeasure initialize(double v);
@@ -12880,9 +12866,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcMagneticFluxMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMagneticFluxMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcMagneticFluxMeasure initialize(double v);
@@ -12893,9 +12879,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_SCHEMA_API IfcMassDensityMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMassDensityMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcMassDensityMeasure initialize(double v);
@@ -12906,9 +12892,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_SCHEMA_API IfcMassFlowRateMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMassFlowRateMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcMassFlowRateMeasure initialize(double v);
@@ -12921,9 +12907,9 @@ public:
 /// NOTE Corresponding ISO 10303 name: mass_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcMassMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMassMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcMassMeasure initialize(double v);
@@ -12936,9 +12922,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_SCHEMA_API IfcMassPerLengthMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMassPerLengthMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcMassPerLengthMeasure initialize(double v);
@@ -12949,9 +12935,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcModulusOfElasticityMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcModulusOfElasticityMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcModulusOfElasticityMeasure initialize(double v);
@@ -12962,9 +12948,9 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC Release 2x2.
-class IFC_SCHEMA_API IfcModulusOfLinearSubgradeReactionMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcModulusOfLinearSubgradeReactionMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcModulusOfLinearSubgradeReactionMeasure initialize(double v);
@@ -12975,9 +12961,9 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_SCHEMA_API IfcModulusOfRotationalSubgradeReactionMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcModulusOfRotationalSubgradeReactionMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcModulusOfRotationalSubgradeReactionMeasure initialize(double v);
@@ -12992,9 +12978,9 @@ public:
 /// Figure 290 illustrates elastic support of a planar member.
 /// 
 /// Figure 290 — Modulus of subgrade reaction measure
-class IFC_SCHEMA_API IfcModulusOfSubgradeReactionMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcModulusOfSubgradeReactionMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcModulusOfSubgradeReactionMeasure initialize(double v);
@@ -13005,9 +12991,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcMoistureDiffusivityMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMoistureDiffusivityMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcMoistureDiffusivityMeasure initialize(double v);
@@ -13018,9 +13004,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcMolecularWeightMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMolecularWeightMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcMolecularWeightMeasure initialize(double v);
@@ -13031,9 +13017,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcMomentOfInertiaMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMomentOfInertiaMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcMomentOfInertiaMeasure initialize(double v);
@@ -13043,9 +13029,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_SCHEMA_API IfcMonetaryMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMonetaryMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcMonetaryMeasure initialize(double v);
@@ -13107,9 +13093,9 @@ public:
 /// standard.
 /// HISTORY New type in IFC
 /// Release 1.5.1.
-class IFC_SCHEMA_API IfcMonthInYearNumber : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMonthInYearNumber : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcMonthInYearNumber initialize(int64_t v);
@@ -13134,9 +13120,9 @@ public:
 /// NOTE Corresponding ISO 10303 name: numeric_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcNumericMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcNumericMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcNumericMeasure initialize(double v);
@@ -13145,9 +13131,9 @@ public:
 /// IfcPHMeasure is a measure of the molar hydrogen ion concentration in a liquid (usually defined as the measure of acidity) in a range from 0 to 14.
 /// 
 /// HISTORY: New type in IFC 2x2.
-class IFC_SCHEMA_API IfcPHMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPHMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcPHMeasure initialize(double v);
@@ -13160,9 +13146,9 @@ public:
 /// NOTE Corresponding STEP name: parameter_value, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcParameterValue : public express::DeclaredType {
+class IFC_SCHEMA_API IfcParameterValue : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcParameterValue initialize(double v);
@@ -13173,9 +13159,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcPlanarForceMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPlanarForceMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcPlanarForceMeasure initialize(double v);
@@ -13192,9 +13178,9 @@ public:
 /// NOTE Corresponding ISO 10303 name: plane_angle_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcPlaneAngleMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPlaneAngleMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcPlaneAngleMeasure initialize(double v);
@@ -13242,9 +13228,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_SCHEMA_API IfcPowerMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPowerMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcPowerMeasure initialize(double v);
@@ -13259,9 +13245,9 @@ public:
 /// NOTE  Corresponding ISO 10303 name: presentable_text. Please refer to ISO/IS 10303-46:1994, p. 133 for the final definition of the formal standard.
 /// 
 /// HISTORY  New type in IFC2x2.
-class IFC_SCHEMA_API IfcPresentableText : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPresentableText : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcPresentableText initialize(std::string v);
@@ -13272,18 +13258,18 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_SCHEMA_API IfcPressureMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPressureMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcPressureMeasure initialize(double v);
     operator double() const;
 };
 
-class IFC_SCHEMA_API IfcPropertySetDefinitionSet : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPropertySetDefinitionSet : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcPropertySetDefinitionSet initialize(std::vector< ::Ifc4x3_rc3::IfcPropertySetDefinition > v);
@@ -13294,9 +13280,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcRadioActivityMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcRadioActivityMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcRadioActivityMeasure initialize(double v);
@@ -13312,9 +13298,9 @@ public:
 /// NOTE Corresponding STEP name: ratio_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcRatioMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcRatioMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcRatioMeasure initialize(double v);
@@ -13327,9 +13313,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY: New type in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcReal : public express::DeclaredType {
+class IFC_SCHEMA_API IfcReal : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcReal initialize(double v);
@@ -13340,9 +13326,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcRotationalFrequencyMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcRotationalFrequencyMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcRotationalFrequencyMeasure initialize(double v);
@@ -13354,9 +13340,9 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_SCHEMA_API IfcRotationalMassMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcRotationalMassMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcRotationalMassMeasure initialize(double v);
@@ -13367,9 +13353,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcRotationalStiffnessMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcRotationalStiffnessMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcRotationalStiffnessMeasure initialize(double v);
@@ -13380,9 +13366,9 @@ public:
 /// Type: REAL 
 /// 
 /// HISTORY New type in IFC Release 2x2.
-class IFC_SCHEMA_API IfcSectionModulusMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSectionModulusMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcSectionModulusMeasure initialize(double v);
@@ -13393,9 +13379,9 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_SCHEMA_API IfcSectionalAreaIntegralMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSectionalAreaIntegralMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcSectionalAreaIntegralMeasure initialize(double v);
@@ -13406,9 +13392,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcShearModulusMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcShearModulusMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcShearModulusMeasure initialize(double v);
@@ -13421,18 +13407,18 @@ public:
 /// NOTE Corresponding ISO 10303 name: solid_angle_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcSolidAngleMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSolidAngleMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcSolidAngleMeasure initialize(double v);
     operator double() const;
 };
 
-class IFC_SCHEMA_API IfcSoundPowerLevelMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSoundPowerLevelMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcSoundPowerLevelMeasure initialize(double v);
@@ -13443,18 +13429,18 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_SCHEMA_API IfcSoundPowerMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSoundPowerMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcSoundPowerMeasure initialize(double v);
     operator double() const;
 };
 
-class IFC_SCHEMA_API IfcSoundPressureLevelMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSoundPressureLevelMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcSoundPressureLevelMeasure initialize(double v);
@@ -13465,9 +13451,9 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_SCHEMA_API IfcSoundPressureMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSoundPressureMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcSoundPressureMeasure initialize(double v);
@@ -13478,9 +13464,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcSpecificHeatCapacityMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSpecificHeatCapacityMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcSpecificHeatCapacityMeasure initialize(double v);
@@ -13493,9 +13479,9 @@ public:
 /// NOTE: The datatype relates to the definition of specular_exponent in ISO 10303-46 entity surface_style_reflectance_ambient_diffuse_specular.
 /// 
 /// HISTORY: New type in IFC2x2.
-class IFC_SCHEMA_API IfcSpecularExponent : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSpecularExponent : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcSpecularExponent initialize(double v);
@@ -13510,9 +13496,9 @@ public:
 /// NOTE: The datatype relates to the definition of "shiness" in VRML97, which is the reciprocate value to the specular roughness.
 /// 
 /// HISTORY: New type in Release IFC2x2.
-class IFC_SCHEMA_API IfcSpecularRoughness : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSpecularRoughness : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcSpecularRoughness initialize(double v);
@@ -13523,9 +13509,9 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_SCHEMA_API IfcTemperatureGradientMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTemperatureGradientMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcTemperatureGradientMeasure initialize(double v);
@@ -13536,9 +13522,9 @@ public:
 /// Type: REAL 
 /// 
 /// HISTORY  New type in IFC2x4.
-class IFC_SCHEMA_API IfcTemperatureRateOfChangeMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTemperatureRateOfChangeMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcTemperatureRateOfChangeMeasure initialize(double v);
@@ -13555,9 +13541,9 @@ public:
 /// Per ISO 10303-11, the set of characters that may appear in STRINGs is defined in ISO 10646.  The encoding of characters in case of file-based exchange is defined in ISO 10303-21 (STEP physical files) and ISO 10303-28 (XML files).  Among else, these specifications define the encoding of 8-bit characters from ISO 8859-1...-16 and of 2-byte Unicode characters.
 /// 
 /// Note that while IfcText is not formally restricted in length, the size of a string in ISO 10303-21:2002 conforming exchange files must not exceed 32767 octets after encoding and escaping.
-class IFC_SCHEMA_API IfcText : public express::DeclaredType {
+class IFC_SCHEMA_API IfcText : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcText initialize(std::string v);
@@ -13573,9 +13559,9 @@ public:
 /// NOTE  Corresponding CSS1 definition is text-align.
 /// 
 /// HISTORY  New type in IFC2x3.
-class IFC_SCHEMA_API IfcTextAlignment : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTextAlignment : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcTextAlignment initialize(std::string v);
@@ -13594,9 +13580,9 @@ public:
 /// NOTE  Corresponding CSS1 definition is text-decoration.
 /// 
 /// HISTORY  New type in IFC2x3.
-class IFC_SCHEMA_API IfcTextDecoration : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTextDecoration : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcTextDecoration initialize(std::string v);
@@ -13621,9 +13607,9 @@ public:
 /// HISTORY  New type in IFC2x2 Addendum 2.
 /// 
 /// IFC2x2 Addendum 2 CHANGE: The IfcFontFamily has been added.
-class IFC_SCHEMA_API IfcTextFontName : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTextFontName : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcTextFontName initialize(std::string v);
@@ -13639,9 +13625,9 @@ public:
 /// NOTE  Corresponding CSS1 definition is text-transform.
 /// 
 /// HISTORY  New type in IFC2x3.
-class IFC_SCHEMA_API IfcTextTransformation : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTextTransformation : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcTextTransformation initialize(std::string v);
@@ -13652,9 +13638,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_SCHEMA_API IfcThermalAdmittanceMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcThermalAdmittanceMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcThermalAdmittanceMeasure initialize(double v);
@@ -13665,9 +13651,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcThermalConductivityMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcThermalConductivityMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcThermalConductivityMeasure initialize(double v);
@@ -13677,9 +13663,9 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_SCHEMA_API IfcThermalExpansionCoefficientMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcThermalExpansionCoefficientMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcThermalExpansionCoefficientMeasure initialize(double v);
@@ -13689,9 +13675,9 @@ public:
 /// Usually measured in m2 Kelvin/Watt.
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_SCHEMA_API IfcThermalResistanceMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcThermalResistanceMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcThermalResistanceMeasure initialize(double v);
@@ -13702,9 +13688,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_SCHEMA_API IfcThermalTransmittanceMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcThermalTransmittanceMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcThermalTransmittanceMeasure initialize(double v);
@@ -13717,9 +13703,9 @@ public:
 /// NOTE Corresponding ISO 10303 name: thermodynamic_temperature_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcThermodynamicTemperatureMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcThermodynamicTemperatureMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcThermodynamicTemperatureMeasure initialize(double v);
@@ -13733,9 +13719,9 @@ public:
 ///   13:20:00-05:00.
 /// 
 /// HISTORY: New type in IFC2x4
-class IFC_SCHEMA_API IfcTime : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTime : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcTime initialize(std::string v);
@@ -13748,9 +13734,9 @@ public:
 /// NOTE Corresponding ISO 10303 name: time_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcTimeMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTimeMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcTimeMeasure initialize(double v);
@@ -13760,9 +13746,9 @@ public:
 /// Type: INTEGER
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcTimeStamp : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTimeStamp : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcTimeStamp initialize(int64_t v);
@@ -13773,9 +13759,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcTorqueMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTorqueMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcTorqueMeasure initialize(double v);
@@ -13788,9 +13774,9 @@ public:
 /// designed to make it easy to map other namespaces (that share the properties of URNs) into URN-space.
 /// 
 /// HISTORY New defined datatype in IFC 2x4.
-class IFC_SCHEMA_API IfcURIReference : public express::DeclaredType {
+class IFC_SCHEMA_API IfcURIReference : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcURIReference initialize(std::string v);
@@ -13801,9 +13787,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_SCHEMA_API IfcVaporPermeabilityMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcVaporPermeabilityMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcVaporPermeabilityMeasure initialize(double v);
@@ -13816,9 +13802,9 @@ public:
 /// NOTE Corresponding ISO 10303 name: volume_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcVolumeMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcVolumeMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcVolumeMeasure initialize(double v);
@@ -13829,9 +13815,9 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_SCHEMA_API IfcVolumetricFlowRateMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcVolumetricFlowRateMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcVolumetricFlowRateMeasure initialize(double v);
@@ -13842,9 +13828,9 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_SCHEMA_API IfcWarpingConstantMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcWarpingConstantMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcWarpingConstantMeasure initialize(double v);
@@ -13855,9 +13841,9 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_SCHEMA_API IfcWarpingMomentMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcWarpingMomentMeasure : public express::declared_type {
 public:
-    using express::DeclaredType::DeclaredType;
+    using express::declared_type::declared_type;
 
     static const ifcopenshell::type_declaration& Class();
     IfcWarpingMomentMeasure initialize(double v);
@@ -13935,9 +13921,9 @@ public:
 /// Corresponds to the following entity in ISO-10303-41: organization_role and person_role.
 /// 
 /// HISTORY New entity in IFC Release 1.5.1
-class IFC_SCHEMA_API IfcActorRole : public express::Entity {
+class IFC_SCHEMA_API IfcActorRole : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// The name of the role played by an actor. If the Role has value USERDEFINED, then
     /// the user defined role shall be provided as a value of the attribute UserDefinedRole.
@@ -13962,9 +13948,9 @@ public:
 /// NOTE Corresponds to the following entity in ISO-10303-41: address.
 /// 
 /// HISTORY New entity in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcAddress : public express::Entity {
+class IFC_SCHEMA_API IfcAddress : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// Identifies the logical location of the address.
     std::optional< ::Ifc4x3_rc3::IfcAddressTypeEnum::Value > Purpose() const;
@@ -13985,9 +13971,9 @@ public:
     IfcAddress initialize(std::optional< ::Ifc4x3_rc3::IfcAddressTypeEnum::Value > v1_Purpose, std::optional< std::string > v2_Description, std::optional< std::string > v3_UserDefinedPurpose);
 };
 
-class IFC_SCHEMA_API IfcAlignmentParameterSegment : public express::Entity {
+class IFC_SCHEMA_API IfcAlignmentParameterSegment : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     std::optional< std::string > StartTag() const;
     void setStartTag(const std::optional< std::string >& v);
@@ -14023,9 +14009,9 @@ public:
 /// IfcApplication holds the information about an IFC compliant application developed by an application developer. The IfcApplication utilizes a short identifying name as provided by the application developer.
 /// 
 /// HISTORY  New entity in IFC R1.5.
-class IFC_SCHEMA_API IfcApplication : public express::Entity {
+class IFC_SCHEMA_API IfcApplication : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// Name of the application developer, being requested to be member of the IAI.
     ::Ifc4x3_rc3::IfcOrganization ApplicationDeveloper() const;
@@ -14057,9 +14043,9 @@ public:
 /// An instance of IfcAppliedValue may have a unit basis asserted.  This is defined as an IfcMeasureWithUnit that determines the extent of the unit value for application purposes. It is assumed that when this attribute is asserted, then the value given to IfcAppliedValue is that for unit quantity. This is not enforced within the IFC schema and thus needs to be controlled within an application.
 /// 
 /// Applied values may be referenced from a document (such as a price list). The relationship between one or more occurrences of IfcAppliedValue (or its subtypes) is achieved through the use of the IfcExternalReferenceRelationship in which the document provides the IfcExternalReferenceRelationship.RelatingExtReference and the value occurrences are the IfcExternalReferenceRelationship.RelatedResourceObjects.
-class IFC_SCHEMA_API IfcAppliedValue : public express::Entity {
+class IFC_SCHEMA_API IfcAppliedValue : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// A name or additional clarification given to a cost value.
     std::optional< std::string > Name() const;
@@ -14105,9 +14091,9 @@ public:
 /// HISTORY New Entity in IFC Release 2.0
 /// 
 /// IFC2x Edition 4 CHANGE  Attributes Identifier and Name made optional, where rule added to require at least one of them being asserted. Inverse attributes ApprovedObjects, ApprovedResources and HasExternalReferences added. Inverse attribute Properties deleted (more general relationship via inverse ApprovedResources to be used instead).
-class IFC_SCHEMA_API IfcApproval : public express::Entity {
+class IFC_SCHEMA_API IfcApproval : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// A computer interpretable identifier by which the approval is known.
     std::optional< std::string > Identifier() const;
@@ -14166,9 +14152,9 @@ public:
 /// HISTORY: New entity
 /// in Release IFC2x Edition
 /// 2.
-class IFC_SCHEMA_API IfcBoundaryCondition : public express::Entity {
+class IFC_SCHEMA_API IfcBoundaryCondition : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// Optionally defines a name for this boundary condition.
     std::optional< std::string > Name() const;
@@ -14310,9 +14296,9 @@ public:
 /// HISTORY  New entity in IFC Release 1.5.
 /// 
 /// IFC2x Edition 3 CHANGE  The definition of the subtypes has been enhanced by allowing either geometric representation items (point | curve | surface) or topological representation items with associated geometry (vertex point | edge curve | face  surface).
-class IFC_SCHEMA_API IfcConnectionGeometry : public express::Entity {
+class IFC_SCHEMA_API IfcConnectionGeometry : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     
     static const ifcopenshell::entity& Class();
@@ -14402,9 +14388,9 @@ public:
 /// A constraint must have a name applied through the IfcConstraint.Name attribute and optionally, a description through IfcConstraint.Description. The grade of the constraint (hard, soft, advisory) must be specified through IfcConstraint.ConstraintGrade or IfcConstraint.UserDefinedGrade whilst the source, creating actor and time at which the constraint is created may be optionally asserted through IfcConstraint.ConstraintSource, IfcConstraint.CreatingActor and IfcConstraint.CreationTime. 
 /// 
 /// A constraint may also have additional external information (such as classification or document information) associated to it by IfcExternalReferenceRelationship, accessible through inverse attribute IfcConstraint.HasExternalReferences
-class IFC_SCHEMA_API IfcConstraint : public express::Entity {
+class IFC_SCHEMA_API IfcConstraint : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// A name to be used for the constraint (e.g., ChillerCoefficientOfPerformance).
     std::string Name() const;
@@ -14482,9 +14468,9 @@ public:
 ///   and any map or other coordinate reference system.
 /// 
 /// HISTORY  New entity in IFC2x4.
-class IFC_SCHEMA_API IfcCoordinateOperation : public express::Entity {
+class IFC_SCHEMA_API IfcCoordinateOperation : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// Source coordinate reference system for the operation.
     ::Ifc4x3_rc3::IfcCoordinateReferenceSystemSelect SourceCRS() const;
@@ -14518,9 +14504,9 @@ public:
 /// Specifications.
 /// 
 /// HISTORY  New entity in IFC2x4.
-class IFC_SCHEMA_API IfcCoordinateReferenceSystem : public express::Entity {
+class IFC_SCHEMA_API IfcCoordinateReferenceSystem : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// Name by which the coordinate reference system is identified.
     /// Note  The name shall be taken from the list recognized by the European Petroleum Survey Group EPSG.
@@ -14604,9 +14590,9 @@ public:
 /// NOTE: Corresponding ISO 10303 name: derived_unit, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcDerivedUnit : public express::Entity {
+class IFC_SCHEMA_API IfcDerivedUnit : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// The group of units and their exponents that define the derived unit.
     std::vector< ::Ifc4x3_rc3::IfcDerivedUnitElement > Elements() const;
@@ -14629,9 +14615,9 @@ public:
 /// NOTE: Corresponding ISO 10303 name: derived_unit_element, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcDerivedUnitElement : public express::Entity {
+class IFC_SCHEMA_API IfcDerivedUnitElement : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// The fixed quantity which is used as the mathematical factor.
     ::Ifc4x3_rc3::IfcNamedUnit Unit() const;
@@ -14660,9 +14646,9 @@ public:
 ///   for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcDimensionalExponents : public express::Entity {
+class IFC_SCHEMA_API IfcDimensionalExponents : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// The power of the length base quantity.
     int64_t LengthExponent() const;
@@ -14695,9 +14681,9 @@ public:
 /// all external information entities.
 /// 
 /// HISTORY New entity in IFC2x4.
-class IFC_SCHEMA_API IfcExternalInformation : public express::Entity {
+class IFC_SCHEMA_API IfcExternalInformation : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     
     static const ifcopenshell::entity& Class();
@@ -14712,9 +14698,9 @@ public:
 /// IfcExternalReference is an abstract supertype of all external reference entities.
 /// 
 /// HISTORY New entity in IFC2x.
-class IFC_SCHEMA_API IfcExternalReference : public express::Entity {
+class IFC_SCHEMA_API IfcExternalReference : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// Location, where the external source (classification, document or library) can be accessed by electronic means. The electronic location is provided as an URI, and would normally be given as an URL location string.
     /// 
@@ -14809,9 +14795,9 @@ public:
 /// underlying AxisCurve supports this concept.
 /// 
 /// Figure 242 — Grid axis
-class IFC_SCHEMA_API IfcGridAxis : public express::Entity {
+class IFC_SCHEMA_API IfcGridAxis : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// The tag or name for this grid axis.
     std::optional< std::string > AxisTag() const;
@@ -14833,9 +14819,9 @@ public:
 /// The IfcIrregularTimeSeriesValue describes a value (or set of values) at a particular time point. 
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IFC_SCHEMA_API IfcIrregularTimeSeriesValue : public express::Entity {
+class IFC_SCHEMA_API IfcIrregularTimeSeriesValue : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// The specification of the time point.
     std::string TimeStamp() const;
@@ -14930,9 +14916,9 @@ public:
 /// For each pair of MainPlaneAngle and SecondaryPlaneAngle the LuminousIntensity is provided (the unit is given by the IfcUnitAssignment referring to the LuminousIntensityDistributionUnit, normally cd/klm). 
 /// 
 /// HISTORY: New entity in IFC2x2.
-class IFC_SCHEMA_API IfcLightDistributionData : public express::Entity {
+class IFC_SCHEMA_API IfcLightDistributionData : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// The main plane angle (A, B or C angles, according to the light distribution curve chosen).
     double MainPlaneAngle() const;
@@ -14952,9 +14938,9 @@ public:
 /// IfcLightIntensityDistribution defines the the luminous intensity of a light source that changes according to the direction of the ray. It is based on some standardized light distribution curves, which are defined by the LightDistributionCurve attribute. 
 /// 
 /// New entity in IFC2x2.
-class IFC_SCHEMA_API IfcLightIntensityDistribution : public express::Entity {
+class IFC_SCHEMA_API IfcLightIntensityDistribution : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// Standardized  light distribution curve used to define the luminous intensity of the light in all directions.
     ::Ifc4x3_rc3::IfcLightDistributionCurveEnum::Value LightDistributionCurve() const;
@@ -15019,9 +15005,9 @@ public:
 /// HISTORY New entity in IFC2x.
 /// 
 /// IFC2x4 CHANGE The entity IfcMaterialClassificationRelationship is deprecated since IFC2x4 and shall no longer be used. Use IfcExternalReferenceRelationship instead.
-class IFC_SCHEMA_API IfcMaterialClassificationRelationship : public express::Entity {
+class IFC_SCHEMA_API IfcMaterialClassificationRelationship : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// The material classifications identifying the type of material.
     std::vector< ::Ifc4x3_rc3::IfcClassificationSelect > MaterialClassifications() const;
@@ -15057,9 +15043,9 @@ public:
 /// IfcRelAssociatesMaterial.
 /// 
 /// HISTORY New entity in IFC2x4
-class IFC_SCHEMA_API IfcMaterialDefinition : public express::Entity {
+class IFC_SCHEMA_API IfcMaterialDefinition : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
         std::vector< IfcRelAssociatesMaterial > AssociatedTo() const; // INVERSE IfcRelAssociatesMaterial::RelatingMaterial
     std::vector< IfcExternalReferenceRelationship > HasExternalReferences() const; // INVERSE IfcExternalReferenceRelationship::RelatedResourceObjects
@@ -15255,9 +15241,9 @@ public:
 /// 
 /// IFC2x4 CHANGE The entity IfcMaterialList is deprecated and shall no longer
 /// be used. Use IfcMaterialConstituentSet instead.
-class IFC_SCHEMA_API IfcMaterialList : public express::Entity {
+class IFC_SCHEMA_API IfcMaterialList : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// Materials used in a composition of substances.
     std::vector< ::Ifc4x3_rc3::IfcMaterial > Materials() const;
@@ -15373,9 +15359,9 @@ public:
 /// IfcMaterialUsageDefinition to a subtype of
 /// IfcElementType, it shall only be assigned to an element
 /// occurrence.
-class IFC_SCHEMA_API IfcMaterialUsageDefinition : public express::Entity {
+class IFC_SCHEMA_API IfcMaterialUsageDefinition : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
         std::vector< IfcRelAssociatesMaterial > AssociatedTo() const; // INVERSE IfcRelAssociatesMaterial::RelatingMaterial
 
@@ -15392,9 +15378,9 @@ public:
 /// NOTE Corresponding ISO 10303 name: measure_with_unit, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcMeasureWithUnit : public express::Entity {
+class IFC_SCHEMA_API IfcMeasureWithUnit : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// The value of the physical quantity when expressed in the specified units.
     ::Ifc4x3_rc3::IfcValue ValueComponent() const;
@@ -15482,9 +15468,9 @@ public:
 /// HISTORY: New entity in IFC Release 2x.
 /// 
 /// IFC2x4 CHANGE: Type of the attribute Currency changed.
-class IFC_SCHEMA_API IfcMonetaryUnit : public express::Entity {
+class IFC_SCHEMA_API IfcMonetaryUnit : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// Code or name of the currency.  Permissible values are the three-letter alphabetic currency codes as per ISO 4217, for example CNY, EUR, GBP, JPY, USD.
     std::string Currency() const;
@@ -15498,9 +15484,9 @@ public:
 /// NOTE Corresponding ISO 10303 name: named_unit, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcNamedUnit : public express::Entity {
+class IFC_SCHEMA_API IfcNamedUnit : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// The dimensional exponents of the SI base units by which the named unit is defined.
     ::Ifc4x3_rc3::IfcDimensionalExponents Dimensions() const;
@@ -15523,9 +15509,9 @@ public:
 /// In any case the object placement has to unambiguously define the object coordinate system as either two-dimensional axis placement (IfcAxis2Placement2D) or three-dimensional axis placement (IfcAxis2Placement3D). The axis placement may have to be calculated.
 /// 
 /// HISTORY New entity in IFC Release 2x.
-class IFC_SCHEMA_API IfcObjectPlacement : public express::Entity {
+class IFC_SCHEMA_API IfcObjectPlacement : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     ::Ifc4x3_rc3::IfcObjectPlacement PlacementRelTo() const;
     void setPlacementRelTo(const ::Ifc4x3_rc3::IfcObjectPlacement& v);
@@ -15570,9 +15556,9 @@ public:
 /// 
 /// HISTORY New entity in IFC Release 1.5.1.
 /// IFC 2x4 change: attribute Id renamed to Identification.
-class IFC_SCHEMA_API IfcOrganization : public express::Entity {
+class IFC_SCHEMA_API IfcOrganization : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// Identification of the organization.
     std::optional< std::string > Identification() const;
@@ -15607,9 +15593,9 @@ public:
 /// 
 /// If LastModifiedDate is defined but ChangeAction is not asserted, then the state of ChangeAction is assumed to be UNDEFINED.	  
 /// If both LastModifiedDate and ChangeAction are asserted, then the state of ChangeAction applies to the value asserted in LastModifiedDate.
-class IFC_SCHEMA_API IfcOwnerHistory : public express::Entity {
+class IFC_SCHEMA_API IfcOwnerHistory : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// Direct reference to the end user who currently "owns" this object. Note that IFC includes the concept of ownership transfer from one user to another and therefore distinguishes between the Owning User and Creating User.
     ::Ifc4x3_rc3::IfcPersonAndOrganization OwningUser() const;
@@ -15648,9 +15634,9 @@ public:
 /// 
 /// HISTORY New entity in IFC Release 1.5.1.
 /// IFC 2x4 change: attribute Id renamed to Identification.  WHERE rule relaxed to allow omission of names if Identification is provided.
-class IFC_SCHEMA_API IfcPerson : public express::Entity {
+class IFC_SCHEMA_API IfcPerson : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// Identification of the person.
     std::optional< std::string > Identification() const;
@@ -15692,9 +15678,9 @@ public:
 /// NOTE Corresponds to the following entity in ISO-10303-41: person_and_organization.
 /// 
 /// HISTORY New entity in IFC Release 1.5.1
-class IFC_SCHEMA_API IfcPersonAndOrganization : public express::Entity {
+class IFC_SCHEMA_API IfcPersonAndOrganization : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// The person who is related to the organization.
     ::Ifc4x3_rc3::IfcPerson ThePerson() const;
@@ -15714,9 +15700,9 @@ public:
 /// The Name attribute defines the actual usage or kind of measure. The interpretation of the name label has to be established within the actual exchange context. In addition an informative text may be associated to each quantity by the Description attribute. 
 /// 
 /// HISTORY  New entity in IFC2x. It replaces the calcXxx attributes used in previous IFC Releases.
-class IFC_SCHEMA_API IfcPhysicalQuantity : public express::Entity {
+class IFC_SCHEMA_API IfcPhysicalQuantity : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// Name of the element quantity or measure. The name attribute has to be made recognizable by further agreements.
     std::string Name() const;
@@ -15789,9 +15775,9 @@ public:
     IfcPostalAddress initialize(std::optional< ::Ifc4x3_rc3::IfcAddressTypeEnum::Value > v1_Purpose, std::optional< std::string > v2_Description, std::optional< std::string > v3_UserDefinedPurpose, std::optional< std::string > v4_InternalLocation, std::optional< std::vector< std::string > /*[1:?]*/ > v5_AddressLines, std::optional< std::string > v6_PostalBox, std::optional< std::string > v7_Town, std::optional< std::string > v8_Region, std::optional< std::string > v9_PostalCode, std::optional< std::string > v10_Country);
 };
 
-class IFC_SCHEMA_API IfcPresentationItem : public express::Entity {
+class IFC_SCHEMA_API IfcPresentationItem : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     
     static const ifcopenshell::entity& Class();
@@ -15812,9 +15798,9 @@ public:
 /// Figure 305 illustrates assignment of items by shape representation or representation item. The set of AssignedItems can either include a whole shape representation, or individual geometric representation items. If both, the IfcShapeRepresentation has a layer assignment, and an individual geometric representation item in the set of IfcShapeRepresentation.Items, then the layer assignment of the IfcGeometricRepresentationItem overides the layer assignment of the IfcShapeRepresentation.
 /// 
 /// Figure 305 — Presentation layer assignment
-class IFC_SCHEMA_API IfcPresentationLayerAssignment : public express::Entity {
+class IFC_SCHEMA_API IfcPresentationLayerAssignment : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// Name of the layer.
     std::string Name() const;
@@ -15874,9 +15860,9 @@ public:
 /// Each subtype of  IfcPresentationStyle can be assigned to IfcGeometricRepresentationItem's via the IfcPresentationStyleAssignment through an intermediate IfcStyledItem or one of its subtypes.
 /// 
 /// HISTORY  New entity in IFC2x3.
-class IFC_SCHEMA_API IfcPresentationStyle : public express::Entity {
+class IFC_SCHEMA_API IfcPresentationStyle : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// Name of the presentation style.
     std::optional< std::string > Name() const;
@@ -15902,9 +15888,9 @@ public:
 /// IFC2x3 NOTE Users should not instantiate the entity from IFC2x Edition 3 onwards.
 /// 
 /// IFC2x4 CHANGE  Entity made abstract.
-class IFC_SCHEMA_API IfcProductRepresentation : public express::Entity {
+class IFC_SCHEMA_API IfcProductRepresentation : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// The word or group of words by which the product representation is known.
     std::optional< std::string > Name() const;
@@ -16089,9 +16075,9 @@ public:
 /// possible to directly instantiate IfcProfileDef and further specify
 /// the profile only by external reference or by profile properties. The latter
 /// are tracked by the inverse attribute HasProperties.
-class IFC_SCHEMA_API IfcProfileDef : public express::Entity {
+class IFC_SCHEMA_API IfcProfileDef : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// Defines the type of geometry into which this profile definition shall be resolved, either a curve or a surface area. In case of curve the profile should be referenced by a swept surface, in case of area the profile should be referenced by a swept area solid.
     ::Ifc4x3_rc3::IfcProfileTypeEnum::Value ProfileType() const;
@@ -16153,9 +16139,9 @@ public:
     IfcProjectedCRS initialize(std::string v1_Name, std::optional< std::string > v2_Description, std::optional< std::string > v3_GeodeticDatum, std::optional< std::string > v4_VerticalDatum, std::optional< std::string > v5_MapProjection, std::optional< std::string > v6_MapZone, ::Ifc4x3_rc3::IfcNamedUnit v7_MapUnit);
 };
 
-class IFC_SCHEMA_API IfcPropertyAbstraction : public express::Entity {
+class IFC_SCHEMA_API IfcPropertyAbstraction : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
         std::vector< IfcExternalReferenceRelationship > HasExternalReferences() const; // INVERSE IfcExternalReferenceRelationship::RelatedResourceObjects
 
@@ -16357,9 +16343,9 @@ public:
 /// 
 /// Use definitions
 /// IfcRecurrencePattern supports various recurrence patterns that are differentiated by a type definition (IfcRecurrencePattern.RecurrenceType), which is required to provide the meaning of the given values. It can be further constrained by applicable times through specified IfcTimePeriod instances, thus enabling time periods such as between 7:00 and 12:00 and between 13:00 and 17:00 for each of the applicable days, weeks or months.
-class IFC_SCHEMA_API IfcRecurrencePattern : public express::Entity {
+class IFC_SCHEMA_API IfcRecurrencePattern : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// Defines the recurrence type that gives meaning to the used
     ///   attributes and decides about possible attribute
@@ -16403,9 +16389,9 @@ public:
     IfcRecurrencePattern initialize(::Ifc4x3_rc3::IfcRecurrenceTypeEnum::Value v1_RecurrenceType, std::optional< std::vector< int64_t > /*[1:?]*/ > v2_DayComponent, std::optional< std::vector< int64_t > /*[1:?]*/ > v3_WeekdayComponent, std::optional< std::vector< int64_t > /*[1:?]*/ > v4_MonthComponent, std::optional< int64_t > v5_Position, std::optional< int64_t > v6_Interval, std::optional< int64_t > v7_Occurrences, std::optional< std::vector< ::Ifc4x3_rc3::IfcTimePeriod > > v8_TimePeriods);
 };
 
-class IFC_SCHEMA_API IfcReference : public express::Entity {
+class IFC_SCHEMA_API IfcReference : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     std::optional< std::string > TypeIdentifier() const;
     void setTypeIdentifier(const std::optional< std::string >& v);
@@ -16467,9 +16453,9 @@ public:
 /// IFC2x4 CHANGE  Entity
 ///   IfcRepresentation has been changed into an ABSTRACT
 ///   supertype.
-class IFC_SCHEMA_API IfcRepresentation : public express::Entity {
+class IFC_SCHEMA_API IfcRepresentation : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// Definition of the representation context for which the different subtypes of representation are valid.
     ::Ifc4x3_rc3::IfcRepresentationContext ContextOfItems() const;
@@ -16501,9 +16487,9 @@ public:
 /// 
 /// IFC2x4 CHANGE Entity made abstract, had been deprecated from instantiation since
 /// IFC2x2.
-class IFC_SCHEMA_API IfcRepresentationContext : public express::Entity {
+class IFC_SCHEMA_API IfcRepresentationContext : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// The optional identifier of the representation context as used within a project.
     std::optional< std::string > ContextIdentifier() const;
@@ -16548,9 +16534,9 @@ public:
 /// HISTORY  New entity in IFC Release 2x.
 /// 
 /// IFC2x3 CHANGE  The inverse attributes StyledByItem and LayerAssignments have been added. Upward compatibility for file based exchange is guaranteed.
-class IFC_SCHEMA_API IfcRepresentationItem : public express::Entity {
+class IFC_SCHEMA_API IfcRepresentationItem : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
         std::vector< IfcPresentationLayerAssignment > LayerAssignment() const; // INVERSE IfcPresentationLayerAssignment::AssignedItems
     std::vector< IfcStyledItem > StyledByItem() const; // INVERSE IfcStyledItem::Item
@@ -16569,9 +16555,9 @@ public:
 /// NOTE  The definition of a mapping which is used to specify a new representation item comprises a representation map and a mapped item entity. Without both entities, the mapping is not fully defined. Two entities are specified to allow the same source representation to be mapped into multiple new representations.
 /// 
 /// HISTORY  New entity in IFC Release 2x.
-class IFC_SCHEMA_API IfcRepresentationMap : public express::Entity {
+class IFC_SCHEMA_API IfcRepresentationMap : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// An axis2 placement that defines the position about which the mapped
     /// representation is mapped.
@@ -16589,9 +16575,9 @@ public:
 /// IfcResourceLevelRelationship is an abstract base class for relationships between resource-level entities.
 /// 
 /// HISTORY New Entity in IFC 2x4
-class IFC_SCHEMA_API IfcResourceLevelRelationship : public express::Entity {
+class IFC_SCHEMA_API IfcResourceLevelRelationship : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// A name used to identify or qualify the relationship.
     std::optional< std::string > Name() const;
@@ -16612,9 +16598,9 @@ public:
 /// HISTORY New entity in IFC Release 1.0
 /// 
 /// IFC2x4 CHANGE The attribute OwnerHistory has been made OPTIONAL.
-class IFC_SCHEMA_API IfcRoot : public express::Entity {
+class IFC_SCHEMA_API IfcRoot : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// Assignment of a globally unique identifier within the entire software world.
     std::string GlobalId() const;
@@ -16662,9 +16648,9 @@ public:
 /// IfcSchedulingTime is the abstract supertype of entities that capture time-related information of processes.
 /// 
 /// HISTORY: New entity in IFC2x4.
-class IFC_SCHEMA_API IfcSchedulingTime : public express::Entity {
+class IFC_SCHEMA_API IfcSchedulingTime : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// Optional name for the time definition.
     std::optional< std::string > Name() const;
@@ -16717,9 +16703,9 @@ public:
 ///   IfcRepresentationMap's that are used by an
 ///   IfcTypeProduct through the
 ///   RepresentationMaps attribute.
-class IFC_SCHEMA_API IfcShapeAspect : public express::Entity {
+class IFC_SCHEMA_API IfcShapeAspect : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// List of shape representations. Each member defines a valid representation of a particular type within a particular representation context as being an aspect (or part) of a product definition.
     /// IFC2x Edition 3 CHANGE  The data type has been changed from IfcShapeRepresentation to IfcShapeModel with upward compatibility
@@ -16918,9 +16904,9 @@ public:
 /// Definition from IAI: Describe more rarely needed connection properties.
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IFC_SCHEMA_API IfcStructuralConnectionCondition : public express::Entity {
+class IFC_SCHEMA_API IfcStructuralConnectionCondition : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// Optionally defines a name for this connection condition.
     std::optional< std::string > Name() const;
@@ -16932,9 +16918,9 @@ public:
 /// Definition from IAI: The abstract entity IfcStructuralLoadOrResult is the supertype of all loads (actions or reactions) or of certain requirements resulting from structural analysis, or certain provisions which influence structural analysis.
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IFC_SCHEMA_API IfcStructuralLoad : public express::Entity {
+class IFC_SCHEMA_API IfcStructuralLoad : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// Optionally defines a name for this load.
     std::optional< std::string > Name() const;
@@ -17387,9 +17373,9 @@ public:
 /// HISTORY  New entity in IFC R1.5.
 /// 
 /// IFC2x4 CHANGE  Columns attribute added.
-class IFC_SCHEMA_API IfcTable : public express::Entity {
+class IFC_SCHEMA_API IfcTable : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// A unique name which is intended to describe the usage of the Table.
     std::optional< std::string > Name() const;
@@ -17409,9 +17395,9 @@ public:
 /// The use of IfcTableColumn supercedes the IsHeading flag associated with IfcTableRow. 
 /// 
 /// HISTORY  New entity in IFC2x4.
-class IFC_SCHEMA_API IfcTableColumn : public express::Entity {
+class IFC_SCHEMA_API IfcTableColumn : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// Table column identifier.
     std::optional< std::string > Identifier() const;
@@ -17444,9 +17430,9 @@ public:
 /// Figure 338 — Table row use alternative
 /// 
 /// HISTORY  New entity in IFC R1.5.
-class IFC_SCHEMA_API IfcTableRow : public express::Entity {
+class IFC_SCHEMA_API IfcTableRow : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// The data value of the table cell..
     std::optional< std::vector< ::Ifc4x3_rc3::IfcValue > > RowCells() const;
@@ -17940,9 +17926,9 @@ public:
 /// 
 /// Use definitions
 /// A time period is defined by a start and an end time, which is defined by IfcTime. The given time period should be within reasonable values (for example, the start time must be before the end time). It is furthermore expected that both time definitions use the same time zone and, if given, the same daylight saving offset.
-class IFC_SCHEMA_API IfcTimePeriod : public express::Entity {
+class IFC_SCHEMA_API IfcTimePeriod : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// Start time of the time period.
     std::string StartTime() const;
@@ -17959,9 +17945,9 @@ public:
 /// The modeling of buildings and their performance involves data that are generated and recorded over a period of time.  Such data cover a large spectrum, from weather data to schedules of all kinds to status measurements to reporting to everything else that has a time related aspect. Their correct placement in time is essential for their proper understanding and use, and the IfcTimeSeries subtypes provide the appropriate data structures to accommodate these types of data.
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IFC_SCHEMA_API IfcTimeSeries : public express::Entity {
+class IFC_SCHEMA_API IfcTimeSeries : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// An unique name for the time series.
     std::string Name() const;
@@ -18001,9 +17987,9 @@ public:
 /// Figure 241 — Time series value 
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IFC_SCHEMA_API IfcTimeSeriesValue : public express::Entity {
+class IFC_SCHEMA_API IfcTimeSeriesValue : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// A list of time-series values. At least one value is required.
     std::vector< ::Ifc4x3_rc3::IfcValue > ListValues() const;
@@ -18072,9 +18058,9 @@ public:
 /// NOTE  A project (IfcProject) has a unit assignment which establishes a set of units which will be used globally within the project, if not otherwise defined. Other objects may have local unit assignments if there is a requirement for them to make use of units which do not fall within the project unit assignment.
 /// 
 /// HISTORY  New entity in IFC Release 1.5.1.
-class IFC_SCHEMA_API IfcUnitAssignment : public express::Entity {
+class IFC_SCHEMA_API IfcUnitAssignment : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// Units to be included within a unit assignment.
     std::vector< ::Ifc4x3_rc3::IfcUnit > Units() const;
@@ -18180,9 +18166,9 @@ public:
 /// OffsetDistances[1] is a negative length measure
 /// 
 /// Figure 248 — Virtual grid intersection negative offset
-class IFC_SCHEMA_API IfcVirtualGridIntersection : public express::Entity {
+class IFC_SCHEMA_API IfcVirtualGridIntersection : public express::entity {
 public:
-    using express::Entity::Entity;
+    using express::entity::entity;
 
     /// Two grid axes which intersects at exactly one intersection (see also informal proposition at IfcGrid). If attribute OffsetDistances is omitted, the intersection defines the placement or ref direction of a grid placement directly. If OffsetDistances are given, the intersection is defined by the offset curves to the grid axes.
     std::vector< ::Ifc4x3_rc3::IfcGridAxis > IntersectingAxes() const;
@@ -18240,11 +18226,13 @@ public:
     void setStartCantRight(const double& v);
     std::optional< double > EndCantRight() const;
     void setEndCantRight(const std::optional< double >& v);
+    std::optional< double > SmoothingLength() const;
+    void setSmoothingLength(const std::optional< double >& v);
     ::Ifc4x3_rc3::IfcAlignmentCantSegmentTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc4x3_rc3::IfcAlignmentCantSegmentTypeEnum::Value& v);
     
     static const ifcopenshell::entity& Class();
-    IfcAlignmentCantSegment initialize(std::optional< std::string > v1_StartTag, std::optional< std::string > v2_EndTag, double v3_StartDistAlong, double v4_HorizontalLength, double v5_StartCantLeft, std::optional< double > v6_EndCantLeft, double v7_StartCantRight, std::optional< double > v8_EndCantRight, ::Ifc4x3_rc3::IfcAlignmentCantSegmentTypeEnum::Value v9_PredefinedType);
+    IfcAlignmentCantSegment initialize(std::optional< std::string > v1_StartTag, std::optional< std::string > v2_EndTag, double v3_StartDistAlong, double v4_HorizontalLength, double v5_StartCantLeft, std::optional< double > v6_EndCantLeft, double v7_StartCantRight, std::optional< double > v8_EndCantRight, std::optional< double > v9_SmoothingLength, ::Ifc4x3_rc3::IfcAlignmentCantSegmentTypeEnum::Value v10_PredefinedType);
 };
 
 class IFC_SCHEMA_API IfcAlignmentHorizontalSegment : public IfcAlignmentParameterSegment {
@@ -29316,13 +29304,13 @@ class IFC_SCHEMA_API IfcSectionedSolidHorizontal : public IfcSectionedSolid {
 public:
     using IfcSectionedSolid::IfcSectionedSolid;
 
-    std::vector< ::Ifc4x3_rc3::IfcAxis2PlacementLinear > CrossSectionPositions() const;
-    void setCrossSectionPositions(const std::vector< ::Ifc4x3_rc3::IfcAxis2PlacementLinear >& v);
+    std::vector< ::Ifc4x3_rc3::IfcCurveMeasureSelect > CrossSectionPositions() const;
+    void setCrossSectionPositions(const std::vector< ::Ifc4x3_rc3::IfcCurveMeasureSelect >& v);
     bool FixedAxisVertical() const;
     void setFixedAxisVertical(const bool& v);
     
     static const ifcopenshell::entity& Class();
-    IfcSectionedSolidHorizontal initialize(::Ifc4x3_rc3::IfcCurve v1_Directrix, std::vector< ::Ifc4x3_rc3::IfcProfileDef > v2_CrossSections, std::vector< ::Ifc4x3_rc3::IfcAxis2PlacementLinear > v3_CrossSectionPositions, bool v4_FixedAxisVertical);
+    IfcSectionedSolidHorizontal initialize(::Ifc4x3_rc3::IfcCurve v1_Directrix, std::vector< ::Ifc4x3_rc3::IfcProfileDef > v2_CrossSections, std::vector< ::Ifc4x3_rc3::IfcCurveMeasureSelect > v3_CrossSectionPositions, bool v4_FixedAxisVertical);
 };
 
 class IFC_SCHEMA_API IfcSectionedSurface : public IfcSurface {
@@ -30778,11 +30766,9 @@ public:
     void setQuadraticTerm(const std::optional< double >& v);
     std::optional< double > LinearTerm() const;
     void setLinearTerm(const std::optional< double >& v);
-    std::optional< double > ConstantTerm() const;
-    void setConstantTerm(const std::optional< double >& v);
     
     static const ifcopenshell::entity& Class();
-    IfcThirdOrderPolynomialSpiral initialize(::Ifc4x3_rc3::IfcAxis2Placement v1_Position, double v2_QubicTerm, std::optional< double > v3_QuadraticTerm, std::optional< double > v4_LinearTerm, std::optional< double > v5_ConstantTerm);
+    IfcThirdOrderPolynomialSpiral initialize(::Ifc4x3_rc3::IfcAxis2Placement v1_Position, double v2_QubicTerm, std::optional< double > v3_QuadraticTerm, std::optional< double > v4_LinearTerm);
 };
 
 class IFC_SCHEMA_API IfcToroidalSurface : public IfcElementarySurface {
@@ -32748,15 +32734,6 @@ public:
     
     static const ifcopenshell::entity& Class();
     IfcDeepFoundationType initialize(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc4x3_rc3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc4x3_rc3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType);
-};
-
-class IFC_SCHEMA_API IfcDirectrixDerivedReferenceSweptAreaSolid : public IfcFixedReferenceSweptAreaSolid {
-public:
-    using IfcFixedReferenceSweptAreaSolid::IfcFixedReferenceSweptAreaSolid;
-
-    
-    static const ifcopenshell::entity& Class();
-    IfcDirectrixDerivedReferenceSweptAreaSolid initialize(::Ifc4x3_rc3::IfcProfileDef v1_SweptArea, ::Ifc4x3_rc3::IfcAxis2Placement3D v2_Position, ::Ifc4x3_rc3::IfcCurve v3_Directrix, ::Ifc4x3_rc3::IfcCurveMeasureSelect v4_StartParam, ::Ifc4x3_rc3::IfcCurveMeasureSelect v5_EndParam, ::Ifc4x3_rc3::IfcDirection v6_FixedReference);
 };
 /// Definition from IAI: The
 /// IfcDistributionElementType defines a list of commonly
@@ -36030,11 +36007,11 @@ class IFC_SCHEMA_API IfcPavementType : public IfcBuiltElementType {
 public:
     using IfcBuiltElementType::IfcBuiltElementType;
 
-    ::Ifc4x3_rc3::IfcPavementTypeEnum::Value PredefinedType() const;
-    void setPredefinedType(const ::Ifc4x3_rc3::IfcPavementTypeEnum::Value& v);
+    bool Flexible() const;
+    void setFlexible(const bool& v);
     
     static const ifcopenshell::entity& Class();
-    IfcPavementType initialize(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc4x3_rc3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc4x3_rc3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc4x3_rc3::IfcPavementTypeEnum::Value v10_PredefinedType);
+    IfcPavementType initialize(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc4x3_rc3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc4x3_rc3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, bool v10_Flexible);
 };
 /// IfcPerformanceHistory is used to document the actual performance of an occurrence instance over time. In practice, performance-related data are generally not easy to obtain as they can originate from different sources (predicted, simulated, or measured) and occur during different stages of the building life-cycle. Such time-related data cover a large spectrum, including meteorological data, schedules, operational status measurements, trend reports, etc.
 /// 
@@ -40658,9 +40635,11 @@ class IFC_SCHEMA_API IfcAlignmentHorizontal : public IfcLinearElement {
 public:
     using IfcLinearElement::IfcLinearElement;
 
+    std::optional< double > StartDistAlong() const;
+    void setStartDistAlong(const std::optional< double >& v);
     
     static const ifcopenshell::entity& Class();
-    IfcAlignmentHorizontal initialize(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc4x3_rc3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc4x3_rc3::IfcProductRepresentation v7_Representation);
+    IfcAlignmentHorizontal initialize(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc4x3_rc3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc4x3_rc3::IfcProductRepresentation v7_Representation, std::optional< double > v8_StartDistAlong);
 };
 
 class IFC_SCHEMA_API IfcAlignmentSegment : public IfcLinearElement {
@@ -46869,11 +46848,11 @@ class IFC_SCHEMA_API IfcPavement : public IfcBuiltElement {
 public:
     using IfcBuiltElement::IfcBuiltElement;
 
-    std::optional< ::Ifc4x3_rc3::IfcPavementTypeEnum::Value > PredefinedType() const;
-    void setPredefinedType(const std::optional< ::Ifc4x3_rc3::IfcPavementTypeEnum::Value >& v);
+    std::optional< bool > Flexible() const;
+    void setFlexible(const std::optional< bool >& v);
     
     static const ifcopenshell::entity& Class();
-    IfcPavement initialize(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc4x3_rc3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc4x3_rc3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< ::Ifc4x3_rc3::IfcPavementTypeEnum::Value > v9_PredefinedType);
+    IfcPavement initialize(std::string v1_GlobalId, ::Ifc4x3_rc3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc4x3_rc3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc4x3_rc3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< bool > v9_Flexible);
 };
 /// A pile is a slender timber, concrete, or steel structural element, driven, jetted, or otherwise embedded on end in the ground for the purpose of supporting a load.
 /// 

@@ -21,7 +21,7 @@
 #include "AppSettings.h"
 #include "../ifcgeom/hybrid_kernel.h"
 #include "../ifcgeom/taxonomy.h"
-#include "../ifcgeom/IfcGeomFilter.h"
+#include "../ifcgeom/filter.h"
 #include "../ifcparse/express.h"
 
 #include <Eigen/Dense>
@@ -41,7 +41,7 @@ struct MaterialInfo {
     float r = 0.75f, g = 0.75f, b = 0.78f, a = 1.0f;
 };
 
-static MaterialInfo materialFromStyle(const ifcopenshell::geometry::taxonomy::style::ptr& style) {
+static MaterialInfo materialFromStyle(const ifcopenshell::geom::taxonomy::style::ptr& style) {
     MaterialInfo material;
     if (!style) return material;
     const auto& color = style->get_color();
@@ -155,7 +155,7 @@ std::vector<ElementInfo> GeometryStreamer::drainElements() {
 // the magnitude off the float-precision-sensitive vertex column.
 static StreamedMesh buildStreamedMesh(uint32_t session_model_id,
                                 uint32_t local_mesh_id,
-                                const IfcGeom::TriangulationElement* elem,
+                                const ifcopenshell::geom::triangulation_element* elem,
                                 const Eigen::Vector3d& offset) {
     StreamedMesh mesh;
     mesh.session_model_id = session_model_id;
@@ -308,7 +308,7 @@ static std::vector<int> prioritisedContextIds(ifcopenshell::file* ifc_file) {
         ContextInfo info{};
         info.id = ctx.id();
 
-        const auto entity = ctx.as<express::Entity>();
+        const auto entity = ctx.as<express::entity>();
         const std::string ctype =
             entity.get_value<std::string>("ContextType", "");
         const std::string cident =
@@ -323,7 +323,7 @@ static std::vector<int> prioritisedContextIds(ifcopenshell::file* ifc_file) {
             try {
                 auto tv = entity.get("TargetView");
                 if (!tv.isNull()) {
-                    enumeration_reference er = tv;
+                    ifcopenshell::enumeration_reference er = tv;
                     info.target_view_priority =
                         rank(target_view_order, er.value());
                 }
@@ -389,7 +389,7 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
         return;
     }
 
-    ifcopenshell::geometry::Settings settings;
+    ifcopenshell::geom::settings settings;
     // Instancing path: geometry stays in local coords; the transform is
     // applied on the GPU per instance.
     settings.set("use-world-coords", false);
@@ -416,7 +416,7 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
     std::set<int> gross_ids;
     {
         const std::string& schema_name = ifc_file_->schema()->name();
-        std::vector<express::Base> elements =
+        std::vector<express::base> elements =
             ifc_file_->instances_by_type("IfcElement");
         if (schema_name == "IFC2X3" || schema_name == "IFC4") {
             auto proxies = ifc_file_->instances_by_type("IfcProxy");
@@ -438,7 +438,7 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
             if (decl.is("IfcElement")) {
                 try {
                     opening_count = static_cast<int>(
-                        e.as<express::Entity>().get_inverse("HasOpenings").size());
+                        e.as<express::entity>().get_inverse("HasOpenings").size());
                 } catch (...) {
                     // HasOpenings not declared on this entity — treat as 0.
                 }
@@ -501,7 +501,7 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
                         bool is_gross) -> bool {
         if (include_ids.empty()) return true;
 
-        ifcopenshell::geometry::Settings base_settings = settings;
+        ifcopenshell::geom::settings base_settings = settings;
         if (is_gross) {
             base_settings.set("disable-opening-subtractions", true);
         }
@@ -509,21 +509,21 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
         // Elements that haven't yet produced geometry from any context.
         std::set<int> remaining = include_ids;
 
-        auto run_iterator = [&](ifcopenshell::geometry::Settings& iter_settings) -> bool {
+        auto run_iterator = [&](ifcopenshell::geom::settings& iter_settings) -> bool {
             if (remaining.empty()) return true;
 
-            std::vector<ifcopenshell::geometry::filter_t> filters;
-            IfcGeom::instance_id_filter idf{
+            std::vector<ifcopenshell::geom::filter_function> filters;
+            ifcopenshell::geom::instance_id_filter idf{
                 /*include=*/true, /*traverse=*/false, remaining};
             filters.push_back(idf);
 
-            std::unique_ptr<IfcGeom::Iterator> iterator;
+            std::unique_ptr<ifcopenshell::geom::iterator> iterator;
             try {
                 const std::string geometry_library =
                     AppSettings::instance().geometryLibrary().toStdString();
-                auto kernel = ifcopenshell::geometry::kernels::construct(
+                auto kernel = ifcopenshell::geom::kernels::construct(
                     ifc_file_.get(), geometry_library, iter_settings);
-                iterator = std::make_unique<IfcGeom::Iterator>(
+                iterator = std::make_unique<ifcopenshell::geom::iterator>(
                     std::move(kernel), iter_settings, ifc_file_.get(),
                     filters, num_threads);
             } catch (const std::exception& e) {
@@ -539,10 +539,11 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
             do {
                 if (cancel_requested_.load()) break;
 
-                const IfcGeom::Element* elem = iterator->get();
+				auto element = iterator->get();
+				const ifcopenshell::geom::element* elem = element.get();
                 if (!elem) continue;
 
-                const auto* tri_elem = dynamic_cast<const IfcGeom::TriangulationElement*>(elem);
+                const auto* tri_elem = dynamic_cast<const ifcopenshell::geom::triangulation_element*>(elem);
                 if (!tri_elem) continue;
 
                 const auto& geom = tri_elem->geometry();
@@ -678,7 +679,7 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
             if (cancel_requested_.load()) break;
             if (remaining.empty()) break;
 
-            ifcopenshell::geometry::Settings iter_settings = base_settings;
+            ifcopenshell::geom::settings iter_settings = base_settings;
             iter_settings.set("context-ids",
                 std::set<int>{ prioritised_contexts[i] });
 

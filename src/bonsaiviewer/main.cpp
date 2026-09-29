@@ -22,6 +22,7 @@
 #include "ViewerSettings.h"
 #include "components/Style.h"
 #include "modules/models/Commands.h"
+#include "../ifcparse/parse.h"
 
 #include <QApplication>
 #include <QCommandLineParser>
@@ -55,6 +56,7 @@ int main(int argc, char* argv[]) {
     QApplication app(argc, argv);
     app.setApplicationName("Bonsai Viewer");
     app.setOrganizationName("IfcOpenShell");
+    app.setApplicationVersion(QString::fromUtf8(IFCOPENSHELL_VERSION));
 
     // Clear any .rdbview extractions left in temp by a previous session.
     bonsaiviewer::modules::models::commands::cleanupRdbviewCache();
@@ -70,6 +72,7 @@ int main(int argc, char* argv[]) {
     QCommandLineParser parser;
     parser.setApplicationDescription("Bonsai Viewer — IfcOpenShell IFC viewer");
     parser.addHelpOption();
+    parser.addVersionOption();
     parser.process(app);
 
     installUiFont();

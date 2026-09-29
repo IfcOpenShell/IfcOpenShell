@@ -22,6 +22,7 @@
 #include "Federation.h"
 #include "LodBuilder.h"
 #include "SidecarCache.h"
+#include "SidecarLayout.h"
 #include "VertexQuantization.h"
 
 #include <QEventLoop>
@@ -204,6 +205,13 @@ bool SidecarBuilder::build(const QString& ifc_path,
     }
 
     SidecarData data = finalize(georef, streamer.drainElements());
+
+    // Match the live loader (SceneLoader::onStreamerFinished): reorder into the
+    // chunk-contiguous layout, which populates the chunk table so writeSidecar
+    // actually compresses the geometry. Without it this offline bake path (used
+    // by the models-panel export command) writes a sidecar whose geometry was
+    // never laid out contiguously, with only the metadata blocks compressed.
+    reorderSidecarByMorton(data);
 
     if (!writeSidecar(anchor_path.toStdString(), data)) {
         last_error_ = "writeSidecar failed";

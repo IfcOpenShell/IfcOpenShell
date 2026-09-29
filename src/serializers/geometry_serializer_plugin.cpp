@@ -34,7 +34,7 @@ namespace {
 
 std::string geometry_serializer_plugin_prefix(const std::string& format = std::string()) {
 	const auto format_lower = boost::to_lower_copy(format);
-	return format_lower.empty() ? "geometry." : "geometry." + format_lower;
+	return format_lower.empty() ? "geometry_" : "geometry_" + format_lower;
 }
 
 std::string geometry_serializer_key(const std::string& extension) {
@@ -130,7 +130,7 @@ void ifcopenshell::serializers::geometry_serializer_registry::configure(const st
 	}
 }
 
-boost::shared_ptr<GeometrySerializer> ifcopenshell::serializers::geometry_serializer_registry::create(const std::string& extension, const geometry_serializer_context& context) const {
+std::shared_ptr<ifcopenshell::geom::geometry_serializer> ifcopenshell::serializers::geometry_serializer_registry::create(const std::string& extension, const geometry_serializer_context& context) const {
 	const auto key = geometry_serializer_key(extension);
 	if (entries_.find(key) == entries_.end()) {
 		load_geometry_serializer_plugin(const_cast<geometry_serializer_registry&>(*this), extension);
@@ -159,7 +159,7 @@ std::vector<ifcopenshell::serializers::geometry_serializer_info> ifcopenshell::s
 		try {
 			module = manager.load(path);
 		} catch (const std::exception& e) {
-			::logger::root().error(e);
+			ifcopenshell::logger::root().error(e);
 			continue;
 		}
 		if (module.meta().kind_ != ifcopenshell::plugin::kind::geometry_serializer) {
@@ -204,7 +204,7 @@ void ifcopenshell::serializers::load_geometry_serializer_plugins(geometry_serial
         try {
 			module = manager.load(path);
 		} catch (const std::exception& e) {
-            ::logger::root().error(e);
+            ifcopenshell::logger::root().error(e);
 			continue;
 		}
 		if (module.meta().kind_ != ifcopenshell::plugin::kind::geometry_serializer) {
@@ -230,7 +230,7 @@ bool ifcopenshell::serializers::load_geometry_serializer_plugin(geometry_seriali
 		try {
 			module = manager.load(path);
 		} catch (const std::exception& e) {
-			::logger::root().error(e);
+			ifcopenshell::logger::root().error(e);
 			continue;
 		}
 		if (module.meta().kind_ != ifcopenshell::plugin::kind::geometry_serializer ||

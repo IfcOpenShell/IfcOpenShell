@@ -72,6 +72,7 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
 
         opening_objects = [obj for obj in selected_objects if obj != target_object]
 
+        obj1 = ...
         for opening_obj in opening_objects:
             element1 = tool.Ifc.get_entity(target_object)
             obj1 = target_object
@@ -196,6 +197,7 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                 bpy.data.objects.remove(obj2)
 
         tool.Model.purge_scene_openings()
+        assert obj1 is not ...
         context.view_layer.objects.active = obj1
         return {"FINISHED"}
 

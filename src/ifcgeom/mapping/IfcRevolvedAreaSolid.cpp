@@ -19,7 +19,7 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 #include <boost/math/constants/constants.hpp>
 
@@ -27,7 +27,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRevolvedAreaSolid& inst) {
 	const double ang = inst.Angle() * angle_unit_;
 
 	taxonomy::cast<taxonomy::face>(map(inst.SweptArea()));
-	
+
 	std::optional<double> angle;
 
 	taxonomy::matrix4::ptr matrix;
@@ -86,7 +86,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRevolvedAreaSolid& inst) {
 		}
 
 		if (intersecting) {
-			::logger::root().warning("Warning Axis and SweptArea intersecting", l);
+			ifcopenshell::logger::root().warning("Warning Axis and SweptArea intersecting", l);
 		}
 	}
 	*/

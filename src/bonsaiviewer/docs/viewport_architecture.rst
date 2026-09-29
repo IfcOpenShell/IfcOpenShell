@@ -44,7 +44,7 @@ Main components
     code.
 
 ``GeometryStreamer``
-    Runs ``IfcGeom::Iterator`` on a worker thread for raw IFC loads. It emits a
+    Runs ``ifcopenshell::geom::iterator`` on a worker thread for raw IFC loads. It emits a
     ``StreamedMesh`` once for each unique representation mesh and a
     ``StreamedInstance`` for each placed occurrence.
 

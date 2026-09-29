@@ -106,8 +106,7 @@ def main(
     progress_function: Callable = DO_NOTHING,
     logger=None,
 ):
-    if logger is None and ifcopenshell.logger is not None:
-        logger = ifcopenshell.logger.Root()
+    logger = ifcopenshell.logger_or_root(logger)
 
     def by_guid(g):
         for f in files:
@@ -162,9 +161,8 @@ def main(
 
     # Initialize serializer
     buffer = ifcopenshell.geom.serializers.buffer()
-    serialiser_settings = ifcopenshell.geom.serializer_settings()
     if settings.auto_floorplan:
-        serialiser_settings.set("section-height-from-storeys", True)
+        geom_settings.set("section-height-from-storeys", True)
 
     # elevation-ref-guid and elevation-ref are also mutually exclusive in C-code.
     # Note that guid or object type are not checked anywhere to be valid,
@@ -173,38 +171,38 @@ def main(
         if settings.drawing_guid:
             if not by_guid(settings.drawing_guid):
                 raise ValueError(f"Unable to find guid {settings.drawing_guid!r}")
-            serialiser_settings.set("elevation-ref-guid", settings.drawing_guid)
+            geom_settings.set("elevation-ref-guid", settings.drawing_guid)
         elif settings.drawing_object_type:
-            serialiser_settings.set("elevation-ref", settings.drawing_object_type)
-        serialiser_settings.set("svg-without-storeys", True)
+            geom_settings.set("elevation-ref", settings.drawing_object_type)
+        geom_settings.set("svg-without-storeys", True)
 
     # required for svgfill
-    serialiser_settings.set("svg-write-poly", True)
-    serialiser_settings.set("svg-xmlns", True)
+    geom_settings.set("svg-write-poly", True)
+    geom_settings.set("svg-xmlns", True)
 
-    serialiser_settings.set("svg-project", settings.include_projection)
-    serialiser_settings.set("profile-threshold", settings.profile_threshold)
-    serialiser_settings.set("bounds", f"{settings.width}x{settings.height}")
-    serialiser_settings.set("scale", str(settings.scale))
-    serialiser_settings.set("auto-elevation", settings.auto_elevation)
-    serialiser_settings.set("auto-section", settings.auto_section)
-    serialiser_settings.set("print-space-names", settings.space_names)
-    serialiser_settings.set("print-space-areas", settings.space_areas)
-    serialiser_settings.set("door-arcs", settings.door_arcs)
-    serialiser_settings.set("svg-no-css", bool(settings.css))
+    geom_settings.set("svg-project", settings.include_projection)
+    geom_settings.set("profile-threshold", settings.profile_threshold)
+    geom_settings.set("bounds", f"{settings.width}x{settings.height}")
+    geom_settings.set("scale", str(settings.scale))
+    geom_settings.set("auto-elevation", settings.auto_elevation)
+    geom_settings.set("auto-section", settings.auto_section)
+    geom_settings.set("print-space-names", settings.space_names)
+    geom_settings.set("print-space-areas", settings.space_areas)
+    geom_settings.set("door-arcs", settings.door_arcs)
+    geom_settings.set("svg-no-css", bool(settings.css))
     if settings.subtract_before_hlr:
-        serialiser_settings.set("svg-subtract-before", "always")
+        geom_settings.set("svg-subtract-before", "always")
 
-    serialiser_settings.set("svg-poly", settings.hlr_poly)
-    serialiser_settings.set("svg-prefilter", settings.prefilter)
-    serialiser_settings.set("svg-unify-inputs", settings.unify_inputs)
-    serialiser_settings.set("svg-mirror-y", settings.mirror_y)
+    geom_settings.set("svg-poly", settings.hlr_poly)
+    geom_settings.set("svg-prefilter", settings.prefilter)
+    geom_settings.set("svg-unify-inputs", settings.unify_inputs)
+    geom_settings.set("svg-mirror-y", settings.mirror_y)
 
     if settings.storey_heights not in {"none", "full", "left"}:
         raise ValueError("storey_heights should be one of {'none', 'full', 'left'}")
-    serialiser_settings.set("draw-storey-heights", settings.storey_heights)
+    geom_settings.set("draw-storey-heights", settings.storey_heights)
 
-    sr = ifcopenshell.geom.serializers.svg(buffer, geom_settings, serialiser_settings)
+    sr = ifcopenshell.geom.serializers.svg(buffer, geom_settings)
     sr.setFile(files[0])
 
     """
@@ -287,8 +285,8 @@ def main(
         else:
             num_passes = 0
 
+        g2 = None
         for iteration in range(num_passes + 1):
-
             # initialize empty group, note that in the current approach only one
             # group is stored
             ps = W.svg_groups_of_polygons()
@@ -307,6 +305,7 @@ def main(
                 plt.fill(numpy.array(x.boundary).T[0], numpy.array(x.boundary).T[1])
             """
 
+            semantics, pairs = None, None
             if iteration != num_passes:
                 pairs = svgfill_context.get_face_pairs()
                 semantics = [None] * (max(pairs) + 1)
@@ -349,7 +348,6 @@ def main(
 
             # Loop over the cell paths
             for pi, p in enumerate(g2.getElementsByTagName("path")):
-
                 progress_function("group", i, "pass", iteration, "path", pi)
 
                 d = p.getAttribute("d")
@@ -368,6 +366,7 @@ def main(
                 if inside_elements:
                     elements = None
                     if iteration != num_passes:
+                        assert semantics is not None
                         semantics[pi] = (inside_elements[0], -1)
                 else:
                     elements = tree.select_ray(pythonize(a), pythonize(b - a))
@@ -376,7 +375,7 @@ def main(
                     # Put the IFC element entity type on the path for CSS-based styling
                     p.setAttribute("class", elements[0].instance.is_a())
 
-                    # Obtain style (IfcOpenShell IfcGeom::Material)
+                    # Obtain style (IfcOpenShell ifcopenshell::geom::Material)
                     style = tree.styles()[elements[0].style_index]
 
                     # This is just a demonstration. We compose a factor of using:
@@ -400,6 +399,7 @@ def main(
                     svg_fill = "rgb(%s)" % ", ".join(str(f * 255.0) for f in clr[0:3])
 
                     if iteration != num_passes:
+                        assert semantics is not None
                         semantics[pi] = elements[0]
                 else:
                     svg_fill = "none"
@@ -407,6 +407,8 @@ def main(
                 p.setAttribute("style", "fill: " + svg_fill)
 
             if iteration != num_passes:
+                assert pairs is not None
+                assert semantics is not None
                 to_remove = []
 
                 for he_idx in range(0, len(pairs), 2):
@@ -436,6 +438,7 @@ def main(
 
         # Swap the XML nodes from the files
         # Remove the original hidden line node we still have in the serializer output
+        assert g2 is not None
         g1.removeChild(projection)
         g2.setAttribute("class", "projection")
         # Find the children of the projection node parent
@@ -530,10 +533,11 @@ def main(
                     *(tup for i, tup in enumerate(zip(path_objects, section_polies, polies)) if has_relevant_zone(i))
                 )
 
+            # ty can't bound the length of the unpacked iterables, so it over-counts the args.
             arranged = W.arrange_polygons(
                 *filter(None, (ARRANGE_POLYGON_SETTINGS,)),
-                polies,  # ty: ignore[too-many-positional-arguments]
-                *((logger,) if logger is not None else ()),
+                polies,  # ty:ignore[too-many-positional-arguments]
+                *ifcopenshell.optional_logger_args(logger),
             )
             svg_data_3 = W.polygons_to_svg(arranged, False)
             dom3 = parseString(svg_data_3)

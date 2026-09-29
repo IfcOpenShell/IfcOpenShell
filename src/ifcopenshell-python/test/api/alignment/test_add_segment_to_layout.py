@@ -24,9 +24,8 @@ import ifcopenshell.api.context
 import ifcopenshell.api.unit
 from ifcopenshell.api.alignment._add_segment_to_layout import _add_segment_to_layout
 
-
 try:
-    ifcopenshell.file(schema="IFC4X3")
+    ifcopenshell.file(schema="IFC4X3_ADD2")
     IFC4X3_AVAILABLE = True
 except RuntimeError:
     IFC4X3_AVAILABLE = False
@@ -34,7 +33,7 @@ except RuntimeError:
 
 @pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
 def test_add_segment_to_layout():
-    file = ifcopenshell.file(schema="IFC4X3")
+    file = ifcopenshell.file(schema="IFC4X3_ADD2")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
     length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
     ifcopenshell.api.unit.assign_unit(file, units=[length])
@@ -48,11 +47,12 @@ def test_add_segment_to_layout():
     )
 
     alignment = ifcopenshell.api.alignment.create(file, "")
+    ifcopenshell.api.alignment.add_stationing_referent(file, "0+00.00", alignment, distance_along=0.0, station=0.0)
 
-    referent_nest = ifcopenshell.api.alignment.get_referent_nest(file, alignment)
+    stationing_nest = ifcopenshell.api.alignment.get_stationing_nest(file, alignment)
     assert (
-        len(referent_nest.RelatedObjects) == 1
-    )  # the alignment creates the stationing nest and it has one referent to defined the stationing for the alignment
+        len(stationing_nest.RelatedObjects) == 1
+    )  # the stationing nest has one referent that defines the stationing for the alignment
 
     horizontal_alignment = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
 
@@ -85,5 +85,8 @@ def test_add_segment_to_layout():
     assert len(horizontal_alignment.IsNestedBy) == 1
     segment_nest = ifcopenshell.api.alignment.get_alignment_segment_nest(horizontal_alignment)
     assert len(segment_nest.RelatedObjects) == 2
-    referent_nest = ifcopenshell.api.alignment.get_referent_nest(file, alignment)
-    assert len(referent_nest.RelatedObjects) == 1  # test this a second time to make sure that it is still true
+    stationing_nest = ifcopenshell.api.alignment.get_stationing_nest(file, alignment)
+    assert len(stationing_nest.RelatedObjects) == 1  # test this a second time to make sure that it is still true
+
+
+test_add_segment_to_layout()

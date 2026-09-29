@@ -19,7 +19,7 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceCurveSweptAreaSolid& inst) {
 	taxonomy::face::ptr f = taxonomy::cast<taxonomy::face>(map(inst.SweptArea()));
@@ -49,11 +49,11 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceCurveSweptAreaSolid& 
 	if (!is_plane) {
 		TopoDS_Shape surface_shell;
 		if (!convert_shape(inst.ReferenceSurface(), surface_shell)) {
-			::logger::root().error("Failed to convert reference surface", l);
+			ifcopenshell::logger::root().error("Failed to convert reference surface", l);
 			return false;
 		}
 		if (util::count(surface_shell, TopAbs_FACE) != 1) {
-			::logger::root().error("Non-continuous reference surface", l);
+			ifcopenshell::logger::root().error("Non-continuous reference surface", l);
 			return false;
 		}
 		surface_face = TopoDS::Face(TopExp_Explorer(surface_shell, TopAbs_FACE).Current());
@@ -65,7 +65,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceCurveSweptAreaSolid& 
 	bool directrix_on_plane = is_plane;
 
 	if (is_plane) {
-		IfcGeom::Kernel::convert((IfcSchema::IfcPlane*) inst.ReferenceSurface(), pln);
+		ifcopenshell::geom::Kernel::convert((IfcSchema::IfcPlane*) inst.ReferenceSurface(), pln);
 
 		// As per Informal propositions 2: The Directrix shall lie on the ReferenceSurface.
 		// This is not always the case with the test files in the repository. I am not sure
@@ -76,7 +76,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceCurveSweptAreaSolid& 
 			for (TopExp_Explorer exp(wire, TopAbs_VERTEX); exp.More(); exp.Next()) {
 				if (pln.Distance(BRep_Tool::Pnt(TopoDS::Vertex(exp.Current()))) > ALMOST_ZERO) {
 					directrix_on_plane = false;
-					::logger::root().message(::logger::LOG_WARNING, "The Directrix does not lie on the ReferenceSurface", l);
+					ifcopenshell::logger::root().message(ifcopenshell::logger::LOG_WARNING, "The Directrix does not lie on the ReferenceSurface", l);
 					break;
 				}
 			}
@@ -91,7 +91,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceCurveSweptAreaSolid& 
 		crv->D1(u0, directrix_origin, directrix_tangent);
 	}
 
-	if (is_plane && pln.Axis().Direction().IsNormal(directrix_tangent, Precision::Approximation()) && directrix_on_plane) {
+	if (is_plane && pln.Axis().Direction().IsNormal(directrix_tangent, ::Precision::Approximation()) && directrix_on_plane) {
 		directrix.SetTransformation(gp_Ax3(directrix_origin, directrix_tangent, pln.Axis().Direction()), gp::XOY());
 	} else if (!is_plane) {
 		ShapeAnalysis_Surface sas(BRep_Tool::Surface(surface_face));

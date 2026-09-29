@@ -1,5 +1,19 @@
 #!/usr/bin/env python3
-"""Split optional IfcOpenShell Pyodide payloads into separate wheels."""
+# /// script
+# ///
+"""Split optional IfcOpenShell Pyodide payloads into separate wheels.
+
+The main wheel bundles per-schema plugin ``.so`` files and pure Python
+subpackages that most browser sessions probably don't need.
+
+This splits each of those out into its own installable wheel,
+so a Pyodide app can fetch just the base wheel plus whichever schema/plugin wheels it actually needs.
+
+Resulting wheels (roughly):
+- ifcopenshell.whl (main ifcopenshell.py files + _ifcopenshell_wrapper)
+- ifcopenshell_pure_python.whl (api, express, python files only)
+- splitted wheels with a single .so binary - e.g. `ifcopenshell_parse_schema_ifc4.whl`
+"""
 
 from __future__ import annotations
 
@@ -15,7 +29,6 @@ import time
 import zipfile
 from email.parser import Parser
 from pathlib import Path
-
 
 MAIN_SHARED_OBJECT_RE = re.compile(r"(^|/)_ifcopenshell_wrapper(?:\.|$)")
 PURE_PYTHON_PACKAGE_NAME = "ifcopenshell-pure-python"
@@ -132,14 +145,14 @@ def build_wheel(
         "License-File: COPYING\n"
         "License-File: COPYING.LESSER\n"
         "\n"
-    ).encode("utf-8")
+    ).encode()
     wheel = (
         "Wheel-Version: 1.0\n"
         "Generator: split_pyodide_ifcopenshell_wheel.py\n"
         f"Root-Is-Purelib: {str(root_is_purelib).lower()}\n"
         f"Tag: {tag}\n"
         "\n"
-    ).encode("utf-8")
+    ).encode()
 
     with zipfile.ZipFile(out, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
         for info, data in payloads:
@@ -160,13 +173,15 @@ def build_wheel(
 
         entries[record_name] = None
         write_record(zf, entries, record_name)
+    print(f"Splitting wheel to '{out}'.")
     return out
 
 
 def rewrite_main_wheel(source: Path, target: Path, split_paths: set[str]) -> None:
-    with zipfile.ZipFile(source) as zin, zipfile.ZipFile(
-        target, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9
-    ) as zout:
+    with (
+        zipfile.ZipFile(source) as zin,
+        zipfile.ZipFile(target, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zout,
+    ):
         _, _, record_name = read_original_metadata(zin)
         entries: dict[str, bytes | None] = {}
         for info in zin.infolist():

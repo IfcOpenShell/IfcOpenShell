@@ -20,7 +20,6 @@ import bpy
 import ifcopenshell.util.unit
 from bpy.types import Menu, Panel, UIList
 
-import ifcopenshell.util.unit
 import bonsai.bim
 import bonsai.tool as tool
 from bonsai.bim.helper import prop_with_search

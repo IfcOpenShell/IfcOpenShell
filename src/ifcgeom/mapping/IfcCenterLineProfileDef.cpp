@@ -19,9 +19,9 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCenterLineProfileDef& inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCenterLineProfileDef&) {
 	return nullptr;
 
 	/*
@@ -73,7 +73,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCenterLineProfileDef& inst) 
 		mw.Add(BRepBuilderAPI_MakeEdge(c1a, c2a));
 		mw.Add(BRepBuilderAPI_MakeEdge(c2));
 		mw.Add(BRepBuilderAPI_MakeEdge(c2b, c1b));
-		
+
 		face = BRepBuilderAPI_MakeFace(mw.Wire());
 	} else {
 		BRepOffsetAPI_MakeOffset offset(BRepBuilderAPI_MakeFace(gp_Pln(gp::Origin(), gp::DZ())));

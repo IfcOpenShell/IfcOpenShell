@@ -18,7 +18,11 @@ pub struct RpcError {
 
 impl RpcError {
     pub fn new(code: i32, message: impl Into<String>) -> Self {
-        Self { code, message: message.into(), data: None }
+        Self {
+            code,
+            message: message.into(),
+            data: None,
+        }
     }
 
     pub fn internal(message: impl Into<String>) -> Self {
@@ -48,7 +52,11 @@ pub struct JsonRpcHost<R: Read, W: Write> {
 
 impl<R: Read, W: Write> JsonRpcHost<R, W> {
     pub fn new(handlers: HashMap<String, Handler>, stdin: R, stdout: W) -> Self {
-        Self { handlers, stdin: BufReader::new(stdin), stdout }
+        Self {
+            handlers,
+            stdin: BufReader::new(stdin),
+            stdout,
+        }
     }
 
     pub fn run(&mut self) -> i32 {
@@ -72,7 +80,12 @@ impl<R: Read, W: Write> JsonRpcHost<R, W> {
         let message: Value = match serde_json::from_str(line) {
             Ok(v) => v,
             Err(e) => {
-                self.respond_error(Value::Null, JSONRPC_PARSE_ERROR, &format!("Parse error: {e}"), None);
+                self.respond_error(
+                    Value::Null,
+                    JSONRPC_PARSE_ERROR,
+                    &format!("Parse error: {e}"),
+                    None,
+                );
                 return;
             }
         };
@@ -80,7 +93,12 @@ impl<R: Read, W: Write> JsonRpcHost<R, W> {
         let obj = match message.as_object() {
             Some(o) => o,
             None => {
-                self.respond_error(Value::Null, JSONRPC_INVALID_REQUEST, "Request must be a JSON object", None);
+                self.respond_error(
+                    Value::Null,
+                    JSONRPC_INVALID_REQUEST,
+                    "Request must be a JSON object",
+                    None,
+                );
                 return;
             }
         };
@@ -88,28 +106,48 @@ impl<R: Read, W: Write> JsonRpcHost<R, W> {
         let message_id = obj.get("id").cloned().unwrap_or(Value::Null);
 
         if obj.get("jsonrpc").and_then(|v| v.as_str()) != Some("2.0") {
-            self.respond_error(message_id, JSONRPC_INVALID_REQUEST, "Missing or wrong 'jsonrpc' version", None);
+            self.respond_error(
+                message_id,
+                JSONRPC_INVALID_REQUEST,
+                "Missing or wrong 'jsonrpc' version",
+                None,
+            );
             return;
         }
 
         let method = match obj.get("method").and_then(|v| v.as_str()) {
             Some(m) => m.to_string(),
             None => {
-                self.respond_error(message_id, JSONRPC_INVALID_REQUEST, "Missing 'method' string", None);
+                self.respond_error(
+                    message_id,
+                    JSONRPC_INVALID_REQUEST,
+                    "Missing 'method' string",
+                    None,
+                );
                 return;
             }
         };
 
         let params = obj.get("params").cloned().unwrap_or(Value::Null);
         if !params.is_null() && !params.is_object() && !params.is_array() {
-            self.respond_error(message_id, JSONRPC_INVALID_PARAMS, "'params' must be a JSON object or array", None);
+            self.respond_error(
+                message_id,
+                JSONRPC_INVALID_PARAMS,
+                "'params' must be a JSON object or array",
+                None,
+            );
             return;
         }
 
         let outcome = match self.handlers.get(&method) {
             Some(handler) => handler(params),
             None => {
-                self.respond_error(message_id, JSONRPC_METHOD_NOT_FOUND, &format!("Unknown method '{method}'"), None);
+                self.respond_error(
+                    message_id,
+                    JSONRPC_METHOD_NOT_FOUND,
+                    &format!("Unknown method '{method}'"),
+                    None,
+                );
                 return;
             }
         };
@@ -168,15 +206,21 @@ mod tests {
 
     fn echo_handlers() -> HashMap<String, Handler> {
         let mut m: HashMap<String, Handler> = HashMap::new();
-        m.insert("echo".into(), Box::new(|p| Ok(p)));
+        m.insert("echo".into(), Box::new(Ok));
         m.insert("boom".into(), Box::new(|_| Err(RpcError::internal("bang"))));
-        m.insert("bad_params".into(), Box::new(|_| Err(RpcError::invalid_params("nope"))));
+        m.insert(
+            "bad_params".into(),
+            Box::new(|_| Err(RpcError::invalid_params("nope"))),
+        );
         m
     }
 
     #[test]
     fn dispatches_result() {
-        let out = run_once(echo_handlers(), "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"echo\",\"params\":{\"x\":1}}\n");
+        let out = run_once(
+            echo_handlers(),
+            "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"echo\",\"params\":{\"x\":1}}\n",
+        );
         assert_eq!(out.len(), 1);
         assert_eq!(out[0]["result"], json!({"x": 1}));
         assert_eq!(out[0]["id"], json!(1));
@@ -184,13 +228,19 @@ mod tests {
 
     #[test]
     fn notification_no_response() {
-        let out = run_once(echo_handlers(), "{\"jsonrpc\":\"2.0\",\"method\":\"echo\",\"params\":{}}\n");
+        let out = run_once(
+            echo_handlers(),
+            "{\"jsonrpc\":\"2.0\",\"method\":\"echo\",\"params\":{}}\n",
+        );
         assert!(out.is_empty());
     }
 
     #[test]
     fn unknown_method() {
-        let out = run_once(echo_handlers(), "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"nope\"}\n");
+        let out = run_once(
+            echo_handlers(),
+            "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"nope\"}\n",
+        );
         assert_eq!(out[0]["error"]["code"], json!(JSONRPC_METHOD_NOT_FOUND));
     }
 
@@ -209,13 +259,19 @@ mod tests {
 
     #[test]
     fn invalid_params_shape() {
-        let out = run_once(echo_handlers(), "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"echo\",\"params\":42}\n");
+        let out = run_once(
+            echo_handlers(),
+            "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"echo\",\"params\":42}\n",
+        );
         assert_eq!(out[0]["error"]["code"], json!(JSONRPC_INVALID_PARAMS));
     }
 
     #[test]
     fn handler_error_passes_code() {
-        let out = run_once(echo_handlers(), "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"bad_params\"}\n");
+        let out = run_once(
+            echo_handlers(),
+            "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"bad_params\"}\n",
+        );
         assert_eq!(out[0]["error"]["code"], json!(JSONRPC_INVALID_PARAMS));
         assert_eq!(out[0]["error"]["message"], json!("nope"));
     }

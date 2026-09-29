@@ -30,8 +30,7 @@ import ifcopenshell
 import ifcopenshell.util.attribute
 import ifcopenshell.util.schema
 
-from . import ifcopenshell_wrapper
-from . import file, entity_instance
+from . import entity_instance, file, ifcopenshell_wrapper
 
 if TYPE_CHECKING:
     import sqlite3
@@ -83,7 +82,7 @@ class sqlite(file):
 
         if not Path(filepath).exists():
             raise FileNotFoundError(f"File doesn't exist: {filepath}")
-        
+
         # See ifcopenshell.file.file_mixin.post_init()
         # history, future and transaction are stored in a list so that they
         # can easily be shared among file instances that are the same C++
@@ -124,7 +123,7 @@ class sqlite(file):
         # For creating C++ instances so that some of the calls here work
         self.shadow_file = ifcopenshell.file(schema_identifier=self.schema)
         # But we only create them once per type because we basically only need access to 'semi-static' such as get_attribute_category()
-        self.instance_map = {}
+        self.instance_map: dict[str, ifcopenshell.entity_instance] = {}
 
         self.cursor.execute("SELECT ifc_id, ifc_class FROM id_map")
         self.id_map: dict[int, str] = {}
@@ -145,8 +144,6 @@ class sqlite(file):
         self.ifc_class_inverses = {}
 
         for declaration in self.ifc_schema.entities():
-            # print('Dealing with declaration', declaration.name())
-
             self.ifc_class_subtypes[declaration.name()] = ifcopenshell.util.schema.get_subtypes(declaration)
             self.ifc_class_attributes[declaration.name()] = {a.name(): a for a in declaration.all_attributes()}
             self.ifc_class_inverse_attributes[declaration.name()] = {
@@ -167,7 +164,6 @@ class sqlite(file):
                         self.ifc_class_inverses[subtype.name()][declaration.name()].append(attribute.name())
 
                 elif self.is_entity_list(attribute):
-                    # print('is an entity list', attribute.name())
                     entity_list.append(attribute.name())
 
                     for entity_name in re.findall("<entity (.*?)>", str(attribute)):
@@ -187,7 +183,7 @@ class sqlite(file):
         """Not supported for sqlite database."""
         assert False, "Not supported for sqlite database."
 
-    def _create_entity(self, type):
+    def _create_entity(self, type: str) -> ifcopenshell.entity_instance:
         if inst := self.instance_map.get(type):
             return inst
         else:
@@ -259,7 +255,6 @@ class sqlite(file):
                     results.append(result)
                     if max_levels is None or max_levels:
                         queue.append(result)
-        # print('traverse results', results)
         return results
 
     def get_inverse(
@@ -349,17 +344,21 @@ class sqlite(file):
 
 class sqlite_entity:
     sqlite_wrapper: sqlite_wrapper
+    wrapped_data: ifcopenshell.entity_instance
 
     def __init__(self, id: int, ifc_class: str, file: sqlite = None):
-        if not ifc_class:
-            print(id, ifc_class, file)
-            assert False
+        assert ifc_class, (id, ifc_class, file)
         s = sqlite_wrapper(id, ifc_class, file)
         object.__setattr__(self, "wrapped_data", file._create_entity(ifc_class))
         object.__setattr__(self, "sqlite_wrapper", s)
 
     def id(self) -> int:
         return self.sqlite_wrapper.id
+
+    def is_a(self, *args):
+        # sqlite_entity no longer derives from entity_instance, but wrapped_data
+        # is a shadow C++ instance of the right type, so it can answer this.
+        return self.wrapped_data.is_a(*args)
 
     def __del__(self) -> None:
         pass
@@ -378,20 +377,16 @@ class sqlite_entity:
         self.sqlite_wrapper.attribute_cache = {}
 
     def __getattr__(self, name: str) -> Any:
-        # print("*" * 100)
-        # print("GETATTR", self.sqlite_wrapper.id, self.sqlite_wrapper.ifc_class, name)
-
-        INVALID, FORWARD, INVERSE = range(3)
+        INVALID, FORWARD, INVERSE, DERIVED = range(4)
         attr_cat = self.wrapped_data.get_attribute_category(name)
+        if attr_cat == DERIVED:
+            raise RuntimeError(
+                f"Derived attributes (e.g. '{name}') are not supported for {type(self).__name__} entities."
+            )
         if attr_cat == FORWARD:
             if self.sqlite_wrapper.attribute_cache:
-                # print(self.sqlite_wrapper.ifc_class)
-                # print(self.sqlite_wrapper.attribute_cache)
                 return self.sqlite_wrapper.attribute_cache[name]
 
-            # print('first time for', self.sqlite_wrapper.ifc_class)
-
-            # print("IT IS A FORWARD")
             query = f"SELECT * FROM {self.sqlite_wrapper.ifc_class} WHERE `ifc_id` = {self.sqlite_wrapper.id} LIMIT 1"
             self.sqlite_wrapper.file.cursor.execute(query)
             row = self.sqlite_wrapper.file.cursor.fetchone()
@@ -453,7 +448,9 @@ class sqlite_entity:
             self.sqlite_wrapper.inverse_attribute_cache[name] = tuple(results)
             return self.sqlite_wrapper.inverse_attribute_cache[name]
 
-        raise AttributeError("entity instance of type '%s' has no attribute '%s'" % (self.is_a(True), name))
+        raise AttributeError(
+            "entity instance of type '%s' has no attribute '%s'" % (self.sqlite_wrapper.ifc_class, name)
+        )
 
     def unserialise_value(self, value):
         if isinstance(value, (tuple, list)):

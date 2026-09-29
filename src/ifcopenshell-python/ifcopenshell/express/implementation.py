@@ -19,7 +19,6 @@
 
 import codegen
 import templates
-
 from schema import OrderedCaseInsensitiveDict
 
 
@@ -67,7 +66,7 @@ class Implementation(codegen.Base):
                     templates.enum_from_string_stmt % dict(context, **locals()) for value in enum.values
                 ),
             )
-            
+
         for name, enum in mapping.schema.selects.items():
             write(
                 templates.select_function,
@@ -107,21 +106,18 @@ class Implementation(codegen.Base):
                             return templates.get_attr_stmt_nested_array
                         elif arg["is_templated_list"] and not (simple or express):
                             return templates.get_attr_stmt_array
-                        elif arg["argument_type_enum"] == 'ifcopenshell::Argument_ENTITY_INSTANCE':
+                        elif arg["argument_type_enum"] == "ifcopenshell::Argument_ENTITY_INSTANCE":
                             return templates.get_attr_stmt_entity
                         else:
                             return templates.get_attr_stmt
 
                     null_check = ""
                     if arg["is_optional"]:
-                        attr_check = (
-                            "if(get_attribute_value(%d).isNull()) { return %%s; }"
-                            % (arg["index"] - 1,)
-                        )
+                        attr_check = "if(get_attribute_value(%d).isNull()) { return %%s; }" % (arg["index"] - 1,)
                         if "std::optional" in arg["full_type"]:
                             null_check = attr_check % "std::nullopt"
                         else:
-                            null_check = attr_check % (arg['full_type'] + "{}")
+                            null_check = attr_check % (arg["full_type"] + "{}")
 
                     tmpl = find_template(arg)
                     write_attr(
@@ -154,7 +150,7 @@ class Implementation(codegen.Base):
                             return templates.set_attr_stmt_nested_array
                         elif arg["is_templated_list"] and not (simple or express):
                             return templates.set_attr_stmt_array
-                        elif arg["argument_type_enum"] == 'ifcopenshell::Argument_ENTITY_INSTANCE':
+                        elif arg["argument_type_enum"] == "ifcopenshell::Argument_ENTITY_INSTANCE":
                             return templates.set_attr_instance
                         else:
                             return templates.set_attr_stmt
@@ -175,7 +171,9 @@ class Implementation(codegen.Base):
                             "non_optional_type": arg["non_optional_type"].replace("::Value", ""),
                             "star_if_optional": "*" if "std::optional" in arg["full_type"] else "",
                             "check_optional_set_begin": "if (v) {" if "std::optional" in arg["full_type"] else "",
-                            "check_optional_set_else": "} else {" if "std::optional" in arg["full_type"] else "if constexpr (false)",
+                            "check_optional_set_else": (
+                                "} else {" if "std::optional" in arg["full_type"] else "if constexpr (false)"
+                            ),
                             "check_optional_set_end": "}" if "std::optional" in arg["full_type"] else "",
                         },
                     )
@@ -190,11 +188,15 @@ class Implementation(codegen.Base):
                     tmpl = (
                         templates.constructor_stmt_array
                         if arg["is_templated_list"]
-                        else templates.constructor_stmt_enum
-                        if arg["is_enum"]
-                        else templates.constructor_stmt_instance
-                        if arg["full_type"].endswith('*')
-                        else templates.constructor_stmt
+                        else (
+                            templates.constructor_stmt_enum
+                            if arg["is_enum"]
+                            else (
+                                templates.constructor_stmt_instance
+                                if arg["full_type"].endswith("*")
+                                else templates.constructor_stmt
+                            )
+                        )
                     )
                     impl = tmpl % {
                         "name": deref_name,
@@ -236,16 +238,12 @@ class Implementation(codegen.Base):
                 for i in type.inverse
             ]
 
-            superclass = (
-                "%s(e)" % type.supertypes[0]
-                if len(type.supertypes) == 1
-                else "express::Entity(e)"
-            )
+            superclass = "%s(e)" % type.supertypes[0] if len(type.supertypes) == 1 else "express::entity(e)"
 
             superclass_num_attrs = (
                 "%s(const std::weak_ptr<instance_data>&(in_memory_attribute_storage(%%d)))" % type.supertypes[0]
                 if len(type.supertypes) == 1
-                else "express::Entity(const std::weak_ptr<instance_data>&(in_memory_attribute_storage(%d)))"
+                else "express::entity(const std::weak_ptr<instance_data>&(in_memory_attribute_storage(%d)))"
             ) % len(constructor_arguments)
 
             write(
@@ -310,7 +308,7 @@ class Implementation(codegen.Base):
         for class_name, type in mapping.schema.simpletypes.items():
             type_str = mapping.make_type_string(mapping.flatten_type_string(type))
             attr_type = mapping.make_argument_type(type)
-            superclass = mapping.simple_type_parent(class_name) or "express::DeclaredType"
+            superclass = mapping.simple_type_parent(class_name) or "express::declared_type"
 
             simpletype_impl_is = (
                 templates.simpletype_impl_is_with_supertype
@@ -371,7 +369,17 @@ class Implementation(codegen.Base):
                             #     ("const std::weak_ptr<instance_data>& e",),
                             #     "",
                             # ),
-                            ("", "", initializer, "", ("%s v" % type_str,), ("set_attribute_value(0, %s(v));" % ("cast_vector<express::Base>" if mapping.is_templated_list(type) else ""))),
+                            (
+                                "",
+                                "",
+                                initializer,
+                                "",
+                                ("%s v" % type_str,),
+                                (
+                                    "set_attribute_value(0, %s(v));"
+                                    % ("cast_vector<express::base>" if mapping.is_templated_list(type) else "")
+                                ),
+                            ),
                             # ("v", "", constructor, "", ("%s v" % type_str,), ""),
                             ("", "", templates.cast_function, type_str, (), simpletype_impl_cast),
                         ),

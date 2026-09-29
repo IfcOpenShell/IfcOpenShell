@@ -23,7 +23,6 @@
 #include "ifc_parse_api.h"
 #include "express.h"
 
-#include <boost/scope_exit.hpp>
 #include <cstddef>
 #include <cstdint>
 #include <exception>
@@ -33,6 +32,8 @@
 #include <sstream>
 #include <string>
 #include <vector>
+
+namespace ifcopenshell {
 
 class IFC_PARSE_API log_message {
   public:
@@ -45,8 +46,8 @@ class IFC_PARSE_API log_message {
         const std::string& code,
         const std::string& timestamp,
         const std::string& message,
-        const express::Base& instance = express::Base(),
-        const express::Base& current_product = express::Base());
+        const express::base& instance = express::base(),
+        const express::base& current_product = express::base());
 };
 
 class IFC_PARSE_API logger {
@@ -57,13 +58,13 @@ class IFC_PARSE_API logger {
         LOG_NOTICE,
         LOG_WARNING,
         LOG_ERROR
-    } Severity;
+    } severity;
 
     typedef enum {
         FMT_PLAIN,
         FMT_JSON,
         FMT_INMEMORY
-    } Format;
+    } format;
 
   private:
     std::vector<log_message> log_messages_;
@@ -75,11 +76,11 @@ class IFC_PARSE_API logger {
     std::wostream* wlog2_ = nullptr;
 
     std::stringstream log_stream_;
-    express::Base current_product_;
+    express::base current_product_;
 
-    Severity verbosity_ = LOG_NOTICE;
-    Format format_ = FMT_PLAIN;
-    Severity max_severity_ = LOG_NOTICE;
+    severity verbosity_ = LOG_NOTICE;
+    format format_ = FMT_PLAIN;
+    severity max_severity_ = LOG_NOTICE;
 
     std::optional<long long> first_timepoint_;
     std::map<std::string, double> performance_statistics_;
@@ -88,9 +89,9 @@ class IFC_PARSE_API logger {
     bool print_perf_stats_on_element_ = false;
     std::mutex mutex_;
 
-    const express::Base& current_product() const;
-    void current_product(const express::Base& product);
-    void message(Severity type, const std::string& code, const std::string& message, const express::Base& instance);
+    const express::base& current_product() const;
+    void current_product(const express::base& product);
+    void message(severity type, const std::string& code, const std::string& message, const express::base& instance);
 
   public:
     logger() = default;
@@ -99,39 +100,39 @@ class IFC_PARSE_API logger {
 
     static logger& root();
 
-    void set_product(std::optional<express::Base> product);
-    void set_product(const express::Base& product) { set_product(std::optional<express::Base>(product)); }
+    void set_product(std::optional<express::base> product);
+    void set_product(const express::base& product) { set_product(std::optional<express::base>(product)); }
 
     void set_output(std::wostream* stream1, std::wostream* stream2);
     void set_output(std::ostream* stream1, std::ostream* stream2);
 
-    void verbosity(Severity severity);
-    Severity verbosity() const;
-    Severity max_severity() const;
+    void verbosity(severity severity);
+    severity verbosity() const;
+    severity max_severity() const;
 
-    void output_format(Format format);
-    Format output_format() const;
+    void output_format(format format);
+    format output_format() const;
 
-    void message(Severity type, const std::string& message, const express::Base& instance = express::Base());
-    void message(Severity type, const std::exception& exception, const express::Base& instance = express::Base());
-    void message(Severity type, const char (&code_prefix)[4], uint16_t code_number, const std::string& message, const express::Base& instance = express::Base());
-    void message(Severity type, const char (&code_prefix)[4], uint16_t code_number, const std::exception& exception, const express::Base& instance = express::Base());
+    void message(severity type, const std::string& message, const express::base& instance = express::base());
+    void message(severity type, const std::exception& exception, const express::base& instance = express::base());
+    void message(severity type, const char (&code_prefix)[4], uint16_t code_number, const std::string& message, const express::base& instance = express::base());
+    void message(severity type, const char (&code_prefix)[4], uint16_t code_number, const std::exception& exception, const express::base& instance = express::base());
 
-    void notice(const std::string& message, const express::Base& instance = express::Base()) { this->message(LOG_NOTICE, message, instance); }
-    void warning(const std::string& message, const express::Base& instance = express::Base()) { this->message(LOG_WARNING, message, instance); }
-    void error(const std::string& message, const express::Base& instance = express::Base()) { this->message(LOG_ERROR, message, instance); }
+    void notice(const std::string& message, const express::base& instance = express::base()) { this->message(LOG_NOTICE, message, instance); }
+    void warning(const std::string& message, const express::base& instance = express::base()) { this->message(LOG_WARNING, message, instance); }
+    void error(const std::string& message, const express::base& instance = express::base()) { this->message(LOG_ERROR, message, instance); }
 
-    void notice(const std::exception& exception, const express::Base& instance = express::Base()) { message(LOG_NOTICE, exception, instance); }
-    void warning(const std::exception& exception, const express::Base& instance = express::Base()) { message(LOG_WARNING, exception, instance); }
-    void error(const std::exception& exception, const express::Base& instance = express::Base()) { message(LOG_ERROR, exception, instance); }
+    void notice(const std::exception& exception, const express::base& instance = express::base()) { message(LOG_NOTICE, exception, instance); }
+    void warning(const std::exception& exception, const express::base& instance = express::base()) { message(LOG_WARNING, exception, instance); }
+    void error(const std::exception& exception, const express::base& instance = express::base()) { message(LOG_ERROR, exception, instance); }
 
-    void notice(const char (&code_prefix)[4], uint16_t code_number, const std::string& message, const express::Base& instance = express::Base()) { this->message(LOG_NOTICE, code_prefix, code_number, message, instance); }
-    void warning(const char (&code_prefix)[4], uint16_t code_number, const std::string& message, const express::Base& instance = express::Base()) { this->message(LOG_WARNING, code_prefix, code_number, message, instance); }
-    void error(const char (&code_prefix)[4], uint16_t code_number, const std::string& message, const express::Base& instance = express::Base()) { this->message(LOG_ERROR, code_prefix, code_number, message, instance); }
+    void notice(const char (&code_prefix)[4], uint16_t code_number, const std::string& message, const express::base& instance = express::base()) { this->message(LOG_NOTICE, code_prefix, code_number, message, instance); }
+    void warning(const char (&code_prefix)[4], uint16_t code_number, const std::string& message, const express::base& instance = express::base()) { this->message(LOG_WARNING, code_prefix, code_number, message, instance); }
+    void error(const char (&code_prefix)[4], uint16_t code_number, const std::string& message, const express::base& instance = express::base()) { this->message(LOG_ERROR, code_prefix, code_number, message, instance); }
 
-    void notice(const char (&code_prefix)[4], uint16_t code_number, const std::exception& exception, const express::Base& instance = express::Base()) { message(LOG_NOTICE, code_prefix, code_number, exception, instance); }
-    void warning(const char (&code_prefix)[4], uint16_t code_number, const std::exception& exception, const express::Base& instance = express::Base()) { message(LOG_WARNING, code_prefix, code_number, exception, instance); }
-    void error(const char (&code_prefix)[4], uint16_t code_number, const std::exception& exception, const express::Base& instance = express::Base()) { message(LOG_ERROR, code_prefix, code_number, exception, instance); }
+    void notice(const char (&code_prefix)[4], uint16_t code_number, const std::exception& exception, const express::base& instance = express::base()) { message(LOG_NOTICE, code_prefix, code_number, exception, instance); }
+    void warning(const char (&code_prefix)[4], uint16_t code_number, const std::exception& exception, const express::base& instance = express::base()) { message(LOG_WARNING, code_prefix, code_number, exception, instance); }
+    void error(const char (&code_prefix)[4], uint16_t code_number, const std::exception& exception, const express::base& instance = express::base()) { message(LOG_ERROR, code_prefix, code_number, exception, instance); }
 
     void status(const std::string& message, bool new_line = true);
 
@@ -147,13 +148,35 @@ class IFC_PARSE_API logger {
     const std::vector<log_message>& log_messages() const { return log_messages_; }
 };
 
-#define PERF(x)                                                      \
-                                                                     \
-    ::logger::root().message(::logger::LOG_PERF, x);                 \
-                                                                     \
-    BOOST_SCOPE_EXIT(void) {                                         \
-        ::logger::root().message(::logger::LOG_PERF, "done " + std::string(x)); \
-    }                                                                \
-    BOOST_SCOPE_EXIT_END
+// SWIG couldn't represent `logger::root()` default value using Python,
+// so when translating signature it represents it just as `fn(*args)`, losing information about args.
+// Using `logger* = nullptr` instead of `logger& = logger::root()` helps,
+// since `nullptr` is convertable Python's `None`.
+// `logger_or_root` is just covering the boilerplate for this pattern.
+inline logger& logger_or_root(logger* logger) { return logger ? *logger : logger::root(); }
+
+namespace detail {
+class performance_scope {
+    std::string label_;
+
+  public:
+    explicit performance_scope(const std::string& label) : label_(label) {
+        logger::root().message(logger::LOG_PERF, label_);
+    }
+
+    ~performance_scope() {
+        logger::root().message(logger::LOG_PERF, "done " + label_);
+    }
+
+    performance_scope(const performance_scope&) = delete;
+    performance_scope& operator=(const performance_scope&) = delete;
+};
+} // namespace detail
+
+} // namespace ifcopenshell
+
+#define IFCOPENSHELL_PERF_NAME_IMPL(line) ifcopenshell_performance_scope_##line
+#define IFCOPENSHELL_PERF_NAME(line) IFCOPENSHELL_PERF_NAME_IMPL(line)
+#define PERF(x) ::ifcopenshell::detail::performance_scope IFCOPENSHELL_PERF_NAME(__LINE__)(x)
 
 #endif

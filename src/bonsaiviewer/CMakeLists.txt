@@ -168,7 +168,7 @@ ifcopenshell_deploy_qt_runtime(BonsaiViewer)
 #      them explicitly. (In a static build these are absent from lib/
 #      and the glob just no-ops, so this rule is safe in both modes.)
 #
-#   2. Plug-ins (ifcopenshell.*.dylib, no `lib` prefix) — dlopen-only
+#   2. Plug-ins (ifcopenshell_*.dylib, no `lib` prefix) — dlopen-only
 #      deps the plug-in loader resolves at runtime. macdeployqt has
 #      no way to know about these.
 #
@@ -177,7 +177,7 @@ ifcopenshell_deploy_qt_runtime(BonsaiViewer)
 # inside the bundle), so plug-ins and core libs both find each other
 # on the first probe.
 #
-# The geometry-writer filter drops ifcopenshell.geometry.writer.*.dylib
+# The geometry-writer filter drops ifcopenshell_geometry_writer_*.dylib
 # (the per-schema OBJ / glTF / DAE / STP / IGS / SVG / TTL export
 # converters — heavy, viewer-irrelevant). Mirrors the Rocky workflow's
 # filter in `stage_runtime_payload` (see 27249770e).
@@ -192,15 +192,31 @@ ifcopenshell_deploy_qt_runtime(BonsaiViewer)
 # so by the time this install rule fires the *.dylib files are already
 # on disk under <prefix>/lib/.
 if(APPLE)
+    # A shared OCCT lives in its own dependency prefix, outside the glob below,
+    # and the plug-ins resolve it through @rpath, so it has to be staged too.
+    set(_occt_shared_lib_dir "")
+    if(TARGET TKernel)
+        get_target_property(_occt_library_type TKernel TYPE)
+        if(_occt_library_type STREQUAL "SHARED_LIBRARY")
+            get_target_property(_occt_location TKernel LOCATION)
+            get_filename_component(_occt_shared_lib_dir "${_occt_location}" DIRECTORY)
+        endif()
+    endif()
+    install(CODE "set(_occt_shared_lib_dir \"${_occt_shared_lib_dir}\")")
     install(CODE [[
         set(_fw "${CMAKE_INSTALL_PREFIX}/BonsaiViewer.app/Contents/Frameworks")
         file(GLOB _ifc_dylibs "${CMAKE_INSTALL_PREFIX}/lib/*.dylib")
-        list(FILTER _ifc_dylibs EXCLUDE REGEX "ifcopenshell\\.geometry\\.writer\\.")
+        list(FILTER _ifc_dylibs EXCLUDE REGEX "ifcopenshell_geometry_writer_")
         if(_ifc_dylibs)
             message(STATUS "Staging IfcOpenShell dylibs (linked core + plug-ins) into BonsaiViewer.app/Contents/Frameworks")
             file(COPY ${_ifc_dylibs} DESTINATION "${_fw}")
         else()
             message(WARNING "No IfcOpenShell *.dylib found in lib/ — BonsaiViewer.app will fail to launch (missing @rpath linked deps) or at IFC load time (missing plug-ins)")
+        endif()
+        if(_occt_shared_lib_dir)
+            file(GLOB _occt_dylibs "${_occt_shared_lib_dir}/libTK*.dylib")
+            message(STATUS "Staging shared OCCT dylibs into BonsaiViewer.app/Contents/Frameworks")
+            file(COPY ${_occt_dylibs} DESTINATION "${_fw}")
         endif()
     ]])
 endif()

@@ -93,7 +93,7 @@ add_ifcviewer_unit_test(test_sidecar_layout
 # InstanceCompose: matrix composition + cross-model object_id lookup.
 # Pulls in wgpu_native for the WGPUBuffer typedef via ModelGpuData.h
 # (never touched at runtime). Eigen for Matrix4d.
-find_package(Eigen3 REQUIRED)
+find_package(Eigen3 ${EIGEN_MIN_VERSION} REQUIRED)
 add_ifcviewer_unit_test(test_instance_compose
     SOURCES ${IFCVIEWER_SRC}/InstanceCompose.cpp
     LIBS wgpu_native Eigen3::Eigen
@@ -109,6 +109,12 @@ endif()
 add_ifcviewer_unit_test(test_selection)
 add_ifcviewer_unit_test(test_visibility)
 
+# GpuBudget: the pure policy deciding how much device memory the geometry
+# cache may hold and how it yields under pressure. No wgpu at all.
+add_ifcviewer_unit_test(test_gpu_budget
+    SOURCES ${IFCVIEWER_SRC}/GpuBudget.cpp
+)
+
 # BufferPool sub-allocator invariants. The pool's wgpu calls live inside
 # addSubBuffer() (the growth path); tests use the addSubBufferForTesting
 # seam to preseed sub-pools with fake handles, so the only wgpu touchpoint
@@ -117,7 +123,7 @@ add_ifcviewer_unit_test(test_visibility)
 # the pool go out of scope holding any. Linking wgpu_native satisfies the
 # symbol regardless.
 add_ifcviewer_unit_test(test_buffer_pool
-    SOURCES ${IFCVIEWER_SRC}/BufferPool.cpp
+    SOURCES ${IFCVIEWER_SRC}/BufferPool.cpp ${IFCVIEWER_SRC}/GpuAllocScope.cpp
     LIBS wgpu_native
 )
 if(UNIX AND NOT APPLE AND WGPU_NATIVE_LIB_DIR)
@@ -144,11 +150,12 @@ endif()
 # directly and enable AUTOMOC for the Q_OBJECT moc-generation.
 find_package(Qt${QT_VERSION} COMPONENTS Core Gui Test REQUIRED PATHS ${QT_DIR})
 
-find_package(Eigen3 REQUIRED)
+find_package(Eigen3 ${EIGEN_MIN_VERSION} REQUIRED)
 
 add_executable(test_federation
     test_federation.cpp
     ${IFCVIEWER_SRC}/Federation.cpp
+    ${IFCVIEWER_SRC}/FederationMath.cpp   # compose helpers, split out for IfcViewerCore
 )
 set_target_properties(test_federation PROPERTIES AUTOMOC ON)
 target_include_directories(test_federation PRIVATE ${IFCVIEWER_SRC})

@@ -32,7 +32,7 @@
 #include "../../../ifcviewer/SceneLoader.h"
 #include "../../../ifcviewer/SidecarBuilder.h"
 #include "../../../ifcviewer/ViewportWindow.h"
-#include "../../../ifcgeom/Serializer.h"
+#include "../../../ifcgeom/serializer.h"
 #include "../../../serializers/document_serializer_plugin.h"
 
 #include <QDebug>
@@ -260,6 +260,52 @@ void removeModel(SessionState& session, ViewportWindow& viewport, QWidget& host,
     session.notifySelectionChanged();
     session.notifyModelsChanged();
     session.setStatusMessage("Models", "Model removed");
+}
+
+void unloadModel(SessionState& session, ViewportWindow& viewport, const QString& model_id) {
+    const uint32_t session_model_id = session.sessionModelIdForModelId(model_id);
+    if (session_model_id == 0) return;
+    if (session.loader()->isLoadingModel(session_model_id)) return;
+    const double freed_mb = double(viewport.modelVramBytes(session_model_id)) / (1024.0 * 1024.0);
+    viewport.unloadModel(session_model_id);
+    session.notifyModelLoadStateChanged(model_id);
+    session.setStatusMessage("Models", QString("Model unloaded (freed %1 MB of GPU memory)")
+                                           .arg(freed_mb, 0, 'f', 0));
+}
+
+void loadModel(SessionState& session, ViewportWindow& viewport, const QString& model_id) {
+    const uint32_t session_model_id = session.sessionModelIdForModelId(model_id);
+    if (session_model_id == 0) return;
+    if (!viewport.loadModel(session_model_id)) {
+        session.setStatusMessage("Models", "Not enough GPU memory to load this model");
+        return;
+    }
+    session.notifyModelLoadStateChanged(model_id);
+    session.setStatusMessage("Models", "Model loaded");
+}
+
+void viewModels(SessionState& session, ViewportWindow& viewport, const QStringList& model_ids) {
+    // Federation ids are the panel's currency; the viewport speaks session
+    // model ids. sessionModelIdForModelId returns 0 for a model the viewport
+    // has never been given geometry for — skip those rather than framing id 0.
+    std::vector<uint32_t> session_model_ids;
+    session_model_ids.reserve(std::size_t(model_ids.size()));
+    for (const QString& model_id : model_ids) {
+        const uint32_t session_model_id = session.sessionModelIdForModelId(model_id);
+        if (session_model_id != 0) session_model_ids.push_back(session_model_id);
+    }
+
+    if (!viewport.viewModels(session_model_ids)) {
+        session.setStatusMessage("Models", "Nothing to view — no loaded geometry");
+        return;
+    }
+
+    QString label = QString("%1 models").arg(model_ids.size());
+    if (model_ids.size() == 1) {
+        const Federation::Model* model = session.federation()->findById(model_ids.front());
+        label = model ? model->display_name : model_ids.front();
+    }
+    session.setStatusMessage("Models", QString("Viewing %1").arg(label));
 }
 
 namespace detail {
@@ -661,7 +707,7 @@ void convertIfcToDatabase(SessionState& session, QWidget& host) {
                 throw ifcopenshell::exception("RDB serializer does not support streaming from an input filename");
             }
 
-            boost::shared_ptr<Serializer> serializer = registry.create("rdb", context);
+            std::shared_ptr<ifcopenshell::geom::serializer> serializer = registry.create("rdb", context);
             serializer->finalize();
         } catch (const std::exception& e) {
             *error_message = QString::fromUtf8(e.what());
@@ -767,7 +813,7 @@ void exportGeometryDatabase(SessionState& session, QWidget& host) {
                 throw ifcopenshell::exception("RDB serializer does not support streaming from an input filename");
             }
 
-            boost::shared_ptr<Serializer> serializer = registry.create("rdb", context);
+            std::shared_ptr<ifcopenshell::geom::serializer> serializer = registry.create("rdb", context);
             serializer->finalize();
             serializer.reset();
 

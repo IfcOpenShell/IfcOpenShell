@@ -23,9 +23,8 @@ import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 import ifcopenshell.api.unit
 
-
 try:
-    ifcopenshell.file(schema="IFC4X3")
+    ifcopenshell.file(schema="IFC4X3_ADD2")
     IFC4X3_AVAILABLE = True
 except RuntimeError:
     IFC4X3_AVAILABLE = False
@@ -36,7 +35,7 @@ except RuntimeError:
 # compound vertical curve (no gradient between curves)
 @pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
 def test_vertical_layout_by_pi_method():
-    file = ifcopenshell.file(schema="IFC4X3")
+    file = ifcopenshell.file(schema="IFC4X3_ADD2")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
     length = ifcopenshell.api.unit.add_conversion_based_unit(file, name="foot")
     ifcopenshell.api.unit.assign_unit(file, units=[length])
@@ -62,6 +61,8 @@ def test_vertical_layout_by_pi_method():
 
     ifcopenshell.api.alignment.create_layout_segment(file, hlayout, segment1)
 
+    ifcopenshell.api.alignment.add_stationing_referent(file, "0+00.00", alignment, distance_along=0.0, station=0.0)
+
     vpoints = [(0.0, 110.0), (400.0, 100.0), (800.0, 115.0), (1300.0, 125.0), (1800.0, 105.0)]
     lengths = [(800.0), (0.0), (1000.0)]
     vlayout = ifcopenshell.api.alignment.get_vertical_layout(alignment)
@@ -74,8 +75,8 @@ def test_vertical_layout_by_pi_method():
     layout_nest = ifcopenshell.api.alignment.get_alignment_layout_nest(alignment)
     assert len(layout_nest.RelatedObjects) == 2
 
-    referent_nest = ifcopenshell.api.alignment.get_referent_nest(file, alignment)
-    assert len(referent_nest.RelatedObjects) == 1
+    stationing_nest = ifcopenshell.api.alignment.get_stationing_nest(file, alignment)
+    assert len(stationing_nest.RelatedObjects) == 1
 
     segment_nest = ifcopenshell.api.alignment.get_alignment_segment_nest(vlayout)
     assert len(segment_nest.RelatedObjects) == 3

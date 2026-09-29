@@ -31,7 +31,7 @@
 #include <Extrema_ExtPC.hxx>
 #include <BRepBuilderAPI_MakeWire.hxx>
 
-namespace IfcGeom {
+namespace ifcopenshell::geom {
 	namespace util {
 		// Returns the first edge of a wire
 		TopoDS_Edge first_edge(const TopoDS_Wire& w);
@@ -46,10 +46,10 @@ namespace IfcGeom {
 			double p_;
 			bool override_next_;
 			gp_Pnt next_override_;
-			express::Base inst_;
+			express::base inst_;
 
 		public:
-            wire_builder(double p, const express::Base& inst = express::Base()) : p_(p), override_next_(false), inst_(inst) {}
+            wire_builder(double p, const express::base& inst = express::base()) : p_(p), override_next_(false), inst_(inst) {}
 
 			void operator()(const TopoDS_Shape& a);
 

@@ -17,7 +17,7 @@ def main() -> int:
 
     model = ifx.file.with_path(sys.argv[1])
     for wall in model.instances_by_type("IfcWall"):
-        print(f"#{wall.id()} {wall.declaration().name()}")
+        print(f"#{wall.id()} {wall.declaration.name()}")
     return 0
 
 

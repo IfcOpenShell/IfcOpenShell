@@ -20,11 +20,10 @@
 #ifndef KERNEL_REGISTRY_H
 #define KERNEL_REGISTRY_H
 
-#include "../ifcgeom/AbstractKernel.h"
+#include "../ifcgeom/abstract_kernel.h"
 #include "../plugin/plugin.h"
 
-#include <boost/function.hpp>
-
+#include <functional>
 #include <map>
 #include <memory>
 #include <string>
@@ -33,7 +32,7 @@
 namespace ifcopenshell {
 	class file;
 
-	namespace geometry {
+	namespace geom {
 		namespace kernels {
 
 			struct IFC_GEOM_API kernel_info {
@@ -43,25 +42,25 @@ namespace ifcopenshell {
 
 			class IFC_GEOM_API kernel_registry {
 			public:
-				typedef boost::function2<AbstractKernel*, ifcopenshell::file*, Settings&> create_fn;
+				typedef std::function<abstract_kernel*(ifcopenshell::file*, ifcopenshell::geom::settings&, ifcopenshell::logger&)> create_fn;
 
 				void bind(const kernel_info& info, create_fn create, const ifcopenshell::plugin::module& module = ifcopenshell::plugin::module());
 				bool has(const std::string& backend_id) const;
-				std::unique_ptr<AbstractKernel> create(const std::string& backend_id, ifcopenshell::file* file, Settings& settings) const;
+				std::unique_ptr<abstract_kernel> create(const std::string& backend_id, ifcopenshell::file* file, ifcopenshell::geom::settings& settings, ifcopenshell::logger& logger) const;
 				std::vector<kernel_info> kernels() const;
 
 			private:
 				struct entry {
+					ifcopenshell::plugin::module module_;
 					kernel_info info_;
 					create_fn create_;
-					ifcopenshell::plugin::module module_;
 				};
 
 				std::map<std::string, entry> entries_;
 			};
 
 			IFC_GEOM_API kernel_registry& kernel_registry_instance();
-			IFC_GEOM_API std::unique_ptr<AbstractKernel> construct(ifcopenshell::file* file, const std::string& geometry_library, Settings& settings);
+			IFC_GEOM_API std::unique_ptr<abstract_kernel> construct(ifcopenshell::file* file, const std::string& geometry_library, ifcopenshell::geom::settings& settings, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
 		}
 	}

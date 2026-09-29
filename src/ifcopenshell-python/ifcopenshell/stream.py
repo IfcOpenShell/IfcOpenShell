@@ -28,9 +28,7 @@ try:
     import ifcopenshell.util.attribute
     import ifcopenshell.util.schema
 
-    from . import ifcopenshell_wrapper
-    from . import entity_instance
-    from . import file
+    from . import file, ifcopenshell_wrapper
 
     class StreamTransformer(Transformer):
         file: file
@@ -188,15 +186,15 @@ try:
                         exclude.update([st.name().upper() for st in ifcopenshell.util.schema.get_subtypes(declaration)])
 
                     # For creating C++ instances so that some of the calls here work
-                    self.shadow_file = ifcopenshell.file(schema_identifier=self.ifc_schema)
+                    self.shadow_file = ifcopenshell.file(schema=self.schema)
                     # But we only create them once per type because we basically only need access to 'semi-static' such as get_attribute_category()
-                    self.instance_map = {}
+                    self.instance_map: dict[str, ifcopenshell.entity_instance] = {}
 
                 offset += len(line) + newline_character
 
             self.preprocess_schema()
 
-        def _create_entity(self, type):
+        def _create_entity(self, type: str) -> ifcopenshell.entity_instance:
             if inst := self.instance_map.get(type):
                 return inst
             else:
@@ -330,6 +328,7 @@ try:
 
     class stream_entity:
         stream_wrapper: stream_wrapper
+        wrapped_data: ifcopenshell.entity_instance
 
         def __init__(self, id: int, ifc_class: str, file: stream = None):
             if not ifc_class:
@@ -361,8 +360,12 @@ try:
             assert False, "Not supported during streaming."
 
         def __getattr__(self, name: str) -> Any:
-            INVALID, FORWARD, INVERSE = range(3)
+            INVALID, FORWARD, INVERSE, DERIVED = range(4)
             attr_cat = self.wrapped_data.get_attribute_category(name)
+            if attr_cat == DERIVED:
+                raise RuntimeError(
+                    f"Derived attributes (e.g. '{name}') are not supported for {type(self).__name__} entities."
+                )
             if attr_cat == FORWARD:
                 if self.stream_wrapper.attribute_cache:
                     return self.stream_wrapper.attribute_cache[name]

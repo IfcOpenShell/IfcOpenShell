@@ -31,6 +31,14 @@ enum class ItemKind {
     Model,
 };
 
+// Columns of the models tree: name | GPU memory | visibility eye.
+enum Column : int {
+    NameColumn       = 0,
+    MemoryColumn     = 1,
+    VisibilityColumn = 2,
+    ColumnCount      = 3,
+};
+
 struct TreeNode {
     QString id;
     QString name;

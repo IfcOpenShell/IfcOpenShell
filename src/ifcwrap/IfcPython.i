@@ -47,19 +47,24 @@
 // TODO add '# pragma warning(pop)' to the very end of the file
 %}
 
+// Before the SWIG library includes, so their classes (iterators, std::vector and
+// std::array wrappers) get prototype docstrings too; validate_stub reads them.
+%feature("autodoc", "1");
+
 %include "stdint.i"
 %include "std_array.i"
 %include "std_vector.i"
 %include "std_string.i"
 %include "exception.i"
 %include "std_shared_ptr.i"
+%include "std_unique_ptr.i"
 
 %{
 	#include <array>
 %}
 %template(DoubleArray3) std::array<double, 3>;
 
-%ignore ifcopenshell::geometry::Converter;
+%ignore ifcopenshell::geom::converter;
 
 // Not relevant for python: new_IfcBaseClass() calls instantiate()
 %ignore schema_definition::instantiate;
@@ -67,8 +72,17 @@
 // Irrelevant abstract base that only has anonymous concrete implementations
 %ignore instance_factory;
 
+%ignore ifcopenshell::schema_registry;
+%ignore ifcopenshell::schema_registry_instance;
+%ignore ifcopenshell::schema_plugin_registration_symbol;
+%ignore ifcopenshell::schema_plugin_metadata;
+%ignore ifcopenshell::schema_plugin_directory;
+%ignore ifcopenshell::load_schema_plugins;
+%ignore ifcopenshell::detail::performance_scope;
+
 // Not relevant for python usage
-%ignore express::Base::data;
+%ignore express::base::data;
+%ignore express::base::data_weak;
 %ignore *::references_to_resolve;
 
 // SVG serializer internal
@@ -91,12 +105,12 @@
 %ignore curve_to_face_upgrade_impl;
 %ignore loop_to_function_item_upgrade_impl;
 
-%ignore IfcGeom::geometry_exception;
-%ignore IfcGeom::too_many_faces_exception;
-%ignore ifcopenshell::geometry::taxonomy::topology_error;
+%ignore ifcopenshell::geom::geometry_exception;
+%ignore ifcopenshell::geom::too_many_faces_exception;
+%ignore ifcopenshell::geom::taxonomy::topology_error;
 
 // settings, can this done more generally?
-// GeometrySerializer.h
+// geometry_serializer.h
 %ignore UseElementNames;
 %ignore UseElementGuids;
 %ignore UseElementStepIds;
@@ -107,7 +121,36 @@
 %ignore BaseUri;
 %ignore WktUseSection;
 %ignore SeparateZUpNode;
-// ConversionSettings.h
+%ignore SvgBounds;
+%ignore SvgScale;
+%ignore SvgCenter;
+%ignore SvgSectionRef;
+%ignore SvgElevationRef;
+%ignore SvgElevationRefGuid;
+%ignore SvgAutoSection;
+%ignore SvgAutoElevation;
+%ignore SvgDrawStoreyHeights;
+%ignore SvgProfileThreshold;
+%ignore SvgStoreyHeightLineLength;
+%ignore SvgUseNamespace;
+%ignore SvgUseHlrPoly;
+%ignore SvgUsePrefiltering;
+%ignore SvgUnifyInputs;
+%ignore SvgSegmentProjection;
+%ignore SvgSubtractBefore;
+%ignore SvgPolygonal;
+%ignore SvgAlwaysProject;
+%ignore SvgWithoutStoreys;
+%ignore SvgNoCss;
+%ignore SvgMirrorY;
+%ignore SvgMirrorX;
+%ignore SvgDoorArcs;
+%ignore SvgSectionHeight;
+%ignore SvgSectionHeightFromStoreys;
+%ignore SvgPrintSpaceNames;
+%ignore SvgPrintSpaceAreas;
+%ignore SvgSpaceNameTransform;
+// conversion_settings.h
 %ignore MesherLinearDeflection;
 %ignore MesherAngularDeflection;
 %ignore ReorientShells;
@@ -129,7 +172,9 @@
 %ignore ContextIds;
 %ignore ContextTypes;
 %ignore ContextIdentifiers;
+%ignore ContextPriorities;
 %ignore OutputDimensionality;
+%ignore MaxVoidsPerElement;
 %ignore IteratorOutput;
 %ignore DisableOpeningSubtractions;
 %ignore ApplyDefaultMaterials;
@@ -162,9 +207,18 @@
 %ignore MaxOffset;
 %ignore MaxOffsetDeviation;
 %ignore ApplyOffset;
+%ignore SvgRidgeAngleMinDegrees;
+%ignore SvgValleyAngleMinDegrees;
+%ignore SvgEmitFlushEdges;
+%ignore SvgUseEdgeClassification;
+%ignore SvgRenderCreaseEdges;
+%ignore SvgRenderSharpEdges;
+
+%ignore filetype;
+%ignore guess_file_type;
 
 // Triangulated representation helper struct
-%ignore EdgeKey;
+%ignore edge_key;
 
 // General python-specific rename rules for comparison operators.
 // Mostly to silence warnings, but might be of use some time.
@@ -191,9 +245,9 @@
 // can probably be reduced, but for now it's identical to the includes
 // of the module definition below.
 %{
-	#include "../ifcgeom/Iterator.h"
+	#include "../ifcgeom/iterator.h"
 	#include "../ifcgeom/tree.h"
-	#include "../ifcgeom/Serialization/Serialization.h"
+	#include "../ifcgeom/serialization/serialization.h"
 	#include "../ifcgeom/taxonomy.h"
 	#include "../ifcgeom/function_item_evaluator.h"
 
@@ -202,17 +256,23 @@
 	#include "../ifcparse/schema.h"
 	#include "../ifcparse/utils.h"
 
-	#include "../ifcgeom/ConversionSettings.h"
-	#include "../ifcgeom/ConversionResult.h"
+	#include "../ifcgeom/conversion_settings.h"
+	#include "../ifcgeom/conversion_result.h"
 
 	#include "../svgfill/src/svgfill.h"
 
 	// @todo abstract into plug-in interface
-	#include "../serializers/RocksDbSerializer.h"
+	#include "../serializers/rocks_db_serializer.h"
+
+	using ifcopenshell::attribute_value;
+	using ifcopenshell::blank;
+	using ifcopenshell::derived;
+	using ifcopenshell::empty_aggregate;
+	using ifcopenshell::empty_aggregate_of_aggregate;
+	using ifcopenshell::enumeration_reference;
 %}
 
 // Create docstrings for generated python code.
-%feature("autodoc", "1");
 
 %include "utils/type_conversion.i"
 
@@ -221,28 +281,29 @@
 %include "utils/typemaps_out.i"
 
 %module ifcopenshell_wrapper %{
-	#include "../ifcgeom/Converter.h"
+	#include "../ifcgeom/converter.h"
 	#include "../ifcgeom/tree.h"
-	#include "../ifcgeom/Serialization/Serialization.h"
+	#include "../ifcgeom/serialization/serialization.h"
 	#include "../ifcgeom/taxonomy.h"
 	#include "../ifcgeom/function_item_evaluator.h"
-	#include "../ifcgeom/Iterator.h"
-	#include "../ifcgeom/ConversionResult.h"
+	#include "../ifcgeom/iterator.h"
+	#include "../ifcgeom/conversion_result.h"
 	#include "../ifcgeom/hybrid_kernel.h"
-	#include "../ifcgeom/GeometrySerializer.h"
+	#include "../ifcgeom/geometry_serializer.h"
+	#include "../ifcgeom/kernel_plugin.h"
 
 	#include "../ifcparse/express.h"
 	#include "../ifcparse/file.h"
 	#include "../ifcparse/schema.h"
 	#include "../ifcparse/utils.h"
-	
-	#include "../ifcgeom/ConversionSettings.h"
-	#include "../ifcgeom/ConversionResult.h"
+
+	#include "../ifcgeom/conversion_settings.h"
+	#include "../ifcgeom/conversion_result.h"
 
 	#include "../svgfill/src/svgfill.h"
 
 	// @todo abstract into plug-in interface
-	#include "../serializers/RocksDbSerializer.h"
+	#include "../serializers/rocks_db_serializer.h"
 %}
 
 %{
@@ -268,6 +329,16 @@ std::vector<std::string> get_plugin_search_paths() {
 
 void clear_plugin_search_paths() {
 	ifcopenshell::plugin::clear_search_paths();
+}
+
+bool has_geometry_library(const std::string& geometry_library) {
+	auto& registry = ifcopenshell::geom::kernels::kernel_registry_instance();
+	try {
+		return registry.has(geometry_library) ||
+			ifcopenshell::geom::kernels::load_kernel_plugin(registry, geometry_library);
+	} catch (const std::exception&) {
+		return false;
+	}
 }
 %}
 

@@ -30,7 +30,7 @@ endif()
 # Eigen3 — used by Federation matrices, ViewportWindow's instance compose,
 # the per-model coordinate-operation matrices stored on ModelGpuData, and
 # everywhere a 4x4 transform shows up. Header-only, works under Emscripten.
-find_package(Eigen3 REQUIRED)
+find_package(Eigen3 ${EIGEN_MIN_VERSION} REQUIRED)
 
 # wgpu-native — fetched as a pre-built binary release from upstream.
 # Under Emscripten this whole block is skipped; the web build links
@@ -82,6 +82,7 @@ FetchContent_MakeAvailable(wgpu_native)
 # the SONAME in once at configure time so dependents get a clean
 # libwgpu_native.so reference, and pin the executable's rpath to the lib dir.
 if(UNIX AND NOT APPLE)
+    # Critical: skipping this makes installation fail later.
     find_program(PATCHELF_EXECUTABLE patchelf)
     if(PATCHELF_EXECUTABLE)
         execute_process(
@@ -90,10 +91,10 @@ if(UNIX AND NOT APPLE)
             RESULT_VARIABLE _patchelf_rc
         )
         if(NOT _patchelf_rc EQUAL 0)
-            message(WARNING "patchelf --set-soname failed on libwgpu_native.so")
+            message(FATAL_ERROR "patchelf --set-soname failed on libwgpu_native.so")
         endif()
     else()
-        message(WARNING
+        message(FATAL_ERROR
             "patchelf not found; libwgpu_native.so will be linked with a "
             "relative DT_NEEDED. Install patchelf to fix.")
     endif()
@@ -138,16 +139,22 @@ endif()
 #
 # Keep this list explicit (no glob) — the boundary is the whole point.
 set(IFCVIEWER_CORE_SOURCES
+    AxisIndicatorRenderer.cpp
     BufferPool.cpp
     ChunkPlanner.cpp
     InstanceCompose.cpp
     LodBuilder.cpp
+    FederationMath.cpp
+    GpuAllocScope.cpp
+    GpuBudget.cpp
+    GpuMemory.cpp
     SidecarCache.cpp
     SidecarCompress.cpp
     StreamingLoader.cpp
     StreamingThread.cpp
     SectionGizmoRenderer.cpp
     ViewportCore.cpp
+    WgpuDynamicOffsets.cpp
 )
 # Web needs a zstd DECODER (Emscripten has no zstd port; the desktop links the
 # full libzstd below). Rather than vendor a generated blob, fetch the pinned
@@ -185,6 +192,7 @@ if(EMSCRIPTEN)
     # below which would mangle these absolute paths; added via target_sources.
 endif()
 set(IFCVIEWER_CORE_HEADERS
+    AxisIndicatorRenderer.h
     BufferPool.h
     CameraMath.h
     ChunkPlanner.h
@@ -199,6 +207,7 @@ set(IFCVIEWER_CORE_HEADERS
     SectionGizmoRenderer.h
     SectionPlane.h
     SelectionState.h
+    FederationMath.h
     SidecarCache.h
     SidecarCompress.h
     StreamingLoader.h
@@ -212,7 +221,19 @@ list(TRANSFORM IFCVIEWER_CORE_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 list(TRANSFORM IFCVIEWER_CORE_HEADERS PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 
 add_library(IfcViewerCore STATIC ${IFCVIEWER_CORE_SOURCES} ${IFCVIEWER_CORE_HEADERS})
+
 target_include_directories(IfcViewerCore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+# FederationMath needs convert() to resolve a federation unit name to metres and
+# x_axis_to_angle_deg() to read grid north off a CoordinateOperation. Both live
+# in src/helpers, whose main library needs IfcParse — helpers_math is the
+# schema-free subset that does not, so it builds under Emscripten too. The web
+# build reaches this via add_subdirectory below; on desktop src/CMakeLists.txt
+# has already defined the target.
+if(NOT TARGET helpers_math)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../helpers helpers_math_build EXCLUDE_FROM_ALL)
+endif()
+target_link_libraries(IfcViewerCore PUBLIC helpers_math)
 target_link_libraries(IfcViewerCore PUBLIC
     Eigen3::Eigen
     wgpu_native
@@ -229,7 +250,7 @@ if(EMSCRIPTEN)
     target_sources(IfcViewerCore PRIVATE ${ZSTD_DEC_SRC})
     target_include_directories(IfcViewerCore PRIVATE ${ZSTD_DEC_DIR})
 else()
-    find_package(zstd CONFIG REQUIRED)
+    find_package(zstd ${ZSTD_MIN_VERSION} CONFIG REQUIRED)
     target_link_libraries(IfcViewerCore PUBLIC zstd::libzstd_static)
 endif()
 install(TARGETS IfcViewerCore EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})

@@ -16,8 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import itertools
 import functools
+import itertools
+from pathlib import Path
 
 
 def indent(n, s):
@@ -26,7 +27,7 @@ def indent(n, s):
     else:
         strs = s
     splitted = itertools.chain.from_iterable(map(functools.partial(str.split, sep="\n"), map(str, strs)))
-    return "\n".join(" "*n + l for l in splitted)
+    return "\n".join(" " * n + l for l in splitted)
 
 
 class Base:
@@ -36,15 +37,4 @@ class Base:
     """
 
     def emit(self):
-        import platform
-
-        if tuple(map(int, platform.python_version_tuple())) < (2, 8):
-            from io import open as unicode_open
-
-            unicode_type = unicode
-        else:
-            unicode_open = open
-            unicode_type = lambda x, *args, **kwargs: x
-        f = unicode_open(self.file_name, "w", encoding="utf-8")
-        f.write(unicode_type(repr(self), encoding="utf-8", errors="ignore"))
-        f.close()
+        Path(self.file_name).write_text(repr(self), encoding="utf-8")

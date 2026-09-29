@@ -1,8 +1,6 @@
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
-
-using namespace IfcGeom;
+using namespace ifcopenshell::geom;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcProduct& inst) {
 	// @todo decide on this, what happens in the product mapping?
@@ -46,7 +44,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcProduct& inst) {
 	}
 
 	if (openings->size() && !settings_.get(IteratorSettings::DISABLE_OPENING_SUBTRACTIONS) && use_body) {
-		
+
 		Eigen::Matrix4d ci;
 		if (c->matrix.components_) {
 			ci = c->matrix.components_->inverse();
@@ -54,7 +52,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcProduct& inst) {
 			ci.setIdentity();
 		}
 
-		std::vector<express::Base> operands(new aggregate_of_instance);
+		std::vector<express::base> operands(new aggregate_of_instance);
 		operands->push(body);
 		operands->push(openings);
 		auto n = map_to_collection<taxonomy::boolean_result>(this, operands);
@@ -71,7 +69,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcProduct& inst) {
 			c->children = { child };
 		} else {
 			delete c;
-			return nullptr;			
+			return nullptr;
 		}
 	}
 

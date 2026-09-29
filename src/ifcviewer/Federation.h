@@ -20,6 +20,8 @@
 #ifndef FEDERATION_H
 #define FEDERATION_H
 
+#include "FederationMath.h"
+
 #include <Eigen/Dense>
 
 #include <QJsonObject>
@@ -60,114 +62,11 @@ namespace ifcopenshell { class file; }
 // to round-trip without precision loss; conversion happens in the compose
 // helpers.
 
-// Federation-wide unit; the value space for FederatedFalseOrigin.xyz and
-// ModelTransformation::{b, pivot}.
-struct FederationConfig {
-    // IfcSIUnit name ("METRE") or IfcConversionBasedUnit name ("foot", "inch").
-    std::string unit_name   = "METRE";
-    // SI prefix ("MILLI", "KILO", ...) — empty for unprefixed or for
-    // conversion-based units.
-    std::string unit_prefix = "";
-};
-
-// FederatedFalseOrigin — the user-nominated federation origin.  Authoring
-// intent is "nominate this XYZ as the new origin, with optional Z-axis
-// heading rotation".  Composed as R_z(rz_deg) · T(-xyz_in_metres).
-struct FederatedFalseOrigin {
-    Eigen::Vector3d xyz    = Eigen::Vector3d::Zero();   // federation unit
-    double          rz_deg = 0.0;
-};
-
-// Frame in which ModelTransformation.a is expressed.
-//   ModelLocal  — pre-CoordinateOperation model coordinates, in the model's
-//                 project length unit
-//   ModelGlobal — post-CoordinateOperation model coordinates, in the model's
-//                 map unit
-enum class AFrame { ModelLocal, ModelGlobal };
-
-// ModelTransformation — the per-model placement within the federation.
-// Authoring intent is "rotate the model around `pivot`, then translate so
-// that point `a` lands at point `b`".  Composed as
-//
-//     R_local    = R_z(rz) · R_y(ry) · R_x(rx)            [intrinsic XYZ]
-//     R_at_pivot = T(pivot_m) · R_local · T(-pivot_m)
-//     result     = T(b_m - R_at_pivot · a_m) · R_at_pivot
-struct ModelTransformation {
-    AFrame          a_frame  = AFrame::ModelGlobal;
-    Eigen::Vector3d a        = Eigen::Vector3d::Zero();   // model project / map unit
-    Eigen::Vector3d b        = Eigen::Vector3d::Zero();   // federation unit
-    Eigen::Vector3d rxyz_deg = Eigen::Vector3d::Zero();   // degrees, intrinsic XYZ
-    Eigen::Vector3d pivot    = Eigen::Vector3d::Zero();   // federation unit
-};
-
-// Per-model unit scales captured at load time.  project_length_to_meters comes
-// from calculate_unit_scale(file, "LENGTHUNIT").  map_unit_to_meters is derived
-// from IfcMapConversion.Scale as project_length_to_meters / Scale; the
-// IfcProjectedCRS.MapUnit named unit is metadata and does not affect the
-// transform composition.
-struct ModelUnits {
-    double project_length_to_meters = 1.0;
-    double map_unit_to_meters       = 1.0;
-};
-
-// Per-model georeferencing data derived from the IFC.
-// `coordinate_operation_meters` is the helmert · inv(wcs) matrix in metres
-// representing the IfcCoordinateOperation; consumers compose it before
-// FederatedFalseOrigin / ModelTransformation at upload time.  When the
-// model has no map conversion, `has_coordinate_operation == false` and the
-// matrix is identity.
-struct ModelGeoref {
-    ModelUnits      units;
-    Eigen::Matrix4d coordinate_operation_meters = Eigen::Matrix4d::Identity();
-    bool            has_coordinate_operation    = false;
-};
-
 // Read a model's project length unit, map unit, helmert parameters, and WCS
 // from `ifc_file` and reduce them to a metres-in / metres-out
 // CoordinateOperation matrix.  Pure compute; safe to call repeatedly if the
 // caller doesn't want to cache.
 ModelGeoref computeModelGeoref(ifcopenshell::file* ifc_file);
-
-// Build a FederatedFalseOrigin guess so that a model lands near the
-// federation origin instead of out at its surveyor coordinates.  Designed
-// to work without an open IFC file so it's usable from sidecar-only loads
-// (the inputs are all derivable from the resident MeshInfo + InstanceInfo
-// data + ModelGeoref).
-//
-// Position: `first_geometry_point_m` is a point that actually lies on the
-// model's first instance's geometry, in metres, pre-CoordinateOperation —
-// typically the world-space centre of the first instance's mesh AABB
-// (instance0.placement_transformation * mesh.local_aabb_center).  We use
-// a real geometry point rather than the instance's placement translation
-// because IFC placements often live far from the actual geometry (long
-// ObjectPlacement chains, intermediate local coordinate systems).  The
-// point is lifted through `georef.coordinate_operation_meters` when one
-// is present, then expressed in the federation unit.
-//
-// Rotation: read directly from `georef.coordinate_operation_meters`
-// when `has_coordinate_operation` (this is the helmert grid-north
-// angle); otherwise zero.  Anticlockwise positive.
-FederatedFalseOrigin
-guessFederatedFalseOrigin(const Eigen::Vector3d& first_geometry_point_m,
-                          const ModelGeoref& georef,
-                          const FederationConfig& fed_cfg);
-
-// 1 federation_unit -> N metres.
-double federationUnitToMeters(const FederationConfig&);
-
-// Compose FederatedFalseOrigin into a 4x4 matrix in metres.
-Eigen::Matrix4d composeFederatedFalseOrigin(const FederatedFalseOrigin&,
-                                            const FederationConfig&);
-
-// Compose ModelTransformation into a 4x4 matrix in metres.
-// `coordinate_operation_meters` is the model's CoordinateOperation matrix
-// (e.g. helmert_meters_from_parameters · inv(wcs_meters)) — needed to lift
-// `a` into metres when a_frame == ModelLocal.  Pass identity when the
-// CoordinateOperation is disabled or absent.
-Eigen::Matrix4d composeModelTransformation(const ModelTransformation&,
-                                           const FederationConfig& fed_cfg,
-                                           const ModelUnits& model_units,
-                                           const Eigen::Matrix4d& coordinate_operation_meters);
 
 // === Federation persistence (.ifcfed) ===
 //

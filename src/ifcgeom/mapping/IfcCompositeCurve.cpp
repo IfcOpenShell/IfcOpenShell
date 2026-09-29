@@ -19,11 +19,11 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve& inst) {
 	auto loop = taxonomy::make<taxonomy::loop>();
-	taxonomy::piecewise_function::spans_t spans;
+	taxonomy::piecewise_function::span_list spans;
 
 #ifdef SCHEMA_HAS_IfcSegment
 	// 4x3
@@ -31,7 +31,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve& inst) {
 #else
 	std::vector<IfcSchema::IfcCompositeCurveSegment> segments = inst.Segments();
 #endif
-	
+
 	for (auto& segment : segments) {
 		if (segment.as<IfcSchema::IfcCompositeCurveSegment>() && segment.as<IfcSchema::IfcCompositeCurveSegment>().ParentCurve().as<IfcSchema::IfcLine>()) {
 			logger_.notice("GEO", 238, "Infinite IfcLine used as ParentCurve of segment, treating as a segment", segment);
@@ -95,7 +95,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve& inst) {
 	}
 
 	if (spans.empty()) {
-		std::vector<express::Entity> profile = inst.file()->get_inverse(inst.id(), &IfcSchema::IfcProfileDef::Class(), -1);
+		std::vector<express::entity> profile = inst.file()->get_inverse(inst.id(), &IfcSchema::IfcProfileDef::Class(), -1);
         const bool force_close = !profile.empty();
 		loop->closed = force_close;
 		loop->instance = inst;
@@ -106,90 +106,3 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve& inst) {
 		return pwf;
 	}
 }
-
-/*
-
-#include <BRepBuilderAPI_MakeEdge.hxx>
-#include <BRepBuilderAPI_MakeWire.hxx>
-#include <TopoDS_Wire.hxx>
-#include <TopTools_ListOfShape.hxx>
-#include <ShapeFix_ShapeTolerance.hxx>
-#include "mapping.h"
-#include "../ifcgeom_schema_agnostic/wire_builder.h"
-
-#define _USE_MATH_DEFINES
-#define mapping POSTFIX_SCHEMA(mapping)
-
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wire& wire) {
-
-
-	TopTools_ListOfShape converted_segments;
-
-	for (auto it = segments->begin(); it != segments->end(); ++it) {
-
-		if (!(*it)->declaration().is(IfcSchema::IfcCompositeCurveSegment::Class())) {
-			::logger::root().error("Not implemented", *it);
-			return false;
-		}
-
-		IfcSchema::IfcCurve* curve = ((IfcSchema::IfcCompositeCurveSegment*)(*it))->ParentCurve();
-
-		// The type of ParentCurve is IfcCurve, but the documentation says:
-		// ParentCurve: The *bounded curve* which defines the geometry of the segment.
-		// At least let's exclude IfcLine as an infinite linear segment
-		// definitely does not make any sense.
-		TopoDS_Wire segment;
-
-		if (curve->as<IfcSchema::IfcLine>()) {
-			::logger::root().notice("Infinite IfcLine used as ParentCurve of segment, treating as a segment", *it);
-			Handle_Geom_Curve handle;
-			convert_curve(curve, handle);
-			double u0 = 0.0;
-			double u1 = curve->as<IfcSchema::IfcLine>()->Dir()->Magnitude() * length_unit_;
-			if (u1 < getValue(GV_PRECISION)) {
-				::logger::root().warning("Segment length below tolerance", *it);
-			}
-			BRepBuilderAPI_MakeEdge me(handle, u0, u1);
-			if (me.IsDone()) {
-				BRep_Builder B;
-				B.MakeWire(segment);
-				B.Add(segment, me.Edge());
-			}
-		} else if (!convert_wire(curve, segment)) {
-			const bool failed_on_purpose = curve->as<IfcSchema::IfcPolyline>() && !segment.IsNull();
-			::logger::root().message(failed_on_purpose ? ::logger::LOG_WARNING : ::logger::LOG_ERROR, "Failed to convert curve:", curve);
-			continue;
-		}
-
-		if (!((IfcSchema::IfcCompositeCurveSegment*)(*it))->SameSense()) {
-			segment.Reverse();
-		}
-
-		ShapeFix_ShapeTolerance FTol;
-		FTol.SetTolerance(segment, getValue(GV_PRECISION), TopAbs_WIRE);
-
-		converted_segments.append(segment);
-
-	}
-
-	if (converted_segments.Extent() == 0) {
-		::logger::root().message(::logger::LOG_ERROR, "No segment successfully converted:", l);
-		return false;
-	}
-
-	BRepBuilderAPI_MakeWire w;
-	TopoDS_Vertex wire_first_vertex, wire_last_vertex, edge_first_vertex, edge_last_vertex;
-
-	TopTools_ListIteratorOfListOfShape it(converted_segments);
-
-	std::vector<express::Base> profile = inst.data().get_inverse(&IfcSchema::IfcProfileDef::Class(), -1);
-	const bool force_close = profile && profile->size() > 0;
-
-	util::wire_builder bld(getValue(GV_PRECISION), l);
-	util::shape_pair_enumerate(it, bld, force_close);
-	wire = bld.wire();
-
-	return true;
-}
-
-*/

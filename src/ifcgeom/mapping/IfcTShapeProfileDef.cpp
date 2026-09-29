@@ -19,7 +19,7 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 #include "../profile_helper.h"
 
@@ -40,10 +40,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTShapeProfileDef& inst) {
 	const double tol = settings_.get<settings::Precision>().get();
 
 	if (x < tol || y < tol || d1 < tol || d2 < tol) {
-		logger_.message(::logger::LOG_NOTICE, "GEO", 296, "Skipping zero sized profile:", inst);
+		logger_.message(ifcopenshell::logger::LOG_NOTICE, "GEO", 296, "Skipping zero sized profile:", inst);
 		return nullptr;
 	}
-	
+
 	double dy1 = 0.0f;
 	double dy2 = 0.0f;
 	double dx1 = 0.0f;
@@ -88,7 +88,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTShapeProfileDef& inst) {
 		const double det = a1*b2 - a2*b1;
 
 		if (std::fabs(det) < 1.e-5) {
-			logger_.message(::logger::LOG_NOTICE, "GEO", 297, "Web and flange do not intersect for:", inst);
+			logger_.message(ifcopenshell::logger::LOG_NOTICE, "GEO", 297, "Web and flange do not intersect for:", inst);
 			return nullptr;
 		}
 

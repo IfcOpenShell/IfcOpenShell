@@ -1,11 +1,10 @@
-#include "OpenCascadeKernel.h"
+#include "opencascade_kernel.h"
 
 #include "base_utils.h"
 
-using namespace ifcopenshell::geometry;
-using namespace ifcopenshell::geometry::kernels;
-using namespace IfcGeom;
-using namespace IfcGeom::util;
+using namespace ifcopenshell::geom;
+using namespace ifcopenshell::geom::kernels;
+using namespace ifcopenshell::geom::util;
 
 namespace {
 	// @todo move into taxonomy;
@@ -24,7 +23,7 @@ namespace {
 	}
 }
 
-bool OpenCascadeKernel::convert(const taxonomy::shell::ptr l, TopoDS_Shape& shape) {
+bool open_cascade_kernel::convert(const taxonomy::shell::ptr l, TopoDS_Shape& shape) {
 	std::unique_ptr<faceset_helper> helper_scope;
 	if (shell_polyhedral(l)) {
 		helper_scope.reset(new faceset_helper(this, l));
@@ -58,7 +57,7 @@ bool OpenCascadeKernel::convert(const taxonomy::shell::ptr l, TopoDS_Shape& shap
 		}
 
 		if (!success) {
-			logger_.message(::logger::LOG_WARNING, "GEO", 198, "Failed to convert face:", face->instance);
+			logger_.message(ifcopenshell::logger::LOG_WARNING, "GEO", 198, "Failed to convert face:", face->instance);
 			continue;
 		}
 
@@ -71,7 +70,7 @@ bool OpenCascadeKernel::convert(const taxonomy::shell::ptr l, TopoDS_Shape& shap
 					if (face_area(triangle) > min_face_area) {
 						face_list.Append(triangle);
 					} else {
-						logger_.message(::logger::LOG_WARNING, "GEO", 199, "Degenerate face:", face->instance);
+						logger_.message(ifcopenshell::logger::LOG_WARNING, "GEO", 199, "Degenerate face:", face->instance);
 					}
 				}
 			}
@@ -79,7 +78,7 @@ bool OpenCascadeKernel::convert(const taxonomy::shell::ptr l, TopoDS_Shape& shap
 			if (face_area(occ_face) > min_face_area) {
 				face_list.Append(occ_face);
 			} else {
-				logger_.message(::logger::LOG_WARNING, "GEO", 200, "Degenerate face:", face->instance);
+				logger_.message(ifcopenshell::logger::LOG_WARNING, "GEO", 200, "Degenerate face:", face->instance);
 			}
 		}
 	}
@@ -106,17 +105,17 @@ bool OpenCascadeKernel::convert(const taxonomy::shell::ptr l, TopoDS_Shape& shap
 	return true;
 }
 
-bool OpenCascadeKernel::convert_impl(const taxonomy::shell::ptr shell, IfcGeom::ConversionResults& results) {
+bool open_cascade_kernel::convert_impl(const taxonomy::shell::ptr shell, std::vector<ifcopenshell::geom::conversion_result>& results) {
     return handle_occt_exception([&]() -> bool {
 
 	TopoDS_Shape shape;
 	if (!convert(shell, shape)) {
 		return false;
 	}
-	results.emplace_back(ConversionResult(
+	results.emplace_back(conversion_result(
 		shell->instance.id(),
 		shell->matrix,
-		new OpenCascadeShape(shape),
+		new open_cascade_shape(shape),
 		shell->surface_style
 	));
 	return true;

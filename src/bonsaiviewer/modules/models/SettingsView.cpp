@@ -75,16 +75,16 @@ QString formatCachedUnitScale(double meters_per_unit) {
     return QString("Cached scale: 1 unit = %1 m").arg(formatNumber(meters_per_unit));
 }
 
-std::string enumString(const attribute_value& av) {
+std::string enumString(const ifcopenshell::attribute_value& av) {
     if (av.isNull()) return {};
     if (av.type() != ifcopenshell::Argument_ENUMERATION) return {};
-    enumeration_reference enumeration = av;
+    ifcopenshell::enumeration_reference enumeration = av;
     return std::string(enumeration.value() ? enumeration.value() : "");
 }
 
-QString formatNamedUnit(const express::Base& unit) {
+QString formatNamedUnit(const express::base& unit) {
     if (!unit) return "—";
-    auto entity = unit.as<express::Entity>();
+    auto entity = unit.as<express::entity>();
     if (unit.declaration().is("IfcSIUnit")) {
         const std::string prefix = enumString(entity.get("Prefix"));
         const std::string name = enumString(entity.get("Name"));

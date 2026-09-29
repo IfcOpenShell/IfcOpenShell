@@ -23,7 +23,9 @@ impl ApsClient {
     pub fn with_base_url(auth: Arc<AuthSessionService>, base_url: String) -> Self {
         Self {
             auth,
-            agent: ureq::AgentBuilder::new().timeout(Duration::from_secs(120)).build(),
+            agent: ureq::AgentBuilder::new()
+                .timeout(Duration::from_secs(120))
+                .build(),
             base_url,
         }
     }

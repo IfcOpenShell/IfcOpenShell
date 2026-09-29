@@ -26,6 +26,7 @@
 #endif
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/dll/runtime_symbol_info.hpp>
 #include <boost/dll/shared_library.hpp>
 
 #include <algorithm>
@@ -126,7 +127,7 @@ namespace {
 	}
 
 	std::string decorated_basename(const std::string& basename) {
-		return boost::algorithm::istarts_with(basename, "ifcopenshell.") ? basename : "ifcopenshell." + basename;
+		return boost::algorithm::istarts_with(basename, "ifcopenshell_") ? basename : "ifcopenshell_" + basename;
 	}
 
 	std::vector<std::string> platform_basenames(const std::string& basename) {
@@ -153,9 +154,6 @@ namespace {
 
 namespace ifcopenshell {
 namespace plugin {
-PLUGIN_API void set_search_paths(const std::vector<std::string>& paths);
-PLUGIN_API std::vector<std::string> search_paths();
-PLUGIN_API void clear_search_paths();
 PLUGIN_API std::filesystem::path add_search_paths_or_default(manager& manager, std::filesystem::path (*default_search_path)());
 }
 }
@@ -349,6 +347,29 @@ PLUGIN_API std::filesystem::path ifcopenshell::plugin::add_search_paths_or_defau
 	const auto path = default_search_path();
 	manager.add_search_path(path);
 
+	// Static libraries place their anchor in the executable. For a normal
+	// Unix install this resolves to $prefix/bin, while shared plug-ins are
+	// installed in $prefix/lib. Windows installs DLL plug-ins in bin already.
+#ifndef _WIN32
+	if (path.filename() == "bin") {
+		const auto lib = path.parent_path() / "lib";
+		if (std::filesystem::exists(lib)) {
+			manager.add_search_path(lib);
+		}
+	}
+
+	// A static IfcParse/IfcGeom embedded in a Python extension resolves to the
+	// extension's site-packages directory, while plug-ins retain CMake's normal
+	// install location. This also covers Python installations outside the CMake
+	// prefix, such as GitHub Actions' hosted Python.
+#ifdef IFCOPENSHELL_INSTALL_PLUGIN_DIRECTORY
+	const auto install_plugin_directory = std::filesystem::path(IFCOPENSHELL_INSTALL_PLUGIN_DIRECTORY);
+	if (install_plugin_directory != path && std::filesystem::exists(install_plugin_directory)) {
+		manager.add_search_path(install_plugin_directory);
+	}
+#endif
+#endif
+
 	// Bundle-aware fallback search paths. The primary search path is
 	// dirname(libIfcParse) which works for the flat layouts we get on
 	// Linux ($prefix/lib/) and Windows ($prefix/bin/) — plug-ins live
@@ -440,7 +461,13 @@ std::filesystem::path ifcopenshell::plugin::module_directory(const void* symbol)
 		throw std::runtime_error("Unable to resolve module path");
 	}
 
-	const auto directory = std::filesystem::path(info.dli_fname).parent_path();
+	auto directory = std::filesystem::path(info.dli_fname).parent_path();
+	if (directory.empty()) {
+		// dladdr() returns the invocation string for symbols in the main
+		// executable. When it was found through PATH this can be just the
+		// executable name, so resolve the actual program location instead.
+		directory = boost::dll::program_location().parent_path();
+	}
 	plugin_debug("module_directory resolved " + path_string(directory));
 	return directory;
 #endif

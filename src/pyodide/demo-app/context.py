@@ -294,7 +294,7 @@ class Context:
     def to_obj_file(self, fn):
         st = ifcopenshell.geom.settings(USE_WORLD_COORDS=True, WELD_VERTICES=False)
         it = ifcopenshell.geom.iterator(st, self.model, exclude=("IfcOpeningElement",))
-        sr = ifcopenshell.geom.serializers.obj(fn, fn + ".mtl", st, ifcopenshell.geom.serializer_settings())
+        sr = ifcopenshell.geom.serializers.obj(fn, fn + ".mtl", st)
         if it.initialize():
             for el in ifcopenshell.geom.consume_iterator(it):
                 sr.write(el)

@@ -19,13 +19,13 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcHalfSpaceSolid& inst) {
     auto surface = inst.BaseSurface();
     auto plane = surface.as<IfcSchema::IfcPlane>();
     if (!plane) {
-		logger_.message(::logger::LOG_ERROR, "UNS", 16, "Unsupported BaseSurface:", surface);
+		logger_.message(ifcopenshell::logger::LOG_ERROR, "UNS", 16, "Unsupported BaseSurface:", surface);
 		return nullptr;
 	}
 	auto p = taxonomy::make<taxonomy::plane>();

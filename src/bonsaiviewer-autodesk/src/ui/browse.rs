@@ -64,10 +64,10 @@ const PLACEHOLDER_LABEL: &str = "Loading…";
 /// cannot touch FLTK widgets.
 #[derive(Clone, Debug)]
 enum WorkerMsg {
-    HubsLoaded(Result<Vec<Hub>, RpcError>),
-    ProjectsLoaded(Result<Vec<Project>, RpcError>),
-    TopFoldersLoaded(Result<Vec<Entry>, RpcError>),
-    FolderContentsLoaded(String, Result<Vec<Entry>, RpcError>),
+    Hubs(Result<Vec<Hub>, RpcError>),
+    Projects(Result<Vec<Project>, RpcError>),
+    TopFolders(Result<Vec<Entry>, RpcError>),
+    FolderContents(String, Result<Vec<Entry>, RpcError>),
 }
 
 struct State {
@@ -198,7 +198,6 @@ impl BrowseDialog {
         sign_in.set_callback({
             let aps = aps.clone();
             let auth = auth.clone();
-            let worker_tx = worker_tx;
             let mut status = status_mut.clone();
             move |_| {
                 status.set_label("Signing in to Autodesk…");
@@ -208,7 +207,7 @@ impl BrowseDialog {
                     let outcome = auth
                         .login_interactive(noop_auth())
                         .and_then(|_| aps.list_hubs());
-                    worker_tx.send(WorkerMsg::HubsLoaded(outcome));
+                    worker_tx.send(WorkerMsg::Hubs(outcome));
                 });
             }
         });
@@ -216,7 +215,6 @@ impl BrowseDialog {
         hub_combo.set_callback({
             let aps = aps.clone();
             let state = state.clone();
-            let worker_tx = worker_tx;
             let mut projects_browser = projects_browser.clone();
             let mut tree = tree.clone();
             let mut status = status_mut.clone();
@@ -247,7 +245,7 @@ impl BrowseDialog {
                 status.set_label(&format!("Loading projects in {hub_name}…"));
                 let aps = aps.clone();
                 thread::spawn(move || {
-                    worker_tx.send(WorkerMsg::ProjectsLoaded(aps.list_projects(&hub_id)));
+                    worker_tx.send(WorkerMsg::Projects(aps.list_projects(&hub_id)));
                 });
             }
         });
@@ -255,7 +253,6 @@ impl BrowseDialog {
         projects_browser.clone().set_callback({
             let aps = aps.clone();
             let state = state.clone();
-            let worker_tx = worker_tx;
             let mut tree = tree.clone();
             let mut status = status_mut.clone();
             let action_btn_clone = action_btn.clone();
@@ -286,8 +283,9 @@ impl BrowseDialog {
                 status.set_label(&format!("Loading top folders in {project_name}…"));
                 let aps = aps.clone();
                 thread::spawn(move || {
-                    worker_tx
-                        .send(WorkerMsg::TopFoldersLoaded(aps.list_top_folders(&hub_id, &project_id)));
+                    worker_tx.send(WorkerMsg::TopFolders(
+                        aps.list_top_folders(&hub_id, &project_id),
+                    ));
                 });
             }
         });
@@ -295,7 +293,6 @@ impl BrowseDialog {
         tree.clone().set_callback({
             let aps = aps.clone();
             let state = state.clone();
-            let worker_tx = worker_tx;
             let mut status = status_mut.clone();
             let action_btn_clone = action_btn.clone();
             move |t| match t.callback_reason() {
@@ -306,10 +303,16 @@ impl BrowseDialog {
                     refresh_action_button(&mut action_btn_clone.clone(), &s, mode);
                 }
                 TreeReason::Opened => {
-                    let Some(item) = t.callback_item() else { return };
-                    let Ok(path) = t.item_pathname(&item) else { return };
+                    let Some(item) = t.callback_item() else {
+                        return;
+                    };
+                    let Ok(path) = t.item_pathname(&item) else {
+                        return;
+                    };
                     let mut s = state.borrow_mut();
-                    let Some(entry) = s.tree_entries.get(&path).cloned() else { return };
+                    let Some(entry) = s.tree_entries.get(&path).cloned() else {
+                        return;
+                    };
                     if entry.entry_type != EntryType::Folders {
                         return;
                     }
@@ -334,8 +337,9 @@ impl BrowseDialog {
                     let folder_id = entry.id.clone();
                     let aps = aps.clone();
                     thread::spawn(move || {
-                        let result = list_folder_contents_for_mode(&aps, &project_id, &folder_id, mode);
-                        worker_tx.send(WorkerMsg::FolderContentsLoaded(path, result));
+                        let result =
+                            list_folder_contents_for_mode(&aps, &project_id, &folder_id, mode);
+                        worker_tx.send(WorkerMsg::FolderContents(path, result));
                     });
                 }
                 _ => {}
@@ -373,7 +377,7 @@ impl BrowseDialog {
         if auth.get_token().ok().flatten().is_some() {
             let aps = aps.clone();
             thread::spawn(move || {
-                worker_tx.send(WorkerMsg::HubsLoaded(aps.list_hubs()));
+                worker_tx.send(WorkerMsg::Hubs(aps.list_hubs()));
             });
         }
 
@@ -416,15 +420,15 @@ fn apply_worker_msg(
     mode: Mode,
 ) {
     match msg {
-        WorkerMsg::HubsLoaded(Err(e)) => show_error("Sign In Failed", &e.message),
-        WorkerMsg::HubsLoaded(Ok(hubs)) => {
+        WorkerMsg::Hubs(Err(e)) => show_error("Sign In Failed", &e.message),
+        WorkerMsg::Hubs(Ok(hubs)) => {
             let mut s = state.borrow_mut();
             s.hubs = hubs;
             refill_hub_combo(hub_combo, &s.hubs);
             status.set_label("Signed in. Select a hub.");
         }
-        WorkerMsg::ProjectsLoaded(Err(e)) => show_error("Load Projects Failed", &e.message),
-        WorkerMsg::ProjectsLoaded(Ok(projects)) => {
+        WorkerMsg::Projects(Err(e)) => show_error("Load Projects Failed", &e.message),
+        WorkerMsg::Projects(Ok(projects)) => {
             let mut s = state.borrow_mut();
             s.projects = projects;
             projects_browser.clear();
@@ -437,8 +441,8 @@ fn apply_worker_msg(
                 }
             }
         }
-        WorkerMsg::TopFoldersLoaded(Err(e)) => show_error("Load Project Failed", &e.message),
-        WorkerMsg::TopFoldersLoaded(Ok(folders)) => {
+        WorkerMsg::TopFolders(Err(e)) => show_error("Load Project Failed", &e.message),
+        WorkerMsg::TopFolders(Ok(folders)) => {
             let mut s = state.borrow_mut();
             for entry in folders {
                 insert_tree_entry(tree, &mut s.tree_entries, "", &entry);
@@ -457,11 +461,11 @@ fn apply_worker_msg(
                 }
             }
         }
-        WorkerMsg::FolderContentsLoaded(parent, Err(e)) => {
+        WorkerMsg::FolderContents(parent, Err(e)) => {
             state.borrow_mut().loaded_folders.remove(&parent);
             show_error("Load Folder Failed", &e.message);
         }
-        WorkerMsg::FolderContentsLoaded(parent, Ok(children)) => {
+        WorkerMsg::FolderContents(parent, Ok(children)) => {
             let mut s = state.borrow_mut();
             for entry in &children {
                 insert_tree_entry(tree, &mut s.tree_entries, &parent, entry);
@@ -474,6 +478,9 @@ fn apply_worker_msg(
 
 // ---- worker helpers -------------------------------------------------------
 
+/// Per-mode predicate deciding which listed entries survive.
+type EntryFilter = Box<dyn Fn(&Entry) -> bool>;
+
 fn list_folder_contents_for_mode(
     aps: &Arc<ApsClient>,
     project_id: &str,
@@ -485,7 +492,7 @@ fn list_folder_contents_for_mode(
     } else {
         &["folders", "items"]
     };
-    let filter_box: Option<Box<dyn Fn(&Entry) -> bool>> = match mode {
+    let filter_box: Option<EntryFilter> = match mode {
         Mode::Ifcfed => Some(Box::new(|e: &Entry| {
             e.display_name.to_lowercase().ends_with(".ifcfed")
         })),
@@ -517,7 +524,9 @@ fn insert_tree_entry(
     parent_canonical: &str,
     entry: &Entry,
 ) -> String {
-    let parent_add = parent_canonical.strip_prefix('/').unwrap_or(parent_canonical);
+    let parent_add = parent_canonical
+        .strip_prefix('/')
+        .unwrap_or(parent_canonical);
     let label = if entry.display_name.is_empty() {
         entry.id.clone()
     } else {
@@ -565,7 +574,9 @@ fn add_unique(tree: &mut Tree, parent_add: &str, label: &str) -> String {
 }
 
 fn collect_selected_entries(tree: &Tree, tree_entries: &HashMap<String, Entry>) -> Vec<Entry> {
-    let Some(items) = tree.get_selected_items() else { return Vec::new() };
+    let Some(items) = tree.get_selected_items() else {
+        return Vec::new();
+    };
     items
         .into_iter()
         .filter_map(|item| tree.item_pathname(&item).ok())
@@ -586,7 +597,10 @@ fn update_status_for_selection(status: &mut Frame, entries: &[Entry], mode: Mode
             status.set_label(&format!("Selected {kind}: {}", entry.display_name));
         }
         n => {
-            let valid = entries.iter().filter(|e| is_valid_selection(mode, e)).count();
+            let valid = entries
+                .iter()
+                .filter(|e| is_valid_selection(mode, e))
+                .count();
             status.set_label(&format!("Selected {valid} of {n} items."));
         }
     }
@@ -636,11 +650,29 @@ mod tests {
 
     #[test]
     fn is_valid_selection_modes() {
-        assert!(is_valid_selection(Mode::Ifcfed, &entry("a.ifcfed", EntryType::Items)));
-        assert!(!is_valid_selection(Mode::Ifcfed, &entry("a.ifc", EntryType::Items)));
-        assert!(is_valid_selection(Mode::Model, &entry("a.ifc", EntryType::Items)));
-        assert!(is_valid_selection(Mode::Model, &entry("a.rdb", EntryType::Items)));
-        assert!(is_valid_selection(Mode::Destination, &entry("folder", EntryType::Folders)));
-        assert!(!is_valid_selection(Mode::Destination, &entry("file.ifc", EntryType::Items)));
+        assert!(is_valid_selection(
+            Mode::Ifcfed,
+            &entry("a.ifcfed", EntryType::Items)
+        ));
+        assert!(!is_valid_selection(
+            Mode::Ifcfed,
+            &entry("a.ifc", EntryType::Items)
+        ));
+        assert!(is_valid_selection(
+            Mode::Model,
+            &entry("a.ifc", EntryType::Items)
+        ));
+        assert!(is_valid_selection(
+            Mode::Model,
+            &entry("a.rdb", EntryType::Items)
+        ));
+        assert!(is_valid_selection(
+            Mode::Destination,
+            &entry("folder", EntryType::Folders)
+        ));
+        assert!(!is_valid_selection(
+            Mode::Destination,
+            &entry("file.ifc", EntryType::Items)
+        ));
     }
 }

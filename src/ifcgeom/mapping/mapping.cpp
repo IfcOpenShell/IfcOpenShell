@@ -36,19 +36,18 @@
 #include <boost/spirit/home/x3.hpp>
 
 using namespace ifcopenshell;
-using namespace ifcopenshell::geometry;
-using namespace IfcGeom;
+using namespace ifcopenshell::geom;
 
 namespace {
     struct POSTFIX_SCHEMA(factory_t) {
-        abstract_mapping* operator()(ifcopenshell::file* file, Settings& settings, ::logger& logger) const {
-            ifcopenshell::geometry::POSTFIX_SCHEMA(mapping)* m = new ifcopenshell::geometry::POSTFIX_SCHEMA(mapping)(file, settings, logger);
+        abstract_mapping* operator()(ifcopenshell::file* file, ifcopenshell::geom::settings& settings, ifcopenshell::logger& logger) const {
+            ifcopenshell::geom::POSTFIX_SCHEMA(mapping)* m = new ifcopenshell::geom::POSTFIX_SCHEMA(mapping)(file, settings, logger);
             return m;
         }
     };
 }
 
-void MAKE_INIT_FN(MappingImplementation)(ifcopenshell::geometry::impl::mapping_registry* mapping) {
+void MAKE_INIT_FN(MappingImplementation)(ifcopenshell::geom::impl::mapping_registry* mapping) {
     static const std::string schema_name = STRINGIFY(IfcSchema);
     POSTFIX_SCHEMA(factory_t) factory;
     mapping->bind(schema_name, factory);
@@ -70,7 +69,7 @@ std::vector<IfcSchema::IfcProduct> mapping::products_represented_by(const IfcSch
         auto invs = prodrep.file()->get_inverse(prodrep.id(), &IfcSchema::IfcProduct::Class(), -1);
         for (auto& inv : invs) {
             products.push_back(inv.as<IfcSchema::IfcProduct>());
-        }        
+        }
     }
 
     if (only_direct) {
@@ -119,10 +118,10 @@ std::vector<IfcSchema::IfcProduct> mapping::products_represented_by(const IfcSch
 }
 
 namespace {
-std::vector<IfcSchema::IfcProduct> filter_products(const std::vector<IfcSchema::IfcProduct>& unfiltered_products, const std::vector<filter_t>& filters) {
+std::vector<IfcSchema::IfcProduct> filter_products(const std::vector<IfcSchema::IfcProduct>& unfiltered_products, const std::vector<filter_function>& filters) {
     std::vector<IfcSchema::IfcProduct> ifcproducts;
     for (auto& prod : unfiltered_products) {
-        if (boost::all(filters, [prod](const filter_t& f) { return f(prod); })) {
+        if (boost::all(filters, [prod](const filter_function& f) { return f(prod); })) {
             ifcproducts.push_back(prod);
         }
     }
@@ -132,7 +131,7 @@ std::vector<IfcSchema::IfcProduct> filter_products(const std::vector<IfcSchema::
 
 bool mapping::reuse_ok_(const std::vector<IfcSchema::IfcProduct>& products) {
     // With world coords enabled, object transformations are directly applied to
-    // the BRep. There is no way to re-use the geometry for multiple products.
+    // the brep. There is no way to re-use the geometry for multiple products.
     if (settings_.get<settings::UseWorldCoords>().get()) {
         return false;
     }
@@ -141,7 +140,7 @@ bool mapping::reuse_ok_(const std::vector<IfcSchema::IfcProduct>& products) {
         return true;
     }
 
-    std::set<std::optional<express::Base>> associated_single_materials;
+    std::set<std::optional<express::base>> associated_single_materials;
 
     for (auto& product : products) {
         if (!settings_.get<settings::DisableOpeningSubtractions>().get() && !find_openings(product).empty()) {
@@ -161,16 +160,16 @@ bool mapping::reuse_ok_(const std::vector<IfcSchema::IfcProduct>& products) {
         }
 
         auto mat = get_single_material_association(product);
-        associated_single_materials.insert(mat ? std::optional<express::Base>{mat} : std::nullopt);
+        associated_single_materials.insert(mat ? std::optional<express::base>{mat} : std::nullopt);
         if (associated_single_materials.size() > 1) return false;
     }
 
     return associated_single_materials.size() == 1;
 }
 
-std::vector<express::Base> mapping::find_openings(const express::Base& inst) {
-    std::vector<express::Base> openings;
-    
+std::vector<express::base> mapping::find_openings(const express::base& inst) {
+    std::vector<express::base> openings;
+
     if (auto rep = inst.as<IfcSchema::IfcRepresentation>()) {
         // @todo this is essentially only for hybrid kernel trying to guess
         // when not to use a simple kernel.
@@ -229,7 +228,7 @@ std::vector<express::Base> mapping::find_openings(const express::Base& inst) {
 }
 
 
-void mapping::get_representations(std::vector<geometry_conversion_task>& tasks, std::vector<filter_t>& filters) {
+void mapping::get_representations(std::vector<geometry_conversion_task>& tasks, std::vector<filter_function>& filters) {
     std::vector<IfcSchema::IfcRepresentation> representations;
     const bool has_context_ids = settings_.get<settings::ContextIds>().has();
     const bool uses_priorities = !has_context_ids && settings_.get<settings::ContextPriorities>().has();
@@ -247,11 +246,11 @@ void mapping::get_representations(std::vector<geometry_conversion_task>& tasks, 
     int task_index = 0;
 
     std::set<IfcSchema::IfcProduct> products_seen;
-    
+
     for (auto representation : representations) {
         IfcSchema::IfcRepresentationMap rmap;
         std::vector<IfcSchema::IfcProduct> ifcproducts = filter_products(products_represented_by(representation, rmap, false), filters);
-        
+
         if (ifcproducts.empty()) {
             continue;
         }
@@ -328,7 +327,7 @@ void mapping::get_representations(std::vector<geometry_conversion_task>& tasks, 
     }
 }
 
-const express::Base mapping::get_product_type(const express::Base& product_) {
+const express::base mapping::get_product_type(const express::base& product_) {
     auto product = product_.as<IfcSchema::IfcProduct>();
 #ifdef SCHEMA_IfcObject_HAS_IsTypedBy
     auto rels = product.IsTypedBy();
@@ -350,10 +349,10 @@ const express::Base mapping::get_product_type(const express::Base& product_) {
         }
         return rel.RelatingType();
     }
-    return express::Base{};
+    return express::base{};
 }
 
-const express::Base mapping::get_single_material_association(const express::Base& product_) {
+const express::base mapping::get_single_material_association(const express::base& product_) {
     auto product = product_.as<IfcSchema::IfcObjectDefinition>();
     IfcSchema::IfcMaterial single_material;
     auto associations = product.HasAssociations();
@@ -364,7 +363,7 @@ const express::Base mapping::get_single_material_association(const express::Base
         }
     }
     if (associated_materials.size() == 1) {
-        express::Base associated_material;
+        express::base associated_material;
 
         try {
             associated_material = associated_materials.front().RelatingMaterial().concrete();
@@ -383,7 +382,7 @@ const express::Base mapping::get_single_material_association(const express::Base
                     if (auto m = associated_material.as<IfcSchema::IfcMaterialLayerSetUsage>()) {
                         if (m.get("ForLayerSet").isNull()) {
                             logger_.warning("GEO", 302, "Missing ForLayerSet for:", m);
-                            return express::Base{};
+                            return express::base{};
                         }
                         layerset = m.ForLayerSet();
                     } else {
@@ -403,7 +402,7 @@ const express::Base mapping::get_single_material_association(const express::Base
                     if (auto m = associated_material.as<IfcSchema::IfcMaterialProfileSetUsage>()) {
                         if (m.get("ForProfileSet").isNull()) {
                             logger_.warning("GEO", 303, "Missing ForProfileSet for:", m);
-                            return express::Base{};
+                            return express::base{};
                         }
                         profileset = m.ForProfileSet();
                     } else {
@@ -642,7 +641,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcMaterial& material) {
     */
 
     // @todo
-    // IfcGeom::SurfaceStyle material_style = IfcGeom::SurfaceStyle(material->data().id(), material->Name());
+    // ifcopenshell::geom::SurfaceStyle material_style = ifcopenshell::geom::SurfaceStyle(material->data().id(), material->Name());
     // return &(style_cache[material->data().id()] = material_style);
 }
 
@@ -666,7 +665,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceStyle& style) {
     auto styles = style.Styles();
     IfcSchema::IfcSurfaceStyleShading shading;
     for (auto& s : styles) {
-        if (shading = s.as<IfcSchema::IfcSurfaceStyleShading>()) {
+        if ((shading = s.as<IfcSchema::IfcSurfaceStyleShading>())) {
             break;
         }
     }
@@ -746,7 +745,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceStyle& style) {
     return surface_style;
 }
 
-taxonomy::ptr mapping::map(const express::Base& inst) {
+taxonomy::ptr mapping::map(const express::base& inst) {
     if (!inst) {
         logger_.error("GEO", 306, "Warning nullptr passed to map() function");
         return nullptr;
@@ -775,13 +774,13 @@ taxonomy::ptr mapping::map(const express::Base& inst) {
             cache_.insert({iden, item});
         }
     } else if (!matched) {
-        logger_.message(::logger::LOG_ERROR, "GEO", 307, "No operation defined for:", inst);
+        logger_.message(ifcopenshell::logger::LOG_ERROR, "GEO", 307, "No operation defined for:", inst);
     }
     return item;
 }
 
 namespace {
-    express::Base get_RelatingObject(IfcSchema::IfcRelDecomposes& decompose) {
+    express::base get_RelatingObject(IfcSchema::IfcRelDecomposes& decompose) {
 #ifdef SCHEMA_IfcRelDecomposes_HAS_RelatingObject
         return decompose.RelatingObject();
 #else
@@ -789,12 +788,12 @@ namespace {
         if (aggr) {
             return aggr.RelatingObject();
         }
-        return express::Base{};
+        return express::base{};
 #endif
     }
 }
 
-express::Base mapping::get_decomposing_entity(const express::Base& inst, bool include_openings) {
+express::base mapping::get_decomposing_entity(const express::base& inst, bool include_openings) {
     IfcSchema::IfcObjectDefinition parent;
 
     auto product = inst.as<IfcSchema::IfcProduct>();
@@ -833,13 +832,13 @@ express::Base mapping::get_decomposing_entity(const express::Base& inst, bool in
 
     /* Parent decompositions to the RelatingObject */
     if (!parent) {
-        std::vector<express::Entity> parents = product.file()->get_inverse(product.id(), (&IfcSchema::IfcRelAggregates::Class()), -1);
+        std::vector<express::entity> parents = product.file()->get_inverse(product.id(), (&IfcSchema::IfcRelAggregates::Class()), -1);
         auto nests = product.file()->get_inverse(product.id(), (&IfcSchema::IfcRelNests::Class()), -1);
         parents.insert(parents.end(), nests.begin(), nests.end());
         for (auto it = parents.begin(); it != parents.end(); ++it) {
             IfcSchema::IfcRelDecomposes decompose = (*it).as<IfcSchema::IfcRelDecomposes>();
-            express::Base ifc_objectdef;
-                                                                                                                
+            express::base ifc_objectdef;
+
             ifc_objectdef = get_RelatingObject(decompose);
 
             if (!ifc_objectdef || product == ifc_objectdef) continue;
@@ -849,11 +848,11 @@ express::Base mapping::get_decomposing_entity(const express::Base& inst, bool in
     return parent;
 }
 
-std::map<std::string, express::Base> mapping::get_layers(const express::Base& inst) {
+std::map<std::string, express::base> mapping::get_layers(const express::base& inst) {
     auto prod = inst.as<IfcSchema::IfcProduct>();
-    std::map<std::string, express::Base> layers;
+    std::map<std::string, express::base> layers;
     if (prod.Representation()) {
-        std::vector<express::Base> representations = ifcopenshell::traverse(prod.Representation());
+        std::vector<express::base> representations = ifcopenshell::traverse(prod.Representation());
         for (auto& inst : representations) {
             if (auto repr = inst.as<IfcSchema::IfcRepresentation>()) {
                 std::vector<IfcSchema::IfcPresentationLayerAssignment> a = repr.LayerAssignments();
@@ -872,7 +871,7 @@ void mapping::initialize_units_() {
     length_unit_ = 1.;
     angle_unit_ = -1.;
     length_unit_name_ = "METER";
-    
+
 #ifdef SCHEMA_HAS_IfcContext
     auto projects = file_->instances_by_type<IfcSchema::IfcContext>();
 #else
@@ -928,7 +927,7 @@ void mapping::initialize_units_() {
     } catch (const ifcopenshell::exception& ex) {
         std::stringstream ss;
         ss << "Failed to determine unit information '" << ex.what() << "'";
-        logger_.message(::logger::LOG_ERROR, "GEO", 311, ss.str());
+        logger_.message(ifcopenshell::logger::LOG_ERROR, "GEO", 311, ss.str());
     }
 
     if (!length_unit_encountered) {
@@ -948,8 +947,8 @@ void mapping::initialize_units_() {
     }
 
     // Translation is applied first, then rotation.
-    if (settings_.get<ModelOffset>().has()) {
-        auto vs = settings_.get<ModelOffset>().get();
+    if (settings_.get<settings::ModelOffset>().has()) {
+        auto vs = settings_.get<settings::ModelOffset>().get();
         if (vs.size() == 3) {
             offset_and_rotation_ *= Eigen::Affine3d(Eigen::Translation3d(vs[0], vs[1], vs[2])).matrix();
         } else {
@@ -957,8 +956,8 @@ void mapping::initialize_units_() {
         }
     }
 
-    if (settings_.get<ModelRotation>().has()) {
-        auto vs = settings_.get<ModelRotation>().get();
+    if (settings_.get<settings::ModelRotation>().has()) {
+        auto vs = settings_.get<settings::ModelRotation>().get();
         if (vs.size() == 4) {
             // @nb W, X, Y, Z
             auto m3 = Eigen::Quaterniond(vs[3], vs[0], vs[1], vs[2]).normalized().matrix();
@@ -990,7 +989,7 @@ void mapping::initialize_settings() {
                 bool selected_sub_context = false;
                 auto subs = context.HasSubContexts();
                 for (auto& sub : subs) {
-                    if (cids.find(context.id()) != cids.end()) {
+                    if (cids.find(sub.id()) != cids.end()) {
                         selected_sub_context = true;
                         break;
                     }
@@ -1013,17 +1012,17 @@ void mapping::initialize_settings() {
 
     if (any_precision_encountered) {
         if (lowest_precision_encountered < 1.e-7) {
-            logger_.message(::logger::LOG_WARNING, "SYS", 33, "Precision lower than 0.0000001 meter not enforced");
+            logger_.message(ifcopenshell::logger::LOG_WARNING, "SYS", 33, "Precision lower than 0.0000001 meter not enforced");
             precision_to_set = 1.e-7;
         } else {
             precision_to_set = lowest_precision_encountered;
         }
     }
 
-    settings_.get<Precision>().value = precision_to_set;
+    settings_.get<settings::Precision>().value = precision_to_set;
 }
 
-bool mapping::get_layerset_information(const express::Base& p, layerset_information& info, int &)
+bool mapping::get_layerset_information(const express::base& p, layerset_information& info, int &)
 {
     auto product = p.as<IfcSchema::IfcProduct>();
 
@@ -1064,7 +1063,7 @@ bool mapping::get_layerset_information(const express::Base& p, layerset_informat
         IfcSchema::IfcRepresentation axis_representation = find_representation(product, "Axis");
 
         if (!axis_representation) {
-            logger_.message(::logger::LOG_WARNING, "GEO", 315, "No axis representation for:", product);
+            logger_.message(ifcopenshell::logger::LOG_WARNING, "GEO", 315, "No axis representation for:", product);
             return false;
         }
 
@@ -1134,12 +1133,12 @@ bool mapping::get_layerset_information(const express::Base& p, layerset_informat
         std::vector<IfcSchema::IfcExtrudedAreaSolid> extrusions;
         for (auto& r : resources) {
             if (auto ex = r.as<IfcSchema::IfcExtrudedAreaSolid>()) {
-                extrusions.push_back(ex);   
+                extrusions.push_back(ex);
             }
         }
 
         if (extrusions.size() != 1) {
-            logger_.message(::logger::LOG_WARNING, "GEO", 316, "No single extrusion found in body representation for:", product);
+            logger_.message(ifcopenshell::logger::LOG_WARNING, "GEO", 316, "No single extrusion found in body representation for:", product);
             return false;
         }
 
@@ -1154,7 +1153,7 @@ bool mapping::get_layerset_information(const express::Base& p, layerset_informat
         if (has_position) {
             auto m4 = taxonomy::cast<taxonomy::matrix4>(map(extrusion.Position()));
             if (!m4) {
-                logger_.message(::logger::LOG_ERROR, "GEO", 317, "Failed to convert placement for extrusion of:", product);
+                logger_.message(ifcopenshell::logger::LOG_ERROR, "GEO", 317, "Failed to convert placement for extrusion of:", product);
                 return false;
             } else {
                 extrusion_position = m4;
@@ -1164,7 +1163,7 @@ bool mapping::get_layerset_information(const express::Base& p, layerset_informat
         taxonomy::direction3::ptr extrusion_direction = taxonomy::cast<taxonomy::direction3>(map(extrusion.ExtrudedDirection()));
 
         if (!extrusion_direction) {
-            logger_.message(::logger::LOG_ERROR, "GEO", 318, "Failed to convert direction for extrusion of:", product);
+            logger_.message(ifcopenshell::logger::LOG_ERROR, "GEO", 318, "Failed to convert direction for extrusion of:", product);
             return false;
         }
 
@@ -1210,12 +1209,12 @@ bool mapping::get_layerset_information(const express::Base& p, layerset_informat
 
     }
 
-    
+
 
     return true;
 }
 
-bool mapping::get_wall_neighbours(const express::Base&, std::vector<endpoint_connection>&) {
+bool mapping::get_wall_neighbours(const express::base&, std::vector<endpoint_connection>&) {
     return false;
 }
 
@@ -1555,7 +1554,7 @@ void mapping::ensureRepresentationContextCache_() {
     representation_context_cache_valid_ = true;
 }
 
-express::Base mapping::representation_of(const express::Base& product) {
+express::base mapping::representation_of(const express::base& product) {
     std::vector<IfcSchema::IfcRepresentation> of_product;
     std::vector<IfcSchema::IfcRepresentation> intersection;
     std::vector<IfcSchema::IfcRepresentation> intersection_no_box;
@@ -1595,7 +1594,7 @@ express::Base mapping::representation_of(const express::Base& product) {
     }
 
     if (intersection.size() == 0) {
-        return express::Base{};
+        return express::base{};
     } else {
         for (auto& r : intersection) {
             auto resources = ifcopenshell::traverse(r);

@@ -20,6 +20,13 @@
 %ignore ifcopenshell::file::register_inverse;
 %ignore ifcopenshell::file::unregister_inverse;
 %ignore ifcopenshell::file::schema;
+%ignore ifcopenshell::file::logger;
+%ignore ifcopenshell::file::process_deletion_inverse;
+%ignore ifcopenshell::file::build_inverses_;
+%ignore ifcopenshell::file::get_unit;
+%ignore ifcopenshell::file::build_inverses;
+%ignore ifcopenshell::file::check_existance_before_adding;
+%ignore ifcopenshell::file::calculate_unit_factors;
 %ignore ifcopenshell::file::begin;
 %ignore ifcopenshell::file::end;
 %ignore ifcopenshell::file::types_begin;
@@ -31,12 +38,26 @@
 %ignore ifcopenshell::file::byref_excl_;
 %ignore ifcopenshell::file::types_to_bypass_loading_;
 
+// Replaces the raw multi-overload ctor with a friendlier keyword-based signature.
+%feature("shadow") ifcopenshell::file::file %{
+	def __init__(self, schema=None, schema_identifier=None, schema_version=None):
+		if schema_identifier is not None:
+			identifier = schema_identifier
+		else:
+			identifier = self._determine_schema_identifier(schema=schema, schema_version=schema_version)
+		_ifcopenshell_wrapper.file_swiginit(self, $action(identifier))
+%}
+
 %ignore ifcopenshell::instance_streamer<ifcopenshell::file_reader<ifcopenshell::full_buffer_impl>>::read_instance;
 %ignore ifcopenshell::instance_streamer<ifcopenshell::file_reader<ifcopenshell::full_buffer_impl>>::steal_instances;
 
-%ignore express::Entity;
-%ignore express::Select;
-%ignore express::DeclaredType;
+%ignore express::entity;
+%ignore express::select;
+%ignore express::declared_type;
+
+// operator< takes a reference, so SWIG's auto __lt__ crashes on None.
+// entity_instance_mixin already has a safe __lt__; let it inherit through.
+%ignore express::base::operator<;
 
 %ignore in_memory_file_storage;
 %ignore rocks_db_file_storage;
@@ -63,24 +84,32 @@
 %ignore ifcopenshell::spf_header::set_file_name;
 %ignore ifcopenshell::spf_header::set_file_schema;
 
+%ignore ifcopenshell::spf_header::logger;
+%ignore ifcopenshell::spf_header::owner_file;
+%ignore ifcopenshell::spf_header::write;
+%ignore ifcopenshell::spf_header::assign;
+
 %ignore ifcopenshell::HeaderEntity::is;
 
 %ignore ifcopenshell::file::type_iterator;
 
-%ignore express::Base::is;
-%ignore express::Base::operator==;
-%ignore express::Base::Base(std::nullopt_t);
+%ignore express::base::is;
+%ignore express::base::operator==;
+%ignore express::base::operator!=;
+%ignore express::base::base(std::nullopt_t);
 
 %rename("by_id") instance_by_id;
 %rename("by_guid") instance_by_guid;
 %rename("_by_type") instances_by_type;
 %rename("_by_type_excl_subtypes") instances_by_type_excl_subtypes;
 %rename("get_inverses_by_declaration") get_inverse;
-%rename("entity_instance") express::Base;
+%rename("entity_instance") express::base;
 %rename("file") file;
 // _add() because mixin defined add which adds transaction logic
 %rename("_add") add_entity;
 %rename("_remove") remove_entity;
+%rename("_batch") batch;
+%rename("_unbatch") unbatch;
 %rename("_traverse") traverse;
 %rename("_traverse_breadth_first") traverse_breadth_first;
 
@@ -121,6 +150,7 @@ PyObject* get_feature(const std::string& x) {
 
 #include <fstream>
 #include <random>
+#include <unordered_set>
 
 // Atomic IFC/STEP write (issue #4797): serialize to a temporary file next to
 // the destination, then atomically rename it onto the destination. If the
@@ -164,7 +194,7 @@ static const std::string& helper_fn_declaration_get_name(const ifcopenshell::dec
 	return decl->name();
 }
 
-static ifcopenshell::argument_type helper_fn_attribute_type(const express::Base* instp, unsigned i) {
+static ifcopenshell::argument_type helper_fn_attribute_type(const express::base* instp, unsigned i) {
 	const auto& inst = *instp;
 	const ifcopenshell::parameter_type* pt = 0;
 	if (inst.declaration().as_entity()) {
@@ -233,39 +263,87 @@ private:
 %}
 
 %newobject ifcopenshell::file::key_value_store_iter;
+%newobject ifcopenshell::file::create_uninitialized;
 
 %extend ifcopenshell::file {
-	/*
 	// Use to correlate to entity_instance.file_pointer, so that we
 	// can trace file ownership of instances on the python side.
 	size_t file_pointer() const {
 		return reinterpret_cast<size_t>($self);
 	}
-	*/
+
+	%pythoncode %{
+		def __eq__(self, other):
+			# Attribute access hands out a new wrapper every time, so identity
+			# of the wrapper says nothing about the file it refers to.
+			if self is other:
+				return True
+			if not isinstance(other, file):
+				return NotImplemented
+			return self.file_pointer() == other.file_pointer()
+
+		def __ne__(self, other):
+			result = self.__eq__(other)
+			return result if result is NotImplemented else not result
+
+		def __hash__(self):
+			return self.file_pointer()
+	%}
 
 	file(const std::string& schema) {
 		return new ifcopenshell::file(ifcopenshell::schema_by_name(schema));
 	}
 
-	std::vector<express::Base> _get_inverse(const express::Base& e) {
-		if (auto e_ = e.as<express::Entity>()) {
-			return cast_vector<express::Base>($self->get_inverse(e_.id(), 0, -1));
+	static ifcopenshell::file* create_uninitialized(ifcopenshell::logger* logger=nullptr) {
+		return new ifcopenshell::file(ifcopenshell::uninitialized_tag{}, ifcopenshell::logger_or_root(logger));
+	}
+
+	std::vector<express::base> _get_inverse(const express::base& e) {
+		if (auto e_ = e.as<express::entity>()) {
+			return cast_vector<express::base>($self->get_inverse(e_.id(), 0, -1));
 		}
 		throw ifcopenshell::exception("Only entities with ids are supported for get_inverse. Provided entity: '" + e.declaration().name() + "'.");
 	}
 
-	std::vector<int> _get_inverse_indices(const express::Base& e) {
-		if (auto e_ = e.as<express::Entity>()) {
+	std::vector<int> _get_inverse_indices(const express::base& e) {
+		if (auto e_ = e.as<express::entity>()) {
 			return $self->get_inverse_indices_by_id(e_.id());
 		}
 		throw ifcopenshell::exception("Only entities with ids are supported for get_inverse_indices. Provided entity: '" + e.declaration().name() + "'.");
 	}
 
-	int get_total_inverses(const express::Base& e) {
-		if (auto e_ = e.as<express::Entity>()) {
+	int get_total_inverses(const express::base& e) {
+		if (auto e_ = e.as<express::entity>()) {
 			return $self->get_inverse_indices_by_id(e_.id()).size();
 		}
 		throw ifcopenshell::exception("Only entities with ids are supported for get_total_inverses. Provided entity: '" + e.declaration().name() + "'.");
+	}
+
+	// True iff every instance referencing e has an id in ids. Stops at the
+	// first referencing instance outside the set, without materializing any.
+	bool _is_referenced_only_in(const express::base& e, const std::vector<int>& ids) {
+		auto e_ = e.as<express::entity>();
+		if (!e_) {
+			throw ifcopenshell::exception("Only entities with ids are supported for _is_referenced_only_in. Provided entity: '" + e.declaration().name() + "'.");
+		}
+		const std::unordered_set<uint32_t> allowed(ids.begin(), ids.end());
+		return $self->all_referencing_instances(e_.id(), [&allowed](uint32_t source_id) {
+			return allowed.count(source_id) != 0;
+		});
+	}
+
+	// The subset of ids whose every referencing instance is itself in ids:
+	// one crossing in, one crossing out, early exit per id.
+	std::vector<int> _ids_referenced_only_within(const std::vector<int>& ids) {
+		const std::unordered_set<uint32_t> allowed(ids.begin(), ids.end());
+		const auto within = [&allowed](uint32_t source_id) { return allowed.count(source_id) != 0; };
+		std::vector<int> contained;
+		for (int id : ids) {
+			if ($self->all_referencing_instances(id, within)) {
+				contained.push_back(id);
+			}
+		}
+		return contained;
 	}
 
 	void _write(const std::string& fn) {
@@ -281,7 +359,7 @@ private:
 		return s.str();
 	}
 
-	express::Base create(const std::string& entity_name, int id=-1) {
+	express::base create(const std::string& entity_name, int id=-1) {
 		const ifcopenshell::declaration* decl = $self->schema()->declaration_by_name(entity_name);
 		if (!decl || !(decl->as_entity() || decl->as_type_declaration())) {
 			throw ifcopenshell::exception("No such entity or type declaration: '" + entity_name + "' in schema '" + $self->schema()->name());
@@ -377,10 +455,6 @@ private:
 		header = property(header)
 		_registry = {}
 
-		_old_init = __init__
-		def __init__(self, schema=None, schema_identifier=None, schema_version=None):
-			self._old_init(schema_identifier if schema_identifier else self._determine_schema_identifier(schema=schema, schema_version=schema_version))
-    
 		def __setattr__(self, k, v):
 			object.__setattr__(self, k, v)
 			if k == 'this':
@@ -389,7 +463,7 @@ private:
 	%}
 }
 
-%extend express::Base {
+%extend express::base {
 
 	// 0 = not found
 	// 1 = regular forward attribute
@@ -399,7 +473,7 @@ private:
 		if (!$self->declaration().as_entity()) {
 			return name == "wrappedValue" ? 1 : 0;
 		}
-		
+
 		{
 		const std::vector<const ifcopenshell::attribute*> attrs = $self->declaration().as_entity()->all_attributes();
 		std::vector<const ifcopenshell::attribute*>::const_iterator it = attrs.begin();
@@ -434,8 +508,8 @@ private:
 	// to expose it to the Python wrapper it is simply duplicated here.
 	// Same applies to the two methods reimplemented below.
 	int id() const {
-		return $self->as<express::Base>() != nullptr
-			? $self->as<express::Base>()->id()
+		return $self->as<express::base>() != nullptr
+			? $self->as<express::base>()->id()
 			: 0;
 	}
 	*/
@@ -452,12 +526,12 @@ private:
 		if (!$self->declaration().as_entity()) {
 			return std::vector<std::string>(1, "wrappedValue");
 		}
-		
+
 		const std::vector<const ifcopenshell::attribute*> attrs = $self->declaration().as_entity()->all_attributes();
-		
+
 		std::vector<std::string> attr_names;
-		attr_names.reserve(attrs.size());		
-		
+		attr_names.reserve(attrs.size());
+
 		std::vector<const ifcopenshell::attribute*>::const_iterator it = attrs.begin();
 		for (; it != attrs.end(); ++it) {
 			attr_names.push_back((*it)->name());
@@ -472,10 +546,10 @@ private:
 		}
 
 		const std::vector<const ifcopenshell::inverse_attribute*> attrs = $self->declaration().as_entity()->all_inverse_attributes();
-		
+
 		std::vector<std::string> attr_names;
-		attr_names.reserve(attrs.size());		
-		
+		attr_names.reserve(attrs.size());
+
 		std::vector<const ifcopenshell::inverse_attribute*>::const_iterator it = attrs.begin();
 		for (; it != attrs.end(); ++it) {
 			attr_names.push_back((*it)->name());
@@ -483,7 +557,7 @@ private:
 
 		return attr_names;
 	}
-	
+
 	bool is_a(const std::string& s) {
 		return self->declaration().is(s);
 	}
@@ -508,60 +582,6 @@ private:
 		return $self->get_attribute_value((unsigned)i);
 	}
 
-	bool __eq__(const express::Base& other) const {
-		// This logic is not perfect and is not fully consistent with __hash__
-		if ($self->identity() == other.identity()) {
-			return true;
-		} else if (&$self->declaration() != &other.declaration()) {
-			return false;
-		} else if (($self->file() != other.file()) || ($self->declaration().as_entity() == nullptr)) {
-			// PyGILState_STATE gil = PyGILState_Ensure();
-			// @todo get_info_2 is actually implemented in C++, so we try to call it directly
-			bool result = false;
-			PyObject *py_self  = SWIG_NewPointerObj(SWIG_as_voidptr($self),
-                                                SWIGTYPE_p_express__Base, 0);
-			PyObject *py_other = SWIG_NewPointerObj(SWIG_as_voidptr(&other),
-                                SWIGTYPE_p_express__Base, 0);
-			if (py_self && py_other) {
-				PyObject *args = PyTuple_New(0);
-
-				PyObject *kwargs = PyDict_New();
-				PyDict_SetItemString(kwargs, "recursive", Py_True);
-				PyDict_SetItemString(kwargs, "include_identifier", Py_False);
-
-				PyObject *m1 = PyObject_GetAttrString(py_self,  "get_info_2");
-				PyObject *m2 = PyObject_GetAttrString(py_other, "get_info_2");
-
-				PyObject *i1 = (m1 ? PyObject_Call(m1, args, kwargs) : nullptr);
-				PyObject *i2 = (m2 ? PyObject_Call(m2, args, kwargs) : nullptr);
-
-				if (i1 && i2) {
-					int eq = PyObject_RichCompareBool(i1, i2, Py_EQ);
-					result = (eq == 1);
-				} else {
-					// get_info_2 missing or threw; treat as not equal (and clear Python error).
-					PyErr_Clear();
-				}
-
-				Py_XDECREF(i1);
-				Py_XDECREF(i2);
-				Py_XDECREF(m1);
-				Py_XDECREF(m2);
-				Py_DECREF(kwargs);
-				Py_DECREF(args);
-			} else {
-				PyErr_Clear();
-			}
-
-			Py_XDECREF(py_self);
-			Py_XDECREF(py_other);
-			// PyGILState_Release(gil);
-			return result;
-		} else {
-			return false;
-		}
-	}
-
 	size_t __hash__() const {
 		return std::hash<uint32_t>{}(self->identity());
 	}
@@ -578,12 +598,10 @@ private:
         return oss.str();
 	}
 
-	/*
-	// Just something to have a somewhat sensible value to hash
+	// Identifies the file owning this instance, zero when it has no owner.
 	size_t file_pointer() const {
-		return reinterpret_cast<size_t>($self->file_);
+		return reinterpret_cast<size_t>($self->file());
 	}
-	*/
 
 	unsigned get_argument_index(const std::string& a) const {
 		if ($self->declaration().as_entity()) {
@@ -595,9 +613,9 @@ private:
 		}
 	}
 
-	std::vector<express::Base> _get_inverse(const std::string& a) {
+	std::vector<express::base> _get_inverse(const std::string& a) {
 		if ($self->declaration().as_entity()) {
-			return cast_vector<express::Base>($self->as<express::Entity>().get_inverse(a));
+			return cast_vector<express::base>($self->as<express::entity>().get_inverse(a));
 		} else {
 			throw ifcopenshell::exception(a + " not found on " + $self->declaration().name());
 		}
@@ -608,7 +626,15 @@ private:
 	}
 
 	const char* const attribute_type(const std::string& name) const {
-		return ifcopenshell::argument_type_to_string(helper_fn_attribute_type($self, express_Base_get_argument_index($self, name)));
+		unsigned int index;
+		if ($self->declaration().as_entity()) {
+			index = $self->declaration().as_entity()->attribute_index(name);
+		} else if (name == "wrappedValue") {
+			index = 0;
+		} else {
+			throw ifcopenshell::exception(name + " not found on " + $self->declaration().name());
+		}
+		return ifcopenshell::argument_type_to_string(helper_fn_attribute_type($self, index));
 	}
 
 	const std::string& attribute_name(unsigned int i) const {
@@ -627,6 +653,12 @@ private:
 			// @nb we don't check anymore if the attribute is optional here, because it should be
 			// possible to go back to the state at construction time.
 			// bool is_optional = $self->declaration().as_entity()->attribute_by_index(i)->optional();
+			// A derived attribute keeps its derived marker, as at construction time.
+			auto* ent = $self->declaration().as_entity();
+			if (ent && i < ent->derived().size() && ent->derived()[i]) {
+				self->set_attribute_value(i, ifcopenshell::derived{});
+				return;
+			}
 			self->set_attribute_value(i, blank{});
 			return;
 		}
@@ -746,35 +778,35 @@ private:
 			return out;
 		};
 
-		auto to_base = [&](PyObject* o) -> express::Base {
+		auto to_base = [&](PyObject* o) -> express::base {
 			void* vp = nullptr;
 
 			// Try non-const pointer first
-			if (swig_type_info* ti = SWIG_TypeQuery("express::Base *")) {
+			if (swig_type_info* ti = SWIG_TypeQuery("express::base *")) {
 				int res = SWIG_ConvertPtr(o, &vp, ti, 0);
 				if (res >= 0 && vp) {
-					return *static_cast<express::Base*>(vp);
+					return *static_cast<express::base*>(vp);
 				}
 			}
 
 			// Then try const pointer
 			vp = nullptr;
-			if (swig_type_info* ti = SWIG_TypeQuery("express::Base const *")) {
+			if (swig_type_info* ti = SWIG_TypeQuery("express::base const *")) {
 				int res = SWIG_ConvertPtr(o, &vp, ti, 0);
 				if (res >= 0 && vp) {
-					return *static_cast<const express::Base*>(vp);
+					return *static_cast<const express::base*>(vp);
 				}
 			}
 
 			throw ifcopenshell::exception("Attribute not set");
 		};
 
-		auto to_vec_base = [&](PyObject* o) -> std::vector<express::Base> {
+		auto to_vec_base = [&](PyObject* o) -> std::vector<express::base> {
 			PyObject* fast = seq_fast(o);
 			Py_ssize_t n = PySequence_Fast_GET_SIZE(fast);
 			PyObject** items = PySequence_Fast_ITEMS(fast);
 
-			std::vector<express::Base> out;
+			std::vector<express::base> out;
 			out.reserve(static_cast<size_t>(n));
 			for (Py_ssize_t k = 0; k < n; ++k) {
 				out.push_back(to_base(items[k]));
@@ -814,12 +846,12 @@ private:
 			return out;
 		};
 
-		auto to_vec_vec_base = [&](PyObject* o) -> std::vector<std::vector<express::Base>> {
+		auto to_vec_vec_base = [&](PyObject* o) -> std::vector<std::vector<express::base>> {
 			PyObject* fast = seq_fast(o);
 			Py_ssize_t n = PySequence_Fast_GET_SIZE(fast);
 			PyObject** items = PySequence_Fast_ITEMS(fast);
 
-			std::vector<std::vector<express::Base>> out;
+			std::vector<std::vector<express::base>> out;
 			out.reserve(static_cast<size_t>(n));
 			for (Py_ssize_t k = 0; k < n; ++k) {
 				out.push_back(to_vec_base(items[k]));
@@ -905,7 +937,7 @@ private:
 						bits.push_back(boost::dynamic_bitset<>(v));
 					} else {
 						throw ifcopenshell::exception("String not a valid binary representation");
-					}			
+					}
 				}
 				self->set_attribute_value(i, bits);
 				return;
@@ -948,13 +980,13 @@ private:
 %extend ifcopenshell::spf_header {
 	// Upcast to header instances for SWIG, because
 	// it has no idea about the schema definitions.
-	express::Base file_description_py() {
+	express::base file_description_py() {
 		return $self->file_description();
 	}
-	express::Base file_name_py() {
+	express::base file_name_py() {
 		return $self->file_name();
 	}
-	express::Base file_schema_py() {
+	express::base file_schema_py() {
 		return $self->file_schema();
 	}
 
@@ -966,49 +998,33 @@ private:
 };
 
 %include "../ifcparse/ifc_parse_api.h"
+
+namespace ifcopenshell {
+std::string encode_spf_string(const std::string& value);
+std::string decode_spf_string(const std::string& value);
+}
+
 %include "../ifcparse/spf_header.h"
 
 %pythoncode %{
-### hack hack hack
-### we trick swig into inheriting from our own extension class
-### that way we do not constantly need to decorate/undecorate
-# @todo is there no official way to do this?
-_old_object = object
-from .file import file_mixin as custom_base
-object = custom_base
+from .file import file_mixin as file_mixin
 %}
+%feature("python:abc", "file_mixin") ifcopenshell::file;
 
 %include "../ifcparse/file.h"
 %template(instance_streamer) ifcopenshell::instance_streamer<ifcopenshell::file_reader<ifcopenshell::full_buffer_impl>>;
 
-%pythoncode %{
-### hack hack hack
-### restore
-object = _old_object
-%}
-
 %include "../ifcparse/file_open_status.h"
 
 %pythoncode %{
-### hack hack hack
-### we trick swig into inheriting from our own extension class
-### that way we do not constantly need to decorate/undecorate
-# @todo is there no official way to do this?
-_old_object = object
-from .entity_instance import entity_instance_mixin as custom_base
-object = custom_base
+from .entity_instance import entity_instance_mixin
 %}
+%feature("python:abc", "entity_instance_mixin") express::base;
 
 %include "../ifcparse/express.h"
 
-%pythoncode %{
-### hack hack hack
-### restore
-object = _old_object
-%}
-
 %include "../ifcparse/schema.h"
-%include "../serializers/RocksDbSerializer.h"
+%include "../serializers/rocks_db_serializer.h"
 %include "../ifcparse/logger.h"
 
 // The file* returned by open() is to be freed by SWIG/Python
@@ -1017,10 +1033,10 @@ object = _old_object
 %newobject stream_from_string;
 
 %inline %{
-	ifcopenshell::file* open(const std::string& fn, bool readonly=false, logger& logger=::logger::root()) {
+	ifcopenshell::file* open(const std::string& fn, bool readonly=false, ifcopenshell::logger* logger=nullptr) {
 		ifcopenshell::file* f;
 		Py_BEGIN_ALLOW_THREADS;
-		f = new ifcopenshell::file(fn, ifcopenshell::FT_AUTODETECT, readonly, logger);
+		f = new ifcopenshell::file(fn, ifcopenshell::FT_AUTODETECT, readonly, ifcopenshell::logger_or_root(logger));
 		Py_END_ALLOW_THREADS;
 		return f;
 	}
@@ -1045,8 +1061,8 @@ object = _old_object
 		return IFCOPENSHELL_VERSION;
 	}
 
-	express::Base new_IfcBaseClass(ifcopenshell::file* file, const std::string& name) {
-        return file->create(file->schema()->declaration_by_name(name));
+	express::base new_IfcBaseClass(ifcopenshell::file& file, const std::string& name) {
+        return file.create(file.schema()->declaration_by_name(name));
 	}
 %}
 
@@ -1178,7 +1194,7 @@ object = _old_object
 	static std::stringstream ifcopenshell_log_stream;
 %}
 %init %{
-	::logger::root().set_output(0, &ifcopenshell_log_stream);
+	ifcopenshell::logger::root().set_output(0, &ifcopenshell_log_stream);
 %}
 %inline %{
 	std::string get_log() {
@@ -1187,47 +1203,47 @@ object = _old_object
 		return log;
 	}
 	void turn_on_detailed_logging() {
-		::logger::root().set_output(&std::cout, &std::cout);
-		::logger::root().verbosity(::logger::LOG_DEBUG);
+		ifcopenshell::logger::root().set_output(&std::cout, &std::cout);
+		ifcopenshell::logger::root().verbosity(ifcopenshell::logger::LOG_DEBUG);
 	}
 	void turn_off_detailed_logging() {
-		::logger::root().set_output(0, &ifcopenshell_log_stream);
-		::logger::root().verbosity(::logger::LOG_WARNING);
+		ifcopenshell::logger::root().set_output(0, &ifcopenshell_log_stream);
+		ifcopenshell::logger::root().verbosity(ifcopenshell::logger::LOG_WARNING);
 	}
 	void set_log_format_json() {
 		ifcopenshell_log_stream.str("");
-		::logger::root().output_format(::logger::FMT_JSON);
+		ifcopenshell::logger::root().output_format(ifcopenshell::logger::FMT_JSON);
 	}
 	void set_log_format_text() {
 		ifcopenshell_log_stream.str("");
-		::logger::root().output_format(::logger::FMT_PLAIN);
+		ifcopenshell::logger::root().output_format(ifcopenshell::logger::FMT_PLAIN);
 	}
 %}
 
 %{
-	PyObject* get_info_cpp(const express::Base& v, bool recursive, bool include_identifier);
+	PyObject* get_info_cpp(const express::base& v, bool recursive, bool include_identifier);
 
-	// @todo refactor this to remove duplication with the typemap. 
+	// @todo refactor this to remove duplication with the typemap.
 	// except this is calls the above function in case of instances.
-	PyObject* convert_cpp_attribute_to_python(const express::Base& instance, size_t attribute_index, bool recursive, bool include_identifier) {
+	PyObject* convert_cpp_attribute_to_python(const express::base& instance, size_t attribute_index, bool recursive, bool include_identifier) {
 		return instance.get_attribute_value(attribute_index).apply_visitor([recursive, include_identifier](const auto& v){
-			using U = std::decay_t<decltype(v)>;
-            if constexpr (std::is_same_v<U, enumeration_reference>) {
+			using u = std::decay_t<decltype(v)>;
+            if constexpr (std::is_same_v<u, ifcopenshell::enumeration_reference>) {
                 return pythonize(std::string(v.value()));
-			} else if constexpr (std::is_same_v<U, derived>) {
+			} else if constexpr (std::is_same_v<u, ifcopenshell::derived>) {
 				if (feature_use_attribute_value_derived) {
 					return SWIG_NewPointerObj(new attribute_value_derived, SWIGTYPE_p_attribute_value_derived, SWIG_POINTER_OWN);
 				} else {
 					Py_INCREF(Py_None);
-					return static_cast<PyObject*>(Py_None); 
+					return static_cast<PyObject*>(Py_None);
 				}
-			} else if constexpr (std::is_same_v<U, express::Base>) {
+			} else if constexpr (std::is_same_v<u, express::base>) {
 				if (recursive) {
 					return get_info_cpp(v, recursive, include_identifier);
 				} else {
 					return pythonize(v);
 				}
-            } else if constexpr (std::is_same_v<U, std::vector<express::Base>>) {
+            } else if constexpr (std::is_same_v<u, std::vector<express::base>>) {
 				if (recursive) {
 					PyObject* t = PyTuple_New(v.size());
                     for (size_t i = 0; i < v.size(); ++i) {
@@ -1238,7 +1254,7 @@ object = _old_object
 				} else {
 					return pythonize_vector(v);
 				}
-            } else if constexpr (std::is_same_v<U, std::vector<std::vector<express::Base>>>) {
+            } else if constexpr (std::is_same_v<u, std::vector<std::vector<express::base>>>) {
 				if (recursive) {
 					PyObject* outer = PyTuple_New(v.size());
                     for (size_t i = 0; i < v.size(); ++i) {
@@ -1254,10 +1270,10 @@ object = _old_object
 				} else {
 					return pythonize_vector(v);
 				}
-            } else if constexpr (std::is_same_v<U, empty_aggregate_t> || std::is_same_v<U, empty_aggregate_of_aggregate_t> || std::is_same_v<U, blank>) {
+            } else if constexpr (std::is_same_v<u, ifcopenshell::empty_aggregate> || std::is_same_v<u, ifcopenshell::empty_aggregate_of_aggregate> || std::is_same_v<u, ifcopenshell::blank>) {
                 Py_INCREF(Py_None);
-				return static_cast<PyObject*>(Py_None); 
-            } else if constexpr (is_std_vector_v<U>) {
+				return static_cast<PyObject*>(Py_None);
+            } else if constexpr (is_std_vector_v<u>) {
 				// only for non-entity-instance vectors
 				return pythonize_vector(v);
             } else {
@@ -1267,7 +1283,7 @@ object = _old_object
 	}
 %}
 %inline %{
-	PyObject* get_info_cpp(const express::Base& v, bool recursive, bool include_identifier) {
+	PyObject* get_info_cpp(const express::base& v, bool recursive, bool include_identifier) {
 		PyObject *d = PyDict_New();
 
 		if (v.declaration().as_entity()) {
@@ -1306,25 +1322,25 @@ object = _old_object
 %}
 
 %extend ifcopenshell::instance_streamer<ifcopenshell::file_reader<ifcopenshell::full_buffer_impl>> {
-	PyObject* readInstancePy(bool type_as_declaration_instance=false) {
-		auto simply_type_to_dictionary = [&](const express::Base& t) -> PyObject* {
+	PyObject* read_instance_py(bool type_as_declaration_instance=false) {
+		auto simply_type_to_dictionary = [&](const express::base& t) -> PyObject* {
 			const auto& nm = t.declaration().name();
 			auto ifc_val = t.get_attribute_value(0);
 			auto attribute_val_py = ifc_val.apply_visitor([&](const auto& t) {
-                using U = std::decay_t<decltype(t)>;
+                using u = std::decay_t<decltype(t)>;
 
-                if constexpr (is_std_vector_v<U>) {
+                if constexpr (is_std_vector_v<u>) {
                     return pythonize_vector(t);
-                } else if constexpr (std::is_same_v<U, enumeration_reference>) {
+                } else if constexpr (std::is_same_v<u, ifcopenshell::enumeration_reference>) {
                     return pythonize(std::string(t.value()));
-                } else if constexpr (std::is_same_v<U, derived>) {
+                } else if constexpr (std::is_same_v<u, ifcopenshell::derived>) {
                     if (feature_use_attribute_value_derived) {
                         return SWIG_NewPointerObj(new attribute_value_derived, SWIGTYPE_p_attribute_value_derived, SWIG_POINTER_OWN);
                     } else {
                         Py_INCREF(Py_None);
                         return static_cast<PyObject*>(Py_None);
                     }
-                } else if constexpr (std::is_same_v<U, empty_aggregate_t> || std::is_same_v<U, empty_aggregate_of_aggregate_t> || std::is_same_v<U, blank>) {
+                } else if constexpr (std::is_same_v<u, ifcopenshell::empty_aggregate> || std::is_same_v<u, ifcopenshell::empty_aggregate_of_aggregate> || std::is_same_v<u, ifcopenshell::blank>) {
                     Py_INCREF(Py_None);
                     return static_cast<PyObject*>(Py_None);
                 } else {
@@ -1404,25 +1420,23 @@ object = _old_object
 
                 // sets dict member, returns void
 				val.apply_visitor([&](const auto& t) -> void {
-					using T = std::decay_t<decltype(t)>;
+					using value_type = std::decay_t<decltype(t)>;
 					PyObject* attribute_val_py;
-					if constexpr (std::is_same_v<T, express::Base>) {
+					if constexpr (std::is_same_v<value_type, express::base>) {
 						attribute_val_py = simply_type_to_dictionary(t);
 					} else {
-                        using U = std::decay_t<decltype(t)>;
-
-                        if constexpr (is_std_vector_v<U>) {
+                        if constexpr (is_std_vector_v<value_type>) {
                             attribute_val_py = pythonize_vector(t);
-                        } else if constexpr (std::is_same_v<U, enumeration_reference>) {
+                        } else if constexpr (std::is_same_v<value_type, ifcopenshell::enumeration_reference>) {
                             attribute_val_py = pythonize(std::string(t.value()));
-                        } else if constexpr (std::is_same_v<U, derived>) {
+                        } else if constexpr (std::is_same_v<value_type, ifcopenshell::derived>) {
                             if (feature_use_attribute_value_derived) {
                                 attribute_val_py = SWIG_NewPointerObj(new attribute_value_derived, SWIGTYPE_p_attribute_value_derived, SWIG_POINTER_OWN);
                             } else {
                                 Py_INCREF(Py_None);
                                 attribute_val_py = static_cast<PyObject*>(Py_None);
                             }
-                        } else if constexpr (std::is_same_v<U, empty_aggregate_t> || std::is_same_v<U, empty_aggregate_of_aggregate_t> || std::is_same_v<U, blank>) {
+                        } else if constexpr (std::is_same_v<value_type, ifcopenshell::empty_aggregate> || std::is_same_v<value_type, ifcopenshell::empty_aggregate_of_aggregate> || std::is_same_v<value_type, ifcopenshell::blank>) {
                             Py_INCREF(Py_None);
                             attribute_val_py = static_cast<PyObject*>(Py_None);
                         } else {
@@ -1445,32 +1459,32 @@ object = _old_object
 
 				std::visit([&](const auto& v) -> void {
                     PyObject* attribute_val_py = nullptr;
-					using T = std::decay_t<decltype(v)>;
-					
-					if constexpr (std::is_same_v<T, ifcopenshell::reference_or_simple_type>) {
-						if (auto* inst = std::get_if<express::Base>(&v)) {
+					using t = std::decay_t<decltype(v)>;
+
+					if constexpr (std::is_same_v<t, ifcopenshell::reference_or_simple_type>) {
+						if (auto* inst = std::get_if<express::base>(&v)) {
 							// So this never happens?
 						} else if (auto* name = std::get_if<ifcopenshell::instance_reference>(&v)) {
 							attribute_val_py = instance_reference_to_dict(*name);
 						}
-					} else if constexpr (std::is_same_v<T, std::vector<ifcopenshell::reference_or_simple_type>>) {
+					} else if constexpr (std::is_same_v<t, std::vector<ifcopenshell::reference_or_simple_type>>) {
 						attribute_val_py = PyTuple_New(v.size());
 						size_t idx = 0;
 						for (auto const& inner : v) {
-							if (auto* inst = std::get_if<express::Base>(&inner)) {
+							if (auto* inst = std::get_if<express::base>(&inner)) {
 								PyTuple_SetItem(attribute_val_py, idx++, simply_type_to_dictionary(*inst));
 							} else if (auto* name = std::get_if<ifcopenshell::instance_reference>(&inner)) {
 								PyTuple_SetItem(attribute_val_py, idx++, instance_reference_to_dict(*name));
 							}
 						}
-					} else if constexpr (std::is_same_v<T, std::vector<std::vector<ifcopenshell::reference_or_simple_type>>>) {
+					} else if constexpr (std::is_same_v<t, std::vector<std::vector<ifcopenshell::reference_or_simple_type>>>) {
 						attribute_val_py = PyTuple_New(v.size());
 						size_t outer_idx = 0;
 						for (auto const& inner : v) {
 							PyObject* inner_py = PyTuple_New(inner.size());
 							size_t idx = 0;
 							for (auto const& innermost : inner) {
-								if (auto* inst = std::get_if<express::Base>(&innermost)) {
+								if (auto* inst = std::get_if<express::base>(&innermost)) {
 									PyTuple_SetItem(inner_py, idx++, simply_type_to_dictionary(*inst));
 								} else if (auto* name = std::get_if<ifcopenshell::instance_reference>(&innermost)) {
 									PyTuple_SetItem(inner_py, idx++, instance_reference_to_dict(*name));
@@ -1511,14 +1525,14 @@ object = _old_object
 	}
 }
 
-%extend logger {
+%extend ifcopenshell::logger {
 	%pythoncode %{
 		def __iter__(self):
 			return iter(self.log_messages())
 	%}
 }
 
-%extend log_message {
+%extend ifcopenshell::log_message {
 	std::string severity_string() const {
 		static const char* const severity_strings[] = {"PERF", "DEBUG", "NOTICE", "WARNING", "ERROR"};
 		return severity_strings[(int)$self->severity];

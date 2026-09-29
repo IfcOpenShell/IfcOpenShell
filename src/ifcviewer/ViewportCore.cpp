@@ -28,6 +28,7 @@
 #endif
 
 #include "CameraMath.h"
+#include "GpuAllocScope.h"
 #include "InstanceCompose.h"
 #include "Log.h"
 
@@ -60,6 +61,17 @@ Eigen::Vector3f orbitEye(const float target[3], float dist,
 ViewportCore::ViewportCore(ViewportHost* host) : host_(host) {}
 ViewportCore::~ViewportCore() = default;
 
+void releaseModelBuffers(ModelGpuData& m) {
+    for (auto& c : m.chunks) {
+        if (c.visible_draws_buffer) { wgpuBufferRelease(c.visible_draws_buffer);   c.visible_draws_buffer = nullptr; }
+        if (c.prefix_sums_buffer)   { wgpuBufferRelease(c.prefix_sums_buffer);     c.prefix_sums_buffer = nullptr; }
+        if (c.per_chunk_uniform)    { wgpuBufferRelease(c.per_chunk_uniform);      c.per_chunk_uniform = nullptr; }
+    }
+    if (m.mesh_storage)     { wgpuBufferRelease(m.mesh_storage);     m.mesh_storage = nullptr; }
+    if (m.instance_storage) { wgpuBufferRelease(m.instance_storage); m.instance_storage = nullptr; }
+    m.vram_bytes_ssbo = 0;
+}
+
 // Tear down a model's per-chunk GPU resources, free its pool slices,
 // and reset all the bookkeeping vectors so the slot can be reused.
 // Static because callers from outside this TU still live in
@@ -76,10 +88,8 @@ void releaseWgpuModelGpuData(ModelGpuData& m, BufferPool& pool) {
             pool.free(c.index_slice);
             c.index_slice = {};
         }
-        if (c.visible_draws_buffer) { wgpuBufferRelease(c.visible_draws_buffer);   c.visible_draws_buffer = nullptr; }
-        if (c.prefix_sums_buffer)   { wgpuBufferRelease(c.prefix_sums_buffer);     c.prefix_sums_buffer = nullptr; }
-        if (c.per_chunk_uniform)    { wgpuBufferRelease(c.per_chunk_uniform);      c.per_chunk_uniform = nullptr; }
     }
+    releaseModelBuffers(m);
     m.chunks.clear();
     m.mesh_chunk_idx.clear();
     m.mesh_chunk_local_base_vertex.clear();
@@ -89,8 +99,6 @@ void releaseWgpuModelGpuData(ModelGpuData& m, BufferPool& pool) {
     m.instance_base_vertex.clear();
     m.instance_ebo_first_u32.clear();
     m.instance_lod1_first_u32.clear();
-    if (m.mesh_storage)         { wgpuBufferRelease(m.mesh_storage);          m.mesh_storage = nullptr; }
-    if (m.instance_storage)     { wgpuBufferRelease(m.instance_storage);      m.instance_storage = nullptr; }
     m.vertex_bytes   = 0;
     m.index_count    = 0;
     m.mesh_count     = 0;
@@ -101,7 +109,41 @@ void releaseWgpuModelGpuData(ModelGpuData& m, BufferPool& pool) {
 
 // ---- Scene mutators -------------------------------------------------------
 
+namespace {
+
+// The GPU-side records the shaders read, built from the CPU mirrors.
+std::vector<MeshGpu> meshGpuRecords(const std::vector<MeshInfo>& meshes) {
+    std::vector<MeshGpu> gpu;
+    gpu.reserve(meshes.size());
+    for (const auto& mesh_info : meshes) {
+        MeshGpu rec = {};
+        for (int a = 0; a < 3; ++a) {
+            rec.aabb_min[a] = mesh_info.local_aabb_min[a];
+            rec.aabb_max[a] = mesh_info.local_aabb_max[a];
+        }
+        gpu.push_back(rec);
+    }
+    return gpu;
+}
+
+std::vector<InstanceGpu> instanceGpuRecords(const std::vector<InstanceInfo>& instances) {
+    std::vector<InstanceGpu> gpu(instances.size());
+    for (size_t i = 0; i < instances.size(); ++i) {
+        const InstanceInfo& inst = instances[i];
+        InstanceGpu& dst = gpu[i];
+        std::memcpy(dst.transform, inst.transform, sizeof(dst.transform));
+        dst.object_id            = inst.object_id;
+        dst.color_override_rgba8 = inst.color_override_rgba8;
+        dst.mesh_id              = inst.mesh_id;
+        dst._pad1                = 0;
+    }
+    return gpu;
+}
+
+}  // namespace
+
 void ViewportCore::removeModel(uint32_t session_model_id) {
+    markCullInputsChanged();
     auto it = models_gpu_.find(session_model_id);
     if (it == models_gpu_.end()) return;
     releaseWgpuModelGpuData(it->second, pool_);
@@ -110,6 +152,7 @@ void ViewportCore::removeModel(uint32_t session_model_id) {
 }
 
 void ViewportCore::resetScene() {
+    markCullInputsChanged();
     for (auto& [session_model_id, m] : models_gpu_) releaseWgpuModelGpuData(m, pool_);
     models_gpu_.clear();
     // A fresh scene should auto-frame its first model. Without this the flag
@@ -121,6 +164,7 @@ void ViewportCore::resetScene() {
 }
 
 void ViewportCore::hideModel(uint32_t session_model_id) {
+    markCullInputsChanged();
     auto it = models_gpu_.find(session_model_id);
     if (it == models_gpu_.end() || it->second.hidden) return;
     it->second.hidden = true;
@@ -128,10 +172,52 @@ void ViewportCore::hideModel(uint32_t session_model_id) {
 }
 
 void ViewportCore::showModel(uint32_t session_model_id) {
+    markCullInputsChanged();
     auto it = models_gpu_.find(session_model_id);
     if (it == models_gpu_.end() || !it->second.hidden) return;
     it->second.hidden = false;
     host_->requestFrame();
+}
+
+void ViewportCore::unloadModel(uint32_t session_model_id) {
+    auto it = models_gpu_.find(session_model_id);
+    if (it == models_gpu_.end() || it->second.unloaded) return;
+    ModelGpuData& m = it->second;
+    for (std::size_t ci = 0; ci < m.chunks.size(); ++ci) unloadChunk(m, ci);
+    releaseModelBuffers(m);
+    m.unloaded = true;
+    host_->requestFrame();
+}
+
+bool ViewportCore::loadModel(uint32_t session_model_id) {
+    markCullInputsChanged();
+    auto it = models_gpu_.find(session_model_id);
+    if (it == models_gpu_.end()) return false;
+    ModelGpuData& m = it->second;
+    if (!m.unloaded) return true;
+    // Chunks stream back in on demand once the model is drawable again;
+    // only the model's own buffers have to be recreated here.
+    if (!createModelBuffers(session_model_id, m,
+                            meshGpuRecords(m.meshes), instanceGpuRecords(m.instances))) {
+        Log::warn() << "[wgpu] model " << session_model_id
+                    << " not reloaded: the device cannot fit its metadata buffers";
+        return false;
+    }
+    m.unloaded = false;
+    host_->requestFrame();
+    return true;
+}
+
+bool ViewportCore::isModelUnloaded(uint32_t session_model_id) const {
+    auto it = models_gpu_.find(session_model_id);
+    return it != models_gpu_.end() && it->second.unloaded;
+}
+
+std::uint64_t ViewportCore::modelVramBytes(uint32_t session_model_id) const {
+    auto it = models_gpu_.find(session_model_id);
+    if (it == models_gpu_.end()) return 0;
+    const ModelGpuData& m = it->second;
+    return m.vram_bytes_vbo + m.vram_bytes_ebo + m.vram_bytes_ssbo;
 }
 
 void ViewportCore::setFederatedFalseOrigin(const Eigen::Matrix4d& matrix_meters) {
@@ -193,22 +279,12 @@ void ViewportCore::buildViewProj(Eigen::Matrix4f& view_out,
 }
 
 bool ViewportCore::computeSceneAabb(float mn[3], float mx[3]) const {
-    bool any = false;
-    for (int i = 0; i < 3; ++i) {
-        mn[i] =  std::numeric_limits<float>::infinity();
-        mx[i] = -std::numeric_limits<float>::infinity();
-    }
-    for (const auto& [session_model_id, m] : models_gpu_) {
-        if (m.hidden) continue;
-        for (const auto& inst : m.instances) {
-            for (int i = 0; i < 3; ++i) {
-                mn[i] = std::min(mn[i], inst.world_aabb_min[i]);
-                mx[i] = std::max(mx[i], inst.world_aabb_max[i]);
-            }
-            any = true;
-        }
-    }
-    return any;
+    return InstanceCompose::sceneWorldAabb(models_gpu_, mn, mx);
+}
+
+bool ViewportCore::computeModelsAabb(const std::vector<uint32_t>& session_model_ids,
+                                     float mn[3], float mx[3]) const {
+    return InstanceCompose::modelsWorldAabb(models_gpu_, session_model_ids, mn, mx);
 }
 
 float ViewportCore::chunkScreenAreaPx(const ModelGpuData::Chunk& c,
@@ -264,27 +340,46 @@ float ViewportCore::chunkScreenAreaPx(const ModelGpuData::Chunk& c,
     return (xmax - xmin) * (ymax - ymin);
 }
 
+void rebuildCullInstances(ModelGpuData& m) {
+    m.cull_instances.resize(m.instances.size());
+    for (std::size_t i = 0; i < m.instances.size(); ++i) {
+        const InstanceInfo& inst = m.instances[i];
+        ModelGpuData::CullInstance& out = m.cull_instances[i];
+        for (int a = 0; a < 3; ++a) {
+            out.aabb_min[a] = inst.world_aabb_min[a];
+            out.aabb_max[a] = inst.world_aabb_max[a];
+        }
+        out.mesh_id              = inst.mesh_id;
+        out.object_id            = inst.object_id;
+        out.color_override_rgba8 = inst.color_override_rgba8;
+        out.chunk_idx            = i < m.instance_chunk_idx.size()
+                                 ? m.instance_chunk_idx[i] : 0;
+    }
+}
+
+void ViewportCore::uploadInstanceRecords(ModelGpuData& m) {
+    // Every path that mutates instances (recompose, transforms, colour
+    // overrides) funnels through here, so the packed cull mirror follows.
+    rebuildCullInstances(m);
+    markCullInputsChanged();
+    if (!wgpu_initialized_ || m.instances.empty() || m.instance_storage == nullptr) return;
+    const std::vector<InstanceGpu> gpu = instanceGpuRecords(m.instances);
+    wgpuQueueWriteBuffer(queue_, m.instance_storage, 0,
+                         gpu.data(), gpu.size() * sizeof(InstanceGpu));
+}
+
 void ViewportCore::recomposeAndUploadModel(uint32_t session_model_id) {
     if (!wgpu_initialized_) return;
     auto it = models_gpu_.find(session_model_id);
     if (it == models_gpu_.end()) return;
     ModelGpuData& m = it->second;
-    if (m.instances.empty() || m.instance_storage == nullptr) return;
+    if (m.instances.empty()) return;
 
-    std::vector<InstanceGpu> gpu(m.instances.size());
-    for (size_t i = 0; i < m.instances.size(); ++i) {
-        InstanceInfo& inst = m.instances[i];
-        composeInstanceFromPlacement(inst, m);
-
-        InstanceGpu& dst = gpu[i];
-        std::memcpy(dst.transform, inst.transform, sizeof(dst.transform));
-        dst.object_id            = inst.object_id;
-        dst.color_override_rgba8 = inst.color_override_rgba8;
-        dst.mesh_id              = inst.mesh_id;
-        dst._pad1                = 0;
-    }
-    wgpuQueueWriteBuffer(queue_, m.instance_storage, 0,
-                         gpu.data(), gpu.size() * sizeof(InstanceGpu));
+    // The CPU mirrors are recomposed even while the model is unloaded (no
+    // instance_storage): cull and loadModel read them, and the upload
+    // below is skipped on its own.
+    for (auto& inst : m.instances) composeInstanceFromPlacement(inst, m);
+    uploadInstanceRecords(m);
 
     // Per-chunk world AABBs are derived from instance world AABBs; they
     // drive chunk-level frustum cull and the streaming priority, so they
@@ -347,6 +442,16 @@ bool ViewportCore::firstGeometryPointWorldM(uint32_t session_model_id,
     const Eigen::Matrix4d P =
         Eigen::Map<const Mat4dCol>(inst0.placement_transformation);
     out = (P * local_center_m.homogeneous()).head<3>();
+    return true;
+}
+
+bool ViewportCore::modelGeoref(uint32_t session_model_id, ModelGeoref& out) const {
+    auto it = models_gpu_.find(session_model_id);
+    if (it == models_gpu_.end()) return false;
+    const ModelGpuData& m = it->second;
+    out.units                       = m.units;
+    out.coordinate_operation_meters = m.coordinate_operation_meters;
+    out.has_coordinate_operation    = m.has_coordinate_operation;
     return true;
 }
 
@@ -433,6 +538,15 @@ void ViewportCore::viewAll() {
         cx, cy, cz, camera_distance_, radius);
 }
 
+bool ViewportCore::viewModels(const std::vector<uint32_t>& session_model_ids) {
+    float mn[3], mx[3];
+    if (!computeModelsAabb(session_model_ids, mn, mx)) return false;
+    frameAabb(mn, mx, 1.10f);   // same padding as viewAll
+    Log::info().noquote().nospace()
+        << "[wgpu] viewModels framed " << session_model_ids.size() << " model(s)";
+    return true;
+}
+
 void ViewportCore::setCamera(float tx, float ty, float tz,
                              float dist, float yaw_deg, float pitch_deg) {
     camera_target_[0]   = tx;
@@ -482,6 +596,13 @@ void ViewportCore::setNavPreset(const char* name) {
 void ViewportCore::setBackfaceCulling(bool enabled) {
     if (backface_culling_ == enabled) return;
     backface_culling_ = enabled;
+    host_->requestFrame();
+}
+
+void ViewportCore::setBackgroundColor(float r, float g, float b, float a) {
+    Eigen::Vector4f next{r, g, b, a};
+    if (background_color_ == next) return;
+    background_color_ = next;
     host_->requestFrame();
 }
 
@@ -553,6 +674,21 @@ void ViewportCore::dollyBy(float notches) {
     const float factor = std::pow(0.9f, notches);
     camera_distance_   = std::max(0.01f, camera_distance_ * factor);
     host_->requestFrame();
+}
+
+void ViewportCore::setPivotIndicatorVisible(bool visible, int hide_after_ms) {
+    pivot_indicator_visible_ = visible;
+    pivot_indicator_hide_ms_ = hide_after_ms;
+    if (visible && hide_after_ms > 0) pivot_indicator_timer_.start();
+    else                              pivot_indicator_timer_.invalidate();
+    host_->requestFrame();
+}
+
+bool ViewportCore::pivotIndicatorVisible() const {
+    if (!pivot_indicator_visible_) return false;
+    // No armed afterglow means a drag is holding it up.
+    if (!pivot_indicator_timer_.isValid()) return true;
+    return pivot_indicator_timer_.elapsed() < pivot_indicator_hide_ms_;
 }
 
 void ViewportCore::flyMove(bool fwd, bool back, bool right, bool left,
@@ -637,6 +773,10 @@ ViewportCore::CameraState ViewportCore::cameraState() const {
     s.yaw      = camera_yaw_deg_;
     s.pitch    = camera_pitch_deg_;
     return s;
+}
+
+Eigen::Vector3f ViewportCore::cameraEye() const {
+    return orbitEye(camera_target_, camera_distance_, camera_yaw_deg_, camera_pitch_deg_);
 }
 
 bool ViewportCore::computeObjectAabb(uint32_t object_id,
@@ -812,6 +952,14 @@ struct PerModel {
 // because we cap the index by arrayLength before fetching.
 @group(0) @binding(1) var<storage, read> sel_flags: array<u32>;
 
+// X-ray marquee select: one bit per object_id, set by fs_boxpick. That pass
+// runs with depth testing off and the scissor clamped to the marquee rect, so
+// every object with a fragment anywhere inside the box sets its bit whether it
+// is occluded or not — which is the whole point of selecting through in x-ray.
+// Only the box-pick pipeline writes it; the layout entry is FRAGMENT-visible
+// only, because WebGPU forbids a read_write storage buffer in the vertex stage.
+@group(0) @binding(2) var<storage, read_write> hit_flags: array<atomic<u32>>;
+
 @group(1) @binding(0) var<storage, read> vertices:      array<u32>;
 @group(1) @binding(1) var<storage, read> meshes:        array<MeshQuant>;
 @group(1) @binding(2) var<storage, read> instances:     array<InstanceRecord>;
@@ -977,6 +1125,19 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     return vec4<f32>(srgbToLinear(color), alpha_out);
 }
 
+// Selection silhouette mask. Same vertex pulling as vs_main, but the only
+// output is coverage: 1 where a selected object is drawn, nothing anywhere
+// else. The pass shares the main depth buffer read-only, so the mask is the
+// selection AS VISIBLE — an occluded object contributes nothing and gets no
+// halo. encodeSelectionOutlinePass dilates this into the outline.
+@fragment
+fn fs_mask(in: VsOut) -> @location(0) f32 {
+    if (is_section_clipped(in.world_pos)) { discard; }
+    if (in.object_id >= arrayLength(&sel_flags)) { discard; }
+    if ((sel_flags[in.object_id] & 1u) == 0u) { discard; }
+    return 1.0;
+}
+
 // --------------------------- Pick pipeline ---------------------------------
 // Same vertex pulling as vs_main, but VsOutPick carries only the object_id
 // (flat-interpolated). Fragment writes the object_id to an R32UInt target.
@@ -1060,12 +1221,23 @@ fn fs_pick(in: VsOutPick) -> FsOutPick {
     out.world_pos = vec4<f32>(in.world_pos, 1.0);
     return out;
 }
+
+// X-ray marquee. No colour outputs and no depth write — the only result is the
+// bit this sets, so every layer under the cursor is recorded rather than just
+// the front-most fragment the depth test would leave standing.
+@fragment
+fn fs_boxpick(in: VsOutPick) {
+    if (is_section_clipped(in.world_pos)) { discard; }
+    let word = in.object_id >> 5u;
+    if (word >= arrayLength(&hit_flags)) { return; }
+    atomicOr(&hit_flags[word], 1u << (in.object_id & 31u));
+}
 )";
 } // namespace
 
 bool ViewportCore::buildPipelines() {
     // ---- Bind group layouts ----------------------------------------------
-    WGPUBindGroupLayoutEntry frame_entries[2] = {};
+    WGPUBindGroupLayoutEntry frame_entries[3] = {};
     frame_entries[0].binding = 0;
     frame_entries[0].visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment;
     frame_entries[0].buffer.type = WGPUBufferBindingType_Uniform;
@@ -1073,9 +1245,14 @@ bool ViewportCore::buildPipelines() {
     frame_entries[1].binding = 1;
     frame_entries[1].visibility = WGPUShaderStage_Fragment;
     frame_entries[1].buffer.type = WGPUBufferBindingType_ReadOnlyStorage;
+    // X-ray marquee hit bits. Fragment-only: a read_write storage buffer is
+    // illegal in the vertex stage, and every pipeline shares this layout.
+    frame_entries[2].binding = 2;
+    frame_entries[2].visibility = WGPUShaderStage_Fragment;
+    frame_entries[2].buffer.type = WGPUBufferBindingType_Storage;
 
     WGPUBindGroupLayoutDescriptor frame_bgl_desc = {};
-    frame_bgl_desc.entryCount = 2;
+    frame_bgl_desc.entryCount = 3;
     frame_bgl_desc.entries    = frame_entries;
     frame_bgl_desc.label      = svFromCStr("ifcviewer-wgpu.frame_bgl");
     frame_bgl_ = wgpuDeviceCreateBindGroupLayout(device_, &frame_bgl_desc);
@@ -1235,6 +1412,10 @@ bool ViewportCore::buildPipelines() {
     // Section-plane gizmo (shared desktop + web). Optional — a failure just
     // means no gizmo, not a dead viewport.
     section_gizmo_.init(device_, queue_, surface_view_format_, kViewportSampleCount);
+
+    // Corner axis gizmo + orbit pivot indicator (shared desktop + web).
+    // Also optional: a failure costs the indicator, not the viewport.
+    axis_indicator_.init(device_, queue_, surface_view_format_, kViewportSampleCount);
     return true;
 }
 
@@ -1271,6 +1452,21 @@ void ViewportCore::ensureSelectionFlagsBuffer() {
         // Initialise to zero so any unused range reads as "not selected".
         // wgpuQueueWriteBuffer with a small zero block is enough; the rest
         // is created as zero-initialised by wgpu per the spec.
+
+        // The x-ray marquee's hit bits ride the same capacity — one BIT per
+        // object where the flags take a word, so a thirty-second of the size.
+        // CopySrc because the box pick reads it back through a staging buffer.
+        if (hit_flags_buffer_) {
+            wgpuBufferRelease(hit_flags_buffer_);
+            hit_flags_buffer_ = nullptr;
+        }
+        hit_flags_words_ = (new_cap + 31u) / 32u;
+        WGPUBufferDescriptor hb = {};
+        hb.size  = uint64_t(hit_flags_words_) * sizeof(uint32_t);
+        hb.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst
+                 | WGPUBufferUsage_CopySrc;
+        hb.label = svFromCStr("ifcviewer-wgpu.xray_hit_flags");
+        hit_flags_buffer_ = wgpuDeviceCreateBuffer(device_, &hb);
     }
 
     // Rebuild the frame bind group against the (possibly new) buffer.
@@ -1278,16 +1474,19 @@ void ViewportCore::ensureSelectionFlagsBuffer() {
         wgpuBindGroupRelease(frame_bind_group_);
         frame_bind_group_ = nullptr;
     }
-    WGPUBindGroupEntry fbg_entries[2] = {};
+    WGPUBindGroupEntry fbg_entries[3] = {};
     fbg_entries[0].binding = 0;
     fbg_entries[0].buffer  = frame_uniform_buffer_;
     fbg_entries[0].size    = sizeof(FrameUniforms);
     fbg_entries[1].binding = 1;
     fbg_entries[1].buffer  = selection_flags_buffer_;
     fbg_entries[1].size    = WGPU_WHOLE_SIZE;
+    fbg_entries[2].binding = 2;
+    fbg_entries[2].buffer  = hit_flags_buffer_;
+    fbg_entries[2].size    = WGPU_WHOLE_SIZE;
     WGPUBindGroupDescriptor fbg_desc = {};
     fbg_desc.layout     = frame_bgl_;
-    fbg_desc.entryCount = 2;
+    fbg_desc.entryCount = 3;
     fbg_desc.entries    = fbg_entries;
     fbg_desc.label      = svFromCStr("ifcviewer-wgpu.frame_bind_group");
     frame_bind_group_ = wgpuDeviceCreateBindGroup(device_, &fbg_desc);
@@ -1493,20 +1692,193 @@ bool ViewportCore::createPool() {
         std::max<uint64_t>(MIN_POOL_CAPACITY, INITIAL_SUB_BUFFER));
     pool_.configure(instance_, device_, pool_usage, per_sub,
                     "ifcviewer-wgpu.pool");
+
+    // How far the pool may grow. The cache must stop short of what the
+    // required tier (attachments, model metadata, staging) will need,
+    // because those are allocated later and the frame cannot be drawn
+    // without them; see GpuBudget.h for the model.
 #if defined(__EMSCRIPTEN__)
-    // Cap total pool capacity below the wasm heap ceiling. On web a growth that
-    // would push the heap past MAXIMUM_MEMORY is a bad_alloc → uncatchable
-    // abort, so the pool must stop growing (and evict) before then. Leave
-    // headroom for metadata (instances/maps), transient decompression buffers,
-    // and wgpu overhead. Big federations then keep a bounded, highest-priority
-    // resident set instead of aborting.
-    pool_.setMaxTotalCapacity(3072ull * 1024 * 1024);  // 3 GB (heap ceiling 4 GB)
+    // No memory query on web. Cap total pool capacity below the wasm heap
+    // ceiling: a growth that would push the heap past MAXIMUM_MEMORY is a
+    // bad_alloc → uncatchable abort, so the pool must stop growing (and
+    // evict) before then. Leave headroom for metadata (instances/maps),
+    // transient decompression buffers, and wgpu overhead. Big federations
+    // then keep a bounded, highest-priority resident set instead of
+    // aborting. Device exhaustion below that is learnt through pressure.
+    budget_.setHardCap(3072ull * 1024 * 1024);  // 3 GB (heap ceiling 4 GB)
+#else
+    {
+        WGPUAdapterInfo adapter_info = WGPU_ADAPTER_INFO_INIT;
+        wgpuAdapterGetInfo(adapter_, &adapter_info);
+        adapter_vendor_id_ = adapter_info.vendorID;
+        adapter_device_id_ = adapter_info.deviceID;
+        wgpuAdapterInfoFreeMembers(adapter_info);
+    }
+    pollDeviceMemory();
 #endif
+    pool_.setMaxTotalCapacity(budget_.bounded() ? budget_.cache_budget_bytes() : 0);
+
     Log::info() << "wgpu: pool per-sub-buffer capacity = "
                 << (per_sub / (1024 * 1024)) << " MB (grows lazily on "
                 << "demand; device maxBufferSize = "
                 << (device_limits.maxBufferSize / (1024 * 1024)) << " MB)";
+    if (budget_.bounded()) {
+        Log::info() << "wgpu: geometry cache budget = "
+                    << (budget_.cache_budget_bytes() / (1024 * 1024)) << " MB"
+                    << (device_vram_total_bytes_ > 0
+                        ? " (device free "
+                          + std::to_string((device_vram_total_bytes_ - device_vram_used_bytes_)
+                                           / (1024 * 1024))
+                          + " MB - margin "
+                          + std::to_string(budget_.margin_bytes() / (1024 * 1024))
+                          + " MB; tracks the driver's report)"
+                        : " (fixed cap)");
+    } else {
+        Log::info() << "wgpu: geometry cache budget unknown (no device memory "
+                       "query); bounded on first memory-pressure event";
+    }
     return true;
+}
+
+ifcviewer::GpuMemoryInfo ViewportCore::queryDeviceMemory() const {
+#if defined(__EMSCRIPTEN__)
+    return {};
+#else
+    return ifcviewer::queryGpuMemory(adapter_vendor_id_, adapter_device_id_);
+#endif
+}
+
+void ViewportCore::pollDeviceMemory() {
+    // Re-derive immediately after the pool has grown: a ceiling computed
+    // from a second-old report can be reached by growth plus the upload
+    // staging that rides on it, leaving the device far below the margin
+    // before the next scheduled poll notices.
+    const bool pool_grew = pool_.sub_buffer_count() != polled_sub_buffer_count_;
+    if (!pool_grew && device_vram_poll_timer_.isValid()
+        && device_vram_poll_timer_.elapsed() < 1000) return;
+    device_vram_poll_timer_.start();
+    polled_sub_buffer_count_ = pool_.sub_buffer_count();
+    const ifcviewer::GpuMemoryInfo mem = queryDeviceMemory();
+    if (!mem.valid) return;
+    device_vram_used_bytes_  = mem.used_bytes;
+    device_vram_total_bytes_ = mem.total_bytes;
+    budget_.update(mem.free_bytes(), pool_.total_capacity_bytes());
+    applyBudgetToPool();
+}
+
+void ViewportCore::applyBudgetToPool() {
+    if (!budget_.bounded()) return;
+    const std::uint64_t budget = budget_.cache_budget_bytes();
+    pool_.setMaxTotalCapacity(budget);
+    const std::uint64_t target = budget_.shrinkTarget(pool_.total_capacity_bytes());
+    if (target == 0) return;
+    const std::uint64_t released = pool_.shrinkToCapacity(
+        target, [this](int sub_idx) { evictChunksInSubBuffer(sub_idx); });
+    if (released > 0) {
+        const double mb = 1.0 / (1024.0 * 1024.0);
+        Log::info() << "[wgpu] device has less to give: geometry cache budget now "
+                    << double(budget) * mb << " MB, released "
+                    << double(released) * mb << " MB";
+    }
+}
+
+std::uint64_t ViewportCore::attachmentBytesPerPixel() {
+    // Sizes follow the formats in ensureDepthTexture / ensureMsaaColorTexture /
+    // ensureSelectionOutlineTextures / createPickAttachments.
+    constexpr std::uint64_t msaa = kViewportSampleCount;
+    return 4 * msaa          // msaa colour, 4 B/sample (any 8-bit RGBA surface)
+         + 4 * msaa          // depth32 msaa
+         + 1 * msaa          // selection mask msaa (R8)
+         + 1                 // selection mask resolve (R8)
+         + 4                 // selection scratch (RGBA8)
+         + 4 + 8 + 16 + 4;   // pick: R32Uint id, RGBA16F normal, RGBA32F position, depth32
+}
+
+bool ViewportCore::onRequiredAllocationFailed(const char* what, std::uint64_t bytes) {
+    const std::uint64_t capacity_before = pool_.total_capacity_bytes();
+    const ifcviewer::GpuMemoryInfo mem = queryDeviceMemory();
+    const bool lowered = budget_.onPressure(capacity_before, bytes,
+                                            mem.valid ? mem.free_bytes() : 0);
+    const double mb = 1.0 / (1024.0 * 1024.0);
+    if (!lowered) {
+        Log::warn() << "[wgpu] out of memory allocating " << what << " ("
+                    << double(bytes) * mb << " MB) and the geometry cache ("
+                    << double(capacity_before) * mb
+                    << " MB) has nothing left to give -- device exhausted";
+        return false;
+    }
+    pool_.setMaxTotalCapacity(budget_.cache_budget_bytes());
+    // The budget was just lowered by what the allocation needs; free at
+    // least that much, whatever the sub-buffer granularity.
+    const std::uint64_t released = pool_.releaseAtLeast(
+        capacity_before - budget_.cache_budget_bytes(),
+        [this](int sub_idx) { evictChunksInSubBuffer(sub_idx); });
+    Log::warn() << "[wgpu] out of memory allocating " << what << " ("
+                << double(bytes) * mb << " MB); geometry cache budget lowered to "
+                << double(budget_.cache_budget_bytes()) * mb << " MB, released "
+                << double(released) * mb << " MB (pressure event #"
+                << budget_.pressure_events() << ")";
+#if !defined(__EMSCRIPTEN__)
+    // Released buffers are reclaimed once the GPU has finished with them;
+    // wait for that so the retry that follows sees the memory. On web
+    // there is no blocking wait — the next frame's attempt will.
+    wgpuDevicePoll(device_, true, nullptr);
+#endif
+    return released > 0;
+}
+
+void ViewportCore::evictChunksInSubBuffer(int sub_idx) {
+    for (auto& [session_model_id, m] : models_gpu_) {
+        for (std::size_t ci = 0; ci < m.chunks.size(); ++ci) {
+            const auto& c = m.chunks[ci];
+            if (!c.is_resident) continue;
+            if (c.vertex_slice.sub_idx == sub_idx || c.index_slice.sub_idx == sub_idx) {
+                unloadChunk(m, ci);
+            }
+        }
+    }
+}
+
+bool ViewportCore::allocateRequired(const char* what, std::uint64_t bytes,
+                                    const std::function<void()>& create,
+                                    const std::function<void()>& release,
+                                    std::function<void()> on_web_failure) {
+#if defined(__EMSCRIPTEN__)
+    (void)release;
+    GpuAllocScope scope(instance_, device_);
+    create();
+    scope.end([this, what, bytes, on_web_failure = std::move(on_web_failure)](bool ok) {
+        if (ok) return;
+        onRequiredAllocationFailed(what, bytes);
+        if (on_web_failure) on_web_failure();
+    });
+    return true;
+#else
+    (void)on_web_failure;
+    // Each failed attempt lowers the budget by the allocation plus slack
+    // and releases at least one sub-buffer, so the loop strictly shrinks
+    // the cache and ends at the floor — the driver may need more headroom
+    // than one carve-out (its refusal threshold is not "free == 0").
+    for (;;) {
+        GpuAllocScope scope(instance_, device_);
+        create();
+        bool ok = false;
+        scope.end([&](bool result) { ok = result; });
+        if (ok) return true;
+        release();
+        if (!onRequiredAllocationFailed(what, bytes)) return false;
+    }
+#endif
+}
+
+WGPUBuffer ViewportCore::createRequiredBuffer(const WGPUBufferDescriptor& desc,
+                                              const char* what) {
+    WGPUBuffer buf = nullptr;
+    const bool ok = allocateRequired(
+        what, desc.size,
+        [&]() { buf = wgpuDeviceCreateBuffer(device_, &desc); },
+        [&]() { if (buf) { wgpuBufferRelease(buf); buf = nullptr; } });
+    return ok ? buf : nullptr;
 }
 
 bool ViewportCore::initWgpu(bool web_limits) {
@@ -1702,10 +2074,19 @@ void ViewportCore::initWgpuAsyncWeb(std::function<void(bool)> on_complete) {
 
     auto* ctx = new WebInitCtx{this, std::move(on_complete)};
 
-    // Bare adapter options (no compatibleSurface, no powerPreference).
-    // Setting any field here makes the subsequent device promise
-    // silently never resolve on Dawn-web.
+    // No compatibleSurface — setting THAT makes the device promise silently
+    // never resolve on Dawn-web, which is what this comment used to warn about
+    // for every field.
+    //
+    // powerPreference is safe, and it matters: without it the browser picks its
+    // default adapter, and on a hybrid laptop that is the INTEGRATED GPU. Seen
+    // on a Windows machine with an RTX 500 sitting at 0% while Intel Graphics
+    // did the work — no warning anywhere, because this is hardware rendering,
+    // just on the wrong hardware. Verified in Chrome that all three settings
+    // resolve a device, and that the choice is honoured: default and
+    // high-performance give the discrete card, low-power gives the iGPU.
     WGPURequestAdapterOptions adapter_opts = {};
+    adapter_opts.powerPreference = WGPUPowerPreference_HighPerformance;
 
     WGPURequestAdapterCallbackInfo acb = {};
     acb.mode = WGPUCallbackMode_AllowSpontaneous;
@@ -1769,6 +2150,10 @@ void ViewportCore::initWgpuAsyncWeb(std::function<void(bool)> on_complete) {
             Log::info() << "[web init] wgpu device + surface ready (format="
                         << int(c->core->surface_format_) << " view format="
                         << int(c->core->surface_view_format_) << ")";
+            // Device + queue are live: the buffer-upload paths guarded on this
+            // (uploadInstanceRecords, recomposeAndUploadModel) are now safe. The
+            // desktop host latches the same flag after its own initWgpu returns.
+            c->core->wgpu_initialized_ = true;
             c->on_complete(true);
             delete c;
         };
@@ -1814,10 +2199,13 @@ void ViewportCore::shutdown() {
     if (frame_uniform_buffer_)    { wgpuBufferRelease(frame_uniform_buffer_);         frame_uniform_buffer_ = nullptr; }
     if (selection_flags_buffer_)  { wgpuBufferRelease(selection_flags_buffer_);       selection_flags_buffer_ = nullptr; }
     selection_flags_capacity_ = 0;
+    if (hit_flags_buffer_)        { wgpuBufferRelease(hit_flags_buffer_);             hit_flags_buffer_ = nullptr; }
+    hit_flags_words_ = 0;
     if (main_pipeline_)              { wgpuRenderPipelineRelease(main_pipeline_);             main_pipeline_ = nullptr; }
     if (main_pipeline_no_cull_)      { wgpuRenderPipelineRelease(main_pipeline_no_cull_);     main_pipeline_no_cull_ = nullptr; }
     if (main_pipeline_transparent_)  { wgpuRenderPipelineRelease(main_pipeline_transparent_); main_pipeline_transparent_ = nullptr; }
     section_gizmo_.destroy();
+    axis_indicator_.destroy();
     if (main_shader_module_)   { wgpuShaderModuleRelease(main_shader_module_);    main_shader_module_ = nullptr; }
     if (pipeline_layout_)      { wgpuPipelineLayoutRelease(pipeline_layout_);     pipeline_layout_ = nullptr; }
     if (model_bgl_)            { wgpuBindGroupLayoutRelease(model_bgl_);          model_bgl_ = nullptr; }
@@ -1990,6 +2378,17 @@ bool ViewportCore::applyStreamedChunk(
     c.is_resident      = true;
     c.is_loading       = false;
     c.loaded_frame_idx = streaming_frame_idx_;
+    markCullInputsChanged();
+
+    // The CPU triangle shadow follows residency: count this chunk into each
+    // of its meshes (a mesh can live in several chunks under the spatial
+    // planner); unloadChunk counts it back out and releases the shadow of
+    // any mesh with no resident chunk left.
+    if (m.mesh_resident_chunk_refs.size() == m.meshes.size()) {
+        for (std::uint32_t mi : c.mesh_ids) {
+            if (mi < m.mesh_resident_chunk_refs.size()) ++m.mesh_resident_chunk_refs[mi];
+        }
+    }
 
     // Per-mesh alpha probe. Scan every vertex of every mesh in this chunk
     // for any alpha byte < 255 — fires the mesh_has_alpha flag the cull
@@ -2027,9 +2426,17 @@ bool ViewportCore::applyStreamedChunk(
     // chunk to deliver each mesh fills it in.
     bool filled_volume = false;
     if (!m.mesh_local_volumes.empty() && !idx.empty()) {
+        const bool want_tris = host_->wantsCpuMeshTriangles();
         for (std::uint32_t mi : c.mesh_ids) {
             if (mi >= m.meshes.size() || mi >= m.mesh_local_volumes.size()) continue;
-            if (m.mesh_local_volumes[mi] != 0.0) continue;
+            // Volume is computed once per mesh (8 B, kept across eviction);
+            // the triangle shadow is refilled whenever this mesh returns to
+            // residency after its shadow was released.
+            const bool need_volume = m.mesh_local_volumes[mi] == 0.0;
+            const bool need_tris   = want_tris
+                && mi < m.mesh_triangles_cache.size()
+                && m.mesh_triangles_cache[mi].indices.empty();
+            if (!need_volume && !need_tris) continue;
             const MeshInfo& mesh = m.meshes[mi];
             if (mesh.vertex_count == 0 || mesh.index_count < 3) continue;
             const std::size_t v_off =
@@ -2040,14 +2447,18 @@ bool ViewportCore::applyStreamedChunk(
                 + std::size_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
             if (v_end > vbytes.size()) continue;
             if (i_off + mesh.index_count > idx.size()) continue;
-            ModelGpuData::MeshTriangles* tris =
-                (mi < m.mesh_triangles_cache.size())
-                    ? &m.mesh_triangles_cache[mi]
-                    : nullptr;
-            m.mesh_local_volumes[mi] = computeMeshLocalVolumeQuantised(
+            const double volume = computeMeshLocalVolumeQuantised(
                 mesh, vbytes.data() + v_off, idx.data() + i_off, mesh.index_count,
-                tris);
-            filled_volume = true;
+                need_tris ? &m.mesh_triangles_cache[mi] : nullptr);
+            if (need_tris) {
+                const auto& tris = m.mesh_triangles_cache[mi];
+                m.cpu_shadow_bytes += tris.positions.size() * sizeof(float)
+                                    + tris.indices.size() * sizeof(std::uint32_t);
+            }
+            if (need_volume) {
+                m.mesh_local_volumes[mi] = volume;
+                filled_volume = true;
+            }
         }
     }
     // Fire the tool-refresh callback once per apply if anything new filled
@@ -2124,6 +2535,39 @@ void ViewportCore::unloadChunk(ModelGpuData& m, std::size_t chunk_idx) {
     c.total_visible_draws    = 0;
     c.total_visible_vertices = 0;
     c.is_resident = false;
+    markCullInputsChanged();
+
+    // CPU side of the eviction. The cull scratch and the uploaded mirrors
+    // are only meaningful for a resident chunk (cull no longer emits for
+    // non-resident ones); releasing them here also keeps the memcmp
+    // dirty-check honest — after a model unload/load cycle the GPU cull
+    // buffers are fresh, and a stale mirror would wrongly skip the first
+    // upload into them. Assignment, not clear(): capacity must go too.
+    c.visible_draws_scratch             = {};
+    c.prefix_sums_scratch               = {};
+    c.visible_draws_scratch_transparent = {};
+    c.transparent_per_draw_vertex_counts = {};
+    c.visible_draws_uploaded            = {};
+    c.prefix_sums_uploaded              = {};
+
+    // Count this chunk out of its meshes' residency; a mesh with no
+    // resident chunk left releases its triangle shadow (refilled from the
+    // chunk bytes on the next residency — see applyStreamedChunk).
+    if (m.mesh_resident_chunk_refs.size() == m.meshes.size()) {
+        for (std::uint32_t mi : c.mesh_ids) {
+            if (mi >= m.mesh_resident_chunk_refs.size()) continue;
+            if (m.mesh_resident_chunk_refs[mi] > 0) --m.mesh_resident_chunk_refs[mi];
+            if (m.mesh_resident_chunk_refs[mi] == 0
+                && mi < m.mesh_triangles_cache.size()) {
+                auto& tris = m.mesh_triangles_cache[mi];
+                const std::uint64_t bytes = tris.positions.size() * sizeof(float)
+                                          + tris.indices.size() * sizeof(std::uint32_t);
+                m.cpu_shadow_bytes = m.cpu_shadow_bytes > bytes
+                                   ? m.cpu_shadow_bytes - bytes : 0;
+                tris = {};
+            }
+        }
+    }
 }
 
 // ===========================================================================
@@ -2155,7 +2599,7 @@ void ViewportCore::driveStreamingLoads() {
     // last ~30 frames.
     constexpr float HISTORY_ALPHA = 1.0f / 30.0f;
     for (auto& [session_model_id, m] : models_gpu_) {
-        if (m.hidden) continue;
+        if (!m.drawable()) continue;
         for (auto& c : m.chunks) {
             if (c.is_resident && c.frustum_visible_count > 0) {
                 c.last_visible_frame_idx = streaming_frame_idx_;
@@ -2360,7 +2804,7 @@ void ViewportCore::driveStreamingLoads() {
     std::vector<Candidate> candidates;
     candidates.reserve(64);
     for (auto& [session_model_id, m] : models_gpu_) {
-        if (m.streaming_file_path.empty() || m.hidden) continue;
+        if (m.streaming_file_path.empty() || !m.drawable()) continue;
         for (std::size_t ci = 0; ci < m.chunks.size(); ++ci) {
             auto& c = m.chunks[ci];
             if (c.is_resident)                       continue;
@@ -2382,9 +2826,26 @@ void ViewportCore::driveStreamingLoads() {
               });
 
     int enqueued = 0;
-    for (const Candidate& cand : candidates) {
+    web_pending_.clear();
+    web_pending_head_ = 0;
+    // Everything from `from` onwards that streams over the network, in priority
+    // order, for the completions to drain. Called from BOTH exits of the loop:
+    // the per-frame budget is reached first when nothing is in flight yet, so
+    // queueing only on the in-flight cap left the queue empty exactly when it
+    // was needed most.
+    auto queue_web_tail = [&](std::size_t from) {
+        for (std::size_t k = from; k < candidates.size(); ++k) {
+            const Candidate& rest = candidates[k];
+            if (rest.m->streaming_from_web) {
+                web_pending_.push_back({rest.session_model_id, rest.ci});
+            }
+        }
+    };
+    for (std::size_t cand_idx = 0; cand_idx < candidates.size(); ++cand_idx) {
+        const Candidate& cand = candidates[cand_idx];
         if (enqueued >= MAX_STREAMING_LOADS_PER_FRAME) {
             more_pending = true;
+            queue_web_tail(cand_idx);
             break;
         }
         auto& c = cand.m->chunks[cand.ci];
@@ -2493,7 +2954,16 @@ void ViewportCore::driveStreamingLoads() {
             // progressive, no special first-chunk handling.
             if (streaming_web_inflight_count_ >= kMaxWebInflightChunks) {
                 more_pending = true;
-                break;  // resume next frame as in-flight loads complete
+                // Hand the rest to the pump, in priority order, so completing
+                // loads can start them without waiting for a render. This used
+                // to just break, which made the fetch rate a function of the
+                // frame rate: at 60fps that is fine, but the loop is on-demand
+                // and quiesces, and any frame-rate drop — a heavy cull, an
+                // occluded window, a background tab — throttled DOWNLOADING in
+                // proportion. Measured at ~2 renders/s: 0.83 MB/s with the
+                // network idle 99.6% of the time and 0.1s of decode.
+                queue_web_tail(cand_idx);
+                break;
             }
             c.is_loading = true;
             c.last_visible_frame_idx = streaming_frame_idx_;
@@ -2520,6 +2990,9 @@ void ViewportCore::driveStreamingLoads() {
         }
     }
     loads += enqueued;
+    // Whatever the frame could not start, start now if the cap allows — and
+    // leave the rest queued for the completions to drain.
+    pumpWebChunkLoads();
 
     // Keep the render loop alive while streaming settles. The main draw + cull
     // run *before* this point in render(), so a chunk that becomes resident
@@ -2530,21 +3003,30 @@ void ViewportCore::driveStreamingLoads() {
     // queued, or a visible chunk not yet resident) and bleed it down over the
     // next few frames so an on-demand render loop doesn't stall before the
     // geometry actually appears. Bounded, so the loop still quiesces at idle.
+    // A chunk still waiting on pool GROWTH keeps the loop alive too. Growth is
+    // asynchronous on web (a provisional sub-buffer validates a frame or two
+    // later), so the driver parks its candidates in a grow-backoff cooldown
+    // while it waits — and that cooldown is counted in FRAMES, which only
+    // advance while the loop is alive. Left out of this test, the loop quiesced
+    // after the settle burst (4 frames) but before the backoff expired (8), the
+    // frame index froze, and the cooldown could then never expire: streaming
+    // stalled part-loaded until the user happened to move the camera. Deadlock.
+    //
+    // Cooldowns that no growth can resolve are still ignored, so the loop keeps
+    // quiescing at idle in the cases this test was written for: a sub-pixel
+    // chunk (contribution_visible_count == 0) is never fetched at all, and a
+    // chunk blocked at the pool's hard capacity — where growth cannot help and
+    // eviction has already failed — genuinely has nothing to wait for.
+    const bool growth_may_land = pool_.growth_pending() || pool_.can_grow();
     bool visible_pending = false;
     for (const auto& [session_model_id, m] : models_gpu_) {
-        if (m.streaming_file_path.empty() || m.hidden) continue;
+        if (m.streaming_file_path.empty() || !m.drawable()) continue;
         for (const auto& c : m.chunks) {
             if (c.is_resident) continue;
-            // Keep the loop alive only for chunks we're actually loading or that
-            // are eligible to enqueue — the same test the enqueue below uses
-            // (contribution-visible and not in a blocked cooldown). A chunk
-            // that's in the frustum but sub-pixel (contribution_visible_count
-            // == 0) is never fetched, so it must not keep the render loop
-            // spinning at idle; likewise a cooldown-blocked chunk only retries
-            // after real work (an eviction or camera move) requests a frame.
-            if (c.is_loading
-                || (c.contribution_visible_count > 0
-                    && c.blocked_cooldown_until_frame_idx <= streaming_frame_idx_)) {
+            if (c.is_loading) { visible_pending = true; break; }
+            if (c.contribution_visible_count == 0) continue;  // sub-pixel: never fetched
+            const bool cooling = c.blocked_cooldown_until_frame_idx > streaming_frame_idx_;
+            if (!cooling || growth_may_land) {
                 visible_pending = true;
                 break;
             }
@@ -2679,7 +3161,8 @@ std::uint32_t ViewportCore::cullModelCpuCompute(
         const HizOccludedFn& hiz_occluded) const {
     std::uint32_t hiz_rejects = 0;
 
-    if (m.instances.empty() || m.meshes.empty() || m.chunks.empty()) {
+    if (m.instances.empty() || m.meshes.empty() || m.chunks.empty()
+        || m.cull_instances.size() != m.instances.size()) {
         return 0;
     }
 
@@ -2707,15 +3190,15 @@ std::uint32_t ViewportCore::cullModelCpuCompute(
     std::vector<std::uint32_t> running_vertex_count(m.chunks.size(), 0);
 
     auto process_instance = [&](std::uint32_t i) {
-        const auto& inst = m.instances[i];
+        const ModelGpuData::CullInstance& inst = m.cull_instances[i];
         if (inst.mesh_id >= m.meshes.size()) return;
         if (visibility_.isHidden(inst.object_id)) return;
         // Per-instance frustum still needed: a partially-covered subtree
         // descended this far means *some* leaves are visible, but not
         // necessarily this one.
-        if (!aabbInFrustum(inst.world_aabb_min, inst.world_aabb_max, planes)) return;
+        if (!aabbInFrustum(inst.aabb_min, inst.aabb_max, planes)) return;
 
-        const std::uint32_t chunk_idx = m.instance_chunk_idx[i];
+        const std::uint32_t chunk_idx = inst.chunk_idx;
         ModelGpuData::Chunk& c = m.chunks[chunk_idx];
 
         // Bump the chunk's frustum-only counter before contribution / HiZ
@@ -2729,12 +3212,12 @@ std::uint32_t ViewportCore::cullModelCpuCompute(
         // rectangle projection (tight — used for streaming priority).
         float projected_px = std::numeric_limits<float>::infinity();
         {
-            const float cx = 0.5f * (inst.world_aabb_min[0] + inst.world_aabb_max[0]);
-            const float cy = 0.5f * (inst.world_aabb_min[1] + inst.world_aabb_max[1]);
-            const float cz = 0.5f * (inst.world_aabb_min[2] + inst.world_aabb_max[2]);
-            const float ex = inst.world_aabb_max[0] - inst.world_aabb_min[0];
-            const float ey = inst.world_aabb_max[1] - inst.world_aabb_min[1];
-            const float ez = inst.world_aabb_max[2] - inst.world_aabb_min[2];
+            const float cx = 0.5f * (inst.aabb_min[0] + inst.aabb_max[0]);
+            const float cy = 0.5f * (inst.aabb_min[1] + inst.aabb_max[1]);
+            const float cz = 0.5f * (inst.aabb_min[2] + inst.aabb_max[2]);
+            const float ex = inst.aabb_max[0] - inst.aabb_min[0];
+            const float ey = inst.aabb_max[1] - inst.aabb_min[1];
+            const float ez = inst.aabb_max[2] - inst.aabb_min[2];
             const float radius_world = 0.5f * std::sqrt(ex*ex + ey*ey + ez*ez);
             const float view_z = forward[0] * (cx - eye[0])
                                + forward[1] * (cy - eye[1])
@@ -2768,8 +3251,15 @@ std::uint32_t ViewportCore::cullModelCpuCompute(
         // decide what's worth fetching for the current view.
         ++c.contribution_visible_count;
 
+        // Streaming has everything it needs. The HiZ test and the draw
+        // emission below only matter for a chunk that can actually draw;
+        // for a non-resident one they were pure waste — scratch heap that
+        // eviction never reclaimed and per-frame buffer uploads that
+        // render() skipped anyway.
+        if (!c.is_resident) return;
+
         if (hiz_active
-            && hiz_occluded(inst.world_aabb_min, inst.world_aabb_max)) {
+            && hiz_occluded(inst.aabb_min, inst.aabb_max)) {
             ++hiz_rejects;
             return;
         }
@@ -2858,25 +3348,53 @@ std::uint32_t ViewportCore::cullModelCpuCompute(
     return hiz_rejects;
 }
 
+// Same contents? A plain == would need operator== on the POD payloads; these
+// are trivially copyable GPU structs, so the bytes are the whole story.
+template <typename T>
+static bool sameBytes(const std::vector<T>& a, const std::vector<T>& b) {
+    return a.size() == b.size()
+        && (a.empty() || std::memcmp(a.data(), b.data(), a.size() * sizeof(T)) == 0);
+}
+
 void ViewportCore::cullModelCpuUpload(ModelGpuData& m) {
     for (auto& c : m.chunks) {
         if (!c.visible_draws_buffer || !c.prefix_sums_buffer || !c.per_chunk_uniform) continue;
 
         if (c.total_visible_draws == 0) {
-            // Render() will skip this chunk; still zero the uniform so
-            // any accidental dispatch sees 0 work.
+            // Render() will skip this chunk; still zero the uniform so any
+            // accidental dispatch sees 0 work — but only once. A chunk that is
+            // off screen stays off screen for many frames, and re-sending four
+            // zero bytes to say so was most of the per-frame write count.
             const std::uint32_t um[4] = { 0, 0, 0, 0 };
-            wgpuQueueWriteBuffer(queue_, c.per_chunk_uniform, 0, um, sizeof(um));
+            if (std::memcmp(c.uniform_uploaded, um, sizeof(um)) != 0) {
+                ++cull_writes_this_frame_;
+                wgpuQueueWriteBuffer(queue_, c.per_chunk_uniform, 0, um, sizeof(um));
+                std::memcpy(c.uniform_uploaded, um, sizeof(um));
+            }
             continue;
         }
 
-        wgpuQueueWriteBuffer(queue_, c.visible_draws_buffer, 0,
-                             c.visible_draws_scratch.data(),
-                             c.visible_draws_scratch.size()
-                                 * sizeof(ModelGpuData::VisibleDrawGpu));
-        wgpuQueueWriteBuffer(queue_, c.prefix_sums_buffer, 0,
-                             c.prefix_sums_scratch.data(),
-                             c.prefix_sums_scratch.size() * sizeof(std::uint32_t));
+        // Only what actually changed. A static camera recomputes the same
+        // visible set every frame, so without this the identical bytes go over
+        // the wire 60 times a second — which is exactly the load phase, where
+        // nothing is moving and everything is waiting on frames.
+        if (!sameBytes(c.visible_draws_uploaded, c.visible_draws_scratch)) {
+            const std::size_t bytes = c.visible_draws_scratch.size()
+                                    * sizeof(ModelGpuData::VisibleDrawGpu);
+            cull_write_bytes_this_frame_ += bytes;
+            ++cull_writes_this_frame_;
+            wgpuQueueWriteBuffer(queue_, c.visible_draws_buffer, 0,
+                                 c.visible_draws_scratch.data(), bytes);
+            c.visible_draws_uploaded = c.visible_draws_scratch;
+        }
+        if (!sameBytes(c.prefix_sums_uploaded, c.prefix_sums_scratch)) {
+            const std::size_t bytes = c.prefix_sums_scratch.size() * sizeof(std::uint32_t);
+            cull_write_bytes_this_frame_ += bytes;
+            ++cull_writes_this_frame_;
+            wgpuQueueWriteBuffer(queue_, c.prefix_sums_buffer, 0,
+                                 c.prefix_sums_scratch.data(), bytes);
+            c.prefix_sums_uploaded = c.prefix_sums_scratch;
+        }
 
         // per_chunk_uniform layout (vec4<u32> u_model in the shader):
         //   [0] total_visible_draws       (opaque + transparent)
@@ -2889,7 +3407,11 @@ void ViewportCore::cullModelCpuUpload(ModelGpuData& m) {
             c.opaque_visible_vertices,
             c.opaque_visible_draws,
         };
-        wgpuQueueWriteBuffer(queue_, c.per_chunk_uniform, 0, um, sizeof(um));
+        if (std::memcmp(c.uniform_uploaded, um, sizeof(um)) != 0) {
+            ++cull_writes_this_frame_;
+            wgpuQueueWriteBuffer(queue_, c.per_chunk_uniform, 0, um, sizeof(um));
+            std::memcpy(c.uniform_uploaded, um, sizeof(um));
+        }
     }
 }
 
@@ -2943,6 +3465,64 @@ SidecarData& getOrCreateDirectStaging(
 
 } // namespace
 
+bool ViewportCore::createModelBuffers(std::uint32_t session_model_id,
+                                      ModelGpuData& m,
+                                      const std::vector<MeshGpu>& mesh_gpu,
+                                      const std::vector<InstanceGpu>& inst_gpu) {
+    const std::size_t mesh_storage_bytes = mesh_gpu.size() * sizeof(MeshGpu);
+    const std::size_t inst_storage_bytes = inst_gpu.size() * sizeof(InstanceGpu);
+    std::uint64_t total_bytes = mesh_storage_bytes + inst_storage_bytes;
+    for (const auto& c : m.chunks) {
+        total_bytes += c.visible_draws_capacity * sizeof(ModelGpuData::VisibleDrawGpu)
+                     + c.prefix_sums_capacity * sizeof(std::uint32_t) + 16;
+    }
+
+    return allocateRequired(
+        "model buffers", total_bytes,
+        [&]() {
+            for (auto& chunk : m.chunks) {
+                WGPUBufferDescriptor vd_desc = {};
+                vd_desc.size  = std::max<std::uint64_t>(
+                    chunk.visible_draws_capacity * sizeof(ModelGpuData::VisibleDrawGpu), 16);
+                vd_desc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
+                vd_desc.label = svFromCStr("model.chunk.visible_draws");
+                chunk.visible_draws_buffer = wgpuDeviceCreateBuffer(device_, &vd_desc);
+                m.vram_bytes_ssbo += vd_desc.size;
+
+                WGPUBufferDescriptor ps_desc = {};
+                ps_desc.size  = std::max<std::uint64_t>(
+                    chunk.prefix_sums_capacity * sizeof(std::uint32_t), 16);
+                ps_desc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
+                ps_desc.label = svFromCStr("model.chunk.prefix_sums");
+                chunk.prefix_sums_buffer = wgpuDeviceCreateBuffer(device_, &ps_desc);
+                m.vram_bytes_ssbo += ps_desc.size;
+
+                WGPUBufferDescriptor mu_desc = {};
+                mu_desc.size  = 16;
+                mu_desc.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
+                mu_desc.label = svFromCStr("model.chunk.uniform");
+                chunk.per_chunk_uniform = wgpuDeviceCreateBuffer(device_, &mu_desc);
+                m.vram_bytes_ssbo += 16;
+            }
+            m.mesh_storage = createBufferWithData(
+                device_, queue_, mesh_gpu.data(), mesh_storage_bytes,
+                WGPUBufferUsage_Storage, "model.mesh_storage");
+            m.vram_bytes_ssbo += mesh_storage_bytes;
+            m.instance_storage = createBufferWithData(
+                device_, queue_, inst_gpu.data(), inst_storage_bytes,
+                WGPUBufferUsage_Storage, "model.instance_storage");
+            m.vram_bytes_ssbo += inst_storage_bytes;
+        },
+        [&]() { releaseModelBuffers(m); },
+        // Web hears of the failure after the model is in the scene; its
+        // buffers are error objects that would fail every bind, so drop it.
+        [this, session_model_id]() {
+            Log::warn() << "[wgpu] model " << session_model_id
+                        << " removed: the device could not fit its metadata buffers";
+            removeModel(session_model_id);
+        });
+}
+
 void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
                                     StreamingSidecar metadata) {
     if (!device_ || !queue_) {
@@ -2964,6 +3544,28 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
     model_gpu_data.instance_count = std::uint32_t(metadata.meta.instances.size());
     model_gpu_data.streaming_file_path      = metadata.file_path;
     model_gpu_data.geometry_section_offset  = metadata.geometry_section_offset;
+
+    // Seed the CoordinateOperation from the sidecar (v11+) so a model lands in
+    // global coordinates without anyone having to push it. Before this, the
+    // matrix stayed identity unless a host called setModelCoordinateOperation —
+    // which only BonsaiViewer does (modules/viewport/View.cpp), so the web
+    // viewer rendered every model in raw local coordinates and federated models
+    // with differing map conversions came out misaligned.
+    //
+    // Instances are composed further down against model_gpu_data, so this has
+    // to be set before that, not after.
+    //
+    // Desktop is unaffected: ViewportView::applyCoordinateOperation pushes the
+    // same matrix derived from the same computeModelGeoref, and
+    // setModelCoordinateOperation early-returns when the value is unchanged.
+    model_gpu_data.has_coordinate_operation = metadata.meta.has_coordinate_operation != 0;
+    if (model_gpu_data.has_coordinate_operation) {
+        // Sidecar stores column-major, matching Eigen's default storage order.
+        model_gpu_data.coordinate_operation_meters =
+            Eigen::Map<const Eigen::Matrix4d>(metadata.meta.coordinate_operation_meters);
+    }
+    model_gpu_data.units.project_length_to_meters = metadata.meta.project_length_to_meters;
+    model_gpu_data.units.map_unit_to_meters       = metadata.meta.map_unit_to_meters;
 
     // ---- Spatial chunk plan ----------------------------------------------
     // A sidecar carries a baked chunk TOC (v14): each chunk is a contiguous
@@ -3098,97 +3700,70 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
         model_gpu_data.vertex_bytes += chunk.vertex_byte_size;
         model_gpu_data.index_count  += std::uint32_t(chunk.index_count);
 
-        // Small per-chunk buffers, allocated upfront so cull can write into
-        // them. visible_draws_buffer cap = chunk's instance count.
+        // Per-chunk cull buffer capacities: visible_draws cap = the chunk's
+        // instance count. The buffers themselves are created together with
+        // the model's other buffers in createModelBuffers below.
         const std::size_t chunk_inst = std::max<std::size_t>(chunk_instance_count[chunk_index], 1);
-        const std::size_t draws_bytes = chunk_inst * sizeof(ModelGpuData::VisibleDrawGpu);
-        const std::size_t ps_bytes    = (chunk_inst + 1) * sizeof(std::uint32_t);
-
-        WGPUBufferDescriptor vd_desc = {};
-        vd_desc.size  = std::max<std::uint64_t>(draws_bytes, 16);
-        vd_desc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
-        vd_desc.label = svFromCStr("model.chunk.visible_draws");
-        chunk.visible_draws_buffer   = wgpuDeviceCreateBuffer(device_, &vd_desc);
         chunk.visible_draws_capacity = chunk_inst;
-        model_gpu_data.vram_bytes_ssbo += vd_desc.size;
-
-        WGPUBufferDescriptor ps_desc = {};
-        ps_desc.size  = std::max<std::uint64_t>(ps_bytes, 16);
-        ps_desc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
-        ps_desc.label = svFromCStr("model.chunk.prefix_sums");
-        chunk.prefix_sums_buffer   = wgpuDeviceCreateBuffer(device_, &ps_desc);
-        chunk.prefix_sums_capacity = chunk_inst + 1;
-        model_gpu_data.vram_bytes_ssbo += ps_desc.size;
-
-        WGPUBufferDescriptor mu_desc = {};
-        mu_desc.size  = 16;
-        mu_desc.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
-        mu_desc.label = svFromCStr("model.chunk.uniform");
-        chunk.per_chunk_uniform = wgpuDeviceCreateBuffer(device_, &mu_desc);
-        model_gpu_data.vram_bytes_ssbo += 16;
-
-        chunk.visible_draws_scratch.reserve(chunk_inst);
-        chunk.prefix_sums_scratch.reserve(chunk_inst + 1);
+        chunk.prefix_sums_capacity   = chunk_inst + 1;
+        // The CPU scratch is NOT reserved here: it grows on the chunk's
+        // first resident cull and is released again on eviction, so only
+        // resident chunks pay for it.
     }
 
     // Index section is NOT loaded upfront. Each chunk's index slice is
     // range-read alongside its vertex bytes in loadChunkBytesAndUploadGpu.
 
-    // MeshGpu storage (per-mesh quant basis).
-    std::vector<MeshGpu> mesh_gpu;
-    mesh_gpu.reserve(metadata.meta.meshes.size());
-    for (const auto& mesh_info : metadata.meta.meshes) {
-        MeshGpu mesh_gpu_record = {};
-        mesh_gpu_record.aabb_min[0] = mesh_info.local_aabb_min[0];
-        mesh_gpu_record.aabb_min[1] = mesh_info.local_aabb_min[1];
-        mesh_gpu_record.aabb_min[2] = mesh_info.local_aabb_min[2];
-        mesh_gpu_record.aabb_max[0] = mesh_info.local_aabb_max[0];
-        mesh_gpu_record.aabb_max[1] = mesh_info.local_aabb_max[1];
-        mesh_gpu_record.aabb_max[2] = mesh_info.local_aabb_max[2];
-        mesh_gpu.push_back(mesh_gpu_record);
-    }
-    const std::size_t mesh_storage_bytes = mesh_gpu.size() * sizeof(MeshGpu);
-    model_gpu_data.mesh_storage = createBufferWithData(
-        device_, queue_,
-        mesh_gpu.data(), mesh_storage_bytes,
-        WGPUBufferUsage_Storage,
-        "model.mesh_storage");
-    model_gpu_data.vram_bytes_ssbo += mesh_storage_bytes;
-
-    // InstanceGpu storage. Rebase object_ids globally.
+    // Rebase object_ids globally (element metadata records rebase to match).
     const std::uint32_t object_id_base = next_object_id_;
     std::uint32_t max_local_id = 0;
-    std::vector<InstanceGpu> inst_gpu;
-    inst_gpu.reserve(metadata.meta.instances.size());
     for (auto& instance_cpu : metadata.meta.instances) {
         if (instance_cpu.object_id > max_local_id) max_local_id = instance_cpu.object_id;
         instance_cpu.object_id = object_id_base + instance_cpu.object_id;
-        InstanceGpu instance_gpu = {};
-        std::memcpy(instance_gpu.transform, instance_cpu.transform, sizeof(instance_gpu.transform));
-        instance_gpu.object_id            = instance_cpu.object_id;
-        instance_gpu.color_override_rgba8 = instance_cpu.color_override_rgba8;
-        instance_gpu.mesh_id              = instance_cpu.mesh_id;
-        inst_gpu.push_back(instance_gpu);
     }
     next_object_id_ = object_id_base + max_local_id + 1;
-    model_gpu_data.object_id_base = object_id_base;  // element metadata records rebase to match
-    const std::size_t inst_storage_bytes = inst_gpu.size() * sizeof(InstanceGpu);
-    model_gpu_data.instance_storage = createBufferWithData(
-        device_, queue_,
-        inst_gpu.data(), inst_storage_bytes,
-        WGPUBufferUsage_Storage,
-        "model.instance_storage");
-    model_gpu_data.vram_bytes_ssbo += inst_storage_bytes;
+    model_gpu_data.object_id_base = object_id_base;
+
+    const std::vector<MeshGpu>     mesh_gpu = meshGpuRecords(metadata.meta.meshes);
+    const std::vector<InstanceGpu> inst_gpu = instanceGpuRecords(metadata.meta.instances);
+    if (!createModelBuffers(session_model_id, model_gpu_data, mesh_gpu, inst_gpu)) {
+        Log::warn() << "[wgpu] model " << session_model_id
+                    << " not loaded: the device cannot fit its metadata buffers";
+        return;
+    }
 
     // Hand off CPU mirrors.
     model_gpu_data.meshes    = std::move(metadata.meta.meshes);
     model_gpu_data.instances = std::move(metadata.meta.instances);
+
+    // Where the element metadata block lives. The web path fetches that block
+    // lazily (loadElementMetadataWeb), so it must arrive here already knowing
+    // WHERE to fetch from: a model that is in the scene but whose locator is
+    // still unknown is indistinguishable from one that has no element block at
+    // all, and loadElementMetadataWeb would latch it as permanently empty.
+    model_gpu_data.element_metadata_comp_offset = metadata.element_metadata_comp_offset;
+    model_gpu_data.element_metadata_comp_size   = metadata.element_metadata_comp_size;
+    model_gpu_data.element_metadata_raw_size    = metadata.element_metadata_raw_size;
+
+    // Element metadata, when the caller already read it. readSidecarMetadata
+    // parses the block up front, so a path-based load arrives with it in hand;
+    // the web byte-range path deliberately skips it (first paint must not wait
+    // on it) and fetches later via loadElementMetadataWeb, arriving here empty.
+    // Either way the rebase is the same and happens here — this function is the
+    // sole authority on object_id_base.
+    if (!metadata.meta.elements.empty()) {
+        model_gpu_data.elements     = std::move(metadata.meta.elements);
+        model_gpu_data.string_table = std::move(metadata.meta.string_table);
+        for (auto& e : model_gpu_data.elements) e.object_id += object_id_base;
+        model_gpu_data.element_metadata_loaded = true;
+    }
 
     // Streaming defers per-mesh vertex data until the owning chunk is
     // loaded. Both volumes + Area-tool CPU shadow fill in per-chunk
     // inside applyStreamedChunk as the bytes arrive.
     model_gpu_data.mesh_local_volumes.assign(model_gpu_data.meshes.size(), 0.0);
     model_gpu_data.mesh_triangles_cache.assign(model_gpu_data.meshes.size(), ModelGpuData::MeshTriangles{});
+    model_gpu_data.mesh_resident_chunk_refs.assign(model_gpu_data.meshes.size(), 0);
     model_gpu_data.mesh_has_alpha.assign(model_gpu_data.meshes.size(), std::uint8_t(0));
 
     // object_id → instance index lookup. Volume tool reads it on every
@@ -3198,6 +3773,8 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
     for (std::uint32_t i = 0; i < std::uint32_t(model_gpu_data.instances.size()); ++i) {
         model_gpu_data.object_id_to_instance.emplace(model_gpu_data.instances[i].object_id, i);
     }
+    rebuildCullInstances(model_gpu_data);
+    markCullInputsChanged();
 
     // Per-chunk world AABBs + instance-id lists from instance_to_chunk.
     for (std::size_t chunk_index = 0; chunk_index < model_gpu_data.chunks.size(); ++chunk_index) {
@@ -3247,6 +3824,23 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
         << " meshes=" << inserted_model.mesh_count
         << " instances=" << inserted_model.instance_count
         << " chunks=" << inserted_model.chunks.size();
+
+    // The instance transforms above came straight from the sidecar, where they
+    // were baked with identity federation matrices. Recompose whenever any of
+    // them is now non-identity, or the model renders in the wrong place:
+    //
+    //   - its own CoordinateOperation, seeded above — a georeferenced model
+    //     would otherwise draw at its local coordinates;
+    //   - a federated false origin already in force, which is the normal case
+    //     for the SECOND and later models of a federation.
+    //
+    // Desktop never hit this because BonsaiViewer pushes
+    // setModelCoordinateOperation + setModelTransformation after every load and
+    // each of those recomposes. Nothing does that on web.
+    if (inserted_model.has_coordinate_operation ||
+        !federated_false_origin_meters_.isIdentity()) {
+        recomposeAndUploadModel(session_model_id);
+    }
 
     if (!initial_view_applied_) {
         viewAll();
@@ -3499,6 +4093,61 @@ extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_on_range_done(int reqId, int ok) {
     webIssueCurrentPlan(reqId);
 }
 
+#endif  // __EMSCRIPTEN__
+
+// Deliberately outside the web-streaming block above, unlike its neighbours:
+// driveStreamingLoads calls this unconditionally and ViewportCore.h declares it
+// unconditionally, so desktop needs a definition to link against. The body
+// guards itself instead, compiling to a no-op off the web — there is nothing to
+// pump when chunk loads are not asynchronous.
+
+// Start queued chunk loads until the in-flight cap is reached. Called at the
+// end of driveStreamingLoads and, more importantly, from every load's
+// completion — so the fetch pipeline refills itself instead of waiting for the
+// next render.
+//
+// The queue is a snapshot of the last frame's priorities and may be stale by
+// the time a completion drains it: the camera can have moved, the chunk can
+// have gone resident by another route, the pool can have filled. So every entry
+// is re-checked against live state here, exactly as driveStreamingLoads checks
+// its own candidates. A stale-but-close priority order beats waiting a frame
+// for a fresh one.
+void ViewportCore::pumpWebChunkLoads() {
+#if defined(__EMSCRIPTEN__)
+    while (streaming_web_inflight_count_ < kMaxWebInflightChunks
+           && web_pending_head_ < web_pending_.size()) {
+        const PendingWebChunk next = web_pending_[web_pending_head_++];
+        auto it = models_gpu_.find(next.session_model_id);
+        if (it == models_gpu_.end()) continue;
+        ModelGpuData& m = it->second;
+        if (!m.drawable() || next.ci >= m.chunks.size()) continue;
+        auto& c = m.chunks[next.ci];
+        if (c.is_resident || c.is_loading)     continue;
+        if (c.contribution_visible_count == 0) continue;   // no longer worth drawing
+        if (c.blocked_cooldown_until_frame_idx > streaming_frame_idx_) continue;
+
+        // Room, or the prospect of room. Eviction is deliberately NOT attempted
+        // here — it is stamped against the frame index and interleaved with the
+        // cull, so it stays where it can reason about what is visible. If the
+        // pool is full the rest of the queue is dropped and the next frame,
+        // which can evict, decides afresh.
+        const std::uint64_t need = c.vertex_byte_size
+                                 + c.index_count * sizeof(std::uint32_t);
+        if (pool_.largest_free_run_bytes() < need && !pool_.can_grow()) {
+            web_pending_head_ = web_pending_.size();
+            break;
+        }
+
+        c.is_loading = true;
+        c.last_visible_frame_idx = streaming_frame_idx_;
+        ++streaming_web_inflight_count_;
+        beginWebChunkLoad(next.session_model_id, next.ci);
+    }
+#endif
+}
+
+#if defined(__EMSCRIPTEN__)   // resume the web-streaming block
+
 void ViewportCore::beginWebChunkLoad(std::uint32_t session_model_id, std::size_t chunk_idx) {
     auto it = models_gpu_.find(session_model_id);
     if (it == models_gpu_.end()) return;
@@ -3540,6 +4189,9 @@ void ViewportCore::beginWebChunkLoad(std::uint32_t session_model_id, std::size_t
         auto& cc = mm.chunks[chunk_idx];
         cc.is_loading = false;
 
+        // emscripten_get_now, not Stopwatch: this is web-only code and the
+        // Stopwatch header is included further down the file than here.
+        const double apply_t0 = emscripten_get_now();
         std::vector<std::uint8_t>  vbytes(static_cast<std::size_t>(v_raw));
         std::vector<std::uint32_t> idx(static_cast<std::size_t>(i_raw / sizeof(std::uint32_t)));
         const bool ok = join->v_ok && join->i_ok
@@ -3548,12 +4200,20 @@ void ViewportCore::beginWebChunkLoad(std::uint32_t session_model_id, std::size_t
             && SidecarCompress::decompress(join->iz.data(), join->iz.size(),
                                            reinterpret_cast<std::uint8_t*>(idx.data()),
                                            std::size_t(i_raw));
+        chunk_apply_ms_total_ += emscripten_get_now() - apply_t0;
+        chunk_apply_raw_bytes_ += v_raw + i_raw;
+        ++chunk_apply_count_;
         if (!ok || !applyStreamedChunk(mm, chunk_idx, vbytes, idx)) {
             cc.blocked_cooldown_until_frame_idx = streaming_frame_idx_
                 + (pool_.can_grow() ? kGrowBackoffFrames : kBlockedCooldownFrames);
+            pumpWebChunkLoads();   // this one is parked; get on with the rest
             return;
         }
         host_->requestFrame();
+        // Refill the pipeline now rather than on the next render. After the
+        // apply, so the pool reservation this chunk just released is real
+        // before the next one reserves against it.
+        pumpWebChunkLoads();
     };
 
     webReadRangesAsync(sid, geom, {{v_comp_off, v_comp_size}},
@@ -3574,7 +4234,8 @@ void ViewportCore::beginWebChunkLoad(std::uint32_t session_model_id, std::size_t
 // here — they stream per chunk through beginWebChunkLoad. `source_label` is a
 // log/identity tag stored as file_path (chunk reads go through the JS source,
 // not this path).
-void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_label) {
+void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_label,
+                                          std::function<void(std::uint32_t)> on_loaded) {
     if (!device_ || !queue_) {
         Log::warn() << "loadSidecarMetadataWeb: wgpu not initialised";
         return;
@@ -3585,10 +4246,25 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
         return;
     }
 
+    // Mint the session model id HERE, synchronously, rather than at the end of
+    // the read chain below. Session ids are what orders the scene's models —
+    // modelIdsInLoadOrder sorts by them, and every per-model slot a host sees
+    // (modelProgress's index, ElementRef::model_index) is a rank in that order.
+    // Minting on completion made that rank the order the models' network reads
+    // happened to finish in, so with several federated models in flight the
+    // slots came out shuffled against the order the host added them and a pick
+    // was attributed to the wrong file. Requesting order is the order the host
+    // asked for, which is the order it can reason about. A load that fails
+    // partway simply abandons its id — the ranks compact over whatever models
+    // made it into the scene, exactly as before.
+    const std::uint32_t session_model_id = next_session_model_id_++;
+
     // Head (v16): [header 12][geom_bytes 8]. The two compressed metadata blocks
     // follow the compressed geometry at SIDECAR_HEAD_BYTES + geom_bytes.
     webReadRangesAsync(source_id, 0, {{0, SIDECAR_HEAD_BYTES}},
-        [this, fsize, source_id, source_label](bool ok, std::vector<std::uint8_t>&& head) {
+        [this, fsize, source_id, source_label, session_model_id,
+         on_loaded = std::move(on_loaded)]
+        (bool ok, std::vector<std::uint8_t>&& head) mutable {
             std::uint64_t geom_bytes = 0;
             if (!ok || !parseSidecarHead(head.data(), head.size(), geom_bytes)) {
                 Log::warn() << "loadSidecarMetadataWeb: bad sidecar head (wrong version?)";
@@ -3601,7 +4277,8 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
             }
             // Geometry metadata block on disk: [comp u64][raw u64][zstd frame].
             webReadRangesAsync(source_id, 0, {{meta_off, 16}},
-                [this, fsize, meta_off, source_id, source_label]
+                [this, fsize, meta_off, source_id, source_label, session_model_id,
+                 on_loaded = std::move(on_loaded)]
                 (bool ok2, std::vector<std::uint8_t>&& h) {
                     if (!ok2 || h.size() < 16) {
                         Log::warn() << "loadSidecarMetadataWeb: short geometry metadata header";
@@ -3618,7 +4295,8 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                     webReadRangesAsync(source_id, 0,
                         {{geometry_metadata_off, geometry_metadata_comp}},
                         [this, geometry_metadata_off, geometry_metadata_comp,
-                         geometry_metadata_raw, source_id, source_label]
+                         geometry_metadata_raw, source_id, source_label,
+                         session_model_id, on_loaded = std::move(on_loaded)]
                         (bool ok3, std::vector<std::uint8_t>&& cz) {
                             if (!ok3) {
                                 Log::warn() << "loadSidecarMetadataWeb: geometry metadata read failed";
@@ -3640,38 +4318,49 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                                 Log::warn() << "loadSidecarMetadataWeb: bad geometry metadata";
                                 return;
                             }
-                            const std::size_t n_meshes    = sc.meta.meshes.size();
-                            const std::size_t n_instances = sc.meta.instances.size();
-                            const std::uint32_t session_model_id = next_session_model_id_++;
-                            applyCachedModel(session_model_id, std::move(sc));
-                            // Mark web-streamed + set the source IMMEDIATELY — the
-                            // model now has non-resident chunks and the RAF loop's
-                            // driveStreamingLoads will run before the element metadata header
-                            // read below returns. If streaming_from_web weren't set
-                            // yet it would take the sync fopen path and fail
-                            // ("failed to read/decompress chunk 0").
-                            if (auto m0 = models_gpu_.find(session_model_id); m0 != models_gpu_.end()) {
-                                m0->second.streaming_from_web = true;
-                                m0->second.web_source_id      = source_id;
-                            }
-                            // Read the element metadata block header to record its locator
-                            // (the property block is fetched on demand later).
+                            // Read the element metadata block's 16-byte header to
+                            // learn where that block lives, and only THEN put the
+                            // model in the scene. Doing it the other way round
+                            // leaves a window in which the model is loaded but its
+                            // locator is still zero — and a loadElementMetadataWeb
+                            // landing in that window (a host page calling
+                            // getObjects() as soon as the model appears) cannot
+                            // tell "locator not read yet" from "this sidecar has no
+                            // element block", so it latches the model as
+                            // permanently empty. It costs one extra 16-byte
+                            // round-trip before first paint.
                             const std::uint64_t element_metadata_hdr_off =
                                 geometry_metadata_off + geometry_metadata_comp;
                             webReadRangesAsync(source_id, 0, {{element_metadata_hdr_off, 16}},
-                                [this, session_model_id, element_metadata_hdr_off, source_id, source_label,
-                                 n_meshes, n_instances]
-                                (bool ok4, std::vector<std::uint8_t>&& dh) {
-                                    auto mit = models_gpu_.find(session_model_id);
-                                    if (mit != models_gpu_.end()) {
-                                        if (ok4 && dh.size() >= 16) {
-                                            std::uint64_t dc = 0, dr = 0;
-                                            std::memcpy(&dc, dh.data(), 8);
-                                            std::memcpy(&dr, dh.data() + 8, 8);
-                                            mit->second.element_metadata_comp_offset = element_metadata_hdr_off + 16;
-                                            mit->second.element_metadata_comp_size   = dc;
-                                            mit->second.element_metadata_raw_size    = dr;
-                                        }
+                                [this, sc = std::move(sc), element_metadata_hdr_off,
+                                 source_id, source_label, session_model_id,
+                                 on_loaded = std::move(on_loaded)]
+                                (bool ok4, std::vector<std::uint8_t>&& dh) mutable {
+                                    if (ok4 && dh.size() >= 16) {
+                                        std::uint64_t dc = 0, dr = 0;
+                                        std::memcpy(&dc, dh.data(), 8);
+                                        std::memcpy(&dr, dh.data() + 8, 8);
+                                        sc.element_metadata_comp_offset = element_metadata_hdr_off + 16;
+                                        sc.element_metadata_comp_size   = dc;
+                                        sc.element_metadata_raw_size    = dr;
+                                    } else {
+                                        Log::warn() << "loadSidecarMetadataWeb: element metadata"
+                                                       " header read failed — no properties for "
+                                                    << source_label;
+                                    }
+
+                                    const std::size_t n_meshes    = sc.meta.meshes.size();
+                                    const std::size_t n_instances = sc.meta.instances.size();
+                                    applyCachedModel(session_model_id, std::move(sc));
+                                    // Mark web-streamed + set the source IMMEDIATELY — the
+                                    // model now has non-resident chunks and the RAF loop's
+                                    // driveStreamingLoads can run before we return here. If
+                                    // streaming_from_web weren't set yet it would take the
+                                    // sync fopen path and fail ("failed to read/decompress
+                                    // chunk 0").
+                                    if (auto m0 = models_gpu_.find(session_model_id); m0 != models_gpu_.end()) {
+                                        m0->second.streaming_from_web = true;
+                                        m0->second.web_source_id      = source_id;
                                     }
                                     // NOTE: no viewAll() here — applyCachedModel
                                     // already frames the FIRST model (gated by
@@ -3682,6 +4371,10 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                                     Log::info() << "ifcviewer-web: loaded sidecar (" << source_label
                                                 << ", id " << session_model_id << ", " << n_meshes << " meshes, "
                                                 << n_instances << " instances)";
+                                    // Last: the model is fully in the scene, so a
+                                    // handler is free to push federation matrices
+                                    // or reframe without racing the setup above.
+                                    if (on_loaded) on_loaded(session_model_id);
                                 });
                         });
                 });
@@ -3731,43 +4424,42 @@ void ViewportCore::loadElementMetadataWeb(std::uint32_t session_model_id,
         });
 }
 
+void ViewportCore::loadAllElementMetadataWeb(std::function<void(bool)> done) {
+    const std::vector<std::uint32_t> ids = modelIdsInLoadOrder();
+    if (ids.empty()) { if (done) done(true); return; }
+    // Fan out one lazy fetch per model and join on a shared counter. The
+    // fetches complete through the JS event loop, so `pending` is only ever
+    // touched from the main thread — no synchronisation needed.
+    struct Join { std::size_t pending; bool ok; std::function<void(bool)> done; };
+    auto join = std::make_shared<Join>(Join{ ids.size(), true, std::move(done) });
+    for (std::uint32_t session_model_id : ids) {
+        loadElementMetadataWeb(session_model_id, [join](bool ok) {
+            join->ok = join->ok && ok;
+            if (--join->pending == 0 && join->done) join->done(join->ok);
+        });
+    }
+}
+
 void ViewportCore::logSelectedObjectGuidWeb(std::uint32_t object_id) {
     InstanceCompose::InstanceLookup lk;
     if (!findInstance(object_id, lk)) return;  // empty pick / unknown id
     const std::uint32_t session_model_id = lk.session_model_id;
-    loadElementMetadataWeb(session_model_id, [this, object_id, session_model_id](bool ok) {
-        if (!ok) {
-            Log::warn() << "pick: element metadata fetch failed for object " << object_id;
+    loadElementMetadataWeb(session_model_id, [this, object_id](bool ok) {
+        ElementRef e;
+        if (!ok || !elementForObject(object_id, e)) {
+            Log::warn() << "pick: no element metadata for object " << object_id;
             return;
         }
-        auto it = models_gpu_.find(session_model_id);
-        if (it == models_gpu_.end()) return;
-        const ModelGpuData& m = it->second;
-        for (const auto& e : m.elements) {
-            if (e.object_id != object_id) continue;
-            std::string guid =
-                (e.guid_length > 0 &&
-                 std::size_t(e.guid_offset) + e.guid_length <= m.string_table.size())
-                    ? m.string_table.substr(e.guid_offset, e.guid_length)
-                    : std::string("(none)");
-            Log::info() << "pick: object " << object_id << " GUID " << guid;
-            // Load-order index of the object's model (sorted by session id — the
-            // same order as streamingModelProgress and the JS model list); -1 if
-            // not found. Lets host pages show which model the pick belongs to.
-            std::vector<std::uint32_t> model_ids;
-            model_ids.reserve(models_gpu_.size());
-            for (const auto& [id, mm] : models_gpu_) model_ids.push_back(id);
-            std::sort(model_ids.begin(), model_ids.end());
-            const auto pos = std::find(model_ids.begin(), model_ids.end(), session_model_id);
-            const int model_index = (pos != model_ids.end()) ? int(pos - model_ids.begin()) : -1;
-            // Surface the selection to JS so host pages can react (e.g. show the
-            // GUID + model). Fires Module.__ifcvOnSelect(object_id, guid, modelIndex).
-            EM_ASM({
-                if (Module.__ifcvOnSelect) Module.__ifcvOnSelect($0, UTF8ToString($1), $2);
-            }, object_id, guid.c_str(), model_index);
-            return;
-        }
-        Log::info() << "pick: object " << object_id << " not in element table";
+        Log::info() << "pick: object " << object_id << " GUID " << e.guid;
+        // Surface the selection to JS so host pages can react (e.g. show the
+        // GUID + model). Fires
+        // Module.__ifcvOnSelect(object_id, guid, modelIndex, sourceId).
+        // modelIndex is the load-order slot; sourceId is the byte-source the
+        // host added the model from, which is the one that cannot shift.
+        EM_ASM({
+            if (Module.__ifcvOnSelect)
+                Module.__ifcvOnSelect($0, UTF8ToString($1), $2, $3);
+        }, object_id, e.guid.c_str(), e.model_index, e.source_id);
     });
 }
 #endif  // __EMSCRIPTEN__
@@ -3776,6 +4468,7 @@ void ViewportCore::streamingProgress(int& resident_chunks, int& total_chunks) co
     resident_chunks = 0;
     total_chunks    = 0;
     for (const auto& [session_model_id, m] : models_gpu_) {
+        if (m.unloaded) continue;
         for (const auto& c : m.chunks) {
             ++total_chunks;
             if (c.is_resident) ++resident_chunks;
@@ -3787,23 +4480,113 @@ int ViewportCore::streamingModelCount() const {
     return int(models_gpu_.size());
 }
 
+std::vector<std::uint32_t> ViewportCore::modelIdsInLoadOrder() const {
+    std::vector<std::uint32_t> ids;
+    ids.reserve(models_gpu_.size());
+    for (const auto& [session_model_id, m] : models_gpu_) ids.push_back(session_model_id);
+    std::sort(ids.begin(), ids.end());
+    return ids;
+}
+
+int ViewportCore::modelLoadIndex(std::uint32_t session_model_id) const {
+    const std::vector<std::uint32_t> ids = modelIdsInLoadOrder();
+    const auto it = std::find(ids.begin(), ids.end(), session_model_id);
+    return (it == ids.end()) ? -1 : int(it - ids.begin());
+}
+
 void ViewportCore::streamingModelProgress(int idx, int& resident_chunks,
                                           int& total_chunks) const {
     resident_chunks = 0;
     total_chunks    = 0;
     if (idx < 0 || idx >= int(models_gpu_.size())) return;
-    // Order by session_model_id (= load order) so a model keeps the same UI slot as it
-    // streams, instead of hopping with unordered_map iteration order.
-    std::vector<std::uint32_t> ids;
-    ids.reserve(models_gpu_.size());
-    for (const auto& [session_model_id, m] : models_gpu_) ids.push_back(session_model_id);
-    std::sort(ids.begin(), ids.end());
-    auto it = models_gpu_.find(ids[std::size_t(idx)]);
-    if (it == models_gpu_.end()) return;
+    auto it = models_gpu_.find(modelIdsInLoadOrder()[std::size_t(idx)]);
+    if (it == models_gpu_.end() || it->second.unloaded) return;
     for (const auto& c : it->second.chunks) {
         ++total_chunks;
         if (c.is_resident) ++resident_chunks;
     }
+}
+
+namespace {
+
+// Resolve one element record against its model's string table. Offsets that run
+// past the table (or carry zero length) yield an empty string rather than a
+// fabricated one — the sidecar writes no string for an unnamed element.
+ViewportCore::ElementRef makeElementRef(const ModelGpuData& m, int model_index,
+                                        const ElementTableRecord& e) {
+    auto str = [&m](std::uint32_t offset, std::uint32_t length) {
+        return (length > 0 && std::size_t(offset) + length <= m.string_table.size())
+                   ? m.string_table.substr(offset, length)
+                   : std::string();
+    };
+    ViewportCore::ElementRef ref;
+    ref.object_id   = e.object_id;
+    ref.model_index = model_index;
+    ref.source_id   = m.web_source_id;
+    ref.guid        = str(e.guid_offset, e.guid_length);
+    ref.name        = str(e.name_offset, e.name_length);
+    ref.type        = str(e.type_offset, e.type_length);
+    return ref;
+}
+
+}  // namespace
+
+std::vector<ViewportCore::ElementRef> ViewportCore::elements() const {
+    std::vector<ElementRef> out;
+    const std::vector<std::uint32_t> ids = modelIdsInLoadOrder();
+    for (std::size_t model_index = 0; model_index < ids.size(); ++model_index) {
+        auto it = models_gpu_.find(ids[model_index]);
+        if (it == models_gpu_.end()) continue;
+        const ModelGpuData& m = it->second;
+        out.reserve(out.size() + m.elements.size());
+        for (const ElementTableRecord& e : m.elements)
+            out.push_back(makeElementRef(m, int(model_index), e));
+    }
+    return out;
+}
+
+void ViewportCore::visitModelElements(
+        int model_index,
+        const std::function<void(const ElementSlices&)>& visit) const {
+    const std::vector<std::uint32_t> ids = modelIdsInLoadOrder();
+    if (model_index < 0 || std::size_t(model_index) >= ids.size()) return;
+    auto it = models_gpu_.find(ids[std::size_t(model_index)]);
+    if (it == models_gpu_.end()) return;
+    const ModelGpuData& m = it->second;
+    auto slice = [&m](std::uint32_t offset, std::uint32_t length,
+                      const char*& out_ptr, std::uint32_t& out_len) {
+        // Out-of-range or zero-length offsets mean "no string was written".
+        if (length > 0 && std::size_t(offset) + length <= m.string_table.size()) {
+            out_ptr = m.string_table.data() + offset;
+            out_len = length;
+        } else {
+            out_ptr = nullptr;
+            out_len = 0;
+        }
+    };
+    for (const ElementTableRecord& e : m.elements) {
+        ElementSlices out;
+        out.object_id = e.object_id;
+        out.source_id = m.web_source_id;
+        slice(e.guid_offset, e.guid_length, out.guid, out.guid_len);
+        slice(e.name_offset, e.name_length, out.name, out.name_len);
+        slice(e.type_offset, e.type_length, out.type, out.type_len);
+        visit(out);
+    }
+}
+
+bool ViewportCore::elementForObject(std::uint32_t object_id, ElementRef& out) const {
+    InstanceCompose::InstanceLookup lk;
+    if (!findInstance(object_id, lk)) return false;
+    auto it = models_gpu_.find(lk.session_model_id);
+    if (it == models_gpu_.end()) return false;
+    const ModelGpuData& m = it->second;
+    for (const ElementTableRecord& e : m.elements) {
+        if (e.object_id != object_id) continue;
+        out = makeElementRef(m, modelLoadIndex(lk.session_model_id), e);
+        return true;
+    }
+    return false;
 }
 
 void ViewportCore::streamingByteProgress(std::uint64_t& total_bytes,
@@ -3816,7 +4599,7 @@ void ViewportCore::streamingByteProgress(std::uint64_t& total_bytes,
     // whole model this view even requires.
     total_bytes = needed_bytes = loaded_bytes = 0;
     for (const auto& [session_model_id, m] : models_gpu_) {
-        if (m.hidden) continue;
+        if (!m.drawable()) continue;
         for (const auto& c : m.chunks) {
             // Report COMPRESSED bytes — what actually crosses the network. Fall
             // back to raw for direct (in-memory) loads that have no blobs.
@@ -4068,21 +4851,7 @@ void ViewportCore::ensureHizTextures(int viewport_w, int viewport_h) {
 
     if (dst_w == hiz_resolve_w_ && dst_h == hiz_resolve_h_ && hiz_resolve_view_) return;
 
-    if (hiz_resolve_view_)    { wgpuTextureViewRelease(hiz_resolve_view_); hiz_resolve_view_ = nullptr; }
-    if (hiz_resolve_texture_) { wgpuTextureRelease(hiz_resolve_texture_);  hiz_resolve_texture_ = nullptr; }
-    for (int s = 0; s < HIZ_SLOTS; ++s) {
-        if (hiz_staging_buffers_[s]) {
-            if (hiz_slot_state_[s] == HizSlotState::Mapped) {
-                wgpuBufferUnmap(hiz_staging_buffers_[s]);
-            }
-            wgpuBufferRelease(hiz_staging_buffers_[s]);
-            hiz_staging_buffers_[s] = nullptr;
-        }
-        hiz_slot_state_[s] = HizSlotState::Idle;
-    }
-    hiz_write_idx_ = 0;
-    hiz_valid_     = false;
-    if (hiz_bind_group_)      { wgpuBindGroupRelease(hiz_bind_group_);     hiz_bind_group_ = nullptr; }
+    releaseHizTextures();
 
     WGPUTextureDescriptor desc = {};
     desc.usage         = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc;
@@ -4125,9 +4894,8 @@ void ViewportCore::ensureHizTextures(int viewport_w, int viewport_h) {
     hiz_valid_     = false;
 }
 
-void ViewportCore::releaseHizResources() {
+void ViewportCore::releaseHizTextures() {
     if (hiz_bind_group_)      { wgpuBindGroupRelease(hiz_bind_group_);     hiz_bind_group_ = nullptr; }
-    if (hiz_uniform_buffer_)  { wgpuBufferRelease(hiz_uniform_buffer_);    hiz_uniform_buffer_ = nullptr; }
     if (hiz_resolve_view_)    { wgpuTextureViewRelease(hiz_resolve_view_); hiz_resolve_view_ = nullptr; }
     if (hiz_resolve_texture_) { wgpuTextureRelease(hiz_resolve_texture_);  hiz_resolve_texture_ = nullptr; }
     for (int s = 0; s < HIZ_SLOTS; ++s) {
@@ -4141,12 +4909,17 @@ void ViewportCore::releaseHizResources() {
         hiz_slot_state_[s] = HizSlotState::Idle;
     }
     hiz_write_idx_ = 0;
+    hiz_resolve_w_ = hiz_resolve_h_ = hiz_padded_bpr_ = 0;
+    hiz_valid_     = false;
+}
+
+void ViewportCore::releaseHizResources() {
+    releaseHizTextures();
+    if (hiz_uniform_buffer_)  { wgpuBufferRelease(hiz_uniform_buffer_);    hiz_uniform_buffer_ = nullptr; }
     if (hiz_pipeline_)        { wgpuRenderPipelineRelease(hiz_pipeline_);  hiz_pipeline_ = nullptr; }
     if (hiz_shader_module_)   { wgpuShaderModuleRelease(hiz_shader_module_); hiz_shader_module_ = nullptr; }
     if (hiz_pipeline_layout_) { wgpuPipelineLayoutRelease(hiz_pipeline_layout_); hiz_pipeline_layout_ = nullptr; }
     if (hiz_bgl_)             { wgpuBindGroupLayoutRelease(hiz_bgl_);      hiz_bgl_ = nullptr; }
-    hiz_resolve_w_ = hiz_resolve_h_ = hiz_padded_bpr_ = 0;
-    hiz_valid_ = false;
     hiz_pyramid_.clear();
     hiz_mip_offset_.clear();
     hiz_mip_w_.clear();
@@ -4332,6 +5105,7 @@ void ViewportCore::drainHizReadbacks() {
 
         hiz_vp_    = hiz_slot_vp_[slot];
         hiz_valid_ = true;
+        markCullInputsChanged();
     }
 }
 
@@ -4432,6 +5206,44 @@ bool ViewportCore::aabbOccludedByHiz(const float mn[3], const float mx[3]) const
         }
     }
     return rejected;
+}
+
+bool ViewportCore::ensureRenderAttachments(int width_px, int height_px) {
+    const std::uint64_t bytes =
+        attachmentBytesPerPixel() * std::uint64_t(width_px) * std::uint64_t(height_px);
+    const bool ok = allocateRequired(
+        "render attachments", bytes,
+        [&]() {
+            ensureDepthTexture(width_px, height_px);
+            ensureMsaaColorTexture(width_px, height_px);
+            ensureHizTextures(width_px, height_px);
+            ensureSelectionOutlineTextures(width_px, height_px);
+            createPickAttachments(width_px, height_px);
+        },
+        [&]() { releaseRenderAttachments(); },
+        // Web learns of the failure after the views are already in use:
+        // drop the set and reconfigure against the now-smaller cache.
+        [this]() {
+            releaseRenderAttachments();
+            int w = 0, h = 0;
+            host_->framebufferSize(w, h);
+            if (w > 0 && h > 0) configureSurface(w, h);
+            host_->requestFrame();
+        });
+    if (!ok && render_attachments_ok_) {
+        Log::warn() << "[wgpu] render attachments unavailable at " << width_px
+                    << "x" << height_px << "; frames are skipped until memory frees up";
+    }
+    render_attachments_ok_ = ok;
+    return ok;
+}
+
+void ViewportCore::releaseRenderAttachments() {
+    releaseDepthTexture();
+    releaseMsaaColorTexture();
+    releaseHizTextures();
+    releaseSelectionOutlineTextures();
+    releasePickResources();
 }
 
 void ViewportCore::ensureDepthTexture(int w, int h) {
@@ -4674,6 +5486,475 @@ void ViewportCore::releaseEdgeResources() {
 }
 
 // ===========================================================================
+// Selection silhouette outline: buildSelectionOutlinePipelines +
+// ensureSelectionOutlineTextures + encodeSelectionMaskPass +
+// encodeSelectionOutlinePass
+//
+// A halo drawn just OUTSIDE the selected objects, so the cue does not depend
+// on the object's own colour the way the fs_main selection tint does — a blue
+// element in a blue-tinted selection is otherwise indistinguishable.
+//
+// Three steps: a geometry pass writes a coverage mask (fs_mask), then two
+// fullscreen passes dilate it. The dilation is separable — a horizontal max
+// into an RGBA8 scratch, then a vertical max composited onto the surface —
+// because the naive 2D disc is O(r^2) taps per pixel and a 3-physical-pixel
+// radius on a HiDPI canvas is already 100+ loads over the whole screen.
+// Separable makes it O(r), and the square structuring element it implies is
+// invisible at this radius.
+// ===========================================================================
+
+namespace {
+
+// Scratch format for the horizontal pass. r = max over the inner radius,
+// g = max over the outer radius, b = this pixel's own coverage passed
+// through so the vertical pass needs only this one texture bound.
+constexpr WGPUTextureFormat kSelScratchFormat = WGPUTextureFormat_RGBA8Unorm;
+
+const char* SEL_OUTLINE_WGSL = R"(
+struct OutlineUniforms {
+    inner_color:  vec4<f32>,   // rgb + alpha of the ring hugging the silhouette
+    outer_color:  vec4<f32>,   // rgb + alpha of the band beyond it
+    inner_radius: f32,         // physical pixels
+    outer_radius: f32,         // physical pixels, >= inner_radius
+    _pad0:        f32,
+    _pad1:        f32,
+};
+
+@group(0) @binding(0) var src: texture_2d<f32>;
+@group(0) @binding(1) var<uniform> u: OutlineUniforms;
+
+// Undo the swap chain's implicit linear->sRGB write encoding, exactly as
+// the main shader does, so the halo's bytes are the colour we asked for.
+fn srgbToLinear(s: vec3<f32>) -> vec3<f32> {
+    let lo = s / 12.92;
+    let hi = pow((s + 0.055) / 1.055, vec3<f32>(2.4));
+    return select(hi, lo, s <= vec3<f32>(0.04045));
+}
+
+@vertex
+fn vs_main(@builtin(vertex_index) vid: u32) -> @builtin(position) vec4<f32> {
+    let x = f32((vid << 1u) & 2u) * 2.0 - 1.0;
+    let y = f32(vid & 2u) * 2.0 - 1.0;
+    return vec4<f32>(x, y, 0.0, 1.0);
+}
+
+// Horizontal half of the dilation. Reads the resolved coverage mask.
+@fragment
+fn fs_dilate_h(@builtin(position) frag: vec4<f32>) -> @location(0) vec4<f32> {
+    let p     = vec2<i32>(i32(frag.x), i32(frag.y));
+    let max_x = i32(textureDimensions(src).x) - 1;
+    let ri    = i32(u.inner_radius);
+    let ro    = i32(u.outer_radius);
+
+    let here = textureLoad(src, p, 0).r;
+    var inner = 0.0;
+    var outer = 0.0;
+    for (var dx = -ro; dx <= ro; dx = dx + 1) {
+        let m = textureLoad(src, vec2<i32>(clamp(p.x + dx, 0, max_x), p.y), 0).r;
+        outer = max(outer, m);
+        if (dx >= -ri && dx <= ri) { inner = max(inner, m); }
+    }
+    return vec4<f32>(inner, outer, here, 1.0);
+}
+
+// Vertical half, plus the composite. Reads the scratch written above.
+@fragment
+fn fs_outline(@builtin(position) frag: vec4<f32>) -> @location(0) vec4<f32> {
+    let p     = vec2<i32>(i32(frag.x), i32(frag.y));
+    let max_y = i32(textureDimensions(src).y) - 1;
+    let ri    = i32(u.inner_radius);
+    let ro    = i32(u.outer_radius);
+
+    // Coverage at this pixel. Inside the silhouette there is nothing to
+    // draw: the halo sits strictly outside, so a selected element's own
+    // colour is never painted over.
+    let here = textureLoad(src, p, 0).b;
+    if (here >= 0.999) { discard; }
+
+    var inner = 0.0;
+    var outer = 0.0;
+    for (var dy = -ro; dy <= ro; dy = dy + 1) {
+        let s = textureLoad(src, vec2<i32>(p.x, clamp(p.y + dy, 0, max_y)), 0);
+        outer = max(outer, s.g);
+        if (dy >= -ri && dy <= ri) { inner = max(inner, s.r); }
+    }
+
+    // Two concentric rings, written as differences so they never overlap:
+    // `in_ring` is the dilation minus the shape, `out_ring` is the wider
+    // dilation minus the narrower one.
+    let in_ring  = clamp(inner - here,  0.0, 1.0);
+    let out_ring = clamp(outer - inner, 0.0, 1.0);
+
+    let a_in  = in_ring  * u.inner_color.a;
+    let a_out = out_ring * u.outer_color.a * (1.0 - in_ring);
+    let a     = a_in + a_out;
+    if (a <= 0.004) { discard; }
+
+    // Straight (unpremultiplied) alpha out — the SrcAlpha blend factor
+    // does the premultiply, which is what the surface's premultiplied
+    // alpha mode expects to find in the buffer.
+    let rgb = (srgbToLinear(u.inner_color.rgb) * a_in
+             + srgbToLinear(u.outer_color.rgb) * a_out) / a;
+    return vec4<f32>(rgb, a);
+}
+)";
+
+} // namespace
+
+bool ViewportCore::buildSelectionOutlinePipelines() {
+    // ---- Mask pass. Reuses the main shader module + pipeline layout, so it
+    // vertex-pulls identically and sees the same sel_flags binding. Depth is
+    // the main pass's, bound read-only: LessEqual against already-written
+    // scene depth keeps only the fragments that actually survived.
+    {
+        WGPUColorTargetState target = {};
+        target.format    = WGPUTextureFormat_R8Unorm;
+        target.writeMask = WGPUColorWriteMask_All;
+
+        WGPUFragmentState frag = {};
+        frag.module      = main_shader_module_;
+        frag.entryPoint  = svFromCStr("fs_mask");
+        frag.targetCount = 1;
+        frag.targets     = &target;
+
+        WGPUDepthStencilState depth = {};
+        depth.format               = WGPUTextureFormat_Depth32Float;
+        depth.depthWriteEnabled    = WGPUOptionalBool_False;
+        depth.depthCompare         = WGPUCompareFunction_LessEqual;
+        depth.stencilFront.compare = WGPUCompareFunction_Always;
+        depth.stencilBack.compare  = WGPUCompareFunction_Always;
+
+        WGPURenderPipelineDescriptor rp_desc = {};
+        rp_desc.layout             = pipeline_layout_;
+        rp_desc.label              = svFromCStr("ifcviewer-wgpu.sel_mask_pipeline");
+        rp_desc.vertex.module      = main_shader_module_;
+        rp_desc.vertex.entryPoint  = svFromCStr("vs_main");
+        rp_desc.vertex.bufferCount = 0;
+        rp_desc.fragment           = &frag;
+        rp_desc.depthStencil       = &depth;
+        rp_desc.primitive.topology = WGPUPrimitiveTopology_TriangleList;
+        // No cull: an open shell (a wall face, a plate) would otherwise
+        // punch holes in its own silhouette when seen from behind.
+        rp_desc.primitive.cullMode = WGPUCullMode_None;
+        rp_desc.multisample.count  = kViewportSampleCount;
+        rp_desc.multisample.mask   = 0xFFFFFFFFu;
+
+        sel_mask_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
+        if (!sel_mask_pipeline_) {
+            Log::warn() << "wgpu selection mask pipeline creation failed";
+            return false;
+        }
+    }
+
+    // ---- Shared fullscreen resources. One BGL for both dilation passes:
+    // each binds a different source texture through the same shape.
+    WGPUBindGroupLayoutEntry entries[2] = {};
+    entries[0].binding = 0;
+    entries[0].visibility = WGPUShaderStage_Fragment;
+    entries[0].texture.sampleType    = WGPUTextureSampleType_Float;
+    entries[0].texture.viewDimension = WGPUTextureViewDimension_2D;
+    entries[1].binding = 1;
+    entries[1].visibility = WGPUShaderStage_Fragment;
+    entries[1].buffer.type           = WGPUBufferBindingType_Uniform;
+    entries[1].buffer.minBindingSize = sizeof(SelOutlineUniforms);
+
+    WGPUBindGroupLayoutDescriptor bgl_desc = {};
+    bgl_desc.entryCount = 2;
+    bgl_desc.entries    = entries;
+    bgl_desc.label      = svFromCStr("ifcviewer-wgpu.sel_outline_bgl");
+    sel_outline_bgl_ = wgpuDeviceCreateBindGroupLayout(device_, &bgl_desc);
+
+    WGPUPipelineLayoutDescriptor pl_desc = {};
+    pl_desc.bindGroupLayoutCount = 1;
+    pl_desc.bindGroupLayouts     = &sel_outline_bgl_;
+    pl_desc.label                = svFromCStr("ifcviewer-wgpu.sel_outline_pipeline_layout");
+    sel_outline_pipeline_layout_ = wgpuDeviceCreatePipelineLayout(device_, &pl_desc);
+
+    WGPUShaderSourceWGSL wgsl_src = {};
+    wgsl_src.chain.sType = WGPUSType_ShaderSourceWGSL;
+    wgsl_src.code        = svFromCStr(SEL_OUTLINE_WGSL);
+    WGPUShaderModuleDescriptor sm_desc = {};
+    sm_desc.nextInChain = &wgsl_src.chain;
+    sm_desc.label       = svFromCStr("ifcviewer-wgpu.sel_outline_wgsl");
+    sel_outline_shader_module_ = wgpuDeviceCreateShaderModule(device_, &sm_desc);
+
+    WGPUBufferDescriptor ub = {};
+    ub.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
+    ub.size  = sizeof(SelOutlineUniforms);
+    ub.label = svFromCStr("ifcviewer-wgpu.sel_outline_uniforms");
+    sel_outline_uniform_buffer_ = wgpuDeviceCreateBuffer(device_, &ub);
+
+    // ---- Horizontal dilation into the scratch target. Opaque write.
+    {
+        WGPUColorTargetState target = {};
+        target.format    = kSelScratchFormat;
+        target.writeMask = WGPUColorWriteMask_All;
+
+        WGPUFragmentState frag = {};
+        frag.module      = sel_outline_shader_module_;
+        frag.entryPoint  = svFromCStr("fs_dilate_h");
+        frag.targetCount = 1;
+        frag.targets     = &target;
+
+        WGPURenderPipelineDescriptor rp_desc = {};
+        rp_desc.layout             = sel_outline_pipeline_layout_;
+        rp_desc.label              = svFromCStr("ifcviewer-wgpu.sel_dilate_h_pipeline");
+        rp_desc.vertex.module      = sel_outline_shader_module_;
+        rp_desc.vertex.entryPoint  = svFromCStr("vs_main");
+        rp_desc.vertex.bufferCount = 0;
+        rp_desc.fragment           = &frag;
+        rp_desc.depthStencil       = nullptr;
+        rp_desc.primitive.topology = WGPUPrimitiveTopology_TriangleList;
+        rp_desc.primitive.cullMode = WGPUCullMode_None;
+        rp_desc.multisample.count  = 1;
+        rp_desc.multisample.mask   = 0xFFFFFFFFu;
+
+        sel_dilate_h_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
+        if (!sel_dilate_h_pipeline_) {
+            Log::warn() << "wgpu selection dilate pipeline creation failed";
+            return false;
+        }
+    }
+
+    // ---- Vertical dilation + composite onto the resolved surface.
+    {
+        WGPUBlendState blend = {};
+        blend.color.srcFactor = WGPUBlendFactor_SrcAlpha;
+        blend.color.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
+        blend.color.operation = WGPUBlendOperation_Add;
+        blend.alpha.srcFactor = WGPUBlendFactor_One;
+        blend.alpha.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
+        blend.alpha.operation = WGPUBlendOperation_Add;
+
+        WGPUColorTargetState target = {};
+        target.format    = surface_view_format_;
+        target.blend     = &blend;
+        target.writeMask = WGPUColorWriteMask_All;
+
+        WGPUFragmentState frag = {};
+        frag.module      = sel_outline_shader_module_;
+        frag.entryPoint  = svFromCStr("fs_outline");
+        frag.targetCount = 1;
+        frag.targets     = &target;
+
+        WGPURenderPipelineDescriptor rp_desc = {};
+        rp_desc.layout             = sel_outline_pipeline_layout_;
+        rp_desc.label              = svFromCStr("ifcviewer-wgpu.sel_outline_pipeline");
+        rp_desc.vertex.module      = sel_outline_shader_module_;
+        rp_desc.vertex.entryPoint  = svFromCStr("vs_main");
+        rp_desc.vertex.bufferCount = 0;
+        rp_desc.fragment           = &frag;
+        rp_desc.depthStencil       = nullptr;
+        rp_desc.primitive.topology = WGPUPrimitiveTopology_TriangleList;
+        rp_desc.primitive.cullMode = WGPUCullMode_None;
+        rp_desc.multisample.count  = 1;
+        rp_desc.multisample.mask   = 0xFFFFFFFFu;
+
+        sel_outline_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
+        if (!sel_outline_pipeline_) {
+            Log::warn() << "wgpu selection outline pipeline creation failed";
+            return false;
+        }
+    }
+    return true;
+}
+
+void ViewportCore::ensureSelectionOutlineTextures(int w, int h) {
+    if (w == sel_mask_w_ && h == sel_mask_h_ && sel_mask_view_) return;
+    releaseSelectionOutlineTextures();
+
+    WGPUTextureDescriptor desc = {};
+    desc.dimension     = WGPUTextureDimension_2D;
+    desc.size.width    = std::uint32_t(w);
+    desc.size.height   = std::uint32_t(h);
+    desc.size.depthOrArrayLayers = 1;
+    desc.mipLevelCount = 1;
+
+    // Multisampled coverage target, matching the main pass so it can share
+    // the depth attachment; resolved down to the single-sample mask the
+    // dilation reads. The resolve is what gives the halo the same edge
+    // antialiasing as the geometry it traces.
+    desc.usage       = WGPUTextureUsage_RenderAttachment;
+    desc.format      = WGPUTextureFormat_R8Unorm;
+    desc.sampleCount = kViewportSampleCount;
+    desc.label       = svFromCStr("ifcviewer-wgpu.sel_mask_msaa");
+    sel_mask_msaa_texture_ = wgpuDeviceCreateTexture(device_, &desc);
+    sel_mask_msaa_view_    = wgpuTextureCreateView(sel_mask_msaa_texture_, nullptr);
+
+    desc.usage       = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_TextureBinding;
+    desc.sampleCount = 1;
+    desc.label       = svFromCStr("ifcviewer-wgpu.sel_mask");
+    sel_mask_texture_ = wgpuDeviceCreateTexture(device_, &desc);
+    sel_mask_view_    = wgpuTextureCreateView(sel_mask_texture_, nullptr);
+
+    desc.format = kSelScratchFormat;
+    desc.label  = svFromCStr("ifcviewer-wgpu.sel_scratch");
+    sel_scratch_texture_ = wgpuDeviceCreateTexture(device_, &desc);
+    sel_scratch_view_    = wgpuTextureCreateView(sel_scratch_texture_, nullptr);
+
+    sel_mask_w_ = w;
+    sel_mask_h_ = h;
+
+    // The bind groups name the views we just replaced.
+    if (sel_dilate_bind_group_) {
+        wgpuBindGroupRelease(sel_dilate_bind_group_);
+        sel_dilate_bind_group_ = nullptr;
+    }
+    if (sel_outline_bind_group_) {
+        wgpuBindGroupRelease(sel_outline_bind_group_);
+        sel_outline_bind_group_ = nullptr;
+    }
+}
+
+void ViewportCore::releaseSelectionOutlineTextures() {
+    if (sel_scratch_view_)       { wgpuTextureViewRelease(sel_scratch_view_);   sel_scratch_view_ = nullptr; }
+    if (sel_scratch_texture_)    { wgpuTextureRelease(sel_scratch_texture_);    sel_scratch_texture_ = nullptr; }
+    if (sel_mask_view_)          { wgpuTextureViewRelease(sel_mask_view_);      sel_mask_view_ = nullptr; }
+    if (sel_mask_texture_)       { wgpuTextureRelease(sel_mask_texture_);       sel_mask_texture_ = nullptr; }
+    if (sel_mask_msaa_view_)     { wgpuTextureViewRelease(sel_mask_msaa_view_); sel_mask_msaa_view_ = nullptr; }
+    if (sel_mask_msaa_texture_)  { wgpuTextureRelease(sel_mask_msaa_texture_);  sel_mask_msaa_texture_ = nullptr; }
+    sel_mask_w_ = sel_mask_h_ = 0;
+}
+
+bool ViewportCore::selectionOutlineActive() const {
+    return selection_outline_enabled_ && selection_.count() > 0
+        && sel_mask_pipeline_ && sel_outline_pipeline_ && sel_mask_view_;
+}
+
+void ViewportCore::encodeSelectionMaskPass(WGPUCommandEncoder enc) {
+    if (!selectionOutlineActive() || !depth_view_ || !frame_bind_group_) return;
+
+    WGPURenderPassColorAttachment color = {};
+    color.view          = sel_mask_msaa_view_;
+    color.resolveTarget = sel_mask_view_;
+    color.loadOp        = WGPULoadOp_Clear;
+    // Only the resolve is ever read, so the multisampled samples can go.
+    color.storeOp       = WGPUStoreOp_Discard;
+    color.clearValue    = {0.0, 0.0, 0.0, 0.0};
+    color.depthSlice    = WGPU_DEPTH_SLICE_UNDEFINED;
+
+    // Read-only depth: the scene's own z, already written by the main pass.
+    // WebGPU requires the load/store ops be left undefined when a depth
+    // attachment is read-only, which the zero-init here does.
+    WGPURenderPassDepthStencilAttachment depth = {};
+    depth.view            = depth_view_;
+    depth.depthReadOnly   = true;
+    depth.stencilReadOnly = true;
+
+    WGPURenderPassDescriptor pass_desc = {};
+    pass_desc.colorAttachmentCount   = 1;
+    pass_desc.colorAttachments       = &color;
+    pass_desc.depthStencilAttachment = &depth;
+    pass_desc.label                  = svFromCStr("ifcviewer-wgpu.sel_mask_pass");
+
+    WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
+    wgpuRenderPassEncoderSetPipeline(pass, sel_mask_pipeline_);
+    wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
+
+    // Same draw stream as the main pass, opaque and transparent together —
+    // a selected element that happens to be translucent still gets a halo.
+    for (const auto& [session_model_id, m] : models_gpu_) {
+        if (!m.drawable()) continue;
+        for (const auto& c : m.chunks) {
+            if (!c.bind_group || c.total_visible_vertices == 0) continue;
+            wgpuRenderPassEncoderSetBindGroup(pass, 1, c.bind_group, 0, nullptr);
+            wgpuRenderPassEncoderDraw(pass, c.total_visible_vertices, 1, 0, 0);
+        }
+    }
+
+    wgpuRenderPassEncoderEnd(pass);
+    wgpuRenderPassEncoderRelease(pass);
+}
+
+void ViewportCore::encodeSelectionOutlinePass(WGPUCommandEncoder enc,
+                                              WGPUTextureView surface_view,
+                                              int dpr) {
+    if (!selectionOutlineActive() || !surface_view || !sel_dilate_h_pipeline_) return;
+
+    // Ring widths in LOGICAL pixels, scaled here so the halo looks the same
+    // on a HiDPI canvas as it does on a 1x one.
+    const float scale = float(std::max(1, dpr));
+    SelOutlineUniforms u = {};
+    u.inner_color[0] = 1.0f; u.inner_color[1] = 1.0f;
+    u.inner_color[2] = 1.0f; u.inner_color[3] = 1.0f;
+    u.outer_color[0] = 0.04f; u.outer_color[1] = 0.04f;
+    u.outer_color[2] = 0.04f; u.outer_color[3] = 0.85f;
+    u.inner_radius   = 2.0f * scale;
+    u.outer_radius   = 3.0f * scale;
+    wgpuQueueWriteBuffer(queue_, sel_outline_uniform_buffer_, 0, &u, sizeof(u));
+
+    if (!sel_dilate_bind_group_) {
+        WGPUBindGroupEntry e[2] = {};
+        e[0].binding     = 0;
+        e[0].textureView = sel_mask_view_;
+        e[1].binding = 1;
+        e[1].buffer  = sel_outline_uniform_buffer_;
+        e[1].size    = sizeof(SelOutlineUniforms);
+        WGPUBindGroupDescriptor bg = {};
+        bg.layout     = sel_outline_bgl_;
+        bg.entryCount = 2;
+        bg.entries    = e;
+        bg.label      = svFromCStr("ifcviewer-wgpu.sel_dilate_bind_group");
+        sel_dilate_bind_group_ = wgpuDeviceCreateBindGroup(device_, &bg);
+    }
+    if (!sel_outline_bind_group_) {
+        WGPUBindGroupEntry e[2] = {};
+        e[0].binding     = 0;
+        e[0].textureView = sel_scratch_view_;
+        e[1].binding = 1;
+        e[1].buffer  = sel_outline_uniform_buffer_;
+        e[1].size    = sizeof(SelOutlineUniforms);
+        WGPUBindGroupDescriptor bg = {};
+        bg.layout     = sel_outline_bgl_;
+        bg.entryCount = 2;
+        bg.entries    = e;
+        bg.label      = svFromCStr("ifcviewer-wgpu.sel_outline_bind_group");
+        sel_outline_bind_group_ = wgpuDeviceCreateBindGroup(device_, &bg);
+    }
+
+    {
+        WGPURenderPassColorAttachment color = {};
+        color.view       = sel_scratch_view_;
+        color.loadOp     = WGPULoadOp_Clear;
+        color.storeOp    = WGPUStoreOp_Store;
+        color.clearValue = {0.0, 0.0, 0.0, 1.0};
+        color.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
+
+        WGPURenderPassDescriptor pass_desc = {};
+        pass_desc.colorAttachmentCount = 1;
+        pass_desc.colorAttachments     = &color;
+        pass_desc.label                = svFromCStr("ifcviewer-wgpu.sel_dilate_h_pass");
+
+        WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
+        wgpuRenderPassEncoderSetPipeline(pass, sel_dilate_h_pipeline_);
+        wgpuRenderPassEncoderSetBindGroup(pass, 0, sel_dilate_bind_group_, 0, nullptr);
+        wgpuRenderPassEncoderDraw(pass, 3, 1, 0, 0);
+        wgpuRenderPassEncoderEnd(pass);
+        wgpuRenderPassEncoderRelease(pass);
+    }
+
+    {
+        WGPURenderPassColorAttachment color = {};
+        color.view       = surface_view;
+        color.loadOp     = WGPULoadOp_Load;
+        color.storeOp    = WGPUStoreOp_Store;
+        color.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
+
+        WGPURenderPassDescriptor pass_desc = {};
+        pass_desc.colorAttachmentCount = 1;
+        pass_desc.colorAttachments     = &color;
+        pass_desc.label                = svFromCStr("ifcviewer-wgpu.sel_outline_pass");
+
+        WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
+        wgpuRenderPassEncoderSetPipeline(pass, sel_outline_pipeline_);
+        wgpuRenderPassEncoderSetBindGroup(pass, 0, sel_outline_bind_group_, 0, nullptr);
+        wgpuRenderPassEncoderDraw(pass, 3, 1, 0, 0);
+        wgpuRenderPassEncoderEnd(pass);
+        wgpuRenderPassEncoderRelease(pass);
+    }
+}
+
+// ===========================================================================
 // Pick + raycast (#84-t)
 // ===========================================================================
 
@@ -4812,11 +6093,68 @@ bool ViewportCore::buildPickPipeline() {
         Log::warn() << "wgpu pick pipeline creation failed";
         return false;
     }
+    // The x-ray marquee variant rides along so no caller has to know about it.
+    // A failure here is not fatal: picksInRect falls back to the depth-tested
+    // read, which is the pre-x-ray behaviour rather than a broken viewport.
+    buildBoxPickPipeline();
     return true;
 }
 
-void ViewportCore::ensurePickAttachments(int w, int h) {
-    if (w <= 0 || h <= 0) return;
+bool ViewportCore::buildBoxPickPipeline() {
+    // No colour targets: fs_boxpick's only output is the atomic bit it sets, so
+    // the pass writes no image at all. A render pass still needs one attachment
+    // — the pick depth view serves, bound read-only.
+    WGPUFragmentState frag = {};
+    frag.module      = main_shader_module_;
+    frag.entryPoint  = svFromCStr("fs_boxpick");
+    frag.targetCount = 0;
+    frag.targets     = nullptr;
+
+    // Always/no-write is the whole trick: every fragment survives, so an
+    // occluded object records its bit just as a front-most one does.
+    WGPUDepthStencilState depth = {};
+    depth.format               = WGPUTextureFormat_Depth32Float;
+    depth.depthWriteEnabled    = WGPUOptionalBool_False;
+    depth.depthCompare         = WGPUCompareFunction_Always;
+    depth.stencilFront.compare = WGPUCompareFunction_Always;
+    depth.stencilBack.compare  = WGPUCompareFunction_Always;
+
+    WGPURenderPipelineDescriptor rp_desc = {};
+    rp_desc.layout              = pipeline_layout_;
+    rp_desc.label               = svFromCStr("ifcviewer-wgpu.box_pick_pipeline");
+    rp_desc.vertex.module       = main_shader_module_;
+    rp_desc.vertex.entryPoint   = svFromCStr("vs_pick");
+    rp_desc.vertex.bufferCount  = 0;
+    rp_desc.fragment            = &frag;
+    rp_desc.depthStencil        = &depth;
+    rp_desc.primitive.topology  = WGPUPrimitiveTopology_TriangleList;
+    // No back-face cull. A box that lands inside a closed solid would otherwise
+    // see none of its faces and miss the object entirely.
+    rp_desc.primitive.cullMode  = WGPUCullMode_None;
+    rp_desc.primitive.frontFace = WGPUFrontFace_CCW;
+    rp_desc.multisample.count   = 1;
+    rp_desc.multisample.mask    = 0xFFFFFFFFu;
+
+    box_pick_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
+    if (!box_pick_pipeline_) {
+        Log::warn() << "wgpu box-pick pipeline creation failed";
+        return false;
+    }
+    return true;
+}
+
+bool ViewportCore::ensurePickAttachments(int w, int h) {
+    if (w <= 0 || h <= 0) return false;
+    if (w == pick_w_ && h == pick_h_ && pick_color_view_) return true;
+    constexpr std::uint64_t kPickBytesPerPixel = 4 + 8 + 16 + 4;
+    const std::uint64_t bytes = kPickBytesPerPixel * std::uint64_t(w) * std::uint64_t(h);
+    return allocateRequired(
+        "pick attachments", bytes,
+        [&]() { createPickAttachments(w, h); },
+        [&]() { releasePickResources(); });
+}
+
+void ViewportCore::createPickAttachments(int w, int h) {
     if (w == pick_w_ && h == pick_h_ && pick_color_view_) return;
 
     if (pick_color_view_)     { wgpuTextureViewRelease(pick_color_view_); pick_color_view_ = nullptr; }
@@ -4917,11 +6255,17 @@ void ViewportCore::releasePickResources() {
         pick_position_staging_buffer_ = nullptr;
     }
     if (pick_pipeline_)            { wgpuRenderPipelineRelease(pick_pipeline_); pick_pipeline_ = nullptr; }
+    if (box_pick_pipeline_)        { wgpuRenderPipelineRelease(box_pick_pipeline_); box_pick_pipeline_ = nullptr; }
     if (box_pick_staging_buffer_)  {
         wgpuBufferRelease(box_pick_staging_buffer_);
         box_pick_staging_buffer_ = nullptr;
     }
     box_pick_staging_capacity_ = 0;
+    if (hit_flags_staging_buffer_) {
+        wgpuBufferRelease(hit_flags_staging_buffer_);
+        hit_flags_staging_buffer_ = nullptr;
+    }
+    hit_flags_staging_capacity_ = 0;
     pick_w_ = pick_h_ = 0;
 }
 
@@ -4972,7 +6316,7 @@ void ViewportCore::encodePickReadbackToStaging(int x_pixels, int y_pixels,
     wgpuRenderPassEncoderSetPipeline(pass, pick_pipeline_);
     wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
     for (const auto& [session_model_id, m] : models_gpu_) {
-        if (m.hidden) continue;
+        if (!m.drawable()) continue;
         for (const auto& c : m.chunks) {
             if (!c.bind_group || c.total_visible_vertices == 0) continue;
             wgpuRenderPassEncoderSetBindGroup(pass, 1, c.bind_group, 0, nullptr);
@@ -5037,8 +6381,8 @@ std::uint32_t ViewportCore::pickObjectAt(int x_pixels, int y_pixels,
     if (x_pixels < 0 || y_pixels < 0 ||
         x_pixels >= configured_w_ || y_pixels >= configured_h_) return 0;
 
-    ensurePickAttachments(configured_w_, configured_h_);
-    if (!pick_color_view_ || !pick_depth_view_ || !pick_staging_buffer_) return 0;
+    if (!ensurePickAttachments(configured_w_, configured_h_)
+        || !pick_staging_buffer_) return 0;
     if (normal_out && !pick_normal_staging_buffer_) return 0;
 
     encodePickReadbackToStaging(x_pixels, y_pixels, normal_out != nullptr);
@@ -5156,6 +6500,7 @@ void ViewportCore::applyMarqueeToSelection(const std::vector<std::uint32_t>& ids
 }
 
 void ViewportCore::hideSelected() {
+    markCullInputsChanged();
     if (selection_.count() == 0) return;
     for (uint32_t id : selection_.selectionIds()) visibility_.hide(id);
     const size_t n = selection_.count();
@@ -5165,13 +6510,14 @@ void ViewportCore::hideSelected() {
 }
 
 void ViewportCore::isolateSelected() {
+    markCullInputsChanged();
     if (selection_.count() == 0) return;
     // Hide every object in a VISIBLE model that isn't selected. Model-hidden
     // objects stay model-hidden (element-level hiding on top is redundant), and
     // object_id 0 (unpickable) is skipped.
     const auto& sel_ids = selection_.selectionIds();
     for (const auto& [session_model_id, m] : models_gpu_) {
-        if (m.hidden) continue;
+        if (!m.drawable()) continue;
         for (const InstanceInfo& inst : m.instances) {
             if (inst.object_id == 0) continue;
             if (sel_ids.find(inst.object_id) == sel_ids.end())
@@ -5183,9 +6529,65 @@ void ViewportCore::isolateSelected() {
 }
 
 void ViewportCore::showAll() {
+    markCullInputsChanged();
     if (visibility_.hiddenCount() == 0) return;
     visibility_.clear();
     Log::info() << "[wgpu] show all";
+    host_->requestFrame();
+}
+
+void ViewportCore::hideAll() {
+    markCullInputsChanged();
+    // Element-level hide of everything in a visible model — the inverse of
+    // showAll, and isolateSelected with an empty selection. Model-hidden
+    // models are already gone from the cull, so they contribute nothing.
+    for (const auto& [session_model_id, m] : models_gpu_) {
+        if (!m.drawable()) continue;
+        for (const InstanceInfo& inst : m.instances) visibility_.hide(inst.object_id);
+    }
+    Log::info().noquote().nospace() << "[wgpu] hid all (" << visibility_.hiddenCount() << ")";
+    host_->requestFrame();
+}
+
+void ViewportCore::setObjectsVisible(const std::vector<std::uint32_t>& object_ids, bool visible) {
+    markCullInputsChanged();
+    for (std::uint32_t id : object_ids) {
+        if (visible) visibility_.show(id);
+        else         visibility_.hide(id);
+    }
+    host_->requestFrame();
+}
+
+void ViewportCore::setObjectsColor(const std::vector<std::uint32_t>& object_ids,
+                                   std::uint32_t rgba8) {
+    if (object_ids.empty()) return;
+    const std::unordered_set<std::uint32_t> wanted(object_ids.begin(), object_ids.end());
+
+    // One pass per model: patch the CPU mirror, then re-upload that model's
+    // instance records only if it actually owned one of the ids.
+    for (auto& [session_model_id, m] : models_gpu_) {
+        bool touched = false;
+        for (InstanceInfo& inst : m.instances) {
+            if (inst.color_override_rgba8 == rgba8) continue;
+            if (wanted.find(inst.object_id) == wanted.end()) continue;
+            inst.color_override_rgba8 = rgba8;
+            touched = true;
+        }
+        if (touched) uploadInstanceRecords(m);
+    }
+    host_->requestFrame();
+}
+
+void ViewportCore::clearObjectColors() {
+    for (auto& [session_model_id, m] : models_gpu_) {
+        bool touched = false;
+        for (InstanceInfo& inst : m.instances) {
+            if (inst.color_override_rgba8 == 0u) continue;
+            inst.color_override_rgba8 = 0u;
+            touched = true;
+        }
+        if (touched) uploadInstanceRecords(m);
+    }
     host_->requestFrame();
 }
 
@@ -5213,8 +6615,8 @@ void ViewportCore::pickObjectAtAsync(int x_pixels, int y_pixels,
     if (x_pixels < 0 || y_pixels < 0 ||
         x_pixels >= configured_w_ || y_pixels >= configured_h_) { miss(0); return; }
 
-    ensurePickAttachments(configured_w_, configured_h_);
-    if (!pick_color_view_ || !pick_depth_view_ || !pick_staging_buffer_) { miss(0); return; }
+    if (!ensurePickAttachments(configured_w_, configured_h_)
+        || !pick_staging_buffer_) { miss(0); return; }
 
     // One pick in flight at a time. Clicks are far slower than a readback, so
     // dropping a pick issued while another is mapping is acceptable (and
@@ -5259,8 +6661,7 @@ bool ViewportCore::encodeBoxPickToStaging(int& x, int& y, int& w, int& h,
     if (y + h > configured_h_) h = configured_h_ - y;
     if (w <= 0 || h <= 0) return false;
 
-    ensurePickAttachments(configured_w_, configured_h_);
-    if (!pick_color_view_ || !pick_depth_view_) return false;
+    if (!ensurePickAttachments(configured_w_, configured_h_)) return false;
 
     // Padded bytes-per-row. R32UInt = 4 B/texel; align to 256 B.
     constexpr std::uint64_t kWgpuBytesPerRowAlign = 256;
@@ -5279,8 +6680,8 @@ bool ViewportCore::encodeBoxPickToStaging(int& x, int& y, int& w, int& h,
         sb.size  = cap;
         sb.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
         sb.label = svFromCStr("ifcviewer-wgpu.box_pick_staging");
-        box_pick_staging_buffer_ = wgpuDeviceCreateBuffer(device_, &sb);
-        box_pick_staging_capacity_ = cap;
+        box_pick_staging_buffer_ = createRequiredBuffer(sb, "box pick staging");
+        box_pick_staging_capacity_ = box_pick_staging_buffer_ ? cap : 0;
     }
     if (!box_pick_staging_buffer_) return false;
 
@@ -5322,7 +6723,7 @@ bool ViewportCore::encodeBoxPickToStaging(int& x, int& y, int& w, int& h,
     wgpuRenderPassEncoderSetPipeline(pass, pick_pipeline_);
     wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
     for (const auto& [session_model_id, m] : models_gpu_) {
-        if (m.hidden) continue;
+        if (!m.drawable()) continue;
         for (const auto& c : m.chunks) {
             if (!c.bind_group || c.total_visible_vertices == 0) continue;
             wgpuRenderPassEncoderSetBindGroup(pass, 1, c.bind_group, 0, nullptr);
@@ -5382,7 +6783,130 @@ std::vector<std::uint32_t> ViewportCore::collectMappedBoxPickIds(
     return out;
 }
 
+bool ViewportCore::encodeXrayBoxPickToStaging(int& x, int& y, int& w, int& h,
+                                              std::uint64_t& needed_bytes_out) {
+    if (w <= 0 || h <= 0) return false;
+    if (!box_pick_pipeline_ || !device_ || !queue_ || models_gpu_.empty()) return false;
+    if (!hit_flags_buffer_ || hit_flags_words_ == 0) return false;
+    if (configured_w_ <= 0 || configured_h_ <= 0) return false;
+    if (x < 0) { w += x; x = 0; }
+    if (y < 0) { h += y; y = 0; }
+    if (x + w > configured_w_) w = configured_w_ - x;
+    if (y + h > configured_h_) h = configured_h_ - y;
+    if (w <= 0 || h <= 0) return false;
+
+    if (!ensurePickAttachments(configured_w_, configured_h_)) return false;
+
+    const std::uint64_t needed_bytes = std::uint64_t(hit_flags_words_) * sizeof(std::uint32_t);
+    if (needed_bytes > hit_flags_staging_capacity_) {
+        if (hit_flags_staging_buffer_) {
+            wgpuBufferRelease(hit_flags_staging_buffer_);
+            hit_flags_staging_buffer_ = nullptr;
+        }
+        const std::uint64_t cap = std::max<std::uint64_t>(needed_bytes * 2, 4 * 1024);
+        WGPUBufferDescriptor sb = {};
+        sb.size  = cap;
+        sb.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
+        sb.label = svFromCStr("ifcviewer-wgpu.hit_flags_staging");
+        hit_flags_staging_buffer_   = createRequiredBuffer(sb, "hit flags staging");
+        hit_flags_staging_capacity_ = hit_flags_staging_buffer_ ? cap : 0;
+    }
+    if (!hit_flags_staging_buffer_) return false;
+
+    WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_, nullptr);
+
+    // Every pick starts from no hits; the bits are pure output.
+    wgpuCommandEncoderClearBuffer(enc, hit_flags_buffer_, 0, needed_bytes);
+
+    // Depth is bound read-only and never compared (the pipeline is Always), so
+    // whatever the last pass left in it is irrelevant.
+    WGPURenderPassDepthStencilAttachment depth = {};
+    depth.view            = pick_depth_view_;
+    depth.depthLoadOp     = WGPULoadOp_Undefined;
+    depth.depthStoreOp    = WGPUStoreOp_Undefined;
+    depth.depthReadOnly   = true;
+    depth.stencilLoadOp   = WGPULoadOp_Undefined;
+    depth.stencilStoreOp  = WGPUStoreOp_Undefined;
+    depth.stencilReadOnly = true;
+
+    WGPURenderPassDescriptor pass_desc = {};
+    pass_desc.colorAttachmentCount   = 0;
+    pass_desc.colorAttachments       = nullptr;
+    pass_desc.depthStencilAttachment = &depth;
+    pass_desc.label                  = svFromCStr("ifcviewer-wgpu.xray_box_pick_pass");
+
+    WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
+    // The scissor is what makes this a BOX pick: geometry is drawn full-screen
+    // as usual, and only fragments landing in the marquee survive to set a bit.
+    wgpuRenderPassEncoderSetScissorRect(pass, std::uint32_t(x), std::uint32_t(y),
+                                        std::uint32_t(w), std::uint32_t(h));
+    wgpuRenderPassEncoderSetPipeline(pass, box_pick_pipeline_);
+    wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
+    for (const auto& [session_model_id, m] : models_gpu_) {
+        if (!m.drawable()) continue;
+        for (const auto& c : m.chunks) {
+            if (!c.bind_group || c.total_visible_vertices == 0) continue;
+            wgpuRenderPassEncoderSetBindGroup(pass, 1, c.bind_group, 0, nullptr);
+            wgpuRenderPassEncoderDraw(pass, c.total_visible_vertices, 1, 0, 0);
+        }
+    }
+    wgpuRenderPassEncoderEnd(pass);
+    wgpuRenderPassEncoderRelease(pass);
+
+    wgpuCommandEncoderCopyBufferToBuffer(enc, hit_flags_buffer_, 0,
+                                         hit_flags_staging_buffer_, 0, needed_bytes);
+
+    WGPUCommandBuffer cmd = wgpuCommandEncoderFinish(enc, nullptr);
+    wgpuQueueSubmit(queue_, 1, &cmd);
+    wgpuCommandBufferRelease(cmd);
+    wgpuCommandEncoderRelease(enc);
+
+    needed_bytes_out = needed_bytes;
+    return true;
+}
+
+std::vector<std::uint32_t> ViewportCore::collectMappedXrayHitIds(std::uint64_t needed_bytes) {
+    std::vector<std::uint32_t> out;
+    const std::uint32_t* words = static_cast<const std::uint32_t*>(
+        wgpuBufferGetConstMappedRange(hit_flags_staging_buffer_, 0, needed_bytes));
+    if (words) {
+        const std::size_t n = std::size_t(needed_bytes / sizeof(std::uint32_t));
+        for (std::size_t i = 0; i < n; ++i) {
+            const std::uint32_t bits = words[i];
+            if (!bits) continue;   // the overwhelmingly common case
+            for (std::uint32_t b = 0; b < 32u; ++b) {
+                if (!(bits & (1u << b))) continue;
+                const std::uint32_t id = std::uint32_t(i) * 32u + b;
+                if (id != 0) out.push_back(id);   // 0 is the "no object" sentinel
+            }
+        }
+    }
+    wgpuBufferUnmap(hit_flags_staging_buffer_);
+    return out;
+}
+
 std::vector<std::uint32_t> ViewportCore::picksInRect(int x, int y, int w, int h) {
+    // X-ray: select through, via the depth-less bitmask pass.
+    if (xrayActive() && box_pick_pipeline_) {
+        std::uint64_t hit_bytes = 0;
+        if (!encodeXrayBoxPickToStaging(x, y, w, h, hit_bytes)) return {};
+        struct MapReq { bool done = false; bool ok = false; };
+        MapReq req;
+        WGPUBufferMapCallbackInfo mcb = {};
+        mcb.mode = kAsyncCbMode;
+        mcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*msg*/,
+                          void* ud1, void* /*ud2*/) {
+            auto* r = static_cast<MapReq*>(ud1);
+            r->done = true;
+            r->ok   = (status == WGPUMapAsyncStatus_Success);
+        };
+        mcb.userdata1 = &req;
+        wgpuBufferMapAsync(hit_flags_staging_buffer_, WGPUMapMode_Read, 0, hit_bytes, mcb);
+        while (!req.done) waitTickInstance(instance_);
+        if (!req.ok) return {};
+        return collectMappedXrayHitIds(hit_bytes);
+    }
+
     std::uint64_t padded_bpr = 0, needed_bytes = 0;
     if (!encodeBoxPickToStaging(x, y, w, h, padded_bpr, needed_bytes)) return {};
 
@@ -5408,6 +6932,38 @@ void ViewportCore::picksInRectAsync(int x, int y, int w, int h,
                                     std::function<void(std::vector<std::uint32_t>)> cb) {
     auto miss = [&cb]() { if (cb) cb({}); };
     if (box_pick_async_in_flight_) { miss(); return; }
+
+    // X-ray: select through. Same spontaneous-map dance, but the mapped buffer
+    // is a per-object bitmask rather than a rect of the object_id image, so the
+    // rect dims the other callback walks are not needed here.
+    if (xrayActive() && box_pick_pipeline_) {
+        std::uint64_t hit_bytes = 0;
+        if (!encodeXrayBoxPickToStaging(x, y, w, h, hit_bytes)) { miss(); return; }
+        box_pick_async_bytes_     = hit_bytes;
+        box_pick_async_xray_      = true;
+        box_pick_async_in_flight_ = true;
+        box_pick_async_cb_        = std::move(cb);
+
+        WGPUBufferMapCallbackInfo xcb = {};
+        xcb.mode = kAsyncCbMode;
+        xcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*msg*/,
+                          void* ud1, void* /*ud2*/) {
+            auto* self = static_cast<ViewportCore*>(ud1);
+            std::vector<std::uint32_t> ids;
+            if (status == WGPUMapAsyncStatus_Success) {
+                ids = self->collectMappedXrayHitIds(self->box_pick_async_bytes_);
+            }
+            auto done = std::move(self->box_pick_async_cb_);
+            self->box_pick_async_cb_        = nullptr;
+            self->box_pick_async_in_flight_ = false;
+            self->box_pick_async_xray_      = false;
+            if (done) done(std::move(ids));
+        };
+        xcb.userdata1 = this;
+        wgpuBufferMapAsync(hit_flags_staging_buffer_, WGPUMapMode_Read, 0, hit_bytes, xcb);
+        return;
+    }
+
     std::uint64_t padded_bpr = 0, needed_bytes = 0;
     if (!encodeBoxPickToStaging(x, y, w, h, padded_bpr, needed_bytes)) { miss(); return; }
 
@@ -5477,7 +7033,7 @@ bool ViewportCore::raycastSurfaceForObject(std::uint32_t object_id, int x_pixels
     float           best_radius = 0.0f;
     bool found = false;
     for (const auto& [session_model_id, m] : models_gpu_) {
-        if (m.hidden) continue;
+        if (!m.drawable()) continue;
         for (const auto& inst : m.instances) {
             if (inst.object_id != object_id) continue;
             float t = 0.0f;
@@ -5565,9 +7121,8 @@ void ViewportCore::pickSurfaceAtAsync(int x_pixels, int y_pixels,
     if (configured_w_ <= 0 || configured_h_ <= 0) { miss(); return; }
     if (x_pixels < 0 || y_pixels < 0 ||
         x_pixels >= configured_w_ || y_pixels >= configured_h_) { miss(); return; }
-    ensurePickAttachments(configured_w_, configured_h_);
-    if (!pick_color_view_ || !pick_depth_view_ ||
-        !pick_staging_buffer_ || !pick_normal_staging_buffer_) { miss(); return; }
+    if (!ensurePickAttachments(configured_w_, configured_h_)
+        || !pick_staging_buffer_ || !pick_normal_staging_buffer_) { miss(); return; }
     // Shares the single-pick staging buffers → shares the in-flight guard.
     if (pick_async_in_flight_) { miss(); return; }
     pick_async_in_flight_ = true;
@@ -5793,7 +7348,7 @@ bool ViewportCore::raycast(const float origin[3], const float dir[3],
     float         best_normal[3] = {0, 0, 0};
 
     for (const auto& [session_model_id, m] : models_gpu_) {
-        if (m.hidden) continue;
+        if (!m.drawable()) continue;
         for (std::uint32_t inst_idx = 0; inst_idx < std::uint32_t(m.instances.size()); ++inst_idx) {
             const InstanceInfo& inst = m.instances[inst_idx];
             if (!rayAabbSlab(origin, inv_d, inst.world_aabb_min, inst.world_aabb_max)) {
@@ -5972,6 +7527,22 @@ void ViewportCore::configureSurface(int width_px, int height_px) {
         case WGPUPresentMode_Fifo:         pm_name = "fifo";         break;
         default: break;
     }
+    // Premultiplied is what lets setBackgroundColor's alpha reach the
+    // compositor, so a clear below alpha 1 shows through to whatever the
+    // viewport is stacked over. Not every surface advertises it, so pick it
+    // only when offered and fall back to Auto — which composites opaquely and
+    // discards the alpha channel — otherwise. The two are indistinguishable
+    // at alpha 1, the default and the only value a caller that never touches
+    // the background will see, so the fallback costs nothing there.
+    auto supportsAlphaMode = [&](WGPUCompositeAlphaMode mode) {
+        for (std::size_t i = 0; i < caps.alphaModeCount; ++i) {
+            if (caps.alphaModes[i] == mode) return true;
+        }
+        return false;
+    };
+    const bool premultiplied =
+        supportsAlphaMode(WGPUCompositeAlphaMode_Premultiplied);
+
     wgpuSurfaceCapabilitiesFreeMembers(caps);
     cfg.presentMode = pm;
     if (!surface_configured_) {
@@ -5989,15 +7560,20 @@ void ViewportCore::configureSurface(int width_px, int height_px) {
         }
         Log::info() << "[wgpu] present mode = " << pm_name << note;
     }
-    cfg.alphaMode = WGPUCompositeAlphaMode_Auto;
+    cfg.alphaMode = premultiplied ? WGPUCompositeAlphaMode_Premultiplied
+                                  : WGPUCompositeAlphaMode_Auto;
+    surface_premultiplied_ = premultiplied;
+    if (!surface_configured_) {
+        Log::info() << "[wgpu] composite alpha = "
+                    << (premultiplied ? "premultiplied (background alpha honoured)"
+                                      : "auto (opaque -- background alpha ignored)");
+    }
 
     wgpuSurfaceConfigure(surface_, &cfg);
     configured_w_       = width_px;
     configured_h_       = height_px;
     surface_configured_ = true;
-    ensureDepthTexture(width_px, height_px);
-    ensureMsaaColorTexture(width_px, height_px);
-    ensureHizTextures(width_px, height_px);
+    ensureRenderAttachments(width_px, height_px);
     // depth_view_ was just replaced; force the HiZ + edge bind groups
     // to rebuild against the new view on next encode.
     if (hiz_bind_group_) {
@@ -6050,7 +7626,8 @@ WGPUBuffer ViewportCore::encodeScreenshotCapture(
     bdesc.size  = total_bytes;
     bdesc.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
     bdesc.label = svFromCStr("ifcviewer-wgpu.capture");
-    WGPUBuffer capture_buffer = wgpuDeviceCreateBuffer(device_, &bdesc);
+    WGPUBuffer capture_buffer = createRequiredBuffer(bdesc, "screenshot capture");
+    if (!capture_buffer) return nullptr;
 
     WGPUTexelCopyTextureInfo src = {};
     src.texture = surface_texture;
@@ -6182,9 +7759,33 @@ void ViewportCore::render() {
     // we don't busy-loop reconfiguring a dead surface — that retry storm is
     // what otherwise freezes the tab. The page logs guidance to reload.
     if (device_lost_) return;
+    // configureSurface could not fit the per-pixel attachments even after
+    // the geometry cache yielded. Drawing would submit invalid views (an
+    // abort on wgpu-native), so try again — memory may have been freed by
+    // another process since — and skip the frame if it still does not fit.
+    if (!render_attachments_ok_
+        && !ensureRenderAttachments(configured_w_, configured_h_)) return;
 
     Stopwatch frame_timer;
     frame_timer.start();
+
+    // The driver refusing pool growth is the query-less platform's device
+    // report (web has no memory query; the pool just grew until the GPU
+    // process said no). Answer it once, immediately: lower the budget so
+    // the required-tier margin comes back out of the cache NOW, instead of
+    // the next attachment resize having to fail — and paint broken frames —
+    // before pressure feedback carves the same room.
+    if (pool_.growth_was_refused() && !pool_growth_refusal_handled_) {
+        pool_growth_refusal_handled_ = true;
+        const double mb = 1.0 / (1024.0 * 1024.0);
+        Log::info() << "[wgpu] driver refused geometry-cache growth at "
+                    << double(pool_.total_capacity_bytes()) * mb
+                    << " MB -- reserving the required-tier margin out of the cache";
+        if (budget_.onPressure(pool_.total_capacity_bytes(),
+                               GpuBudget::kFixedMarginBytes, 0)) {
+            applyBudgetToPool();
+        }
+    }
 
     // Drain any HiZ async readbacks completed since last frame.
     if (hiz_enabled_) drainHizReadbacks();
@@ -6229,12 +7830,10 @@ void ViewportCore::render() {
     updateFrameUniforms();
 
     // ---- Per-frame cull --------------------------------------------------
-    last_visible_objects_   = 0;
-    last_visible_triangles_ = 0;
-    last_sub_draws_         = 0;
-    hiz_reject_count_       = 0;
     Stopwatch cull_timer;
     cull_timer.start();
+    cull_writes_this_frame_ = 0;
+    cull_write_bytes_this_frame_ = 0;
     Eigen::Matrix4f vp_this_frame;
     {
         const Eigen::Vector3f target(camera_target_[0], camera_target_[1], camera_target_[2]);
@@ -6271,8 +7870,20 @@ void ViewportCore::render() {
              || camera_distance_  != prev_camera_distance_
              || camera_yaw_deg_   != prev_camera_yaw_deg_
              || camera_pitch_deg_ != prev_camera_pitch_deg_);
+        if (camera_moved) {
+            motion_cull_latched_ = true;
+            motion_hold_timer_.start();
+        } else if (motion_cull_latched_
+                   && motion_hold_timer_.elapsed() >= kMotionHoldMs) {
+            motion_cull_latched_ = false;
+        }
+        // While the latch holds with the camera still, keep frames coming so
+        // the expiry actually happens and the fine-threshold re-cull runs —
+        // the loop is on demand, and a fully-resident scene would otherwise
+        // stay coarsely culled until the next input.
+        if (motion_cull_latched_ && !camera_moved) host_->requestFrame();
         const bool use_motion_threshold =
-            camera_moved && motion_min_pixel_radius_ > min_pixel_radius_;
+            motion_cull_latched_ && motion_min_pixel_radius_ > min_pixel_radius_;
         const float effective_min_px =
             use_motion_threshold ? motion_min_pixel_radius_ : min_pixel_radius_;
         last_cull_was_motion_ = use_motion_threshold;
@@ -6311,6 +7922,36 @@ void ViewportCore::render() {
             };
         }
 
+        // Re-cull only when something that can change its outcome did:
+        // the camera, the scene epoch (residency / visibility / colours /
+        // transforms / models / a new HiZ pyramid), or a cull-relevant
+        // setting. Everything the draw needs from a cull persists — the
+        // per-chunk counters and the uploaded visible_draws buffers — so a
+        // frame requested for an overlay, a pick highlight, or a streaming
+        // tick where nothing landed skips the whole walk. Benchmarks are
+        // exempt so bench numbers keep measuring the real cull.
+        const bool cull_inputs_unchanged =
+            bench_total_ == 0
+            && has_last_cull_
+            && last_cull_epoch_  == scene_epoch_
+            && last_cull_vp_     == vp_this_frame
+            && last_cull_min_px_ == effective_min_px
+            && last_cull_lod_px_ == lod1_pixel_threshold_
+            && last_cull_xray_   == xray_alpha_cap_
+            && last_cull_hiz_    == hiz_for_this_frame;
+        if (!cull_inputs_unchanged) {
+            has_last_cull_    = true;
+            last_cull_epoch_  = scene_epoch_;
+            last_cull_vp_     = vp_this_frame;
+            last_cull_min_px_ = effective_min_px;
+            last_cull_lod_px_ = lod1_pixel_threshold_;
+            last_cull_xray_   = xray_alpha_cap_;
+            last_cull_hiz_    = hiz_for_this_frame;
+            last_visible_objects_   = 0;
+            last_visible_triangles_ = 0;
+            last_sub_draws_         = 0;
+            hiz_reject_count_       = 0;
+
         // Force sequential on Emscripten: std::async(std::launch::async)
         // without -pthread throws std::system_error from inside libstdc++,
         // and we link without exceptions so that becomes abort(). Until
@@ -6324,7 +7965,7 @@ void ViewportCore::render() {
             std::vector<std::pair<std::uint32_t, std::future<std::uint32_t>>> futures;
             futures.reserve(models_gpu_.size());
             for (auto& [session_model_id, m] : models_gpu_) {
-                if (m.hidden) continue;
+                if (!m.drawable()) continue;
                 auto& m_ref = m;
                 futures.emplace_back(session_model_id, std::async(std::launch::async,
                     [this, &m_ref, &planes, &eye_a, &fwd_a, &right_a, &up_a,
@@ -6341,7 +7982,7 @@ void ViewportCore::render() {
             }
         } else {
             for (auto& [session_model_id, m] : models_gpu_) {
-                if (m.hidden) continue;
+                if (!m.drawable()) continue;
                 hiz_reject_count_ += cullModelCpuCompute(
                     m, planes, eye_a, fwd_a, right_a, up_a, focal_px,
                     effective_min_px, lod1_pixel_threshold_,
@@ -6353,7 +7994,7 @@ void ViewportCore::render() {
         Stopwatch upload_timer;
         upload_timer.start();
         for (auto& [session_model_id, m] : models_gpu_) {
-            if (m.hidden) continue;
+            if (!m.drawable()) continue;
             cullModelCpuUpload(m);
             for (const auto& c : m.chunks) {
                 last_visible_objects_   += c.total_visible_draws;
@@ -6363,6 +8004,10 @@ void ViewportCore::render() {
         }
         last_cull_compute_ms_ = cull_compute_ms;
         last_cull_upload_ms_  = double(upload_timer.nsecsElapsed()) / 1e6;
+        } else {
+            last_cull_compute_ms_ = 0.0;
+            last_cull_upload_ms_  = 0.0;
+        }
     }
 
     const double cull_only_ms = double(cull_timer.nsecsElapsed()) / 1e6;
@@ -6394,11 +8039,18 @@ void ViewportCore::render() {
     color.resolveTarget = view;
     color.loadOp        = WGPULoadOp_Clear;
     color.storeOp       = WGPUStoreOp_Store;
+    // A premultiplied surface expects colour already scaled by alpha, so the
+    // clear fades toward transparent instead of tinting what shows through:
+    // leaving it unscaled would have the compositor add the background colour
+    // on top of the layer behind. When the surface could only be configured
+    // opaque the alpha is discarded anyway, and scaling would darken the
+    // colour for nothing — so hold alpha at 1 and write it straight.
+    const float bg_a = surface_premultiplied_ ? background_color_[3] : 1.0f;
     color.clearValue    = {
-        srgbToLinear(background_color_[0]),
-        srgbToLinear(background_color_[1]),
-        srgbToLinear(background_color_[2]),
-        1.0,
+        srgbToLinear(background_color_[0]) * bg_a,
+        srgbToLinear(background_color_[1]) * bg_a,
+        srgbToLinear(background_color_[2]) * bg_a,
+        bg_a,
     };
     color.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
 
@@ -6427,7 +8079,7 @@ void ViewportCore::render() {
         wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
 
         for (const auto& [session_model_id, m] : models_gpu_) {
-            if (m.hidden) continue;
+            if (!m.drawable()) continue;
             for (const auto& c : m.chunks) {
                 if (!c.bind_group || c.opaque_visible_vertices == 0) continue;
                 wgpuRenderPassEncoderSetBindGroup(pass, 1, c.bind_group, 0, nullptr);
@@ -6438,7 +8090,7 @@ void ViewportCore::render() {
 
         wgpuRenderPassEncoderSetPipeline(pass, main_pipeline_transparent_);
         for (const auto& [session_model_id, m] : models_gpu_) {
-            if (m.hidden) continue;
+            if (!m.drawable()) continue;
             for (const auto& c : m.chunks) {
                 if (!c.bind_group) continue;
                 const std::uint32_t transparent_verts =
@@ -6475,21 +8127,39 @@ void ViewportCore::render() {
     section_gizmo_.encode(pass, vp_this_frame, section_planes_,
                           viewport_w_px, viewport_h_px, dpr_int, section_selected_index_);
 
-    // Remaining in-pass overlays (highlight triangles, pivot, overlay
-    // lines/points). QtViewportHost forwards to overlays_.X(); web host no-ops.
+    // Orbit pivot indicator — same shared-renderer story. Drawn while the host
+    // has it gated on (drag) or an afterglow is still running; in the latter
+    // case keep frames coming so the one that clears it actually lands.
+    const bool pivot_visible = pivotIndicatorVisible();
+    axis_indicator_.encodePivot(pass, overlay_frame, pivot_visible);
+    if (pivot_visible && pivot_indicator_timer_.isValid()) host_->requestFrame();
+
+    // Remaining in-pass overlays (highlight triangles, overlay lines/points).
+    // QtViewportHost forwards to overlays_.X(); the web host no-ops.
     host_->encodeOverlaysInMainPass(pass, overlay_frame);
 
     wgpuRenderPassEncoderEnd(pass);
     wgpuRenderPassEncoderRelease(pass);
 
+    // Selection coverage, while the main pass's depth is still current. The
+    // halo itself composites AFTER the edge pass, so the edge multiply does
+    // not darken it.
+    encodeSelectionMaskPass(enc);
+
     // Edge silhouette + HiZ resolve, before the surface-targeted overlays.
     if (edges_enabled_) encodeEdgePass(enc, view);
+
+    encodeSelectionOutlinePass(enc, view, dpr_int);
 
     int hiz_submitted_slot = -1;
     if (hiz_enabled_) hiz_submitted_slot = encodeHizResolve(enc);
 
-    // Post-main overlays (corner axis, marquee, labels) on the resolved
-    // surface. QtViewportHost forwards to overlays_.X().
+    // Corner axis gizmo on the resolved surface — shared renderer, ahead of the
+    // host's own post-main overlays so marquee / labels still stack on top.
+    axis_indicator_.encodeCornerAxis(enc, view, overlay_frame);
+
+    // Remaining post-main overlays (marquee, labels) on the resolved surface.
+    // QtViewportHost forwards to overlays_.X(); the web host no-ops.
     host_->encodeOverlaysPostMain(enc, view, overlay_frame);
 
     // Optional capture: encode copy on the same command buffer.
@@ -6542,13 +8212,35 @@ void ViewportCore::render() {
         stats.unique_meshes     = total_meshes;
         std::uint32_t draw_calls = 0;
         for (const auto& [session_model_id, mm] : models_gpu_) {
-            if (mm.hidden) continue;
+            if (!mm.drawable()) continue;
             for (const auto& c : mm.chunks) {
                 if (c.is_resident && c.total_visible_draws > 0) ++draw_calls;
             }
         }
         stats.gl_draw_calls      = draw_calls;
         stats.indirect_sub_draws = last_sub_draws_;
+        std::uint32_t wanted = 0, wanted_missing = 0;
+        std::uint64_t wanted_missing_bytes = 0;
+        for (const auto& [session_model_id, mm] : models_gpu_) {
+            if (!mm.drawable()) continue;
+            for (const auto& c : mm.chunks) {
+                if (c.contribution_visible_count == 0) continue;
+                ++wanted;
+                if (c.is_resident) continue;
+                ++wanted_missing;
+                wanted_missing_bytes += c.vertex_byte_size
+                                      + c.index_count * sizeof(std::uint32_t);
+            }
+        }
+        stats.chunks_wanted         = wanted;
+        stats.chunks_wanted_missing = wanted_missing;
+        stats.wanted_missing_bytes  = wanted_missing_bytes;
+        stats.vram_used_bytes     = pool_.total_used_bytes();
+        stats.vram_capacity_bytes = pool_.total_capacity_bytes();
+        stats.vram_budget_bytes   = budget_.bounded() ? budget_.cache_budget_bytes() : 0;
+        pollDeviceMemory();
+        stats.device_vram_used_bytes  = device_vram_used_bytes_;
+        stats.device_vram_total_bytes = device_vram_total_bytes_;
         host_->onFrameStats(stats);
     }
 
@@ -6580,6 +8272,7 @@ void ViewportCore::render() {
         ++interactive_frame_count_;
         const float ms = float(frame_timer.nsecsElapsed()) / 1e6f;
         std::uint64_t total_vbo = 0, total_ebo = 0, total_ssbo = 0;
+        std::uint64_t total_cpu_shadow = 0;
         std::uint32_t total_instances = 0;
         std::size_t chunks_total = 0, chunks_resident = 0;
         std::size_t chunks_frustum_vis = 0, chunks_missing = 0;
@@ -6587,6 +8280,7 @@ void ViewportCore::render() {
             total_vbo  += mo.vram_bytes_vbo;
             total_ebo  += mo.vram_bytes_ebo;
             total_ssbo += mo.vram_bytes_ssbo;
+            total_cpu_shadow += mo.cpu_shadow_bytes;
             total_instances += mo.instance_count;
             for (const auto& c : mo.chunks) {
                 ++chunks_total;
@@ -6606,10 +8300,18 @@ void ViewportCore::render() {
             << "  sub_draws " << last_sub_draws_
             << "  hiz_rej " << hiz_reject_count_
             << "  cull " << fmtF(last_cull_ms_, 2) << "ms"
+            << " (compute " << fmtF(last_cull_compute_ms_, 2)
+            << " upload " << fmtF(last_cull_upload_ms_, 2) << ")"
+            << "  decode+apply " << fmtF(chunk_apply_ms_total_ / 1000.0, 2) << "s/"
+            << chunk_apply_count_ << "ch ("
+            << fmtF(double(chunk_apply_raw_bytes_) / (1024.0 * 1024.0), 0) << "MB raw)"
+            << "  writes " << cull_writes_this_frame_
+            << " (" << fmtF(double(cull_write_bytes_this_frame_) / 1024.0, 0) << "KB)"
             << "  stream " << fmtF(last_stream_ms_, 2) << "ms"
             << "  chunks " << chunks_resident << "/" << chunks_frustum_vis
             << "/" << chunks_total << " (missing " << chunks_missing << ")"
             << "  vram " << fmtF(double(total_vbo + total_ebo + total_ssbo) * mb, 1) << "MB"
+            << "  cpuTris " << fmtF(float(double(total_cpu_shadow) * mb), 1) << "MB"
             << "  models " << models_gpu_.size()
             << "  lod1 " << lod1_dbg_count_ << "/" << (lod1_dbg_count_ + lod0_dbg_eligible_count_)
             << " (saved " << lod1_dbg_tris_saved_ << " tris, "

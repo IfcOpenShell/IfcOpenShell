@@ -22,12 +22,12 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcExtrudedAreaSolid& inst) {
 	const double height = inst.Depth() * length_unit_;
 	if (height < settings_.get<settings::Precision>().get()) {
-		logger_.message(::logger::LOG_ERROR, "GEO", 89, "Non-positive extrusion height encountered for:", inst);
+		logger_.message(ifcopenshell::logger::LOG_ERROR, "GEO", 89, "Non-positive extrusion height encountered for:", inst);
 #ifndef PERMISSIVE_EXTRUSION
 		return nullptr;
 #endif

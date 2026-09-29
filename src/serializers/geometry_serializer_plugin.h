@@ -21,11 +21,11 @@
 #define IFCOPENSHELL_GEOMETRY_SERIALIZER_PLUGIN_H
 
 #include "../serializers/serializers_api.h"
-#include "../ifcgeom/GeometrySerializer.h"
+#include "../ifcgeom/geometry_serializer.h"
 #include "../plugin/plugin.h"
 
-#include <boost/function.hpp>
-#include <boost/shared_ptr.hpp>
+#include <functional>
+#include <memory>
 
 #include <filesystem>
 #include <map>
@@ -34,6 +34,8 @@
 
 namespace ifcopenshell {
 namespace serializers {
+
+using ifcopenshell::geom::geometry_serializer;
 
 struct SERIALIZERS_API geometry_serializer_info {
 	std::string format;
@@ -52,30 +54,29 @@ struct SERIALIZERS_API geometry_serializer_info {
 struct SERIALIZERS_API geometry_serializer_context {
 	std::string output_filename;
 	std::string output_temp_filename;
-	ifcopenshell::geometry::Settings& geometry_settings;
-	const ifcopenshell::geometry::SerializerSettings& serializer_settings;
+	ifcopenshell::geom::settings& settings;
 	const stream_or_filename* output_stream = nullptr;
 	const stream_or_filename* output_temp_stream = nullptr;
 };
 
 class SERIALIZERS_API geometry_serializer_registry {
 public:
-	typedef boost::function<boost::shared_ptr<GeometrySerializer>(const geometry_serializer_context&)> create_fn;
-	typedef boost::function<void(geometry_serializer_context&)> configure_fn;
+	typedef std::function<std::shared_ptr<geometry_serializer>(const geometry_serializer_context&)> create_fn;
+	typedef std::function<void(geometry_serializer_context&)> configure_fn;
 
 	void bind(const geometry_serializer_info& info, create_fn create, configure_fn configure = configure_fn(), const ifcopenshell::plugin::module& module = ifcopenshell::plugin::module());
 	bool has(const std::string& extension) const;
 	const geometry_serializer_info* find(const std::string& extension) const;
 	void configure(const std::string& extension, geometry_serializer_context& context) const;
-	boost::shared_ptr<GeometrySerializer> create(const std::string& extension, const geometry_serializer_context& context) const;
+	std::shared_ptr<geometry_serializer> create(const std::string& extension, const geometry_serializer_context& context) const;
 	std::vector<geometry_serializer_info> serializers() const;
 
 private:
 	struct entry {
+		ifcopenshell::plugin::module module_;
 		geometry_serializer_info info_;
 		create_fn create_;
 		configure_fn configure_;
-		ifcopenshell::plugin::module module_;
 	};
 
 	friend SERIALIZERS_API bool load_geometry_serializer_plugin(geometry_serializer_registry& registry, const std::string& extension);

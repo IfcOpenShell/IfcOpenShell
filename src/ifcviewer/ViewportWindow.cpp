@@ -233,7 +233,6 @@ ViewportWindow::ViewportWindow(QWindow* parent)
       camera_fov_y_deg_(core_.camera_fov_y_deg_),
       camera_near_    (core_.camera_near_),
       camera_far_     (core_.camera_far_),
-      background_color_(core_.background_color_),
       frame_uniform_buffer_(core_.frame_uniform_buffer_),
       frame_bind_group_    (core_.frame_bind_group_),
       selection_flags_buffer_  (core_.selection_flags_buffer_),
@@ -436,14 +435,14 @@ void ViewportWindow::onFrameStats(const FrameStats& stats) {
 
 void ViewportWindow::encodeOverlaysInMainPass(WGPURenderPassEncoder pass,
                                               const OverlayFrame& frame) {
-    // Section gizmos, highlight triangles, pivot, overlay lines / points
-    // — drawn inside the MSAA pass so depth-test correctly hides them
-    // behind closer geometry. (Corner axis / marquee / labels run on the
-    // resolved surface; see encodeOverlaysPostMain.)
-    // NB: section-plane gizmos now draw from ViewportCore::render via the shared
-    // SectionGizmoRenderer (desktop + web), so they are NOT drawn here.
+    // Highlight triangles + overlay lines / points — drawn inside the MSAA
+    // pass so depth-test correctly hides them behind closer geometry.
+    // (Marquee / labels run on the resolved surface; see
+    // encodeOverlaysPostMain.)
+    // NB: section-plane gizmos and the pivot indicator now draw from
+    // ViewportCore::render via their shared renderers (desktop + web), so
+    // they are NOT drawn here.
     overlays_.encodeHighlightTriangles(pass, frame);
-    overlays_.encodePivot(pass, frame, pivot_indicator_visible_);
     overlays_.encodeOverlayLines(pass, frame);
     overlays_.encodeOverlayPoints(pass, frame);
 }
@@ -451,7 +450,8 @@ void ViewportWindow::encodeOverlaysInMainPass(WGPURenderPassEncoder pass,
 void ViewportWindow::encodeOverlaysPostMain(WGPUCommandEncoder enc,
                                             WGPUTextureView surface_view,
                                             const OverlayFrame& frame) {
-    overlays_.encodeCornerAxis(enc, surface_view, frame);
+    // NB: the corner axis gizmo draws from ViewportCore::render (shared
+    // AxisIndicatorRenderer), just before this hook.
     overlays_.encodeMarquee(enc, surface_view, frame,
                             box_select_start_pos_,
                             box_select_current_pos_,
@@ -465,7 +465,13 @@ void ViewportWindow::saveScreenshotRgba8(const std::string& path,
     // QImage takes a stride argument so it doesn't try to read past the
     // last row — wgpu's staging buffer was BGRA8 padded; core already
     // packed the rows tightly into rgba.
-    QImage img(rgba, w, h, w * 4, QImage::Format_RGBA8888);
+    //
+    // Premultiplied, matching what the render pass leaves in the buffer: the
+    // main blend accumulates alpha as One/OneMinusSrcAlpha, so colour there is
+    // already scaled by coverage. Tagging it straight would wash out a
+    // screenshot taken over a translucent background; at the default opaque
+    // alpha the two formats describe the same bytes.
+    QImage img(rgba, w, h, w * 4, QImage::Format_RGBA8888_Premultiplied);
     const QString qpath = QString::fromStdString(path);
     if (img.save(qpath, "PNG")) {
         Log::info() << "[wgpu] saved screenshot: "
@@ -476,8 +482,7 @@ void ViewportWindow::saveScreenshotRgba8(const std::string& path,
 }
 
 void ViewportWindow::setBackgroundColor(float r, float g, float b, float a) {
-    background_color_ = {r, g, b, a};
-    if (isExposed()) requestUpdate();
+    core_.setBackgroundColor(r, g, b, a);
 }
 
 // -----------------------------------------------------------------------------
@@ -589,6 +594,10 @@ void ViewportWindow::removeModel(uint32_t session_model_id)   { core_.removeMode
 void ViewportWindow::resetScene()                     { core_.resetScene(); }
 void ViewportWindow::hideModel(uint32_t session_model_id)     { core_.hideModel(session_model_id); }
 void ViewportWindow::showModel(uint32_t session_model_id)     { core_.showModel(session_model_id); }
+void ViewportWindow::unloadModel(uint32_t session_model_id)   { core_.unloadModel(session_model_id); }
+bool ViewportWindow::loadModel(uint32_t session_model_id)     { return core_.loadModel(session_model_id); }
+bool ViewportWindow::isModelUnloaded(uint32_t session_model_id) const { return core_.isModelUnloaded(session_model_id); }
+std::uint64_t ViewportWindow::modelVramBytes(uint32_t session_model_id) const { return core_.modelVramBytes(session_model_id); }
 
 void ViewportWindow::setFederatedFalseOrigin(const Eigen::Matrix4d& m) {
     core_.setFederatedFalseOrigin(m);
@@ -903,25 +912,8 @@ bool ViewportWindow::initWgpu() {
 
 // encodeEdgePass moved to ViewportCore (#84-s).
 
-// -----------------------------------------------------------------------------
-void ViewportWindow::setPivotIndicatorVisible(bool visible, int hide_after_ms) {
-    if (!pivot_indicator_hide_timer_) {
-        pivot_indicator_hide_timer_ = new QTimer(this);
-        pivot_indicator_hide_timer_->setSingleShot(true);
-        QObject::connect(pivot_indicator_hide_timer_, &QTimer::timeout, this,
-                         [this]() {
-                             pivot_indicator_visible_ = false;
-                             requestUpdate();
-                         });
-    }
-    pivot_indicator_visible_ = visible;
-    if (visible && hide_after_ms > 0) {
-        pivot_indicator_hide_timer_->start(hide_after_ms);
-    } else {
-        pivot_indicator_hide_timer_->stop();
-    }
-    requestUpdate();
-}
+// setPivotIndicatorVisible moved to ViewportCore (drawn by the shared
+// AxisIndicatorRenderer, so the visibility gate lives there too).
 // releaseEdgeResources moved to ViewportCore (#84-s).
 
 // -----------------------------------------------------------------------------
@@ -1402,6 +1394,9 @@ void ViewportWindow::setCamera(float tx, float ty, float tz,
 // viewAll / frameAabb / computeObjectAabb moved to ViewportCore (#84-i).
 
 void ViewportWindow::viewAll() { core_.viewAll(); }
+bool ViewportWindow::viewModels(const std::vector<uint32_t>& session_model_ids) {
+    return core_.viewModels(session_model_ids);
+}
 void ViewportWindow::frameAabb(const float mn[3], const float mx[3], float padding) {
     core_.frameAabb(mn, mx, padding);
 }
@@ -1578,11 +1573,11 @@ void ViewportWindow::mousePressEvent(QMouseEvent* event) {
     if (event->button() == orbit_button_
         && (mods & Qt::KeyboardModifierMask) == orbit_mods_) {
         nav_drag_kind_ = NavDrag::Orbit;
-        setPivotIndicatorVisible(true);  // hidden again on release
+        core_.setPivotIndicatorVisible(true);  // hidden again on release
     } else if (event->button() == pan_button_
             && (mods & Qt::KeyboardModifierMask) == pan_mods_) {
         nav_drag_kind_ = NavDrag::Pan;
-        setPivotIndicatorVisible(true);
+        core_.setPivotIndicatorVisible(true);
     } else if (event->button() == select_button_
             && !section_tool_active_
             && tool_mode_ != ToolMode::Area
@@ -1676,7 +1671,7 @@ void ViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
                 }
                 nav_active_button_ = Qt::NoButton;
                 nav_drag_kind_     = NavDrag::Inactive;
-                setPivotIndicatorVisible(false);
+                core_.setPivotIndicatorVisible(false);
                 return;
             }
 
@@ -1693,7 +1688,7 @@ void ViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
                 emit surfacePickedInTool(px, py, int(event->modifiers()));
                 nav_active_button_ = Qt::NoButton;
                 nav_drag_kind_     = NavDrag::Inactive;
-                setPivotIndicatorVisible(false);
+                core_.setPivotIndicatorVisible(false);
                 return;
             }
 
@@ -1708,7 +1703,7 @@ void ViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
                 emit surfacePickedInTool(px, py, int(event->modifiers()));
                 nav_active_button_ = Qt::NoButton;
                 nav_drag_kind_     = NavDrag::Inactive;
-                setPivotIndicatorVisible(false);
+                core_.setPivotIndicatorVisible(false);
                 return;
             }
 
@@ -1793,7 +1788,7 @@ void ViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
         nav_active_button_ = Qt::NoButton;
         nav_drag_kind_     = NavDrag::Inactive;
         // Drag is over — hide the pivot indicator without afterglow.
-        setPivotIndicatorVisible(false);
+        core_.setPivotIndicatorVisible(false);
     }
 }
 
@@ -2043,7 +2038,7 @@ void ViewportWindow::wheelEvent(QWheelEvent* event) {
     core_.dollyBy(notches);
     // Pivot afterglow on wheel — visible for 600 ms so the user can see
     // what they're zooming around without holding a drag.
-    setPivotIndicatorVisible(true, 600);
+    core_.setPivotIndicatorVisible(true, 600);
 }
 
 void ViewportWindow::shutdown() {

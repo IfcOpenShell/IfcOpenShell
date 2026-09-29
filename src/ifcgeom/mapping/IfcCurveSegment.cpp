@@ -19,7 +19,7 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 #ifdef SCHEMA_HAS_IfcCurveSegment
 
@@ -133,7 +133,7 @@ struct spiral_parent_curve : public parent_curve_function {
 
 // this is the piecewise curve segment function for horizontal and vertical
 struct curve_segment_function {
-    curve_segment_function(const Eigen::Matrix4d& curve_segment_placement, const Eigen::Matrix4d& parent_curve_normalization, std::shared_ptr<parent_curve_function> parent_curve_fn) : 
+    curve_segment_function(const Eigen::Matrix4d& curve_segment_placement, const Eigen::Matrix4d& parent_curve_normalization, std::shared_ptr<parent_curve_function> parent_curve_fn) :
        curve_segment_placement_(curve_segment_placement),
        parent_curve_normalization_(parent_curve_normalization),
        parent_curve_fn_(parent_curve_fn) {
@@ -153,7 +153,7 @@ struct curve_segment_function {
 
 // this is the piecewise curve segment function for cant
 struct cant_curve_segment_function {
-    cant_curve_segment_function(const Eigen::Matrix4d& curve_segment_placement, const Eigen::Matrix4d& parent_curve_start_point, std::shared_ptr<parent_curve_function> parent_curve_fn) : 
+    cant_curve_segment_function(const Eigen::Matrix4d& curve_segment_placement, const Eigen::Matrix4d& parent_curve_start_point, std::shared_ptr<parent_curve_function> parent_curve_fn) :
        curve_segment_placement_(curve_segment_placement),
        parent_curve_start_point_(parent_curve_start_point),
        parent_curve_fn_(parent_curve_fn) {
@@ -216,7 +216,7 @@ struct cant_curve_segment_function {
 class curve_segment_evaluator {
   private:
     mapping* mapping_ = nullptr;
-    logger& logger_;    
+    ifcopenshell::logger& logger_;
     IfcSchema::IfcCurveSegment inst_;      // this curve segment instance
     double length_unit_;
     double start_;
@@ -258,12 +258,10 @@ class curve_segment_evaluator {
                 }
                 if (s == inst) {
                     emit_next = true;
-                } else {
-                    logger_.warning("GEO", 242, "IfcCurveSegment belongs to multiple IfcCompositeCurve instances. Cannot determine the next segment.");
                 }
             }
         } else {
-            logger_.warning("IfcCurveSegment belongs to multiple IfcCompositeCurve instances. Cannot determine the next segment.");
+            logger_.warning("GEO", 242, "IfcCurveSegment belongs to multiple IfcCompositeCurve instances. Cannot determine the next segment.");
         }
 
         bool is_horizontal = false;
@@ -354,7 +352,7 @@ class curve_segment_evaluator {
         } else {
             // The parent curve function returns the 4x4 matrix for the parent curve.
             // Normalize the parent curve so that the trim start point and tangent direction at the start point
-            // are aligned with the origin. This is accomplished with a normalization matrix that subtracts the 
+            // are aligned with the origin. This is accomplished with a normalization matrix that subtracts the
             // incremental parent curve start point and applies a rotation. Apply the incremental
             // translation and rotation to the curve_segment_placement to get the curve_segment_point
 
@@ -623,7 +621,7 @@ class curve_segment_evaluator {
         } else if (segment_type_ == ST_CANT) {
             std::optional<std::function<double(double)>> super, slope;
             std::tie(super, slope) = get_superelevation_functions();
-            
+
             auto cant = [constant_term, cosine_term, L](double t) -> double {
                 auto a0 = constant_term.has_value() ? 1 / constant_term.value() : 0.0;
                 auto a1 = (1 / cosine_term) * cos(PI * t / L);
@@ -690,7 +688,7 @@ class curve_segment_evaluator {
         } else if (segment_type_ == ST_CANT) {
             std::optional<std::function<double(double)>> super, slope;
             std::tie(super, slope) = get_superelevation_functions();
-            
+
             auto cant = [constant_term, linear_term, sine_term, L](double t) -> double {
                auto a0 = constant_term.has_value() ? 1 / constant_term.value() : 0.0;
                auto a1 = linear_term.has_value() ? (linear_term.value()/fabs(linear_term.value())) * pow(1 / linear_term.value(), 2.0) * t : 0.0;
@@ -825,7 +823,7 @@ class curve_segment_evaluator {
 #else
         A3 = c.QubicTerm();
 #endif
-        
+
         if (segment_type_ == ST_CANT) {
             polynomial_cant_spiral(A0, A1, A2, A3, A4, A5, A6, A7);
         } else {
@@ -961,10 +959,6 @@ class curve_segment_evaluator {
                 auto cos_start_angle = cos(start_angle);
                 auto sin_start_angle = sin(start_angle);
 
-                // point on the parent curve
-                auto pcStartX = R * cos_start_angle + pcCenterX;
-                auto pcStartY = R * sin_start_angle + pcCenterY;
-
                 auto pcStartDx = -sign_l * sin_start_angle;
                 auto pcStartDy =  sign_l * cos_start_angle;
 
@@ -987,7 +981,7 @@ class curve_segment_evaluator {
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
         }
     }
-    
+
     void operator()(const IfcSchema::IfcLine& l) {
        projected_length_ = length_;
 
@@ -999,8 +993,8 @@ class curve_segment_evaluator {
        // 8.9.3.30 IfcDirection https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcDirection.htm
        // "The IfcDirection does not imply a vector length, and the direction ratios does not have to be normalized."
        //
-       // Therefore, the direction ratios need to be normalized to compute points on the line. 
-       // 
+       // Therefore, the direction ratios need to be normalized to compute points on the line.
+       //
        // Magnitude is not used because it relates to the parameterization of the line, which isn't currently done for IfcCurveSegment
        // @todo - parameterization was recently added so Magnitude needs to be taking into consideration
        auto dr = l.Dir().Orientation().DirectionRatios();
@@ -1034,7 +1028,7 @@ class curve_segment_evaluator {
 
           auto pcDZy = curve_segment_placement_ ? (*curve_segment_placement_)(1, 2) : 0.;
           auto pcDZz = curve_segment_placement_ ? (*curve_segment_placement_)(2, 2) : 1.;
-          
+
           parent_curve_fn_ = std::make_shared<line_parent_curve>(
               [segment_type = segment_type_,pcX, pcY, pcDXx, pcDXy, pcDZy, pcDZz, convert_u](double u)->Eigen::Matrix4d {
                   u = convert_u(u);
@@ -1198,8 +1192,7 @@ class curve_segment_evaluator {
                      m.col(3) = Eigen::Vector4d(X, Y, 0.0, 1.0);
                      return m;
                 },
-                [start = start_, lu = length_unit_, coeffX, coeffY, convert_u](double u) -> Eigen::Matrix4d { 
-                     auto x = convert_u(u + start); // find x for u
+                [coeffY](double) -> Eigen::Matrix4d {
                     Eigen::Matrix4d c = Eigen::Matrix4d::Zero();
                     c(3, 0) = coeffY[2]; // this may need a unit conversion (also assume there is only 3 coefficients)
                      return c;

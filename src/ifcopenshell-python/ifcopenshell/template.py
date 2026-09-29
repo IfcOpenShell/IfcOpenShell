@@ -22,6 +22,7 @@ import uuid
 from typing import Optional
 
 from ifcopenshell import file
+
 from .guid import compress
 from .ifcopenshell_wrapper import version
 
@@ -64,14 +65,19 @@ DEFAULTS = {
     "project_globalid": lambda d: compress(uuid.uuid4().hex),
     "schema_identifier": lambda d: "IFC4",
     "timestamp": lambda d: int(time.time()),
-    "timestring": lambda d: time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(d.get("timestamp") or time.time())),
+    "timestring": lambda d: time.strftime(
+        "%Y-%m-%dT%H:%M:%S",
+        time.gmtime(d["timestamp"] if d.get("timestamp") is not None else time.time()),
+    ),
     "mvd": lambda d: (
         "ReferenceView_V1.2"
         if d.get("schema_identifier") == "IFC4"
         else (
             "CoordinationView_V2.0"
             if d.get("schema_identifier") == "IFC2X3"
-            else "ReferenceView" if d.get("schema_identifier") == "IFC4X3_ADD2" else "ReferenceView_V1.2"
+            else "ReferenceView"
+            if d.get("schema_identifier") == "IFC4X3_ADD2"
+            else "ReferenceView_V1.2"
         )
     ),
 }

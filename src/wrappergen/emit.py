@@ -173,7 +173,7 @@ def _class_or_enum_cpp_name(adapter: str, model: ModuleModel) -> str:
 
 def _cpp_argument(parameter: ParameterModel, model: ModuleModel) -> str:
     if parameter.adapter == "string":
-        return f"std::string({parameter.name} ? {parameter.name} : \"\")"
+        return f'std::string({parameter.name} ? {parameter.name} : "")'
     if is_enum_adapter(parameter.adapter):
         return f"static_cast<{_class_or_enum_cpp_name(parameter.adapter, model)}>({parameter.name})"
     if is_handle_adapter(parameter.adapter):
@@ -315,8 +315,7 @@ def emit_c_api_header(model: ModuleModel) -> str:
     for variant in _all_variants(model):
         return_type = _return_c_type(variant.callable.return_adapter, model)
         parameters = ", ".join(
-            f"{_parameter_c_type(parameter, model)} {parameter.name}"
-            for parameter in variant.parameters
+            f"{_parameter_c_type(parameter, model)} {parameter.name}" for parameter in variant.parameters
         )
         if variant.callable.kind == "method":
             self_type = f"{_class_c_type(variant.owner, model)}* handle"
@@ -327,11 +326,15 @@ def emit_c_api_header(model: ModuleModel) -> str:
     for class_model in sequence_targets:
         list_prefix = f"{model.c_prefix}_{_class_c_identifier(class_model, model)}_list"
         lines.append(f"int {list_prefix}_size(const {_list_c_type(class_model, model)}* handle);")
-        lines.append(f"{_class_c_type(class_model, model)}* {list_prefix}_get(const {_list_c_type(class_model, model)}* handle, int index);")
+        lines.append(
+            f"{_class_c_type(class_model, model)}* {list_prefix}_get(const {_list_c_type(class_model, model)}* handle, int index);"
+        )
         lines.append(f"void {list_prefix}_free({_list_c_type(class_model, model)}* handle);")
         lines.append("")
     for class_model in model.classes:
-        lines.append(f"void {model.c_prefix}_{_class_c_identifier(class_model, model)}_free({_class_c_type(class_model, model)}* handle);")
+        lines.append(
+            f"void {model.c_prefix}_{_class_c_identifier(class_model, model)}_free({_class_c_type(class_model, model)}* handle);"
+        )
     lines.extend(
         [
             "",
@@ -419,8 +422,7 @@ def emit_c_api_implementation(model: ModuleModel) -> str:
     for variant in _all_variants(model):
         return_type = _return_c_type(variant.callable.return_adapter, model)
         parameter_list = ", ".join(
-            f"{_parameter_c_type(parameter, model)} {parameter.name}"
-            for parameter in variant.parameters
+            f"{_parameter_c_type(parameter, model)} {parameter.name}" for parameter in variant.parameters
         )
         if variant.callable.kind == "method":
             self_type = f"{_class_c_type(variant.owner, model)}* handle"
@@ -435,21 +437,31 @@ def emit_c_api_implementation(model: ModuleModel) -> str:
         for parameter in variant.parameters:
             if is_handle_adapter(parameter.adapter):
                 lines.append(f"        if ({parameter.name} == nullptr) {{")
-                lines.append(f'            throw std::runtime_error("Null handle parameter received for {parameter.name}");')
+                lines.append(
+                    f'            throw std::runtime_error("Null handle parameter received for {parameter.name}");'
+                )
                 lines.append("        }")
         call_expression = _call_expression(variant, model)
         if variant.callable.kind == "constructor":
             lines.append(f"        auto constructed_value = {call_expression};")
             if variant.owner.handle_kind == "shared_ptr":
-                lines.append(f"        return new {_class_c_type(variant.owner, model)}{{ std::move(constructed_value) }};")
+                lines.append(
+                    f"        return new {_class_c_type(variant.owner, model)}{{ std::move(constructed_value) }};"
+                )
             elif variant.owner.owner_cpp_name is not None:
-                lines.append(f"        return new {_class_c_type(variant.owner, model)}{{ {{}}, std::move(constructed_value) }};")
+                lines.append(
+                    f"        return new {_class_c_type(variant.owner, model)}{{ {{}}, std::move(constructed_value) }};"
+                )
             else:
-                lines.append(f"        return new {_class_c_type(variant.owner, model)}{{ std::move(constructed_value) }};")
+                lines.append(
+                    f"        return new {_class_c_type(variant.owner, model)}{{ std::move(constructed_value) }};"
+                )
         elif variant.callable.return_adapter == "string":
             lines.append(f"        auto result = {call_expression};")
             lines.append("        return duplicate_string(result);")
-        elif variant.callable.return_adapter in {"integer", "bool", "void"} or is_enum_adapter(variant.callable.return_adapter):
+        elif variant.callable.return_adapter in {"integer", "bool", "void"} or is_enum_adapter(
+            variant.callable.return_adapter
+        ):
             if variant.callable.return_adapter == "void":
                 lines.append(f"        {call_expression};")
                 lines.append("        return;")
@@ -503,11 +515,15 @@ def emit_c_api_implementation(model: ModuleModel) -> str:
             ]
         )
         if class_model.handle_kind == "shared_ptr":
-            lines.append(f"        auto item_value = std::make_shared<{class_model.cpp_name}>(handle->value.at(static_cast<size_t>(index)));")
+            lines.append(
+                f"        auto item_value = std::make_shared<{class_model.cpp_name}>(handle->value.at(static_cast<size_t>(index)));"
+            )
             lines.append(f"        return new {_class_c_type(class_model, model)}{{ std::move(item_value) }};")
         elif class_model.owner_cpp_name is not None:
             lines.append(f"        auto item_value = handle->value.at(static_cast<size_t>(index));")
-            lines.append(f"        return new {_class_c_type(class_model, model)}{{ handle->owner, std::move(item_value) }};")
+            lines.append(
+                f"        return new {_class_c_type(class_model, model)}{{ handle->owner, std::move(item_value) }};"
+            )
         else:
             lines.append(f"        auto item_value = handle->value.at(static_cast<size_t>(index));")
             lines.append(f"        return new {_class_c_type(class_model, model)}{{ std::move(item_value) }};")
@@ -526,7 +542,9 @@ def emit_c_api_implementation(model: ModuleModel) -> str:
             ]
         )
     for class_model in model.classes:
-        lines.append(f"void {model.c_prefix}_{_class_c_identifier(class_model, model)}_free({_class_c_type(class_model, model)}* handle) {{")
+        lines.append(
+            f"void {model.c_prefix}_{_class_c_identifier(class_model, model)}_free({_class_c_type(class_model, model)}* handle) {{"
+        )
         lines.append("    delete handle;")
         lines.append("}")
         lines.append("")
@@ -706,7 +724,9 @@ def emit_python_extension(model: ModuleModel) -> str:
             lines.append(f"    {list_prefix}_free(result);")
             lines.append("    return values;")
         else:
-            raise RuntimeError(f"Unsupported return adapter in Python extension emitter: {variant.callable.return_adapter}")
+            raise RuntimeError(
+                f"Unsupported return adapter in Python extension emitter: {variant.callable.return_adapter}"
+            )
         lines.append("}")
         lines.append("")
     lines.extend(["static PyMethodDef MODULE_METHODS[] = {"])
@@ -847,7 +867,9 @@ def emit_python_facade(model: ModuleModel) -> str:
         lines.append("        self._handle = handle")
         lines.append("")
         for callable_model in class_model.callables:
-            parameters = ", ".join(_python_parameter_signature(parameter, model) for parameter in callable_model.parameters)
+            parameters = ", ".join(
+                _python_parameter_signature(parameter, model) for parameter in callable_model.parameters
+            )
             full_variant = _full_variant(class_model, callable_model)
             call_arguments = ", ".join(_python_native_argument(parameter) for parameter in callable_model.parameters)
             return_annotation = _python_type_for_return(callable_model.return_adapter, model)

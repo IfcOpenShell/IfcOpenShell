@@ -21,7 +21,7 @@
 
 #define mapping POSTFIX_SCHEMA(mapping)
 
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcAxis2Placement2D& inst) {
 	Eigen::Vector3d P(0, 0, 0), axis(0, 0, 1), V(1, 0, 0);

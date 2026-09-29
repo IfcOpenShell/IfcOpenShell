@@ -20,7 +20,7 @@
 #include "mapping.h"
 #include "../function_item_evaluator.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 #ifdef SCHEMA_HAS_IfcGradientCurve
 
@@ -30,7 +30,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcGradientCurve& inst) {
 
 	auto segments = inst.Segments();
 
-	taxonomy::piecewise_function::spans_t spans;
+	taxonomy::piecewise_function::span_list spans;
 
 	for (auto& segment : segments) {
 		if (segment.as<IfcSchema::IfcCurveSegment>()) {

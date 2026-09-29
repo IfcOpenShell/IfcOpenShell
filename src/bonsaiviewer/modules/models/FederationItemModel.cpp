@@ -25,16 +25,25 @@
 #include "../../../ifcviewer/Federation.h"
 
 #include <QBrush>
+#include <QFont>
 #include <QColor>
 
 namespace bonsaiviewer::modules::models {
 
 namespace {
 
-QStandardItem* siblingVisibilityItem(QStandardItem* name_item) {
+QStandardItem* siblingItem(QStandardItem* name_item, Column column) {
     QStandardItem* parent = name_item->parent();
     if (!parent) parent = name_item->model()->invisibleRootItem();
-    return parent->child(name_item->row(), 1);
+    return parent->child(name_item->row(), int(column));
+}
+
+QStandardItem* siblingVisibilityItem(QStandardItem* name_item) {
+    return siblingItem(name_item, VisibilityColumn);
+}
+
+QString formatMegabytes(quint64 bytes) {
+    return QString("%1 MB").arg(double(bytes) / (1024.0 * 1024.0), 0, 'f', 0);
 }
 
 template <typename F>
@@ -51,7 +60,7 @@ FederationItemModel::FederationItemModel(Federation* federation, QObject* parent
     : QStandardItemModel(parent)
     , federation_(federation)
 {
-    setColumnCount(2);
+    setColumnCount(ColumnCount);
     rebuildAll();
 
     connect(federation_, &Federation::groupAdded,              this, &FederationItemModel::onGroupAdded);
@@ -67,7 +76,7 @@ FederationItemModel::FederationItemModel(Federation* federation, QObject* parent
 
 void FederationItemModel::rebuildAll() {
     clear();
-    setColumnCount(2);
+    setColumnCount(ColumnCount);
     id_to_name_item_.clear();
 
     for (const auto& root_group : federation_->rootGroups()) {
@@ -121,6 +130,14 @@ QStandardItem* FederationItemModel::makeVisibilityItem(ItemKind kind, bool visib
     return item;
 }
 
+QStandardItem* FederationItemModel::makeMemoryItem() const {
+    auto* item = new QStandardItem(QString());
+    item->setEditable(false);
+    item->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    item->setForeground(QBrush(QColor(bonsaiviewer::ViewerSettings::instance().color("disabled_text"))));
+    return item;
+}
+
 void FederationItemModel::styleRowVisibility(QStandardItem* name_item, bool visible) const {
     QStandardItem* vis_item = siblingVisibilityItem(name_item);
     if (visible) {
@@ -130,6 +147,22 @@ void FederationItemModel::styleRowVisibility(QStandardItem* name_item, bool visi
         const QBrush disabled(QColor(bonsaiviewer::ViewerSettings::instance().color("disabled_text")));
         name_item->setForeground(disabled);
         if (vis_item) vis_item->setForeground(disabled);
+    }
+}
+
+void FederationItemModel::setModelResidency(const QString& model_id, bool unloaded, quint64 vram_bytes) {
+    QStandardItem* name_item = findItem(model_id);
+    if (!name_item) return;
+    QStandardItem* memory_item = siblingItem(name_item, MemoryColumn);
+    if (!memory_item) return;
+    const QString text = unloaded ? QStringLiteral("unloaded")
+                       : vram_bytes > 0 ? formatMegabytes(vram_bytes)
+                       : QString();
+    if (memory_item->text() != text) memory_item->setText(text);
+    QFont font = name_item->font();
+    if (font.italic() != unloaded) {
+        font.setItalic(unloaded);
+        name_item->setFont(font);
     }
 }
 
@@ -148,7 +181,7 @@ void FederationItemModel::appendModelTo(QStandardItem* parent_item, const QStrin
     if (!model) return;
     auto* name_item = makeModelNameItem(model_id, model->display_name);
     auto* vis_item = makeVisibilityItem(ItemKind::Model, federation_->isModelEffectivelyVisible(model_id));
-    parent_item->appendRow({name_item, vis_item});
+    parent_item->appendRow({name_item, makeMemoryItem(), vis_item});
     id_to_name_item_.insert(model_id, name_item);
     styleRowVisibility(name_item, federation_->isModelEffectivelyVisible(model_id));
 }
@@ -158,7 +191,7 @@ void FederationItemModel::appendGroupSubtreeTo(QStandardItem* parent_item, const
     if (!group) return;
     auto* name_item = makeGroupNameItem(group_id, group->display_name);
     auto* vis_item = makeVisibilityItem(ItemKind::Group, group->visible);
-    parent_item->appendRow({name_item, vis_item});
+    parent_item->appendRow({name_item, makeMemoryItem(), vis_item});
     id_to_name_item_.insert(group_id, name_item);
     styleRowVisibility(name_item, group->visible);
 

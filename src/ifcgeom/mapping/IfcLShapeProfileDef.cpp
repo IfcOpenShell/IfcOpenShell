@@ -19,7 +19,7 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 #include "../profile_helper.h"
 
@@ -32,7 +32,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcLShapeProfileDef& inst) {
 	const double x = inst.Width().value_or(inst.Depth()) / 2.0f * length_unit_;
 	const double d = inst.Thickness() * length_unit_;
 	const double slope = inst.LegSlope().value_or(0.) * angle_unit_;
-	
+
 	double f1 = 0.0f;
 	double f2 = 0.0f;
 	if (doFillet) {
@@ -45,7 +45,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcLShapeProfileDef& inst) {
 	const double tol = settings_.get<settings::Precision>().get();
 
 	if ( x < tol || y < tol || d < tol) {
-		logger_.message(::logger::LOG_NOTICE, "GEO", 265, "Skipping zero sized profile:", inst);
+		logger_.message(ifcopenshell::logger::LOG_NOTICE, "GEO", 265, "Skipping zero sized profile:", inst);
 		return nullptr;
 	}
 
@@ -77,7 +77,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcLShapeProfileDef& inst) {
 		const double det = a1*b2 - a2*b1;
 
 		if (std::fabs(det) < 1.e-5) {
-			logger_.message(::logger::LOG_NOTICE, "GEO", 266, "Legs do not intersect for:", inst);
+			logger_.message(ifcopenshell::logger::LOG_NOTICE, "GEO", 266, "Legs do not intersect for:", inst);
 			return nullptr;
 		}
 

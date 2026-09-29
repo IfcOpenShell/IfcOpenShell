@@ -20,10 +20,10 @@
 #ifdef WITH_USD
 
 #include "geometry_serializer_plugin.h"
-#include "USDSerializer.h"
+#include "usd_serializer.h"
 
 #include <boost/dll/alias.hpp>
-#include <boost/make_shared.hpp>
+#include <memory>
 
 namespace ifcopenshell {
 namespace serializers {
@@ -37,8 +37,8 @@ plugin::metadata plugin_metadata() {
 	return geometry_serializer_plugin_metadata("usd");
 }
 
-boost::shared_ptr<GeometrySerializer> create_serializer(const geometry_serializer_context& context) {
-	return boost::make_shared<USDSerializer>(context.output_filename, context.geometry_settings, context.serializer_settings);
+std::shared_ptr<geometry_serializer> create_serializer(const geometry_serializer_context& context) {
+	return std::make_shared<usd_serializer>(context.output_filename, context.settings);
 }
 
 void register_plugin(geometry_serializer_registry& registry, const plugin::module& module) {

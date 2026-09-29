@@ -19,7 +19,7 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 #include "../profile_helper.h"
 
@@ -33,11 +33,11 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRectangleHollowProfileDef& i
 
 	const double r1 = fr1 ? (*inst.OuterFilletRadius()) * length_unit_ : 0.;
 	const double r2 = fr2 ? (*inst.InnerFilletRadius()) * length_unit_ : 0.;
-	
+
 	const double tol = settings_.get<settings::Precision>().get();
 
 	if (x < tol || y < tol) {
-		logger_.message(::logger::LOG_NOTICE, "GEO", 282, "Skipping zero sized profile:", inst);
+		logger_.message(ifcopenshell::logger::LOG_NOTICE, "GEO", 282, "Skipping zero sized profile:", inst);
 		return nullptr;
 	}
 

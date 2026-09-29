@@ -75,15 +75,24 @@ macro(build_example exe_name)
 endmacro()
 
 macro(build_schema_example exe_name schema)
-    build_example(${exe_name} ${ARGN})
-    if(NOT STANDALONE_PROJECT)
+    build_example(${exe_name} ${schema} ${ARGN})
+    if(STANDALONE_PROJECT)
+        target_link_libraries(${exe_name} IfcOpenShell::parse_schema_ifc${schema})
+        target_compile_definitions(
+            ${exe_name}
+            PRIVATE IFCOPENSHELL_EXAMPLE_PLUGIN_PATH="$<TARGET_FILE_DIR:IfcOpenShell::parse_schema_ifc${schema}>"
+        )
+    else()
         target_link_libraries(${exe_name} parse_schema_ifc${schema})
     endif()
 endmacro()
 
-if("2x3" IN_LIST SCHEMA_VERSIONS)
+if(SCHEMA_VERSIONS)
+    list(GET SCHEMA_VERSIONS -1 schema)
+    build_schema_example(IfcParseExamples ${schema})
     if(WITH_OPENCASCADE)
-        build_schema_example(IfcAdvancedHouse 2x3 geometry_serializer)
+        build_schema_example(IfcOpenHouse ${schema} geometry_serializer)
+        build_schema_example(IfcAdvancedHouse ${schema} geometry_serializer)
     endif()
 endif()
 

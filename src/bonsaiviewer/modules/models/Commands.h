@@ -60,6 +60,17 @@ void moveGroup(SessionState& session, const QString& id, const QString& parent_g
 void moveModels(SessionState& session, const QStringList& ids, const QString& parent_group_id);
 void removeGroup(SessionState& session, QWidget& host, const QString& group_id);
 void removeModel(SessionState& session, ViewportWindow& viewport, QWidget& host, const QString& model_id);
+// GPU residency, distinct from visibility (hide) and from membership
+// (remove): unloadModel frees everything the model holds on the device
+// while it stays in the federation; loadModel brings it back. Both emit
+// modelLoadStateChanged.
+void unloadModel(SessionState& session, ViewportWindow& viewport, const QString& model_id);
+void loadModel(SessionState& session, ViewportWindow& viewport, const QString& model_id);
+// "View Selected Model" — frame the camera on just these models' geometry, the
+// way View All frames the whole federation. Models that carry no loaded
+// geometry (never loaded, or still streaming their metadata) contribute
+// nothing; if none of them do, the camera is left where it is.
+void viewModels(SessionState& session, ViewportWindow& viewport, const QStringList& model_ids);
 void addModel(SessionState& session, QWidget& host);
 // Connector picker → pull_models_interactive → addCloudModel + load.
 // Reachable from AddModelDialog's CloudModel button; the underlying call

@@ -7,24 +7,23 @@
 
 #include <algorithm>
 
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
-void fix_wallconnectivity(ifcopenshell::file& f, bool no_progress, bool quiet, bool stderr_progress, logger& logger = ::logger::root()) {
+void fix_wallconnectivity(ifcopenshell::file& f, bool no_progress, bool quiet, bool stderr_progress, ifcopenshell::logger& logger = ifcopenshell::logger::root()) {
 	intersection_validator v(f, { "IfcWall" }, 1.e-3, no_progress, quiet, stderr_progress, logger);
 
-	ifcopenshell::geometry::Settings settings;
+	ifcopenshell::geom::settings settings;
 
-	settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = false;
-	settings.get<ifcopenshell::geometry::settings::WeldVertices>().value = false;
-	settings.get<ifcopenshell::geometry::settings::ReorientShells>().value = true;
-	settings.get<ifcopenshell::geometry::settings::ConvertBackUnits>().value = true;
-	settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
-	settings.get<ifcopenshell::geometry::settings::DisableOpeningSubtractions>().value = true;
+	settings.get<ifcopenshell::geom::settings::UseWorldCoords>().value = false;
+	settings.get<ifcopenshell::geom::settings::WeldVertices>().value = false;
+	settings.get<ifcopenshell::geom::settings::ReorientShells>().value = true;
+	settings.get<ifcopenshell::geom::settings::ConvertBackUnits>().value = true;
+	settings.get<ifcopenshell::geom::settings::IteratorOutput>().value = ifcopenshell::geom::settings::NATIVE;
+	settings.get<ifcopenshell::geom::settings::DisableOpeningSubtractions>().value = true;
 
-	settings.get<ifcopenshell::geometry::settings::IncludeCurves>().value = true;
-	settings.get<ifcopenshell::geometry::settings::IncludeSurfaces>().value = false;
-	
-	ifcopenshell::geometry::Converter c(ifcopenshell::geometry::kernels::construct(&f, "cgal", settings), &f, settings, logger);
+	settings.get<ifcopenshell::geom::settings::OutputDimensionality>().value = ifcopenshell::geom::settings::CURVES;
+
+	ifcopenshell::geom::converter c(ifcopenshell::geom::kernels::construct(&f, "cgal", settings, logger), &f, settings, logger);
 
 	auto rels = f.instances_by_type("IfcRelConnectsPathElements");
 	std::map<std::set<const ifcopenshell::IfcBaseClass*>, const ifcopenshell::IfcBaseClass*> rel_by_elem;
@@ -55,11 +54,11 @@ void fix_wallconnectivity(ifcopenshell::file& f, bool no_progress, bool quiet, b
 			if (!a_is_relating) {
 				std::swap(a_type, b_type);
 			}
-		}		
+		}
 
 #if 0
-		auto a_poly = ifcopenshell::geometry::utils::create_polyhedron(a.handle()->second);
-		auto b_poly = ifcopenshell::geometry::utils::create_polyhedron(b.handle()->second);
+		auto a_poly = ifcopenshell::geom::utils::create_polyhedron(a.handle()->second);
+		auto b_poly = ifcopenshell::geom::utils::create_polyhedron(b.handle()->second);
 
 		std::wcout << "a" << std::endl;
 		for (auto& v : vertices(a_poly)) {
@@ -91,7 +90,7 @@ void fix_wallconnectivity(ifcopenshell::file& f, bool no_progress, bool quiet, b
 		}
 
 		std::clock_t poly_begin = std::clock();
-		cgal_shape_t x_poly;
+		cgal_polyhedron x_poly;
 		x.convert_to_polyhedron(x_poly);
 		std::clock_t poly_end = std::clock();
 		conversion_to_poly += (poly_end - poly_begin) / (double)CLOCKS_PER_SEC;
@@ -124,7 +123,7 @@ void fix_wallconnectivity(ifcopenshell::file& f, bool no_progress, bool quiet, b
 				} else {
 					auto p0 = boost::get<taxonomy::point3::ptr>(first_vertex);
 					auto p1 = boost::get<taxonomy::point3::ptr>(last_vertex);
-					
+
 					auto v0 = taxonomy::cast<taxonomy::geom_item>(item)->matrix->ccomponents() * p0->ccomponents().homogeneous();
 					auto v1 = taxonomy::cast<taxonomy::geom_item>(item)->matrix->ccomponents() * p1->ccomponents().homogeneous();
 
@@ -137,13 +136,13 @@ void fix_wallconnectivity(ifcopenshell::file& f, bool no_progress, bool quiet, b
 
 					std::vector<Kernel_::FT> parameters;
 
-					std::transform(vertices(x_poly).begin(), vertices(x_poly).end(), std::back_inserter(parameters), [&P0, D](cgal_vertex_descriptor_t& v) {
+					std::transform(vertices(x_poly).begin(), vertices(x_poly).end(), std::back_inserter(parameters), [&P0, D](cgal_vertex_descriptor& v) {
 						return (v->point() - P0) * D;
 					});
 
 					auto pit = std::minmax_element(parameters.begin(), parameters.end());
 					return std::make_pair(len, std::make_pair(CGAL::to_double(*pit.first), CGAL::to_double(*pit.second)));
-				}				
+				}
 			}
 			const auto& nan = std::numeric_limits<double>::quiet_NaN();
 			return std::make_pair(nan, std::make_pair(nan, nan));

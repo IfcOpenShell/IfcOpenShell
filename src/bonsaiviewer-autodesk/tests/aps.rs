@@ -57,7 +57,10 @@ fn spawn_stub(routes: Vec<(&'static str, &'static str, u16, String)>) -> StubSer
                 if h == "\r\n" || h == "\n" {
                     break;
                 }
-                if let Some(v) = h.strip_prefix("Content-Length: ").or_else(|| h.strip_prefix("content-length: ")) {
+                if let Some(v) = h
+                    .strip_prefix("Content-Length: ")
+                    .or_else(|| h.strip_prefix("content-length: "))
+                {
                     content_length = v.trim().parse().unwrap_or(0);
                 }
             }
@@ -72,7 +75,9 @@ fn spawn_stub(routes: Vec<(&'static str, &'static str, u16, String)>) -> StubSer
             let method = parts.first().copied().unwrap_or("");
             let path = parts.get(1).copied().unwrap_or("/");
 
-            let idx = routes.iter().position(|(m, p, _, _)| *m == method && path.starts_with(p));
+            let idx = routes
+                .iter()
+                .position(|(m, p, _, _)| *m == method && path.starts_with(p));
             let (status, body) = match idx {
                 Some(i) => {
                     let (_, _, status, body) = routes.remove(i);
@@ -156,9 +161,15 @@ fn list_folder_contents_filters_ifcfed() {
             {"id": "i2", "type": "items", "attributes": {"displayName": "model.ifcfed"}}
         ]
     }"#;
-    let server = spawn_stub(vec![("GET", "/data/v1/projects/P/folders/F/contents", 200, body.into())]);
+    let server = spawn_stub(vec![(
+        "GET",
+        "/data/v1/projects/P/folders/F/contents",
+        200,
+        body.into(),
+    )]);
     let client = make_client(server.base_url.clone());
-    let filter = |e: &bonsaiviewer_autodesk::aps::Entry| e.display_name.to_lowercase().ends_with(".ifcfed");
+    let filter =
+        |e: &bonsaiviewer_autodesk::aps::Entry| e.display_name.to_lowercase().ends_with(".ifcfed");
     let entries = client
         .list_folder_contents("P", "F", &["folders", "items"], Some(&filter))
         .unwrap();
@@ -193,12 +204,20 @@ fn get_item_returns_tip_metadata() {
             }
         }]
     }"#;
-    let server = spawn_stub(vec![("GET", "/data/v1/projects/P/items/I", 200, body.into())]);
+    let server = spawn_stub(vec![(
+        "GET",
+        "/data/v1/projects/P/items/I",
+        200,
+        body.into(),
+    )]);
     let client = make_client(server.base_url.clone());
     let item = client.get_item("P", "I").unwrap();
     assert!(!item.hidden);
     assert_eq!(item.version_id.as_deref(), Some("V"));
-    assert_eq!(item.storage_id.as_deref(), Some("urn:adsk.objects:os.object:bk/obj"));
+    assert_eq!(
+        item.storage_id.as_deref(),
+        Some("urn:adsk.objects:os.object:bk/obj")
+    );
     assert_eq!(item.last_modified_user_name.as_deref(), Some("alice"));
     assert_eq!(item.parent_folder_id.as_deref(), Some("F"));
 }
@@ -216,7 +235,12 @@ fn get_item_handles_missing_tip_as_hidden() {
             }
         }
     }"#;
-    let server = spawn_stub(vec![("GET", "/data/v1/projects/P/items/I", 200, body.into())]);
+    let server = spawn_stub(vec![(
+        "GET",
+        "/data/v1/projects/P/items/I",
+        200,
+        body.into(),
+    )]);
     let client = make_client(server.base_url.clone());
     let item = client.get_item("P", "I").unwrap();
     assert!(item.hidden);
@@ -228,10 +252,7 @@ fn get_item_handles_missing_tip_as_hidden() {
 fn download_signed_then_get_writes_file() {
     let tmp = tempfile::tempdir().unwrap();
     let dst = tmp.path().join("out.bin");
-    let signed = format!(
-        r#"{{"url": "{base}/payload"}}"#,
-        base = "PLACEHOLDER"
-    );
+    let signed = format!(r#"{{"url": "{base}/payload"}}"#, base = "PLACEHOLDER");
     // We need two-stage: first signed url returns a pointer into the same
     // stub, then the GET against that path returns the bytes.
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
@@ -240,8 +261,18 @@ fn download_signed_then_get_writes_file() {
     let signed_with_url = signed.replace("PLACEHOLDER", &base);
     let payload_bytes = b"hello-bytes-12345";
     let mut routes: Vec<(&'static str, &'static str, u16, String)> = vec![
-        ("GET", "/oss/v2/buckets/bk/objects/obj/signeds3download", 200, signed_with_url),
-        ("GET", "/payload", 200, String::from_utf8(payload_bytes.to_vec()).unwrap()),
+        (
+            "GET",
+            "/oss/v2/buckets/bk/objects/obj/signeds3download",
+            200,
+            signed_with_url,
+        ),
+        (
+            "GET",
+            "/payload",
+            200,
+            String::from_utf8(payload_bytes.to_vec()).unwrap(),
+        ),
     ];
     // Hand-roll a stub on the bound listener so we can re-use the same port.
     let handle = thread::spawn(move || {
@@ -262,7 +293,10 @@ fn download_signed_then_get_writes_file() {
             let parts: Vec<&str> = request_line.split_whitespace().collect();
             let method = parts[0];
             let path = parts[1];
-            let idx = routes.iter().position(|(m, p, _, _)| *m == method && path.starts_with(p)).unwrap();
+            let idx = routes
+                .iter()
+                .position(|(m, p, _, _)| *m == method && path.starts_with(p))
+                .unwrap();
             let (_, _, status, body) = routes.remove(idx);
             let header = format!(
                 "HTTP/1.1 {status} OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
@@ -298,10 +332,12 @@ fn upload_small_file_creates_new_item() {
     let base = format!("http://127.0.0.1:{port}");
     let presigned_url = format!("{base}/presigned/0");
 
-    let put_bytes_received: Arc<std::sync::Mutex<Vec<u8>>> = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let put_bytes_received: Arc<std::sync::Mutex<Vec<u8>>> =
+        Arc::new(std::sync::Mutex::new(Vec::new()));
     let put_bytes_clone = put_bytes_received.clone();
 
-    let create_storage_body = r#"{"data":{"id":"urn:adsk.objects:os.object:bk/obj","type":"objects"}}"#.to_string();
+    let create_storage_body =
+        r#"{"data":{"id":"urn:adsk.objects:os.object:bk/obj","type":"objects"}}"#.to_string();
     let signed_upload_body = format!(r#"{{"uploadKey":"UK1","urls":["{presigned_url}"]}}"#);
     let complete_body = r#"{}"#.to_string();
     let folder_contents_body = r#"{"data":[]}"#.to_string();
@@ -316,10 +352,22 @@ fn upload_small_file_creates_new_item() {
     let handle = thread::spawn(move || {
         let expected = vec![
             ("POST", "/data/v1/projects/P/storage", create_storage_body),
-            ("GET", "/oss/v2/buckets/bk/objects/obj/signeds3upload", signed_upload_body),
+            (
+                "GET",
+                "/oss/v2/buckets/bk/objects/obj/signeds3upload",
+                signed_upload_body,
+            ),
             ("PUT", "/presigned/0", String::new()),
-            ("POST", "/oss/v2/buckets/bk/objects/obj/signeds3upload", complete_body),
-            ("GET", "/data/v1/projects/P/folders/F/contents", folder_contents_body),
+            (
+                "POST",
+                "/oss/v2/buckets/bk/objects/obj/signeds3upload",
+                complete_body,
+            ),
+            (
+                "GET",
+                "/data/v1/projects/P/folders/F/contents",
+                folder_contents_body,
+            ),
             ("POST", "/data/v1/projects/P/items", create_item_body),
         ];
         for (method, prefix, body) in expected {
@@ -350,7 +398,11 @@ fn upload_small_file_creates_new_item() {
             }
             let parts: Vec<&str> = request_line.split_whitespace().collect();
             assert_eq!(parts[0], method, "request_line={request_line:?}");
-            assert!(parts[1].starts_with(prefix), "got {} expected prefix {prefix}", parts[1]);
+            assert!(
+                parts[1].starts_with(prefix),
+                "got {} expected prefix {prefix}",
+                parts[1]
+            );
             let header = format!(
                 "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
                 body.len()

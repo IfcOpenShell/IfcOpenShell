@@ -27,11 +27,7 @@ def _existing_directories(paths: list[Path]) -> list[str]:
 
 
 def _discover_headers(src_ifcparse: Path) -> list[str]:
-    return [
-        str(path.resolve())
-        for path in sorted(src_ifcparse.glob("*.h"))
-        if path.parent.name != "schemas"
-    ]
+    return [str(path.resolve()) for path in sorted(src_ifcparse.glob("*.h")) if path.parent.name != "schemas"]
 
 
 def _discover_boost_include_dirs() -> list[Path]:
@@ -76,10 +72,10 @@ def build_default_wrapper_config(repo_root: Path) -> WrapperConfig:
         parameter_names={"type": "filetype", "read_only": "readonly"},
         class_handle_kinds={"ifcopenshell::file": "shared_ptr"},
         class_owner_types={
-            "express::Base": "ifcopenshell::file",
-            "express::Entity": "ifcopenshell::file",
-            "express::Select": "ifcopenshell::file",
-            "express::DeclaredType": "ifcopenshell::file",
+            "express::base": "ifcopenshell::file",
+            "express::entity": "ifcopenshell::file",
+            "express::select": "ifcopenshell::file",
+            "express::declared_type": "ifcopenshell::file",
         },
         type_adapters={
             "std::string": "string",

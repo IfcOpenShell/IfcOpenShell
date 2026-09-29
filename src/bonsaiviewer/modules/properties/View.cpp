@@ -109,7 +109,7 @@ void PropertiesPanelView::refresh(uint32_t object_id) {
     state.entity = {"No item selected", ""};
 
     auto entity = registry ? registry->findEntity(object_id)
-                           : std::optional<express::Base>{};
+                           : std::optional<express::base>{};
     if (entity) {
         state.entity.entity_class = QString::fromStdString(entity->declaration().name());
         if (auto predefined_type = get_predefined_type(*entity)) {
@@ -121,16 +121,16 @@ void PropertiesPanelView::refresh(uint32_t object_id) {
         }
         // Relationships: the construction type and the spatial container, shown
         // by name (falling back to the entity class when unnamed).
-        auto display_name = [](const express::Base& related) -> QString {
+        auto display_name = [](const express::base& related) -> QString {
             if (auto name = get_string_attribute(related, "Name"); name && !name->empty()) {
                 return QString::fromStdString(*name);
             }
             return QString::fromStdString(related.declaration().name());
         };
-        if (express::Base type = get_type(*entity)) {
+        if (express::base type = get_type(*entity)) {
             state.relationships.append({"Type", display_name(type)});
         }
-        if (express::Base container = get_container(*entity)) {
+        if (express::base container = get_container(*entity)) {
             state.relationships.append({"Container", display_name(container)});
         }
         // Property sets (Pset_*) and quantity sets (Qto_* / BaseQuantities),

@@ -60,7 +60,7 @@ TreeNode* findNodeRecursive(QList<TreeNode>& nodes, const NodePath& path, int de
     return nullptr;
 }
 
-ItemKind kindOf(const express::Base& element) {
+ItemKind kindOf(const express::base& element) {
     const auto& declaration = element.declaration();
     if (declaration.is("IfcSite")) return ItemKind::Site;
     if (declaration.is("IfcBuilding")) return ItemKind::Building;
@@ -68,14 +68,14 @@ ItemKind kindOf(const express::Base& element) {
     return ItemKind::Space;  // IfcSpace, IfcSpatialZone, …
 }
 
-QString displayName(const express::Base& element) {
+QString displayName(const express::base& element) {
     if (auto name = get_string_attribute(element, "Name"); name && !name->empty()) {
         return QString::fromStdString(*name);
     }
     return QString::fromStdString(element.declaration().name());
 }
 
-TreeNode buildNode(const express::Base& element) {
+TreeNode buildNode(const express::base& element) {
     TreeNode node;
     node.name = displayName(element);
     node.kind = kindOf(element);

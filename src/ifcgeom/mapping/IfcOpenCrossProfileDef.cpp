@@ -19,7 +19,7 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 #include "../../ifcgeom/profile_helper.h"
 #include "../../ifcgeom/infra_sweep_helper.h"
@@ -87,7 +87,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOpenCrossProfileDef& inst) {
         auto r = taxonomy::loop::ptr((taxonomy::loop*)mapped->clone_());
         r->closed = false;
         return r;
-    }*/ 
+    }*/
 
     mapped->closed = false;
     mapped->tags = tags;

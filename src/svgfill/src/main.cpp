@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
 	bool random_color = false;
 	double eps = 1.e-5;
 	std::optional<std::string> class_name;
-	
+
 	std::vector<std::string> flags;
 	std::vector<std::string> args;
 	svgfill::solver s = svgfill::FILTERED_CARTESIAN_QUOTIENT;

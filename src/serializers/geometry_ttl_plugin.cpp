@@ -18,10 +18,10 @@
  ********************************************************************************/
 
 #include "geometry_serializer_plugin.h"
-#include "TtlWktSerializer.h"
+#include "ttl_wkt_serializer.h"
 
 #include <boost/dll/alias.hpp>
-#include <boost/make_shared.hpp>
+#include <memory>
 
 namespace ifcopenshell {
 namespace serializers {
@@ -35,18 +35,18 @@ plugin::metadata plugin_metadata() {
 	return geometry_serializer_plugin_metadata("ttl");
 }
 
-boost::shared_ptr<GeometrySerializer> create_serializer(const geometry_serializer_context& context) {
+std::shared_ptr<geometry_serializer> create_serializer(const geometry_serializer_context& context) {
 	if (context.output_temp_stream) {
-		return boost::make_shared<TtlWktSerializer>(
-			*context.output_temp_stream, context.geometry_settings, context.serializer_settings);
+		return std::make_shared<ttl_wkt_serializer>(
+			*context.output_temp_stream, context.settings);
 	}
-	return boost::make_shared<TtlWktSerializer>(context.output_temp_filename, context.geometry_settings, context.serializer_settings);
+	return std::make_shared<ttl_wkt_serializer>(context.output_temp_filename, context.settings);
 }
 
 void configure_serializer(geometry_serializer_context& context) {
-	context.geometry_settings.get<ifcopenshell::geometry::settings::TriangulationType>().value = ifcopenshell::geometry::settings::POLYHEDRON_WITH_HOLES;
-	if (context.serializer_settings.get<ifcopenshell::geometry::settings::WktUseSection>().get()) {
-		context.geometry_settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
+	context.settings.get<ifcopenshell::geom::settings::TriangulationType>().value = ifcopenshell::geom::settings::POLYHEDRON_WITH_HOLES;
+	if (context.settings.get<ifcopenshell::geom::settings::WktUseSection>().get()) {
+		context.settings.get<ifcopenshell::geom::settings::IteratorOutput>().value = ifcopenshell::geom::settings::NATIVE;
 	}
 }
 

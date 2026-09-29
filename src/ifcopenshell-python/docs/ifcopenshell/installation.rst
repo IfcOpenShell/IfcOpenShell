@@ -58,7 +58,7 @@ operating systems. GCC (4.7 or newer) or Clang (any version) is required.
 
    .. code-block:: bash
 
-       sudo apt-get install git cmake gcc g++ libboost-all-dev libcgal-dev
+       sudo apt-get install git cmake gcc g++ libboost-all-dev libcgal-dev libeigen3-dev
 
    The CGAL version that ships with Ubuntu 20.04 is too old. Users on Ubuntu 20.04 are advised to manually install CGAL 5.3.
 
@@ -75,29 +75,9 @@ operating systems. GCC (4.7 or newer) or Clang (any version) is required.
 
    IfcOpenShell 0.8 depends on fairly recent OCCT additions such as the BVH Tree functionality. Users on Ubuntu 20.04 are advised to manually compile and install OCCT 7.7.
 
-   Another alternative is to use OpenCascade Community Edition (OCE), but it may
-   lag behind OCCT and is no longer actively maintained so is not recommended.
-
-   .. code-block:: bash
-
-        sudo apt-get install liboce-foundation-dev liboce-modeling-dev liboce-ocaf-dev liboce-visualization-dev liboce-ocaf-lite-dev
-
-   As a final alternative, you may also manually compile OCE:
-
-   .. code-block:: bash
-
-        sudo apt-get install libftgl-dev libtbb2 libtbb-dev libgl1-mesa-dev libfreetype6-dev
-        git clone https://github.com/tpaviot/oce.git
-        cd oce
-        mkdir build && cd build
-        cmake ..
-        # Replace X with number of CPU cores + 1
-        make -j X
-        sudo make install
-
    .. warning::
 
-    Choose one option only between installing OCCT, installing OCE, or
+    Choose one option only between installing OCCT packages or
     self-compilation. If you install and compile multiple versions of
     OpenCascade, your system may get confused.
 
@@ -130,24 +110,9 @@ operating systems. GCC (4.7 or newer) or Clang (any version) is required.
         cd /path/to/IfcOpenShell
         mkdir build && cd build
         # Customise the compile options to suit your environment
-        # Check all paths are valid for your environment
-        cmake ../cmake \
-              -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu/ \
-              -DOCC_INCLUDE_DIR=/usr/include/opencascade \
-              \
-              # Optional Collada support
-              -DCOLLADA_SUPPORT=On \
-              -DOPENCOLLADA_INCLUDE_DIR="/usr/local/include/opencollada" \
-              -DOPENCOLLADA_LIBRARY_DIR="/usr/local/lib/opencollada"  \
-              -DPCRE_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu/ \
-              \
-              -DCGAL_INCLUDE_DIR=/usr/include \
-              -DGMP_INCLUDE_DIR=/usr/include \
-              -DMPFR_INCLUDE_DIR=/usr/include \
-              -DGMP_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
-              -DMPFR_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
-              -DJSON_INCLUDE_DIR=/usr/include \
-              -DEIGEN_DIR=/usr/include/eigen3
+        # Dependencies are found automatically.
+        # If you skipped step 4, pass -DCOLLADA_SUPPORT=Off.
+        cmake ../cmake
         # Replace X with number of CPU cores + 1. Reduce when running out of memory. Compiling the code generated from the schemas is resource intensive.
         make -j X
         # Optionally install to the system
@@ -191,12 +156,6 @@ GCC (4.7 or newer) or Clang (any version) is required.
             -DPYTHON_EXECUTABLE=/opt/homebrew/bin/python3.13 \
             -DPYTHON_LIBRARY=/opt/homebrew/opt/python@3.13/Frameworks/Python.framework/Versions/3.13/lib/libpython3.13.dylib \
             -DPYTHON_INCLUDE_DIR=/opt/homebrew/opt/python@3.13/Frameworks/Python.framework/Versions/3.13/include/python3.13/ \
-            -DOCC_LIBRARY_DIR=/opt/homebrew/lib/ \
-            -DOCC_INCLUDE_DIR=/opt/homebrew/include/opencascade/ \
-            -DCGAL_INCLUDE_DIR=/opt/homebrew/include/ \
-            -DGMP_LIBRARY_DIR=/opt/homebrew/lib/ \
-            -DMPFR_LIBRARY_DIR=/opt/homebrew/lib/ \
-            -DEIGEN_DIR=/opt/homebrew/Cellar/eigen/3.4.0_1/include/eigen3 \
             -DCOLLADA_SUPPORT=0
         # `sysctl -n hw.ncpu` returns the number of cpu cores on macOS
         make -j$(sysctl -n hw.ncpu)
@@ -225,8 +184,8 @@ C++ Build Tools <http://landinghub.visualstudio.com/visual-cpp-build-tools>`__).
    .. code-block:: bat
 
         cd IfcOpenShell\win
-        build-deps.cmd
-        run-cmake.bat
+        python build-deps.py
+        python run-cmake.py
 
 3. Open and build the solution file in Visual Studio:
 
@@ -240,51 +199,19 @@ C++ Build Tools <http://landinghub.visualstudio.com/visual-cpp-build-tools>`__).
    Only) to deploy the headers and binaries into a single location if
    wanted/needed.
 
-   Alternatively, one can use the utility batch file(s) to build and install the
+   Alternatively, one can use the utility script(s) to build and install the
    project easily from the command-line (installing a project will build it
    also, if required):
 
    .. code-block:: bat
 
-        install-ifcopenshell.bat
+        python install-ifcopenshell.py
 
 .. seealso::
 
     For more information on configuring a Windows compilation see the `Windows
     Readme
-    <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.8.0/win/readme.md>`__.
-
-Compiling on Windows (MSYS2 + MinGW)
-------------------------------------
-
-This is for users of `MSYS2 <https://msys2.github.io/>`__ and `MinGW
-<https://www.mingw-w64.org/>`__.
-
-1. Fetch the latest source code, including all submodules.
-
-   .. code-block:: bat
-
-        git clone --recursive https://github.com/IfcOpenShell/IfcOpenshell.git
-
-   .. warning::
-
-        The path where the source code is cloned to can contain spaces but non-ASCII
-        characters are very likely to cause problems with the build.
-
-2. Start the MSYS2 Shell and then:
-
-   .. code-block:: bat
-
-        cd IfcOpenShell/win
-        ./build-deps.sh
-        ./run-cmake.sh
-        ./install-ifcopenshell.sh
-
-.. seealso::
-
-    For more information on configuring a Windows compilation see the `Windows
-    Readme
-    <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.8.0/win/readme.md>`__.
+    <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.9.0/win/readme.md>`__.
 
 Packaged installation
 ---------------------

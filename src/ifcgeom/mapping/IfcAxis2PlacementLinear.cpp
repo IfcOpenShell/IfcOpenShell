@@ -19,7 +19,7 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 #if defined SCHEMA_HAS_IfcAxis2PlacementLinear
 
@@ -45,7 +45,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcAxis2PlacementLinear& inst) 
 
     /*
     if (hasAxis != hasRef) {
-		::logger::root().warning("Axis and RefDirection should be specified together", inst);
+		ifcopenshell::logger::root().warning("Axis and RefDirection should be specified together", inst);
 	}
 	*/
 

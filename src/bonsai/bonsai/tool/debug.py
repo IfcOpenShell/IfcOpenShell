@@ -19,7 +19,6 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 from collections import defaultdict
 from collections.abc import Iterable
@@ -153,7 +152,7 @@ class Debug(bonsai.core.tool.Debug):
             return name
 
         def get_hash(element: ifcopenshell.entity_instance) -> int:
-            data = element.get_info_2(include_identifier=False, recursive=True)
+            data = element.get_info(include_identifier=False, recursive=True)
             if object_type == "APPLICATION":
                 # To avoid disruption let user merge organizations separately.
                 data["ApplicationDeveloper"] = element.ApplicationDeveloper.id()

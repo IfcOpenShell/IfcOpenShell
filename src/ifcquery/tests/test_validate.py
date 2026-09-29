@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import ifcopenshell
 import ifcopenshell.api.project
-import pytest
 
 from ifcquery.validate import validate
 

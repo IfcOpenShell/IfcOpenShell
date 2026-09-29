@@ -102,6 +102,26 @@ class EditMaterial(bpy.types.Operator, tool.Ifc.Operator):
         core.edit_material(tool.Ifc, tool.Material, material=tool.Ifc.get().by_id(self.material))
 
 
+class RenameMaterial(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.rename_material"
+    bl_label = "Rename Material"
+    bl_description = "Rename an IfcMaterial"
+    bl_options = {"REGISTER", "UNDO"}
+    material: bpy.props.IntProperty()
+    name: bpy.props.StringProperty(name="Name")
+
+    def invoke(self, context, event):
+        material = tool.Ifc.get().by_id(self.material)
+        self.name = material.Name or ""
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        self.layout.prop(self, "name")
+
+    def _execute(self, context):
+        core.rename_material(tool.Ifc, tool.Material, material=tool.Ifc.get().by_id(self.material), name=self.name)
+
+
 class DisableEditingMaterial(bpy.types.Operator):
     bl_idname = "bim.disable_editing_material"
     bl_label = "Disable Editing Material"

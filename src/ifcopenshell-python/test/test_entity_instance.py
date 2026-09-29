@@ -16,16 +16,18 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
 import pytest
+
+import ifcopenshell
 import test.bootstrap
+
 
 class TestGetInfo2(test.bootstrap.IFC4):
     def test_instance_attribute(self):
         brep = self.file.create_entity("IfcFacetedBrep")
         shell = self.file.create_entity("IfcClosedShell")
         brep.Outer = shell
-        assert brep.get_info_2(recursive=True) == {
+        assert brep.get_info(recursive=True) == {
             "Outer": {"CfsFaces": None, "id": 2, "type": "IfcClosedShell"},
             "id": 1,
             "type": "IfcFacetedBrep",
@@ -35,7 +37,7 @@ class TestGetInfo2(test.bootstrap.IFC4):
         shell = self.file.create_entity("IfcClosedShell")
         faces = [self.file.create_entity("IfcFace") for i in range(3)]
         shell.CfsFaces = faces
-        assert shell.get_info_2(recursive=True)["CfsFaces"] == (
+        assert shell.get_info(recursive=True)["CfsFaces"] == (
             {"Bounds": None, "id": 2, "type": "IfcFace"},
             {"Bounds": None, "id": 3, "type": "IfcFace"},
             {"Bounds": None, "id": 4, "type": "IfcFace"},
@@ -45,7 +47,7 @@ class TestGetInfo2(test.bootstrap.IFC4):
         surface = self.file.create_entity("IfcBSplineSurfaceWithKnots")
         pp = [self.file.create_entity("IfcCartesianPoint", [float(i)]) for i in range(4)]
         surface.ControlPointsList = [pp[:2], pp[2:]]
-        assert surface.get_info_2(recursive=True)["ControlPointsList"] == (
+        assert surface.get_info(recursive=True)["ControlPointsList"] == (
             (
                 {"Coordinates": (0.0,), "id": 2, "type": "IfcCartesianPoint"},
                 {"Coordinates": (1.0,), "id": 3, "type": "IfcCartesianPoint"},
@@ -60,30 +62,46 @@ class TestGetInfo2(test.bootstrap.IFC4):
         brep = self.file.create_entity("IfcFacetedBrep")
         shell = self.file.create_entity("IfcClosedShell")
         brep.Outer = shell
-        assert brep.get_info_2(recursive=True, include_identifier=False) == {
+        assert brep.get_info(recursive=True, include_identifier=False) == {
             "Outer": {"CfsFaces": None, "type": "IfcClosedShell"},
             "type": "IfcFacetedBrep",
         }
 
+
 def test_equality():
     f = ifcopenshell.file()
     g = ifcopenshell.file()
-    f.createIfcCartesianPoint((0., 0.))
-    g.createIfcCartesianPoint((0., 0.))
+    f.createIfcCartesianPoint((0.0, 0.0))
+    g.createIfcCartesianPoint((0.0, 0.0))
     assert f[1] == g[1]
-    g[1].Coordinates = (1., 0.)
+    g[1].Coordinates = (1.0, 0.0)
     assert f[1] != g[1]
+    f.createIfcCartesianPoint((0.0, 0.0))
+    assert f[1] == f[1]
+    assert f[1] != f[2]
+
+
+def test_equality_of_owning_file():
+    f = ifcopenshell.file()
+    g = ifcopenshell.file()
+    f.createIfcCartesianPoint((0.0, 0.0))
+    f.createIfcCartesianPoint((0.0, 0.0))
+    g.createIfcCartesianPoint((0.0, 0.0))
+    assert f[1].file == f[1].file
+    assert f[1].file == f[2].file
+    assert f[1].file != g[1].file
+
 
 def test_setting_logical():
     f = ifcopenshell.file()
     inst = f.createIfcPresentationLayerWithStyle(LayerOn="UNKNOWN")
     assert inst.LayerOn == "UNKNOWN"
-    assert '.U.' in str(inst)
+    assert ".U." in str(inst)
     with pytest.raises(Exception):
         inst.LayerOn = "SOME_OTHER_STRING"
     inst.LayerOn = False
     assert inst.LayerOn is False
-    assert '.F.' in str(inst)
+    assert ".F." in str(inst)
     inst.LayerOn = True
     assert inst.LayerOn is True
-    assert '.T.' in str(inst)
+    assert ".T." in str(inst)

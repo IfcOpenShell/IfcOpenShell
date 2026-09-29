@@ -32,7 +32,6 @@
 #include <boost/multi_index/random_access_index.hpp>
 #include <boost/multi_index/sequenced_index.hpp>
 #include <boost/multi_index_container.hpp>
-#include <boost/circular_buffer.hpp>
 #include <iterator>
 #include <map>
 #include <memory>
@@ -91,19 +90,17 @@ enum filetype {
 IFC_PARSE_API filetype guess_file_type(const std::string& path);
 
 template <typename Reader = file_reader<full_buffer_impl>>
-class IFC_PARSE_API instance_streamer {
+class instance_streamer {
 private:
     std::unique_ptr<Reader> owned_stream_;
     Reader* stream_;
     std::unique_ptr<spf_lexer<Reader>> lexer_;
     std::unique_ptr<spf_header> owned_header_;
-    spf_header* header_;
     ifcopenshell::file* owner_;
-    boost::circular_buffer<token> token_stream_;
     const ifcopenshell::schema_definition* schema_;
     ifcopenshell::impl::in_memory_file_storage storage_;
     ifcopenshell::file_open_status good_ = ifcopenshell::file_open_status::SUCCESS;
-    std::reference_wrapper<::logger> logger_;
+    std::reference_wrapper<ifcopenshell::logger> logger_;
     int progress_;
     ifcopenshell::unresolved_references references_to_resolve_;
     int yielded_header_instances_ = 0;
@@ -113,6 +110,7 @@ private:
     std::vector<bool> types_to_bypass_materialized_;
 
     void initialize_header();
+    void materialize_bypass_types();
     spf_header& ensure_header();
 
   public:
@@ -139,11 +137,11 @@ private:
         return bypassed_instances_;
     }
 
-    const ifcopenshell::impl::in_memory_file_storage::entities_by_ref_t& inverses() const {
+    const ifcopenshell::impl::in_memory_file_storage::entities_by_ref& inverses() const {
         return storage_.byref_excl_;
     }
 
-    ifcopenshell::impl::in_memory_file_storage::entities_by_ref_t& inverses() {
+    ifcopenshell::impl::in_memory_file_storage::entities_by_ref& inverses() {
         return storage_.byref_excl_;
     }
 
@@ -157,21 +155,24 @@ private:
 
     void push_page(const std::string& page_data);
 
-    instance_streamer(ifcopenshell::file* owner_file = nullptr, ::logger& logger = ::logger::root());
+    instance_streamer(ifcopenshell::file* owner_file = nullptr, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
-    instance_streamer(const std::string& path, bool use_mmap = false, ifcopenshell::file* owner_file = nullptr, ::logger& logger = ::logger::root());
+    instance_streamer(const std::string& path, bool use_mmap = false, ifcopenshell::file* owner_file = nullptr, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
-    instance_streamer(void* data, int data_size, ifcopenshell::file* owner_file = nullptr, ::logger& logger = ::logger::root());
+    instance_streamer(void* data, int data_size, ifcopenshell::file* owner_file = nullptr, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
-    instance_streamer(Reader* stream, ifcopenshell::file* owner_file = nullptr, ::logger& logger = ::logger::root());
+    instance_streamer(Reader* stream, ifcopenshell::file* owner_file = nullptr, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
     void bypass_types(const std::set<std::string>& type_names);
+    void resolve_references_in_place(bool value) {
+        storage_.resolve_references_in_place = value;
+    }
 
     void yield_header_instances(bool enabled) { yield_header_instances_ = enabled; }
 
     const ifcopenshell::schema_definition* schema() const { return schema_; }
 
-    const spf_header* header() const { return header_; }
+    const spf_header* header() const;
 
     ~instance_streamer() = default;
 
@@ -185,38 +186,40 @@ class uninitialized_tag {};
 /// The file takes ownership of instances added to this file and deletes them when the file is deleted.
 class IFC_PARSE_API file {
 private:
-    typedef std::map<uint32_t, express::Base> entity_entity_map_t;
+    typedef std::map<uint32_t, express::base> entity_entity_map;
 
     // @todo determine the constness of things (probably needs to be all const, we don't want to overwrite)
     // @todo we have variant_iterator and MapVariant, we probably need to retain only one?
 public:
     using const_iterator = variant_iterator<impl::in_memory_file_storage::iterator, impl::rocks_db_file_storage::const_iterator>;
     using type_iterator = variant_iterator<impl::in_memory_file_storage::type_iterator, impl::rocks_db_file_storage::rocksdb_types_iterator>;
-    using storage_t = std::variant<std::monostate, impl::in_memory_file_storage, impl::rocks_db_file_storage>;
+    using storage_type = std::variant<std::monostate, impl::in_memory_file_storage, impl::rocks_db_file_storage>;
 
-    typedef variant_map<impl::in_memory_file_storage::entity_instance_by_guid_t, impl::rocks_db_file_storage::entity_instance_by_guid_t> entity_instance_by_guid_t;
-    entity_instance_by_guid_t byguid_;
-    typedef variant_map<impl::in_memory_file_storage::entity_instance_by_name_t, impl::rocks_db_file_storage::entity_instance_by_name_t> entity_by_id_t;
-    entity_by_id_t byid_;
-    typedef variant_map<impl::in_memory_file_storage::entities_by_ref_t, impl::rocks_db_file_storage::entities_by_ref_t> entities_by_ref_t;
-    entities_by_ref_t byref_excl_;
+    typedef variant_map<impl::in_memory_file_storage::entity_instance_by_guid, impl::rocks_db_file_storage::entity_instance_by_guid> entity_instance_by_guid;
+    entity_instance_by_guid byguid_;
+    typedef variant_map<impl::in_memory_file_storage::entity_instance_by_name, impl::rocks_db_file_storage::entity_instance_by_name> entity_by_id;
+    entity_by_id byid_;
+    typedef variant_map<impl::in_memory_file_storage::entities_by_ref, impl::rocks_db_file_storage::entities_by_ref> entities_by_ref;
+    entities_by_ref byref_excl_;
 
     bool check_existance_before_adding = true;
     bool calculate_unit_factors = true;
 
     // @todo temporarily public for header
-    storage_t storage_;
+    storage_type storage_;
 
     std::set<std::string> types_to_bypass_loading_;
 
   private:
+    bool lazy_loading_ = false;
+    bool paged_reading_ = false;
     file_open_status good_ = file_open_status::SUCCESS;
-    std::reference_wrapper<::logger> logger_;
+    std::reference_wrapper<ifcopenshell::logger> logger_;
 
     const ifcopenshell::schema_definition* schema_;
     const ifcopenshell::declaration* ifcroot_type_;
 
-    entity_entity_map_t entity_file_map_;
+    entity_entity_map entity_file_map_;
 
     unsigned int max_id_;
 
@@ -233,7 +236,8 @@ public:
         batch_deletion_ids_t;
     batch_deletion_ids_t batch_deletion_ids_;
     bool batch_mode_ = false;
-    void process_deletion_(const express::Base& entity);
+    void process_deletion_(const express::base& entity);
+    void erase_instances_(const std::vector<uint32_t>& ids);
 
   public:
 #ifdef USE_MMAP
@@ -242,41 +246,55 @@ public:
     /// </summary>
     /// <param name="path">UTF-8 file path to an IFC-SPF file</param>
     /// <param name="mmap">Whether to use memory-mapped I/O</param>
-    file(const std::string& path, bool use_mmap, ::logger& logger = ::logger::root());
+    file(const std::string& path, bool use_mmap, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 #endif
     /// <summary>
 	/// Constructs an file object from a file path, supports IFC-SPF and the IfcOpenShell-specific RocksDB format.
     /// </summary>
     /// <param name="path">UTF-8 file path to an IFC-SPF file or RocksDB database directory</param>
-    /// <param name="ty">File type of the path</param>
-    /// <param name="readonly">Whether to open in read-only mode, only supported on RocksDB databases</param>
-    file(const std::string& path, filetype type = FT_AUTODETECT, bool read_only = false, ::logger& logger = ::logger::root());
+    /// <param name="type">File type of the path</param>
+    /// <param name="read_only">Whether to open in read-only mode, only supported on RocksDB databases</param>
+    /// <param name="logger">Logger used while opening the file</param>
+    file(const std::string& path, filetype type = FT_AUTODETECT, bool read_only = false, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
     /// <summary>
 	/// Constructs an file object from a stream containing IFC-SPF data.
     /// </summary>
-    file(std::istream& stream, int data_size, ::logger& logger = ::logger::root());
+    file(std::istream& stream, int data_size, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
     /// <summary>
 	/// Constructs an file object from a memory buffer containing IFC-SPF data.
     /// </summary>
-    file(void* data, int data_size, ::logger& logger = ::logger::root());
+    file(void* data, int data_size, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
     /// <summary>
     /// Constructs an file object with the specified schema, file type, and file path.
-    /// @nb path is only used in rocksdb mode, for spf file is in-memory only until write() is called
+    /// @note path is only used in RocksDB mode; an SPF file is in memory only until write() is called.
     /// </summary>
     /// <param name="schema">Pointer to the schema definition to use. Defaults to the IFC4 schema if not specified.</param>
-    /// <param name="ty">The file type to use for the file. Defaults to FT_AUTODETECT.</param>
+    /// <param name="type">The file type to use for the file. Defaults to FT_AUTODETECT.</param>
     /// <param name="path">The file system path to the IFC file. Defaults to an empty string.</param>
-    file(const ifcopenshell::schema_definition* schema = ifcopenshell::schema_by_name("IFC4"), filetype type = FT_AUTODETECT, const std::string& path = "", ::logger& logger = ::logger::root());
+    /// <param name="logger">Logger used while creating the file.</param>
+    file(const ifcopenshell::schema_definition* schema = ifcopenshell::schema_by_name("IFC4"), filetype type = FT_AUTODETECT, const std::string& path = "", ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
     /// <summary>
     /// Constructs an unitialized file object. Call initialize() later on. Allows to specify which types to bypass during load.
     /// </summary>
-    file(const uninitialized_tag& tag, ::logger& logger = ::logger::root());
+    file(const uninitialized_tag& tag, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
     bool initialize(const std::string& path, filetype type = FT_AUTODETECT, bool read_only = false);
+    // Index the file with one pass and parse each instance's attributes on
+    // first access instead of parsing everything up front. Set before
+    // initialize(). Falls back to the full parse if the index pass finds
+    // anything it does not handle.
+    void lazy_loading(bool value) { lazy_loading_ = value; }
+    bool lazy_loading() const { return lazy_loading_; }
+    // Read the file through the paged reader (64 KB pages, 4 MB cache)
+    // instead of loading it into memory as a whole. Set before
+    // initialize(). Applies to the full parse; lazy loading always reads
+    // in pages.
+    void paged_reading(bool value) { paged_reading_ = value; }
+    bool paged_reading() const { return paged_reading_; }
 #ifdef USE_MMAP
     bool initialize(const std::string& path, bool use_mmap);
 #endif
@@ -288,17 +306,17 @@ public:
     ~file();
 
     ifcopenshell::file_open_status good() const { return good_; }
-    ::logger& logger() const { return logger_.get(); }
+    ifcopenshell::logger& logger() const { return logger_.get(); }
 
     /// Returns the first entity in the range of instances contained in the model,
     /// in arbitrary order
-    entity_by_id_t::iterator begin() const {
+    entity_by_id::iterator begin() const {
         return byid_.begin();
     }
 
     /// Returns the first entity in the range of instances contained in the model,
     /// in arbitrary order
-    entity_by_id_t::iterator end() const {
+    entity_by_id::iterator end() const {
         return byid_.end();
     }
 
@@ -310,7 +328,7 @@ public:
     /// IfcWall will also return IfcWallStandardCase entities
     template <class T>
     typename std::vector<T> instances_by_type() {
-        std::vector<express::Base> untyped_list = instances_by_type(&T::Class());
+        std::vector<express::base> untyped_list = instances_by_type(&T::Class());
         std::vector<T> return_value;
         for (auto& untyped : untyped_list) {
             return_value.push_back(untyped.as<T>());
@@ -320,7 +338,7 @@ public:
 
     template <class T>
     typename std::vector<T> instances_by_type_excl_subtypes() {
-        std::vector<express::Base> untyped_list = instances_by_type_excl_subtypes(&T::Class());
+        std::vector<express::base> untyped_list = instances_by_type_excl_subtypes(&T::Class());
         std::vector<T> return_value;
         for (auto& untyped : untyped_list) {
             return_value.push_back(untyped.as<T>());
@@ -331,36 +349,43 @@ public:
     /// Returns all entities in the file that match the positional argument.
     /// NOTE: This also returns subtypes of the requested type, for example:
     /// IfcWall will also return IfcWallStandardCase entities
-    std::vector<express::Base> instances_by_type(const ifcopenshell::declaration* declaration);
+    std::vector<express::base> instances_by_type(const ifcopenshell::declaration* declaration);
 
     /// Returns all entities in the file that match the positional argument.
-    std::vector<express::Base> instances_by_type_excl_subtypes(const ifcopenshell::declaration* declaration);
+    std::vector<express::base> instances_by_type_excl_subtypes(const ifcopenshell::declaration* declaration);
 
     /// Returns all entities in the file that match the positional argument.
     /// NOTE: This also returns subtypes of the requested type, for example:
     /// IfcWall will also return IfcWallStandardCase entities
-    std::vector<express::Base> instances_by_type(const std::string& type_name);
+    std::vector<express::base> instances_by_type(const std::string& type_name);
 
     /// Returns all entities in the file that match the positional argument.
-    std::vector<express::Base> instances_by_type_excl_subtypes(const std::string& type_name);
+    std::vector<express::base> instances_by_type_excl_subtypes(const std::string& type_name);
 
     /// Returns all entities in the file that reference the id
-    std::vector<express::Base> instances_by_reference(int reference_id);
+    std::vector<express::base> instances_by_reference(int reference_id);
+
+#ifndef SWIG
+    /// Returns whether pred accepts the id of every instance that references
+    /// instance_id, stopping at the first one it rejects. Used by the Python
+    /// wrapper's helpers; a std::function can't be exposed to Python itself.
+    bool all_referencing_instances(int instance_id, const std::function<bool(uint32_t)>& pred);
+#endif
 
     /// Returns the entity with the specified id
-    express::Base instance_by_id(int instance_id);
+    express::base instance_by_id(int instance_id);
 
     /// Returns the entity with the specified GlobalId
-    express::Base instance_by_guid(const std::string& global_id);
+    express::base instance_by_guid(const std::string& global_id);
 
     /// Performs a depth-first traversal, returning all entity instance
     /// attributes as a flat list. NB: includes the root instance specified
     /// in the first function argument.
-    static std::vector<express::Base> traverse(const express::Base& instance, int max_depth = -1);
+    static std::vector<express::base> traverse(const express::base& instance, int max_depth = -1);
 
     /// Same as traverse() but maintains topological order by using a
     /// breadth-first search
-    static std::vector<express::Base> traverse_breadth_first(const express::Base& instance, int max_depth = -1);
+    static std::vector<express::base> traverse_breadth_first(const express::base& instance, int max_depth = -1);
 
     /// Get the attribute indices corresponding to the list of entity instances
     /// returned by get_inverse().
@@ -371,7 +396,7 @@ public:
         return get_inverse(instance_id, &T::Class(), attribute_index)->template as<T>();
     }
 
-    std::vector<express::Entity> get_inverse(int instance_id, const ifcopenshell::declaration* declaration, int attribute_index);
+    std::vector<express::entity> get_inverse(int instance_id, const ifcopenshell::declaration* declaration, int attribute_index);
 
     size_t get_total_inverses(int instance_id);
 
@@ -383,18 +408,18 @@ public:
 
     void recalculate_id_counter();
 
-    express::Base add_entity(const express::Base& entity, int instance_id = -1);
+    express::base add_entity(const express::base& entity, int instance_id = -1);
 
     /// Removes entity instance from file and unsets references.
     ///
     /// Attention when running remove_entity inside a loop over a list of entities to be removed.
     /// This invalidates the iterator. A workaround is to reverse the loop:
-    /// boost::shared_ptr<aggregate_of_instance> entities = ...;
+    /// std::shared_ptr<aggregate_of_instance> entities = ...;
     /// for (auto it = entities->end() - 1; it >= entities->begin(); --it) {
     ///    ifcopenshell::IfcBaseClass *const inst = *it;
     ///    model->remove_entity(inst);
     /// }
-    void remove_entity(const express::Base& entity);
+    void remove_entity(const express::base& entity);
 
     const spf_header& header() const { return *header_; }
     spf_header& header() { return *header_; }
@@ -403,30 +428,30 @@ public:
 
     const ifcopenshell::schema_definition* schema() const;
 
-    std::pair<express::Base, double> get_unit(const std::string& unit_type);
+    std::pair<express::base, double> get_unit(const std::string& unit_type);
 
     void build_inverses();
 
     void register_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, int instance_id, int attribute_index);
-    void unregister_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, const express::Base& entity, int attribute_index);
+    void unregister_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, const express::base& entity, int attribute_index);
 
-    entity_instance_by_guid_t internal_guid_map() { return byguid_; };
+    entity_instance_by_guid internal_guid_map() { return byguid_; };
 
-    void add_type_ref(const express::Base& new_entity);
-    void remove_type_ref(const express::Base& new_entity);
-    void process_deletion_inverse(const express::Base& entity);
+    void add_type_ref(const express::base& new_entity);
+    void remove_type_ref(const express::base& new_entity);
+    void process_deletion_inverse(const express::base& entity);
 
-    void build_inverses_(const express::Base& entity);
+    void build_inverses_(const express::base& entity);
 
     template <typename T>
     T create(int instance_id = -1) {
         return create(&T::Class(), instance_id).template as<T>();
     }
 
-    express::Base create(const ifcopenshell::declaration* declaration, int instance_id = -1);
+    express::base create(const ifcopenshell::declaration* declaration, int instance_id = -1);
 
     void batch() {
-        batch_mode_ = true; 
+        batch_mode_ = true;
     }
     void unbatch();
 

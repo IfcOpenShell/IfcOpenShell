@@ -49,17 +49,17 @@ inline const char* children_attribute_name(const ifcopenshell::declaration& decl
 }
 
 template <typename Relation>
-express::Base get_parent_of_relation(const Relation& relation) {
-    return relation.template as<express::Entity>().get(parent_attribute_name(relation.declaration()));
+express::base get_parent_of_relation(const Relation& relation) {
+    return relation.template as<express::entity>().get(parent_attribute_name(relation.declaration()));
 }
 
 template <typename Relation>
-std::vector<express::Base> get_children_of_relation(const Relation& relation) {
-    return relation.template as<express::Entity>().get(children_attribute_name(relation.declaration()));
+std::vector<express::base> get_children_of_relation(const Relation& relation) {
+    return relation.template as<express::entity>().get(children_attribute_name(relation.declaration()));
 }
 
 template <typename Relation>
-void set_children_of_relation(Relation& relation, std::vector<express::Base>& children) {
+void set_children_of_relation(Relation& relation, std::vector<express::base>& children) {
     relation.set_attribute_value(children_attribute_name(relation.declaration()), children);
 }
 
@@ -103,7 +103,7 @@ class IFC_SCHEMA_API hierarchy_helper : public ifcopenshell::file {
         auto t = create<T>();
         t.set_attribute_value(0, std::vector<double>{x, y});
         return t;
-    }    
+    }
 
     template <typename T, typename U>
     T addValue(U value) {
@@ -180,9 +180,9 @@ class IFC_SCHEMA_API hierarchy_helper : public ifcopenshell::file {
                         break;
                     }
                 } catch (std::exception& e) {
-                    ::logger::root().error(e);
+                    ifcopenshell::logger::root().error(e);
                 } catch (...) {
-                    ::logger::root().error("Unknown error in addRelatedObject()");
+                    ifcopenshell::logger::root().error("Unknown error in addRelatedObject()");
                 }
             }
             if (!found) {
@@ -193,7 +193,7 @@ class IFC_SCHEMA_API hierarchy_helper : public ifcopenshell::file {
                     owner_history = addOwnerHistory();
                 }
 
-                std::vector<express::Base> related_objects;
+                std::vector<express::base> related_objects;
                 related_objects.push_back(related_object);
 
                 T t = create<T>();

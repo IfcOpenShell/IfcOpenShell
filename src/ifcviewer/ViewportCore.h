@@ -43,10 +43,14 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
+#include "AxisIndicatorRenderer.h"
 #include "BufferPool.h"
+#include "GpuBudget.h"
+#include "GpuMemory.h"
 #include "InstanceCompose.h"
 #include "InstancedGeometry.h"
 #include "ModelGpuData.h"
@@ -54,6 +58,7 @@
 #include "SectionPlane.h"
 #include "SelectionState.h"
 #include "SidecarCache.h"
+#include "Stopwatch.h"
 #include "StreamingLoader.h"
 #include "StreamingThread.h"
 #include "ViewportHost.h"
@@ -126,6 +131,15 @@ public:
     bool firstGeometryPointWorldM(uint32_t session_model_id,
                                   Eigen::Vector3d& out) const;
 
+    // The model's georef as seeded from its sidecar by applyCachedModel.
+    // Returns false when the model is unknown.
+    //
+    // This is the sidecar-only equivalent of the desktop's
+    // SceneLoader::modelGeoref: composeModelTransformation needs the unit
+    // scales and the CoordinateOperation to lift ModelTransformation::a into
+    // metres, and on web there is no ifcopenshell::file to re-read them from.
+    bool modelGeoref(uint32_t session_model_id, ModelGeoref& out) const;
+
     // The global-id base applyCachedModel added to this model's instance
     // object_ids. Callers that hold the element table separately (the desktop
     // sidecar path) rebase their element records by the same base so registry
@@ -143,6 +157,17 @@ public:
     void resetScene();
     void hideModel(uint32_t session_model_id);
     void showModel(uint32_t session_model_id);
+    // Release a model's GPU memory (every chunk + its own buffers) while
+    // keeping it in the scene; loadModel recreates the buffers from the
+    // CPU mirrors and lets chunks stream back. Neither touches hidden.
+    // loadModel returns false when the device cannot fit the model's
+    // buffers even after the cache yielded (it stays unloaded).
+    void unloadModel(uint32_t session_model_id);
+    bool loadModel(uint32_t session_model_id);
+    bool isModelUnloaded(uint32_t session_model_id) const;
+    // Bytes this model currently holds on the GPU: resident chunk
+    // geometry plus its mesh/instance/cull buffers. 0 when unloaded.
+    std::uint64_t modelVramBytes(uint32_t session_model_id) const;
 
     // Federation matrix setters. Each writes to model state and posts
     // a recompose so per-instance world matrices stay consistent with
@@ -160,6 +185,12 @@ public:
     // completed.
     void recomposeAndUploadModel(uint32_t session_model_id);
 
+    // Re-pack m.instances into InstanceGpu[] and write the whole array back to
+    // m.instance_storage. Reads the already-composed inst.transform, so unlike
+    // recomposeAndUploadModel it does no matrix work and touches no AABB —
+    // it is the upload half, shared with the colour-override path.
+    void uploadInstanceRecords(ModelGpuData& m);
+
     // ---- Camera math --------------------------------------------------------
     //
     // buildViewProj feeds every cull, streaming, pick and render path
@@ -172,6 +203,12 @@ public:
     void buildViewProj(Eigen::Matrix4f& view_out,
                        Eigen::Matrix4f& proj_out) const;
     bool computeSceneAabb(float mn[3], float mx[3]) const;
+    // The same union restricted to `session_model_ids`. Unknown ids contribute
+    // nothing; false means none of them resolved to any geometry. Unlike
+    // computeSceneAabb this does NOT skip hidden models — the caller asked for
+    // these models specifically.
+    bool computeModelsAabb(const std::vector<uint32_t>& session_model_ids,
+                           float mn[3], float mx[3]) const;
     float chunkScreenAreaPx(const ModelGpuData::Chunk& c,
                             const Eigen::Matrix4f& vp_mat) const;
 
@@ -188,6 +225,12 @@ public:
     // ---- Camera mutators / getters ------------------------------------------
 
     void viewAll();
+    // viewAll scoped to specific models: frame the union of their world AABBs
+    // with the same 1.10 padding, so "view this model" and "view everything"
+    // sit the camera the same way. Returns whether it framed anything (an
+    // unloaded or empty model leaves the camera alone rather than flying it to
+    // the origin).
+    bool viewModels(const std::vector<uint32_t>& session_model_ids);
     void setCamera(float tx, float ty, float tz,
                    float dist, float yaw_deg, float pitch_deg);
     void setStandardView(float yaw_deg, float pitch_deg);
@@ -229,6 +272,20 @@ public:
     void setBackfaceCulling(bool enabled);
     bool backfaceCulling() const { return backface_culling_; }
 
+    // Background colour, RGBA in [0..1]. An alpha below 1 makes the viewport
+    // composite over whatever is behind it rather than painting a colour of
+    // its own: at alpha 0 it clears to nothing, so the model appears to sit
+    // on top of the layer behind — another canvas, a second 3D view, plain
+    // page content, anything the host stacks there. There is no depth
+    // interaction; the layer behind is strictly behind.
+    //
+    // Honouring the alpha needs a premultiplied surface, which configureSurface
+    // requests when the platform advertises it. Where it does not, the alpha is
+    // ignored and the clear stays opaque. At alpha 1 — the default, and every
+    // caller that leaves the background alone — the two are identical.
+    void setBackgroundColor(float r, float g, float b, float a);
+    const Eigen::Vector4f& backgroundColor() const { return background_color_; }
+
     // Frame the current selection: union the selected objects' world AABBs and
     // fit the camera to them (same 1.30 padding as the desktop "F" hotkey).
     // No-op with an empty selection or no resolvable AABBs; returns whether it
@@ -239,9 +296,9 @@ public:
     //
     // Pixel-delta camera moves, shared by every host (Qt desktop + web).
     // Hosts translate raw pointer/wheel events into these calls and own
-    // their own UI concerns (drag promotion, pivot indicator, cursor
-    // capture); the orbit math lives here so it can't drift between
-    // platforms. Each schedules a frame via the host.
+    // their own UI concerns (drag promotion, cursor capture); the orbit
+    // math lives here so it can't drift between platforms. Each schedules
+    // a frame via the host.
     //
     // orbitBy:  drag-right yaws the world right (yaw -= dx), drag-down
     //           tilts the camera up (pitch += dy). 0.4 deg/px matches GL.
@@ -253,6 +310,18 @@ public:
     void orbitBy(float dx_px, float dy_px);
     void panBy(float dx_px, float dy_px, int viewport_height_px);
     void dollyBy(float notches);
+
+    // ---- Pivot indicator ----------------------------------------------------
+    //
+    // The RGB triad drawn at the orbit target while the user navigates, so it's
+    // obvious what the camera is turning around. Hosts gate it: (true) when an
+    // orbit / pan drag starts, (false) when it ends. `hide_after_ms` > 0 arms an
+    // afterglow instead — the wheel path uses it so a zoom without a held drag
+    // still shows the pivot for a moment. State lives here (not in the host) so
+    // desktop and web behave identically; render() consults it each frame and
+    // keeps requesting frames until an armed afterglow expires.
+    void setPivotIndicatorVisible(bool visible, int hide_after_ms = 0);
+    bool pivotIndicatorVisible() const;
 
     // ---- First-person / fly navigation --------------------------------------
     //
@@ -277,6 +346,10 @@ public:
     bool projectionOrtho() const { return projection_ortho_; }
     std::string cameraString() const;
     CameraState cameraState() const;
+    // The orbit camera's world-space eye, derived from (target, distance, yaw,
+    // pitch). Exposed so hosts reporting camera position don't re-implement the
+    // orbit convention — buildViewProj feeds lookAt from exactly this point.
+    Eigen::Vector3f cameraEye() const;
 
     // Re-aim the orbit camera so [mn, mx] fits the view with `padding`
     // headroom (1.10 typical). Used by viewAll and focusOnSelectedObject.
@@ -406,6 +479,11 @@ public:
     // residency is still settling so the render loop keeps ticking.
     void driveStreamingLoads();
 
+    // Start as many queued web chunk loads as the in-flight cap allows. Called
+    // from driveStreamingLoads and, crucially, from each load's completion —
+    // which is what decouples fetching from the render loop.
+    void pumpWebChunkLoads();
+
     // ---- Sidecar / direct load (#84-q) -----------------------------------
     //
     // Apply a parsed sidecar's metadata + planned chunk layout to
@@ -416,6 +494,12 @@ public:
     // brings them in. Triggers an auto-viewAll on the first model (so a
     // freshly-loaded scene frames itself).
     void applyCachedModel(std::uint32_t session_model_id, StreamingSidecar metadata);
+    // The model's required-tier buffers (mesh + instance storage, per-chunk
+    // cull buffers) as one allocation unit — see allocateRequired. False
+    // when the device cannot fit them even after the cache yielded.
+    bool createModelBuffers(std::uint32_t session_model_id, ModelGpuData& m,
+                            const std::vector<MeshGpu>& mesh_gpu,
+                            const std::vector<InstanceGpu>& inst_gpu);
 
     // Qt-free sidecar load: readSidecarMetadata + applyCachedModel.
     // Used by the web build (and any other non-Qt embedder) so the
@@ -436,7 +520,15 @@ public:
     // (Module.__ifcvSources[source_id] — a picked File or remote URL, already
     // sized by shell.html); each federated model streams from its own source.
     // `source_label` is a log/identity tag.
-    void loadSidecarMetadataWeb(int source_id, std::string source_label);
+    //
+    // `on_loaded` (optional) fires once the model is in the scene, carrying the
+    // session_model_id that was allocated for it. That id is minted inside the
+    // async range-read chain, so a caller holding only a source_id has no other
+    // way to learn it — which is what the federation layer needs in order to
+    // bind per-model state (transform, display name) that JS may have set
+    // against the source_id before the load finished.
+    void loadSidecarMetadataWeb(int source_id, std::string source_label,
+                                std::function<void(std::uint32_t)> on_loaded = {});
 
     // On-demand fetch of the v15 element metadata block (elements + string
     // table) for a web-streamed model — what a UI (object tree / selected-name
@@ -445,6 +537,11 @@ public:
     // one fetch per model.
     void loadElementMetadataWeb(std::uint32_t session_model_id,
                                 std::function<void(bool)> done = {});
+
+    // loadElementMetadataWeb fanned out over every model in the scene, firing
+    // done(ok) once the last one lands (ok = every model resolved). Backs the
+    // JS getObjects() API, which needs the whole federation's element tables.
+    void loadAllElementMetadataWeb(std::function<void(bool)> done);
 
     // Demo consumer of the element metadata fetch: on pick, ensure the owning model's
     // property block is loaded (loadElementMetadataWeb — fetched once, on
@@ -466,11 +563,59 @@ public:
 
     // Per-model progress for a federation loading UI. count() is how many
     // models have metadata (are in the scene); progress(idx,…) gives the
-    // idx-th model's resident/total chunks, ordered by session_model_id (= load order)
-    // so each model keeps a stable UI slot as it streams.
+    // idx-th model's resident/total chunks, ordered by session_model_id — which
+    // is minted when a load is REQUESTED, so this is the order the host asked
+    // for its models, not the order their reads finished. Each model keeps a
+    // stable UI slot as it streams.
     int  streamingModelCount() const;
     void streamingModelProgress(int idx, int& resident_chunks,
                                 int& total_chunks) const;
+
+    // A model's slot in that load order, i.e. the `idx` streamingModelProgress
+    // wants, for a session_model_id. -1 when the model is gone. The one place
+    // the session-id → UI-slot mapping is derived.
+    int modelLoadIndex(std::uint32_t session_model_id) const;
+
+    // One row of the element table: the IFC identity behind a rendered
+    // object_id, plus which model it came from, said two ways.
+    //
+    // `model_index` is the load-order slot (modelLoadIndex) — a POSITION, so it
+    // shifts if an earlier model fails to load. `source_id` is the JS byte-source
+    // the model was added from (-1 when it came from somewhere else), which the
+    // host minted itself and which never moves. Prefer the latter for
+    // attributing an object to a file; the index is for UI slots.
+    struct ElementRef {
+        std::uint32_t object_id   = 0;
+        int           model_index = -1;
+        int           source_id   = -1;
+        std::string   guid;
+        std::string   name;
+        std::string   type;
+    };
+
+    // Every object in the scene, across every model whose element metadata is
+    // resident. On web that means calling loadAllElementMetadataWeb first —
+    // models still lazily un-fetched simply contribute nothing.
+    std::vector<ElementRef> elements() const;
+    // One model's elements (by load-order index, same as modelProgress),
+    // handed out as slices into the model's string table — valid only for
+    // the duration of the visit, no per-element string copies. The web
+    // objects export serialises hundreds of thousands of elements straight
+    // from these; materialising ElementRefs there tripled the peak heap.
+    struct ElementSlices {
+        std::uint32_t object_id = 0;
+        int           source_id = -1;
+        const char*   guid = nullptr; std::uint32_t guid_len = 0;
+        const char*   name = nullptr; std::uint32_t name_len = 0;
+        const char*   type = nullptr; std::uint32_t type_len = 0;
+    };
+    void visitModelElements(int model_index,
+                            const std::function<void(const ElementSlices&)>& visit) const;
+
+    // The single element behind one object_id — the pick path's lookup, which
+    // must not pay for materialising the whole table. Scans only the model that
+    // owns the id. False when the id is unknown or its metadata isn't resident.
+    bool elementForObject(std::uint32_t object_id, ElementRef& out) const;
 
     // Byte-level streaming progress for a combined loading bar. total = all
     // geometry bytes; needed = bytes the current view wants (contribution-
@@ -593,6 +738,9 @@ public:
     // dimensions match. Resets ping-pong state so any in-flight map is
     // dropped (caller already ensured the surface resize blocked).
     void ensureHizTextures(int viewport_w, int viewport_h);
+    // Drop just the resolve texture + staging buffers (pipeline stays),
+    // resetting the ping-pong state. ensureHizTextures recreates them.
+    void releaseHizTextures();
 
     // Tear down every HiZ-owned wgpu resource (pipeline + textures +
     // staging buffers + pyramid). Called from shutdown() before
@@ -649,6 +797,36 @@ public:
     // Called from shutdown() before the device dies.
     void releaseEdgeResources();
 
+    // ---- Selection silhouette outline -------------------------------------
+    //
+    // A halo drawn just outside the selected objects. The fs_main selection
+    // tint mixes toward blue, which says nothing on an object that is already
+    // blue; the halo is a fixed colour against the BACKGROUND instead, so it
+    // reads whatever the element is painted.
+    //
+    // Build the mask + dilation pipelines. Run after buildPipelines(), which
+    // owns the shader module and pipeline layout the mask pass reuses.
+    bool buildSelectionOutlinePipelines();
+
+    // (Re)allocate the coverage mask + dilation scratch to the surface size.
+    // Idempotent when dimensions match.
+    void ensureSelectionOutlineTextures(int w, int h);
+    void releaseSelectionOutlineTextures();
+
+    // Coverage pass: draws the selection into the mask, depth-tested against
+    // the main pass's z so only visible surface contributes. Must be encoded
+    // after the main pass and before encodeSelectionOutlinePass.
+    void encodeSelectionMaskPass(WGPUCommandEncoder enc);
+
+    // Dilate the mask and composite the halo onto the resolved surface.
+    // `dpr` scales the ring widths so they hold their apparent size on a
+    // HiDPI canvas. No-op when nothing is selected.
+    void encodeSelectionOutlinePass(WGPUCommandEncoder enc,
+                                    WGPUTextureView surface_view, int dpr);
+
+    void setSelectionOutlineEnabled(bool on) { selection_outline_enabled_ = on; }
+    bool selectionOutlineEnabled() const     { return selection_outline_enabled_; }
+
     // ---- Pick + raycast (#84-t) -------------------------------------------
     //
     // Build the pick pipeline. Reuses the main shader module's
@@ -658,8 +836,13 @@ public:
     bool buildPickPipeline();
 
     // (Re)allocate the pick MRT attachments + readback staging buffers
-    // to the supplied size. Idempotent when dimensions match.
-    void ensurePickAttachments(int w, int h);
+    // to the supplied size. Idempotent when dimensions match. Created
+    // eagerly with the other attachments in configureSurface; the pick
+    // entry points call it again only as the retry after a pressure
+    // shrink, and bail when it returns false.
+    bool ensurePickAttachments(int w, int h);
+    // The raw (unscoped) creation ensurePickAttachments wraps.
+    void createPickAttachments(int w, int h);
 
     // Encode the one-shot pick pass + copy the (x, y) texel into the pick
     // staging buffer(s) and submit. Shared by the sync (pickObjectAt) and
@@ -679,6 +862,21 @@ public:
     std::vector<std::uint32_t> collectMappedBoxPickIds(std::uint64_t padded_bpr,
                                                        int w, int h,
                                                        std::uint64_t needed_bytes);
+
+    // Build the x-ray box-pick pipeline: vs_pick + fs_boxpick, depth compare
+    // Always with no depth write and no colour targets, so nothing culls a
+    // fragment behind another and the pass's only output is the hit bitmask.
+    bool buildBoxPickPipeline();
+
+    // Encode the depth-less box-pick pass scissored to (x,y,w,h): zero the hit
+    // bits, draw every visible chunk, copy the bitmask into
+    // hit_flags_staging_buffer_ and submit. Clamps the rect in place and reports
+    // the byte count to map. False if nothing is pickable or the rect is empty.
+    bool encodeXrayBoxPickToStaging(int& x, int& y, int& w, int& h,
+                                    std::uint64_t& needed_bytes_out);
+    // Read the (already-mapped) hit bitmask → the object ids whose bit is set.
+    // Unmaps before returning.
+    std::vector<std::uint32_t> collectMappedXrayHitIds(std::uint64_t needed_bytes);
 
     // CPU half of pickSurfaceAt: cast the pixel's world ray against every
     // instance carrying `object_id`, returning the closest hit's world pos,
@@ -718,9 +916,16 @@ public:
     void applyPickToSelection(std::uint32_t object_id, bool add, bool remove);
 
     // Apply a marquee box-pick result to the selection: plain = replace with
-    // `ids`, add = union, remove = subtract. Schedules a frame.
+    // `ids`, add = union, remove = subtract. Schedules a frame. Also the
+    // programmatic selection primitive for host UIs (an empty `ids` with
+    // add=remove=false clears).
     void applyMarqueeToSelection(const std::vector<std::uint32_t>& ids,
                                  bool add, bool remove);
+
+    // Selection accessor. Mirrors ViewportWindow::selection() so hosts can read
+    // selectionIds() / activeId(); mutation goes through the apply*ToSelection
+    // paths above (they own the dirty flag + frame scheduling).
+    const SelectionState& selection() const { return selection_; }
 
     // Visibility + X-ray, shared by desktop (H / Shift+H / Alt+H / Alt+X) and
     // web. Hidden objects are skipped by the cull and xray_alpha_cap_ is read
@@ -729,7 +934,25 @@ public:
     void hideSelected();      // hide the selected objects, then clear selection
     void isolateSelected();   // hide everything that is NOT selected
     void showAll();           // clear the hidden set
+    void hideAll();           // hide every object in every loaded model
+    // Explicit per-object visibility, for host UIs driving a model tree /
+    // filter rather than the current selection.
+    void setObjectsVisible(const std::vector<std::uint32_t>& object_ids, bool visible);
+    bool isObjectHidden(std::uint32_t object_id) const { return visibility_.isHidden(object_id); }
+    const std::unordered_set<std::uint32_t>& hiddenIds() const { return visibility_.hiddenIds(); }
     size_t hiddenCount() const { return visibility_.hiddenCount(); }
+
+    // Runtime colour override. `rgba8` is packed 0xAABBGGRR (the byte order the
+    // WGSL unpacks); 0 is the sentinel for "no override — use the baked vertex
+    // colour", so clearing is just setObjectsColor(ids, 0). An alpha below 255
+    // routes the instance through the transparent pass on the next cull, which
+    // re-reads the byte every frame — nothing else to invalidate.
+    //
+    // Writes the CPU instance mirror and re-uploads the touched models' instance
+    // records. Cost is one buffer write per model that actually changed, so
+    // colouring a whole model is one upload, not one per object.
+    void setObjectsColor(const std::vector<std::uint32_t>& object_ids, std::uint32_t rgba8);
+    void clearObjectColors();   // drop every override in every model
     // Global X-ray: translucent everything. Flips the frame uniform's alpha cap;
     // the cull classifier routes every instance through the transparent pass.
     void toggleXray();
@@ -748,6 +971,11 @@ public:
     // Marquee box select: encode the pick pass, copy the (x, y, w, h)
     // sub-rect of the object_id MRT back, return the set of unique
     // non-zero ids. Synchronous (rare interaction) — desktop only path.
+    //
+    // In x-ray this instead runs the depth-less box-pick pass (see
+    // encodeXrayBoxPickToStaging), so the marquee selects THROUGH occluders —
+    // matching what x-ray already lets you see. Outside x-ray the depth-tested
+    // MRT read stands, so a marquee still takes only what is actually visible.
     std::vector<std::uint32_t> picksInRect(int x, int y, int w, int h);
 
 #if defined(__EMSCRIPTEN__)
@@ -865,6 +1093,85 @@ public:
 private:
     bool createPool();
 
+    // ---- Memory tiers (see GpuBudget.h) ------------------------------------
+    //
+    // Every allocation the frame cannot do without — the per-pixel
+    // attachments, a model's metadata buffers, readback staging — is
+    // "required" and goes through one of these so an out-of-memory is
+    // observed and answered by shrinking the geometry cache, instead of
+    // surfacing as an invalid resource that aborts in wgpuQueueSubmit.
+
+    // Bytes every per-pixel attachment set costs (MSAA colour + depth,
+    // selection mask trio, pick MRT + depth) — sizes the pressure
+    // carve-out when an attachment set fails.
+    static std::uint64_t attachmentBytesPerPixel();
+
+    // Desktop: the driver's view of the adapter wgpu picked (GpuMemory.h);
+    // `valid` false on web or an unsupported driver.
+    ifcviewer::GpuMemoryInfo queryDeviceMemory() const;
+    // Desktop, at most once a second from render(): refresh the device
+    // figures for FrameStats and re-derive the live cache budget from
+    // them, shrinking the pool when the device has less to give than the
+    // pool holds (another process took memory).
+    void pollDeviceMemory();
+    // Push budget_ to the pool: the growth ceiling, and a shrink when the
+    // pool is over it by at least a sub-buffer.
+    void applyBudgetToPool();
+
+    // A required allocation of `bytes` (`what` names it for the log)
+    // failed. Lowers the budget, evicts and releases cache sub-buffers
+    // down to it, and on desktop waits for the device to actually reclaim
+    // them so an immediate retry can succeed. Returns false when the
+    // cache had nothing left to give: the device is exhausted and the
+    // caller degrades (skips the operation) rather than retrying.
+    bool onRequiredAllocationFailed(const char* what, std::uint64_t bytes);
+    // Unload every resident chunk whose slices live in pool sub-buffer
+    // `sub_idx`; the evictor BufferPool::shrinkToCapacity calls before it
+    // releases that sub-buffer.
+    void evictChunksInSubBuffer(int sub_idx);
+
+    // Run `create` (one or more wgpu allocations totalling ~`bytes`) under
+    // an allocation scope. Desktop: verified synchronously; on failure
+    // `release` undoes the attempt, the cache yields, and `create` runs
+    // again, until it succeeds or the cache has nothing left to give
+    // (false). Web: the resources are used
+    // provisionally and true is returned; if the scope later reports a
+    // failure the cache yields and `on_web_failure` (if any) corrects
+    // course, since the caller has long since moved on.
+    bool allocateRequired(const char* what, std::uint64_t bytes,
+                          const std::function<void()>& create,
+                          const std::function<void()>& release,
+                          std::function<void()> on_web_failure = {});
+    // allocateRequired for a single buffer: the buffer, or null when the
+    // device could not fit it even after the cache yielded.
+    WGPUBuffer createRequiredBuffer(const WGPUBufferDescriptor& desc,
+                                    const char* what);
+
+    // (Re)create every per-pixel attachment for a width_px × height_px
+    // surface as one required allocation. False when they could not be
+    // allocated even after the cache yielded; render() then skips the
+    // frame rather than submitting with invalid views.
+    bool ensureRenderAttachments(int width_px, int height_px);
+    void releaseRenderAttachments();
+
+    GpuBudget budget_;
+    // Latch: the pool's first driver-refused growth has been answered by
+    // carving the margin out of the cache (see render()).
+    bool      pool_growth_refusal_handled_ = false;
+    // Adapter ids, read once at init, for matching the driver's memory
+    // report to the card wgpu is actually using.
+    std::uint32_t adapter_vendor_id_ = 0;
+    std::uint32_t adapter_device_id_ = 0;
+    // Latched false by ensureRenderAttachments when the device could not
+    // fit the attachments; re-evaluated on the next configureSurface.
+    bool      render_attachments_ok_ = true;
+
+    // The scene's models in load order (ascending session_model_id, minted at
+    // request time — see loadSidecarMetadataWeb). Every per-model API indexes
+    // against this, so a model keeps a stable UI slot instead of hopping with
+    // unordered_map iteration order.
+    std::vector<std::uint32_t> modelIdsInLoadOrder() const;
+
 public:
 
     // Friend access for ViewportWindow's reference proxies. As each
@@ -922,6 +1229,14 @@ private:
     // Lifted out of the Qt-coupled OverlayRenderer so one identical gizmo draws
     // everywhere; the desktop's OverlayRenderer no longer draws it.
     SectionGizmoRenderer section_gizmo_;
+    // Corner axis gizmo + orbit pivot indicator, likewise shared by desktop +
+    // web. Same lift out of the Qt-coupled OverlayRenderer.
+    AxisIndicatorRenderer axis_indicator_;
+    bool                  pivot_indicator_visible_ = false;
+    // Only running while an afterglow is armed; a drag-held indicator leaves it
+    // invalid so the triad stays up until the host clears it.
+    Stopwatch             pivot_indicator_timer_;
+    int                   pivot_indicator_hide_ms_ = 0;
 
     // HiZ occlusion-cull pipeline group. Downsamples MSAA depth into a
     // mip pyramid; consumed by next-frame cull.
@@ -998,6 +1313,39 @@ private:
     WGPUBindGroup       edge_bind_group_      = nullptr;
     bool                edges_enabled_        = true;
 
+    // Selection silhouette outline. The mask is rendered multisampled so it
+    // can share the main depth attachment, then resolved; the scratch holds
+    // the horizontal half of the separable dilation.
+    struct SelOutlineUniforms {
+        float inner_color[4];
+        float outer_color[4];
+        float inner_radius;   // physical px
+        float outer_radius;   // physical px
+        float _pad0;
+        float _pad1;
+    };
+    WGPURenderPipeline  sel_mask_pipeline_           = nullptr;
+    WGPUTexture         sel_mask_msaa_texture_       = nullptr;
+    WGPUTextureView     sel_mask_msaa_view_          = nullptr;
+    WGPUTexture         sel_mask_texture_            = nullptr;
+    WGPUTextureView     sel_mask_view_               = nullptr;
+    WGPUTexture         sel_scratch_texture_         = nullptr;
+    WGPUTextureView     sel_scratch_view_            = nullptr;
+    int                 sel_mask_w_                  = 0;
+    int                 sel_mask_h_                  = 0;
+    WGPUShaderModule    sel_outline_shader_module_   = nullptr;
+    WGPUBindGroupLayout sel_outline_bgl_             = nullptr;
+    WGPUPipelineLayout  sel_outline_pipeline_layout_ = nullptr;
+    WGPUBuffer          sel_outline_uniform_buffer_  = nullptr;
+    WGPURenderPipeline  sel_dilate_h_pipeline_       = nullptr;
+    WGPUBindGroup       sel_dilate_bind_group_       = nullptr;
+    WGPURenderPipeline  sel_outline_pipeline_        = nullptr;
+    WGPUBindGroup       sel_outline_bind_group_      = nullptr;
+    bool                selection_outline_enabled_   = true;
+
+    // True when there is something to outline and the resources are live.
+    bool selectionOutlineActive() const;
+
     // Pick pass. Reuses pipeline_layout_ — same set of bindings as the
     // main pass since the pick fragment also vertex-pulls instance data.
     WGPURenderPipeline  pick_pipeline_ = nullptr;
@@ -1022,6 +1370,11 @@ private:
     int                pick_h_                     = 0;
     WGPUBuffer         box_pick_staging_buffer_    = nullptr;
     std::uint64_t      box_pick_staging_capacity_  = 0;
+    // Readback target for the x-ray marquee's hit bits. Separate from the
+    // rect staging buffer above: that one holds an image, this one a bitmask.
+    WGPUBuffer         hit_flags_staging_buffer_   = nullptr;
+    std::uint64_t      hit_flags_staging_capacity_ = 0;
+    WGPURenderPipeline box_pick_pipeline_          = nullptr;
 #if defined(__EMSCRIPTEN__)
     // Async object-pick state (web). Held while the staging map is in flight;
     // pick_async_cb_ fires with object_id when the spontaneous map resolves.
@@ -1035,6 +1388,10 @@ private:
     int                               box_pick_async_h_ = 0;
     std::uint64_t                     box_pick_async_padded_bpr_ = 0;
     std::uint64_t                     box_pick_async_bytes_      = 0;
+    // Which staging buffer the in-flight map belongs to: the x-ray bitmask or
+    // the object_id rect. Both share box_pick_async_in_flight_ so only one box
+    // pick can be outstanding either way.
+    bool                              box_pick_async_xray_       = false;
     // Async surface pick (section tool): chained id→normal staging maps. Reuses
     // pick_async_in_flight_ (same staging buffers as the single object pick).
     std::function<void(SurfaceHit)>   surface_async_cb_;
@@ -1058,6 +1415,13 @@ private:
     WGPUBuffer    selection_flags_buffer_   = nullptr;
     uint32_t      selection_flags_capacity_ = 0;  // u32 entries
     std::vector<uint32_t> selection_flags_scratch_;
+
+    // X-ray marquee hit bits: one bit per object_id, written by fs_boxpick and
+    // read back to decide the selection. Allocated and bound alongside the
+    // selection flags (ensureSelectionFlagsBuffer) so the two never disagree
+    // about how many object ids exist.
+    WGPUBuffer    hit_flags_buffer_  = nullptr;
+    uint32_t      hit_flags_words_   = 0;   // u32 words = ceil(capacity / 32)
 
     // Active world-space section planes (up to kMaxSectionPlanes); packed
     // into the per-frame uniform every render and consumed by the WGSL
@@ -1144,11 +1508,27 @@ private:
     // Web only: number of chunk loads in flight, and the cap. The browser
     // multiplexes all in-flight Range requests over one HTTP/2 connection, so
     // an unbounded count splits the bandwidth N ways and nothing finishes (so
-    // nothing paints) until ~the whole model has downloaded. A small cap lets
-    // the highest-priority chunks finish + paint first, then the next —
+    // nothing paints) until ~the whole model has downloaded. A cap lets the
+    // highest-priority chunks finish + paint first, then the next —
     // progressive streaming. Tune for first-paint vs latency-hiding.
-    static constexpr int kMaxWebInflightChunks = 2;
+    //
+    // Raised from 2 once fetching stopped being frame-driven (see
+    // pumpWebChunkLoads). While a completion could only issue its successor on
+    // the NEXT render, the effective rate was 2 x frames-per-second and the cap
+    // was doing double duty as a pacing mechanism; with the pump it means only
+    // what it says. Six keeps a small multiplexed pipeline full without
+    // splitting bandwidth so far that nothing paints early.
+    static constexpr int kMaxWebInflightChunks = 6;
     int streaming_web_inflight_count_ = 0;
+
+    // Chunks the last driveStreamingLoads wanted but could not start, in
+    // priority order, so a completing load can start the next one immediately
+    // instead of waiting for a frame. Rebuilt every frame — this is a snapshot
+    // of the view's priorities, and every entry is re-checked before it is
+    // issued because the camera may have moved since.
+    struct PendingWebChunk { std::uint32_t session_model_id; std::size_t ci; };
+    std::vector<PendingWebChunk> web_pending_;
+    std::size_t                  web_pending_head_ = 0;
 
     // Settle burst: keep the render loop alive for a few frames after any
     // streaming activity so the cull→load→display latency (the draw + cull
@@ -1161,6 +1541,18 @@ private:
     // Per-frame breakdown counters consumed by the WGPU_STREAM_DEBUG
     // log. All reset at the top of driveStreamingLoads.
     int  streaming_candidates_this_frame_      = 0;
+    // Per-frame wgpuQueueWriteBuffer count and payload from the cull upload.
+    // On Dawn-web every one of these is an IPC message to the GPU process, so
+    // the COUNT matters at least as much as the bytes.
+    // Cumulative decompress + GPU-apply cost for streamed chunks. This runs in
+    // the JS completion callback, OUTSIDE render(), so none of it appears in
+    // the frame timings — which is exactly why a load can take 18s while the
+    // frames only account for 5.
+    double        chunk_apply_ms_total_        = 0.0;
+    std::uint64_t chunk_apply_raw_bytes_       = 0;
+    int           chunk_apply_count_           = 0;
+    int           cull_writes_this_frame_      = 0;
+    std::uint64_t cull_write_bytes_this_frame_ = 0;
     int  streaming_evictions_lru_this_frame_   = 0;
     int  streaming_evictions_pri_this_frame_   = 0;
     int  streaming_drained_this_frame_         = 0;
@@ -1202,15 +1594,57 @@ private:
     // for parallel-vs-serial benchmarking. Default ON.
     bool  cull_threads_enabled_    = true;
 
+    // ---- Cull-input tracking -------------------------------------------
+    //
+    // The CPU cull is the single largest per-frame cost (the whole frame on
+    // the single-threaded web build), and most requested frames do not
+    // change its inputs — overlay redraws, pick feedback, streaming frames
+    // where no chunk actually landed. scene_epoch_ is bumped by everything
+    // that can alter a cull's outcome besides the camera (residency,
+    // visibility, colours, transforms, model set, HiZ pyramid updates);
+    // render() re-culls only when the epoch, the camera, or a cull-relevant
+    // setting changed, and otherwise draws from the buffers the last cull
+    // uploaded.
+    std::uint64_t scene_epoch_ = 0;
+    void markCullInputsChanged() { ++scene_epoch_; }
+    bool          has_last_cull_       = false;
+    Eigen::Matrix4f last_cull_vp_      = Eigen::Matrix4f::Zero();
+    std::uint64_t last_cull_epoch_     = 0;
+    float         last_cull_min_px_    = -1.0f;
+    float         last_cull_lod_px_    = -1.0f;
+    float         last_cull_xray_      = -1.0f;
+    bool          last_cull_hiz_       = false;
+
     // Per-frame stats latched by render() for FrameStats emission +
     // the interactive heartbeat / bench per-frame line.
     std::uint32_t last_visible_objects_   = 0;
     std::uint32_t last_visible_triangles_ = 0;
     std::uint32_t last_sub_draws_         = 0;
+    // Device-wide VRAM readout for FrameStats and the live cache budget
+    // (pollDeviceMemory). The driver query is too slow for per-frame use,
+    // so it is re-polled at most once a second and the last answer is
+    // repeated in between.
+    std::uint64_t device_vram_used_bytes_  = 0;
+    std::uint64_t device_vram_total_bytes_ = 0;
+    Stopwatch     device_vram_poll_timer_;
+    std::size_t   polled_sub_buffer_count_ = 0;
     double last_cull_ms_                  = 0.0;
     double last_cull_compute_ms_          = 0.0;
     double last_cull_upload_ms_           = 0.0;
     double last_stream_ms_                = 0.0;
+    // Motion-cull latch. The coarse motion threshold used to follow the
+    // per-frame "did the camera move" test directly, which flip-flops
+    // during a slow low-fps drag: coalesced mouse events leave frames
+    // where the camera happens not to change, so the cull alternated
+    // between the 3 px and 15 px thresholds — most of the scene vanishing
+    // and reappearing every few frames, with a full visible-set re-upload
+    // at each flip. The latch holds the coarse threshold until the camera
+    // has been still for kMotionHoldMs, so a drag degrades once at its
+    // start and restores once, shortly after it ends.
+    static constexpr int kMotionHoldMs = 250;
+    bool      motion_cull_latched_ = false;
+    Stopwatch motion_hold_timer_;
+
     // True when the cull just used motion_min_pixel_radius_ — render()
     // schedules one more frame so the camera-now-stopped state recomputes
     // the cull at the still threshold and previously dropped sub-pixel
@@ -1321,6 +1755,11 @@ private:
     // an sRGB-to-linear conversion on top so the on-screen colour
     // matches the hex value passed via setBackgroundColor.
     Eigen::Vector4f background_color_ = {0.125f, 0.137f, 0.161f, 1.0f};
+
+    // Whether the surface was configured with a premultiplied alpha mode, and
+    // so whether background_color_'s alpha reaches the compositor at all.
+    // Decided per configureSurface against the surface's advertised modes.
+    bool surface_premultiplied_ = false;
 };
 
 #endif  // VIEWPORTCORE_H

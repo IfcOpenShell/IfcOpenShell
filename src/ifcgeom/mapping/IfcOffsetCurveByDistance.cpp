@@ -21,7 +21,7 @@
 #include "../profile_helper.h"
 #include "../function_item_evaluator.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 // ifc4x1
 //#define SCHEMA_IfcOffsetCurveByDistances_HAS_OffsetValues
@@ -63,7 +63,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances& inst
     double start = basis_curve_fn->start();
     double basis_curve_length = basis_curve_fn->length();
 
-    taxonomy::piecewise_function::spans_t offset_spans;
+    taxonomy::piecewise_function::span_list offset_spans;
 
 #if defined SCHEMA_HAS_IfcDistanceExpression
    double first_distance = first_offset_value.DistanceAlong();
@@ -84,11 +84,11 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances& inst
         double pz = first_offset_value.OffsetVertical().value_or(0.0);
         py *= length_unit_;
         pz *= length_unit_;
-        
-        auto fn = [py, pz](double /*u*/) -> Eigen::Matrix4d { 
-           Eigen::Matrix4d m = Eigen::Matrix4d::Identity(); 
-           m.col(3)(1) = py; 
-           m.col(3)(2) = pz; 
+
+        auto fn = [py, pz](double /*u*/) -> Eigen::Matrix4d {
+           Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+           m.col(3)(1) = py;
+           m.col(3)(2) = pz;
            return m; };
         offset_spans.emplace_back(taxonomy::make<taxonomy::functor_item>(first_distance, fn));
 	}
@@ -146,7 +146,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances& inst
             zn = zn_at_end;
         }
 
-       
+
         auto fn = [yp, yn, zp, zn, l](double u) -> Eigen::Matrix4d {
             Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
             m.col(3)(1) = (l == 0.0 ? yp : (yp + (yn - yp) * u / l));
@@ -171,10 +171,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances& inst
          py *= length_unit_;
          pz *= length_unit_;
          double l = basis_curve_length - last_distance;
-         auto fn = [py, pz](double /*u*/) -> Eigen::Matrix4d { 
-            Eigen::Matrix4d m = Eigen::Matrix4d::Identity(); 
-            m.col(3)(1) = py; 
-            m.col(3)(2) = pz; 
+         auto fn = [py, pz](double /*u*/) -> Eigen::Matrix4d {
+            Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+            m.col(3)(1) = py;
+            m.col(3)(2) = pz;
             return m; };
 
          offset_spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn));

@@ -14,6 +14,14 @@ add_library(IfcGeom ${SCHEMA_AGNOSTIC_FILES})
 set_target_properties(IfcGeom PROPERTIES
         OUTPUT_NAME "ifcopenshell.geometry"
 )
+target_include_directories(IfcGeom PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+
+if((NOT WIN32) AND BUILD_SHARED_LIBS AND NOT WASM_BUILD AND NOT CREATE_BUNDLE AND NOT CMAKE_INSTALL_RPATH AND COMMAND SET_INSTALL_SELF_RPATH)
+    SET_INSTALL_SELF_RPATH(IfcGeom)
+endif()
 set_target_properties(IfcGeom PROPERTIES COMPILE_FLAGS -DIFC_GEOM_EXPORTS)
 if (NOT CREATE_BUNDLE)
 set_target_properties(IfcGeom PROPERTIES VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
@@ -33,7 +41,7 @@ if(UNIX)
     find_package(Threads)
 endif()
 
-find_package(Eigen3 REQUIRED)
+find_package(Eigen3 ${EIGEN_MIN_VERSION} REQUIRED)
 
 add_subdirectory(kernels)
 set(kernel_libraries ${kernel_libraries} PARENT_SCOPE)
@@ -46,7 +54,7 @@ else()
 endif()
 
 if((BUILD_CONVERT OR BUILD_IFCPYTHON) AND WITH_OPENCASCADE)
-    add_subdirectory(Serialization)
+    add_subdirectory(serialization)
     set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} PARENT_SCOPE)
     set(geometry_serializer_libraries ${geometry_serializer_libraries} PARENT_SCOPE)
 endif()

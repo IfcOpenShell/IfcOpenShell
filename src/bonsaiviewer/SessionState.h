@@ -89,6 +89,7 @@ public:
     void notifyFederationChanged();
     void notifyVisibilityChanged();
     void notifyModelGeometryReady(uint32_t session_model_id);
+    void notifyModelLoadStateChanged(const QString& model_id);
     void notifyProjectOpened(const QString& path);
     void notifyProjectSaved(const QString& path);
     void notifyProjectReset();
@@ -107,6 +108,10 @@ signals:
     // for both sidecar-cache and stream loads; subscribers that just need to
     // re-derive view state (e.g. ViewportView::refresh) listen to this.
     void modelGeometryReady(uint32_t session_model_id);
+    // Fires when a model was unloaded from, or loaded back onto, the GPU
+    // (commands::unloadModel / loadModel). The viewport is the authority
+    // for the state itself — ViewportWindow::isModelUnloaded.
+    void modelLoadStateChanged(const QString& model_id);
     // Fires when a model's live IFC data source (the .ifc/.rdb, opened in the
     // background after a sidecar-cache hit) becomes available for queries —
     // e.g. so the spatial hierarchy can be built once the file is loaded.

@@ -2,7 +2,7 @@
 
 #include "validation_utils.h"
 
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 #include <CGAL/AABB_tree.h>
 #include <CGAL/AABB_traits.h>
@@ -18,7 +18,7 @@ typedef CGAL::AABB_traits<Kernel_, Primitive> Traits;
 typedef CGAL::AABB_tree<Traits> Tree;
 typedef Tree::Point_and_primitive_id Point_and_primitive_id;
 
-void fix_spaceboundaries(ifcopenshell::file& f, bool no_progress, bool quiet, bool stderr_progress, logger& logger = ::logger::root()) {
+void fix_spaceboundaries(ifcopenshell::file& f, bool no_progress, bool quiet, bool stderr_progress, ifcopenshell::logger& logger = ifcopenshell::logger::root()) {
 	intersection_validator v(f, { "IfcWall", "IfcSpace", "IfcSlab", "IfcCovering" }, 1.e-5, no_progress, quiet, stderr_progress, logger);
 
 	auto rels = f.instances_by_type("IfcRelSpaceBoundary");
@@ -45,16 +45,16 @@ void fix_spaceboundaries(ifcopenshell::file& f, bool no_progress, bool quiet, bo
 		return;
 	}
 
-	ifcopenshell::geometry::Settings settings;
+	ifcopenshell::geom::settings settings;
 
-	settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = false;
-	settings.get<ifcopenshell::geometry::settings::WeldVertices>().value = false;
-	settings.get<ifcopenshell::geometry::settings::ReorientShells>().value = true;
-	settings.get<ifcopenshell::geometry::settings::ConvertBackUnits>().value = true;
-	settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
-	settings.get<ifcopenshell::geometry::settings::DisableOpeningSubtractions>().value = true;
+	settings.get<ifcopenshell::geom::settings::UseWorldCoords>().value = false;
+	settings.get<ifcopenshell::geom::settings::WeldVertices>().value = false;
+	settings.get<ifcopenshell::geom::settings::ReorientShells>().value = true;
+	settings.get<ifcopenshell::geom::settings::ConvertBackUnits>().value = true;
+	settings.get<ifcopenshell::geom::settings::IteratorOutput>().value = ifcopenshell::geom::settings::NATIVE;
+	settings.get<ifcopenshell::geom::settings::DisableOpeningSubtractions>().value = true;
 
-	ifcopenshell::geometry::Converter c(ifcopenshell::geometry::kernels::construct(&f2, "cgal", settings), &f2, settings, logger);
+	ifcopenshell::geom::converter c(ifcopenshell::geom::kernels::construct(&f2, "cgal", settings, logger), &f2, settings, logger);
 
 	std::map<std::set<std::string>, std::vector<Kernel_::Point_3>> elem_to_space_boundary_coords;
 
@@ -112,7 +112,7 @@ void fix_spaceboundaries(ifcopenshell::file& f, bool no_progress, bool quiet, bo
 
 		guid_pairs_visited.insert({ Aguid, Bguid });
 
-		cgal_shape_t x_poly;
+		cgal_polyhedron x_poly;
 		x.convert_to_polyhedron(x_poly);
 
 		{

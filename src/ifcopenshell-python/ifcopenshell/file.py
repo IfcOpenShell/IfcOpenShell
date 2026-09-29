@@ -22,8 +22,6 @@ import functools
 import numbers
 import os
 import re
-import types
-import weakref
 import zipfile
 from collections.abc import Callable, Generator
 from pathlib import Path
@@ -92,8 +90,8 @@ class Transaction:
     batch_inverses: list[ElementInverses]
     batch_delete_ids: set[int]
 
-    def __init__(self, ifc_file: file):
-        self.file: file = ifc_file
+    def __init__(self, ifc_file: ifcopenshell.file):
+        self.file: ifcopenshell.file = ifc_file
         self.operations = []
         self.is_batched = False
         self.batch_delete_index = 0
@@ -259,9 +257,11 @@ binary_deserializers = (
     lambda __, val: struct.unpack("@d", val)[0],
     lambda __, val: val.decode("utf-8"),
     lambda __, val: val.decode("utf-8"),
-    lambda storage, val: ifcopenshell_wrapper.schema_by_name(storage.schema_identifier)
-    .declarations()[struct.unpack("@q", val[:8])[0]]
-    .enumeration_items()[struct.unpack("@q", val[8:])[0]],
+    lambda storage, val: (
+        ifcopenshell_wrapper.schema_by_name(storage.schema_identifier)
+        .declarations()[struct.unpack("@q", val[:8])[0]]
+        .enumeration_items()[struct.unpack("@q", val[8:])[0]]
+    ),
     lambda storage, val: storage.by_id((val[0] == 105, struct.unpack("@q", val[1:])[0])),
     lambda __, _: (),
     lambda __, val: struct.unpack("@" + "i" * (len(val) // 4), val),
@@ -382,13 +382,13 @@ class rocksdb_lazy_instance:
                 else:
                     return repr(val)
             elif isinstance(val, (tuple, list)):
-                return f'({",".join(map(val_repr, val))})'
+                return f"({','.join(map(val_repr, val))})"
             elif val is None:
                 return "$"
             else:
                 return repr(val)
 
-        return f'{pre}{self.is_a()}({",".join(map(val_repr, self))})'
+        return f"{pre}{self.is_a()}({','.join(map(val_repr, self))})"
 
     def id(self):
         if self.name.startswith("i|"):
@@ -429,7 +429,7 @@ class rocksdb_file_storage:
 
     def by_id(self, name):
         if isinstance(name, tuple):
-            inst = rocksdb_lazy_instance(self, f'{"i" if name[0] else "t"}|{name[1]}')
+            inst = rocksdb_lazy_instance(self, f"{'i' if name[0] else 't'}|{name[1]}")
         else:
             inst = rocksdb_lazy_instance(self, f"i|{name}")
         if not inst:
@@ -636,6 +636,7 @@ class file_mixin:
         # Don't store these attributes as transactions
         # as the creation it self is already stored with
         # it's arguments
+        transaction = None
         if attrs:
             transaction = self.transaction
             self.transaction = None
@@ -699,7 +700,7 @@ class file_mixin:
         if attr[0:6] == "create":
             return functools.partial(self.create_entity, attr[6:])
         else:
-            raise AttributeError
+            raise AttributeError(f"'file' object has no attribute '{attr}'.")
 
     def __getitem__(self, key: Union[numbers.Integral, str, bytes]) -> ifcopenshell.entity_instance:
         if isinstance(key, numbers.Integral):
@@ -717,17 +718,19 @@ class file_mixin:
         :returns: An ifcopenshell.entity_instance
         """
 
+        max_id = None
         if self.transaction:
             max_id = self.get_max_id()
 
         result = self._add(inst, -1 if _id is None else _id)
 
         if self.transaction:
+            assert max_id is not None
             added_elements = [e for e in self.traverse(result) if e.id() > max_id]
             [self.transaction.store_create(e) for e in reversed(added_elements)]
         return result
 
-    def by_type(self, type: str, include_subtypes=True) -> list[ifcopenshell.entity_instance]:
+    def by_type(self, type: str, include_subtypes=True) -> tuple[ifcopenshell.entity_instance, ...]:
         """Return IFC objects filtered by IFC Type and wrapped with the entity_instance class.
 
         If an IFC type class has subclasses, all entities of those subclasses are also returned.
@@ -745,7 +748,7 @@ class file_mixin:
 
     def traverse(
         self, inst: ifcopenshell.entity_instance, max_levels: Optional[int] = None, breadth_first: bool = False
-    ) -> list[ifcopenshell.entity_instance]:
+    ) -> tuple[ifcopenshell.entity_instance, ...]:
         """Get a list of all referenced instances for a particular instance including itself
 
         :param inst: The entity instance to get all sub instances
@@ -775,8 +778,15 @@ class file_mixin:
         self,
         inst: ifcopenshell.entity_instance,
         allow_duplicate: Literal[True],
-        with_attribute_indices: bool = False,
+        with_attribute_indices: Literal[False] = False,
     ) -> list[ifcopenshell.entity_instance]: ...
+    @overload
+    def get_inverse(
+        self,
+        inst: ifcopenshell.entity_instance,
+        allow_duplicate: Literal[True],
+        with_attribute_indices: Literal[True],
+    ) -> list[tuple[ifcopenshell.entity_instance, int]]: ...
     @overload
     def get_inverse(
         self,
@@ -789,7 +799,11 @@ class file_mixin:
         inst: ifcopenshell.entity_instance,
         allow_duplicate: bool = False,
         with_attribute_indices: bool = False,
-    ) -> Union[list[ifcopenshell.entity_instance], set[ifcopenshell.entity_instance]]:
+    ) -> (
+        list[ifcopenshell.entity_instance]
+        | set[ifcopenshell.entity_instance]
+        | list[tuple[ifcopenshell.entity_instance, int]]
+    ):
         """Return a list of entities that reference this entity
 
         Warning: this is a slow function, especially when there is a large
@@ -831,19 +845,28 @@ class file_mixin:
             self.transaction.store_delete(inst)
         return self._remove(inst)
 
-    def batch(self):
-        """Low-level mechanism to speed up deletion of large subgraphs"""
+    def batch(self) -> None:
+        """Enable batch mode, a low-level mechanism to speed up deleting large subgraphs.
+
+        In batch mode ``remove(entity)`` marks the entity for deletion instead
+        of deleting it, and ``unbatch()`` deletes everything marked in one
+        operation. The difference from usual removal: normally, removing an
+        entity immediately edits it out of every entity that references it; in
+        batch mode a referencing entity that is itself marked is left alone,
+        so removing a face set and its thousands of faces does not rewrite the
+        face set's list once per face.
+        """
         if self.transaction:
             self.transaction.batch()
-        return self.batch()
+        self._batch()
 
-    def unbatch(self):
-        """Low-level mechanism to speed up deletion of large subgraphs"""
+    def unbatch(self) -> None:
+        """Exit batch mode, deleting everything marked since ``batch()``."""
         if self.transaction:
             self.transaction.unbatch()
-        return self.unbatch()
+        self._unbatch()
 
-    def __iter__(self) -> Generator[ifcopenshell.entity_instance, None, None]:
+    def __iter__(self) -> Generator[ifcopenshell.entity_instance]:
         return iter(self[id] for id in self.entity_names())
 
     def assign_header_from(self, other: ifcopenshell.file) -> None:
@@ -900,7 +923,7 @@ class file_mixin:
     def _determine_schema_identifier(
         schema: Optional[ifcopenshell.util.schema.IFC_SCHEMA] = None,
         schema_version: Optional[tuple[int, int, int, int]] = None,
-    ):
+    ) -> str:
         if schema_version:
             prefixes = ("IFC", "X", "_ADD", "_TC")
             schema = "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, schema_version))

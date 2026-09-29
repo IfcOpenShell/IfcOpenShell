@@ -3,7 +3,6 @@ from __future__ import annotations
 import keyword
 import re
 
-
 INTEGER_CPP_TYPES = {"int", "size_t", "std::size_t", "unsigned int", "uint32_t"}
 
 
@@ -127,11 +126,7 @@ def resolve_cpp_type_key(cpp_type: str, candidates: set[str]) -> str | None:
     if canonical in candidates:
         return canonical
     leaf = strip_pointer(canonical).rsplit("::", 1)[-1]
-    matches = [
-        candidate
-        for candidate in candidates
-        if strip_pointer(candidate).rsplit("::", 1)[-1] == leaf
-    ]
+    matches = [candidate for candidate in candidates if strip_pointer(candidate).rsplit("::", 1)[-1] == leaf]
     if len(matches) == 1:
         return matches[0]
     return None

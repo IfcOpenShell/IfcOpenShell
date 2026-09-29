@@ -38,7 +38,9 @@ pub fn progress_detail(percent: Option<i32>, done: Option<u64>, total: Option<u6
         parts.push(format!("{p}%"));
     }
     match (done, total) {
-        (Some(d), Some(t)) if t > 0 => parts.push(format!("{} / {}", format_bytes(d), format_bytes(t))),
+        (Some(d), Some(t)) if t > 0 => {
+            parts.push(format!("{} / {}", format_bytes(d), format_bytes(t)))
+        }
         (Some(d), _) => parts.push(format_bytes(d)),
         _ => {}
     }
@@ -49,10 +51,18 @@ pub fn progress_detail(percent: Option<i32>, done: Option<u64>, total: Option<u6
 /// "(i/N)" when batching. Pass `total = 0` for single-file transfers.
 pub fn download_callback(report: Report, index: usize, total: usize) -> ApsProgress {
     Arc::new(move |name, percent, done, total_bytes| {
-        let suffix = if total != 0 { format!(" ({index}/{total})") } else { String::new() };
+        let suffix = if total != 0 {
+            format!(" ({index}/{total})")
+        } else {
+            String::new()
+        };
         let detail = progress_detail(percent, done, total_bytes);
         let msg = format!("Downloading {name}{suffix}");
-        let detail_ref = if detail.is_empty() { None } else { Some(detail.as_str()) };
+        let detail_ref = if detail.is_empty() {
+            None
+        } else {
+            Some(detail.as_str())
+        };
         report("download", &msg, percent, detail_ref);
     })
 }
@@ -61,7 +71,11 @@ pub fn upload_callback(report: Report) -> ApsProgress {
     Arc::new(move |name, percent, done, total_bytes| {
         let detail = progress_detail(percent, done, total_bytes);
         let msg = format!("Uploading {name}");
-        let detail_ref = if detail.is_empty() { None } else { Some(detail.as_str()) };
+        let detail_ref = if detail.is_empty() {
+            None
+        } else {
+            Some(detail.as_str())
+        };
         report("upload", &msg, percent, detail_ref);
     })
 }
@@ -73,21 +87,31 @@ pub fn auth_to_report(report: Report) -> AuthProgress {
     })
 }
 
+/// A single coalesced report: `(phase, message, percent, detail)`.
+type PendingReport = (String, String, Option<i32>, Option<String>);
+
 /// Latest-wins hand-off from worker thread → UI thread. Intermediate updates
 /// are coalesced: only the freshest matters for a progress bar.
 pub struct ProgressBridge {
-    pending: Mutex<Option<(String, String, Option<i32>, Option<String>)>>,
+    pending: Mutex<Option<PendingReport>>,
 }
 
 impl ProgressBridge {
     pub fn new() -> Arc<Self> {
-        Arc::new(Self { pending: Mutex::new(None) })
+        Arc::new(Self {
+            pending: Mutex::new(None),
+        })
     }
 
     pub fn report_fn(self: Arc<Self>) -> Report {
         Arc::new(move |phase, message, percent, detail| {
             let mut slot = self.pending.lock().unwrap();
-            *slot = Some((phase.to_string(), message.to_string(), percent, detail.map(str::to_string)));
+            *slot = Some((
+                phase.to_string(),
+                message.to_string(),
+                percent,
+                detail.map(str::to_string),
+            ));
         })
     }
 
@@ -110,7 +134,10 @@ mod tests {
 
     #[test]
     fn progress_detail_combines_parts() {
-        assert_eq!(progress_detail(Some(50), Some(512), Some(1024)), "50%, 512 B / 1.0 KB");
+        assert_eq!(
+            progress_detail(Some(50), Some(512), Some(1024)),
+            "50%, 512 B / 1.0 KB"
+        );
         assert_eq!(progress_detail(None, Some(512), None), "512 B");
         assert_eq!(progress_detail(None, None, None), "");
     }

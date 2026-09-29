@@ -21,12 +21,12 @@
 #define IFCOPENSHELL_DOCUMENT_SERIALIZER_PLUGIN_H
 
 #include "../serializers/serializers_api.h"
-#include "../ifcgeom/Serializer.h"
+#include "../ifcgeom/serializer.h"
 #include "../ifcparse/file.h"
 #include "../plugin/plugin.h"
 
-#include <boost/function.hpp>
-#include <boost/shared_ptr.hpp>
+#include <functional>
+#include <memory>
 
 #include <filesystem>
 #include <map>
@@ -35,6 +35,8 @@
 
 namespace ifcopenshell {
 namespace serializers {
+
+using ifcopenshell::geom::serializer;
 
 struct SERIALIZERS_API document_serializer_info {
 	std::string format;
@@ -62,18 +64,18 @@ struct SERIALIZERS_API document_serializer_context {
 
 class SERIALIZERS_API document_serializer_registry {
 public:
-	typedef boost::function<boost::shared_ptr<Serializer>(const document_serializer_context&)> create_fn;
+	typedef std::function<std::shared_ptr<serializer>(const document_serializer_context&)> create_fn;
 
 	void bind(const document_serializer_info& info, create_fn create, const ifcopenshell::plugin::module& module = ifcopenshell::plugin::module());
 	const document_serializer_info* find(const std::string& format, const std::string& schema_name = std::string()) const;
-	boost::shared_ptr<Serializer> create(const std::string& format, const document_serializer_context& context) const;
+	std::shared_ptr<serializer> create(const std::string& format, const document_serializer_context& context) const;
 	std::vector<document_serializer_info> serializers() const;
 
 private:
 	struct entry {
+		ifcopenshell::plugin::module module_;
 		document_serializer_info info_;
 		create_fn create_;
-		ifcopenshell::plugin::module module_;
 	};
 
 	const entry* find_entry_(const std::string& format, const std::string& schema_name) const;

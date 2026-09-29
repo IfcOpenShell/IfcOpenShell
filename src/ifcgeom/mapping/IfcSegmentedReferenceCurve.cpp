@@ -19,7 +19,7 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 #include "../function_item_evaluator.h"
 
@@ -28,10 +28,10 @@ using namespace ifcopenshell::geometry;
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve& inst) {
    if (!inst.BaseCurve().as<IfcSchema::IfcGradientCurve>())
        logger_.warning("GEO", 291, "Expected IfcSegmentedReferenceCurve.BaseCurve to be IfcGradient", inst); // CT 4.1.7.1.1.3
-		  
+
 	auto segments = inst.Segments();
 
-	taxonomy::piecewise_function::spans_t spans;
+	taxonomy::piecewise_function::span_list spans;
     for (auto& segment : segments) {
 		if (auto cseg = segment.as<IfcSchema::IfcCurveSegment>()) {
 			// @todo check that we don't get a mixture of implicit and explicit definitions

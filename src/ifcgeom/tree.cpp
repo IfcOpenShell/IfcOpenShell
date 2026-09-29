@@ -19,215 +19,102 @@
 
 #include "tree.h"
 
-#include "Iterator.h"
-#include "tree_registry.h"
+#include "iterator.h"
 #include "../ifcparse/exception.h"
 
 #include <boost/functional/hash.hpp>
 
 #include <cstdio>
-#include <limits>
 #include <unordered_set>
 
 namespace {
-	constexpr const char* default_selection_backend_id = "opencascade.brep";
-	constexpr const char* default_clash_backend_id = "opencascade.trianglebvh";
-
-	const std::vector<double>& empty_double_vector() {
-		static const std::vector<double> values;
-		return values;
-	}
-
-	const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& empty_style_vector() {
-		static const std::vector<ifcopenshell::geometry::taxonomy::style::ptr> values;
-		return values;
-	}
-
-	std::vector<express::Entity> to_product_entities(const std::vector<express::Base>& instances) {
-		std::vector<express::Entity> entities;
-		entities.reserve(instances.size());
-
-		for (const auto& instance : instances) {
-			if (!instance) {
-				throw ifcopenshell::exception("All instances should be of type IfcProduct");
-			}
-
-			auto entity = instance.as<express::Entity>();
-			if (!entity || !instance.declaration().is("IfcProduct")) {
-				throw ifcopenshell::exception("All instances should be of type IfcProduct");
-			}
-			entities.push_back(entity);
-		}
-
-		return entities;
+	[[noreturn]] void unsupported_tree_operation(const std::string& backend_id, const std::string& operation) {
+		throw ifcopenshell::exception("Tree backend '" + backend_id + "' does not support " + operation);
 	}
 }
 
-class IfcGeom::tree::impl {
-public:
-	impl() = default;
+ifcopenshell::geom::tree::~tree() = default;
 
-	explicit impl(const std::string& backend_id)
-		: backend_id_(backend_id)
-	{}
-
-	ifcopenshell::geometry::trees::abstract_tree& backend() const {
-		if (!backend_) {
-			if (backend_id_.empty()) {
-				throw ifcopenshell::exception("No geometry tree backend configured");
-			}
-			backend_ = ifcopenshell::geometry::trees::construct(backend_id_);
-		}
-		return *backend_;
-	}
-
-	ifcopenshell::geometry::trees::abstract_tree& backend(const std::string& default_backend_id) const {
-		if (backend_id_.empty()) {
-			backend_id_ = default_backend_id;
-		}
-		return backend();
-	}
-
-	ifcopenshell::geometry::trees::abstract_tree& backend_for_element(IfcGeom::Element* element) const {
-		if (dynamic_cast<IfcGeom::BRepElement*>(element)) {
-			return backend(default_selection_backend_id);
-		}
-
-		if (dynamic_cast<IfcGeom::TriangulationElement*>(element)) {
-			return backend(default_clash_backend_id);
-		}
-
-		throw ifcopenshell::exception("Unsupported tree element type");
-	}
-
-	const ifcopenshell::geometry::trees::abstract_tree* backend_or_null() const {
-		return backend_.get();
-	}
-
-private:
-	mutable std::string backend_id_;
-	mutable std::unique_ptr<ifcopenshell::geometry::trees::abstract_tree> backend_;
-};
-
-IfcGeom::tree::tree()
-	: impl_(new impl())
-{}
-
-IfcGeom::tree::tree(const std::string& backend_id)
-	: impl_(new impl(backend_id))
-{}
-
-IfcGeom::tree::tree(ifcopenshell::file& file)
-	: tree()
-{
-	add_file(file, ifcopenshell::geometry::Settings{});
+void ifcopenshell::geom::tree::add_file(ifcopenshell::file&, const ifcopenshell::geom::settings&) {
+	unsupported_tree_operation(backend_id(), "add_file()");
 }
 
-IfcGeom::tree::tree(ifcopenshell::file& file, const ifcopenshell::geometry::Settings& settings)
-	: tree()
-{
-	add_file(file, settings);
-}
-
-IfcGeom::tree::tree(IfcGeom::Iterator& iterator)
-	: tree()
-{
-	add_file(iterator);
-}
-
-IfcGeom::tree::~tree() = default;
-
-IfcGeom::tree::tree(tree&& other) noexcept = default;
-
-IfcGeom::tree& IfcGeom::tree::operator=(tree&& other) noexcept = default;
-
-void IfcGeom::tree::add_file(ifcopenshell::file& file, const ifcopenshell::geometry::Settings& settings) {
-	impl_->backend(default_selection_backend_id).add_file(file, settings);
-}
-
-void IfcGeom::tree::add_file(IfcGeom::Iterator& iterator) {
+void ifcopenshell::geom::tree::add_file(ifcopenshell::geom::iterator& iterator) {
 	if (!iterator.initialize()) {
 		return;
 	}
 
 	do {
-		add_element(iterator.get());
+		auto element = iterator.get();
+		add_element(element.get());
 	} while (iterator.next());
 }
 
-void IfcGeom::tree::add_element(IfcGeom::Element* element) {
-	if (!element) {
-		return;
-	}
-
-	impl_->backend_for_element(element).add_element(element);
+void ifcopenshell::geom::tree::add_element(ifcopenshell::geom::element*) {
+	unsupported_tree_operation(backend_id(), "add_element()");
 }
 
-std::vector<express::Entity> IfcGeom::tree::select_box(const express::Entity& entity, bool completely_within, double extend) const {
-	return impl_->backend(default_selection_backend_id).select_box(entity, completely_within, extend);
+std::vector<express::base> ifcopenshell::geom::tree::select_box(const express::base&, bool, double) const {
+	unsupported_tree_operation(backend_id(), "select_box(entity)");
 }
 
-std::vector<express::Entity> IfcGeom::tree::select_box(const tree_point& point) const {
-	return impl_->backend(default_selection_backend_id).select_box(point);
+std::vector<express::base> ifcopenshell::geom::tree::select_box(const tree_point&) const {
+	unsupported_tree_operation(backend_id(), "select_box(point)");
 }
 
-std::vector<express::Entity> IfcGeom::tree::select_box(const tree_box& bounds, bool completely_within) const {
-	return impl_->backend(default_selection_backend_id).select_box(bounds, completely_within);
+std::vector<express::base> ifcopenshell::geom::tree::select_box(const tree_box&, bool) const {
+	unsupported_tree_operation(backend_id(), "select_box(bounds)");
 }
 
-std::vector<express::Entity> IfcGeom::tree::select(const express::Entity& entity, bool completely_within, double extend) const {
-	return impl_->backend(default_selection_backend_id).select(entity, completely_within, extend);
+std::vector<express::base> ifcopenshell::geom::tree::select(const express::base&, bool, double) const {
+	unsupported_tree_operation(backend_id(), "select(entity)");
 }
 
-std::vector<express::Entity> IfcGeom::tree::select(const IfcGeom::Element* element, bool completely_within, double extend) const {
-	return impl_->backend(default_selection_backend_id).select(element, completely_within, extend);
+std::vector<express::base> ifcopenshell::geom::tree::select(const ifcopenshell::geom::element*, bool, double) const {
+	unsupported_tree_operation(backend_id(), "select(element)");
 }
 
-std::vector<express::Entity> IfcGeom::tree::select(const tree_point& point, double extend) const {
-	return impl_->backend(default_selection_backend_id).select(point, extend);
+std::vector<express::base> ifcopenshell::geom::tree::select(const tree_point&, double) const {
+	unsupported_tree_operation(backend_id(), "select(point)");
 }
 
-std::vector<IfcGeom::ray_intersection_result> IfcGeom::tree::select_ray(const tree_point& origin, const tree_point& direction, double length) const {
-	return impl_->backend(default_selection_backend_id).select_ray(origin, direction, length);
+std::vector<ifcopenshell::geom::ray_intersection_result> ifcopenshell::geom::tree::select_ray(const tree_point&, const tree_point&, double) const {
+	unsupported_tree_operation(backend_id(), "select_ray()");
 }
 
-std::vector<IfcGeom::clash> IfcGeom::tree::clash_intersection_many(const std::vector<express::Base>& set_a, const std::vector<express::Base>& set_b, double tolerance, bool check_all) const {
-	return impl_->backend(default_clash_backend_id).clash_intersection_many(to_product_entities(set_a), to_product_entities(set_b), tolerance, check_all);
+std::vector<ifcopenshell::geom::clash> ifcopenshell::geom::tree::clash_intersection_many(const std::vector<express::base>&, const std::vector<express::base>&, double, bool) const {
+	unsupported_tree_operation(backend_id(), "clash_intersection_many()");
 }
 
-std::vector<IfcGeom::clash> IfcGeom::tree::clash_collision_many(const std::vector<express::Base>& set_a, const std::vector<express::Base>& set_b, bool allow_touching) const {
-	return impl_->backend(default_clash_backend_id).clash_collision_many(to_product_entities(set_a), to_product_entities(set_b), allow_touching);
+std::vector<ifcopenshell::geom::clash> ifcopenshell::geom::tree::clash_collision_many(const std::vector<express::base>&, const std::vector<express::base>&, bool) const {
+	unsupported_tree_operation(backend_id(), "clash_collision_many()");
 }
 
-std::vector<IfcGeom::clash> IfcGeom::tree::clash_clearance_many(const std::vector<express::Base>& set_a, const std::vector<express::Base>& set_b, double clearance, bool check_all) const {
-	return impl_->backend(default_clash_backend_id).clash_clearance_many(to_product_entities(set_a), to_product_entities(set_b), clearance, check_all);
+std::vector<ifcopenshell::geom::clash> ifcopenshell::geom::tree::clash_clearance_many(const std::vector<express::base>&, const std::vector<express::base>&, double, bool) const {
+	unsupported_tree_operation(backend_id(), "clash_clearance_many()");
 }
 
-const std::vector<double>& IfcGeom::tree::distances() const {
-	const auto* backend = impl_->backend_or_null();
-	return backend ? backend->distances() : empty_double_vector();
+const std::vector<double>& ifcopenshell::geom::tree::distances() const {
+	unsupported_tree_operation(backend_id(), "distances()");
 }
 
-const std::vector<double>& IfcGeom::tree::protrusion_distances() const {
-	const auto* backend = impl_->backend_or_null();
-	return backend ? backend->protrusion_distances() : empty_double_vector();
+const std::vector<double>& ifcopenshell::geom::tree::protrusion_distances() const {
+	unsupported_tree_operation(backend_id(), "protrusion_distances()");
 }
 
-bool IfcGeom::tree::enable_face_styles() const {
-	const auto* backend = impl_->backend_or_null();
-	return backend ? backend->enable_face_styles() : false;
+bool ifcopenshell::geom::tree::enable_face_styles() const {
+	unsupported_tree_operation(backend_id(), "enable_face_styles()");
 }
 
-void IfcGeom::tree::enable_face_styles(bool enable) {
-	impl_->backend(default_selection_backend_id).enable_face_styles(enable);
+void ifcopenshell::geom::tree::enable_face_styles(bool) {
+	unsupported_tree_operation(backend_id(), "enable_face_styles(bool)");
 }
 
-const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& IfcGeom::tree::styles() const {
-	const auto* backend = impl_->backend_or_null();
-	return backend ? backend->styles() : empty_style_vector();
+const std::vector<ifcopenshell::geom::taxonomy::style::ptr>& ifcopenshell::geom::tree::styles() const {
+	unsupported_tree_operation(backend_id(), "styles()");
 }
 
-std::string IfcGeom::tree::uint8_to_b64(const std::vector<uint8_t>& uuids_array) const {
+std::string ifcopenshell::geom::tree::uint8_to_b64(const std::vector<uint8_t>& uuids_array) const {
 	std::string hex_str;
 	hex_str.reserve(uuids_array.size() * 2);
 
@@ -240,7 +127,7 @@ std::string IfcGeom::tree::uint8_to_b64(const std::vector<uint8_t>& uuids_array)
 	return hex_str;
 }
 
-bool IfcGeom::tree::is_manifold(const std::vector<int>& faces) {
+bool ifcopenshell::geom::tree::is_manifold(const std::vector<int>& faces) {
 	std::unordered_set<std::pair<size_t, size_t>, boost::hash<std::pair<size_t, size_t>>> directed_edges;
 
 	for (size_t i = 0; i < faces.size(); i += 3) {

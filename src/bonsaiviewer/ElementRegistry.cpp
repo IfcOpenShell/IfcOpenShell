@@ -70,7 +70,7 @@ std::optional<BasicElementInfo> ElementRegistry::findBasicElementInfo(uint32_t o
     return it->second;
 }
 
-std::optional<express::Base> ElementRegistry::findEntity(uint32_t object_id) const {
+std::optional<express::base> ElementRegistry::findEntity(uint32_t object_id) const {
     if (!loader_) return std::nullopt;
 
     auto info = findBasicElementInfo(object_id);

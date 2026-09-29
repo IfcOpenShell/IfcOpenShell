@@ -1,6 +1,7 @@
 #include "spf_header.h"
 
 #include "file.h"
+#include "logger.h"
 
 static const char* const ISO_10303_21 = "ISO-10303-21";
 static const char* const HEADER = "HEADER";
@@ -11,7 +12,7 @@ using namespace ifcopenshell;
 
 namespace {
 
-shared_pointer_type make_header_entity(ifcopenshell::file* file, const ifcopenshell::entity& decl, ::logger& logger) {
+shared_pointer_type make_header_entity(ifcopenshell::file* file, const ifcopenshell::entity& decl, ifcopenshell::logger& logger) {
     static_cast<void>(logger);
     const bool in_memory = file == nullptr || std::visit([](auto& storage) {
         return std::is_same_v<std::decay_t<decltype(storage)>, ifcopenshell::impl::in_memory_file_storage>;
@@ -26,9 +27,9 @@ shared_pointer_type make_header_entity(ifcopenshell::file* file, const ifcopensh
 
 } // namespace
 
-ifcopenshell::spf_header::spf_header(ifcopenshell::file* file, ::logger& logger)
+ifcopenshell::spf_header::spf_header(ifcopenshell::file* file, ifcopenshell::logger* logger)
     : file_(file)
-    , logger_(logger) {
+    , logger_(logger_or_root(logger)) {
     Header_section_schema::get_schema();
 
     header_entities_[0] = make_header_entity(file_, Header_section_schema::file_description::Class(), logger_);
@@ -96,4 +97,29 @@ Header_section_schema::file_name ifcopenshell::spf_header::file_name() {
 
 Header_section_schema::file_schema ifcopenshell::spf_header::file_schema() {
     return Header_section_schema::file_schema(header_entities_[2]);
+}
+
+void ifcopenshell::spf_header::assign(const spf_header& other) {
+    if (this != &other) {
+        auto copy_inst = [](express::entity& new_entity, const express::entity& entity) {
+            for (size_t i = 0; i < entity.declaration().as_entity()->attribute_count(); ++i) {
+                entity.get_attribute_value(i).apply_visitor([i, &entity, &new_entity](const auto& v) {
+                    using u = std::decay_t<decltype(v)>;
+                    if constexpr (std::is_same_v<u, express::base>) {
+                    } else if constexpr (std::is_same_v<u, std::vector<express::base>>) {
+                    } else if constexpr (std::is_same_v<u, std::vector<std::vector<express::base>>>) {
+                    } else if constexpr (std::is_same_v<u, empty_aggregate>) {
+                    } else if constexpr (std::is_same_v<u, empty_aggregate_of_aggregate>) {
+                    } else {
+                        new_entity.set_attribute_value(i, v);
+                    }
+                });
+            }
+        };
+
+        for (size_t i = 0; i < header_entities_.size(); ++i) {
+            express::entity tmp(header_entities_[i]);
+            copy_inst(tmp, express::entity(other.header_entities_[i]));
+        }
+    }
 }

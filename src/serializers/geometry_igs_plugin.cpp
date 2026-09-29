@@ -20,10 +20,10 @@
 #ifdef IFOPSH_WITH_OPENCASCADE
 
 #include "geometry_serializer_plugin.h"
-#include "IgesSerializer.h"
+#include "iges_serializer.h"
 
 #include <boost/dll/alias.hpp>
-#include <boost/make_shared.hpp>
+#include <memory>
 
 #include <Standard_Version.hxx>
 
@@ -43,16 +43,16 @@ plugin::metadata plugin_metadata() {
 	return geometry_serializer_plugin_metadata("igs");
 }
 
-boost::shared_ptr<GeometrySerializer> create_serializer(const geometry_serializer_context& context) {
+std::shared_ptr<geometry_serializer> create_serializer(const geometry_serializer_context& context) {
 #if OCC_VERSION_HEX < 0x60900
 	IGESControl_Controller::Init();
 #endif
-	return boost::make_shared<IgesSerializer>(context.output_temp_filename, context.geometry_settings, context.serializer_settings);
+	return std::make_shared<iges_serializer>(context.output_temp_filename, context.settings);
 }
 
 void configure_serializer(geometry_serializer_context& context) {
-	context.geometry_settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = true;
-	context.geometry_settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
+	context.settings.get<ifcopenshell::geom::settings::UseWorldCoords>().value = true;
+	context.settings.get<ifcopenshell::geom::settings::IteratorOutput>().value = ifcopenshell::geom::settings::NATIVE;
 }
 
 void register_plugin(geometry_serializer_registry& registry, const plugin::module& module) {

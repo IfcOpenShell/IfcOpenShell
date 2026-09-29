@@ -18,13 +18,13 @@ list(REMOVE_ITEM IFCPARSE_CPP_FILES
 
 message(STATUS "SCHEMA_VERSIONS from ifcparse: ${SCHEMA_VERSIONS}")
 foreach(schema ${SCHEMA_VERSIONS})
-    list(APPEND IFCPARSE_H_FILES
+    list(APPEND IFCPARSE_SCHEMA_H_FILES
         schemas/Ifc${schema}.h
         schemas/Ifc${schema}-definitions.h
     )
 endforeach()
 
-list(APPEND IFCPARSE_H_FILES
+list(APPEND IFCPARSE_SCHEMA_H_FILES
     schemas/Header_section_schema.h
 )
 list(APPEND IFCPARSE_CPP_FILES
@@ -32,12 +32,20 @@ list(APPEND IFCPARSE_CPP_FILES
     schemas/Header_section_schema-schema.cpp
 )
 
-set(IFCPARSE_FILES ${IFCPARSE_CPP_FILES} ${IFCPARSE_H_FILES})
+set(IFCPARSE_FILES ${IFCPARSE_CPP_FILES} ${IFCPARSE_H_FILES} ${IFCPARSE_SCHEMA_H_FILES})
 
 add_library(IfcParse ${IFCPARSE_FILES})
 set_target_properties(IfcParse PROPERTIES
         OUTPUT_NAME "ifcopenshell.parse"
 )
+target_include_directories(IfcParse PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+
+if((NOT WIN32) AND BUILD_SHARED_LIBS AND NOT WASM_BUILD AND NOT CREATE_BUNDLE AND NOT CMAKE_INSTALL_RPATH AND COMMAND SET_INSTALL_SELF_RPATH)
+    SET_INSTALL_SELF_RPATH(IfcParse)
+endif()
 target_compile_definitions(IfcParse PUBLIC ${SCHEMA_DEFINITIONS})
 if(USE_MMAP)
     target_compile_definitions(IfcParse PUBLIC USE_MMAP)
@@ -51,9 +59,10 @@ if (NOT CREATE_BUNDLE)
     set_target_properties(IfcParse PROPERTIES VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
 endif()
 if(WASM_BUILD)
-    target_link_libraries(IfcParse plugin ${BCRYPT_LIBRARIES})
+    # No Boost link libraries for wasm, but the headers are still needed.
+    target_link_libraries(IfcParse plugin Boost::headers)
 else()
-    target_link_libraries(IfcParse plugin ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES})
+    target_link_libraries(IfcParse plugin ${Boost_LIBRARIES})
 endif()
 
 if(WITH_ROCKSDB)
@@ -87,7 +96,7 @@ foreach(schema ${SCHEMA_VERSIONS})
     )
     target_link_libraries(${SCHEMA_PLUGIN_TARGET} PRIVATE ${plugin_when_not_wasm} IfcParse)
     set_target_properties(${SCHEMA_PLUGIN_TARGET} PROPERTIES
-        OUTPUT_NAME "ifcopenshell.parse.schema.ifc${schema}"
+        OUTPUT_NAME "ifcopenshell_parse_schema_ifc${schema}"
     )
     ifcopenshell_plugin_target(${SCHEMA_PLUGIN_TARGET})
 
@@ -103,6 +112,13 @@ install(FILES ${IFCPARSE_H_FILES}
     DESTINATION ${INCLUDEDIR}/ifcparse
 )
 
-install(TARGETS IfcParse ${schema_libraries})
+install(FILES ${IFCPARSE_SCHEMA_H_FILES}
+    DESTINATION ${INCLUDEDIR}/ifcparse/schemas
+)
+
+install(
+    TARGETS IfcParse ${schema_libraries}
+    EXPORT ${IFCOPENSHELL_EXPORT_TARGETS}
+)
 
 set(schema_libraries ${schema_libraries} PARENT_SCOPE)

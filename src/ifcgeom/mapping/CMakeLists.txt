@@ -1,4 +1,4 @@
-find_package(Eigen3 REQUIRED)
+find_package(Eigen3 ${EIGEN_MIN_VERSION} REQUIRED)
 
 set(mapping_plugin_runtime_dir "$<TARGET_FILE_DIR:IfcGeom>")
 
@@ -17,7 +17,7 @@ foreach(schema ${SCHEMA_VERSIONS})
     add_library(geometry_mapping_ifc${schema} SHARED ${IFCGEOM_FILES})
     set_target_properties(geometry_mapping_ifc${schema} PROPERTIES
         COMPILE_FLAGS "-DIfcSchema=Ifc${schema}"
-        OUTPUT_NAME "ifcopenshell.geometry.mapping.ifc${schema}"
+        OUTPUT_NAME "ifcopenshell_geometry_mapping_ifc${schema}"
         RUNTIME_OUTPUT_DIRECTORY "${mapping_plugin_runtime_dir}"
         LIBRARY_OUTPUT_DIRECTORY "${mapping_plugin_runtime_dir}"
     )
@@ -37,7 +37,7 @@ foreach(schema ${SCHEMA_VERSIONS})
 
     list(APPEND mapping_libraries geometry_mapping_ifc${schema})
 
-    install(TARGETS geometry_mapping_ifc${schema})
+    install(TARGETS geometry_mapping_ifc${schema} EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
 endforeach()
 
 set(mapping_libraries ${mapping_libraries} PARENT_SCOPE)

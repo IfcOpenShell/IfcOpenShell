@@ -1,6 +1,18 @@
 #!/usr/bin/env python3
+# /// script
+# ///
 # This file was generated with the assistance of an AI coding tool.
-"""Order Pyodide wheel shared objects so wasm side modules load safely."""
+"""Order Pyodide wheel shared objects so wasm side modules load safely.
+
+Pyodide's package loader loads a wheel's bundled ``.so`` files in the order
+they appear in the wheel's zip.
+If a ``.so`` that depends on symbols from another ``.so`` is loaded first,
+loading fails with errors like
+- "Failed to load dynamic library"
+- "Dynamic linking error: cannot resolve symbol"
+
+This is a known issue upstream - https://github.com/pyodide/pyodide/issues/6020.
+"""
 
 from __future__ import annotations
 
@@ -10,7 +22,6 @@ import re
 import tempfile
 import zipfile
 from pathlib import Path
-
 
 SCHEMA_ORDER = {
     "ifc2x3": 0,
@@ -23,10 +34,10 @@ SCHEMA_ORDER = {
 }
 
 MAIN_SHARED_OBJECT_RE = re.compile(r"^_ifcopenshell_wrapper(?:\.|$)")
-SCHEMA_PLUGIN_RE = re.compile(r"^ifcopenshell\.parse\.schema\.([^.]+)\.so$")
-MAPPING_PLUGIN_RE = re.compile(r"^ifcopenshell\.geometry\.mapping\.([^.]+)\.so$")
-DOCUMENT_PLUGIN_RE = re.compile(r"^ifcopenshell\.document\.[^.]+\.([^.]+)\.so$")
-GEOMETRY_SERIALIZATION_PLUGIN_RE = re.compile(r"^ifcopenshell\.geometry\.serialization\.([^.]+)\.so$")
+SCHEMA_PLUGIN_RE = re.compile(r"^ifcopenshell_parse_schema_(.+)\.so$")
+MAPPING_PLUGIN_RE = re.compile(r"^ifcopenshell_geometry_mapping_(.+)\.so$")
+DOCUMENT_PLUGIN_RE = re.compile(r"^ifcopenshell_document_[a-z0-9]+(?:_(.+))?\.so$")
+GEOMETRY_SERIALIZATION_PLUGIN_RE = re.compile(r"^ifcopenshell_geometry_writer_(.+)\.so$")
 
 
 def schema_key(schema: str) -> tuple[int, str]:
@@ -83,9 +94,10 @@ def rewrite_wheel(wheel: Path, ordered: list[zipfile.ZipInfo]) -> None:
     os.close(fd)
     temp_path = Path(temp_name)
     try:
-        with zipfile.ZipFile(wheel) as zin, zipfile.ZipFile(
-            temp_path, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9
-        ) as zout:
+        with (
+            zipfile.ZipFile(wheel) as zin,
+            zipfile.ZipFile(temp_path, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zout,
+        ):
             for info in ordered:
                 zout.writestr(zip_info_for_write(info), zin.read(info))
         os.replace(temp_path, wheel)

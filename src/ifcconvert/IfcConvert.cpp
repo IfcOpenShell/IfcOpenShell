@@ -33,19 +33,20 @@
 #include "../serializers/document_serializer_plugin.h"
 #include "../serializers/geometry_serializer_plugin.h"
 
-#include "../ifcgeom/IfcGeomFilter.h"
-#include "../ifcgeom/Iterator.h"
-#include "../ifcgeom/IfcGeomRenderStyles.h"
+#include "../ifcgeom/filter.h"
+#include "../ifcgeom/iterator.h"
+#include "../ifcgeom/render_styles.h"
 #include "../ifcgeom/hybrid_kernel.h"
 
 #include "../ifcparse/utils.h"
 
 #include <boost/program_options.hpp>
+#include <memory>
 #include <boost/optional/optional_io.hpp>
-#include <boost/make_shared.hpp>
 
 #include <algorithm>
 #include <fstream>
+#include <functional>
 #include <iomanip>
 #include <map>
 #include <set>
@@ -219,13 +220,13 @@ bool file_exists(const std::string& filename) {
 
 static std::basic_stringstream<path_t::value_type> log_stream;
 void write_log(bool);
-void fix_quantities(ifcopenshell::file&, bool, bool, bool, logger& logger = ::logger::root());
+void fix_quantities(ifcopenshell::file&, bool, bool, bool, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 std::string format_duration(time_t start, time_t end);
 
 /// @todo make the filters non-global
-IfcGeom::entity_filter entity_filter; // Entity filter is used always by default.
-IfcGeom::layer_filter layer_filter;
-IfcGeom::attribute_filter attribute_filter;
+ifcopenshell::geom::entity_filter entity_filter; // Entity filter is used always by default.
+ifcopenshell::geom::layer_filter layer_filter;
+ifcopenshell::geom::attribute_filter attribute_filter;
 
 struct geom_filter
 {
@@ -247,9 +248,9 @@ struct exclusion_traverse_filter : public geom_filter { exclusion_traverse_filte
 
 size_t read_filters_from_file(const std::string&, inclusion_filter&, inclusion_traverse_filter&, exclusion_filter&, exclusion_traverse_filter&);
 void parse_filter(geom_filter &, const std::vector<std::string>&);
-std::vector<ifcopenshell::geometry::filter_t> setup_filters(const std::vector<geom_filter>&, const std::string&);
+std::vector<ifcopenshell::geom::filter_function> setup_filters(const std::vector<geom_filter>&, const std::string&);
 
-bool init_input_file(const std::string& filename, ifcopenshell::file*& ifc_file, bool no_progress, bool mmap, bool bypass_properties=false, logger& logger = ::logger::root());
+bool init_input_file(const std::string& filename, ifcopenshell::file*& ifc_file, bool no_progress, bool mmap, bool bypass_properties=false, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
 // from https://stackoverflow.com/questions/31696328/boost-program-options-using-zero-parameter-options-multiple-times
 struct verbosity_counter {
@@ -271,7 +272,7 @@ int main(int argc, char** argv) {
 	typedef po::command_line_parser command_line_parser;
 	typedef char char_t;
 #endif
-	logger logger;
+	ifcopenshell::logger logger;
 
 	inclusion_filter include_filter;
 	inclusion_traverse_filter include_traverse_filter;
@@ -295,6 +296,10 @@ int main(int argc, char** argv) {
 		("stderr-progress", "output progress to stderr stream")
 		("yes,y", "answer 'yes' automatically to possible confirmation queries (e.g. overwriting an existing output file)")
 		("no-progress", "suppress possible progress bar type of prints that use carriage return")
+		("fail-on-error", "return a non-zero exit code when one or more errors were logged during "
+			"geometry conversion (e.g. an element failed to convert). By default IfcConvert exits "
+			"successfully as long as an output file could be written, even if some elements were "
+			"silently dropped. Enable this flag so scripts and CI can detect partial conversions.")
 		("log-format", po::value<std::string>(&log_format), "log format: plain or json")
 		("log-file", new po::typed_value<path_t, char_t>(&log_file), "redirect log output to file");
 
@@ -330,8 +335,8 @@ int main(int argc, char** argv) {
 	// none, convex-decomposition, minkowski-triangles or halfspace-snapping
 	std::string exterior_only_algo;
 
-	ifcopenshell::geometry::Settings geometry_settings;
-    
+	ifcopenshell::geom::settings settings;
+
 	po::options_description geom_options("Geometry options");
 	geom_options.add_options()
 		("kernel", po::value<std::string>(&geometry_kernel)->default_value(default_kernel),
@@ -384,17 +389,13 @@ int main(int argc, char** argv) {
 		("model", "Specifies whether to include surfaces and solids in the output result. "
 			"Typically these are representations of type Body or Facetation. ")
 		;
-	
-	geometry_settings.define_options(geom_options);
+
+	settings.define_options(geom_options);
 
     std::string bounds;
 #ifdef HAVE_ICU
     std::string unicode_mode;
 #endif
-    short precision;
-
-	ifcopenshell::geometry::SerializerSettings serializer_settings;
-
     po::options_description serializer_options("Serialization options");
     serializer_options.add_options()
 #ifdef HAVE_ICU
@@ -403,8 +404,6 @@ int main(int argc, char** argv) {
             "Accepted values 'utf8' (the default) and 'escape'.")
 #endif
 		;
-
-	serializer_settings.define_options(serializer_options);
 
     po::options_description cmdline_options;
 	cmdline_options.add(generic_options).add(fileio_options).add(geom_options).add(ifc_options).add(serializer_options);
@@ -438,6 +437,7 @@ int main(int argc, char** argv) {
 
 	const bool mmap = vmap.count("mmap") != 0;
 	const bool no_progress = vmap.count("no-progress") != 0;
+	const bool fail_on_error = vmap.count("fail-on-error") != 0;
 	const bool quiet = vmap.count("quiet") != 0;
 	const bool stderr_progress = vmap.count("stderr-progress") != 0;
 
@@ -466,20 +466,20 @@ int main(int argc, char** argv) {
 		num_threads = std::thread::hardware_concurrency();
 		logger.notice("SYS", 7, "Using " + std::to_string(num_threads) + " threads");
 	}
-    
+
 	if (vmap.count("log-format") == 1) {
 		boost::to_lower(log_format);
 		if (log_format == "plain") {
-			logger.output_format(::logger::FMT_PLAIN);
+			logger.output_format(ifcopenshell::logger::FMT_PLAIN);
 		} else if (log_format == "json") {
-			logger.output_format(::logger::FMT_JSON);
+			logger.output_format(ifcopenshell::logger::FMT_JSON);
 		} else {
 			cerr_ << "[error] --log-format should be either plain or json" << std::endl;
 			print_usage();
 			return EXIT_FAILURE;
 		}
 	}
-    
+
     if (!filter_filename.empty()) {
         size_t num_filters = read_filters_from_file(ifcopenshell::path::to_utf8(filter_filename), include_filter, include_traverse_filter, exclude_filter, exclude_traverse_filter);
         if (num_filters) {
@@ -506,7 +506,7 @@ int main(int argc, char** argv) {
 
     if (!default_material_filename.empty()) {
         try {
-            IfcGeom::set_default_style_file(ifcopenshell::path::to_utf8(default_material_filename));
+            ifcopenshell::geom::set_default_style_file(ifcopenshell::path::to_utf8(default_material_filename));
         } catch (const std::exception& e) {
             cerr_ << "[error] Could not read default material file:" << std::endl;
             cerr_ << e.what() << std::endl;
@@ -524,10 +524,10 @@ int main(int argc, char** argv) {
 
 	// If no output filename is specified a Wavefront OBJ file will be output
 	// to maintain backwards compatibility with the obsolete IfcObj executable.
-	const path_t output_filename = vmap.count("output-file") == 1 
+	const path_t output_filename = vmap.count("output-file") == 1
 		? vmap["output-file"].as<path_t>()
 		: change_extension(input_filename, ifcopenshell::path::from_utf8(DEFAULT_EXTENSION));
-	
+
 	if (output_filename.size() < 5) {
         cerr_ << "[error] Invalid or unsupported output file '" << output_filename << "' given" << std::endl;
         print_usage();
@@ -554,31 +554,31 @@ int main(int argc, char** argv) {
 
 	switch (vcounter.count) {
 	case 0:
-		logger.verbosity(::logger::LOG_ERROR);
+		logger.verbosity(ifcopenshell::logger::LOG_ERROR);
 		break;
 	case 1:
-		logger.verbosity(::logger::LOG_NOTICE);
+		logger.verbosity(ifcopenshell::logger::LOG_NOTICE);
 		break;
 	case 2:
-		logger.verbosity(::logger::LOG_DEBUG);
+		logger.verbosity(ifcopenshell::logger::LOG_DEBUG);
 		break;
 	case 3:
-		logger.verbosity(::logger::LOG_PERF);
+		logger.verbosity(ifcopenshell::logger::LOG_PERF);
 		break;
 	case 4:
-		logger.verbosity(::logger::LOG_PERF);
+		logger.verbosity(ifcopenshell::logger::LOG_PERF);
 		logger.print_performance_stats_on_element(true);
 		break;
 	}
 
     path_t output_temp_filename = output_filename + ifcopenshell::path::from_utf8(TEMP_FILE_EXTENSION);
-	
+
 	std::vector<path_t> tokens;
 	split(tokens, output_filename, boost::is_any_of("."));
 	std::vector<path_t>::iterator tok_iter;
 	path_t ext = *(tokens.end() - 1);
 	path_t dot;
-	dot = '.';	
+	dot = '.';
 	path_t output_extension = dot + ext;
 
 	boost::to_lower(output_extension);
@@ -586,8 +586,6 @@ int main(int argc, char** argv) {
 
 	ifcopenshell::file* ifc_file = 0;
 
-	boost::optional<std::list<IfcGeom::Element*>> elems_from_adaptor;
-    
     const path_t IFC = ifcopenshell::path::from_utf8(".ifc");
 
 	auto run_document_serializer = [&](const ifcopenshell::serializers::document_serializer_info* document_serializer_info) {
@@ -617,7 +615,7 @@ int main(int argc, char** argv) {
 				context.schema_name = ifc_file ? ifc_file->schema()->name() : document_serializer_info->schema_name;
 				context.stream = use_input_filename;
 
-				boost::shared_ptr<Serializer> serializer = document_serializer_registry.create(output_extension_utf8, context);
+				std::shared_ptr<ifcopenshell::geom::serializer> serializer = document_serializer_registry.create(output_extension_utf8, context);
 				if (serializer->is_streaming() != use_input_filename) {
 					throw ifcopenshell::exception("Selected document serializer streaming mode does not match its registry metadata");
 				}
@@ -693,7 +691,7 @@ int main(int argc, char** argv) {
     if (exclude_filter.type != geom_filter::UNUSED) { used_filters.push_back(exclude_filter); }
     if (exclude_traverse_filter.type != geom_filter::UNUSED) { used_filters.push_back(exclude_traverse_filter); }
 
-    std::vector<ifcopenshell::geometry::filter_t> filter_funcs = setup_filters(used_filters, ifcopenshell::path::to_utf8(output_extension));
+    std::vector<ifcopenshell::geom::filter_function> filter_funcs = setup_filters(used_filters, ifcopenshell::path::to_utf8(output_extension));
     if (filter_funcs.empty()) {
         cerr_ << "[error] Failed to set up geometry filters\n";
         return EXIT_FAILURE;
@@ -722,21 +720,21 @@ int main(int argc, char** argv) {
 	}
 
 	// The OS will clean up for us if there is a leak
-	geometry_settings.get<ifcopenshell::geometry::settings::OcctNoCleanTriangulation>().value = true;
+	settings.get<ifcopenshell::geom::settings::OcctNoCleanTriangulation>().value = true;
 
-	if (geometry_settings.get<ifcopenshell::geometry::settings::PermissiveShapeReuse>().get()) {
-		geometry_settings.get<ifcopenshell::geometry::settings::NoParallelMapping>().value = true;
+	if (settings.get<ifcopenshell::geom::settings::PermissiveShapeReuse>().get()) {
+		settings.get<ifcopenshell::geom::settings::NoParallelMapping>().value = true;
 	}
 
-	if (vmap[ifcopenshell::geometry::settings::WeldVertices::name].defaulted()) {
-		geometry_settings.get<ifcopenshell::geometry::settings::WeldVertices>().value = false;
+	if (vmap[ifcopenshell::geom::settings::WeldVertices::name].defaulted()) {
+		settings.get<ifcopenshell::geom::settings::WeldVertices>().value = false;
 	}
 
-	if (geometry_settings.get<ifcopenshell::geometry::settings::ForceSpaceTransparency>().has()) {
-		IfcGeom::update_default_style("IfcSpace")->transparency = geometry_settings.get<ifcopenshell::geometry::settings::ForceSpaceTransparency>().get();
+	if (settings.get<ifcopenshell::geom::settings::ForceSpaceTransparency>().has()) {
+		ifcopenshell::geom::update_default_style("IfcSpace")->transparency = settings.get<ifcopenshell::geom::settings::ForceSpaceTransparency>().get();
 	}
 
-	if (geometry_settings.get<ifcopenshell::geometry::settings::UseElementHierarchy>().get() &&
+	if (settings.get<ifcopenshell::geom::settings::UseElementHierarchy>().get() &&
 		!geometry_serializer_info->supports_user_element_hierarchy) {
 		cerr_ << "[error] --use-element-hierarchy is not supported by the selected geometry serializer.\n";
 		write_log(!quiet);
@@ -748,11 +746,10 @@ int main(int argc, char** argv) {
 	ifcopenshell::serializers::geometry_serializer_context serializer_context{
 		ifcopenshell::path::to_utf8(output_filename),
 		ifcopenshell::path::to_utf8(output_temp_filename),
-		geometry_settings,
-		serializer_settings
+		settings
 	};
 
-	boost::shared_ptr<GeometrySerializer> serializer; /**< @todo use std::unique_ptr when possible */
+	std::shared_ptr<ifcopenshell::geom::geometry_serializer> serializer; /**< @todo use std::unique_ptr when possible */
 	try {
 		geometry_serializer_registry.configure(output_extension_utf8, serializer_context);
 		serializer = geometry_serializer_registry.create(output_extension_utf8, serializer_context);
@@ -766,20 +763,21 @@ int main(int argc, char** argv) {
 
     const bool is_tesselated = serializer->isTesselated(); // isTesselated() doesn't change at run-time
 	if (!is_tesselated) {
-		if (geometry_settings.get<ifcopenshell::geometry::settings::WeldVertices>().get()) {
+		if (settings.get<ifcopenshell::geom::settings::WeldVertices>().get()) {
             logger.notice("SYS", 16, "Weld vertices setting ignored when writing non-tesselated output");
 		}
-        if (geometry_settings.get<ifcopenshell::geometry::settings::GenerateUvs>().get()) {
+        if (settings.get<ifcopenshell::geom::settings::GenerateUvs>().get()) {
             logger.notice("SYS", 17, "Generate UVs setting ignored when writing non-tesselated output");
         }
         if (center_model || center_model_geometry) {
             logger.notice("SYS", 18, "Centering/offsetting model setting ignored when writing non-tesselated output");
         }
 
-		geometry_settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
+		settings.get<ifcopenshell::geom::settings::IteratorOutput>().value = ifcopenshell::geom::settings::NATIVE;
 	}
 
 	if (!serializer->ready()) {
+		logger.error("SYS", 25, "Unable to open output file '" + ifcopenshell::path::to_utf8(output_filename) + "' for writing; check that the directory exists and is writable");
 		ifcopenshell::path::delete_file(ifcopenshell::path::to_utf8(output_temp_filename));
 		write_log(!quiet);
 		return EXIT_FAILURE;
@@ -787,7 +785,7 @@ int main(int argc, char** argv) {
 
 	time_t start,end;
 	time(&start);
-	
+
 	// @nb last argument true -> bypass_properties which are not read by any of the geometry serializers
     // Document serializers and IFC are already special-cased above
     // SVG requires properties for IfcAnnotation/DRAWING properties
@@ -807,7 +805,7 @@ int main(int argc, char** argv) {
 	if (model_rotation) {
 		std::vector<double> rotation(4);
 		int n = 0;
-		if (sscanf(rotation_str.c_str(), "%lf;%lf;%lf;%lf %n", &rotation[0], &rotation[1], &rotation[2], &rotation[3], &n) != 4 || n != rotation_str.size()) {
+		if (sscanf(rotation_str.c_str(), "%lf;%lf;%lf;%lf %n", &rotation[0], &rotation[1], &rotation[2], &rotation[3], &n) != 4 || static_cast<std::size_t>(n) != rotation_str.size()) {
 			cerr_ << "[error] Invalid use of --model-rotation\n";
 			ifcopenshell::path::delete_file(ifcopenshell::path::to_utf8(output_temp_filename));
 			print_options(serializer_options);
@@ -818,7 +816,7 @@ int main(int argc, char** argv) {
 		msg << "Using model rotation (" << rotation[0] << "," << rotation[1] << "," << rotation[2] << "," << rotation[3] << ")";
 		logger.notice("SYS", 19, msg.str());
 
-		geometry_settings.get<ifcopenshell::geometry::settings::ModelRotation>().value = rotation;
+		settings.get<ifcopenshell::geom::settings::ModelRotation>().value = rotation;
 	}
 
 	if (model_offset && (center_model || center_model_geometry)) {
@@ -828,7 +826,7 @@ int main(int argc, char** argv) {
 	if (model_offset && !(center_model || center_model_geometry)) {
 		std::vector<double> offset(3);
 		int n = 0;
-		if (sscanf(offset_str.c_str(), "%lf;%lf;%lf %n", &offset[0], &offset[1], &offset[2], &n) != 3 || n != offset_str.size()) {
+		if (sscanf(offset_str.c_str(), "%lf;%lf;%lf %n", &offset[0], &offset[1], &offset[2], &n) != 3 || static_cast<std::size_t>(n) != offset_str.size()) {
 			cerr_ << "[error] Invalid use of --model-offset\n";
 			ifcopenshell::path::delete_file(ifcopenshell::path::to_utf8(output_temp_filename));
 			print_options(serializer_options);
@@ -839,16 +837,16 @@ int main(int argc, char** argv) {
 		msg << std::setprecision(std::numeric_limits<double>::max_digits10) << "Using model offset (" << offset[0] << "," << offset[1] << "," << offset[2] << ")";
 		logger.notice("SYS", 20, msg.str());
 
-		geometry_settings.get<ifcopenshell::geometry::settings::ModelOffset>().value = offset;
+		settings.get<ifcopenshell::geom::settings::ModelOffset>().value = offset;
 	}
-	
+
     if (is_tesselated && (center_model || center_model_geometry)) {
 		std::vector<double> offset(3);
 
-		IfcGeom::Iterator tmp_context_iterator(ifcopenshell::geometry::kernels::construct(ifc_file, geometry_kernel, geometry_settings), geometry_settings, ifc_file, filter_funcs, num_threads, logger);
-			
-		time_t start, end;
-		time(&start);
+		ifcopenshell::geom::iterator tmp_context_iterator(ifcopenshell::geom::kernels::construct(ifc_file, geometry_kernel, settings, logger), settings, ifc_file, filter_funcs, num_threads, logger);
+
+		time_t bounds_start, bounds_end;
+		time(&bounds_start);
 		if (!quiet) logger.status("Computing bounds...");
 
 		if (center_model_geometry) {
@@ -862,11 +860,11 @@ int main(int argc, char** argv) {
 				return EXIT_FAILURE;
 			}
 		}
-		
+
         tmp_context_iterator.compute_bounds(center_model_geometry);
 
-		time(&end);
-        if (!quiet) logger.status("Done ! Bounds computed in " + format_duration(start, end));
+		time(&bounds_end);
+		if (!quiet) logger.status("Done ! Bounds computed in " + format_duration(bounds_start, bounds_end));
 
         auto center = (tmp_context_iterator.bounds_min().ccomponents() + tmp_context_iterator.bounds_max().ccomponents()) * 0.5;
         offset[0] = -center(0);
@@ -877,24 +875,22 @@ int main(int argc, char** argv) {
         msg << std::setprecision (std::numeric_limits<double>::max_digits10) << "Using model offset (" << offset[0] << "," << offset[1] << "," << offset[2] << ")";
         logger.notice("SYS", 21, msg.str());
 
-		geometry_settings.get<ifcopenshell::geometry::settings::ModelOffset>().value = offset;
+		settings.get<ifcopenshell::geom::settings::ModelOffset>().value = offset;
     }
 
 	// backwards compatibility
 	if (vmap.count("plan") && vmap.count("model")) {
-		geometry_settings.get<ifcopenshell::geometry::settings::OutputDimensionality>().value = ifcopenshell::geometry::settings::CURVES_SURFACES_AND_SOLIDS;
+		settings.get<ifcopenshell::geom::settings::OutputDimensionality>().value = ifcopenshell::geom::settings::CURVES_SURFACES_AND_SOLIDS;
 	} else if (vmap.count("model")) {
-		geometry_settings.get<ifcopenshell::geometry::settings::OutputDimensionality>().value = ifcopenshell::geometry::settings::SURFACES_AND_SOLIDS;
+		settings.get<ifcopenshell::geom::settings::OutputDimensionality>().value = ifcopenshell::geom::settings::SURFACES_AND_SOLIDS;
 	} else if (vmap.count("plan")) {
-		geometry_settings.get<ifcopenshell::geometry::settings::OutputDimensionality>().value = ifcopenshell::geometry::settings::CURVES;
+		settings.get<ifcopenshell::geom::settings::OutputDimensionality>().value = ifcopenshell::geom::settings::CURVES;
 	}
 
-	std::unique_ptr<IfcGeom::Iterator> context_iterator;
-	if (!elems_from_adaptor) {
-		context_iterator.reset(new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(ifc_file, geometry_kernel, geometry_settings), geometry_settings, ifc_file, filter_funcs, num_threads, logger));
-	}	
+	std::unique_ptr<ifcopenshell::geom::iterator> context_iterator;
+	context_iterator.reset(new ifcopenshell::geom::iterator(ifcopenshell::geom::kernels::construct(ifc_file, geometry_kernel, settings, logger), settings, ifc_file, filter_funcs, num_threads, logger));
 
-	logger.message(::logger::LOG_PERF, "file geometry conversion");
+	logger.message(ifcopenshell::logger::LOG_PERF, "file geometry conversion");
 
     if (context_iterator && !context_iterator->initialize()) {
         /// @todo It would be nice to know and print separate error prints for a case where we found no entities
@@ -906,9 +902,9 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-	serializer->setFile(ifc_file);
+	serializer->setFile(*ifc_file);
 
-    if (context_iterator && geometry_settings.get<ifcopenshell::geometry::settings::ConvertBackUnits>().get()) {
+    if (context_iterator && settings.get<ifcopenshell::geom::settings::ConvertBackUnits>().get()) {
 		serializer->setUnitNameAndMagnitude(context_iterator->unit_name(), static_cast<float>(context_iterator->unit_magnitude()));
 	} else {
 		serializer->setUnitNameAndMagnitude("METER", 1.0f);
@@ -922,38 +918,33 @@ int main(int argc, char** argv) {
 		logger.status("Creating geometry...");
 	}
 
-	// The functions IfcGeom::Iterator::get() and IfcGeom::Iterator::next() 
-	// wrap an iterator of all geometrical products in the Ifc file. 
-	// IfcGeom::Iterator::get() returns an IfcGeom::TriangulationElement or 
-	// -BRepElement pointer, based on current settings. (see Iterator.h 
-	// for definition) IfcGeom::Iterator::next() is used to poll whether more 
-	// geometrical entities are available. None of these functions throw 
-	// exceptions, neither for parsing errors or geometrical errors. Upon 
-	// calling next() the entity to be returned has already been processed, a 
-	// non-null return value guarantees that a successfully processed product is 
-	// available. 
+	// The functions ifcopenshell::geom::iterator::get() and ifcopenshell::geom::iterator::next()
+	// wrap an iterator of all geometrical products in the Ifc file.
+	// ifcopenshell::geom::iterator::get() returns an ifcopenshell::geom::triangulation_element or
+	// -native_element pointer, based on current settings. (see iterator.h
+	// for definition) ifcopenshell::geom::iterator::next() is used to poll whether more
+	// geometrical entities are available. None of these functions throw
+	// exceptions, neither for parsing errors or geometrical errors. Upon
+	// calling next() the entity to be returned has already been processed, a
+	// non-null return value guarantees that a successfully processed product is
+	// available.
 	size_t num_created = 0;
 
-	std::list<IfcGeom::Element*>::const_iterator elems_from_adaptor_it;
-	if (elems_from_adaptor) {
-		elems_from_adaptor_it = elems_from_adaptor->begin();
-	}
-	
 	while (true) {
-		
-        IfcGeom::Element* geom_object = elems_from_adaptor ? *elems_from_adaptor_it : context_iterator->get();
+
+		auto geom_object = context_iterator->get();
 
 		if (is_tesselated)
 		{
-			serializer->write(static_cast<const IfcGeom::TriangulationElement*>(geom_object));
+			serializer->write(static_cast<const ifcopenshell::geom::triangulation_element*>(geom_object.get()));
 		}
 		else
 		{
-			serializer->write(static_cast<const IfcGeom::BRepElement*>(geom_object));
+			serializer->write(static_cast<const ifcopenshell::geom::native_element*>(geom_object.get()));
 		}
 
         if (!no_progress) {
-			int progress = context_iterator ? context_iterator->progress() : (int)std::distance(elems_from_adaptor->cbegin(), elems_from_adaptor_it) * 100 / elems_from_adaptor->size();
+			int progress = context_iterator->progress();
 			if (quiet) {
 				for (; old_progress < progress; ++old_progress) {
 					cout_ << ".";
@@ -964,7 +955,7 @@ int main(int argc, char** argv) {
 				if (stderr_progress)
 					cerr_ << std::flush;
 			} else if (vcounter.count == 2) {
-				logger.message(::logger::LOG_DEBUG, "SYS", 23, "Progress " + boost::lexical_cast<std::string>(progress));
+				logger.message(ifcopenshell::logger::LOG_DEBUG, "SYS", 23, "Progress " + boost::lexical_cast<std::string>(progress));
 			} else {
 				progress = progress / 2;
 				if (old_progress != progress) logger.progress_bar(progress);
@@ -973,17 +964,10 @@ int main(int argc, char** argv) {
         }
 
 		++num_created;
-		if (context_iterator) {
-			if (!context_iterator->next()) {
-				break;
-			}
-		} else {
-			++elems_from_adaptor_it;
-			if (elems_from_adaptor_it == elems_from_adaptor->end()) {
-				break;
-			}
+		if (!context_iterator->next()) {
+			break;
 		}
-    } 
+    }
 	if (!no_progress && quiet) {
 		for (; old_progress < 100; ++old_progress) {
 			cout_ << ".";
@@ -1004,7 +988,7 @@ int main(int argc, char** argv) {
     // Make sure the dtor is explicitly run here (e.g. output files are closed before renaming them).
     serializer.reset();
 
-	logger.message(::logger::LOG_PERF, "GEO", 26, "done file geometry conversion");
+	logger.message(ifcopenshell::logger::LOG_PERF, "GEO", 26, "done file geometry conversion");
 
 	bool successful;
 	if (geometry_serializer_info->writes_final_output) {
@@ -1022,12 +1006,17 @@ int main(int argc, char** argv) {
             output_temp_filename << "' for the conversion result.";
     }
 
-	if (geometry_settings.get<ifcopenshell::geometry::settings::ValidateQuantities>().get() && logger.max_severity() >= ::logger::LOG_ERROR) {
+	if (settings.get<ifcopenshell::geom::settings::ValidateQuantities>().get() && logger.max_severity() >= ifcopenshell::logger::LOG_ERROR) {
 		logger.error("SYS", 24, "Errors encountered during processing.");
 		successful = false;
 	}
 
-	if (logger.verbosity() == ::logger::LOG_PERF) {
+	if (fail_on_error && logger.max_severity() >= ifcopenshell::logger::LOG_ERROR) {
+		logger.error("SYS", 26, "Errors encountered during processing, failing due to --fail-on-error.");
+		successful = false;
+	}
+
+	if (logger.verbosity() == ifcopenshell::logger::LOG_PERF) {
 		logger.print_performance_stats();
 	}
 
@@ -1074,7 +1063,7 @@ void write_log(bool header) {
 
 #include <boost/algorithm/string/predicate.hpp>
 
-bool init_input_file(const std::string& filename, ifcopenshell::file*& ifc_file, bool no_progress, bool mmap, bool bypass_properties, logger& logger) {
+bool init_input_file(const std::string& filename, ifcopenshell::file*& ifc_file, bool no_progress, bool mmap, bool bypass_properties, ifcopenshell::logger& logger) {
     time_t start, end;
 
     // Prevent file::Init() prints by setting output to null temporarily
@@ -1097,7 +1086,7 @@ bool init_input_file(const std::string& filename, ifcopenshell::file*& ifc_file,
         ifc_file->bypass_type("IfcProfileProperties");
         ifc_file->bypass_type("IfcPhysicalQuantity");
     }
-    
+
 #ifdef USE_MMAP
     if (mmap) {
         ifc_file->initialize(filename, mmap);
@@ -1213,7 +1202,7 @@ void parse_filter(geom_filter &filter, const std::vector<std::string>& values)
     filter.values.insert(values.begin() + (filter.type == geom_filter::ENTITY_ARG ? 2 : 1), values.end());
 }
 
-void validate(boost::any& v, const std::vector<std::string>& values, verbosity_counter*, long) {
+void validate(boost::any& v, const std::vector<std::string>&, verbosity_counter*, long) {
 	if (v.empty()) v = verbosity_counter{ 1 };
 	else ++boost::any_cast<verbosity_counter&>(v).count;
 }
@@ -1254,9 +1243,9 @@ void validate(boost::any& v, const std::vector<std::string>& values, exclusion_t
 
 /// @todo Clean up this filter initialization code further.
 /// @return References to the used filter functors, if none an error occurred.
-std::vector<ifcopenshell::geometry::filter_t> setup_filters(const std::vector<geom_filter>& filters, const std::string& output_extension)
+std::vector<ifcopenshell::geom::filter_function> setup_filters(const std::vector<geom_filter>& filters, const std::string& output_extension)
 {
-    std::vector<ifcopenshell::geometry::filter_t> filter_funcs;
+    std::vector<ifcopenshell::geom::filter_function> filter_funcs;
     for(auto& f: filters) {
         if (f.type == geom_filter::ENTITY_TYPE) {
             entity_filter.include = f.include;
@@ -1286,9 +1275,9 @@ std::vector<ifcopenshell::geometry::filter_t> setup_filters(const std::vector<ge
         entity_filter.entity_names = entities;
     }
 
-    if (!layer_filter.values.empty()) { filter_funcs.push_back(boost::ref(layer_filter));  }
-    if (!entity_filter.entity_names.empty()) { filter_funcs.push_back(boost::ref(entity_filter)); }
-    if (!attribute_filter.values.empty()) { filter_funcs.push_back(boost::ref(attribute_filter)); }
+    if (!layer_filter.values.empty()) { filter_funcs.push_back(std::ref(layer_filter));  }
+    if (!entity_filter.entity_names.empty()) { filter_funcs.push_back(std::ref(entity_filter)); }
+    if (!attribute_filter.values.empty()) { filter_funcs.push_back(std::ref(attribute_filter)); }
 
     return filter_funcs;
 }
@@ -1296,43 +1285,43 @@ std::vector<ifcopenshell::geometry::filter_t> setup_filters(const std::vector<ge
 namespace latebound_access {
 
 	template <typename T>
-	void set(express::Base inst, const std::string& attr, T t);
+	void set(express::base inst, const std::string& attr, T t);
 
 	template <typename T>
-    void set_enumeration(express::Base, const std::string&, const ifcopenshell::enumeration_type*, T) {}
+    void set_enumeration(express::base, const std::string&, const ifcopenshell::enumeration_type*, T) {}
 
 	template <>
-    void set_enumeration(express::Base inst, const std::string& attr, const ifcopenshell::enumeration_type* enum_type, std::string t) {
+    void set_enumeration(express::base inst, const std::string& attr, const ifcopenshell::enumeration_type* enum_type, std::string t) {
 		std::vector<std::string>::const_iterator it = std::find(
 			enum_type->enumeration_items().begin(),
 			enum_type->enumeration_items().end(),
 			t);
 
-		return set(inst, attr, enumeration_reference(enum_type, it - enum_type->enumeration_items().begin()));
+		return set(inst, attr, ifcopenshell::enumeration_reference(enum_type, it - enum_type->enumeration_items().begin()));
 	}
 
 	template <typename T>
-    void set(express::Base inst, const std::string& attr, T t) {
+    void set(express::base inst, const std::string& attr, T t) {
 		auto decl = inst.declaration().as_entity();
 		auto i = decl->attribute_index(attr);
 
 		auto attr_type = decl->attribute_by_index(i)->type_of_attribute();
-		if (attr_type->as_named_type() && attr_type->as_named_type()->declared_type()->as_enumeration_type() && !std::is_same<T, enumeration_reference>::value) {
+		if (attr_type->as_named_type() && attr_type->as_named_type()->declared_type()->as_enumeration_type() && !std::is_same<T, ifcopenshell::enumeration_reference>::value) {
 			set_enumeration(inst, attr, attr_type->as_named_type()->declared_type()->as_enumeration_type(), t);
 		} else {
 			inst.set_attribute_value(i, t);
 		}
 	}
 
-	express::Base create(ifcopenshell::file& f, const std::string& entity) {
+	express::base create(ifcopenshell::file& f, const std::string& entity) {
 		auto decl = f.schema()->declaration_by_name(entity);
         return f.create(decl);
 	}
 }
 
-void fix_quantities(ifcopenshell::file& f, bool no_progress, bool quiet, bool stderr_progress, logger& logger) {
+void fix_quantities(ifcopenshell::file& f, bool no_progress, bool quiet, bool stderr_progress, ifcopenshell::logger& logger) {
 	{
-		auto delete_reversed = [&f](const std::vector<express::Base>& insts) {
+		auto delete_reversed = [&f](const std::vector<express::base>& insts) {
 			// Lists are traversed back to front as the list may be mutated when
 			// instances are removed from the grouping by type.
 			for (auto it = insts.end() - 1; it >= insts.begin(); --it) {
@@ -1354,7 +1343,7 @@ void fix_quantities(ifcopenshell::file& f, bool no_progress, bool quiet, bool st
 		auto element_quantities = f.instances_by_type("IfcElementQuantity");
 
 		// Capture relationship nodes
-		std::vector<express::Entity> relationships;
+		std::vector<express::entity> relationships;
 		auto IfcRelDefinesByProperties = f.schema()->declaration_by_name("IfcRelDefinesByProperties");
 
 		for (auto& eq : element_quantities) {
@@ -1374,14 +1363,14 @@ void fix_quantities(ifcopenshell::file& f, bool no_progress, bool quiet, bool st
 		}
 	}
 
-	ifcopenshell::geometry::Settings settings;
-	settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = false;
-	settings.get<ifcopenshell::geometry::settings::WeldVertices>().value = false;
-	settings.get<ifcopenshell::geometry::settings::ReorientShells>().value = true;
-	settings.get<ifcopenshell::geometry::settings::ConvertBackUnits>().value = true;
-	settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
+	ifcopenshell::geom::settings settings;
+	settings.get<ifcopenshell::geom::settings::UseWorldCoords>().value = false;
+	settings.get<ifcopenshell::geom::settings::WeldVertices>().value = false;
+	settings.get<ifcopenshell::geom::settings::ReorientShells>().value = true;
+	settings.get<ifcopenshell::geom::settings::ConvertBackUnits>().value = true;
+	settings.get<ifcopenshell::geom::settings::IteratorOutput>().value = ifcopenshell::geom::settings::NATIVE;
 
-	IfcGeom::Iterator context_iterator(ifcopenshell::geometry::kernels::construct(&f, "opencascade", settings), settings, &f, {}, 1, logger);
+	ifcopenshell::geom::iterator context_iterator(ifcopenshell::geom::kernels::construct(&f, "opencascade", settings, logger), settings, &f, {}, 1, logger);
 
 	if (!context_iterator.initialize()) {
 		return;
@@ -1393,36 +1382,36 @@ void fix_quantities(ifcopenshell::file& f, bool no_progress, bool quiet, bool st
 	auto person = latebound_access::create(f, "IfcPerson");
 	latebound_access::set(person, "FamilyName", std::string("IfcOpenShell"));
 	latebound_access::set(person, "GivenName", std::string("IfcOpenShell"));
-	
+
 	auto org = latebound_access::create(f, "IfcOrganization");
 	latebound_access::set(org, "Name", std::string("IfcOpenShell"));
-	
+
 	auto pando = latebound_access::create(f, "IfcPersonAndOrganization");
 	latebound_access::set(pando, "ThePerson", person);
 	latebound_access::set(pando, "TheOrganization", org);
-	
+
 	auto application = latebound_access::create(f, "IfcApplication");
 	latebound_access::set(application, "ApplicationDeveloper", org);
 	latebound_access::set(application, "Version", std::string(IFCOPENSHELL_VERSION));
 	latebound_access::set(application, "ApplicationFullName", std::string("IfcConvert"));
 	latebound_access::set(application, "ApplicationIdentifier", std::string("IfcConvert") + IFCOPENSHELL_VERSION);
-	
+
 	auto ownerhist = latebound_access::create(f, "IfcOwnerHistory");
 	latebound_access::set(ownerhist, "OwningUser", pando);
 	latebound_access::set(ownerhist, "OwningApplication", application);
 	latebound_access::set(ownerhist, "ChangeAction", std::string("MODIFIED"));
 	latebound_access::set(ownerhist, "CreationDate", (int64_t)time(0));
 
-	express::Base quantity;
-	std::vector<express::Base> objects;
-	boost::shared_ptr<IfcGeom::Representation::BRep> previous_geometry_pointer;
+	express::base quantity;
+	std::vector<express::base> objects;
+	std::shared_ptr<ifcopenshell::geom::native> previous_geometry_pointer;
 
 	for (;; ++num_created) {
 		bool has_more = true;
 		if (num_created) {
 			has_more = context_iterator.next();
 		}
-		IfcGeom::BRepElement* geom_object = nullptr;
+		std::unique_ptr<ifcopenshell::geom::native_element> geom_object;
 		if (has_more) {
 			geom_object = context_iterator.get_native();
 		}
@@ -1442,7 +1431,7 @@ void fix_quantities(ifcopenshell::file& f, bool no_progress, bool quiet, bool st
 				break;
 			}
 
-			std::vector<express::Base> quantities;
+			std::vector<express::base> quantities;
 
 			double a, b, c;
 			if (geom_object->geometry().calculate_surface_area(a)) {
@@ -1451,7 +1440,7 @@ void fix_quantities(ifcopenshell::file& f, bool no_progress, bool quiet, bool st
 				latebound_access::set(quantity_area, "AreaValue", a);
 				quantities.push_back(quantity_area);
 			}
-			
+
 			if (geom_object->geometry().calculate_volume(a)) {
 				auto quantity_volume = latebound_access::create(f, "IfcQuantityVolume");
 				latebound_access::set(quantity_volume, "Name", std::string("Volume"));
@@ -1470,15 +1459,15 @@ void fix_quantities(ifcopenshell::file& f, bool no_progress, bool quiet, bool st
 			latebound_access::set(quantity_complex, "Name", std::string("Shape Validation Properties"));
 			quantities.push_back(quantity_complex);
 
-			std::vector<express::Base> quantities_2;
+			std::vector<express::base> quantities_2;
 
-			for (auto& part : geom_object->geometry()) {				
+			for (auto& part : geom_object->geometry()) {
 				auto quantity_count = latebound_access::create(f, "IfcQuantityCount");
 				latebound_access::set(quantity_count, "Name", std::string("Surface Genus"));
 				latebound_access::set(quantity_count, "Description", '#' + boost::lexical_cast<std::string>(part.ItemId()));
-				latebound_access::set(quantity_count, "CountValue", (int64_t) part.Shape()->surface_genus());
+				latebound_access::set(quantity_count, "CountValue", (int64_t) part.shape()->surface_genus());
 
-				quantities_2.push_back(quantity_count);				
+				quantities_2.push_back(quantity_count);
 			}
 
 			latebound_access::set(quantity_complex, "HasQuantities", quantities_2);

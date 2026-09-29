@@ -42,6 +42,10 @@
   ul#model-list .name b { font-weight: 600; overflow: hidden; text-overflow: ellipsis;
     white-space: nowrap; }
   ul#model-list .pct { color: #8a93a6; flex: 0 0 auto; }
+  ul#model-list .mem { color: #8a93a6; font-size: 11px; margin-left: 8px; flex: 0 0 auto; }
+  ul#model-list .mem button { font-size: 11px; padding: 1px 6px; margin-left: 6px; }
+  ul#model-list li.unloaded b { font-style: italic; color: #6f7988; }
+  #gpu-memory.full { color: #e0a040; }
   .bar { height: 4px; margin-top: 5px; border-radius: 2px; background: #232833; overflow: hidden; }
   .bar > i { display: block; height: 100%; width: 0%; background: #3182ce; }
   .empty { color: #6f7988; font-size: 12px; padding: 4px 0; }
@@ -92,6 +96,7 @@
     <div class="card">
       <h2>Models in scene</h2>
       <ul id="model-list"><li class="empty">No models loaded.</li></ul>
+      <div class="hint" id="gpu-memory">GPU memory: —</div>
     </div>
 
     <div class="card">
@@ -124,14 +129,59 @@
     listEl.innerHTML = '';
     models.forEach(function (m, i) {
       var li = document.createElement('li');
+      if (m.unloaded) li.className = 'unloaded';
       var pct = m.total > 0 ? Math.round(100 * m.resident / m.total) : 0;
-      var label = m.total > 0 ? pct + '%' : '…';
+      var label = m.unloaded ? 'unloaded' : m.total > 0 ? pct + '%' : '…';
+      var mem = m.unloaded ? '' : Math.round(m.vram / (1024 * 1024)) + ' MB';
       li.innerHTML =
         '<div class="name"><b title="' + m.name + '">' + m.name + '</b>' +
+        '<span class="mem">' + mem + '<button data-i="' + i + '">' +
+        (m.unloaded ? 'Load' : 'Unload') + '</button></span>' +
         '<span class="pct">' + label + '</span></div>' +
-        '<div class="bar"><i style="width:' + pct + '%"></i></div>';
+        '<div class="bar"><i style="width:' + (m.unloaded ? 0 : pct) + '%"></i></div>';
       listEl.appendChild(li);
     });
+  }
+
+  // Unload frees a model's GPU memory while it stays in the scene — the lever
+  // when the GPU memory line reports chunks that cannot be loaded.
+  listEl.addEventListener('click', function (ev) {
+    var btn = ev.target.closest('button[data-i]');
+    if (!btn || !activeViewer) return;
+    var m = models[+btn.dataset.i];
+    if (!m || m.sid === undefined) return;
+    if (m.unloaded) {
+      if (!activeViewer.loadModel(m.sid)) { hintEl.textContent = 'Not enough GPU memory to load ' + m.name; return; }
+    } else {
+      activeViewer.unloadModel(m.sid);
+    }
+    m.unloaded = activeViewer.modelUnloaded(m.sid);
+    renderList();
+  });
+
+  var gpuMemEl = document.getElementById('gpu-memory');
+  var shortfallSince = 0;
+  var activeViewer = null;  // set once IfcViewer.create resolves
+  function renderGpuMemory(viewer) {
+    var s = viewer.stats();
+    if (!s) return;
+    var mb = function (b) { return Math.round(b / (1024 * 1024)); };
+    var text = 'GPU memory: ' + mb(s.vram.usedBytes) + ' / ' + mb(s.vram.capacityBytes) + ' MB';
+    if (s.vram.budgetBytes && s.vram.budgetBytes !== s.vram.capacityBytes) {
+      text += ' (budget ' + mb(s.vram.budgetBytes) + ')';
+    }
+    // A few missing chunks right after a camera move are normal; a shortfall
+    // that persists means the view does not fit — say so.
+    var now = performance.now();
+    if (!s.workingSet.chunksMissing) shortfallSince = 0;
+    else if (!shortfallSince) shortfallSince = now;
+    var full = shortfallSince && now - shortfallSince > 3000;
+    if (full) {
+      text += ' — full: ' + s.workingSet.chunksMissing + ' of ' + s.workingSet.chunks +
+              ' visible chunks (' + mb(s.workingSet.missingBytes) + ' MB) not loaded. Unload a model to make room.';
+    }
+    if (gpuMemEl.textContent !== text) gpuMemEl.textContent = text;
+    gpuMemEl.classList.toggle('full', !!full);
   }
 
   function setSelection(guid, modelName) {
@@ -154,16 +204,20 @@
       // Keep clearing until it's gone; stop once the user adds their own model.
       if (!userAddedAny && viewer.modelCount() > 0) viewer.clearScene();
       if (!models.length) return;
+      renderGpuMemory(viewer);
       var changed = false;
       for (var i = 0; i < models.length; i++) {
         var p = viewer.modelProgress(i);
-        if (p.resident !== models[i].resident || p.total !== models[i].total) {
-          models[i].resident = p.resident; models[i].total = p.total; changed = true;
+        var vram = models[i].sid !== undefined ? viewer.modelVramBytes(models[i].sid) : 0;
+        if (p.resident !== models[i].resident || p.total !== models[i].total
+            || Math.round(vram / (1024 * 1024)) !== Math.round(models[i].vram / (1024 * 1024))) {
+          models[i].resident = p.resident; models[i].total = p.total; models[i].vram = vram; changed = true;
         }
       }
       if (changed) renderList();
     },
   }).then(function (viewer) {
+    activeViewer = viewer;
     // Report the picked object's model + IFC GlobalId in our own DOM (empty on
     // deselect). sel.modelIndex indexes our JS model list (load order).
     viewer.onSelect(function (sel) {
@@ -177,7 +231,10 @@
     var urlInput = document.getElementById('url-input');
     var urlBtn = document.getElementById('url-btn');
 
-    function addModelEntry(name) { models.push({ name: name, resident: 0, total: 0 }); renderList(); }
+    function addModelEntry(name, sid) {
+      models.push({ name: name, sid: sid, resident: 0, total: 0, vram: 0, unloaded: false });
+      renderList();
+    }
 
     viewer.ready.then(function () {
       hintEl.textContent = 'Ready — add a .ifcview model.';
@@ -188,7 +245,7 @@
     fileInput.addEventListener('change', function (ev) {
       if (ev.target.files.length) userAddedAny = true;
       Array.prototype.forEach.call(ev.target.files, function (file) {
-        viewer.addFile(file).then(function () { addModelEntry(file.name); });
+        viewer.addFile(file).then(function (sid) { addModelEntry(file.name, sid); });
       });
       fileInput.value = '';
     });
@@ -198,8 +255,8 @@
       if (!url) return;
       userAddedAny = true;
       urlBtn.disabled = true;
-      viewer.addUrl(url).then(function () {
-        addModelEntry(url.split('/').pop() || url);
+      viewer.addUrl(url).then(function (sid) {
+        addModelEntry(url.split('/').pop() || url, sid);
         urlInput.value = '';
       }).catch(function (e) {
         hintEl.textContent = 'URL load failed: ' + e.message;

@@ -21,10 +21,10 @@
 
 #define mapping POSTFIX_SCHEMA(mapping)
 
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 namespace {
-	taxonomy::boolean_result::operation_t boolean_op_type(IfcSchema::IfcBooleanOperator::Value op) {
+	taxonomy::boolean_result::operation_type boolean_op_type(IfcSchema::IfcBooleanOperator::Value op) {
 		if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_DIFFERENCE) {
 			return taxonomy::boolean_result::SUBTRACTION;
 		} else if (op == IfcSchema::IfcBooleanOperator::IfcBooleanOperator_INTERSECTION) {
@@ -40,8 +40,6 @@ namespace {
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcBooleanResult& inst) {
 	IfcSchema::IfcBooleanOperand operand1 = inst.FirstOperand();
 	IfcSchema::IfcBooleanOperand operand2 = inst.SecondOperand();
-	bool has_halfspace_operand = false;
-	
 	std::vector<IfcSchema::IfcBooleanOperand> operands;
 	operands.push_back(operand2);
 

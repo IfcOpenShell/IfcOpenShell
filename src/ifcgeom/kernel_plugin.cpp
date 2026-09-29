@@ -31,7 +31,7 @@ PLUGIN_API std::filesystem::path add_search_paths_or_default(manager& manager, s
 }
 
 namespace {
-	constexpr const char* kernel_plugin_prefix = "geometry.kernel.";
+	constexpr const char* kernel_plugin_prefix = "geometry_kernel_";
 
 	std::string kernel_plugin_name(const std::string& backend_id) {
 		auto name = boost::to_lower_copy(backend_id);
@@ -40,22 +40,22 @@ namespace {
 	}
 }
 
-const char* ifcopenshell::geometry::kernels::kernel_plugin_registration_symbol() {
+const char* ifcopenshell::geom::kernels::kernel_plugin_registration_symbol() {
 	return "ifcopenshell_register_kernel_plugin_v1";
 }
 
-ifcopenshell::plugin::metadata ifcopenshell::geometry::kernels::kernel_plugin_metadata(const std::string& plugin_name) {
+ifcopenshell::plugin::metadata ifcopenshell::geom::kernels::kernel_plugin_metadata(const std::string& plugin_name) {
 	plugin::metadata metadata;
 	metadata.kind_ = plugin::kind::kernel;
 	metadata.id = kernel_plugin_prefix + plugin_name;
 	return metadata;
 }
 
-std::filesystem::path ifcopenshell::geometry::kernels::kernel_plugin_directory() {
-	return plugin::module_directory(reinterpret_cast<const void*>(&ifcopenshell::geometry::kernels::load_kernel_plugins));
+std::filesystem::path ifcopenshell::geom::kernels::kernel_plugin_directory() {
+	return plugin::module_directory(reinterpret_cast<const void*>(&ifcopenshell::geom::kernels::load_kernel_plugins));
 }
 
-void ifcopenshell::geometry::kernels::load_kernel_plugins(kernel_registry& registry) {
+void ifcopenshell::geom::kernels::load_kernel_plugins(kernel_registry& registry) {
 	plugin::manager manager;
 	plugin::add_search_paths_or_default(manager, &kernel_plugin_directory);
 
@@ -70,7 +70,7 @@ void ifcopenshell::geometry::kernels::load_kernel_plugins(kernel_registry& regis
 	}
 }
 
-bool ifcopenshell::geometry::kernels::load_kernel_plugin(kernel_registry& registry, const std::string& backend_id) {
+bool ifcopenshell::geom::kernels::load_kernel_plugin(kernel_registry& registry, const std::string& backend_id) {
 	plugin::manager manager;
 	plugin::add_search_paths_or_default(manager, &kernel_plugin_directory);
 

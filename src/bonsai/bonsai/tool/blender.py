@@ -25,6 +25,7 @@ import importlib
 import math
 import os
 import platform
+import re
 import subprocess
 import sys
 import tempfile
@@ -802,6 +803,40 @@ class Blender(bonsai.core.tool.Blender):
 
         # restore shader editor settings
         shader_editor.pin = previous_pin_setting
+
+    @classmethod
+    def copy_node_graph_additive(
+        cls, material_to: bpy.types.Material, material_from: bpy.types.Material
+    ) -> bpy.types.ShaderNodeOutputMaterial | None:
+        """Paste nodes from material_from alongside the existing nodes in material_to.
+
+        Unlike copy_node_graph this does NOT clear the existing node tree first.
+        Returns the OUTPUT_MATERIAL node that was added from material_from, or None.
+        """
+        temp_override = cls.get_shader_editor_context()
+        shader_editor = temp_override["space"]
+
+        before_names = {n.name for n in material_to.node_tree.nodes}
+
+        previous_pin_setting = shader_editor.pin
+        shader_editor.pin = True
+        shader_editor.node_tree = material_from.node_tree
+
+        for node in material_from.node_tree.nodes:
+            node.select = True
+        with bpy.context.temp_override(**temp_override):
+            bpy.ops.node.clipboard_copy()
+
+        shader_editor.node_tree = material_to.node_tree
+        with bpy.context.temp_override(**temp_override):
+            bpy.ops.node.clipboard_paste(offset=(0, 0))
+
+        shader_editor.pin = previous_pin_setting
+
+        for node in material_to.node_tree.nodes:
+            if node.name not in before_names and node.type == "OUTPUT_MATERIAL":
+                return node
+        return None
 
     @classmethod
     def get_material_node(
@@ -1722,6 +1757,7 @@ class Blender(bonsai.core.tool.Blender):
             repo_path = repo.working_tree_dir
             assert repo_path
             version_ = (Path(repo_path) / "VERSION").read_text().strip()
+            version_ = re.sub(r"[A-Za-z]+\d+$", "", version_)
             commit_date = bonsai.get_last_commit_date()
             assert commit_date
             commit_date = datetime.fromisoformat(commit_date)
@@ -2125,7 +2161,7 @@ class Blender(bonsai.core.tool.Blender):
         return cls.get_internal_data_dir() / relative_path
 
     @classmethod
-    def get_data_dir_paths(cls, relative_dir_path: Union[str, Path], glob_pattern: str) -> Generator[Path, None, None]:
+    def get_data_dir_paths(cls, relative_dir_path: str | Path, glob_pattern: str) -> Generator[Path]:
         """Return paths based on glob pattern from the provided path in data folder.
         Return paths from internal data folder first and then paths from the user data folder (if it exists)."""
         custom_path = cls.get_user_data_dir() / relative_dir_path
@@ -2645,7 +2681,7 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     @contextlib.contextmanager
-    def bonsai_crash_txt(cls, s: str = "") -> Generator[Path, Any, None]:
+    def bonsai_crash_txt(cls, s: str = "") -> Generator[Path, Any]:
         """Create a temporary bonsai.crash.txt file the with current traceback.
 
         Useful in case Blender crash might occur too unexpectedly (e.g. #6686),

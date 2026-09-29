@@ -19,7 +19,7 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 #include <boost/math/constants/constants.hpp>
 
@@ -29,21 +29,21 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrimmedCurve& inst) {
 	auto basis_curve = inst.BasisCurve();
 	bool isConic = basis_curve.declaration().is(IfcSchema::IfcConic::Class());
 	double parameterFactor = isConic ? angle_unit_ : length_unit_;
-	
+
 	auto tc = taxonomy::make<taxonomy::edge>();
 	tc->basis = map(inst.BasisCurve());
-	
+
 	bool trim_cartesian = inst.MasterRepresentation() != IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER;
 	auto trims1 = inst.Trim1();
 	auto trims2 = inst.Trim2();
-	
+
 	// reversed orientation handling happens in geometry kernel
 	unsigned sense_agreement = 0;
 	double flts[2];
 	taxonomy::point3::ptr pnts[2];
 	bool has_flts[2] = {false,false};
 	bool has_pnts[2] = {false,false};
-	
+
 	tc->curve_sense = inst.SenseAgreement();
 
 	for (auto it = trims1.begin(); it != trims1.end(); it ++) {
@@ -73,10 +73,9 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrimmedCurve& inst) {
 	const double tol = settings_.get<settings::Precision>().get();
 
 	trim_cartesian &= has_pnts[0] && has_pnts[1];
-	bool trim_cartesian_failed = !trim_cartesian;
 	if (trim_cartesian) {
 		if ((pnts[0]->ccomponents() - pnts[1]->ccomponents()).norm() < (2 * tol)) {
-			logger_.message(::logger::LOG_WARNING, "GEO", 295, "Skipping segment with length below tolerance level:", inst);
+			logger_.message(ifcopenshell::logger::LOG_WARNING, "GEO", 295, "Skipping segment with length below tolerance level:", inst);
 			return nullptr;
 		}
 		tc->start = pnts[0];
@@ -140,7 +139,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrimmedCurve& inst) {
 			TopoDS_Vertex v0, v1;
 			TopExp::Vertices(e, v0, v1);
 			if (v0.IsSame(v1)) {
-				::logger::root().warning("Skipping degenerate segment", l);
+				ifcopenshell::logger::root().warning("Skipping degenerate segment", l);
 				return false;
 			}
 		}
@@ -168,7 +167,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrimmedCurve& inst) {
 			TopoDS_Vertex v0, v1;
 			TopExp::Vertices(e, v0, v1);
 			e = TopoDS::Edge(BRepBuilderAPI_MakeEdge(v0, v1).Edge().Oriented(e.Orientation()));
-			::logger::root().warning("Substituted edge with linear approximation", l);
+			ifcopenshell::logger::root().warning("Substituted edge with linear approximation", l);
 		}
 	}
 

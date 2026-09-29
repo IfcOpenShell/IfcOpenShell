@@ -107,6 +107,15 @@ void ifcopenshell::sanitate_material_name(std::string& str) {
 }
 
 void ifcopenshell::escape_xml(std::string& str) {
+    // Strip characters that are illegal in XML 1.0. Control characters other
+    // than tab (0x09), newline (0x0A) and carriage return (0x0D) are not valid
+    // XML 1.0 characters and cannot even be represented as numeric character
+    // references, so they would otherwise make the serialized XML/SVG output
+    // non-well-formed. Bytes belonging to a valid UTF-8 multibyte sequence are
+    // always >= 0x80, so filtering on the low control range leaves them intact.
+    str.erase(std::remove_if(str.begin(), str.end(), [](unsigned char c) {
+        return c < 0x20 && c != '\t' && c != '\n' && c != '\r';
+    }), str.end());
     boost::replace_all(str, "&", "&amp;");
     boost::replace_all(str, "\"", "&quot;");
     boost::replace_all(str, "'", "&apos;");
@@ -122,19 +131,19 @@ void ifcopenshell::unescape_xml(std::string& str) {
     boost::replace_all(str, "&gt;", ">");
 }
 
-void instance_data::populate_derived_() {
+void ifcopenshell::instance_data::populate_derived_() {
     if (auto* ent = declaration_->as_entity()) {
         for (auto it = ent->derived().begin(); it != ent->derived().end(); ++it) {
             if (*it) {
                 set_attribute_value(
                     std::distance(ent->derived().begin(), it),
-                    derived{});
+                    ifcopenshell::derived{});
             }
         }
     }
 }
 
-attribute_value express::Entity::get(const std::string& name) const {
+ifcopenshell::attribute_value express::entity::get(const std::string& name) const {
     auto attrs = declaration().as_entity()->all_attributes();
     auto iter = attrs.begin();
     size_t idx = 0;
@@ -146,7 +155,7 @@ attribute_value express::Entity::get(const std::string& name) const {
     throw ifcopenshell::exception(name + " not found on " + declaration().name());
 }
 
-std::vector<express::Entity> express::Entity::get_inverse(const std::string& name) const {
+std::vector<express::entity> express::entity::get_inverse(const std::string& name) const {
     const std::vector<const ifcopenshell::inverse_attribute*> attrs = declaration().as_entity()->all_inverse_attributes();
     std::vector<const ifcopenshell::inverse_attribute*>::const_iterator iter = attrs.begin();
     for (; iter != attrs.end(); ++iter) {

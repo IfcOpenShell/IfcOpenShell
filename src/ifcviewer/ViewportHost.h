@@ -99,6 +99,13 @@ public:
     // is encoded; QtViewportHost forwards to `emit frameStatsUpdated(...)`.
     virtual void onFrameStats(const FrameStats& /*stats*/) {}
 
+    // Whether this host's tools need the CPU-side triangle shadow
+    // (ModelGpuData::mesh_triangles_cache) that surface raycasts and the
+    // measurement tools read. It costs 12 B/vertex + 4 B/index of heap for
+    // every resident mesh, so hosts without those tools (the web viewer,
+    // for now) skip populating it entirely.
+    virtual bool wantsCpuMeshTriangles() const { return true; }
+
     // Overlay encode hooks. ViewportCore::render() calls these mid-
     // frame so the Qt-bound OverlayRenderer (which carries QString
     // labels for the HUD) can encode its passes without core having

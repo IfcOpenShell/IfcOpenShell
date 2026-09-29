@@ -48,8 +48,9 @@
 #include INCLUDE_SCHEMA_DEFINITIONS(ifcparse/schemas, IfcSchema)
 
 #include "ifcparse/hierarchy_helper.h"
+#include "plugin/plugin.h"
 
-#include "../ifcgeom/Serialization/Serialization.h"
+#include "../ifcgeom/serialization/serialization.h"
 
 #if USE_VLD
 #include <vld.h>
@@ -62,6 +63,10 @@ void createGroundShape(TopoDS_Shape& shape);
 
 int main() {
 
+#ifdef IFCOPENSHELL_EXAMPLE_PLUGIN_PATH
+	ifcopenshell::plugin::set_search_paths({IFCOPENSHELL_EXAMPLE_PLUGIN_PATH});
+#endif
+
 	// The hierarchy_helper is a subclass of the regular file that provides several
 	// convenience functions for working with geometry in IFC files.
 	hierarchy_helper<IfcSchema> file;
@@ -71,12 +76,12 @@ int main() {
 	// By adding a building, a hierarchy has been automatically created that consists of the following
 	// structure: IfcProject > IfcSite > IfcBuilding
 
-	// Lateron changing the name of the IfcProject can be done by obtaining a reference to the 
+	// Lateron changing the name of the IfcProject can be done by obtaining a reference to the
 	// project, which has been created automatically.
 	file.getSingle<IfcSchema::IfcProject>().setName("IfcAdvancedHouse"s);
 
 	// To demonstrate the ability to serialize arbitrary opencascade solids a building envelope is
-	// constructed by applying boolean operations. Naturally, in IFC, building elements should be 
+	// constructed by applying boolean operations. Naturally, in IFC, building elements should be
 	// modeled separately, with rich parametric and relational semantics. Creating geometry in this
 	// way does not preserve any history and is merely a demonstration of technical capabilities.
 	TopoDS_Shape outer =   BRepPrimAPI_MakeBox(gp_Pnt(-5000., -180., -2000.), gp_Pnt(5000., 5180., 3000.)).Shape();
@@ -96,11 +101,16 @@ int main() {
 	// IfcFacetedBRep. If it would not be a polyhedron, serialise() can only be successful when linked
 	// to the IFC4 model and with `advanced` set to `true` which introduces IfcAdvancedFace. It would
 	// return `0` otherwise.
-	auto building_shape = IfcGeom::serialise(file, building_shell, false).as<IfcSchema::IfcProductDefinitionShape>();
-	
+	auto building_shape_result = ifcopenshell::geom::serialise(file, building_shell, false);
+	if (!building_shape_result) {
+		std::cerr << "Failed to serialize building shell." << std::endl;
+		return 1;
+	}
+	auto building_shape = building_shape_result.as<IfcSchema::IfcProductDefinitionShape>();
+
 	file.add_entity(building_shape);
-	auto rep = building_shape.Representations().begin();
-	rep->setContextOfItems(file.getRepresentationContext("model"));
+	auto building_representations = building_shape.Representations();
+	building_representations.front().setContextOfItems(file.getRepresentationContext("model"));
 
 	building.setRepresentation(building_shape);
 
@@ -112,12 +122,12 @@ int main() {
 	TopoDS_Shape shape;
 	createGroundShape(shape);
 
-	auto ground_representation = IfcGeom::serialise(file, shape, true);
+	auto ground_representation = ifcopenshell::geom::serialise(file, shape, true);
 	if (!ground_representation) {
-        ground_representation = IfcGeom::tesselate(file, shape, 100.);
+        ground_representation = ifcopenshell::geom::tesselate(file, shape, 100.);
 	}
 	file.getSingle<IfcSchema::IfcSite>().setRepresentation(ground_representation.as<IfcSchema::IfcProductDefinitionShape>());
-	
+
 	auto ground_reps = file.getSingle<IfcSchema::IfcSite>().Representation().Representations();
 	for (auto& rep : ground_reps) {
 		rep.setContextOfItems(file.getRepresentationContext("Model"));
@@ -126,13 +136,13 @@ int main() {
 	setSurfaceColour(file, ground_representation.as<IfcSchema::IfcProductDefinitionShape>(), 0.15, 0.25, 0.05);
 
     /*
-    // Note that IFC lacks elementary surfaces that STEP does have, such as spherical_surface.
-    // BRepBuilderAPI_NurbsConvert can be used to serialize such surfaces as nurbs surfaces.
+	// Note that IFC lacks elementary surfaces that STEP does have, such as spherical_surface.
+	// BRepBuilderAPI_NurbsConvert can be used to serialize such surfaces as nurbs surfaces.
 	TopoDS_Shape sphere = BRepPrimAPI_MakeSphere(gp_Pnt(), 1000.).Shape();
-	IfcSchema::IfcProductDefinitionShape* sphere_representation = IfcGeom::serialise(sphere, true);
+	auto sphere_representation = ifcopenshell::geom::serialise(file, sphere, true);
 	if (S(IfcSchema::Identifier) == "IFC4") {
 		sphere = BRepBuilderAPI_NurbsConvert(sphere, true).Shape();
-		sphere_representation = IfcGeom::serialise(sphere, true);
+		sphere_representation = ifcopenshell::geom::serialise(file, sphere, true);
 	}
     */
 
@@ -170,10 +180,10 @@ void createGroundShape(TopoDS_Shape& shape) {
 	cv.SetValue(4, 4, gp_Pnt( 10000,  10000, -8130));
 	TColStd_Array1OfReal knots(0, 1);
 	knots(0) = 0;
-	knots(1) = 1;		
+	knots(1) = 1;
 	TColStd_Array1OfInteger mult(0, 1);
 	mult(0) = 5;
-	mult(1) = 5;	
+	mult(1) = 5;
 	Handle(Geom_BSplineSurface) surf = new Geom_BSplineSurface(cv, knots, knots, mult, mult, 4, 4);
 #if OCC_VERSION_HEX < 0x60502
 	shape = BRepBuilderAPI_MakeFace(surf);

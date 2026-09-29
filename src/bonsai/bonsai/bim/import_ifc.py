@@ -133,10 +133,6 @@ class MaterialCreator:
                 if shape_has_openings and coords.is_a("IfcIndexedTextureMap"):
                     continue
                 tool.Loader.load_indexed_map(coords, self.mesh)
-            elif tool.Style.get_texture_style(material):
-                # No explicit coordinate mapping (e.g. IFC2X3 has no IsMappedBy,
-                # and IFC4 COORD uses generated UVs). Bake XY→UV as fallback.
-                tool.Loader.load_generated_uv_map(self.mesh)
 
     def assign_material_slots_to_faces(self) -> None:
         if not self.mesh["ios_materials"]:
@@ -744,7 +740,7 @@ class IfcImporter:
                 self.update_progress((percent_average / 100 * progress_range) + start_progress)
             shape = iterator.get()
             if shape:
-                assert isinstance(shape, W.TriangulationElement)
+                assert isinstance(shape, W.triangulation_element)
                 product = self.file.by_id(shape.id)
                 self.create_product(product, shape)
                 results.add(product)
@@ -976,8 +972,13 @@ class IfcImporter:
                     if unit.Name == "METRE":
                         if not unit.Prefix:
                             bpy.context.scene.unit_settings.length_unit = "METERS"
-                        else:
+                        elif f"{unit.Prefix}METERS" in ("KILOMETERS", "CENTIMETERS", "MILLIMETERS", "MICROMETERS"):
                             bpy.context.scene.unit_settings.length_unit = f"{unit.Prefix}METERS"
+                        else:
+                            # Blender's length_unit enum has no entry for other
+                            # SI prefixes (e.g. DECIMETERS), so fall back to
+                            # adaptive display instead of failing to open.
+                            bpy.context.scene.unit_settings.length_unit = "ADAPTIVE"
                 else:
                     bpy.context.scene.unit_settings.system = "IMPERIAL"
                     name = unit.Name.lower()
@@ -1078,9 +1079,9 @@ class IfcImporter:
     def create_curve(
         self,
         element: ifcopenshell.entity_instance,
-        shape: Union[W.Triangulation, W.TriangulationElement],
+        shape: Union[W.triangulation, W.triangulation_element],
     ) -> bpy.types.Curve:
-        if isinstance(shape, W.TriangulationElement):
+        if isinstance(shape, W.triangulation_element):
             geometry = shape.geometry
         else:
             geometry = shape
@@ -1094,12 +1095,14 @@ class IfcImporter:
         vertices = [[v[i], v[i + 1], v[i + 2], 1] for i in range(0, len(v), 3)]
         edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
         v2 = None
+        polyline = None
         for edge in edges:
             v1 = vertices[edge[0]]
             if v1 != v2:
                 polyline = curve.splines.new("POLY")
                 polyline.points[-1].co = mathutils.Vector(v1)
             v2 = vertices[edge[1]]
+            assert polyline is not None
             polyline.points.add(1)
             polyline.points[-1].co = mathutils.Vector(v2)
         edges_item_ids = ifcopenshell.util.shape.get_edges_representation_item_ids(geometry).tolist()
@@ -1109,11 +1112,11 @@ class IfcImporter:
     def create_mesh(
         self,
         element: ifcopenshell.entity_instance,
-        shape: Union[W.Triangulation, W.TriangulationElement],
+        shape: Union[W.triangulation, W.triangulation_element],
         cartesian_point_offset: Union[npt.NDArray[np.float64], Literal[False]] = None,
     ) -> Union[bpy.types.Mesh, None]:
         try:
-            if isinstance(shape, W.TriangulationElement):
+            if isinstance(shape, W.triangulation_element):
                 # shape is ShapeElementType
                 geometry = shape.geometry
             else:

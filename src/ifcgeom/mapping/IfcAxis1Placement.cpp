@@ -20,7 +20,7 @@
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
 
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcAxis1Placement& inst) {
 	Eigen::Vector3d P(0, 0, 0), axis(0, 0, 1), ref;
@@ -35,7 +35,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcAxis1Placement& inst) {
 		taxonomy::direction3::ptr v = taxonomy::cast<taxonomy::direction3>(map(inst.Axis()));
 		axis = *v->components_;
 	}
-	
+
 	// @todo not sure what to do with ref, we're probably never reading it,
 	// because we just created an Axis1 again from it in the kernel, but
 	// to this constructor we need to supply something valid.

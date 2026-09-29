@@ -19,7 +19,7 @@
 
 #include "mapping.h"
 #define mapping POSTFIX_SCHEMA(mapping)
-using namespace ifcopenshell::geometry;
+using namespace ifcopenshell::geom;
 
 #include "../profile_helper.h"
 
@@ -36,7 +36,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolyLoop& inst) {
 	// A loop should consist of at least three vertices
 	int original_count = polygon.size();
 	if (original_count < 3) {
-		logger_.message(::logger::LOG_WARNING, "GEO", 278, "Not enough edges for:", inst);
+		logger_.message(ifcopenshell::logger::LOG_WARNING, "GEO", 278, "Not enough edges for:", inst);
 		return nullptr;
 	}
 
@@ -50,12 +50,12 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolyLoop& inst) {
 
 	int count = polygon.size();
 	if (original_count - count != 0) {
-		std::stringstream ss; ss << (original_count - count) << " edges removed for:"; 
-		logger_.message(::logger::LOG_WARNING, "GEO", 280, ss.str(), inst);
+		std::stringstream ss; ss << (original_count - count) << " edges removed for:";
+		logger_.message(ifcopenshell::logger::LOG_WARNING, "GEO", 280, ss.str(), inst);
 	}
 
 	if (count < 3) {
-		logger_.message(::logger::LOG_WARNING, "GEO", 281, "Not enough edges for:", inst);
+		logger_.message(ifcopenshell::logger::LOG_WARNING, "GEO", 281, "Not enough edges for:", inst);
 		return nullptr;
 	}
 

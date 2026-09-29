@@ -20,6 +20,7 @@ from collections import deque
 from collections.abc import Callable
 from functools import partial
 from typing import Any, Literal, Optional, Union, get_args
+
 import ifcopenshell
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry

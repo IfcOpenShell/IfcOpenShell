@@ -22,18 +22,14 @@ from __future__ import annotations
 import functools
 import importlib
 import itertools
-import numbers
 import operator
 import subprocess
 import sys
 import time
 from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING, Any, NoReturn, TypeVar, Union, cast, overload
+from typing import Any, TypeVar, Union
 
 from . import ifcopenshell_wrapper, settings
-
-if TYPE_CHECKING:
-    import ifcopenshell
 
 try:
     import logging
@@ -212,20 +208,25 @@ class entity_instance_mixin:
 
         return value
 
-    def __eq__(self, other: entity_instance_mixin) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, entity_instance_mixin):
-            if not self.is_entity():
-                return self[0] == other
-            else:
-                return False
-        else:
-            raise NotImplementedError
+            return self[0] == other if not self.is_entity() else False
 
-    def __ne__(self, other: entity_instance_mixin) -> bool:
-        if other is None or not isinstance(other, entity_instance_mixin):
+        if self.identity() == other.identity():
             return True
-        else:
-            raise NotImplementedError
+
+        if self.is_a(True) != other.is_a(True):
+            return False
+
+        if settings.compare_instances_by_value or self.file_pointer() != other.file_pointer() or not self.is_entity():
+            return self.get_info(recursive=True, include_identifier=False) == other.get_info(
+                recursive=True, include_identifier=False
+            )
+
+        return False
+
+    def __ne__(self, other: object) -> bool:
+        return not self == other
 
     def is_entity(self) -> bool:
         """Tests whether the instance is an entity type as opposed to a simple data type.
@@ -383,8 +384,6 @@ class entity_instance_mixin:
 
         return return_type(_())
 
-    __dict__ = property(get_info)
-
     def get_info(
         self,
         include_identifier: bool = True,
@@ -392,15 +391,17 @@ class entity_instance_mixin:
         return_type: type[dict] = dict,
         ignore: Sequence[str] = (),
     ) -> dict[str, Any]:
-        """More perfomant version of `.get_info()`.\n
-        Method has exactly the same signature as `.get_info()`, but the fast C++
+        """More perfomant version of `.get_info_py()`.\n
+        Method has exactly the same signature as `.get_info_py()`, but the fast C++
         path only implements ``recursive=True``, ``return_type=dict`` and
         ``ignore=()``. Any other combination falls back to the pure Python
-        `.get_info()`, where no meaningful performance gain is possible anyway
+        `.get_info_py()`, where no meaningful performance gain is possible anyway
         as the cost is dominated by the recursive traversal.
         """
         if recursive and return_type is dict and not ignore:
-            return ifcopenshell_wrapper.get_info_cpp(self.wrapped_data, include_identifier)
+            return ifcopenshell_wrapper.get_info_cpp(self, recursive, include_identifier)
         return self.get_info_py(
             include_identifier=include_identifier, recursive=recursive, return_type=return_type, ignore=ignore
         )
+
+    __dict__ = property(get_info)

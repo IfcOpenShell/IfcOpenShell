@@ -1,15 +1,9 @@
 //! Settings dialog: APS client id + OAuth callback port + sign-out.
 
-use std::sync::Arc;
+use std::rc::Rc;
 
 use fltk::{
-    app,
-    button::Button,
-    enums::Align,
-    frame::Frame,
-    group::Flex,
-    input::Input,
-    prelude::*,
+    app, button::Button, enums::Align, frame::Frame, group::Flex, input::Input, prelude::*,
     window::Window,
 };
 
@@ -20,11 +14,11 @@ use crate::ui::dialogs::{center_on_screen, confirm, drain_after_close, show_erro
 use crate::ui::ensure_app;
 
 pub struct SettingsDialog {
-    pub on_reload: Arc<dyn Fn() -> Result<(), RpcError>>,
+    pub on_reload: Rc<dyn Fn() -> Result<(), RpcError>>,
 }
 
 impl SettingsDialog {
-    pub fn new(on_reload: Arc<dyn Fn() -> Result<(), RpcError>>) -> Self {
+    pub fn new(on_reload: Rc<dyn Fn() -> Result<(), RpcError>>) -> Self {
         Self { on_reload }
     }
 

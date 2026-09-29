@@ -29,6 +29,7 @@ try:
 except RuntimeError:
     IFC4X3_AVAILABLE = False
 
+
 def _BlossCurve_100_0_300_1000_1_Meter(file):
     design_parameters = file.createIfcAlignmentCantSegment(
         StartDistAlong=0.0,

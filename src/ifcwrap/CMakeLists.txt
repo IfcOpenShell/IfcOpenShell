@@ -34,10 +34,8 @@ if(CMAKE_CXX_STANDARD LESS 17)
 endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if(POLICY CMP0148) # 3.27
-    cmake_policy(SET CMP0148 OLD)
-endif()
 if(POLICY CMP0177) # 3.31
+    # install() DESTINATION paths are normalized.
     cmake_policy(SET CMP0177 OLD)
 endif()
 
@@ -50,6 +48,7 @@ if(IFCOPENSHELL_IFCWRAP_STANDALONE)
 
     set(WITH_OPENCASCADE "${IFCOPENSHELL_WITH_OPENCASCADE}")
     set(WITH_CGAL "${IFCOPENSHELL_WITH_CGAL}")
+    set(WITH_ROCKSDB "${IFCOPENSHELL_WITH_ROCKSDB}")
     set(SWIG_DEFINES "")
 
     if(IFCOPENSHELL_WITH_OPENCASCADE)
@@ -67,15 +66,16 @@ if(IFCOPENSHELL_IFCWRAP_STANDALONE)
     if(IFCOPENSHELL_WITH_ROCKSDB)
         list(APPEND SWIG_DEFINES -DIFOPSH_WITH_ROCKSDB)
         list(APPEND _ifcwrap_feature_definitions IFOPSH_WITH_ROCKSDB)
+        add_library(document_serializer_rdb ALIAS IfcOpenShell::document_serializer_rdb)
     endif()
 endif()
 
-find_package(SWIG)
+find_package(SWIG 4.1)
 if(NOT SWIG_FOUND)
     message(
         FATAL_ERROR
-        "BUILD_IFCPYTHON enabled, but unable to find SWIG. Disable BUILD_IFCPYTHON or fix SWIG paths to proceed. "
-        "Likely SWIG_EXECUTABLE is missing (current value - '${SWIG_EXECUTABLE}')."
+        "BUILD_IFCPYTHON requires SWIG 4.1 or newer. Disable BUILD_IFCPYTHON or fix SWIG paths to proceed. "
+        "Found version '${SWIG_VERSION}' at '${SWIG_EXECUTABLE}'."
     )
 ENDIF()
 include(GNUInstallDirs)
@@ -98,7 +98,8 @@ ENDIF()
 # - Unix - Python_INCLUDE_DIR
 # Unfortunately all paths must be always provided explicitly, not by prefixing PATH.
 # Otherwise FindPython will break on newer Python versions (list of supported versions is hardcoded).
-find_package(Python COMPONENTS Development.Module)
+set(PYTHON_MIN_VERSION 3.10)
+find_package(Python ${PYTHON_MIN_VERSION} COMPONENTS Development.Module)
 IF(NOT Python_Development.Module_FOUND)
 	MESSAGE(FATAL_ERROR "BUILD_IFCPYTHON enabled, but unable to find Python lib or header. Disable BUILD_IFCPYTHON or fix Python paths to proceed.")
 ENDIF()
@@ -108,19 +109,7 @@ ENDIF()
 set(_python_libs_version "${Python_VERSION_MAJOR}${Python_VERSION_MINOR}")
 INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
-SET(CMAKE_SWIG_FLAGS ${SWIG_DEFINES})
-
-if(WITH_CGAL)
-    if(IFCOPENSHELL_IFCWRAP_STANDALONE)
-        if(TARGET IfcOpenShell::svgfill)
-            set(LIBSVGFILL IfcOpenShell::svgfill)
-        else()
-            message(FATAL_ERROR "IfcOpenShell was built with CGAL, but the exported svgfill target was not found.")
-        endif()
-    else()
-        set(LIBSVGFILL svgfill)
-    endif()
-endif()
+SET(CMAKE_SWIG_FLAGS ${SWIG_DEFINES} -fastproxy -fastdispatch)
 
 set_source_files_properties(IfcPython.i PROPERTIES CPLUSPLUS ON)
 # Rebuild on changes in other .i files.
@@ -191,7 +180,7 @@ if(IFCOPENSHELL_IFCWRAP_STANDALONE)
     set(_ifcwrap_swig_depends "")
 else()
     set(_ifcwrap_ifcopenshell_libraries ${IFCOPENSHELL_LIBRARIES})
-    set(_ifcwrap_geometry_libraries IfcGeom ${kernel_libraries})
+    set(_ifcwrap_geometry_libraries IfcGeom)
     set(_ifcwrap_cgal_libraries ${CGAL_LIBRARIES})
     set(_ifcwrap_swig_depends ${IFCOPENSHELL_LIBRARIES})
 endif()
@@ -216,11 +205,25 @@ if(WASM_BUILD)
         PRIVATE "SHELL:-s EXPORTED_FUNCTIONS=_PyInit__ifcopenshell_wrapper -s SIDE_MODULE=2" -O1
     )
 endif()
-target_link_libraries(ifcopenshell_wrapper PRIVATE IfcGeom IfcParse ${Boost_LIBRARIES})
+target_link_libraries(ifcopenshell_wrapper PRIVATE
+    ${_ifcwrap_geometry_libraries}
+    ${_ifcwrap_ifcopenshell_libraries}
+    ${Boost_LIBRARIES}
+)
 if(schema_libraries OR kernel_libraries OR tree_libraries OR mapping_libraries OR geometry_serializer_libraries OR document_serializer_libraries OR linework_processing_libraries)
     add_dependencies(ifcopenshell_wrapper ${schema_libraries} ${kernel_libraries} ${tree_libraries} ${mapping_libraries} ${geometry_serializer_libraries} ${document_serializer_libraries} ${linework_processing_libraries})
 endif()
-if((NOT WIN32) AND BUILD_SHARED_LIBS AND COMMAND SET_INSTALL_RPATHS)
+if((NOT WIN32) AND NOT WASM_BUILD AND NOT CREATE_BUNDLE AND NOT CMAKE_INSTALL_RPATH AND COMMAND SET_INSTALL_RPATHS)
+    if(IFCOPENSHELL_IFCWRAP_STANDALONE)
+        set(_ifcwrap_ifcopenshell_library_dir "${IFCOPENSHELL_LIBRARY_DIR}")
+    else()
+        set(_ifcwrap_ifcopenshell_library_dir "${CMAKE_INSTALL_FULL_LIBDIR}")
+    endif()
+    # The Python package and IfcOpenShell libraries can have unrelated install
+    # prefixes. This is notably the case for standalone ifcwrap builds against
+    # an installed CMake package and GitHub Actions' hosted Python.
+    SET_INSTALL_RPATHS(ifcopenshell_wrapper "${_ifcwrap_ifcopenshell_library_dir};${IFCDIRS};${OCC_LIBRARY_DIR}")
+elseif((NOT WIN32) AND BUILD_SHARED_LIBS AND COMMAND SET_INSTALL_RPATHS)
     SET_INSTALL_RPATHS(ifcopenshell_wrapper "${IFCDIRS};${OCC_LIBRARY_DIR}")
 endif()
 
@@ -260,7 +263,7 @@ IF(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
             set(python_package_dir "${Python_SITEARCH}")
         ENDIF()
         if (BUILD_PACKAGE)
-            set(python_package_dir ${CMAKE_INSTALL_LIBDIR}/python${PYTHON_VERSION_MAJOR}/dist-packages/)
+            set(python_package_dir ${CMAKE_INSTALL_LIBDIR}/python${Python_VERSION_MAJOR}/dist-packages/)
         endif()
     endif()
     IF("${python_package_dir}" STREQUAL "")
@@ -268,6 +271,11 @@ IF(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
     ELSE()
         message(STATUS "Python wrapper will be installed to '${python_package_dir}'.")
         file(GLOB_RECURSE sourcefiles "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/*")
+        # Exclude compiled extensions and shared libraries (including versioned .so.X.Y) -
+        # they're part of dev environment and shouldn't leak into installation.
+        list(FILTER sourcefiles EXCLUDE REGEX [[\.(so(\.[0-9]+)*|pyd|dylib|dll)$]])
+        # Exclude cached bytecode.
+        list(FILTER sourcefiles EXCLUDE REGEX [[\.pyc$]])
         foreach(file ${sourcefiles})
             file(RELATIVE_PATH relative "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/" "${file}")
             get_filename_component(dir "${relative}" DIRECTORY)
@@ -279,16 +287,6 @@ IF(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
             FILES "${CMAKE_CURRENT_BINARY_DIR}/ifcopenshell_wrapper.py"
             DESTINATION "${python_package_dir}/ifcopenshell"
         )
-        FOREACH(file ${sourcefiles})
-            FILE(RELATIVE_PATH relative "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/" "${file}")
-            GET_FILENAME_COMPONENT(dir "${relative}" DIRECTORY)
-            if(NOT IS_DIRECTORY "${file}")
-			    INSTALL(FILES "${file}"
-                        DESTINATION "${python_package_dir}/ifcopenshell/${dir}")
-            endif()
-        ENDFOREACH()
-        INSTALL(FILES "${CMAKE_BINARY_DIR}/ifcwrap/ifcopenshell_wrapper.py"
-                DESTINATION "${python_package_dir}/ifcopenshell")
         INSTALL(TARGETS ifcopenshell_wrapper
                 DESTINATION "${python_package_dir}/ifcopenshell")
 
@@ -300,6 +298,7 @@ IF(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
                 ${kernel_libraries}
                 ${tree_libraries}
                 ${mapping_libraries}
+                geometry_serializer
                 ${geometry_serializer_libraries}
                 ${document_serializer_libraries}
                 ${linework_processing_libraries}
@@ -314,13 +313,23 @@ IF(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
                         RUNTIME DESTINATION "${python_package_dir}/ifcopenshell")
             endif()
 
+            if(MSVC)
+                # Ship the shared third-party runtime (e.g. OCCT, Boost, manifold) next to the wrapper.
+                foreach(_target ifcopenshell_wrapper ${_ifcopenshell_python_runtime_targets})
+                    get_target_property(_target_type ${_target} TYPE)
+                    if(_target_type STREQUAL "SHARED_LIBRARY" OR _target_type STREQUAL "MODULE_LIBRARY")
+                        install(FILES $<TARGET_RUNTIME_DLLS:${_target}> DESTINATION "${python_package_dir}/ifcopenshell")
+                    endif()
+                endforeach()
+            endif()
+
             if(NOT WIN32 AND NOT WASM_BUILD)
                 # On Linux $ORIGIN expands to the directory of the loaded
                 # object (= site-packages/ifcopenshell/). macOS dyld doesn't
                 # expand $ORIGIN; the equivalent placeholder is
                 # @loader_path. Setting $ORIGIN on macOS bakes a literal
                 # "$ORIGIN" into LC_RPATH which resolves to nothing at
-                # runtime — the wrapper's `@rpath/ifcopenshell.document.rdb
+                # runtime — the wrapper's `@rpath/ifcopenshell_document_rdb
                 # .dylib` LC_LOAD_DYLIB then fails to find the plug-in even
                 # though INSTALL(TARGETS … LIBRARY DESTINATION …/ifcopenshell)
                 # above has dropped it right next to the wrapper.

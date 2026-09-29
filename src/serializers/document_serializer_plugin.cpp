@@ -52,7 +52,7 @@ std::string document_serializer_schema_key(const std::string& schema_name) {
 
 std::string document_serializer_plugin_prefix(const std::string& format = std::string()) {
 	const auto format_key = document_serializer_key(format);
-	return format_key.empty() ? "document." : "document." + format_key;
+	return format_key.empty() ? "document_" : "document_" + format_key;
 }
 
 void add_document_serializer_search_paths(ifcopenshell::plugin::manager& manager) {
@@ -125,7 +125,7 @@ const ifcopenshell::serializers::document_serializer_info* ifcopenshell::seriali
 	return entry ? &entry->info_ : nullptr;
 }
 
-boost::shared_ptr<Serializer> ifcopenshell::serializers::document_serializer_registry::create(const std::string& format, const document_serializer_context& context) const {
+std::shared_ptr<ifcopenshell::geom::serializer> ifcopenshell::serializers::document_serializer_registry::create(const std::string& format, const document_serializer_context& context) const {
 	const auto schema_name = !context.schema_name.empty() ? context.schema_name :
 		(context.file ? context.file->schema()->name() : std::string());
 	auto* registry = const_cast<document_serializer_registry*>(this);
@@ -161,7 +161,7 @@ std::vector<ifcopenshell::serializers::document_serializer_info> ifcopenshell::s
 		try {
 			module = manager.load(path);
 		} catch (const std::exception& e) {
-			::logger::root().error(e);
+			ifcopenshell::logger::root().error(e);
 			continue;
 		}
 		if (module.meta().kind_ != ifcopenshell::plugin::kind::document_serializer) {
@@ -194,7 +194,7 @@ ifcopenshell::plugin::metadata ifcopenshell::serializers::document_serializer_pl
 	metadata.kind_ = plugin::kind::document_serializer;
 	metadata.id = document_serializer_plugin_prefix(format);
 	if (!schema_name.empty()) {
-		metadata.id += "." + boost::to_lower_copy(schema_name);
+		metadata.id += "_" + boost::to_lower_copy(schema_name);
 	}
 	metadata.schema = document_serializer_schema_key(schema_name);
 	metadata.format = document_serializer_key(format);
@@ -214,7 +214,7 @@ void ifcopenshell::serializers::load_document_serializer_plugins(document_serial
 		try {
 			module = manager.load(path);
 		} catch (const std::exception& e) {
-			::logger::root().error(e);
+			ifcopenshell::logger::root().error(e);
 			continue;
 		}
 		if (module.meta().kind_ != ifcopenshell::plugin::kind::document_serializer) {
@@ -235,7 +235,7 @@ bool ifcopenshell::serializers::load_document_serializer_plugin(document_seriali
 	const auto schema_key = document_serializer_schema_key(schema_name);
 	auto basename = document_serializer_plugin_prefix(format_key);
 	if (!schema_key.empty()) {
-		basename += "." + boost::to_lower_copy(schema_key);
+		basename += "_" + boost::to_lower_copy(schema_key);
 	}
 
 	ifcopenshell::plugin::manager manager;
@@ -246,7 +246,7 @@ bool ifcopenshell::serializers::load_document_serializer_plugin(document_seriali
 		try {
 			module = manager.load(path);
 		} catch (const std::exception& e) {
-			::logger::root().error(e);
+			ifcopenshell::logger::root().error(e);
 			continue;
 		}
 		if (module.meta().kind_ != ifcopenshell::plugin::kind::document_serializer ||

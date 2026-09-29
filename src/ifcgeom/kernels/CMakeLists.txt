@@ -22,6 +22,9 @@ foreach(kernel ${GEOMETRY_KERNELS})
 
     set(KERNEL_TARGET "geometry_kernel_${kernel}")
     add_library(${KERNEL_TARGET} SHARED ${IFCGEOM_FILES})
+    if((NOT WIN32) AND NOT WASM_BUILD AND NOT CREATE_BUNDLE AND NOT CMAKE_INSTALL_RPATH AND COMMAND SET_INSTALL_SELF_RPATH)
+        SET_INSTALL_SELF_RPATH(${KERNEL_TARGET})
+    endif()
 
     if(${kernel} STREQUAL "opencascade")
         ifcopenshell_wasm_plugin_link_options(${KERNEL_TARGET} ifcopenshell_register_kernel_plugin_v1 OPTIMIZATION -O0)
@@ -31,7 +34,7 @@ foreach(kernel ${GEOMETRY_KERNELS})
 
     set_target_properties(${KERNEL_TARGET} PROPERTIES
         COMPILE_FLAGS "-DIFC_GEOMLIBRARY_EXPORTS"
-        OUTPUT_NAME "ifcopenshell.geometry.kernel.${kernel}"
+        OUTPUT_NAME "ifcopenshell_geometry_kernel_${kernel}"
         RUNTIME_OUTPUT_DIRECTORY "${kernel_plugin_runtime_dir}"
         LIBRARY_OUTPUT_DIRECTORY "${kernel_plugin_runtime_dir}"
     )
@@ -39,18 +42,24 @@ foreach(kernel ${GEOMETRY_KERNELS})
     target_link_libraries(${KERNEL_TARGET} PRIVATE ${plugin_when_not_wasm} IfcGeom ${${KERNEL_UPPER}_LIBRARIES} Eigen3::Eigen)
 
     install(TARGETS ${KERNEL_TARGET})
+    # Every OCCT consumer links the same toolkit list, so the kernel's
+    # runtime DLL set covers the tree and serializer plug-ins too.
+    ifcopenshell_install_runtime_dlls(TARGETS ${KERNEL_TARGET})
 
     if(${kernel} STREQUAL "cgal")
         set_property(TARGET ${KERNEL_TARGET} APPEND_STRING PROPERTY COMPILE_FLAGS " -DCGAL_HAS_THREADS")
 
         set(KERNEL_TARGET_SIMPLE "${KERNEL_TARGET}_simple")
         add_library(${KERNEL_TARGET_SIMPLE} SHARED ${IFCGEOM_FILES})
+        if((NOT WIN32) AND NOT CREATE_BUNDLE AND NOT CMAKE_INSTALL_RPATH AND COMMAND SET_INSTALL_SELF_RPATH)
+            SET_INSTALL_SELF_RPATH(${KERNEL_TARGET_SIMPLE})
+        endif()
 
         ifcopenshell_wasm_plugin_link_options(${KERNEL_TARGET_SIMPLE} ifcopenshell_register_kernel_plugin_v1)
 
         set_target_properties(${KERNEL_TARGET_SIMPLE} PROPERTIES
             COMPILE_FLAGS "-DIFC_GEOMLIBRARY_EXPORTS -DIFOPSH_SIMPLE_KERNEL -DCGAL_HAS_THREADS"
-            OUTPUT_NAME "ifcopenshell.geometry.kernel.cgalsimple"
+            OUTPUT_NAME "ifcopenshell_geometry_kernel_cgalsimple"
             RUNTIME_OUTPUT_DIRECTORY "${kernel_plugin_runtime_dir}"
             LIBRARY_OUTPUT_DIRECTORY "${kernel_plugin_runtime_dir}"
         )
@@ -70,13 +79,21 @@ foreach(kernel ${GEOMETRY_KERNELS})
 	if (NOT WASM_BUILD)
         foreach(tree_backend brep trianglebvh)
             set(TREE_TARGET "geometry_tree_opencascade_${tree_backend}")
+            if(${tree_backend} STREQUAL "brep")
+                set(TREE_IMPLEMENTATION ub_tree.h)
+            else()
+                set(TREE_IMPLEMENTATION bvh_tree.h)
+            endif()
             add_library(${TREE_TARGET} SHARED
                 ${kernel}/tree_${tree_backend}_plugin.cpp
-                ${kernel}/tree_backends.h
+                ${kernel}/${TREE_IMPLEMENTATION}
             )
+            if((NOT WIN32) AND NOT CREATE_BUNDLE AND NOT CMAKE_INSTALL_RPATH AND COMMAND SET_INSTALL_SELF_RPATH)
+                SET_INSTALL_SELF_RPATH(${TREE_TARGET})
+            endif()
             set_target_properties(${TREE_TARGET} PROPERTIES
                 COMPILE_FLAGS "-DIFC_GEOMLIBRARY_EXPORTS"
-                OUTPUT_NAME "ifcopenshell.geometry.tree.opencascade.${tree_backend}"
+                OUTPUT_NAME "ifcopenshell_geometry_tree_opencascade_${tree_backend}"
                 RUNTIME_OUTPUT_DIRECTORY "${kernel_plugin_runtime_dir}"
                 LIBRARY_OUTPUT_DIRECTORY "${kernel_plugin_runtime_dir}"
             )

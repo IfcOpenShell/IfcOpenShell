@@ -35,7 +35,7 @@ double get_SI_equivalent(const typename Schema::IfcNamedUnit& named_unit) {
     if (auto conv_unit = named_unit.template as<typename Schema::IfcConversionBasedUnit>()) {
         auto factor = conv_unit.ConversionFactor();
         auto component = factor.UnitComponent();
-        if (si_unit = component.concrete().template as<typename Schema::IfcSIUnit>()) {
+        if ((si_unit = component.concrete().template as<typename Schema::IfcSIUnit>())) {
             auto value = factor.ValueComponent();
             scale = value.get_attribute_value(0);
         }
