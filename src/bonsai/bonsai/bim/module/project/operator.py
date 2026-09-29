@@ -624,14 +624,16 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
         self.file = tool.Ifc.get()
         library_file = IfcStore.library_file
         assert library_file
+        library_element = library_file.by_id(self.definition)
         element = ifcopenshell.api.project.append_asset(
             self.file,
             library=library_file,
-            element=library_file.by_id(self.definition),
+            element=library_element,
             assume_asset_uniqueness_by_name=self.assume_unique_by_name,
         )
         if not element:
             return {"FINISHED"}
+        tool.License.inherit_library_license(self.file, element, library_file, library_element)
         if element.is_a("IfcTypeProduct"):
             self.import_type_from_ifc(element, context)
         elif element.is_a("IfcProduct"):
@@ -2777,6 +2779,7 @@ class AppendInspectedLinkedElement(AppendLibraryElement):
             library=linked_ifc_file,
             element=element_to_append,
         )
+        tool.License.inherit_library_license(tool.Ifc.get(), element, linked_ifc_file, element_to_append)
         self.import_product_from_ifc(element, context)
         element_type = ifcopenshell.util.element.get_type(element)
         if element_type and tool.Ifc.get_object(element_type) is None:
