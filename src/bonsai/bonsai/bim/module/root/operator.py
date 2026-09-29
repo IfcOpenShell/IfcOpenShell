@@ -390,6 +390,24 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                 pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="BBIM_ImportedBlenderProps")
                 ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties=custom_props)
 
+            # Snapping and layer offsets assume the wall length is on local +X (see #7453).
+            # Warn about it without changing the user's geometry.
+            if (
+                element
+                and element.is_a("IfcWall")
+                and isinstance(obj.data, bpy.types.Mesh)
+                and tool.Model.get_usage_type(element) is None
+            ):
+                x_extent, y_extent = tool.Model.get_local_horizontal_extents(obj)
+                if y_extent > x_extent * (1.0 + 1e-4):
+                    self.report(
+                        {"WARNING"},
+                        f"Wall '{obj.name}' is longer along local Y than local X. "
+                        "Window/door snapping and layer offsets assume the length is on local X. "
+                        "Run Object > IFC Set Origin > Align Local X To Length (bim.align_local_x_to_length) to fix it "
+                        "without changing the wall's appearance.",
+                    )
+
         # TODO: reload representation might lead to the object being replaced by object of the other type.
         # We probably should track it somehow and keep the original selection.
 
