@@ -19,6 +19,7 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api.aggregate
 import ifcopenshell.api.geometry
 import ifcopenshell.api.group
 import ifcopenshell.api.root
@@ -49,3 +50,17 @@ class TestAppendLibraryElement(NewFile):
         appended = ifc.by_type("IfcAnnotation")[0]
         assert tool.Drawing.get_drawing_group(appended)
         assert tool.Ifc.get_object(appended) is None
+
+    def test_appending_an_aggregate_creates_objects_for_its_parts(self):
+        library = ifcopenshell.file()
+        ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject")
+        assembly = ifcopenshell.api.root.create_entity(library, ifc_class="IfcElementAssembly", name="Module")
+        part = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall", name="Panel")
+        ifcopenshell.api.aggregate.assign_object(library, products=[part], relating_object=assembly)
+        IfcStore.library_file = library
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+
+        bpy.ops.bim.append_library_element(definition=assembly.id())
+
+        assert tool.Ifc.get_object(ifc.by_type("IfcWall")[0])
