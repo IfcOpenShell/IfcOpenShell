@@ -30,7 +30,8 @@ from bonsai.bim.module.drawing.decoration import BaseDecorator
 class TestDrawLabelFontSize:
     @pytest.mark.parametrize("region_width", [1001, 1234, 2731])
     def test_font_size_is_not_truncated_to_a_whole_number_of_pixels_per_mm(self, region_width):
-        decorator = BaseDecorator()
+        decorator = BaseDecorator.__new__(BaseDecorator)
+        decorator.font_id = 0
         context = mock.Mock()
         context.space_data.region_3d.view_camera_zoom = 0
         context.region.width = region_width
