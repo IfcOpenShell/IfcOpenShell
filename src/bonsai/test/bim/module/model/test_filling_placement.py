@@ -19,12 +19,16 @@
 # This file was generated with the assistance of an AI coding tool.
 
 import bpy
+import ifcopenshell
+import ifcopenshell.api.aggregate
+import ifcopenshell.api.root
 import ifcopenshell.util.placement
 import numpy as np
 import pytest
 from mathutils import Vector
 
 import bonsai.tool as tool
+from bonsai.bim.module.model import opening as model_opening
 from bonsai.bim.module.model.wall import DumbWallGenerator
 from test.bim.bootstrap import NewFile
 
@@ -134,3 +138,35 @@ class TestUnhostableFilling(NewFile):
         with pytest.raises(RuntimeError, match="Could not host"):
             bpy.ops.bim.add_opening()
         assert not door.FillsVoids
+
+
+class TestFillingHostFromPart(NewFile):
+    def test_a_door_picked_on_a_part_of_the_wall_is_hosted_in_the_wall(self):
+        bpy.ops.bim.create_project()
+        wall_obj = _add_wall(Vector((0.0, 0.0, 0.0)), Vector((5.0, 0.0, 0.0)))
+        ifc = tool.Ifc.get()
+        wall = tool.Ifc.get_entity(wall_obj)
+        part_obj = bpy.data.objects.new("Part", bpy.data.meshes.new("Part"))
+        bpy.context.scene.collection.objects.link(part_obj)
+        bpy.ops.bim.assign_class(obj=part_obj.name, ifc_class="IfcBuildingElementPart")
+        part = ifc.by_type("IfcBuildingElementPart")[0]
+        part_obj = tool.Ifc.get_object(part)
+        ifcopenshell.api.aggregate.assign_object(ifc, products=[part], relating_object=wall)
+        door = _place_door(part_obj, _add_door_type(), Vector((2.0, 0.0, 1.0)))
+        assert door.FillsVoids
+        assert door.FillsVoids[0].RelatingOpeningElement.VoidsElements[0].RelatingBuildingElement == wall
+
+    def test_the_host_is_found_through_nested_parts(self):
+        ifc = ifcopenshell.file()
+        wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        part = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcBuildingElementPart")
+        annotation = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcAnnotation")
+        ifcopenshell.api.aggregate.assign_object(ifc, products=[part], relating_object=wall)
+        ifcopenshell.api.aggregate.assign_object(ifc, products=[annotation], relating_object=part)
+        assert model_opening.get_filling_host(annotation) == wall
+
+    def test_an_element_outside_any_host_has_no_host(self):
+        ifc = ifcopenshell.file()
+        beam = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcBeam")
+        assert model_opening.get_filling_host(beam) is None
+        assert model_opening.get_filling_host(None) is None

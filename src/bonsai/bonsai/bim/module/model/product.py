@@ -49,7 +49,7 @@ from bonsai.bim.module.model.data import AuthoringData
 from bonsai.bim.module.model.decorator import PolylineDecorator, ProductDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
 
-from . import mep, profile, slab, wall
+from . import mep, opening, profile, slab, wall
 
 
 class AddEmptyType(bpy.types.Operator, AddObjectHelper):
@@ -324,6 +324,15 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
             building_obj = context.active_object
             building_element = tool.Ifc.get_entity(building_obj)
 
+        relating_type = tool.Ifc.get().by_id(int(relating_type_id))
+        ifc_class = relating_type.is_a()
+        instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, tool.Ifc.get().schema)[0]
+        material = ifcopenshell.util.element.get_material(relating_type)
+
+        if instance_class in ("IfcDoor", "IfcWindow") and building_element:
+            if (host := opening.get_filling_host(building_element)) and (host_obj := tool.Ifc.get_object(host)):
+                building_element, building_obj = host, host_obj
+
         self.container = None
         self.container_obj = None
         if (
@@ -336,11 +345,6 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
         elif container := tool.Root.get_default_container():
             self.container = container
             self.container_obj = tool.Ifc.get_object(container)
-
-        relating_type = tool.Ifc.get().by_id(int(relating_type_id))
-        ifc_class = relating_type.is_a()
-        instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, tool.Ifc.get().schema)[0]
-        material = ifcopenshell.util.element.get_material(relating_type)
 
         existing_context = None
         for existing_occurrence in ifcopenshell.util.element.get_types(relating_type):
@@ -447,7 +451,7 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
         if (
             building_obj
             and building_element
-            and building_element.is_a() in ["IfcWall", "IfcWallStandardCase", "IfcCovering", "IfcElementAssembly"]
+            and building_element.is_a() in opening.FILLING_HOST_CLASSES
             and instance_class in ["IfcWindow", "IfcDoor"]
         ):
             # Fills should be a sibling to the building element
@@ -476,7 +480,7 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
         if (
             building_obj
             and building_element
-            and building_element.is_a() in ["IfcWall", "IfcWallStandardCase", "IfcCovering", "IfcElementAssembly"]
+            and building_element.is_a() in opening.FILLING_HOST_CLASSES
             and instance_class in ["IfcWindow", "IfcDoor"]
         ):
             # TODO For now we are hardcoding windows and doors as a prototype

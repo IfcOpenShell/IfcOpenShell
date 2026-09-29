@@ -249,6 +249,20 @@ def is_filling_supported(element) -> bool:
     return element is not None and element.is_a() in ("IfcDoor", "IfcWindow")
 
 
+FILLING_HOST_CLASSES = ("IfcWall", "IfcWallStandardCase", "IfcCovering", "IfcElementAssembly")
+
+
+def get_filling_host(element: Union[ifcopenshell.entity_instance, None]) -> Union[ifcopenshell.entity_instance, None]:
+    """The host a filling belongs in, walking up the aggregation from whatever part was picked."""
+    seen = set()
+    while element is not None and element.id() not in seen:
+        if element.is_a() in FILLING_HOST_CLASSES:
+            return element
+        seen.add(element.id())
+        element = ifcopenshell.util.element.get_aggregate(element)
+    return None
+
+
 def closest_point_on_host(obj: bpy.types.Object, target: Vector, distance: float) -> tuple[bool, Vector, Vector, int]:
     """``Object.closest_point_on_mesh`` that reports a miss instead of raising on a mesh without faces."""
     try:
