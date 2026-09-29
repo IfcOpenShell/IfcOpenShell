@@ -98,3 +98,39 @@ class TestOpeningPlacementWithBlenderOffset(NewFile):
         opening = door.FillsVoids[0].RelatingOpeningElement
         opening_matrix = ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement)
         np.testing.assert_allclose(opening_matrix, tool.Surveyor.get_absolute_matrix(door_obj), atol=1e-6)
+
+
+class TestUnhostableFilling(NewFile):
+    def test_a_host_without_faces_reports_instead_of_raising(self):
+        bpy.ops.bim.create_project()
+        wall_obj = _add_wall(Vector((0.0, 0.0, 0.0)), Vector((5.0, 0.0, 0.0)))
+        wall_obj.data = bpy.data.meshes.new("Empty")
+        door_type = _add_door_type()
+        with pytest.raises(RuntimeError, match="Could not host the door"):
+            _place_door(wall_obj, door_type, Vector((2.0, 0.0, 1.0)))
+        assert not tool.Ifc.get().by_type("IfcDoor")
+
+    def test_a_door_too_far_from_the_host_is_not_left_behind(self):
+        bpy.ops.bim.create_project()
+        wall_obj = _add_wall(Vector((0.0, 0.0, 0.0)), Vector((5.0, 0.0, 0.0)))
+        door_type = _add_door_type()
+        with pytest.raises(RuntimeError, match="Could not host the door"):
+            _place_door(wall_obj, door_type, Vector((500.0, 500.0, 0.0)))
+        assert not tool.Ifc.get().by_type("IfcDoor")
+        assert not tool.Ifc.get().by_type("IfcOpeningElement")
+
+    def test_adding_a_far_door_to_a_wall_as_an_opening_reports_why(self):
+        bpy.ops.bim.create_project()
+        wall_obj = _add_wall(Vector((0.0, 0.0, 0.0)), Vector((5.0, 0.0, 0.0)))
+        bpy.ops.object.select_all(action="DESELECT")
+        bpy.context.scene.cursor.location = Vector((500.0, 500.0, 0.0))
+        bpy.ops.bim.add_occurrence(relating_type_id=_add_door_type().id())
+        door = tool.Ifc.get().by_type("IfcDoor")[-1]
+        door_obj = tool.Ifc.get_object(door)
+        bpy.ops.object.select_all(action="DESELECT")
+        wall_obj.select_set(True)
+        door_obj.select_set(True)
+        bpy.context.view_layer.objects.active = wall_obj
+        with pytest.raises(RuntimeError, match="Could not host"):
+            bpy.ops.bim.add_opening()
+        assert not door.FillsVoids
