@@ -33,7 +33,8 @@ The usage for python project.
 ~~~py
 import ifcopenshell
 import ifcopenshell.express
-schema = ifcopenshell.express.parse('IFC.exp')
+
+schema = ifcopenshell.express.parse("IFC.exp")
 ifcopenshell.register_schema(schema)
 f = ifcopenshell.file(schema=schema.schema.name())
 f.createIfcProject(ifcopenshell.guid.new())
