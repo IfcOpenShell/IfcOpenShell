@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import copy
-from math import atan2, degrees, pi, radians
+from math import atan2, cos, degrees, pi, radians
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 import bpy
@@ -738,15 +738,19 @@ class DumbProfileJoiner:
                 )
         else:
             # This is the standard L and T joints described by IFC
+            direction = axis1[1] - axis1[0] if connection1 == "ATEND" else axis1[0] - axis1[1]
+            face = self.get_profile_face_plane(
+                profile2, furthest_plane if is_relating else closest_plane, direction.normalized()
+            )
             if connection1 == "ATEND":
-                if tool.Cad.is_x(abs(xy_angle), (0, 90, 180), tolerance=0.001) and is_orthogonal:
+                if face is None and tool.Cad.is_x(abs(xy_angle), (0, 90, 180), tolerance=0.001) and is_orthogonal:
                     plane = self.get_profile_plane(profile2, furthest_plane if is_relating else closest_plane)
                     intersect = mathutils.geometry.intersect_line_plane(
                         axis1[0], axis1[1], plane.translation, plane.col[2].to_3d()
                     )
                     self.body[1] = intersect
                 else:
-                    plane = self.get_profile_plane(
+                    plane = face or self.get_profile_plane(
                         profile2,
                         furthest_plane if is_relating else closest_plane,
                         z_inwards=False if is_relating else True,
@@ -764,14 +768,14 @@ class DumbProfileJoiner:
                         }
                     )
             elif connection1 == "ATSTART":
-                if tool.Cad.is_x(abs(xy_angle), (0, 90, 180), tolerance=0.001) and is_orthogonal:
+                if face is None and tool.Cad.is_x(abs(xy_angle), (0, 90, 180), tolerance=0.001) and is_orthogonal:
                     plane = self.get_profile_plane(profile2, furthest_plane if is_relating else closest_plane)
                     intersect = mathutils.geometry.intersect_line_plane(
                         axis1[0], axis1[1], plane.translation, plane.col[2].to_3d()
                     )
                     self.body[0] = intersect
                 else:
-                    plane = self.get_profile_plane(
+                    plane = face or self.get_profile_plane(
                         profile2,
                         furthest_plane if is_relating else closest_plane,
                         z_inwards=False if is_relating else True,
@@ -851,6 +855,32 @@ class DumbProfileJoiner:
         else:
             assert False, plane
         return self.create_matrix(p, x_axis, y_axis, z_axis)
+
+    def get_profile_face_plane(self, obj, plane: str, direction: Vector) -> Optional[Matrix]:
+        # Cutting plane on the profile's single convex hull face on this side, if that face is sloped.
+        # Returns None when the bounding box plane already is the face, or the slope exceeds 45 degrees.
+        if not isinstance(mesh := obj.data, bpy.types.Mesh):
+            return None
+        if len(points := list({(round(v.co.x, 5), round(v.co.y, 5)) for v in mesh.vertices})) < 3:
+            return None
+        hull = [Vector(points[i]) for i in mathutils.geometry.convex_hull_2d(points)]
+        centre = sum(hull, Vector((0, 0))) / len(hull)
+        side = {"top": Vector((0, 1)), "bottom": Vector((0, -1)), "right": Vector((1, 0)), "left": Vector((-1, 0))}
+        faces = []
+        for a, b in zip(hull, hull[1:] + hull[:1]):
+            normal = Vector(((b - a).y, (a - b).x)).normalized()
+            normal = -normal if normal.dot(a - centre) < 0 else normal
+            if normal.dot(side[plane]) > 1e-5:
+                faces.append((a, normal))
+        if len(faces) != 1 or faces[0][1].dot(side[plane]) > 1 - 1e-5:
+            return None
+        rotation = obj.matrix_world.to_quaternion()
+        z_axis = rotation @ faces[0][1].to_3d()
+        if abs(z_axis.dot(direction)) < cos(radians(45)):
+            return None
+        z_axis = z_axis if z_axis.dot(direction) > 0 else -z_axis
+        x_axis = rotation @ Vector((0, 0, 1))
+        return self.create_matrix(obj.matrix_world @ faces[0][0].to_3d(), x_axis, z_axis.cross(x_axis), z_axis)
 
     def create_matrix(self, p: Vector, x: Vector, y: Vector, z: Vector) -> Matrix:
         return Matrix([x, y, z, p]).to_4x4().transposed()
