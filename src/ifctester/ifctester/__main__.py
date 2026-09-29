@@ -57,6 +57,7 @@ reporter_types = {
     "Console": lambda: reporter.Console(specs, use_colour=not args.no_color),
     "Txt": lambda: reporter.Txt(specs),
     "Json": lambda: reporter.Json(specs),
+    "Sqlite": lambda: reporter.Sqlite(specs),
     "Html": lambda: reporter.Html(specs),
     "Ods": lambda: reporter.Ods(specs, excel_safe=args.excel_safe),
     "OdsSummary": lambda: reporter.OdsSummary(specs, excel_safe=args.excel_safe),
