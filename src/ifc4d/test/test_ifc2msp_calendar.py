@@ -29,12 +29,6 @@ from ifc4d.ifc2msp import Ifc2Msp
 
 class TestIfc2MspCalendarWithoutWorkingTimes:
     def test_calendar_with_no_working_times_does_not_crash_the_export(self):
-        # WorkingTimes is an optional attribute on IfcWorkCalendar. A calendar
-        # created without any working time pattern (e.g. straight after
-        # ifcopenshell.api.sequence.add_work_calendar, before any
-        # add_work_time call) is valid IFC and leaves WorkingTimes as None.
-        # Before the fix, auto_detect_working_week iterated it directly and
-        # raised TypeError: 'NoneType' object is not iterable.
         ifc_file = ifcopenshell.file()
         ifc_file.create_entity("IfcProject", GlobalId=ifcopenshell.guid.new(), Name="P")
         work_schedule = ifcopenshell.api.sequence.add_work_schedule(ifc_file, name="Schedule A")

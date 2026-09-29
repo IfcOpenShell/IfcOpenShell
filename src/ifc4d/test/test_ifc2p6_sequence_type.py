@@ -72,13 +72,11 @@ class TestIfc2P6RelationshipType:
             return Path(converter.xml).read_text()
 
     def test_userdefined_sequence_type_does_not_crash_the_export(self):
-        # Before the fix: KeyError: 'USERDEFINED'.
         ifc_file = self.build_ifc("USERDEFINED")
         xml = self.export(ifc_file)
         assert re.findall(r"<Relationship>.*?<Type>([^<]*)</Type>", xml) == ["Finish to Start"]
 
     def test_notdefined_sequence_type_does_not_crash_the_export(self):
-        # Before the fix: KeyError: 'NOTDEFINED'.
         ifc_file = self.build_ifc("NOTDEFINED")
         xml = self.export(ifc_file)
         assert re.findall(r"<Relationship>.*?<Type>([^<]*)</Type>", xml) == ["Finish to Start"]
