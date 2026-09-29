@@ -129,7 +129,6 @@ async def upload_part(part_id: str, request: Request, current_user: User = Depen
     request_body = await request.body()
 
     if document:
-
         # try to receive the uploaded part
         try:
             print("File contents: ", request_body)
