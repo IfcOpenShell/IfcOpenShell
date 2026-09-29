@@ -568,11 +568,7 @@ class Usecase:
         tool.Blender.select_and_activate_single_object(bpy.context, dummy)
         if not isinstance(geom_data, bpy.types.Mesh):
             if isinstance(dummy.data, bpy.types.Curve) and dummy.data.bevel_depth:
-                # IfcSweptDiskSolid directrices are loaded as curves with a bevel_depth
-                # (see #3496), so the object renders as a solid tube. Strip the bevel
-                # before converting to a mesh, otherwise the intermediate mesh is the
-                # tube's surface (no loose wire edges), and converting it back to a
-                # curve below silently produces another mesh instead of a curve.
+                # Strip the bevel so the mesh keeps wire edges and converts back to a curve (#3496).
                 dummy.data.bevel_depth = 0.0
             bpy.ops.object.convert(target="MESH")
         self.remove_doubles_from_mesh(dummy.data)
