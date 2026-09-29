@@ -448,3 +448,86 @@ class TestSetActiveUnit(NewFile):
         subject.set_active_unit(unit)
         props = tool.Unit.get_unit_props()
         assert props.active_unit_id == unit.id()
+
+
+class TestGetUnitSiScale(NewFile):
+    def test_run(self):
+        tool.Ifc.set(ifc := ifcopenshell.file())
+        assert subject.get_unit_si_scale(ifcopenshell.api.unit.add_si_unit(ifc, unit_type="LENGTHUNIT")) == 1
+        mm = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="LENGTHUNIT", prefix="MILLI")
+        assert subject.get_unit_si_scale(mm) == 0.001
+        foot = ifcopenshell.api.unit.add_conversion_based_unit(ifc, name="foot")
+        assert round(subject.get_unit_si_scale(foot), 4) == 0.3048
+        thing = ifcopenshell.api.unit.add_context_dependent_unit(ifc, name="THINGS", unit_type="LENGTHUNIT")
+        assert subject.get_unit_si_scale(thing) is None
+
+
+class TestGetProjectRescaleFactor(NewFile):
+    def test_run(self):
+        tool.Ifc.set(ifc := ifcopenshell.file())
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        unit = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="LENGTHUNIT")
+        ifcopenshell.api.unit.assign_unit(ifc, units=[unit])
+        assert subject.get_project_rescale_factor(0.001) is None
+        ifc.createIfcShapeRepresentation()
+        assert subject.get_project_rescale_factor(0.001) == 0.001
+        assert subject.get_project_rescale_factor(1.0) is None
+        assert subject.get_project_rescale_factor(None) is None
+
+
+class TestIsProjectUnit(NewFile):
+    def test_run(self):
+        tool.Ifc.set(ifc := ifcopenshell.file())
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        m = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="LENGTHUNIT")
+        mm = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="LENGTHUNIT", prefix="MILLI")
+        assert subject.is_project_unit(m) is False
+        ifcopenshell.api.unit.assign_unit(ifc, units=[m])
+        assert subject.is_project_unit(m) is True
+        assert subject.is_project_unit(mm) is False
+
+
+class TestGetAssignUnitRescaleFactor(NewFile):
+    def test_run(self):
+        tool.Ifc.set(ifc := ifcopenshell.file())
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        m = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="LENGTHUNIT")
+        mm = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="LENGTHUNIT", prefix="MILLI")
+        area = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="AREAUNIT")
+        ifcopenshell.api.unit.assign_unit(ifc, units=[m])
+        ifc.createIfcShapeRepresentation()
+        assert subject.get_assign_unit_rescale_factor(mm) == 0.001
+        assert subject.get_assign_unit_rescale_factor(m) is None
+        assert subject.get_assign_unit_rescale_factor(area) is None
+
+
+class TestGetEditUnitRescaleFactor(NewFile):
+    def test_run(self):
+        tool.Ifc.set(ifc := ifcopenshell.file())
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        m = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="LENGTHUNIT")
+        mm = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="LENGTHUNIT", prefix="MILLI")
+        ifcopenshell.api.unit.assign_unit(ifc, units=[m])
+        ifc.createIfcShapeRepresentation()
+        subject.import_unit_attributes(m)
+        assert subject.get_edit_unit_rescale_factor(m) is None
+        props = tool.Unit.get_unit_props()
+        prefix = props.unit_attributes["Prefix"]
+        prefix.is_null = False
+        prefix.enum_value = "MILLI"
+        assert subject.get_edit_unit_rescale_factor(m) == 0.001
+        assert subject.get_edit_unit_rescale_factor(mm) is None
+
+
+class TestGetSceneUnitsRescaleFactor(NewFile):
+    def test_run(self):
+        tool.Ifc.set(ifc := ifcopenshell.file())
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        m = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="LENGTHUNIT")
+        ifcopenshell.api.unit.assign_unit(ifc, units=[m])
+        ifc.createIfcShapeRepresentation()
+        bpy.context.scene.unit_settings.system = "METRIC"
+        bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
+        assert subject.get_scene_units_rescale_factor() == 0.001
+        bpy.context.scene.unit_settings.length_unit = "METERS"
+        assert subject.get_scene_units_rescale_factor() is None
