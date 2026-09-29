@@ -22,7 +22,7 @@ class Patcher(ifcpatch.BasePatcher):
         self.file_patched: ifcopenshell.file
 
     def patch(self):
-        patched_file = ifcopenshell.file.from_string(self.file.wrapped_data.to_string())
+        patched_file = ifcopenshell.file.from_string(self.file.to_string())
 
         alignments = patched_file.by_type("IfcAlignment")
         for alignment in alignments:
@@ -31,12 +31,12 @@ class Patcher(ifcpatch.BasePatcher):
             nests = alignment.IsNestedBy
             first_referent = nests[1].RelatedObjects[0]
             start_station = ifcopenshell.util.element.get_pset(first_referent, "Pset_Stationing", "Station")
-            # start_station = first_referent.IsDefinedBy[0].RelatingPropertyDefinition.HasProperties[0].NominalValue.wrapped_data # get station from first_referent
+            # start_station = first_referent.IsDefinedBy[0].RelatingPropertyDefinition.HasProperties[0].NominalValue # get station from first_referent
             for referent in nests[1].RelatedObjects:
                 if referent.ObjectPlacement == None:
                     # Need to get Station property from Pset_Stationing + Station property from the first referent... the DistanceAlong is the different in these values
                     station = ifcopenshell.util.element.get_pset(referent, "Pset_Stationing", "Station")
-                    # station = referent.IsDefinedBy[0].RelatingPropertyDefinition.HasProperties[0].NominalValue.wrapped_data # get station from current referent
+                    # station = referent.IsDefinedBy[0].RelatingPropertyDefinition.HasProperties[0].NominalValue # get station from current referent
                     object_placement = patched_file.createIfcLinearPlacement(
                         RelativePlacement=patched_file.createIfcAxis2PlacementLinear(
                             Location=patched_file.createIfcPointByDistanceExpression(
