@@ -469,7 +469,6 @@ class ScheduleIfcGenerator:
     def create_resources(self) -> None:
         if self.resources:
             for id, resource in self.resources.items():
-
                 parent = self.resources.get(resource.get("ParentObjectId"))
                 if parent:
                     if not parent.get("ifc"):

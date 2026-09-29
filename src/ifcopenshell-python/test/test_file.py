@@ -197,10 +197,13 @@ class TestFile(test.bootstrap.IFC4):
             self.file.by_id("id")
 
     def test_getting_an_element_by_guid(self):
-        element = self.file.createIfcWall("id")
+        # Only a 22-character GlobalId is indexed.
+        element = self.file.createIfcWall("0YvctVUKr0kugbFTf53O9L")
         with pytest.raises(TypeError):
             self.file.by_guid(1)
-        assert self.file.by_guid("id") == element
+        assert self.file.by_guid("0YvctVUKr0kugbFTf53O9L") == element
+        with pytest.raises(RuntimeError):
+            self.file.by_guid("id")
 
     def test_adding_an_element(self):
         g = ifcopenshell.file()

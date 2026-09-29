@@ -623,10 +623,7 @@ class ExtendWallsToPolylinePoint(bpy.types.Operator, PolylineOperator, tool.Ifc.
                     self.connection,
                 )
 
-            tool.Polyline.clear_polyline()
-            context.workspace.status_text_set(text=None)
-            PolylineDecorator.uninstall()
-            tool.Blender.update_viewport()
+            self.cleanup(context)
             return {"FINISHED"}
 
         self.handle_keyboard_input(context, event)
@@ -1070,8 +1067,7 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
     def _modal(self, context, event):
         if not self.relating_type:
             self.report({"WARNING"}, "You need to select a wall type.")
-            PolylineDecorator.uninstall()
-            tool.Blender.update_viewport()
+            self.cleanup(context)
             return {"FINISHED"}
 
         PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
@@ -1119,12 +1115,8 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
             and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}
         ):
             self.create_walls_from_polyline(context)
-            context.workspace.status_text_set(text=None)
             self.tool_state.plane_method = None
-            ProductDecorator.uninstall()
-            PolylineDecorator.uninstall()
-            tool.Polyline.clear_polyline()
-            tool.Blender.update_viewport()
+            self.cleanup(context)
             return {"FINISHED"}
 
         self.handle_keyboard_input(context, event)
@@ -1132,7 +1124,6 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
 
         cancel = self.handle_cancelation(context, event)
         if cancel is not None:
-            ProductDecorator.uninstall()
             return cancel
 
         return {"RUNNING_MODAL"}
@@ -4863,7 +4854,9 @@ class WallGizmoPreviewDecorator(tool.Blender.ViewportDecorator):
         tool.Blender.draw_quads(context, quads, fill_color=(*color_rgb, self.QUAD_ALPHA))
 
     @staticmethod
-    def _wall_floor_quad(mw: Matrix, x0: float, x1: float, y0: float, y1: float) -> tuple[
+    def _wall_floor_quad(
+        mw: Matrix, x0: float, x1: float, y0: float, y1: float
+    ) -> tuple[
         tuple[float, float, float],
         tuple[float, float, float],
         tuple[float, float, float],

@@ -32,7 +32,6 @@
 #include <boost/multi_index/random_access_index.hpp>
 #include <boost/multi_index/sequenced_index.hpp>
 #include <boost/multi_index_container.hpp>
-#include <boost/circular_buffer.hpp>
 #include <iterator>
 #include <map>
 #include <memory>
@@ -91,14 +90,13 @@ enum filetype {
 IFC_PARSE_API filetype guess_file_type(const std::string& path);
 
 template <typename Reader = file_reader<full_buffer_impl>>
-class IFC_PARSE_API instance_streamer {
+class instance_streamer {
 private:
     std::unique_ptr<Reader> owned_stream_;
     Reader* stream_;
     std::unique_ptr<spf_lexer<Reader>> lexer_;
     std::unique_ptr<spf_header> owned_header_;
     ifcopenshell::file* owner_;
-    boost::circular_buffer<token> token_stream_;
     const ifcopenshell::schema_definition* schema_;
     ifcopenshell::impl::in_memory_file_storage storage_;
     ifcopenshell::file_open_status good_ = ifcopenshell::file_open_status::SUCCESS;
@@ -166,6 +164,9 @@ private:
     instance_streamer(Reader* stream, ifcopenshell::file* owner_file = nullptr, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
     void bypass_types(const std::set<std::string>& type_names);
+    void resolve_references_in_place(bool value) {
+        storage_.resolve_references_in_place = value;
+    }
 
     void yield_header_instances(bool enabled) { yield_header_instances_ = enabled; }
 
@@ -210,6 +211,8 @@ public:
     std::set<std::string> types_to_bypass_loading_;
 
   private:
+    bool lazy_loading_ = false;
+    bool paged_reading_ = false;
     file_open_status good_ = file_open_status::SUCCESS;
     std::reference_wrapper<ifcopenshell::logger> logger_;
 
@@ -234,6 +237,7 @@ public:
     batch_deletion_ids_t batch_deletion_ids_;
     bool batch_mode_ = false;
     void process_deletion_(const express::base& entity);
+    void erase_instances_(const std::vector<uint32_t>& ids);
 
   public:
 #ifdef USE_MMAP
@@ -279,6 +283,18 @@ public:
     file(const uninitialized_tag& tag, ifcopenshell::logger& logger = ifcopenshell::logger::root());
 
     bool initialize(const std::string& path, filetype type = FT_AUTODETECT, bool read_only = false);
+    // Index the file with one pass and parse each instance's attributes on
+    // first access instead of parsing everything up front. Set before
+    // initialize(). Falls back to the full parse if the index pass finds
+    // anything it does not handle.
+    void lazy_loading(bool value) { lazy_loading_ = value; }
+    bool lazy_loading() const { return lazy_loading_; }
+    // Read the file through the paged reader (64 KB pages, 4 MB cache)
+    // instead of loading it into memory as a whole. Set before
+    // initialize(). Applies to the full parse; lazy loading always reads
+    // in pages.
+    void paged_reading(bool value) { paged_reading_ = value; }
+    bool paged_reading() const { return paged_reading_; }
 #ifdef USE_MMAP
     bool initialize(const std::string& path, bool use_mmap);
 #endif
@@ -348,6 +364,13 @@ public:
 
     /// Returns all entities in the file that reference the id
     std::vector<express::base> instances_by_reference(int reference_id);
+
+#ifndef SWIG
+    /// Returns whether pred accepts the id of every instance that references
+    /// instance_id, stopping at the first one it rejects. Used by the Python
+    /// wrapper's helpers; a std::function can't be exposed to Python itself.
+    bool all_referencing_instances(int instance_id, const std::function<bool(uint32_t)>& pred);
+#endif
 
     /// Returns the entity with the specified id
     express::base instance_by_id(int instance_id);

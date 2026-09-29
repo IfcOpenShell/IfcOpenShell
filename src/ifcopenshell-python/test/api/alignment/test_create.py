@@ -23,7 +23,6 @@ import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 import ifcopenshell.api.unit
 
-
 try:
     ifcopenshell.file(schema="IFC4")
     IFC4X3_AVAILABLE = True
@@ -56,9 +55,7 @@ def test_create():
 
         # create() does not define stationing - the alignment has no referent nest at all
         assert ifcopenshell.api.alignment.get_stationing_nest(file, ali) is None
-        assert not any(
-            related.is_a("IfcReferent") for nest in ali.IsNestedBy for related in nest.RelatedObjects
-        )
+        assert not any(related.is_a("IfcReferent") for nest in ali.IsNestedBy for related in nest.RelatedObjects)
 
         # verify the geometric representation was created
         curve = ifcopenshell.api.alignment.get_curve(ali)

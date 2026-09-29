@@ -293,10 +293,10 @@ bool open_cascade_kernel::convert(const taxonomy::sweep_along_curve::ptr scs, To
 	}
 
 	if (mf0->IsDone() && mf1->IsDone()) {
-		BB.Add(comp, mf0->Face());
+		BB.Add(comp, TopoDS::Face(mf0->Face().Reversed()));
 		BB.Add(comp, mf1->Face());
 	} else {
-		BB.Add(comp, f0);
+		BB.Add(comp, TopoDS::Face(f0.Reversed()));
 		BB.Add(comp, f1);
 	}
 
