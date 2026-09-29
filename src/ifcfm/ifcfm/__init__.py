@@ -25,9 +25,10 @@ import re
 from collections import defaultdict
 from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, Union
+from typing import TYPE_CHECKING, Any, Literal, Union, cast
 
 import ifcopenshell.util.selector
+from typing_extensions import assert_never
 
 try:
     from openpyxl import Workbook
@@ -100,8 +101,9 @@ class Parser:
     def parse(self, ifc_file: ifcopenshell.file, name=None):
         for category_name, category_config in self.config["categories"].items():
             for element in category_config["get_category_elements"](ifc_file):
-                get_element_data: Union[GetElementDataCallBack, dict[str, Any]]
-                get_element_data = category_config["get_element_data"]
+                get_element_data = cast(
+                    Union[GetElementDataCallBack, dict[str, Any]], category_config["get_element_data"]
+                )
 
                 if isinstance(get_element_data, dict):
                     data = {}
@@ -109,14 +111,18 @@ class Parser:
                         data[key] = ifcopenshell.util.selector.get_element_value(element, query)
                 elif isinstance(get_element_data, Callable):
                     data = get_element_data(ifc_file, element) or {}
+                else:
+                    assert_never(get_element_data)
 
-                get_custom_element_data = self.get_custom_element_data.get(category_name, lambda x, y: None)
+                get_custom_element_data = self.get_custom_element_data.get(category_name, lambda *_: None)
                 if isinstance(get_custom_element_data, dict):
                     custom_data = {}
                     for key, query in get_custom_element_data.items():
                         custom_data[key] = ifcopenshell.util.selector.get_element_value(element, query)
                 elif isinstance(get_custom_element_data, Callable):
                     custom_data = get_custom_element_data(ifc_file, element) or {}
+                else:
+                    assert_never(get_custom_element_data)
 
                 data.update(custom_data)
 
