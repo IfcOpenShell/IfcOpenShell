@@ -24,6 +24,7 @@
 
 #ifdef IFOPSH_WITH_OPENCASCADE
 #include "../ifcgeom/kernels/opencascade/OpenCascadeKernel.h"
+#include "../ifcgeom/kernels/opencascade/boolean_utils.h"
 #undef Handle
 #endif
 
@@ -37,6 +38,17 @@
 #endif
 
 namespace {
+	// Whether an attempt's own (temporary, in-memory) logger carries a signal that its
+	// result should be distrusted, e.g. has_coincident_edges() (see boolean_utils.cpp).
+	inline bool logger_flags_suspicious_result(const Logger& logger) {
+#ifdef IFOPSH_WITH_OPENCASCADE
+		if (IfcGeom::util::has_coincident_faces_warning(logger)) {
+			return true;
+		}
+#endif
+		return false;
+	}
+
 	inline bool is_valid_for_kernel(const ifcopenshell::geometry::kernels::AbstractKernel* k, const IfcGeom::ConversionResult& shp) {
 #ifdef IFOPSH_WITH_OPENCASCADE
 		if (k->geometry_library() == "opencascade") {
@@ -61,8 +73,27 @@ namespace ifcopenshell {
 
 			class HybridKernel : public ifcopenshell::geometry::kernels::AbstractKernel {
 				std::vector<std::unique_ptr<AbstractKernel>> kernels_;
+				// Each kernels_[i] is bound to its own dedicated, in-memory attempt_loggers_[i]
+				// so a chain attempt's log messages can be inspected then discarded or
+				// folded into logger_, without disturbing the other kernels' persisted state.
+				std::vector<std::unique_ptr<Logger>> attempt_loggers_;
 				ifcopenshell::geometry::abstract_mapping* mapping_;
 				IfcParse::IfcFile* file_;
+
+				void bind_attempt_loggers() {
+					attempt_loggers_.clear();
+					attempt_loggers_.reserve(kernels_.size());
+					for (auto& k : kernels_) {
+						attempt_loggers_.emplace_back(std::make_unique<Logger>());
+						auto& al = *attempt_loggers_.back();
+						al.OutputFormat(Logger::FMT_INMEMORY);
+						// Capture at least at NOTICE, regardless of logger_'s (e.g. CLI-configured)
+						// verbosity, so detection doesn't depend on the user's chosen verbosity;
+						// Append() re-applies logger_'s real verbosity when replaying.
+						al.Verbosity((std::min)(Logger::LOG_NOTICE, logger_.Verbosity()));
+						k.reset(k->clone(al));
+					}
+				}
 			public:
 				HybridKernel(const std::string& name, IfcParse::IfcFile* file, Settings& settings, std::vector<std::unique_ptr<AbstractKernel>>&& kernels, Logger& logger = Logger::Root())
 					: AbstractKernel(name, settings, logger)
@@ -70,6 +101,7 @@ namespace ifcopenshell {
 					, mapping_(ifcopenshell::geometry::impl::mapping_implementations().construct(file, settings, logger))
 					, file_(file)
 				{
+					bind_attempt_loggers();
 				}
 				virtual bool supports_boolean_operations() const
 				{
@@ -84,7 +116,13 @@ namespace ifcopenshell {
 				{
 					auto ops = mapping_->find_openings(item->instance->as<IfcUtil::IfcBaseEntity>());
 					bool has_openings = ops && ops->size();
-					for (auto& k : kernels_) {
+
+					IfcGeom::ConversionResults best;
+					bool have_best = false;
+					size_t best_index = 0;
+
+					for (size_t i = 0; i < kernels_.size(); ++i) {
+						auto& k = kernels_[i];
 #ifdef IFOPSH_WITH_CGAL
 						if (has_openings && !k->supports_boolean_operations()) {
 							// @todo this would fail later on in the find_openings() call, because we have a
@@ -96,14 +134,38 @@ namespace ifcopenshell {
 							continue;
 						}
 #endif
+						auto& attempt_logger = *attempt_loggers_[i];
+						attempt_logger.ClearLog();
+
+						IfcGeom::ConversionResults candidate;
 						bool success = false;
 						try {
-							success = k->convert(item, rs);
+							success = k->convert(item, candidate);
 						} catch (...) {}
-						if (success) {
+						if (!success) {
+							continue;
+						}
+						if (!logger_flags_suspicious_result(attempt_logger)) {
+							logger_.Append(attempt_logger);
+							rs.insert(rs.end(), candidate.begin(), candidate.end());
 							return true;
 						}
+						// A kernel further down the chain gets a chance to clear this up;
+						// keep the first suspicious success (and its log) in case none do.
+						if (!have_best) {
+							best = std::move(candidate);
+							best_index = i;
+							have_best = true;
+						}
 					}
+
+					if (have_best) {
+						logger_.Warning("SYS", 36, "Hybrid kernel chain has no non-suspicious result, using the first suspicious one", item->instance);
+						logger_.Append(*attempt_loggers_[best_index]);
+						rs.insert(rs.end(), best.begin(), best.end());
+						return true;
+					}
+
 					return false;
 				}
 				virtual bool apply_layerset(IfcGeom::ConversionResults& items, const ifcopenshell::geometry::layerset_information& layers)
@@ -135,7 +197,14 @@ namespace ifcopenshell {
 				virtual bool convert_openings(const IfcUtil::IfcBaseEntity* entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
 					const IfcGeom::ConversionResults& entity_shapes, const ifcopenshell::geometry::taxonomy::matrix4& entity_trsf, IfcGeom::ConversionResults& cut_shapes)
 				{
-					for (auto& k : kernels_) {
+					// @todo entity_shapes already commits to one kernel's native shape type,
+					// so is_valid_for_kernel() below usually leaves only one candidate.
+					IfcGeom::ConversionResults best;
+					bool have_best = false;
+					size_t best_index = 0;
+
+					for (size_t i = 0; i < kernels_.size(); ++i) {
+						auto& k = kernels_[i];
 						bool is_valid = true;
 						for (auto& s : entity_shapes) {
 							if (!is_valid_for_kernel(k.get(), s)) {
@@ -146,14 +215,37 @@ namespace ifcopenshell {
 						if (!is_valid) {
 							continue;
 						}
+
+						auto& attempt_logger = *attempt_loggers_[i];
+						attempt_logger.ClearLog();
+
+						IfcGeom::ConversionResults candidate;
 						bool success = false;
 						try {
-							success = k->convert_openings(entity, openings, entity_shapes, entity_trsf, cut_shapes);
+							success = k->convert_openings(entity, openings, entity_shapes, entity_trsf, candidate);
 						} catch (...) {}
-						if (success) {
+						if (!success) {
+							continue;
+						}
+						if (!logger_flags_suspicious_result(attempt_logger)) {
+							logger_.Append(attempt_logger);
+							cut_shapes.insert(cut_shapes.end(), candidate.begin(), candidate.end());
 							return true;
 						}
+						if (!have_best) {
+							best = std::move(candidate);
+							best_index = i;
+							have_best = true;
+						}
 					}
+
+					if (have_best) {
+						logger_.Warning("SYS", 36, "Hybrid kernel chain has no non-suspicious opening cut, using the first suspicious one", entity);
+						logger_.Append(*attempt_loggers_[best_index]);
+						cut_shapes.insert(cut_shapes.end(), best.begin(), best.end());
+						return true;
+					}
+
 					return false;
 				}
 				virtual AbstractKernel* clone(Logger& logger) const

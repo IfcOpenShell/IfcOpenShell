@@ -1,5 +1,7 @@
 #include "boolean_utils.h"
 
+#include <cstring>
+
 #include "IfcGeomTree.h"
 #include "base_utils.h"
 
@@ -832,6 +834,19 @@ bool IfcGeom::util::points_on_planar_face_generator::operator()(gp_Pnt& p) {
 }
 
 
+namespace IfcGeom { namespace util {
+	const char coincident_faces_warning_code[] = "GEO155";
+
+	bool has_coincident_faces_warning(const Logger& logger) {
+		for (auto& m : logger.log_messages()) {
+			if (std::strcmp(m.code, coincident_faces_warning_code) == 0) {
+				return true;
+			}
+		}
+		return false;
+	}
+} }
+
 bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const TopoDS_Shape& a_input, const NCollection_List<TopoDS_Shape>& b_input, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
 	using namespace std::string_literals;
 
@@ -1386,6 +1401,11 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 
 					if (success) {
 						result = r;
+
+						// Only pay for has_coincident_edges() when a caller actually wants it.
+						if (settings.logger && has_coincident_edges(r, Precision::Confusion())) {
+							settings.log().Warning("GEO", 155, "Boolean operation result has coincident faces at possibly non-manifold locations");
+						}
 					}
 
 				} else {
