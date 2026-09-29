@@ -38,7 +38,7 @@ class TestMergeMaterialsIFC2X3(test.bootstrap.IFC2X3):
 
         ifcopenshell.api.material.merge_materials(self.file, materials=[m1, m2], merge_into=m1)
 
-        assert self.file.by_type("IfcMaterial") == [m1]
+        assert self.file.by_type("IfcMaterial") == (m1,)
         assert ifcopenshell.util.element.get_material(wall1) == m1
         assert ifcopenshell.util.element.get_material(wall2) == m1
         # No dangling IfcRelAssociatesMaterial pointing at the removed material.
@@ -54,7 +54,7 @@ class TestMergeMaterialsIFC2X3(test.bootstrap.IFC2X3):
 
         ifcopenshell.api.material.merge_materials(self.file, materials=[m1, m2], merge_into=m1)
 
-        assert self.file.by_type("IfcMaterial") == [m1]
+        assert self.file.by_type("IfcMaterial") == (m1,)
         assert ifcopenshell.util.element.get_material(wall) == m1
         assert len(self.file.by_type("IfcRelAssociatesMaterial")) == 1
 
@@ -69,7 +69,7 @@ class TestMergeMaterialsIFC2X3(test.bootstrap.IFC2X3):
 
         ifcopenshell.api.material.merge_materials(self.file, materials=[m1, m2], merge_into=m1)
 
-        assert self.file.by_type("IfcMaterial") == [m1]
+        assert self.file.by_type("IfcMaterial") == (m1,)
         assert layer1.Material == m1
         assert layer2.Material == m1
         # The layers themselves are untouched, only their material.
@@ -86,7 +86,7 @@ class TestMergeMaterialsIFC2X3(test.bootstrap.IFC2X3):
 
         ifcopenshell.api.material.merge_materials(self.file, materials=[m1, m2], merge_into=m1)
 
-        assert self.file.by_type("IfcMaterial") == [m1]
+        assert self.file.by_type("IfcMaterial") == (m1,)
         # No duplicate entries even though both list items now point at m1.
         assert list(material_set.Materials) == [m1]
 
@@ -102,21 +102,21 @@ class TestMergeMaterialsIFC2X3(test.bootstrap.IFC2X3):
 
         ifcopenshell.api.material.merge_materials(self.file, materials=[m1, m2], merge_into=m1)
 
-        assert self.file.by_type("IfcMaterial") == [m1]
-        assert self.file.by_type("IfcMaterialDefinitionRepresentation") == []
-        assert self.file.by_type("IfcMaterialProperties") == []
+        assert self.file.by_type("IfcMaterial") == (m1,)
+        assert self.file.by_type("IfcMaterialDefinitionRepresentation") == ()
+        assert self.file.by_type("IfcMaterialProperties") == ()
         # The style itself is not deleted, only its assignment to the removed material.
-        assert self.file.by_type("IfcSurfaceStyle") == [style]
+        assert self.file.by_type("IfcSurfaceStyle") == (style,)
 
     def test_merging_no_materials_does_nothing(self):
         m1 = ifcopenshell.api.material.add_material(self.file, name="M1")
         ifcopenshell.api.material.merge_materials(self.file, materials=[], merge_into=m1)
-        assert self.file.by_type("IfcMaterial") == [m1]
+        assert self.file.by_type("IfcMaterial") == (m1,)
 
     def test_merging_only_the_target_does_nothing(self):
         m1 = ifcopenshell.api.material.add_material(self.file, name="M1")
         ifcopenshell.api.material.merge_materials(self.file, materials=[m1], merge_into=m1)
-        assert self.file.by_type("IfcMaterial") == [m1]
+        assert self.file.by_type("IfcMaterial") == (m1,)
 
 
 class TestMergeMaterialsIFC4(test.bootstrap.IFC4, TestMergeMaterialsIFC2X3):
@@ -131,7 +131,7 @@ class TestMergeMaterialsIFC4(test.bootstrap.IFC4, TestMergeMaterialsIFC2X3):
 
         ifcopenshell.api.material.merge_materials(self.file, materials=[m1, m2], merge_into=m1)
 
-        assert self.file.by_type("IfcMaterial") == [m1]
+        assert self.file.by_type("IfcMaterial") == (m1,)
         assert profile1.Material == m1
         assert profile2.Material == m1
 
@@ -146,7 +146,7 @@ class TestMergeMaterialsIFC4(test.bootstrap.IFC4, TestMergeMaterialsIFC2X3):
 
         ifcopenshell.api.material.merge_materials(self.file, materials=[m1, m2], merge_into=m1)
 
-        assert self.file.by_type("IfcMaterial") == [m1]
+        assert self.file.by_type("IfcMaterial") == (m1,)
         assert constituent1.Material == m1
         assert constituent2.Material == m1
 
@@ -164,6 +164,6 @@ class TestMergeMaterialsIFC4(test.bootstrap.IFC4, TestMergeMaterialsIFC2X3):
         # Passing the target along with the redundant materials should be safe.
         ifcopenshell.api.material.merge_materials(self.file, materials=[target, m1, m2], merge_into=target)
 
-        assert self.file.by_type("IfcMaterial") == [target]
+        assert self.file.by_type("IfcMaterial") == (target,)
         for wall in (wall1, wall2, wall3):
             assert ifcopenshell.util.element.get_material(wall) == target
