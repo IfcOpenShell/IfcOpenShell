@@ -341,10 +341,7 @@ class SheetBuilder:
             """
             return re.sub(r"url\(#([^\)]+)\)", rf"url(#{prefix}-\1)", text)
 
-        # add .prefix class to all css selectors
-        # Some embedded documents (e.g. plain references) have no stylesheet, so
-        # this is optional. The id and class prefixing below always runs so that
-        # ids and classes stay unique across the whole sheet.
+        # add .prefix class to all css selectors (documents without a stylesheet skip this)
         style = svg.find(f"{SVG}defs/{SVG}style")
         if style is not None and style.text is not None:
             style_data = style.text
@@ -480,10 +477,7 @@ class SheetBuilder:
                     view_title = image
 
             if table is not None:
-                # Scope the document's styles to its own elements, just like drawings.
-                # Without this, a schedule's `text { font-family: ... }` rule is emitted
-                # globally and clobbers (or is clobbered by) other documents on the sheet,
-                # so the schedule loses its own font. See issue #5221.
+                # Scope the document's styles like drawings, so they don't clobber other documents (#5221).
                 svg = self.parse_embedded_svg(table, {})
                 svg = self.ensure_drawing_unique_styles(svg, int(view.attrib["data-id"]))
                 view.append(svg)
