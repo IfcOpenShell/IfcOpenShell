@@ -491,7 +491,7 @@ class SelectRequirement(bpy.types.Operator):
         for e in failed_entities:
             new_entity = props.failed_entities.add()
             new_entity.ifc_id = e["id"]
-            new_entity.element = f'{e["class"]} | {e["name"]}'
+            new_entity.element = f"{e['class']} | {e['name']}"
             new_entity.reason = e["reason"]
 
         if props.flag:

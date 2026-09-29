@@ -10,6 +10,7 @@ authors = [
 ]
 description = "CLI wrapper for ifcopenshell.api IFC model mutation functions"
 readme = "README.md"
+requires-python = ">=3.11"
 keywords = ["IFC", "BIM", "API"]
 classifiers = [
     "Programming Language :: Python :: 3",

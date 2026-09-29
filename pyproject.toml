@@ -4,22 +4,6 @@ version = "0.0.0"
 # Don't provide requires-python explicitly
 # allowing pyprojects to set their own (e.g. bonsai and general ifcopenshell version differ).
 
-[tool.black]
-line-length = 120
-include = '''
-    src/.*.pyi?$
-    |nix/.*.pyi?$
-'''
-extend-exclude = '''
-    src/ifcopenshell-python/ifcopenshell/express/rules/*
-    |src/ifcopenshell-python/ifcopenshell/express/express_parser.py
-    |src/ifcopenshell-python/ifcopenshell/mvd/*
-    |src/ifcopenshell-python/ifcopenshell/simple_spf/*
-    |src/ifc2ca/templates/*
-    |src/svgfill
-    |src/exterior-shell-extractor
-'''
-
 [tool.pyright]
 reportInvalidTypeForm = false
 disableBytesTypePromotions = true
@@ -41,16 +25,17 @@ exclude = [
 line-length = 120
 exclude = [
     # Submodules.
-    "src/ifcopenshell-python/ifcopenshell/express",
     "src/ifcopenshell-python/ifcopenshell/mvd",
     "src/ifcopenshell-python/ifcopenshell/simple_spf",
     "src/svgfill",
-    #
-    # Unformatted.
-    "src/exterior-shell-extractor",
+    "src/pyodide/demo-app/wheels",
+    # Generated.
+    "src/ifcopenshell-python/ifcopenshell/express/express_parser.py",
+    "src/ifcopenshell-python/ifcopenshell/express/rules",
     # Incompatible with linter.
     "src/ifc2ca/templates",
 ]
+
 [tool.ruff.lint]
 preview = true
 select = [
@@ -60,30 +45,39 @@ select = [
     "E9",          # io errors
     # "F",         # pyflakes
     #
+    "unused-import",
     "FA",          # future annotations
     "UP",          # pyupgrade
-    "RUF015",      # next() > list_comprehension[0]
-    "RUF022",      # sort __all__
+    "unnecessary-iterable-allocation-for-first-element",
+    "unsorted-dunder-all",
     "I",           # import sorting
+    "unused-noqa",
+    "rule-codes-in-selectors",
+    "noqa-comments",
+    "rule-codes-in-suppression-comments",
+    # General util rules.
+    "invalid-rule-code",
+    "redirected-noqa",
+    "invalid-pyproject-toml",
+    "invalid-suppression-comment",
 ]
 ignore = [
-    "FA100", # Conflicts with Blender using annotations for props definitions.
+    # Conflicts with Blender using annotations for props definitions.
+    "future-rewritable-type-annotation",
     # Maybe will enable later:
-    "UP007", # Optional to X | Y
-    "UP045", # Optional to X | None
-    "UP015", # Unnecessary mode argument
-    "UP028", # yield for -> yield from
-    "UP030", # implicit references for positional format fields
-    "UP031", # Replace % with .format
-    "UP032", # Replace .format with f-string
+    "non-pep604-annotation-union", # Union[X,Y] to X | Y
+    "non-pep604-annotation-optional", # Optional to X | None
+    "redundant-open-modes", # Unnecessary mode argument
+    "yield-in-for-loop", # yield for -> yield from
+    "format-literals", # implicit references for positional format fields
+    "printf-string-formatting", # Replace % with .format
+    "f-string", # Replace .format with f-string
 ]
 
 [tool.ty.rules]
 all = "error"
 
 # Structural rules (no deep type inference needed, easier to adapt).
-# Has false positives due to ty walrus operator bug.
-possibly-unresolved-reference = "ignore"
 # Maybe later, requires to specify element types for all generics.
 missing-type-argument = "ignore"
 # Conflicts with `bpy` props defined using annotations.
@@ -100,10 +94,13 @@ unresolved-attribute = "ignore"
 invalid-argument-type = "ignore"
 invalid-method-override = "ignore"
 invalid-assignment = "ignore"
+unsound-assignment = "ignore"
 invalid-parameter-default = "ignore"
 missing-override-decorator = "ignore"
 invalid-yield = "ignore"
+unsound-yield = "ignore"
 invalid-return-type = "ignore"
+unsound-return-statement = "ignore"
 non-callable-init-subclass = "ignore"
 not-iterable = "ignore"
 possibly-missing-attribute = "ignore"
@@ -111,7 +108,11 @@ no-matching-overload = "ignore"
 not-subscriptable = "ignore"
 unsupported-dynamic-base = "ignore"
 unsupported-operator = "ignore"
-type-assertion-failure = "ignore"
+redundant-condition = "ignore"
+redundant-condition-strict = "ignore"
+truthiness-test-of-iterable = "ignore"
+# `@persistent` is incorrectly annotated as `Any` in fake-bpy, needs to be resolved upstream.
+dynamic-function-decorator-return = "ignore"
 
 [tool.ty.environment]
 extra-paths = [
@@ -159,20 +160,34 @@ exclude = [
 [tool.poe.tasks]
 
 dev-setup.sequence = [
-    {cmd = "uv sync"},
+    # 3.13 is chosen because it's the version used in the latest Bonsai.
+    {cmd = "uv sync --python 3.13"},
     {cmd = "uv pip install -e ./src/bsdd/"},
     {cmd = "uv pip install -e ./src/ifcopenshell-python/[advanced,dev]"},
-    {cmd = "uv pip install -e ./src/ifcedit/"},
+    # Ordered so that packages come after the repo packages they depend on,
+    # otherwise uv would pull those dependencies from PyPI instead.
+    {cmd = "uv pip install -e ./src/bcf/"},
+    {cmd = "uv pip install -e ./src/ifc4d/"},
+    {cmd = "uv pip install -e ./src/ifc5d/"},
+    {cmd = "uv pip install -e ./src/ifccityjson/"},
+    {cmd = "uv pip install -e ./src/ifcclash/"},
+    {cmd = "uv pip install -e ./src/ifccsv/"},
+    {cmd = "uv pip install -e ./src/ifcdiff/"},
+    {cmd = "uv pip install -e ./src/ifcfm/"},
     {cmd = "uv pip install -e ./src/ifcpatch/"},
+    {cmd = "uv pip install -e ./src/ifctester/"},
+    {cmd = "uv pip install -e ./src/ifcedit/"},
     {cmd = "uv pip install -e ./src/ifcquery/"},
     {cmd = "uv pip install -e './src/ifcmcp/[mcp]'"},
-    {cmd = "uv pip install -r src/bonsai/requirements-dev.txt"},
+    {cmd = "uv pip install --group src/bonsai/pyproject.toml:dev"},
 ]
 dev-setup.help = "Install repo packages in editable mode"
 
 ruff = "ruff check"
 
-black = "black ."
+check-whitespace = "uv run .github/scripts/check-whitespace.py"
+
+ruff-format = "ruff format"
 
 ty.sequence = ["ty-bonsai", "ty-ios"]
 ty.help = "Run ty type checker. Requires ty-venv to be set up first."
@@ -182,23 +197,24 @@ ty-venv.sequence = ["bonsai-deps", "ty-venv-bonsai", "ty-venv-ios"]
 
 ty-venv-bonsai.sequence = [
     {cmd = "uv venv src/bonsai/.venv --python=3.11 --allow-existing"},
-    {cmd = "uv pip install -r src/bonsai/type-check-requirements.txt --python=src/bonsai/.venv"},
+    {cmd = "uv pip install --group src/bonsai/pyproject.toml:type-check --python=src/bonsai/.venv"},
 ]
 
 ty-venv-ios.sequence = [
-    {cmd = "uv venv src/ifcopenshell-python/.venv --python=3.10 --allow-existing"},
-    {cmd = "uv pip install -r src/ifcopenshell-python/type-check-requirements.txt --python=src/ifcopenshell-python/.venv"},
+    {cmd = "uv venv src/ifcopenshell-python/.venv --python=3.11 --allow-existing"},
+    {cmd = "uv pip install --group src/ifcopenshell-python/pyproject.toml:type-check --python=src/ifcopenshell-python/.venv"},
 ]
 
-format.sequence = ["black", "ruff"]
+format.sequence = ["ruff-format", "ruff"]
 
 cmake-format = "gersemi . --in-place"
 
 [tool.poe.tasks.ty-ios]
-# --ignore unresolved-reference: walrus operator false positives in ty.
 cmd = """
     ty check
+    conda/
     nix/
+    win/
     src/bcf
     src/bsdd
     src/ifc2ca
@@ -213,7 +229,6 @@ cmd = """
     src/ifcpatch
     src/ifctester
     --python=src/ifcopenshell-python/.venv
-    --ignore unresolved-reference
 """
 
 [tool.poe.tasks.bonsai-deps]
