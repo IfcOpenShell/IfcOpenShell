@@ -89,8 +89,7 @@ class ColourByPropertyData:
     @classmethod
     def colourscheme_key(cls):
         default = [("QUERY", "Custom Query", "Specify a custom query to colour by"), None]
-        ifc_file = tool.Ifc.get()
-        if not ifc_file:
+        if not (ifc_file := tool.Ifc.get()):
             return default
 
         keys = set()
