@@ -78,7 +78,7 @@ class TestGizmoSlabAlignPoll:
         with patched_tool(
             viewport_gizmos=True,
             selected=[obj_a, obj_b],
-            entity=None,
+            entity=lambda o: None,
             modifier_predicates={"any_selected_is_array_child": False},
         ):
             with patch("bonsai.tool.Blender.get_active_object", return_value=obj_a):
