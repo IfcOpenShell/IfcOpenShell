@@ -18,7 +18,6 @@
 
 import pytest
 
-import bonsai.tool as tool
 import test.bim.bootstrap
 from bonsai.tool.search import Search as subject
 
