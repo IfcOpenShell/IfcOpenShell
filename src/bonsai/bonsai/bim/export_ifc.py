@@ -90,22 +90,13 @@ class IfcExporter:
                 result = self.sync_object_placement(obj)
                 if result:
                     results.append(result)
-                if result:
-                    results.append(result)
             except ReferenceError:
                 pass  # The object is likely deleted
         return results
 
     def sync_object_placement(self, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
-        ifc_definition_id = tool.Blender.get_object_bim_props(obj).ifc_definition_id
-        try:
-            element = self.file.by_id(ifc_definition_id)
-        except RuntimeError:
-            # The linked IFC entity no longer exists; skip it instead of crashing the save.
-            print(
-                f"WARNING. Object '{obj.name}' is linked to IFC entity #{ifc_definition_id} "
-                "which no longer exists in the IFC file. Skipping it during save."
-            )
+        if not (element := tool.Ifc.get_entity(obj)):
+            print(f"WARNING. '{obj.name}' is linked to a non-existent IFC entity and was skipped during save.")
             return
         # Handle camera scales specially
         if obj.type == "CAMERA":
