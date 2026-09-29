@@ -350,8 +350,7 @@ class FormatTransformer(lark.Transformer):
         try:
             value = float(value)
         except (TypeError, ValueError):
-            # The value is not numeric (e.g. "N/A"), so formatting it as a
-            # length is meaningless. Return it unchanged instead of crashing
+            # Non-numeric values (e.g. "N/A") pass through instead of crashing
             # the whole expression (#5297).
             return value
         return ifcopenshell.util.unit.format_length(value, float(precision), int(decimal_places), unit_system="metric")
