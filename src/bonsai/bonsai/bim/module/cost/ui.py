@@ -102,9 +102,9 @@ class BIM_PT_cost_schedules(Panel):
             row1.label(text="Schedule tools")
             row1 = col.row(align=True)
             row1.alignment = "RIGHT"
-            row1.operator("bim.export_cost_schedules", text="Export spreadsheet", icon="EXPORT").cost_schedule = (
-                cost_schedule["id"]
-            )
+            row1.operator(
+                "bim.export_cost_schedules", text="Export spreadsheet", icon="EXPORT"
+            ).cost_schedule = cost_schedule["id"]
             row1.operator(
                 "bim.generate_cost_schedule_browser", text="Generate spreadsheet browser", icon="URL"
             ).cost_schedule = cost_schedule["id"]
@@ -130,9 +130,9 @@ class BIM_PT_cost_schedules(Panel):
                 text="{}[{}]".format(cost_schedule["name"], cost_schedule["predefined_type"]), icon="LINENUMBERS_ON"
             )
             row.operator("bim.enable_editing_cost_items", text="", icon="OUTLINER").cost_schedule = cost_schedule["id"]
-            row.operator("bim.enable_editing_cost_schedule_attributes", text="", icon="GREASEPENCIL").cost_schedule = (
-                cost_schedule["id"]
-            )
+            row.operator(
+                "bim.enable_editing_cost_schedule_attributes", text="", icon="GREASEPENCIL"
+            ).cost_schedule = cost_schedule["id"]
             row.operator("bim.copy_cost_schedule", text="", icon="DUPLICATE").cost_schedule = cost_schedule["id"]
             row.operator("bim.remove_cost_schedule", text="", icon="X").cost_schedule = cost_schedule["id"]
         if self.props.active_cost_schedule_id == cost_schedule["id"]:
