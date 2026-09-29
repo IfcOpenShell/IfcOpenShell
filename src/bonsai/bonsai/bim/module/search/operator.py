@@ -1033,6 +1033,7 @@ class ColourByProperty(Operator):
         palette = props.palette
         is_qualitative = palette in ("tab10", "paired")
 
+        colours = None
         if is_qualitative:
             colours = tool.Search.get_qualitative_palette(palette)
 
@@ -1059,6 +1060,7 @@ class ColourByProperty(Operator):
                 if value in colourscheme:
                     colourscheme[value]["total"] += 1
                 else:
+                    assert colours is not None
                     colourscheme[value] = {"colour": next(colours)[0:3], "total": 1}
                 obj.color = (*colourscheme[value]["colour"], 1)
             else:
@@ -1163,6 +1165,7 @@ class SelectByProperty(Operator):
 
         is_qualitative = palette in ("tab10", "paired")
 
+        values = None
         if not is_qualitative:
             values = []
             for colour in props.colourscheme:
@@ -1478,7 +1481,7 @@ class SelectSimilar(Operator):
 
     @classmethod
     def description(cls, context, properties):
-        base = "Select objects with a similar value\n\n" "SHIFT+CLICK remove from selection set."
+        base = "Select objects with a similar value\n\nSHIFT+CLICK remove from selection set."
 
         key = getattr(properties, "key", None)
         active = context.active_object
