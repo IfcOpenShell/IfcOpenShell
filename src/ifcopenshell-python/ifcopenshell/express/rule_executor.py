@@ -1,11 +1,13 @@
-import os
-import re
 import ast
 import collections
-import ifcopenshell
-from logging import Logger
+import os
+import re
 from dataclasses import dataclass
+from logging import Logger
+
 from codegen import indent
+
+import ifcopenshell
 
 
 def reverse_compile(s):
@@ -90,13 +92,19 @@ def run(f: ifcopenshell.file, logger: Logger) -> None:
     orig = ifcopenshell.settings.unpack_non_aggregate_inverses
     ifcopenshell.settings.unpack_non_aggregate_inverses = True
 
+    # Rules are transpiled with EXPRESS `=` emitted as Python `==`, so `==` has
+    # to mean value comparison for the duration. See the @todo on
+    # rule_compiler.process_rel_op.
+    orig_compare = ifcopenshell.settings.compare_instances_by_value
+    ifcopenshell.settings.compare_instances_by_value = True
+
     fn = os.path.join(os.path.dirname(__file__), "rules", f"{f.schema_identifier}.py")
     try:
         source = open(fn, "r").read()
     except FileNotFoundError as e:
+        import subprocess
         import sys
         import time
-        import subprocess
 
         current_dir_files = {fn.lower(): fn for fn in os.listdir(".")}
         schema_name = str(f.schema_identifier).split(" ")[-1].lower()
@@ -272,12 +280,14 @@ def run(f: ifcopenshell.file, logger: Logger) -> None:
                 )
 
     ifcopenshell.settings.unpack_non_aggregate_inverses = orig
+    ifcopenshell.settings.compare_instances_by_value = orig_compare
 
 
 if __name__ == "__main__":
-    import sys
     import json
     import logging
+    import sys
+
     import ifcopenshell
     from ifcopenshell.validate import json_logger
 
