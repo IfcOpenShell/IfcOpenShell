@@ -141,5 +141,24 @@ def test_rocks_storage_getattr_invalid_attribute():
         gc.collect()
 
 
+def test_rocks_storage_ids_and_type_lookups():
+    with tempfile.TemporaryDirectory() as d:
+        rfn = os.path.join(d, os.path.basename(fn))
+        ifcopenshell.convert_path_to_rocksdb(fn, rfn)
+
+        f = ifcopenshell.open(rfn)
+        m = ifcopenshell.open(fn)
+        assert sorted(i.id() for i in f.storage) == sorted(i.id() for i in m)
+        inst = f.storage.by_id(139)
+        assert inst.id() == 139
+        assert len(inst) == 6
+        assert repr(inst).startswith("#139=IfcRelDefinesByProperties(")
+        assert [i.id() for i in f.storage.by_type("IfcColumn")] == [93]
+        assert [i.id() for i in f.storage.by_id(93).IsDefinedBy] == [101, 102, 103, 139]
+
+        del f
+        gc.collect()
+
+
 if __name__ == "__main__":
     pytest.main(["-sx", __file__])

@@ -344,24 +344,24 @@ class rocksdb_lazy_instance:
 
             def _():
                 for index_in_schema in entity_indices:
-                    buffer = self.storage.read(f"v|{self.name[2:]}|{index_in_schema}|{attribute_index}") or b""
+                    buffer = (
+                        self.storage.read(f"v|{self.name[2:]}|{index_in_schema:016x}|{attribute_index:016x}") or b""
+                    )
                     yield from map(self.storage.by_id, struct.unpack("<" + "I" * (len(buffer) // 4), buffer))
 
             return list(_())
 
     def __getitem__(self, index):
-        return self._transform_value(self.storage.read(f"{self.name}|{index}"))
+        return self._transform_value(self.storage.read(f"{self.name}|{index:016x}"))
 
     @functools.cache
     def __len__(self):
         return (
             max(
-                map(
-                    int,
-                    filter(
-                        lambda s: s.isdigit(),
-                        (k.split(b"|")[2] for k, v in self.storage.prefix(f"{self.name}|").items()),
-                    ),
+                (
+                    int(k.split(b"|")[2], 16)
+                    for k, v in self.storage.prefix(f"{self.name}|").items()
+                    if k.split(b"|")[2] != b"_"
                 ),
                 default=-1,
             )
@@ -373,12 +373,12 @@ class rocksdb_lazy_instance:
             yield self[i]
 
     def __repr__(self):
-        pre = f"#{self.name[2:]}=" if self.name.startswith("i|") else ""
+        pre = f"#{self.id()}=" if self.name.startswith("i|") else ""
 
         def val_repr(val):
             if isinstance(val, rocksdb_lazy_instance):
                 if val.name[0] == "i":
-                    return f"#{val.name[2:]}"
+                    return f"#{val.id()}"
                 else:
                     return repr(val)
             elif isinstance(val, (tuple, list)):
@@ -392,7 +392,7 @@ class rocksdb_lazy_instance:
 
     def id(self):
         if self.name.startswith("i|"):
-            return int(self.name[2:])
+            return int(self.name[2:], 16)
         else:
             # compatibility with C++
             return 0
@@ -429,9 +429,9 @@ class rocksdb_file_storage:
 
     def by_id(self, name):
         if isinstance(name, tuple):
-            inst = rocksdb_lazy_instance(self, f'{"i" if name[0] else "t"}|{name[1]}')
+            inst = rocksdb_lazy_instance(self, f'{"i" if name[0] else "t"}|{name[1]:016x}')
         else:
-            inst = rocksdb_lazy_instance(self, f"i|{name}")
+            inst = rocksdb_lazy_instance(self, f"i|{name:016x}")
         if not inst:
             raise KeyError(f"Instance with name {name} not found in file")
         return inst
@@ -446,7 +446,7 @@ class rocksdb_file_storage:
 
         def _():
             for index in visit(decl):
-                buff = self.read(f"t|{index}") or b""
+                buff = self.read(f"t|{index:016x}") or b""
                 yield from map(self.by_id, struct.unpack("@" + "q" * (len(buff) // 8), buff))
 
         return list(_())
@@ -457,10 +457,10 @@ class rocksdb_file_storage:
         previous = None
         for k, v in self.items():
             if k.startswith(b"i|"):
-                name = int(k[2:].split(b"|")[0])
+                name = int(k[2:].split(b"|")[0], 16)
                 if name != previous:
                     previous = name
-                    yield rocksdb_lazy_instance(self, f"i|{name}")
+                    yield rocksdb_lazy_instance(self, f"i|{name:016x}")
 
     def prefix(self, prefix):
         return rocksdb_file_storage(self.file, self._prefix + prefix)
