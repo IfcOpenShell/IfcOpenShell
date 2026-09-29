@@ -17,11 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import ifcopenshell.api.cost
-
 import bonsai.core.tool
-import bonsai.tool as tool
-import test.bim.bootstrap
 from bonsai.tool.cost import Cost as subject
 from test.bim.bootstrap import NewFile
 
