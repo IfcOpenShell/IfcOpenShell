@@ -35,6 +35,7 @@
 #include <cmath>
 
 #include "../ifcparse/utils.h"
+#include "../ifcparse/IfcLogger.h"
 
 static std::string& collada_id(std::string& s)
 {
@@ -70,7 +71,15 @@ void ColladaSerializer::ColladaExporter::ColladaGeometries::write(
     const std::vector<double>& uvs, const std::vector<std::string>& material_references)
 {
 	openMesh(mesh_id);
-	
+
+	if (faces.empty() && edges.empty() && !positions.empty()) {
+		// Vertex/Point/PointCloud representation (#134/#1409/#5218). COLLADA
+		// has no native point primitive, only lines/polygons/triangles, so
+		// there is nothing meaningful to write beyond the raw position
+		// source below: the geometry will not be visible in the scene.
+		serializer->logger().Warning("GEO", 410, "Point/vertex-only geometry (" + mesh_id + ") has no COLLADA representation and will not be visible");
+	}
+
 	// The normals vector can be empty for example when the WELD_VERTICES setting is used.
 	// IfcOpenShell does not provide them with multiple face normals collapsed into a single vertex.
 	const bool has_normals = !normals.empty();
