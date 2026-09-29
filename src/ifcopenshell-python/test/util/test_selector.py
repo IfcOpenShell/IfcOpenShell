@@ -509,6 +509,19 @@ class TestSetElementValue(test.bootstrap.IFC4):
         subject.set_element_value(self.file, layer, "Material.Name", "Foo")
         assert material.Name == "Foo"
 
+    def test_set_material_and_profile_pset_property(self):
+        material = ifcopenshell.api.material.add_material(self.file, name="Mat")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=material, name="Foo")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Bar": "a"})
+        subject.set_element_value(self.file, material, "Foo.Bar", "b")
+        assert ifcopenshell.util.element.get_pset(material, "Foo", "Bar") == "b"
+
+        profile = self.file.create_entity("IfcRectangleProfileDef", ProfileType="AREA", XDim=1.0, YDim=1.0)
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=profile, name="Foo")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Bar": "a"})
+        subject.set_element_value(self.file, profile, "Foo.Bar", "b")
+        assert ifcopenshell.util.element.get_pset(profile, "Foo", "Bar") == "b"
+
 
 class TestSetElementValuePredefinedType(test.bootstrap.IFC4):
     def test_setting_an_element_predefined_type(self):

@@ -110,9 +110,7 @@ class IfcCsv:
 
             for attribute in attributes:
                 if attribute == "GlobalId" and not hasattr(element, "GlobalId"):
-                    # Entities such as IfcMaterial or IfcProfileDef have no
-                    # GlobalId. Fall back to the STEP id so they can still be
-                    # uniquely identified when the spreadsheet is imported back.
+                    # Entities without a GlobalId (e.g. IfcMaterial) fall back to the STEP id.
                     value = element.id()
                 else:
                     value = ifcopenshell.util.selector.get_element_value(element, attribute)
@@ -492,12 +490,7 @@ class IfcCsv:
         bool_false: str,
         concat: str,
     ) -> None:
-        # Keys that resolve to read-only or computed values and therefore
-        # cannot be written back to the IFC file. This is an exact match
-        # against the whole key, not a substring match, since a substring
-        # match would also skip legitimate keys that merely contain these
-        # words, such as a property set named "Pset_MaterialCommon" or a
-        # quantity named "RoomCount".
+        # Exact match on read-only keys, so names like "Pset_MaterialCommon" are not skipped.
         SKIP_KEYS = {"count", "material", "mat", "materials", "mats"}
 
         try:
@@ -506,9 +499,7 @@ class IfcCsv:
             element = None
 
         if element is None:
-            # Entities such as IfcMaterial or IfcProfileDef have no GlobalId,
-            # so on export a fallback STEP id is written instead. Recognise
-            # that here so those entities can also be imported.
+            # Export writes the STEP id for entities without a GlobalId.
             try:
                 element = ifc_file.by_id(int(row[0]))
             except Exception:
