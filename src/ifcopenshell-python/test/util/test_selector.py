@@ -143,8 +143,6 @@ class TestGetElementValue(test.bootstrap.IFC4):
         assert subject.get_element_value(element_without_placement, "rotation_z") is None
 
     def test_selecting_an_elements_position_using_a_query(self):
-        # Control: an element placed only through ObjectPlacement (no mapped
-        # item) still resolves x/y/z straight from the placement matrix.
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         ifcopenshell.api.unit.assign_unit(self.file)
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
@@ -156,10 +154,6 @@ class TestGetElementValue(test.bootstrap.IFC4):
         assert subject.get_element_value(element, "z") == pytest.approx(3.0)
 
     def test_selecting_an_elements_position_when_represented_via_a_mapped_item(self):
-        # Feature test for #6277: an element positioned through an
-        # IfcMappedItem gets part of its world position from the mapping
-        # transform (MappingTarget combined with MappingSource.MappingOrigin),
-        # not only from ObjectPlacement. x/y/z must account for both.
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         ifcopenshell.api.unit.assign_unit(self.file)
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
@@ -187,8 +181,6 @@ class TestGetElementValue(test.bootstrap.IFC4):
         )
         element.Representation = self.file.createIfcProductDefinitionShape(Representations=[representation])
 
-        # Without the fix, x/y/z would only reflect ObjectPlacement (1, 2, 3)
-        # and silently drop the mapping's contribution.
         assert subject.get_element_value(element, "x") == pytest.approx(11.0)
         assert subject.get_element_value(element, "y") == pytest.approx(22.0)
         assert subject.get_element_value(element, "z") == pytest.approx(33.0)
