@@ -47,11 +47,6 @@ class TestPartOfContainedInSpatialStructureRecursionFixture:
 
         required, prohibited = specs.specifications
 
-        # The beam's direct container is the storey, one aggregation hop
-        # below the building. It must still be recognised as part of it.
         assert required.status is True
 
-        # Symmetrically, a prohibited check against the same relationship
-        # must correctly fail, not silently pass because only the nearer,
-        # non-matching storey was ever inspected.
         assert prohibited.status is False

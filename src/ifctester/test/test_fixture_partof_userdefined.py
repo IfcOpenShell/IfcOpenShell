@@ -36,9 +36,6 @@ FIXTURES = os.path.join(os.path.dirname(__file__), "fixtures")
 
 class TestPartOfUserdefinedFixture:
     def test_wall_prohibited_from_userdefined_space_but_is_in_one(self):
-        # A wall sitting in a user-defined-type IfcSpace, checked against a
-        # PartOf requirement that prohibits exactly that relationship. The
-        # relationship genuinely exists, so the specification must fail.
         specs = ids.open(os.path.join(FIXTURES, "partof_userdefined", "partof_userdefined.ids"))
         ifc = ifcopenshell.open(os.path.join(FIXTURES, "partof_userdefined", "partof_userdefined.ifc"))
         specs.validate(ifc)

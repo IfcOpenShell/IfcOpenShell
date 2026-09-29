@@ -46,11 +46,6 @@ class TestPartOfAssignsToGroupRecursionFixture:
 
         required, prohibited = specs.specifications
 
-        # The duct is two IfcRelAssignsToGroup hops away from the system (via
-        # an intermediate zone). It must still be recognised as part of it.
         assert required.status is True
 
-        # Symmetrically, a prohibited check against the same relationship
-        # must correctly fail, not silently pass because only the nearer,
-        # non-matching zone was ever inspected.
         assert prohibited.status is False
