@@ -206,7 +206,7 @@ def update_translations_from_po(po_directory: Path, translations_module: Path):
             msgctxt = msg.msgctxt
             if not msgctxt:
                 msgctxt = default_context
-            ret.append(f"{tab*2}({msgctxt!r}, {msgid!r}): {msgstr!r},")
+            ret.append(f"{tab * 2}({msgctxt!r}, {msgid!r}): {msgstr!r},")
         ret.append(f"{tab}}},")
 
     ret.append("}")

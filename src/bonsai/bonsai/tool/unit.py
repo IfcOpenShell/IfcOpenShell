@@ -342,11 +342,9 @@ class Unit(bonsai.core.tool.Unit):
                     name = "foot"
                 else:
                     name = "METRE"
-            name = (
-                {"MILES": "mile", "FEET": "foot", "INCHES": "inch", "THOU": "thou", "ADAPTIVE": "METERS"}
-                .get(name, name)
-                .replace("METERS", "METRE")
-            )
+            name = {"MILES": "mile", "FEET": "foot", "INCHES": "inch", "THOU": "thou", "ADAPTIVE": "METERS"}.get(
+                name, name
+            ).replace("METERS", "METRE")
             if len(name) > len("METRE") and name.endswith("METRE"):
                 return f"{name[:-5]}/METRE"
             return name
