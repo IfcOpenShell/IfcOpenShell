@@ -4,6 +4,7 @@ on:
   push:
     branches: [v0.9.0]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   lint:
