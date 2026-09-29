@@ -44,7 +44,6 @@ import ifcopenshell.api.type
 import ifcopenshell.util.element
 import pytest
 
-import bonsai.core.geometry
 import bonsai.core.root
 import bonsai.tool as tool
 from bonsai.bim.module.model.door import ToggleDoorSwing
@@ -54,10 +53,8 @@ pytestmark = pytest.mark.model
 
 
 class TestIsExternalDoor:
-    """Truth table for the confirmation-gate decision, on plain IFC files."""
-
     def _door(self, is_external=None, pset_on_type=False):
-        f = ifcopenshell.file(schema="IFC4")
+        f = self.file = ifcopenshell.file(schema="IFC4")
         door = ifcopenshell.api.root.create_entity(f, ifc_class="IfcDoor")
         target = door
         if pset_on_type:
@@ -85,8 +82,6 @@ class TestIsExternalDoor:
 
 
 class TestInvokeGate:
-    """The invoke wiring: dialog only for external doors, Shift captured first."""
-
     def _invoke(self, *, element, shift=False):
         op = SimpleNamespace(
             skip_direction_change=False,
@@ -95,14 +90,15 @@ class TestInvokeGate:
         )
         context = Mock()
         event = Mock(shift=shift)
-        with patch.object(tool.Blender, "get_active_object", return_value=Mock()), patch.object(
-            tool.Ifc, "get_entity", return_value=element
+        with (
+            patch.object(tool.Blender, "get_active_object", return_value=Mock()),
+            patch.object(tool.Ifc, "get_entity", return_value=element),
         ):
             result = ToggleDoorSwing.invoke(op, context, event)
         return op, context, result
 
     def _external_door(self):
-        f = ifcopenshell.file(schema="IFC4")
+        f = self.file = ifcopenshell.file(schema="IFC4")
         door = ifcopenshell.api.root.create_entity(f, ifc_class="IfcDoor")
         pset = ifcopenshell.api.pset.add_pset(f, product=door, name="Pset_DoorCommon")
         ifcopenshell.api.pset.edit_pset(f, pset=pset, properties={"IsExternal": True})
@@ -114,7 +110,7 @@ class TestInvokeGate:
         op.execute.assert_not_called()
 
     def test_internal_door_flips_without_dialog(self):
-        f = ifcopenshell.file(schema="IFC4")
+        f = self.file = ifcopenshell.file(schema="IFC4")
         door = ifcopenshell.api.root.create_entity(f, ifc_class="IfcDoor")
         op, context, result = self._invoke(element=door)
         context.window_manager.invoke_confirm.assert_not_called()
@@ -127,7 +123,6 @@ class TestInvokeGate:
 
 
 def _add_parametric_door_type():
-    """Parametric IfcDoorType (BBIM_Door on the type) plus one occurrence."""
     mesh = bpy.data.meshes.new("DT")
     tobj = bpy.data.objects.new("DT", mesh)
     dtype = bonsai.core.root.assign_class(
