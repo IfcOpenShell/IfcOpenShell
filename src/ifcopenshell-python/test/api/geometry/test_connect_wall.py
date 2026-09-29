@@ -27,6 +27,7 @@ import test.bootstrap
 
 class TestConnectWall(test.bootstrap.IFC4):
     def setup_axis_context(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         model = ifcopenshell.api.context.add_context(self.file, context_type="Plan")
         return ifcopenshell.api.context.add_context(
             self.file,
@@ -57,9 +58,6 @@ class TestConnectWall(test.bootstrap.IFC4):
         return wall
 
     def make_crossing_walls(self, axis_context):
-        # wall1's own axis runs (0, 0) to (10, 0). wall2 crosses it near
-        # wall1's far end (world x=8, past wall1's own midpoint of 5), so the
-        # default heuristic keeps wall1's longer (start-side) portion.
         wall1 = self.make_wall(axis_context, np.eye(4), (0.0, 0.0), (10.0, 0.0))
         theta = np.pi / 2
         rotation = np.array(
