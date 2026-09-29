@@ -81,9 +81,6 @@ class TestReassignClass(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcWallType")) == 0
 
     def test_raising_a_clear_error_when_no_occurrence_class_is_applicable(self):
-        # Regression test for #8210: classes with no applicable occurrences
-        # (e.g. IfcTypeProduct) raised an uncaught StopIteration instead of
-        # a clear error when the type had occurrences to reassign.
         element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
@@ -214,6 +211,12 @@ class TestReassignClass(test.bootstrap.IFC4):
         assert ifcopenshell.util.representation.get_representation(element, context=context) == representation
         assert len(self.file.by_type("IfcWallType")) == 0
         assert len(self.file.by_type("IfcSlab")) == 1
+
+    def test_keeping_a_falsy_but_set_attribute_value(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element.Name = ""
+        new = ifcopenshell.api.root.reassign_class(self.file, product=element, ifc_class="IfcSlab")
+        assert new.Name == ""
 
 
 class TestReassignClassIFC4X3(test.bootstrap.IFC4X3, TestReassignClass):

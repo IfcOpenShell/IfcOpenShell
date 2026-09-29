@@ -188,7 +188,6 @@ class Usecase:
         """
         element = self.reassign_class(element, ifc_class, predefined_type)
         if element.is_a("IfcTypeProduct"):
-
             if self.occurrence_class:
                 occurrence_class = self.occurrence_class
             else:
@@ -204,22 +203,18 @@ class Usecase:
                         f"No applicable occurrence class found for '{ifc_class}' in schema "
                         f"{self.file.schema}. Provide 'occurrence_class' explicitly."
                     )
-            assert not self.schema.declaration_by_name(occurrence_class)._is(
-                "IfcTypeProduct"
-            ), f"Unexpected occurrence_class: '{occurrence_class}' / '{self.occurrence_class}'."
+            assert not self.schema.declaration_by_name(occurrence_class)._is("IfcTypeProduct"), (
+                f"Unexpected occurrence_class: '{occurrence_class}' / '{self.occurrence_class}'."
+            )
 
             for occurrence in ifcopenshell.util.element.get_types(element):
                 self.reassign_class(occurrence, occurrence_class, predefined_type)
         else:
             element_type = ifcopenshell.util.element.get_type(element)
             if element_type:
-                ifc_class_ = next(
-                    iter(ifcopenshell.util.type.get_applicable_types(ifc_class, self.file.schema)), None
-                )
+                ifc_class_ = next(iter(ifcopenshell.util.type.get_applicable_types(ifc_class, self.file.schema)), None)
                 if ifc_class_ is None:
-                    raise TypeError(
-                        f"No applicable type class found for '{ifc_class}' in schema {self.file.schema}."
-                    )
+                    raise TypeError(f"No applicable type class found for '{ifc_class}' in schema {self.file.schema}.")
                 element_type = self.reassign_class(element_type, ifc_class_, predefined_type)
                 ifc_class = element.is_a()
                 for occurrence in ifcopenshell.util.element.get_types(element_type):
