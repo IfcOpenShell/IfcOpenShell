@@ -903,8 +903,7 @@ class Geometry(bonsai.core.tool.Geometry):
         representation = cls.get_active_representation(obj)
         if representation is not None and representation.is_a("IfcShapeRepresentation"):
             return representation
-        element = tool.Ifc.get_entity(obj)
-        if element is None:
+        if not (element := tool.Ifc.get_entity(obj)):
             return None
         return cls.get_representation_by_context(element, cls.get_active_representation_context(obj))
 
