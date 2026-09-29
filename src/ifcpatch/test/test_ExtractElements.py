@@ -87,8 +87,6 @@ class TestExtractElements(test.bootstrap.IFC4):
         assert not output.by_type("IfcSlab")
 
     def test_keep_presentation_layer_items_of_extracted_elements(self):
-        # Regression test for #9419: the layer assignment was copied into the
-        # output but its AssignedItems (SET [1:?]) was left empty.
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         builder = ShapeBuilder(self.file)
         model = ifcopenshell.api.context.add_context(self.file, context_type="Model")
