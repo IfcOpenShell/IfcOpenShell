@@ -156,6 +156,7 @@ class Usecase:
                             self.file,
                             relating_process=relating_process,
                             related_process=related_process,
+                            sequence_type=inverse.SequenceType,
                         )
                         if inverse.TimeLag:
                             ifcopenshell.api.sequence.assign_lag_time(
@@ -188,6 +189,6 @@ class Usecase:
                     "OwnerHistory": ifcopenshell.api.owner.create_owner_history(self.file),
                     "RelatedObjects": [related_object],
                     "RelatingObject": relating_object,
-                }
+                },
             )
         return referenced_by
