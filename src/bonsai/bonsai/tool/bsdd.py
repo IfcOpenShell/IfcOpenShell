@@ -170,7 +170,7 @@ class Bsdd(bonsai.core.tool.Bsdd):
             psets.setdefault(pset, {})
 
             predefined_value = prop.get("predefinedValue")
-            if predefined_value:
+            if predefined_value and predefined_value != "None":
                 possible_values = [predefined_value]
             else:
                 possible_values = prop.get("allowedValues", []) or []
@@ -369,7 +369,7 @@ class Bsdd(bonsai.core.tool.Bsdd):
             data = cls.bsdd_properties[bsdd_prop.uri]
 
             predefined_value = data.get("predefinedValue")
-            if predefined_value:
+            if predefined_value and predefined_value != "None":
                 possible_values = [predefined_value]
             else:
                 possible_values = data.get("allowedValues", []) or []
@@ -401,13 +401,50 @@ class Bsdd(bonsai.core.tool.Bsdd):
                 uris.add(uri)
         psets = set()
         for uri in uris:
-            if not (bsdd_class := cls.bsdd_classes.get(uri, None)):
+            try:
+                # Cache may not be populated yet (e.g. a fresh session that never
+                # browsed this class), so fetch on a cache miss instead of skipping.
+                bsdd_class = cls.get_bsdd_class(uri)
+            except Exception:
+                continue
+            if not bsdd_class:
                 continue
             for class_pset in bsdd_class.get("classProperties", []):
                 if not (pset_name := class_pset.get("propertySet", None)):
                     continue
                 psets.add((uri, bsdd_class["name"], pset_name))
         return psets
+
+    @classmethod
+    def get_bsdd_pset_property_values(
+        cls, element: ifcopenshell.entity_instance, pset_name: str
+    ) -> dict[str, list[str]]:
+        """Map bSDD property code -> allowed/predefined values for properties bSDD says
+        are applicable to `element` (via its classification references) under `pset_name`.
+
+        Used to recognise a Pset property as bSDD-sourced even outside the dedicated
+        bSDD add-property flow (e.g. a Pset created in a previous session), so it can
+        still be edited as a picklist.
+        """
+        result: dict[str, list[str]] = {}
+        for uri, class_name, applicable_pset_name in cls.get_applicable_psets(element):
+            if applicable_pset_name != pset_name:
+                continue
+            bsdd_class = cls.get_bsdd_class(uri)
+            for class_prop in bsdd_class.get("classProperties", []):
+                if class_prop.get("propertySet") != pset_name:
+                    continue
+                code = class_prop.get("propertyCode")
+                if not code or code in result:
+                    continue
+                predefined_value = class_prop.get("predefinedValue")
+                if predefined_value and predefined_value != "None":
+                    result[code] = [predefined_value]
+                    continue
+                allowed_values = class_prop.get("allowedValues", []) or []
+                if allowed_values:
+                    result[code] = [v["value"] for v in allowed_values]
+        return result
 
     @classmethod
     def is_applicable(cls, pset_uri: str, element: ifcopenshell.entity_instance) -> bool:
