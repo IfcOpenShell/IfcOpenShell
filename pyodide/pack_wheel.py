@@ -5,6 +5,7 @@
 # # https://github.com/pyodide/pyodide-build/blob/main/pyodide_build/xbuildenv_releases.py
 # requires-python = "==3.13.2"
 # dependencies = [
+#   "packaging",
 #   "requests",
 #   "setuptools",
 # ]
@@ -29,6 +30,7 @@ from pathlib import Path
 from urllib.parse import quote
 
 import requests
+from packaging.version import Version
 
 # Get repo root (parent of this script's parent directory)
 REPO_ROOT = Path(__file__).parent.parent
@@ -96,9 +98,10 @@ class WheelBuilder:
             return vars
 
         vars: dict[str, str] = parse_makefile_vars()
-        binary_version = vars["BINARY_VERSION"]
+        # Wheel filenames carry the PEP 440 normalized version (0.9.0alpha0 -> 0.9.0a0).
+        binary_version = Version(vars["BINARY_VERSION"])
         build_commit = vars["BUILD_COMMIT"]
-        filename = f"ifcopenshell-{binary_version}+{build_commit}-cp313-cp313-pyodide_2025_0_wasm32.whl"
+        filename = f"ifcopenshell-{binary_version}+{build_commit}-cp313-cp313-pyemscripten_2025_0_wasm32.whl"
         encoded_filename = quote(filename, safe="")
         return f"https://s3.amazonaws.com/ifcopenshell-builds/{encoded_filename}"
 

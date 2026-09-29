@@ -81,6 +81,7 @@ def generate_ifc4_entity_map(filepath, schema_name, manual_corrections={}):
     schema_version = schema_name.lower().strip("ifc")
     with open(f"src/ifcopenshell-python/ifcopenshell/util/entity_to_type_map_{schema_version}.json", "w") as f:
         json.dump(entity_to_type_map, f, indent=4, sort_keys=True)
+        f.write("\n")
 
     return entity_to_type_map
 
@@ -126,6 +127,7 @@ def generate_ifc2x3_entity_map():
 
     with open("src/ifcopenshell-python/ifcopenshell/util/entity_to_type_map_2x3.json", "w") as f:
         json.dump(entity_to_type_map, f, indent=4, sort_keys=True)
+        f.write("\n")
 
     return entity_to_type_map
 
