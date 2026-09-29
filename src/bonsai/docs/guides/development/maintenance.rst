@@ -31,6 +31,8 @@ When adding or removing a supported Python version, update the following:
      - ``requires-python``
    * - ``src/ifcopenshell-python/test/test_package.py``
      - ``SUPPORTED_PY_VERSIONS`` tuple
+   * - ``src/ifcwrap/CMakeLists.txt``
+     - ``PYTHON_MIN_VERSION``
    * - ``win/build-all-win.py``
      - ``PYTHON_VERSIONS`` list
 
