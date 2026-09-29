@@ -17,44 +17,20 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import pytest
+
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 import ifcopenshell.api.unit
-import ifcopenshell.util.element
+
+try:
+    ifcopenshell.file(schema="IFC4")
+    IFC4X3_AVAILABLE = True
+except RuntimeError:
+    IFC4X3_AVAILABLE = False
 
 
-def test_create_stationing_referent_name_includes_alignment_name():
-    """create() creates an initial stationing IfcReferent from start_station
-    (see add_stationing_referent()). Its Name must include the alignment's
-    own name, the same "<alignment name> <station>" convention
-    update_key_point_referents() uses for its own referents -- otherwise
-    this referent is indistinguishable by name alone from the same-named
-    referent of any OTHER alignment in the same file, unlike every other
-    referent in the model."""
-    file = ifcopenshell.file(schema="IFC4X3_ADD2")
-    project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
-    length = ifcopenshell.api.unit.add_conversion_based_unit(file, name="foot")
-    ifcopenshell.api.unit.assign_unit(file, units=[length])
-    geometric_representation_context = ifcopenshell.api.context.add_context(file, context_type="Model")
-    ifcopenshell.api.context.add_context(
-        file,
-        context_type="Model",
-        context_identifier="Axis",
-        target_view="MODEL_VIEW",
-        parent=geometric_representation_context,
-    )
-
-    alignment = ifcopenshell.api.alignment.create(file, "TestAlignment", start_station=4900.0)
-
-    referents = [
-        r
-        for r in ifcopenshell.util.element.get_components(alignment)
-        if r.is_a("IfcReferent") and ifcopenshell.util.element.get_pset(r, name="Pset_Stationing", prop="Station") == 4900.0
-    ]
-    assert len(referents) == 1
-    assert referents[0].Name == "TestAlignment 49+00.00"
-
-
+@pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
 def test_create():
     file = ifcopenshell.file(schema="IFC4X3_ADD2")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
@@ -76,6 +52,10 @@ def test_create():
     for i in range(0, 3):
         ali = ifcopenshell.api.alignment.create(file, "A1", include_vertical[i], include_cant[i])
         assert ali != None
+
+        # create() does not define stationing - the alignment has no referent nest at all
+        assert ifcopenshell.api.alignment.get_stationing_nest(file, ali) is None
+        assert not any(related.is_a("IfcReferent") for nest in ali.IsNestedBy for related in nest.RelatedObjects)
 
         # verify the geometric representation was created
         curve = ifcopenshell.api.alignment.get_curve(ali)
@@ -114,7 +94,3 @@ def test_create():
         curves = file.by_type("IfcSegmentedReferenceCurve")
         for curve in curves:
             assert ifcopenshell.api.alignment.has_zero_length_segment(curve)
-
-
-test_create()
-test_create_stationing_referent_name_includes_alignment_name()

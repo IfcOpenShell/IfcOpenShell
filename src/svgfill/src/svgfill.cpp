@@ -19,6 +19,7 @@
  ****************************************************************************/
 
 #include "svgfill.h"
+#include "linework_processing_plugin.h"
 
 #include <libxml/parser.h>
 
@@ -48,7 +49,7 @@ private:
 	svgfill::point_2 start_, xy_;
 
 public:
-	boost::optional<std::string> class_name;
+	std::optional<std::string> class_name;
 	std::vector<std::vector<svgfill::line_segment_2>> segments;
 
 	void on_enter_element(tag::element::any)
@@ -59,7 +60,7 @@ public:
 	void on_enter_element(tag::element::g)
 	{
 		++depth_;
-		if (enabled_at_ == -1 && !class_name.is_initialized()) {
+        if (enabled_at_ == -1 && !class_name.has_value()) {
 			enabled_at_ = depth_;
 			segments.emplace_back();
 		}
@@ -78,7 +79,7 @@ public:
 
 	template<class Str>
 	void set(tag::attribute::class_, Str const & s) {
-		if (enabled_at_ == -1 && class_name.is_initialized() && std::string(s.begin(), s.size()).find(*class_name) != std::string::npos) {
+		if (enabled_at_ == -1 && class_name.has_value() && std::string(s.begin(), s.size()).find(*class_name) != std::string::npos) {
 			enabled_at_ = depth_;
 			segments.emplace_back();
 		}
@@ -143,7 +144,7 @@ boost::mpl::set<
 >::type processed_elements_t;
 
 // This cryptic code just merges predefined sequences traits::shapes_attributes_by_element
-// and traits::viewport_attributes with tag::attribute::transform and tag::attribute::xlink::href 
+// and traits::viewport_attributes with tag::attribute::transform and tag::attribute::xlink::href
 // attributes into single MPL sequence
 typedef
 boost::mpl::fold<
@@ -157,7 +158,7 @@ boost::mpl::fold<
 	boost::mpl::insert<boost::mpl::_1, boost::mpl::_2>
 >::type processed_attributes_t;
 
-bool svgfill::svg_to_line_segments(const std::string& data, const boost::optional<std::string>& class_name, std::vector<std::vector<line_segment_2>>& segments)
+bool svgfill::svg_to_line_segments(const std::string& data, const std::optional<std::string>& class_name, std::vector<std::vector<line_segment_2>>& segments)
 {
 	Context context;
 	context.class_name = class_name;
@@ -187,7 +188,7 @@ bool svgfill::line_segments_to_polygons(solver s, double eps, const std::vector<
 	return line_segments_to_polygons(s, eps, segments, polygons, fn);
 }
 
-bool svgfill::svg_to_polygons(const std::string& data, const boost::optional<std::string>& class_name, std::vector<polygon_2>& polygons) {
+bool svgfill::svg_to_polygons(const std::string& data, const std::optional<std::string>& class_name, std::vector<polygon_2>& polygons) {
 	Context context;
 	context.class_name = class_name;
 	xmlDoc* doc = xmlReadMemory(data.c_str(), data.size(), nullptr, nullptr, 0);
@@ -474,7 +475,7 @@ public:
 					emitted = true;
 				}
 			}
-			
+
 			if (!emitted) {
 				ps.push_back(-1);
 				ps.push_back(-1);
@@ -512,7 +513,7 @@ public:
 				}
 			}
 		}
-		
+
 		for (auto& h : to_remove) {
 			/*
 			auto v0 = h->source()->point();
@@ -615,23 +616,32 @@ std::string svgfill::polygons_to_svg(const std::vector<polygon_2>& polygons, boo
 	return polygons_to_svg(pps, random_color);
 }
 
+svgfill::abstract_arrangement* svgfill::create_arrangement(solver s) {
+	if (s == CARTESIAN_DOUBLE) {
+		return new cgal_arrangement<CGAL::Cartesian<double>>;
+	} else if (s == CARTESIAN_QUOTIENT) {
+		return new cgal_arrangement<CGAL::Cartesian<CGAL::Quotient<CGAL::MP_Float>>>;
+	} else if (s == FILTERED_CARTESIAN_QUOTIENT) {
+		return new cgal_arrangement<CGAL::Filtered_kernel<CGAL::Cartesian<CGAL::Quotient<CGAL::MP_Float>>>>;
+	} else if (s == EXACT_PREDICATES) {
+		return new cgal_arrangement<CGAL::Epick>;
+	} else if (s == EXACT_CONSTRUCTIONS) {
+		return new cgal_arrangement<CGAL::Epeck>;
+	}
+	return nullptr;
+}
+
+void svgfill::destroy_arrangement(abstract_arrangement* arrangement) {
+	delete arrangement;
+}
+
 void svgfill::context::add(const std::vector<line_segment_2>& segments) {
 	segments_.insert(segments_.end(), segments.begin(), segments.end());
 }
 
 bool svgfill::context::build() {
-	if (solver_ == CARTESIAN_DOUBLE) {
-		arr_ = new cgal_arrangement<CGAL::Cartesian<double>>;
-	} else if (solver_ == CARTESIAN_QUOTIENT) {
-		arr_ = new cgal_arrangement<CGAL::Cartesian<CGAL::Quotient<CGAL::MP_Float>>>;
-	} else if (solver_ == FILTERED_CARTESIAN_QUOTIENT) {
-		arr_ = new cgal_arrangement<CGAL::Filtered_kernel<CGAL::Cartesian<CGAL::Quotient<CGAL::MP_Float>>>>;
-	} else if (solver_ == EXACT_PREDICATES) {
-		arr_ = new cgal_arrangement<CGAL::Epick>;
-	} else if (solver_ == EXACT_CONSTRUCTIONS) {
-		arr_ = new cgal_arrangement<CGAL::Epeck>;
-	}
-	return (*arr_)(eps_, segments_, progress_);
+	arr_ = create_arrangement(solver_);
+	return arr_ && (*arr_)(eps_, segments_, progress_);
 }
 
 void svgfill::context::merge(const std::vector<int>& edge_indices) {
@@ -642,4 +652,8 @@ void svgfill::context::write(std::vector<std::vector<polygon_2>>& p) {
 	std::vector<polygon_2> polygons;
 	arr_->write(polygons, progress_);
 	p.push_back(polygons);
+}
+
+svgfill::context::~context() {
+	destroy_arrangement(arr_);
 }
