@@ -625,21 +625,6 @@ def select_assigned_product(drawing: type[tool.Drawing], context: bpy.types.Cont
     drawing.select_assigned_product(context)
 
 
-def activate_drawing_view(
-    ifc: type[tool.Ifc],
-    blender: type[tool.Blender],
-    drawing_tool: type[tool.Drawing],
-    drawing: ifcopenshell.entity_instance,
-) -> None:
-    camera = ifc.get_object(drawing)
-    if not camera:
-        camera = drawing_tool.import_drawing(drawing)
-        drawing_tool.import_annotations_in_group(drawing_tool.get_drawing_group(drawing))
-    blender.activate_camera(camera)
-    drawing_tool.isolate_camera_collection(camera)
-    drawing_tool.activate_drawing(camera)
-
-
 def run_conversion_command(
     drawing: type[tool.Drawing], command_json: str, replacements: dict[str, str], setting_name: str
 ) -> None:
@@ -673,3 +658,18 @@ def run_conversion_command(
 
 class ConversionCommandError(Exception):
     pass
+
+
+def activate_drawing_view(
+    ifc: type[tool.Ifc],
+    blender: type[tool.Blender],
+    drawing_tool: type[tool.Drawing],
+    drawing: ifcopenshell.entity_instance,
+) -> None:
+    camera = ifc.get_object(drawing)
+    if not camera:
+        camera = drawing_tool.import_drawing(drawing)
+        drawing_tool.import_annotations_in_group(drawing_tool.get_drawing_group(drawing))
+    blender.activate_camera(camera)
+    drawing_tool.isolate_camera_collection(camera)
+    drawing_tool.activate_drawing(camera)
