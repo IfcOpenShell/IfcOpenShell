@@ -19,6 +19,7 @@
 # This file was generated with the assistance of an AI coding tool.
 
 import numpy as np
+
 import ifcopenshell.util.representation as subject
 import test.bootstrap
 
@@ -66,9 +67,6 @@ class TestResolveItems(test.bootstrap.IFC4):
         return self.file.createIfcShapeRepresentation(RepresentationType="MappedRepresentation", Items=[item])
 
     def test_outer_translation_is_not_dropped_when_the_inner_mapped_item_is_identity(self):
-        # See #3019: when the inner IfcMappedItem's own transform happens to
-        # be the identity, the accumulated outer transform must still be
-        # carried through, not discarded.
         innermost = self.file.createIfcShapeRepresentation(Items=[self.file.createIfcExtrudedAreaSolid()])
         inner = self.wrap(innermost, np.eye(4))
         outer_matrix = translation_matrix(10, 20, 30)
