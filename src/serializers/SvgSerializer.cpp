@@ -1968,8 +1968,8 @@ void SvgSerializer::write(const geometry_data& data) {
 			}
 		}
 
-		if (!annotation.IsNull()) {
-			write(*po(), annotation);
+		if (po_ != nullptr && !annotation.IsNull()) {
+			write(*po_, annotation);
 		}
 	}
 
