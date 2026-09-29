@@ -30,6 +30,7 @@
 #include "utils.h"
 
 #include <algorithm>
+#include <cmath>
 #include <boost/algorithm/string.hpp>
 #include <boost/variant.hpp>
 #include <boost/math/special_functions/fpclassify.hpp>
@@ -283,7 +284,13 @@ bool ParseFloat(const char* pStart, double& val) {
     double result = strtod_l(pStart, &pEnd, locale);
 #endif
     if (*pEnd != 0) {
-        return false;
+        // Historically REALs were serialized by appending a '.' to any formatted
+        // double lacking one, producing non-finite spellings such as "nan.",
+        // "-nan(ind)." and "inf." that strtod stops in front of. Accept a single
+        // trailing '.' after a successful partial parse so these load again.
+        if (pEnd == pStart || pEnd[0] != '.' || pEnd[1] != 0) {
+            return false;
+        }
     }
     val = result;
     return true;
@@ -339,6 +346,9 @@ Token IfcParse::GeneralTokenPtr(IfcSpfLexer* lexer, size_t start, const std::str
         token.type = Token_INT;
     } else if (ParseFloat(tokenStr.c_str(), token.value_double)) {
         token.type = Token_FLOAT;
+        if (!std::isfinite(token.value_double)) {
+            lexer->logger().Message(Logger::LOG_ERROR, "SYN", 41, "Non-finite value '" + tokenStr + "' at offset " + std::to_string(token.startPos));
+        }
     } else {
         token.type = Token_KEYWORD;
     }
