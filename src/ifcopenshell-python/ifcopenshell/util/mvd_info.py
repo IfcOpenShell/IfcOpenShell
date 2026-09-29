@@ -18,18 +18,16 @@
 
 from __future__ import annotations
 
-try:
-    from lark import Lark, Transformer
-    from lark.exceptions import UnexpectedCharacters, UnexpectedEOF, UnexpectedToken
-
-    LARK_AVAILABLE = True
-except ImportError:
-    LARK_AVAILABLE = False
-
+import importlib.util
 import re
 from typing import Union
 
+LARK_AVAILABLE = importlib.util.find_spec("lark") is not None
+
 if LARK_AVAILABLE:
+    from lark import Lark, Transformer
+    from lark.exceptions import UnexpectedCharacters, UnexpectedEOF, UnexpectedToken
+
     mvd_grammar = r"""
         start: entry+
 
@@ -92,9 +90,9 @@ if LARK_AVAILABLE:
                 self.store_text_attribute(args, "options")
 
         def dynamic_option(self, args):
+            original_keyword = str(args[0])
+            key = original_keyword.lower()
             try:
-                original_keyword = str(args[0])
-                key = original_keyword.lower()
                 raw_text = args[1].children[0].value
                 parsed_value = parse_semicolon_separated_kv(raw_text)
                 self._dynamic[key] = (parsed_value, original_keyword)

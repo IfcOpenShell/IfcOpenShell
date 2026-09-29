@@ -373,35 +373,37 @@ class Root(bonsai.core.tool.Root):
                 try:
                     new_aggregate = old_to_new[old_aggregate]
                 except:
-                    bonsai.core.aggregate.unassign_object(
-                        tool.Ifc,
-                        tool.Aggregate,
-                        tool.Collector,
-                        relating_obj=tool.Ifc.get_object(old_aggregate),
-                        related_obj=tool.Ifc.get_object(new[0]),
-                    )
-                    continue
-
-                bonsai.core.aggregate.assign_object(
-                    tool.Ifc,
-                    tool.Aggregate,
-                    tool.Collector,
-                    relating_obj=tool.Ifc.get_object(new_aggregate[0]),
-                    related_obj=tool.Ifc.get_object(new[0]),
-                )
-
-                # Make sure that the array children also get reassigned to the correct aggregate
-                pset = ifcopenshell.util.element.get_pset(new[0], "BBIM_Array")
-                if pset:
-                    array_children = tool.Array.get_all_children_objects(new[0])
-                    for obj in array_children:
-                        bonsai.core.aggregate.assign_object(
+                    for new_entity in new:
+                        bonsai.core.aggregate.unassign_object(
                             tool.Ifc,
                             tool.Aggregate,
                             tool.Collector,
-                            relating_obj=tool.Ifc.get_object(new_aggregate[0]),
-                            related_obj=tool.Ifc.get_object(tool.Ifc.get_entity(obj)),
+                            relating_obj=tool.Ifc.get_object(old_aggregate),
+                            related_obj=tool.Ifc.get_object(new_entity),
                         )
+                    continue
+
+                for new_entity in new:
+                    bonsai.core.aggregate.assign_object(
+                        tool.Ifc,
+                        tool.Aggregate,
+                        tool.Collector,
+                        relating_obj=tool.Ifc.get_object(new_aggregate[0]),
+                        related_obj=tool.Ifc.get_object(new_entity),
+                    )
+
+                    # Make sure that the array children also get reassigned to the correct aggregate
+                    pset = ifcopenshell.util.element.get_pset(new_entity, "BBIM_Array")
+                    if pset:
+                        array_children = tool.Array.get_all_children_objects(new_entity)
+                        for obj in array_children:
+                            bonsai.core.aggregate.assign_object(
+                                tool.Ifc,
+                                tool.Aggregate,
+                                tool.Collector,
+                                relating_obj=tool.Ifc.get_object(new_aggregate[0]),
+                                related_obj=tool.Ifc.get_object(tool.Ifc.get_entity(obj)),
+                            )
 
         if new_aggregate is None:
             return
