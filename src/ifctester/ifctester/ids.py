@@ -268,8 +268,7 @@ class Specification:
         # still validate against the XSD (buildingSMART/IDS#344), but
         # downstream consumers (reports, asdict()) expect a stable order.
         for name in self.FACET_ORDER:
-            facets = clause.get(name)
-            if facets is None:
+            if (facets := clause.get(name)) is None:
                 continue
             if not isinstance(facets, list):
                 facets = [facets]
