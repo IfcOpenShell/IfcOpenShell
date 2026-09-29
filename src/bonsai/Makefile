@@ -92,6 +92,14 @@ endif
 
 endif # def PLATFORM
 
+PIP_DOWNLOAD_ARGS=$(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+# pyradiance is using different platform versions than defaults in our makefile.
+ifeq ($(PLATFORM), linux)
+PYRADIANCE_PIP_DOWNLOAD_ARGS=$(subst $(PYPI_PLATFORM),--platform manylinux_2_28_x86_64,$(PIP_DOWNLOAD_ARGS))
+else
+PYRADIANCE_PIP_DOWNLOAD_ARGS=$(PIP_DOWNLOAD_ARGS)
+endif
+
 # Wheels bundled with Bonsai, downloaded for the target platform in one pip call.
 BUNDLED_WHEELS :=
 BUNDLED_WHEELS += GitPython
@@ -201,16 +209,11 @@ endif
 	# Resolve all bundled wheels in one pip call, so they share a single consistent
 	# dependency set - no conflicting versions or duplicate wheels of the same package -
 	# and skip re-resolving shared dependencies in dozens of separate pip calls.
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download $(BUNDLED_WHEELS) $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download $(BUNDLED_WHEELS) $(PIP_DOWNLOAD_ARGS)
 
 	# odfpy doesn't come with its own wheel, so whee'l (get it?) create it ourselves!
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) wheel odfpy --wheel-dir=./wheels
-	# pyradiance is using different platform versions than defaults in our makefile.
-ifeq ($(PLATFORM), linux)
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance --platform manylinux_2_28_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
-else
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
-endif
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance $(PYRADIANCE_PIP_DOWNLOAD_ARGS)
 
 	# jQuery is required for web UI functionality
 	cd build/bonsai/bim/data/webui/static/js/ && wget --no-verbose https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js
