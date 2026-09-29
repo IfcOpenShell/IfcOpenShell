@@ -114,7 +114,7 @@ typename Schema::IfcOwnerHistory hierarchy_helper<Schema>::addOwnerHistory() {
     owner_hist.setLastModifyingUser(person_and_org);
     owner_hist.setLastModifyingApplication(application);
     owner_hist.setCreationDate(timestamp);
-    
+
     return owner_hist;
 }
 
@@ -151,7 +151,7 @@ typename Schema::IfcProject hierarchy_helper<Schema>::addProject(typename Schema
     unit2.setUnitType(Schema::IfcUnitEnum::IfcUnit_PLANEANGLEUNIT);
     unit2.setName("Degrees");
     unit2.setConversionFactor(unit2b);
-    
+
     std::vector<typename Schema::IfcUnit> units = {unit1, unit2};
     auto unit_assignment = create<typename Schema::IfcUnitAssignment>();
     unit_assignment.setUnits(units);
@@ -317,7 +317,7 @@ void hierarchy_helper<Schema>::addExtrudedPolyline(typename Schema::IfcShapeRepr
     solid.setPosition(place2 ? place2 : addPlacement3d());
     solid.setExtrudedDirection(dir ? dir : addTriplet<typename Schema::IfcDirection>(0, 0, 1));
     solid.setDepth(h);
-    
+
     std::vector<typename Schema::IfcRepresentationItem> items;
     try {
         auto existing_items = rep.Items();
@@ -372,7 +372,7 @@ template <typename Schema>
 void hierarchy_helper<Schema>::addAxis(
     typename Schema::IfcShapeRepresentation rep,
     double l,
-    typename Schema::IfcRepresentationContext /*context*/) 
+    typename Schema::IfcRepresentationContext /*context*/)
 {
     auto p1 = addDoublet<typename Schema::IfcCartesianPoint>(-l / 2., 0.);
     auto p2 = addDoublet<typename Schema::IfcCartesianPoint>(+l / 2., 0.);
@@ -402,7 +402,7 @@ typename Schema::IfcProductDefinitionShape hierarchy_helper<Schema>::addBox(doub
 
     auto shape = create<typename Schema::IfcProductDefinitionShape>();
     shape.setRepresentations(std::vector<typename Schema::IfcRepresentation>{rep});
-    
+
     addBox(rep, w, d, h, place, place2, dir, context);
     return shape;
 }

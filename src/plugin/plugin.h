@@ -96,7 +96,7 @@ public:
 
 	std::vector<std::filesystem::path> discover(const std::string& basename_prefix) const;
 	std::vector<std::filesystem::path> discover_exact(const std::string& basename) const;
-	module load(const std::filesystem::path& path) const;
+	ifcopenshell::plugin::module load(const std::filesystem::path& path) const;
 
 private:
 	std::vector<std::filesystem::path> search_paths_;

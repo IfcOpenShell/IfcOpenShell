@@ -59,9 +59,10 @@ if (NOT CREATE_BUNDLE)
     set_target_properties(IfcParse PROPERTIES VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
 endif()
 if(WASM_BUILD)
-    target_link_libraries(IfcParse plugin ${BCRYPT_LIBRARIES})
+    # No Boost link libraries for wasm, but the headers are still needed.
+    target_link_libraries(IfcParse plugin Boost::headers)
 else()
-    target_link_libraries(IfcParse plugin ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES})
+    target_link_libraries(IfcParse plugin ${Boost_LIBRARIES})
 endif()
 
 if(WITH_ROCKSDB)

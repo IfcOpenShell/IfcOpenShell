@@ -42,7 +42,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRectangleProfileDef& inst) {
 	if (has_position) {
 		m4 = taxonomy::cast<taxonomy::matrix4>(map(inst.Position()));
 	}
-	
+
 	return profile_helper(m4, {
 		{{-x,-y}},
 		{{x,-y}},

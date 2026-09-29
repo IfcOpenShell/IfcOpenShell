@@ -345,7 +345,7 @@ public:
     void to_arrangement(T& arr) {
         if (is_valid() && arr.is_empty()) {
             std::vector<CGAL::Segment_2<Kernel>> edges;
-            
+
             for (auto it = edges_begin(); it != edges_end(); ++it) {
                 edges.emplace_back(it->first, it->second);
             }
@@ -357,7 +357,7 @@ public:
                 }
                 CGAL::insert(arr, CGAL::Segment_2<Kernel>(it->first, it->second));
             }
-        }        
+        }
     }
 
     template <typename T>

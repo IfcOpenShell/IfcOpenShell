@@ -144,7 +144,7 @@ boost::mpl::set<
 >::type processed_elements_t;
 
 // This cryptic code just merges predefined sequences traits::shapes_attributes_by_element
-// and traits::viewport_attributes with tag::attribute::transform and tag::attribute::xlink::href 
+// and traits::viewport_attributes with tag::attribute::transform and tag::attribute::xlink::href
 // attributes into single MPL sequence
 typedef
 boost::mpl::fold<
@@ -475,7 +475,7 @@ public:
 					emitted = true;
 				}
 			}
-			
+
 			if (!emitted) {
 				ps.push_back(-1);
 				ps.push_back(-1);
@@ -513,7 +513,7 @@ public:
 				}
 			}
 		}
-		
+
 		for (auto& h : to_remove) {
 			/*
 			auto v0 = h->source()->point();

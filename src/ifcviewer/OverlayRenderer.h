@@ -33,10 +33,14 @@
 #include "OverlayFrame.h"
 #include "SectionPlane.h"
 
-// All viewport overlays in one place: axis indicator (corner + pivot),
-// section plane gizmos, and the marquee drag rect. Mirrors GL's
-// OverlayRenderer split so ViewportWindow.cpp doesn't have to
-// carry ~1.5k lines of pipeline plumbing.
+// The Qt-coupled viewport overlays: the marquee drag rect, measure-tool
+// lines / points / highlight patches, and the QPainter-rasterised labels
+// and HUD. Mirrors GL's OverlayRenderer split so ViewportWindow.cpp
+// doesn't have to carry ~1.5k lines of pipeline plumbing.
+//
+// The Qt-free overlays live in their own shared renderers so the web build
+// gets them too: SectionGizmoRenderer and AxisIndicatorRenderer (corner
+// axis gizmo + orbit pivot), both driven by ViewportCore::render.
 //
 // Lifecycle: init() once after the device is up, destroy() before the
 // device dies. Pipelines are immutable after init; only per-frame
@@ -56,16 +60,11 @@ public:
     void destroy();
 
     // ---- Inside the main MSAA pass, after geometry ----
-    // Both share depth with the scene so they're correctly occluded.
+    // These share depth with the scene so they're correctly occluded.
 
-    // Orbit pivot indicator. `visible` is the viewport's UI gate (orbit
-    // drag / wheel-zoom afterglow). When false this is a cheap no-op.
-    void encodePivot(WGPURenderPassEncoder pass,
-                     const OverlayFrame& f,
-                     bool visible);
-
-    // Section-plane gizmos moved to the shared SectionGizmoRenderer (drawn by
-    // ViewportCore for both desktop + web).
+    // Section-plane gizmos moved to the shared SectionGizmoRenderer, and the
+    // orbit pivot to AxisIndicatorRenderer (both drawn by ViewportCore for
+    // desktop + web).
 
     // Replace the highlight-triangle list. `world_xyz` is 3 floats per
     // vertex, 3 vertices per triangle, in world space (post-composed-
@@ -148,12 +147,8 @@ public:
                       const OverlayFrame& f);
 
     // ---- After the edge silhouette pass, on the resolved surface ----
-
-    // Corner axis gizmo (bottom-left, 110×110 px). Independent ortho
-    // projection — only the camera direction matters.
-    void encodeCornerAxis(WGPUCommandEncoder enc,
-                          WGPUTextureView surface_view,
-                          const OverlayFrame& f);
+    // (The corner axis gizmo also draws here — from ViewportCore, via
+    // AxisIndicatorRenderer.)
 
     // Marquee box-select drag rect (translucent fill + thick outline).
     // No-op when `active` is false.
@@ -170,7 +165,6 @@ public:
     static constexpr int kMaxSectionPlanes = 6;
 
 private:
-    bool buildAxisIndicator();
     bool buildMarquee();
     bool buildOverlayLines();
     bool buildOverlayPoints();
@@ -199,19 +193,6 @@ private:
     WGPUQueue           queue_          = nullptr;
     WGPUTextureFormat   surface_format_ = WGPUTextureFormat_Undefined;
     int                 sample_count_   = 1;
-
-    // ---- Axis indicator (shared shape, three pipelines) ----
-    // Slot 0 = corner gizmo. Slots 1/2 = pivot visible/x-ray.
-    WGPUShaderModule    axis_shader_module_       = nullptr;
-    WGPUBindGroupLayout axis_bgl_                 = nullptr;
-    WGPUPipelineLayout  axis_pipeline_layout_     = nullptr;
-    WGPURenderPipeline  axis_pivot_pipeline_      = nullptr;
-    WGPURenderPipeline  axis_pivot_xray_pipeline_ = nullptr;
-    WGPURenderPipeline  axis_corner_pipeline_     = nullptr;
-    WGPUBuffer          axis_vertex_buffer_       = nullptr;
-    WGPUBuffer          axis_uniform_buffer_      = nullptr;
-    WGPUBindGroup       axis_bind_group_          = nullptr;
-    static constexpr uint32_t kAxisUniformSlotSize = 256;
 
     // ---- Marquee (fill + outline pipelines, one uniform buffer) ----
     WGPUShaderModule    marquee_shader_module_      = nullptr;

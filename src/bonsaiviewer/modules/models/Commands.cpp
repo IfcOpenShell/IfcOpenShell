@@ -262,6 +262,28 @@ void removeModel(SessionState& session, ViewportWindow& viewport, QWidget& host,
     session.setStatusMessage("Models", "Model removed");
 }
 
+void unloadModel(SessionState& session, ViewportWindow& viewport, const QString& model_id) {
+    const uint32_t session_model_id = session.sessionModelIdForModelId(model_id);
+    if (session_model_id == 0) return;
+    if (session.loader()->isLoadingModel(session_model_id)) return;
+    const double freed_mb = double(viewport.modelVramBytes(session_model_id)) / (1024.0 * 1024.0);
+    viewport.unloadModel(session_model_id);
+    session.notifyModelLoadStateChanged(model_id);
+    session.setStatusMessage("Models", QString("Model unloaded (freed %1 MB of GPU memory)")
+                                           .arg(freed_mb, 0, 'f', 0));
+}
+
+void loadModel(SessionState& session, ViewportWindow& viewport, const QString& model_id) {
+    const uint32_t session_model_id = session.sessionModelIdForModelId(model_id);
+    if (session_model_id == 0) return;
+    if (!viewport.loadModel(session_model_id)) {
+        session.setStatusMessage("Models", "Not enough GPU memory to load this model");
+        return;
+    }
+    session.notifyModelLoadStateChanged(model_id);
+    session.setStatusMessage("Models", "Model loaded");
+}
+
 void viewModels(SessionState& session, ViewportWindow& viewport, const QStringList& model_ids) {
     // Federation ids are the panel's currency; the viewport speaks session
     // model ids. sessionModelIdForModelId returns 0 for a model the viewport

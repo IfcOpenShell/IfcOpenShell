@@ -75,7 +75,7 @@ void ifcopenshell::geom::open_cascade_shape::triangulate(ifcopenshell::geom::set
 
 	// A 3x3 matrix to rotate the vertex normals
 	std::optional<gp_Mat> rotation_matrix;
-	
+
 	if (place.components_) {
 		const auto& m = *place.components_;
 		rotation_matrix.emplace(
@@ -84,7 +84,7 @@ void ifcopenshell::geom::open_cascade_shape::triangulate(ifcopenshell::geom::set
 			m(2, 0), m(2, 1), m(2, 2)
 		);
 	}
-	
+
 	// When welding vertices, vertex coords will be shared among faces so we need to per-shape set
 	// to keep track of which edges were already emitted.
 	std::set<std::pair<int, int>> emitted_edges;
@@ -119,9 +119,9 @@ void ifcopenshell::geom::open_cascade_shape::triangulate(ifcopenshell::geom::set
 	for (exp.Init(shape_, TopAbs_FACE); exp.More(); exp.Next(), ++num_faces) {
 		TopoDS_Face face = TopoDS::Face(exp.Current());
 
-		size_t num_bounds = 0; 
+		size_t num_bounds = 0;
 		for (TopoDS_Iterator it(face); it.More(); it.Next(), ++num_bounds) {}
-		
+
 		const bool is_planar = BRep_Tool::Surface(face) && BRep_Tool::Surface(face)->DynamicType() == STANDARD_TYPE(Geom_Plane);
 		const bool has_inner_bounds = num_bounds > 1;
 
@@ -187,12 +187,11 @@ void ifcopenshell::geom::open_cascade_shape::triangulate(ifcopenshell::geom::set
 				}
 			}
 
-			const NCollection_Array1<Poly_Triangle>& triangles = tri->Triangles();
-			for (int i = 1; i <= triangles.Length(); ++i) {
+			for (int i = 1; i <= tri->NbTriangles(); ++i) {
 				int n1, n2, n3;
 				if (face.Orientation() == TopAbs_REVERSED)
-					triangles(i).Get(n3, n2, n1);
-				else triangles(i).Get(n1, n2, n3);
+					tri->Triangle(i).Get(n3, n2, n1);
+				else tri->Triangle(i).Get(n1, n2, n3);
 
 				if (dict[n1] == dict[n2] || dict[n2] == dict[n3] || dict[n3] == dict[n1]) {
 					logger.warning("GEO", 185, "Mesher generated a degenerate triangle, ignoring");
@@ -314,7 +313,7 @@ void ifcopenshell::geom::open_cascade_shape::triangulate(ifcopenshell::geom::set
 				} else {
 					p = tessellater.Value(i).XYZ();
 				}
-				
+
 				auto p_local = p;
 				taxonomy_transform(place.components_, p);
 
@@ -582,7 +581,7 @@ conversion_result_shape* ifcopenshell::geom::open_cascade_shape::concat(conversi
 {
 	TopoDS_Compound compound;
 	BRep_Builder builder;
-	
+
 	auto& left = shape_;
 	auto& right = ((ifcopenshell::geom::open_cascade_shape*)other)->shape_;
 
@@ -594,7 +593,7 @@ conversion_result_shape* ifcopenshell::geom::open_cascade_shape::concat(conversi
 		builder.MakeCompound(compound);
 		builder.Add(compound, left);
 	}
-	
+
 	builder.Add(compound, right);
 
 	return new open_cascade_shape(std::move(compound));
@@ -656,14 +655,13 @@ namespace {
 						coords.push_back(tri->Node(i).Transformed(loc).XYZ());
 					}
 
-					const NCollection_Array1<Poly_Triangle>& triangles = tri->Triangles();
-					for (int i = 1; i <= triangles.Length(); ++i) {
+					for (int i = 1; i <= tri->NbTriangles(); ++i) {
 						int n1, n2, n3;
 
 						if (face.Orientation() == TopAbs_REVERSED) {
-							triangles(i).Get(n3, n2, n1);
+							tri->Triangle(i).Get(n3, n2, n1);
 						} else {
-							triangles(i).Get(n1, n2, n3);
+							tri->Triangle(i).Get(n1, n2, n3);
 						}
 
 						const gp_XYZ& pt1 = coords[n1 - 1];

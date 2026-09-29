@@ -11,7 +11,7 @@ target_include_directories(plugin PUBLIC
 )
 
 if (NOT CREATE_BUNDLE)
-set_target_properties(plugin PROPERTIES 
+set_target_properties(plugin PROPERTIES
     VERSION "${PROJECT_VERSION}"
     SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
 )

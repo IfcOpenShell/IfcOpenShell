@@ -64,8 +64,8 @@ bool open_cascade_kernel::convert(const taxonomy::solid::ptr solid, TopoDS_Shape
 
 		result = halfspace;
 		return true;
-	} else if (solid->children.size() == 1 
-		&& solid->children[0]->children.size() == 1 
+	} else if (solid->children.size() == 1
+		&& solid->children[0]->children.size() == 1
 		&& solid->children[0]->children[0]->basis
 		&& solid->children[0]->children[0]->basis->kind() == taxonomy::SPHERE)
 	{

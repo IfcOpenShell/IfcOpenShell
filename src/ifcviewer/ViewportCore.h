@@ -47,7 +47,10 @@
 #include <utility>
 #include <vector>
 
+#include "AxisIndicatorRenderer.h"
 #include "BufferPool.h"
+#include "GpuBudget.h"
+#include "GpuMemory.h"
 #include "InstanceCompose.h"
 #include "InstancedGeometry.h"
 #include "ModelGpuData.h"
@@ -55,6 +58,7 @@
 #include "SectionPlane.h"
 #include "SelectionState.h"
 #include "SidecarCache.h"
+#include "Stopwatch.h"
 #include "StreamingLoader.h"
 #include "StreamingThread.h"
 #include "ViewportHost.h"
@@ -153,6 +157,17 @@ public:
     void resetScene();
     void hideModel(uint32_t session_model_id);
     void showModel(uint32_t session_model_id);
+    // Release a model's GPU memory (every chunk + its own buffers) while
+    // keeping it in the scene; loadModel recreates the buffers from the
+    // CPU mirrors and lets chunks stream back. Neither touches hidden.
+    // loadModel returns false when the device cannot fit the model's
+    // buffers even after the cache yielded (it stays unloaded).
+    void unloadModel(uint32_t session_model_id);
+    bool loadModel(uint32_t session_model_id);
+    bool isModelUnloaded(uint32_t session_model_id) const;
+    // Bytes this model currently holds on the GPU: resident chunk
+    // geometry plus its mesh/instance/cull buffers. 0 when unloaded.
+    std::uint64_t modelVramBytes(uint32_t session_model_id) const;
 
     // Federation matrix setters. Each writes to model state and posts
     // a recompose so per-instance world matrices stay consistent with
@@ -281,9 +296,9 @@ public:
     //
     // Pixel-delta camera moves, shared by every host (Qt desktop + web).
     // Hosts translate raw pointer/wheel events into these calls and own
-    // their own UI concerns (drag promotion, pivot indicator, cursor
-    // capture); the orbit math lives here so it can't drift between
-    // platforms. Each schedules a frame via the host.
+    // their own UI concerns (drag promotion, cursor capture); the orbit
+    // math lives here so it can't drift between platforms. Each schedules
+    // a frame via the host.
     //
     // orbitBy:  drag-right yaws the world right (yaw -= dx), drag-down
     //           tilts the camera up (pitch += dy). 0.4 deg/px matches GL.
@@ -295,6 +310,18 @@ public:
     void orbitBy(float dx_px, float dy_px);
     void panBy(float dx_px, float dy_px, int viewport_height_px);
     void dollyBy(float notches);
+
+    // ---- Pivot indicator ----------------------------------------------------
+    //
+    // The RGB triad drawn at the orbit target while the user navigates, so it's
+    // obvious what the camera is turning around. Hosts gate it: (true) when an
+    // orbit / pan drag starts, (false) when it ends. `hide_after_ms` > 0 arms an
+    // afterglow instead — the wheel path uses it so a zoom without a held drag
+    // still shows the pivot for a moment. State lives here (not in the host) so
+    // desktop and web behave identically; render() consults it each frame and
+    // keeps requesting frames until an armed afterglow expires.
+    void setPivotIndicatorVisible(bool visible, int hide_after_ms = 0);
+    bool pivotIndicatorVisible() const;
 
     // ---- First-person / fly navigation --------------------------------------
     //
@@ -467,6 +494,12 @@ public:
     // brings them in. Triggers an auto-viewAll on the first model (so a
     // freshly-loaded scene frames itself).
     void applyCachedModel(std::uint32_t session_model_id, StreamingSidecar metadata);
+    // The model's required-tier buffers (mesh + instance storage, per-chunk
+    // cull buffers) as one allocation unit — see allocateRequired. False
+    // when the device cannot fit them even after the cache yielded.
+    bool createModelBuffers(std::uint32_t session_model_id, ModelGpuData& m,
+                            const std::vector<MeshGpu>& mesh_gpu,
+                            const std::vector<InstanceGpu>& inst_gpu);
 
     // Qt-free sidecar load: readSidecarMetadata + applyCachedModel.
     // Used by the web build (and any other non-Qt embedder) so the
@@ -530,8 +563,10 @@ public:
 
     // Per-model progress for a federation loading UI. count() is how many
     // models have metadata (are in the scene); progress(idx,…) gives the
-    // idx-th model's resident/total chunks, ordered by session_model_id (= load order)
-    // so each model keeps a stable UI slot as it streams.
+    // idx-th model's resident/total chunks, ordered by session_model_id — which
+    // is minted when a load is REQUESTED, so this is the order the host asked
+    // for its models, not the order their reads finished. Each model keeps a
+    // stable UI slot as it streams.
     int  streamingModelCount() const;
     void streamingModelProgress(int idx, int& resident_chunks,
                                 int& total_chunks) const;
@@ -542,11 +577,17 @@ public:
     int modelLoadIndex(std::uint32_t session_model_id) const;
 
     // One row of the element table: the IFC identity behind a rendered
-    // object_id. `model_index` is the load-order slot (modelLoadIndex), so a
-    // host UI can attribute an object to the file it came from.
+    // object_id, plus which model it came from, said two ways.
+    //
+    // `model_index` is the load-order slot (modelLoadIndex) — a POSITION, so it
+    // shifts if an earlier model fails to load. `source_id` is the JS byte-source
+    // the model was added from (-1 when it came from somewhere else), which the
+    // host minted itself and which never moves. Prefer the latter for
+    // attributing an object to a file; the index is for UI slots.
     struct ElementRef {
         std::uint32_t object_id   = 0;
         int           model_index = -1;
+        int           source_id   = -1;
         std::string   guid;
         std::string   name;
         std::string   type;
@@ -556,6 +597,20 @@ public:
     // resident. On web that means calling loadAllElementMetadataWeb first —
     // models still lazily un-fetched simply contribute nothing.
     std::vector<ElementRef> elements() const;
+    // One model's elements (by load-order index, same as modelProgress),
+    // handed out as slices into the model's string table — valid only for
+    // the duration of the visit, no per-element string copies. The web
+    // objects export serialises hundreds of thousands of elements straight
+    // from these; materialising ElementRefs there tripled the peak heap.
+    struct ElementSlices {
+        std::uint32_t object_id = 0;
+        int           source_id = -1;
+        const char*   guid = nullptr; std::uint32_t guid_len = 0;
+        const char*   name = nullptr; std::uint32_t name_len = 0;
+        const char*   type = nullptr; std::uint32_t type_len = 0;
+    };
+    void visitModelElements(int model_index,
+                            const std::function<void(const ElementSlices&)>& visit) const;
 
     // The single element behind one object_id — the pick path's lookup, which
     // must not pay for materialising the whole table. Scans only the model that
@@ -683,6 +738,9 @@ public:
     // dimensions match. Resets ping-pong state so any in-flight map is
     // dropped (caller already ensured the surface resize blocked).
     void ensureHizTextures(int viewport_w, int viewport_h);
+    // Drop just the resolve texture + staging buffers (pipeline stays),
+    // resetting the ping-pong state. ensureHizTextures recreates them.
+    void releaseHizTextures();
 
     // Tear down every HiZ-owned wgpu resource (pipeline + textures +
     // staging buffers + pyramid). Called from shutdown() before
@@ -778,8 +836,13 @@ public:
     bool buildPickPipeline();
 
     // (Re)allocate the pick MRT attachments + readback staging buffers
-    // to the supplied size. Idempotent when dimensions match.
-    void ensurePickAttachments(int w, int h);
+    // to the supplied size. Idempotent when dimensions match. Created
+    // eagerly with the other attachments in configureSurface; the pick
+    // entry points call it again only as the retry after a pressure
+    // shrink, and bail when it returns false.
+    bool ensurePickAttachments(int w, int h);
+    // The raw (unscoped) creation ensurePickAttachments wraps.
+    void createPickAttachments(int w, int h);
 
     // Encode the one-shot pick pass + copy the (x, y) texel into the pick
     // staging buffer(s) and submit. Shared by the sync (pickObjectAt) and
@@ -1030,9 +1093,83 @@ public:
 private:
     bool createPool();
 
-    // The scene's models in load order (ascending session_model_id). Every
-    // per-model API indexes against this, so a model keeps a stable UI slot
-    // instead of hopping with unordered_map iteration order.
+    // ---- Memory tiers (see GpuBudget.h) ------------------------------------
+    //
+    // Every allocation the frame cannot do without — the per-pixel
+    // attachments, a model's metadata buffers, readback staging — is
+    // "required" and goes through one of these so an out-of-memory is
+    // observed and answered by shrinking the geometry cache, instead of
+    // surfacing as an invalid resource that aborts in wgpuQueueSubmit.
+
+    // Bytes every per-pixel attachment set costs (MSAA colour + depth,
+    // selection mask trio, pick MRT + depth) — sizes the pressure
+    // carve-out when an attachment set fails.
+    static std::uint64_t attachmentBytesPerPixel();
+
+    // Desktop: the driver's view of the adapter wgpu picked (GpuMemory.h);
+    // `valid` false on web or an unsupported driver.
+    ifcviewer::GpuMemoryInfo queryDeviceMemory() const;
+    // Desktop, at most once a second from render(): refresh the device
+    // figures for FrameStats and re-derive the live cache budget from
+    // them, shrinking the pool when the device has less to give than the
+    // pool holds (another process took memory).
+    void pollDeviceMemory();
+    // Push budget_ to the pool: the growth ceiling, and a shrink when the
+    // pool is over it by at least a sub-buffer.
+    void applyBudgetToPool();
+
+    // A required allocation of `bytes` (`what` names it for the log)
+    // failed. Lowers the budget, evicts and releases cache sub-buffers
+    // down to it, and on desktop waits for the device to actually reclaim
+    // them so an immediate retry can succeed. Returns false when the
+    // cache had nothing left to give: the device is exhausted and the
+    // caller degrades (skips the operation) rather than retrying.
+    bool onRequiredAllocationFailed(const char* what, std::uint64_t bytes);
+    // Unload every resident chunk whose slices live in pool sub-buffer
+    // `sub_idx`; the evictor BufferPool::shrinkToCapacity calls before it
+    // releases that sub-buffer.
+    void evictChunksInSubBuffer(int sub_idx);
+
+    // Run `create` (one or more wgpu allocations totalling ~`bytes`) under
+    // an allocation scope. Desktop: verified synchronously; on failure
+    // `release` undoes the attempt, the cache yields, and `create` runs
+    // again, until it succeeds or the cache has nothing left to give
+    // (false). Web: the resources are used
+    // provisionally and true is returned; if the scope later reports a
+    // failure the cache yields and `on_web_failure` (if any) corrects
+    // course, since the caller has long since moved on.
+    bool allocateRequired(const char* what, std::uint64_t bytes,
+                          const std::function<void()>& create,
+                          const std::function<void()>& release,
+                          std::function<void()> on_web_failure = {});
+    // allocateRequired for a single buffer: the buffer, or null when the
+    // device could not fit it even after the cache yielded.
+    WGPUBuffer createRequiredBuffer(const WGPUBufferDescriptor& desc,
+                                    const char* what);
+
+    // (Re)create every per-pixel attachment for a width_px × height_px
+    // surface as one required allocation. False when they could not be
+    // allocated even after the cache yielded; render() then skips the
+    // frame rather than submitting with invalid views.
+    bool ensureRenderAttachments(int width_px, int height_px);
+    void releaseRenderAttachments();
+
+    GpuBudget budget_;
+    // Latch: the pool's first driver-refused growth has been answered by
+    // carving the margin out of the cache (see render()).
+    bool      pool_growth_refusal_handled_ = false;
+    // Adapter ids, read once at init, for matching the driver's memory
+    // report to the card wgpu is actually using.
+    std::uint32_t adapter_vendor_id_ = 0;
+    std::uint32_t adapter_device_id_ = 0;
+    // Latched false by ensureRenderAttachments when the device could not
+    // fit the attachments; re-evaluated on the next configureSurface.
+    bool      render_attachments_ok_ = true;
+
+    // The scene's models in load order (ascending session_model_id, minted at
+    // request time — see loadSidecarMetadataWeb). Every per-model API indexes
+    // against this, so a model keeps a stable UI slot instead of hopping with
+    // unordered_map iteration order.
     std::vector<std::uint32_t> modelIdsInLoadOrder() const;
 
 public:
@@ -1092,6 +1229,14 @@ private:
     // Lifted out of the Qt-coupled OverlayRenderer so one identical gizmo draws
     // everywhere; the desktop's OverlayRenderer no longer draws it.
     SectionGizmoRenderer section_gizmo_;
+    // Corner axis gizmo + orbit pivot indicator, likewise shared by desktop +
+    // web. Same lift out of the Qt-coupled OverlayRenderer.
+    AxisIndicatorRenderer axis_indicator_;
+    bool                  pivot_indicator_visible_ = false;
+    // Only running while an afterglow is armed; a drag-held indicator leaves it
+    // invalid so the triad stays up until the host clears it.
+    Stopwatch             pivot_indicator_timer_;
+    int                   pivot_indicator_hide_ms_ = 0;
 
     // HiZ occlusion-cull pipeline group. Downsamples MSAA depth into a
     // mip pyramid; consumed by next-frame cull.
@@ -1449,15 +1594,57 @@ private:
     // for parallel-vs-serial benchmarking. Default ON.
     bool  cull_threads_enabled_    = true;
 
+    // ---- Cull-input tracking -------------------------------------------
+    //
+    // The CPU cull is the single largest per-frame cost (the whole frame on
+    // the single-threaded web build), and most requested frames do not
+    // change its inputs — overlay redraws, pick feedback, streaming frames
+    // where no chunk actually landed. scene_epoch_ is bumped by everything
+    // that can alter a cull's outcome besides the camera (residency,
+    // visibility, colours, transforms, model set, HiZ pyramid updates);
+    // render() re-culls only when the epoch, the camera, or a cull-relevant
+    // setting changed, and otherwise draws from the buffers the last cull
+    // uploaded.
+    std::uint64_t scene_epoch_ = 0;
+    void markCullInputsChanged() { ++scene_epoch_; }
+    bool          has_last_cull_       = false;
+    Eigen::Matrix4f last_cull_vp_      = Eigen::Matrix4f::Zero();
+    std::uint64_t last_cull_epoch_     = 0;
+    float         last_cull_min_px_    = -1.0f;
+    float         last_cull_lod_px_    = -1.0f;
+    float         last_cull_xray_      = -1.0f;
+    bool          last_cull_hiz_       = false;
+
     // Per-frame stats latched by render() for FrameStats emission +
     // the interactive heartbeat / bench per-frame line.
     std::uint32_t last_visible_objects_   = 0;
     std::uint32_t last_visible_triangles_ = 0;
     std::uint32_t last_sub_draws_         = 0;
+    // Device-wide VRAM readout for FrameStats and the live cache budget
+    // (pollDeviceMemory). The driver query is too slow for per-frame use,
+    // so it is re-polled at most once a second and the last answer is
+    // repeated in between.
+    std::uint64_t device_vram_used_bytes_  = 0;
+    std::uint64_t device_vram_total_bytes_ = 0;
+    Stopwatch     device_vram_poll_timer_;
+    std::size_t   polled_sub_buffer_count_ = 0;
     double last_cull_ms_                  = 0.0;
     double last_cull_compute_ms_          = 0.0;
     double last_cull_upload_ms_           = 0.0;
     double last_stream_ms_                = 0.0;
+    // Motion-cull latch. The coarse motion threshold used to follow the
+    // per-frame "did the camera move" test directly, which flip-flops
+    // during a slow low-fps drag: coalesced mouse events leave frames
+    // where the camera happens not to change, so the cull alternated
+    // between the 3 px and 15 px thresholds — most of the scene vanishing
+    // and reappearing every few frames, with a full visible-set re-upload
+    // at each flip. The latch holds the coarse threshold until the camera
+    // has been still for kMotionHoldMs, so a drag degrades once at its
+    // start and restores once, shortly after it ends.
+    static constexpr int kMotionHoldMs = 250;
+    bool      motion_cull_latched_ = false;
+    Stopwatch motion_hold_timer_;
+
     // True when the cull just used motion_min_pixel_radius_ — render()
     // schedules one more frame so the camera-now-stopped state recomputes
     // the cull at the still threshold and previously dropped sub-pixel

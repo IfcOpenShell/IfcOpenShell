@@ -1,5 +1,5 @@
 %typemap(out) ifcopenshell::argument_type {
-	$result = SWIG_Python_str_FromChar(ifcopenshell::argument_type_to_string($1));
+	$result = PyUnicode_FromString(ifcopenshell::argument_type_to_string($1));
 }
 
 %typemap(out) ifcopenshell::declaration* {
@@ -24,7 +24,7 @@
 
 %typemap(out) ifcopenshell::simple_type::data_type {
 	static const char* const data_type_strings[] = {"binary", "boolean", "integer", "logical", "number", "real", "string"};
-	$result = SWIG_Python_str_FromChar(data_type_strings[(int)$1]);
+	$result = PyUnicode_FromString(data_type_strings[(int)$1]);
 }
 
 %typemap(out) attribute_value {
@@ -43,11 +43,11 @@
 					return SWIG_NewPointerObj(new attribute_value_derived, SWIGTYPE_p_attribute_value_derived, SWIG_POINTER_OWN);
 				} else {
 					Py_INCREF(Py_None);
-					return static_cast<PyObject*>(Py_None); 
+					return static_cast<PyObject*>(Py_None);
 				}
             } else if constexpr (std::is_same_v<u, ifcopenshell::empty_aggregate> || std::is_same_v<u, ifcopenshell::empty_aggregate_of_aggregate> || std::is_same_v<u, ifcopenshell::blank>) {
                 Py_INCREF(Py_None);
-				return static_cast<PyObject*>(Py_None); 
+				return static_cast<PyObject*>(Py_None);
             } else {
 				return pythonize(v);
 			}

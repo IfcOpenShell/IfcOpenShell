@@ -276,7 +276,7 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 			const int v1 = o->geometry().faces()[3*i+0];
 			const int v2 = o->geometry().faces()[3*i+1];
 			const int v3 = o->geometry().faces()[3*i+2];
-			
+
 			const edge_t e1((std::min)(v1, v2), (std::max)(v1, v2));
 			const edge_t e2((std::min)(v2, v3), (std::max)(v2, v3));
 			const edge_t e3((std::min)(v3, v1), (std::max)(v3, v1));
@@ -294,7 +294,7 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 			}
 			tri->mesh.faces[i].setMatID(mtlid);
 		}
-				
+
 		tri->mesh.buildNormals();
 		// Either use this or undefine the FACESETS_AS_COMPOUND option in IfcGeom.h to have
 		// properly oriented normals. Using only the line below will result in a consistent
@@ -322,6 +322,6 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 	} while (iterator.next());
 
 	itfc->ProgressEnd();
-	
+
 	return true;
 }

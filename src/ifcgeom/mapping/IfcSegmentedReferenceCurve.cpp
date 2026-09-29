@@ -28,7 +28,7 @@ using namespace ifcopenshell::geom;
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve& inst) {
    if (!inst.BaseCurve().as<IfcSchema::IfcGradientCurve>())
        logger_.warning("GEO", 291, "Expected IfcSegmentedReferenceCurve.BaseCurve to be IfcGradient", inst); // CT 4.1.7.1.1.3
-		  
+
 	auto segments = inst.Segments();
 
 	taxonomy::piecewise_function::span_list spans;

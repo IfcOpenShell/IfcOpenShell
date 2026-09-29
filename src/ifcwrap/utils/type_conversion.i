@@ -82,7 +82,7 @@
 				return false;
 			}
 		}
-		return true;		
+		return true;
 	}
 
 	bool check_aggregate_of_aggregate_of_type(PyObject* aggregate, void* type_obj) {
@@ -161,7 +161,7 @@
 
 	template <>
 	int cast_pyobject(PyObject* element) {
-		return static_cast<int>(PyInt_AsLong(element));
+		return static_cast<int>(PyLong_AsLong(element));
 	}
 
 	template <>
@@ -255,9 +255,9 @@
 		}
 	}
 
-	PyObject* pythonize(const int& t)                   { return PyInt_FromLong(t);                                                                  }
+	PyObject* pythonize(const int& t)                   { return PyLong_FromLong(t);                                                                  }
 	PyObject* pythonize(const int64_t& t)               { return PyLong_FromLongLong(t);                                                             }
-	PyObject* pythonize(const unsigned int& t)          { return PyInt_FromLong(t);                                                                  }
+	PyObject* pythonize(const unsigned int& t)          { return PyLong_FromLong(t);                                                                  }
 	PyObject* pythonize(const bool& t)                  { return PyBool_FromLong(t);                                                                 }
 	PyObject* pythonize(const boost::logic::tribool& t) { return boost::logic::indeterminate(t) ? PyUnicode_FromString("UNKNOWN") : PyBool_FromLong((bool)t) ;}
 	PyObject* pythonize(const double& t)                { return PyFloat_FromDouble(t);                                                              }
@@ -273,8 +273,8 @@
 	// PyObject* pythonize(const ifcopenshell::geom::conversion_result_shape* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_ifcopenshell__geom__conversion_result_shape, 0); }
 	// NB: This cannot be temporary as a Python object is constructed from a pointer to the address of this object
 	// PyObject* pythonize(const ifcopenshell::geom::Material& t)     { return SWIG_NewPointerObj(SWIG_as_voidptr(&t), SWIGTYPE_p_ifcopenshell__geom__Material, 0);           }
-	
-	PyObject* pythonize(const boost::dynamic_bitset<>& t) { 
+
+	PyObject* pythonize(const boost::dynamic_bitset<>& t) {
 		std::string bitstring;
 		boost::to_string(t, bitstring);
 		return pythonize(bitstring);

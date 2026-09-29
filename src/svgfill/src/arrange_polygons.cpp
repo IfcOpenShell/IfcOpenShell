@@ -389,7 +389,7 @@ class DebugWriter {
     }
 
     DebugWriter& operator=(const DebugWriter&) = delete;
-    
+
     DebugWriter& operator=(DebugWriter&& other) noexcept {
         if (this == &other) {
             return *this;
@@ -504,7 +504,7 @@ class DebugWriter {
     std::ofstream svg;
     bool enabled_;
     std::string last_segment_name_;
-    
+
     void write_polygon_to_svg_(std::ostream& ofs, const Polygon_2& polygon, const std::string& class_name = "") {
         auto class_name_ = class_name;
         if (!polygon.is_simple()) {
@@ -710,7 +710,7 @@ class SegmentLookup {
     typedef std::vector<Polygon_2>::const_iterator PolygonIt;
 
     SegmentLookup(const std::vector<Polygon_2>& polygons)
-        : polygons_ref_(polygons) 
+        : polygons_ref_(polygons)
     {
         // Unfortunately CGAL does not seem to have a ready to use aabb primitive for segments in 2D,
         // so we have to use 3D segments and aabb tree for 2D polygons.
@@ -890,7 +890,7 @@ Polygon_with_holes_2 subdivide_polygon_on_same_input(SegmentLookup& segment_look
 };
 
 std::tuple<
-    std::map<Point_2, std::vector<Point_2>>, 
+    std::map<Point_2, std::vector<Point_2>>,
     std::map<Point_2, std::pair<Point_2, Point_2>>,
     std::map<std::pair<Point_2, Point_2>, std::vector<const CGAL::Polygon_2<K>*>>
 >
@@ -2039,7 +2039,7 @@ void edge_slide(Graph2D<K>& G) {
 }
 
 std::list<std::pair<Point_2, Point_2>> extend_end_vertices_based_on_input(
-    const Graph2D<K>& G, 
+    const Graph2D<K>& G,
     const std::map<Point_2, std::pair<Point_2, Point_2>>& midpoint_to_segment,
     const std::map<std::pair<Point_2, Point_2>, std::vector<const CGAL::Polygon_2<K>*>>& segment_to_input_facet,
     const Polygon_list& outer_perimiter,
@@ -2113,8 +2113,8 @@ std::list<std::pair<Point_2, Point_2>> extend_end_vertices_based_on_input(
                                                 closest_intersection_point = *xp;
                                                 sq_distance_along_ray = dist;
                                             } else {
-                                            
-                                            }                                            
+
+                                            }
                                         }
                                     }
                                 }
@@ -2164,7 +2164,7 @@ std::list<std::pair<Point_2, Point_2>> extend_end_vertices_based_on_input(
                             }
 #endif
                             } else {
-                                
+
                                 // Loop over boundary segments, and project point onto it, take the closest
                                 K::FT closest_distance = std::numeric_limits<double>::infinity();
                                 std::optional<CGAL::Point_2<K>> closest_point;
@@ -3343,7 +3343,7 @@ class timer {
                 std::ostringstream message;
                 message << "Timing for " << start_it.value()->first << ": " << duration << " ms";
                 logger_->message(ifcopenshell::logger::LOG_PERF, "ARR", 11, message.str());
-            }     
+            }
         }
 
       private:
@@ -3395,7 +3395,7 @@ void arrange_cgal_polygons(
     static const double OVERLAP_RESOLUTION_DISTANCE = 1.e-1;
     // even larger amount of inset so that outer perimeter is safely within all input polygons even when overlap resolution is applied
     // no, `1.e-2 + 1.e-5` creates issues with the outer perimeter, are there other tolerances in play?
-    static const double OUTER_PERIMITER_ADDITIONAL_INSET_AMOUNT = 1.e-5; 
+    static const double OUTER_PERIMITER_ADDITIONAL_INSET_AMOUNT = 1.e-5;
 
     DebugWriter debug_output;
     if (settings.debug_output) {
@@ -3418,7 +3418,7 @@ void arrange_cgal_polygons(
 
     if (polygon_offset_distance < 0.) {
         polygon_offset_distance = estimate_polygon_offset_distance(input_polygons_);
-    }   
+    }
 
     // Create copy to make mutable for cleaning
     auto input_polygons = input_polygons_;
@@ -3454,10 +3454,10 @@ void arrange_cgal_polygons(
     // that touch in the corner.
     // Now that overlaps/touches at corners are handled more locally only a small indent is produced
     // which would be undone by means of an inset+offset.
-    // 
+    //
     // [NB Nov 10] this is actually still necessary though, but we apply a much smaller distance now
     // to keep the overlap eliminations in tact
-    // 
+    //
     // Inset-offset to remove tiny details that may cause enourmous spikes in offsets
     for (auto& r : input_polygons) {
         smooth_polygon(polygon_offset_distance / 1000., r);
@@ -3666,11 +3666,11 @@ void arrange_cgal_polygons(
 
     std::list<std::pair<Point_2, Point_2>> segments, segments1, segments2;
     bool fallback_to_line_cleaning_algo_1 = false;
-    
+
     if (settings.line_cleaning_algo == 0) {
         segments1 = extend_end_vertices_based_on_input_simple(debug_output, G, outer_perimiter, subdivision_length * 16, 0, logger);
         segments2 = extend_end_vertices_based_on_input_simple(debug_output, G_orig, outer_perimiter, subdivision_length * 16, 1, logger);
-        
+
         Arrangement_2 arr_clean;
         G.to_arrangement(arr_clean);
         for (auto& pq : segments1) {
@@ -3731,7 +3731,7 @@ void arrange_cgal_polygons(
 
     if (settings.line_cleaning_algo != 0 || fallback_to_line_cleaning_algo_1) {
         segments = extend_end_vertices_based_on_input(G, midpoint_to_segment, segment_to_input_facet, outer_perimiter, segment_lookup, subdivision_length * 4);
-    }   
+    }
 
     // Now plot the edges on an arrangement in order to find planar cycles
     // and merge the corridor-halves with their neighbouring input polygon

@@ -151,7 +151,11 @@ character_decoder<Reader>::~character_decoder() {
 }
 
 namespace {
-    template <typename Reader>
+    // Reads the string at the stream's read pointer, up to and including
+    // its closing quote. With Decode the characters are collected in
+    // builder_ and converted; without it the same state machine runs so the
+    // string ends at the same byte, and nothing is collected.
+    template <typename Reader, bool Decode = true>
     std::string read_string(std::u32string& builder_, Reader& stream_, logger& logger_, typename ifcopenshell::character_decoder<Reader>::ConversionMode mode, char substitution_character) {
         unsigned int parse_state = 0;
         builder_.clear();
@@ -166,7 +170,9 @@ namespace {
                 if (stream_.remaining() >= 8) {
                     uint64_t x = stream_.peek_u64();
                     if (SWAR::has_special_char(x) == 0) {
-                        SWAR::append_ascii(builder_, reinterpret_cast<const char*>(&x), 8);
+                        if constexpr (Decode) {
+                            SWAR::append_ascii(builder_, reinterpret_cast<const char*>(&x), 8);
+                        }
                         stream_.increment(8);
                         continue;
                     }
@@ -174,7 +180,9 @@ namespace {
                 if (stream_.remaining() >= 4) {
                     uint32_t x = stream_.peek_u32();
                     if (SWAR::has_special_char(x) == 0) {
-                        SWAR::append_ascii(builder_, reinterpret_cast<const char*>(&x), 4);
+                        if constexpr (Decode) {
+                            SWAR::append_ascii(builder_, reinterpret_cast<const char*>(&x), 4);
+                        }
                         stream_.increment(4);
                         continue;
                     }
@@ -187,7 +195,9 @@ namespace {
             }
 
             if (EXPECTS_CHARACTER(parse_state)) {
-                builder_.push_back(ifcopenshell::convert_codepage(codepage, current_char + 0x80));
+                if constexpr (Decode) {
+                    builder_.push_back(ifcopenshell::convert_codepage(codepage, current_char + 0x80));
+                }
                 parse_state = 0;
             } else if (current_char == '\'' && (parse_state == 0U)) {
                 parse_state = APOSTROPHE;
@@ -235,7 +245,9 @@ namespace {
                 if ((hex_count == 2 && ((parse_state & EXTENDED2) == 0U)) ||
                     (hex_count == 4 && ((parse_state & EXTENDED4) == 0U)) ||
                     (hex_count == 8)) {
-                    builder_.push_back(hex);
+                    if constexpr (Decode) {
+                        builder_.push_back(hex);
+                    }
                     if (hex_count == 2) {
                         parse_state = 0;
                     } else {
@@ -253,9 +265,14 @@ namespace {
                 throw invalid_token_exception(stream_.tell(), current_char);
             } else {
                 parse_state = hex = hex_count = 0;
-                builder_.push_back(current_char);
+                if constexpr (Decode) {
+                    builder_.push_back(current_char);
+                }
             }
             stream_.increment();
+        }
+        if constexpr (!Decode) {
+            return std::string();
         }
         // builder_.push_back('\'');
 
@@ -301,6 +318,11 @@ namespace {
 template <typename Reader>
 character_decoder<Reader>::operator std::string() {
     return read_string(builder_, *stream_, logger_, mode, substitution_character);
+}
+
+template <typename Reader>
+void character_decoder<Reader>::skip() {
+    read_string<Reader, false>(builder_, *stream_, logger_, mode, substitution_character);
 }
 
 template <typename Reader>

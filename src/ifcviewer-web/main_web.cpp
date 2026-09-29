@@ -195,9 +195,10 @@ int fillIdsAscending(const std::unordered_set<std::uint32_t>& ids,
 // Quote `s` as a JSON string literal. IFC names come straight from the model
 // and can hold quotes, backslashes and control characters; UTF-8 continuation
 // bytes are already legal JSON and pass through untouched.
-std::string jsonString(const std::string& s) {
-    std::string out = "\"";
-    for (unsigned char c : s) {
+void appendJsonString(std::string& out, const char* data, std::uint32_t length) {
+    out += '"';
+    for (std::uint32_t i = 0; i < length; ++i) {
+        const unsigned char c = (unsigned char)data[i];
         switch (c) {
             case '"':  out += "\\\""; break;
             case '\\': out += "\\\\"; break;
@@ -216,8 +217,9 @@ std::string jsonString(const std::string& s) {
                 }
         }
     }
-    return out + '"';
+    out += '"';
 }
+
 
 NavKind classifyPress(const ViewportCore::NavBindings& b, int em_button,
                       bool shift, bool ctrl, bool alt) {
@@ -253,6 +255,10 @@ EM_BOOL onMouseDown(int, const EmscriptenMouseEvent* e, void* user) {
         app->nav_drag_px = 0.0f;
         app->down_x      = e->targetX;  // canvas-relative CSS px
         app->down_y      = e->targetY;
+        // Show the pivot triad for the duration of an orbit / pan drag, so
+        // it's visible what the camera turns around (matches the desktop).
+        if (kind == NavKind::Orbit || kind == NavKind::Pan)
+            app->core.setPivotIndicatorVisible(true);
     }
     return EM_TRUE;
 }
@@ -297,6 +303,10 @@ EM_BOOL onMouseUp(int, const EmscriptenMouseEvent* e, void* user) {
     const NavKind kind       = app->nav_kind;
     app->nav_active = false;
     app->nav_kind   = NavKind::None;
+    // Drag is over — hide the pivot indicator without afterglow. Only for the
+    // gesture that raised it; a stray mouseup must not cut a wheel afterglow.
+    if (was_active && (kind == NavKind::Orbit || kind == NavKind::Pan))
+        app->core.setPivotIndicatorVisible(false);
 
     // End a section-gizmo drag (took over the press; no pick/orbit on release).
     if (app->section_dragging) {
@@ -351,7 +361,7 @@ EM_BOOL onMouseUp(int, const EmscriptenMouseEvent* e, void* user) {
                 if (id != 0) {
                     app->core.logSelectedObjectGuidWeb(id);
                 } else if (!add && !remove) {
-                    EM_ASM({ if (Module.__ifcvOnSelect) Module.__ifcvOnSelect(0, '', -1); });
+                    EM_ASM({ if (Module.__ifcvOnSelect) Module.__ifcvOnSelect(0, '', -1, -1); });
                 }
                 app->host.requestFrame();
             });
@@ -373,6 +383,9 @@ EM_BOOL onWheel(int, const EmscriptenWheelEvent* e, void* user) {
     // In fly mode the wheel tunes move speed (Blender convention), not zoom.
     if (app->fly_mode) { app->core.flyAdjustSpeed(-float(dy) / 100.0f); return EM_TRUE; }
     app->core.dollyBy(-float(dy) / 100.0f);
+    // Pivot afterglow on wheel — visible for 600 ms so the user can see what
+    // they're zooming around without holding a drag.
+    app->core.setPivotIndicatorVisible(true, 600);
     return EM_TRUE;  // consume so the page doesn't scroll
 }
 
@@ -811,26 +824,49 @@ extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_get_model_georef_c(int source_id, doubl
 // Promise the JS layer is holding.
 extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_request_objects_c(int token) {
     if (!g_app || !g_app->ready) {
-        EM_ASM({ if (Module.__ifcvOnObjects) Module.__ifcvOnObjects($0, '[]'); }, token);
+        EM_ASM({ if (Module.__ifcvOnObjectsDone) Module.__ifcvOnObjectsDone($0); }, token);
         return;
     }
     g_app->core.loadAllElementMetadataWeb([token](bool) {
         // Partial failures are not fatal: a model whose element block failed to
         // fetch simply contributes no rows, and the rest still resolve.
-        std::string json = "[";
-        bool first = true;
-        for (const ViewportCore::ElementRef& e : g_app->core.elements()) {
-            if (!first) json += ',';
-            first = false;
-            json += "{\"objectId\":" + std::to_string(e.object_id)
-                  + ",\"model\":"    + std::to_string(e.model_index)
-                  + ",\"guid\":"     + jsonString(e.guid)
-                  + ",\"name\":"     + jsonString(e.name)
-                  + ",\"type\":"     + jsonString(e.type) + '}';
+        //
+        // Serialised one model per batch, straight from string-table slices.
+        // The whole-scene single-string version materialised three string
+        // copies per element plus a scene-sized JSON blob simultaneously —
+        // a 400+ MB transient at ~600k elements, and the wasm heap never
+        // returns pages, so that peak became the session's floor. Peak is
+        // now one model's JSON; the string keeps its capacity across models
+        // so it reallocates only up to the largest one.
+        std::string json;
+        const int model_count = g_app->core.streamingModelCount();
+        for (int model_index = 0; model_index < model_count; ++model_index) {
+            json.clear();
+            json += '[';
+            bool first = true;
+            g_app->core.visitModelElements(model_index,
+                [&](const ViewportCore::ElementSlices& e) {
+                    if (!first) json += ',';
+                    first = false;
+                    json += "{\"objectId\":";
+                    json += std::to_string(e.object_id);
+                    json += ",\"model\":";
+                    json += std::to_string(model_index);
+                    json += ",\"sourceId\":";
+                    json += std::to_string(e.source_id);
+                    json += ",\"guid\":";
+                    appendJsonString(json, e.guid, e.guid_len);
+                    json += ",\"name\":";
+                    appendJsonString(json, e.name, e.name_len);
+                    json += ",\"type\":";
+                    appendJsonString(json, e.type, e.type_len);
+                    json += '}';
+                });
+            json += ']';
+            EM_ASM({ if (Module.__ifcvOnObjectsBatch) Module.__ifcvOnObjectsBatch($0, UTF8ToString($1)); },
+                   token, json.c_str());
         }
-        json += ']';
-        EM_ASM({ if (Module.__ifcvOnObjects) Module.__ifcvOnObjects($0, UTF8ToString($1)); },
-               token, json.c_str());
+        EM_ASM({ if (Module.__ifcvOnObjectsDone) Module.__ifcvOnObjectsDone($0); }, token);
     });
 }
 
@@ -912,6 +948,62 @@ extern "C" EMSCRIPTEN_KEEPALIVE double ifcv_bytes_loaded_c() {
     std::uint64_t total_bytes = 0, needed_bytes = 0, loaded_bytes = 0;
     g_app->core.streamingByteProgress(total_bytes, needed_bytes, loaded_bytes);
     return double(loaded_bytes);
+}
+
+// ---- Frame stats + GPU residency ------------------------------------------
+
+// The latest FrameStats as doubles, in this order (see FrameStats.h):
+//  0 fps, 1 frame_time_ms, 2 total_objects, 3 visible_objects,
+//  4 total_triangles, 5 visible_triangles, 6 draw_calls,
+//  7 vram_used_bytes, 8 vram_capacity_bytes, 9 vram_budget_bytes,
+// 10 chunks_wanted, 11 chunks_wanted_missing, 12 wanted_missing_bytes.
+// Device-wide VRAM is not included: there is no query for it on web.
+// Returns the number of values written (0 before the first frame).
+constexpr int kFrameStatsValues = 13;
+extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_get_frame_stats_c(double* out, int capacity) {
+    if (!g_app || !out || capacity < kFrameStatsValues) return 0;
+    const FrameStats& s = g_app->host.lastFrameStats();
+    out[0]  = s.fps;
+    out[1]  = s.frame_time_ms;
+    out[2]  = s.total_objects;
+    out[3]  = s.visible_objects;
+    out[4]  = s.total_triangles;
+    out[5]  = s.visible_triangles;
+    out[6]  = s.gl_draw_calls;
+    out[7]  = double(s.vram_used_bytes);
+    out[8]  = double(s.vram_capacity_bytes);
+    out[9]  = double(s.vram_budget_bytes);
+    out[10] = s.chunks_wanted;
+    out[11] = s.chunks_wanted_missing;
+    out[12] = double(s.wanted_missing_bytes);
+    return kFrameStatsValues;
+}
+
+// Per-model GPU residency, keyed by source id like the other per-model
+// exports. Unload frees everything the model holds on the GPU while it stays
+// in the scene; load brings it back (0 if the device cannot fit its buffers).
+// Neither touches visibility.
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_unload_model_c(int source_id) {
+    if (!g_app) return;
+    const std::uint32_t session_model_id = g_app->federation.sessionModelId(source_id);
+    if (session_model_id == 0) return;
+    g_app->core.unloadModel(session_model_id);
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_load_model_c(int source_id) {
+    if (!g_app) return 0;
+    const std::uint32_t session_model_id = g_app->federation.sessionModelId(source_id);
+    if (session_model_id == 0) return 0;
+    return g_app->core.loadModel(session_model_id) ? 1 : 0;
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_model_unloaded_c(int source_id) {
+    if (!g_app) return 0;
+    const std::uint32_t session_model_id = g_app->federation.sessionModelId(source_id);
+    return session_model_id != 0 && g_app->core.isModelUnloaded(session_model_id) ? 1 : 0;
+}
+extern "C" EMSCRIPTEN_KEEPALIVE double ifcv_model_vram_bytes_c(int source_id) {
+    if (!g_app) return 0.0;
+    const std::uint32_t session_model_id = g_app->federation.sessionModelId(source_id);
+    return session_model_id == 0 ? 0.0 : double(g_app->core.modelVramBytes(session_model_id));
 }
 
 int main(int /*argc*/, char** /*argv*/) {

@@ -50,7 +50,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolyLoop& inst) {
 
 	int count = polygon.size();
 	if (original_count - count != 0) {
-		std::stringstream ss; ss << (original_count - count) << " edges removed for:"; 
+		std::stringstream ss; ss << (original_count - count) << " edges removed for:";
 		logger_.message(ifcopenshell::logger::LOG_WARNING, "GEO", 280, ss.str(), inst);
 	}
 

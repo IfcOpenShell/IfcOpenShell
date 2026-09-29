@@ -31,7 +31,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcZShapeProfileDef& inst) {
 
 	bool doFillet = !!inst.FilletRadius();
 	bool doEdgeFillet = !!inst.EdgeRadius();
-	
+
 	double f1 = 0.;
 	double f2 = 0.;
 

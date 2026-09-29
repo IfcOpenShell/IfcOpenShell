@@ -19,7 +19,7 @@ ifcopenshell::geom::converter::~converter() {
 
 ifcopenshell::geom::native_element* ifcopenshell::geom::converter::create_brep_for_representation_and_product(taxonomy::ptr representation_node, const express::base product_, const taxonomy::matrix4::ptr& place_) {
     auto product = product_.as<express::entity>();
-    
+
 	std::stringstream representation_id_builder;
 
 	auto place = place_;
@@ -32,7 +32,7 @@ ifcopenshell::geom::native_element* ifcopenshell::geom::converter::create_brep_f
 	if (!kernel_->convert(representation_node, shapes)) {
 		return 0;
 	}
-	
+
 	if (settings_.get<ifcopenshell::geom::settings::ApplyLayerSets>().get()) {
 		ifcopenshell::geom::layerset_information layerinfo;
 		std::vector<ifcopenshell::geom::endpoint_connection> neighbours;
@@ -55,7 +55,7 @@ ifcopenshell::geom::native_element* ifcopenshell::geom::converter::create_brep_f
 		/*
 		if (util::flatten_shape_list(shapes, merge, false, getValue(GV_PRECISION))) {
 			if (util::count(merge, TopAbs_FACE) > 0) {
-				
+
 				if (convert_layerset(product, layers, styles, thickness)) {
 
 					IfcSchema::IfcRelAssociates::list::ptr associations = product->HasAssociations();

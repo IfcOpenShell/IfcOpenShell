@@ -96,7 +96,7 @@ namespace {
     }
 
     void emit_line_component(
-        std::ostream& os, 
+        std::ostream& os,
         const std::vector<double>& vertices,
         const std::vector<int>& component,
         bool force_2d = false,

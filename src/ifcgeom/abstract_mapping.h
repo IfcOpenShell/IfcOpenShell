@@ -44,7 +44,7 @@ namespace geom {
     /// should return true if the geometry for the product is wanted to be included in the output.
     /// http://www.boost.org/doc/libs/1_62_0/doc/html/function/tutorial.html
 	typedef std::function<bool(const express::base&)> filter_function;
-    
+
 	class IFC_GEOM_API abstract_mapping {
 	protected:
 		ifcopenshell::geom::settings settings_;
@@ -106,7 +106,7 @@ namespace geom {
 
 		IFC_GEOM_API mapping_factory_implementation& mapping_implementations();
 	}
-    
+
 }
 
 }

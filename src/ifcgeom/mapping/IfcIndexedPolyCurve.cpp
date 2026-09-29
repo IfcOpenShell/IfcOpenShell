@@ -24,7 +24,7 @@ using namespace ifcopenshell::geom;
 #ifdef SCHEMA_HAS_IfcIndexedPolyCurve
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcIndexedPolyCurve& inst) {
-	
+
 	auto point_list = inst.Points();
 	std::vector< std::vector<double> > coordinates;
 	if (point_list.as<IfcSchema::IfcCartesianPointList2D>()) {
@@ -100,7 +100,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcIndexedPolyCurve& inst) {
 			previous = current;
         }
     }
-	
+
 	return loop;
 }
 

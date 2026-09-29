@@ -308,7 +308,7 @@ static std::vector<int> prioritisedContextIds(ifcopenshell::file* ifc_file) {
         ContextInfo info{};
         info.id = ctx.id();
 
-        const auto entity = ctx.as<express::Entity>();
+        const auto entity = ctx.as<express::entity>();
         const std::string ctype =
             entity.get_value<std::string>("ContextType", "");
         const std::string cident =
@@ -416,7 +416,7 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
     std::set<int> gross_ids;
     {
         const std::string& schema_name = ifc_file_->schema()->name();
-        std::vector<express::Base> elements =
+        std::vector<express::base> elements =
             ifc_file_->instances_by_type("IfcElement");
         if (schema_name == "IFC2X3" || schema_name == "IFC4") {
             auto proxies = ifc_file_->instances_by_type("IfcProxy");
@@ -438,7 +438,7 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
             if (decl.is("IfcElement")) {
                 try {
                     opening_count = static_cast<int>(
-                        e.as<express::Entity>().get_inverse("HasOpenings").size());
+                        e.as<express::entity>().get_inverse("HasOpenings").size());
                 } catch (...) {
                     // HasOpenings not declared on this entity — treat as 0.
                 }

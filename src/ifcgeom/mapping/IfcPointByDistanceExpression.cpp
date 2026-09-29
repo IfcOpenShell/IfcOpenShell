@@ -45,7 +45,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPointByDistanceExpression& i
 
    if (inst.OffsetLateral().has_value()) {
        auto offset_lateral = inst.OffsetLateral().value() * length_unit_;
-       auto y = Eigen::Vector3d(m.col(1)(0), m.col(1)(1), m.col(1)(2)); 
+       auto y = Eigen::Vector3d(m.col(1)(0), m.col(1)(1), m.col(1)(2));
        o += offset_lateral * y;
    }
 

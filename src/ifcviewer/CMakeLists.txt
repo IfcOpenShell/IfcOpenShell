@@ -30,7 +30,7 @@ endif()
 # Eigen3 — used by Federation matrices, ViewportWindow's instance compose,
 # the per-model coordinate-operation matrices stored on ModelGpuData, and
 # everywhere a 4x4 transform shows up. Header-only, works under Emscripten.
-find_package(Eigen3 REQUIRED)
+find_package(Eigen3 ${EIGEN_MIN_VERSION} REQUIRED)
 
 # wgpu-native — fetched as a pre-built binary release from upstream.
 # Under Emscripten this whole block is skipped; the web build links
@@ -139,17 +139,22 @@ endif()
 #
 # Keep this list explicit (no glob) — the boundary is the whole point.
 set(IFCVIEWER_CORE_SOURCES
+    AxisIndicatorRenderer.cpp
     BufferPool.cpp
     ChunkPlanner.cpp
     InstanceCompose.cpp
     LodBuilder.cpp
     FederationMath.cpp
+    GpuAllocScope.cpp
+    GpuBudget.cpp
+    GpuMemory.cpp
     SidecarCache.cpp
     SidecarCompress.cpp
     StreamingLoader.cpp
     StreamingThread.cpp
     SectionGizmoRenderer.cpp
     ViewportCore.cpp
+    WgpuDynamicOffsets.cpp
 )
 # Web needs a zstd DECODER (Emscripten has no zstd port; the desktop links the
 # full libzstd below). Rather than vendor a generated blob, fetch the pinned
@@ -187,6 +192,7 @@ if(EMSCRIPTEN)
     # below which would mangle these absolute paths; added via target_sources.
 endif()
 set(IFCVIEWER_CORE_HEADERS
+    AxisIndicatorRenderer.h
     BufferPool.h
     CameraMath.h
     ChunkPlanner.h
@@ -244,7 +250,7 @@ if(EMSCRIPTEN)
     target_sources(IfcViewerCore PRIVATE ${ZSTD_DEC_SRC})
     target_include_directories(IfcViewerCore PRIVATE ${ZSTD_DEC_DIR})
 else()
-    find_package(zstd CONFIG REQUIRED)
+    find_package(zstd ${ZSTD_MIN_VERSION} CONFIG REQUIRED)
     target_link_libraries(IfcViewerCore PUBLIC zstd::libzstd_static)
 endif()
 install(TARGETS IfcViewerCore EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})

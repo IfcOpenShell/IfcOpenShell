@@ -16,6 +16,9 @@ set_target_properties(geometry_serializer PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${geometry_serialization_plugin_runtime_dir}"
     LIBRARY_OUTPUT_DIRECTORY "${geometry_serialization_plugin_runtime_dir}"
 )
+if (NOT CREATE_BUNDLE)
+    set_target_properties(geometry_serializer PROPERTIES VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
+endif()
 target_link_libraries(geometry_serializer plugin IfcGeom IfcParse ${OpenCASCADE_LIBRARIES})
 if(NOT WASM_BUILD)
     target_link_libraries(geometry_serializer geometry_kernel_opencascade)
