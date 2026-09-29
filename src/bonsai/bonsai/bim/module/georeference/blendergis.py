@@ -18,20 +18,7 @@
 
 # This file was generated with the assistance of an AI coding tool.
 
-"""Bridge to read georeferencing data written by the BlenderGIS addon.
-
-BlenderGIS (https://github.com/domlysz/BlenderGIS) is a separate, optional
-Blender addon. It is never imported here: its scene properties are simply
-documented custom ID properties, read directly off bpy.context.scene, so
-this bridge degrades to a no-op when BlenderGIS is absent or has not
-georeferenced the scene.
-
-The property keys and their semantics below are taken from BlenderGIS's own
-geoscene.py (class GeoScene, alias SK) and core/proj/srs.py (class SRS), as
-published on the BlenderGIS repository. A scene is only considered
-georeferenced by BlenderGIS itself once both a CRS and the CRS coordinates
-of the scene origin are set.
-"""
+"""Read georeferencing data written by the optional BlenderGIS addon off the Blender scene properties."""
 
 from __future__ import annotations
 

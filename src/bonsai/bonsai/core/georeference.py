@@ -21,7 +21,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
-
     import bonsai.tool as tool
 
 
@@ -33,8 +32,7 @@ def add_georeferencing(georeference: type[tool.Georeference]) -> None:
 def import_georeferencing_from_blendergis(
     ifc: type[tool.Ifc], georeference: type[tool.Georeference]
 ) -> Union[str, None]:
-    result = georeference.get_blendergis_map_conversion()
-    if result is None:
+    if not (result := georeference.get_blendergis_map_conversion()):
         return "No BlenderGIS georeferencing data was found on the active scene."
     projected_crs, coordinate_operation = result
     ifc.run("georeference.add_georeferencing")

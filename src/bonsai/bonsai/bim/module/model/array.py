@@ -564,6 +564,7 @@ class SelectAllArrayObjects(bpy.types.Operator):
                     except RuntimeError:
                         self.report({"ERROR"}, f"Objects that don't have an array parent, were deselected.")
                         object.select_set(False)
+                        continue
 
                     array_objects = tool.Array.get_all_objects(parent_element)
                     tool.Blender.set_objects_selection(
@@ -760,7 +761,7 @@ class AddArrayFromFeatureEdit(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_array_from_feature_edit"
     bl_label = "Add Array"
     bl_description = (
-        "Click: add an array along X.\n" "Shift+Click: add an array along Y.\n" "Ctrl+Click: add an array along Z"
+        "Click: add an array along X.\nShift+Click: add an array along Y.\nCtrl+Click: add an array along Z"
     )
     bl_options = {"REGISTER", "UNDO"}
 
@@ -854,7 +855,7 @@ class ArrayGizmoClick(bpy.types.Operator):
 
     bl_idname = "bim.array_gizmo_click"
     bl_label = "Array Layer"
-    bl_description = "Click: edit this array layer.\n" "Shift+Click: add another array layer"
+    bl_description = "Click: edit this array layer.\nShift+Click: add another array layer"
     bl_options = {"REGISTER", "UNDO"}
 
     item: bpy.props.IntProperty(name="Layer Index", default=0, min=0)

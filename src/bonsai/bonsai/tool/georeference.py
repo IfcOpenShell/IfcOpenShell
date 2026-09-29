@@ -422,8 +422,7 @@ class Georeference(bonsai.core.tool.Georeference):
     def get_blendergis_map_conversion(cls) -> Union[tuple[dict[str, Any], dict[str, Any]], None]:
         from bonsai.bim.module.georeference import blendergis
 
-        data = blendergis.read_blendergis_scene(bpy.context.scene)
-        if data is None:
+        if not (data := blendergis.read_blendergis_scene(bpy.context.scene)):
             return None
         props = cls.get_georeference_props()
         offset = (
