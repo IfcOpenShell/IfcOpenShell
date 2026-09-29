@@ -616,14 +616,7 @@ class SetElementValueException(Exception): ...
 
 
 def _is_editable_pset(pset: ifcopenshell.entity_instance) -> bool:
-    """True if `pset` holds simple properties that can be written using
-    ifcopenshell.api.pset.edit_pset.
-
-    This includes IfcPropertySet, as well as IfcMaterialProperties and
-    IfcProfileProperties (IFC4+), and IfcExtendedMaterialProperties
-    (IFC2X3), which are edited the same way. IfcElementQuantity is handled
-    separately via ifcopenshell.api.pset.edit_qto.
-    """
+    """True if `pset` can be written with ifcopenshell.api.pset.edit_pset."""
     return (
         pset.is_a("IfcPropertySet")
         or pset.is_a("IfcMaterialProperties")
