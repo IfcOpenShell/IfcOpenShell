@@ -142,8 +142,35 @@ def assign_material(
         else:
             element_material_type = material_type
 
-        ifc.run("material.assign_material", products=[element], type=element_material_type, material=material)
-        assigned_material = material_tool.get_material(element)
+        # TODO: this whole dance is a stopgap and wants rewriting.
+        #
+        # material.assign_material creates material sets with no items in them,
+        # ignoring the material it was handed -- an IfcMaterialLayerSet with no
+        # MaterialLayers is not valid IFC, since the list is mandatory and
+        # [1:?]. So we repair it below, after the fact. Worse, the API rejects a
+        # plain IfcMaterial outright when asked for a usage, which is exactly
+        # what the Object Materials dropdown gives us, so we cannot even pass it
+        # on and have to let the API invent an empty set and then fill it in.
+        #
+        # The fix is for assign_material to build the set around the material it
+        # is given, rather than leaving an invalid one behind for its callers to
+        # patch up. That is a wider change than it looks: add_material_set has
+        # the same behaviour, and the create-empty-then-add-items idiom is
+        # spread through the API's own docstrings, examples and tests. Until
+        # that is untangled, keep the repair here where it is at least visible.
+
+        # Only a usage refuses a plain IfcMaterial; every other type still wants
+        # it, and IfcMaterial and IfcMaterialList cannot be created without it.
+        pass_material = material_tool.is_a_material_set(material) or not element_material_type.endswith("Usage")
+        ifc.run(
+            "material.assign_material",
+            products=[element],
+            type=element_material_type,
+            material=material if pass_material else None,
+        )
+        # A usage points at the set rather than being one, and it is the set
+        # that needs an item adding to it below.
+        assigned_material = material_tool.get_material(element, should_skip_usage=True)
         assert assigned_material  # Type checker.
 
         if material_tool.is_a_material_set(material):
