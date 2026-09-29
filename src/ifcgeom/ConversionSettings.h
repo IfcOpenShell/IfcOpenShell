@@ -415,6 +415,15 @@ namespace ifcopenshell {
 				static constexpr bool defaultvalue = false;
 			};
 
+			struct BboxSubstitutionThreshold : public SettingBase<BboxSubstitutionThreshold, double> {
+				static constexpr const char* const name = "bbox-substitution-threshold";
+				static constexpr const char* const description =
+					"Substitutes the geometry of individual representation items with their axis-aligned "
+					"bounding box when the vertex density (mesh vertices per cubic unit of bounding box "
+					"volume) exceeds this threshold. Greatly reduces processing time on models with "
+					"overly detailed elements. Disabled when not provided.";
+			};
+
 			struct SurfaceColour : public SettingBase<SurfaceColour, bool> {
                 static constexpr const char* const name = "surface-colour";
                 static constexpr const char* const description =
@@ -689,7 +698,7 @@ namespace ifcopenshell {
 		};
 
 		class Settings : public SettingsContainer<
-                             std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, CgalSmoothAngleDegrees, SvgRidgeAngleMinDegrees, SvgValleyAngleMinDegrees, SvgEmitFlushEdges, SvgUseEdgeClassification, SvgRenderCreaseEdges, SvgRenderSharpEdges, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes, DeferProcessingFirstElement, MaxOffset, MaxOffsetDeviation, ApplyOffset, MakeVolume>
+                             std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, CgalSmoothAngleDegrees, SvgRidgeAngleMinDegrees, SvgValleyAngleMinDegrees, SvgEmitFlushEdges, SvgUseEdgeClassification, SvgRenderCreaseEdges, SvgRenderSharpEdges, KeepBoundingBoxes, BboxSubstitutionThreshold, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes, DeferProcessingFirstElement, MaxOffset, MaxOffsetDeviation, ApplyOffset, MakeVolume>
 		>
 		{};
 }

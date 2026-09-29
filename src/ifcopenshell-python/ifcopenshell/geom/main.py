@@ -64,6 +64,7 @@ SETTING = Literal[
     "angle-unit",
     "apply-default-materials",
     "apply-offset",
+    "bbox-substitution-threshold",
     "boolean-attempt-2d",
     "building-local-placement",
     "cache-shapes",
