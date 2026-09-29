@@ -101,6 +101,6 @@ def assign_resource(
                 "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
                 "RelatedObjects": [related_object],
                 "RelatingResource": relating_resource,
-            }
+            },
         )
     return resource_of
