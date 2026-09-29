@@ -352,9 +352,7 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                     if is_structural:
                         return False
                     data = obj.data
-                    # obj.data is None for empties, including collection instances
-                    # (e.g. objects dragged in from the Asset Browser), which have no
-                    # convertible geometry of their own.
+                    # Empties, including collection instances, have no data to convert.
                     if not tool.Geometry.is_data_supported_for_adding_representation(data):
                         return False
                     # Is empty mesh.
@@ -388,9 +386,8 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                 elif is_unresolved_collection_instance:
                     self.report(
                         {"WARNING"},
-                        f"Object '{obj.name}' is a collection instance (e.g. dragged in from the Asset Browser) "
-                        "with no mesh data of its own, so no IFC representation was created. "
-                        "Use Object > Apply > Make Instances Real, or append the object directly, then assign the class again.",
+                        f"Object '{obj.name}' is a collection instance with no mesh data, so no representation was created. "
+                        "Use Object > Apply > Make Instances Real and assign the class again.",
                     )
 
             # Accomodate existing importers to Blender from other formats that set custom props
