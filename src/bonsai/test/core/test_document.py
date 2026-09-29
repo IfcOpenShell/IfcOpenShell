@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bonsai.core.document as subject
-from test.core.bootstrap import document, ifc
+from test.core.bootstrap import document, ifc  # ruff: ignore[unused-import]
 
 
 class TestLoadProjectDocuments:
