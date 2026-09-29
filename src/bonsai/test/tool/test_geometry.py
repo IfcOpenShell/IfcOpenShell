@@ -20,6 +20,7 @@ from typing import Union
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api.context
 import ifcopenshell.api.geometry
 import ifcopenshell.api.root
 import ifcopenshell.api.type
@@ -756,3 +757,37 @@ class TestApplyItemIdsAsVertexGroups(NewFile):
                 vert = verts[vi]
                 groups = [g.group for g in vert.groups]
                 assert groups == [ios_item_ids_unique[i]]
+
+
+class TestImportItem(NewFile):
+    def test_a_non_perpendicular_ref_direction_gives_an_orthonormal_matrix(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        model = ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        ifcopenshell.api.context.add_context(
+            ifc, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+        )
+        wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        profile = ifc.createIfcRectangleProfileDef("AREA", None, None, 1.0, 1.0)
+        position = ifc.createIfcAxis2Placement3D(
+            ifc.createIfcCartesianPoint((0.0, 0.0, 0.0)),
+            ifc.createIfcDirection((0.0, 0.0, 1.0)),
+            ifc.createIfcDirection((1.0, 0.0, 0.5)),
+        )
+        item = ifc.createIfcExtrudedAreaSolid(profile, position, ifc.createIfcDirection((0.0, 0.0, 1.0)), 1.0)
+
+        rep_obj = bpy.data.objects.new("Wall", bpy.data.meshes.new("Wall"))
+        tool.Ifc.link(wall, rep_obj)
+        tool.Geometry.get_geometry_props().representation_obj = rep_obj
+        obj = bpy.data.objects.new("Item", bpy.data.meshes.new("Item"))
+        tool.Geometry.get_mesh_props(obj.data).ifc_definition_id = item.id()
+        bpy.context.scene.collection.objects.link(obj)
+
+        tool.Loader.load_settings()
+        subject.import_item(obj)
+        bpy.context.view_layer.update()
+
+        rotation = np.array(obj.matrix_world.to_3x3())
+        assert np.allclose(rotation @ rotation.T, np.eye(3), atol=1e-6)
+        assert np.allclose(rotation[:, 0], (1.0, 0.0, 0.0), atol=1e-6)
