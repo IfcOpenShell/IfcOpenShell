@@ -798,10 +798,7 @@ class Style(bonsai.core.tool.Style):
     ) -> Union[ifcopenshell.entity_instance, None]:
         """Return IfcPresentationStyle associated with a representation item.
 
-        :param ifc_class: Only consider styles of this class. An item can carry
-            several styles at once (e.g. DDScad writes an IfcCurveStyle and an
-            IfcSurfaceStyle on the same styled item), so callers that need a
-            specific kind should ask for it, e.g. "IfcSurfaceStyle".
+        :param ifc_class: Only consider styles of this class, e.g. "IfcSurfaceStyle".
         """
         is_4x3 = representation_item.file.schema == "IFC4X3"
         for style in representation_item.StyledByItem:
