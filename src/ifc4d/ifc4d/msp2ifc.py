@@ -27,6 +27,10 @@ import ifcopenshell.api.root
 import ifcopenshell.api.sequence
 import ifcopenshell.util.date
 
+ELAPSED_LAG_FORMATS = {"4", "6", "8", "10", "12", "20", "36", "38", "40", "42", "44", "52"}
+PERCENTAGE_LAG_FORMATS = {"19", "20", "51", "52"}
+NULL_LAG_FORMATS = {"21", "53"}
+
 
 class MSP2Ifc:
     def __init__(self, optionalColumns: list[str] = []):
@@ -64,12 +68,50 @@ class MSP2Ifc:
         id = 0
         if task.findall("pr:PredecessorLink", self.ns):
             for relationship in task.findall("pr:PredecessorLink", self.ns):
+                lag_format = relationship.findtext("pr:LagFormat", namespaces=self.ns)
+                link_lag = int(relationship.findtext("pr:LinkLag", namespaces=self.ns) or 0)
+                duration_type = "ELAPSEDTIME" if lag_format in ELAPSED_LAG_FORMATS else "WORKTIME"
+                if lag_format in PERCENTAGE_LAG_FORMATS:
+                    lag = link_lag / 100 if link_lag else None
+                elif lag_format not in NULL_LAG_FORMATS:
+                    minutes_per_day = (
+                        24 * 60 if duration_type == "ELAPSEDTIME" else int(self.project["MinutesPerDay"] or 8 * 60)
+                    )
+                    lag = self._format_link_lag(link_lag, minutes_per_day)
+                else:
+                    lag = None
                 relationships[id] = {
                     "PredecessorTask": relationship.find("pr:PredecessorUID", self.ns).text,
                     "Type": relationship.find("pr:Type", self.ns).text,
+                    "Lag": lag,
+                    "LagDurationType": duration_type,
                 }
                 id += 1
         return relationships
+
+    @staticmethod
+    def _format_link_lag(link_lag: int, minutes_per_day: int) -> str | None:
+        if not link_lag:
+            return None
+
+        # Microsoft Project stores LinkLag in tenths of a minute.
+        total_seconds = abs(link_lag) * 60 // 10
+        days, seconds = divmod(total_seconds, minutes_per_day * 60)
+        hours, seconds = divmod(seconds, 60 * 60)
+        minutes, seconds = divmod(seconds, 60)
+
+        duration = f"{'-' if link_lag < 0 else ''}P"
+        if days:
+            duration += f"{days}D"
+        if hours or minutes or seconds:
+            duration += "T"
+            if hours:
+                duration += f"{hours}H"
+            if minutes:
+                duration += f"{minutes}M"
+            if seconds:
+                duration += f"{seconds}S"
+        return duration
 
     def parse_task_xml(self, project):
         if self.project["MinutesPerDay"]:
@@ -371,6 +413,13 @@ class MSP2Ifc:
                         self.file,
                         rel_sequence=rel_sequence,
                         attributes={"SequenceType": self.sequence_type_map[predecessor["Type"]]},
+                    )
+                if predecessor["Lag"] is not None:
+                    ifcopenshell.api.sequence.assign_lag_time(
+                        self.file,
+                        rel_sequence=rel_sequence,
+                        lag_value=predecessor["Lag"],
+                        duration_type=predecessor["LagDurationType"],
                     )
 
     def parse_resources_xml(self, project):
