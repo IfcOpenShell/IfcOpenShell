@@ -164,10 +164,6 @@ class TestGetElementValue(test.bootstrap.IFC4):
         assert subject.get_element_value(element, "mat.i.Name") == ["L1", "L2"]
 
     def test_selecting_material_set_item_category_using_mats_shortform(self):
-        # Feature test for #7000: Category is an attribute of the material set
-        # item (IfcMaterialConstituent, IfcMaterialLayer, IfcMaterialProfile),
-        # not of the IfcMaterial it references, so "mats.Category"/"materials.Category"
-        # must resolve it via the set item rather than the flattened material list.
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         material_set = ifcopenshell.api.material.add_material_set(
             self.file, name="FOO", set_type="IfcMaterialConstituentSet"
@@ -185,8 +181,6 @@ class TestGetElementValue(test.bootstrap.IFC4):
         ifcopenshell.api.material.assign_material(self.file, products=[element], material=material_set)
         assert subject.get_element_value(element, "mats.Category") == ["Structure", "Insulation"]
         assert subject.get_element_value(element, "materials.Category") == ["Structure", "Insulation"]
-        # Unaffected: mats without .Category keeps resolving to the flattened
-        # IfcMaterial list, same as before this fix.
         assert subject.get_element_value(element, "mats.Name") == ["CON01", "CON02"]
 
     def test_selecting_material_layer_category_using_mats_shortform(self):
@@ -199,8 +193,6 @@ class TestGetElementValue(test.bootstrap.IFC4):
         assert subject.get_element_value(element, "mats.Category") == ["Cladding"]
 
     def test_material_category_falls_back_to_the_referenced_material(self):
-        # Real models often categorise the IfcMaterial rather than the set item
-        # (reported by @theoryshaw on #9044), so an unset item must not drop it.
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         material_set = ifcopenshell.api.material.add_material_set(self.file, name="FOO", set_type="IfcMaterialLayerSet")
         plaster = ifcopenshell.api.material.add_material(self.file, name="Plaster")
