@@ -1114,6 +1114,81 @@ class Model(bonsai.core.tool.Model):
         return axes
 
     @classmethod
+    def has_layer2_reference_line(cls, element: ifcopenshell.entity_instance) -> bool:
+        """True when an AXIS2 IfcMaterialLayerSetUsage makes the element's local X its reference line."""
+        material = ifcopenshell.util.element.get_material(element)
+        if material is None or not material.is_a("IfcMaterialLayerSetUsage"):
+            return False
+        if material.LayerSetDirection != "AXIS2":
+            return False
+        if not (layer_set := material.ForLayerSet):
+            return False
+        return sum(layer.LayerThickness for layer in layer_set.MaterialLayers or ()) > 0
+
+    @classmethod
+    def get_run_axis(cls, obj: bpy.types.Object) -> Union[Vector, None]:
+        """World XY direction of the mesh's greatest horizontal extent, or None if it has no clear run."""
+        mesh = obj.data
+        if not isinstance(mesh, bpy.types.Mesh) or len(mesh.vertices) < 2:
+            return None
+        matrix = obj.matrix_world
+        co = np.array([(matrix @ v.co)[:2] for v in mesh.vertices])
+        co -= co.mean(axis=0)
+        if not np.isfinite(co).all():
+            return None
+        try:
+            _, _, vt = np.linalg.svd(co, full_matrices=False)
+        except np.linalg.LinAlgError:
+            return None
+        axis = Vector((float(vt[0][0]), float(vt[0][1]), 0.0))
+        if axis.length < 1e-9:
+            return None
+        axis = axis.normalized()
+        across = Vector((-axis.y, axis.x, 0.0))
+        along_extent = np.ptp(co @ np.array([axis.x, axis.y]))
+        across_extent = np.ptp(co @ np.array([across.x, across.y]))
+        # A host about as deep as it is long has no run to read off.
+        if along_extent < 1.2 * across_extent:
+            return None
+        return axis
+
+    @classmethod
+    def get_wall_face_frame(cls, obj: bpy.types.Object, point: Vector) -> Union[tuple[Vector, Vector], None]:
+        """World (inward normal square to the run, point on the face) nearest ``point``.
+
+        None when there are no faces, nothing is near, or the nearest face is an end or a top."""
+        mesh = obj.data
+        if not isinstance(mesh, bpy.types.Mesh) or not len(mesh.polygons):
+            return None
+        if not (run := cls.get_run_axis(obj)):
+            return None
+        matrix = obj.matrix_world
+        try:
+            hit, location, normal, _ = obj.closest_point_on_mesh(matrix.inverted() @ point)
+        except RuntimeError:
+            return None
+        if not hit:
+            return None
+        world_normal = (matrix.to_3x3().inverted().transposed() @ normal).normalized()
+        horizontal = Vector((world_normal.x, world_normal.y, 0.0))
+        if horizontal.length < 0.5:
+            return None
+        inward = -horizontal.normalized()
+        across = Vector((-run.y, run.x, 0.0))
+        alignment = across.dot(inward)
+        if abs(alignment) < 0.5:
+            return None
+        return (across if alignment > 0 else -across), matrix @ location
+
+    @classmethod
+    def get_filling_rotation(cls, inward: Vector) -> Matrix:
+        """Rotation putting a filling's local +Y along ``inward`` and +Z up."""
+        y = inward.normalized()
+        z = Vector((0.0, 0.0, 1.0))
+        x = y.cross(z)
+        return Matrix((x, y, z)).transposed().to_4x4()
+
+    @classmethod
     def get_connected_walls(cls, walls: list[bpy.types.Object]) -> list[bpy.types.Object]:
         """
         Loop through walls by retrieving the next connected wall using the connection path.

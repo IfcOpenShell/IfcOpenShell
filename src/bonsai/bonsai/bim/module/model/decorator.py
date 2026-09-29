@@ -1571,6 +1571,10 @@ class ProductDecorator(tool.Blender.ViewportDecorator):
             if on_side != (layers["direction_sense"] == "NEGATIVE"):
                 rot_quat = rot_quat @ Quaternion(Vector((0, 0, 1)), radians(180))
             rot_mat = rot_quat.to_matrix().to_4x4()
+            if not tool.Model.has_layer2_reference_line(snap_element) and (
+                face_frame := tool.Model.get_wall_face_frame(snap_obj, Vector((snap_prop.x, snap_prop.y, snap_prop.z)))
+            ):
+                rot_mat = tool.Model.get_filling_rotation(face_frame[0])
 
             mouse_point.z = snap_obj.matrix_world.translation.z
 

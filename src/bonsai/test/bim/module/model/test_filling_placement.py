@@ -23,8 +23,12 @@ import math
 import bpy
 import ifcopenshell
 import ifcopenshell.api.aggregate
+import ifcopenshell.api.geometry
+import ifcopenshell.api.material
 import ifcopenshell.api.root
+import ifcopenshell.api.spatial
 import ifcopenshell.util.placement
+import ifcopenshell.util.representation
 import numpy as np
 import pytest
 from mathutils import Vector
@@ -251,3 +255,47 @@ class TestFillingDirectionSense(NewFile):
         placed = _centroid([door_obj.matrix_world @ v.co for v in door_obj.data.vertices])
         preview = _centroid(data["verts"][: len(door_obj.data.vertices)])
         assert (preview - placed).length < 0.05
+
+
+def _load_wall_without_layer_usage(path, angle):
+    bpy.ops.bim.create_project()
+    f = tool.Ifc.get()
+    body = ifcopenshell.util.representation.get_context(f, "Model", "Body", "MODEL_VIEW")
+    storey = f.by_type("IfcBuildingStorey")[0]
+    wall = ifcopenshell.api.root.create_entity(f, ifc_class="IfcWall")
+    representation = ifcopenshell.api.geometry.add_wall_representation(
+        f, context=body, length=5, height=3, thickness=0.2
+    )
+    representation.Items[0].Position = f.createIfcAxis2Placement3D(
+        f.createIfcCartesianPoint((0.0, 0.0, 0.0)),
+        f.createIfcDirection((0.0, 0.0, 1.0)),
+        f.createIfcDirection((0.0, 1.0, 0.0)),
+    )
+    ifcopenshell.api.geometry.assign_representation(f, product=wall, representation=representation)
+    ifcopenshell.api.material.assign_material(f, products=[wall], material=f.createIfcMaterial("Concrete"))
+    ifcopenshell.api.spatial.assign_container(f, products=[wall], relating_structure=storey)
+    matrix = np.eye(4)
+    matrix[:2, :2] = [[math.cos(angle), -math.sin(angle)], [math.sin(angle), math.cos(angle)]]
+    matrix[:3, 3] = [2.0, 1.0, 0.0]
+    ifcopenshell.api.geometry.edit_object_placement(f, product=wall, matrix=matrix)
+    f.write(str(path))
+    bpy.ops.bim.load_project(filepath=str(path))
+    return tool.Ifc.get_object(tool.Ifc.get().by_type("IfcWall")[0])
+
+
+class TestFillingOnWallWithoutReferenceLine(NewFile):
+    @pytest.mark.parametrize("angle", [0, 30, 135])
+    def test_the_door_follows_the_clicked_face(self, tmp_path, angle):
+        wall_obj = _load_wall_without_layer_usage(tmp_path / "wall.ifc", math.radians(angle))
+        run = (wall_obj.matrix_world.to_3x3() @ Vector((0.0, 1.0, 0.0))).normalized()
+        face_point = wall_obj.matrix_world @ Vector((0.0, 2.5, 1.0))
+        door_type = _add_door_type()
+        data = _preview_data(door_type, wall_obj, face_point)
+        door_obj = tool.Ifc.get_object(_place_door(wall_obj, door_type, face_point))
+        door_x = (door_obj.matrix_world.to_3x3() @ Vector((1.0, 0.0, 0.0))).normalized()
+        assert abs(door_x.dot(run)) > 0.999
+        assert _faces_into_body(door_obj, wall_obj)
+        assert (door_obj.matrix_world.translation.to_2d() - face_point.to_2d()).length < 0.01
+        placed = _centroid([door_obj.matrix_world @ v.co for v in door_obj.data.vertices])
+        preview = _centroid(data["verts"][: len(door_obj.data.vertices)])
+        assert (preview - placed).to_2d().length < 0.05

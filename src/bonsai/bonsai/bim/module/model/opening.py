@@ -332,6 +332,14 @@ class FilledOpeningGenerator:
                 # The filling faces into the body, which a NEGATIVE direction sense puts on local -Y.
                 if on_side != (layers["direction_sense"] == "NEGATIVE"):
                     new_matrix = new_matrix @ Matrix.Rotation(radians(180.0), 4, "Z")
+                # Without a layer set usage local X is not the wall run, so read the clicked face.
+                if not tool.Model.has_layer2_reference_line(element) and (
+                    face_frame := tool.Model.get_wall_face_frame(voided_obj, target)
+                ):
+                    inward, face_point = face_frame
+                    new_matrix = tool.Model.get_filling_rotation(inward)
+                    new_matrix.translation.x = face_point.x
+                    new_matrix.translation.y = face_point.y
 
                 if should_set_z_level:
                     if filling.is_a("IfcDoor"):
