@@ -34,11 +34,7 @@ import bpy
 from bonsai.tool.covering import Covering as subject
 from test.bim.bootstrap import NewFile
 
-# A simple box standing in for a LAYER2 wall's mesh: local X is the wall's
-# length (0..2), local Y is the wall's thickness (0..0.1, matching the "+Y"
-# / "-Y" side convention ``get_wall_side_face`` expects), local Z is height
-# (0..3). Built directly in local space with an identity ``matrix_world`` so
-# world and local coordinates coincide.
+# A box standing in for a LAYER2 wall mesh: X is length (0..2), Y thickness (0..0.1), Z height (0..3).
 LENGTH, THICKNESS, HEIGHT = 2.0, 0.1, 3.0
 
 
