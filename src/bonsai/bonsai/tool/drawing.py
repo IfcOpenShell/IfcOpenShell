@@ -2440,9 +2440,7 @@ class Drawing(bonsai.core.tool.Drawing):
         elements = cls.get_elements_in_camera_view(
             tool.Ifc.get_object(drawing), [tool.Ifc.get_object(e) for e in ifc_file.by_type("IfcSpace")]
         )
-        # Apply the Include filter to spaces so they honour EPset_Drawing.Include
-        # like every other element (see #4785). Intersecting only ever narrows the
-        # space set, so it cannot pull in non-space elements.
+        # Apply the Include filter to spaces too (#4785).
         include = pset.get("Include", None)
         if include:
             try:
