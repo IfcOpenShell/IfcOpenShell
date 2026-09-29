@@ -26,8 +26,6 @@ import test.bootstrap
 
 class TestChangeNest(test.bootstrap.IFC4):
     def test_nesting_an_item_that_had_no_previous_parent(self):
-        # A root item, one that isn't nested under anything yet, must still
-        # be assignable to a new parent.
         item = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTask")
         new_parent = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTask")
         ifcopenshell.api.nest.change_nest(self.file, item=item, new_parent=new_parent)
