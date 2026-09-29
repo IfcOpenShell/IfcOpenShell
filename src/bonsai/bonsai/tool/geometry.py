@@ -76,7 +76,6 @@ import bonsai.core.style
 import bonsai.core.system
 import bonsai.core.tool
 import bonsai.tool as tool
-from bonsai.bim.ifc import IfcStore, get_cache_or_detect_lock
 
 if TYPE_CHECKING:
     from bonsai.bim.module.geometry.prop import (
@@ -113,24 +112,18 @@ class Geometry(bonsai.core.tool.Geometry):
         old_data.user_remap(new_data)
 
     @classmethod
-    def get_cache(cls) -> Union[ifcopenshell.geom.serializers.hdf5, None]:
-        return IfcStore.get_cache()
-
-    @classmethod
-    def clear_cache(cls, element: ifcopenshell.entity_instance) -> None:
-        # Cache acquisition can fail if the HDF5 file is locked by another
-        # process — degrade gracefully rather than aborting the caller's
-        # reimport flow. A stale cache entry is harmless; a raised exception
-        # prevents the actual mesh swap. The wrapper sets the project-panel
-        # warning flag on lock so the user sees one prominent notice instead
-        # of per-element log spam.
-        try:
-            cache = get_cache_or_detect_lock()
-        except Exception as exc:
-            print(f"clear_cache: skipping cache invalidation for {element} ({exc})")
-            return
-        if cache and hasattr(element, "GlobalId"):
-            cache.remove(element.GlobalId)
+    def has_axis_representation(cls, element: ifcopenshell.entity_instance) -> bool:
+        """True if the element carries a shape representation whose
+        RepresentationIdentifier is 'Axis'. Elements without one cannot be
+        projected to an unambiguous 1D path; callers that draw schematic axis
+        overlays must skip them rather than fall back to mesh-derived geometry."""
+        product_rep = getattr(element, "Representation", None)
+        if product_rep is None:
+            return False
+        for rep in product_rep.Representations:
+            if getattr(rep, "RepresentationIdentifier", None) == "Axis":
+                return True
+        return False
 
     # Per-host work coalesced by `batch_host_recut`. Keys are voided element ifc ids;
     # dict insertion preserves call ordering. Recut values store the representation at
@@ -142,7 +135,7 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     @contextmanager
-    def batch_host_recut(cls) -> Generator[None, None, None]:
+    def batch_host_recut(cls) -> Generator[None]:
         """Coalesce host body work — `recut_host` and `update_host_representation`
         calls inside the with-block enqueue by voided element id. On the outermost
         exit: every host's `update_representation` runs first (writes Blender mesh
@@ -1117,7 +1110,6 @@ class Geometry(bonsai.core.tool.Geometry):
             if not cls.has_data_users(old_data):
                 cls.delete_data(old_data)
             cls.clear_modifiers(obj)
-            cls.clear_cache(element)
 
         # Import swept disk solids as Blender curves if possible.
         elements_without_openings = {e for e in elements if not getattr(e, "HasOpenings", False)}
@@ -1195,7 +1187,7 @@ class Geometry(bonsai.core.tool.Geometry):
         if iterator and iterator.initialize():
             while True:
                 shape = iterator.get()
-                assert isinstance(shape, W.TriangulationElement)
+                assert isinstance(shape, W.triangulation_element)
                 element = tool.Ifc.get().by_id(shape.id)
                 if obj := tool.Ifc.get_object(element):
                     # It's possible that there will be multiple shapes for the same context,
@@ -1295,7 +1287,9 @@ class Geometry(bonsai.core.tool.Geometry):
         return representation.ContextOfItems.ContextIdentifier == "Box"
 
     @classmethod
-    def is_data_supported_for_adding_representation(cls, data: Union[bpy.types.ID, None]) -> TypeIs[
+    def is_data_supported_for_adding_representation(
+        cls, data: Union[bpy.types.ID, None]
+    ) -> TypeIs[
         Union[
             bpy.types.Mesh,
             bpy.types.Curve,
@@ -1682,6 +1676,116 @@ class Geometry(bonsai.core.tool.Geometry):
         bpy.context.view_layer.update()
 
     @classmethod
+    def enable_editing_representation_items(cls, obj: bpy.types.Object) -> None:
+        element_id = tool.Ifc.get_entity(obj).id()
+        tool.Ifc.subscribe(
+            ("representation_items", element_id),
+            (
+                "IfcRepresentationItem",
+                "IfcRepresentation",
+                "IfcRepresentationMap",
+                "IfcProductRepresentation",
+                "IfcShapeAspect",
+                "IfcPresentationItem",
+                "IfcPresentationStyle",
+                "IfcPresentationLayerAssignment",
+            ),
+            lambda: cls.refresh_representation_items(element_id),
+        )
+        props = cls.get_object_geometry_props(obj)
+        props.is_editing = True
+        props.items.clear()
+
+        def add_tag(item, tag: str) -> None:
+            if item.tags:
+                item.tags += ","
+            item.tags += tag
+
+        if tool.Geometry.has_mesh_properties(data := obj.data):
+            representation = tool.Geometry.get_data_representation(data)
+            assert representation
+
+            # Shape aspects must be considered from the PartOfProductDefinitionShape level
+            element = tool.Ifc.get_entity(obj)
+            assert element
+            product_reps = []
+            if element.is_a("IfcProduct"):
+                product_reps = [element.Representation]
+                if element_type := ifcopenshell.util.element.get_type(element):
+                    product_reps.extend(element_type.RepresentationMaps or [])
+            elif element.is_a("IfcTypeProduct"):
+                product_reps = element.RepresentationMaps
+            item_aspect = {}
+            for product_rep in product_reps:
+                for aspect in getattr(product_rep, "HasShapeAspects", ()):
+                    for aspect_rep in aspect.ShapeRepresentations:
+                        if aspect_rep.ContextOfItems != representation.ContextOfItems:
+                            continue
+                        for item in aspect_rep.Items:
+                            item_aspect[item] = aspect
+
+            # IfcShapeRepresentation or IfcTopologyRepresentation.
+            if not representation.is_a("IfcShapeModel"):
+                return
+            queue = list(representation.Items)
+            while queue:
+                item = queue.pop()
+                if item.is_a("IfcMappedItem"):
+                    queue.extend(item.MappingSource.MappedRepresentation.Items)
+                else:
+                    new = props.items.add()
+                    new.name = item.is_a()
+                    new.ifc_definition_id = item.id()
+
+                    styles = []
+                    for inverse in tool.Ifc.get().get_inverse(item):
+                        if inverse.is_a("IfcStyledItem"):
+                            styles = inverse.Styles
+                            if styles and styles[0].is_a("IfcPresentationStyleAssignment"):
+                                styles = styles[0].Styles
+                            for style in styles:
+                                if style.is_a("IfcSurfaceStyle"):
+                                    new.surface_style = style.Name or "Unnamed"
+                                    new.surface_style_id = style.id()
+                        elif inverse.is_a("IfcPresentationLayerAssignment"):
+                            new.layer = inverse.Name or "Unnamed"
+                            new.layer_id = inverse.id()
+                        elif inverse.is_a("IfcIndexedTextureMap"):
+                            add_tag(new, "UV")
+                        elif inverse.is_a("IfcIndexedColourMap"):
+                            add_tag(new, "Colour")
+
+                    if aspect := item_aspect.get(item, None):
+                        new.shape_aspect = aspect.Name
+                        new.shape_aspect_id = aspect.id()
+
+            # sort created items
+            sorted_items = sorted(props.items[:], key=lambda i: (not i.shape_aspect, i.shape_aspect))
+            for i, item in enumerate(sorted_items[:-1]):  # last item is sorted automatically
+                props.items.move(props.items[:].index(item), i)
+
+    @classmethod
+    def refresh_representation_items(cls, element_id: int) -> bool:
+        """Rebuild the items list of this element's object; False once it no longer has one open."""
+        try:
+            element = tool.Ifc.get().by_id(element_id)
+        except RuntimeError:
+            return False
+        obj = tool.Ifc.get_object(element)
+        if not (obj and cls.get_object_geometry_props(obj).is_editing):
+            return False
+        if not cls.get_data_representation(obj.data):
+            cls.disable_editing_representation_items(obj)
+            return False
+        cls.enable_editing_representation_items(obj)
+        return True
+
+    @classmethod
+    def disable_editing_representation_items(cls, obj: bpy.types.Object) -> None:
+        tool.Ifc.unsubscribe(("representation_items", tool.Ifc.get_entity(obj).id()))
+        cls.get_object_geometry_props(obj).is_editing = False
+
+    @classmethod
     def reload_representation(cls, obj_or_objs: Union[bpy.types.Object, Iterable[bpy.types.Object]]) -> None:
         """Reload object/objects active representation.
 
@@ -1924,11 +2028,11 @@ class Geometry(bonsai.core.tool.Geometry):
                     previous_shape_aspect = inverse.OfShapeAspect[0]
                 else:
                     base_representation = inverse
-        assert base_representation
 
         # remove item from previous shape aspect
         if previous_shape_aspect:
             cls.remove_representation_items_from_shape_aspect(representation_items, previous_shape_aspect)
+        assert base_representation
         shape_aspect_representation = cls.get_shape_aspect_representation(
             shape_aspect, base_representation, create_new=True
         )
@@ -2101,7 +2205,7 @@ class Geometry(bonsai.core.tool.Geometry):
         return use_immediate_repr
 
     @classmethod
-    def get_openings(cls, element: ifcopenshell.entity_instance) -> Generator[ifcopenshell.entity_instance, None, None]:
+    def get_openings(cls, element: ifcopenshell.entity_instance) -> Generator[ifcopenshell.entity_instance]:
         """Get element openings as IfcRelVoidsElements.
 
         Use `.RelatedOpeningElement` to get the opening element.
@@ -2187,7 +2291,7 @@ class Geometry(bonsai.core.tool.Geometry):
         item = tool.Ifc.get().by_id(props.ifc_definition_id)
         allowed_attributes = [
             a.name()
-            for a in item.wrapped_data.declaration().as_entity().all_attributes()
+            for a in item.declaration.as_entity().all_attributes()
             if a.type_of_attribute()._is("IfcLengthMeasure")
         ]
 
