@@ -18,6 +18,10 @@
 
 # This file was generated with the assistance of an AI coding tool.
 
+import bpy
+import ifcopenshell
+import ifcopenshell.api.root
+
 import bonsai.tool as tool
 from bonsai.tool.bsdd import Bsdd as subject
 from test.bim.bootstrap import NewFile
@@ -55,3 +59,28 @@ class TestSearchClass(NewFile):
         assert total == 3
         assert [c.name for c in props.classifications] == ["Fundering", "Kolom", "No Reference Code"]
         assert [c.reference_code for c in props.classifications] == ["16", "17", ""]
+
+
+class TestAddClassificationReferenceFromBsdd(NewFile):
+    def test_class_without_reference_code_gets_no_identification(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        obj = bpy.data.objects.new("Wall", None)
+        tool.Ifc.link(element, obj)
+        bpy.context.scene.collection.objects.link(obj)
+        bpy.context.view_layer.objects.active = obj
+
+        props = tool.Bsdd.get_bsdd_props()
+        item = props.classifications.add()
+        item.name = "No Reference Code"
+        item.uri = "https://example.org/class/1"
+        item.dictionary_name = "NL-SfB"
+        item.dictionary_namespace_uri = "https://example.org/dictionary/nl-sfb"
+
+        bpy.ops.bim.add_classification_reference_from_bsdd(obj="Wall", obj_type="Object")
+
+        reference = ifc.by_type("IfcClassificationReference")[0]
+        assert reference.Name == "No Reference Code"
+        assert reference.Identification is None
