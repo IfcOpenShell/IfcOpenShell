@@ -81,6 +81,7 @@ Scenario: Assign type - assign to a type with a material layer set, which automa
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
     And I press "bim.add_material()"
+    And the object "IfcWallType/Empty" is selected
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
     And I press "bim.assign_material"
     When the variable "type" is "{ifc}.by_type('IfcWallType')[0].id()"
@@ -102,6 +103,7 @@ Scenario: Assign type - assign to a type with a material layer set, which automa
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
     And I press "bim.add_material()"
+    And the object "IfcWallType/Empty" is selected
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
     And I press "bim.assign_material"
     When the variable "type" is "{ifc}.by_type('IfcWallType')[0].id()"
@@ -125,6 +127,7 @@ Scenario: Assign type - assign to a different type with a LAYER2 material layer 
     And I press "bim.assign_class"
     And the variable "type" is "{ifc}.by_type('IfcWallType')[-1].id()"
     And I press "bim.add_material()"
+    And the object "IfcWallType/Empty" is selected
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
     And I press "bim.assign_material"
     And I add an empty
@@ -180,6 +183,7 @@ Scenario: Assign type - assign to a type with a material profile set
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
     And I press "bim.add_material()"
+    And the object "IfcWallType/Empty" is selected
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialProfileSet"
     And I press "bim.assign_material"
     And I press "bim.enable_editing_assigned_material"
