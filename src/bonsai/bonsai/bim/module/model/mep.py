@@ -1295,17 +1295,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
         ref_point = end_point.copy()
         end_segment_dir = (second_segment_end - end_point).normalized()
         # we prioritize direction between end_point and start_point for bend_vector
-        # if those points match we use general end segment direction.
-        #
-        # We also fall back to the general end segment direction if start_point
-        # and end_point do differ but their offset is purely along the start
-        # segment's own local Z axis (e.g. a segment is extended straight ahead
-        # before turning into the bend, so the "gap" sits entirely on the
-        # start segment's own axis instead of laterally). In that case the raw
-        # point offset carries no lateral (local X/Y) component at all, even
-        # though the bend itself is perfectly well defined, and mep_bend_shape
-        # requires bend_vector to carry a detectable lateral component to
-        # determine the bend's second axis.
+        # if those points match or differ only along start segment's local Z we use general end segment direction.
         offset_local = (to_start_object_space @ end_point) - (to_start_object_space @ start_point)
         no_lateral_offset = tool.Cad.is_x(offset_local.x, 0) and tool.Cad.is_x(offset_local.y, 0)
         if tool.Cad.is_x((end_point - start_point).length, 0) or no_lateral_offset:
