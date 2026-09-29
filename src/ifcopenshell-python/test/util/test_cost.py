@@ -52,7 +52,6 @@ class TestGetCostItemForProduct(test.bootstrap.IFC4):
 
 class TestCalculateTotalAppliedValue(test.bootstrap.IFC4):
     def test_run(self):
-        # A cost item with multiple composite cost values sums them all (#5912).
         model = self.file
         cost_schedule = ifcopenshell.api.cost.add_cost_schedule(model)
         item = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=cost_schedule)
