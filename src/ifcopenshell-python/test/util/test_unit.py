@@ -273,10 +273,6 @@ class TestConvert(test.bootstrap.IFC4):
         assert subject.convert(1, None, "CUBIC_METRE", "MILLI", "CUBIC_METRE") == 1000000000
 
     def test_area_and_volume_conversion_based_units_are_scaled_by_prefix_squared_and_cubed(self):
-        # Regression test: converting a non-SI area/volume unit (as named per
-        # IFC4 Annex A, lower-case e.g. "square foot") to a prefixed SI unit
-        # (upper-case enumerant, e.g. "SQUARE_METRE") must square/cube the
-        # prefix multiplier, the same as converting between two SI units does.
         assert subject.convert(1, None, "square foot", "MILLI", "SQUARE_METRE") == pytest.approx(92903.04)
         assert subject.convert(1, "MILLI", "SQUARE_METRE", None, "square foot") == pytest.approx(1 / 92903.04)
         assert subject.convert(1, None, "cubic foot", "MILLI", "CUBIC_METRE") == pytest.approx(28316846.71168849)

@@ -933,10 +933,8 @@ def format_length(
     :returns: The formatted string, such as 1' - 5 1/2".
     """
     if unit_system == "imperial":
-        # A negative value is negated up front and formatted as a positive
-        # magnitude, then the sign is reapplied once to the finished string.
-        # Negating feet and inches independently produces malformed output
-        # like "-1' - -6\"" for -1.5 feet.
+        # Format the magnitude and reapply the sign once, so -1.5 feet
+        # does not become "-1' - -6\"".
         sign = "-" if value < 0 else ""
         value = abs(value)
 
