@@ -60,8 +60,6 @@ class TestIfc2CsvOutputColumns:
         return resource
 
     def test_equipment_output_is_not_written_to_labor_output_column(self) -> None:
-        # An equipment resource's productivity must land in EQUIPMENT
-        # OUTPUT, not LABOR OUTPUT, which must stay empty for it.
         ifc_file = self.setup_ifc_file()
         self.add_resource_with_productivity(ifc_file, "IfcConstructionEquipmentResource", "Excavator", 2.0)
         self.add_resource_with_productivity(ifc_file, "IfcLaborResource", "Carpenter", 1.0)
