@@ -43,9 +43,6 @@ class TestCalculateResourceUsage(test.bootstrap.IFC4):
         assert resource.Usage.ScheduleUsage == 6.0
 
     def test_no_crash_when_task_time_has_no_scheduled_duration(self):
-        # A task time with a start date but no duration is a valid, deliberately
-        # supported state (see TestEditTaskTime.
-        # test_editing_just_a_start_date_with_no_duration_or_finish).
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
 
         resource = ifcopenshell.api.resource.add_resource(self.file, ifc_class="IfcLaborResource")
