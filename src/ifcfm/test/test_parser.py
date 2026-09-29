@@ -33,9 +33,6 @@ class TestParserDuplicateKeys:
         return ifc_file
 
     def test_duplicate_key_warns_and_keeps_last_element(self) -> None:
-        # Two systems sharing the same Name collide on the same category
-        # key. The earlier one used to vanish from every exported format
-        # with no warning. It must now be reported.
         ifc_file = self.setup_ifc_file()
         ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcSystem", name="HVAC")
         second_system = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcSystem", name="HVAC")
