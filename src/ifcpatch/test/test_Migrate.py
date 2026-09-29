@@ -17,9 +17,9 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import ifcopenshell.api.project
 import pytest
 
-import ifcopenshell.api.project
 import ifcpatch
 import test.bootstrap
 

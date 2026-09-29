@@ -133,16 +133,19 @@ def test_mixed_selection_assigns_only_compatible_objects(fresh_ifc, neutralised_
     op = _fake_operator_with_report()
     op.relating_type = wall_type.id()
 
-    with mock.patch(
-        "bonsai.bim.module.type.operator.tool.Blender.get_selected_objects", return_value=[wall_obj, door_obj]
-    ), mock.patch("bonsai.bim.module.type.operator.core.assign_type") as mock_assign:
+    with (
+        mock.patch(
+            "bonsai.bim.module.type.operator.tool.Blender.get_selected_objects", return_value=[wall_obj, door_obj]
+        ),
+        mock.patch("bonsai.bim.module.type.operator.core.assign_type") as mock_assign,
+    ):
         result = AssignType._execute(op, _build_context_with_no_active_drawing())
 
     assert result != {"CANCELLED"}, "operator must succeed when at least one object is compatible"
     typed_elements = {call.kwargs["element"] for call in mock_assign.call_args_list}
-    assert typed_elements == {
-        wall_elem
-    }, f"only the compatible wall element should reach core.assign_type, got {typed_elements}"
+    assert typed_elements == {wall_elem}, (
+        f"only the compatible wall element should reach core.assign_type, got {typed_elements}"
+    )
 
     warning_calls = [c for c in op.report.call_args_list if c.args[0] == {"WARNING"}]
     assert warning_calls, "skipped occurrence class must surface as a WARNING"
@@ -164,9 +167,10 @@ def test_all_incompatible_selection_returns_cancelled_without_mutation(fresh_ifc
     op = _fake_operator_with_report()
     op.relating_type = wall_type.id()
 
-    with mock.patch(
-        "bonsai.bim.module.type.operator.tool.Blender.get_selected_objects", return_value=[door_obj]
-    ), mock.patch("bonsai.bim.module.type.operator.core.assign_type") as mock_assign:
+    with (
+        mock.patch("bonsai.bim.module.type.operator.tool.Blender.get_selected_objects", return_value=[door_obj]),
+        mock.patch("bonsai.bim.module.type.operator.core.assign_type") as mock_assign,
+    ):
         result = AssignType._execute(op, _build_context_with_no_active_drawing())
 
     assert result == {"CANCELLED"}

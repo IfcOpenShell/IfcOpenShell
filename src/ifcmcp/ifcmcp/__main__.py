@@ -1,5 +1,6 @@
 # This file was generated with the assistance of an AI coding tool.
 import argparse
+import importlib.util
 
 from ifcmcp import __version__
 
@@ -27,13 +28,11 @@ def main():
 
     args = parser.parse_args()
 
-    try:
-        from mcp.server.fastmcp import FastMCP  # noqa: F401
-    except ImportError:
+    if importlib.util.find_spec("mcp.server.fastmcp") is None:
         import sys
 
         print(
-            "error: the 'mcp' package is required to run the server.\n" "Install it with:  pip install mcp",
+            "error: the 'mcp' package is required to run the server.\nInstall it with:  pip install mcp",
             file=sys.stderr,
         )
         sys.exit(1)
