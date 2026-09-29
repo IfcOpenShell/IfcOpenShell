@@ -17,12 +17,14 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from datetime import datetime
 from types import SimpleNamespace
 
 import bpy
 import ifcopenshell
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
+import ifcopenshell.api.sequence
 import pytest
 from mathutils import Color
 
@@ -93,6 +95,31 @@ class TestAnimateInputOutput(NewFile):
         assert obj.animation_data.action
 
 
+class TestGetAnimationProductFrames(NewFile):
+    def test_carrying_the_object_type_of_the_task(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        schedule = ifcopenshell.api.sequence.add_work_schedule(ifc)
+        task = ifcopenshell.api.sequence.add_task(ifc, work_schedule=schedule)
+        task.PredefinedType = "USERDEFINED"
+        task.ObjectType = "COLORRED"
+        task_time = ifcopenshell.api.sequence.add_task_time(ifc, task=task)
+        ifcopenshell.api.sequence.edit_task_time(
+            ifc, task_time=task_time, attributes={"ScheduleStart": "2026-01-01", "ScheduleFinish": "2026-01-10"}
+        )
+        wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        ifcopenshell.api.sequence.assign_product(ifc, relating_product=wall, related_object=task)
+        settings = {
+            "start": datetime(2026, 1, 1),
+            "duration": datetime(2026, 1, 10) - datetime(2026, 1, 1),
+            "start_frame": 1,
+            "total_frames": 100,
+        }
+        frames = subject.get_animation_product_frames(schedule, settings)
+        assert [(f["type"], f["object_type"]) for f in frames[wall.id()]] == [("USERDEFINED", "COLORRED")]
+
+
 class TestGetAnimationColor(NewFile):
     def test_using_the_color_of_the_predefined_type(self):
         colors = {
@@ -106,5 +133,56 @@ class TestGetAnimationColor(NewFile):
         assert subject.get_animation_color(colors, "USERDEFINED")[:] == (0.0, 1.0, 0.0)
         assert subject.get_animation_color(colors, None)[:] == (0.0, 1.0, 0.0)
 
+    def test_using_the_color_of_the_object_type_for_a_userdefined_type(self):
+        colors = {
+            "USERDEFINED": SimpleNamespace(color=Color((0.5, 0.5, 0.5))),
+            "COLORRED": SimpleNamespace(color=Color((1.0, 0.0, 0.0))),
+        }
+        assert subject.get_animation_color(colors, "USERDEFINED", "COLORRED")[:] == (1.0, 0.0, 0.0)
+
+    def test_falling_back_to_the_userdefined_color_for_an_unknown_object_type(self):
+        colors = {"USERDEFINED": SimpleNamespace(color=Color((0.5, 0.5, 0.5)))}
+        assert subject.get_animation_color(colors, "USERDEFINED", "COLORRED")[:] == (0.5, 0.5, 0.5)
+        assert subject.get_animation_color(colors, "USERDEFINED", "")[:] == (0.5, 0.5, 0.5)
+
+    def test_ignoring_the_object_type_for_a_regular_predefined_type(self):
+        colors = {
+            "CONSTRUCTION": SimpleNamespace(color=Color((0.0, 1.0, 0.0))),
+            "COLORRED": SimpleNamespace(color=Color((1.0, 0.0, 0.0))),
+        }
+        assert subject.get_animation_color(colors, "CONSTRUCTION", "COLORRED")[:] == (0.0, 1.0, 0.0)
+
     def test_falling_back_to_grey_without_any_matching_color(self):
         assert subject.get_animation_color({}, "USERDEFINED")[:] == pytest.approx((0.2, 0.2, 0.2))
+
+
+class TestAddAnimationTaskTypeColor(NewFile):
+    def test_adding_a_color_keyed_by_object_type(self):
+        bpy.ops.bim.create_project()
+        props = tool.Sequence.get_animation_props()
+        subject.add_animation_task_type_color("input", "COLORRED")
+        assert "COLORRED" in props.task_input_colors
+        assert "COLORRED" not in props.task_output_colors
+
+    def test_not_adding_a_blank_object_type(self):
+        bpy.ops.bim.create_project()
+        props = tool.Sequence.get_animation_props()
+        subject.add_animation_task_type_color("output", "  ")
+        assert len(props.task_output_colors) == 0
+
+    def test_not_duplicating_an_existing_entry(self):
+        bpy.ops.bim.create_project()
+        props = tool.Sequence.get_animation_props()
+        subject.add_animation_task_type_color("input", "COLORRED")
+        subject.add_animation_task_type_color("input", "COLORRED")
+        assert len(props.task_input_colors) == 1
+
+
+class TestRemoveAnimationTaskTypeColor(NewFile):
+    def test_removing_the_active_color(self):
+        bpy.ops.bim.create_project()
+        props = tool.Sequence.get_animation_props()
+        subject.add_animation_task_type_color("input", "COLORRED")
+        props.active_color_component_inputs_index = 0
+        subject.remove_animation_task_type_color("input")
+        assert "COLORRED" not in props.task_input_colors

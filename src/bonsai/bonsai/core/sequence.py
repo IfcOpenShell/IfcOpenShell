@@ -593,6 +593,14 @@ def load_default_animation_color_scheme(sequence: type[tool.Sequence]) -> None:
     sequence.load_default_animation_color_scheme()
 
 
+def add_animation_task_type_color(sequence: type[tool.Sequence], group: str, object_type: str) -> None:
+    sequence.add_animation_task_type_color(group, object_type)
+
+
+def remove_animation_task_type_color(sequence: type[tool.Sequence], group: str) -> None:
+    sequence.remove_animation_task_type_color(group)
+
+
 def visualise_work_schedule_date_range(
     sequence: type[tool.Sequence], work_schedule: ifcopenshell.entity_instance
 ) -> None:
