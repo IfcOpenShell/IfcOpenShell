@@ -939,10 +939,8 @@ def typeof(inst):
         return express_set([])
     schema_name = inst.is_a(True).split('.')[0].lower()
     schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_name)
-    # Per ISO 10303-11 12.4.3, TYPEOF() also includes every select data type
-    # that references (transitively) any of the value's types as a member of
-    # its select list. Cache, per schema, the reverse map type name -> select
-    # types directly referencing it.
+    # ISO 10303-11 12.4.3: TYPEOF() includes select types that reference the value's types.
+    # Cached per schema: type name -> select types directly referencing it.
     select_parents = getattr(typeof, '_select_parents', None)
     if select_parents is None:
         select_parents = typeof._select_parents = {}
