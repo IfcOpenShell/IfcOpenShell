@@ -776,10 +776,7 @@ class AddIfcArcIndexFillet(bpy.types.Operator):
 
         bmesh.ops.remove_doubles(bm, verts=all_verts, dist=1e-4)
 
-        # The edges may already share a vertex, or they may be disjoint (e.g. two
-        # profile lines with a gap between them). Either way, find the corner they
-        # should be filleted around: their shared vertex, or the virtual intersection
-        # of the lines they lie on if extended.
+        # Fillet around the shared vertex, or around the virtual intersection of the extended lines if disjoint.
         edge1_verts = tuple(selected_edges[0].verts)
         edge2_verts = tuple(selected_edges[1].verts)
         corner_result = tool.Cad.get_fillet_corner(tuple(v.co for v in edge1_verts), tuple(v.co for v in edge2_verts))
