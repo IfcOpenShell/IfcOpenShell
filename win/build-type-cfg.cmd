@@ -44,17 +44,9 @@ IF NOT !BUILD_CFG!==%BUILD_CFG_RELWITHDEBINFO% IF NOT !BUILD_CFG!==%BUILD_CFG_DE
 
 :: DEBUG_OR_RELEASE and DEBUG_OR_RELEASE_LOWERCASE are "Debug" and "debug" for Debug build and "Release" and
 :: "release" for all of the Release variants.
-:: POSTFIX_D, POSTFIX_UNDERSCORE_D and POSTFIX_UNDERSCORE_DEBUG are helpers for performing file copies and
-:: checking for existence of files. In release build these variables are empty.
 set DEBUG_OR_RELEASE=Release
 set DEBUG_OR_RELEASE_LOWERCASE=release
-set POSTFIX_D=
-set POSTFIX_UNDERSCORE_D=
-set POSTFIX_UNDERSCORE_DEBUG=
 IF %BUILD_CFG%==Debug (
     set DEBUG_OR_RELEASE=Debug
     set DEBUG_OR_RELEASE_LOWERCASE=debug
-    set POSTFIX_D=d
-    set POSTFIX_UNDERSCORE_D=_d
-    set POSTFIX_UNDERSCORE_DEBUG=_debug
 )
