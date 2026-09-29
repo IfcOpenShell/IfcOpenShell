@@ -30,15 +30,11 @@ class TestRemoveCostItemQuantity(test.bootstrap.IFC4):
         quantity = ifcopenshell.api.cost.add_cost_item_quantity(
             self.file, cost_item=item, ifc_class="IfcQuantityVolume"
         )
-        # Give the quantity a second inverse so it is not simply purged, and
-        # the CostQuantities-emptying branch is exercised instead.
         self.file.create_entity("IfcElementQuantity", GlobalId=ifcopenshell.guid.new(), Quantities=[quantity])
         assert item.CostQuantities
 
         ifcopenshell.api.cost.remove_cost_item_quantity(self.file, cost_item=item, physical_quantity=quantity)
 
-        # An empty list is not a valid value: CostQuantities is either unset
-        # or has at least one member.
         assert item.CostQuantities is None
 
         logger = ifcopenshell.validate.json_logger()
