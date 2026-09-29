@@ -39,8 +39,8 @@ from natsort import natsorted
 import bonsai.bim
 import bonsai.bim.helper
 import bonsai.tool as tool
-from bonsai.bim.ifc import is_cache_locked_by_other_process
 from bonsai.bim.module.bsdd.prop import BIMBSDDProperties, BSDDProperty
+from bonsai.bim.module.material.operator import SelectByMaterial
 from bonsai.bim.module.model import prop as _model_prop
 from bonsai.bim.module.model import ui as _model_ui
 from bonsai.bim.module.pset.prop import IfcProperty
@@ -284,11 +284,13 @@ class GizmoPreferences(bpy.types.PropertyGroup):
         draw_gizmos_in_3d_viewport: bool
 
 
+_gizmo_pref_entry = None
 for _gizmo_pref_entry in tool.Parametric.EDIT_TYPES:
     GizmoPreferences.__annotations__[_gizmo_pref_entry.name] = BoolProperty(
         name=_gizmo_pref_entry.name.replace("_", " ").title(),
         default=True,
     )
+assert _gizmo_pref_entry is not None
 del _gizmo_pref_entry
 
 
@@ -394,12 +396,14 @@ class DefaultParameters(bpy.types.PropertyGroup):
     and gives the create operator a preset to copy from."""
 
 
+_default_params_entry = None
 for _default_params_entry in tool.Parametric.EDIT_TYPES:
     if not _default_params_entry.has_default_parameters:
         continue
     DefaultParameters.__annotations__[_default_params_entry.name] = bpy.props.PointerProperty(
         type=getattr(_model_prop, _default_params_entry.props_attr),
     )
+assert _default_params_entry is not None
 del _default_params_entry
 
 
@@ -481,9 +485,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     should_use_snap: BoolProperty(
         name="Enable Snapping on Startup",
         default=True,
-        description=(
-            "If enabled, snapping will be enabled on new sessions.\n" "It is recommended to keep this `Enabled`"
-        ),
+        description=("If enabled, snapping will be enabled on new sessions.\nIt is recommended to keep this `Enabled`"),
     )
     should_play_chaching_sound: BoolProperty(name="Play A Cha-Ching Sound When Project Costs Updates", default=False)
     tmp_dir: StringProperty(
@@ -656,10 +658,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         default="PROMPT",
     )
     should_stream: BoolProperty(name="Stream Data From IFC-SPF (Only for advanced users)", default=False)
-    should_always_cache: BoolProperty(
-        name="Always Cache Geometry",
-        description="Whether to always cache geometry regardless of 'Cache' setting during Advanced Project Load.",
-    )
     occurrence_name_style: bpy.props.EnumProperty(
         items=[("CLASS", "By Class", ""), ("TYPE", "By Type", ""), ("CUSTOM", "Custom", "")],
         name="Occurrence Name Style",
@@ -774,7 +772,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         watch_ifc_interval_seconds: int
         watch_ifc_mode: Literal["PROMPT", "AUTO"]
         should_stream: bool
-        should_always_cache: bool
         occurrence_name_style: Literal["CLASS", "TYPE", "CUSTOM"]
         occurrence_name_function: str
         gizmos: GizmoPreferences
@@ -933,7 +930,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
             layout.prop(self, "watch_ifc_interval_seconds")
             layout.prop(self, "watch_ifc_mode")
         layout.prop(self, "should_stream")
-        layout.prop(self, "should_always_cache")
         layout.label(text="bSDD:")
         layout.prop(self, "bsdd_load_preview_dictionaries")
         layout.prop(self, "bsdd_load_inactive_dictionaries")
@@ -1044,20 +1040,6 @@ class BIM_PT_tabs(Panel):
             op = row.operator("bim.open_uri", text="", icon="QUESTION")
             op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html#saving-and-loading-blend-files"
             row.operator("bim.close_blend_warning", text="", icon="CANCEL")
-
-        if is_cache_locked_by_other_process():
-            box = self.layout.box()
-            box.alert = True
-            row = box.row(align=True)
-            row.label(text="IFC Already Open in Another Blender Instance", icon="ERROR")
-            row.operator("bim.dismiss_multi_instance_warning", text="", icon="CANCEL")
-            draw_multiline_text(
-                box.column(align=True),
-                "This file is open in another Blender instance. Editing the same "
-                "IFC from two instances at once can lose your work or display "
-                "outdated geometry. Close the other Blender instances to continue safely.",
-                context=context,
-            )
 
         pprops = tool.Project.get_project_props()
         if pending := pprops.pending_opening_recut:
@@ -1264,9 +1246,9 @@ class BIM_PT_tab_grouping_and_filtering(Panel):
         # Draws help button on the right
         row = self.layout.row(align=True)
         row.label(text="")  # empty text occupies the left of the row
-        row.operator("bim.open_uri", text="", icon="HELP").uri = (
-            "https://docs.ifcopenshell.org/ifcopenshell-python/selector_syntax.html"
-        )
+        row.operator(
+            "bim.open_uri", text="", icon="HELP"
+        ).uri = "https://docs.ifcopenshell.org/ifcopenshell-python/selector_syntax.html"
 
 
 class BIM_PT_tab_geometry(Panel):
@@ -1899,6 +1881,21 @@ def draw_statusbar(self, context):
 
 def draw_custom_context_menu(self: bpy.types.Menu, context: bpy.types.Context) -> None:
     # https://blender.stackexchange.com/a/275555/86891
+
+    # Context menu for material name buttons (e.g. `bim.select_by_material`),
+    # offering a quick "Rename Material" entry instead of having to look up
+    # the material in the scene Materials panel to rename it.
+    button_operator = getattr(context, "button_operator", None)
+    if button_operator is not None and button_operator.bl_rna.identifier == SelectByMaterial.bl_rna.identifier:
+        ifc_file = tool.Ifc.get()
+        material = ifc_file.by_id(button_operator.material) if ifc_file else None
+        if material is not None and material.is_a("IfcMaterial"):
+            assert self.layout
+            self.layout.separator()
+            op = self.layout.operator("bim.rename_material", text="Rename Material", icon="GREASEPENCIL")
+            op.material = material.id()
+        return
+
     if (
         not hasattr(context, "button_pointer")
         or not hasattr(context, "button_prop")
@@ -2100,3 +2097,6 @@ class BIM_PT_snappping(Panel):
         row.prop(groups, "object", toggle=True)
         row.prop(groups, "polyline", toggle=True)
         row.prop(groups, "measure", toggle=True)
+        layout.separator()
+        row = layout.row(align=True)
+        row.prop(prop, "use_gpu_snapping", toggle=True)
