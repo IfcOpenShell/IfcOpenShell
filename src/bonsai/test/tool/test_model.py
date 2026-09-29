@@ -920,6 +920,15 @@ class TestApplyIfcMaterialChanges(NewFile):
         assert self.get_mesh(obj).materials[:] == [bpy.data.materials["Red"]]
 
 
+class TestGetElementMatrix(NewFile):
+    def test_local_matrix_of_an_element_without_placement(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        wall.ObjectPlacement = None
+        assert np.allclose(subject.get_element_matrix(wall, keep_local=True), np.eye(4))
+
+
 class TestOffsetWall(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
