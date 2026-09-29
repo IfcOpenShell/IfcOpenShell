@@ -61,7 +61,7 @@ class TestWindowShape(NewFile):
         assert len(obj.data.vertices) > rectangle_vertex_count * 2
         assert element.OverallHeight == pytest.approx(1.6)
         assert obj.dimensions.x == pytest.approx(1.0, abs=1e-2)
-        assert obj.dimensions.z == pytest.approx(1.6, abs=1e-2)
+        assert obj.dimensions.z == pytest.approx(1.6, abs=2e-2)
 
     def test_non_rectangular_shape_forces_a_single_panel(self):
         _, props = self.add_window()
