@@ -150,6 +150,26 @@ class TestUnmarkManualBooleans(NewFile):
         assert set(value) == {boolean2.id()}
 
 
+class TestProfileShapeIsUnchanged(NewFile):
+    def _make_profiles(self, width: float):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        old = ifc.createIfcRectangleProfileDef("AREA", None, None, 0.4, 0.2)
+        half_x, half_y = width / 2, 0.1
+        points = [(-half_x, -half_y), (half_x, -half_y), (half_x, half_y), (-half_x, half_y)]
+        curve = ifc.createIfcIndexedPolyCurve(ifc.createIfcCartesianPointList2D([*points, points[0]]))
+        new = ifc.createIfcArbitraryClosedProfileDef("AREA", None, curve)
+        return old, new
+
+    def test_same_outline_keeps_the_parametric_profile(self):
+        old, new = self._make_profiles(0.4)
+        assert subject.profile_shape_is_unchanged(old, new) is True
+
+    def test_edited_outline_is_a_change(self):
+        old, new = self._make_profiles(0.5)
+        assert subject.profile_shape_is_unchanged(old, new) is False
+
+
 class TestStairCalculatedParams(NewFile):
     def compare_data(self, pset_data, expected_calculated_data):
         calculated_data = subject.get_active_stair_calculated_params(pset_data)
