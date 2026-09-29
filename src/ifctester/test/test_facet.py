@@ -204,8 +204,6 @@ class TestEntity:
         facet = Entity(name="IFCWALL", predefinedType="X")
         run("Overridden predefined types should pass", facet=facet, inst=wall, expected=True)
 
-        # A predefined type enumeration that includes USERDEFINED must still match a
-        # specific value such as SOLIDWALL, and must match USERDEFINED elements (#7855, #7856).
         restriction = Restriction(options={"enumeration": ["SOLIDWALL", "USERDEFINED"]})
         facet = Entity(name="IFCWALL", predefinedType=restriction)
         ifc = ifcopenshell.file()

@@ -256,10 +256,7 @@ class Entity(Facet):
         if is_pass and self.predefinedType:
             predefined_type = ifcopenshell.util.element.get_predefined_type(inst)
             is_pass = predefined_type == self.predefinedType
-            # A USERDEFINED element resolves its predefined type to its ObjectType,
-            # so it is matched via the literal "USERDEFINED" rather than that value.
-            # Comparing against self.predefinedType also handles the restriction case
-            # (e.g. an enumeration of "COLUMN" and "USERDEFINED").
+            # A USERDEFINED element resolves to its ObjectType, so match it via the literal USERDEFINED.
             if not is_pass and ifcopenshell.util.element.is_userdefined_type(inst):
                 is_pass = self.predefinedType == "USERDEFINED"
 
