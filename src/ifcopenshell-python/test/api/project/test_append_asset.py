@@ -801,8 +801,6 @@ class TestAppendAssetIFC4(test.bootstrap.IFC4, TestAppendAssetIFC2X3):
         assert len(styles) == 2 and all(s.Name == "TestStyle" for s in styles)
 
     def test_a_products_type_is_appended_without_assuming_asset_uniqueness_by_name(self):
-        # The type is appended through a recursive `append_asset()` call, which must
-        # forward `assume_asset_uniqueness_by_name` instead of silently defaulting to True.
         library = ifcopenshell.api.project.create_file(version=self.file.schema)
         ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject")
         element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
