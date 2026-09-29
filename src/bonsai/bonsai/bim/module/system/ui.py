@@ -218,9 +218,9 @@ class BIM_PT_ports(Panel):
                             "bim.cycle_flow_direction", text="", icon=connected_port_flow_dir, emboss=True
                         )
                         op.port_id = connected_port.id()
-                        cols[5].operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = (
-                            connected_port.id()
-                        )
+                        cols[5].operator(
+                            "bim.select_entity", text="", icon="RESTRICT_SELECT_OFF"
+                        ).ifc_id = connected_port.id()
                         cols[6].label(text=connected_port_obj.name)
                     else:
                         blank4 = cols[4].column(align=True)
@@ -333,9 +333,9 @@ class BIM_PT_port(Panel):
             else:
                 cols[7].label(text="", icon="BLANK1")
                 cols[8].label(text="")
-            cols[9].operator("bim.establish_path_direction", text="", icon="CON_FOLLOWPATH").port_id = (
-                connected_port.id()
-            )
+            cols[9].operator(
+                "bim.establish_path_direction", text="", icon="CON_FOLLOWPATH"
+            ).port_id = connected_port.id()
         else:
             cols[4].label(text="", icon="BLANK1")
             cols[5].label(text="", icon="BLANK1")
