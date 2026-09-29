@@ -1,0 +1,3 @@
+sphinx
+furo
+sphinx-copybutton
