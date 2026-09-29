@@ -641,6 +641,8 @@ del _edit_type_names
 # call sites can reference ``tool.Parametric.ROOF`` directly. Renaming a
 # registry entry renames the constant; a typo at the call site surfaces as
 # AttributeError at module load.
+_entry = None
 for _entry in Parametric.EDIT_TYPES:
     setattr(Parametric, _entry.name.upper(), _entry)
+assert _entry is not None
 del _entry
