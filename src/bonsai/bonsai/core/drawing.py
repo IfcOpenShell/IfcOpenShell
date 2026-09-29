@@ -98,7 +98,6 @@ def edit_assigned_product(
     # Temporarily accomodate existing bug and check for multiple products.
     existing_products = drawing.get_assigned_product_workaround(element)
     if existing_products != [product]:
-
         if product in existing_products:
             assert product is not None
             existing_products.remove(product)
@@ -526,9 +525,9 @@ def add_annotation(
         context = drawing_tool.create_annotation_context(target_view, object_type)
 
     drawing_tool.show_decorations()
+    relating_type_rep = None
     obj = drawing_tool.create_annotation_object(drawing, object_type)
     element = ifc.get_entity(obj)
-    relating_type_rep = None
     if not element:  # Brand new annotation
         relating_type_rep = drawing_tool.get_annotation_representation(relating_type) if relating_type else None
         element = drawing_tool.run_root_assign_class(
