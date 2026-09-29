@@ -23,7 +23,6 @@ import ifcopenshell
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.spatial
 import ifcopenshell.api.unit
-import numpy
 
 import bonsai.core.tool
 import bonsai.tool as tool
