@@ -158,11 +158,8 @@ class DumbProfileGenerator:
             )
 
         material_profiles = list(self.profile_set.MaterialProfiles or [])
-        # A composite profile is an explicit, authored silhouette (e.g. for structural
-        # analysis) and always takes priority when present, matching prior behaviour.
-        # Only when there's no composite profile AND more than one material profile do
-        # we split the occurrence into one item per material profile, so each keeps its
-        # own material instead of collapsing to the first one.
+        # A composite profile keeps priority. Without one, several material profiles
+        # become one item each so every profile keeps its own material.
         is_multi_material = not self.profile_set.CompositeProfile and len(material_profiles) > 1
 
         if is_multi_material:
@@ -197,15 +194,7 @@ class DumbProfileGenerator:
     def create_multi_material_profile_items(
         self, material_profiles: list[ifcopenshell.entity_instance]
     ) -> tuple[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]:
-        """Builds a single Body representation with one extruded item per `IfcMaterialProfile`.
-
-        All items share the same placement (derived from the first material profile's
-        cardinal point / bounding box), mirroring how door/window representations combine
-        multiple items in a single coordinate frame: each `IfcProfileDef` in a material
-        profile set is expected to already be positioned relative to that shared origin
-        (e.g. a cladding profile authored with its own offset `Position`), so reusing one
-        placement for every item preserves the intended nesting between profiles.
-        """
+        """Build one Body representation with an extruded item per material profile, sharing one placement."""
         file = tool.Ifc.get()
         reference_representation = ifcopenshell.api.geometry.add_profile_representation(
             file,
@@ -236,17 +225,9 @@ class DumbProfileGenerator:
         items: list[ifcopenshell.entity_instance],
         material_profiles: list[ifcopenshell.entity_instance],
     ) -> None:
-        """Tags each item with an `IfcShapeAspect` named after its `IfcMaterialProfile`,
-        and applies that material's style (if any) directly to the item, following the
-        same item-level tagging pattern used by the door/window representation generators.
-
-        The element's own material assignment is left untouched (it keeps referencing the
-        type's `IfcMaterialProfileSetUsage`), since that's what carries the per-profile
-        material information; the shape aspect only correlates geometry items back to it.
-        """
+        """Tag each item with a shape aspect named after its material profile and apply the material style."""
         file = tool.Ifc.get()
-        part_of_product = ifcopenshell.util.representation.get_part_of_product(element, self.body_context)
-        if not part_of_product:
+        if not (part_of_product := ifcopenshell.util.representation.get_part_of_product(element, self.body_context)):
             return
         for index, (item, material_profile) in enumerate(zip(items, material_profiles)):
             material = material_profile.Material
