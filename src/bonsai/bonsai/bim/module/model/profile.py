@@ -1035,10 +1035,7 @@ class EnableEditingExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
             direction = Vector(extrusion.ExtrudedDirection.DirectionRatios).normalized()
             tool.Model.import_axis((Vector((0, 0, 0)), direction * extrusion.Depth), obj=obj, position=position)
 
-        # Remember the original endpoints so that on commit we can tell which
-        # endpoint the user actually moved. The moved endpoint must have its
-        # intelligent connection dropped, otherwise recreate_profile re-joins it
-        # and snaps it back to the connected element (see #7975).
+        # Remember the axis endpoints so the commit can drop the connection of the moved one.
         obj["ifc_axis_edit_start"] = list(obj.data.vertices[0].co)
         obj["ifc_axis_edit_end"] = list(obj.data.vertices[1].co)
 
@@ -1100,11 +1097,7 @@ class EditExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
         depth = (end - start).length
         z_axis = (end - start).normalized()
 
-        # Resize by moving an endpoint drops the intelligent connection at the
-        # moved endpoint only. If the user moved the ATSTART endpoint we must
-        # disconnect ATSTART, otherwise the connection is re-joined and snaps the
-        # endpoint back to the connected element (see #7975). The ATEND endpoint
-        # is the anchor by default, matching the resize-by-depth behaviour.
+        # Disconnect the endpoint the user moved, otherwise it is re-joined and snaps back.
         connection_type = "ATEND"
         original_start = obj.get("ifc_axis_edit_start")
         original_end = obj.get("ifc_axis_edit_end")
