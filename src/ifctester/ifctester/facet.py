@@ -925,8 +925,7 @@ class Property(Facet):
         elif pset.is_a("IfcElementQuantity"):
             return pset.Quantities
         elif pset.is_a("IfcExtendedMaterialProperties"):
-            # IFC2X3 subtype of IfcMaterialProperties, checked before it:
-            # it has no Properties attribute, only ExtendedProperties.
+            # Checked before its supertype IfcMaterialProperties, as it only has ExtendedProperties.
             return pset.ExtendedProperties
         elif pset.is_a("IfcMaterialProperties") or pset.is_a("IfcProfileProperties"):
             return pset.Properties
