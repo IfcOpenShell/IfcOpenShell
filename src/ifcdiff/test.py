@@ -101,11 +101,6 @@ class TestIfcDiff:
         assert ifc_diff.change_register == {wall.GlobalId: {"attributes_changed": True}}
 
     def test_changed_class_is_reported(self):
-        # Regression test: an element reclassified to a different IFC class,
-        # with the same GlobalId and otherwise identical attribute values,
-        # must be reported. diff_element previously only ran DeepDiff over
-        # direct attributes and never compared is_a(), so a reclassified
-        # element was silently treated as unchanged.
         ifc_file = setup_project()
         wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWallStandardCase", name="Foo")
 
