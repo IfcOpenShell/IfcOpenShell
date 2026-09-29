@@ -34,8 +34,3 @@ exclude = ["test*"]
 
 [tool.ruff]
 extend = "../../pyproject.toml"
-
-[tool.ruff.lint]
-extend-select = [
-    "unused-import",
-]

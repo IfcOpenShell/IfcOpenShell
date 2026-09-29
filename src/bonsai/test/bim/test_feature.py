@@ -22,11 +22,9 @@ from __future__ import annotations
 
 import os
 import pprint
-import shutil
 import traceback
 import types
 import webbrowser
-from collections.abc import Generator
 from inspect import signature
 from math import radians
 from pathlib import Path
@@ -38,7 +36,6 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import numpy as np
-import pytest
 from mathutils import Vector
 from pytest_bdd import given, parsers, scenarios, then, when
 
@@ -624,9 +621,9 @@ def i_dont_see_the_name_list(name):
 def i_see_the_prop_property(prop):
     assert panel_spy
     panel_spy.refresh_spy()
-    assert [
-        p for p in panel_spy.spied_props if prop in (p["name"], p["text"], p["icon"])
-    ], f"Property {prop} not found in {pprint.pformat(panel_spy.spied_props)}"
+    assert [p for p in panel_spy.spied_props if prop in (p["name"], p["text"], p["icon"])], (
+        f"Property {prop} not found in {pprint.pformat(panel_spy.spied_props)}"
+    )
 
 
 @given(parsers.parse('I don\'t see the "{prop}" property'))
@@ -635,9 +632,9 @@ def i_see_the_prop_property(prop):
 def i_dont_see_the_prop_property(prop):
     assert panel_spy
     panel_spy.refresh_spy()
-    assert not [
-        p for p in panel_spy.spied_props if prop in (p["name"], p["text"], p["icon"])
-    ], f"Property {prop} not found in {pprint.pformat(panel_spy.spied_props)}"
+    assert not [p for p in panel_spy.spied_props if prop in (p["name"], p["text"], p["icon"])], (
+        f"Property {prop} not found in {pprint.pformat(panel_spy.spied_props)}"
+    )
 
 
 @given(parsers.parse('I see the "{prop}" property is "{value}"'))
@@ -648,9 +645,9 @@ def i_see_the_prop_property_is_value(prop, value):
     panel_spy.refresh_spy()
     for spied_prop in panel_spy.spied_props:
         if prop in (spied_prop["name"], spied_prop["text"], spied_prop["icon"]):
-            assert (
-                spied_prop["value"] == value
-            ), f"Property {prop} value is not {value} - it is actually {spied_prop['value']}"
+            assert spied_prop["value"] == value, (
+                f"Property {prop} value is not {value} - it is actually {spied_prop['value']}"
+            )
             return
     assert False, f"Property {prop} not found in {pprint.pformat(panel_spy.spied_props)}"
 
@@ -1655,9 +1652,9 @@ def objects_not_exist_starting_with(name):
 @then(parsers.parse('the object "{name}" is at "{location}"'))
 def the_object_name_is_at_location(name, location):
     obj_location = the_object_name_exists(name).location
-    assert (
-        obj_location - Vector([float(co) for co in location.split(",")])
-    ).length < 0.05, f"Object is at {obj_location} instead of {location}"
+    assert (obj_location - Vector([float(co) for co in location.split(",")])).length < 0.05, (
+        f"Object is at {obj_location} instead of {location}"
+    )
 
 
 @then(parsers.parse('the object "{name}" has a vertex at "{location}"'))
@@ -1724,9 +1721,9 @@ def the_object_name_is_at_location_relative_to_the_model_origin_at_map_coordinat
     """
     obj = the_object_name_exists(name)
     obj_location = obj.location + get_model_origin()
-    assert (
-        obj_location - Vector([float(co) for co in location.split(",")])
-    ).length < 0.05, f"Object is at {obj_location} relative to the model origin instead of {location}"
+    assert (obj_location - Vector([float(co) for co in location.split(",")])).length < 0.05, (
+        f"Object is at {obj_location} relative to the model origin instead of {location}"
+    )
     assert_vert_at_map_coordinates(obj, obj.matrix_world.translation, coordinates)
 
 
@@ -1806,22 +1803,50 @@ def the_object_name_dimensions_are_dimensions(name, dimensions):
         assert is_x(number, expected_dimensions[i]), f"Expected {expected_dimensions} but got {actual_dimensions}"
 
 
+# An inscribed tessellation is never wider than the profile it approximates, so
+# the slack is one sided: short of nominal is fine, over nominal is not.
+DIMENSION_RELATIVE_TOLERANCE = 0.05
+
+
+@then(parsers.parse('the object "{name}" dimensions are approximately "{dimensions}"'))
+def the_object_name_dimensions_are_approximately_dimensions(name, dimensions):
+    """Assert nominal dimensions without pinning the mesher's tessellation.
+
+    Bonsai meshes with mesher-angular-deflection 0.5, so a conforming full
+    circle turns at most 0.5 rad per chord and needs at least
+    ceil(2 * pi / 0.5) = 13 of them. The bounding box of a polygon with that
+    many chords inscribed in a circle is at least 2r * cos(pi / 13), 97.1% of
+    the nominal diameter, whatever the phase the mesher starts sampling at.
+    5% accepts every tessellation that honours the setting, with headroom, and
+    the upper bound stays exact because an inscribed profile cannot overshoot.
+    """
+    actual_dimensions = list(the_object_name_exists(name).dimensions)
+    expected_dimensions = [float(co) for co in dimensions.split(",")]
+    assert len(actual_dimensions) == len(expected_dimensions), (
+        f"Expected {len(expected_dimensions)} dimensions but got {actual_dimensions}"
+    )
+    for actual, expected in zip(actual_dimensions, expected_dimensions):
+        lower = expected - abs(expected) * DIMENSION_RELATIVE_TOLERANCE - 1e-5
+        upper = expected + 1e-5
+        assert lower <= actual <= upper, f"Expected approximately {expected_dimensions} but got {actual_dimensions}"
+
+
 @then(parsers.parse('the object "{name}" top right corner is at "{location}"'))
 def the_object_name_top_right_corner_is_at_location(name, location):
     obj = the_object_name_exists(name)
     obj_corner = obj.matrix_world @ Vector(obj.bound_box[6])
-    assert (
-        obj_corner - Vector([float(co) for co in location.split(",")])
-    ).length < 0.05, f"Object has top right corner {obj_corner} instead of {location}"
+    assert (obj_corner - Vector([float(co) for co in location.split(",")])).length < 0.05, (
+        f"Object has top right corner {obj_corner} instead of {location}"
+    )
 
 
 @then(parsers.parse('the object "{name}" bottom left corner is at "{location}"'))
 def the_object_name_bottom_left_corner_is_at_location(name, location):
     obj = the_object_name_exists(name)
     obj_corner = obj.matrix_world @ Vector(obj.bound_box[0])
-    assert (
-        obj_corner - Vector([float(co) for co in location.split(",")])
-    ).length < 0.05, f"Object has bottom left corner {obj_corner} instead of {location}"
+    assert (obj_corner - Vector([float(co) for co in location.split(",")])).length < 0.05, (
+        f"Object has bottom left corner {obj_corner} instead of {location}"
+    )
 
 
 @then(parsers.parse('the object "{name}" is contained in "{container_name}"'))

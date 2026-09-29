@@ -39,7 +39,6 @@ from natsort import natsorted
 import bonsai.bim
 import bonsai.bim.helper
 import bonsai.tool as tool
-from bonsai.bim.ifc import is_cache_locked_by_other_process
 from bonsai.bim.module.bsdd.prop import BIMBSDDProperties, BSDDProperty
 from bonsai.bim.module.material.operator import SelectByMaterial
 from bonsai.bim.module.model import prop as _model_prop
@@ -486,9 +485,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     should_use_snap: BoolProperty(
         name="Enable Snapping on Startup",
         default=True,
-        description=(
-            "If enabled, snapping will be enabled on new sessions.\n" "It is recommended to keep this `Enabled`"
-        ),
+        description=("If enabled, snapping will be enabled on new sessions.\nIt is recommended to keep this `Enabled`"),
     )
     should_play_chaching_sound: BoolProperty(name="Play A Cha-Ching Sound When Project Costs Updates", default=False)
     tmp_dir: StringProperty(
@@ -995,20 +992,6 @@ class BIM_PT_tabs(Panel):
             op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html#saving-and-loading-blend-files"
             row.operator("bim.close_blend_warning", text="", icon="CANCEL")
 
-        if is_cache_locked_by_other_process():
-            box = self.layout.box()
-            box.alert = True
-            row = box.row(align=True)
-            row.label(text="IFC Already Open in Another Blender Instance", icon="ERROR")
-            row.operator("bim.dismiss_multi_instance_warning", text="", icon="CANCEL")
-            draw_multiline_text(
-                box.column(align=True),
-                "This file is open in another Blender instance. Editing the same "
-                "IFC from two instances at once can lose your work or display "
-                "outdated geometry. Close the other Blender instances to continue safely.",
-                context=context,
-            )
-
         pprops = tool.Project.get_project_props()
         if pending := pprops.pending_opening_recut:
             box = self.layout.box()
@@ -1214,9 +1197,9 @@ class BIM_PT_tab_grouping_and_filtering(Panel):
         # Draws help button on the right
         row = self.layout.row(align=True)
         row.label(text="")  # empty text occupies the left of the row
-        row.operator("bim.open_uri", text="", icon="HELP").uri = (
-            "https://docs.ifcopenshell.org/ifcopenshell-python/selector_syntax.html"
-        )
+        row.operator(
+            "bim.open_uri", text="", icon="HELP"
+        ).uri = "https://docs.ifcopenshell.org/ifcopenshell-python/selector_syntax.html"
 
 
 class BIM_PT_tab_geometry(Panel):
@@ -2065,3 +2048,6 @@ class BIM_PT_snappping(Panel):
         row.prop(groups, "object", toggle=True)
         row.prop(groups, "polyline", toggle=True)
         row.prop(groups, "measure", toggle=True)
+        layout.separator()
+        row = layout.row(align=True)
+        row.prop(prop, "use_gpu_snapping", toggle=True)
