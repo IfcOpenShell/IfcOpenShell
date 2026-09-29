@@ -90,12 +90,6 @@ def test_selected_annotation_fill_uses_selection_highlight_colour(monkeypatch, t
     from bonsai.bim.module.drawing import decoration
     from bonsai.bim.module.drawing.decoration import CutDecorator, DecoratorData
 
-    # `two_annotations_crossing_camera_plane` already created the objects
-    # (one selected, one not) in the current scene; nothing to unpack here.
-
-    # Stub only the leaf GPU calls: gpu.state/gpu.shader need an initialized
-    # GPU context, unavailable in --background Blender. Everything else
-    # (the fill/selection grouping under test) runs unmodified.
     fake_shader = MagicMock()
     monkeypatch.setattr(decoration.gpu.state, "point_size_set", lambda *a, **k: None)
     monkeypatch.setattr(decoration.gpu.state, "blend_set", lambda *a, **k: None)
@@ -106,8 +100,6 @@ def test_selected_annotation_fill_uses_selection_highlight_colour(monkeypatch, t
     def recording_draw_batch(self, shader_type, content_pos, color, indices=None):
         if shader_type == "TRIS":
             recorded_tris_colours.append(tuple(color))
-        # Skip the real implementation entirely: batch_for_shader/.draw()
-        # also require an initialized GPU context.
 
     monkeypatch.setattr(CutDecorator, "draw_batch", recording_draw_batch)
 
@@ -129,9 +121,9 @@ def test_selected_annotation_fill_uses_selection_highlight_colour(monkeypatch, t
     selected_elements_color = tuple(tool.Blender.get_addon_preferences().decorator_color_selected)
 
     assert recorded_tris_colours, "no fill (TRIS) batches were drawn for either annotation"
-    assert (
-        selected_elements_color in recorded_tris_colours
-    ), "the selected annotation's fill must be drawn in the selection-highlight colour"
-    assert any(
-        c != selected_elements_color for c in recorded_tris_colours
-    ), "the unselected annotation's fill must keep its own (non-highlight) colour"
+    assert selected_elements_color in recorded_tris_colours, (
+        "the selected annotation's fill must be drawn in the selection-highlight colour"
+    )
+    assert any(c != selected_elements_color for c in recorded_tris_colours), (
+        "the unselected annotation's fill must keep its own (non-highlight) colour"
+    )
