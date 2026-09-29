@@ -36,13 +36,6 @@ def setup_project() -> ifcopenshell.file:
 
 class TestIfcCsv:
     def test_blank_xlsx_cell_does_not_corrupt_attribute(self):
-        # Regression test: a blank XLSX/ODS cell is read back by pandas as
-        # float `nan`, not as an empty string or None (pandas cannot tell a
-        # blank cell apart from a genuinely missing one). Before the fix,
-        # `nan` fell through process_row's null/empty checks untouched and
-        # was later stringified, silently setting the IFC attribute to the
-        # literal text "nan" instead of clearing it - even though the user
-        # only deleted a cell's content in Excel.
         ifc_file = setup_project()
         wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall")
         wall.Name = "Original Name"
@@ -62,8 +55,6 @@ class TestIfcCsv:
         assert wall.Description == "", f"expected an empty string, got {wall.Description!r}"
 
     def test_xlsx_roundtrip_of_empty_string_is_stable(self):
-        # Reimporting an unchanged XLSX export should be a no-op, even for an
-        # attribute that was explicitly an empty string (as opposed to None).
         ifc_file = setup_project()
         wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall")
         wall.Name = ""
