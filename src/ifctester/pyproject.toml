@@ -10,6 +10,7 @@ authors = [
 ]
 description = "IFC model auditing tool with support for IDS"
 readme = "README.md"
+requires-python = ">=3.11"
 keywords = ["IFC", "IDS", "BIM"]
 classifiers = [
     "Programming Language :: Python :: 3",

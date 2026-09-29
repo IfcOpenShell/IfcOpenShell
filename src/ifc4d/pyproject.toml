@@ -10,6 +10,7 @@ authors = [
 ]
 description = "IFC 4D scheduling library to support file conversions and calculations"
 readme = "README.md"
+requires-python = ">=3.11"
 keywords = ["IFC", "4D", "BIM"]
 classifiers = [
     "Programming Language :: Python :: 3",

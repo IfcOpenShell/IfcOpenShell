@@ -10,6 +10,7 @@ authors = [
 ]
 description = "Utility for applying modification recipes to IFC files"
 readme = "README.md"
+requires-python = ">=3.11"
 keywords = ["IFC", "BIM"]
 classifiers = [
     "Programming Language :: Python :: 3",

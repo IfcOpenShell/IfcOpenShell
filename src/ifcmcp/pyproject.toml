@@ -10,6 +10,7 @@ authors = [
 ]
 description = "MCP server for querying and editing IFC building models"
 readme = "README.md"
+requires-python = ">=3.11"
 keywords = ["IFC", "BIM", "MCP"]
 classifiers = [
     "Programming Language :: Python :: 3",

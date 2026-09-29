@@ -11,6 +11,7 @@ authors = [
 ]
 description = "Converter for CityJSON files and IFC"
 readme = "README.md"
+requires-python = ">=3.11"
 keywords = ["IFC", "CityJSON", "BIM"]
 classifiers = [
     "Programming Language :: Python :: 3",
