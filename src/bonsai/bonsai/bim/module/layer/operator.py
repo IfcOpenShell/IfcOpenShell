@@ -41,14 +41,7 @@ def get_active_mesh(context: bpy.types.Context, mesh_name: str) -> bpy.types.Mes
 def resolve_layer(
     operator: bpy.types.Operator, ifc_file: ifcopenshell.file, layer_id: int
 ) -> ifcopenshell.entity_instance | None:
-    """Resolve a layer id supplied by the UI to a live entity.
-
-    UI buttons bake the layer id at draw time, so a queued or double click can
-    still target an ``IfcPresentationLayerAssignment`` that another operator has
-    already removed. Rather than let ``by_id`` raise ``Instance #N not found``,
-    reload the layer list so the stale row disappears, warn the user, and return
-    ``None`` so the caller aborts without touching a deleted entity.
-    """
+    """Resolve a UI baked layer id; a stale id refreshes the layer list, warns and returns None."""
     try:
         layer = ifc_file.by_id(layer_id)
     except RuntimeError:
