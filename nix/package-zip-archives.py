@@ -137,11 +137,8 @@ def is_shared_library(path: Path) -> bool:
     return name.endswith((".so", ".dylib", ".dll")) or ".so." in name
 
 
-# Runtime plug-ins are loaded by name and carry the underscore-prefixed
-# `ifcopenshell_` names without a platform library prefix (see
-# `decorated_basename()` in src/plugin/plugin.cpp and `ifcopenshell_plugin_target()`
-# in cmake/utilities.cmake), while the core shared libraries keep the dotted
-# `ifcopenshell.` names and the platform `lib` prefix. Match both conventions.
+# Runtime plug-ins use underscore-prefixed `ifcopenshell_` names with no platform prefix;
+# core libraries keep the dotted `ifcopenshell.` names and the platform `lib` prefix.
 IFC_GEOMETRY_WRITER_PREFIXES = ("ifcopenshell.geometry.writer.", "ifcopenshell_geometry_writer_")
 
 
