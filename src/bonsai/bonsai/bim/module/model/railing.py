@@ -138,7 +138,7 @@ def update_bbim_railing_pset(element: ifcopenshell.entity_instance, railing_data
 
 def generate_wall_mounted_handrail_preview(
     obj: bpy.types.Object,
-    props: "BIMRailingProperties",
+    props: "prop.BIMRailingProperties",
     path_data: dict[str, Any],
     si_conversion: float,
 ) -> None:
@@ -747,7 +747,7 @@ class GizmoRailingSchematic(bpy.types.GizmoGroup, gizmo.BaseSchematicGizmoGroup)
             attr_name="support_spacing",
             axis=(1, 0, 0),
             min_value=0.05,
-            visibility_condition=lambda p: (p.railing_type == "WALL_MOUNTED_HANDRAIL" and not p.use_manual_supports),
+            visibility_condition=lambda p: p.railing_type == "WALL_MOUNTED_HANDRAIL" and not p.use_manual_supports,
             matrix_position=lambda p: Vector(
                 (
                     -GizmoRailingSchematic.SCHEMATIC_MESH_WIDTH_FRAC / 2
@@ -860,7 +860,9 @@ class GizmoRailingSchematic(bpy.types.GizmoGroup, gizmo.BaseSchematicGizmoGroup)
         terminal_world = anchor + billboard_rot @ view_rotation @ terminal_local
         self.terminal_gizmo.matrix_basis = gizmo.billboarded_at(terminal_world, billboard_rot, 0.18)
 
-    def update_editing_gizmos(self, context: bpy.types.Context, mw: "Matrix", props: "BIMRailingProperties") -> None:
+    def update_editing_gizmos(
+        self, context: bpy.types.Context, mw: "Matrix", props: "prop.BIMRailingProperties"
+    ) -> None:
         """Hide the pen gizmo while polyline path-edit is active; reposition the cycle icon.
 
         The base class shows the pen gizmo whenever ``is_editing`` is False,

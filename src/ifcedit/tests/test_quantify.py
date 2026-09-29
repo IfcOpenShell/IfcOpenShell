@@ -1,7 +1,6 @@
 # This file was generated with the assistance of an AI coding tool.
 from __future__ import annotations
 
-import ifcopenshell
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.owner.settings
 import ifcopenshell.api.project
@@ -10,7 +9,7 @@ import ifcopenshell.api.spatial
 import ifcopenshell.api.unit
 import pytest
 
-from ifcedit.quantify import AVAILABLE_RULES, list_rules, run_quantify
+from ifcedit.quantify import list_rules, run_quantify
 
 
 class TestListRules:
@@ -85,3 +84,20 @@ class TestRunQuantify:
     def test_empty_selector_runs_on_all(self, quantify_model):
         result = run_quantify(quantify_model, "IFC4QtoBaseQuantities", selector=None)
         assert result["ok"] is True
+
+    def test_default_selector_includes_spaces(self, quantify_model, monkeypatch):
+        """IfcSpace is not a subtype of IfcElement, so the default scope must add it explicitly."""
+        import ifc5d.qto
+
+        seen_elements = {}
+
+        def fake_quantify(ifc_file, elements, rules):
+            seen_elements["elements"] = elements
+            return {}
+
+        monkeypatch.setattr(ifc5d.qto, "quantify", fake_quantify)
+
+        space = ifcopenshell.api.root.create_entity(quantify_model, ifc_class="IfcSpace", name="TestSpace")
+        run_quantify(quantify_model, "IFC4QtoBaseQuantities")
+
+        assert space in seen_elements["elements"]
