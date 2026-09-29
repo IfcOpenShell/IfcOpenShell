@@ -364,9 +364,7 @@ class Ifc2Csv:
             base_quantity_value = base_quantity[3]
             base_quantity_class = base_quantity.is_a()
 
-        # A resource can be allocated to a task via IfcRelAssignsToProcess.
-        # A resource is not expected to be allocated to more than one task at
-        # a time, so only the first assignment found is exported.
+        # A resource is not expected to be allocated to several tasks, so only the first assignment is exported.
         task_guid = None
         for rel in resource.HasAssignments or []:
             if rel.is_a("IfcRelAssignsToProcess") and rel.RelatingProcess.is_a("IfcTask"):
