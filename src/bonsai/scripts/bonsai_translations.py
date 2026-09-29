@@ -206,7 +206,7 @@ def update_translations_from_po(po_directory: Path, translations_module: Path):
             msgctxt = msg.msgctxt
             if not msgctxt:
                 msgctxt = default_context
-            ret.append(f"{tab*2}({msgctxt!r}, {msgid!r}): {msgstr!r},")
+            ret.append(f"{tab * 2}({msgctxt!r}, {msgid!r}): {msgstr!r},")
         ret.append(f"{tab}}},")
 
     ret.append("}")
@@ -216,6 +216,7 @@ def update_translations_from_po(po_directory: Path, translations_module: Path):
 
 
 if BPY_IS_LOADED:
+    import bpy
 
     class SetupTranslationUI(bpy.types.Operator):
         bl_idname = "bim.setup_translation_ui"

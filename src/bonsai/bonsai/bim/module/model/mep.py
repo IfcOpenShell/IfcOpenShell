@@ -408,6 +408,8 @@ class MEPGenerator:
                     compare = tool.Cad.is_x(requested_value, fitting_value, compare_precision)
                 elif isinstance(fitting_value, list):
                     compare = tool.Cad.are_vectors_equal(requested_value, Vector(fitting_value), precision)
+                else:
+                    assert False, f"{key} {second_key}"
                 return compare
 
             ignore_keys = []
@@ -476,12 +478,14 @@ class MEPGenerator:
             if predefined_type == "OBSTRUCTION":
                 return packed_data
 
+            start_port = None
             for port in ports:
                 port_local_position = V(*port.ObjectPlacement.RelativePlacement.Location.Coordinates)
                 if tool.Cad.is_x(port_local_position.length, 0.0):
                     start_port = port
                     break
 
+            assert start_port is not None
             connected_port = tool.System.get_connected_port(start_port)
             connected_element = tool.System.get_port_relating_element(connected_port)
             element_type = ifcopenshell.util.element.get_type(connected_element)
