@@ -80,8 +80,7 @@ def test_check_file_no_history(tmp_path: Path):
 def test_check_file_multi_author(tmp_path: Path):
     f = tmp_path / "multi.py"
     f.write_text(
-        "# Copyright (C) 2020, 2021 Author One <one@example.com>\n"
-        "# Copyright (C) 2022 Author Two <two@example.com>\n"
+        "# Copyright (C) 2020, 2021 Author One <one@example.com>\n# Copyright (C) 2022 Author Two <two@example.com>\n"
     )
     with patch.object(subprocess, "run", return_value=_git_log_result(["2020", "2021", "2022"])):
         report = cc.check_file(f, tmp_path)
