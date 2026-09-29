@@ -618,11 +618,9 @@ def get_void_intersection_mesh(o: bpy.types.Object) -> Optional[bpy.types.Mesh]:
     :return: World-space intersection mesh (the caller must delete it), or None
         if the element voids nothing or the host has no Blender object
     """
-    element = tool.Ifc.get_entity(o)
-    if not element:
+    if not (element := tool.Ifc.get_entity(o)):
         return None
-    rels = getattr(element, "VoidsElements", None)
-    if not rels:
+    if not (rels := getattr(element, "VoidsElements", None)):
         return None
     host = rels[0].RelatingBuildingElement
     host_obj = tool.Ifc.get_object(host)
@@ -647,9 +645,7 @@ def get_void_intersection_mesh(o: bpy.types.Object) -> Optional[bpy.types.Mesh]:
         delete_mesh(gross_mesh)
 
 
-# Per-take-off-run memo for the void intersection, keyed by object name.
-# One BOOLEAN evaluation serves all four quantities of an element; the qto
-# engine clears it at the start of every calculate() run.
+# Per-take-off-run memo of the void intersection by object name, cleared at the start of calculate().
 _void_result_cache: dict[str, Union[tuple[float, "VectorTuple"], None]] = {}
 
 
@@ -690,8 +686,7 @@ def get_void_volume(o: bpy.types.Object) -> float:
     :param o: Blender object
     :return float: volume
     """
-    result = _get_void_result(o)
-    if result is None:
+    if (result := _get_void_result(o)) is None:
         return get_net_volume(o)
     return result[0]
 
@@ -702,8 +697,7 @@ def get_void_extents(o: bpy.types.Object) -> Optional[VectorTuple]:
     :param o: Blender object
     :return: (x, y, z) extents, or None if the element voids nothing
     """
-    result = _get_void_result(o)
-    if result is None:
+    if (result := _get_void_result(o)) is None:
         return None
     return result[1]
 
@@ -717,8 +711,7 @@ def get_void_length(o: bpy.types.Object) -> float:
     :param o: Blender object
     :return float: length
     """
-    extents = get_void_extents(o)
-    if extents is None:
+    if (extents := get_void_extents(o)) is None:
         return get_length(o)
     return max(extents[0], extents[1])
 
@@ -732,8 +725,7 @@ def get_void_width(o: bpy.types.Object) -> float:
     :param o: Blender object
     :return float: width
     """
-    extents = get_void_extents(o)
-    if extents is None:
+    if (extents := get_void_extents(o)) is None:
         return get_width(o)
     return min(extents[0], extents[1])
 
@@ -747,8 +739,7 @@ def get_void_height(o: bpy.types.Object) -> float:
     :param o: Blender object
     :return float: height
     """
-    extents = get_void_extents(o)
-    if extents is None:
+    if (extents := get_void_extents(o)) is None:
         return get_height(o)
     return extents[2]
 

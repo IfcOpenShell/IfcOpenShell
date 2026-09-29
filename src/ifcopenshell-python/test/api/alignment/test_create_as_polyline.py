@@ -17,13 +17,22 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import pytest
+
 import ifcopenshell.api.alignment
 import ifcopenshell.api.unit
 import ifcopenshell.util.element
 
+try:
+    ifcopenshell.file(schema="IFC4X3")
+    IFC4X3_AVAILABLE = True
+except RuntimeError:
+    IFC4X3_AVAILABLE = False
 
+
+@pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
 def test_create_as_polyline():
-    file = ifcopenshell.file(schema="IFC4X3_ADD2")
+    file = ifcopenshell.file(schema="IFC4X3")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
     length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
     ifcopenshell.api.unit.assign_unit(file, units=[length])
@@ -54,6 +63,3 @@ def test_create_as_polyline():
     referents = [r for r in ifcopenshell.util.element.get_components(alignment) if r.is_a("IfcReferent")]
     assert len(referents) == 1
     assert referents[0].Name == "A1 0+100.000"
-
-
-test_create_as_polyline()

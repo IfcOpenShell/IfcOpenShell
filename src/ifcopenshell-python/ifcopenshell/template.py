@@ -21,7 +21,8 @@ import time
 import uuid
 from typing import Optional
 
-from .file import file
+from ifcopenshell import file
+
 from .guid import compress
 from .ifcopenshell_wrapper import version
 
@@ -74,7 +75,9 @@ DEFAULTS = {
         else (
             "CoordinationView_V2.0"
             if d.get("schema_identifier") == "IFC2X3"
-            else "ReferenceView" if d.get("schema_identifier") == "IFC4X3_ADD2" else "ReferenceView_V1.2"
+            else "ReferenceView"
+            if d.get("schema_identifier") == "IFC4X3_ADD2"
+            else "ReferenceView_V1.2"
         )
     ),
 }

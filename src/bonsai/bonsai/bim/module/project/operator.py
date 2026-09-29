@@ -1576,7 +1576,6 @@ class LoadLink(bpy.types.Operator, tool.Ifc.Operator):
 
     def link_ifc(self) -> Union[set[str], None]:
         blend_filepath = self.filepath_.with_suffix(".ifc.cache.blend")
-        h5_filepath = self.filepath_.with_suffix(".ifc.cache.h5")
         json_filepath = self.filepath_.with_suffix(".ifc.cache.json")
 
         def should_clear_cache() -> bool:
@@ -2443,7 +2442,7 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
             if iterator.initialize():
                 while True:  # Main loop.
                     shape = iterator.get()
-                    assert isinstance(shape, W.TriangulationElement)
+                    assert isinstance(shape, W.triangulation_element)
                     results.add(self.file.by_id(shape.id))
                     geometry = shape.geometry
 
@@ -2519,7 +2518,7 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
         print("Finished", time.time() - start)
         return {"FINISHED"}
 
-    def process_occurrence(self, shape: W.TriangulationElement) -> None:
+    def process_occurrence(self, shape: W.triangulation_element) -> None:
         element = self.file.by_id(shape.id)
 
         mat = ifcopenshell.util.shape.get_shape_matrix(shape)
@@ -3390,11 +3389,7 @@ class MeasureFaceAreaTool(bpy.types.Operator, PolylineOperator):
             tool.Blender.update_viewport()
 
         if event.value == "RELEASE" and event.type in {"ESC", "RIGHTMOUSE"}:
-            polyline_props.insertion_polyline.clear()
-            context.workspace.status_text_set(text=None)
-            PolylineDecorator.uninstall()
-            FaceAreaDecorator.uninstall()
-            tool.Blender.update_viewport()
+            self.cleanup(context)
             return {"CANCELLED"}
 
         return {"RUNNING_MODAL"}
@@ -3405,6 +3400,10 @@ class MeasureFaceAreaTool(bpy.types.Operator, PolylineOperator):
         PolylineDecorator.install(context, ui_only=True)
         FaceAreaDecorator.install(context)
         return {"RUNNING_MODAL"}
+
+    def cleanup(self, context):
+        FaceAreaDecorator.uninstall()
+        super().cleanup(context)
 
 
 class ClearMeasurement(bpy.types.Operator):
@@ -3523,11 +3522,9 @@ class ImageScalingTool(bpy.types.Operator, PolylineOperator):
         return {"RUNNING_MODAL"}
 
     def cancel_tool(self, context: bpy.types.Context) -> set["rna_enums.OperatorReturnItems"]:
-        context.workspace.status_text_set(text=None)
         if hasattr(self, "tool_state"):
             self.tool_state.plane_method = None
-        PolylineDecorator.uninstall()
-        tool.Blender.update_viewport()
+        self.cleanup(context)
         return {"CANCELLED"}
 
     def handle_custom_instructions(self, context: bpy.types.Context) -> None:
@@ -3598,10 +3595,8 @@ class ImageScalingTool(bpy.types.Operator, PolylineOperator):
 
             self.report({"INFO"}, f"Applied scale factor: {scale_factor:.4f}")
 
-        context.workspace.status_text_set(text=None)
         self.tool_state.plane_method = None
-        PolylineDecorator.uninstall()
-        tool.Blender.update_viewport()
+        self.cleanup(context)
 
         return {"FINISHED"}
 
@@ -3724,21 +3719,6 @@ class BIM_OT_dismiss_pending_opening_cuts(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> set[str]:
         tool.Project.get_project_props().pending_opening_recut.clear()
-        return {"FINISHED"}
-
-
-class BIM_OT_dismiss_multi_instance_warning(bpy.types.Operator):
-    bl_idname = "bim.dismiss_multi_instance_warning"
-    bl_label = "Dismiss Multi-Instance Warning"
-    bl_description = (
-        "Hide the warning that another Blender instance has this IFC file open. Sticky for the current session."
-    )
-    bl_options = {"REGISTER"}
-
-    def execute(self, context: bpy.types.Context) -> set[str]:
-        from bonsai.bim.ifc import dismiss_multi_instance_warning
-
-        dismiss_multi_instance_warning()
         return {"FINISHED"}
 
 

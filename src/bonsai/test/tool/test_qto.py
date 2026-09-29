@@ -18,14 +18,12 @@
 
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.context
 import ifcopenshell.api.cost
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
 import ifcopenshell.guid
-import ifcopenshell.util.pset
 
 import bonsai.bim.import_ifc as import_ifc
 import bonsai.core.root
@@ -182,6 +180,42 @@ class TestGetCalculatedObjectQuantities(test.bim.bootstrap.NewFile):
         assert quantities["NetVolume"] == 282.517
 
 
+class TestGetTargetUnits(test.bim.bootstrap.NewFile):
+    def setup_file(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject", name="Test")
+        return ifc
+
+    def test_default_scene_state_returns_nothing(self):
+        self.setup_file()
+        assert subject.get_target_units() == {}
+
+    def test_setting_a_field_maps_it_to_its_measure_class(self):
+        ifc = self.setup_file()
+        metre = ifc.createIfcSIUnit(None, "LENGTHUNIT", None, "METRE")
+        millimetre = ifc.createIfcSIUnit(None, "LENGTHUNIT", "MILLI", "METRE")
+        ifcopenshell.api.unit.assign_unit(ifc, units=[metre])
+
+        props = tool.Qto.get_qto_props()
+        props.target_unit_length = str(millimetre.id())
+
+        assert subject.get_target_units() == {"IfcLengthMeasure": millimetre}
+
+    def test_untouched_fields_are_excluded(self):
+        ifc = self.setup_file()
+        metre = ifc.createIfcSIUnit(None, "LENGTHUNIT", None, "METRE")
+        millimetre = ifc.createIfcSIUnit(None, "LENGTHUNIT", "MILLI", "METRE")
+        gram = ifc.createIfcSIUnit(None, "MASSUNIT", None, "GRAM")
+        ifcopenshell.api.unit.assign_unit(ifc, units=[metre, gram])
+
+        props = tool.Qto.get_qto_props()
+        props.target_unit_length = str(millimetre.id())
+        props.target_unit_mass = "0"  # explicitly left at "Default"
+
+        assert subject.get_target_units() == {"IfcLengthMeasure": millimetre}
+
+
 class TestGetBaseQto(test.bim.bootstrap.NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
@@ -223,8 +257,6 @@ class TestGetRelatedCostItemQuantities(test.bim.bootstrap.NewFile):
 
 class TestGetCalculatedVoidQuantities(test.bim.bootstrap.NewFile):
     def test_earthworks_cut_quantities_measure_the_removed_material(self):
-        # The subtraction solid is deliberately oversized, so quantities must be
-        # evaluated against the voided host, not the solid itself (#9376).
         import logging
 
         import ifc5d.qto
@@ -246,8 +278,6 @@ class TestGetCalculatedVoidQuantities(test.bim.bootstrap.NewFile):
         ifc_importer.create_project()
         context = ifcopenshell.api.context.add_context(self.ifc, context_type="Model")
 
-        # Host box spanning z 0..2, cut box spanning z 1..3: only a 2x2x1 slab
-        # of the host is actually removed, while the solid itself is 2x2x2.
         bpy.ops.mesh.primitive_cube_add(location=(0.0, 0.0, 1.0), size=2)
         host_obj = bpy.context.active_object
         host = bonsai.core.root.assign_class(

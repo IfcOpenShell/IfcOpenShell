@@ -24,9 +24,7 @@ import os
 import types
 from collections import defaultdict
 from collections.abc import Iterable
-from typing import Any, Literal, NamedTuple, Union, get_args
-
-import numpy as np
+from typing import Any, Literal, NamedTuple, Optional, Union, get_args
 
 import ifcopenshell
 import ifcopenshell.api.pset
@@ -37,6 +35,7 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.selector
 import ifcopenshell.util.shape
 import ifcopenshell.util.unit
+import numpy as np
 
 
 class Function(NamedTuple):
@@ -129,8 +128,61 @@ def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_inst
     return results
 
 
-def edit_qtos(ifc_file: ifcopenshell.file, results: ResultsDict) -> None:
-    """Apply quantification results as quantity sets."""
+def get_quantity_measures(rules: dict) -> dict[str, dict[str, str]]:
+    """Statically derive each quantity's measure class from the rule set that defines it,
+    reading it straight from the calculator's own Function table (the same source the
+    calculator itself used to compute the value) -- not guessed from the quantity name.
+
+    :param rules: A rule set as accepted by :func:`quantify`, e.g. from `ifc5d.qto.rules`.
+    :return: `qto_name -> quantity_name -> measure class` (e.g. "IfcLengthMeasure"), matching
+        the keys used by `SI2ProjectUnitConverter.project_units`.
+    """
+    measures: dict[str, dict[str, str]] = {}
+    for calculator_name, queries in rules.get("calculators", {}).items():
+        calculator = calculators[calculator_name]
+        for _entity_or_query, qtos in queries.items():
+            for qto_name, quantities in qtos.items():
+                for quantity_name, formula in quantities.items():
+                    if not formula:
+                        continue
+                    function = calculator.functions.get(formula)
+                    if function is None:
+                        continue
+                    measures.setdefault(qto_name, {})[quantity_name] = function.measure
+    return measures
+
+
+def _reconvert(ifc_file: ifcopenshell.file, value: float, to_unit: ifcopenshell.entity_instance) -> float:
+    """Re-express `value` (as computed by `SI2ProjectUnitConverter` -- the project's default
+    unit for its dimension, or, if the project has none, raw SI, mirroring `convert()`'s own
+    fallback below) in `to_unit`, which shares `to_unit`'s dimension (`UnitType`).
+    """
+    unit_type = getattr(to_unit, "UnitType", None)
+    from_unit = ifcopenshell.util.unit.get_project_unit(ifc_file, unit_type) if unit_type else None
+    from_scale = ifcopenshell.util.unit.get_unit_scale(from_unit) if from_unit else 1.0  # already SI
+    return value * from_scale / ifcopenshell.util.unit.get_unit_scale(to_unit)
+
+
+def edit_qtos(
+    ifc_file: ifcopenshell.file,
+    results: ResultsDict,
+    target_units: Optional[dict[str, ifcopenshell.entity_instance]] = None,
+    rules: Optional[dict] = None,
+) -> None:
+    """Apply quantification results as quantity sets.
+
+    :param target_units: Optional map of measure class (e.g. "IfcLengthMeasure", matching
+        `SI2ProjectUnitConverter.project_units`'s keys) to a unit to express *newly created*
+        quantities of that measure in, instead of the project default. Ignored unless `rules`
+        is also given (needed to resolve each quantity's measure class -- see
+        `get_quantity_measures`). Has no effect on quantities that already exist -- those are
+        always re-expressed in whatever Unit they already carry (see below), regardless of
+        `target_units`.
+    :param rules: The rule set used to produce `results` (the same object passed to
+        `quantify()`), used only to resolve `target_units` via `get_quantity_measures()`.
+    """
+    quantity_measures = get_quantity_measures(rules) if (target_units and rules) else {}
+
     for element, qtos in results.items():
         for name, quantities in qtos.items():
             qto = ifcopenshell.util.element.get_pset(element, name, should_inherit=False)
@@ -138,7 +190,36 @@ def edit_qtos(ifc_file: ifcopenshell.file, results: ResultsDict) -> None:
                 qto = ifc_file.by_id(qto["id"])
             else:
                 qto = ifcopenshell.api.pset.add_qto(ifc_file, element, name)
-            ifcopenshell.api.pset.edit_qto(ifc_file, qto=qto, properties=quantities)
+
+            existing_by_name = {q.Name: q for q in (qto.Quantities or ())}
+            wrapped_quantities: dict[str, Any] = {}
+
+            for quantity_name, value in quantities.items():
+                existing_unit = getattr(existing_by_name.get(quantity_name), "Unit", None)
+
+                if existing_unit is not None:
+                    # A quantity that already carries its own Unit override must be
+                    # re-expressed in that unit, not overwritten with a value computed in
+                    # the project default while the stale Unit label stays put.
+                    wrapped_quantities[quantity_name] = {
+                        "NominalValue": _reconvert(ifc_file, value, existing_unit),
+                        "Unit": existing_unit,
+                    }
+                    continue
+
+                measure = quantity_measures.get(name, {}).get(quantity_name)
+                target_unit = target_units.get(measure) if (target_units and measure) else None
+                if target_unit is not None:
+                    # Brand new quantity, proactively expressed in the chosen target unit.
+                    wrapped_quantities[quantity_name] = {
+                        "NominalValue": _reconvert(ifc_file, value, target_unit),
+                        "Unit": target_unit,
+                    }
+                    continue
+
+                wrapped_quantities[quantity_name] = value  # unchanged bare-float path
+
+            ifcopenshell.api.pset.edit_qto(ifc_file, qto=qto, properties=wrapped_quantities)
 
 
 class SI2ProjectUnitConverter:
@@ -458,8 +539,7 @@ class IfcOpenShell(QtoCalculator):
                                 value = cls.get_opening_quantity(geometry, formula)
                                 value = cls.unit_converter.convert(value, IfcOpenShell.raw_functions[formula].measure)
                             elif formula.startswith("get_void_"):
-                                value = cls.get_void_quantity(element, geometry, formula)
-                                if value is None:
+                                if (value := cls.get_void_quantity(element, geometry, formula)) is None:
                                     continue
                                 value = cls.unit_converter.convert(value, cls.raw_functions[formula].measure)
                             elif formula in cls.footing_functions:
@@ -612,7 +692,7 @@ class IfcOpenShell(QtoCalculator):
                 area_shape = ifcopenshell.geom.create_shape(settings, item.SweptArea)
             except RuntimeError:
                 return
-            assert isinstance(area_shape, W.Triangulation)
+            assert isinstance(area_shape, W.triangulation)
             x = ifcopenshell.util.shape.get_x(area_shape) / cls.unit_scale
             y = ifcopenshell.util.shape.get_y(area_shape) / cls.unit_scale
             z = item.Depth
