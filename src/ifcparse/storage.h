@@ -199,6 +199,9 @@ namespace IfcParse {
                 return std::move(read_simple_type_instances);
             }
 
+            // Entities rejected by byid_.insert() on a duplicate #id; kept alive here since byguid_/bytype_excl_ already reference them.
+            std::vector<std::unique_ptr<IfcUtil::IfcBaseClass>> duplicate_id_instances_;
+
             IfcParse::IfcSpfLexer* tokens;
             std::reference_wrapper<Logger> logger_;
             // IfcParse::FileReader* stream;
