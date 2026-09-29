@@ -1,17 +1,5 @@
 # This file was generated with the assistance of an AI coding tool.
-"""Build-time safeguard for the exec bit on the bundled pyradiance binaries.
-
-pyradiance ships its ``bin/`` binaries with the exec bit set inside the wheel.
-Bonsai bundles that wheel unchanged, so the packaged artifact is only correct as
-long as upstream keeps setting it. If a future pyradiance release (or a new
-platform wheel) ever regresses this, a permission-preserving install path (eg. a
-distro/AUR package unpacking the wheels system-wide onto a read-only filesystem)
-would end up with non-executable binaries and no way to fix them at runtime.
-
-This script fails the build early in that case, in the same spirit as the other
-wheel safeguards in the Makefile. It is a read-only check: it never mutates the
-wheel.
-"""
+"""Fail the build if the bundled pyradiance wheels ship binaries without the exec bit. See #7156."""
 
 import glob
 import os
@@ -19,8 +7,7 @@ import stat
 import sys
 import zipfile
 
-# Files under bin/ that carry a Windows executable extension do not rely on the
-# unix exec bit, so they are not checked.
+# Windows executables do not rely on the unix exec bit.
 WINDOWS_EXECUTABLE_SUFFIXES = (".exe", ".bat", ".cmd", ".dll", ".pyd")
 
 
