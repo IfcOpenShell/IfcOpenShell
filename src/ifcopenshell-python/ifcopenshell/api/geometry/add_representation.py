@@ -582,10 +582,7 @@ class Usecase:
         return curves
 
     def create_loose_edge_curves(self, is_2d: bool = False) -> list[ifcopenshell.entity_instance]:
-        # Build curves straight from the mesh loose edges (edges not shared by any
-        # face), reusing the existing mesh curve emission. Goes directly to the mesh
-        # helpers rather than through create_curves() so the face edges are excluded
-        # and we do not fall back to the Blender curve-conversion path (issue #4593).
+        # Build curves from edges not shared by any face, bypassing create_curves().
         if self.file.schema == "IFC2X3":
             return self.create_curves_from_mesh_ifc2x3(should_exclude_faces=True, is_2d=is_2d)
         return self.create_curves_from_mesh(should_exclude_faces=True, is_2d=is_2d)
@@ -951,8 +948,7 @@ class Usecase:
     def create_annotation2d_representation(self) -> ifcopenshell.entity_instance:
         if isinstance(self.settings["geometry"], bpy.types.Mesh) and len(self.settings["geometry"].polygons):
             items = self.create_annotation_fill_areas(is_2d=True)
-            # A mesh can mix faces and loose edges. Faces become fill areas above;
-            # keep the loose edges as curves too instead of dropping them (issue #4593).
+            # Faces become fill areas above; keep the loose edges as curves too.
             loose_curves = self.create_loose_edge_curves(is_2d=True)
             if loose_curves:
                 items.append(self.file.createIfcGeometricCurveSet(loose_curves))
@@ -971,8 +967,7 @@ class Usecase:
         items = []
         if isinstance(self.settings["geometry"], bpy.types.Mesh) and len(self.settings["geometry"].polygons):
             items = self.create_annotation_fill_areas(is_2d=False)
-            # A mesh can mix faces and loose edges. Faces become fill areas above;
-            # keep the loose edges as curves too instead of dropping them (issue #4593).
+            # Faces become fill areas above; keep the loose edges as curves too.
             loose_curves = self.create_loose_edge_curves(is_2d=False)
             if loose_curves:
                 items.append(self.file.createIfcGeometricCurveSet(loose_curves))
