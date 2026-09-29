@@ -649,6 +649,29 @@ class TestRemoveRepresentationItem(NewFile):
         assert tool.Ifc.get_entity_by_id(shape_aspect_id) is None
         assert set(representation.Items) == {items[1]}
 
+    def test_remove_an_item_nested_in_a_geometric_set(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+
+        context = ifc.createIfcGeometricRepresentationContext()
+        element = ifc.createIfcAnnotation()
+        points = [ifc.createIfcCartesianPoint((0.0, 0.0)), ifc.createIfcCartesianPoint((1.0, 0.0))]
+        curves = [ifc.createIfcPolyline(points), ifc.createIfcPolyline(points)]
+        curve_set = ifc.createIfcGeometricCurveSet(curves)
+        other = ifc.createIfcGeometricCurveSet([ifc.createIfcPolyline(points)])
+        representation = ifc.createIfcShapeRepresentation(Items=[curve_set, other], ContextOfItems=context)
+        ifcopenshell.api.geometry.assign_representation(ifc, product=element, representation=representation)
+        curve_id = curves[0].id()
+        curve_set_id = curve_set.id()
+
+        subject.remove_representation_item(curves[0], element)
+        assert tool.Ifc.get_entity_by_id(curve_id) is None
+        assert curve_set.Elements == (curves[1],)
+
+        subject.remove_representation_item(curves[1], element)
+        assert tool.Ifc.get_entity_by_id(curve_set_id) is None
+        assert representation.Items == (other,)
+
 
 class TestCreateShapeAspect(NewFile):
     def test_run(self):
