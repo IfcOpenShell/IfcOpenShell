@@ -164,7 +164,7 @@ def test_stale_same_class_refreshes_cache_and_completes_the_click():
         ]
     )
     props = _FakeModelProps(
-        valid_ids={"63"},  # 64 missing: stale same-class cache
+        valid_ids={"63"},
         initial_relating_type_id="63",
         valid_classes={"IfcDoorType", "IfcWindowType"},
         initial_ifc_class="IfcDoorType",
@@ -222,7 +222,7 @@ def test_deleted_type_reports_warning_and_leaves_props_untouched():
     at all, in any class). The operator must not crash, must leave
     relating_type_id at whatever valid value it had, AND must tell the
     user via self.report - not fail silently."""
-    ifc_file = _FakeIfcFile([_FakeEntity(63, "IfcDoorType", "Door A")])  # 999 does not exist
+    ifc_file = _FakeIfcFile([_FakeEntity(63, "IfcDoorType", "Door A")])
     props = _FakeModelProps(
         valid_ids={"63"},
         initial_relating_type_id="63",
