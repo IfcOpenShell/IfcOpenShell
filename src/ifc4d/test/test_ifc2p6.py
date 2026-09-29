@@ -75,15 +75,11 @@ class TestIfc2P6Lag:
             return Path(converter.xml).read_text()
 
     def test_sub_day_lag_is_not_truncated(self):
-        # Before the fix, only whole days (duration.days) were read, so a
-        # pure PT12H0M0S lag (duration.days == 0) exported as Lag "0".
         ifc_file = self.build_ifc("PT12H0M0S", "WORKTIME")
         xml = self.export(ifc_file)
         assert re.findall(r"<Lag>([^<]*)</Lag>", xml) == ["4"]
 
     def test_mixed_day_and_hour_lag_keeps_the_hour_remainder(self):
-        # Before the fix this exported "8" (only the 1 whole day * 8h/day),
-        # silently dropping the extra 12 hours.
         ifc_file = self.build_ifc("P1DT12H0M0S", "WORKTIME")
         xml = self.export(ifc_file)
         assert re.findall(r"<Lag>([^<]*)</Lag>", xml) == ["12"]
@@ -128,8 +124,6 @@ class TestIfc2P6Duration:
             return Path(converter.xml).read_text()
 
     def test_mixed_day_and_hour_duration_keeps_the_hour_remainder(self):
-        # Before the fix this exported "8" (only the 1 whole day * 8h/day),
-        # silently dropping the extra 4 hours.
         ifc_file = self.build_ifc("P1DT4H0M0S")
         xml = self.export(ifc_file)
         assert re.findall(r"<PlannedDuration>([^<]*)</PlannedDuration>", xml) == ["9.333333333"]

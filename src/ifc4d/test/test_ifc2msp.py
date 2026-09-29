@@ -69,16 +69,12 @@ class TestIfc2MspLag:
         return re.findall(rf"<{tag}>([^<]*)</{tag}>", xml_text)
 
     def test_sub_day_worktime_lag_is_not_truncated(self):
-        # Before the fix, only whole days (duration.days) were read, so a
-        # pure PT12H0M0S lag (duration.days == 0) exported as LinkLag "0".
         ifc_file = self.build_ifc("PT12H0M0S", "WORKTIME")
         xml = self.export(ifc_file)
         assert self.get_fields(xml, "LinkLag") == ["2400"]
         assert self.get_fields(xml, "LagFormat") == ["7"]
 
     def test_mixed_day_and_hour_worktime_lag_keeps_the_hour_remainder(self):
-        # Before the fix this exported "4800" (only the 1 whole day),
-        # silently dropping the extra 12 hours.
         ifc_file = self.build_ifc("P1DT12H0M0S", "WORKTIME")
         xml = self.export(ifc_file)
         assert self.get_fields(xml, "LinkLag") == ["7200"]
@@ -131,15 +127,11 @@ class TestIfc2MspTaskDuration:
             return Path(converter.xml).read_text()
 
     def test_sub_day_task_duration_is_not_truncated_to_zero(self):
-        # Before the fix this used only duration.days, so a pure PT4H0M0S
-        # duration (duration.days == 0) exported as "PT0H0M0S". Correct is
-        # 4h / 24h-per-calendar-day * 8h-per-workday = 1.3333 work-hours.
         ifc_file = self.build_ifc("PT4H0M0S")
         xml = self.export(ifc_file)
         assert re.findall(r"<Duration>([^<]*)</Duration>", xml) == ["PT1H20M0S"]
 
     def test_mixed_day_and_hour_task_duration_keeps_the_hour_remainder(self):
-        # 1 work-day (8h) + 4h = 9.3333 work-hours at 8h/day.
         ifc_file = self.build_ifc("P1DT4H0M0S")
         xml = self.export(ifc_file)
         assert re.findall(r"<Duration>([^<]*)</Duration>", xml) == ["PT9H20M0S"]
