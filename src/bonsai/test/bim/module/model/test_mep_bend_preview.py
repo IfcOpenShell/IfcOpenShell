@@ -371,9 +371,7 @@ def test_finish_bend_preview_catches_runtime_error_from_dispatch():
     op_self.report.assert_called()
 
 
-# ---------------------------------------------------------------------------
 # MEPAddBend._execute — parallel/degenerate intersection guard (issue #3932)
-# ---------------------------------------------------------------------------
 
 
 def test_mep_add_bend_cancels_cleanly_when_axes_do_not_cross():
