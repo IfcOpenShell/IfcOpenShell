@@ -22,7 +22,13 @@ import ifcopenshell
 
 
 def materials(model: ifcopenshell.file) -> list[dict]:
-    """Return all materials and material sets from the model.
+    """List the materials and material sets defined in the model.
+
+    Returns a single list covering ``IfcMaterial`` (with its category),
+    ``IfcMaterialLayerSet`` (each layer's name, thickness, material and
+    ventilation flag), ``IfcMaterialConstituentSet`` (constituent names,
+    materials and fractions) and ``IfcMaterialProfileSet`` (profile names and
+    materials). Every entry carries the step ID of the material entity.
 
     :param model: The in-memory IFC model.
     :return: List of dicts covering IfcMaterial, IfcMaterialLayerSet,
