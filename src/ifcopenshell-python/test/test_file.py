@@ -198,6 +198,54 @@ class TestFile(test.bootstrap.IFC4):
         result = self.file.add(element)
         assert result.is_a() == element.is_a()
 
+    def test_assigning_an_unowned_instance_adds_it_to_the_file(self):
+        user = ifcopenshell.create_entity("IfcPersonAndOrganization", schema="IFC4")
+        owner = self.file.createIfcOwnerHistory()
+        owner.OwningUser = user
+        assert user.id() != 0
+        assert self.file.by_id(user.id()) == user
+        assert self.file.get_inverse(user) == {owner}
+        assert f"#{user.id()}" in self.file.to_string()
+
+    def test_assigning_an_unowned_instance_adds_its_references_to_the_file(self):
+        person = ifcopenshell.create_entity("IfcPerson", schema="IFC4")
+        organization = ifcopenshell.create_entity("IfcOrganization", schema="IFC4", Name="o")
+        user = ifcopenshell.create_entity(
+            "IfcPersonAndOrganization", schema="IFC4", ThePerson=person, TheOrganization=organization
+        )
+        owner = self.file.createIfcOwnerHistory()
+        owner.OwningUser = user
+        assert self.file.by_id(person.id()) == person
+        assert self.file.by_id(organization.id()) == organization
+        assert self.file.traverse(user) == [user, person, organization]
+
+    def test_assigning_unowned_instances_in_an_aggregate_adds_them_to_the_file(self):
+        role = ifcopenshell.create_entity("IfcActorRole", schema="IFC4")
+        person = self.file.createIfcPerson()
+        person.Roles = [role]
+        assert role.id() != 0
+        assert self.file.by_id(role.id()) == role
+
+    def test_assigning_an_instance_from_another_file_copies_it_into_the_file(self):
+        g = ifcopenshell.file(schema="IFC4")
+        other_user = g.createIfcPersonAndOrganization()
+        owner = self.file.createIfcOwnerHistory()
+        owner.OwningUser = other_user
+        copied = owner.OwningUser
+        assert copied.wrapped_data.file_pointer() != other_user.wrapped_data.file_pointer()
+        assert self.file.by_id(copied.id()) == copied
+        assert g.by_id(other_user.id()) == other_user
+
+    def test_assigning_an_instance_of_another_schema_raises(self):
+        g = ifcopenshell.file(schema="IFC2X3")
+        other_user = g.createIfcPersonAndOrganization()
+        owner = self.file.createIfcOwnerHistory()
+        with pytest.raises(Exception):
+            owner.OwningUser = other_user
+        unowned = ifcopenshell.create_entity("IfcPersonAndOrganization", schema="IFC2X3")
+        with pytest.raises(Exception):
+            owner.OwningUser = unowned
+
     def test_getting_elements_by_type(self):
         wall = self.file.createIfcWall()
         slab = self.file.createIfcSlab()
