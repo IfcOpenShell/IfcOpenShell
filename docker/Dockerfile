@@ -28,8 +28,11 @@ RUN git config --system --add safe.directory '*'
 # volume mount point at runtime - anything `ccache -M` writes to a config
 # file under it during this build gets shadowed once the real volume is
 # mounted, so the size cap only actually takes effect via the env var.
+# 2G is generous: a full build (IfcParse+IfcGeom+IfcConvert+wrapper, one
+# Python version) measures ~300MB, and the volume is now shared across all
+# checkouts (see compose.yaml), so this covers several diverging branches.
 ENV CCACHE_DIR=/ccache
-ENV CCACHE_MAXSIZE=5G
+ENV CCACHE_MAXSIZE=2G
 ENV PATH="/usr/lib/ccache:$PATH"
 
 # Non-root user matching the host UID/GID that bind-mounts the repo (default
@@ -39,7 +42,15 @@ ENV PATH="/usr/lib/ccache:$PATH"
 # if your host user has a different UID/GID.
 ARG USER_UID=1000
 ARG USER_GID=1000
-RUN groupadd -g "${USER_GID}" builder \
+# groupadd fails outright if USER_GID is already taken by an existing
+# system group - which happens whenever a host's primary GID collides with
+# one baked into the rockylinux9 base image. The main real-world case is
+# macOS, where the default user's primary group is "staff" at GID 20, and
+# GID 20 is "games" on RHEL-family images. Only create the "builder" group
+# when that GID is actually free; otherwise useradd just attaches to
+# whichever group already owns it. Either way the builder user ends up
+# with the right GID for bind-mount ownership, which is all that matters.
+RUN (getent group "${USER_GID}" >/dev/null || groupadd -g "${USER_GID}" builder) \
     && useradd -m -u "${USER_UID}" -g "${USER_GID}" -s /bin/bash builder \
     && echo "builder ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/builder
 
