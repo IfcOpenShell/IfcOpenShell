@@ -102,7 +102,6 @@ class TestGetFilletCorner(NewFile):
         assert near2 == V(0, 0, 0) and far2 == V(0, 1, 0)
 
     def test_disjoint_edges_use_virtual_intersection(self):
-        # Two edges that would meet at (0, 0, 0) if extended, but leave a gap.
         edge1 = (V(2, 0, 0), V(1, 0, 0))
         edge2 = (V(0, 1, 0), V(0, 2, 0))
         corner, near1, far1, near2, far2 = subject.get_fillet_corner(edge1, edge2)
