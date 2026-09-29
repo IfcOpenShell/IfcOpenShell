@@ -105,10 +105,8 @@ def assign_container(
     if not products:
         return
 
-    # Only elements carry the ContainedInStructure inverse (IfcElement,
-    # IfcAnnotation, IfcGrid and their subtypes). Passing a type such as
-    # IfcBeamType otherwise crashed with an opaque AttributeError deep in the
-    # loop below, so reject it up front with a clear message instead.
+    # Types such as IfcBeamType have no ContainedInStructure inverse and
+    # would otherwise crash later with an AttributeError.
     non_containable = [p for p in products if not hasattr(p, "ContainedInStructure")]
     if non_containable:
         raise TypeError(
