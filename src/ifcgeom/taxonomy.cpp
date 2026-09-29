@@ -1,9 +1,9 @@
-#include "../ifcparse/IfcLogger.h"
+#include "../ifcparse/logger.h"
 #include "taxonomy.h"
 #include "profile_helper.h"
 #include "function_item_evaluator.h"
 
-using namespace ifcopenshell::geometry::taxonomy;
+using namespace ifcopenshell::geom::taxonomy;
 
 namespace {
 	bool compare(const trimmed_curve& a, const trimmed_curve& b);
@@ -88,7 +88,7 @@ namespace {
 	}
 
 	template <typename T>
-	int less_to_order_optional(const boost::optional<T>& a, const boost::optional<T>& b) {
+	int less_to_order_optional(const std::optional<T>& a, const std::optional<T>& b) {
 		if (a && b) {
 			return less_to_order(*a, *b);
 		}
@@ -103,16 +103,16 @@ namespace {
 		}
 	}
 
-	int compare(const boost::variant<boost::blank, point3::ptr, double>& a, const boost::variant<boost::blank, point3::ptr, double>& b) {
+	int compare(const std::variant<boost::blank, point3::ptr, double>& a, const std::variant<boost::blank, point3::ptr, double>& b) {
 		bool a_lt_b, b_lt_a;
-		if (a.which() == 0) {
+		if (a.index() == 0) {
 			return 0;
-		} else if (a.which() == 1) {
-			a_lt_b = compare(*boost::get<point3::ptr>(a), *boost::get<point3::ptr>(b));
-			b_lt_a = compare(*boost::get<point3::ptr>(b), *boost::get<point3::ptr>(a));
+		} else if (a.index() == 1) {
+			a_lt_b = compare(*std::get<point3::ptr>(a), *std::get<point3::ptr>(b));
+			b_lt_a = compare(*std::get<point3::ptr>(b), *std::get<point3::ptr>(a));
 		} else {
-			a_lt_b = std::less<double>()(boost::get<double>(a), boost::get<double>(b));
-			b_lt_a = std::less<double>()(boost::get<double>(b), boost::get<double>(a));
+			a_lt_b = std::less<double>()(std::get<double>(a), std::get<double>(b));
+			b_lt_a = std::less<double>()(std::get<double>(b), std::get<double>(a));
 		}
 		return a_lt_b ?
 			-1 : (!b_lt_a ? 0 : 1);
@@ -187,19 +187,6 @@ namespace {
        throw std::runtime_error("not implemented");
    }
 
-	bool compare(const style& a, const style& b) {
-		const int order[5] = {
-			less_to_order(a.name, b.name),
-			less_to_order(a.diffuse, b.diffuse),
-			less_to_order(a.specular, b.specular),
-			less_to_order(a.specularity, b.specularity),
-			less_to_order(a.transparency, b.transparency)
-		};
-		auto it = std::find_if(std::begin(order), std::end(order), [](int x) { return x; });
-		if (it == std::end(order)) return false;
-		return *it == -1;
-	}
-
 	/* A compile-time for loop over the taxonomy kinds */
 	template <size_t N>
 	struct dispatch_comparison {
@@ -223,9 +210,9 @@ namespace {
 	};
 }
 
-ifcopenshell::geometry::taxonomy::topology_error::~topology_error() = default;
+ifcopenshell::geom::taxonomy::topology_error::~topology_error() = default;
 
-bool ifcopenshell::geometry::taxonomy::less(item::const_ptr a, item::const_ptr b) {
+bool ifcopenshell::geom::taxonomy::less(item::const_ptr a, item::const_ptr b) {
 	if (a == b) {
 		return false;
 	}
@@ -245,10 +232,10 @@ bool ifcopenshell::geometry::taxonomy::less(item::const_ptr a, item::const_ptr b
 
 namespace {
 	bool compare(const trimmed_curve& a, const trimmed_curve& b) {
-		int a_which_start = a.start.which();
-		int a_which_end = a.end.which();
-		int b_which_start = b.start.which();
-		int b_which_end = b.end.which();
+		std::size_t a_which_start = a.start.index();
+		std::size_t a_which_end = a.end.index();
+		std::size_t b_which_start = b.start.index();
+		std::size_t b_which_end = b.end.index();
 		if (std::tie(a.orientation, a_which_start, a_which_end) ==
 			std::tie(b.orientation, b_which_start, b_which_end)) {
 
@@ -347,11 +334,11 @@ namespace {
 	}
 }
 
-ifcopenshell::geometry::taxonomy::solid::ptr ifcopenshell::geometry::create_box(double dx, double dy, double dz) {
+ifcopenshell::geom::taxonomy::solid::ptr ifcopenshell::geom::create_box(double dx, double dy, double dz) {
 	return create_box(0., 0., 0., dx, dy, dz);
 }
 
-ifcopenshell::geometry::taxonomy::solid::ptr ifcopenshell::geometry::create_box(double x, double y, double z, double dx, double dy, double dz) {
+ifcopenshell::geom::taxonomy::solid::ptr ifcopenshell::geom::create_box(double x, double y, double z, double dx, double dy, double dz) {
 	auto solid = make<taxonomy::solid>();
 	auto shell = make<taxonomy::shell>();
 	solid->children.push_back(shell);
@@ -486,16 +473,16 @@ ifcopenshell::geometry::taxonomy::solid::ptr ifcopenshell::geometry::create_box(
 }
 
 ///////////////////
-piecewise_function::piecewise_function(double start, const spans_t& s, const IfcUtil::IfcBaseInterface* instance) : function_item(instance), start_(start), spans_(s) {
+piecewise_function::piecewise_function(double start, const span_list& s, const express::base& instance) : function_item(instance), start_(start), spans_(s) {
 }
 
-piecewise_function::piecewise_function(double start, const std::vector<piecewise_function::ptr>& pwfs, const IfcUtil::IfcBaseInterface* instance) : function_item(instance), start_(start) {
+piecewise_function::piecewise_function(double start, const std::vector<piecewise_function::ptr>& pwfs, const express::base& instance) : function_item(instance), start_(start) {
     for (auto& pwf : pwfs) {
         spans_.insert(spans_.end(), pwf->spans().begin(), pwf->spans().end());
     }
 };
 
-const piecewise_function::spans_t& piecewise_function::spans() const { return spans_; }
+const piecewise_function::span_list& piecewise_function::spans() const { return spans_; }
 bool piecewise_function::is_empty() const { return spans_.empty(); }
 double piecewise_function::start() const { return start_; }
 double piecewise_function::end() const { return start_ + length(); }
@@ -512,7 +499,7 @@ double piecewise_function::length() const {
 }
 
 
-gradient_function::gradient_function(piecewise_function::const_ptr horizontal, piecewise_function::const_ptr vertical, const IfcUtil::IfcBaseInterface* instance) : 
+gradient_function::gradient_function(piecewise_function::const_ptr horizontal, piecewise_function::const_ptr vertical, const express::base& instance) :
 	function_item(instance), horizontal_(horizontal), vertical_(vertical) {
 }
 double gradient_function::start() const { return std::max(horizontal_->start(), vertical_->start()); }
@@ -521,7 +508,7 @@ piecewise_function::const_ptr gradient_function::get_horizontal() const { return
 piecewise_function::const_ptr gradient_function::get_vertical() const { return vertical_; }
 
 
-cant_function::cant_function(gradient_function::const_ptr gradient, piecewise_function::const_ptr cant, const IfcUtil::IfcBaseInterface* instance) : 
+cant_function::cant_function(gradient_function::const_ptr gradient, piecewise_function::const_ptr cant, const express::base& instance) :
 	function_item(instance), gradient_(gradient), cant_(cant) {
 }
 double cant_function::start() const { return std::max(gradient_->start(), cant_->start()); }
@@ -530,7 +517,7 @@ gradient_function::const_ptr cant_function::get_gradient() const { return gradie
 piecewise_function::const_ptr cant_function::get_cant() const { return cant_; }
 
 
-offset_function::offset_function(function_item::const_ptr basis, piecewise_function::const_ptr offset, const IfcUtil::IfcBaseInterface* instance) : function_item(instance),
+offset_function::offset_function(function_item::const_ptr basis, piecewise_function::const_ptr offset, const express::base& instance) : function_item(instance),
                                                                                                                                                                        basis_(basis),
                                                                                                                                                                        offset_(offset) {
 }
@@ -540,15 +527,15 @@ function_item::const_ptr offset_function::get_basis() const { return basis_; }
 piecewise_function::const_ptr offset_function::get_offset() const { return offset_; }
 
 
-ifcopenshell::geometry::taxonomy::collection::ptr ifcopenshell::geometry::flatten(const taxonomy::collection::ptr& deep) {
+ifcopenshell::geom::taxonomy::collection::ptr ifcopenshell::geom::flatten(const taxonomy::collection::ptr& deep) {
 	auto flat = make<taxonomy::collection>();
-	ifcopenshell::geometry::visit<taxonomy::collection>(deep, [&flat](taxonomy::ptr i) {
-		flat->children.push_back(std::static_pointer_cast<taxonomy::geom_item>(clone(i)));
-	});
+	ifcopenshell::geom::visit<taxonomy::collection>(deep, [&flat](taxonomy::ptr i) {
+		flat->children.push_back(taxonomy::cast<taxonomy::geom_item>(clone(i)));
+		});
 	return flat;
 }
 
-const std::string& ifcopenshell::geometry::taxonomy::kind_to_string(kinds k) {
+const std::string& ifcopenshell::geom::taxonomy::kind_to_string(kinds k) {
 	using namespace std::string_literals;
 
 	static std::string values[] = {
@@ -590,21 +577,21 @@ const std::string& ifcopenshell::geometry::taxonomy::kind_to_string(kinds k) {
 	return values[k];
 }
 
-std::atomic_uint32_t item::counter_(0);
+IFC_GEOM_API std::atomic_uint32_t item::counter_(0);
 
-void ifcopenshell::geometry::taxonomy::item::print(std::ostream& o, int indent) const {
+void ifcopenshell::geom::taxonomy::item::print(std::ostream& o, int indent) const {
 	o << std::string(indent, ' ') << kind_to_string(kind()) << std::endl;
 }
 
-void ifcopenshell::geometry::taxonomy::matrix4::print(std::ostream& o, int indent) const {
+void ifcopenshell::geom::taxonomy::matrix4::print(std::ostream& o, int indent) const {
 	print_impl(o, kind_to_string(kind()), indent);
 }
 
-void ifcopenshell::geometry::taxonomy::colour::print(std::ostream& o, int indent) const {
+void ifcopenshell::geom::taxonomy::colour::print(std::ostream& o, int indent) const {
 	print_impl(o, kind_to_string(kind()), indent);
 }
 
-void ifcopenshell::geometry::taxonomy::style::print(std::ostream& o, int indent) const {
+void ifcopenshell::geom::taxonomy::style::print(std::ostream& o, int indent) const {
 	o << std::string(indent, ' ') << "style" << std::endl;
 	o << std::string(indent, ' ') << "     " << "name " << (name) << std::endl;
 	if (diffuse.components_) {
@@ -618,36 +605,36 @@ void ifcopenshell::geometry::taxonomy::style::print(std::ostream& o, int indent)
 	// @todo
 }
 
-void ifcopenshell::geometry::taxonomy::point3::print(std::ostream& o, int indent) const {
+void ifcopenshell::geom::taxonomy::point3::print(std::ostream& o, int indent) const {
 	print_impl(o, kind_to_string(kind()), indent);
 }
 
-void ifcopenshell::geometry::taxonomy::direction3::print(std::ostream& o, int indent) const {
+void ifcopenshell::geom::taxonomy::direction3::print(std::ostream& o, int indent) const {
 	print_impl(o, kind_to_string(kind()), indent);
 }
 
-void ifcopenshell::geometry::taxonomy::line::print(std::ostream& o, int indent) const {
+void ifcopenshell::geom::taxonomy::line::print(std::ostream& o, int indent) const {
 	print_impl(o, kind_to_string(kind()), indent);
 }
 
-void ifcopenshell::geometry::taxonomy::circle::print(std::ostream& o, int indent) const {
+void ifcopenshell::geom::taxonomy::circle::print(std::ostream& o, int indent) const {
 	print_impl(o, kind_to_string(kind()), indent);
 	o << std::string(indent + 4, ' ') << "radius " << radius << std::endl;
 }
 
-void ifcopenshell::geometry::taxonomy::ellipse::print(std::ostream& o, int indent) const {
+void ifcopenshell::geom::taxonomy::ellipse::print(std::ostream& o, int indent) const {
 	print_impl(o, kind_to_string(kind()), indent);
 	o << std::string(indent + 4, ' ') << "radii " << radius << " " << radius2 << std::endl;
 }
 
-void ifcopenshell::geometry::taxonomy::trimmed_curve::print(std::ostream& o, int indent) const {
+void ifcopenshell::geom::taxonomy::trimmed_curve::print(std::ostream& o, int indent) const {
 	o << std::string(indent, ' ') << kind_to_string(kind());
-	if (!this->orientation.get_value_or(true)) {
+	if (!this->orientation.value_or(true)) {
 		o << " [R]";
 	} else {
 		o << " [ ]";
 	}
-	if (!this->curve_sense.get_value_or(true)) {
+	if (!this->curve_sense.value_or(true)) {
 		o << " [R]";
 	} else {
 		o << " [ ]";
@@ -657,31 +644,31 @@ void ifcopenshell::geometry::taxonomy::trimmed_curve::print(std::ostream& o, int
 		basis->print(o, indent + 4);
 	}
 
-	const boost::variant<boost::blank, point3::ptr, double>* const start_end[2] = { &start, &end };
+	const std::variant<boost::blank, point3::ptr, double>* const start_end[2] = { &start, &end };
 	for (int i = 0; i < 2; ++i) {
 		o << std::string(indent + 4, ' ') << (i == 0 ? "start" : "end") << std::endl;
-		if (start_end[i]->which() == 1) {
-			boost::get<point3::ptr>(*start_end[i])->print(o, indent + 4);
-		} else if (start_end[i]->which() == 2) {
-			o << std::string(indent + 4, ' ') << "parameter " << boost::get<double>(*start_end[i]) << std::endl;
+		if (start_end[i]->index() == 1) {
+			std::get<point3::ptr>(*start_end[i])->print(o, indent + 4);
+		} else if (start_end[i]->index() == 2) {
+			o << std::string(indent + 4, ' ') << "parameter " << std::get<double>(*start_end[i]) << std::endl;
 		}
 	}
 
-	if (this->instance) {
+	if (instance) {
 		std::ostringstream oss;
-		this->instance->as<IfcUtil::IfcBaseClass>()->toString(oss);
+		instance.to_string(oss);
 		o << std::string(indent + 4, ' ') << oss.str() << std::endl;
 	}
 }
 
-void ifcopenshell::geometry::taxonomy::extrusion::print(std::ostream& o, int indent) const {
+void ifcopenshell::geom::taxonomy::extrusion::print(std::ostream& o, int indent) const {
 	o << std::string(indent, ' ') << "extrusion " << depth << std::endl;
 	direction->print(o, indent + 4);
 	basis->print(o, indent + 4);
 }
 
-boost::optional<face::ptr> ifcopenshell::geometry::taxonomy::loop_to_face_upgrade_impl(ptr item) {
-	boost::optional<face::ptr> face_;
+std::optional<face::ptr> ifcopenshell::geom::taxonomy::loop_to_face_upgrade_impl(ptr item) {
+	std::optional<face::ptr> face_;
 	auto loop_ = dcast<loop>(item);
 		if (loop_) {
 			loop_->external = true;
@@ -694,8 +681,8 @@ boost::optional<face::ptr> ifcopenshell::geometry::taxonomy::loop_to_face_upgrad
 	return face_;
 }
 
-boost::optional<edge::ptr> ifcopenshell::geometry::taxonomy::curve_to_edge_upgrade_impl(ptr item) {
-	boost::optional<edge::ptr> edge_;
+std::optional<edge::ptr> ifcopenshell::geom::taxonomy::curve_to_edge_upgrade_impl(ptr item) {
+	std::optional<edge::ptr> edge_;
 	auto circle_ = dcast<circle>(item);
 	auto ellipse_ = dcast<ellipse>(item);
 	auto line_ = dcast<line>(item);
@@ -725,8 +712,8 @@ boost::optional<edge::ptr> ifcopenshell::geometry::taxonomy::curve_to_edge_upgra
 	return edge_;
 }
 
-boost::optional<loop::ptr> ifcopenshell::geometry::taxonomy::curve_to_loop_upgrade_impl(ptr item) {
-	boost::optional<loop::ptr> loop_;
+std::optional<loop::ptr> ifcopenshell::geom::taxonomy::curve_to_loop_upgrade_impl(ptr item) {
+	std::optional<loop::ptr> loop_;
 	auto circle_ = dcast<circle>(item);
 	auto ellipse_ = dcast<ellipse>(item);
 	auto line_ = dcast<line>(item);
@@ -755,8 +742,8 @@ boost::optional<loop::ptr> ifcopenshell::geometry::taxonomy::curve_to_loop_upgra
 	return loop_;
 }
 
-boost::optional<loop::ptr> ifcopenshell::geometry::taxonomy::edge_to_loop_upgrade_impl(ptr item) {
-	boost::optional<loop::ptr> loop_;
+std::optional<loop::ptr> ifcopenshell::geom::taxonomy::edge_to_loop_upgrade_impl(ptr item) {
+	std::optional<loop::ptr> loop_;
 	auto edge_ = dcast<edge>(item);
 	if (edge_) {
 		loop_ = make<loop>();
@@ -765,8 +752,8 @@ boost::optional<loop::ptr> ifcopenshell::geometry::taxonomy::edge_to_loop_upgrad
 	return loop_;
 }
 
-boost::optional<face::ptr> ifcopenshell::geometry::taxonomy::curve_to_face_upgrade_impl(ptr item) {
-    boost::optional<face::ptr> face_;
+std::optional<face::ptr> ifcopenshell::geom::taxonomy::curve_to_face_upgrade_impl(ptr item) {
+    std::optional<face::ptr> face_;
     auto circle_ = dcast<circle>(item);
     auto ellipse_ = dcast<ellipse>(item);
     auto line_ = dcast<line>(item);
@@ -821,30 +808,30 @@ namespace {
 }
 
 
-boost::optional<function_item::ptr> ifcopenshell::geometry::taxonomy::loop_to_function_item_upgrade_impl(ptr item) {
-	boost::optional<function_item::ptr> function_item_;
+std::optional<function_item::ptr> ifcopenshell::geom::taxonomy::loop_to_function_item_upgrade_impl(ptr item) {
+	std::optional<function_item::ptr> fi_;
 	auto loop_ = dcast<loop>(item);
 	if (loop_) {
-        if (loop_->function_item.is_initialized()) {
-            function_item_ = loop_->function_item;
+		if (loop_->fi.has_value()) {
+			fi_ = loop_->fi;
 		} else {
          // piecewise_function is a specialization of function_item - callers don't need to know this detail
-			piecewise_function::spans_t spans;
+			piecewise_function::span_list spans;
 			spans.reserve(loop_->children.size());
 			for (auto& edge_ : loop_->children) {
 				if (edge_->basis && edge_->basis->kind() == CIRCLE) {
 					const circle::ptr circ = std::static_pointer_cast<circle>(edge_->basis);
 
-					auto* s_pnt = boost::get<point3::ptr>(&edge_->start);
-					auto* e_pnt = boost::get<point3::ptr>(&edge_->end);
-					auto* s_param = boost::get<double>(&edge_->start);
-					auto* e_param = boost::get<double>(&edge_->end);
+					auto* s_pnt = std::get_if<point3::ptr>(&edge_->start);
+                    auto* e_pnt = std::get_if<point3::ptr>(&edge_->end);
+                    auto* s_param = std::get_if<double>(&edge_->start);
+                    auto* e_param = std::get_if<double>(&edge_->end);
 
 					if (!s_pnt && !s_param) {
-						return boost::none;
+						return std::nullopt;
 					}
 					if (!e_pnt && !e_param) {
-						return boost::none;
+						return std::nullopt;
 					}
 
 					double s = s_pnt ? project_onto_curve(circ, **s_pnt) : *s_param;
@@ -859,12 +846,12 @@ boost::optional<function_item::ptr> ifcopenshell::geometry::taxonomy::loop_to_fu
 						return matrix4(P.ccomponents(), circ->matrix->ccomponents().col(2).head<3>(), d.ccomponents()).components();
 					};
 					spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn));
-				} else if (edge_->start.which() == 1 && edge_->end.which() == 1) {
+				} else if (edge_->start.index() == 1 && edge_->end.index() == 1) {
 					if (edge_->basis && edge_->basis->kind() != LINE) {
-						Logger::Root().Message(Logger::Severity::LOG_WARNING, "UNS", 20, "Basis curve not supported - edge is treated as a straight line edge");
+						ifcopenshell::logger::root().message(ifcopenshell::logger::severity::LOG_WARNING, "UNS", 20, "Basis curve not supported - edge is treated as a straight line edge");
 					}
-					const auto& s = boost::get<point3::ptr>(edge_->start)->ccomponents();
-					const auto& e = boost::get<point3::ptr>(edge_->end)->ccomponents();
+					const auto& s = std::get<point3::ptr>(edge_->start)->ccomponents();
+					const auto& e = std::get<point3::ptr>(edge_->end)->ccomponents();
 					Eigen::Vector3d v = e - s;
 					auto l = v.norm(); // the norm of a vector is a measure of its length
 					v.normalize();     // normalize the vector so that it is a unit direction vector
@@ -876,13 +863,13 @@ boost::optional<function_item::ptr> ifcopenshell::geometry::taxonomy::loop_to_fu
 					};
 					spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn));
 				} else {
-					Logger::Root().Message(Logger::Severity::LOG_ERROR, "UNS", 21, "Basis curve not supported");
-					return boost::none;
+					ifcopenshell::logger::root().message(ifcopenshell::logger::severity::LOG_ERROR, "UNS", 21, "Basis curve not supported");
+					return std::nullopt;
 				}
 			}
-            function_item_ = make<piecewise_function>(0.0, spans);
-            loop_->function_item = function_item_;
+			fi_ = make<piecewise_function>(0.0,spans);
+			loop_->fi = fi_;
 		}
 	}
-    return function_item_;
+    return fi_;
 }
