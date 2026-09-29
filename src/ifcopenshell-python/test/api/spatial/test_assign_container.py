@@ -46,12 +46,9 @@ class TestAssignContainer(test.bootstrap.IFC4):
         beam_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBeamType")
         with pytest.raises(TypeError):
             ifcopenshell.api.spatial.assign_container(self.file, products=[beam_type], relating_structure=storey)
-        # A type mixed into an otherwise valid selection must not be partially applied.
         wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         with pytest.raises(TypeError):
-            ifcopenshell.api.spatial.assign_container(
-                self.file, products=[wall, beam_type], relating_structure=storey
-            )
+            ifcopenshell.api.spatial.assign_container(self.file, products=[wall, beam_type], relating_structure=storey)
         assert ifcopenshell.util.element.get_container(wall) is None
 
     def test_doing_nothing_if_the_container_is_already_assigned(self):
