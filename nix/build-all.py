@@ -51,7 +51,7 @@ Used environment variables:
     - ``NO_CLEAN`` - do not clean `ifcopenshell` build directories but continue working on current build
     (installed dependencies are never cleared).
     By default option is disabled, to enable pass any value from `1`, `on`, `true`.
-    - ``IFCOS_SCHEMAS`` - schemas to be built; defaults to cmake default (8 schemas), to be supplied as `2x3;4;4x3_add2`
+    - ``IFCOS_SCHEMAS`` - schemas to be built; defaults to common schemas (`2x3;4;4x3_add2`), to be supplied in the same format
     - ``WASM_PYTHON_PATH`` - path to WASM Python installation,
     used to deduce `PYVERSION` (e.g. '3.13.2'), `PYTHONINCLUDE`,
     `SIDE_MODULE_CFLAGS`, `SIDE_MODULE_LDFLAGS`.
@@ -337,7 +337,7 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         dest="schemas",
         default=argparse.SUPPRESS,
         help="IFC schemas to be built, e.g. '2x3;4;4x3_add2'. Also can be specified by using IFCOS_SCHEMAS "
-        "env variable. (default: cmake default, currently 8 schemas)",
+        "env variable. (default: common schemas, 2x3;4;4x3_add2)",
     )
     arg_parser.add_argument(
         "--build-cfg",
@@ -535,7 +535,7 @@ if BUILD_CFG == "MinSizeRel":
 cecho(f"* IFCOS_NUM_BUILD_PROCS  = {IFCOS_NUM_BUILD_PROCS}", MAGENTA)
 cecho(""" - How many compiler processes may be run in parallel.""")
 cecho(f"* IFCOS_SCHEMAS = '{ARGS.schemas}'", MAGENTA)
-cecho(""" - IFC Schemas to compile. If not provided, fallback to default provided in cmake.
+cecho(""" - IFC Schemas to compile. If not provided, only common schemas are built.
 """)
 
 dependency_tree: dict[str, tuple[str, ...]] = {
@@ -1777,6 +1777,8 @@ if WASM:
 
 if ARGS.schemas:
     cmake_args.append(f"-DSCHEMA_VERSIONS={ARGS.schemas}")
+else:
+    cmake_args.append("-DBUILD_ONLY_COMMON_SCHEMAS=ON")
 
 if "cgal" in targets:
     cmake_args_prefix_path.append(str(Dependencies.get_install_dir("cgal")))
