@@ -276,15 +276,7 @@ class OverrideOriginSet(bpy.types.Operator, tool.Ifc.Operator):
             if not tool.Geometry.is_meshlike(representation) and not self.can_regenerate_swept_solid(
                 element, representation
             ):
-                # Parametric representations (e.g. SweptSolid) aren't stored as raw mesh
-                # vertices, so Blender's origin_set can't simply be applied to them. A
-                # single simple extrusion can safely be re-derived from the tessellated
-                # mesh after the origin shift (the same logic bim.update_representation
-                # already uses), but anything more complex - multiple extrusions,
-                # booleans, or a parametric material profile/layer set as used by walls,
-                # columns and beams - can't be safely re-centered without risking
-                # silently replacing the parametric representation with a plain mesh.
-                # Rather than doing nothing silently, tell the user explicitly.
+                # Only a single simple extrusion can be re-derived from the mesh; warn instead of doing nothing.
                 self.report(
                     {"WARNING"},
                     f"IFC Set Origin is not supported for '{obj.name}': its representation "
@@ -298,16 +290,12 @@ class OverrideOriginSet(bpy.types.Operator, tool.Ifc.Operator):
     def can_regenerate_swept_solid(
         element: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
     ) -> bool:
-        """Whether a non-meshlike representation is a simple enough SweptSolid to be safely
-        re-derived from its (tessellated) Blender mesh, the same way bim.update_representation
-        does for meshlike representations.
-        """
+        """Whether a SweptSolid is simple enough to be re-derived from its Blender mesh."""
         if not tool.Geometry.is_swept_profile(representation):
             return False
         material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
         if material and material.is_a() in ("IfcMaterialProfileSet", "IfcMaterialLayerSet"):
-            # Parametrically defined by axis + material profile/layer set. Re-deriving
-            # the extrusion from the mesh would discard that parametric definition.
+            # Re-deriving the extrusion from the mesh would discard the parametric definition.
             return False
         return bool(tool.Geometry.get_ifc_representation_class(element, representation))
 
