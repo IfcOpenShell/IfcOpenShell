@@ -121,6 +121,7 @@ Scenario: Assign material - material layer set
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
     And I press "bim.add_material()"
+    And the object "IfcWallType/Empty" is selected
     When I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
     And I press "bim.assign_material"
     Then the object "IfcWallType/Empty" does not have the material "Default"
@@ -134,6 +135,7 @@ Scenario: Unassign material - material layer set
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
     And I press "bim.add_material()"
+    And the object "IfcWallType/Empty" is selected
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
     And I press "bim.assign_material"
     When I press "bim.unassign_material"
@@ -155,6 +157,7 @@ Scenario: Unassign material - removing inherited material
     And I press "bim.assign_class"
 
     And I press "bim.add_material()"
+    And the object "IfcWallType/Empty" is selected
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
     And I press "bim.assign_material"
 
@@ -181,6 +184,7 @@ Scenario: Enable editing assigned material - material layer set
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
     And I press "bim.add_material()"
+    And the object "IfcWallType/Empty" is selected
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
     And I press "bim.assign_material"
     When I press "bim.enable_editing_assigned_material"
@@ -200,6 +204,7 @@ Scenario: Disable editing assigned material - material layer set
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
     And I press "bim.add_material()"
+    And the object "IfcWallType/Empty" is selected
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
     And I press "bim.assign_material"
     And I press "bim.enable_editing_assigned_material"
@@ -220,6 +225,7 @@ Scenario: Edit assigned material - material layer set
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
     And I press "bim.add_material()"
+    And the object "IfcWallType/Empty" is selected
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
     And I press "bim.assign_material"
     And I press "bim.enable_editing_assigned_material"
@@ -235,6 +241,7 @@ Scenario: Assign material - material profile set
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
     And I press "bim.add_material()"
+    And the object "IfcWallType/Empty" is selected
     When I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialProfileSet"
     And I press "bim.assign_material"
     Then the object "IfcWallType/Empty" does not have the material "Default"
@@ -248,6 +255,7 @@ Scenario: Unassign material - material profile set
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
     And I press "bim.add_material()"
+    And the object "IfcWallType/Empty" is selected
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialProfileSet"
     And I press "bim.assign_material"
     When I press "bim.unassign_material"
@@ -267,6 +275,7 @@ Scenario: Enable editing assigned material - material profile set
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
     And I press "bim.add_material()"
+    And the object "IfcWallType/Empty" is selected
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialProfileSet"
     And I press "bim.assign_material"
     When I press "bim.enable_editing_assigned_material"
@@ -286,6 +295,7 @@ Scenario: Disable editing assigned material - material profile set
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
     And I press "bim.add_material()"
+    And the object "IfcWallType/Empty" is selected
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialProfileSet"
     And I press "bim.assign_material"
     And I press "bim.enable_editing_assigned_material"
@@ -306,6 +316,7 @@ Scenario: Edit assigned material - material profile set
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
     And I press "bim.add_material()"
+    And the object "IfcWallType/Empty" is selected
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialProfileSet"
     And I press "bim.assign_material"
     And I press "bim.enable_editing_assigned_material"
@@ -454,6 +465,7 @@ Scenario: Add material set layer
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
     And I press "bim.add_material()"
+    And the object "IfcWallType/Empty" is selected
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
     And I press "bim.assign_material"
     And I press "bim.enable_editing_assigned_material"
@@ -477,6 +489,7 @@ Scenario: Remove material set layer
     And I press "bim.assign_class"
 
     And I press "bim.add_material()"
+    And the object "IfcWallType/Empty" is selected
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
     And I press "bim.assign_material"
 
