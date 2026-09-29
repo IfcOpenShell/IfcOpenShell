@@ -23,6 +23,10 @@ import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.pset
 
+# Sentinel distinguishing "no Unit dict was passed at all" from "a Unit dict was passed
+# with Unit explicitly set to None" (i.e. explicitly clear an existing override).
+_NO_UNIT = object()
+
 
 def edit_pset(
     file: ifcopenshell.file,
@@ -285,7 +289,7 @@ class Usecase:
                 f'Value "{self.settings["properties"][prop.Name]}" is not a valid value for enum property {prop.Name}.'
             )
 
-        if unit:
+        if unit is not _NO_UNIT:
             prop.Unit = unit
         del self.settings["properties"][prop.Name]
         return prop
@@ -315,7 +319,7 @@ class Usecase:
             else:
                 value = self.cast_value_to_primary_measure_type(value, primary_measure_type)
                 prop.NominalValue = self.file.create_entity(primary_measure_type, value)
-        if unit:
+        if unit is not _NO_UNIT:
             prop.Unit = unit
         del self.settings["properties"][prop.Name]
         return prop
@@ -334,7 +338,7 @@ class Usecase:
                 # If it's not an entity, then it's a primitive data type
                 elif not value.is_entity():
                     kwargs = {"Name": name, "NominalValue": value}
-                    if unit:
+                    if unit is not None and unit is not _NO_UNIT:
                         kwargs["Unit"] = unit
                     properties.append(self.file.create_entity("IfcPropertySingleValue", **kwargs))
 
@@ -358,7 +362,7 @@ class Usecase:
                                 "IfcPropertyListValue",
                                 Name=name,
                                 ListValues=[self.file.create_entity(ifc_class, v) for v in value],
-                                Unit=unit,
+                                Unit=unit if (unit is not None and unit is not _NO_UNIT) else None,
                             )
                         )
                         break
@@ -368,7 +372,7 @@ class Usecase:
                             "IFCPROPERTYENUMERATION",
                             Name=name,
                             EnumerationValues=pset_template.Enumerators.EnumerationValues,
-                            **({"Unit": unit} if unit else {}),
+                            **({"Unit": unit} if (unit is not None and unit is not _NO_UNIT) else {}),
                         )
                         prop_enum_value = self.file.create_entity(
                             "IFCPROPERTYENUMERATEDVALUE",
@@ -394,7 +398,7 @@ class Usecase:
                     value = self.cast_value_to_primary_measure_type(value, primary_measure_type)
                     nominal_value = self.file.create_entity(primary_measure_type, value)
                 args = {"Name": name, "NominalValue": nominal_value}
-                if unit:
+                if unit is not None and unit is not _NO_UNIT:
                     args["Unit"] = unit
 
                 properties.append(self.file.create_entity("IfcPropertySingleValue", **args))
@@ -460,13 +464,7 @@ class Usecase:
                 return "IfcDate"
 
     def is_empty_numeric_value(self, value: Any, primary_measure_type: str) -> bool:
-        """Whether an empty string is being assigned to a numeric measure.
-
-        Casting an empty string to a number raises (e.g. ``float("")``), which
-        would abort the whole edit. Callers treat this as "no value" instead,
-        the same way ``None`` is handled. Empty strings for string-based
-        measures (e.g. IfcLabel) are left untouched.
-        """
+        """Whether an empty string is assigned to a numeric measure, to be treated as no value."""
         if value != "":
             return False
         return self.file.create_entity(primary_measure_type).attribute_type(0) in ("DOUBLE", "INT")
@@ -496,12 +494,16 @@ class Usecase:
     def unpack_unit_value(value_candidate):
         """
         Returns tuple of the format: (Unit, NominalValue)
-        NOTE: Unit fallbacks to None
+
+        NOTE: Unit is the module-level _NO_UNIT sentinel when no Unit was specified at all
+        (bare value, or a dict without a "Unit" key), so that callers can distinguish "leave
+        the existing Unit untouched" from an explicit `{"Unit": None, ...}` (clear the
+        existing Unit override, falling back to the project default).
         """
         if value_candidate is None:
             return (None, None)
 
         if isinstance(value_candidate, dict):  # Custom IfcUnits can be passed in a dict along with the pset value
-            return (value_candidate["Unit"], value_candidate["NominalValue"])
+            return (value_candidate.get("Unit", _NO_UNIT), value_candidate["NominalValue"])
 
-        return (None, value_candidate)
+        return (_NO_UNIT, value_candidate)
