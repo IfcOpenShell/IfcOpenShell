@@ -335,6 +335,7 @@ class TestFilterElements(test.bootstrap.IFC4):
             assert subject.filter_elements(self.file, f"IfcWall, Pset_WallCommon.LoadBearing={false_value}") == {
                 element2
             }, false_value
+        assert subject.filter_elements(self.file, "IfcWall, Pset_WallCommon.LoadBearing=Maybe") == set()
 
     def test_selecting_by_property_with_comparisons(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
