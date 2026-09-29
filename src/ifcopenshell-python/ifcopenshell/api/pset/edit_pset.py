@@ -355,7 +355,7 @@ class Usecase:
                         )
                     )
             prop.ListValues = tuple(list_values)
-        if unit:
+        if unit is not _NO_UNIT:
             prop.Unit = unit
         del self.settings["properties"][prop.Name]
         return prop
