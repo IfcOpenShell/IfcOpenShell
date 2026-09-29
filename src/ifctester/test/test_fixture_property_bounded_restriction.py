@@ -36,11 +36,6 @@ FIXTURES = os.path.join(os.path.dirname(__file__), "fixtures")
 
 class TestPropertyBoundedRestrictionFixture:
     def test_open_lower_bound_fails_a_minimum_restriction(self):
-        # buildingSMART/IDS#371: an IfcPropertyBoundedValue with only an
-        # UpperBoundValue (no LowerBoundValue) is checked against a
-        # minInclusive restriction. The missing lower bound could be
-        # anything, including below the minimum, so it must fail rather
-        # than pass by omission.
         specs = ids.open(os.path.join(FIXTURES, "property_bounded_restriction", "property_bounded_restriction.ids"))
         ifc = ifcopenshell.open(
             os.path.join(FIXTURES, "property_bounded_restriction", "property_bounded_restriction.ifc")

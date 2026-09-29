@@ -1197,8 +1197,6 @@ class TestProperty:
         facet = Property(propertySet="Foo_Bar", baseName="Foo", value="2", dataType="IFCLENGTHMEASURE")
         run("Any matching value in a bounded property will pass 4/4", facet=facet, inst=element, expected=False)
 
-        # A restriction against a bounded property must respect the whole declared
-        # interval, not any single value in it. See buildingSMART/IDS#371.
         ifc = self.setup_ifc()
         element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
         pset = ifcopenshell.api.pset.add_pset(ifc, product=element, name="Foo_Bar")
