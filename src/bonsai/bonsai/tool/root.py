@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 
+import math
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 import bpy
@@ -29,7 +30,6 @@ import ifcopenshell.api.style
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
-import numpy as np
 
 import bonsai.core.aggregate
 import bonsai.core.geometry
@@ -166,7 +166,11 @@ class Root(bonsai.core.tool.Root):
         mapped geometry untouched."""
         if target.is_a("IfcCartesianTransformationOperator3D"):
             matrix = ifcopenshell.util.placement.get_cartesiantransformationoperator3d(target)
-            return bool(np.allclose(matrix, np.eye(4)))
+            return all(
+                math.isclose(matrix[i][j], float(i == j), rel_tol=1e-5, abs_tol=1e-8)
+                for i in range(4)
+                for j in range(4)
+            )
         # 2D operators, conservatively treated as transformed unless plainly identity.
         if any(coordinate != 0.0 for coordinate in target.LocalOrigin.Coordinates):
             return False
