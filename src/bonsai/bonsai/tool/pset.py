@@ -29,15 +29,9 @@ import ifcopenshell.util.element
 import ifcopenshell.util.unit
 
 import bonsai.bim.helper
-# Bind the schema module directly rather than referencing it as
-# ``bonsai.bim.schema`` at call time: on a Blender restart / add-on reload the
-# ``bonsai.bim`` package can lose its ``schema`` attribute before the pset UI
-# draws, which raised ``AttributeError: module 'bonsai.bim' has no attribute
-# 'schema'`` and left the panels blank (see #8236). A directly bound reference
-# survives that, since it points at the module object itself.
-from bonsai.bim import schema as bim_schema
 import bonsai.core.tool
 import bonsai.tool as tool
+from bonsai.bim import schema as bim_schema
 
 if TYPE_CHECKING:
     from bonsai.bim.module.pset.prop import (
