@@ -78,8 +78,6 @@ class TestCsv2Ifc:
         self.validate_ifc_file_against_csv(ifc_file, csv_filepath)
 
     def test_import_semicolon_delimited(self):
-        # Regression test for #7048. Locales that use a comma as the decimal separator
-        # use a semicolon as the field delimiter, which was previously unreadable.
         csv_filepath = Path(__file__).parent.parent / "sample_cost_schedule_house_FR.csv"
         rows = self.get_items_rows_from_csv(csv_filepath)
 
@@ -91,7 +89,6 @@ class TestCsv2Ifc:
             with semicolon_filepath.open("w", newline="", encoding="utf-8") as csv_file:
                 csv.writer(csv_file, delimiter=";").writerows(all_rows)
 
-            # The comma reader must not silently treat the whole line as one column.
             assert len(self.get_items_rows_from_csv(semicolon_filepath, delimiter=";")) == len(rows)
 
             ifc_file = self.setup_ifc_file()
@@ -115,7 +112,6 @@ class TestCsv2Ifc:
             n_rows = len(self.get_items_rows_from_csv(csv_filepath))
             assert len(self.get_items_rows_from_csv(exported, delimiter=";")) == n_rows
 
-            # Round trip it back through the semicolon reader.
             new_ifc_file = self.setup_ifc_file()
             ifc5d.csv2ifc.Csv2Ifc(str(exported), new_ifc_file, delimiter=";").execute()
             assert len(new_ifc_file.by_type("IfcCostItem")) == n_rows
