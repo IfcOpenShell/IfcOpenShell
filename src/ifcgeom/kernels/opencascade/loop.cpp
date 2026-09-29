@@ -167,11 +167,7 @@ namespace {
 					auto v1 = std::get<double>(e_start);
 					auto v2 = std::get<double>(e_end);
 
-					if (is_conic && ALMOST_THE_SAME(v1, v2)) {
-						// A zero span trim is a degenerate segment, not a full revolution,
-						// but fmod(0, 2pi) == 0 would emit a whole conic edge (#6912).
-						throw std::runtime_error("Degenerate zero-span trimmed conic segment");
-					} else if (is_conic && ALMOST_THE_SAME(fmod(v2 - v1, M_PI * 2.), 0.)) {
+					if (is_conic && ALMOST_THE_SAME(fmod(v2 - v1, M_PI * 2.), 0.)) {
 						E = BRepBuilderAPI_MakeEdge(curve).Edge();
 					} else {
 						E = BRepBuilderAPI_MakeEdge(curve, v1, v2).Edge();
