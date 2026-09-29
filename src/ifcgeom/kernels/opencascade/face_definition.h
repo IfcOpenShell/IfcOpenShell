@@ -26,7 +26,7 @@
 #include <map>
 #include <vector>
 
-namespace IfcGeom {
+namespace ifcopenshell::geom {
 	namespace util {
 
 		/* Returns whether wire conforms to a polyhedron, i.e. only edges with linear curves*/
@@ -70,7 +70,7 @@ namespace IfcGeom {
 			std::pair<wire_it, wire_it> inner_wires() const {
 				return { wires_.begin() + 1, wires_.end() };
 			}
-		};	
+		};
 
 	}
 }

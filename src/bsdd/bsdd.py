@@ -534,7 +534,7 @@ class Client:
         self.session.mount("http://", HTTPAdapter(max_retries=retries))
 
     def get(self, endpoint, params=None, is_auth_required=False):
-        headers = {"User-Agent": "IfcOpenShell.bSDD.py/0.8.0"}
+        headers = {"User-Agent": "IfcOpenShell.bSDD.py/0.9.0"}
         if is_auth_required:
             headers["Authorization"] = "Bearer " + self.get_access_token()
         response = self.session.get(f"{self.baseurl}{endpoint}", timeout=10, headers=headers, params=params or None)
@@ -550,7 +550,7 @@ class Client:
         return response.json()
 
     def _get_deprecated(self, endpoint, params=None, is_auth_required=False):
-        headers = {"User-Agent": "IfcOpenShell.bSDD.py/0.8.0"}
+        headers = {"User-Agent": "IfcOpenShell.bSDD.py/0.9.0"}
         old_baseurl = "https://bs-dd-api-prototype.azurewebsites.net/"
         if is_auth_required:
             headers["Authorization"] = "Bearer " + self.get_access_token()
@@ -712,7 +712,7 @@ class Client:
         return self.get(f"api/Unit/{version}")
 
     def get_dictionary(
-        self, dictionary_uri: str = "", include_test_dictionaries: bool = "False", version: int = 1
+        self, dictionary_uri: str = "", include_test_dictionaries: bool = False, version: int = 1
     ) -> DictionaryResponseContractV1:
         """
         Get list of available Dictionaries
@@ -1031,7 +1031,7 @@ def apply_ifc_classification_properties(
     psets = ifcopenshell.util.element.get_psets(element)
     for prop in classificationProperties:
         predefinedValue = prop.get("predefinedValue")
-        if not predefinedValue or prop.get("propertyDomainName") != "IFC":
+        if not predefinedValue or predefinedValue == "None" or prop.get("propertyDomainName") != "IFC":
             continue
         pset = psets.get(prop["propertySet"])
         if pset:
