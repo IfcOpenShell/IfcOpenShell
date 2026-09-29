@@ -168,9 +168,9 @@ def add_instance_wall_coverings_from_walls(
             covering.create_wall_covering(obj, facing_cursor=facing_cursor)
 
 
-class NoDefaultContainer(Exception):
+class NoLayerSetThickness(Exception):
     pass
 
 
-class NoLayerSetThickness(Exception):
+class NoDefaultContainer(Exception):
     pass
