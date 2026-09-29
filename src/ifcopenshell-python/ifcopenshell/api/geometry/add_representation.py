@@ -555,16 +555,8 @@ class Usecase:
                     return self.create_curves_from_mesh_ifc2x3(should_exclude_faces=should_exclude_faces, is_2d=is_2d)
                 return self.create_curves_from_mesh(should_exclude_faces=should_exclude_faces, is_2d=is_2d)
 
-        # Polyline-only curves (ie. no bezier splines needing flattening into line
-        # segments) can be converted directly, spline by spline, without going
-        # through a mesh round-trip. Routing them through the mesh round-trip below
-        # is not only unnecessary, it is actively destructive: remove_doubles_from_mesh
-        # merges vertices by distance regardless of which spline they belong to, so
-        # multiple splines that legitimately share a point (eg. several leader arrows
-        # fanning out from the same origin) get welded into a single branching vertex.
-        # Converting that back into a curve then arbitrarily re-chains the edges into
-        # a different, wrong set of splines (eg. two arrows get merged into one zigzag
-        # spline while losing the shared origin as each spline's start point). See #5268.
+        # Curves without bezier splines skip the mesh round-trip, which welds
+        # splines that share a point (#5268).
         if isinstance(geom_data, bpy.types.Curve) and not any(spline.type == "BEZIER" for spline in geom_data.splines):
             if self.file.schema == "IFC2X3":
                 return self.create_curves_from_curve_ifc2x3(is_2d=is_2d, curve_object_data=geom_data)
