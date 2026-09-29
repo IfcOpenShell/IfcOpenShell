@@ -70,8 +70,9 @@ def test_outside_batch_calls_switch_representation_directly():
     voided_obj = _mock_voided_obj("Wall")
     representation = Mock()
 
-    with patch("bonsai.core.geometry.switch_representation") as recut, patch.object(
-        tool.Ifc, "get_entity", return_value=_mock_element(42)
+    with (
+        patch("bonsai.core.geometry.switch_representation") as recut,
+        patch.object(tool.Ifc, "get_entity", return_value=_mock_element(42)),
     ):
         tool.Geometry.recut_host(voided_obj, representation)
 
@@ -88,9 +89,11 @@ def test_inside_batch_queues_then_drains_once_on_exit():
     representation = Mock()
     element = _mock_element(42)
 
-    with patch("bonsai.core.geometry.switch_representation") as recut, patch.object(
-        tool.Ifc, "get_entity", return_value=element
-    ), patch.object(tool.Geometry, "get_active_representation", return_value=representation):
+    with (
+        patch("bonsai.core.geometry.switch_representation") as recut,
+        patch.object(tool.Ifc, "get_entity", return_value=element),
+        patch.object(tool.Geometry, "get_active_representation", return_value=representation),
+    ):
         with tool.Geometry.batch_host_recut():
             for _ in range(5):
                 tool.Geometry.recut_host(voided_obj, representation)
@@ -112,9 +115,11 @@ def test_two_different_hosts_drain_separately():
     def get_entity(obj):
         return elem_a if obj is obj_a else elem_b
 
-    with patch("bonsai.core.geometry.switch_representation") as recut, patch.object(
-        tool.Ifc, "get_entity", side_effect=get_entity
-    ), patch.object(tool.Geometry, "get_active_representation", return_value=rep):
+    with (
+        patch("bonsai.core.geometry.switch_representation") as recut,
+        patch.object(tool.Ifc, "get_entity", side_effect=get_entity),
+        patch.object(tool.Geometry, "get_active_representation", return_value=rep),
+    ):
         with tool.Geometry.batch_host_recut():
             for _ in range(5):
                 tool.Geometry.recut_host(obj_a, rep)
@@ -132,9 +137,11 @@ def test_nested_batches_only_outermost_drains():
     voided_obj = _mock_voided_obj("Wall")
     rep = Mock()
 
-    with patch("bonsai.core.geometry.switch_representation") as recut, patch.object(
-        tool.Ifc, "get_entity", return_value=_mock_element(1)
-    ), patch.object(tool.Geometry, "get_active_representation", return_value=rep):
+    with (
+        patch("bonsai.core.geometry.switch_representation") as recut,
+        patch.object(tool.Ifc, "get_entity", return_value=_mock_element(1)),
+        patch.object(tool.Geometry, "get_active_representation", return_value=rep),
+    ):
         with tool.Geometry.batch_host_recut():
             tool.Geometry.recut_host(voided_obj, rep)
             with tool.Geometry.batch_host_recut():
@@ -154,14 +161,76 @@ def test_stale_element_skipped_at_drain():
     rep = Mock()
     entity_state = {"alive": _mock_element(1)}
 
-    with patch("bonsai.core.geometry.switch_representation") as recut, patch.object(
-        tool.Ifc, "get_entity", side_effect=lambda obj: entity_state["alive"]
-    ), patch.object(tool.Geometry, "get_active_representation", return_value=rep):
+    with (
+        patch("bonsai.core.geometry.switch_representation") as recut,
+        patch.object(tool.Ifc, "get_entity", side_effect=lambda obj: entity_state["alive"]),
+        patch.object(tool.Geometry, "get_active_representation", return_value=rep),
+    ):
         with tool.Geometry.batch_host_recut():
             tool.Geometry.recut_host(dead_obj, rep)
             entity_state["alive"] = None
 
     assert recut.call_count == 0
+
+
+class _DeadStructRNA:
+    """Simulates a Blender object whose StructRNA has been removed — every
+    attribute access raises ReferenceError. Enqueue this as voided_obj to
+    reproduce the outliner-mid-batch-delete crash."""
+
+    def __getattr__(self, name):
+        raise ReferenceError("StructRNA of type Object has been removed")
+
+    def __bool__(self):
+        raise ReferenceError("StructRNA of type Object has been removed")
+
+
+def test_dead_structrna_recut_skipped_at_drain():
+    """Blender object is deleted while the batch is open (outliner delete +
+    manual DEL bypass the bim.delete cascade). The drain must skip it silently
+    — not raise — so unrelated hosts in the same batch still get their recut."""
+    from bonsai import tool
+
+    dead_obj = _DeadStructRNA()
+    live_obj = _mock_voided_obj("LiveWall")
+    rep = Mock()
+
+    def get_entity(obj):
+        # Called only when the guard clears — for the dead ref, guard short-circuits first.
+        return _mock_element(2)
+
+    with (
+        patch("bonsai.core.geometry.switch_representation") as recut,
+        patch.object(tool.Ifc, "get_entity", side_effect=get_entity),
+        patch.object(tool.Geometry, "get_active_representation", return_value=rep),
+    ):
+        with tool.Geometry.batch_host_recut():
+            tool.Geometry._host_recut_queue[999] = (dead_obj, rep)
+            tool.Geometry.recut_host(live_obj, rep)
+
+    assert recut.call_count == 1, "live host must still get its recut despite a dead sibling in the queue"
+    drained_obj = recut.call_args.kwargs["obj"]
+    assert drained_obj is live_obj
+
+
+def test_dead_structrna_update_skipped_at_drain():
+    """Same guarantee for update_representation drain path."""
+    from bonsai import tool
+
+    dead_obj = _DeadStructRNA()
+    live_obj = _mock_voided_obj("LiveWall")
+    bpy_ops_mock = Mock()
+
+    with (
+        patch("bonsai.tool.geometry.bpy.ops", new=bpy_ops_mock),
+        patch.object(tool.Ifc, "get_entity", return_value=_mock_element(42)),
+        patch.object(tool.Geometry, "get_active_representation", return_value=Mock()),
+    ):
+        with tool.Geometry.batch_host_recut():
+            tool.Geometry._host_update_queue[999] = dead_obj
+            tool.Geometry.update_host_representation(live_obj)
+
+    assert bpy_ops_mock.bim.update_representation.call_count == 1
 
 
 def test_exception_inside_batch_still_resets_state():
@@ -182,8 +251,9 @@ def test_update_host_representation_outside_batch_fires_operator():
     voided_obj = _mock_voided_obj("Wall")
     bpy_ops_mock = Mock()
 
-    with patch("bonsai.tool.geometry.bpy.ops", new=bpy_ops_mock), patch.object(
-        tool.Ifc, "get_entity", return_value=_mock_element(42)
+    with (
+        patch("bonsai.tool.geometry.bpy.ops", new=bpy_ops_mock),
+        patch.object(tool.Ifc, "get_entity", return_value=_mock_element(42)),
     ):
         tool.Geometry.update_host_representation(voided_obj)
 
@@ -197,9 +267,11 @@ def test_update_host_representation_coalesces_inside_batch():
     voided_obj = _mock_voided_obj("Wall")
     bpy_ops_mock = Mock()
 
-    with patch("bonsai.tool.geometry.bpy.ops", new=bpy_ops_mock), patch.object(
-        tool.Ifc, "get_entity", return_value=_mock_element(42)
-    ), patch.object(tool.Geometry, "get_active_representation", return_value=Mock()):
+    with (
+        patch("bonsai.tool.geometry.bpy.ops", new=bpy_ops_mock),
+        patch.object(tool.Ifc, "get_entity", return_value=_mock_element(42)),
+        patch.object(tool.Geometry, "get_active_representation", return_value=Mock()),
+    ):
         with tool.Geometry.batch_host_recut():
             for _ in range(5):
                 tool.Geometry.update_host_representation(voided_obj)
@@ -220,10 +292,11 @@ def test_drain_order_update_before_recut():
     bpy_ops_mock = Mock()
     bpy_ops_mock.bim.update_representation.side_effect = lambda **kw: fire_log.append("update")
 
-    with patch("bonsai.tool.geometry.bpy.ops", new=bpy_ops_mock), patch(
-        "bonsai.core.geometry.switch_representation", side_effect=lambda *a, **kw: fire_log.append("recut")
-    ), patch.object(tool.Ifc, "get_entity", return_value=_mock_element(42)), patch.object(
-        tool.Geometry, "get_active_representation", return_value=rep
+    with (
+        patch("bonsai.tool.geometry.bpy.ops", new=bpy_ops_mock),
+        patch("bonsai.core.geometry.switch_representation", side_effect=lambda *a, **kw: fire_log.append("recut")),
+        patch.object(tool.Ifc, "get_entity", return_value=_mock_element(42)),
+        patch.object(tool.Geometry, "get_active_representation", return_value=rep),
     ):
         with tool.Geometry.batch_host_recut():
             tool.Geometry.recut_host(voided_obj, rep)
@@ -249,11 +322,14 @@ def test_mixed_hosts_drain_grouped_by_phase():
     bpy_ops_mock = Mock()
     bpy_ops_mock.bim.update_representation.side_effect = lambda **kw: update_targets.append(kw["obj"])
 
-    with patch("bonsai.tool.geometry.bpy.ops", new=bpy_ops_mock), patch(
-        "bonsai.core.geometry.switch_representation",
-        side_effect=lambda *a, **kw: recut_targets.append(kw["obj"]),
-    ), patch.object(tool.Ifc, "get_entity", side_effect=get_entity), patch.object(
-        tool.Geometry, "get_active_representation", return_value=rep
+    with (
+        patch("bonsai.tool.geometry.bpy.ops", new=bpy_ops_mock),
+        patch(
+            "bonsai.core.geometry.switch_representation",
+            side_effect=lambda *a, **kw: recut_targets.append(kw["obj"]),
+        ),
+        patch.object(tool.Ifc, "get_entity", side_effect=get_entity),
+        patch.object(tool.Geometry, "get_active_representation", return_value=rep),
     ):
         with tool.Geometry.batch_host_recut():
             tool.Geometry.update_host_representation(obj_a)
