@@ -14,10 +14,7 @@ jobs:
 
   publish:
     needs: upstream-only
-    name: ${{ matrix.config.name }}-${{ matrix.pyver }}
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
     steps:
       - uses: actions/checkout@v7 # https://github.com/actions/checkout
       - uses: actions/setup-python@v7 # https://github.com/actions/setup-python
