@@ -679,7 +679,7 @@ def validate(f: ifcopenshell.file | str | Path, logger: Logger | json_logger, ex
                                 continue
                             if isinstance(logger, json_logger):
                                 logger.set_state("attribute", f"{entity.name()}.{attr.name()}")
-                                logger.error("Instantiated measure %s has no corresponding unit", measure_inst)
+                                logger.error(f"Instantiated measure {measure_inst} has no corresponding unit")
                             else:
                                 logger.error(
                                     "For instance:\n    %s\n    %s\nWith attribute:\n    %s\n"
