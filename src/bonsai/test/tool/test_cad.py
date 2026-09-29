@@ -34,13 +34,13 @@ class TestAreEdgesCollinear(NewFile):
             (V(-1,0,-1), V(1,0,-1)), 
             (V(-1,0,1), V(1,0,1))
         )
-        
+
         # One edge is just a point and the other is a line segment.
         assert not subject.are_edges_collinear(
             (V(1,-1,0), V(1,-1,0)), 
             (V(-1,1,0), V(1,1,0))
         )
-        
+
         # Both edges are collinear and overlap.
         assert subject.are_edges_collinear(
             (V(0,0,0), V(2,2,2)),
@@ -52,7 +52,7 @@ class TestAreEdgesCollinear(NewFile):
             (V(0,0,0), V(1,1,1)),
             (V(2,2,2), V(3,3,3))
         )
-        
+
         # Edges are not parallel and not collinear.
         assert not subject.are_edges_collinear(
             (V(0,0,0), V(1,1,1)),
