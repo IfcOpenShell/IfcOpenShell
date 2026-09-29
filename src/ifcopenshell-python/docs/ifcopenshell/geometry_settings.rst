@@ -93,7 +93,7 @@ num_threads
 +------+-------------------------+---------+
 | Type | IfcConvert Option       | Default |
 +======+=========================+=========+
-| INT  | ``--threads`` or ``-j`` | 1       |
+| INT  | ``--threads`` or ``-j`` | 0       |
 +------+-------------------------+---------+
 
 Number of parallel processing threads for geometry interpretation.
