@@ -24,7 +24,7 @@ import os
 import types
 from collections import defaultdict
 from collections.abc import Iterable
-from typing import Any, Literal, NamedTuple, Union, get_args
+from typing import Any, Literal, NamedTuple, Optional, Union, get_args
 
 import ifcopenshell
 import ifcopenshell.api.pset
@@ -127,8 +127,61 @@ def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_inst
     return results
 
 
-def edit_qtos(ifc_file: ifcopenshell.file, results: ResultsDict) -> None:
-    """Apply quantification results as quantity sets."""
+def get_quantity_measures(rules: dict) -> dict[str, dict[str, str]]:
+    """Statically derive each quantity's measure class from the rule set that defines it,
+    reading it straight from the calculator's own Function table (the same source the
+    calculator itself used to compute the value) -- not guessed from the quantity name.
+
+    :param rules: A rule set as accepted by :func:`quantify`, e.g. from `ifc5d.qto.rules`.
+    :return: `qto_name -> quantity_name -> measure class` (e.g. "IfcLengthMeasure"), matching
+        the keys used by `SI2ProjectUnitConverter.project_units`.
+    """
+    measures: dict[str, dict[str, str]] = {}
+    for calculator_name, queries in rules.get("calculators", {}).items():
+        calculator = calculators[calculator_name]
+        for _entity_or_query, qtos in queries.items():
+            for qto_name, quantities in qtos.items():
+                for quantity_name, formula in quantities.items():
+                    if not formula:
+                        continue
+                    function = calculator.functions.get(formula)
+                    if function is None:
+                        continue
+                    measures.setdefault(qto_name, {})[quantity_name] = function.measure
+    return measures
+
+
+def _reconvert(ifc_file: ifcopenshell.file, value: float, to_unit: ifcopenshell.entity_instance) -> float:
+    """Re-express `value` (as computed by `SI2ProjectUnitConverter` -- the project's default
+    unit for its dimension, or, if the project has none, raw SI, mirroring `convert()`'s own
+    fallback below) in `to_unit`, which shares `to_unit`'s dimension (`UnitType`).
+    """
+    unit_type = getattr(to_unit, "UnitType", None)
+    from_unit = ifcopenshell.util.unit.get_project_unit(ifc_file, unit_type) if unit_type else None
+    from_scale = ifcopenshell.util.unit.get_unit_scale(from_unit) if from_unit else 1.0  # already SI
+    return value * from_scale / ifcopenshell.util.unit.get_unit_scale(to_unit)
+
+
+def edit_qtos(
+    ifc_file: ifcopenshell.file,
+    results: ResultsDict,
+    target_units: Optional[dict[str, ifcopenshell.entity_instance]] = None,
+    rules: Optional[dict] = None,
+) -> None:
+    """Apply quantification results as quantity sets.
+
+    :param target_units: Optional map of measure class (e.g. "IfcLengthMeasure", matching
+        `SI2ProjectUnitConverter.project_units`'s keys) to a unit to express *newly created*
+        quantities of that measure in, instead of the project default. Ignored unless `rules`
+        is also given (needed to resolve each quantity's measure class -- see
+        `get_quantity_measures`). Has no effect on quantities that already exist -- those are
+        always re-expressed in whatever Unit they already carry (see below), regardless of
+        `target_units`.
+    :param rules: The rule set used to produce `results` (the same object passed to
+        `quantify()`), used only to resolve `target_units` via `get_quantity_measures()`.
+    """
+    quantity_measures = get_quantity_measures(rules) if (target_units and rules) else {}
+
     for element, qtos in results.items():
         for name, quantities in qtos.items():
             qto = ifcopenshell.util.element.get_pset(element, name, should_inherit=False)
@@ -136,7 +189,36 @@ def edit_qtos(ifc_file: ifcopenshell.file, results: ResultsDict) -> None:
                 qto = ifc_file.by_id(qto["id"])
             else:
                 qto = ifcopenshell.api.pset.add_qto(ifc_file, element, name)
-            ifcopenshell.api.pset.edit_qto(ifc_file, qto=qto, properties=quantities)
+
+            existing_by_name = {q.Name: q for q in (qto.Quantities or ())}
+            wrapped_quantities: dict[str, Any] = {}
+
+            for quantity_name, value in quantities.items():
+                existing_unit = getattr(existing_by_name.get(quantity_name), "Unit", None)
+
+                if existing_unit is not None:
+                    # A quantity that already carries its own Unit override must be
+                    # re-expressed in that unit, not overwritten with a value computed in
+                    # the project default while the stale Unit label stays put.
+                    wrapped_quantities[quantity_name] = {
+                        "NominalValue": _reconvert(ifc_file, value, existing_unit),
+                        "Unit": existing_unit,
+                    }
+                    continue
+
+                measure = quantity_measures.get(name, {}).get(quantity_name)
+                target_unit = target_units.get(measure) if (target_units and measure) else None
+                if target_unit is not None:
+                    # Brand new quantity, proactively expressed in the chosen target unit.
+                    wrapped_quantities[quantity_name] = {
+                        "NominalValue": _reconvert(ifc_file, value, target_unit),
+                        "Unit": target_unit,
+                    }
+                    continue
+
+                wrapped_quantities[quantity_name] = value  # unchanged bare-float path
+
+            ifcopenshell.api.pset.edit_qto(ifc_file, qto=qto, properties=wrapped_quantities)
 
 
 class SI2ProjectUnitConverter:
@@ -254,8 +336,52 @@ class IfcOpenShell(QtoCalculator):
         "get_segment_length": Function(
             "IfcLengthMeasure", "Segment Length", "Intelligently guesses the length of flow segments"
         ),
+        "get_opening_width": Function(
+            "IfcLengthMeasure", "Opening Width", "The width of an opening, guessing the opening orientation"
+        ),
+        "get_opening_height": Function(
+            "IfcLengthMeasure", "Opening Height", "The height of an opening, guessing the opening orientation"
+        ),
+        "get_opening_depth": Function(
+            "IfcLengthMeasure",
+            "Opening Depth",
+            "The depth of an opening (through the voided element), guessing the opening orientation",
+        ),
+        "get_footing_length": Function(
+            "IfcLengthMeasure",
+            "Footing Length",
+            "The footing length. For beam-like footings (STRIP_FOOTING, FOOTING_BEAM) this is the "
+            "extruded run along the local Z axis. For slab-like footings (PAD_FOOTING, PILE_CAP) and "
+            "other predefined types it is the longer footprint side (the larger of local X or Y).",
+        ),
+        "get_footing_width": Function(
+            "IfcLengthMeasure",
+            "Footing Width",
+            "The footing width. For beam-like footings (STRIP_FOOTING, FOOTING_BEAM) this is the "
+            "cross section width along the local X axis. For slab-like footings (PAD_FOOTING, PILE_CAP) "
+            "and other predefined types it is the shorter footprint side (the smaller of local X or Y).",
+        ),
+        "get_footing_height": Function(
+            "IfcLengthMeasure",
+            "Footing Height",
+            "The footing height. For beam-like footings (STRIP_FOOTING, FOOTING_BEAM) this is the "
+            "cross section height along the local Y axis. For slab-like footings (PAD_FOOTING, PILE_CAP) "
+            "and other predefined types it is the thickness along the local Z axis.",
+        ),
+        "get_covering_width": Function(
+            "IfcLengthMeasure",
+            "Covering Width",
+            "The covering's thickness: the side area axis for AXIS2 (e.g. wall finishes), "
+            "otherwise the local Z depth (e.g. floor or ceiling finishes)",
+        ),
         # IfcAreaMeasure
         "get_area": Function("IfcAreaMeasure", "Area", "The total surface area of the element"),
+        "get_covering_area": Function(
+            "IfcAreaMeasure",
+            "Covering Area",
+            "The covering's side area for AXIS2 (e.g. wall finishes), otherwise its footprint "
+            "area (e.g. floor or ceiling finishes)",
+        ),
         "get_footprint_area": Function(
             "IfcAreaMeasure",
             "Footprint Area",
@@ -275,6 +401,9 @@ class IfcOpenShell(QtoCalculator):
             "IfcAreaMeasure",
             "Side area",
             "The side (non-projected) are of the shape as seen from the local Y-axis",
+        ),
+        "get_opening_area": Function(
+            "IfcAreaMeasure", "Opening Area", "The area of an opening, guessing the opening orientation"
         ),
         "get_top_area": Function(
             "IfcAreaMeasure",
@@ -298,10 +427,25 @@ class IfcOpenShell(QtoCalculator):
         functions[f"gross_{k}"] = Function(v.measure, f"Gross {v.name}", v.description)
         functions[f"net_{k}"] = Function(v.measure, f"Net {v.name}", v.description)
 
+    # Predefined-type-aware footing functions. They read the element's predefined type to
+    # pick the correct local axis, so they receive the element (not just the geometry) and
+    # cannot live in ifcopenshell.util.shape.
+    footing_functions = (
+        "get_footing_length",
+        "get_footing_width",
+        "get_footing_height",
+    )
+
     internal_functions = (
         "get_segment_length",
         "get_weight",
-    )
+        "get_opening_width",
+        "get_opening_height",
+        "get_opening_depth",
+        "get_opening_area",
+        "get_covering_width",
+        "get_covering_area",
+    ) + footing_functions
 
     @classmethod
     def calculate(cls, ifc_file, elements, qtos, results):
@@ -365,6 +509,20 @@ class IfcOpenShell(QtoCalculator):
                                 value = cls.get_weight(element, geometry, calculation_type)
                                 if value is None:
                                     continue
+                            elif formula.startswith("get_opening_"):
+                                value = cls.get_opening_quantity(geometry, formula)
+                                value = cls.unit_converter.convert(value, IfcOpenShell.raw_functions[formula].measure)
+                            elif formula in cls.footing_functions:
+                                value = getattr(cls, formula)(element, geometry)
+                                if value is None:
+                                    continue
+                                value = cls.unit_converter.convert(value, cls.raw_functions[formula].measure)
+                            elif formula == "get_covering_width":
+                                value = cls.get_covering_width(element, geometry)
+                                value = cls.unit_converter.convert(value, "IfcLengthMeasure")
+                            elif formula == "get_covering_area":
+                                value = cls.get_covering_area(element, geometry)
+                                value = cls.unit_converter.convert(value, "IfcAreaMeasure")
                             else:
                                 # An element can be included by the iterator yet still
                                 # produce empty geometry (no vertices). Bounding-box and
@@ -397,6 +555,34 @@ class IfcOpenShell(QtoCalculator):
         return iterators
 
     @classmethod
+    def get_opening_quantity(cls, geometry: ifcopenshell.geom.ShapeType, formula: str) -> float:
+        """Get an opening dimension or area, guessing the opening orientation.
+
+        Vertical (wall) openings are measured in a Z-up local frame: X along
+        the voided element, Y through it, Z vertical. An opening is treated as
+        horizontal (e.g. voiding a slab) when its Z extent is smaller than
+        both X and Y, matching the Blender calculator's heuristic.
+
+        :param geometry: Geometry output calculated by IfcOpenShell
+        :param formula: One of the ``get_opening_*`` internal function names.
+        :return: The dimension or area in SI units.
+        """
+        x = ifcopenshell.util.shape.get_x(geometry)
+        y = ifcopenshell.util.shape.get_y(geometry)
+        z = ifcopenshell.util.shape.get_z(geometry)
+        is_horizontal = z < x and z < y
+        if formula == "get_opening_width":
+            return x
+        if formula == "get_opening_height":
+            return min(x, y) if is_horizontal else z
+        if formula == "get_opening_depth":
+            return z if is_horizontal else y
+        assert formula == "get_opening_area"
+        if is_horizontal:
+            return ifcopenshell.util.shape.get_footprint_area(geometry)
+        return ifcopenshell.util.shape.get_side_area(geometry)
+
+    @classmethod
     def get_segment_length(cls, element: ifcopenshell.entity_instance) -> Union[float, None]:
         """Get segment length.
 
@@ -421,11 +607,41 @@ class IfcOpenShell(QtoCalculator):
                 area_shape = ifcopenshell.geom.create_shape(settings, item.SweptArea)
             except RuntimeError:
                 return
-            assert isinstance(area_shape, W.Triangulation)
+            assert isinstance(area_shape, W.triangulation)
             x = ifcopenshell.util.shape.get_x(area_shape) / cls.unit_scale
             y = ifcopenshell.util.shape.get_y(area_shape) / cls.unit_scale
             z = item.Depth
             return max([x, y, z])
+
+    # Footings are authored two ways, so a single static axis rule cannot be correct for both.
+    # Beam-like footings (STRIP_FOOTING, FOOTING_BEAM) are a profile extruded along the local Z
+    # axis, so the run (Length) is local Z and the cross section sits on local X (Width) and
+    # local Y (Height). Slab-like footings (PAD_FOOTING, PILE_CAP) have their footprint on the
+    # local X/Y plane and their thickness (Height) on local Z. These functions branch on the
+    # predefined type to pick the right axis. This mirrors the Blender calculator's
+    # get_footing_length / get_footing_width / get_footing_height.
+    _beam_like_footings = ("STRIP_FOOTING", "FOOTING_BEAM")
+
+    @classmethod
+    def get_footing_length(cls, element: ifcopenshell.entity_instance, geometry: ifcopenshell.geom.ShapeType) -> float:
+        predefined_type = ifcopenshell.util.element.get_predefined_type(element)
+        if predefined_type in cls._beam_like_footings:
+            return ifcopenshell.util.shape.get_z(geometry)
+        return max(ifcopenshell.util.shape.get_x(geometry), ifcopenshell.util.shape.get_y(geometry))
+
+    @classmethod
+    def get_footing_width(cls, element: ifcopenshell.entity_instance, geometry: ifcopenshell.geom.ShapeType) -> float:
+        predefined_type = ifcopenshell.util.element.get_predefined_type(element)
+        if predefined_type in cls._beam_like_footings:
+            return ifcopenshell.util.shape.get_x(geometry)
+        return min(ifcopenshell.util.shape.get_x(geometry), ifcopenshell.util.shape.get_y(geometry))
+
+    @classmethod
+    def get_footing_height(cls, element: ifcopenshell.entity_instance, geometry: ifcopenshell.geom.ShapeType) -> float:
+        predefined_type = ifcopenshell.util.element.get_predefined_type(element)
+        if predefined_type in cls._beam_like_footings:
+            return ifcopenshell.util.shape.get_y(geometry)
+        return ifcopenshell.util.shape.get_z(geometry)
 
     @classmethod
     def get_weight(
@@ -479,6 +695,53 @@ class IfcOpenShell(QtoCalculator):
             mass += mass_per_length * item.Depth
         return mass
 
+    @staticmethod
+    def get_covering_parametric_axis(element: ifcopenshell.entity_instance) -> Union[str, None]:
+        """Get an IfcCovering's layer set direction, as authored by Bonsai's covering type.
+
+        :param element: IFC element entity.
+        :return: ``"AXIS2"`` for wall-like coverings, ``"AXIS3"`` for slab-like
+            coverings (e.g. floors or ceilings), or ``None`` if the covering's
+            type has no ``EPset_Parametric.LayerSetDirection``.
+        """
+        relating_type = ifcopenshell.util.element.get_type(element)
+        if not relating_type:
+            return None
+        parametric = ifcopenshell.util.element.get_psets(relating_type).get("EPset_Parametric")
+        if not parametric:
+            return None
+        return parametric.get("LayerSetDirection")
+
+    @classmethod
+    def get_covering_area(cls, element: ifcopenshell.entity_instance, geometry: ifcopenshell.geom.ShapeType) -> float:
+        """Get a covering's area, following its layer set direction.
+
+        AXIS2 (wall-like) coverings report the local Y-facing side area,
+        while AXIS3 coverings and coverings without a layer set direction
+        (e.g. freeform profiles) report the projected footprint area. This
+        mirrors how ``gross_get_side_area``/``net_get_side_area`` are
+        already used for ``Qto_WallBaseQuantities.*SideArea`` in this same
+        rule set.
+        """
+        if cls.get_covering_parametric_axis(element) == "AXIS2":
+            return ifcopenshell.util.shape.get_side_area(geometry)
+        return ifcopenshell.util.shape.get_footprint_area(geometry)
+
+    @classmethod
+    def get_covering_width(cls, element: ifcopenshell.entity_instance, geometry: ifcopenshell.geom.ShapeType) -> float:
+        """Get a covering's width (i.e. thickness), following its layer set direction.
+
+        AXIS2 (wall-like) coverings report the local Y depth, while AXIS3
+        coverings and coverings without a layer set direction report the
+        local Z depth. This mirrors how ``net_get_y`` is already used for
+        ``Qto_WallBaseQuantities.Width`` in this same rule set, rather than
+        the ``min(X, Y)`` heuristic used by the Blender-side
+        :func:`bonsai.bim.module.qto.calculator.get_width`.
+        """
+        if cls.get_covering_parametric_axis(element) == "AXIS2":
+            return ifcopenshell.util.shape.get_y(geometry)
+        return ifcopenshell.util.shape.get_z(geometry)
+
 
 class Blender(QtoCalculator):
     """Calculates geometry based on currently loaded Blender objects."""
@@ -502,6 +765,7 @@ class Blender(QtoCalculator):
         "get_width": Function("IfcLengthMeasure", "Width", ""),
         "get_footing_height": Function("IfcLengthMeasure", "Height", ""),
         "get_footing_length": Function("IfcLengthMeasure", "Length", ""),
+        "get_footing_width": Function("IfcLengthMeasure", "Width", ""),
         # IfcAreaMeasure
         "get_covering_gross_area": Function("IfcAreaMeasure", "Covering Gross Area", ""),
         "get_covering_net_area": Function("IfcAreaMeasure", "Covering Net Area", ""),
