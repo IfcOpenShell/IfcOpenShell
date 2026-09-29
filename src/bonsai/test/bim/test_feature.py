@@ -22,11 +22,9 @@ from __future__ import annotations
 
 import os
 import pprint
-import shutil
 import traceback
 import types
 import webbrowser
-from collections.abc import Generator
 from inspect import signature
 from math import radians
 from pathlib import Path
@@ -36,8 +34,8 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
+import ifcopenshell.util.unit
 import numpy as np
-import pytest
 from mathutils import Vector
 from pytest_bdd import given, parsers, scenarios, then, when
 
@@ -468,6 +466,7 @@ def i_trigger_operator(operator):
 @then(parsers.parse('I see "{text}"'))
 def i_see_text(text):
     assert panel_spy
+    text = replace_variables(text)
     panel_spy.refresh_spy()
     assert [l for l in panel_spy.spied_labels if text in l], f"Text {text} not found in {panel_spy.spied_labels}"
 
@@ -602,6 +601,7 @@ def i_select_the_row_where_i_see_text_in_the_nth_list(text, nth):
 @then(parsers.parse('I don\'t see "{text}"'))
 def i_dont_see_text(text):
     assert panel_spy
+    text = replace_variables(text)
     panel_spy.refresh_spy()
     assert not [l for l in panel_spy.spied_labels if text in l], f"Text {text} found in {panel_spy.spied_labels}"
 
@@ -621,9 +621,9 @@ def i_dont_see_the_name_list(name):
 def i_see_the_prop_property(prop):
     assert panel_spy
     panel_spy.refresh_spy()
-    assert [
-        p for p in panel_spy.spied_props if prop in (p["name"], p["text"], p["icon"])
-    ], f"Property {prop} not found in {pprint.pformat(panel_spy.spied_props)}"
+    assert [p for p in panel_spy.spied_props if prop in (p["name"], p["text"], p["icon"])], (
+        f"Property {prop} not found in {pprint.pformat(panel_spy.spied_props)}"
+    )
 
 
 @given(parsers.parse('I don\'t see the "{prop}" property'))
@@ -632,9 +632,9 @@ def i_see_the_prop_property(prop):
 def i_dont_see_the_prop_property(prop):
     assert panel_spy
     panel_spy.refresh_spy()
-    assert not [
-        p for p in panel_spy.spied_props if prop in (p["name"], p["text"], p["icon"])
-    ], f"Property {prop} not found in {pprint.pformat(panel_spy.spied_props)}"
+    assert not [p for p in panel_spy.spied_props if prop in (p["name"], p["text"], p["icon"])], (
+        f"Property {prop} not found in {pprint.pformat(panel_spy.spied_props)}"
+    )
 
 
 @given(parsers.parse('I see the "{prop}" property is "{value}"'))
@@ -645,9 +645,9 @@ def i_see_the_prop_property_is_value(prop, value):
     panel_spy.refresh_spy()
     for spied_prop in panel_spy.spied_props:
         if prop in (spied_prop["name"], spied_prop["text"], spied_prop["icon"]):
-            assert (
-                spied_prop["value"] == value
-            ), f"Property {prop} value is not {value} - it is actually {spied_prop['value']}"
+            assert spied_prop["value"] == value, (
+                f"Property {prop} value is not {value} - it is actually {spied_prop['value']}"
+            )
             return
     assert False, f"Property {prop} not found in {pprint.pformat(panel_spy.spied_props)}"
 
@@ -998,6 +998,7 @@ def i_click_button_and_expect_error_error_msg(button, error_msg):
 
 @given(parsers.parse('I evaluate expression "{expression}"'))
 @when(parsers.parse('I evaluate expression "{expression}"'))
+@then(parsers.parse('I evaluate expression "{expression}"'))
 def i_evaluate_expression(expression):
     expression = replace_variables(expression)
     exec(expression)
@@ -1092,6 +1093,7 @@ def then_the_object_name_is_placed_in_the_collection_collection(name: str, colle
 @given(parsers.parse('additionally the object "{name}" is selected'))
 @when(parsers.parse('additionally the object "{name}" is selected'))
 def additionally_the_object_name_is_selected(name):
+    name = replace_variables(name)
     obj = bpy.context.scene.objects.get(name)
     if not obj:
         total = len(bpy.context.scene.objects)
@@ -1172,6 +1174,7 @@ def nothing_happens():
 @when(parsers.parse('the object "{name}" exists'))
 @then(parsers.parse('the object "{name}" exists'))
 def the_object_name_exists(name: str) -> bpy.types.Object:
+    name = replace_variables(name)
     # Some objects from linked collections may share the same name. This disambiguates them.
     if name.startswith("Col:"):
         _, collection_name, name = name.split(":")
@@ -1186,6 +1189,7 @@ def the_object_name_exists(name: str) -> bpy.types.Object:
 
 @then(parsers.parse('the object "{name}" does not exist'))
 def the_object_name_does_not_exist(name) -> None:
+    name = replace_variables(name)
     obj = bpy.data.objects.get(name)
     assert obj is None, f'The object "{name}" exists'
 
@@ -1648,9 +1652,9 @@ def objects_not_exist_starting_with(name):
 @then(parsers.parse('the object "{name}" is at "{location}"'))
 def the_object_name_is_at_location(name, location):
     obj_location = the_object_name_exists(name).location
-    assert (
-        obj_location - Vector([float(co) for co in location.split(",")])
-    ).length < 0.05, f"Object is at {obj_location} instead of {location}"
+    assert (obj_location - Vector([float(co) for co in location.split(",")])).length < 0.05, (
+        f"Object is at {obj_location} instead of {location}"
+    )
 
 
 @then(parsers.parse('the object "{name}" has a vertex at "{location}"'))
@@ -1675,6 +1679,111 @@ def the_object_name_has_a_vertex_at_location(name, location):
     assert is_pass, f"No verts found at {location}: {verts}"
 
 
+def get_model_origin() -> Vector:
+    """Where the model was shifted to, in Blender units.
+
+    Geometry far from the origin is moved next to it so it keeps its precision,
+    and the shift is recorded as the model origin. Which vert of which object it
+    lands on is not something to depend on, so anything measured from it stays
+    put even when that choice changes.
+    """
+    props = bpy.context.scene.BIMGeoreferenceProperties
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(an_ifc_file_exists())
+    return Vector([float(co) for co in props.model_origin.split(",")]) * unit_scale
+
+
+def get_world_verts(obj: bpy.types.Object) -> list[Vector]:
+    mesh = obj.data
+    assert isinstance(mesh, bpy.types.Mesh) and len(mesh.vertices), f"Object {obj.name} has no mesh"
+    return [obj.matrix_world @ v.co for v in mesh.vertices]
+
+
+def assert_vert_at_map_coordinates(obj: bpy.types.Object, vert: Vector, coordinates: str) -> None:
+    # Same conversion as the georeferencing calculator, which works in project
+    # units rather than Blender ones.
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(an_ifc_file_exists())
+    enh = Vector(tool.Georeference.xyz2enh(tuple(co / unit_scale for co in vert)))
+    expected = Vector([float(co) for co in coordinates.split(",")])
+    assert (enh - expected).length < 0.05, f"Vert {vert} is at map coordinates {enh[:]} instead of {coordinates}"
+
+
+@then(
+    parsers.parse(
+        'the object "{name}" is at "{location}" relative to the model origin at map coordinates "{coordinates}"'
+    )
+)
+def the_object_name_is_at_location_relative_to_the_model_origin_at_map_coordinates(name, location, coordinates):
+    """For objects with no geometry to name a vert on.
+
+    The Blender location is only meaningful next to the origin everything was
+    shifted by, since the two move together, but the map coordinates hold still
+    either way.
+    """
+    obj = the_object_name_exists(name)
+    obj_location = obj.location + get_model_origin()
+    assert (obj_location - Vector([float(co) for co in location.split(",")])).length < 0.05, (
+        f"Object is at {obj_location} relative to the model origin instead of {location}"
+    )
+    assert_vert_at_map_coordinates(obj, obj.matrix_world.translation, coordinates)
+
+
+@then(parsers.parse('the object "{name}" has a vert at "{location}" at map coordinates "{coordinates}"'))
+def the_object_name_has_a_vert_at_location_at_map_coordinates(name, location, coordinates):
+    """Check where a vert sits in Blender and where it is in the world.
+
+    Both matter: the Blender location is what the user sees, and checking only
+    the map coordinates would pass just as happily if the georeferencing maths
+    or the offsets it reads were wrong, since the same maths produces both.
+    """
+    obj = the_object_name_exists(name)
+    target = Vector([float(co) for co in location.split(",")])
+    verts = get_world_verts(obj)
+    vert = next((v for v in verts if (v - target).length < 0.001), None)
+    assert vert is not None, f"No vert found at {location}: {verts}"
+    assert_vert_at_map_coordinates(obj, vert, coordinates)
+
+
+@then(
+    parsers.parse(
+        'the object "{name}" has a vert at "{location}" relative to the model origin at map coordinates "{coordinates}"'
+    )
+)
+def the_object_name_has_a_vert_at_location_relative_to_the_model_origin_at_map_coordinates(name, location, coordinates):
+    """As above, for when the whole model has been shifted onto the origin.
+
+    Blender locations are then only meaningful relative to that origin, since
+    everything moves together with it.
+    """
+    obj = the_object_name_exists(name)
+    target = Vector([float(co) for co in location.split(",")]) - get_model_origin()
+    verts = get_world_verts(obj)
+    vert = next((v for v in verts if (v - target).length < 0.001), None)
+    assert vert is not None, f"No vert found at {location} relative to the model origin: {verts}"
+    assert_vert_at_map_coordinates(obj, vert, coordinates)
+
+
+@then(parsers.parse('the object "{name}" has its origin on a vertex'))
+def the_object_name_has_its_origin_on_a_vertex(name):
+    """Far away geometry is shifted onto one of its own verts, which keeps the
+    origin on the geometry and the local coordinates small enough to keep their
+    precision. Which vert that is does not matter."""
+    obj = the_object_name_exists(name)
+    mesh = obj.data
+    assert isinstance(mesh, bpy.types.Mesh) and len(mesh.vertices), f"Object {obj.name} has no mesh"
+    nearest = min(v.co.length for v in mesh.vertices)
+    assert nearest < 0.001, f"Object origin is {nearest} away from its nearest vert"
+
+
+@then("the model origin is on an object vertex")
+def the_model_origin_is_on_an_object_vertex():
+    for obj in bpy.data.objects:
+        if not isinstance(obj.data, bpy.types.Mesh):
+            continue
+        if any(v.length < 0.001 for v in get_world_verts(obj)):
+            return
+    assert False, "No object has a vert at the model origin"
+
+
 @then(parsers.parse('the object "{name}" has no scale'))
 def the_object_name_has_no_scale(name):
     assert the_object_name_exists(name).scale == Vector(
@@ -1694,22 +1803,50 @@ def the_object_name_dimensions_are_dimensions(name, dimensions):
         assert is_x(number, expected_dimensions[i]), f"Expected {expected_dimensions} but got {actual_dimensions}"
 
 
+# An inscribed tessellation is never wider than the profile it approximates, so
+# the slack is one sided: short of nominal is fine, over nominal is not.
+DIMENSION_RELATIVE_TOLERANCE = 0.05
+
+
+@then(parsers.parse('the object "{name}" dimensions are approximately "{dimensions}"'))
+def the_object_name_dimensions_are_approximately_dimensions(name, dimensions):
+    """Assert nominal dimensions without pinning the mesher's tessellation.
+
+    Bonsai meshes with mesher-angular-deflection 0.5, so a conforming full
+    circle turns at most 0.5 rad per chord and needs at least
+    ceil(2 * pi / 0.5) = 13 of them. The bounding box of a polygon with that
+    many chords inscribed in a circle is at least 2r * cos(pi / 13), 97.1% of
+    the nominal diameter, whatever the phase the mesher starts sampling at.
+    5% accepts every tessellation that honours the setting, with headroom, and
+    the upper bound stays exact because an inscribed profile cannot overshoot.
+    """
+    actual_dimensions = list(the_object_name_exists(name).dimensions)
+    expected_dimensions = [float(co) for co in dimensions.split(",")]
+    assert len(actual_dimensions) == len(expected_dimensions), (
+        f"Expected {len(expected_dimensions)} dimensions but got {actual_dimensions}"
+    )
+    for actual, expected in zip(actual_dimensions, expected_dimensions):
+        lower = expected - abs(expected) * DIMENSION_RELATIVE_TOLERANCE - 1e-5
+        upper = expected + 1e-5
+        assert lower <= actual <= upper, f"Expected approximately {expected_dimensions} but got {actual_dimensions}"
+
+
 @then(parsers.parse('the object "{name}" top right corner is at "{location}"'))
 def the_object_name_top_right_corner_is_at_location(name, location):
     obj = the_object_name_exists(name)
     obj_corner = obj.matrix_world @ Vector(obj.bound_box[6])
-    assert (
-        obj_corner - Vector([float(co) for co in location.split(",")])
-    ).length < 0.05, f"Object has top right corner {obj_corner} instead of {location}"
+    assert (obj_corner - Vector([float(co) for co in location.split(",")])).length < 0.05, (
+        f"Object has top right corner {obj_corner} instead of {location}"
+    )
 
 
 @then(parsers.parse('the object "{name}" bottom left corner is at "{location}"'))
 def the_object_name_bottom_left_corner_is_at_location(name, location):
     obj = the_object_name_exists(name)
     obj_corner = obj.matrix_world @ Vector(obj.bound_box[0])
-    assert (
-        obj_corner - Vector([float(co) for co in location.split(",")])
-    ).length < 0.05, f"Object has bottom left corner {obj_corner} instead of {location}"
+    assert (obj_corner - Vector([float(co) for co in location.split(",")])).length < 0.05, (
+        f"Object has bottom left corner {obj_corner} instead of {location}"
+    )
 
 
 @then(parsers.parse('the object "{name}" is contained in "{container_name}"'))
