@@ -77,8 +77,6 @@ def test_flow_segment_profile_create_entity_calls_set_position() -> None:
     tree = ast.parse(BONSAI_ROOT_OPERATOR.read_text(encoding="utf-8"))
     calls = _find_create_entity_profile_calls(tree)
 
-    # Sanity check: make sure the AST walk actually found the quick-add call
-    # sites, so this test cannot silently pass by finding nothing.
     assert len(calls) >= 5, (
         f"Expected to find at least 5 create_entity(...) calls for "
         f"{sorted(PROFILE_CLASSES_REQUIRING_POSITION)} in {BONSAI_ROOT_OPERATOR.name}, "
