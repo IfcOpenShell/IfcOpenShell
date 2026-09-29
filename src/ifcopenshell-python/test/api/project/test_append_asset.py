@@ -847,11 +847,6 @@ class TestAppendAssetIFC4(test.bootstrap.IFC4, TestAppendAssetIFC2X3):
 
 
 class TestAppendAssetCrossSchema(test.bootstrap.IFC4X3):
-    # Regression tests for issue #4766: appending from a library whose schema
-    # differs from the project's. append_asset itself stays schema-agnostic and
-    # raises a clear error; the library is expected to be migrated once (higher
-    # up, e.g. at load time in the Bonsai project-library operator) before
-    # appending, rather than migrated per element.
     def _make_ifc4_library(self):
         library = ifcopenshell.api.project.create_file(version="IFC4")
         wall_type = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWallType", name="WAL01")
@@ -866,20 +861,15 @@ class TestAppendAssetCrossSchema(test.bootstrap.IFC4X3):
         return library
 
     def test_append_asset_raises_a_clear_error_on_schema_mismatch(self):
-        # append_asset must not silently migrate (would be wasteful per element).
         library = self._make_ifc4_library()
         wall_type = library.by_type("IfcWallType")[0]
         with pytest.raises(ValueError):
             ifcopenshell.api.project.append_asset(self.file, library=library, element=wall_type)
 
     def test_append_many_assets_from_a_library_migrated_once(self):
-        # Mirrors the higher-level flow: migrate the whole library ONE time,
-        # then append several elements from the already-migrated library.
         ifcpatch = pytest.importorskip("ifcpatch")
         library = self._make_ifc4_library()
-        migrated = ifcpatch.execute(
-            {"file": library, "recipe": "Migrate", "arguments": [self.file.schema_identifier]}
-        )
+        migrated = ifcpatch.execute({"file": library, "recipe": "Migrate", "arguments": [self.file.schema_identifier]})
         assert isinstance(migrated, ifcopenshell.file)
         assert migrated.schema_identifier == self.file.schema_identifier
 
@@ -890,13 +880,11 @@ class TestAppendAssetCrossSchema(test.bootstrap.IFC4X3):
         assert len(appended) == 2
         wall_type = next(e for e in appended if e.is_a("IfcWallType"))
         assert wall_type.file == self.file
-        # Inverse-linked material and forward-linked pset survive migration.
         material = ifcopenshell.util.element.get_material(wall_type)
         assert material.is_a("IfcMaterialLayerSet")
         assert material.MaterialLayers[0].Material.Name == "Concrete"
         assert material.MaterialLayers[0].LayerThickness == 200
         assert ifcopenshell.util.element.get_psets(wall_type)["Pset_WallCommon"]["FireRating"] == "REI60"
-        # The shared material was migrated once and reused, not duplicated.
         assert len(self.file.by_type("IfcMaterial")) == 1
 
     def test_same_schema_library_appends_unchanged(self):
