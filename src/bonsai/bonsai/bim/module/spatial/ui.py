@@ -404,8 +404,7 @@ class BIM_UL_elements(UIList):
 
     def filter_items(self, context: bpy.types.Context, data: BIMSpatialDecompositionProperties, propname: str):
         items = getattr(data, propname)
-        filter_name = data.element_filter
-        if not filter_name:
+        if not (filter_name := data.element_filter):
             return [self.bitflag_filter_item] * len(items), []
 
         if data.element_filter_regex:
