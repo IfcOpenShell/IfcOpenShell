@@ -134,9 +134,6 @@ class TestExtractElements(test.bootstrap.IFC4):
         assert output.by_type("IfcWall")[0].GlobalId == wall.GlobalId
 
     def test_extract_without_leaving_orphan_placements(self):
-        # Regression test for #9419: extraction rebases each extracted
-        # product's placement, and the copied site/storey placement chain was
-        # left behind with an empty PlacesObject inverse.
         project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         site = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSite")
         storey = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
@@ -160,10 +157,6 @@ class TestExtractElements(test.bootstrap.IFC4):
         assert not [s for s in logger.statements if "PlacesObject" in str(s)]
 
     def test_extract_without_leaving_orphan_placement_ancestors_of_excluded_products(self):
-        # Regression test for #9419: the door is placed relative to its
-        # opening, which is placed relative to the wall, and only the door is
-        # extracted. The copied wall and opening placements must not survive
-        # as orphans with an empty PlacesObject.
         project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         storey = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
         ifcopenshell.api.aggregate.assign_object(self.file, products=[storey], relating_object=project)

@@ -651,9 +651,6 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         assert len(ifc_file.by_type("IfcActorRole")) == 2
 
     def test_append_products_without_leaving_orphan_placements(self):
-        # Regression test for #9419: appending a product copies its placement
-        # ancestors (the site/storey chain), then rebases the placement,
-        # leaving the copied ancestors with an empty PlacesObject inverse.
         library = ifcopenshell.api.project.create_file(version=self.file.schema)
         project = ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject")
         site = ifcopenshell.api.root.create_entity(library, ifc_class="IfcSite")

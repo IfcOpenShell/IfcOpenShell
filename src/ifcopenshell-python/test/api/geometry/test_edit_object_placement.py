@@ -637,10 +637,6 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
         assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(wall.ObjectPlacement), matrix)
 
     def test_removing_a_placement_also_removes_unreferenced_ancestors(self):
-        # Regression test for #9419: placements copied by append_asset arrive
-        # with an ancestor chain nothing else references. Replacing the old
-        # placement must purge that chain instead of stranding it with an
-        # empty PlacesObject inverse.
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         ifcopenshell.api.unit.assign_unit(self.file)
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
@@ -656,10 +652,6 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
         assert not [p for p in self.file.by_type("IfcLocalPlacement") if not p.PlacesObject]
 
     def test_keeping_placement_ancestors_still_used_by_other_products(self):
-        # Ancestors shared with other placement chains are not garbage: the
-        # storey placement is referenced by the storey and by the second
-        # wall's placement, so replacing the first wall's placement must
-        # leave the whole storey placement subgraph intact.
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         ifcopenshell.api.unit.assign_unit(self.file)
         storey = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
