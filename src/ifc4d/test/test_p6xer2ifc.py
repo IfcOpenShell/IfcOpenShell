@@ -23,9 +23,6 @@ import ifcopenshell
 from ifc4d.p6xer2ifc import P6XER2Ifc
 
 
-# Minimal stand-ins for xerparser's Calendar/Exception rows. p6xer2ifc.py
-# only reads .clndr_id/.clndr_name/.clndr_type/.day_hr_cnt/.working_hours/
-# .exceptions off a calendar, and .year/.month/.day off an exception.
 class FakeException:
     def __init__(self, year, month, day):
         self.year = year
@@ -65,10 +62,6 @@ class TestParseCalendarXerExceptionsAreNotShared:
         p6xer2ifc = self.parse_two_calendars()
         cal_a_exceptions = p6xer2ifc.calendars["CAL_A"]["HolidayOrExceptions"]
         cal_b_exceptions = p6xer2ifc.calendars["CAL_B"]["HolidayOrExceptions"]
-        # Before the fix, both calendars pointed at the exact same dict
-        # object (exceptions = {} was declared outside the per-calendar
-        # loop), so every calendar ended up with the union of every other
-        # calendar's holidays.
         assert cal_a_exceptions is not cal_b_exceptions
 
     def test_calendar_a_only_has_its_own_holiday(self):
