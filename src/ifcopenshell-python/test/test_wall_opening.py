@@ -218,7 +218,7 @@ class TestWallOpenings:
 
                 ts = []
                 for j in range(10 if PERF else 1):
-                    subprocess.call(args, stdout=subprocess.PIPE)
+                    subprocess.check_call(args, stdout=subprocess.PIPE)
 
                     log = [json.loads(ln)["message"] for ln in open(fn + ".log.json") if ln]
                     perf = dict(x.groups() for x in [re.match(pat, l) for l in log] if x)

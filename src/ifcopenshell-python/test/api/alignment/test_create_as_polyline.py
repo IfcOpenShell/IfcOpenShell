@@ -17,12 +17,22 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import pytest
+
 import ifcopenshell.api.alignment
 import ifcopenshell.api.unit
+import ifcopenshell.util.element
+
+try:
+    ifcopenshell.file(schema="IFC4X3")
+    IFC4X3_AVAILABLE = True
+except RuntimeError:
+    IFC4X3_AVAILABLE = False
 
 
+@pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
 def test_create_as_polyline():
-    file = ifcopenshell.file(schema="IFC4X3_ADD2")
+    file = ifcopenshell.file(schema="IFC4X3")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
     length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
     ifcopenshell.api.unit.assign_unit(file, units=[length])
@@ -40,10 +50,16 @@ def test_create_as_polyline():
         file.createIfcCartesianPoint((-585.0, 3275.2, 56.2)),
     ]
 
-    alignment = ifcopenshell.api.alignment.create_as_polyline(file, "A1", points)
+    alignment = ifcopenshell.api.alignment.create_as_polyline(file, "A1", points, start_station=100.0)
     curve = ifcopenshell.api.alignment.get_curve(alignment)
     assert curve.is_a("IfcPolyline")
     assert len(curve.Points) == 10
 
-
-test_create_as_polyline()
+    # stationing referent's Name must include the alignment's own name, the
+    # same "<alignment name> <station>" convention create() and
+    # update_key_point_referents() use -- previously this reassigned the
+    # local `name` variable (shadowing the "A1" parameter) to just the bare
+    # station string, losing the alignment name entirely.
+    referents = [r for r in ifcopenshell.util.element.get_components(alignment) if r.is_a("IfcReferent")]
+    assert len(referents) == 1
+    assert referents[0].Name == "A1 0+100.000"

@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bonsai.core.spatial as subject
-from test.core.bootstrap import collector, ifc, spatial
+from test.core.bootstrap import collector, ifc, spatial  # ruff: ignore[unused-import]
 
 
 class TestReferenceStructure:
