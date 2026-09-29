@@ -2133,6 +2133,18 @@ class Model(bonsai.core.tool.Model):
         return voided_obj
 
     @classmethod
+    def get_opening_update_targets(cls, element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+        """Propagation targets whose opening follows an edit of ``element``:
+        ``element`` itself and occurrences sharing its Body representation."""
+        from bonsai.bim.module.model.window import has_shared_model_body
+
+        targets = tool.Array.get_parametric_propagation_targets(element)
+        if not (body := ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")):
+            return targets
+        body = tool.Geometry.resolve_mapped_representation(body)
+        return [e for e in targets if e == element or has_shared_model_body(e, body)]
+
+    @classmethod
     def regenerate_simple_opening_bodies(cls, element: ifcopenshell.entity_instance) -> set:
         """Regenerate every distinct mapped opening source among ``element``
         and the occurrences sharing its Body, so each one matches the current
@@ -2170,18 +2182,6 @@ class Model(bonsai.core.tool.Model):
             cls.regenerate_filling_opening_body(filling)
 
         return voided_objs
-
-    @classmethod
-    def get_opening_update_targets(cls, element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
-        """Propagation targets whose opening follows an edit of ``element``:
-        ``element`` itself and occurrences sharing its Body representation."""
-        from bonsai.bim.module.model.window import has_shared_model_body
-
-        targets = tool.Array.get_parametric_propagation_targets(element)
-        if not (body := ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")):
-            return targets
-        body = tool.Geometry.resolve_mapped_representation(body)
-        return [e for e in targets if e == element or has_shared_model_body(e, body)]
 
     @classmethod
     def update_simple_openings(cls, element: ifcopenshell.entity_instance) -> None:
