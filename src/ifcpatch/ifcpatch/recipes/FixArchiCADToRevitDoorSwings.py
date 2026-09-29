@@ -135,10 +135,7 @@ class Patcher(ifcpatch.BasePatcher):
         #
         # This fixes symptom E.
 
-        # IFC2X3 has no IfcDoorType: the door type entity there is named
-        # IfcDoorStyle. Both descend from IfcTypeProduct and both declare
-        # the same optional RepresentationMaps attribute, so only the class
-        # name to query differs between schemas.
+        # IFC2X3 has no IfcDoorType, its equivalent is IfcDoorStyle
         door_type_class = "IfcDoorStyle" if self.file.schema == "IFC2X3" else "IfcDoorType"
         for door in self.file.by_type(door_type_class):
             rep_maps = list(door.RepresentationMaps or [])
@@ -202,10 +199,7 @@ class Patcher(ifcpatch.BasePatcher):
         #
         # This fixes symptom C.
 
-        # IfcIndexedPolyCurve (and its IfcArcIndex segments) do not exist in
-        # IFC2X3, which has no arc index representation to facet. Same
-        # reasoning as DowngradeIndexedPolyCurve.py: this section is simply
-        # not applicable to that schema, so there is nothing to do.
+        # IfcIndexedPolyCurve does not exist in IFC2X3, so there is nothing to facet
         if self.file.schema == "IFC2X3":
             return
 

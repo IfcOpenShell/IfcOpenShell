@@ -43,9 +43,6 @@ class TestFixArchiCADToRevitDoorSwings(test.bootstrap.IFC4):
         return body_ctx, footprint_ctx
 
     def _make_footprint_representation(self, context):
-        # IfcPolyline is used (rather than IfcIndexedPolyCurve) because it is
-        # available in both IFC2X3 and IFC4, unlike IfcIndexedPolyCurve which
-        # is IFC4-only.
         points = [
             self.file.create_entity("IfcCartesianPoint", Coordinates=c)
             for c in [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0), (0.0, 0.0)]
