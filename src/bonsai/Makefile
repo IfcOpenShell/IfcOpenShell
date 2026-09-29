@@ -189,7 +189,6 @@ endif
 
 	# To scope any build-time dependencies
 	cd build && $(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && $(PIP) install build
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) install wheel
 
 	mkdir -p build/wheels
 	# Provides IfcOpenShell Python functionality
