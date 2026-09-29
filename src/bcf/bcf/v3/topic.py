@@ -207,12 +207,7 @@ class TopicHandler:
             destination_zip.writestr(f"{self.topic.guid}/{ref_filename}", self.bim_snippet)
 
     def _resolve_zip_path(self, reference: str) -> str:
-        """Resolve a topic-relative reference into its POSIX path inside the BCF zip.
-
-        Unlike walking self._topic_dir with joinpath()/parent, this doesn't rely on
-        zipfile.Path.at, which a freshly created topic (backed by a plain pathlib.Path,
-        not yet loaded from a zip) doesn't have.
-        """
+        """Resolve a topic-relative reference into its path inside the BCF zip."""
         parts = [self._topic_dir.name]
         for path_part in reference.split("/"):
             if path_part == "..":
