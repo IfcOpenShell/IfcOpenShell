@@ -78,19 +78,11 @@ class TestUnionCoercion:
         assert result == 42
 
     def test_union_str_int_prefers_int_for_numeric_string(self):
-        # str never raises, so it must not shadow a more specific alternative
-        # like int just because it happens to be listed first in the Union.
         result = coerce_value("42", Union[str, int])
         assert result == 42
         assert isinstance(result, int)
 
     def test_union_str_entity_resolves_entity_by_id(self, model):
-        # Regression: coerce_value used to always resolve Union[str, entity_instance]
-        # to a plain string, because coercing to `str` never raises and was tried
-        # first, making the entity_instance alternative unreachable. This meant
-        # ifcopenshell.api.classification.add_classification(classification="<id>")
-        # always took the "create a new custom classification named '<id>'" path,
-        # even when the caller intended to reference an existing entity by ID.
         wall = model.by_type("IfcWall")[0]
         result = coerce_value(str(wall.id()), Union[str, ifcopenshell.entity_instance], model)
         assert result == wall

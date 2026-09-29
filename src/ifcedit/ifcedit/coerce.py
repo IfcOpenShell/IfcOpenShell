@@ -65,10 +65,7 @@ def coerce_value(
                 return None
         if value_str is None and type(None) in args:
             return None
-        # Try each non-None type in order, but always try `str` last. Coercing to
-        # `str` never raises, so trying it before a more specific alternative
-        # (e.g. Union[str, entity_instance]) makes that alternative unreachable
-        # dead code and silently returns the raw string instead of resolving it.
+        # Try each non-None type in order, with `str` last since it never raises.
         ordered_types = [t for t in non_none_types if t is not str]
         if str in non_none_types:
             ordered_types.append(str)
