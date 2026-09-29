@@ -10,7 +10,6 @@ def refresh():
 
 
 class IfcGitData:
-
     data = {}
     is_loaded = False
 

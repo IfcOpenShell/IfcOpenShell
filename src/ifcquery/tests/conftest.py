@@ -1,5 +1,4 @@
 # This file was generated with the assistance of an AI coding tool.
-import ifcopenshell
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.owner.settings
 import ifcopenshell.api.project
