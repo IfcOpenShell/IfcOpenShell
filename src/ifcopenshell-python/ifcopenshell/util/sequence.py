@@ -272,14 +272,12 @@ def _is_recurring_day_applicable(
         start = datetime.date(start.year, start.month, start.day)
     if not _recurrence_base_match(recurrence, recurrence_type, day):
         return False
-    cycle = _recurrence_cycle_index(recurrence_type, start, day)
-    if cycle is None:
+    if (cycle := _recurrence_cycle_index(recurrence_type, start, day)) is None:
         return False
     interval = recurrence.Interval or 1
     if cycle % interval != 0:
         return False
-    occurrences = recurrence.Occurrences
-    if not occurrences:
+    if not (occurrences := recurrence.Occurrences):
         return True
     count = 0
     current = start
