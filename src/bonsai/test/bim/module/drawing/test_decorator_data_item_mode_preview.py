@@ -62,10 +62,7 @@ def _create_dimension_annotation(drawing):
 
 
 def _fake_decorations_handler():
-    # A real DecorationsHandler() calls gpu.shader.from_builtin() per decorator,
-    # which needs an initialized GPU context that headless test runs don't have.
-    # object_decorators() only reads handler.decorators, so a stand-in with the
-    # same keys is enough to exercise the visibility filtering under test.
+    # A stand-in with the same keys as DecorationsHandler.decorators, since a real one needs a GPU context.
     return type(
         "FakeHandler", (), {"decorators": {cls.objecttype: object() for cls in DecorationsHandler.decorators_classes}}
     )()
