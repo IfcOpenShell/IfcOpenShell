@@ -35,7 +35,7 @@ def camera_vectors_from_target_position(
     """
     camera_offset = np.array((5, 5, 5)) if offset is None else offset
     camera_position = target_position + camera_offset
-    camera_direction = unit_vector(-camera_offset)  # pylint: disable=invalid-unary-operand-type
+    camera_direction = unit_vector(-camera_offset)
     camera_right = unit_vector(np.cross(np.array([0.0, 0.0, 1.0]), camera_direction))
     camera_up = unit_vector(np.cross(camera_direction, camera_right))
     return camera_position.tolist(), camera_direction.tolist(), camera_up.tolist()
