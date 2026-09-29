@@ -1,12 +1,11 @@
-#include "OpenCascadeKernel.h"
+#include "opencascade_kernel.h"
 
 #include <Geom_BSplineSurface.hxx>
 
-using namespace ifcopenshell::geometry;
-using namespace ifcopenshell::geometry::kernels;
-using namespace IfcGeom;
+using namespace ifcopenshell::geom;
+using namespace ifcopenshell::geom::kernels;
 
-bool OpenCascadeKernel::convert(const taxonomy::bspline_surface::ptr bs, Handle(Geom_Surface) surf) {
+bool open_cascade_kernel::convert(const taxonomy::bspline_surface::ptr bs, Handle(Geom_Surface) surf) {
 	const bool is_rational = !!bs->weights;
 
 	NCollection_Array2<gp_Pnt> Poles(0, (int)bs->control_points.size() - 1, 0, (int)(*bs->control_points.begin()).size() - 1);
@@ -44,6 +43,7 @@ bool OpenCascadeKernel::convert(const taxonomy::bspline_surface::ptr bs, Handle(
 	}
 
 	if (is_rational) {
+		i = 0;
 		for (auto it = bs->weights->begin(); it != bs->weights->end(); ++it, ++i) {
 			j = 0;
 			for (auto jt = (*it).begin(); jt != (*it).end(); ++jt, ++j) {

@@ -18,11 +18,10 @@
 
 import ifcopenshell
 import ifcopenshell.api.alignment
-from ifcopenshell.api.alignment._ensure_alignment_object_placement import _ensure_alignment_object_placement
-from ifcopenshell.api.alignment.update_fallback_position import update_fallback_position
 import ifcopenshell.api.pset
 import ifcopenshell.guid
 from ifcopenshell import entity_instance
+from ifcopenshell.api.alignment.update_fallback_position import update_fallback_position
 
 
 def add_positioning_referent(
@@ -71,11 +70,11 @@ def add_positioning_referent(
 
         update_fallback_position(file, object_placement)
     else:
-        _ensure_alignment_object_placement(file, alignment)
-        coordinates = alignment.ObjectPlacement.RelativePlacement.Location.Coordinates
         object_placement = file.createIfcLocalPlacement(
             PlacementRelTo=None,
-            RelativePlacement=file.createIfcAxis2Placement2D(Location=file.createIfcCartesianPoint(coordinates)),
+            RelativePlacement=file.createIfcAxis2Placement2D(
+                Location=file.createIfcCartesianPoint(alignment.ObjectPlacement.RelativePlacement.Location.Coordinates)
+            ),
         )
 
     # this commented out code is what you would do to add a geometric representation of the referent
