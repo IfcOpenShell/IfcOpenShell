@@ -549,9 +549,7 @@ def get_type_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_inst
                     pset_metadata[key] = str(value)
 
             if not asset_type and name in asset_type_names and val(value) is not None:
-                # str(): AssetType is expected to be a string enum, but val()
-                # now also lets through non-string falsy values like 0 or
-                # False, which .strip() alone would crash on.
+                # str() because val() now passes non-string falsy values like 0 or False
                 value = str(value).strip().lower()
                 if value in ("moveable", "nonfixed"):
                     asset_type = "Moveable"

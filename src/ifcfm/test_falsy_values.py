@@ -118,10 +118,6 @@ class TestZeroValuePropertiesAreNotDroppedAsAbsent:
         assert cobie24legacy.get_job_data(ifc_file, job)["Duration"] == "0"
 
     def test_cobie24_get_type_data_warranty_zero_is_not_overridden_by_fallback_pset(self):
-        # COBie_Warranty explicitly states a zero-duration parts warranty
-        # (no separate parts cover, distinct from "unknown"). A legacy
-        # Pset_Warranty also happens to be attached with a real period; it
-        # must not override the explicit zero from COBie_Warranty.
         ifc_file, *_ = setup_project()
         etype = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcFurnitureType", name="Chair")
         cobie_warranty = ifcopenshell.api.pset.add_pset(ifc_file, product=etype, name="COBie_Warranty")
