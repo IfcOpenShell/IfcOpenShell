@@ -428,8 +428,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def get_spatial_geometry_corners(cls, element: ifcopenshell.entity_instance) -> list[Vector]:
-        """World-space bounding-box corners of the geometry directly contained
-        in a spatial element. Empty if it holds no mesh geometry."""
+        """World-space bounding-box corners of the mesh geometry contained in a spatial element."""
         return [
             obj.matrix_world @ Vector(corner)
             for rel in getattr(element, "ContainsElements", [])
@@ -454,14 +453,8 @@ class Drawing(bonsai.core.tool.Drawing):
         else:
             props.camera_type = "ORTHO"
         camera_data.ortho_scale = 50  # The default of 6m is too small
-        # For a plan of a non-building container (a road, facility part, ...),
-        # size the view to the container's extent so a large element like a
-        # road actually fits instead of showing a default 50m slice.
-        if (
-            isinstance(location_hint, int)
-            and location_hint
-            and target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW")
-        ):
+        # Size plans of non-storey containers to the container's extent.
+        if isinstance(location_hint, int) and location_hint and target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW"):
             spatial = tool.Ifc.get().by_id(location_hint)
             if not spatial.is_a("IfcBuildingStorey") and (corners := cls.get_spatial_geometry_corners(spatial)):
                 span = max(
@@ -892,14 +885,10 @@ class Drawing(bonsai.core.tool.Drawing):
                 assert isinstance(storey, bpy.types.Object)
                 z = storey.matrix_world.translation.z
                 if not spatial.is_a("IfcBuildingStorey") and (corners := cls.get_spatial_geometry_corners(spatial)):
-                    # Infrastructure containers (roads, facility parts, ...) are
-                    # often far from the cursor/origin, so center the plan on the
-                    # container's own contents; otherwise the drawing comes up empty.
+                    # Center on the container's own contents, not the cursor/origin.
                     x = (min(c.x for c in corners) + max(c.x for c in corners)) / 2
                     y = (min(c.y for c in corners) + max(c.y for c in corners)) / 2
-                    # Sit above the top of the geometry, not the container's
-                    # placement (roads sit at z=0 while the surface is higher),
-                    # so the top-down view actually looks onto the elements.
+                    # Sit above the top of the geometry, not the container placement.
                     z = max(c.z for c in corners)
                 if target_view == "PLAN_VIEW":
                     # Keep default camera direction - Z-.

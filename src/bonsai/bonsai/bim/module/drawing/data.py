@@ -127,14 +127,8 @@ class DrawingsData:
         if props.target_view in ["PLAN_VIEW", "REFLECTED_PLAN_VIEW"]:
             ifc = tool.Ifc.get()
             results = [("0", "Origin", "")]
-            results.extend(
-                [(str(s.id()), s.Name or "Unnamed", "") for s in ifc.by_type("IfcBuildingStorey")]
-            )
-            # Also offer other spatial containers that directly contain elements
-            # (roads, facility parts, sites, ...). Without this, infrastructure
-            # models that have no IfcBuildingStorey only offer "Origin", forcing
-            # the plan camera to (0,0,0) away from the geometry, so the drawing
-            # comes up empty.
+            results.extend([(str(s.id()), s.Name or "Unnamed", "") for s in ifc.by_type("IfcBuildingStorey")])
+            # Also offer non-storey spatial containers that directly contain elements (roads, sites, ...).
             for s in ifc.by_type("IfcSpatialStructureElement"):
                 if s.is_a("IfcBuildingStorey") or not getattr(s, "ContainsElements", None):
                     continue
