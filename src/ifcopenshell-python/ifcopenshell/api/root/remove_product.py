@@ -220,19 +220,14 @@ def remove_product(file: ifcopenshell.file, product: ifcopenshell.entity_instanc
                 if history:
                     ifcopenshell.util.element.remove_deep2(file, history)
         elif inverse.is_a("IfcRelAssigns"):
-            # Covers the remaining IfcRelAssignsTo* subtypes (process, control,
-            # actor, resource). Only remove the relationship when the product is
-            # its sole related object, otherwise file.remove drops the product
-            # from RelatedObjects and the relationship stays valid.
+            # Remaining IfcRelAssignsTo* subtypes: only remove the relationship if the product is its sole object.
             if len(inverse.RelatedObjects) == 1:
                 history = inverse.OwnerHistory
                 file.remove(inverse)
                 if history:
                     ifcopenshell.util.element.remove_deep2(file, history)
         elif inverse.is_a("IfcRelAssociates"):
-            # IfcRelAssociatesMaterial is handled above. Other associations
-            # (classification, document, library, constraint, approval) would
-            # otherwise be left with an empty mandatory RelatedObjects set.
+            # IfcRelAssociatesMaterial is handled above; this covers the other associations.
             if len(inverse.RelatedObjects) == 1:
                 history = inverse.OwnerHistory
                 file.remove(inverse)
