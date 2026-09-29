@@ -66,8 +66,10 @@ filter_elements_grammar = lark.Lark("""start: filter_group
     attribute_name: /[A-Z]\\w+/
     ifc_class: /Ifc\\w+/
 
-    value: special | quoted_string | regex_string | unquoted_string
+    value: special | quoted_string | regex_string | decimal_string | unquoted_string
     unquoted_string: /[^,.=><*!\\s]+/
+    decimal_string: SIGNED_DECIMAL
+    SIGNED_DECIMAL: ["+"|"-"] (INT "." INT | "." INT)
     regex_string: "/" /[^\\/]+/ "/"
     quoted_string: ESCAPED_STRING
 
@@ -488,7 +490,7 @@ def _get_element_value(element: ifcopenshell.entity_instance, keys: list[str]) -
                 if key in ("x", "y", "z"):
                     value = xyz["xyz".index(key)]
                 else:
-                    enh = ifcopenshell.util.geolocation.auto_xyz2enh(element.wrapped_data.file, *xyz)
+                    enh = ifcopenshell.util.geolocation.auto_xyz2enh(element.file, *xyz)
                     value = enh[("easting", "northing", "elevation").index(key)]
             else:
                 value = None
@@ -540,8 +542,15 @@ def _get_element_value(element: ifcopenshell.entity_instance, keys: list[str]) -
                 value = results or None
                 if value and len(value) == 1:
                     value = value[0]
+            elif key in value:
+                value = value[key]
             else:
-                value = value.get(key, None)
+                # A nested complex quantity/property (IfcPhysicalComplexQuantity /
+                # IfcComplexProperty) is represented as a dict whose nested members
+                # live under a "properties" sub-dict. Descend into it so that nested
+                # values are reachable with the natural "Qto.Complex.Nested" path.
+                subprops = value.get("properties")
+                value = subprops.get(key, None) if isinstance(subprops, dict) else None
         elif isinstance(value, (list, tuple, set)):  # If we use regex
             if isinstance(key, str) and key.isnumeric():
                 try:
@@ -678,8 +687,8 @@ def set_element_value(
                 element: ifcopenshell.entity_instance, value: Union[str, None], *, is_type: bool
             ) -> None:
                 predefined_type = element.PredefinedType
-                declaration = element.wrapped_data.declaration()
-                entity = declaration.as_entity()
+                declaration = element.declaration
+                entity = declaration
                 enum_attr = next(attr for attr in entity.attributes() if attr.name() == "PredefinedType")
                 enum_items = ifcopenshell.util.attribute.get_enum_items(enum_attr)
 
@@ -758,9 +767,7 @@ def set_element_value(
                     except:
                         # Try to cast
                         data_type = ifcopenshell.util.attribute.get_primitive_type(
-                            element.wrapped_data.declaration()
-                            .as_entity()
-                            .attribute_by_index(element.wrapped_data.get_argument_index(key))
+                            element.declaration.attribute_by_index(element.get_argument_index(key))
                         )
                         if data_type == "string":
                             value = str(value)
@@ -1228,6 +1235,8 @@ class FacetTransformer(lark.Transformer):
     def value(self, args):
         if args[0].data == "unquoted_string":
             return args[0].children[0].value
+        elif args[0].data == "decimal_string":
+            return args[0].children[0].value
         elif args[0].data == "quoted_string":
             return args[0].children[0].value[1:-1].replace('\\"', '"')
         elif args[0].data == "regex_string":
@@ -1242,7 +1251,13 @@ class FacetTransformer(lark.Transformer):
 
     def compare(self, element_value, comparison, value) -> bool:
         if isinstance(element_value, (list, tuple)):
-            return any(self.compare(ev, comparison, value) for ev in element_value)
+            # Match if any item does, negating the aggregate rather than each
+            # item, so that e.g. != means "no item equals" and stays the
+            # complement of = (#8129).
+            result = any(self.compare(ev, comparison.lstrip("!"), value) for ev in element_value)
+            if comparison.startswith("!"):
+                return not result
+            return result
         elif isinstance(value, str):
             try:
                 if isinstance(element_value, int):

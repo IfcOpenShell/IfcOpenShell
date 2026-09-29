@@ -40,7 +40,7 @@ def _has_occ():
         pass
 
     try:
-        import OCC.BRepTools  # noqa: F401  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
+        import OCC.BRepTools  # ruff: ignore[unused-import]  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
         return True
     except ImportError:
@@ -52,6 +52,6 @@ def _has_occ():
 has_occ = _has_occ()
 
 if has_occ:
-    from . import occ_utils as utils  # noqa: F401
+    from . import occ_utils as utils  # ruff: ignore[unused-import]
 
 from .main import *
