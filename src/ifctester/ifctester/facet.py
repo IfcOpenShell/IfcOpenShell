@@ -662,11 +662,7 @@ class PartOf(Facet):
         return None
 
     def predefined_type_matches(self, element: ifcopenshell.entity_instance) -> bool:
-        # get_predefined_type() never returns the literal "USERDEFINED": for a
-        # userdefined element it substitutes the custom ObjectType (or
-        # equivalent) text instead. Comparing that text against the literal
-        # "USERDEFINED" would always be false, wrongly failing a required
-        # requirement and wrongly passing a prohibited one.
+        # get_predefined_type() substitutes the custom ObjectType for "USERDEFINED", so it never equals the literal.
         if self.predefinedType == "USERDEFINED":
             return ifcopenshell.util.element.is_userdefined_type(element)
         return ifcopenshell.util.element.get_predefined_type(element) == self.predefinedType
