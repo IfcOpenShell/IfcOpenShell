@@ -197,10 +197,12 @@ void do_circle_head(vec4 pos_w, vec4 head[CIRCLE_SEGS]) {
 
 def add_verts_sequence(verts, start_i, output_verts, output_edges, closed=False):
     """Add sequence of verts to output lists, returns next vertex index"""
+    i = None
     for i, v in enumerate(verts[:-1], start_i):
         output_verts.append(v)
         output_edges.append((i, i + 1))
     output_verts.append(verts[-1])
+    assert i is not None
     if closed:
         output_edges.append((i + 1, start_i))
     return i + 2
@@ -335,9 +337,12 @@ class BaseLinesShader(BaseShader):
 
     TYPE = "LINES"
 
-    DEF_GLSL = BaseShader.DEF_GLSL + """
+    DEF_GLSL = (
+        BaseShader.DEF_GLSL
+        + """
     #define GAP_SIZE {gap_size}
     """
+    )
 
     GEOM_GLSL = """
     layout(lines) in;
@@ -395,10 +400,13 @@ class DotsGizmoShader(GizmoShader):
 
     TYPE = "POINTS"
 
-    DEF_GLSL = BaseShader.DEF_GLSL + """
+    DEF_GLSL = (
+        BaseShader.DEF_GLSL
+        + """
     #define CIRCLE_SEGMENTS 12
     #define CIRCLE_RADIUS 8
     """
+    )
 
     GEOM_GLSL = """
     layout(points) in;
