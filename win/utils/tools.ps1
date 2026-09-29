@@ -24,64 +24,6 @@ function mark {
     New-Item -Path $marker_filepath -ItemType File | Out-Null
 }
 
-# This function can be deprecated in the future, since installations are marked automatically.
-# It's here only to avoid some disruption during the transition period.
-function mark_based_on_artifacts {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$dependency_name,
-
-        [Parameter(Mandatory = $true)]
-        [string]$installation_dir
-    )
-
-    if ($dependency_name -eq "hdf5") {
-        if ($env:BUILD_CFG -eq "Debug") {
-            $artifact = "lib\libhdf5_D.lib"
-        }
-        else {
-            $artifact = "lib\libhdf5.lib"
-        }
-    }
-    elseif ($dependency_name -eq "opencollada") {
-        if ($env:BUILD_CFG -eq "Debug") {
-            $artifact = "lib\opencollada\OpenCOLLADAFrameworkd.lib"
-        }
-        else {
-            $artifact = "lib\opencollada\OpenCOLLADAFramework.lib"
-        }
-    }
-    elseif ($dependency_name -eq "OpenCASCADE") {
-        # New OCCT folder layout was introduced after marker files were added,
-        # so installation don't need artifact-based detection.
-        return
-    }
-    elseif ($dependency_name -eq "rocksdb") {
-        if ($env:BUILD_CFG -eq "Debug") {
-            $artifact = "lib\rocksdb_d.lib"
-        }
-        else {
-            $artifact = "lib\rocksdb.lib"
-        }
-    }
-    else {
-        throw "Unexpected dependency name '$dependency_name'."
-    }
-    $artifact_filepath = Join-Path -Path $installation_dir -ChildPath $artifact
-    if (-not (Test-Path -Path $artifact_filepath)) {
-        return
-    }
-    if (-not (Test-Path -Path $installation_dir)) {
-        throw "Directory '$installation_dir' does not exist."
-    }
-    $marker_filepath = Join-Path -Path $installation_dir -ChildPath $ENV:MARKER_FILE
-    if (Test-Path -Path $marker_filepath) {
-        return
-    }
-    . $cecho 0 13 "Found artifact '$artifact' for dependency '$dependency_name' $env:BUILD_CFG."
-    & mark $installation_dir
-}
-
 # Check if installation exists for the current `BUILD_CFG`.
 # Returns exit code 200 if installation exists, 404 otherwise.
 # Since we want Release and Debug installation to coexist,
@@ -98,8 +40,6 @@ function check_installation {
         exit 404
     }
 
-    & mark_based_on_artifacts $dependency_name $installation_dir
-
     $marker_filepath = Join-Path -Path $installation_dir -ChildPath $ENV:MARKER_FILE
     if (-not (Test-Path -Path $marker_filepath)) {
         exit 404
@@ -109,10 +49,10 @@ function check_installation {
 
 
 # Dependencies Release/Debug configs compatibility:
-# - hdf5: incompatible
 # - OpenCASCADE: incompatible
 # - rocksdb: incompatible
 # - opencollada: incompatible
+# - Qt6: compatible when both Release and Debug artifacts are installed
 # - zstd: compatible
 
 function setup_build_cfg {
@@ -144,7 +84,10 @@ function extract_file {
         return
     }
     . $cecho 0 13 "Extracting $dependency_name into '$destination_dir' from '$filename'."
-    7za x "$filename" -o"$destination_dir"
+    7z x -bso0 -bsp0 "$filename" -o"$destination_dir"
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to extract '$filename' for '$dependency_name' with 7z exit code $LASTEXITCODE."
+    }
 }
 
 
@@ -216,44 +159,6 @@ function install_cmake_project {
     . $cecho 0 13 "$command"
     Invoke-Expression $command
     popd
-}
-
-
-function check_boost_vc145_compatibility {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$VC_VER,
-        [Parameter(Mandatory = $true)]
-        [string]$DEPS_DIR,
-        [Parameter(Mandatory = $true)]
-        [string]$BOOST_ROOT
-    )
-
-    $boost_build_path = "$BOOST_ROOT/tools/build"
-
-    if ($VC_VER -ne "14.5") {
-        . $cecho 0 13 "VC_VER is not 14.5, no need to install updated b2."
-        return
-    }
-
-    $res = Select-String -Path "$boost_build_path/src/engine/build.bat" -Pattern 'vc143, vc145' -Quiet;
-    if ($res) {
-        . $cecho 0 13 "vc145 already supported, no need to install updated b2."
-        return
-    }
-
-    $b2_version = "5.4.2"
-    $b2_stem = "b2-$b2_version"
-    $b2_path = "$DEPS_DIR\$b2_stem"
-    $b2_filename = "$b2_stem.zip"
-
-    & download_file "b2" "https://github.com/bfgroup/b2/releases/download/$b2_version/$b2_filename" "$DEPS_DIR" "$b2_filename"
-    & extract_file "b2" "$b2_filename" "$DEPS_DIR" "$b2_path"
-
-    . $cecho 0 13 "Installing b2 with vc145 support..."
-    Remove-Item -Recurse -Path "$boost_build_path"
-    Copy-Item -Path "$b2_path" -Destination "$boost_build_path" -Recurse
-    . $cecho 0 13 "b2 with vc145 support installed."
 }
 
 function main {
