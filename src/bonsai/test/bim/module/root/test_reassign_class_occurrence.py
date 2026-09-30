@@ -130,9 +130,7 @@ def test_reassigning_one_occurrence_among_siblings_leaves_type_and_siblings_unto
     assert result == {"FINISHED"}
     slab = fresh_ifc.by_id(wall1_id)
     assert slab.is_a("IfcSlab")
-    # reassigned occurrence is detached from the now-mismatched type
     assert ifcopenshell.util.element.get_type(slab) is None
-    # shared type and sibling occurrences are untouched
     assert wall_type.is_a("IfcWallType")
     assert set(ifcopenshell.util.element.get_types(wall_type)) == {walls[1], walls[2]}
     assert walls[1].is_a("IfcWall") and walls[2].is_a("IfcWall")
