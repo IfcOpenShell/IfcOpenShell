@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=77.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -10,12 +10,13 @@ authors = [
 ]
 description = "Utility for applying modification recipes to IFC files"
 readme = "README.md"
+requires-python = ">=3.11"
+license = "LGPL-3.0-or-later"
 keywords = ["IFC", "BIM"]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
 ]
-dependencies = ["ifcopenshell", "toposort", "numpy"]
+dependencies = ["ifcopenshell", "numpy"]
 
 [project.optional-dependencies]
 advanced = [
@@ -34,8 +35,3 @@ exclude = ["test*"]
 
 [tool.ruff]
 extend = "../../pyproject.toml"
-
-[tool.ruff.lint]
-select = [
-    "F401", # unused imports
-]

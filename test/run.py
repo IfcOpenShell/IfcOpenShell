@@ -34,57 +34,70 @@ from urllib.request import urlretrieve
 from zipfile import ZipFile
 
 # Test whether Blender and IfcOpenShell are installed
-if subprocess.call(['blender','-b','-P','bpy.py','TEST']) != 0:
+if subprocess.call(["blender", "-b", "-P", "bpy.py", "TEST"]) != 0:
     print("[Error] Failed to launch Blender")
     sys.exit(1)
 else:
     print("[Notice] Found Blender and IfcOpenShell on system")
 
-# Global variables for keeping track of test cases    
+# Global variables for keeping track of test cases
 test_cases = []
 failed = []
 
 # Create the output directory
 cwd = os.path.abspath(os.path.dirname(inspect.getfile(inspect.currentframe())))
 os.chdir(cwd)
-if not os.path.exists("output"): os.mkdir("output")
-if not os.path.exists("input"): os.mkdir("input")
+if not os.path.exists("output"):
+    os.mkdir("output")
+if not os.path.exists("input"):
+    os.mkdir("input")
+
 
 def extension(fn):
     return os.path.splitext(fn)[-1].lower()
 
-# Class to download extract and convert IFC files    
+
+# Class to download extract and convert IFC files
 class TestFile:
-    def __init__(self,fn,store_as=None):
+    def __init__(self, fn, store_as=None):
         global test_cases
         self.fn = fn
         self.store_as = store_as
         self.failed = []
         test_cases.append(self)
+
     def __call__(self):
         if self.fn.startswith("http://") or self.fn.startswith("ftp://"):
             fn = self.store_as if self.store_as else self.fn.split("/")[-1]
-            if os.path.exists(os.path.join("input",fn)):
-                print ("[Notice] Already downloaded:",fn)
+            if os.path.exists(os.path.join("input", fn)):
+                print("[Notice] Already downloaded:", fn)
             else:
-                print ("[Notice] Downloading:",fn)
-                urlretrieve(self.fn,os.path.join("input",fn))
+                print("[Notice] Downloading:", fn)
+                urlretrieve(self.fn, os.path.join("input", fn))
             self.fn = fn
-        if extension(self.fn) == '.zip':
-            print ("[Notice] Extracting:",self.fn)
-            zf = ZipFile(os.path.join("input",self.fn))
-            self.fn = [n for n in zf.namelist() if extension(n) == '.ifc' and not n.startswith('__') and not n.startswith('.')]
+        if extension(self.fn) == ".zip":
+            print("[Notice] Extracting:", self.fn)
+            zf = ZipFile(os.path.join("input", self.fn))
+            self.fn = [
+                n for n in zf.namelist() if extension(n) == ".ifc" and not n.startswith("__") and not n.startswith(".")
+            ]
             for fn in self.fn:
-                if not os.path.exists(os.path.join("input",fn)): zf.extract(fn,"input")            
+                if not os.path.exists(os.path.join("input", fn)):
+                    zf.extract(fn, "input")
             zf.close()
-        else: self.fn = [self.fn]
+        else:
+            self.fn = [self.fn]
         for fn in self.fn:
-            print ("[Notice] Rendering:",fn)
-            succes = subprocess.call(['blender','-b','-P','bpy.py','render',os.path.join("input",fn)]) == 0
-            if not succes: self.failed.append(fn)
+            print("[Notice] Rendering:", fn)
+            succes = subprocess.call(["blender", "-b", "-P", "bpy.py", "render", os.path.join("input", fn)]) == 0
+            if not succes:
+                self.failed.append(fn)
         return len(self.failed) == 0
-    def __str__(self): return "\n".join(self.failed) if len(self.failed) else ""
-        
+
+    def __str__(self):
+        return "\n".join(self.failed) if len(self.failed) else ""
+
+
 # Karlsruher Institut fuer Technologie
 TestFile("http://iai-typo3.iai.fzk.de/www-extern-kit/fileadmin/download/download-vrsys/ADT-FZK-Haus-2005-2006.zip")
 TestFile("http://iai-typo3.iai.fzk.de/www-extern-kit/fileadmin/download/download-vrsys/Nem-FZK-Haus-2x3.zip")
@@ -93,24 +106,34 @@ TestFile("http://iai-typo3.iai.fzk.de/www-extern-kit/fileadmin/download/download
 
 TestFile("http://iai-typo3.iai.fzk.de/www-extern-kit/fileadmin/download/download-vrsys/FJK-Project-Final.zip")
 
-TestFile("http://www.iai.fzk.de/www-extern-kit/fileadmin/download/download-vrsys/Bien-Zenker_Jasmin-Sun-AC14-V2-IFC.zip")
+TestFile(
+    "http://www.iai.fzk.de/www-extern-kit/fileadmin/download/download-vrsys/Bien-Zenker_Jasmin-Sun-AC14-V2-IFC.zip"
+)
 
-TestFile("http://www.iai.fzk.de/www-extern-kit/fileadmin/download/download-vrsys/ADT-Smiley-West-Project-14-10-2005.zip")
+TestFile(
+    "http://www.iai.fzk.de/www-extern-kit/fileadmin/download/download-vrsys/ADT-Smiley-West-Project-14-10-2005.zip"
+)
 TestFile("http://www.iai.fzk.de/www-extern-kit/fileadmin/download/download-vrsys/Allplan-Smiley-West.zip")
 TestFile("http://www.iai.fzk.de/www-extern-kit/fileadmin/download/download-vrsys/AC-11-Smiley-West-04-07-2007-IFC.zip")
 
 TestFile("http://www.iai.fzk.de/www-extern-kit/fileadmin/download/download-vrsys/Allplan-2008-Institute-Var-2-IFC.zip")
 TestFile("http://www.iai.fzk.de/www-extern-kit/fileadmin/download/download-vrsys/AC11-Institute-Var-2-IFC.zip")
 
-TestFile("http://iai-typo3.iai.fzk.de/www-extern-kit/fileadmin/download/download-vrsys/PART02_Wilfer_200302_20070209_IFC.zip")
-TestFile("http://iai-typo3.iai.fzk.de/www-extern-kit/fileadmin/download/download-vrsys/PART06_Kermi_200405_20070401_IFC.zip")
+TestFile(
+    "http://iai-typo3.iai.fzk.de/www-extern-kit/fileadmin/download/download-vrsys/PART02_Wilfer_200302_20070209_IFC.zip"
+)
+TestFile(
+    "http://iai-typo3.iai.fzk.de/www-extern-kit/fileadmin/download/download-vrsys/PART06_Kermi_200405_20070401_IFC.zip"
+)
 
-TestFile("http://iai-typo3.iai.fzk.de/www-extern-kit/fileadmin/download/download-vrsys/Ettenheim-GIS-05-11-2006_optimized.zip")
+TestFile(
+    "http://iai-typo3.iai.fzk.de/www-extern-kit/fileadmin/download/download-vrsys/Ettenheim-GIS-05-11-2006_optimized.zip"
+)
 
 # Selvaag Gruppen
 TestFile("ftp://ftp.dds.no/pub/ifc/Munkerud/Munkerud_hus6_BE.zip")
 
-# Statsbygg 
+# Statsbygg
 TestFile("ftp://ftp.dds.no/pub/ifc/HiTOS/2x3_HiTOS_EL_new.zip")
 TestFile("ftp://ftp.dds.no/pub/ifc/HiTOS/2x3_HiTOS_HVAC_new.zip")
 TestFile("ftp://ftp.dds.no/pub/ifc/HiTOS/HITOS_Architectural_2006-10-25.zip")
@@ -125,12 +148,12 @@ TestFile("http://download2cf.nemetschek.net/www_misc/bim/DCR-LOD_200.zip")
 TestFile("ftp://ftp.dds.no/pub/ifc/BardNa/Dds_BardNa.zip")
 
 # Common Building Information Model Files
-TestFile("http://projects.buildingsmartalliance.org/files/?artifact_id=4278","2011-09-14-Duplex-IFC.zip")
-TestFile("http://projects.buildingsmartalliance.org/files/?artifact_id=4284","2011-09-14-Office-IFC.zip")
+TestFile("http://projects.buildingsmartalliance.org/files/?artifact_id=4278", "2011-09-14-Duplex-IFC.zip")
+TestFile("http://projects.buildingsmartalliance.org/files/?artifact_id=4284", "2011-09-14-Office-IFC.zip")
 # Rather large:
 # TestFile("http://projects.buildingsmartalliance.org/files/?artifact_id=4289","2011-09-14-Clinic-IFC.zip")
 
-# http://openifcmodel.cs.auckland.ac.nz IAI 
+# http://openifcmodel.cs.auckland.ac.nz IAI
 TestFile("http://openifcmodel.cs.auckland.ac.nz/_models/0912101-01wall_layers_number_1.ifc")
 TestFile("http://openifcmodel.cs.auckland.ac.nz/_models/0912101-02wall_opening_straight_ac_1.ifc")
 TestFile("http://openifcmodel.cs.auckland.ac.nz/_models/0912101-03wall_recess_ben_1.ifc")
@@ -182,16 +205,16 @@ TestFile("http://openifcmodel.cs.auckland.ac.nz/_models/171210threebeams_brep.if
 TestFile("http://openifcmodel.cs.auckland.ac.nz/_models/171210TrainingStructure_brep.ifc")
 TestFile("http://openifcmodel.cs.auckland.ac.nz/_models/171210eccentricity_physical.ifc")
 
-# BIMserver 
+# BIMserver
 TestFile("http://bimserver.googlecode.com/svn/trunk/TestData/data/06-03-01_windows_in_curved_wall_vw.ifc")
 TestFile("http://bimserver.googlecode.com/svn/trunk/TestData/data/4351.ifc")
 TestFile("http://bimserver.googlecode.com/svn/trunk/TestData/data/AC9R1-Haus-G-H-Ver2-2x3.ifc")
 TestFile("http://bimserver.googlecode.com/svn/trunk/TestData/data/AC90R1-niedriha-V2-2x3.ifc")
 
-# File courtesey of Jon Mirtschin / Geometry Gym  
+# File courtesey of Jon Mirtschin / Geometry Gym
 TestFile("geometrygym_great_court_roof.ifc")
 
-# File courtesey of Ryan Schultz / Opening Design / Studio Wikitecture  
+# File courtesey of Ryan Schultz / Opening Design / Studio Wikitecture
 TestFile("revit2012_janesville_restaurant.zip")
 
 # Walls cut by IfcPolygonalBoundedHalfSpaces from Revit 2011
@@ -243,10 +266,9 @@ for test in test_cases:
     if not succes:
         failed.append(test)
 
-if len(failed):        
+if len(failed):
     print("[Notice] Conversion failed for the following cases:")
     for test in failed:
-        print (test)
+        print(test)
 else:
     print("[Notice] All cases succeeded")
-
