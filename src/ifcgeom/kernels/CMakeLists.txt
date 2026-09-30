@@ -110,5 +110,9 @@ foreach(kernel ${GEOMETRY_KERNELS})
     )
 endforeach()
 
+install(FILES ifc_geomlibrary_api.h
+    DESTINATION ${INCLUDEDIR}/ifcgeom/kernels
+)
+
 set(kernel_libraries ${kernel_libraries} PARENT_SCOPE)
 set(tree_libraries ${tree_libraries} PARENT_SCOPE)
