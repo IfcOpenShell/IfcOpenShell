@@ -42,6 +42,11 @@ class Patcher:
         project = self.file.by_type("IfcProject")[0]
         storeys = self.find_decomposed_ifc_class(project, "IfcBuildingStorey")
         for storey in storeys:
+            if storey.ObjectPlacement is None:
+                self.logger.warning(
+                    f"Skipping storey '{storey.Name or storey.GlobalId}': it has no ObjectPlacement to offset."
+                )
+                continue
             co = storey.ObjectPlacement.RelativePlacement.Location.Coordinates
             storey.ObjectPlacement.RelativePlacement.Location.Coordinates = (co[0], co[1], co[2] + float(self.z))
             co = storey.ObjectPlacement.RelativePlacement.Location.Coordinates
