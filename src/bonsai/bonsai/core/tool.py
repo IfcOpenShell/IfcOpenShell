@@ -21,7 +21,6 @@ import inspect
 from typing import Optional
 
 # fmt: off
-# pylint: skip-file
 
 # This interface class and decorator is magic syntactic sugar to allow concise interface definitions
 # If we didn't do this, Python is unnecessarily verbose, which I find distracting. Don't black this file :)
@@ -290,7 +289,6 @@ class Cost:
 class Debug:
     def add_schema_identifier(cls, schema): pass
     def load_express(cls, filename): pass
-    def purge_hdf5_cache(cls): pass
 
 
 @interface
@@ -446,7 +444,6 @@ class Feature:
 @interface
 class Geometry:
     def change_object_data(cls, obj, data, is_global=False): pass
-    def clear_cache(cls, element): pass
     def clear_modifiers(cls, obj): pass
     def clear_scale(cls, obj): pass
     def copy_data_links(cls, data, copied_entities) -> None: pass
@@ -654,7 +651,7 @@ class Material:
     def get_default_material(cls): pass
     def get_elements_by_material(cls, material): pass
     def get_material_attributes(cls): pass
-    def get_material(cls, element, should_inherit: bool = False): pass
+    def get_material(cls, element, should_inherit: bool = False, should_skip_usage: bool = False): pass
     def get_object_ui_active_material(cls): pass
     def get_object_ui_material_type(cls): pass
     def get_style(cls, material): pass
