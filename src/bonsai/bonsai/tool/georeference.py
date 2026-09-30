@@ -65,7 +65,7 @@ class Georeference(bonsai.core.tool.Georeference):
                 new.is_optional = True
                 new.enum_items = json.dumps(
                     {
-                        u.id(): (getattr(u, "Prefix", "") or "") + u.Name
+                        u.id(): (getattr(u, "Prefix", "") or "") + (u.Name or "")
                         for u in tool.Ifc.get().by_type("IfcNamedUnit")
                         if u.UnitType == "LENGTHUNIT"
                     }
