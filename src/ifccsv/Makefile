@@ -22,7 +22,7 @@ include ../common.mk
 
 .PHONY: test
 test:
-	pytest -p no:pytest-blender test.py
+	pytest -p no:pytest-blender test
 
 .PHONY: qa
 qa:
