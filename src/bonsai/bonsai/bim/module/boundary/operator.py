@@ -685,8 +685,8 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
             tool.Ifc.get().by_type("IfcWall")
             + tool.Ifc.get().by_type("IfcSlab")
             + tool.Ifc.get().by_type("IfcVirtualElement")
-            + standalone_windows
         )
+        building_elements += standalone_windows
 
         for building_element in building_elements:
             if obj := tool.Ifc.get_object(building_element):
