@@ -217,15 +217,6 @@ class TestCreatePolyline(test.bootstrap.IFC4):
         assert segment.wrappedValue == (2, 3, 1)
 
 
-class TestMirror(test.bootstrap.IFC4):
-    def test_mirror(self):
-        builder = ShapeBuilder(self.file)
-        rectangle = builder.rectangle(size=(100, 100))
-        assert np.allclose(rectangle.Points.CoordList, ((0.0, 0.0), (100.0, 0.0), (100.0, 100.0), (0.0, 100.0)))
-        builder.mirror(rectangle, mirror_axes=(1, 0))
-        assert np.allclose(rectangle.Points.CoordList, ((0.0, 0.0), (-100.0, 0.0), (-100.0, 100.0), (0.0, 100.0)))
-
-
 class TestCreateEllipseCurve(test.bootstrap.IFC4):
     def test_equal_radii_create_a_circle(self):
         curve = ShapeBuilder(self.file).create_ellipse_curve(1.0, 1.0)
@@ -240,6 +231,15 @@ class TestCreateEllipseCurve(test.bootstrap.IFC4):
     def test_different_radii_create_an_ellipse(self):
         curve = ShapeBuilder(self.file).create_ellipse_curve(1.0, 0.5)
         assert curve.is_a("IfcEllipse")
+
+
+class TestMirror(test.bootstrap.IFC4):
+    def test_mirror(self):
+        builder = ShapeBuilder(self.file)
+        rectangle = builder.rectangle(size=(100, 100))
+        assert np.allclose(rectangle.Points.CoordList, ((0.0, 0.0), (100.0, 0.0), (100.0, 100.0), (0.0, 100.0)))
+        builder.mirror(rectangle, mirror_axes=(1, 0))
+        assert np.allclose(rectangle.Points.CoordList, ((0.0, 0.0), (-100.0, 0.0), (-100.0, 100.0), (0.0, 100.0)))
 
 
 class TestVertex(test.bootstrap.IFC4):
