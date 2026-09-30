@@ -1851,7 +1851,10 @@ ifcos_build_args = [
     f"-DBUILD_CONVERT={OFF_ON['IfcConvert' in targets]}",
     f"-DBUILD_BONSAIVIEWER={OFF_ON['BonsaiViewer' in targets]}",
     "-DUSE_CCACHE=ON",
-    "-DIFCOPENSHELL_DEPLOY_QT_RUNTIME=OFF",
+    # On macOS macdeployqt embeds Qt into the .app bundle, `package-zip-archives` relies on it.
+    # Elsewhere it's disabled since Qt deploy installs everything to `lib`, making it hard to filter out
+    # libs not needed for the Python wrapper. Qt is staged by `package-zip-archives` itself instead.
+    f"-DIFCOPENSHELL_DEPLOY_QT_RUNTIME={OFF_ON[APPLE]}",
 ]
 
 ld_library_paths = [
