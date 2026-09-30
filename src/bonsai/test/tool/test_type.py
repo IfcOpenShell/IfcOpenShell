@@ -20,7 +20,6 @@ import bpy
 import ifcopenshell
 import ifcopenshell.api.root
 import ifcopenshell.api.type
-import pytest
 
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -193,9 +192,17 @@ class TestIsRelatingTypeCompatible(NewFile):
         assert subject.is_relating_type_compatible(door, door_style) is True
 
     def test_legacy_style_pairing_refused_in_ifc4x3(self):
+        ifc4x3 = ifcopenshell.file(schema="IFC4X3")
+        ifc4 = ifcopenshell.file(schema="IFC4")
+        door = ifcopenshell.api.root.create_entity(ifc4x3, ifc_class="IfcDoor")
+        door_style = ifcopenshell.api.root.create_entity(ifc4, ifc_class="IfcDoorStyle")
+        assert subject.is_relating_type_compatible(door, door_style) is False
+
+    def test_matched_pair_ifc4x3(self):
         ifc = ifcopenshell.file(schema="IFC4X3")
-        with pytest.raises(RuntimeError):
-            ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcDoorStyle")
+        door = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcDoor")
+        door_type = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcDoorType")
+        assert subject.is_relating_type_compatible(door, door_type) is True
 
     def test_untypable_occurrence_returns_false(self):
         ifc = ifcopenshell.file()
