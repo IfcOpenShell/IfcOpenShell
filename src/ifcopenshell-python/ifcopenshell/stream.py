@@ -19,7 +19,6 @@
 from __future__ import annotations
 
 try:
-    import os
     import re
     from typing import Any, NoReturn, Optional, Union
 
@@ -159,17 +158,22 @@ try:
 
             exclude = set()
 
-            offset = 0
-            newline_character = len(os.linesep)
-            for line in self.file:
-                line = line.strip()
+            # Offsets come from `tell()`, not an accumulated `len(line)` guess, so line
+            # endings that differ from the running OS (e.g. CRLF files on Linux) don't drift.
+            offset = self.file.tell()
+            while True:
+                raw_line = self.file.readline()
+                if not raw_line:
+                    break
+                next_offset = self.file.tell()
+                line = raw_line.strip()
                 if line.startswith("#"):
                     step_id, ifc_class = line.split("(")[0].split("=")
                     step_id = int(step_id.strip()[1:])
                     ifc_class = ifc_class.strip()
 
                     if ifc_class in exclude:
-                        offset += len(line) + newline_character
+                        offset = next_offset
                         continue
 
                     for reference_id in self.reference_pattern.findall(line[1:]):
@@ -190,7 +194,7 @@ try:
                     # But we only create them once per type because we basically only need access to 'semi-static' such as get_attribute_category()
                     self.instance_map: dict[str, ifcopenshell.entity_instance] = {}
 
-                offset += len(line) + newline_character
+                offset = next_offset
 
             self.preprocess_schema()
 
