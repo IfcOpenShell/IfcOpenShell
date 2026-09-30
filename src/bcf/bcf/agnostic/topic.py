@@ -1,8 +1,6 @@
 import tempfile
 from pathlib import Path
-from typing import Optional, Union
-
-from typing_extensions import assert_never
+from typing import Optional, Union, assert_never
 
 import bcf.agnostic.model as mdl
 import bcf.v2.bcfxml
