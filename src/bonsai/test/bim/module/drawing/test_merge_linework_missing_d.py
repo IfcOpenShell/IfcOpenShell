@@ -51,4 +51,6 @@ class TestMergeLineworkAndAddMetadata(NewFile):
             "</g></svg>"
         )
         CreateDrawing.merge_linework_and_add_metadata(drawing, root)
-        assert len(root.xpath("//*[local-name()='path'][@d]")) == 1
+        paths = root.xpath("//*[local-name()='path']")
+        assert len(paths) == 1
+        assert paths[0].get("d")
