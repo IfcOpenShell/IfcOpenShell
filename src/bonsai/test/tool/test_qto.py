@@ -23,7 +23,6 @@ import ifcopenshell.api.cost
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
-import pytest
 
 import bonsai.bim.import_ifc as import_ifc
 import bonsai.core.root
@@ -56,6 +55,7 @@ class TestQuantifyGeographicElement(test.bim.bootstrap.NewFile):
         import logging
 
         import ifc5d.qto
+        import pytest
 
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
