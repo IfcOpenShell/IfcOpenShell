@@ -7,14 +7,13 @@
 # ///
 """Run the package tests against a built ifcopenshell-python zip.
 
-Usage: python run_against_package.py <zip or glob> [pytest args...]
-
 The zip is extracted into a temporary directory that is put on PYTHONPATH, so the
 tests import the *packaged* wrapper and plug-ins, not a source build. Runs with the
 interpreter that runs this script, which therefore has to match the zip's Python
 version and have pytest installed.
 """
 
+import argparse
 import glob
 import os
 import subprocess
@@ -42,12 +41,14 @@ def extract_preserving_symlinks(zip_path: Path, dest: Path) -> None:
 
 
 def main() -> int:
-    if len(sys.argv) < 2:
-        print(__doc__)
-        return 2
-    matches = sorted(glob.glob(sys.argv[1]))
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("zip", help="Path or glob to the ifcopenshell-python zip.")
+    parser.add_argument("pytest_args", nargs=argparse.REMAINDER, help="Extra arguments passed to pytest.")
+    args = parser.parse_args()
+
+    matches = sorted(glob.glob(args.zip))
     if len(matches) != 1:
-        print(f"Expected exactly one zip for {sys.argv[1]!r}, found: {matches}")
+        print(f"Expected exactly one zip for {args.zip!r}, found: {matches}")
         return 2
     zip_path = Path(matches[0])
     with tempfile.TemporaryDirectory(prefix="ifcopenshell-package-") as tmp:
@@ -55,7 +56,7 @@ def main() -> int:
         extract_preserving_symlinks(zip_path, Path(tmp))
         env = dict(os.environ, PYTHONPATH=tmp, PYTEST_DISABLE_PLUGIN_AUTOLOAD="1")
         # Run from the temp dir so a checked-out `src/ifcopenshell-python` can never shadow the package.
-        cmd = [sys.executable, "-m", "pytest", "-p", "no:cacheprovider", "-v", str(HERE), *sys.argv[2:]]
+        cmd = [sys.executable, "-m", "pytest", "-p", "no:cacheprovider", "-v", str(HERE), *args.pytest_args]
         print("$", " ".join(cmd))
         proc = subprocess.run(cmd, cwd=tmp, env=env)
         return proc.returncode
