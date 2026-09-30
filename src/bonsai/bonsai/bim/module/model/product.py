@@ -73,85 +73,100 @@ class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     ifc_element_type: bpy.props.StringProperty()
 
+    # IFC2X3 spells these two type classes differently and the toolbar passes the
+    # spelling of the active schema, while the defaults below are keyed by the IFC4 name.
+    TYPE_CLASS_ALIASES = {
+        "IfcDoorStyle": "IfcDoorType",
+        "IfcWindowStyle": "IfcWindowType",
+    }
+
+    def set_predefined_type(self, context: bpy.types.Context, predefined_type: str) -> None:
+        props = tool.Root.get_root_props()
+        items = get_enum_items(props, "ifc_predefined_type", context) or ()
+        if predefined_type in {i[0] for i in items if i}:
+            props.ifc_predefined_type = predefined_type
+
     def _execute(self, context):
         props = tool.Root.get_root_props()
         props.ifc_product = "IfcElementType"
         props.ifc_class = self.ifc_element_type
-        if self.ifc_element_type == "IfcWallType":
+        ifc_element_type = self.TYPE_CLASS_ALIASES.get(self.ifc_element_type, self.ifc_element_type)
+
+        if ifc_element_type == "IfcWallType":
             if tool.Ifc.get().schema == "IFC2X3":
-                props.ifc_predefined_type = "STANDARD"
+                self.set_predefined_type(context, "STANDARD")
             else:
-                props.ifc_predefined_type = "SOLIDWALL"
+                self.set_predefined_type(context, "SOLIDWALL")
             props.representation_template = "LAYERSET_AXIS2"
-        elif self.ifc_element_type == "IfcRailingType":
-            props.ifc_predefined_type = "BALUSTRADE"
+        elif ifc_element_type == "IfcRailingType":
+            self.set_predefined_type(context, "BALUSTRADE")
             props.representation_template = "RAILING"
 
-        elif self.ifc_element_type == "IfcRoofType":
-            props.ifc_predefined_type = "HIP_ROOF"
+        elif ifc_element_type == "IfcRoofType":
+            self.set_predefined_type(context, "HIP_ROOF")
             props.representation_template = "ROOF"
-        elif self.ifc_element_type == "IfcSlabType":
-            props.ifc_predefined_type = "FLOOR"
+        elif ifc_element_type == "IfcSlabType":
+            self.set_predefined_type(context, "FLOOR")
             props.representation_template = "LAYERSET_AXIS3"
 
-        elif self.ifc_element_type == "IfcDoorType":
-            props.ifc_predefined_type = "DOOR"
+        elif ifc_element_type == "IfcDoorType":
+            self.set_predefined_type(context, "DOOR")
             props.representation_template = "DOOR"
-        elif self.ifc_element_type == "IfcWindowType":
-            props.ifc_predefined_type = "WINDOW"
+        elif ifc_element_type == "IfcWindowType":
+            self.set_predefined_type(context, "WINDOW")
             props.representation_template = "WINDOW"
 
-        elif self.ifc_element_type == "IfcColumnType":
-            props.ifc_predefined_type = "COLUMN"
+        elif ifc_element_type == "IfcColumnType":
+            self.set_predefined_type(context, "COLUMN")
             props.representation_template = "PROFILESET"
-        elif self.ifc_element_type == "IfcBeamType":
-            props.ifc_predefined_type = "BEAM"
+        elif ifc_element_type == "IfcBeamType":
+            self.set_predefined_type(context, "BEAM")
             props.representation_template = "PROFILESET"
-        elif self.ifc_element_type == "IfcMemberType":
-            props.ifc_predefined_type = "CHORD"
+        elif ifc_element_type == "IfcMemberType":
+            self.set_predefined_type(context, "CHORD")
             props.representation_template = "PROFILESET"
-        elif self.ifc_element_type == "IfcPlateType":
-            props.ifc_predefined_type = "SHEET"
+        elif ifc_element_type == "IfcPlateType":
+            self.set_predefined_type(context, "SHEET")
             props.representation_template = "LAYERSET_AXIS3"
-        elif self.ifc_element_type == "IfcFootingType":
-            props.ifc_predefined_type = "FOOTING_BEAM"
+        elif ifc_element_type == "IfcFootingType":
+            self.set_predefined_type(context, "FOOTING_BEAM")
             props.representation_template = "PROFILESET"
-        elif self.ifc_element_type == "IfcPileType":
-            props.ifc_predefined_type = "COHESION"
+        elif ifc_element_type == "IfcPileType":
+            self.set_predefined_type(context, "COHESION")
             props.representation_template = "PROFILESET"
 
-        elif self.ifc_element_type == "IfcDuctSegmentType":
-            props.ifc_predefined_type = "RIGIDSEGMENT"
+        elif ifc_element_type == "IfcDuctSegmentType":
+            self.set_predefined_type(context, "RIGIDSEGMENT")
             props.representation_template = "FLOW_SEGMENT_RECTANGULAR"
-        elif self.ifc_element_type == "IfcPipeSegmentType":
-            props.ifc_predefined_type = "RIGIDSEGMENT"
+        elif ifc_element_type == "IfcPipeSegmentType":
+            self.set_predefined_type(context, "RIGIDSEGMENT")
             props.representation_template = "FLOW_SEGMENT_CIRCULAR"
 
-        elif self.ifc_element_type == "IfcStairFlightType":
-            props.ifc_predefined_type = "STRAIGHT"
+        elif ifc_element_type == "IfcStairFlightType":
+            self.set_predefined_type(context, "STRAIGHT")
             props.representation_template = "STAIR"
-        elif self.ifc_element_type == "IfcRampFlightType":
-            props.ifc_predefined_type = "STRAIGHT"
+        elif ifc_element_type == "IfcRampFlightType":
+            self.set_predefined_type(context, "STRAIGHT")
             props.representation_template = "LAYERSET_AXIS3"
 
-        elif self.ifc_element_type == "IfcFurnitureType":
-            props.ifc_predefined_type = "CHAIR"
+        elif ifc_element_type == "IfcFurnitureType":
+            self.set_predefined_type(context, "CHAIR")
             props.representation_template = "MESH"
-        elif self.ifc_element_type == "IfcSanitaryTerminalType":
-            props.ifc_predefined_type = "TOILETPAN"
+        elif ifc_element_type == "IfcSanitaryTerminalType":
+            self.set_predefined_type(context, "TOILETPAN")
             props.representation_template = "MESH"
-        elif self.ifc_element_type == "IfcLightFixtureType":
-            props.ifc_predefined_type = "DIRECTIONSOURCE"
+        elif ifc_element_type == "IfcLightFixtureType":
+            self.set_predefined_type(context, "DIRECTIONSOURCE")
             props.representation_template = "MESH"
-        elif self.ifc_element_type == "IfcElectricApplianceType":
-            props.ifc_predefined_type = "WASHINGMACHINE"
+        elif ifc_element_type == "IfcElectricApplianceType":
+            self.set_predefined_type(context, "WASHINGMACHINE")
             props.representation_template = "MESH"
-        elif self.ifc_element_type == "IfcGeographicElementType":
+        elif ifc_element_type == "IfcGeographicElementType":
             if tool.Ifc.get().schema == "IFC4":
-                props.ifc_predefined_type = "USERDEFINED"
+                self.set_predefined_type(context, "USERDEFINED")
                 props.ifc_userdefined_type = "VEGETATION"
             elif tool.Ifc.get().schema == "IFC4X3":
-                props.ifc_predefined_type = "VEGETATION"
+                self.set_predefined_type(context, "VEGETATION")
             props.representation_template = "MESH"
 
         bpy.ops.bim.add_element()
