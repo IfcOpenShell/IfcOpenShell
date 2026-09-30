@@ -64,7 +64,7 @@ def add_reference(
     assigned to both the type and an occurrence, then the assignment at the
     occurrence will override the type classification.
 
-    :param product: The list of IFC objects, properties, or resources you want to
+    :param products: The list of IFC objects, properties, or resources you want to
         associate the classification reference to.
     :param reference: The classification reference entity taken from an
         IFC classification library. If you supply this parameter, you will
