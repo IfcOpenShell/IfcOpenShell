@@ -99,7 +99,12 @@ def run_bonsaiviewer(output_dir: Path) -> int:
             sys.exit(f"No BonsaiViewer executable found in {zip_path}")
         cmd = [str(exe), "--version"]
         print("$", " ".join(cmd))
-        return subprocess.run(cmd).returncode
+        env = dict(os.environ)
+        if sys.platform.startswith("linux"):
+            # TODO: in theory `BonsaiViewer` should be runnable as cli too?
+            # No display on CI, and the default xcb platform plugin needs one (and libxcb-cursor0).
+            env["QT_QPA_PLATFORM"] = "offscreen"
+        return subprocess.run(cmd, env=env).returncode
 
 
 class Args(NamedTuple):
