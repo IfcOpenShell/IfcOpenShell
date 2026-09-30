@@ -57,9 +57,9 @@ from collections.abc import Iterator
 from logging import Handler, Logger
 from pathlib import Path
 from types import EllipsisType
-from typing import TYPE_CHECKING, Any, Literal, Optional, TypeAlias, Union
+from typing import TYPE_CHECKING, Any, Literal, NotRequired, Optional, TypeAlias, Union
 
-from typing_extensions import NotRequired, TypedDict
+from typing_extensions import TypedDict
 
 import ifcopenshell
 import ifcopenshell.express.rule_executor
