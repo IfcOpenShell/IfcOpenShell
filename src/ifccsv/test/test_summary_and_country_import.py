@@ -22,6 +22,7 @@ import ifcopenshell
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.util.element
+import ifcopenshell.util.selector
 
 import ifccsv
 
@@ -49,7 +50,7 @@ class TestSummaryTotal:
 
 
 class TestImportReadOnlyColumns:
-    def test_country_is_imported_while_count_is_skipped(self, tmp_path):
+    def test_country_is_imported_while_count_is_skipped(self, tmp_path, monkeypatch):
         ifc_file = ifcopenshell.file(schema="IFC4")
         wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall", name="Wall")
         pset = ifcopenshell.api.pset.add_pset(ifc_file, product=wall, name="Pset_Address")
@@ -57,7 +58,16 @@ class TestImportReadOnlyColumns:
         table = tmp_path / "edited.csv"
         table.write_text(f"GlobalId,Pset_Address.Country,Count\n{wall.GlobalId},New,99\n", encoding="utf-8")
 
+        set_keys = []
+        set_element_value = ifcopenshell.util.selector.set_element_value
+
+        def recording_set_element_value(ifc_file, element, key, *args, **kwargs):
+            set_keys.append(key)
+            return set_element_value(ifc_file, element, key, *args, **kwargs)
+
+        monkeypatch.setattr(ifcopenshell.util.selector, "set_element_value", recording_set_element_value)
+
         ifccsv.IfcCsv().Import(ifc_file, str(table))
 
         assert ifcopenshell.util.element.get_pset(wall, "Pset_Address", "Country") == "New"
-        assert wall.Name == "Wall"
+        assert set_keys == ["Pset_Address.Country"]
