@@ -16,11 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 import ifcopenshell
 import ifcopenshell.api.material
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.style
+import ifcopenshell.util.element
 
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -217,3 +219,29 @@ class TestPurgeUnusedMaterials(NewFile):
 
         assert subject.purge_unused_materials() == 1
         assert not ifc.by_type("IfcMaterial")
+
+
+class TestObjectMaterialDataSetItems(NewFile):
+    def test_layers_stay_in_stored_order_when_the_direction_sense_flips(self):
+        from bonsai.bim.module.material.data import ObjectMaterialData
+
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        obj = bpy.data.objects.new("Wall", None)
+        bpy.context.scene.collection.objects.link(obj)
+        tool.Ifc.link(wall, obj)
+        bpy.context.view_layer.objects.active = obj
+        layer_set = ifcopenshell.api.material.add_material_set(ifc, name="Layers", set_type="IfcMaterialLayerSet")
+        for name in ("EXT", "MID", "INT"):
+            material = ifcopenshell.api.material.add_material(ifc, name=name)
+            ifcopenshell.api.material.add_layer(ifc, layer_set=layer_set, material=material)
+        ifcopenshell.api.material.assign_material(
+            ifc, products=[wall], type="IfcMaterialLayerSetUsage", material=layer_set
+        )
+        usage = ifcopenshell.util.element.get_material(wall)
+        stored_order = ["EXT", "MID", "INT"]
+        for direction_sense in ("POSITIVE", "NEGATIVE"):
+            usage.DirectionSense = direction_sense
+            ObjectMaterialData.load()
+            assert [item["material"] for item in ObjectMaterialData.data["set_items"]] == stored_order
