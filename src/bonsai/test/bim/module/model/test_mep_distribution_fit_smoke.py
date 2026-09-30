@@ -217,13 +217,13 @@ def test_fit_flow_segments_with_three_segments_dispatches_junction():
     context.selected_objects = objs
 
     op = _make_op()
-    with patch.object(mep.tool.Ifc, "get_entity", side_effect=lambda o: entities[id(o)]), patch.object(
-        mep.tool.Model, "get_flow_segment_profile", return_value=profile
-    ), patch.object(mep.MEPAddJunction, "_execute", return_value=None) as junction, patch.object(
-        mep.MEPAddObstruction, "_execute", return_value=None
-    ) as obstruction, patch.object(
-        mep.MEPAddBend, "_execute", return_value=None
-    ) as bend:
+    with (
+        patch.object(mep.tool.Ifc, "get_entity", side_effect=lambda o: entities[id(o)]),
+        patch.object(mep.tool.Model, "get_flow_segment_profile", return_value=profile),
+        patch.object(mep.MEPAddJunction, "_execute", return_value=None) as junction,
+        patch.object(mep.MEPAddObstruction, "_execute", return_value=None) as obstruction,
+        patch.object(mep.MEPAddBend, "_execute", return_value=None) as bend,
+    ):
         mep.FitFlowSegments._execute(op, context=context)
 
     assert junction.call_count == 1
