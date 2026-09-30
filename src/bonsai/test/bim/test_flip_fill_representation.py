@@ -66,11 +66,15 @@ def add_wide_plan_representation(element):
 class TestFlipFill(NewIfc):
     def test_flip_ignores_a_wide_2d_representation_being_shown(self):
         door = add_door_in_wall()
+        origin = door.matrix_world.translation.copy()
+        width, depth, _ = door.dimensions
         plan_representation = add_wide_plan_representation(tool.Ifc.get_entity(door))
         select_only(door)
         bpy.ops.bim.switch_representation(obj=door.name, ifc_definition_id=plan_representation.id())
 
         bpy.ops.bim.flip_fill()
 
-        assert tuple(door.matrix_world.translation) == pytest.approx((8.01, 0.1, 0), abs=1e-3)
+        assert tuple(door.matrix_world.translation) == pytest.approx(
+            (origin.x + width, origin.y + depth, origin.z), abs=1e-3
+        )
         assert tool.Geometry.get_active_representation(door) == plan_representation
