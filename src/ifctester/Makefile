@@ -49,7 +49,12 @@ pyodide-download:
 		echo "Downloading and preparing Pyodide $(PYODIDE_VERSION)..."; \
 		mkdir -p $(PYODIDE_DIR)/tmp; \
 		curl -L -o $(PYODIDE_DIR)/tmp/pyodide-$(PYODIDE_VERSION).tar.bz2 $(PYODIDE_URL); \
-		cd $(PYODIDE_DIR)/tmp && tar -xjf pyodide-$(PYODIDE_VERSION).tar.bz2 && cd -; \
+		cd $(PYODIDE_DIR)/tmp && \
+		if command -v lbzip2 >/dev/null 2>&1; then \
+			tar --use-compress-program=lbzip2 -xf pyodide-$(PYODIDE_VERSION).tar.bz2; \
+		else \
+			tar -xjf pyodide-$(PYODIDE_VERSION).tar.bz2; \
+		fi && cd -; \
 		cp $(PYODIDE_DIR)/tmp/pyodide/pyodide.asm.js $(PYODIDE_DIR)/; \
 		cp $(PYODIDE_DIR)/tmp/pyodide/pyodide.asm.wasm $(PYODIDE_DIR)/; \
 		cp $(PYODIDE_DIR)/tmp/pyodide/pyodide.mjs $(PYODIDE_DIR)/; \
@@ -100,7 +105,11 @@ else
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION_DAILY)"/' $(WEBAPP_IFCTESTER_BUILD_DIR)/pyproject.toml
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION_DAILY)"/' $(WEBAPP_IFCTESTER_BUILD_DIR)/$(PACKAGE_NAME)/__init__.py
 endif
-	cd $(WEBAPP_IFCTESTER_BUILD_DIR) && $(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && python -m pip install build && python -m build --wheel
+	cd $(WEBAPP_IFCTESTER_BUILD_DIR) && if command -v uv >/dev/null 2>&1; then \
+		uv build --wheel; \
+	else \
+		$(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && python -m pip install build && python -m build --wheel; \
+	fi
 	mkdir -p $(WEBAPP_GENERATED_DIR)
 	wheel=$$(basename $(WEBAPP_IFCTESTER_BUILD_DIR)/dist/$(PACKAGE_NAME)-*.whl); \
 	cp "$(WEBAPP_IFCTESTER_BUILD_DIR)/dist/$$wheel" "$(WEBAPP_GENERATED_DIR)/$$wheel"; \
