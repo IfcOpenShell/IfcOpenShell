@@ -1,5 +1,6 @@
 # This file was generated with the assistance of an AI coding tool.
 
+import re
 import warnings
 from pathlib import Path
 from shutil import rmtree
@@ -57,3 +58,32 @@ exclude_patterns = [
     "output/doxygen",
     "output/html",
 ]
+
+
+def fix_generated_api_pages(app):
+    for node in app.exhale_root.all_nodes:
+        nested_type = (
+            node.kind in ("class", "struct") and node.parent is not None and node.parent.kind in ("class", "struct")
+        )
+        if node.kind != "function" and not nested_type:
+            continue
+        path = Path(app.exhale_root.root_directory) / node.file_name
+        source = path.read_text(encoding="utf-8")
+        if node.kind == "function":
+            # Exhale 0.3.7 emits unescaped function names in RST headings.
+            title = re.sub(r"(?<!\\)_", r"\\_", node.title)
+            source = source.replace(
+                f"{node.title}\n{'=' * len(node.title)}",
+                f"{title}\n{'=' * len(title)}",
+                1,
+            )
+        if nested_type:
+            # Breathe already renders the nested type and its members on the parent page.
+            directive = f".. doxygen{node.kind}:: {node.breathe_identifier()}"
+            source = source.split(directive, 1)[0]
+            source += f"See :ref:`{node.parent.link_name}` for this nested type's documentation.\n"
+        path.write_text(source, encoding="utf-8")
+
+
+def setup(app):
+    app.connect("builder-inited", fix_generated_api_pages, priority=600)

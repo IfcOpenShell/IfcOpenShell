@@ -110,6 +110,7 @@ unsupported-dynamic-base = "ignore"
 unsupported-operator = "ignore"
 redundant-condition = "ignore"
 redundant-condition-strict = "ignore"
+truthiness-test-of-iterable = "ignore"
 # `@persistent` is incorrectly annotated as `Any` in fake-bpy, needs to be resolved upstream.
 dynamic-function-decorator-return = "ignore"
 
@@ -200,7 +201,7 @@ ty-venv-bonsai.sequence = [
 ]
 
 ty-venv-ios.sequence = [
-    {cmd = "uv venv src/ifcopenshell-python/.venv --python=3.10 --allow-existing"},
+    {cmd = "uv venv src/ifcopenshell-python/.venv --python=3.11 --allow-existing"},
     {cmd = "uv pip install --group src/ifcopenshell-python/pyproject.toml:type-check --python=src/ifcopenshell-python/.venv"},
 ]
 
