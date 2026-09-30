@@ -1260,12 +1260,21 @@ class FacetTransformer(lark.Transformer):
             return result
         elif isinstance(value, str):
             try:
-                if isinstance(element_value, int):
+                if isinstance(element_value, bool):
+                    # bool subclasses int, so it is handled before the numeric
+                    # branches.
+                    if value in ("True", "true", "TRUE", "1"):
+                        value = True
+                    elif value in ("False", "false", "FALSE", "0"):
+                        value = False
+                elif isinstance(element_value, int):
                     value = int(value)
                 elif isinstance(element_value, float):
                     value = float(value)
 
-                if isinstance(element_value, (int, float)):
+                if isinstance(element_value, bool):
+                    result = element_value == value
+                elif isinstance(element_value, (int, float)):
                     operator = comparison.lstrip("!")
                     if operator == ">=":
                         result = element_value >= value
