@@ -52,6 +52,12 @@ class TestFormat(test.bootstrap.IFC4):
         assert subject.format('substr("foobar", 1, 2)') == "o"
         assert subject.format('substr("foobar", 1, -1)') == "ooba"
 
+    def test_numeric_formatters_pass_through_non_numeric_values(self):
+        assert subject.format('round("12.5 m", 1)') == "12.5 m"
+        assert subject.format('round("Foo", 1)') == "Foo"
+        assert subject.format('int("Foo")') == "Foo"
+        assert subject.format('number("Foo")') == "Foo"
+
     def test_number_formatting(self):
         assert subject.format("round(123, 5)") == "125"
         assert subject.format('round("123", 5)') == "125"
