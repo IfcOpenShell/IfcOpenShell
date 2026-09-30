@@ -68,34 +68,33 @@ def is_x(value: float, x: float, tolerance: Optional[float] = None) -> bool:
 
 
 def is_manifold(geometry: W.triangulation) -> bool:
-    """Checks whether a triangulated geometry is a closed, consistently oriented manifold
+    """Checks whether a triangulated geometry is closed and consistently oriented
 
-    Every edge, as an unordered pair of vertices, must be shared by exactly
-    two triangles, and those two triangles must traverse it in opposite
-    directions. A single use means an open hole or boundary; a third use, or
-    two uses in the same direction, means the winding is inconsistent (e.g. a
-    flipped or duplicated face) - both invalidate volume calculations that
-    rely on a closed, consistently wound mesh.
+    Vertices at the same position count as one vertex, so seams and unwelded
+    meshes are handled. Every edge must be traversed as often in one direction
+    as in the other. An unbalanced edge means an open boundary or inconsistent
+    winding (e.g. a flipped or duplicated face), both of which invalidate
+    volume calculations. Closed solids that touch along an edge are accepted.
 
     :param geometry: Geometry output calculated by IfcOpenShell
-    :return: ``True`` if the geometry is a closed, consistently oriented manifold
+    :return: ``True`` if the geometry is closed and consistently oriented
     """
     faces = geometry.faces
-    edge_state: dict[tuple[int, int], int] = {}
+    verts = geometry.verts
+    welded: dict[tuple[float, float, float], int] = {}
+    ids = [
+        welded.setdefault((round(verts[i], 9), round(verts[i + 1], 9), round(verts[i + 2], 9)), len(welded))
+        for i in range(0, len(verts), 3)
+    ]
+    edge_balance: dict[tuple[int, int], int] = {}
     for i in range(0, len(faces), 3):
-        a, b, c = faces[i], faces[i + 1], faces[i + 2]
+        a, b, c = ids[faces[i]], ids[faces[i + 1]], ids[faces[i + 2]]
         for u, v in ((a, b), (b, c), (c, a)):
-            if u == v:
-                return False
-            edge, direction = ((u, v), 1) if u < v else ((v, u), -1)
-            state = edge_state.get(edge)
-            if state is None:
-                edge_state[edge] = direction
-            elif state == -direction:
-                edge_state[edge] = 0
-            else:
-                return False
-    return all(state == 0 for state in edge_state.values())
+            if u < v:
+                edge_balance[(u, v)] = edge_balance.get((u, v), 0) + 1
+            elif v < u:
+                edge_balance[(v, u)] = edge_balance.get((v, u), 0) - 1
+    return not any(edge_balance.values())
 
 
 def get_volume(geometry: W.triangulation) -> float:

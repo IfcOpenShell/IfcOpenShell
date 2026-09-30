@@ -64,6 +64,18 @@ class TestIsManifold:
         verts, faces = cube()
         assert subject.is_manifold(FakeTriangulation(verts, faces)) is True
 
+    def test_closed_mesh_with_duplicated_vertex_positions_is_manifold(self):
+        verts, faces = cube()
+        unwelded_verts = [verts[i] for tri in faces for i in tri]
+        unwelded_faces = [(i, i + 1, i + 2) for i in range(0, len(unwelded_verts), 3)]
+        assert subject.is_manifold(FakeTriangulation(unwelded_verts, unwelded_faces)) is True
+
+    def test_solids_touching_along_an_edge_are_manifold(self):
+        verts, faces = cube()
+        neighbour = [(x + 1, y + 1, z) for x, y, z in verts]
+        faces = faces + [(a + 8, b + 8, c + 8) for a, b, c in faces]
+        assert subject.is_manifold(FakeTriangulation(verts + neighbour, faces)) is True
+
     def test_open_mesh_is_not_manifold(self):
         verts, faces = cube()
         geometry = FakeTriangulation(verts, faces[:-1])
