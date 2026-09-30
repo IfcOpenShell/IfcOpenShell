@@ -375,7 +375,7 @@ class BIM_OT_add_railing(bpy.types.Operator, tool.Ifc.Operator):
         obj = bpy.data.objects.new("IfcRailing", mesh)
         obj.location = spawn_location
 
-        body_context = tool.Model.get_body_context()
+        body_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
         bonsai.core.root.assign_class(
             tool.Ifc,
             tool.Collector,

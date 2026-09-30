@@ -1258,6 +1258,21 @@ class TestRailingRepresentationOnImportedFile(NewFile):
         assert body is not None
         assert body.Items
 
+    def test_adding_a_parametric_railing_to_an_existing_element_on_a_file_with_no_subcontexts(self):
+        tool.Project.get_project_props().template_file = "0"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        self.strip_subcontexts(ifc)
+        assert ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW") is None
+
+        result = add_parametric_element("IfcRailing", "add_railing")
+        assert result == {"FINISHED"}
+
+        element = ifc.by_type("IfcRailing")[0]
+        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        assert body is not None
+        assert body.Items
+
     def test_not_creating_duplicate_body_contexts_on_a_second_railing(self):
         tool.Project.get_project_props().template_file = "0"
         bpy.ops.bim.create_project()
@@ -1319,6 +1334,21 @@ class TestRoofRepresentationOnImportedFile(NewFile):
 
         roof = ifc.by_type("IfcRoof")[0]
         body = ifcopenshell.util.representation.get_representation(roof, "Model", "Body", "MODEL_VIEW")
+        assert body is not None
+        assert body.Items
+
+    def test_adding_a_parametric_roof_to_an_existing_element_on_a_file_with_no_subcontexts(self):
+        tool.Project.get_project_props().template_file = "0"
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        self.strip_subcontexts(ifc)
+        assert ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW") is None
+
+        result = add_parametric_element("IfcRoof", "add_roof")
+        assert result == {"FINISHED"}
+
+        element = ifc.by_type("IfcRoof")[0]
+        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         assert body is not None
         assert body.Items
 

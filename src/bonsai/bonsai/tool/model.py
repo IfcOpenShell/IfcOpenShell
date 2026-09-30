@@ -2241,10 +2241,7 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def add_body_representation(cls, obj: bpy.types.Object) -> None:
-        ifc_file = tool.Ifc.get()
-        body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
-        assert body
-        cls.add_representation(obj, body)
+        cls.add_representation(obj, cls.get_body_context())
 
     @classmethod
     def get_or_create_context(
