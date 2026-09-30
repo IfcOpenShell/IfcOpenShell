@@ -28,6 +28,28 @@ import pytest
 import ifc5d.qto
 
 
+class TestAttributeQuantities:
+    @pytest.mark.parametrize("ifc_class", ["IfcDoor", "IfcWindow"])
+    def test_doors_and_windows_are_quantified_from_overall_size_without_geometry(self, ifc_class):
+        file = ifcopenshell.file(schema="IFC4X3")
+        ifcopenshell.api.root.create_entity(file, ifc_class="IfcProject", name="Test")
+        millimetre = file.createIfcSIUnit(None, "LENGTHUNIT", "MILLI", "METRE")
+        sqm = file.createIfcSIUnit(None, "AREAUNIT", None, "SQUARE_METRE")
+        ifcopenshell.api.unit.assign_unit(file, units=[millimetre, sqm])
+        element = ifcopenshell.api.root.create_entity(file, ifc_class=ifc_class)
+        element.OverallWidth = 900.0
+        element.OverallHeight = 2000.0
+
+        results = ifc5d.qto.quantify(file, {element}, ifc5d.qto.rules["IFC4X3QtoBaseQuantities"])
+
+        assert results[element][f"Qto_{ifc_class[3:]}BaseQuantities"] == {
+            "Width": pytest.approx(900.0),
+            "Height": pytest.approx(2000.0),
+            "Area": pytest.approx(1.8),
+            "Perimeter": pytest.approx(5800.0),
+        }
+
+
 class TestOpeningQuantities:
     """Openings authored in a Z-up local frame, as produced by Bonsai (#6835)."""
 
@@ -229,25 +251,3 @@ class TestEditQtosIntegration:
         assert length.is_a("IfcQuantityLength")
         assert length.Unit == millimetre
         assert length.LengthValue == pytest.approx(5000.0)
-
-
-class TestAttributeQuantities:
-    @pytest.mark.parametrize("ifc_class", ["IfcDoor", "IfcWindow"])
-    def test_doors_and_windows_are_quantified_from_overall_size_without_geometry(self, ifc_class):
-        file = ifcopenshell.file(schema="IFC4X3")
-        ifcopenshell.api.root.create_entity(file, ifc_class="IfcProject", name="Test")
-        millimetre = file.createIfcSIUnit(None, "LENGTHUNIT", "MILLI", "METRE")
-        sqm = file.createIfcSIUnit(None, "AREAUNIT", None, "SQUARE_METRE")
-        ifcopenshell.api.unit.assign_unit(file, units=[millimetre, sqm])
-        element = ifcopenshell.api.root.create_entity(file, ifc_class=ifc_class)
-        element.OverallWidth = 900.0
-        element.OverallHeight = 2000.0
-
-        results = ifc5d.qto.quantify(file, {element}, ifc5d.qto.rules["IFC4X3QtoBaseQuantities"])
-
-        assert results[element][f"Qto_{ifc_class[3:]}BaseQuantities"] == {
-            "Width": pytest.approx(900.0),
-            "Height": pytest.approx(2000.0),
-            "Area": pytest.approx(1.8),
-            "Perimeter": pytest.approx(5800.0),
-        }
