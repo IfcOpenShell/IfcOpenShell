@@ -30,6 +30,7 @@ import bonsai.core.geometry
 import bonsai.core.root
 import bonsai.core.type as core
 import bonsai.tool as tool
+from bonsai.bim.module.model.data import AuthoringData
 
 
 class AssignType(bpy.types.Operator, tool.Ifc.Operator):
@@ -533,8 +534,18 @@ class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
         ifc_class = new.is_a()
         # Set duplicated type as active in current tool.
         if ifc_class in (i[0] for i in (bonsai.bim.helper.get_enum_items(props, "ifc_class", context) or ()) if i):
-            props.ifc_class = new.is_a()
-            props.relating_type_id = str(tool.Blender.get_ifc_definition_id(new_obj))
+            if props.ifc_class != ifc_class:
+                # Assigning triggers update_ifc_class, which refreshes
+                # AuthoringData (incl. relating_type_id) for the new class.
+                props.ifc_class = ifc_class
+            else:
+                # Blender skips an EnumProperty's update callback when the
+                # value doesn't change, so this needs an explicit refresh.
+                AuthoringData.refresh_relating_type_id()
+            try:
+                props.relating_type_id = str(tool.Blender.get_ifc_definition_id(new_obj))
+            except TypeError:
+                self.report({"WARNING"}, f"Duplicated '{new.Name or 'Unnamed'}' but could not select it as active.")
         return {"FINISHED"}
 
     def invoke(self, context, event):
