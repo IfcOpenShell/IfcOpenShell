@@ -169,6 +169,20 @@ _SPECIAL = {"=", " "}  # Formula prefix, spaces
 
 NUMERIC_INPUT_CHARS = _DIGITS | _OPERATORS | _METRIC_UNITS | _IMPERIAL_UNITS | _SPECIAL
 
+# The numpad decimal key can emit ',' (e.g. German layouts); treat it as '.' like native fields.
+_NUMPAD_DECIMAL_TYPES = {"NUMPAD_PERIOD", "NUMPAD_COMMA"}
+
+
+def resolve_numeric_input_char(event: bpy.types.Event) -> str | None:
+    """Return the character a keystroke adds to a numeric input, or None."""
+    if event.value != "PRESS":
+        return None
+    if event.type in _NUMPAD_DECIMAL_TYPES:
+        return "."
+    if event.ascii and event.ascii.lower() in NUMERIC_INPUT_CHARS:
+        return event.ascii
+    return None
+
 
 def _is_transform_modal_active(context) -> bool:
     """Module-local alias for ``tool.Blender.is_transform_modal_active``.
@@ -2722,8 +2736,9 @@ class BIM_OT_gizmo_value_input(bpy.types.Operator):
     def modal(self, context, event):
         kb = self._keyboard_input
 
-        if event.value == "PRESS" and event.ascii and event.ascii.lower() in NUMERIC_INPUT_CHARS:
-            kb.characters.append(event.ascii)
+        input_char = resolve_numeric_input_char(event)
+        if input_char is not None:
+            kb.characters.append(input_char)
             kb.is_active = True
             kb.parse()
             self._apply_value()
@@ -3090,8 +3105,9 @@ class GizmoMovable(bpy.types.Gizmo):
         """Handle keyboard numeric input."""
         kb = self.keyboard_input
 
-        if event.value == "PRESS" and event.ascii and event.ascii.lower() in NUMERIC_INPUT_CHARS:
-            kb.characters.append(event.ascii)
+        input_char = resolve_numeric_input_char(event)
+        if input_char is not None:
+            kb.characters.append(input_char)
             kb.is_active = True
             kb.parse()
             self._apply_keyboard_value()
