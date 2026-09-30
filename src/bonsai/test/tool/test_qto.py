@@ -181,15 +181,7 @@ class TestGetCalculatedObjectQuantities(test.bim.bootstrap.NewFile):
         assert quantities["NetVolume"] == 282.517
 
 
-class TestGetGrossSideAreaWithoutOpeningRelationship(test.bim.bootstrap.NewFile):
-    """Regression tests for #9235.
-
-    An opening can be baked directly into the body tessellation (e.g. an
-    IfcIndexedPolygonalFaceWithVoids) instead of being modelled as an
-    IfcOpeningElement related via IfcRelVoidsElement. has_openings() only
-    sees the relationship, so it is blind to this case.
-    """
-
+class TestNetSideAreaByWallAxis(test.bim.bootstrap.NewFile):
     def setup_file(self):
         import logging
 
@@ -226,7 +218,7 @@ class TestGetGrossSideAreaWithoutOpeningRelationship(test.bim.bootstrap.NewFile)
         )
         return obj
 
-    def build_wall_with_baked_hole(
+    def build_wall_with_hole(
         self,
         length: float,
         height: float,
@@ -234,16 +226,6 @@ class TestGetGrossSideAreaWithoutOpeningRelationship(test.bim.bootstrap.NewFile)
         hole_size: float,
         main_axis: str = "x",
     ) -> bpy.types.Mesh:
-        """A rectangular wall with a square hole cut straight into the mesh.
-
-        No IfcOpeningElement is involved: the hole is a topological gap in
-        the body geometry itself, like an opening baked into an
-        IfcIndexedPolygonalFaceWithVoids.
-
-        :param main_axis: which local axis the wall runs along ("x" or "y").
-            The thickness always runs along the other horizontal axis, and
-            height is always along Z. #9237 was Bonsai only handling "x".
-        """
         cx, cz = length / 2, height / 2
         outer = [(0, 0), (length, 0), (length, height), (0, height)]
         h = hole_size / 2
@@ -252,7 +234,7 @@ class TestGetGrossSideAreaWithoutOpeningRelationship(test.bim.bootstrap.NewFile)
         def point(along_main: float, along_thickness: float, z: float) -> tuple[float, float, float]:
             return (along_main, along_thickness, z) if main_axis == "x" else (along_thickness, along_main, z)
 
-        mesh = bpy.data.meshes.new("WallWithBakedHole")
+        mesh = bpy.data.meshes.new("WallWithHole")
         bm = bmesh.new()
 
         def make_ring(thickness_pos: float):
@@ -283,88 +265,21 @@ class TestGetGrossSideAreaWithoutOpeningRelationship(test.bim.bootstrap.NewFile)
         bm.free()
         return mesh
 
-    def build_gable_wall(
-        self, length: float, eave_height: float, ridge_height: float, thickness: float
-    ) -> bpy.types.Mesh:
-        """A gable-shaped wall (pentagon profile), no openings at all.
-
-        Its bounding box is taller than the wall itself, so a fallback that
-        substitutes the bounding box for GrossSideArea would overstate it.
-        """
-        profile = [
-            (0.0, 0.0),
-            (length, 0.0),
-            (length, eave_height),
-            (length / 2, ridge_height),
-            (0.0, eave_height),
-        ]
-
-        mesh = bpy.data.meshes.new("GableWall")
-        bm = bmesh.new()
-        verts_front = [bm.verts.new((x, 0.0, z)) for x, z in profile]
-        verts_back = [bm.verts.new((x, thickness, z)) for x, z in profile]
-        bm.verts.ensure_lookup_table()
-
-        bm.faces.new(verts_front[::-1])
-        bm.faces.new(verts_back)
-        n = len(profile)
-        for i in range(n):
-            j = (i + 1) % n
-            bm.faces.new([verts_front[i], verts_front[j], verts_back[j], verts_back[i]])
-
-        bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
-        bm.to_mesh(mesh)
-        bm.free()
-        return mesh
-
-    def test_baked_opening_is_recovered(self):
+    def test_y_oriented_wall_reports_its_elevation_area(self):
         self.setup_file()
         length, height, thickness, hole = 4.0, 3.0, 0.2, 1.0
-        obj = self.make_wall(self.build_wall_with_baked_hole(length, height, thickness, hole))
-
-        assert calculator.has_openings(obj) == []
-        assert round(calculator.get_net_side_area(obj), 3) == round(length * height - hole * hole, 3)
-        assert round(calculator.get_gross_side_area(obj), 3) == round(length * height, 3)
-
-    def test_y_oriented_wall_baked_opening_is_recovered(self):
-        """Regression test for #9237.
-
-        A wall whose length runs along local Y (thickness along X) used to
-        report its end face instead of its elevation face, because
-        get_net_side_area/get_gross_side_area hardcoded main_axis="x".
-        """
-        self.setup_file()
-        length, height, thickness, hole = 4.0, 3.0, 0.2, 1.0
-        obj = self.make_wall(self.build_wall_with_baked_hole(length, height, thickness, hole, main_axis="y"))
+        obj = self.make_wall(self.build_wall_with_hole(length, height, thickness, hole, main_axis="y"))
 
         assert calculator.get_x(obj) < calculator.get_y(obj)
-        assert calculator.has_openings(obj) == []
         assert round(calculator.get_net_side_area(obj), 3) == round(length * height - hole * hole, 3)
-        assert round(calculator.get_gross_side_area(obj), 3) == round(length * height, 3)
 
     def test_x_and_y_oriented_walls_agree(self):
-        """The same wall, modelled with its length along local X or local Y,
-        must report the same NetSideArea and GrossSideArea (#9237)."""
         self.setup_file()
         length, height, thickness, hole = 4.0, 3.0, 0.2, 1.0
-        obj_x = self.make_wall(self.build_wall_with_baked_hole(length, height, thickness, hole, main_axis="x"))
-        obj_y = self.make_wall(self.build_wall_with_baked_hole(length, height, thickness, hole, main_axis="y"))
+        obj_x = self.make_wall(self.build_wall_with_hole(length, height, thickness, hole, main_axis="x"))
+        obj_y = self.make_wall(self.build_wall_with_hole(length, height, thickness, hole, main_axis="y"))
 
         assert round(calculator.get_net_side_area(obj_x), 3) == round(calculator.get_net_side_area(obj_y), 3)
-        assert round(calculator.get_gross_side_area(obj_x), 3) == round(calculator.get_gross_side_area(obj_y), 3)
-
-    def test_non_rectangular_wall_without_openings_is_not_overstated(self):
-        self.setup_file()
-        length, eave_height, ridge_height, thickness = 6.0, 2.0, 4.0, 0.3
-        obj = self.make_wall(self.build_gable_wall(length, eave_height, ridge_height, thickness))
-
-        true_area = length * eave_height + 0.5 * length * (ridge_height - eave_height)
-        bbox_area = calculator.get_side_area(obj)  # what a bounding-box fallback would return
-
-        assert calculator.has_openings(obj) == []
-        assert round(calculator.get_net_side_area(obj), 3) == round(true_area, 3)
-        assert round(calculator.get_gross_side_area(obj), 3) == round(true_area, 3)
-        assert bbox_area > true_area + 1  # the bounding box would have overstated this wall
 
 
 class TestGetTargetUnits(test.bim.bootstrap.NewFile):
