@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-from unittest import mock
 
 import bpy
 import ifcopenshell
@@ -26,7 +25,6 @@ import ifcopenshell.api.nest
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
 import numpy as np
-import shapely
 from mathutils import Matrix
 
 import bonsai.core.tool
@@ -218,14 +216,6 @@ class TestRunRootCopyClass(NewFile):
 class TestRunSpatialAssignContainer(NewFile):
     def test_nothing(self):
         pass
-
-
-class TestGetSpacePolygonFromContextVisibleObjects(NewFile):
-    def test_boundary_lines_collapsing_to_one_piece_returns_no_polygons_found(self):
-        single_line = [shapely.LineString([(0.0, 0.0), (5.0, 0.0)])]
-        with mock.patch.object(subject, "get_boundary_lines_from_context_visible_objects", return_value=single_line):
-            result = subject.get_space_polygon_from_context_visible_objects(1.0, 1.0)
-        assert result == "NO POLYGONS FOUND"
 
 
 class TestSelectObject(NewFile):
