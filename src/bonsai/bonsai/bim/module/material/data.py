@@ -307,18 +307,13 @@ class ObjectMaterialData:
                 else:
                     data["material"] = item.Material.Name or "Unnamed"
                 results.append(data)
-        should_reverse = cls.material.is_a("IfcMaterialLayerSetUsage") and cls.material.DirectionSense == "POSITIVE"
+        # Layers are listed in stored order, independent of DirectionSense,
+        # so flipping a wall does not reorder the panel.
         last_i = len(results) - 1
         for i, result in enumerate(results):
             result["index"] = i
-            if should_reverse:
-                result["index_up"] = i + 1 if i != last_i else None
-                result["index_down"] = i - 1 if i != 0 else None
-            else:
-                result["index_down"] = i + 1 if i != last_i else None
-                result["index_up"] = i - 1 if i != 0 else None
-        if should_reverse:
-            return list(reversed(results))
+            result["index_down"] = i + 1 if i != last_i else None
+            result["index_up"] = i - 1 if i != 0 else None
         return results
 
     @classmethod
