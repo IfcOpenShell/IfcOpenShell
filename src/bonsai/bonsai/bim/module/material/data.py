@@ -307,12 +307,8 @@ class ObjectMaterialData:
                 else:
                     data["material"] = item.Material.Name or "Unnamed"
                 results.append(data)
-        # Present the layers in their stored order (ForLayerSet.MaterialLayers),
-        # which is the order the user manages directly. Previously the list was
-        # reversed for an IfcMaterialLayerSetUsage with a POSITIVE DirectionSense
-        # so the layer farthest from the reference line showed on top. That made
-        # a wall flip silently reorder the panel, because flip toggles
-        # DirectionSense, even though the stored layers never change (see #8240).
+        # Layers are listed in stored order, independent of DirectionSense,
+        # so flipping a wall does not reorder the panel.
         last_i = len(results) - 1
         for i, result in enumerate(results):
             result["index"] = i
