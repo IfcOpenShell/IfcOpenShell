@@ -1327,10 +1327,8 @@ class OverrideDuplicateMove(bpy.types.Operator):
         if new_active_obj:
             context.view_layer.objects.active = new_active_obj
 
-        # A plain duplicate of an aggregate that belongs to a linked-aggregate set must keep
-        # that link; otherwise the BBIM_Linked_Aggregate group and pset are dropped from the
-        # copies (#8233). Duplicates re-join the original group so edits still propagate.
-        if copy_linked_aggregate:
+        # Duplicated aggregates re-join their BBIM_Linked_Aggregate group so edits still propagate.
+        if copy_linked_aggregate and any(old.is_a("IfcElementAssembly") for old in old_to_new):
             copy_linked_aggregate_data(tool.Ifc.get(), old_to_new)
 
         return old_to_new
@@ -1397,8 +1395,7 @@ def copy_linked_aggregate_data(
                         (
                             r.RelatedObjects
                             for r in getattr(new[0], "HasAssignments", []) or []
-                            if r.is_a("IfcRelAssignsToGroup")
-                            and "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
+                            if r.is_a("IfcRelAssignsToGroup") and "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
                         ),
                         [],
                     )
