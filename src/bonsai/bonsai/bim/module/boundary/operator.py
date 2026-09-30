@@ -696,8 +696,15 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
         # matched and updated in place instead of deleted and recreated,
         # which would discard manual attribute corrections (#3446).
         existing_boundaries: dict[int, list[ifcopenshell.entity_instance]] = {}
+        regenerated_elements = set(building_elements)
         for boundary in space.BoundedBy:
-            if related_element := boundary.RelatedBuildingElement:
+            if not (related_element := boundary.RelatedBuildingElement):
+                continue
+            if related_element.is_a("IfcOpeningElement"):
+                host = next((rel.RelatingBuildingElement for rel in related_element.VoidsElements), None)
+            else:
+                host = tool.Spatial.get_host_element(related_element) or related_element
+            if host in regenerated_elements:
                 existing_boundaries.setdefault(related_element.id(), []).append(boundary)
 
         # Create tree of gross shapes of all potential related building elements
