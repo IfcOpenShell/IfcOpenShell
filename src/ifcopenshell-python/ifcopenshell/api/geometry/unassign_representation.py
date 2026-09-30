@@ -52,6 +52,17 @@ class Usecase:
         if representation not in representations:
             return
         representations.remove(representation)
+
+        # A shape shared with other products (#9207) must not be mutated or removed, so detach this product.
+        if len(product_def.ShapeOfProduct) > 1:
+            if representations:
+                product.Representation = self.file.createIfcProductDefinitionShape(
+                    product_def.Name, product_def.Description, representations
+                )
+            else:
+                product.Representation = None
+            return
+
         if not representations:
             # TODO: should somehow find matching shape aspect and remove it
             # even before the last representation is removed.
