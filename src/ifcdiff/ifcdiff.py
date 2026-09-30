@@ -277,7 +277,8 @@ class IfcDiff:
     def get_precision(self) -> float:
         contexts = [c for c in self.new.by_type("IfcGeometricRepresentationContext") if c.ContextType == "Model"]
         if contexts:
-            return contexts[0].Precision or 1e-4
+            precision = contexts[0].Precision
+            return precision if precision is not None else 1e-4
         return 1e-4
 
     def diff_element(self, old, new):
