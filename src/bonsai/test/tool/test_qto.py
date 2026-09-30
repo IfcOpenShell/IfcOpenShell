@@ -19,13 +19,11 @@
 import bmesh
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.context
 import ifcopenshell.api.cost
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
-import ifcopenshell.util.pset
 
 import bonsai.bim.import_ifc as import_ifc
 import bonsai.bim.module.qto.calculator as calculator
@@ -367,6 +365,42 @@ class TestGetGrossSideAreaWithoutOpeningRelationship(test.bim.bootstrap.NewFile)
         assert round(calculator.get_net_side_area(obj), 3) == round(true_area, 3)
         assert round(calculator.get_gross_side_area(obj), 3) == round(true_area, 3)
         assert bbox_area > true_area + 1  # the bounding box would have overstated this wall
+
+
+class TestGetTargetUnits(test.bim.bootstrap.NewFile):
+    def setup_file(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject", name="Test")
+        return ifc
+
+    def test_default_scene_state_returns_nothing(self):
+        self.setup_file()
+        assert subject.get_target_units() == {}
+
+    def test_setting_a_field_maps_it_to_its_measure_class(self):
+        ifc = self.setup_file()
+        metre = ifc.createIfcSIUnit(None, "LENGTHUNIT", None, "METRE")
+        millimetre = ifc.createIfcSIUnit(None, "LENGTHUNIT", "MILLI", "METRE")
+        ifcopenshell.api.unit.assign_unit(ifc, units=[metre])
+
+        props = tool.Qto.get_qto_props()
+        props.target_unit_length = str(millimetre.id())
+
+        assert subject.get_target_units() == {"IfcLengthMeasure": millimetre}
+
+    def test_untouched_fields_are_excluded(self):
+        ifc = self.setup_file()
+        metre = ifc.createIfcSIUnit(None, "LENGTHUNIT", None, "METRE")
+        millimetre = ifc.createIfcSIUnit(None, "LENGTHUNIT", "MILLI", "METRE")
+        gram = ifc.createIfcSIUnit(None, "MASSUNIT", None, "GRAM")
+        ifcopenshell.api.unit.assign_unit(ifc, units=[metre, gram])
+
+        props = tool.Qto.get_qto_props()
+        props.target_unit_length = str(millimetre.id())
+        props.target_unit_mass = "0"  # explicitly left at "Default"
+
+        assert subject.get_target_units() == {"IfcLengthMeasure": millimetre}
 
 
 class TestGetBaseQto(test.bim.bootstrap.NewFile):
