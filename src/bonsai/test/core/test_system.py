@@ -18,7 +18,7 @@
 
 
 import bonsai.core.system as subject
-from test.core.bootstrap import group, ifc, spatial, system
+from test.core.bootstrap import group, ifc, spatial, system  # ruff: ignore[unused-import]
 
 
 class TestLoadSystems:

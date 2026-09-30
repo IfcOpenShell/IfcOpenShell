@@ -280,9 +280,9 @@ def test_override_positions_all_dimensions_at_object_origin():
     assert set(calls) == {"height", "angle", "roof_thickness"}
     for name in ("height", "angle", "roof_thickness"):
         position, _axis = calls[name]
-        assert position.xyz[:] == pytest.approx(
-            (0.0, 0.0, 0.0)
-        ), f"{name} anchored at {position.xyz[:]} instead of object origin"
+        assert position.xyz[:] == pytest.approx((0.0, 0.0, 0.0)), (
+            f"{name} anchored at {position.xyz[:]} instead of object origin"
+        )
     # Axes split the three handles along Z+ (height/slope) vs Z- (thickness)
     # so they don't visually collide despite sharing the anchor point.
     assert calls["height"][1] == (0, 0, 1)
