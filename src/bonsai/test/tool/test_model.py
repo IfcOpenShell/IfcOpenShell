@@ -35,6 +35,7 @@ import mathutils
 import numpy as np
 from ifcopenshell.util.shape_builder import ShapeBuilder, V
 
+import bonsai.core.root
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.tool.model import Model as subject
@@ -1033,6 +1034,23 @@ class TestGetOrCreateContext(NewFile):
         assert len(ifc.by_type("IfcGeometricRepresentationSubContext")) == 1
 
 
+def add_parametric_element(ifc_class: str, operator: str, with_body: bool = False) -> set[str]:
+    obj = bpy.data.objects.new(ifc_class, bpy.data.meshes.new(ifc_class))
+    bonsai.core.root.assign_class(
+        tool.Ifc,
+        tool.Collector,
+        tool.Root,
+        obj=obj,
+        ifc_class=ifc_class,
+        should_add_representation=with_body,
+        context=tool.Model.get_body_context() if with_body else None,
+    )
+    bpy.ops.object.select_all(action="DESELECT")
+    bpy.context.view_layer.objects.active = obj
+    tool.Blender.select_object(obj)
+    return getattr(bpy.ops.bim, operator)()
+
+
 class TestWindowRepresentationOnImportedFile(NewFile):
     """window.py mirrors the door crash fixed above: it looked up
     Model/Body/MODEL_VIEW directly and passed a possibly-None context
@@ -1049,7 +1067,7 @@ class TestWindowRepresentationOnImportedFile(NewFile):
         self.strip_subcontexts(ifc)
         assert ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW") is None
 
-        result = bpy.ops.mesh.add_window()
+        result = add_parametric_element("IfcWindow", "add_window")
         assert result == {"FINISHED"}
 
         obj = bpy.context.view_layer.objects.active
@@ -1064,9 +1082,8 @@ class TestWindowRepresentationOnImportedFile(NewFile):
         ifc = tool.Ifc.get()
         self.strip_subcontexts(ifc)
 
-        bpy.ops.mesh.add_window()
-        bpy.context.view_layer.objects.active = None
-        bpy.ops.mesh.add_window()
+        add_parametric_element("IfcWindow", "add_window")
+        add_parametric_element("IfcWindow", "add_window")
 
         assert len(ifc.by_type("IfcGeometricRepresentationSubContext")) == 1
 
@@ -1218,7 +1235,7 @@ class TestSlabRepresentationOnImportedFile(NewFile):
 
 
 class TestRailingRepresentationOnImportedFile(NewFile):
-    """railing.py mirrors the same crash: BIM_OT_add_railing and the
+    """railing.py mirrors the same crash: AddRailing and the
     WALL_MOUNTED_HANDRAIL branch of update_railing_modifier_ifc_data both
     looked up Model/Body/MODEL_VIEW directly."""
 
@@ -1233,7 +1250,7 @@ class TestRailingRepresentationOnImportedFile(NewFile):
         self.strip_subcontexts(ifc)
         assert ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW") is None
 
-        result = bpy.ops.mesh.add_railing()
+        result = add_parametric_element("IfcRailing", "add_railing", with_body=True)
         assert result == {"FINISHED"}
 
         railing = ifc.by_type("IfcRailing")[0]
@@ -1247,10 +1264,8 @@ class TestRailingRepresentationOnImportedFile(NewFile):
         ifc = tool.Ifc.get()
         self.strip_subcontexts(ifc)
 
-        bpy.ops.mesh.add_railing()
-        bpy.context.view_layer.objects.active = None
-        tool.Blender.set_objects_selection(bpy.context, None, ())
-        bpy.ops.mesh.add_railing()
+        add_parametric_element("IfcRailing", "add_railing", with_body=True)
+        add_parametric_element("IfcRailing", "add_railing", with_body=True)
 
         body_subcontexts = [
             sc
@@ -1265,7 +1280,7 @@ class TestRailingRepresentationOnImportedFile(NewFile):
         tool.Project.get_project_props().template_file = "0"
         bpy.ops.bim.create_project()
         ifc = tool.Ifc.get()
-        bpy.ops.mesh.add_railing()
+        add_parametric_element("IfcRailing", "add_railing", with_body=True)
         railing = ifc.by_type("IfcRailing")[0]
         obj = tool.Ifc.get_object(railing)
         tool.Blender.set_objects_selection(bpy.context, obj, (obj,))
@@ -1284,7 +1299,7 @@ class TestRailingRepresentationOnImportedFile(NewFile):
 
 
 class TestRoofRepresentationOnImportedFile(NewFile):
-    """roof.py mirrors the same crash: BIM_OT_add_roof looked up
+    """roof.py mirrors the same crash: AddRoof looked up
     Model/Body/MODEL_VIEW directly and passed a possibly-None context into
     root.assign_class, which asserts on it."""
 
@@ -1299,7 +1314,7 @@ class TestRoofRepresentationOnImportedFile(NewFile):
         self.strip_subcontexts(ifc)
         assert ifcopenshell.util.representation.get_context(ifc, "Model", "Body", "MODEL_VIEW") is None
 
-        result = bpy.ops.mesh.add_roof()
+        result = add_parametric_element("IfcRoof", "add_roof", with_body=True)
         assert result == {"FINISHED"}
 
         roof = ifc.by_type("IfcRoof")[0]
@@ -1313,10 +1328,8 @@ class TestRoofRepresentationOnImportedFile(NewFile):
         ifc = tool.Ifc.get()
         self.strip_subcontexts(ifc)
 
-        bpy.ops.mesh.add_roof()
-        bpy.context.view_layer.objects.active = None
-        tool.Blender.set_objects_selection(bpy.context, None, ())
-        bpy.ops.mesh.add_roof()
+        add_parametric_element("IfcRoof", "add_roof", with_body=True)
+        add_parametric_element("IfcRoof", "add_roof", with_body=True)
 
         body_subcontexts = [
             sc
