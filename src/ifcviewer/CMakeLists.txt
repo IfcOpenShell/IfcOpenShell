@@ -30,7 +30,7 @@ endif()
 # Eigen3 — used by Federation matrices, ViewportWindow's instance compose,
 # the per-model coordinate-operation matrices stored on ModelGpuData, and
 # everywhere a 4x4 transform shows up. Header-only, works under Emscripten.
-find_package(Eigen3 REQUIRED)
+find_package(Eigen3 ${EIGEN_MIN_VERSION} REQUIRED)
 
 # wgpu-native — fetched as a pre-built binary release from upstream.
 # Under Emscripten this whole block is skipped; the web build links
@@ -250,7 +250,7 @@ if(EMSCRIPTEN)
     target_sources(IfcViewerCore PRIVATE ${ZSTD_DEC_SRC})
     target_include_directories(IfcViewerCore PRIVATE ${ZSTD_DEC_DIR})
 else()
-    find_package(zstd CONFIG REQUIRED)
+    find_package(zstd ${ZSTD_MIN_VERSION} CONFIG REQUIRED)
     target_link_libraries(IfcViewerCore PUBLIC zstd::libzstd_static)
 endif()
 install(TARGETS IfcViewerCore EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})

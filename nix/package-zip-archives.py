@@ -1,56 +1,21 @@
 #!/usr/bin/env -S uv run --script
 # /// script
+# [tool.ty.environment]
+# root = ["."]
 # ///
 
 import argparse
 import json
-import logging
 import os
 import platform
 import re
-import shlex
 import shutil
 import subprocess
 from pathlib import Path
 from typing import Literal, NamedTuple
 
+from common import REPO_ROOT, logger, run
 
-class C:
-    GREY = "\033[90m"
-    YELLOW = "\033[33m"
-    RED = "\033[31m"
-    RESET = "\033[0m"
-
-
-class ColorFormatter(logging.Formatter):
-    COLORS = {
-        logging.DEBUG: C.GREY,
-        logging.WARNING: C.YELLOW,
-        logging.ERROR: C.RED,
-    }
-
-    def format(self, record: logging.LogRecord) -> str:
-        color = self.COLORS.get(record.levelno, C.RESET)
-        return f"{color}{super().format(record)}{C.RESET}"
-
-
-handler = logging.StreamHandler()
-handler.setFormatter(ColorFormatter("%(message)s"))
-logging.basicConfig(level=logging.INFO, handlers=[handler])
-logger = logging.getLogger(__name__)
-
-
-def run(
-    *cmd: str,
-    cwd: Path | None = None,
-    env: dict[str, str] | None = None,
-    stderr: int | None = None,
-) -> str:
-    logger.debug(f"$ {shlex.join(cmd)}")
-    return subprocess.check_output(cmd, cwd=cwd, env=env, stderr=stderr, text=True)
-
-
-REPO_ROOT = Path(run("git", "-C", str(Path(__file__).parent), "rev-parse", "--show-toplevel").strip())
 VERSION = "v" + (REPO_ROOT / "VERSION").read_text().strip()
 
 
@@ -104,18 +69,53 @@ def get_runtime_info(install_root: Path, qt6_version: str) -> RuntimeInfo:
     qt_dir = Path(qt_dir_env) if qt_dir_env else find_qt_dir(install_root, qt6_version, qt6_install_root)
 
     if ARGS.shared:
-        dependencies_to_stage = install_dirs.keys()
-    elif ARGS.occt_shared:
-        dependencies_to_stage = {"occt"}
+        dependencies_to_stage = set(install_dirs.keys())
     else:
-        return RuntimeInfo([], qt_dir)
+        # OCCT is shared by default (see `build-all.py --occt-static`): a static OCCT gets a
+        # private copy in every plug-in and shapes handed between plug-ins are misread.
+        # Whatever was built shared is staged; `--occt-shared` additionally insists on it.
+        dependencies_to_stage = {
+            name for name in ("occt",) if name in install_dirs and "-shared-" in Path(install_dirs[name]).name
+        }
+        if ARGS.occt_shared:
+            assert "occt" in dependencies_to_stage, f"Expected a shared OCCT build, found: {install_dirs.get('occt')}"
 
     runtime_dirs = []
-    for name in dependencies_to_stage:
+    for name in sorted(dependencies_to_stage):
         runtime_dir = Path(install_dirs[name])
-        assert "-shared-" in runtime_dir.name, f"Expected a shared build, found: {runtime_dir}"
+        if "-shared-" not in runtime_dir.name:
+            continue
         runtime_dirs.append(runtime_dir)
     return RuntimeInfo(runtime_dirs, qt_dir)
+
+
+def get_soname(shared_object: Path) -> str | None:
+    """Name the dynamic loader looks `shared_object` up by: its SONAME, on macOS its install name.
+
+    `None` for binaries that don't have one (e.g. Python extension modules).
+    """
+    try:
+        if is_platform("MAC"):
+            # Prints the binary's path, followed by its install name if it has one.
+            lines = run("otool", "-D", str(shared_object), stderr=subprocess.DEVNULL).splitlines()
+            return lines[1].strip().rsplit("/", 1)[-1] if len(lines) > 1 else None
+        readelf_output = run("readelf", "-d", str(shared_object), stderr=subprocess.DEVNULL)
+    except subprocess.CalledProcessError:
+        return None
+    match = re.search(r"\(SONAME\).*Library soname: \[(.*)\]", readelf_output)
+    return match.group(1) if match else None
+
+
+def get_needed_libraries(binary: Path) -> list[str]:
+    """File names of the shared libraries `binary` is linked to."""
+    try:
+        if is_platform("MAC"):
+            lines = run("otool", "-L", str(binary), stderr=subprocess.DEVNULL).splitlines()[1:]
+            return [line.strip().split(" (")[0].rsplit("/", 1)[-1] for line in lines if line.strip()]
+        readelf_output = run("readelf", "-d", str(binary), stderr=subprocess.DEVNULL)
+    except subprocess.CalledProcessError:
+        return []  # Not a binary.
+    return re.findall(r"\(NEEDED\).*Shared library: \[(.*)\]", readelf_output)
 
 
 def ensure_soname_links(paths: list[Path]) -> None:
@@ -123,14 +123,9 @@ def ensure_soname_links(paths: list[Path]) -> None:
     for shared_object in paths:
         if not shared_object.is_file():
             continue
-        try:
-            readelf_output = run("readelf", "-d", str(shared_object))
-        except subprocess.CalledProcessError:
+        soname = get_soname(shared_object)
+        if not soname:
             continue
-        match = re.search(r"\(SONAME\).*Library soname: \[(.*)\]", readelf_output)
-        if not match:
-            continue
-        soname = match.group(1)
         soname_path = shared_object.parent / soname
         if soname_path.exists():
             continue
@@ -142,35 +137,95 @@ def is_shared_library(path: Path) -> bool:
     return name.endswith((".so", ".dylib", ".dll")) or ".so." in name
 
 
-def stage_runtime_payload(install_dir: Path, dest: Path, *, include_geometry_writers: bool = True) -> None:
-    """Copy all libs from `install_dir/{bin,lib,lib64}` into `dest`."""
-    runtime_files = []
+def mac_rpaths(binary: Path) -> list[str]:
+    """LC_RPATH entries of a Mach-O binary."""
+    output = run("otool", "-l", str(binary))
+    return re.findall(r"cmd LC_RPATH\n\s+cmdsize \d+\n\s+path (\S+)", output)
+
+
+def mac_add_rpath(binary: Path, rpath: str) -> None:
+    """Add `rpath` to `binary` and re-sign it: editing a Mach-O invalidates its signature,
+    and arm64 macOS refuses to load an unsigned or mis-signed image."""
+    if rpath in mac_rpaths(binary):
+        return
+    run("install_name_tool", "-add_rpath", rpath, str(binary))
+    run("codesign", "--force", "--sign", "-", str(binary))
+
+
+def mac_fix_rpaths(package_dir: Path, executables: tuple[Path, ...] = ()) -> None:
+    """Make every shared library in `package_dir` resolve its @rpath dependencies next to itself.
+
+    With CREATE_BUNDLE the plug-ins and core dylibs get no LC_RPATH from CMake at all;
+    only the Python wrapper carries `@loader_path`. That is enough when the plug-in is
+    dlopen'd through the wrapper (dyld accumulates rpaths along the load chain) but not
+    for IfcConvert & co, whose plug-ins would otherwise fail to find OCCT and each other.
+    """
+    for binary in package_dir.rglob("*"):
+        if not binary.is_file() or binary.is_symlink() or not is_shared_library(binary):
+            continue
+        mac_add_rpath(binary, "@loader_path")
+    for exe in executables:
+        mac_add_rpath(exe, "@executable_path")
+
+
+def stage_runtime_payload(install_dir: Path, dest: Path, *, include_geometry_writers: bool = True) -> list[Path]:
+    """Copy all libs from `install_dir/{bin,lib,lib64}` into `dest` and return where they ended up.
+
+    Every library is staged once, under the name the dynamic loader looks it up by (see `get_soname`).
+    The `libX.so -> libX.so.1 -> libX.so.1.2.3` chain of symlinks a versioned library is installed
+    with is not reproduced: the other names only serve the linker, and since a wheel can't hold
+    symlinks, each of them ends up there as one more full copy of the library.
+    """
+    staged_files = []
+    copied_files = []
     for runtime_dir_name in ("bin", "lib", "lib64"):
         runtime_dir = install_dir / runtime_dir_name
         if not runtime_dir.is_dir():
             continue
         for runtime_file in runtime_dir.rglob("*"):
-            if not (runtime_file.is_symlink() or runtime_file.is_file()):
+            if runtime_file.is_symlink() or not runtime_file.is_file():
                 continue
             if not is_shared_library(runtime_file):
                 continue
             if not include_geometry_writers and runtime_file.name.startswith("ifcopenshell.geometry.writer."):
                 continue
-            dest_file = dest / runtime_file.name
+            dest_file = dest / (get_soname(runtime_file) or runtime_file.name)
+            staged_files.append(dest_file)
             # Currently there's an overlap between dependencies installations.
             # E.g. libraries from occt are installed to both `ifcopenshell/lib`
             # (as part of `ifcopenshell_deploy_qt_runtime`)
             # and to `occt-shared/lib`. So we skip previously installed binaries.
             if dest_file.exists():
                 continue
-            shutil.copy(runtime_file, dest_file, follow_symlinks=False)
-            runtime_files.append(dest_file)
-    if not is_platform("MAC"):
-        ensure_soname_links(runtime_files)
+            shutil.copy(runtime_file, dest_file)
+            copied_files.append(dest_file)
+    for lib in copied_files:
+        if is_platform("MAC"):
+            mac_add_rpath(lib, "@loader_path")
+        else:
+            run("patchelf", "--set-rpath", "$ORIGIN", str(lib))
+    return staged_files
 
-        for lib_so in runtime_files:
-            if lib_so.is_file():
-                run("patchelf", "--set-rpath", "$ORIGIN", str(lib_so))
+
+def prune_unused_libraries(package_dir: Path, candidates: list[Path]) -> None:
+    """Remove the `candidates` that no other binary in `package_dir` is linked to, directly or indirectly.
+
+    A dependency installs all of its libraries, of which IfcOpenShell typically uses only a part
+    (e.g. about half of the OCCT toolkits).
+    """
+    unused = {candidate.name: candidate for candidate in candidates}
+    queue = [
+        path
+        for path in package_dir.rglob("*")
+        if path.is_file() and path.name not in unused and (is_shared_library(path) or os.access(path, os.X_OK))
+    ]
+    while queue:
+        for needed in get_needed_libraries(queue.pop()):
+            if needed in unused:
+                queue.append(unused.pop(needed))
+    for path in unused.values():
+        logger.debug(f"Not packaging '{path.name}': nothing links to it")
+        path.unlink()
 
 
 def stage_qt_runtime_payload(exe_path: Path, dest: Path, qt_dir: Path | None) -> None:
@@ -286,6 +341,52 @@ def check_runtime_dependencies(package_dir: Path) -> None:
         logger.warning("Runtime dependency check found issues; continuing packaging.")
 
 
+MAC_SYSTEM_LIBRARY_PREFIXES = ("/usr/lib/", "/System/")
+
+
+def check_runtime_dependencies_mac(package_dir: Path) -> None:
+    """macOS counterpart of `check_runtime_dependencies`, based on `otool -L`.
+
+    Every `@rpath/` dependency must be present in `package_dir` (all staged binaries carry
+    an `@loader_path` rpath, see `mac_fix_rpaths`), and no dependency may point at an
+    absolute path outside the system frameworks, since that would only resolve on the
+    build machine.
+    """
+    missing = False
+    staged = {p.name for p in package_dir.rglob("*") if is_shared_library(p)}
+    for binary_file in package_dir.rglob("*"):
+        if not binary_file.is_file() or binary_file.is_symlink():
+            continue
+        if not (is_shared_library(binary_file) or os.access(binary_file, os.X_OK)):
+            continue
+        try:
+            otool_output = run("otool", "-L", str(binary_file), stderr=subprocess.DEVNULL)
+        except subprocess.CalledProcessError:
+            continue  # Not a Mach-O file.
+        problems = []
+        for line in otool_output.splitlines()[1:]:
+            dependency = line.strip().split(" (")[0]
+            if not dependency:
+                continue
+            if dependency.startswith(MAC_SYSTEM_LIBRARY_PREFIXES):
+                continue
+            if dependency.startswith(("@rpath/", "@loader_path/", "@executable_path/")):
+                if dependency.split("/", 1)[1] not in staged:
+                    problems.append(f"{dependency} => not found")
+            elif dependency.startswith("/"):
+                problems.append(f"{dependency} => absolute path outside the package")
+        if problems:
+            logger.warning(f"Missing runtime dependencies for {binary_file}")
+            for problem in problems:
+                logger.warning(problem)
+            missing = True
+
+    if missing:
+        global HAS_MISSING_DEPENDENCIES
+        HAS_MISSING_DEPENDENCIES = True
+        logger.warning("Runtime dependency check found issues; continuing packaging.")
+
+
 def package_python_wrapper(
     py_dir: Path,
     ifcopenshell_install_dir: Path,
@@ -332,10 +433,15 @@ def package_python_wrapper(
 
     stage_runtime_payload(ifcopenshell_install_dir, ifcopenshell_dir)
 
+    dependency_libs = []
     for runtime_dir in runtime_dirs:
-        stage_runtime_payload(runtime_dir, ifcopenshell_dir)
+        dependency_libs += stage_runtime_payload(runtime_dir, ifcopenshell_dir)
+    prune_unused_libraries(ifcopenshell_dir, dependency_libs)
 
-    if not is_platform("MAC"):
+    if is_platform("MAC"):
+        mac_fix_rpaths(ifcopenshell_dir)
+        check_runtime_dependencies_mac(ifcopenshell_dir)
+    else:
         check_runtime_dependencies(ifcopenshell_dir)
 
     if ARGS.no_zip:
@@ -374,12 +480,17 @@ def package_executable(
     # but is this guard needed or it should be always False?
     stage_runtime_payload(ifcopenshell_install_dir, package_dir, include_geometry_writers=is_platform("MAC"))
 
+    dependency_libs = []
     for runtime_dir in runtime_dirs:
-        stage_runtime_payload(runtime_dir, package_dir)
+        dependency_libs += stage_runtime_payload(runtime_dir, package_dir)
+    prune_unused_libraries(package_dir, dependency_libs)
 
-    # On macOS, rpath is already set at build time via CMake's INSTALL_RPATH, and
-    # QT apps are packaged as .app bundles (`package_app_bundle`) instead.
-    if not is_platform("MAC"):
+    # On macOS QT apps are packaged as .app bundles (`package_app_bundle`) instead,
+    # and the flat executables get their rpaths patched below.
+    if is_platform("MAC"):
+        mac_fix_rpaths(package_dir, executables=(package_dir / exe,))
+        check_runtime_dependencies_mac(package_dir)
+    else:
         run("patchelf", "--set-rpath", "$ORIGIN", str(package_dir / exe))
         stage_qt_runtime_payload(exe_path, package_dir, qt_dir)
 
@@ -428,7 +539,7 @@ def package_app_bundle(
     run("zip", "-qq", "-r", str(zip_path), app_path.name, cwd=install_root)
 
 
-ARCH_SUFFIXES = ("linux64", "linuxarm64", "macosm164")
+ARCH_SUFFIXES = ("linux64", "linuxarm64", "macos64", "macosm164")
 LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR")
 
 
@@ -439,6 +550,7 @@ class Args(NamedTuple):
     shared: bool
     no_zip: bool
     fail_on_missing_deps: bool
+    no_executables: bool
 
 
 ARGS: Args
@@ -449,7 +561,11 @@ def main() -> None:
     parser.add_argument("arch_suffix", choices=ARCH_SUFFIXES, help="Zip filename suffix.")
     # TODO: relax default to INFO once things get more stable.
     parser.add_argument("--log-level", default="DEBUG", choices=LOG_LEVELS, help="Logging verbosity.")
-    parser.add_argument("--occt-shared", action="store_true", help="OCCT was built as shared libraries.")
+    parser.add_argument(
+        "--occt-shared",
+        action="store_true",
+        help="Insist that OCCT was built as shared libraries (the default; a shared OCCT is always staged).",
+    )
     parser.add_argument("--shared", action="store_true", help="Build was made with shared libraries.")
     parser.add_argument(
         "--no-zip",
@@ -464,6 +580,11 @@ def main() -> None:
         action="store_true",
         help="Exit with an error at the end if any packaged binary has missing runtime dependencies.",
     )
+    parser.add_argument(
+        "--no-executables",
+        action="store_true",
+        help="Skip packaging standalone executables; only Python wrappers get zipped.",
+    )
     args = parser.parse_args()
 
     global ARGS
@@ -474,6 +595,7 @@ def main() -> None:
         shared=args.shared,
         no_zip=args.no_zip,
         fail_on_missing_deps=args.fail_on_missing_deps,
+        no_executables=args.no_executables,
     )
     logger.setLevel(ARGS.log_level)
 
@@ -505,7 +627,7 @@ def main() -> None:
     # Iterate over all executables in `install/ifcopenshell/bin` and zip them.
     # Each zip bundles dynamic libs from `lib` and also qt libs.
     bin_dir = ifcopenshell_install_dir / "bin"
-    for exe_path in sorted(bin_dir.iterdir()):
+    for exe_path in [] if ARGS.no_executables else sorted(bin_dir.iterdir()):
         if is_packageable_executable(exe_path):
             package_executable(
                 exe_path,
@@ -518,9 +640,11 @@ def main() -> None:
                 ARGS.arch_suffix,
             )
 
-    if is_platform("MAC"):
-        for app_path in sorted(install_root.glob("*.app")):
-            package_app_bundle(app_path, install_root, github_sha, output_dir, autodesk_connector_dir, ARGS.arch_suffix)
+    if not ARGS.no_executables and is_platform("MAC"):
+        for app_path in sorted(ifcopenshell_install_dir.glob("*.app")):
+            package_app_bundle(
+                app_path, ifcopenshell_install_dir, github_sha, output_dir, autodesk_connector_dir, ARGS.arch_suffix
+            )
 
     if ARGS.fail_on_missing_deps and HAS_MISSING_DEPENDENCIES:
         raise Exception("Runtime dependency check found issues; see warnings above.")

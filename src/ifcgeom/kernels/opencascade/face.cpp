@@ -172,8 +172,7 @@ namespace {
 			} else if (crv_or_wire.index() == 1) {
 				return std::get<Handle(Geom_Curve)>(crv_or_wire);
 			} else if (crv_or_wire.index() == 2) {
-				// @todo
-				const double precision_ = 1.e-5;
+				auto precision_ = kernel->settings().get<settings::Precision>().get();
 				ifcopenshell::logger::root().warning("GEO", 156, "Approximating BasisCurve due to possible discontinuities", i->instance);
 				const auto& w = std::get<TopoDS_Wire>(crv_or_wire);
 #if OCC_VERSION_HEX < 0x70600
@@ -183,7 +182,7 @@ namespace {
 				auto hcc = new BRepAdaptor_CompCurve(w, true);
 #endif
 				// @todo, arbitrary numbers here, note they cannot be too high as contiguous memory is allocated based on them.
-				Approx_Curve3d approx(hcc, precision_, GeomAbs_C0, 10, 10);
+                Approx_Curve3d approx(hcc, precision_, GeomAbs_C0, 10, 10);
 				return approx.Curve();
 			}
 			throw std::runtime_error("Unexpected curve evaluation");
@@ -260,7 +259,16 @@ namespace {
 Handle(Geom_Surface) open_cascade_kernel::convert_surface(const taxonomy::ptr surface) {
 	surface_creation_visitor v{ this, {} };
 	if (dispatch_surface_creation<surface_creation_visitor, 0>::dispatch(surface, v)) {
-		return v.result;
+        if (surface->orientation && !*surface->orientation) {
+			// @nb this is not 100% correct, IFC models same sense as the agreement
+			// between surface normal and eventual face normal, we actually invert
+			// the parameter space, which has the same affect but also affects (well duh)
+			// the parameter space. Since p-curves are not normally seen in IFC I'm ok
+			// with this side-effect for the time being.
+            return v.result->UReversed();
+        } else {
+            return v.result;
+        }
 	} else {
 		throw std::runtime_error("No surface created");
 	}
@@ -268,18 +276,28 @@ Handle(Geom_Surface) open_cascade_kernel::convert_surface(const taxonomy::ptr su
 
 bool open_cascade_kernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& result, bool reversed_surface) {
 #ifdef IFOPSH_DEBUG
-	std::ostringstream oss;
-	face->print(oss);
-	auto osss = oss.str();
-	std::wcout << osss.c_str() << std::endl;
+    std::ostringstream oss;
+    face->print(oss);
+    auto osss = oss.str();
+    std::wcout << osss.c_str() << std::endl;
 #endif
 
-	face_definition fd;
+    face_definition fd;
 
-	// when the surface is planar we do not care about it
-	if (face->basis && face->basis->kind() != taxonomy::PLANE) {
-		fd.surface() = convert_surface(face->basis);
-	}
+    // when the surface is planar we do not care about it
+    // - but we do take note of the oriented normal to reverse if needed
+    std::optional<gp_Dir> expected_planar_normal;
+    if (face->basis) {
+        if (face->basis->kind() == taxonomy::PLANE) {
+            const auto& m = taxonomy::cast<taxonomy::plane>(face->basis)->matrix->ccomponents();
+            expected_planar_normal = convert_xyz2<gp_Dir>(m.col(2));
+            if (!face->basis->orientation.value_or(true)) {
+                expected_planar_normal->Reverse();
+            }
+        } else {
+            fd.surface() = convert_surface(face->basis);
+        }
+    }
 
 	const size_t num_bounds = face->children.size();
 	std::size_t num_outer_bounds = 0;
@@ -370,7 +388,7 @@ bool open_cascade_kernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& 
 		for (size_t i = 1; i < fwires.size() && !reported; ++i) {
 			for (size_t j = 0; j < i && !reported; ++j) {
 				BRepExtrema_DistShapeShape dss(fwires[i], fwires[j]);
-				if (dss.IsDone() && dss.Value() < precision_) {
+				if (dss.IsDone() && dss.Value() < settings_.get<settings::Precision>().get()) {
 					logger().warning("GEO", 402, "Face inner boundary intersects another face boundary", face->instance);
 					reported = true;
 				}
@@ -407,7 +425,7 @@ bool open_cascade_kernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& 
 				}
 			} else {
 				gp_Pln pln;
-				if (approximate_plane_through_wire(wire, pln, precision_)) {
+				if (approximate_plane_through_wire(wire, pln, settings_.get<settings::Precision>().get())) {
 					fd.surface() = new Geom_Plane(pln);
 				}
 			}
@@ -415,15 +433,25 @@ bool open_cascade_kernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& 
 	}
 
 	if (fd.surface().IsNull()) {
-		// BRepLib_FindSurface is used in case no surface is found or provided
+		// BRepLib_FindSurface is used in case no surface is found or provided - or the surface is planar
 
 		const TopoDS_Wire& wire = fd.wires().front();
 
-		BRepLib_FindSurface fs(wire, precision_, true, true);
+		BRepLib_FindSurface fs(wire, settings_.get<settings::Precision>().get(), true, true);
 		if (fs.Found()) {
 			fd.surface() = fs.Surface();
 			ShapeFix_ShapeTolerance ftol;
 			ftol.SetTolerance(wire, fs.ToleranceReached(), TopAbs_WIRE);
+		}
+	}
+
+	// Reverse the normal of our found plane when it does not agree to the oriented normal specified in the model
+	if (expected_planar_normal && !fd.surface().IsNull() && fd.surface()->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
+        auto plane = Handle(Geom_Plane)::DownCast(fd.surface());
+		const auto& axes = plane->Position();
+		const auto found_normal = axes.XDirection().Crossed(axes.YDirection());
+		if (found_normal.Dot(*expected_planar_normal) < 0.) {
+			fd.surface() = fd.surface()->UReversed();
 		}
 	}
 

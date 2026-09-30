@@ -197,9 +197,9 @@ class Usecase:
             if self.settings["material"]:
                 provided_material_set = self.settings["material"]
                 material_set_class = provided_material_set.is_a()
-                assert (
-                    material_set_class == "IfcMaterialLayerSet"
-                ), f"{material_set_class} cannot be assiged as a IfcMaterialLayerSetUsage."
+                assert material_set_class == "IfcMaterialLayerSet", (
+                    f"{material_set_class} cannot be assiged as a IfcMaterialLayerSetUsage."
+                )
 
             layer_types_to_products: defaultdict[
                 tuple[ifcopenshell.entity_instance, str], list[ifcopenshell.entity_instance]
@@ -245,9 +245,9 @@ class Usecase:
             if self.settings["material"]:
                 provided_material_set = self.settings["material"]
                 material_set_class = provided_material_set.is_a()
-                assert (
-                    material_set_class == "IfcMaterialProfileSet"
-                ), f"{material_set_class} cannot be assiged as a IfcMaterialProfileSetUsage."
+                assert material_set_class == "IfcMaterialProfileSet", (
+                    f"{material_set_class} cannot be assiged as a IfcMaterialProfileSetUsage."
+                )
 
             material_sets_to_products: dict[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]
             material_sets_to_products = defaultdict(list)

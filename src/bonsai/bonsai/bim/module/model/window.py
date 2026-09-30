@@ -569,7 +569,9 @@ class PickWindowType(bpy.types.Operator, tool.Ifc.Operator, PickTypeMixin):
 
 
 # Frame accessor factory - creates callbacks that delegate to BIMWindowProperties methods
-def _make_frame_accessors(attr_name: str, panel_index: int) -> tuple[
+def _make_frame_accessors(
+    attr_name: str, panel_index: int
+) -> tuple[
     "collections.abc.Callable[[BIMWindowProperties], float]",
     "collections.abc.Callable[[BIMWindowProperties, float], None]",
 ]:

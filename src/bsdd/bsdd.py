@@ -23,11 +23,10 @@ import urllib.parse
 import uuid
 import warnings
 import webbrowser
-from typing import TYPE_CHECKING, Any, Literal, Optional, TypedDict
+from typing import TYPE_CHECKING, Any, Literal, NotRequired, Optional, TypedDict
 
 import requests
 from requests.adapters import HTTPAdapter
-from typing_extensions import NotRequired
 from urllib3.util import Retry
 
 if TYPE_CHECKING:
@@ -534,7 +533,7 @@ class Client:
         self.session.mount("http://", HTTPAdapter(max_retries=retries))
 
     def get(self, endpoint, params=None, is_auth_required=False):
-        headers = {"User-Agent": "IfcOpenShell.bSDD.py/0.8.0"}
+        headers = {"User-Agent": "IfcOpenShell.bSDD.py/0.9.0"}
         if is_auth_required:
             headers["Authorization"] = "Bearer " + self.get_access_token()
         response = self.session.get(f"{self.baseurl}{endpoint}", timeout=10, headers=headers, params=params or None)
@@ -550,7 +549,7 @@ class Client:
         return response.json()
 
     def _get_deprecated(self, endpoint, params=None, is_auth_required=False):
-        headers = {"User-Agent": "IfcOpenShell.bSDD.py/0.8.0"}
+        headers = {"User-Agent": "IfcOpenShell.bSDD.py/0.9.0"}
         old_baseurl = "https://bs-dd-api-prototype.azurewebsites.net/"
         if is_auth_required:
             headers["Authorization"] = "Bearer " + self.get_access_token()
@@ -712,7 +711,7 @@ class Client:
         return self.get(f"api/Unit/{version}")
 
     def get_dictionary(
-        self, dictionary_uri: str = "", include_test_dictionaries: bool = "False", version: int = 1
+        self, dictionary_uri: str = "", include_test_dictionaries: bool = False, version: int = 1
     ) -> DictionaryResponseContractV1:
         """
         Get list of available Dictionaries

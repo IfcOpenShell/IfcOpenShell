@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=77.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -10,19 +10,14 @@ authors = [
 ]
 description = "Library to interact with the buildingSMART Data Dictionary"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
+license = "LGPL-3.0-or-later"
 keywords = ["IFC", "bSDD", "BIM"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
-    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
 ]
 dependencies = [
     "requests",
@@ -46,6 +41,3 @@ py-modules = ["bsdd","bsdd_json","type_hints"]
 
 [tool.ruff]
 extend = "../../pyproject.toml"
-lint.extend-select = [
-  "unused-import",
-]

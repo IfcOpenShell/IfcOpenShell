@@ -239,7 +239,7 @@ def reassign_class(
     for attribute in declaration.all_attributes():
         name = attribute.name()
         old_attribute = info.get(name, None)
-        if old_attribute:
+        if old_attribute is not None:
             if ifcopenshell.util.attribute.get_primitive_type(attribute) == "enum":
                 if old_attribute in ifcopenshell.util.attribute.get_enum_items(attribute):
                     new_attributes[name] = old_attribute
@@ -400,9 +400,9 @@ class Migrator:
                 for inverse, attribute_index in old_file.get_inverse(
                     element, allow_duplicate=True, with_attribute_indices=True
                 ):
-                    self.attribute_overrides.setdefault(inverse.id(), {})[
-                        attribute_index
-                    ] = f"{element[2]}-{element[1]}-{element[0]}"
+                    self.attribute_overrides.setdefault(inverse.id(), {})[attribute_index] = (
+                        f"{element[2]}-{element[1]}-{element[0]}"
+                    )
                 to_delete.add(element)
 
         if old_file.schema == "IFC4" and new_file.schema == "IFC4X3":

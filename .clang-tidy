@@ -1,4 +1,9 @@
-Checks:          'bugprone-*,cert-*,clang-analyzer-*,readability-*'
+Checks:          >
+  bugprone-*,
+  cert-*,
+  clang-analyzer-*,
+  readability-*,
+  -readability-identifier-length,
 WarningsAsErrors: ''
 HeaderFilterRegex: ''
 FormatStyle: none

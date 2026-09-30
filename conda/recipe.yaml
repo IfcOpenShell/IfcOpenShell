@@ -12,6 +12,7 @@ source:
 
 build:
   number: ${{ build }}
+  script: build.py
   dynamic_linking:
     binary_relocation: ${{ true if osx }}
 
@@ -38,6 +39,20 @@ requirements:
     - nlohmann_json
     - gmp
     - zlib
+    # bug upstream: https://github.com/conda-forge/vtk-feedstock/issues/459
+    - xorg-xorgproto
+    # TODO: Drop once occt is bumped to vtk >=9.4.2.
+    # Only needed because of old occt, which pins vtk-base <9.4.2: vtk built with TBB on Windows
+    # doesn't declare tbb-devel needed for find_package(VTK).
+    - if: win
+      then:
+        - tbb-devel
+    # TODO: Drop once occt is bumped to >=7.9.1.
+    # occt <7.9.1 CMake config lists bare `GL` in TKOpenGl/TKV3d link libraries,
+    # but doesn't depend on libgl-devel, which provides libGL.so for linking.
+    - if: linux
+      then:
+        - libgl-devel
   run:
     - python
     - shapely
@@ -75,19 +90,19 @@ about:
   description: |
     IfcOpenShell
     ============
-    
+
     IfcOpenShell is an open source ([LGPL]) software library for working with Industry Foundation Classes ([IFC]). Complete
     parsing support is provided for [IFC2x3 TC1], [IFC4 Add2 TC1], IFC4x1, IFC4x3, and IFC4x3. Extensive geometric support
     is implemented for the IFC releases [IFC2x3 TC1] and [IFC4 Add2 TC1]. Extending with support for arbitrary IFC schemas
     is possible at compile-time when using C++ and at run-time when using Python.
-    
+
     In addition to a C++ and Python API, IfcOpenShell comes with an ecosystem of tools, notably including IfcConvert (an
     application to convert IFC models to
     other formats), the BlenderBIM Add-on (an add-on to Blender providing a graphical IFC authoring platform), and many
     other libraries, CLI apps, and more. Support is also provided for auxiliary standards such as BCF and IDS.
-    
+
     For more information, see:
-    
+
     * [IfcOpenShell Website](http://ifcopenshell.org)
     * [IfcOpenShell Documentation](http://bonsaibim.org/docs-python)
     * [IfcOpenShell C++ Installation](https://bonsaibim.org/docs-python/ifcopenshell/installation.html)
@@ -97,7 +112,7 @@ about:
     * [Bonsai Documentation](http://bonsaibim.org/docs)
     * [Add-on Installation](https://bonsaibim.org/docs/users/installation.html)
     * [Exploring an IFC model](https://bonsaibim.org/docs/users/exploring_an_ifc_model.html)
-    
+
     <table>
       <thead>
         <tr>
@@ -127,10 +142,6 @@ about:
           <td><a href="https://aur.archlinux.org/packages/ifcopenshell-git"><img src="https://img.shields.io/aur/version/ifcopenshell-git" alt="AUR Badge"></a></td>
         </tr>
         <tr>
-          <td>BlenderBIM Add-on Chocolatey (under moderation)</td>
-          <td><a href="https://community.chocolatey.org/packages/blenderbim-nightly/"><img src="https://img.shields.io/chocolatey/v/blenderbim-nightly" alt="Chocolatey Badge"></a></td>
-        </tr>
-        <tr>
           <td>Sponsor development on OpenCollective</td>
           <td><a href="https://opencollective.com/opensourcebim/"><img src="https://opencollective.com/opensourcebim/tiers/badge.svg" alt="Financial Contributors"></a></td>
         </tr>
@@ -138,12 +149,12 @@ about:
           <td>Docker hub</td>
           <td><a href="https://hub.docker.com/r/aecgeeks/ifcopenshell"><img src="https://img.shields.io/docker/pulls/aecgeeks/ifcopenshell" alt="Docker Pulls"></a></td>
         </tr>
-    
+
       </tbody>
     </table>
     Contents
     --------
-    
+
     Those marked with an asterisk are part of IfcOpenShell.
     <table>
       <thead>
@@ -182,11 +193,6 @@ about:
         <tr>
           <td>ifc5d</td>
           <td>Report and optimise cost information from IFC</td>
-          <td>LGPL-3.0-or-later</td>
-        </tr>
-        <tr>
-          <td>ifcbimtester</td>
-          <td>Wrapper for Gherkin based unit testing for IFC models</td>
           <td>LGPL-3.0-or-later</td>
         </tr>
         <tr>
@@ -281,16 +287,11 @@ about:
     </tr>
     </tbody>
     </table>
-    
+
     [LGPL]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/COPYING.LESSER "LGPL-3.0-or-later"
     [IFC]: https://technical.buildingsmart.org/standards/ifc/ "IFC"
     [IFC2x3 TC1]: https://standards.buildingsmart.org/IFC/RELEASE/IFC2x3/TC1/HTML/ "IFC2x3 TC1"
     [IFC4 Add2 TC1]: https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/ "IFC4 Add2 TC1"
-    [Visual Studio]: https://www.visualstudio.com/ "Visual Studio"
-    [Visual C++ Build Tools]: http://landinghub.visualstudio.com/visual-cpp-build-tools "Visual C++ Build Tools"
-    [MSYS2]: https://msys2.github.io/ "MSYS2"
-    [win/readme.md]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/win/readme.md "win/readme.md"
-    [nix/build-all.py]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/nix/build-all.py "nix/build-all.py"
   homepage: https://ifcopenshell.org
   repository: https://github.com/IfcOpenShell/IfcOpenShell
   documentation: https://ifcopenshell.org/

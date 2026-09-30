@@ -34,10 +34,8 @@ if(CMAKE_CXX_STANDARD LESS 17)
 endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if(POLICY CMP0148) # 3.27
-    cmake_policy(SET CMP0148 OLD)
-endif()
 if(POLICY CMP0177) # 3.31
+    # install() DESTINATION paths are normalized.
     cmake_policy(SET CMP0177 OLD)
 endif()
 
@@ -100,7 +98,8 @@ ENDIF()
 # - Unix - Python_INCLUDE_DIR
 # Unfortunately all paths must be always provided explicitly, not by prefixing PATH.
 # Otherwise FindPython will break on newer Python versions (list of supported versions is hardcoded).
-find_package(Python COMPONENTS Development.Module)
+set(PYTHON_MIN_VERSION 3.11)
+find_package(Python ${PYTHON_MIN_VERSION} COMPONENTS Development.Module)
 IF(NOT Python_Development.Module_FOUND)
 	MESSAGE(FATAL_ERROR "BUILD_IFCPYTHON enabled, but unable to find Python lib or header. Disable BUILD_IFCPYTHON or fix Python paths to proceed.")
 ENDIF()
@@ -110,7 +109,7 @@ ENDIF()
 set(_python_libs_version "${Python_VERSION_MAJOR}${Python_VERSION_MINOR}")
 INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
-SET(CMAKE_SWIG_FLAGS ${SWIG_DEFINES})
+SET(CMAKE_SWIG_FLAGS ${SWIG_DEFINES} -fastproxy -fastdispatch)
 
 set_source_files_properties(IfcPython.i PROPERTIES CPLUSPLUS ON)
 # Rebuild on changes in other .i files.
@@ -264,7 +263,7 @@ IF(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
             set(python_package_dir "${Python_SITEARCH}")
         ENDIF()
         if (BUILD_PACKAGE)
-            set(python_package_dir ${CMAKE_INSTALL_LIBDIR}/python${PYTHON_VERSION_MAJOR}/dist-packages/)
+            set(python_package_dir ${CMAKE_INSTALL_LIBDIR}/python${Python_VERSION_MAJOR}/dist-packages/)
         endif()
     endif()
     IF("${python_package_dir}" STREQUAL "")
@@ -274,7 +273,7 @@ IF(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
         file(GLOB_RECURSE sourcefiles "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/*")
         # Exclude compiled extensions and shared libraries (including versioned .so.X.Y) -
         # they're part of dev environment and shouldn't leak into installation.
-        list(FILTER sourcefiles EXCLUDE REGEX [[\.(so(\.[0-9]+)*|pyd|dylib)$]])
+        list(FILTER sourcefiles EXCLUDE REGEX [[\.(so(\.[0-9]+)*|pyd|dylib|dll)$]])
         # Exclude cached bytecode.
         list(FILTER sourcefiles EXCLUDE REGEX [[\.pyc$]])
         foreach(file ${sourcefiles})
@@ -312,6 +311,16 @@ IF(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
                 INSTALL(TARGETS ${_ifcopenshell_python_runtime_targets}
                         LIBRARY DESTINATION "${python_package_dir}/ifcopenshell"
                         RUNTIME DESTINATION "${python_package_dir}/ifcopenshell")
+            endif()
+
+            if(MSVC)
+                # Ship the shared third-party runtime (e.g. OCCT, Boost, manifold) next to the wrapper.
+                foreach(_target ifcopenshell_wrapper ${_ifcopenshell_python_runtime_targets})
+                    get_target_property(_target_type ${_target} TYPE)
+                    if(_target_type STREQUAL "SHARED_LIBRARY" OR _target_type STREQUAL "MODULE_LIBRARY")
+                        install(FILES $<TARGET_RUNTIME_DLLS:${_target}> DESTINATION "${python_package_dir}/ifcopenshell")
+                    endif()
+                endforeach()
             endif()
 
             if(NOT WIN32 AND NOT WASM_BUILD)

@@ -27,11 +27,6 @@ endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON) # not necessary, but encouraged
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# The VERSION file in the repository root is the single source of truth for the
-# release version. Read it unconditionally so a plain source build reports the
-# real version through buildinfo.cpp instead of the stale hardcoded 0.8.0
-# fallback (see #8164). VERSION_OVERRIDE still controls the branch name used
-# when ADD_COMMIT_SHA embeds a commit sha.
 file(READ "../VERSION" "RELEASE_VERSION_")
 string(STRIP "${RELEASE_VERSION_}" RELEASE_VERSION)
 message(STATUS "Detected version '${RELEASE_VERSION}'")
@@ -46,6 +41,10 @@ endif()
 
 add_definitions(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
 
+if(POLICY CMP0135) # 3.24
+  # FetchContent/ExternalProject URL downloads use extraction-time timestamps.
+  cmake_policy(SET CMP0135 NEW)
+endif()
 if(POLICY CMP0141) # 3.25+
   cmake_policy(SET CMP0141 NEW) # Support for `CMAKE_MSVC_DEBUG_INFORMATION_FORMAT`.
 endif()
@@ -53,6 +52,7 @@ if(POLICY CMP0144) # 3.27
     cmake_policy(SET CMP0144 NEW) # find_package() uses upper-case <PACKAGENAME>_ROOT variables.
 endif()
 if(POLICY CMP0167) # 3.30
+    # find_package(Boost) to use BoostConfig instead of FindBoost.
     cmake_policy(SET CMP0167 OLD)
 endif()
 
@@ -83,7 +83,7 @@ option(MSVC_PARALLEL_BUILD "Multi-threaded compilation in Microsoft Visual Studi
 option(USE_VLD "Use Visual Leak Detector for debugging memory leaks, MSVC-only." OFF)
 option(USE_MMAP "Adds a command line options to parse IFC files from memory mapped files using Boost.Iostreams" OFF)
 option(NO_WARN "Disable all warnings" OFF)
-option(CREATE_BUNDLE "Copy .so files and don't create RPATHS or SOVERSION symlinks" )
+option(CREATE_BUNDLE "Copy .so files and don't create RPATHS or SOVERSION symlinks" OFF)
 
 option(BUILD_IFCGEOM "Build IfcGeom." ON)
 option(BUILD_IFCPYTHON "Build IfcPython." ON)
@@ -93,7 +93,6 @@ option(BUILD_DOCUMENTATION "Build IfcOpenShell Documentation." OFF)
 option(BUILD_EXAMPLES "Build example applications." ON)
 option(BUILD_GEOMSERVER "Build IfcGeomServer executable (Open CASCADE is required)." ON)
 option(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
-option(BUILD_IFCMODEL_UI "Build minimal Qt IFC model UI prototype" OFF)
 option(BUILD_BONSAIVIEWER "Build Bonsai Viewer" OFF) # Requires Qt6 + OpenGL 4.5
 option(BUILD_IFCOPENSHELL_PARSE_TESTS "Build C++ unit tests for IfcParse (fetches Catch2 v3)" OFF)
 option(BUILD_IFCOPENSHELL_GEOMETRY_TESTS "Build C++ unit tests for IfcGeom (fetches Catch2 v3)" OFF)
@@ -107,7 +106,17 @@ if(BUILD_BONSAIVIEWER AND NOT BUILD_BONSAIVIEWER_WGPU)
                    "(SceneLoader uses ViewportWindow); auto-enabling.")
     set(BUILD_BONSAIVIEWER_WGPU ON)
 endif()
-option(BUILD_PACKAGE "" OFF)
+# TODO: still needed?
+option(BUILD_PACKAGE "Install the Python module to lib/python3/dist-packages under the install prefix" OFF)
+# Most users probably need just common schemas,
+# but we're keeping it `OFF` by default to avoid disruption
+# (e.g. all Python distribution would need to adapt this option to be set).
+option(
+    BUILD_ONLY_COMMON_SCHEMAS
+    "Build only common IFC schemas (2x3, 4, 4x3_add2). By default all schemas will be built."
+    OFF
+)
+option(SCHEMA_VERSIONS "Explicitly specify schemas to build." "")
 
 option(
     BUILD_FUZZERS
@@ -234,8 +243,13 @@ if(NOT IS_ABSOLUTE ${INCLUDEDIR})
 endif()
 message(STATUS "INCLUDEDIR: ${INCLUDEDIR}")
 
+# On Windows Release and Debug binaries are not compatible.
+# So we add a postfix to avoid issues and allow release and debug installations to coexist.
+if(WIN32)
+    set(CMAKE_DEBUG_POSTFIX "_d")
+endif()
+
 if(MSVC)
-    message(WARNING "Building DLLs against the static VC run-time. This is not recommended if the DLLs are to be redistributed.")
     # C4521: 'identifier' : class 'type' needs to have dll-interface to be used by clients of class 'type2'
     # There will be couple hundreds of these so suppress them away, https://msdn.microsoft.com/en-us/library/esew7y1w.aspx
     add_definitions(-wd4251)
@@ -258,14 +272,26 @@ foreach(option_flag IN LISTS option_flags)
     convert_env_var_to_bool("${option_flag}")
 endforeach()
 
+set(SWIG_DEFINES "")
+
 if(WITH_CGAL)
-    find_package(CGAL REQUIRED)
+    # 5.4 is the version shipped with Ubuntu 22.04.
+    set(CGAL_MIN_VERSION 5.4)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15)
+        # https://github.com/CGAL/cgal/issues/8313
+        set(CGAL_MIN_VERSION 5.6.2)
+    endif()
+    find_package(CGAL ${CGAL_MIN_VERSION} REQUIRED)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_CGAL)
     list(APPEND GEOMETRY_KERNELS cgal)
 endif()
 
 if(BUILD_IFCGEOM AND WITH_OPENCASCADE)
+    # 7.5.1 is the version shipped with Ubuntu 22.04.
+    set(OPENCASCADE_MIN_VERSION 7.5.1)
     find_package(OpenCASCADE REQUIRED)
+    # OpenCASCADEConfigVersion.cmake only accepts an exact version match.
+    check_min_version(OpenCASCADE "${OpenCASCADE_VERSION}" "${OPENCASCADE_MIN_VERSION}")
     # Map OpenCASCADE_LIBRARIES variable from OpenCASCADEConfig.cmake to OpenCASCADE_LIBRARIES used by kernel generic cmake file
     set(OpenCASCADE_LIBRARIES ${OpenCASCADE_LIBRARIES})
     set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_OPENCASCADE)
@@ -275,7 +301,8 @@ endif()
 message(STATUS "BUILD_IFCGEOM WITH_MANIFOLD: ${BUILD_IFCGEOM} ${WITH_MANIFOLD}")
 
 if(BUILD_IFCGEOM AND WITH_MANIFOLD)
-    find_package(manifold CONFIG REQUIRED)
+    set(MANIFOLD_MIN_VERSION 3.2.1)
+    find_package(manifold ${MANIFOLD_MIN_VERSION} CONFIG REQUIRED)
     if(TARGET manifold::manifold)
         set(MANIFOLD_LIBRARIES manifold::manifold)
     elseif(TARGET manifold)
@@ -291,7 +318,13 @@ if(BUILD_IFCGEOM)
 endif()
 
 if(GLTF_SUPPORT)
-    find_package(nlohmann_json REQUIRED)
+    # 3.6.1 is the version currently used on the Windows build.
+    # 3.10.5 is the version shipped with Ubuntu 22.04.
+    find_package(nlohmann_json 3.6.1 REQUIRED)
+endif()
+
+if(WITH_PROJ)
+    set(PROJ_MIN_VERSION 9.4.1)
 endif()
 
 # Add USD support to serializers
@@ -300,6 +333,13 @@ if(USD_SUPPORT)
 endif(USD_SUPPORT)
 
 if (WITH_ROCKSDB)
+    # 1.5.5 is the version shipped with Ubuntu 24.04.
+    # Not referencing the zstd/RocksDB versions from 22.04 as they lack CMake configs.
+    set(ZSTD_MIN_VERSION 1.5.5)
+
+    # 8.9.1 is the version shipped with Ubuntu 24.04.
+    set(ROCKSDB_MIN_VERSION 8.9.1)
+
     # Temporaily mess with CMAKE_FIND_PACKAGE_PREFER_CONFIG to help RocksDB
     # find it's zstd dependency on Windows.
     # Only do it on Windows, otherwise it might create problems as
@@ -312,8 +352,9 @@ if (WITH_ROCKSDB)
     if(WIN32)
         set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ${TEMP})
     endif()
-
     message(STATUS "RocksDB: found at '${RocksDB_DIR}'.")
+    # RocksDBConfigVersion.cmake only accepts a compatible version within the same major version.
+    check_min_version(RocksDB "${RocksDB_VERSION}" "${ROCKSDB_MIN_VERSION}")
     add_library(IFCOPENSHELL_RocksDB INTERFACE)
     set(IFCOPENSHELL_ROCKSDB_TARGET IFCOPENSHELL_RocksDB)
     set(ROCKSDB_LIBRARIES "IFCOPENSHELL_RocksDB")
@@ -327,35 +368,24 @@ if (WITH_ROCKSDB)
     else()
         message(FATAL_ERROR "RocksDB found but neither RocksDB::rocksdb nor RocksDB::rocksdb-shared target exists")
     endif()
-    # Our win/build-deps.cmd builds RocksDB separately per Debug/Release config into the
-    # same install prefix, so the imported target only ever has DEBUG and RELEASE listed in
-    # IMPORTED_CONFIGURATIONS. On a multi-config generator (Visual Studio), CMake maps any
-    # unmatched build config to the *first* entry of that list, which happens to be DEBUG
-    # (RocksDBTargets-debug.cmake sorts before RocksDBTargets-release.cmake). Without an
-    # explicit mapping, RelWithDebInfo and MinSizeRel builds would end up linking the
-    # /MDd-flavored rocksdb_d.lib into an /MD (NDEBUG) binary, causing a CRT/runtime-library
-    # mismatch that depends on nothing but that alphabetical ordering.
-    set_target_properties(${IFCOPENSHELL_ROCKSDB_IMPORTED_TARGET} PROPERTIES
-        MAP_IMPORTED_CONFIG_RELWITHDEBINFO "RELWITHDEBINFO;RELEASE"
-        MAP_IMPORTED_CONFIG_MINSIZEREL "MINSIZEREL;RELEASE"
-    )
+    avoid_debug_imported_config_fallback(${IFCOPENSHELL_ROCKSDB_IMPORTED_TARGET})
     target_link_libraries(IFCOPENSHELL_RocksDB INTERFACE ${IFCOPENSHELL_ROCKSDB_IMPORTED_TARGET})
 
     if (WITH_ZSTD)
         # @todo do we actually need the zstd include dir or rather just pass
         # the libzstd.a along with the rocksdb library when needed and feature
         # detect based on rocksdb API?
+        # Same exact-major-version caveat as RocksDB above.
         find_package(zstd CONFIG REQUIRED)
         message(STATUS "zstd: found at '${zstd_DIR}'.")
+        check_min_version(zstd "${zstd_VERSION}" "${ZSTD_MIN_VERSION}")
     endif()
 
     install(TARGETS IFCOPENSHELL_RocksDB EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
 endif()
 
-# Find Boost: On win32 the (hardcoded) default is to use static libraries and
-# runtime, when doing running conda-build we pick what conda prepared for us.
-if(WIN32 AND("$ENV{CONDA_BUILD}" STREQUAL ""))
-    set(Boost_USE_STATIC_LIBS ON)
+# When running conda-build we pick what conda prepared for us.
+if(WIN32 AND NOT DEFINED ENV{CONDA_BUILD})
     set(Boost_USE_STATIC_RUNTIME OFF)
     set(Boost_USE_MULTITHREADED ON)
 
@@ -364,45 +394,57 @@ if(WIN32 AND("$ENV{CONDA_BUILD}" STREQUAL ""))
     # compiled with a toolset different from default.
     if(MSVC)
         add_definitions(-DBOOST_ALL_NO_LIB)
-
-        # Necessary for boost version >= 1.67
-        set(BCRYPT_LIBRARIES "bcrypt.lib")
     endif()
 else()
     # Disable Boost's autolinking as the libraries to be linked to are supplied
     # already by CMake, and it's going to conflict if there are multiple, as is
     # the case in conda-forge's libboost feedstock.
     add_definitions(-DBOOST_ALL_NO_LIB)
-
-    if(WIN32)
-        # Necessary for boost version >= 1.67
-        set(BCRYPT_LIBRARIES "bcrypt.lib")
-    endif()
 endif()
 
 if(WASM_BUILD)
     set(BOOST_COMPONENTS)
 else()
-    # @todo review this, shouldn't this be all possible header-only now?
-    # ... or rewritten using C++17 features?
-    # set(BOOST_COMPONENTS system program_options regex thread date_time iostreams)
-    set(BOOST_COMPONENTS program_options regex thread date_time iostreams)
-endif()
-
-if(USE_MMAP)
-    if(MSVC)
-        # filesystem is necessary for the utf-16 wpath
-        set(BOOST_COMPONENTS ${BOOST_COMPONENTS} iostreams filesystem)
-    else()
-        set(BOOST_COMPONENTS ${BOOST_COMPONENTS} iostreams)
+    set(BOOST_COMPONENTS "")
+    if(BUILD_IFCGEOM OR BUILD_CONVERT)
+        set(BOOST_COMPONENTS ${BOOST_COMPONENTS} program_options)
+    endif()
+    # TODO: drop `regex` once BOOST_MIN_VERSION >= 1.76, since then it became header-only.
+    if(BUILD_IFCGEOM)
+        set(BOOST_COMPONENTS ${BOOST_COMPONENTS} regex)
     endif()
 endif()
 
-find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
+if(USE_MMAP)
+    set(BOOST_COMPONENTS ${BOOST_COMPONENTS} iostreams)
+endif()
+
+# 3.3.9 is the version currently used on the Windows build.
+# 3.4.0 is the version shipped with Ubuntu 22.04.
+set(EIGEN_MIN_VERSION 3.3.9)
+
+# 1.74 is the version shipped with Ubuntu 22.04.
+set(BOOST_MIN_VERSION 1.74)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 14)
+    # https://github.com/boostorg/math/issues/992
+    set(BOOST_MIN_VERSION 1.83)
+endif()
+find_package(Boost ${BOOST_MIN_VERSION} REQUIRED COMPONENTS ${BOOST_COMPONENTS})
+# TODO: drop this whole `if` (and the `regex` component above) once BOOST_MIN_VERSION >= 1.76.
+if(Boost_VERSION VERSION_GREATER_EQUAL 1.76)
+    list(REMOVE_ITEM Boost_LIBRARIES ${Boost_REGEX_LIBRARY} Boost::regex)
+endif()
+# This is only needed for FindBoost, when libraries are just paths to the library files on the disk.
+# If Boost is found using cmake config, then all its Boost_LIBRARIES are targets
+# and automatically depend on the headers.
+list(APPEND Boost_LIBRARIES Boost::headers)
 message(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
-message(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
+message(STATUS "Boost libraries found in ${Boost_LIBRARIES}")
 
 if(COLLADA_SUPPORT)
+    # OpenCOLLADA is ancient and never properly hardcodes its version to any of the installed files.
+    # Version used in header is partial, -version.cmake hardcodes "0.1.0".
+    # So we don't set any minimal version and just take whatever there is.
     find_package(OpenCOLLADA REQUIRED)
 endif()
 
@@ -429,13 +471,6 @@ if(ENABLE_BUILD_OPTIMIZATIONS)
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
         set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} -O3")
     endif()
-else()
-    # @tfk I commented this out as this kind of defeats the purpose of RelWithDebInfo. For the
-    # best debugging experience simply use Debug. Note that in MSVC you can selectively toggle
-    # optimization on a specific file if you're investigating a specific issue.
-    # if(MSVC)
-    #     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /Od")
-    # endif()
 endif(ENABLE_BUILD_OPTIMIZATIONS)
 
 if(MSVC)
@@ -476,21 +511,6 @@ if(MSVC)
         add_definitions(-permissive-)
     endif()
 
-    # Link against the static VC runtime
-    # TODO Make this configurable
-    # if("$ENV{CONDA_BUILD}" STREQUAL "")
-    #     foreach(flag CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL
-    #     CMAKE_CXX_FLAGS_RELWITHDEBINFO CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
-    #     CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
-    #         if(${flag} MATCHES "/MD")
-    #             STRING(REGEX REPLACE "/MD" "/MT" ${flag} "${${flag}}")
-    #         endif()
-    #         if(${flag} MATCHES "/MDd")
-    #             STRING(REGEX REPLACE "/MDd" "/MTd" ${flag} "${${flag}}")
-    #         endif()
-    #     endforeach()
-    # endif()
-
 	add_definitions(-D_ENABLE_EXTENDED_ALIGNED_STORAGE)
 	# See #5158.
 	if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.40)
@@ -516,14 +536,9 @@ else()
     endif()
 endif(MSVC)
 
-include_directories(${INCLUDE_DIRECTORIES}
-	${Boost_INCLUDE_DIRS}
-    ${CGAL_INCLUDE_DIR} ${GMP_INCLUDE_DIR} ${MPFR_INCLUDE_DIR}
-)
-
 if(NOT SCHEMA_VERSIONS)
-    if(WASM_BUILD)
-        # super arbitrarily try to keep size down at least a little bit
+    # `WASM_BUILD` - super arbitrarily try to keep size down at least a little bit
+    if(BUILD_ONLY_COMMON_SCHEMAS OR WASM_BUILD)
         set(SCHEMA_VERSIONS "2x3" "4" "4x3_add2")
     else()
         set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2" "4x3" "4x3_tc1" "4x3_add1" "4x3_add2")
@@ -619,21 +634,8 @@ endif()
 
 if(BUILD_IFCGEOM)
     # CGAL::CGAL target already has dependencies resolved.
-    if(WITH_CGAL AND CGAL_DIR)
+    if(WITH_CGAL)
         set(CGAL_LIBRARIES CGAL::CGAL)
-        message(STATUS "Using found CGAL package at '${CGAL_DIR}'")
-    elseif(WITH_CGAL AND NOT CGAL_DIR)
-        find_library(libGMP NAMES gmp mpir PATHS ${GMP_LIBRARY_DIR} NO_DEFAULT_PATH)
-        find_library(libMPFR NAMES mpfr PATHS ${MPFR_LIBRARY_DIR} NO_DEFAULT_PATH)
-        if(NOT libGMP)
-            message(FATAL_ERROR "Unable to find GMP library files, aborting")
-        endif()
-        if(NOT libMPFR)
-            message(FATAL_ERROR "Unable to find MPFR library files, aborting")
-        endif()
-
-        list(APPEND CGAL_LIBRARIES "${libMPFR}")
-        list(APPEND CGAL_LIBRARIES "${libGMP}")
     endif()
 
     add_subdirectory(../src/ifcgeom ifcgeom)
@@ -708,9 +710,6 @@ if(ADD_COMMIT_SHA)
     endif()
 endif(ADD_COMMIT_SHA)
 
-# Always expose the release version (from the VERSION file) to buildinfo.cpp so
-# that a build without commit-sha info reports the correct version instead of a
-# stale hardcoded fallback. See #8164.
 target_compile_definitions(IfcParse PRIVATE IFCOPENSHELL_VERSION_STRING=${RELEASE_VERSION})
 
 if(MSVC)
@@ -741,18 +740,10 @@ if(BUILD_IFCPYTHON)
     add_subdirectory(../src/ifcwrap ifcwrap)
 endif()
 
-if(BUILD_IFCMODEL_UI)
-    add_subdirectory(../src/ifcmodel-ui ifcmodel-ui)
-endif()
-
 if(BUILD_IFCGEOM)
     # install(FILES ${IFCGEOM_H_FILES}
     #     DESTINATION ${INCLUDEDIR}/ifcgeom
     # )
-
-    install(FILES ${SCHEMA_AGNOSTIC_H_FILES}
-        DESTINATION ${INCLUDEDIR}/ifcgeom
-    )
 
     file(GLOB SERIALIZATION_H_FILES ../src/ifcgeom/serialization/*.h)
     install(FILES ${SERIALIZATION_H_FILES}
@@ -767,7 +758,7 @@ if(BUILD_IFCGEOM)
     endforeach()
 
     install(
-        TARGETS ${IFCGEOM_SCHEMA_LIBRARIES} ${kernel_libraries} IfcGeom
+        TARGETS ${kernel_libraries} IfcGeom
         EXPORT ${IFCOPENSHELL_EXPORT_TARGETS}
     )
 endif(BUILD_IFCGEOM)
@@ -819,6 +810,7 @@ set(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
 set(CPACK_GENERATOR "TGZ;DEB")
 set(CPACK_SOURCE_GENERATOR "TGZ")
 
+set(BOOST_DEPS "")
 foreach(COMPONENT IN ITEMS ${BOOST_COMPONENTS})
     string(REPLACE "_" "-" COMP ${COMPONENT})
     set(BOOST_DEPS "${BOOST_DEPS}, libboost-${COMP}-dev")
