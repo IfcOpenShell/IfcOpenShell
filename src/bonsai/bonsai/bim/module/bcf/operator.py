@@ -701,8 +701,7 @@ class RemoveBcfViewpoint(bpy.types.Operator):
         del topic.viewpoints[blender_topic.viewpoints]
 
         viewpoints = tool.Bcf.get_topic_viewpoints(topic)
-        # Only guid is required attribute for a viewpoint.
-        vp_index = next(i for i, vp in enumerate(viewpoints) if vp.guid in blender_topic.viewpoints)
+        vp_index = next(i for i, vp in enumerate(viewpoints) if vp.viewpoint == blender_topic.viewpoints)
         del viewpoints[vp_index]
         tool.Bcf.set_topic_viewpoints(topic, viewpoints)
 
@@ -1150,7 +1149,7 @@ class AddBcfComment(bpy.types.Operator):
                 guid=str(uuid.uuid4()),
             )
             if props.has_related_viewpoint:
-                comment.viewpoint = bcf.v2.model.CommentViewpoint(guid=blender_topic.viewpoints)
+                comment.viewpoint = bcf.v2.model.CommentViewpoint(guid=topic.viewpoints[blender_topic.viewpoints].guid)
             assert tool.Bcf.is_list_of(comments, bcf.v2.model.Comment)
             comments.append(comment)
             assert isinstance(topic, bcf.v2.topic.TopicHandler)
@@ -1163,7 +1162,7 @@ class AddBcfComment(bpy.types.Operator):
                 guid=str(uuid.uuid4()),
             )
             if props.has_related_viewpoint:
-                comment.viewpoint = bcf.v3.model.CommentViewpoint(guid=blender_topic.viewpoints)
+                comment.viewpoint = bcf.v3.model.CommentViewpoint(guid=topic.viewpoints[blender_topic.viewpoints].guid)
             assert tool.Bcf.is_list_of(comments, bcf.v3.model.Comment)
             comments.append(comment)
             assert isinstance(topic, bcf.v3.topic.TopicHandler)
@@ -1212,9 +1211,8 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         assert blender_topic
         topic = bcfxml.topics[blender_topic.name]
         if self.viewpoint_guid:
-            viewpoint_guid = self.viewpoint_guid + ".bcfv"
-            if viewpoint_guid not in topic.viewpoints:
-                self.report({"ERROR"}, f"No such viewpoint in the active topic: '{viewpoint_guid}'.")
+            if not (viewpoint_guid := topic.get_viewpoint_filename(self.viewpoint_guid)):
+                self.report({"ERROR"}, f"No such viewpoint in the active topic: '{self.viewpoint_guid}'.")
                 return {"CANCELLED"}
         else:
             viewpoint_guid = tool.Blender.get_enum_safe(blender_topic, "viewpoints")
