@@ -1635,7 +1635,6 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
                     bonsai.core.drawing.edit_assigned_product(tool.Ifc, tool.Drawing, obj=annotation, product=product)
                 else:
                     # Clear every assigned product first, as core.drawing.edit_assigned_product does (#4014).
-                    # stale products remain and the reassignment silently fails.
                     existing_products = tool.Drawing.get_assigned_product_workaround(assignment)
                     if existing_products != [product]:
                         if product in existing_products:
