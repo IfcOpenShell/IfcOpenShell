@@ -1,7 +1,7 @@
 
 There are two ways to build pyodide ifcopenshell Python wrapper wheel.
 
-1. Using pyodide build system (`build_pyodide.yml` does it):
+1. Using pyodide build system (`build-ifcopenshell-wasm.yml` does it):
 
 - install prebuilt pyodide build and emscripten environment (see `build_pyodide.sh`)
 - clone IfcOpenShell to `IfcOpenShell` folder
