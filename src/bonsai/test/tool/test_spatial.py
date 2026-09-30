@@ -24,6 +24,8 @@ import ifcopenshell.api.nest
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
 import numpy as np
+import pytest
+import shapely
 from mathutils import Matrix
 
 import bonsai.core.tool
@@ -311,3 +313,40 @@ class TestGenerateSpace(NewFile):
         bpy.ops.bim.generate_space()
 
         assert np.isclose(space.location.z, 5), f"Expected z=5, got {space.location.z}"
+
+
+class TestSetSpaceRepresentationFromPolygon(NewFile):
+    def create_space_and_roof(self, roof_coords):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        roof = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcRoof")
+        roof_mesh = bpy.data.meshes.new("Roof")
+        roof_mesh.from_pydata(roof_coords, [], [(0, 1, 2, 3)])
+        roof_obj = bpy.data.objects.new("Roof", roof_mesh)
+        bpy.context.scene.collection.objects.link(roof_obj)
+        tool.Ifc.link(roof, roof_obj)
+        space = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcSpace")
+        space_obj = bpy.data.objects.new("Space", bpy.data.meshes.new("Space"))
+        bpy.context.scene.collection.objects.link(space_obj)
+        tool.Ifc.link(space, space_obj)
+        return space, space_obj
+
+    def test_the_top_of_a_space_follows_a_sloped_roof_when_following_the_ceiling(self):
+        roof_coords = [(-3, -3, 3), (3, -3, 5), (3, 3, 5), (-3, 3, 3)]
+        space, space_obj = self.create_space_and_roof(roof_coords)
+        poly = shapely.Polygon([(-1, -1), (1, -1), (1, 1), (-1, 1)])
+        subject.set_space_representation_from_polygon(
+            space_obj, space, poly, 2.5, polygon_is_si=True, follow_ceiling=True, base_z=0.0
+        )
+        top_heights = [v.co.z for v in space_obj.data.vertices if v.co.z > 0.5]
+        assert max(top_heights) == pytest.approx(4.327, abs=0.05)
+        assert min(top_heights) == pytest.approx(3.673, abs=0.05)
+
+    def test_the_top_of_a_space_snaps_to_a_flat_roof_when_following_the_ceiling(self):
+        roof_coords = [(-3, -3, 3.2), (3, -3, 3.2), (3, 3, 3.2), (-3, 3, 3.2)]
+        space, space_obj = self.create_space_and_roof(roof_coords)
+        poly = shapely.Polygon([(-1, -1), (1, -1), (1, 1), (-1, 1)])
+        subject.set_space_representation_from_polygon(
+            space_obj, space, poly, 2.5, polygon_is_si=True, follow_ceiling=True, base_z=0.0
+        )
+        assert {round(v.co.z, 3) for v in space_obj.data.vertices} == {0.0, 3.2}
