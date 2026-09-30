@@ -401,12 +401,6 @@ class TestCreatingStyles(NewFile):
         )
 
 
-class TestGuessFalseOrigin(NewFile):
-    def test_a_file_without_a_project_does_not_raise(self):
-        subject.guess_false_origin(ifcopenshell.file(schema="IFC4"))
-        subject.guess_false_origin(ifcopenshell.file(schema="IFC2X3"))
-
-
 class TestLoadingIndexedMap(NewFile):
     def test_load_texture_map(self):
         bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
@@ -558,6 +552,12 @@ class TestSetupActiveBsddClassification(NewFile):
 
     def test_set_load_and_set_active_bsdd_ifc4x3(self):
         self.run_test("IFC4X3")
+
+
+class TestGuessFalseOrigin(NewFile):
+    def test_a_file_without_a_project_does_not_raise(self):
+        subject.guess_false_origin(ifcopenshell.file(schema="IFC4"))
+        subject.guess_false_origin(ifcopenshell.file(schema="IFC2X3"))
 
 
 class TestCreatePointCloudMesh(NewFile):
