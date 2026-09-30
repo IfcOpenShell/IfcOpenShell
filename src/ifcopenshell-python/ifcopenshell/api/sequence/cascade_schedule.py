@@ -133,7 +133,9 @@ class Usecase:
             print("... which is cyclically a predecessor to ...", task)
             raise RecursionError("Recursive tasks found. Could not cascade schedule.")
 
-        if not task.TaskTime:
+        # IfcTaskTime does not exist in IFC2X3, so IfcTask has no TaskTime
+        # attribute at all there. Treat that the same as "no time set yet".
+        if not getattr(task, "TaskTime", None):
             return
 
         duration = (
