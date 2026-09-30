@@ -16,9 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Any, Optional, Union
-
-from typing_extensions import assert_never
+from typing import Any, Optional, Union, assert_never
 
 import ifcopenshell
 import ifcopenshell.api.pset
