@@ -59,7 +59,8 @@ Scenario: Regenerate boundaries after moving a wall
     And the object "IfcWall/Wall" is moved to "0,0,1"
     And I select the object "IfcSpace/Space"
     And I press "bim.add_boundary"
-    Then the object "IfcRelSpaceBoundary/None.002" has a vertex at "1,0.1,1"
+    And the variable "lowest_z" is "min((o.matrix_world @ v.co).z for o in [tool.Ifc.get_object(b) for b in {ifc}.by_type('IfcRelSpaceBoundary') if b.RelatedBuildingElement == tool.Ifc.get_entity(bpy.data.objects['IfcWall/Wall'])] for v in o.data.vertices)"
+    Then the variable "lowest_z" equals "1.0"
 
 Scenario: Regenerate boundaries keeps the boundary of an unrelated element
     Given an empty IFC project
