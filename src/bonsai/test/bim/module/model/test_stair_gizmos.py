@@ -155,9 +155,11 @@ def test_count_label_gizmo_is_registered():
 
 def test_stair_edit_row_reserves_label_slot_between_tread_lock_and_plus():
     """The ``tread_count_label`` placeholder slot must sit one
-    ``ICON_ARRAY_GAP`` past the tread-lock and one gap before the plus
+    ``ICON_ARRAY_GAP`` past the last tread lock and one gap before the plus
     icon, so the layout naturally allocates the count label's X without
-    any subclass-side gap math."""
+    any subclass-side gap math. The first and last tread locks are
+    independent slots (separate locks, issue #7484) and must themselves be
+    one gap apart."""
     from bonsai.bim.module.drawing.gizmos import BaseParametricGizmoGroup
     from bonsai.bim.module.model.stair import GizmoStairEdition
 
@@ -165,7 +167,8 @@ def test_stair_edit_row_reserves_label_slot_between_tread_lock_and_plus():
     gap = BaseParametricGizmoGroup.ICON_ARRAY_GAP
 
     assert "tread_count_label" in slot_x
-    assert slot_x["tread_count_label"] - slot_x["tread_lock"] == pytest.approx(gap)
+    assert slot_x["last_tread_lock"] - slot_x["first_tread_lock"] == pytest.approx(gap)
+    assert slot_x["tread_count_label"] - slot_x["last_tread_lock"] == pytest.approx(gap)
     assert slot_x["plus"] - slot_x["tread_count_label"] == pytest.approx(gap)
     assert slot_x["minus"] - slot_x["plus"] == pytest.approx(gap)
 

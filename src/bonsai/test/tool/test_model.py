@@ -219,6 +219,30 @@ class TestStairCalculatedParams(NewFile):
         calculated_data["Length"] += 0.1 * pset_data["number_of_treads"]
         self.compare_data(pset_data, calculated_data)
 
+        pset_data = pset_data_base.copy()
+        calculated_data = calculated_data_base.copy()
+        pset_data["custom_first_last_tread_run"] = (0.1, 0.4)
+        pset_data["custom_first_tread_lock"] = False
+        pset_data["custom_last_tread_lock"] = True
+        calculated_data["Length"] = 0.1 + 0.3 * 3
+        self.compare_data(pset_data, calculated_data)
+
+        pset_data = pset_data_base.copy()
+        calculated_data = calculated_data_base.copy()
+        pset_data["custom_first_last_tread_run"] = (0.1, 0.4)
+        pset_data["custom_first_tread_lock"] = True
+        pset_data["custom_last_tread_lock"] = False
+        calculated_data["Length"] = 0.4 + 0.3 * 3
+        self.compare_data(pset_data, calculated_data)
+
+        pset_data = pset_data_base.copy()
+        calculated_data = calculated_data_base.copy()
+        pset_data["custom_first_last_tread_run"] = (0.1, 0.4)
+        pset_data["custom_first_tread_lock"] = False
+        pset_data["custom_last_tread_lock"] = False
+        calculated_data["Length"] = 0.1 + 0.4 + 0.3 * 2
+        self.compare_data(pset_data, calculated_data)
+
 
 class TestGenerateStair2DProfile(NewFile):
     def compare_data(self, generated_profile, expected_profile):
