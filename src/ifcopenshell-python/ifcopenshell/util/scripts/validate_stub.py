@@ -31,9 +31,7 @@ import importlib
 import re
 import types
 from pathlib import Path
-from typing import Union
-
-from typing_extensions import assert_never
+from typing import Union, assert_never
 
 
 def format_diff(lines: list[str]) -> None:
