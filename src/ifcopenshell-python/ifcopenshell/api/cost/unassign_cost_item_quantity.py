@@ -82,7 +82,7 @@ class Usecase:
                     for related_object in rel.RelatedObjects:
                         if related_object in products:
                             quantities.remove(quantity)
-        cost_item.CostQuantities = list(quantities)
+        cost_item.CostQuantities = list(quantities) or None
         for product in products:
             ifcopenshell.api.control.unassign_control(
                 self.file,
@@ -94,7 +94,7 @@ class Usecase:
     def update_cost_item_count(self, cost_item: ifcopenshell.entity_instance) -> None:
         # This is a bold assumption
         # https://forums.buildingsmart.org/t/how-does-a-cost-item-know-that-it-is-counting-a-controlled-product/3564
-        if len(cost_item.CostQuantities) == 1:
+        if len(cost_item.CostQuantities or []) == 1:
             quantity = cost_item.CostQuantities[0]
             if quantity.is_a("IfcQuantityCount"):
                 count = 0
