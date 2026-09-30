@@ -25,7 +25,7 @@ import re
 import time
 import typing
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, Union
+from typing import TYPE_CHECKING, Any, Literal, Union, assert_never
 
 import ifcopenshell
 import ifcopenshell.geom
@@ -38,7 +38,6 @@ import ifcopenshell.util.schema
 import ifcopenshell.util.shape
 import ifcopenshell.util.unit
 import numpy as np
-from typing_extensions import assert_never
 
 import ifcpatch
 
