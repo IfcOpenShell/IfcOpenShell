@@ -178,6 +178,7 @@ class BIMRootProperties(PropertyGroup):
         description="The representation will be a tessellation of the selected object",
     )
     profile: EnumProperty(name="Profile for profile type object", items=get_profile)
+    thickness: bpy.props.FloatProperty(name="Thickness", default=0.1, subtype="DISTANCE")
     relating_class_object: PointerProperty(
         type=bpy.types.Object,
         name="Copy Class",
@@ -202,4 +203,5 @@ class BIMRootProperties(PropertyGroup):
         representation_template: str
         representation_obj: Union[bpy.types.Object, None]
         profile: str
+        thickness: float
         relating_class_object: Union[bpy.types.Object, None]
