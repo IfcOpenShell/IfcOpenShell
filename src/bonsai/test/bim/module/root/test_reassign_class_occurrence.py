@@ -94,15 +94,14 @@ def _run_reassign(selected_objects, ifc_class="IfcSlab"):
     from bonsai.bim.module.root.operator import ReassignClass
 
     op = _fake_operator()
-    with mock.patch(
-        "bonsai.bim.module.root.operator.tool.Blender.get_selected_objects", return_value=selected_objects
-    ), mock.patch(
-        "bonsai.bim.module.root.operator.tool.Root.get_root_props",
-        return_value=_make_root_props("IfcElement", ifc_class),
-    ), mock.patch(
-        "bonsai.bim.module.root.operator.tool.Root.set_object_name"
-    ), mock.patch(
-        "bonsai.bim.module.root.operator.tool.Collector.assign"
+    with (
+        mock.patch("bonsai.bim.module.root.operator.tool.Blender.get_selected_objects", return_value=selected_objects),
+        mock.patch(
+            "bonsai.bim.module.root.operator.tool.Root.get_root_props",
+            return_value=_make_root_props("IfcElement", ifc_class),
+        ),
+        mock.patch("bonsai.bim.module.root.operator.tool.Root.set_object_name"),
+        mock.patch("bonsai.bim.module.root.operator.tool.Collector.assign"),
     ):
         return ReassignClass._execute(op, mock.Mock())
 
