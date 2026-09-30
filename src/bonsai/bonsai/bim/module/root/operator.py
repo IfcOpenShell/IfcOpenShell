@@ -352,9 +352,6 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                     if is_structural:
                         return False
                     data = obj.data
-                    # Empties, including collection instances, have no data to convert.
-                    if not tool.Geometry.is_data_supported_for_adding_representation(data):
-                        return False
                     # Is empty mesh.
                     if isinstance(data, bpy.types.Mesh) and not data.vertices:
                         return False
