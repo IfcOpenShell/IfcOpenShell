@@ -21,16 +21,20 @@ When adding or removing a supported Python version, update the following:
      - ``pyver`` matrix
    * - ``nix/build-all.py``
      - ``PYTHON_VERSIONS`` list
-   * - ``src/bsdd/pyproject.toml``
-     - ``requires-python``
+   * - ``pyproject.toml``
+     - ``--python`` in ``ty-venv-ios``
+   * - ``src/*/pyproject.toml``
+     - - ``requires-python`` lower bound
+       - except ``bonsai`` and ``ifcsverchok`` - they're maintained separately
+       - ``ifcopenshell-python`` also has an upper bound to maintain
    * - ``src/ifcopenshell-python/docs/ifcopenshell-python/installation.rst``
      - add or remove the row in the ZIP packages table
    * - ``src/ifcopenshell-python/Makefile``
      - ``SUPPORTED_PYVERSIONS``
-   * - ``src/ifcopenshell-python/pyproject.toml``
-     - ``requires-python``
    * - ``src/ifcopenshell-python/test/test_package.py``
      - ``SUPPORTED_PY_VERSIONS`` tuple
+   * - ``src/ifcwrap/CMakeLists.txt``
+     - ``PYTHON_MIN_VERSION``
    * - ``win/build-all-win.py``
      - ``PYTHON_VERSIONS`` list
 
@@ -98,6 +102,7 @@ Things to update:
 
 - ``.github/workflows/publish-bcf-pypi.yml`` - release `bcf-client <https://pypi.org/project/bcf-client/>`_ to PyPI
 - ``.github/workflows/publish-bonsai.yml`` - release bonsai in GitHub releases
+- ``.github/workflows/publish-bonsaiviewer.yml`` - release Bonsai Viewer binaries in GitHub releases
 - ``.github/workflows/publish-bsdd-pypi.yml`` - release `bsdd <https://pypi.org/project/bsdd/>`_ to PyPI
 - ``.github/workflows/publish-ifc4d-pypi.yml`` - release `ifc4d <https://pypi.org/project/ifc4d/>`_ to PyPI
 - ``.github/workflows/publish-ifc5d-pypi.yml`` - release `ifc5d <https://pypi.org/project/ifc5d/>`_ to PyPI

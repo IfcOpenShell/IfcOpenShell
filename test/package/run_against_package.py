@@ -1,3 +1,10 @@
+# /// script
+# dependencies = [
+#     "pytest",
+#     "typing_extensions",
+#     "numpy",
+# ]
+# ///
 """Run the package tests against a built ifcopenshell-python zip.
 
 Usage: python run_against_package.py <zip or glob> [pytest args...]

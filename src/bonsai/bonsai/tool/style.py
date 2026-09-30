@@ -543,7 +543,9 @@ class Style(bonsai.core.tool.Style):
         return results
 
     @classmethod
-    def get_style_ui_props_attributes(cls, style_type: str) -> Union[
+    def get_style_ui_props_attributes(
+        cls, style_type: str
+    ) -> Union[
         bpy.types.bpy_prop_collection_idprop[Attribute],
         bpy.types.bpy_prop_collection_idprop[ColourRgb],
         None,

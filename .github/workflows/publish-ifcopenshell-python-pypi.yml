@@ -24,11 +24,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pyver: [py310, py311, py312, py313, py314]
+        pyver: [py311, py312, py313, py314, py315]
         config:
           - {
             name: "Windows 64bit",
             short_name: win64,
+          }
+          - {
+            name: "Windows ARM 64bit",
+            short_name: win-arm64
           }
           - {
             name: "Linux 64bit",
@@ -50,17 +54,11 @@ jobs:
       - uses: actions/checkout@v7
         with:
           submodules: recursive
-      - uses: actions/setup-python@v7 # https://github.com/actions/setup-python
+      - uses: actions/setup-python@v7
         with:
-          python-version: '3.11' # Version range or exact version of a Python version to use, using SemVer's version range syntax
-          architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
-      - run: echo ${{ env.DATE }}
-      - name: Get current date
-        id: date
-        run: echo "::set-output name=date::$(date +'%y%m%d')"
+          python-version: '3.x'
       - name: Compile
         run: |
-          pip install build
           cp -r src/ifcopenshell-python src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
           cd src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
           make dist PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }} IS_STABLE=TRUE

@@ -27,7 +27,9 @@ from common import SCRIPT_DIR, run_streamed
 
 
 def main() -> None:
-    run_streamed(sys.executable, str(SCRIPT_DIR / "build-ifcopenshell.py"), "--target", "INSTALL", *sys.argv[1:])
+    # Ninja is requiring target to be `install` (lowercase).
+    # MSBuild is using `INSTALL`, but it's case-insensitive.
+    run_streamed(sys.executable, str(SCRIPT_DIR / "build-ifcopenshell.py"), "--target", "install", *sys.argv[1:])
 
 
 if __name__ == "__main__":

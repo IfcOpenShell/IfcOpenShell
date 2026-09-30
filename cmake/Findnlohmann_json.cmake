@@ -21,13 +21,17 @@ find_path(json_header_path "nlohmann/json.hpp" HINTS "${JSON_INCLUDE_DIR}")
 mark_as_advanced(json_header_path)
 
 if(json_header_path)
-    file(STRINGS "${json_header_path}/nlohmann/json.hpp" json_version_major_line REGEX "^#define NLOHMANN_JSON_VERSION_MAJOR")
-    file(STRINGS "${json_header_path}/nlohmann/json.hpp" json_version_minor_line REGEX "^#define NLOHMANN_JSON_VERSION_MINOR")
-    file(STRINGS "${json_header_path}/nlohmann/json.hpp" json_version_patch_line REGEX "^#define NLOHMANN_JSON_VERSION_PATCH")
-    string(REGEX REPLACE "^#define NLOHMANN_JSON_VERSION_MAJOR ([0-9]+)$" "\\1" json_version_major "${json_version_major_line}")
-    string(REGEX REPLACE "^#define NLOHMANN_JSON_VERSION_MINOR ([0-9]+)$" "\\1" json_version_minor "${json_version_minor_line}")
-    string(REGEX REPLACE "^#define NLOHMANN_JSON_VERSION_PATCH ([0-9]+)$" "\\1" json_version_patch "${json_version_patch_line}")
-    set(nlohmann_json_VERSION "${json_version_major}.${json_version_minor}.${json_version_patch}")
+    # Multiple headers installations (e.g. conda-forge) keep the version macros in a separate header since 3.11.
+    set(json_version_header "${json_header_path}/nlohmann/detail/abi_macros.hpp")
+    if(NOT EXISTS "${json_version_header}")
+        set(json_version_header "${json_header_path}/nlohmann/json.hpp")
+    endif()
+    foreach(component MAJOR MINOR PATCH)
+        file(STRINGS "${json_version_header}" json_version_line REGEX "^#define NLOHMANN_JSON_VERSION_${component} ")
+        # Since 3.11 the macros are followed by a NOLINT comment.
+        string(REGEX REPLACE "^#define NLOHMANN_JSON_VERSION_${component} ([0-9]+)([ \t]*//.*)?$" "\\1" json_version_${component} "${json_version_line}")
+    endforeach()
+    set(nlohmann_json_VERSION "${json_version_MAJOR}.${json_version_MINOR}.${json_version_PATCH}")
 
     include(FindPackageHandleStandardArgs)
     find_package_handle_standard_args(nlohmann_json

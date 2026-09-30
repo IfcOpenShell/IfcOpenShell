@@ -4854,7 +4854,9 @@ class WallGizmoPreviewDecorator(tool.Blender.ViewportDecorator):
         tool.Blender.draw_quads(context, quads, fill_color=(*color_rgb, self.QUAD_ALPHA))
 
     @staticmethod
-    def _wall_floor_quad(mw: Matrix, x0: float, x1: float, y0: float, y1: float) -> tuple[
+    def _wall_floor_quad(
+        mw: Matrix, x0: float, x1: float, y0: float, y1: float
+    ) -> tuple[
         tuple[float, float, float],
         tuple[float, float, float],
         tuple[float, float, float],

@@ -26,12 +26,7 @@
 #include "../ifcparse/logger.h"
 
 #include <IGESControl_Writer.hxx>
-
-#ifndef HAVE_CONFIG_H
-/// @note this is brittle, but apparently the only way to differentiate OCCT
-/// from OCE. In the latter including this header fails for some versions.
 #include <Interface_Static.hxx>
-#endif
 
 class iges_serializer : public open_cascade_based_serializer
 {
@@ -53,12 +48,8 @@ public:
 	void setUnitNameAndMagnitude(const std::string& /*name*/, float magnitude) {
 		const char* symbol = getSymbolForUnitMagnitude(magnitude);
 		if (symbol) {
-#ifdef HAVE_CONFIG_H
-			logger_.warning("SER", 5, "Setting IGES units not supported on OCE");
-#else
 			Interface_Static::SetCVal("xstep.cascade.unit", symbol);
 			Interface_Static::SetCVal("write.iges.unit", symbol);
-#endif
 		}
 	}
 };

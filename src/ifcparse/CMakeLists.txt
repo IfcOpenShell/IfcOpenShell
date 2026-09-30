@@ -16,7 +16,6 @@ list(REMOVE_ITEM IFCPARSE_CPP_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/alignment_helper.cpp
 )
 
-message(STATUS "SCHEMA_VERSIONS from ifcparse: ${SCHEMA_VERSIONS}")
 foreach(schema ${SCHEMA_VERSIONS})
     list(APPEND IFCPARSE_SCHEMA_H_FILES
         schemas/Ifc${schema}.h
@@ -60,9 +59,9 @@ if (NOT CREATE_BUNDLE)
 endif()
 if(WASM_BUILD)
     # No Boost link libraries for wasm, but the headers are still needed.
-    target_link_libraries(IfcParse plugin Boost::headers ${BCRYPT_LIBRARIES})
+    target_link_libraries(IfcParse plugin Boost::headers)
 else()
-    target_link_libraries(IfcParse plugin ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES})
+    target_link_libraries(IfcParse plugin ${Boost_LIBRARIES})
 endif()
 
 if(WITH_ROCKSDB)

@@ -95,6 +95,7 @@ if(WITH_OPENCASCADE AND NOT WASM_BUILD)
 endif()
 
 install(TARGETS ${document_serializer_libraries} ${geometry_serializer_libraries})
+ifcopenshell_install_runtime_dlls(TARGETS ${document_serializer_libraries} ${geometry_serializer_libraries})
 
 install(FILES ${SERIALIZERS_H_FILES}
     DESTINATION ${INCLUDEDIR}/serializers/

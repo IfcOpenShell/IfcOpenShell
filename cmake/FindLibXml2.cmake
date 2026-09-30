@@ -25,9 +25,6 @@ if((NOT LIBXML2_INCLUDE_DIR AND NOT LIBXML2_LIBRARIES))
         find_package(LibXml2 REQUIRED)
     else()
         message(STATUS "Found LibXml2 config: ${LibXml2_DIR}")
-        # libxml2-config.cmake only sets LIBXML2_VERSION_STRING, not LibXml2_VERSION
-        # (unlike CMake's builtin FindLibXml2 module), so mirror it for consistency.
-        set(LibXml2_VERSION "${LIBXML2_VERSION_STRING}")
     endif()
 else()
     find_package(LibXml2 REQUIRED)
@@ -44,6 +41,12 @@ else()
                 IMPORTED_LOCATION_DEBUG "${LIBXML2_DEBUG_LIB}"
         )
     endif()
+endif()
+
+# Neither libxml2-config.cmake nor CMake's builtin FindLibXml2 module sets `LibXml2_VERSION`,
+# both only set `LIBXML2_VERSION_STRING`, so mirror it for `check_min_version`.
+if(NOT LibXml2_VERSION)
+    set(LibXml2_VERSION "${LIBXML2_VERSION_STRING}")
 endif()
 
 # Restore module path.

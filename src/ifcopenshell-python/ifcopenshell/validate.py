@@ -57,9 +57,9 @@ from collections.abc import Iterator
 from logging import Handler, Logger
 from pathlib import Path
 from types import EllipsisType
-from typing import TYPE_CHECKING, Any, Literal, Optional, TypeAlias, Union
+from typing import TYPE_CHECKING, Any, Literal, NotRequired, Optional, TypeAlias, Union
 
-from typing_extensions import NotRequired, TypedDict
+from typing_extensions import TypedDict
 
 import ifcopenshell
 import ifcopenshell.express.rule_executor
@@ -205,7 +205,7 @@ def assert_valid_inverse(
         aggr = attr.type_of_aggregation_string().upper()
 
         if aggr:
-            aggr_str = f'{aggr} [{b1}:{"?" if b2 == -1 else b2}] OF '
+            aggr_str = f"{aggr} [{b1}:{'?' if b2 == -1 else b2}] OF "
         else:
             aggr_str = ""
 

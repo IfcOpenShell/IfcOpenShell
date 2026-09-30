@@ -120,6 +120,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2.24
         with:
           key: ubuntu-22.04-${{ runner.arch }}
+          # The prebuilt ccache 4.13.6 handles native CPU flags correctly across runners.
+          install: binary
 
       # RTTI is only enabled by default in Debug builds of rocksdb.
       # Distros are using Release builds, so we're compiling it ourselves with RTTI forced on.
@@ -129,8 +131,11 @@ jobs:
           git clone https://github.com/facebook/rocksdb --branch v9.11.2
           cd rocksdb
           mkdir build && cd build
-          # rocksdb is using ccache automatically.
-          cmake -DFAIL_ON_WARNINGS=Off \
+          # rocksdb autodetects ccache on PATH and uses it as a compiler launcher,
+          # so no need to pass CMAKE_<LANG>_COMPILER_LAUNCHER=ccache here.
+          cmake .. \
+            -G Ninja \
+            -DFAIL_ON_WARNINGS=Off \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX=/usr/local \
             -DWITH_TESTS=OFF \
@@ -138,11 +143,12 @@ jobs:
             -DWITH_GFLAGS=OFF \
             -DWITH_BENCHMARK_TOOLS=OFF \
             -DWITH_CORE_TOOLS=OFF \
+            -DWITH_TRACE_TOOLS=OFF \
             -DROCKSDB_BUILD_SHARED=Off \
+            -DPORTABLE=1 \
             -DCMAKE_POSITION_INDEPENDENT_CODE=On \
-            -DUSE_RTTI=On \
-            ..
-          sudo make -j$(nproc) install
+            -DUSE_RTTI=On
+          sudo cmake --build . --target install -j $(nproc)
 
       # OpenCOLLADA is ancient, but we still have it in the main build.
       # So adding it to CI to catch any breakages.
@@ -155,12 +161,13 @@ jobs:
           patch -p1 --batch --forward -i ../nix/patches/opencollada/config_select_libs_by_use_shared.patch
           mkdir build && cd build
           cmake .. \
+            -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_FLAGS_INIT="-fPIC"
-          sudo make -j$(nproc) install
+          sudo cmake --build . --target install -j $(nproc)
 
       # We need zstd and libxml2 just for cmake config files to test the examples build.
       # zslibzstd-dev has cmake config only on Ubuntu 24.04+.
@@ -170,7 +177,9 @@ jobs:
           cd zstd
           # `build` already exists.
           mkdir build_ && cd build_
-          cmake ../build/cmake -DCMAKE_BUILD_TYPE=Release \
+          cmake ../build/cmake \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           sudo cmake --build . --target install -j $(nproc)
@@ -182,6 +191,7 @@ jobs:
           cd libxml2
           mkdir build && cd build
           cmake .. \
+            -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
@@ -195,6 +205,7 @@ jobs:
           cd manifold
           mkdir build && cd build
           cmake .. \
+            -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
@@ -215,6 +226,7 @@ jobs:
           cd PROJ
           mkdir build && cd build
           cmake .. \
+            -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
@@ -238,34 +250,32 @@ jobs:
           cd swig
           mkdir build && cd build
           cmake .. \
+            -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-          sudo make -j$(nproc) install
+          sudo cmake --build . --target install -j $(nproc)
 
       - name: Build ifcopenshell
         run: |
           which python
 
           mkdir build && cd build
-          cmake \
+          cmake ../cmake \
+               -G Ninja \
                -DCMAKE_BUILD_TYPE=Release \
-               -DCMAKE_PREFIX_PATH=/usr \
-               -DCMAKE_SYSTEM_PREFIX_PATH=/usr \
                -DPYTHON_EXECUTABLE:FILEPATH=$(which python) \
                -DPYTHON_INCLUDE_DIR:PATH=$(python -c "import sysconfig; print(sysconfig.get_path('include'))") \
                -DUSE_MMAP=On \
                -DUSE_CCACHE=ON \
                -DBUILD_SHARED_LIBS=${{ matrix.build_shared_libs == 'shared' && 'ON' || 'OFF' }} \
-               "-DSCHEMA_VERSIONS=2x3;4;4x3_add2" \
+               -DBUILD_ONLY_COMMON_SCHEMAS=ON \
                -DGLTF_SUPPORT=On \
                -DWITH_ROCKSDB=On \
                -DWITH_MANIFOLD=ON \
                -DWITH_PROJ=ON \
-               -DBUILD_EXAMPLES=ON \
-             ../cmake
-          sudo make -j $(nproc)
-          sudo make install
+               -DBUILD_EXAMPLES=ON
+          sudo cmake --build . --target install -j $(nproc)
 
       # - name: Run IfcConvert on Sample files
       #   run: |
@@ -290,10 +300,12 @@ jobs:
           set -x
           cd src/examples
           mkdir build && cd build
-          cmake .. -DCMAKE_BUILD_TYPE=Release \
+          cmake .. \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-          cmake --build .
+          cmake --build . -j $(nproc)
           ./IfcOpenHouse                && test -f IfcOpenHouse.ifc
           ./IfcParseExamples IfcOpenHouse.ifc
           ./IfcAdvancedHouse            && test -f IfcAdvancedHouse.ifc
