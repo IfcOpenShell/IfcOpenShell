@@ -19,6 +19,8 @@
 import operator
 from typing import Union
 
+import pytest
+
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.guid
@@ -345,6 +347,12 @@ class TestEditPsetIFC4(test.bootstrap.IFC4, TestEditPsetIFC2X3):
         ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Status": []}, should_purge=True)
         pset = element.IsDefinedBy[0].RelatingPropertyDefinition
         assert len(pset.HasProperties) == 0
+
+    def test_adding_a_list_valued_property_to_an_untemplated_pset_raises_instead_of_crashing(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Custom_Pset")
+        with pytest.raises(NotImplementedError):
+            ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Foo": ["One", "Two"]})
 
     def test_editing_list_valued_properties(self):
         cable = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDistributionPort", predefined_type="CABLE")
