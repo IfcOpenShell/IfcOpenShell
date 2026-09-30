@@ -127,20 +127,22 @@ class SvIfcByType(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfc
             self.ifc_products = get_ifc_products(self, bpy.context)
             self.ifc_classes = get_ifc_classes(self, bpy.context)
         self.sv_input_names = ["ifc_product", "ifc_class", "custom_ifc_class"]
+        # Accumulate over every process_ifc() call; a linked socket can carry several classes.
+        self.entities_out = []
+        self.entity_ids_out = []
         super().process()
+        self.outputs["Entities"].sv_set(self.entities_out)
+        self.outputs["Entity Ids"].sv_set(self.entity_ids_out)
 
     def process_ifc(self, ifc_product, ifc_class, custom_ifc_class):
         if custom_ifc_class:
             entities = self.file.by_type(custom_ifc_class)
-            self.outputs["Entities"].sv_set(entities)
-            self.outputs["Entity Ids"].sv_set([e.id() for e in entities])
         elif ifc_class:
             entities = self.file.by_type(ifc_class)
-            self.outputs["Entities"].sv_set(self.file.by_type(ifc_class))
-            self.outputs["Entity Ids"].sv_set([e.id() for e in entities])
         else:
-            self.outputs["Entities"].sv_set([])
-            self.outputs["Entity Ids"].sv_set([])
+            entities = []
+        self.entities_out.extend(entities)
+        self.entity_ids_out.extend(e.id() for e in entities)
 
 
 def register():
