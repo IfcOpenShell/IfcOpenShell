@@ -16,9 +16,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import importlib
 import tempfile
+import tomllib
 from pathlib import Path
 
+import ifcopenshell
 import ifcopenshell.api.root
 
 import ifcpatch
@@ -36,6 +39,29 @@ class Test:
             expected_keys = ("class_", "description", "output", "inputs")
             for key in expected_keys:
                 assert key in docs
+
+    def test_console_script_entry_point_patches_a_file(self, monkeypatch, tmp_path):
+        pyproject = tomllib.loads((Path(ifcpatch.__file__).parent.parent / "pyproject.toml").read_text())
+        module_name, function_name = pyproject["project"]["scripts"]["ifcpatch"].split(":")
+        main = getattr(importlib.import_module(module_name), function_name)
+
+        ifc_file = ifcopenshell.file()
+        ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcProject")
+        ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall")
+        ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcSlab")
+        input_path = tmp_path / "input.ifc"
+        output_path = tmp_path / "output.ifc"
+        ifc_file.write(str(input_path))
+        monkeypatch.setattr(
+            "sys.argv",
+            ["ifcpatch", "-i", str(input_path), "-o", str(output_path), "-r", "ExtractElements", "-a", "IfcWall"],
+        )
+
+        main()
+
+        output = ifcopenshell.open(str(output_path))
+        assert len(output.by_type("IfcWall")) == 1
+        assert not output.by_type("IfcSlab")
 
     def test_static_ifcpatch_execution(self):
         from ifcpatch.recipes import ExtractElements
