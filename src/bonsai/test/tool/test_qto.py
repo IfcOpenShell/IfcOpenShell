@@ -215,6 +215,71 @@ class TestGetTargetUnits(test.bim.bootstrap.NewFile):
         assert subject.get_target_units() == {"IfcLengthMeasure": millimetre}
 
 
+class TestGetCalculatedObjectQuantitiesNonManifold(test.bim.bootstrap.NewFile):
+    def test_run(self):
+        import bmesh
+        import ifc5d.qto
+
+        import bonsai.core.root
+
+        self.ifc = ifcopenshell.file()
+        tool.Ifc.set(self.ifc)
+        ifcopenshell.api.root.create_entity(self.ifc, ifc_class="IfcProject", name="My Project")
+        import logging
+
+        import bonsai.bim.import_ifc as import_ifc
+
+        ifc_import_settings = import_ifc.IfcImportSettings.factory(
+            bpy.context, tool.Ifc.get_path(), logging.getLogger("ImportIFC")
+        )
+        ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
+        ifc_importer.file = self.ifc
+        ifc_importer.create_project()
+
+        context = ifcopenshell.api.context.add_context(self.ifc, context_type="Model")
+
+        bpy.ops.mesh.primitive_cube_add(location=(0.0, 0.0, 0.0), size=2)
+        obj = bpy.context.active_object
+        element = bonsai.core.root.assign_class(
+            tool.Ifc,
+            tool.Collector,
+            tool.Root,
+            obj=obj,
+            ifc_class="IfcWall",
+            predefined_type="ELEMENTEDWALL",
+            context=context,
+        )
+
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+        bm.faces.ensure_lookup_table()
+        bmesh.ops.delete(bm, geom=[bm.faces[0]], context="FACES")
+        bm.to_mesh(obj.data)
+        bm.free()
+
+        rules = {
+            "calculators": {
+                "Blender": {
+                    "IfcWall": {
+                        "Qto_WallBaseQuantities": {
+                            "GrossFootprintArea": "get_gross_footprint_area",
+                            "GrossVolume": "get_gross_volume",
+                            "NetVolume": "get_net_volume",
+                        }
+                    },
+                }
+            }
+        }
+
+        ifc_file = tool.Ifc.get()
+        results = ifc5d.qto.quantify(ifc_file, {element}, rules)
+        quantities = results[element]["Qto_WallBaseQuantities"]
+
+        assert quantities["GrossFootprintArea"] == 4
+        assert "GrossVolume" not in quantities
+        assert "NetVolume" not in quantities
+
+
 class TestGetBaseQto(test.bim.bootstrap.NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()

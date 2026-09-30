@@ -527,6 +527,9 @@ class IfcOpenShell(QtoCalculator):
                                 value = formula_functions[formula](geometry)
                                 assert isinstance(value, (float, int))
                                 value = cls.unit_converter.convert(value, IfcOpenShell.raw_functions[formula].measure)
+                            # A non-manifold mesh has no volume (nan, see #6125); skip it.
+                            if isinstance(value, float) and value != value:
+                                continue
                             results[element][name][quantity] = value
                     if not iterator.next():
                         break
