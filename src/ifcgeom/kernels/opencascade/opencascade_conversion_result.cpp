@@ -85,6 +85,9 @@ void ifcopenshell::geom::open_cascade_shape::triangulate(ifcopenshell::geom::set
 		);
 	}
 
+	// A mirroring placement reverses vertex handedness but not the topological winding.
+	const bool flip_winding = rotation_matrix && rotation_matrix->Determinant() < 0;
+
 	// When welding vertices, vertex coords will be shared among faces so we need to per-shape set
 	// to keep track of which edges were already emitted.
 	std::set<std::pair<int, int>> emitted_edges;
@@ -192,6 +195,10 @@ void ifcopenshell::geom::open_cascade_shape::triangulate(ifcopenshell::geom::set
 				if (face.Orientation() == TopAbs_REVERSED)
 					tri->Triangle(i).Get(n3, n2, n1);
 				else tri->Triangle(i).Get(n1, n2, n3);
+
+				if (flip_winding) {
+					std::swap(n1, n3);
+				}
 
 				if (dict[n1] == dict[n2] || dict[n2] == dict[n3] || dict[n3] == dict[n1]) {
 					logger.warning("GEO", 185, "Mesher generated a degenerate triangle, ignoring");
