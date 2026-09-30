@@ -16,9 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Literal
-
-from typing_extensions import assert_never
+from typing import Literal, assert_never
 
 import ifcopenshell
 import ifcopenshell.ifcopenshell_wrapper as W

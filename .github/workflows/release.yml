@@ -64,7 +64,7 @@ jobs:
            -G Ninja \
            -DCMAKE_INSTALL_PREFIX=$PWD/install/ \
            -DCMAKE_BUILD_TYPE=Release \
-           "-DSCHEMA_VERSIONS=2x3;4;4x3_add2" \
+           -DBUILD_ONLY_COMMON_SCHEMAS=ON \
            -DUSE_CCACHE=ON \
            -DBUILD_PACKAGE=On \
            -DPYTHON_EXECUTABLE:FILEPATH=$(which python) \

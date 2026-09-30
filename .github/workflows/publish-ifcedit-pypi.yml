@@ -15,16 +15,13 @@ jobs:
   publish:
     needs: upstream-only
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
-          python-version: '3.11'
+          python-version: '3.x'
       - name: Compile
         run: |
-          pip install build
           cd src/ifcedit &&
           make dist IS_STABLE=TRUE
       - name: Publish a Python distribution to PyPI
