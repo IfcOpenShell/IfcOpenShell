@@ -196,6 +196,12 @@ class TestReassignClass(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcWallType")) == 0
         assert len(self.file.by_type("IfcSlab")) == 1
 
+    def test_keeping_a_falsy_but_set_attribute_value(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element.Name = ""
+        new = ifcopenshell.api.root.reassign_class(self.file, product=element, ifc_class="IfcSlab")
+        assert new.Name == ""
+
 
 class TestReassignClassIFC4X3(test.bootstrap.IFC4X3, TestReassignClass):
     pass
