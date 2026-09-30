@@ -94,9 +94,7 @@ jobs:
           git commit -m "Update build artifacts [skip ci]" || echo "No changes to commit"
           git push --set-upstream origin ${{ matrix.build_branch }} || echo "Push failed"
 
-      - name: Test packaged Python wrapper
-        # Imports the *packaged* wrapper and exercises the cross-plug-in hand-offs
-        # (kernel -> tree, kernel -> SVG serializer) that a duplicated OCCT breaks.
+      - name: Test packages
         # Runs after the dependency cache is pushed, so a failing package never
         # costs the cache.
         run: |
