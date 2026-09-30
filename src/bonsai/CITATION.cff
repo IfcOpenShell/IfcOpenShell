@@ -12,7 +12,7 @@ authors:
 repository-code: >-
   https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.9.0/src/bonsai
 url: 'https://bonsaibim.org/'
-repository-artifact: 'https://bonsaibim.org/download.html'
+repository-artifact: 'https://extensions.blender.org/add-ons/bonsai/'
 abstract: >-
   Add-on to Blender providing a graphical native IFC
   authoring platform
