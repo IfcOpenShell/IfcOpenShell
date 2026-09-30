@@ -31,19 +31,19 @@ ZIP packages
 1. Choose which version to download based on your operating system, Python
    version, and computer architecture.
 
-   +-------------+---------------------------------+-------------------------------+---------------------------------+-----------------------------------+
-   |             | Linux 64bit                     | Windows 64bit                 | MacOS Intel 64bit               | MacOS Silicon 64bit               |
-   +=============+=================================+===============================+=================================+===================================+
-   | Python 3.10 | :ios_python_url:`py310-linux64` | :ios_python_url:`py310-win64` | :ios_python_url:`py310-macos64` | :ios_python_url:`py310-macosm164` |
-   +-------------+---------------------------------+-------------------------------+---------------------------------+-----------------------------------+
-   | Python 3.11 | :ios_python_url:`py311-linux64` | :ios_python_url:`py311-win64` | :ios_python_url:`py311-macos64` | :ios_python_url:`py311-macosm164` |
-   +-------------+---------------------------------+-------------------------------+---------------------------------+-----------------------------------+
-   | Python 3.12 | :ios_python_url:`py312-linux64` | :ios_python_url:`py312-win64` | :ios_python_url:`py312-macos64` | :ios_python_url:`py312-macosm164` |
-   +-------------+---------------------------------+-------------------------------+---------------------------------+-----------------------------------+
-   | Python 3.13 | :ios_python_url:`py313-linux64` | :ios_python_url:`py313-win64` | :ios_python_url:`py313-macos64` | :ios_python_url:`py313-macosm164` |
-   +-------------+---------------------------------+-------------------------------+---------------------------------+-----------------------------------+
-   | Python 3.14 | :ios_python_url:`py314-linux64` | :ios_python_url:`py314-win64` | :ios_python_url:`py314-macos64` | :ios_python_url:`py314-macosm164` |
-   +-------------+---------------------------------+-------------------------------+---------------------------------+-----------------------------------+
+   +-------------+---------------------------------+------------------------------------+-------------------------------+-----------------------------------+---------------------------------+-----------------------------------+
+   |             | Linux 64bit                     | Linux ARM64                        | Windows 64bit                 | Windows ARM64                     | MacOS Intel 64bit               | MacOS Silicon 64bit               |
+   +=============+=================================+====================================+===============================+===================================+=================================+===================================+
+   | Python 3.11 | :ios_python_url:`py311-linux64` | :ios_python_url:`py311-linuxarm64` | :ios_python_url:`py311-win64` | :ios_python_url:`py311-win-arm64` | :ios_python_url:`py311-macos64` | :ios_python_url:`py311-macosm164` |
+   +-------------+---------------------------------+------------------------------------+-------------------------------+-----------------------------------+---------------------------------+-----------------------------------+
+   | Python 3.12 | :ios_python_url:`py312-linux64` | :ios_python_url:`py312-linuxarm64` | :ios_python_url:`py312-win64` | :ios_python_url:`py312-win-arm64` | :ios_python_url:`py312-macos64` | :ios_python_url:`py312-macosm164` |
+   +-------------+---------------------------------+------------------------------------+-------------------------------+-----------------------------------+---------------------------------+-----------------------------------+
+   | Python 3.13 | :ios_python_url:`py313-linux64` | :ios_python_url:`py313-linuxarm64` | :ios_python_url:`py313-win64` | :ios_python_url:`py313-win-arm64` | :ios_python_url:`py313-macos64` | :ios_python_url:`py313-macosm164` |
+   +-------------+---------------------------------+------------------------------------+-------------------------------+-----------------------------------+---------------------------------+-----------------------------------+
+   | Python 3.14 | :ios_python_url:`py314-linux64` | :ios_python_url:`py314-linuxarm64` | :ios_python_url:`py314-win64` | :ios_python_url:`py314-win-arm64` | :ios_python_url:`py314-macos64` | :ios_python_url:`py314-macosm164` |
+   +-------------+---------------------------------+------------------------------------+-------------------------------+-----------------------------------+---------------------------------+-----------------------------------+
+   | Python 3.15 | :ios_python_url:`py315-linux64` | :ios_python_url:`py315-linuxarm64` | :ios_python_url:`py315-win64` | :ios_python_url:`py315-win-arm64` | :ios_python_url:`py315-macos64` | :ios_python_url:`py315-macosm164` |
+   +-------------+---------------------------------+------------------------------------+-------------------------------+-----------------------------------+---------------------------------+-----------------------------------+
 
 2. Unzip the downloaded file and copy the ``ifcopenshell`` directory into your
    Python path. If you're not sure where your Python path is, run the following
@@ -130,15 +130,15 @@ Gateways, etc.
    <https://github.com/ifcopenshell/ifcopenshell>`_.
 
 2. Replace the sample Lambda function code in the `example_handler
-   <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.8.0/aws/lambda/example_handler/__init__.py>`__
+   <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.9.0/aws/lambda/example_handler/__init__.py>`__
    directory with your own code.
 
 3. Update the import path in the Dockerfile's `CMD instruction
-   <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.8.0/aws/lambda/Dockerfile#L40>`__
+   <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.9.0/aws/lambda/Dockerfile#L40>`__
    to match your Lambda function's handler function.
 
 4. Edit the `requirements.txt
-   <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.8.0/aws/lambda/requirements.txt>`__
+   <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.9.0/aws/lambda/requirements.txt>`__
    file and add any additional dependencies required by your Lambda function.
 
 5. Build the Docker image:
@@ -185,7 +185,7 @@ is incredibly heavy and will incur a long load time, but once loaded, will give
 you full access to the entire IfcOpenShell API:
 
 - the latest preview - `here
-  <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.8.0/src/pyodide/demo-app/README.md>`__
+  <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.9.0/src/pyodide/demo-app/README.md>`__
 
 - an older preview, that may have some additional information - `here
   <https://github.com/IfcOpenShell/wasm-preview>`__

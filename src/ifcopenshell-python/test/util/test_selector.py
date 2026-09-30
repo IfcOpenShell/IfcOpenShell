@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import lark
 import numpy as np
 import pytest
 
@@ -307,6 +308,8 @@ class TestFilterElements(test.bootstrap.IFC4):
         ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Baz": 123})
         assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz=123") == {element}
         ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Bay": 123.3})
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Bay=123.3") == {element}
+        assert subject.filter_elements(self.file, 'IfcWall, Foobar.Bay="123.3"') == {element}
         pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Pset_WallCommon")
         ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Status": ["New"]})
         assert subject.filter_elements(self.file, "IfcWall, Pset_WallCommon.Status=New") == {element}
@@ -330,6 +333,35 @@ class TestFilterElements(test.bootstrap.IFC4):
         assert subject.filter_elements(self.file, "IfcWall, Foobar.Foo*=ar") == {element}
         assert subject.filter_elements(self.file, "IfcWall, Foobar.Foo!*=ar") == {element2}
         assert subject.filter_elements(self.file, "IfcWall, Foobar.Foo*=Foo") == set()
+
+    def test_selecting_by_property_with_an_unquoted_decimal(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Foobar")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Baz": 1.5})
+        # A decimal needs no quotes. The pset/prop separator has already been
+        # consumed by the comparison, so a "." is unambiguous in a value.
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz=1.5") == {element}
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz>1") == {element}
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz>1.4") == {element}
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz<1.4") == set()
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz>=1.5") == {element}
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz<=1.5") == {element}
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz!=1.5") == {element2}
+        # Signed and leading dot forms.
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz>-1.5") == {element}
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz>+1.4") == {element}
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz>.5") == {element}
+        # Quoting a decimal stays legal and means exactly the same thing.
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz=1.5") == subject.filter_elements(
+            self.file, 'IfcWall, Foobar.Baz="1.5"'
+        )
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz>1.4") == subject.filter_elements(
+            self.file, 'IfcWall, Foobar.Baz>"1.4"'
+        )
+        # A dot in a value is still only a number. Anything else needs quotes.
+        with pytest.raises(lark.exceptions.UnexpectedInput):
+            subject.filter_elements(self.file, "IfcWall, Foobar.Baz=v1.2")
 
     def test_selecting_by_classification(self):
         project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
