@@ -13,11 +13,11 @@
     <link
       rel="stylesheet"
       id="tabulator-stylesheet"
-      href="https://unpkg.com/tabulator-tables/dist/css/tabulator_site_dark.min.css"
+      href="/static/css/tabulator_site_dark.min.css?v={{v}}"
     />
     <link
       rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
+      href="/static/css/all.min.css?v={{v}}"
     />
     <script
       type="text/javascript"
@@ -25,11 +25,11 @@
     ></script>
     <script
       type="text/javascript"
-      src="https://unpkg.com/tabulator-tables/dist/js/tabulator.min.js"
+      src="/static/js/tabulator.min.js?v={{v}}"
     ></script>
     <script
       type="text/javascript"
-      src="https://cdn.socket.io/4.0.0/socket.io.min.js"
+      src="/static/js/socket.io.min.js?v={{v}}"
     ></script>
     <script>
       var SOCKET_PORT = {{port}};
@@ -39,7 +39,7 @@
   <body>
     <nav>
       <img
-        src="https://bonsaibim.org/assets/images/blender/blender-logo.png"
+        src="/static/images/blender-logo.png?v={{v}}"
         alt="Logo"
         class="logo"
       />
