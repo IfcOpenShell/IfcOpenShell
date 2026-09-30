@@ -1,4 +1,6 @@
 # /// script
+# # Python 3.12 is needed for reliable `platform.machine()` on arm, see win/build-all-win.py.
+# requires-python = ">=3.12"
 # ///
 """Run the package tests against the built zips in the output directory.
 
@@ -12,6 +14,7 @@ Unless `--skip-bonsaiviewer` is passed, `BonsaiViewer --version` is run from the
 
 import argparse
 import os
+import platform
 import re
 import stat
 import subprocess
@@ -65,6 +68,11 @@ def find_oldest_zip(output_dir: Path) -> tuple[Path, str]:
 
 def run_python_tests(output_dir: Path, pytest_args: list[str]) -> int:
     zip_path, python_version = find_oldest_zip(output_dir)
+    python_request = python_version
+    if sys.platform == "win32" and platform.machine() == "ARM64":
+        # On Windows ARM64 uv defaults to x86_64 Python, which can't load an ARM64 .pyd.
+        # See https://github.com/astral-sh/uv/issues/12906
+        python_request = f"{python_version}-aarch64"
     with tempfile.TemporaryDirectory(prefix="ifcopenshell-package-") as tmp:
         print(f"Extracting {zip_path} into {tmp}")
         extract_preserving_symlinks(zip_path, Path(tmp))
@@ -72,7 +80,7 @@ def run_python_tests(output_dir: Path, pytest_args: list[str]) -> int:
         with_args = [arg for dep in TEST_DEPENDENCIES for arg in ("--with", dep)]
         # Run from the temp dir so a checked-out `src/ifcopenshell-python` can never shadow the package.
         cmd = [
-            *("uv", "run", "--python", python_version, *with_args),
+            *("uv", "run", "--python", python_request, *with_args),
             *("python", "-m", "pytest", "-p", "no:cacheprovider", "-v", str(HERE), *pytest_args),
         ]
         print("$", " ".join(cmd))
