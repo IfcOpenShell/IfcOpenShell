@@ -575,7 +575,8 @@ private:
 	}
 
 	attribute_value get_argument(const std::string& a) {
-		auto i = $self->declaration().as_entity()->attribute_index(a);
+		auto* ent = $self->declaration().as_entity();
+		auto i = ent ? ent->attribute_index(a) : (a == "wrappedValue" ? 0 : -1);
 		if (i == -1) {
 			throw std::runtime_error("Attribute '" + a + "' not found on entity named " + $self->declaration().name());
 		}
