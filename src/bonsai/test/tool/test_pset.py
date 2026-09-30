@@ -23,6 +23,7 @@ import ifcopenshell.api.root
 import ifcopenshell.api.unit
 import pytest
 
+import bonsai.bim
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.tool.pset import Pset as subject
@@ -41,6 +42,13 @@ class TestGetElementPset(NewFile):
         element = ifc.createIfcWall()
         pset = ifcopenshell.api.pset.add_pset(ifc, product=element, name="Foo")
         assert subject.get_element_pset(element, "Foo") == pset
+
+
+class TestGetPsetTemplate(NewFile):
+    def test_template_is_found_when_the_bim_package_lost_its_schema_attribute(self, monkeypatch):
+        tool.Ifc.set(ifcopenshell.file())
+        monkeypatch.delattr(bonsai.bim, "schema")
+        assert subject.get_pset_template("Pset_WallCommon")
 
 
 class TestIsPsetEmpty(NewFile):
