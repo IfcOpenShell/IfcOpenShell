@@ -73,6 +73,10 @@ class BIM_PT_units(Panel):
             row = self.layout.row(align=True)
             row.label(text="Volume Unit", icon="EMPTY_ARROWS")
             row.label(text=str(UnitsData.data["volume_unit"]))
+
+            row = self.layout.row(align=True)
+            row.label(text="Display Length", icon="HIDE_OFF")
+            row.prop(self.props, "display_length_unit", text="")
             return
 
         row = self.layout.row(align=True)
