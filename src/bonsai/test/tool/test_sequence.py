@@ -69,3 +69,49 @@ class TestAssignStatus(NewFile):
 
         bpy.ops.bim.assign_status(status="EXISTING", should_unassign_status=True)
         assert subject.get_element_status(element) == set()
+
+
+class TestApplyVisibilityToVoids(NewFile):
+    def create_wall_with_opening(self):
+        bpy.ops.bim.create_project()
+        bpy.ops.mesh.primitive_cube_add(size=2)
+        bpy.ops.bim.assign_class(ifc_class="IfcWall")
+        wall_obj = bpy.data.objects["IfcWall/Cube"]
+        bpy.ops.mesh.primitive_cube_add(size=1)
+        opening_obj = bpy.context.active_object
+        wall_obj.select_set(True)
+        opening_obj.select_set(True)
+        bpy.context.view_layer.objects.active = wall_obj
+        bpy.ops.bim.add_opening()
+        wall = tool.Ifc.get_entity(wall_obj)
+        opening = wall.HasOpenings[0].RelatedOpeningElement
+        return wall_obj, wall, opening
+
+    def test_hiding_an_opening_recuts_the_host_without_modifying_the_model(self):
+        wall_obj, wall, opening = self.create_wall_with_opening()
+        ifc = tool.Ifc.get()
+        cut_vertices = len(wall_obj.data.vertices)
+        ifc_before = ifc.to_string()
+
+        subject.apply_visibility_to_voids({wall})
+        assert len(wall_obj.data.vertices) < cut_vertices
+        assert opening.Representation
+        assert ifc.to_string() == ifc_before
+
+        subject.apply_visibility_to_voids({wall, opening})
+        assert len(wall_obj.data.vertices) == cut_vertices
+        assert ifc.to_string() == ifc_before
+
+    def test_geometry_file_has_hidden_openings_without_representation(self):
+        _, wall, opening = self.create_wall_with_opening()
+        ifc = tool.Ifc.get()
+        assert subject.get_geometry_file(ifc, [wall]) is ifc
+
+        subject.apply_visibility_to_voids({wall})
+        geometry_file = subject.get_geometry_file(ifc, [wall])
+        assert geometry_file is not ifc
+        assert geometry_file.by_id(opening.id()).Representation is None
+        assert opening.Representation
+
+        subject.apply_visibility_to_voids({wall, opening})
+        assert subject.get_geometry_file(ifc, [wall]) is ifc

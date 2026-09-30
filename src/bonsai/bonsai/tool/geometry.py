@@ -1156,11 +1156,12 @@ class Geometry(bonsai.core.tool.Geometry):
 
         shape = None
         if elements:
+            geometry_file = tool.Sequence.get_geometry_file(tool.Ifc.get(), elements) if apply_openings else ifc_file
             iterator = ifcopenshell.geom.iterator(
                 settings,
-                tool.Ifc.get(),
+                geometry_file,
                 multiprocessing.cpu_count(),
-                include=elements,
+                include=[geometry_file.by_id(e.id()) for e in elements],
                 geometry_library=geometry_library,
             )
         else:

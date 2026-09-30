@@ -712,8 +712,12 @@ class CreateDrawing(bpy.types.Operator):
                     geom_settings.set("model-offset", (0.0, 0.0, z_offset))
 
                 geom_settings.set("context-ids", context)
+                geometry_file = tool.Sequence.get_geometry_file(ifc, drawing_elements)
                 it = ifcopenshell.geom.iterator(
-                    geom_settings, ifc, multiprocessing.cpu_count(), include=drawing_elements
+                    geom_settings,
+                    geometry_file,
+                    multiprocessing.cpu_count(),
+                    include=[geometry_file.by_id(e.id()) for e in drawing_elements],
                 )
                 processed = set()
                 for elem in it:
