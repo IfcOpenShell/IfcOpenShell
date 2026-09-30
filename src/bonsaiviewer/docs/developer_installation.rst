@@ -35,7 +35,7 @@ System requirements
 The viewer is built on the IfcViewer library. If you want to build your own
 application on that library instead of the ready-made Bonsai Viewer, see
 "Building with IfcViewer" in the IfcOpenShell documentation (under
-``src/ifcopenshell-python/docs/ifcviewer``).
+``docs/ifcviewer``).
 
 Batteries-included build
 ------------------------

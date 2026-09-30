@@ -44,7 +44,6 @@ jobs:
               - 'src/ifcedit/**'
               - 'src/ifcmcp/**'
               - 'src/ifcopenshell-python/**'
-              - '!src/ifcopenshell-python/docs/**'
               - 'src/ifcparse/**'
               - 'src/ifcpatch/**'
               - 'src/ifcquery/**'

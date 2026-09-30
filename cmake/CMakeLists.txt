@@ -721,7 +721,7 @@ endif()
 
 # Documentation
 if(BUILD_DOCUMENTATION)
-    add_subdirectory(../docs/cpp-api docs/cpp-api)
+    add_subdirectory(../docs docs)
 endif()
 
 if(BUILD_EXAMPLES)
