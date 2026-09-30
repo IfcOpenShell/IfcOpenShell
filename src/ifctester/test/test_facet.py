@@ -1488,6 +1488,8 @@ class TestMaterial:
         material.Name = "Bar"
         material.Category = "Foo"
         run("Any material Category in a layer set will pass a value check", facet=facet, inst=element, expected=True)
+        layer.Material = None
+        run("A layer with no Material does not crash the value check", facet=facet, inst=element, expected=False)
 
         ifc = ifcopenshell.file()
         facet = Material(value="Foo")
@@ -1508,6 +1510,8 @@ class TestMaterial:
         material.Name = "Bar"
         material.Category = "Foo"
         run("Any material category in a profile set will pass a value check", facet=facet, inst=element, expected=True)
+        profile.Material = None
+        run("A profile with no Material does not crash the value check", facet=facet, inst=element, expected=False)
 
         ifc = ifcopenshell.file()
         facet = Material(value="Foo")
