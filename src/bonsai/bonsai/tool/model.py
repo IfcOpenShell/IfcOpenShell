@@ -1042,6 +1042,23 @@ class Model(bonsai.core.tool.Model):
             return material.MaterialProfiles[0].Profile
 
     @classmethod
+    def get_material_profile_set(
+        cls, element: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        """The material an element (or type) needs for ``DumbProfileGenerator`` to draw it.
+
+        Unlike :func:`get_usage_type`, this only accepts a genuine
+        ``IfcMaterialProfileSet``. An ``IfcMaterialProfileSetUsage`` also makes
+        ``get_usage_type`` report ``"PROFILE"``, but ``DumbProfileGenerator``
+        can't draw from a usage, so callers routing into the polyline profile
+        tool must check this, not just the usage type.
+        """
+        material = ifcopenshell.util.element.get_material(element)
+        if material and material.is_a("IfcMaterialProfileSet"):
+            return material
+        return None
+
+    @classmethod
     def get_usage_type(
         cls, element: ifcopenshell.entity_instance
     ) -> Optional[Literal["LAYER1", "LAYER2", "LAYER3", "PROFILE"]]:
