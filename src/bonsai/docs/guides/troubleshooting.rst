@@ -91,6 +91,32 @@ can `report a bug <https://github.com/ifcopenshell/ifcopenshell/issues>`_ or
    from `Github Releases <https://github.com/IfcOpenShell/IfcOpenShell/releases>`__ 
    or from Blender extensions platform.
 
+5. **I get an error saying "ModuleNotFoundError: No module named 'ifcopenshell'"**
+
+   Bonsai bundles ``ifcopenshell`` and its other Python dependencies as wheels.
+   Blender extracts those wheels into a single folder shared by every
+   installed extension (``extensions/.local/lib/pythonX.XX/site-packages/``),
+   and it only refreshes that folder when an extension is enabled, disabled,
+   installed or uninstalled. It never refreshes it on startup.
+
+   If that refresh does not complete, for example because an update was
+   interrupted, or because a file was still locked by a running Blender, the
+   Bonsai extension is left in place while its dependencies are gone. Restarting
+   Blender does not fix it, because startup does not trigger a refresh.
+
+   Two situations commonly cause this:
+
+   - An update of Bonsai was interrupted or could not replace files that were
+     still in use.
+   - You have more than one extension installed that bundles the same
+     dependencies, such as **Bonsai** and **BonsaiPR**. They share one folder,
+     so enabling or disabling either of them rewrites it, and a rewrite that
+     cannot complete leaves both without dependencies.
+
+   To fix it, go to :menuselection:`Edit --> Preferences --> Add-ons`, find
+   Bonsai, **disable** it, then **enable** it again. Blender will re-extract the
+   bundled wheels. Restart Blender afterwards.
+
 Saving and loading blend files
 ------------------------------
 
