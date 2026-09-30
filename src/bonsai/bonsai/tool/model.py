@@ -224,7 +224,7 @@ class Model(bonsai.core.tool.Model):
         material = ifcopenshell.util.element.get_material(element)
         if not material or not material.is_a("IfcMaterialConstituentSet"):
             return props
-        for constituent in material.MaterialConstituents:
+        for constituent in material.MaterialConstituents or []:
             name = (constituent.Name or "").lower()
             if name in constituents:
                 props[f"{name}_material"] = str(constituent.Material.id())
@@ -1703,7 +1703,10 @@ class Model(bonsai.core.tool.Model):
     def get_element_matrix(cls, element: ifcopenshell.entity_instance, keep_local: bool = False) -> Matrix:
         placement = element.ObjectPlacement
         if keep_local:
-            placement = ifcopenshell.util.placement.get_axis2placement(placement.RelativePlacement)
+            if placement is None:
+                placement = np.eye(4)
+            else:
+                placement = ifcopenshell.util.placement.get_axis2placement(placement.RelativePlacement)
         else:
             placement = ifcopenshell.util.placement.get_local_placement(placement)
         return Matrix(placement)
