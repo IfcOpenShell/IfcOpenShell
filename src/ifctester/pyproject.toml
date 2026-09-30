@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=77.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -10,12 +10,24 @@ authors = [
 ]
 description = "IFC model auditing tool with support for IDS"
 readme = "README.md"
+requires-python = ">=3.11"
+license = "LGPL-3.0-or-later"
 keywords = ["IFC", "IDS", "BIM"]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
 ]
-dependencies = ["ifcopenshell", "python-dateutil", "xmlschema", "numpy", "odfpy", "pystache", "bcf-client", "flask"]
+dependencies = [
+    "ifcopenshell",
+    "python-dateutil",
+    "xmlschema",
+    "elementpath",
+    "numpy",
+    "odfpy",
+    "pystache",
+    "bcf-client",
+    "flask",
+    "typing_extensions",
+]
 
 [project.optional-dependencies]
 advanced = [
@@ -35,6 +47,3 @@ exclude = ["test*"]
 
 [tool.ruff]
 extend = "../../pyproject.toml"
-lint.select = [
-  "F401",  # unused imports
-]
