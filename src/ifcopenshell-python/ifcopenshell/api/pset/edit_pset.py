@@ -23,6 +23,10 @@ import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.pset
 
+# Sentinel distinguishing "no Unit dict was passed at all" from "a Unit dict was passed
+# with Unit explicitly set to None" (i.e. explicitly clear an existing override).
+_NO_UNIT = object()
+
 
 def edit_pset(
     file: ifcopenshell.file,
@@ -80,12 +84,6 @@ def edit_pset(
         left as None but not removed. If set to true, properties set to None
         will actually be removed. The default of true is the same behaviour as
         :func:`ifcopenshell.api.pset.edit_qto`.
-
-        The exception is a LOGICAL property (IfcLogical), which is
-        three-valued: TRUE, FALSE, and UNKNOWN. For a LOGICAL property, a
-        value of None always means UNKNOWN, regardless of `should_purge`; it
-        is never deleted or left blank, since UNKNOWN is a real, meaningful
-        value and not merely the absence of one.
     :return: None
 
     Example:
@@ -291,7 +289,7 @@ class Usecase:
                 f'Value "{self.settings["properties"][prop.Name]}" is not a valid value for enum property {prop.Name}.'
             )
 
-        if unit:
+        if unit is not _NO_UNIT:
             prop.Unit = unit
         del self.settings["properties"][prop.Name]
         return prop
@@ -304,21 +302,19 @@ class Usecase:
         """
         value = self.settings["properties"][prop.Name]
         unit, value = self.unpack_unit_value(value)
-        primary_measure_type = self.get_primary_measure_type(prop.Name, old_value=prop.NominalValue, new_value=value)
-        if value is None and primary_measure_type != "IfcLogical":
+        if value is None:
             if self._try_purge(prop):
                 return
             prop.NominalValue = None
         elif isinstance(value, ifcopenshell.entity_instance):
             prop.NominalValue = value
         else:
-            # A LOGICAL property (IfcLogical) is three-valued: TRUE, FALSE, and
-            # UNKNOWN. None is its UNKNOWN state, not a request to blank/delete
-            # the property, so it is routed through casting instead of the
-            # purge/blank branch above.
+            primary_measure_type = self.get_primary_measure_type(
+                prop.Name, old_value=prop.NominalValue, new_value=value
+            )
             value = self.cast_value_to_primary_measure_type(value, primary_measure_type)
             prop.NominalValue = self.file.create_entity(primary_measure_type, value)
-        if unit:
+        if unit is not _NO_UNIT:
             prop.Unit = unit
         del self.settings["properties"][prop.Name]
         return prop
@@ -326,12 +322,8 @@ class Usecase:
     def add_new_properties(self) -> list[ifcopenshell.entity_instance]:
         properties: list[ifcopenshell.entity_instance] = []
         for name, value in self.settings["properties"].items():
-            # None is skipped entirely for a brand new property (there is nothing
-            # to blank), except for a LOGICAL property, where None is the
-            # meaningful UNKNOWN state rather than "no value".
             if value is None and self.settings["should_purge"]:
-                if self.get_primary_measure_type(name, new_value=value) != "IfcLogical":
-                    continue
+                continue
             unit, value = self.unpack_unit_value(value)
 
             if isinstance(value, ifcopenshell.entity_instance):
@@ -341,7 +333,7 @@ class Usecase:
                 # If it's not an entity, then it's a primitive data type
                 elif not value.is_entity():
                     kwargs = {"Name": name, "NominalValue": value}
-                    if unit:
+                    if unit is not None and unit is not _NO_UNIT:
                         kwargs["Unit"] = unit
                     properties.append(self.file.create_entity("IfcPropertySingleValue", **kwargs))
 
@@ -365,7 +357,7 @@ class Usecase:
                                 "IfcPropertyListValue",
                                 Name=name,
                                 ListValues=[self.file.create_entity(ifc_class, v) for v in value],
-                                Unit=unit,
+                                Unit=unit if (unit is not None and unit is not _NO_UNIT) else None,
                             )
                         )
                         break
@@ -375,7 +367,7 @@ class Usecase:
                             "IFCPROPERTYENUMERATION",
                             Name=name,
                             EnumerationValues=pset_template.Enumerators.EnumerationValues,
-                            **({"Unit": unit} if unit else {}),
+                            **({"Unit": unit} if (unit is not None and unit is not _NO_UNIT) else {}),
                         )
                         prop_enum_value = self.file.create_entity(
                             "IFCPROPERTYENUMERATEDVALUE",
@@ -395,13 +387,13 @@ class Usecase:
 
             else:
                 primary_measure_type = self.get_primary_measure_type(name, new_value=value)
-                if value is None and primary_measure_type != "IfcLogical":
+                if value is None:
                     nominal_value = value
                 else:
                     value = self.cast_value_to_primary_measure_type(value, primary_measure_type)
                     nominal_value = self.file.create_entity(primary_measure_type, value)
                 args = {"Name": name, "NominalValue": nominal_value}
-                if unit:
+                if unit is not None and unit is not _NO_UNIT:
                     args["Unit"] = unit
 
                 properties.append(self.file.create_entity("IfcPropertySingleValue", **args))
@@ -479,17 +471,8 @@ class Usecase:
             "DOUBLE": float,
             "STRING": str,
         }[type_str]
-        if type_str == "LOGICAL":
-            if isinstance(value, bool):
-                # str(True) would store "True", which IfcLogical reads as UNKNOWN.
-                return value
-            if value is None:
-                # None is IfcLogical's third state, UNKNOWN. str(None) would store
-                # the wrong string "None", and the underlying wrapper only accepts
-                # a bool or the literal string "UNKNOWN" for a LOGICAL attribute
-                # (passing Python None straight through crashes it), so translate
-                # here.
-                return "UNKNOWN"
+        if type_str == "LOGICAL" and isinstance(value, bool):
+            return value
         if type_str == "AGGREGATE OF DOUBLE":
             return [float(i) for i in value]
         elif type_str == "AGGREGATE OF INT":
@@ -502,12 +485,16 @@ class Usecase:
     def unpack_unit_value(value_candidate):
         """
         Returns tuple of the format: (Unit, NominalValue)
-        NOTE: Unit fallbacks to None
+
+        NOTE: Unit is the module-level _NO_UNIT sentinel when no Unit was specified at all
+        (bare value, or a dict without a "Unit" key), so that callers can distinguish "leave
+        the existing Unit untouched" from an explicit `{"Unit": None, ...}` (clear the
+        existing Unit override, falling back to the project default).
         """
         if value_candidate is None:
             return (None, None)
 
         if isinstance(value_candidate, dict):  # Custom IfcUnits can be passed in a dict along with the pset value
-            return (value_candidate["Unit"], value_candidate["NominalValue"])
+            return (value_candidate.get("Unit", _NO_UNIT), value_candidate["NominalValue"])
 
-        return (None, value_candidate)
+        return (_NO_UNIT, value_candidate)

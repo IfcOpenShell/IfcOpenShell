@@ -52,9 +52,7 @@ class TestEditPsetIFC2X3(test.bootstrap.IFC2X3):
         assert pset.HasProperties[0].NominalValue.is_a("IfcThermalTransmittanceMeasure")
         assert pset.HasProperties[0].NominalValue.wrappedValue == 42
 
-    def test_editing_a_logical_property_with_true(self):
-        # Regression test for #7475: str(True) stored "True", which IfcLogical
-        # reads as UNKNOWN, so AboveGround could never be set.
+    def test_editing_a_logical_property_to_true(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
         pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Pset_BuildingStoreyCommon")
         ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"AboveGround": True})
@@ -62,10 +60,7 @@ class TestEditPsetIFC2X3(test.bootstrap.IFC2X3):
         assert prop.NominalValue.is_a("IfcLogical")
         assert prop.NominalValue.wrappedValue is True
 
-    def test_editing_a_logical_property_with_false(self):
-        # IfcLogical is three-valued (TRUE / FALSE / UNKNOWN). False must round-trip
-        # just as cleanly as True: str(False) would store "False", which IfcLogical
-        # also reads as UNKNOWN.
+    def test_editing_a_logical_property_to_false(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
         pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Pset_BuildingStoreyCommon")
         ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"AboveGround": False})
@@ -73,23 +68,11 @@ class TestEditPsetIFC2X3(test.bootstrap.IFC2X3):
         assert prop.NominalValue.is_a("IfcLogical")
         assert prop.NominalValue.wrappedValue is False
 
-    def test_editing_a_logical_property_with_none_is_unknown(self):
-        # The third state of IfcLogical is UNKNOWN. A None value for a LOGICAL
-        # property means UNKNOWN, not "delete this property" (unlike every other
-        # data type), since UNKNOWN is itself a meaningful, storable value.
+    def test_editing_a_logical_property_to_unknown(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
         pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Pset_BuildingStoreyCommon")
-
-        # Brand new property, set straight to None, with the default should_purge=True.
-        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"AboveGround": None})
-        prop = next(p for p in pset.HasProperties if p.Name == "AboveGround")
-        assert prop.NominalValue.is_a("IfcLogical")
-        assert prop.NominalValue.wrappedValue == "UNKNOWN"
-
-        # An existing property edited back to None (still should_purge=True) also
-        # becomes UNKNOWN rather than being purged.
         ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"AboveGround": True})
-        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"AboveGround": None})
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"AboveGround": "UNKNOWN"})
         prop = next(p for p in pset.HasProperties if p.Name == "AboveGround")
         assert prop.NominalValue.is_a("IfcLogical")
         assert prop.NominalValue.wrappedValue == "UNKNOWN"
@@ -229,6 +212,36 @@ class TestEditPsetIFC2X3(test.bootstrap.IFC2X3):
         assert unit.UnitType == "PRESSUREUNIT"
         assert unit.Prefix == "GIGA"
         assert unit.Name == "PASCAL"
+
+    def test_explicitly_clearing_a_propertys_unit_override(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        custom_unit = self.file.createIfcSIUnit(UnitType="PRESSUREUNIT", Prefix="GIGA", Name="PASCAL")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Foo_Bar")
+        ifcopenshell.api.pset.edit_pset(
+            self.file, pset=pset, properties={"MyCustom": {"NominalValue": 30.0, "Unit": custom_unit}}
+        )
+        prop = pset.HasProperties[0]
+        assert prop.Unit == custom_unit
+
+        ifcopenshell.api.pset.edit_pset(
+            self.file, pset=pset, properties={"MyCustom": {"NominalValue": 40.0, "Unit": None}}
+        )
+        assert prop.Unit is None
+        assert prop.NominalValue.wrappedValue == 40.0
+
+    def test_a_bare_value_does_not_disturb_an_existing_units_override(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        custom_unit = self.file.createIfcSIUnit(UnitType="PRESSUREUNIT", Prefix="GIGA", Name="PASCAL")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Foo_Bar")
+        ifcopenshell.api.pset.edit_pset(
+            self.file, pset=pset, properties={"MyCustom": {"NominalValue": 30.0, "Unit": custom_unit}}
+        )
+        prop = pset.HasProperties[0]
+        assert prop.Unit == custom_unit
+
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"MyCustom": 42.0})
+        assert prop.Unit == custom_unit
+        assert prop.NominalValue.wrappedValue == 42.0
 
     def test_editing_properties_of_non_rooted_elements(self):
         element = self.file.createIfcMaterial()

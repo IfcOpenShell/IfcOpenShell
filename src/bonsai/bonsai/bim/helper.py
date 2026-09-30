@@ -187,7 +187,7 @@ def import_attributes(
         info = {a.name(): None for a in attributes}
         info["type"] = element
     else:
-        assert (entity := element.wrapped_data.declaration().as_entity())
+        assert (entity := element.declaration.as_entity())
         attributes = entity.all_attributes()
         info = element.get_info()
     for attribute in attributes:
@@ -236,11 +236,8 @@ def import_attribute(
     elif data_type == "integer":
         new.int_value = 0 if new.is_null else int(data[attribute.name()])
     elif data_type == "float":
-        attribute_type = attribute.type_of_attribute()
-        if attribute_type._is("IfcLengthMeasure"):
-            new.special_type = "LENGTH"
-        elif attribute_type._is("IfcForceMeasure"):
-            new.special_type = "FORCE"
+        measure_class = attribute.type_of_attribute().declared_type().name()
+        new.special_type = tool.Pset.get_special_type_for_measure_class(measure_class)
         new.float_value = 0.0 if new.is_null else float(data[attribute.name()])
     elif data_type == "enum":
         attribute_type = attribute.type_of_attribute()
@@ -281,19 +278,8 @@ def add_attribute_min_max(attribute: W.attribute, attribute_blender: bonsai.bim.
         attribute_blender.value_min_constraint = True
 
 
-def set_logical_enum_items(
-    metadata: bonsai.bim.prop.Attribute, value: Union[bool, str, None]
-) -> Union[str, None]:
-    """Mark `metadata` as an IfcLogical enum (TRUE / FALSE / UNKNOWN) and translate `value`.
-
-    IfcLogical is three-valued: TRUE, FALSE, and UNKNOWN. IfcOpenShell represents this as
-    a Python `True`/`False` for TRUE/FALSE, and the string "UNKNOWN" for UNKNOWN.
-
-    :param value: True, False, the string "UNKNOWN", or None (no value at all, distinct
-        from the explicit UNKNOWN state).
-    :return: The matching enum item name ("TRUE"/"FALSE"/"UNKNOWN"), or None if `value` is
-        None (in which case the caller should leave `enum_value` untouched).
-    """
+def set_logical_enum_items(metadata: bonsai.bim.prop.Attribute, value: Union[bool, str, None]) -> Union[str, None]:
+    """Mark `metadata` as a TRUE / FALSE / UNKNOWN enum and return `value` as the matching item, or None."""
     metadata.special_type = "LOGICAL"
     metadata.enum_items = json.dumps(("TRUE", "FALSE", "UNKNOWN"))
     if value is None:
