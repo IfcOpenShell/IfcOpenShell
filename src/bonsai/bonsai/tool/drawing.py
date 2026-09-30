@@ -722,9 +722,7 @@ class Drawing(bonsai.core.tool.Drawing):
     def get_drawing_camera_context(cls) -> ifcopenshell.entity_instance:
         ifc_file = tool.Ifc.get()
         context_type, context_identifier, target_view = cls.DRAWING_CAMERA_CONTEXT
-        context = ifcopenshell.util.representation.get_context(
-            ifc_file, context_type, context_identifier, target_view
-        )
+        context = ifcopenshell.util.representation.get_context(ifc_file, context_type, context_identifier, target_view)
         if context is None:
             parent = ifcopenshell.util.representation.get_context(ifc_file, context_type)
             if parent is None:
@@ -747,9 +745,7 @@ class Drawing(bonsai.core.tool.Drawing):
         # so fall back to Body for backwards compatibility.
         representation = ifcopenshell.util.representation.get_representation(drawing, *cls.DRAWING_CAMERA_CONTEXT)
         if representation is None:
-            representation = ifcopenshell.util.representation.get_representation(
-                drawing, "Model", "Body", "MODEL_VIEW"
-            )
+            representation = ifcopenshell.util.representation.get_representation(drawing, "Model", "Body", "MODEL_VIEW")
         return representation
 
     @classmethod

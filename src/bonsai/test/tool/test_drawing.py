@@ -451,6 +451,45 @@ class TestGetBodyContext(NewFile):
         assert subject.get_body_context() == context
 
 
+class TestGetDrawingCameraContext(NewFile):
+    def test_creates_a_context_outside_of_body(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        context = subject.get_drawing_camera_context()
+        assert (context.ContextType, context.ContextIdentifier, context.TargetView) == (
+            "Model",
+            "Clearance",
+            "MODEL_VIEW",
+        )
+        assert subject.get_drawing_camera_context() == context
+
+
+class TestGetDrawingCameraRepresentation(NewFile):
+    def create_drawing(self, ifc, context):
+        representation = ifc.createIfcShapeRepresentation(context, context.ContextIdentifier, "CSG", [])
+        drawing = ifc.createIfcAnnotation(
+            Representation=ifc.createIfcProductDefinitionShape(Representations=[representation])
+        )
+        return drawing, representation
+
+    def test_returns_the_representation_in_the_camera_context(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        drawing, representation = self.create_drawing(ifc, subject.get_drawing_camera_context())
+        assert subject.get_drawing_camera_representation(drawing) == representation
+
+    def test_falls_back_to_the_body_context_for_older_drawings(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        body = ifc.createIfcGeometricRepresentationSubContext(
+            ContextType="Model", ContextIdentifier="Body", TargetView="MODEL_VIEW"
+        )
+        drawing, representation = self.create_drawing(ifc, body)
+        assert subject.get_drawing_camera_representation(drawing) == representation
+
+
 class TestGetDocumentUri(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
