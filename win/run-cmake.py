@@ -346,6 +346,7 @@ def main() -> None:
         f"-DCMAKE_INSTALL_PREFIX={cmake_install_prefix}",
         "-DWITH_ROCKSDB=ON",
         "-DWITH_ZSTD=ON",
+        "-DBUILD_ONLY_COMMON_SCHEMAS=ON",
         f"-DCMAKE_PREFIX_PATH={cmake_prefix_path}",
         f"-DADD_COMMIT_SHA={ADD_COMMIT_SHA}",
         f"-DVERSION_OVERRIDE={VERSION_OVERRIDE}",
