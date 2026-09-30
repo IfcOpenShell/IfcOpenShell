@@ -105,7 +105,7 @@ class Usecase:
                     "OwnerHistory": ifcopenshell.api.owner.create_owner_history(self.file),
                     "RelatedObjects": [self.settings["product"]],
                     "RelatingPropertyDefinition": qto,
-                }
+                },
             )
             return qto
         elif product.is_a("IfcTypeObject"):

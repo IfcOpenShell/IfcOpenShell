@@ -18,14 +18,23 @@
 
 import math
 
+import pytest
+
 import ifcopenshell.api.alignment
 import ifcopenshell.api.unit
 import ifcopenshell.util
 import ifcopenshell.util.unit
 
+try:
+    ifcopenshell.file(schema="IFC4X3")
+    IFC4X3_AVAILABLE = True
+except RuntimeError:
+    IFC4X3_AVAILABLE = False
 
+
+@pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
 def test_create_as_offset_curve():
-    file = ifcopenshell.file(schema="IFC4X3_ADD2")
+    file = ifcopenshell.file(schema="IFC4X3")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="OCBD Test Alignment")
     length = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
     ifcopenshell.api.unit.assign_unit(file, units=[length])
@@ -135,6 +144,3 @@ def test_create_as_offset_curve():
     curve = ifcopenshell.api.alignment.get_curve(offset_alignment)
     assert curve.is_a("IfcOffsetCurveByDistances")
     assert curve.BasisCurve == basis_curve
-
-
-test_create_as_offset_curve()
