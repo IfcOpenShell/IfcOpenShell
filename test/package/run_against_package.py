@@ -112,7 +112,11 @@ def run_bonsaiviewer(output_dir: Path) -> int:
             # TODO: in theory `BonsaiViewer` should be runnable as cli too?
             # No display on CI, and the default xcb platform plugin needs one (and libxcb-cursor0).
             env["QT_QPA_PLATFORM"] = "offscreen"
-        return subprocess.run(cmd, env=env).returncode
+        # `capture_output` is attaching stdio.
+        # `--version` without stdio shows a message box and leaves the process hanging.
+        proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
+        print(proc.stdout + proc.stderr, end="")
+        return proc.returncode
 
 
 class Args(NamedTuple):
