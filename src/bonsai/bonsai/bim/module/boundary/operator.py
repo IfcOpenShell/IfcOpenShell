@@ -678,7 +678,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
 
         # Identify all potential building elements
         # TODO: don't select everything, use AABB culling in Blender
-        building_elements = (
+        building_elements = list(
             tool.Ifc.get().by_type("IfcWall")
             + tool.Ifc.get().by_type("IfcSlab")
             + tool.Ifc.get().by_type("IfcVirtualElement")
@@ -711,7 +711,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
             while True:
                 tree.add_element(iterator.get_native())
                 shape = iterator.get()
-                assert isinstance(shape, W.TriangulationElement)
+                assert isinstance(shape, W.triangulation_element)
                 shapes[shape.id] = {
                     "verts": ifcopenshell.util.shape.get_vertices(shape.geometry),
                     "faces": ifcopenshell.util.shape.get_faces(shape.geometry),
@@ -1138,7 +1138,8 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
                 point_list = tool.Ifc.get().createIfcCartesianPointList2D(points)
                 inner_boundaries.append(tool.Ifc.get().createIfcIndexedPolyCurve(point_list, None, False))
         else:
-            pass  # TODO
+            # TODO:
+            raise NotImplementedError(tool.Ifc.get().schema)
 
         surface.OuterBoundary = outer_boundary
         surface.InnerBoundaries = inner_boundaries

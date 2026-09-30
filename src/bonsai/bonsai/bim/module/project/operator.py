@@ -281,7 +281,7 @@ class RefreshLibrary(bpy.types.Operator):
         elements = {e for e in elements if not tool.Project.is_element_assigned_to_project_library(e, rels)}
         self.props.add_library_project_library("Unassigned", len(elements), 0, False)
 
-        root_context = tool.Project.get_root_context(library_file)
+        root_context = library_file.by_type("IfcProject")[0]
         hierarchy = tool.Project.get_project_hierarchy(library_file)
         tool.Project.load_project_libraries_to_ui(root_context, hierarchy)
         return {"FINISHED"}
@@ -714,6 +714,8 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
             representations = element.RepresentationMaps or []
         elif element.is_a("IfcProduct"):
             representations = [element.Representation] if element.Representation else []
+        else:
+            assert False, element
         for representation in representations or []:
             for element in self.file.traverse(representation):
                 if not element.is_a("IfcRepresentationItem") or not element.StyledByItem:
@@ -759,21 +761,22 @@ class EditProjectLibrary(bpy.types.Operator):
         attributes = bonsai.bim.helper.export_attributes(props.project_library_attributes)
         ifcopenshell.api.attribute.edit_attributes(library_file, project_library, attributes)
 
-        # Update parent library.
+        # Update parent library. Tear down the old IfcRelDeclares/IfcRelNests before
+        # creating the new one; a library must have exactly one of the two, never both.
         previous_parent_library = tool.Project.get_parent_library(project_library)
         new_parent_library = library_file.by_id(int(props.parent_library))
         if previous_parent_library != new_parent_library:
-            if previous_parent_library is None:
-                # Edited library was a root in a library-only file; nest it under the new parent.
+            if previous_parent_library is not None:
+                if previous_parent_library.is_a("IfcProject"):
+                    ifcopenshell.api.project.unassign_declaration(
+                        library_file, [project_library], previous_parent_library
+                    )
+                else:
+                    ifcopenshell.api.nest.unassign_object(library_file, [project_library])
+            if new_parent_library.is_a("IfcProject"):
+                ifcopenshell.api.project.assign_declaration(library_file, [project_library], new_parent_library)
+            else:
                 ifcopenshell.api.nest.assign_object(library_file, [project_library], new_parent_library)
-            elif previous_parent_library.is_a("IfcProject"):
-                # Then new one is IfcProjectLibrary.
-                ifcopenshell.api.nest.assign_object(library_file, [project_library], new_parent_library)
-            else:  # Previous is IfcProjectLibrary.
-                ifcopenshell.api.nest.unassign_object(library_file, [project_library])
-                # If new one is IfcProject, then it's already assigned by default.
-                if new_parent_library.is_a("IfcProjectLibrary"):
-                    ifcopenshell.api.nest.assign_object(library_file, [project_library], new_parent_library)
 
         props.is_editing_project_library = False
         bpy.ops.bim.refresh_library()
@@ -807,12 +810,9 @@ class AddProjectLibrary(bpy.types.Operator):
         props = tool.Project.get_project_props()
         library_file = IfcStore.library_file
         assert library_file
-        root_context = tool.Project.get_root_context(library_file)
+        root_context = library_file.by_type("IfcProject")[0]
         project_library = ifcopenshell.api.root.create_entity(library_file, "IfcProjectLibrary")
-        if root_context.is_a("IfcProject"):
-            ifcopenshell.api.project.assign_declaration(library_file, [project_library], root_context)
-        else:
-            ifcopenshell.api.nest.assign_object(library_file, [project_library], root_context)
+        ifcopenshell.api.project.assign_declaration(library_file, [project_library], root_context)
         ProjectLibraryData.load()  # Update enum.
         props.selected_project_library = str(project_library.id())
         props.is_editing_project_library = True
@@ -1299,6 +1299,10 @@ class LoadProjectElements(bpy.types.Operator):
         tool.Project.set_default_modeling_dimensions()
         tool.Root.reload_grid_decorator()
         bonsai.bim.handler.refresh_ui_data()
+        for screen in bpy.data.screens:
+            for area in screen.areas:
+                if area.type == "VIEW_3D":
+                    bonsai.bim.handler.viewport_shading_changed_callback(area)
         return {"FINISHED"}
 
     def get_decomposition_elements(self) -> set[ifcopenshell.entity_instance]:
@@ -1572,14 +1576,16 @@ class LoadLink(bpy.types.Operator, tool.Ifc.Operator):
 
     def link_ifc(self) -> Union[set[str], None]:
         blend_filepath = self.filepath_.with_suffix(".ifc.cache.blend")
-        h5_filepath = self.filepath_.with_suffix(".ifc.cache.h5")
         json_filepath = self.filepath_.with_suffix(".ifc.cache.json")
 
         def should_clear_cache() -> bool:
-            if not self.use_cache:
-                return True
+            # Nothing to clear if the cache file was never created (e.g. a
+            # fresh link). Check this first so os.remove below is never
+            # called on a non-existent path, regardless of use_cache.
             if not blend_filepath.exists():
                 return False
+            if not self.use_cache:
+                return True
             data = json.loads(json_filepath.read_text())
             # Empty 'query' - model loaded without custom query.
             # Missing 'query' - model was loaded before custom queries were introduced in Bonsai.
@@ -2029,6 +2035,7 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         project_props = tool.Project.get_project_props()
         prefs = tool.Blender.get_addon_preferences()
         project_props.use_relative_project_path = self.use_relative_path
+        old_history_size, old_undo_steps = None, None
         if prefs.should_disable_undo_on_save:
             old_history_size = tool.Ifc.get().history_size
             old_undo_steps = context.preferences.edit.undo_steps
@@ -2036,6 +2043,7 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
             context.preferences.edit.undo_steps = 0
         IfcStore.execute_ifc_operator(self, context)
         if prefs.should_disable_undo_on_save:
+            assert old_history_size is not None and old_undo_steps is not None
             tool.Ifc.get().history_size = old_history_size
             context.preferences.edit.undo_steps = old_undo_steps
         return {"FINISHED"}
@@ -2434,7 +2442,7 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
             if iterator.initialize():
                 while True:  # Main loop.
                     shape = iterator.get()
-                    assert isinstance(shape, W.TriangulationElement)
+                    assert isinstance(shape, W.triangulation_element)
                     results.add(self.file.by_id(shape.id))
                     geometry = shape.geometry
 
@@ -2510,7 +2518,7 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
         print("Finished", time.time() - start)
         return {"FINISHED"}
 
-    def process_occurrence(self, shape: W.TriangulationElement) -> None:
+    def process_occurrence(self, shape: W.triangulation_element) -> None:
         element = self.file.by_id(shape.id)
 
         mat = ifcopenshell.util.shape.get_shape_matrix(shape)
@@ -3256,13 +3264,10 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
             and event.value == "RELEASE"
             and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}
         ) or single_mode:
-            context.workspace.status_text_set(text=None)
             self.tool_state.plane_method = None
-            PolylineDecorator.uninstall()
             tool.Polyline.move_polyline_to_measure(context, self.input_ui)
-            tool.Polyline.clear_polyline()
             MeasureDecorator.install(context)
-            tool.Blender.update_viewport()
+            self.cleanup(context)
             return {"FINISHED"}
 
         self.handle_keyboard_input(context, event)
@@ -3384,11 +3389,7 @@ class MeasureFaceAreaTool(bpy.types.Operator, PolylineOperator):
             tool.Blender.update_viewport()
 
         if event.value == "RELEASE" and event.type in {"ESC", "RIGHTMOUSE"}:
-            polyline_props.insertion_polyline.clear()
-            context.workspace.status_text_set(text=None)
-            PolylineDecorator.uninstall()
-            FaceAreaDecorator.uninstall()
-            tool.Blender.update_viewport()
+            self.cleanup(context)
             return {"CANCELLED"}
 
         return {"RUNNING_MODAL"}
@@ -3399,6 +3400,10 @@ class MeasureFaceAreaTool(bpy.types.Operator, PolylineOperator):
         PolylineDecorator.install(context, ui_only=True)
         FaceAreaDecorator.install(context)
         return {"RUNNING_MODAL"}
+
+    def cleanup(self, context):
+        FaceAreaDecorator.uninstall()
+        super().cleanup(context)
 
 
 class ClearMeasurement(bpy.types.Operator):
@@ -3517,11 +3522,9 @@ class ImageScalingTool(bpy.types.Operator, PolylineOperator):
         return {"RUNNING_MODAL"}
 
     def cancel_tool(self, context: bpy.types.Context) -> set["rna_enums.OperatorReturnItems"]:
-        context.workspace.status_text_set(text=None)
         if hasattr(self, "tool_state"):
             self.tool_state.plane_method = None
-        PolylineDecorator.uninstall()
-        tool.Blender.update_viewport()
+        self.cleanup(context)
         return {"CANCELLED"}
 
     def handle_custom_instructions(self, context: bpy.types.Context) -> None:
@@ -3592,10 +3595,8 @@ class ImageScalingTool(bpy.types.Operator, PolylineOperator):
 
             self.report({"INFO"}, f"Applied scale factor: {scale_factor:.4f}")
 
-        context.workspace.status_text_set(text=None)
         self.tool_state.plane_method = None
-        PolylineDecorator.uninstall()
-        tool.Blender.update_viewport()
+        self.cleanup(context)
 
         return {"FINISHED"}
 
@@ -3718,21 +3719,6 @@ class BIM_OT_dismiss_pending_opening_cuts(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> set[str]:
         tool.Project.get_project_props().pending_opening_recut.clear()
-        return {"FINISHED"}
-
-
-class BIM_OT_dismiss_multi_instance_warning(bpy.types.Operator):
-    bl_idname = "bim.dismiss_multi_instance_warning"
-    bl_label = "Dismiss Multi-Instance Warning"
-    bl_description = (
-        "Hide the warning that another Blender instance has this IFC file open. Sticky for the current session."
-    )
-    bl_options = {"REGISTER"}
-
-    def execute(self, context: bpy.types.Context) -> set[str]:
-        from bonsai.bim.ifc import dismiss_multi_instance_warning
-
-        dismiss_multi_instance_warning()
         return {"FINISHED"}
 
 
