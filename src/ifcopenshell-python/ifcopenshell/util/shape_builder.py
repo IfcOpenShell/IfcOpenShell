@@ -186,7 +186,7 @@ def np_rotation_matrix(
 ) -> np.ndarray:
     """Get rotation matrix. Designed to be similar to mathutils Matrix.Rotation but to use numpy.
 
-    :param float: Rotation angle, in radians.
+    :param angle: Rotation angle, in radians.
     :param size: Matrix size ([2;4]).
     :param axis: Rotation axis.
         For 2x2 matrices Z assumed by default and argument can be omitted,
