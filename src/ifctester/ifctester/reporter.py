@@ -26,13 +26,12 @@ import re
 import sqlite3
 import sys
 from collections.abc import Iterable, Iterator
-from typing import Literal, Optional, TypedDict, Union
+from typing import Literal, NotRequired, Optional, TypedDict, Union
 
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.unit
-from typing_extensions import NotRequired
 
 from .facet import Facet, FacetFailure
 from .ids import Ids, Specification
