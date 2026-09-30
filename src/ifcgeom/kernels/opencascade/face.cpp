@@ -172,8 +172,7 @@ namespace {
 			} else if (crv_or_wire.index() == 1) {
 				return std::get<Handle(Geom_Curve)>(crv_or_wire);
 			} else if (crv_or_wire.index() == 2) {
-				// @todo
-				const double precision_ = 1.e-5;
+				auto precision_ = kernel->settings().get<settings::Precision>().get();
 				ifcopenshell::logger::root().warning("GEO", 156, "Approximating BasisCurve due to possible discontinuities", i->instance);
 				const auto& w = std::get<TopoDS_Wire>(crv_or_wire);
 #if OCC_VERSION_HEX < 0x70600
@@ -183,7 +182,7 @@ namespace {
 				auto hcc = new BRepAdaptor_CompCurve(w, true);
 #endif
 				// @todo, arbitrary numbers here, note they cannot be too high as contiguous memory is allocated based on them.
-				Approx_Curve3d approx(hcc, precision_, GeomAbs_C0, 10, 10);
+                Approx_Curve3d approx(hcc, precision_, GeomAbs_C0, 10, 10);
 				return approx.Curve();
 			}
 			throw std::runtime_error("Unexpected curve evaluation");
@@ -389,7 +388,7 @@ bool open_cascade_kernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& 
 		for (size_t i = 1; i < fwires.size() && !reported; ++i) {
 			for (size_t j = 0; j < i && !reported; ++j) {
 				BRepExtrema_DistShapeShape dss(fwires[i], fwires[j]);
-				if (dss.IsDone() && dss.Value() < precision_) {
+				if (dss.IsDone() && dss.Value() < settings_.get<settings::Precision>().get()) {
 					logger().warning("GEO", 402, "Face inner boundary intersects another face boundary", face->instance);
 					reported = true;
 				}
@@ -426,7 +425,7 @@ bool open_cascade_kernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& 
 				}
 			} else {
 				gp_Pln pln;
-				if (approximate_plane_through_wire(wire, pln, precision_)) {
+				if (approximate_plane_through_wire(wire, pln, settings_.get<settings::Precision>().get())) {
 					fd.surface() = new Geom_Plane(pln);
 				}
 			}
@@ -438,7 +437,7 @@ bool open_cascade_kernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& 
 
 		const TopoDS_Wire& wire = fd.wires().front();
 
-		BRepLib_FindSurface fs(wire, precision_, true, true);
+		BRepLib_FindSurface fs(wire, settings_.get<settings::Precision>().get(), true, true);
 		if (fs.Found()) {
 			fd.surface() = fs.Surface();
 			ShapeFix_ShapeTolerance ftol;
