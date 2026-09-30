@@ -37,7 +37,7 @@ def unassign_object(file: ifcopenshell.file, related_objects: list[ifcopenshell.
 
     .. code:: python
 
-        task = ifcopenshell.api.root.create_entity(model, ifc_class="IfcTasks")
+        task = ifcopenshell.api.root.create_entity(model, ifc_class="IfcTask")
         subtask1 = ifcopenshell.api.root.create_entity(model, ifc_class="IfcTask")
         subtask2 = ifcopenshell.api.root.create_entity(model, ifc_class="IfcTask")
         ifcopenshell.api.nest.assign_object(model, related_objects=[subtask1], relating_object=task)
