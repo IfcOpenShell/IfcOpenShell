@@ -103,8 +103,7 @@ def _measure_segment_length_from_mesh(
     if len(vertices) < 4 or len(faces) < 2:
         return None
 
-    # Per triangle unit normal and area, used to group the triangulated mesh
-    # back into the flat faces of the solid.
+    # Per triangle unit normal and area, to regroup triangles into flat facets.
     v0, v1, v2 = vertices[faces[:, 0]], vertices[faces[:, 1]], vertices[faces[:, 2]]
     cross = np.cross(v1 - v0, v2 - v0)
     double_area = np.linalg.norm(cross, axis=1)  # twice the triangle area
@@ -114,8 +113,7 @@ def _measure_segment_length_from_mesh(
     normals = np.zeros_like(cross)
     normals[valid] = cross[valid] / double_area[valid][:, None]
 
-    # Union find over triangles. Two triangles that share an edge and face the
-    # same way belong to one flat facet of the solid (a simple dual graph merge).
+    # Union find: edge-adjacent triangles with the same normal form one flat facet.
     parent = list(range(len(faces)))
 
     def find(a: int) -> int:
@@ -152,9 +150,7 @@ def _measure_segment_length_from_mesh(
     if len(facet_triangles) < 3:
         return None
 
-    # Describe every flat facet by the numbers needed to spot the caps: its area,
-    # unit normal, the vertices it uses, its boundary edges and the sorted lengths
-    # of those boundary edges (a cheap congruence signature).
+    # Per facet: area, normal, vertices, boundary edges and sorted boundary edge lengths.
     facets = []
     for triangles in facet_triangles.values():
         idx = np.array(triangles)
@@ -193,10 +189,7 @@ def _measure_segment_length_from_mesh(
             return False
         return bool(np.allclose(f["boundary_lengths"], g["boundary_lengths"], rtol=1e-3, atol=1e-6))
 
-    # Graph of the original polygon edges. A shortest path from a vertex of one
-    # cap to the nearest vertex of the other cap follows the side of the sweep,
-    # so it tracks a bend instead of cutting across it. Fall back to the triangle
-    # edges when the geometry carries no untriangulated edges.
+    # Edge graph for the arclength search; falls back to triangle edges when there are no polygon edges.
     if len(edges) == 0:
         edges = np.array(
             [undirected(int(faces[ti][k]), int(faces[ti][(k + 1) % 3])) for ti in range(len(faces)) for k in range(3)],
@@ -211,11 +204,7 @@ def _measure_segment_length_from_mesh(
         graph[u].append((v, weight))
         graph[v].append((u, weight))
 
-    # A cap is left along its normal by the side (rail) edges of the sweep, so
-    # every edge leaving a cap vertex for a vertex outside the cap runs close to
-    # the cap normal and this score is near one. A long flat strip on the side of
-    # a segment bent within a plane is left within its own plane, so its score is
-    # lower and it loses to the real caps in the ranking below.
+    # Mean alignment of the edges leaving a facet with its normal; near one for a cap.
     def leaves_along_normal(facet: dict) -> float:
         members = facet["vertex_ids"]
         normal = facet["normal"]
@@ -233,15 +222,7 @@ def _measure_segment_length_from_mesh(
 
     alignment = [leaves_along_normal(f) for f in facets]
 
-    # The extrusion basis (the caps) is a congruent pair of facets that do not
-    # touch each other. Several such pairs exist on a symmetric solid, so rank
-    # them: first by how strongly the pair is left along its own normal (which
-    # separates the caps from a flat side strip of a planar bend), then by the
-    # higher vertex count (a footprint richer than a quad makes the profile the
-    # only face of that count, removing the ambiguity with the quad sides), and
-    # only then by the greater arclength, matching the convention of the
-    # supported extrusion path in get_segment_length which reports the largest
-    # dimension.
+    # Caps are a congruent, non touching facet pair. Rank pairs by alignment, then vertex count, then length.
     candidates = []
     for i in range(len(facets)):
         for j in range(i + 1, len(facets)):
@@ -823,7 +804,7 @@ class IfcOpenShell(QtoCalculator):
     def get_segment_length(
         cls,
         element: ifcopenshell.entity_instance,
-        geometry: Union[W.Triangulation, None] = None,
+        geometry: Union[W.triangulation, None] = None,
     ) -> Union[float, None]:
         """Get segment length.
 
@@ -860,15 +841,7 @@ class IfcOpenShell(QtoCalculator):
             z = item.Depth
             return max([x, y, z])
 
-        # Not a supported extrusion (e.g. a tessellated or Brep segment exported
-        # by some authoring tools). This estimate only runs when the caller
-        # opted in (geometry is passed); otherwise we return None and produce no
-        # Length, keeping the default Qto reliable.
-        #
-        # Locate the two extrusion basis faces (the caps) in the mesh and take
-        # the length as the average arclength of the edges connecting them. This
-        # stays correct for a bent segment and for a short extrusion of a non
-        # rectangular footprint, and returns None when the caps are ambiguous.
+        # Not a supported extrusion: opt-in estimate from the cap faces, None when they are ambiguous.
         if geometry is None:
             return None
         vertices = ifcopenshell.util.shape.get_vertices(geometry)
@@ -1081,9 +1054,7 @@ class Blender(QtoCalculator):
 
     @classmethod
     def calculate(cls, ifc_file, elements, qtos, results, *, estimate_length_from_geometry=False):
-        # estimate_length_from_geometry is only meaningful for the IfcOpenShell
-        # calculator's extrusion fallback; the Blender calculator measures the
-        # loaded object directly, so the flag is accepted and ignored here.
+        # estimate_length_from_geometry only applies to the IfcOpenShell calculator.
         import bonsai.bim.module.qto.calculator as calculator
         import bonsai.tool as tool
 
