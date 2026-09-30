@@ -25,7 +25,7 @@ Scenario: Add element - a structural curve member
     And I make the collection "IfcStructuralItem" visible
     And I select the object "IfcStructuralCurveMember/Foo"
     And I toggle edit mode
-    Then the object "Item/IfcEdge/68" exists
+    Then the object "Item/IfcEdge/69" exists
 
 Scenario: Add element - a structural surface member
     Given an empty IFC project

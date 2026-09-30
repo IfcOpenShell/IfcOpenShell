@@ -429,6 +429,23 @@ class Root(bonsai.core.tool.Root):
         )
 
     @classmethod
+    def set_default_structural_axis(cls, element: ifcopenshell.entity_instance, obj: bpy.types.Object) -> None:
+        """Set the mandatory Axis of a structural curve member or connection that has none."""
+        if not (element.is_a("IfcStructuralCurveMember") or element.is_a("IfcStructuralCurveConnection")):
+            return
+        if not hasattr(element, "Axis") or element.Axis:
+            return
+        axis = (0.0, 0.0, 1.0)
+        mesh = obj.data
+        if isinstance(mesh, bpy.types.Mesh) and len(mesh.vertices) == 2:
+            tangent = mesh.vertices[1].co - mesh.vertices[0].co
+            if tangent.length_squared > 0:
+                tangent.normalize()
+                if abs(tangent.z) > 0.9:
+                    axis = (1.0, 0.0, 0.0)
+        tool.Ifc.run("structural.edit_structural_item_axis", structural_item=element, axis=axis)
+
+    @classmethod
     def set_object_name(cls, obj: bpy.types.Object, element: ifcopenshell.entity_instance) -> None:
         name = tool.Loader.get_name(element)
         if obj.name != name:
