@@ -91,7 +91,7 @@
       },
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "SCHEMA_VERSIONS": "2x3;4;4x3_add2"
+        "BUILD_ONLY_COMMON_SCHEMAS": "ON"
       }
     }
   ]

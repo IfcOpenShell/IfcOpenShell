@@ -79,7 +79,12 @@ namespace ifcopenshell {
 		virtual ~abstract_kernel() = default;
 
 		virtual bool convert(const taxonomy::ptr, std::vector<ifcopenshell::geom::conversion_result>&);
+
 		const ifcopenshell::geom::settings& settings() const;
+		void apply_settings(const ifcopenshell::geom::settings& settings) {
+            settings_ = settings;
+        }
+
 		const std::string& geometry_library() const {
 			return geometry_library_;
 		}
