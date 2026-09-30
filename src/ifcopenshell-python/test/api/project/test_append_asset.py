@@ -681,6 +681,21 @@ class TestAppendAssetIFC4(test.bootstrap.IFC4, TestAppendAssetIFC2X3):
         assert ifcopenshell.util.element.get_material(new2) == material
         assert ifcopenshell.util.element.get_psets(material)["Foo_Bar"]["Foo"] == "Bar"
 
+    def test_a_guid_collision_with_an_unrelated_class_is_not_reused_as_the_same_asset(self):
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        occurrence = ifcopenshell.api.root.create_entity(library, ifc_class="IfcSanitaryTerminal")
+        occurrence_type = ifcopenshell.api.root.create_entity(library, ifc_class="IfcSanitaryTerminalType")
+        ifcopenshell.api.type.assign_type(library, related_objects=[occurrence], relating_type=occurrence_type)
+
+        unrelated = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcFlowTerminal")
+        unrelated.GlobalId = occurrence_type.GlobalId
+
+        result = ifcopenshell.api.project.append_asset(self.file, library=library, element=occurrence)
+        assert result.is_a("IfcSanitaryTerminal")
+        result_type = ifcopenshell.util.element.get_type(result)
+        assert result_type.is_a("IfcSanitaryTerminalType")
+        assert result_type != unrelated
+
     # NOTE: breaks in IFC2X3 since IfcCostItem doesn't have "IsNestedBy" inverse in ifc2x3
     # and we use it in whitelisted_inverse_attributes for appending IfcCostSchedule
     def test_append_a_cost_schedule(self):
