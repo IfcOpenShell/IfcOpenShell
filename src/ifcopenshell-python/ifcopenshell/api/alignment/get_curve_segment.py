@@ -16,12 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-from collections.abc import Sequence
-
-from ifcopenshell import entity_instance
 
 import ifcopenshell.api.alignment
-
+from ifcopenshell import entity_instance
 from ifcopenshell.api.alignment.get_mapped_segments import _get_curve_segment_count
 
 
