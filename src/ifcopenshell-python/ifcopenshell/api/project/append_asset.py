@@ -134,6 +134,15 @@ def append_asset(
             )
 
     """
+    # The library and the project must share a schema; migrate the library first (see #4766).
+    if library.schema_identifier != file.schema_identifier:
+        raise ValueError(
+            f"Cannot append an asset from a library in schema {library.schema_identifier} "
+            f"into a project in schema {file.schema_identifier}. "
+            f"Migrate the library to the project schema first "
+            f"(e.g. the 'Migrate' ifcpatch recipe or ifcopenshell.util.schema.Migrator)."
+        )
+
     usecase = Usecase()
     usecase.file: ifcopenshell.file = file
     usecase.settings = {
