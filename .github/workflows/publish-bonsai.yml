@@ -1,6 +1,6 @@
 name: Publish Bonsai
 
-# Differences from ci-bonsai-daily.yml:
+# Differences from publish-bonsai-unstable.yml:
 # - make has IS_STABLE=TRUE
 # - action is never triggered and executed only manually
 # - doesn't add a current date to the release and tag
@@ -40,10 +40,12 @@ jobs:
           }
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7 # https://github.com/actions/setup-python
+      - uses: actions/setup-python@v7
         with:
-          architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
-          python-version: '3.11'
+          python-version: '3.x'
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+      - name: Install lbzip2
+        run: sudo apt-get install -y lbzip2
       - name: Get current version
         id: version
         run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
