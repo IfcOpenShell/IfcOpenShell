@@ -162,6 +162,7 @@ class DumbProfileGenerator:
         # become one item each so every profile keeps its own material.
         is_multi_material = not self.profile_set.CompositeProfile and len(material_profiles) > 1
 
+        items: list[ifcopenshell.entity_instance] = []
         if is_multi_material:
             representation, items = self.create_multi_material_profile_items(material_profiles)
         else:
