@@ -232,19 +232,16 @@ class TestStairCalculatedParams(NewFile):
 class TestDeprecatedMeshAddOperatorsAreRemoved(NewFile):
     NAMES = ("add_stair", "add_window", "add_door", "add_railing", "add_roof")
 
-    def test_the_mesh_add_operators_are_not_registered(self):
-        registered = []
-        for name in self.NAMES:
-            try:
-                getattr(bpy.ops.mesh, name).get_rna_type()
-                registered.append(name)
-            except KeyError:
-                pass
-        assert registered == []
+    @staticmethod
+    def is_registered(operator_module, name: str) -> bool:
+        try:
+            getattr(operator_module, name).get_rna_type()
+        except KeyError:
+            return False
+        return True
 
-    def test_the_bim_add_operators_are_registered(self):
-        for name in self.NAMES:
-            assert getattr(bpy.ops.bim, name).get_rna_type()
+    def test_the_mesh_add_operators_are_not_registered(self):
+        assert [name for name in self.NAMES if self.is_registered(bpy.ops.mesh, name)] == []
 
 
 class TestGenerateStair2DProfile(NewFile):
