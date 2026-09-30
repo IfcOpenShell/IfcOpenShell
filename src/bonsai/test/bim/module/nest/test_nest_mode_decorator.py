@@ -20,6 +20,7 @@
 
 from types import SimpleNamespace
 
+import blf
 import bpy
 from bpy_extras import view3d_utils
 
@@ -34,5 +35,8 @@ class TestNestModeDecorator(NewFile):
         bpy.context.scene.collection.objects.link(nest_obj)
         tool.Nest.get_nest_props().editing_nest = nest_obj
         monkeypatch.setattr(view3d_utils, "location_3d_to_region_2d", lambda *args, **kwargs: None)
+        draw_calls = []
+        monkeypatch.setattr(blf, "draw", lambda *args, **kwargs: draw_calls.append(args))
         context = SimpleNamespace(mode="OBJECT", region=SimpleNamespace(data=None), selected_objects=[])
         NestModeDecorator().draw_nest_name(context)
+        assert draw_calls == []
