@@ -23,6 +23,7 @@ import ifcopenshell.api.cost
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
+import pytest
 
 import bonsai.bim.import_ifc as import_ifc
 import bonsai.core.root
@@ -177,6 +178,45 @@ class TestGetCalculatedObjectQuantities(test.bim.bootstrap.NewFile):
         assert quantities["NetSideArea"] == 43.056
         assert quantities["GrossVolume"] == 282.517
         assert quantities["NetVolume"] == 282.517
+
+
+class TestQuantifyGeographicElement(test.bim.bootstrap.NewFile):
+    def test_a_geographic_element_gets_a_custom_base_quantity_set(self):
+        import logging
+
+        import ifc5d.qto
+
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject", name="My Project")
+        ifc_import_settings = import_ifc.IfcImportSettings.factory(
+            bpy.context, tool.Ifc.get_path(), logging.getLogger("ImportIFC")
+        )
+        ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
+        ifc_importer.file = ifc
+        ifc_importer.create_project()
+        ifcopenshell.api.unit.assign_unit(ifc, length={"is_metric": True, "raw": "METERS"})
+        context = ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        bpy.ops.mesh.primitive_cube_add(location=(0.0, 0.0, 0.0), size=2)
+        element = bonsai.core.root.assign_class(
+            tool.Ifc,
+            tool.Collector,
+            tool.Root,
+            obj=bpy.context.active_object,
+            ifc_class="IfcGeographicElement",
+            context=context,
+        )
+
+        results = ifc5d.qto.quantify(ifc, {element}, ifc5d.qto.rules["IFC4QtoBaseQuantitiesBlender"])
+
+        assert results[element]["EQto_GeographicElementBaseQuantities"] == {
+            "Depth": pytest.approx(2.0),
+            "GrossArea": pytest.approx(4.0),
+            "GrossVolume": pytest.approx(8.0),
+            "NetArea": pytest.approx(4.0),
+            "NetVolume": pytest.approx(8.0),
+            "Perimeter": pytest.approx(8.0),
+        }
 
 
 class TestGetTargetUnits(test.bim.bootstrap.NewFile):
