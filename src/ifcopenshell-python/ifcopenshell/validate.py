@@ -445,6 +445,13 @@ def validate(f: ifcopenshell.file | str | Path, logger: Logger | json_logger, ex
         pprint(logger.statements)
     """
 
+    if isinstance(f, ifcopenshell.sqlite):
+        raise NotImplementedError(
+            "ifcopenshell.validate.validate() does not support ifcopenshell.sqlite files: "
+            "the sqlite backend does not retain the full IFC header or entity attribute data "
+            "needed for validation."
+        )
+
     # Originally there was no way in Python to distinguish on an entity instance attribute value whether the
     # value supplied in the model was NIL ($) or 'missing because derived in subtype' (*). For validation this
     # however this may be important, and hence a feature switch has been implemented to return *-values as
