@@ -28,10 +28,17 @@ def add_boolean(
     first_item: ifcopenshell.entity_instance,
     second_items: list[ifcopenshell.entity_instance],
     operator: Literal["DIFFERENCE", "INTERSECTION", "UNION"] = "DIFFERENCE",
+    climb_through_unions: bool = True,
 ) -> list[ifcopenshell.entity_instance]:
     """Adds a boolean operation to two or more representation items
 
     This function protects against recursive booleans.
+
+    If ``first_item`` is already an operand of an existing IfcBooleanResult,
+    the new boolean is applied to the top of that existing chain instead of
+    to ``first_item`` directly, so repeated calls keep compounding onto the
+    same accumulated solid rather than creating a conflicting second
+    reference to ``first_item``.
 
     After a boolean operation is made, since the items of
     IfcShapeRepresentation may be modified, it is not guaranteed that the
@@ -43,6 +50,17 @@ def add_boolean(
     :param second_items: The IfcBooleanOperands that the operation will be
         performed with, in the order given of the list.
     :param operator: The type of boolean operation to perform
+    :param climb_through_unions: If an ancestor IfcBooleanResult found while
+        climbing has a UNION operator, treat it as a boundary and stop
+        climbing past it when this is ``False``. A UNION typically joins
+        otherwise-unrelated sibling items (e.g. to keep a mixed
+        IfcShapeRepresentation.Items list schema-valid), so climbing through
+        it would silently apply the new boolean to those unrelated siblings
+        too. Pass ``False`` when ``first_item`` was chosen to represent one
+        specific, deliberately targeted item rather than "whatever is
+        currently on top". Ancestors with a DIFFERENCE or INTERSECTION
+        operator are always climbed through, regardless of this flag,
+        since those represent further cuts of the same accumulating solid.
     :return: A list of newly created IfcBooleanResult in the order of boolean
         operations (based on the order of second items). If nothing was
         created, the list will be empty.
@@ -68,6 +86,8 @@ def add_boolean(
         is_part_of_boolean = False
         for inverse in file.get_inverse(first_item):
             if inverse.is_a("IfcBooleanResult"):
+                if not climb_through_unions and inverse.Operator == "UNION":
+                    continue
                 is_part_of_boolean = True
                 first_item = inverse
                 if inverse.FirstOperand == original_first_item and inverse.SecondOperand in second_items:
