@@ -133,6 +133,7 @@ namespace ifcopenshell::geom {
 		ifcopenshell::file* ifc_file;
 		std::vector<ifcopenshell::geom::filter_function> filters_;
 		int num_threads_;
+		bool no_progress_ = false;
 		std::string geometry_library_;
 		ifcopenshell::logger& logger_;
 
@@ -277,6 +278,8 @@ namespace ifcopenshell::geom {
 		/// Computes model's bounding box (bounds_min and bounds_max).
 		/// @note Can take several minutes for large files.
 		void compute_bounds(bool with_geometry);
+
+		void suppress_progress(bool b = true) { no_progress_ = b; }
 
 		int progress() const {
 			return progress_;
