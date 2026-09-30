@@ -23,9 +23,9 @@ Those tests are not automatically checked and just there to make sure overloads 
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union, cast
+from typing import TYPE_CHECKING, Union, assert_type, cast
 
-from typing_extensions import TypeIs, assert_type
+from typing_extensions import TypeIs
 
 import ifcopenshell
 
