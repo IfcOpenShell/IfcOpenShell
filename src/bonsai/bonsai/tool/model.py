@@ -1029,6 +1029,21 @@ class Model(bonsai.core.tool.Model):
             ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=element, pset=pset)
 
     @classmethod
+    def remap_manual_booleans(
+        cls, element: ifcopenshell.entity_instance, id_map: dict[int, ifcopenshell.entity_instance]
+    ) -> None:
+        """Repoint the 'BBIM_Boolean' pset ids of a duplicated element onto its copied booleans."""
+        if not (pset_data := ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")):
+            return
+        stored_ids = json.loads(pset_data["Data"])
+        remapped = [id_map[i].id() if i in id_map else i for i in stored_ids]
+        if remapped == stored_ids:
+            return
+        pset = tool.Ifc.get().by_id(pset_data["id"])
+        data = tool.Ifc.get().createIfcText(json.dumps(remapped))
+        ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": data})
+
+    @classmethod
     def get_flow_segment_axis(cls, obj: bpy.types.Object) -> tuple[Vector, Vector]:
         z_values = [v[2] for v in obj.bound_box]
         return (obj.matrix_world @ Vector((0, 0, min(z_values))), obj.matrix_world @ Vector((0, 0, max(z_values))))
