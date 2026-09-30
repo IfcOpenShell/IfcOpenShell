@@ -24,10 +24,9 @@ import operator
 import random
 import warnings
 from collections.abc import Iterable
-from typing import NamedTuple, Union
+from typing import NamedTuple, Union, assert_never
 
 import OCC  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
-from typing_extensions import assert_never
 
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 
@@ -60,7 +59,7 @@ except ImportError:
 class shape_tuple(NamedTuple):
     """A tuple containing IfcOpenShell serialized element/shape and pythonOCC shape."""
 
-    data: Union[ifcopenshell_wrapper.SerializedElement, ifcopenshell_wrapper.Serialization]
+    data: Union[ifcopenshell_wrapper.serialized_element, ifcopenshell_wrapper.serialization]
     geometry: TopoDS.TopoDS_Shape
     styles: tuple[tuple[float, float, float, float], ...]
     style_ids: tuple[int, ...]
@@ -225,7 +224,11 @@ def display_shape(shape, clr=None, viewer_handle=None):
 
 
 def set_shape_transparency(ais, t, update_viewer=True):
-    handle.Context.SetTransparency(ais, t, update_viewer)
+    # AIS_InteractiveContext.SetTransparency()'s argument count differs across
+    # pythonocc-core versions (#1037); AIS_InteractiveObject.SetTransparency() is stable.
+    ais.SetTransparency(t)
+    if update_viewer:
+        handle.Context.UpdateCurrentViewer()
 
 
 def get_bounding_box_center(bbox):
@@ -264,16 +267,16 @@ def serialize_shape(shape):
 
 
 def create_shape_from_serialization(
-    brep_object: Union[ifcopenshell_wrapper.SerializedElement, ifcopenshell_wrapper.Serialization],
+    brep_object: Union[ifcopenshell_wrapper.serialized_element, ifcopenshell_wrapper.serialization],
 ) -> Union[shape_tuple, TopoDS.TopoDS_Shape]:
     brep_data, occ_shape, styles, style_ids = None, None, (), ()
 
     is_product_shape = True
-    if isinstance(brep_object, ifcopenshell_wrapper.SerializedElement):
+    if isinstance(brep_object, ifcopenshell_wrapper.serialized_element):
         brep_data = brep_object.geometry.brep_data
         styles = brep_object.geometry.surface_styles
         style_ids = brep_object.geometry.surface_style_ids
-    elif isinstance(brep_object, ifcopenshell_wrapper.Serialization):
+    elif isinstance(brep_object, ifcopenshell_wrapper.serialization):
         try:
             brep_data = brep_object.brep_data
             styles = brep_object.surface_styles
