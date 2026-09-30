@@ -17,41 +17,30 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import http.client
-from collections.abc import Sequence
 from pathlib import Path
+from typing import assert_never
 from urllib.parse import urlparse
 
-from typing_extensions import assert_never
-
-try:
-    from bs4 import BeautifulSoup
-except:
-    pass
-
-# Where it's also reflected:
-# - .github/workflows/ci-ifcopenshell-python.yml
-# - .github/workflows/ci-ifcopenshell-python-pypi.yml
-# - src/ifcopenshell-python/Makefile (PYVERSION check)
-SUPPORTED_PY_VERSIONS = ("310", "311", "312", "313", "314")
-SUPPORTED_PLATFORMS = ("win64", "linux64", "macos64", "macosm164")
+SUPPORTED_PY_VERSIONS = ("311", "312", "313", "314", "315")
+SUPPORTED_PLATFORMS = ("win64", "win-arm64", "linux64", "linuxarm64", "macos64", "macosm164")
 
 WASM_SUPPORTED_PY_VERSIONS = ("313",)
-WASM_PLATFORM = "pyodide_2025_0_wasm32"
+# The platform tag pyodide-build stamps on the wheel; it changed from pyodide_* to pyemscripten_* in 2025.
+WASM_PLATFORM = "pyemscripten_2025_0_wasm32"
 WASM_TEMPLATE = "https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-{BINARY_VERSION}%2B{BUILD_COMMIT}-cp{PYNUMBER}-cp{PYNUMBER}-{PLATFORM}.whl"
 
 
+def pep440_version(version: str) -> str:
+    """Normalise a version the way setuptools does when naming a wheel: "0.9.0alpha0" -> "0.9.0a0"."""
+    return version.replace("alpha", "a").replace("beta", "b").replace("pre", "rc").replace("preview", "rc")
+
+
 class TestPackageSupportedPlatforms:
-    def test_run(self) -> None:
+    @staticmethod
+    def get_required_urls() -> list[str]:
         IOS_REPO = Path(__file__).parents[3]
         makefile = IOS_REPO / "src/ifcopenshell-python/Makefile"
         text = makefile.read_text()
-
-        # We don't use requests in ifcopenshell, so we use Python builtin stuff.
-        parsed = urlparse("https://builds.ifcopenshell.org")
-        conn = http.client.HTTPSConnection(parsed.netloc)
-        conn.request("GET", parsed.path)
-        response = conn.getresponse()
-        build_html = response.read().decode("utf-8")
 
         def find_make_var(var_name: str) -> str:
             line = next(l for l in text.splitlines() if l.startswith(f"{var_name}:="))
@@ -59,6 +48,10 @@ class TestPackageSupportedPlatforms:
 
         BINARY_VERSION = find_make_var("BINARY_VERSION")
         BUILD_COMMIT = find_make_var("BUILD_COMMIT")
+        # Build workflows upload artifacts using a 7-char short SHA.
+        assert (l := len(BUILD_COMMIT)) == 7, (
+            f"BUILD_COMMIT must be a 7-char short SHA, got {BUILD_COMMIT!r} (length {l})"
+        )
 
         required_urls: list[str] = []
 
@@ -87,24 +80,58 @@ class TestPackageSupportedPlatforms:
                 else:
                     assert_never(url_type)
 
-        # WASM wheels.
+        # WASM wheels. The wheel carries the PEP 440 normalised version ("0.9.0a0"),
+        # not the "0.9.0alpha0" the zips use.
         for pyver in WASM_SUPPORTED_PY_VERSIONS:
             url = WASM_TEMPLATE.format(
                 PYNUMBER=pyver,
                 PLATFORM=WASM_PLATFORM,
-                BINARY_VERSION=BINARY_VERSION,
+                BINARY_VERSION=pep440_version(BINARY_VERSION),
                 BUILD_COMMIT=BUILD_COMMIT,
             )
             required_urls.append(url)
 
-        # Verify all required URLs are present in the build HTML.
-        missing_urls: Sequence[str]
-        if "BeautifulSoup" in globals():
-            missing_urls = set(required_urls) - set(a["href"] for a in BeautifulSoup(build_html).find_all("a"))
-        else:
-            missing_urls = []
-            for url in required_urls:
-                if url not in build_html:
-                    missing_urls.append(url)
+        return required_urls
+
+    @staticmethod
+    def get_missing_urls_fast(urls: list[str]) -> list[str]:
+        """Check `urls` against the build listing page.
+
+        Fast, but the listing page can lag behind what's actually on S3, so this may report URLs as
+        missing that do exist.
+        """
+        # We don't use requests in ifcopenshell, so we use Python builtin stuff.
+        parsed = urlparse("https://builds.ifcopenshell.org")
+        conn = http.client.HTTPSConnection(parsed.netloc)
+        conn.request("GET", parsed.path)
+        response = conn.getresponse()
+        build_html = response.read().decode("utf-8")
+        conn.close()
+
+        return [url for url in urls if url not in build_html]
+
+    @staticmethod
+    def get_missing_urls_slow(urls: list[str]) -> list[str]:
+        """Check `urls` directly with a HEAD request each.
+
+        Slow, but more reliable.
+        """
+        missing_urls: list[str] = []
+        for url in urls:
+            parsed = urlparse(url)
+            conn = http.client.HTTPSConnection(parsed.netloc)
+            conn.request("HEAD", parsed.path)
+            response = conn.getresponse()
+            response.read()
+            conn.close()
+            if response.status != 200:
+                missing_urls.append(url)
+
+        return missing_urls
+
+    def test_run(self) -> None:
+        required_urls = self.get_required_urls()
+        maybe_missing_urls = self.get_missing_urls_fast(required_urls)
+        missing_urls = self.get_missing_urls_slow(maybe_missing_urls)
 
         assert not missing_urls

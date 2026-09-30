@@ -372,6 +372,16 @@ def update_shading_style(self: "BIMStyleProperties", context: bpy.types.Context)
         tool.Style.switch_shading(blender_material, self.active_style_type)
 
 
+def update_prefer_ifc_shading(self: "BIMStyleProperties", context: bpy.types.Context) -> None:
+    style_elements = tool.Style.get_style_elements(self.id_data)
+    has_external = tool.Style.has_blender_external_style(style_elements)
+    if self.prefer_ifc_shading or not has_external:
+        self.active_style_type = "Shading"
+    else:
+        self.active_style_type = "External"
+    self.id_data.update_tag()
+
+
 class BIMStyleProperties(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     active_style_type: EnumProperty(
@@ -381,9 +391,19 @@ class BIMStyleProperties(PropertyGroup):
         default="Shading",
         update=update_shading_style,
     )
+    prefer_ifc_shading: BoolProperty(
+        name="Flat / Pretty",
+        description=(
+            "Toggle between Flat (IFC-native shading) and Pretty (external .blend style). "
+            "When set to Flat, viewport switches to Material Preview or Rendered will not activate the external style."
+        ),
+        default=False,
+        update=update_prefer_ifc_shading,
+    )
     is_renaming: BoolProperty(description="Used to prevent triggering handler callback.", default=False)
 
     if TYPE_CHECKING:
         ifc_definition_id: int
         active_style_type: tool.Style.StyleType
+        prefer_ifc_shading: bool
         is_renaming: bool
