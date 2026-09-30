@@ -173,6 +173,8 @@ ifndef NEW
 endif
 	cd . && $(SED) -b "s/$(OLD)/$(NEW)/" Makefile
 	cd ../ifcopenshell-python/ && $(SED) -b "s/$(OLD)/$(NEW)/" Makefile
+	# Verify the builds for the new commit are uploaded.
+	cd ../ifcopenshell-python/ && uvx pytest -p no:pytest-blender test/test_package.py
 
 .PHONY: dist
 dist:
