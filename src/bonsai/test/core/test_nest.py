@@ -57,3 +57,9 @@ class TestUnassignObject:
         collector.assign("relating_obj").should_be_called()
         collector.assign("related_obj").should_be_called()
         subject.unassign_object(ifc, nest, collector, relating_obj="relating_obj", related_obj="related_obj")
+
+    def test_run_with_falsy_relating_obj_when_no_nest_parent_is_found(self, ifc, nest, collector):
+        ifc.get_entity("related_obj").should_be_called().will_return("element")
+        nest.get_container("element").should_be_called().will_return(None)
+        nest.get_relating_object("element").should_be_called().will_return(None)
+        subject.unassign_object(ifc, nest, collector, relating_obj=None, related_obj="related_obj")
