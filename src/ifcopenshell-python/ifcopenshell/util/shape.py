@@ -31,7 +31,6 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 
 if TYPE_CHECKING:
-
     import ifcopenshell.ifcopenshell_wrapper as W
     from ifcopenshell.geom import ShapeElementType
     from ifcopenshell.util.shape_builder import VectorType
@@ -46,7 +45,7 @@ MatrixType = npt.NDArray[np.float64]
 
 tol = 1e-6
 
-# NOTE: See IfcGeomRepresentation.h for W.Triangulation buffer types.
+# NOTE: See representation.h for W.triangulation buffer types.
 
 # NOTE: For functions that return a single scalar ensure to use .item() to
 # return the Python float instead of numpy float
@@ -68,7 +67,7 @@ def is_x(value: float, x: float, tolerance: Optional[float] = None) -> bool:
     return abs(x - value) < tolerance
 
 
-def get_volume(geometry: W.Triangulation) -> float:
+def get_volume(geometry: W.triangulation) -> float:
     """Calculates the total internal volume of a geometry
 
     Volumes of non-manifold geometry will be unpredictable.
@@ -98,7 +97,7 @@ def get_volume(geometry: W.Triangulation) -> float:
     return abs(sum(volumes))
 
 
-def get_x(geometry: W.Triangulation) -> float:
+def get_x(geometry: W.triangulation) -> float:
     """Calculates the X length of the geometry
 
     :param geometry: Geometry output calculated by IfcOpenShell
@@ -108,7 +107,7 @@ def get_x(geometry: W.Triangulation) -> float:
     return (np.max(verts_flat[0::3]) - np.min(verts_flat[0::3])).item()
 
 
-def get_y(geometry: W.Triangulation) -> float:
+def get_y(geometry: W.triangulation) -> float:
     """Calculates the Y length of the geometry
 
     :param geometry: Geometry output calculated by IfcOpenShell
@@ -118,7 +117,7 @@ def get_y(geometry: W.Triangulation) -> float:
     return (np.max(verts_flat[1::3]) - np.min(verts_flat[1::3])).item()
 
 
-def get_z(geometry: W.Triangulation) -> float:
+def get_z(geometry: W.triangulation) -> float:
     """Calculates the Z length of the geometry
 
     :param geometry: Geometry output calculated by IfcOpenShell
@@ -128,7 +127,7 @@ def get_z(geometry: W.Triangulation) -> float:
     return (np.max(verts_flat[2::3]) - np.min(verts_flat[2::3])).item()
 
 
-def get_max_xy(geometry: W.Triangulation) -> float:
+def get_max_xy(geometry: W.triangulation) -> float:
     """Gets the maximum X or Y length of the geometry
 
     :param geometry: Geometry output calculated by IfcOpenShell
@@ -137,7 +136,7 @@ def get_max_xy(geometry: W.Triangulation) -> float:
     return max(get_x(geometry), get_y(geometry))
 
 
-def get_max_xyz(geometry: W.Triangulation) -> float:
+def get_max_xyz(geometry: W.triangulation) -> float:
     """Gets the maximum X, Y, or Z length of the geometry
 
     :param geometry: Geometry output calculated by IfcOpenShell
@@ -146,7 +145,7 @@ def get_max_xyz(geometry: W.Triangulation) -> float:
     return max(get_x(geometry), get_y(geometry), get_z(geometry))
 
 
-def get_min_xyz(geometry: W.Triangulation) -> float:
+def get_min_xyz(geometry: W.triangulation) -> float:
     """Gets the minimum X, Y, or Z length of the geometry
 
     :param geometry: Geometry output calculated by IfcOpenShell
@@ -164,7 +163,7 @@ def get_shape_matrix(shape: ShapeElementType) -> MatrixType:
     return np.frombuffer(shape.transformation_buffer, "d").reshape((4, 4), order="F")
 
 
-def get_bbox_centroid(geometry: W.Triangulation) -> tuple[float, float, float]:
+def get_bbox_centroid(geometry: W.triangulation) -> tuple[float, float, float]:
     """Calculates the bounding box centroid of the geometry
 
     The centroid is in local coordinates relative to the object's placement.
@@ -176,7 +175,7 @@ def get_bbox_centroid(geometry: W.Triangulation) -> tuple[float, float, float]:
     return (np.min(vertices_array, axis=0) + np.max(vertices_array, axis=0)) / 2
 
 
-def get_vert_centroid(geometry: W.Triangulation) -> tuple[float, float, float]:
+def get_vert_centroid(geometry: W.triangulation) -> tuple[float, float, float]:
     """Calculates the average vertex centroid of the geometry
 
     The centroid is in local coordinates relative to the object's placement.
@@ -188,7 +187,7 @@ def get_vert_centroid(geometry: W.Triangulation) -> tuple[float, float, float]:
 
 
 def get_element_bbox_centroid(
-    element: ifcopenshell.entity_instance, geometry: W.Triangulation
+    element: ifcopenshell.entity_instance, geometry: W.triangulation
 ) -> npt.NDArray[np.float64]:
     """Calculates the element's bounding box centroid
 
@@ -206,7 +205,7 @@ def get_element_bbox_centroid(
     return (mat @ np.array([*centroid, 1.0]))[0:3]
 
 
-def get_shape_bbox_centroid(shape: ShapeElementType, geometry: W.Triangulation) -> npt.NDArray[np.float64]:
+def get_shape_bbox_centroid(shape: ShapeElementType, geometry: W.triangulation) -> npt.NDArray[np.float64]:
     """Calculates the shape's bounding box centroid
 
     The centroid is in global coordinates. Note that if you do not have the
@@ -220,7 +219,7 @@ def get_shape_bbox_centroid(shape: ShapeElementType, geometry: W.Triangulation) 
     return (get_shape_matrix(shape) @ np.array([*centroid, 1.0]))[0:3]
 
 
-def get_vertices(geometry: W.Triangulation, is_2d: bool = False) -> npt.NDArray[np.float64]:
+def get_vertices(geometry: W.triangulation, is_2d: bool = False) -> npt.NDArray[np.float64]:
     """Get all the vertices as a numpy array
 
     Vertices are in local coordinates.
@@ -235,7 +234,7 @@ def get_vertices(geometry: W.Triangulation, is_2d: bool = False) -> npt.NDArray[
     return np.frombuffer(geometry.verts_buffer, "d").reshape(-1, 3)
 
 
-def get_edges(geometry: W.Triangulation) -> npt.NDArray[np.int32]:
+def get_edges(geometry: W.triangulation) -> npt.NDArray[np.int32]:
     """Get all the edges as a numpy array
 
     Results are a nested numpy array e.g. [[e1v1, e1v2], [e2v1, e2v2], ...]
@@ -251,7 +250,7 @@ def get_edges(geometry: W.Triangulation) -> npt.NDArray[np.int32]:
     return np.frombuffer(geometry.edges_buffer, dtype="i").reshape(-1, 2)
 
 
-def get_faces(geometry: W.Triangulation) -> npt.NDArray[np.int32]:
+def get_faces(geometry: W.triangulation) -> npt.NDArray[np.int32]:
     """Get all the faces as a numpy array
 
     Faces are always triangulated. If the shape is a BRep and you want to get
@@ -266,7 +265,7 @@ def get_faces(geometry: W.Triangulation) -> npt.NDArray[np.int32]:
     return np.frombuffer(geometry.faces_buffer, dtype="i").reshape(-1, 3)
 
 
-def get_material_colors(geometry: W.Triangulation) -> npt.NDArray[np.float64]:
+def get_material_colors(geometry: W.triangulation) -> npt.NDArray[np.float64]:
     """Get material colors as a numpy array.
 
     :return: A numpy array listing RGBA color for each shape's material.
@@ -277,7 +276,7 @@ def get_material_colors(geometry: W.Triangulation) -> npt.NDArray[np.float64]:
     return np.frombuffer(geometry.colors_buffer, dtype="d").reshape(-1, 4)
 
 
-def get_normals(geometry: W.Triangulation) -> npt.NDArray[np.float64]:
+def get_normals(geometry: W.triangulation) -> npt.NDArray[np.float64]:
     """Get vertex normals as a numpy array.
 
     See geometry settings documentation for settings that affect normals.
@@ -288,12 +287,12 @@ def get_normals(geometry: W.Triangulation) -> npt.NDArray[np.float64]:
     return np.frombuffer(geometry.normals_buffer, dtype="d").reshape(-1, 3)
 
 
-def get_shape_material_styles(geometry: W.Triangulation) -> tuple[W.style, ...]:
+def get_shape_material_styles(geometry: W.triangulation) -> tuple[W.style, ...]:
     """Get list of material styles."""
     return geometry.materials
 
 
-def get_faces_material_style_ids(geometry: W.Triangulation) -> npt.NDArray[np.int32]:
+def get_faces_material_style_ids(geometry: W.triangulation) -> npt.NDArray[np.int32]:
     """Get material styles ids for the geometry faces.
 
     Return a list of corresponding indices of styles from get_shape_material_styles for each face.
@@ -302,12 +301,12 @@ def get_faces_material_style_ids(geometry: W.Triangulation) -> npt.NDArray[np.in
     return np.frombuffer(geometry.material_ids_buffer, dtype="i")
 
 
-def get_faces_representation_item_ids(geometry: W.Triangulation) -> npt.NDArray[np.int32]:
+def get_faces_representation_item_ids(geometry: W.triangulation) -> npt.NDArray[np.int32]:
     """Get representation item ids for the geometry faces."""
     return np.frombuffer(geometry.item_ids_buffer, dtype="i")
 
 
-def get_edges_representation_item_ids(geometry: W.Triangulation) -> npt.NDArray[np.int32]:
+def get_edges_representation_item_ids(geometry: W.triangulation) -> npt.NDArray[np.int32]:
     """Get representation item ids for the geometry edges.
 
     Can be useful for geometry without faces and in general is more universal
@@ -316,7 +315,7 @@ def get_edges_representation_item_ids(geometry: W.Triangulation) -> npt.NDArray[
     return np.frombuffer(geometry.edges_item_ids_buffer, dtype="i")
 
 
-def get_shape_vertices(shape: ShapeElementType, geometry: W.Triangulation) -> npt.NDArray[np.float64]:
+def get_shape_vertices(shape: ShapeElementType, geometry: W.triangulation) -> npt.NDArray[np.float64]:
     """Get the shape's vertices as a numpy array
 
     Vertices are in global coordinates. If you do not have the shape, you can
@@ -334,7 +333,7 @@ def get_shape_vertices(shape: ShapeElementType, geometry: W.Triangulation) -> np
     return np.delete((mat @ np.hstack((verts, np.ones((len(verts), 1)))).T).T, -1, axis=1)
 
 
-def get_element_vertices(element: ifcopenshell.entity_instance, geometry: W.Triangulation) -> npt.NDArray[np.float64]:
+def get_element_vertices(element: ifcopenshell.entity_instance, geometry: W.triangulation) -> npt.NDArray[np.float64]:
     """Get the element's vertices as a numpy array
 
     Vertices are in global coordinates. Note that if you have the shape, it is
@@ -353,7 +352,7 @@ def get_element_vertices(element: ifcopenshell.entity_instance, geometry: W.Tria
     return np.delete((mat @ np.hstack((verts, np.ones((len(verts), 1)))).T).T, -1, axis=1)
 
 
-def get_bottom_elevation(geometry: W.Triangulation) -> float:
+def get_bottom_elevation(geometry: W.triangulation) -> float:
     """Gets the lowest local Z ordinate of the geometry
 
     :param geometry: Geometry output calculated by IfcOpenShell
@@ -363,7 +362,7 @@ def get_bottom_elevation(geometry: W.Triangulation) -> float:
     return np.min(verts_flat[2::3]).item()
 
 
-def get_top_elevation(geometry: W.Triangulation) -> float:
+def get_top_elevation(geometry: W.triangulation) -> float:
     """Gets the highest local Z ordinate of the geometry
 
     :param geometry: Geometry output calculated by IfcOpenShell
@@ -373,7 +372,7 @@ def get_top_elevation(geometry: W.Triangulation) -> float:
     return np.max(verts_flat[2::3]).item()
 
 
-def get_shape_bottom_elevation(shape: ShapeElementType, geometry: W.Triangulation) -> float:
+def get_shape_bottom_elevation(shape: ShapeElementType, geometry: W.triangulation) -> float:
     """Gets the lowest global Z ordinate of the shape
 
     If you do not have the shape, you can use :func:`get_element_bottom_elevation`
@@ -386,7 +385,7 @@ def get_shape_bottom_elevation(shape: ShapeElementType, geometry: W.Triangulatio
     return min([v[2] for v in get_shape_vertices(shape, geometry)])
 
 
-def get_shape_top_elevation(shape: ShapeElementType, geometry: W.Triangulation) -> float:
+def get_shape_top_elevation(shape: ShapeElementType, geometry: W.triangulation) -> float:
     """Gets the highest global Z ordinate of the shape
 
     If you do not have the shape, you can use :func:`get_element_top_elevation`
@@ -399,7 +398,7 @@ def get_shape_top_elevation(shape: ShapeElementType, geometry: W.Triangulation) 
     return max([v[2] for v in get_shape_vertices(shape, geometry)])
 
 
-def get_element_bottom_elevation(element: ifcopenshell.entity_instance, geometry: W.Triangulation) -> float:
+def get_element_bottom_elevation(element: ifcopenshell.entity_instance, geometry: W.triangulation) -> float:
     """Gets the lowest global Z ordinate of the element
 
     Note that if you have the shape, it is more efficient to use
@@ -412,7 +411,7 @@ def get_element_bottom_elevation(element: ifcopenshell.entity_instance, geometry
     return min([v[2] for v in get_element_vertices(element, geometry)])
 
 
-def get_element_top_elevation(element: ifcopenshell.entity_instance, geometry: W.Triangulation) -> float:
+def get_element_top_elevation(element: ifcopenshell.entity_instance, geometry: W.triangulation) -> float:
     """Gets the highest global Z ordinate of the element
 
     Note that if you have the shape, it is more efficient to use
@@ -458,7 +457,7 @@ def get_area_vf(vertices: npt.NDArray[np.float64], faces: npt.NDArray[np.int32])
     return mesh_area.item()
 
 
-def get_area(geometry: W.Triangulation) -> float:
+def get_area(geometry: W.triangulation) -> float:
     """Calculates the surface area of the geometry
 
     :param geometry: Geometry output calculated by IfcOpenShell
@@ -470,7 +469,7 @@ def get_area(geometry: W.Triangulation) -> float:
 
 
 def get_side_area(
-    geometry: W.Triangulation,
+    geometry: W.triangulation,
     axis: AXIS_LITERAL = "Y",
     direction: Optional[VectorType] = None,
     angle: float = 90.0,
@@ -520,7 +519,7 @@ def get_side_area(
     return get_area_vf(vertices, filtered_faces)
 
 
-def get_max_side_area(geometry: W.Triangulation) -> float:
+def get_max_side_area(geometry: W.triangulation) -> float:
     """Returns the maximum X, Y, or Z side area
 
     See :func:`get_side_area` for how side area is calculated.
@@ -531,12 +530,12 @@ def get_max_side_area(geometry: W.Triangulation) -> float:
     return max(get_side_area(geometry, axis="X"), get_side_area(geometry, axis="Y"), get_side_area(geometry, axis="Z"))
 
 
-def get_top_area(geometry: W.Triangulation) -> float:
+def get_top_area(geometry: W.triangulation) -> float:
     return get_side_area(geometry, axis="Z", angle=45)
 
 
 def get_footprint_area(
-    geometry: W.Triangulation,
+    geometry: W.triangulation,
     axis: AXIS_LITERAL = "Z",
     direction: Optional[VECTOR_3D] = None,
 ) -> float:
@@ -614,7 +613,7 @@ def get_footprint_area(
     return unioned_polygon.area
 
 
-def get_outer_surface_area(geometry: W.Triangulation) -> float:
+def get_outer_surface_area(geometry: W.triangulation) -> float:
     """Calculates the outer surface area (i.e. all sides except for top and bottom)
 
     This is typically useful for calculating painted areas of beams which
@@ -640,7 +639,7 @@ def get_outer_surface_area(geometry: W.Triangulation) -> float:
     return get_area_vf(vertices, filtered_faces)
 
 
-def get_footprint_perimeter(geometry: W.Triangulation) -> float:
+def get_footprint_perimeter(geometry: W.triangulation) -> float:
     """Calculates the footprint perimeter of the geometry
 
     All faces with a negative Z normal are considered and the distance of all
@@ -743,7 +742,7 @@ def get_base_extrusions(element: ifcopenshell.entity_instance) -> Union[list[ifc
     return extrusions
 
 
-def get_total_edge_length(geometry: W.Triangulation) -> float:
+def get_total_edge_length(geometry: W.triangulation) -> float:
     """Calculates the total length of edges in a given geometry.
 
     :param geometry: Geometry output calculated by IfcOpenShell

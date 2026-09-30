@@ -25,7 +25,7 @@ import re
 import time
 import typing
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, Union
+from typing import TYPE_CHECKING, Any, Literal, Union, assert_never
 
 import ifcopenshell
 import ifcopenshell.geom
@@ -38,7 +38,6 @@ import ifcopenshell.util.schema
 import ifcopenshell.util.shape
 import ifcopenshell.util.unit
 import numpy as np
-from typing_extensions import assert_never
 
 import ifcpatch
 
@@ -204,7 +203,7 @@ class Patcher(ifcpatch.BasePatcher):
                 d.name() for d in self.schema.declarations() if isinstance(d, ifcopenshell.ifcopenshell_wrapper.entity)
             ]
         else:
-            ifc_classes = self.file.wrapped_data.types()
+            ifc_classes = self.file.types()
 
         for ifc_class in ifc_classes:
             declaration = self.schema.declaration_by_name(ifc_class)
@@ -297,7 +296,7 @@ class Patcher(ifcpatch.BasePatcher):
                 checkpoint = time.time()
             shape = iterator.get()
             if shape:
-                assert isinstance(shape, W.TriangulationElement)
+                assert isinstance(shape, W.triangulation_element)
                 shape_id = shape.id
                 geometry = shape.geometry
                 geometry_id = geometry.id
@@ -328,13 +327,13 @@ class Patcher(ifcpatch.BasePatcher):
                     geometry_id = geometry_id_
                 elif geometry := ifcopenshell.geom.create_shape(self.settings, representation):
                     geometry_id = geometry_id_
-                    assert isinstance(geometry, W.Triangulation)
+                    assert isinstance(geometry, W.triangulation)
                     self.add_geometry_row(geometry_id, geometry)
 
             shape_id = element_type.id()
             self.shape_rows[shape_id] = (shape_id, *(0.0, 0.0, 0.0), m_bytes, geometry_id)
 
-    def add_geometry_row(self, geometry_id: str, geometry: W.Triangulation) -> None:
+    def add_geometry_row(self, geometry_id: str, geometry: W.triangulation) -> None:
         v = geometry.verts_buffer
         e = geometry.edges_buffer
         f = geometry.faces_buffer
@@ -521,7 +520,7 @@ class Patcher(ifcpatch.BasePatcher):
                 data_type = "JSON"
                 json_attrs.append(i)
             else:
-                print("Possibly not implemented attribute data type:", attribute, primitive)
+                assert False, f"{attribute}, {primitive}"
             if not self.is_strict or derived[i]:
                 optional = "DEFAULT NULL"
             else:
@@ -605,7 +604,7 @@ class Patcher(ifcpatch.BasePatcher):
 
         if self.sql_type == "sqlite":
             if rows:
-                self.c.executemany(f"INSERT INTO {ifc_class} VALUES ({','.join(['?']*len(rows[0]))});", rows)
+                self.c.executemany(f"INSERT INTO {ifc_class} VALUES ({','.join(['?'] * len(rows[0]))});", rows)
                 self.c.executemany("INSERT INTO id_map VALUES (?, ?);", id_map_rows)
             if pset_rows:
                 self.c.executemany("INSERT INTO psets VALUES (?, ?, ?, ?);", pset_rows)
@@ -618,7 +617,7 @@ class Patcher(ifcpatch.BasePatcher):
                             if (value := row[attr_i]) is None:
                                 continue
                             row[attr_i] = str(row[attr_i])
-                self.c.executemany(f"INSERT INTO {ifc_class} VALUES ({','.join(['%s']*len(rows[0]))});", rows)
+                self.c.executemany(f"INSERT INTO {ifc_class} VALUES ({','.join(['%s'] * len(rows[0]))});", rows)
                 self.c.executemany("INSERT INTO id_map VALUES (%s, %s);", id_map_rows)
             if pset_rows:
                 self.c.executemany("INSERT INTO psets VALUES (%s, %s, %s, %s);", pset_rows)
