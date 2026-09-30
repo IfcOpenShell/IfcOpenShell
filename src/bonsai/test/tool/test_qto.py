@@ -23,7 +23,6 @@ import ifcopenshell.api.cost
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
-import pytest
 
 import bonsai.bim.import_ifc as import_ifc
 import bonsai.core.root
@@ -60,6 +59,7 @@ class TestGetRoundedValue(test.bim.bootstrap.NewFile):
 class TestQuantifyElementWithoutObject(test.bim.bootstrap.NewFile):
     def test_a_door_with_no_blender_object_is_quantified_from_its_overall_size(self):
         import ifc5d.qto
+        import pytest
 
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
