@@ -30,7 +30,7 @@ SED:=sed -i '' -e
 endif
 endif
 
-SUPPORTED_PYVERSIONS := py310 py311 py312 py313 py314
+SUPPORTED_PYVERSIONS := py311 py312 py313 py314 py315
 
 ifeq ($(filter $(PYVERSION),$(SUPPORTED_PYVERSIONS)),)
 $(error Unsupported PYVERSION=$(PYVERSION). Must be one of $(SUPPORTED_PYVERSIONS))
@@ -60,8 +60,8 @@ ifeq ($(PLATFORM), win-arm64)
 PLATFORMTAG:=win_arm64
 endif
 
-BINARY_VERSION:=0.9.0alpha0
-BUILD_COMMIT:=8c614fa
+BINARY_VERSION:=0.9.1
+BUILD_COMMIT:=462f7a6
 IOS_URL:=https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v$(BINARY_VERSION)-$(BUILD_COMMIT)-$(PLATFORM).zip
 IFCCONVERT_URL:=https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v$(BINARY_VERSION)-$(BUILD_COMMIT)-$(PLATFORM).zip
 BONSAIVIEWER_URL:=https://s3.amazonaws.com/ifcopenshell-builds/BonsaiViewer-v$(BINARY_VERSION)-$(BUILD_COMMIT)-$(PLATFORM).zip
@@ -149,7 +149,7 @@ endif
 	cp -r ifcopenshell build/
 
 	mkdir build/botbuild
-	cd build/botbuild && wget $(IOS_URL) && unzip ifcopenshell-python*
+	cd build/botbuild && wget --no-verbose $(IOS_URL) && unzip ifcopenshell-python*
 	cp -r build/botbuild/ifcopenshell/*ifcopenshell_wrapper* build/ifcopenshell/
 	# v0.9.0 splits IfcOpenShell into shared libraries loaded from next to the
 	# wrapper (libifcopenshell.parse, ifcopenshell_document_rdb, ...). Copy
@@ -165,8 +165,12 @@ else
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION_DAILY)"/' build/ifcopenshell/__init__.py
 endif
 
-	cd build && $(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && $(PIP) install build
-	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m build
+	cd build && if command -v uv >/dev/null 2>&1; then \
+		uv build --wheel; \
+	else \
+		$(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && $(PIP) install build && \
+		$(PYTHON) -m build --wheel; \
+	fi
 
 ifeq ($(IS_STABLE), TRUE)
 	mv build/dist/ifcopenshell-*.whl dist/ifcopenshell-$(VERSION_PYTHON)-$(PYVERSION)-none-$(PLATFORMTAG).whl
