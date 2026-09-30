@@ -191,6 +191,37 @@ class TestEditQtos:
         assert quantity.LengthValue == pytest.approx(5000.0)
 
 
+class TestGeographicElementQuantities:
+    def test_a_geographic_element_gets_a_custom_base_quantity_set(self):
+        file = ifcopenshell.file(schema="IFC4X3")
+        ifcopenshell.api.root.create_entity(file, ifc_class="IfcProject", name="Test")
+        ifcopenshell.api.unit.assign_unit(file, length={"is_metric": True, "raw": "METERS"})
+        model = ifcopenshell.api.context.add_context(file, context_type="Model")
+        body = ifcopenshell.api.context.add_context(
+            file, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+        )
+        element = ifcopenshell.api.root.create_entity(file, ifc_class="IfcGeographicElement")
+        element.ObjectPlacement = file.createIfcLocalPlacement(
+            None, file.createIfcAxis2Placement3D(file.createIfcCartesianPoint((0.0, 0.0, 0.0)), None, None)
+        )
+        profile = file.createIfcRectangleProfileDef("AREA", None, None, 4.0, 2.0)
+        position = file.createIfcAxis2Placement3D(file.createIfcCartesianPoint((0.0, 0.0, 0.0)), None, None)
+        solid = file.createIfcExtrudedAreaSolid(profile, position, file.createIfcDirection((0.0, 0.0, 1.0)), 1.0)
+        rep = file.createIfcShapeRepresentation(body, "Body", "SweptSolid", [solid])
+        element.Representation = file.createIfcProductDefinitionShape(None, None, [rep])
+
+        results = ifc5d.qto.quantify(file, {element}, ifc5d.qto.rules["IFC4X3QtoBaseQuantities"])
+
+        assert results[element]["EQto_GeographicElementBaseQuantities"] == {
+            "Depth": pytest.approx(1.0),
+            "GrossArea": pytest.approx(8.0),
+            "GrossVolume": pytest.approx(8.0),
+            "NetArea": pytest.approx(8.0),
+            "NetVolume": pytest.approx(8.0),
+            "Perimeter": pytest.approx(12.0),
+        }
+
+
 class TestEditQtosIntegration:
     """A real quantify() + edit_qtos() round trip, guarding against edit_qto's own
     class-inference disagreeing with get_quantity_measures()'s notion of measure.
@@ -229,34 +260,3 @@ class TestEditQtosIntegration:
         assert length.is_a("IfcQuantityLength")
         assert length.Unit == millimetre
         assert length.LengthValue == pytest.approx(5000.0)
-
-
-class TestGeographicElementQuantities:
-    def test_a_geographic_element_gets_a_custom_base_quantity_set(self):
-        file = ifcopenshell.file(schema="IFC4X3")
-        ifcopenshell.api.root.create_entity(file, ifc_class="IfcProject", name="Test")
-        ifcopenshell.api.unit.assign_unit(file, length={"is_metric": True, "raw": "METERS"})
-        model = ifcopenshell.api.context.add_context(file, context_type="Model")
-        body = ifcopenshell.api.context.add_context(
-            file, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
-        )
-        element = ifcopenshell.api.root.create_entity(file, ifc_class="IfcGeographicElement")
-        element.ObjectPlacement = file.createIfcLocalPlacement(
-            None, file.createIfcAxis2Placement3D(file.createIfcCartesianPoint((0.0, 0.0, 0.0)), None, None)
-        )
-        profile = file.createIfcRectangleProfileDef("AREA", None, None, 4.0, 2.0)
-        position = file.createIfcAxis2Placement3D(file.createIfcCartesianPoint((0.0, 0.0, 0.0)), None, None)
-        solid = file.createIfcExtrudedAreaSolid(profile, position, file.createIfcDirection((0.0, 0.0, 1.0)), 1.0)
-        rep = file.createIfcShapeRepresentation(body, "Body", "SweptSolid", [solid])
-        element.Representation = file.createIfcProductDefinitionShape(None, None, [rep])
-
-        results = ifc5d.qto.quantify(file, {element}, ifc5d.qto.rules["IFC4X3QtoBaseQuantities"])
-
-        assert results[element]["EQto_GeographicElementBaseQuantities"] == {
-            "Depth": pytest.approx(1.0),
-            "GrossArea": pytest.approx(8.0),
-            "GrossVolume": pytest.approx(8.0),
-            "NetArea": pytest.approx(8.0),
-            "NetVolume": pytest.approx(8.0),
-            "Perimeter": pytest.approx(12.0),
-        }
