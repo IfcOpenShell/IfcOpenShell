@@ -1,28 +1,27 @@
 # /// script
-# dependencies = [
-#     "pytest",
-#     "typing_extensions",
-#     "numpy",
-# ]
 # ///
 """Run the package tests against a built ifcopenshell-python zip.
 
-The zip is extracted into a temporary directory that is put on PYTHONPATH, so the
-tests import the *packaged* wrapper and plug-ins, not a source build. Runs with the
-interpreter that runs this script, which therefore has to match the zip's Python
-version and have pytest installed.
+The zip with the lowest Python version is picked from the output directory and
+extracted into a temporary directory that is put on PYTHONPATH, so the tests import
+the *packaged* wrapper and plug-ins, not a source build. pytest is run through uv with
+the Python version matching the zip.
 """
 
 import argparse
-import glob
 import os
+import re
 import subprocess
 import sys
 import tempfile
 import zipfile
+from collections import defaultdict
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+TEST_DEPENDENCIES = ("pytest", "typing_extensions", "numpy")
+# Free-threaded builds (e.g. `ifcopenshell-python-313t-...`) are skipped.
+ZIP_PATTERN = re.compile(r"ifcopenshell-python-(\d)(\d+)-.*\.zip")
 
 
 def extract_preserving_symlinks(zip_path: Path, dest: Path) -> None:
@@ -40,23 +39,37 @@ def extract_preserving_symlinks(zip_path: Path, dest: Path) -> None:
                 zf.extract(info, dest)
 
 
+def find_oldest_zip(output_dir: Path) -> tuple[Path, str]:
+    """Return the zip with the lowest Python version and that version (e.g. "3.13")."""
+    zips: defaultdict[tuple[int, int], list[Path]] = defaultdict(list)
+    for path in output_dir.iterdir():
+        if match := ZIP_PATTERN.fullmatch(path.name):
+            zips[(int(match[1]), int(match[2]))].append(path)
+    if not zips:
+        sys.exit(f"No ifcopenshell-python zips found in {str(output_dir)!r}")
+    version = min(zips)
+    if len(zips[version]) != 1:
+        sys.exit(f"Expected exactly one zip for Python {version}, found: {sorted(zips[version])}")
+    return zips[version][0], ".".join(map(str, version))
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("zip", help="Path or glob to the ifcopenshell-python zip.")
+    parser.add_argument("output_dir", type=Path, help="Directory with the packaged ifcopenshell-python zips.")
     parser.add_argument("pytest_args", nargs=argparse.REMAINDER, help="Extra arguments passed to pytest.")
     args = parser.parse_args()
 
-    matches = sorted(glob.glob(args.zip))
-    if len(matches) != 1:
-        print(f"Expected exactly one zip for {args.zip!r}, found: {matches}")
-        return 2
-    zip_path = Path(matches[0])
+    zip_path, python_version = find_oldest_zip(args.output_dir)
     with tempfile.TemporaryDirectory(prefix="ifcopenshell-package-") as tmp:
         print(f"Extracting {zip_path} into {tmp}")
         extract_preserving_symlinks(zip_path, Path(tmp))
         env = dict(os.environ, PYTHONPATH=tmp, PYTEST_DISABLE_PLUGIN_AUTOLOAD="1")
+        with_args = [arg for dep in TEST_DEPENDENCIES for arg in ("--with", dep)]
         # Run from the temp dir so a checked-out `src/ifcopenshell-python` can never shadow the package.
-        cmd = [sys.executable, "-m", "pytest", "-p", "no:cacheprovider", "-v", str(HERE), *args.pytest_args]
+        cmd = [
+            *("uv", "run", "--python", python_version, *with_args),
+            *("python", "-m", "pytest", "-p", "no:cacheprovider", "-v", str(HERE), *args.pytest_args),
+        ]
         print("$", " ".join(cmd))
         proc = subprocess.run(cmd, cwd=tmp, env=env)
         return proc.returncode

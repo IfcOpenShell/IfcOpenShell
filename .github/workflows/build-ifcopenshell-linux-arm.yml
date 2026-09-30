@@ -133,7 +133,7 @@ jobs:
         # (kernel -> tree, kernel -> SVG serializer) that a duplicated OCCT breaks.
         shell: bash
         run: |
-          uv run --python 3.13 test/package/run_against_package.py "$HOME/output/ifcopenshell-python-313-*-linuxarm64.zip"
+          uv run test/package/run_against_package.py "$HOME/output"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
