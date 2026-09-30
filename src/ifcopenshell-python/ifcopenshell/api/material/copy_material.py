@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api.profile
 import ifcopenshell.util.element
 
 
@@ -26,8 +27,9 @@ def copy_material(file: ifcopenshell.file, material: ifcopenshell.entity_instanc
     All material psets and styles are copied. The copied material is not
     associated to any elements.
 
-    If a material set is copied, the set items are also copied. However the
-    underlying materials (and profiles) used within the set items are reused.
+    If a material set is copied, the set items are also copied. The underlying
+    materials used within the set items are reused, but profile definitions are
+    copied so each set may be edited independently.
 
     If a material is associated with a presentation style, that presentation
     style is reused.
@@ -63,7 +65,10 @@ def copy_material(file: ifcopenshell.file, material: ifcopenshell.entity_instanc
         new.MaterialProfiles = [copy_material(file, i) for i in material.MaterialProfiles]
         return new
     elif material.is_a("IfcMaterialProfile"):
-        return _copy_material_with_inverses(file, material)
+        new = _copy_material_with_inverses(file, material)
+        if new.Profile:
+            new.Profile = ifcopenshell.api.profile.copy_profile(file, new.Profile)
+        return new
     elif material.is_a("IfcMaterialList"):
         return _copy_material_with_inverses(file, material)
     else:
