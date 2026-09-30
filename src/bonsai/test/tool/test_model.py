@@ -229,6 +229,24 @@ class TestStairCalculatedParams(NewFile):
         self.compare_data(pset_data, calculated_data)
 
 
+class TestDeprecatedMeshAddOperatorsAreRemoved(NewFile):
+    NAMES = ("add_stair", "add_window", "add_door", "add_railing", "add_roof")
+
+    def test_the_mesh_add_operators_are_not_registered(self):
+        registered = []
+        for name in self.NAMES:
+            try:
+                getattr(bpy.ops.mesh, name).get_rna_type()
+                registered.append(name)
+            except KeyError:
+                pass
+        assert registered == []
+
+    def test_the_bim_add_operators_are_registered(self):
+        for name in self.NAMES:
+            assert getattr(bpy.ops.bim, name).get_rna_type()
+
+
 class TestGenerateStair2DProfile(NewFile):
     def compare_data(self, generated_profile, expected_profile):
         verts_gen, edges_gen, faces_gen = generated_profile
