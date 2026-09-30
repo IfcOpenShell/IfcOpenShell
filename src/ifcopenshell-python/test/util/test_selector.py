@@ -474,6 +474,21 @@ class TestFilterElements(test.bootstrap.IFC4):
 
 
 class TestSetElementValue(test.bootstrap.IFC4):
+    def test_set_value_with_a_trailing_index(self):
+        layer_set = self.file.create_entity("IfcMaterialLayerSet")
+        material0 = self.file.create_entity("IfcMaterial", Name="0")
+        layer0 = self.file.create_entity("IfcMaterialLayer", Material=material0)
+        material1 = self.file.create_entity("IfcMaterial", Name="1")
+        layer1 = self.file.create_entity("IfcMaterialLayer", Material=material1)
+        layer_set.MaterialLayers = [layer0, layer1]
+        assert subject.get_element_value(layer_set, "item.Material.Name.0") == "0"
+        subject.set_element_value(self.file, layer_set, "item.Material.Name.0", "a")
+        assert material0.Name == "a"
+        assert material1.Name == "1"
+        subject.set_element_value(self.file, layer_set, "item.Material.Name.1", "b")
+        assert material1.Name == "b"
+        assert material0.Name == "a"
+
     def test_set_xyz_coordinates(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         ifcopenshell.api.unit.assign_unit(self.file)
@@ -508,21 +523,6 @@ class TestSetElementValue(test.bootstrap.IFC4):
         layer.Material = material
         subject.set_element_value(self.file, layer, "Material.Name", "Foo")
         assert material.Name == "Foo"
-
-    def test_set_value_with_a_trailing_index(self):
-        layer_set = self.file.create_entity("IfcMaterialLayerSet")
-        material0 = self.file.create_entity("IfcMaterial", Name="0")
-        layer0 = self.file.create_entity("IfcMaterialLayer", Material=material0)
-        material1 = self.file.create_entity("IfcMaterial", Name="1")
-        layer1 = self.file.create_entity("IfcMaterialLayer", Material=material1)
-        layer_set.MaterialLayers = [layer0, layer1]
-        assert subject.get_element_value(layer_set, "item.Material.Name.0") == "0"
-        subject.set_element_value(self.file, layer_set, "item.Material.Name.0", "a")
-        assert material0.Name == "a"
-        assert material1.Name == "1"
-        subject.set_element_value(self.file, layer_set, "item.Material.Name.1", "b")
-        assert material1.Name == "b"
-        assert material0.Name == "a"
 
 
 class TestSetElementValuePredefinedType(test.bootstrap.IFC4):
