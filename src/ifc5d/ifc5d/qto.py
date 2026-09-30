@@ -436,10 +436,8 @@ class IfcOpenShell(QtoCalculator):
         "get_footing_height",
     )
 
-    # Attribute based calculators. Unlike the geometry calculators above these
-    # read values straight off the IFC element (e.g. IfcDoor/IfcWindow
-    # OverallWidth/OverallHeight) and need no geometry, so they quantify elements
-    # whose body representation is mapped, missing, or otherwise not meshed.
+    # Attribute based calculators read values off the IFC element and need no
+    # geometry.
     attribute_functions = {
         "get_overall_width": Function(
             "IfcLengthMeasure", "Overall Width", "The door/window OverallWidth attribute (nominal outer lining width)"
@@ -538,8 +536,7 @@ class IfcOpenShell(QtoCalculator):
             for quantity, formula in quantities.items():
                 if not formula:
                     continue
-                # Attribute based formulas are computed from the element directly
-                # and need no geometry, so keep them out of the iterator tasks.
+                # Attribute based formulas need no geometry, so skip the iterator tasks.
                 if formula in cls.attribute_functions:
                     attribute_qtos.setdefault(name, {})[quantity] = formula
                     continue
@@ -565,8 +562,7 @@ class IfcOpenShell(QtoCalculator):
 
         cls.unit_converter = SI2ProjectUnitConverter(ifc_file)
 
-        # Attribute based quantities: compute straight from the element, no
-        # geometry required, so mapped/unmeshed doors and windows still quantify.
+        # Attribute based quantities are computed from the element, no geometry.
         for element in elements:
             for name, quantities in attribute_qtos.items():
                 for quantity, formula in quantities.items():
@@ -912,12 +908,8 @@ class Blender(QtoCalculator):
 
         for element in elements:
             obj = tool.Ifc.get_object(element)
-            # When the element has no Blender object (e.g. a door/window whose
-            # mapped body representation never produced a standalone mesh),
-            # attribute-based calculators can still quantify it from the IFC
-            # element directly. Pass the element itself as the calculation target
-            # in that case; geometry-only calculators raise on a non-object and
-            # are skipped below, so nothing crashes.
+            # Without a Blender object the IFC element is the target, so attribute
+            # based calculators still work.
             target = obj if obj is not None else element
             element_results = results.setdefault(element, {})
             for name, quantities in qtos.items():
@@ -927,10 +919,7 @@ class Blender(QtoCalculator):
                         continue
                     if not (formula_function := formula_functions.get(formula)):
                         formula_function = formula_functions[formula] = getattr(calculator, formula)
-                    # A calculator may raise on geometry it cannot handle (a
-                    # non-MESH object, or the element itself when there is no
-                    # object). Skip that quantity rather than aborting the whole
-                    # take-off.
+                    # Geometry calculators raise on a non-mesh target; skip that quantity.
                     try:
                         value = formula_function(target)
                     except Exception:

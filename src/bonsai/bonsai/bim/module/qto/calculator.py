@@ -521,9 +521,8 @@ def get_side_area(o: bpy.types.Object) -> float:
     return max(x * z, y * z)
 
 
-# A quantity target is either a Blender object, the IFC element itself (used when
-# the element has no Blender object, e.g. a door/window whose mapped body
-# representation never produced a standalone mesh), or None.
+# A quantity target is a Blender object, or the IFC element itself when it has no
+# Blender object.
 QtoTarget = Union[bpy.types.Object, ifcopenshell.entity_instance, None]
 
 
