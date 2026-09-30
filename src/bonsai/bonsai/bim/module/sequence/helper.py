@@ -52,7 +52,13 @@ def canonicalise_time(time: Union[datetime, None]) -> str:
 def parse_duration_as_blender_props(dt: Union[Any, str]) -> dict[str, int]:
     if True:
         if isinstance(dt, str):
-            dt = ifcopenshell.util.date.ifc2datetime(dt)
+            try:
+                dt = ifcopenshell.util.date.ifc2datetime(dt)
+            except (ValueError, TypeError):
+                # A malformed IfcDuration (e.g. "1D", "") makes ifc2datetime raise.
+                # Warn and treat it as empty.
+                print(f"WARNING: could not parse duration value {dt!r}, treating it as empty.")
+                dt = None
 
         seconds = getattr(dt, "seconds", 0)
         hours, seconds = divmod(seconds, 3600)
