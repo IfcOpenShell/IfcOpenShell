@@ -49,7 +49,7 @@ class AddPsetTemplateFile(bpy.types.Operator):
         ifcopenshell.api.pset_template.add_prop_template(template, pset_template=pset_template)
         template.write(filepath)
         bonsai.bim.handler.refresh_ui_data()
-        bonsai.bim.schema.reload(tool.Ifc.get().schema)
+        bonsai.bim.schema.reload(tool.Ifc.get().schema_identifier)
         props = tool.PsetTemplate.get_pset_template_props()
         props.pset_template_files = filepath
         tool.PsetTemplate.enable_editing_pset_template()
@@ -68,7 +68,7 @@ class AddPsetTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOperator
         ifcopenshell.api.pset_template.add_prop_template(self.template_file, pset_template=template)
         self.template_file.write(IfcStore.pset_template_path)
         bonsai.bim.handler.refresh_ui_data()
-        bonsai.bim.schema.reload(tool.Ifc.get().schema)
+        bonsai.bim.schema.reload(tool.Ifc.get().schema_identifier)
         props = tool.PsetTemplate.get_pset_template_props()
         props.pset_templates = str(template.id())
 
@@ -89,7 +89,7 @@ class RemovePsetTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOpera
         )
         self.template_file.write(IfcStore.pset_template_path)
         bonsai.bim.handler.refresh_ui_data()
-        bonsai.bim.schema.reload(tool.Ifc.get().schema)
+        bonsai.bim.schema.reload(tool.Ifc.get().schema_identifier)
         tool.Blender.ensure_enum_is_valid(props, "pset_templates")
 
 
@@ -182,7 +182,7 @@ class EditPsetTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOperato
         bpy.ops.bim.disable_editing_pset_template()
         IfcStore.pset_template_file.write(IfcStore.pset_template_path)
         bonsai.bim.handler.refresh_ui_data()
-        bonsai.bim.schema.reload(tool.Ifc.get().schema)
+        bonsai.bim.schema.reload(tool.Ifc.get().schema_identifier)
 
 
 class SavePsetTemplateFile(bpy.types.Operator):
@@ -192,7 +192,7 @@ class SavePsetTemplateFile(bpy.types.Operator):
     def execute(self, context):
         IfcStore.pset_template_file.write(IfcStore.pset_template_path)
         bonsai.bim.handler.refresh_ui_data()
-        bonsai.bim.schema.reload(tool.Ifc.get().schema)
+        bonsai.bim.schema.reload(tool.Ifc.get().schema_identifier)
         return {"FINISHED"}
 
 
@@ -207,7 +207,7 @@ class RemovePsetTemplateFile(bpy.types.Operator):
         except:
             pass
         bonsai.bim.handler.refresh_ui_data()
-        bonsai.bim.schema.reload(tool.Ifc.get().schema)
+        bonsai.bim.schema.reload(tool.Ifc.get().schema_identifier)
 
         # Ensure enum is valid after deletion.
         self.props = tool.PsetTemplate.get_pset_template_props()
@@ -236,7 +236,7 @@ class AddPropTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOperator
         bpy.ops.bim.disable_editing_prop_template()
         IfcStore.pset_template_file.write(IfcStore.pset_template_path)
         bonsai.bim.handler.refresh_ui_data()
-        bonsai.bim.schema.reload(tool.Ifc.get().schema)
+        bonsai.bim.schema.reload(tool.Ifc.get().schema_identifier)
         tool.PsetTemplate.enable_editing_prop_template(prop_template)
 
 
@@ -253,7 +253,7 @@ class RemovePropTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOpera
         )
         IfcStore.pset_template_file.write(IfcStore.pset_template_path)
         bonsai.bim.handler.refresh_ui_data()
-        bonsai.bim.schema.reload(tool.Ifc.get().schema)
+        bonsai.bim.schema.reload(tool.Ifc.get().schema_identifier)
 
 
 class EditPropTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOperator):
@@ -293,7 +293,7 @@ class EditPropTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOperato
         IfcStore.pset_template_file.write(IfcStore.pset_template_path)
         bonsai.bim.handler.refresh_ui_data()
         if tool.Ifc.get():
-            bonsai.bim.schema.reload(tool.Ifc.get().schema)
+            bonsai.bim.schema.reload(tool.Ifc.get().schema_identifier)
 
 
 class SelectPsetTemplatesInUI(bpy.types.Operator):
