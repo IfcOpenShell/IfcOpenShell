@@ -582,9 +582,13 @@ class DisableEditingSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator
 
 def disable_editing_extrusion_profile(context):
     ProfileDecorator.uninstall()
-    bpy.ops.object.mode_set(mode="OBJECT")
 
-    obj = context.active_object
+    # Also the decorator exit callback, which can fire with no active object (#9006).
+    if not (obj := context.active_object):
+        return {"CANCELLED"}
+    if obj.mode == "EDIT":
+        bpy.ops.object.mode_set(mode="OBJECT")
+
     element = tool.Ifc.get_entity(obj)
     body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
 
