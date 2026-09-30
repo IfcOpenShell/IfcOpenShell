@@ -222,7 +222,7 @@ def get_attributes(ifc_file: ifcopenshell.file) -> list[dict[str, Any]]:
                 pset_description = val(pset.Description) or pset_name
                 category = get_category(pset)
                 for name, value in props.items():
-                    if value == "default" or not val(value):
+                    if value == "default" or val(value) is None:
                         continue
                     elif name in excluded_names:
                         continue
@@ -372,7 +372,7 @@ def get_floor_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_ins
         if height is not None:
             break
         for name, value in props.items():
-            if name in height_names and val(value):
+            if name in height_names and val(value) is not None:
                 height = str(value)
                 break
 
@@ -409,13 +409,13 @@ def get_space_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_ins
     net_area_names = {"NetFloorArea", "GSA"}
     for _, props in ifcopenshell.util.element.get_psets(element).items():
         for name, value in props.items():
-            if not room_tag and name in room_tag_names and val(value):
+            if not room_tag and name in room_tag_names and val(value) is not None:
                 room_tag = str(value)
-            if not usable_height and name in usable_height_names and val(value):
+            if not usable_height and name in usable_height_names and val(value) is not None:
                 usable_height = str(value)
-            if not gross_area and name in gross_area_names and val(value):
+            if not gross_area and name in gross_area_names and val(value) is not None:
                 gross_area = str(value)
-            if not net_area and name in net_area_names and val(value):
+            if not net_area and name in net_area_names and val(value) is not None:
                 net_area = str(value)
 
     return {
@@ -491,10 +491,14 @@ def get_type_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_inst
 
     for pset_name, props in ifcopenshell.util.element.get_psets(element).items():
         if pset_name == "COBie_Warranty":
-            warranty_guarantor_parts = warranty_guarantor_parts or props.get("WarrantyGuarantorParts", None)
-            warranty_guarantor_labor = warranty_guarantor_labor or props.get("WarrantyGuarantorLabor", None)
-            warranty_duration_parts = warranty_duration_parts or props.get("WarrantyDurationParts", None)
-            warranty_duration_labor = warranty_duration_labor or props.get("WarrantyDurationLabor", None)
+            if warranty_guarantor_parts is None:
+                warranty_guarantor_parts = props.get("WarrantyGuarantorParts", None)
+            if warranty_guarantor_labor is None:
+                warranty_guarantor_labor = props.get("WarrantyGuarantorLabor", None)
+            if warranty_duration_parts is None:
+                warranty_duration_parts = props.get("WarrantyDurationParts", None)
+            if warranty_duration_labor is None:
+                warranty_duration_labor = props.get("WarrantyDurationLabor", None)
             warranty_duration_unit = props.get("WarrantyDurationUnit", None)
             warranty_description = props.get("WarrantyDescription", None)
         elif pset_name == "COBie_Asset":
@@ -533,10 +537,14 @@ def get_type_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_inst
             # with this, assuming the user either specifically targets
             # COBie_Waranty, or if they use the built-in Pset_Warranty, we
             # assume it affects both type sof warranty.
-            warranty_guarantor_parts = warranty_guarantor_parts or props.get("PointOfContact", None)
-            warranty_guarantor_labor = warranty_guarantor_labor or props.get("PointOfContact", None)
-            warranty_duration_parts = warranty_duration_parts or props.get("WarrantyPeriod", None)
-            warranty_duration_labor = warranty_duration_labor or props.get("WarrantyPeriod", None)
+            if warranty_guarantor_parts is None:
+                warranty_guarantor_parts = props.get("PointOfContact", None)
+            if warranty_guarantor_labor is None:
+                warranty_guarantor_labor = props.get("PointOfContact", None)
+            if warranty_duration_parts is None:
+                warranty_duration_parts = props.get("WarrantyPeriod", None)
+            if warranty_duration_labor is None:
+                warranty_duration_labor = props.get("WarrantyPeriod", None)
 
     return {
         "Name": val(element.Name),
@@ -598,17 +606,17 @@ def get_component_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity
 
     for _, props in ifcopenshell.util.element.get_psets(element).items():
         for name, value in props.items():
-            if not serial_number and name == "SerialNumber" and val(value):
+            if not serial_number and name == "SerialNumber" and val(value) is not None:
                 serial_number = str(value)
-            if not installation_date and name == "InstallationDate" and val(value):
+            if not installation_date and name == "InstallationDate" and val(value) is not None:
                 installation_date = str(value)
-            if not warranty_start_date and name == "WarrantyStartDate" and val(value):
+            if not warranty_start_date and name == "WarrantyStartDate" and val(value) is not None:
                 warranty_start_date = str(value)
-            if not tag_number and name == "TagNumber" and val(value):
+            if not tag_number and name == "TagNumber" and val(value) is not None:
                 tag_number = str(value)
-            if not bar_code and name == "BarCode" and val(value):
+            if not bar_code and name == "BarCode" and val(value) is not None:
                 bar_code = str(value)
-            if not asset_identifier and name == "AssetIdentifier" and val(value):
+            if not asset_identifier and name == "AssetIdentifier" and val(value) is not None:
                 asset_identifier = str(value)
 
     return {
@@ -722,11 +730,11 @@ def get_spare_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_ins
     part_number = None
     for _, props in ifcopenshell.util.element.get_psets(element).items():
         for name, value in props.items():
-            if name == "Suppliers" and val(value):
+            if name == "Suppliers" and val(value) is not None:
                 suppliers = str(value)
-            if name == "SetNumber" and val(value):
+            if name == "SetNumber" and val(value) is not None:
                 set_number = str(value)
-            if name == "PartNumber" and val(value):
+            if name == "PartNumber" and val(value) is not None:
                 part_number = str(value)
 
     return {
@@ -782,15 +790,15 @@ def get_job_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_insta
     for _, props in ifcopenshell.util.element.get_psets(element).items():
         pset = ifc_file.by_id(props["id"])
         for name, value in props.items():
-            if not duration and name == "TaskDuration" and val(value):
+            if not duration and name == "TaskDuration" and val(value) is not None:
                 duration = str(value)
                 if not duration_unit:
                     duration_unit = get_property_unit(pset, name)
-            if not start and name == "TaskStartDate" and val(value):
+            if not start and name == "TaskStartDate" and val(value) is not None:
                 start = str(value)
                 if not task_start_unit:
                     task_start_unit = get_property_unit(pset, name)
-            if not frequency and name == "TaskInterval" and val(value):
+            if not frequency and name == "TaskInterval" and val(value) is not None:
                 frequency = str(value)
                 if not frequency_unit:
                     frequency_unit = get_property_unit(pset, name)
