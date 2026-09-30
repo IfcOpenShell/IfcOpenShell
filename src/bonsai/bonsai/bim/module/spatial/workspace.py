@@ -83,8 +83,13 @@ class SpatialToolUI:
 
     @classmethod
     def draw_default_interface(cls, context):
+        spatial_props = tool.Spatial.get_spatial_props()
         row = cls.layout.row(align=True)
         row.prop(data=cls.model_props, property="rl3", text="RL")
+        row = cls.layout.row(align=True)
+        row.prop(data=spatial_props, property="space_height", text="Height")
+        row.prop(data=spatial_props, property="force_space_height", text="", icon="PINNED")
+        row.operator("bim.apply_space_height_to_selection", text="", icon="COPYDOWN")
         row = cls.layout.row(align=True)
         op_name = lambda op: op.get_rna_type().name
         if AuthoringData.data["active_class"] == "IfcWall" and context.selected_objects:

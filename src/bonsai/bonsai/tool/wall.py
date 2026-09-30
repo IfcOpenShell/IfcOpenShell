@@ -245,16 +245,9 @@ class Wall(bonsai.core.tool.Wall):
     @classmethod
     def iter_wall_slab_connections(cls, wall: ifcopenshell.entity_instance):
         """Yield ``(slab, rel)`` tuples for every ``IfcRelConnectsElements(TOP)``
-        connecting a slab to this wall — the rel kind ``extend_walls_to_underside``
-        creates. Walks ``wall.ConnectedFrom`` because the slab is the relating
-        side of the TOP rel."""
-        for rel in getattr(wall, "ConnectedFrom", []) or ():
-            if not rel.is_a("IfcRelConnectsElements") or rel.Description != "TOP":
-                continue
-            slab = rel.RelatingElement
-            if slab is None:
-                continue
-            yield slab, rel
+        connecting a slab to this wall. Delegates to
+        :func:`ifcopenshell.util.element.iter_top_connections`."""
+        yield from ifcopenshell.util.element.iter_top_connections(wall)
 
     @classmethod
     def iter_slab_wall_connections(cls, slab: ifcopenshell.entity_instance):

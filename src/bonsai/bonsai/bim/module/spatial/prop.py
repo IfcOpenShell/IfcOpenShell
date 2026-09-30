@@ -24,6 +24,7 @@ from bpy.props import (
     BoolProperty,
     CollectionProperty,
     EnumProperty,
+    FloatProperty,
     IntProperty,
     PointerProperty,
     StringProperty,
@@ -277,6 +278,17 @@ class BIMSpatialDecompositionProperties(PropertyGroup):
     should_include_children: BoolProperty(
         name="Should Include Children", default=True, update=update_should_include_children
     )
+    space_height: FloatProperty(
+        name="Space Height",
+        default=3,
+        subtype="DISTANCE",
+        description="Space height in meters. Auto-detected on generation unless forced. Used as fallback.",
+    )
+    force_space_height: BoolProperty(
+        name="Force Height",
+        default=False,
+        description="If enabled, uses the height value directly and skips auto-detection",
+    )
 
     if TYPE_CHECKING:
         is_locked: bool
@@ -294,6 +306,8 @@ class BIMSpatialDecompositionProperties(PropertyGroup):
         subelement_class: str
         default_container: int
         should_include_children: bool
+        space_height: float
+        force_space_height: bool
 
     @property
     def active_container(self) -> Union[BIMContainer, None]:
