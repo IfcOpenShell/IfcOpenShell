@@ -285,6 +285,21 @@ class TestImportRepresentationParameters(NewFile):
         assert mprops.ifc_parameters[1].index == 3
 
 
+class TestImportItem(NewFile):
+    def test_half_space_item_position_is_baselined(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        tool.Loader.load_settings()
+        plane = ifc.createIfcPlane(ifc.createIfcAxis2Placement3D(ifc.createIfcCartesianPoint((0.0, 0.0, 1.0))))
+        item = ifc.createIfcHalfSpaceSolid(BaseSurface=plane, AgreementFlag=False)
+        rep_obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Rep"))
+        tool.Geometry.get_geometry_props().representation_obj = rep_obj
+        obj = bpy.data.objects.new("Item", bpy.data.meshes.new("Item"))
+        tool.Geometry.get_mesh_props(obj.data).ifc_definition_id = item.id()
+        subject.import_item(obj)
+        assert tool.Ifc.is_moved(obj) is False
+
+
 class TestIsBodyRepresentation(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
