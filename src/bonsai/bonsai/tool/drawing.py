@@ -2960,50 +2960,52 @@ class Drawing(bonsai.core.tool.Drawing):
         def finalize_dxf():
             doc.saveas(dxf_filepath)
 
-        drawing = svg.findall(f"{SVG}g[@{IFC}name]")
-        if not drawing:
+        drawings = svg.findall(f"{SVG}g[@{IFC}name]")
+        if not drawings:
             finalize_dxf()
             return
-        drawing = drawing[0]
 
-        NUMBER = r"-?\d+\.?\d+"
+        # SVG coordinates can be bare integers or scientific notation, e.g. "5" or "1.5e-13". See #4703.
+        NUMBER = r"[-+]?(?:\d*\.\d+|\d+\.?\d*)(?:[eE][-+]?\d+)?"
         COORD = rf"{NUMBER},{NUMBER}"
         POLYLINE_PATTERN = rf"M{COORD} (?:L{COORD} ?)+Z? ?"
         MULTI_POLYLINE_PATTERN = rf"^({POLYLINE_PATTERN})+$"
 
-        for element_g in drawing.findall(f"{SVG}g"):
-            paths = element_g.findall(f"{SVG}path")
+        # Export every named drawing group, not just the first.
+        for drawing in drawings:
+            for element_g in drawing.findall(f"{SVG}g"):
+                paths = element_g.findall(f"{SVG}path")
 
-            for path in paths:
-                # For some reason `<path/>` without "d" attribute can occur too. See #6871.
-                # It's unclear whether this issue is still present with the updated ifcopenshell core,
-                # but adding this fix for now. Could be reveted later.
-                if "d" not in path.attrib:
-                    continue
-                path = path.attrib["d"]
+                for path in paths:
+                    # For some reason `<path/>` without "d" attribute can occur too. See #6871.
+                    # It's unclear whether this issue is still present with the updated ifcopenshell core,
+                    # but adding this fix for now. Could be reveted later.
+                    if "d" not in path.attrib:
+                        continue
+                    path = path.attrib["d"]
 
-                if not re.match(MULTI_POLYLINE_PATTERN, path):
-                    # print(f'Path "{path}" doesn\'t match expected pattern {MULTI_POLYLINE_PATTERN}')
-                    continue
+                    if not re.match(MULTI_POLYLINE_PATTERN, path):
+                        # print(f'Path "{path}" doesn\'t match expected pattern {MULTI_POLYLINE_PATTERN}')
+                        continue
 
-                for polyline_path in re.findall(POLYLINE_PATTERN, path):
-                    points = re.findall(rf"{NUMBER}", polyline_path)
-                    points = [float(p) for p in points]
-                    POINT_SIZE = 2
+                    for polyline_path in re.findall(POLYLINE_PATTERN, path):
+                        points = re.findall(rf"{NUMBER}", polyline_path)
+                        points = [float(p) for p in points]
+                        POINT_SIZE = 2
 
-                    grouped_points = []
-                    for i in range(0, len(points), POINT_SIZE):
-                        point = points[i : i + POINT_SIZE]
-                        point[1] *= -1
-                        grouped_points.append(point)
-                    points = grouped_points
+                        grouped_points = []
+                        for i in range(0, len(points), POINT_SIZE):
+                            point = points[i : i + POINT_SIZE]
+                            point[1] *= -1
+                            grouped_points.append(point)
+                        points = grouped_points
 
-                    # Z marks closed polylines
-                    is_closed_polyline = polyline_path.rstrip().endswith("Z")
-                    if is_closed_polyline or len(points) > 2:
-                        msp.add_lwpolyline(points, close=is_closed_polyline)
-                    else:  # LINE
-                        msp.add_line(*points)
+                        # Z marks closed polylines
+                        is_closed_polyline = polyline_path.rstrip().endswith("Z")
+                        if is_closed_polyline or len(points) > 2:
+                            msp.add_lwpolyline(points, close=is_closed_polyline)
+                        else:  # LINE
+                            msp.add_line(*points)
 
         finalize_dxf()
 
