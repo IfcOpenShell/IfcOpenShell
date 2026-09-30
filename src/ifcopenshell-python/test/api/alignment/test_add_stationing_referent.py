@@ -21,6 +21,7 @@ import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 import ifcopenshell.api.unit
 import ifcopenshell.util.element
+import ifcopenshell.validate
 
 
 def _create_test_file():
@@ -148,8 +149,25 @@ def test_add_stationing_referent_has_increasing_station():
     )
 
 
+def test_add_stationing_referent_without_alignment_object_placement():
+    file = ifcopenshell.file(schema="IFC4X3")
+    file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
+    alignment = file.createIfcAlignment(GlobalId=ifcopenshell.guid.new(), Name="TestAlignment")
+
+    referent = ifcopenshell.api.alignment.add_stationing_referent(
+        file, "1+00.000", alignment, distance_along=0.0, station=100.0
+    )
+
+    assert referent.ObjectPlacement.RelativePlacement.Location.Coordinates == (0.0, 0.0)
+    assert alignment.ObjectPlacement.RelativePlacement.Location.Coordinates == (0.0, 0.0)
+    logger = ifcopenshell.validate.json_logger()
+    ifcopenshell.validate.validate(file, logger, express_rules=True)
+    assert not [s for s in logger.statements if "HasPlacement" in str(s)]
+
+
 test_add_stationing_referent_on_basis_curve_none_defaults_to_basis_curve()
 test_add_stationing_referent_on_basis_curve_true()
 test_add_stationing_referent_on_basis_curve_false()
 test_add_stationing_referent_without_geometry_placed_at_global_origin()
 test_add_stationing_referent_has_increasing_station()
+test_add_stationing_referent_without_alignment_object_placement()
