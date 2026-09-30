@@ -126,6 +126,14 @@ class TestGetElementValue(test.bootstrap.IFC4):
         element.Name = "Foobar"
         assert subject.get_element_value(element, "Name") == "Foobar"
 
+    def test_selecting_referenced_structures(self):
+        storey = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey", name="L1")
+        space = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSpace", name="Kitchen")
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDoor")
+        ifcopenshell.api.spatial.reference_structure(self.file, products=[element], relating_structure=storey)
+        ifcopenshell.api.spatial.reference_structure(self.file, products=[element], relating_structure=space)
+        assert subject.get_element_value(element, "referenced_structures.Name") == ["L1", "Kitchen"]
+
     def test_selecting_an_elements_rotation_using_a_query(self):
         # Feature test for #6262: rotation_x/y/z value keys expose the
         # placement's Euler angles in degrees, e.g. for GIS symbol placement.
@@ -162,14 +170,6 @@ class TestGetElementValue(test.bootstrap.IFC4):
         assert subject.get_element_value(element, 'material."item"."Name"') == ["L1", "L2"]
         # Provide shortform for convenience
         assert subject.get_element_value(element, "mat.i.Name") == ["L1", "L2"]
-
-    def test_selecting_referenced_structures(self):
-        storey = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey", name="L1")
-        space = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSpace", name="Kitchen")
-        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDoor")
-        ifcopenshell.api.spatial.reference_structure(self.file, products=[element], relating_structure=storey)
-        ifcopenshell.api.spatial.reference_structure(self.file, products=[element], relating_structure=space)
-        assert subject.get_element_value(element, "referenced_structures.Name") == ["L1", "Kitchen"]
 
     def test_selecting_a_query_that_fails_silently(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
