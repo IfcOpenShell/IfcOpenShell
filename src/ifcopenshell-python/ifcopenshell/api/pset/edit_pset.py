@@ -312,8 +312,13 @@ class Usecase:
             primary_measure_type = self.get_primary_measure_type(
                 prop.Name, old_value=prop.NominalValue, new_value=value
             )
-            value = self.cast_value_to_primary_measure_type(value, primary_measure_type)
-            prop.NominalValue = self.file.create_entity(primary_measure_type, value)
+            if self.is_empty_numeric_value(value, primary_measure_type):
+                if self._try_purge(prop):
+                    return
+                prop.NominalValue = None
+            else:
+                value = self.cast_value_to_primary_measure_type(value, primary_measure_type)
+                prop.NominalValue = self.file.create_entity(primary_measure_type, value)
         if unit is not _NO_UNIT:
             prop.Unit = unit
         del self.settings["properties"][prop.Name]
@@ -387,8 +392,8 @@ class Usecase:
 
             else:
                 primary_measure_type = self.get_primary_measure_type(name, new_value=value)
-                if value is None:
-                    nominal_value = value
+                if value is None or self.is_empty_numeric_value(value, primary_measure_type):
+                    nominal_value = None
                 else:
                     value = self.cast_value_to_primary_measure_type(value, primary_measure_type)
                     nominal_value = self.file.create_entity(primary_measure_type, value)
@@ -457,6 +462,12 @@ class Usecase:
                 return "IfcDateTime"
             elif isinstance(new_value, datetime.date):
                 return "IfcDate"
+
+    def is_empty_numeric_value(self, value: Any, primary_measure_type: str) -> bool:
+        """Whether an empty string is assigned to a numeric measure, to be treated as no value."""
+        if value != "":
+            return False
+        return self.file.create_entity(primary_measure_type).attribute_type(0) in ("DOUBLE", "INT")
 
     def cast_value_to_primary_measure_type(self, value, primary_measure_type):
         type_str = self.file.create_entity(primary_measure_type).attribute_type(0)
