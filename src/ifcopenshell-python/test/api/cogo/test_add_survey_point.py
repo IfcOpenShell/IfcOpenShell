@@ -50,3 +50,4 @@ def test_add_survey_point():
     assert annotation.Representation.Representations[0].RepresentationIdentifier == "Annotation"
     assert annotation.Representation.Representations[0].RepresentationType == "Point"
     assert annotation.Representation.Representations[0].Items[0].Coordinates == pytest.approx((50.0, 10.0))
+    assert annotation.ObjectPlacement.is_a("IfcLocalPlacement")
