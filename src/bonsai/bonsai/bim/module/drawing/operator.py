@@ -21,7 +21,6 @@ import logging
 import multiprocessing
 import os
 import shutil
-import subprocess
 import time
 from math import radians
 from pathlib import Path
@@ -2254,17 +2253,20 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
             if svg2pdf_command:
                 # With great power comes great responsibility. Example:
                 # [["inkscape", "svg", "-o", "pdf"]]
-                commands = json.loads(svg2pdf_command)
-                for command in commands:
-                    subprocess.run([replacements.get(c, c) for c in command])
+                try:
+                    core.run_conversion_command(tool.Drawing, svg2pdf_command, replacements, "svg2pdf_command")
+                except core.ConversionCommandError as e:
+                    self.report({"ERROR"}, str(e))
+                    return {"CANCELLED"}
 
             if svg2dxf_command:
                 # With great power comes great responsibility. Example:
                 # [["inkscape", "svg", "-o", "eps"], ["pstoedit", "-dt", "-f", "dxf:-polyaslines -mm", "eps", "dxf", "-psarg", "-dNOSAFER"]]
-                commands = json.loads(svg2dxf_command)
-                for command in commands:
-                    command[0] = shutil.which(str(command[0])) or command[0]
-                    subprocess.run([replacements.get(c, c) for c in command])
+                try:
+                    core.run_conversion_command(tool.Drawing, svg2dxf_command, replacements, "svg2dxf_command")
+                except core.ConversionCommandError as e:
+                    self.report({"ERROR"}, str(e))
+                    return {"CANCELLED"}
 
             if self.open_viewer:
                 if svg2pdf_command:

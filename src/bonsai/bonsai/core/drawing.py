@@ -18,6 +18,8 @@
 
 from __future__ import annotations
 
+import json
+import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Optional, Union
 
@@ -621,6 +623,41 @@ def sync_references(
 
 def select_assigned_product(drawing: type[tool.Drawing], context: bpy.types.Context) -> None:
     drawing.select_assigned_product(context)
+
+
+def run_conversion_command(
+    drawing: type[tool.Drawing], command_json: str, replacements: dict[str, str], setting_name: str
+) -> None:
+    """Run a user-configured SVG conversion command, such as svg2pdf_command.
+
+    :raises ConversionCommandError: if the command is not valid JSON, the
+        configured program cannot be found, or the command exits with a
+        non-zero status.
+    """
+    try:
+        drawing.run_conversion_command(command_json, replacements)
+    except json.JSONDecodeError as e:
+        raise ConversionCommandError(
+            f'The "{setting_name}" Bonsai preference is not valid JSON ({e}). '
+            'It should look like [["inkscape", "svg", "-o", "pdf"]].'
+        )
+    except FileNotFoundError as e:
+        raise ConversionCommandError(
+            f'Could not run "{e.filename}" set in the "{setting_name}" Bonsai preference. '
+            "The program was not found. Check that it is installed and on your PATH "
+            '(on Windows you may need "inkscape.exe" instead of "inkscape"), '
+            "then update the command in the Bonsai add-on preferences."
+        )
+    except subprocess.CalledProcessError as e:
+        raise ConversionCommandError(
+            f'The command "{e.cmd[0]}" set in the "{setting_name}" Bonsai preference '
+            f"failed with exit code {e.returncode}. See the system console for details, "
+            "then check the command in the Bonsai add-on preferences."
+        )
+
+
+class ConversionCommandError(Exception):
+    pass
 
 
 def activate_drawing_view(
