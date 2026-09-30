@@ -96,6 +96,9 @@ class BIM_PT_classifications(Panel):
 
     def draw_add_file_ui(self, context):
         assert self.layout
+        if len(ClassificationsData.data["loaded_classification_libraries"]) > 1:
+            row = self.layout.row(align=True)
+            row.prop(self.props, "loaded_classification_library", text="")
         if ClassificationsData.data["has_classification_file"]:
             row = self.layout.row(align=True)
             row.prop(self.props, "available_classifications", text="")
