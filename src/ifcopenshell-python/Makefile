@@ -60,8 +60,8 @@ ifeq ($(PLATFORM), win-arm64)
 PLATFORMTAG:=win_arm64
 endif
 
-BINARY_VERSION:=0.9.0alpha0
-BUILD_COMMIT:=8c614fa
+BINARY_VERSION:=0.9.1
+BUILD_COMMIT:=462f7a6
 IOS_URL:=https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v$(BINARY_VERSION)-$(BUILD_COMMIT)-$(PLATFORM).zip
 IFCCONVERT_URL:=https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v$(BINARY_VERSION)-$(BUILD_COMMIT)-$(PLATFORM).zip
 BONSAIVIEWER_URL:=https://s3.amazonaws.com/ifcopenshell-builds/BonsaiViewer-v$(BINARY_VERSION)-$(BUILD_COMMIT)-$(PLATFORM).zip

@@ -76,7 +76,10 @@ $(error Unsupported PLATFORM=$(PLATFORM). Must be one of $(SUPPORTED_PLATFORMS))
 endif
 
 ifeq ($(PLATFORM), linux)
-PYPI_PLATFORM:=--platform manylinux_2_17_x86_64
+# See Blender glibc requirements in https://www.blender.org/download/requirements/
+PYPI_PLATFORM:=--platform manylinux_2_28_x86_64
+# tzfpy requires 2_17.
+PYPI_PLATFORM+=--platform manylinux_2_17_x86_64
 BLENDER_PLATFORM:=linux-x64
 endif
 
@@ -93,12 +96,6 @@ endif
 endif # def PLATFORM
 
 PIP_DOWNLOAD_ARGS=$(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
-# pyradiance is using different platform versions than defaults in our makefile.
-ifeq ($(PLATFORM), linux)
-PYRADIANCE_PIP_DOWNLOAD_ARGS=$(subst $(PYPI_PLATFORM),--platform manylinux_2_28_x86_64,$(PIP_DOWNLOAD_ARGS))
-else
-PYRADIANCE_PIP_DOWNLOAD_ARGS=$(PIP_DOWNLOAD_ARGS)
-endif
 
 # Wheels bundled with Bonsai, downloaded for the target platform in one pip call.
 BUNDLED_WHEELS :=
@@ -160,11 +157,12 @@ BUNDLED_WHEELS += platformdirs
 # Required by light module
 BUNDLED_WHEELS += pytz
 BUNDLED_WHEELS += tzfpy
+BUNDLED_WHEELS += pyradiance
 # Required by ifctester web ui.
 BUNDLED_WHEELS += flask
 
 # Current build commit hash.
-OLD:=8c614fa
+OLD:=462f7a6
 .PHONY: bump
 bump:
 ifndef NEW
@@ -173,6 +171,8 @@ ifndef NEW
 endif
 	cd . && $(SED) -b "s/$(OLD)/$(NEW)/" Makefile
 	cd ../ifcopenshell-python/ && $(SED) -b "s/$(OLD)/$(NEW)/" Makefile
+	# Verify the builds for the new commit are uploaded.
+	cd ../ifcopenshell-python/ && uvx pytest -p no:pytest-blender test/test_package.py
 
 .PHONY: dist
 dist:
@@ -212,8 +212,6 @@ endif
 
 	# odfpy doesn't come with its own wheel, so whee'l (get it?) create it ourselves!
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) wheel odfpy --wheel-dir=./wheels
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance $(PYRADIANCE_PIP_DOWNLOAD_ARGS)
-
 	# jQuery is required for web UI functionality
 	cd build/bonsai/bim/data/webui/static/js/ && wget --no-verbose https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js
 
