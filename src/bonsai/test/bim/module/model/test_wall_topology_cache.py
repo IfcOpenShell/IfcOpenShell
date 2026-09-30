@@ -50,8 +50,9 @@ def test_get_wall_connections_cached_returns_cached_within_generation():
         call_count["n"] += 1
         return expected
 
-    with patch.object(wall, "_iter_path_connections", side_effect=counting_iter), patch(
-        "bonsai.bim.module.model.wall.tool.Parametric.get_geom_generation", return_value=7
+    with (
+        patch.object(wall, "_iter_path_connections", side_effect=counting_iter),
+        patch("bonsai.bim.module.model.wall.tool.Parametric.get_geom_generation", return_value=7),
     ):
         first = wall._get_wall_connections_cached(group, elem)
         second = wall._get_wall_connections_cached(group, elem)
@@ -74,8 +75,9 @@ def test_get_wall_connections_cached_invalidates_on_generation_bump():
         return []
 
     gen_state = {"gen": 1}
-    with patch.object(wall, "_iter_path_connections", side_effect=counting_iter), patch(
-        "bonsai.bim.module.model.wall.tool.Parametric.get_geom_generation", side_effect=lambda: gen_state["gen"]
+    with (
+        patch.object(wall, "_iter_path_connections", side_effect=counting_iter),
+        patch("bonsai.bim.module.model.wall.tool.Parametric.get_geom_generation", side_effect=lambda: gen_state["gen"]),
     ):
         wall._get_wall_connections_cached(group, elem)
         gen_state["gen"] = 2
