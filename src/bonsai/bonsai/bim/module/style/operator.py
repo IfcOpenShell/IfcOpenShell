@@ -439,6 +439,19 @@ class ActivateExternalStyle(bpy.types.Operator):
             location = external_style.Location
             identification = external_style.Identification
 
+        if not location:
+            self.report({"ERROR"}, f'Error loading external style for "{material.name}" - Location is not set')
+            return {"CANCELLED"}
+
+        if not identification or identification.count("/") != 1:
+            self.report(
+                {"ERROR"},
+                f'Error loading external style for "{material.name}"'
+                ' - Identification must be in the form "DataBlockType/DataBlockName"'
+                f", got: {identification!r}",
+            )
+            return {"CANCELLED"}
+
         data_block_type, data_block = identification.split("/")
         style_path = Path(tool.Ifc.resolve_uri(location))
 
