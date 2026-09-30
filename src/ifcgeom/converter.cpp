@@ -9,8 +9,9 @@ ifcopenshell::geom::converter::converter(std::unique_ptr<ifcopenshell::geom::ker
 	, logger_(logger)
 {
 	mapping_ = impl::mapping_implementations().construct(file, settings, logger_);
-	// Mapping reads unit information and applies to settings
+	// Mapping reads unit information and tolerance and applies to settings
 	settings_ = mapping_->settings();
+	kernel_->apply_settings(settings_);
 }
 
 ifcopenshell::geom::converter::~converter() {

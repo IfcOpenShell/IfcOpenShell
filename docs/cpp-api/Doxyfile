@@ -1025,6 +1025,7 @@ EXCLUDE_PATTERNS       =
 # ANamespace::AClass, ANamespace::*Test
 
 EXCLUDE_SYMBOLS        = "ifcopenshell::geom::opaque_number::*" \
+                         ifcopenshell::geom::impl::bvh_tree::clash_task \
                          ifcopenshell::entity::attribute_by_name_cmp \
                          ifcopenshell::impl::rocks_db_file_storage::rocksdb_types_iterator \
                          ifcopenshell::impl::in_memory_file_storage::type_iterator \
@@ -2374,6 +2375,8 @@ PREDEFINED             = IFC_PARSE_API= \
                          IFC_GEOM_API= \
                          IFC_GEOMLIBRARY_API= \
                          IFC_GEOMSERIALIZATION_API= \
+                         IFC_SWAR_INLINE= \
+                         IFC_READER_INLINE= \
                          SERIALIZERS_API= \
                          "POSTFIX_SCHEMA(name)=name##_Schema" \
                          "Handle(name):=opencascade::handle<name>" \
