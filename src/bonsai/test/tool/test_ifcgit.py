@@ -497,6 +497,8 @@ class TestGitMergetool:
         with tempfile.TemporaryDirectory() as tmpdir:
             ifc_path = os.path.join(tmpdir, "model.ifc")
             mock_repo = mock.MagicMock()
+            # A clean mergetool resolution leaves no unmerged blobs in the index.
+            mock_repo.index.unmerged_blobs.return_value = {}
             IfcGitRepo.repo = mock_repo
             result = IfcGit.git_mergetool("ifcmerge", ifc_path)
             assert result is None
@@ -511,6 +513,8 @@ class TestGitMergetool:
             report_path = ifc_path + ".ifcmerge"
             open(report_path, "w").close()
             mock_repo = mock.MagicMock()
+            # A clean mergetool resolution leaves no unmerged blobs in the index.
+            mock_repo.index.unmerged_blobs.return_value = {}
             IfcGitRepo.repo = mock_repo
             result = IfcGit.git_mergetool("ifcmerge", ifc_path)
             assert result is None
