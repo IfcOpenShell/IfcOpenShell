@@ -210,12 +210,6 @@ class TestAssignType(test.bootstrap.IFC4):
         assert ifcopenshell.util.element.get_type(wall) is None
         assert ifcopenshell.util.element.get_type(door) is None
 
-    def test_untypable_occurrence_rejected(self):
-        opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
-        any_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
-        with pytest.raises(TypeError):
-            ifcopenshell.api.type.assign_type(self.file, related_objects=[opening], relating_type=any_type)
-
     def test_concrete_subtype_of_allowed_occurrence_accepted(self):
         terminal = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcFlowTerminal")
         distribution_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDistributionElementType")
@@ -227,6 +221,12 @@ class TestAssignType(test.bootstrap.IFC4):
         air_terminal_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcAirTerminalType")
         with pytest.raises(TypeError, match=r"IfcAirTerminalType cannot type IfcWall"):
             ifcopenshell.api.type.assign_type(self.file, related_objects=[wall], relating_type=air_terminal_type)
+
+    def test_untypable_occurrence_rejected(self):
+        opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
+        any_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        with pytest.raises(TypeError):
+            ifcopenshell.api.type.assign_type(self.file, related_objects=[opening], relating_type=any_type)
 
 
 class TestAssignTypeIFC2X3(test.bootstrap.IFC2X3, TestAssignType):
