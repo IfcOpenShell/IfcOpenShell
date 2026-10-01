@@ -220,7 +220,10 @@ class Usecase:
                 allowed_occurrences.add(occurrence_class)
             except RuntimeError:
                 pass
-        mismatched_classes = sorted({o.is_a() for o in related_objects if o.is_a() not in allowed_occurrences})
+        # Allowed occurrences are abstract classes, so match subtypes too (#9247).
+        mismatched_classes = sorted(
+            {o.is_a() for o in related_objects if not any(o.is_a(allowed) for allowed in allowed_occurrences)}
+        )
         if mismatched_classes:
             raise TypeError(
                 f"{relating_type.is_a()} cannot type {', '.join(mismatched_classes)} "
