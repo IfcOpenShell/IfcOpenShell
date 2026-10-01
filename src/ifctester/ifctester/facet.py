@@ -254,13 +254,11 @@ class Entity(Facet):
 
         predefined_type = None
         if is_pass and self.predefinedType:
-            if self.predefinedType == "USERDEFINED":
-                is_pass = ifcopenshell.util.element.is_userdefined_type(inst)
-                if not is_pass:
-                    predefined_type = ifcopenshell.util.element.get_predefined_type(inst)
-            else:
-                predefined_type = ifcopenshell.util.element.get_predefined_type(inst)
-                is_pass = predefined_type == self.predefinedType
+            predefined_type = ifcopenshell.util.element.get_predefined_type(inst)
+            is_pass = predefined_type == self.predefinedType
+            # A USERDEFINED element resolves to its ObjectType, so match it via the literal USERDEFINED.
+            if not is_pass and ifcopenshell.util.element.is_userdefined_type(inst):
+                is_pass = self.predefinedType == "USERDEFINED"
 
             if not is_pass:
                 reason = {"type": "PREDEFINEDTYPE", "actual": predefined_type}
