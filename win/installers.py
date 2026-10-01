@@ -854,13 +854,11 @@ def install_qt6(
     QT_DIR = QT6_INSTALL_DIR
 
     QT6_HOST_AQT_OUTPUT_DIR = None
-    QT6_HOST_INSTALL_DIR = None
     QT_HOST_PATH = None
     if QT6_CROSS_COMPILING:
         assert QT6_HOST_INSTALL_SUFFIX is not None
         QT6_HOST_AQT_OUTPUT_DIR = vs_cfg_vars.install_dir / f"qt6-{qt6_version}-{QT6_HOST_INSTALL_SUFFIX}"
-        QT6_HOST_INSTALL_DIR = QT6_HOST_AQT_OUTPUT_DIR / qt6_version / QT6_HOST_INSTALL_SUFFIX
-        QT_HOST_PATH = QT6_HOST_INSTALL_DIR
+        QT_HOST_PATH = QT6_HOST_AQT_OUTPUT_DIR / qt6_version / QT6_HOST_INSTALL_SUFFIX
 
     QT6_CONFIG_DLL = "Qt6Cored.dll" if debug_or_release(build_cfg) == "Debug" else "Qt6Core.dll"
 
@@ -871,9 +869,7 @@ def install_qt6(
     build_deps_cache.add_entry("QT6_INSTALL_DIR", str(QT6_INSTALL_DIR))
     build_deps_cache.add_entry("QT_DIR", str(QT_DIR))
     if QT6_CROSS_COMPILING:
-        assert QT6_HOST_INSTALL_DIR is not None
         assert QT_HOST_PATH is not None
-        build_deps_cache.add_entry("QT6_HOST_INSTALL_DIR", str(QT6_HOST_INSTALL_DIR))
         build_deps_cache.add_entry("QT_HOST_PATH", str(QT_HOST_PATH))
 
     QT6_TARGET_EXPECTED_FILES = [
@@ -886,19 +882,19 @@ def install_qt6(
     QT6_HOST_EXPECTED_FILES = None
     QT6_HOST_INSTALLED = True
     if QT6_CROSS_COMPILING:
-        assert QT6_HOST_INSTALL_DIR is not None
+        assert QT_HOST_PATH is not None
         QT6_HOST_EXPECTED_FILES = [
-            QT6_HOST_INSTALL_DIR / "lib" / "cmake" / "Qt6" / "Qt6Config.cmake",
-            QT6_HOST_INSTALL_DIR / "bin" / "moc.exe",
-            QT6_HOST_INSTALL_DIR / "bin" / "rcc.exe",
-            QT6_HOST_INSTALL_DIR / "lib" / "cmake" / "Qt6Svg" / "Qt6SvgConfig.cmake",
+            QT_HOST_PATH / "lib" / "cmake" / "Qt6" / "Qt6Config.cmake",
+            QT_HOST_PATH / "bin" / "moc.exe",
+            QT_HOST_PATH / "bin" / "rcc.exe",
+            QT_HOST_PATH / "lib" / "cmake" / "Qt6Svg" / "Qt6SvgConfig.cmake",
         ]
         QT6_HOST_INSTALLED = all(path.exists() for path in QT6_HOST_EXPECTED_FILES)
 
     if QT6_TARGET_INSTALLED and QT6_HOST_INSTALLED:
         logger.info(f"Found existing '{QT6_INSTALL_DIR}' for {build_cfg}, skipping")
         if QT6_CROSS_COMPILING:
-            logger.info(f"Found existing Qt host tools at '{QT6_HOST_INSTALL_DIR}', skipping")
+            logger.info(f"Found existing Qt host tools at '{QT_HOST_PATH}', skipping")
         return
 
     def install_via_pip(python_exe: str) -> tuple[str, ...]:

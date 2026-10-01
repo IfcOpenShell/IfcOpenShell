@@ -283,7 +283,7 @@ def main() -> None:
     VERSION_OVERRIDE = ADD_COMMIT_SHA
 
     qt_dir = get_var(deps_cache, "QT_DIR") or get_var(deps_cache, "QT6_INSTALL_DIR")
-    qt_host_path = get_var(deps_cache, "QT_HOST_PATH") or get_var(deps_cache, "QT6_HOST_INSTALL_DIR")
+    qt_host_path = get_var(deps_cache, "QT_HOST_PATH")
 
     cmake_install_prefix = REPO_ROOT / f"_installed-{vs_cfg_vars.gen_shorthand}"
 

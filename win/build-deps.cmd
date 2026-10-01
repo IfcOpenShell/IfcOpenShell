@@ -760,11 +760,9 @@ set QT6_AQT_OUTPUT_DIR=%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%
 set QT6_INSTALL_DIR=%QT6_AQT_OUTPUT_DIR%\%QT6_VERSION%\%QT6_INSTALL_SUFFIX%
 set QT_DIR=%QT6_INSTALL_DIR%
 set QT6_HOST_AQT_OUTPUT_DIR=
-set QT6_HOST_INSTALL_DIR=
 set QT_HOST_PATH=
 IF NOT "%QT6_HOST_INSTALL_SUFFIX%"=="" (
     set QT6_HOST_AQT_OUTPUT_DIR=%INSTALL_DIR%\qt6-%QT6_VERSION%-%QT6_HOST_INSTALL_SUFFIX%
-    set QT6_HOST_INSTALL_DIR=%INSTALL_DIR%\qt6-%QT6_VERSION%-%QT6_HOST_INSTALL_SUFFIX%\%QT6_VERSION%\%QT6_HOST_INSTALL_SUFFIX%
     set QT_HOST_PATH=%INSTALL_DIR%\qt6-%QT6_VERSION%-%QT6_HOST_INSTALL_SUFFIX%\%QT6_VERSION%\%QT6_HOST_INSTALL_SUFFIX%
 )
 set QT6_CONFIG_DLL=Qt6Core.dll
@@ -780,22 +778,21 @@ IF NOT "%IFCOS_INSTALL_QT6%"=="TRUE" (
 
 echo QT6_INSTALL_DIR=%QT6_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 echo QT_DIR=%QT_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
-IF DEFINED QT6_HOST_INSTALL_DIR (
-    echo QT6_HOST_INSTALL_DIR=%QT6_HOST_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+IF DEFINED QT_HOST_PATH (
     echo QT_HOST_PATH=%QT_HOST_PATH%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 )
 
 set QT6_TARGET_INSTALLED=FALSE
 IF EXIST "%QT6_INSTALL_DIR%\lib\cmake\Qt6\Qt6Config.cmake" IF EXIST "%QT6_INSTALL_DIR%\bin\%QT6_CONFIG_DLL%" IF EXIST "%QT6_INSTALL_DIR%\lib\cmake\Qt6Svg\Qt6SvgConfig.cmake" set QT6_TARGET_INSTALLED=TRUE
 set QT6_HOST_INSTALLED=TRUE
-IF DEFINED QT6_HOST_INSTALL_DIR (
+IF DEFINED QT_HOST_PATH (
     set QT6_HOST_INSTALLED=FALSE
-    IF EXIST "%QT6_HOST_INSTALL_DIR%\lib\cmake\Qt6\Qt6Config.cmake" IF EXIST "%QT6_HOST_INSTALL_DIR%\bin\moc.exe" IF EXIST "%QT6_HOST_INSTALL_DIR%\bin\rcc.exe" IF EXIST "%QT6_HOST_INSTALL_DIR%\lib\cmake\Qt6Svg\Qt6SvgConfig.cmake" set QT6_HOST_INSTALLED=TRUE
+    IF EXIST "%QT_HOST_PATH%\lib\cmake\Qt6\Qt6Config.cmake" IF EXIST "%QT_HOST_PATH%\bin\moc.exe" IF EXIST "%QT_HOST_PATH%\bin\rcc.exe" IF EXIST "%QT_HOST_PATH%\lib\cmake\Qt6Svg\Qt6SvgConfig.cmake" set QT6_HOST_INSTALLED=TRUE
 )
 
 IF "%QT6_TARGET_INSTALLED%"=="TRUE" IF "%QT6_HOST_INSTALLED%"=="TRUE" (
     echo Found existing "%QT6_INSTALL_DIR%" for %BUILD_CFG%, skipping
-    IF DEFINED QT6_HOST_INSTALL_DIR echo Found existing Qt host tools at "%QT6_HOST_INSTALL_DIR%", skipping
+    IF DEFINED QT_HOST_PATH echo Found existing Qt host tools at "%QT_HOST_PATH%", skipping
     goto %NEXT_DEPENDENCY_LABEL%
 )
 
@@ -816,7 +813,7 @@ IF NOT "%QT6_TARGET_INSTALLED%"=="TRUE" (
     IF ERRORLEVEL 1 GOTO :Error
 )
 
-IF DEFINED QT6_HOST_INSTALL_DIR (
+IF DEFINED QT_HOST_PATH (
     IF NOT "%QT6_HOST_INSTALLED%"=="TRUE" (
         REM windeployqt runs from the host Qt when cross-compiling ARM64, so the
         REM host Qt needs qtsvg too to deploy the Bonsai Viewer's Qt6Svg dependency.
@@ -840,17 +837,17 @@ IF NOT EXIST "%QT6_INSTALL_DIR%\lib\cmake\Qt6Svg\Qt6SvgConfig.cmake" (
     GOTO :Error
 )
 
-IF DEFINED QT6_HOST_INSTALL_DIR (
-    IF NOT EXIST "%QT6_HOST_INSTALL_DIR%\lib\cmake\Qt6\Qt6Config.cmake" (
-        call cecho.cmd 0 12 "Qt6 host installation did not produce Qt6Config.cmake at %QT6_HOST_INSTALL_DIR%."
+IF DEFINED QT_HOST_PATH (
+    IF NOT EXIST "%QT_HOST_PATH%\lib\cmake\Qt6\Qt6Config.cmake" (
+        call cecho.cmd 0 12 "Qt6 host installation did not produce Qt6Config.cmake at %QT_HOST_PATH%."
         GOTO :Error
     )
-    IF NOT EXIST "%QT6_HOST_INSTALL_DIR%\bin\moc.exe" (
-        call cecho.cmd 0 12 "Qt6 host installation did not produce moc.exe at %QT6_HOST_INSTALL_DIR%\bin."
+    IF NOT EXIST "%QT_HOST_PATH%\bin\moc.exe" (
+        call cecho.cmd 0 12 "Qt6 host installation did not produce moc.exe at %QT_HOST_PATH%\bin."
         GOTO :Error
     )
-    IF NOT EXIST "%QT6_HOST_INSTALL_DIR%\bin\rcc.exe" (
-        call cecho.cmd 0 12 "Qt6 host installation did not produce rcc.exe at %QT6_HOST_INSTALL_DIR%\bin."
+    IF NOT EXIST "%QT_HOST_PATH%\bin\rcc.exe" (
+        call cecho.cmd 0 12 "Qt6 host installation did not produce rcc.exe at %QT_HOST_PATH%\bin."
         GOTO :Error
     )
 )
