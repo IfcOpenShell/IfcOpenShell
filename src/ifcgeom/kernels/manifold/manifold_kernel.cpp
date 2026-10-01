@@ -21,6 +21,40 @@ namespace {
 	using mesh_type = manifold::MeshGL64;
 	using part = ifcopenshell::geom::manifold_part;
 
+	// Call this after collecting every operand of a boolean operation. Manifold
+	// 3.2.1 corrupts memory when its disjoint-composition path receives mixed
+	// property counts, so normalise them before evaluating the operation.
+	template <typename Vec>
+	bool unify_parameter_count(const Vec& operands, Vec& unified) {
+		if (operands.size() < 2) {
+			return false;
+		}
+		std::size_t min_num_prop = operands.front().NumProp();
+		std::size_t max_num_prop = min_num_prop;
+		for (const auto& operand : operands) {
+			const std::size_t num_prop = operand.NumProp();
+			min_num_prop = std::min(min_num_prop, num_prop);
+			max_num_prop = std::max(max_num_prop, num_prop);
+		}
+		if (min_num_prop == max_num_prop) {
+			return false;
+		}
+		ifcopenshell::logger::root().notice(
+			"Manifold kernel: boolean operands have mixed property counts; normalizing to " +
+			std::to_string(min_num_prop));
+		unified = operands;
+		for (auto& operand : unified) {
+			if (operand.NumProp() != min_num_prop) {
+				operand = operand.SetProperties(
+					static_cast<int>(min_num_prop),
+					[min_num_prop](double* new_properties, manifold::vec3, const double* old_properties) {
+						std::copy(old_properties, old_properties + min_num_prop, new_properties);
+					});
+			}
+		}
+		return true;
+	}
+
 	std::string manifold_error_string(manifold::Manifold::Error error) {
 		switch (error) {
 		case manifold::Manifold::Error::NoError:
@@ -1441,7 +1475,9 @@ namespace {
 		if (operands.size() == 1) {
 			return operands.front();
 		}
-		return manifold::Manifold::BatchBoolean(operands, manifold::OpType::Add);
+		std::vector<manifold::Manifold> unified;
+		auto is_unified = unify_parameter_count(operands, unified);
+		return manifold::Manifold::BatchBoolean(is_unified ? unified : operands, manifold::OpType::Add);
 	}
 
 	std::optional<manifold::Box> results_bbox(const std::vector<ifcopenshell::geom::conversion_result>& results) {
@@ -1477,13 +1513,15 @@ namespace {
 		if (operands.size() == 1) {
 			return operands.front();
 		}
+		std::vector<manifold::Manifold> unified;
+		auto is_unified = unify_parameter_count(operands, unified);
 		switch (operation) {
 		case taxonomy::boolean_result::UNION:
-			return manifold::Manifold::BatchBoolean(operands, manifold::OpType::Add);
+			return manifold::Manifold::BatchBoolean(is_unified ? unified : operands, manifold::OpType::Add);
 		case taxonomy::boolean_result::INTERSECTION:
-			return manifold::Manifold::BatchBoolean(operands, manifold::OpType::Intersect);
+			return manifold::Manifold::BatchBoolean(is_unified ? unified : operands, manifold::OpType::Intersect);
 		case taxonomy::boolean_result::SUBTRACTION:
-			return manifold::Manifold::BatchBoolean(operands, manifold::OpType::Subtract);
+			return manifold::Manifold::BatchBoolean(is_unified ? unified : operands, manifold::OpType::Subtract);
 		}
 		return std::nullopt;
 	}
@@ -1668,14 +1706,19 @@ bool manifold_kernel::convert_openings(const express::base&, const std::vector<s
 	if (opening_operands.empty()) {
 		return false;
 	}
-	auto opening_union = manifold::Manifold::BatchBoolean(opening_operands, manifold::OpType::Add);
+	std::vector<manifold::Manifold> unified_opening_operands;
+	auto is_unified = unify_parameter_count(opening_operands, unified_opening_operands);
+	auto opening_union = manifold::Manifold::BatchBoolean(is_unified ? unified_opening_operands : opening_operands, manifold::OpType::Add);
 	for (const auto& entity_shape : entity_shapes) {
 		auto operand = result_to_manifold(entity_shape);
 		if (!operand) {
 			ifcopenshell::logger::root().warning("Manifold kernel: host shape is not a valid manifold solid");
 			return false;
 		}
-		auto result = *operand - opening_union;
+		std::array<manifold::Manifold, 2> unified_subtraction_operands;
+		std::array<manifold::Manifold, 2> subtraction_operands = { *operand, opening_union };
+		auto subtraction_operands_unified = unify_parameter_count(subtraction_operands, unified_subtraction_operands);
+		auto result = subtraction_operands_unified ? unified_subtraction_operands.front() - unified_subtraction_operands.back() : subtraction_operands.front() - subtraction_operands.back();
 		cut_shapes.emplace_back(ifcopenshell::geom::conversion_result(
 			entity_shape.ItemId(),
 			new ifcopenshell::geom::manifold_shape(result),
