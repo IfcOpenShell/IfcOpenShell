@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
+
 from bpy.types import Panel
 
 import bonsai.bim.helper
@@ -131,3 +133,15 @@ class BIM_PT_ifccsv(Panel):
         else:
             row.operator("bim.export_ifccsv", icon="EXPORT", text="Export IFC to " + props.format.upper())
         row.operator("bim.import_ifccsv", icon="IMPORT")
+
+        layout.separator()
+        row = layout.row(align=True)
+        row.label(text="Stacked Export")
+        row.operator("bim.add_stacked_csv_templates", icon="ADD", text="")
+        for index, template in enumerate(props.stacked_templates):
+            row = layout.row(align=True)
+            row.label(text=os.path.basename(template.name), icon="FILE")
+            row.operator("bim.remove_stacked_csv_template", icon="X", text="").index = index
+        if props.stacked_templates:
+            row = layout.row(align=True)
+            row.operator("bim.export_stacked_ifccsv", icon="EXPORT", text="Export Stacked CSV")
