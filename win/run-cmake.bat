@@ -113,7 +113,6 @@ set USD_INSTALL_DIR=%INSTALL_DIR%\usd
 set ROCKSDB_INSTALL_DIR=%INSTALL_DIR%\rocksdb
 set ZSTD_INSTALL_DIR=%INSTALL_DIR%\zstd
 if not defined QT_DIR if defined QT6_INSTALL_DIR set QT_DIR=%QT6_INSTALL_DIR%
-if not defined QT_HOST_PATH if defined QT6_HOST_INSTALL_DIR set QT_HOST_PATH=%QT6_HOST_INSTALL_DIR%
 
 echo.
 call cecho.cmd 0 10 "Script configuration:"
