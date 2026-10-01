@@ -354,8 +354,6 @@ def main() -> None:
         f"-DPYTHON_INCLUDE_DIR={python_include_dir}",
         f"-DPYTHON_LIBRARY={python_library}",
     ]
-    if qt_dir:
-        cmake_args.append(f"-DQT_DIR={qt_dir}")
     if qt_host_path:
         cmake_args.append(f"-DQT_HOST_PATH={qt_host_path}")
     if Deps.values()["manifold"]:
