@@ -283,7 +283,6 @@ def main() -> None:
     VERSION_OVERRIDE = ADD_COMMIT_SHA
 
     qt_dir = get_var(deps_cache, "QT_DIR") or get_var(deps_cache, "QT6_INSTALL_DIR")
-    qt_host_path = get_var(deps_cache, "QT_HOST_PATH")
 
     cmake_install_prefix = REPO_ROOT / f"_installed-{vs_cfg_vars.gen_shorthand}"
 
@@ -301,7 +300,6 @@ def main() -> None:
         "PYTHON_LIBRARY": python_library,
         "PYTHON_EXECUTABLE": python_executable,
         "QT_DIR": qt_dir,
-        "QT_HOST_PATH": qt_host_path,
         "CMAKE_INSTALL_PREFIX": cmake_install_prefix,
     }
     dep_vars = ((dep.env_var, Deps.values()[name]) for name, dep in Deps.DEPS.items())
@@ -354,8 +352,6 @@ def main() -> None:
         f"-DPYTHON_INCLUDE_DIR={python_include_dir}",
         f"-DPYTHON_LIBRARY={python_library}",
     ]
-    if qt_host_path:
-        cmake_args.append(f"-DQT_HOST_PATH={qt_host_path}")
     if Deps.values()["manifold"]:
         cmake_args.append("-DWITH_MANIFOLD=ON")
     cmake_args += Deps.cmake_args()
