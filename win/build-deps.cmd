@@ -151,7 +151,7 @@ echo     to your Python installation path.
 call cecho.cmd 0 13 "* IFCOS_INSTALL_QT6`t= %IFCOS_INSTALL_QT6%"
 echo   - Download and install Qt6 using aqtinstall.
 echo     Set to something other than TRUE if you wish to use an already installed version of Qt6.
-echo     But then you'll need to set QT_DIR env variable to your Qt6 installation before running run-cmake.bat.
+echo     But then you'll need to set QT6_INSTALL_DIR env variable to your Qt6 installation before running run-cmake.bat.
 call cecho.cmd 0 13 "* IFCOS_NUM_BUILD_PROCS`t= %IFCOS_NUM_BUILD_PROCS%"
 echo   - How many MSBuild.exe processes may be run in parallel.
 echo     Defaults to NUMBER_OF_PROCESSORS. Used also by other IfcOpenShell build scripts.
@@ -754,7 +754,6 @@ IF "%QT6_ARCH%"=="" (
 set DEPENDENCY_INSTALL_NAME=qt6-%QT6_VERSION%-%QT6_INSTALL_SUFFIX%
 set QT6_AQT_OUTPUT_DIR=%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%
 set QT6_INSTALL_DIR=%QT6_AQT_OUTPUT_DIR%\%QT6_VERSION%\%QT6_INSTALL_SUFFIX%
-set QT_DIR=%QT6_INSTALL_DIR%
 set QT6_CONFIG_DLL=Qt6Core.dll
 IF /I "%BUILD_CFG%"=="Debug" (
     set QT6_CONFIG_DLL=Qt6Cored.dll
@@ -767,7 +766,6 @@ IF NOT "%IFCOS_INSTALL_QT6%"=="TRUE" (
 )
 
 echo QT6_INSTALL_DIR=%QT6_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
-echo QT_DIR=%QT_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 
 :: TODO: drop this TRANSITION check once ARM64 dependency caches no longer contain the
 :: cross-compiled Qt, which was installed at the same path as the native one.

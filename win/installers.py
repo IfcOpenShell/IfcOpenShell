@@ -824,7 +824,6 @@ def install_qt6(
             sys.exit(1)
         logger.info(f"Using Qt6 installation at '{qt6_install_dir}'.")
         build_deps_cache.add_entry("QT6_INSTALL_DIR", str(qt6_install_dir))
-        build_deps_cache.add_entry("QT_DIR", str(qt6_install_dir))
         return
 
     vs_toolset = vs_cfg_vars.vs_toolset
@@ -854,7 +853,6 @@ def install_qt6(
     DEPENDENCY_INSTALL_NAME = f"qt6-{qt6_version}-{QT6_INSTALL_SUFFIX}"
     QT6_AQT_OUTPUT_DIR = vs_cfg_vars.install_dir / DEPENDENCY_INSTALL_NAME
     QT6_INSTALL_DIR = QT6_AQT_OUTPUT_DIR / qt6_version / QT6_INSTALL_SUFFIX
-    QT_DIR = QT6_INSTALL_DIR
 
     QT6_CONFIG_DLL = "Qt6Cored.dll" if debug_or_release(build_cfg) == "Debug" else "Qt6Core.dll"
 
@@ -863,7 +861,6 @@ def install_qt6(
         return
 
     build_deps_cache.add_entry("QT6_INSTALL_DIR", str(QT6_INSTALL_DIR))
-    build_deps_cache.add_entry("QT_DIR", str(QT_DIR))
 
     # TODO: drop this TRANSITION check once ARM64 dependency caches no longer contain the
     # cross-compiled Qt, which was installed at the same path as the native one.

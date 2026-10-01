@@ -112,7 +112,6 @@ set TBB_INSTALL_DIR=%INSTALL_DIR%\tbb
 set USD_INSTALL_DIR=%INSTALL_DIR%\usd
 set ROCKSDB_INSTALL_DIR=%INSTALL_DIR%\rocksdb
 set ZSTD_INSTALL_DIR=%INSTALL_DIR%\zstd
-if not defined QT_DIR if defined QT6_INSTALL_DIR set QT_DIR=%QT6_INSTALL_DIR%
 
 echo.
 call cecho.cmd 0 10 "Script configuration:"
@@ -143,7 +142,7 @@ echo    USD_INSTALL_DIR         = %USD_INSTALL_DIR%
 echo    ROCKSDB_INSTALL_DIR     = %ROCKSDB_INSTALL_DIR%
 echo    ZSTD_INSTALL_DIR        = %ZSTD_INSTALL_DIR%
 echo    MANIFOLD_INSTALL_PATH   = %MANIFOLD_INSTALL_PATH%
-echo    QT_DIR                  = %QT_DIR%
+echo    QT6_INSTALL_DIR         = %QT6_INSTALL_DIR%
 echo    CCACHE_INSTALL_DIR      = %CCACHE_INSTALL_DIR%
 echo.
 echo    CMAKE_INSTALL_PREFIX    = %CMAKE_INSTALL_PREFIX%
@@ -167,7 +166,7 @@ set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%OCC_INSTALL_DIR%;%CGAL_INSTALL_DIR%
 set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%GMP_INSTALL_DIR%;%MPFR_INSTALL_DIR%
 :: TODO: drop this TRANSITION check once everyone has re-run build-deps.py with manifold support.
 if defined MANIFOLD_INSTALL_PATH set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%MANIFOLD_INSTALL_PATH%
-if defined QT_DIR set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%QT_DIR%
+if defined QT6_INSTALL_DIR set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%QT6_INSTALL_DIR%
 
 :: TODO: drop this TRANSITION check once everyone has re-run build-deps.py with manifold support.
 set WITH_MANIFOLD_OPTION=

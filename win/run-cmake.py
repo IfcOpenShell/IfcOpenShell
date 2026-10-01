@@ -282,7 +282,7 @@ def main() -> None:
     ADD_COMMIT_SHA = OFF_ON[ARGS.add_commit_sha]
     VERSION_OVERRIDE = ADD_COMMIT_SHA
 
-    qt_dir = get_var(deps_cache, "QT_DIR") or get_var(deps_cache, "QT6_INSTALL_DIR")
+    qt6_install_dir = get_var(deps_cache, "QT6_INSTALL_DIR")
 
     cmake_install_prefix = REPO_ROOT / f"_installed-{vs_cfg_vars.gen_shorthand}"
 
@@ -299,7 +299,7 @@ def main() -> None:
         "PYTHON_INCLUDE_DIR": python_include_dir,
         "PYTHON_LIBRARY": python_library,
         "PYTHON_EXECUTABLE": python_executable,
-        "QT_DIR": qt_dir,
+        "QT6_INSTALL_DIR": qt6_install_dir,
         "CMAKE_INSTALL_PREFIX": cmake_install_prefix,
     }
     dep_vars = ((dep.env_var, Deps.values()[name]) for name, dep in Deps.DEPS.items())
@@ -322,8 +322,8 @@ def main() -> None:
     logger.info(f'"Running CMake for {PROJECT_NAME}."')
 
     cmake_prefix_path_parts = Deps.cmake_prefix_paths()
-    if qt_dir:
-        cmake_prefix_path_parts.append(Path(qt_dir))
+    if qt6_install_dir:
+        cmake_prefix_path_parts.append(Path(qt6_install_dir))
     cmake_prefix_path = ";".join(str(part) for part in cmake_prefix_path_parts)
 
     if ARGS.use_ninja:
