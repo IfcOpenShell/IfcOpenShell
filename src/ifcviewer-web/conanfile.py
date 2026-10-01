@@ -72,6 +72,7 @@ class IfcViewerWebConan(ConanFile):
         dist = os.path.join(self.package_folder, "dist")
         for pattern in ("IfcViewerWeb.js", "IfcViewerWeb.wasm", "ifcviewer.js", "*.html"):
             copy(self, pattern, src=self.build_folder, dst=dist, keep_path=False)
+        copy(self, "package.json", src=self.source_folder, dst=self.package_folder, keep_path=False)
 
     def package_info(self):
         self.cpp_info.bindirs = ["dist"]

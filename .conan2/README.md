@@ -75,13 +75,13 @@ ERROR: opengl/system: Error in system_requirements() method, line 36
 	ConanException: None of the installs for the package substitutes succeeded.
 ```
 
-or to target Emscripten (FIXME):
+or to target Emscripten (FIXME), only static build with WebAssembly:
 
 ```
 git clone https://github.com/conan-io/conan-toolchains.git
 conan remote add conan-toolchains ./conan-toolchains
-conan install . -pr:h=.conan2/profiles/emscripten_host -pr:b=.conan2/profiles/linux_host --build=missing -o "*/*:shared=True" -c tools.system.package_manager:mode=install -c tools.system.package_manager:sudo=True
-conan build . -pr:h=.conan2/profiles/emscripten_host -pr:b=.conan2/profiles/linux_host -o "*/*:shared=True"
+conan install . -pr:h=.conan2/profiles/emscripten_host -pr:b=.conan2/profiles/linux_host --build=missing
+conan build . -pr:h=.conan2/profiles/emscripten_host -pr:b=.conan2/profiles/linux_host
 
 
 or more simply:
@@ -89,6 +89,15 @@ or more simply:
 ```
 python3 .conan2/build-all-conan.py --host-profile emscripten_host
 ```
+
+PKGID=$(conan list "emsdk/5.0.3:*" --format=json \
+  | jq -r '.["Local Cache"]["emsdk/5.0.3"].revisions | to_entries[0].value.packages | keys[0]')
+
+EMSDK_PKG=$(conan cache path "emsdk/5.0.3:${PKGID}")
+
+source "${EMSDK_PKG}/bin/emsdk_env.sh"
+
+enable webGPU on chrome (chrome://flags/#enable-unsafe-webgpu)
 
 ## Misc
 

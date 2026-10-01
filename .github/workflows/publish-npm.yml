@@ -1,0 +1,65 @@
+name: Publish ifcopenshell-viewer to npm
+
+on:
+  push:
+    # tags:
+    #   - "v*"          # publish when you push a tag like v0.1.0
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write      # needed for npm --provenance
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Clone conan-toolchains
+        run: git clone https://github.com/conan-io/conan-toolchains.git
+
+      - name: Setup Conan
+        uses: conan-io/setup-conan@v1
+        with:
+          config_urls: |
+            .conan2/
+          cache_packages: true
+          profile_detect: false
+
+      - name: Add conan-toolchains as local remote
+        run: conan remote add conan-toolchains ./conan-toolchains
+
+      - name: Cache Conan packages
+        uses: actions/cache@v6
+        with:
+          path: ~/.conan2/p
+          key: conan-${{ runner.os }}-${{ hashFiles('**/conanfile.py') }}
+
+      - name: Build WASM package with Conan
+        working-directory: src/ifcviewer-web
+        run: |
+          VERSION=0.1.0
+          conan install . -pr:h=../../.conan2/profiles/emscripten_host -pr:b=../../.conan2/profiles/linux_host --build=missing
+          conan build . -pr:h=../../.conan2/profiles/emscripten_host -pr:b=../../.conan2/profiles/linux_host
+          conan export-pkg . -pr:h=../../.conan2/profiles/emscripten_host -pr:b=../../.conan2/profiles/linux_host --version="${VERSION}"
+
+      - name: Extract build output with deployer
+        working-directory: src/ifcviewer-web
+        run: |
+          VERSION=0.1.0
+          conan install --requires=ifcviewer-web/${VERSION} \
+            -pr:h=../../.conan2/profiles/emscripten_host -pr:b=../../.conan2/profiles/linux_host \
+            --deployer=direct_deploy --deployer-folder=../../npm-pkg
+        #   sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"${VERSION}\"/" ../../npm-pkg/direct-deploy/ifcviewer-web/package.json
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Publish to npm
+        working-directory: npm-pkg/direct_deploy/ifcviewer-web
+        run: npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

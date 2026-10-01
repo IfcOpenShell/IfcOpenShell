@@ -9,6 +9,9 @@
 /src/examples/build/
 # ifctester docs output
 /src/ifctester/test/build/
+build-web/
+build/
+src/ifcviewer-web/npm-pkg/
 
 # output directories
 /cmake/out/

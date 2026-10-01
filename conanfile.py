@@ -181,7 +181,7 @@ class IfcOpenShellConan(ConanFile):
 
     def build(self):
         cmake = CMake(self)
-        cmake.configure()
+        cmake.configure(cli_args=["--graphviz=deps.dot"])
         cmake.build(cli_args=["-v"])
 
     def package(self):

@@ -9,6 +9,9 @@ compiler.libcxx=libc++
 compiler.version=4.0.10
 os=Emscripten
 
+[options]
+boost/*:without_stacktrace=True
+
 [tool_requires]
 emsdk/5.0.3
 
