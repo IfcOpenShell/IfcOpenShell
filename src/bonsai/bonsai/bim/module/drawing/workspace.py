@@ -323,7 +323,11 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
                 ),
                 enable_editing=False,
             )
-            tool.Drawing.setup_annotation_object(obj, object_type, related_object, props.tag_rotation_mode)
+            try:
+                tool.Drawing.setup_annotation_object(obj, object_type, related_object, props.tag_rotation_mode)
+            except ValueError as e:
+                self.report({"ERROR"}, str(e))
+                continue
             created_objects.append(obj)
 
         # Select the created annotation objects
@@ -362,4 +366,8 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             related_object = tool.Ifc.get_object(related_product)
 
             rotation_mode = tool.Drawing.get_annotation_props().tag_rotation_mode
-            tool.Drawing.setup_annotation_object(obj, annotation_type, related_object, rotation_mode)
+            try:
+                tool.Drawing.setup_annotation_object(obj, annotation_type, related_object, rotation_mode)
+            except ValueError as e:
+                self.report({"ERROR"}, str(e))
+                continue
