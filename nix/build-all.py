@@ -1842,7 +1842,6 @@ if "swig" in targets:
 
 if os.environ.get("QT_DIR"):
     cmake_args_prefix_path.append(os.environ["QT_DIR"])
-    cmake_args.append(f"-DQT_DIR={os.environ['QT_DIR']}")
 
 IFCOPENSHELL_INSTALL_PATH = f"{DEPS_DIR}/install/ifcopenshell"
 ifcos_build_args = [
