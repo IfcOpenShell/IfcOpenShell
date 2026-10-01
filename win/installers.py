@@ -814,8 +814,18 @@ def install_qt6(
     ifcos_install_qt6: bool,
     qt6_version: str,
     pythonhome: Path | None,
+    qt6_install_dir: Path | None,
 ) -> None:
     build_deps_cache.add_entry("QT6_VERSION", qt6_version)
+
+    if qt6_install_dir is not None:
+        if not (qt6_install_dir / "lib" / "cmake" / "Qt6" / "Qt6Config.cmake").exists():
+            logger.error(f"'{qt6_install_dir}' is not a Qt6 installation, Qt6Config.cmake not found.")
+            sys.exit(1)
+        logger.info(f"Using Qt6 installation at '{qt6_install_dir}'.")
+        build_deps_cache.add_entry("QT6_INSTALL_DIR", str(qt6_install_dir))
+        build_deps_cache.add_entry("QT_DIR", str(qt6_install_dir))
+        return
 
     vs_toolset = vs_cfg_vars.vs_toolset
     QT6_MSVC_YEAR = VS_TOOLSET_TO_VS_VER[vs_toolset]
@@ -936,8 +946,17 @@ def install_python(
     python_version: str,
     build_deps_cache: BuildDepsCache,
     nuget_exe: Path,
+    pythonhome: Path | None,
 ) -> Path | None:
     """Returns PYTHONHOME, or None if IFCOS_INSTALL_PYTHON is not set."""
+    if pythonhome is not None:
+        if not (pythonhome / "python.exe").exists():
+            logger.error(f"'{pythonhome}' is not a Python installation, python.exe not found.")
+            sys.exit(1)
+        logger.info(f"Using Python installation at '{pythonhome}'.")
+        build_deps_cache.add_entry("PYTHONHOME", str(pythonhome))
+        return pythonhome
+
     if not ifcos_install_python:
         logger.info("IFCOS_INSTALL_PYTHON not 'TRUE', skipping installation of Python.")
         return None
