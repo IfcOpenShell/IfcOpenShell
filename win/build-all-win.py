@@ -1,4 +1,8 @@
 # /// script
+# # 3.12+ for `platform.machine()` reporting the actual machine architecture on Windows.
+# # On <3.12 it falls back to `PROCESSOR_ARCHITECTURE`,
+# # reporting the current process's architecture instead.
+# requires-python = ">=3.12"
 # [tool.ty.environment]
 # root = ["."]
 # ///
@@ -67,7 +71,7 @@ def parse_args() -> Args:
 
 
 def is_arm64() -> bool:
-    return platform.machine().lower() in ("arm64", "aarch64")
+    return platform.machine() == "ARM64"
 
 
 def build_generator() -> str:
