@@ -83,7 +83,16 @@ class CalculateObjectVolumes(bpy.types.Operator):
         return context.selected_objects and context.active_object
 
     def execute(self, context):
-        result = helper.calculate_volumes([o for o in context.selected_objects if o.type == "MESH"], context)
+        result, non_manifold_names = helper.calculate_volumes(
+            [o for o in context.selected_objects if o.type == "MESH"], context
+        )
+        if non_manifold_names:
+            self.report(
+                {"WARNING"},
+                "Volume not calculated for non-manifold object(s): "
+                + ", ".join(non_manifold_names)
+                + ". Result excludes them and is incomplete.",
+            )
         tool.Qto.set_qto_result(result)
         return {"FINISHED"}
 
