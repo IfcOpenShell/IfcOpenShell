@@ -366,22 +366,19 @@ class Usecase:
     def create_camera_pyramid_representation(self) -> ifcopenshell.entity_instance:
         assert isinstance(self.geometry, bpy.types.Camera)
         props = tool.Drawing.get_camera_props(self.geometry)
-        raster_x = props.raster_x
-        raster_y = props.raster_y
-        fov = self.settings["geometry"].angle
 
         clip_end = self.settings["geometry"].clip_end
         clip_start = self.settings["geometry"].clip_start
 
-        if self.is_camera_landscape():
-            half_width = math.tan(fov / 2) * clip_end
-            half_height = half_width * raster_y / raster_x
-        else:
-            half_height = math.tan(fov / 2) * clip_end
-            half_width = half_height * raster_x / raster_y
+        # Width/Height drive the pyramid base; the field of view is derived from them
+        # (as in Loader.create_camera), so editing Depth no longer rescales them.
+        x_length = props.width
+        y_length = props.height
+        half_width = x_length / 2
+        half_height = y_length / 2
 
-        x_length = 2 * half_width
-        y_length = 2 * half_height
+        fov = 2 * math.atan(max(half_width, half_height) / clip_end)
+        self.geometry.angle = fov
 
         pyramid = self.file.create_entity(
             "IfcRectangularPyramid",
