@@ -220,6 +220,8 @@ class Usecase:
                 allowed_occurrences.add(occurrence_class)
             except RuntimeError:
                 pass
+        if relating_type.is_a() == "IfcTypeProduct" and not allowed_occurrences:
+            allowed_occurrences.add("IfcProduct")
         # Allowed occurrences are abstract classes, so match subtypes too (#9247).
         mismatched_classes = sorted(
             {o.is_a() for o in related_objects if not any(o.is_a(allowed) for allowed in allowed_occurrences)}

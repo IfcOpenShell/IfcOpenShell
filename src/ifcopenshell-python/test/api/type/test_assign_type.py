@@ -222,6 +222,19 @@ class TestAssignType(test.bootstrap.IFC4):
         with pytest.raises(TypeError, match=r"IfcAirTerminalType cannot type IfcWall"):
             ifcopenshell.api.type.assign_type(self.file, related_objects=[wall], relating_type=air_terminal_type)
 
+    def test_generic_type_product_without_applicable_occurrence_types_any_product(self):
+        stair = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStair")
+        generic_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTypeProduct")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[stair], relating_type=generic_type)
+        assert ifcopenshell.util.element.get_type(stair) == generic_type
+
+    def test_generic_type_product_with_applicable_occurrence_still_rejects_other_classes(self):
+        stair = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStair")
+        generic_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTypeProduct")
+        generic_type.ApplicableOccurrence = "IfcWall"
+        with pytest.raises(TypeError):
+            ifcopenshell.api.type.assign_type(self.file, related_objects=[stair], relating_type=generic_type)
+
     def test_untypable_occurrence_rejected(self):
         opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
         any_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
