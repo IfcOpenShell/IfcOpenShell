@@ -257,6 +257,10 @@ class BIMCostProperties(PropertyGroup):
     active_column_index: IntProperty(name="Active Column Index")
     cost_item_products: CollectionProperty(name="Cost Item Products", type=CostItemQuantity)
     active_cost_item_product_index: IntProperty(name="Active Cost Item Product Index")
+    cost_item_products_query: StringProperty(
+        name="Query",
+        description="A selector query to select elements to assign to the active cost item, e.g. IfcWall, material=Concrete",
+    )
     cost_item_processes: CollectionProperty(name="Cost Item Processes", type=CostItemQuantity)
     active_cost_item_process_index: IntProperty(name="Active Cost Item Process Index")
     cost_item_resources: CollectionProperty(name="Cost Item Resources", type=CostItemQuantity)
@@ -317,6 +321,7 @@ class BIMCostProperties(PropertyGroup):
         active_column_index: int
         cost_item_products: bpy.types.bpy_prop_collection_idprop[CostItemQuantity]
         active_cost_item_product_index: int
+        cost_item_products_query: str
         cost_item_processes: bpy.types.bpy_prop_collection_idprop[CostItemQuantity]
         active_cost_item_process_index: int
         cost_item_resources: bpy.types.bpy_prop_collection_idprop[CostItemQuantity]
