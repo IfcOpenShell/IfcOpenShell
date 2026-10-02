@@ -991,6 +991,18 @@ class TestProperty:
             "@instructions": "instructions",
         }
 
+    def test_ifc2x3_extended_material_properties_are_read_from_extended_properties(self):
+        set_facet("property")
+        ifc = ifcopenshell.file(schema="IFC2X3")
+        ifc.createIfcProject()
+        material = ifc.createIfcMaterial("Concrete")
+        prop = ifc.createIfcPropertySingleValue("Foo", None, ifc.createIfcLabel("Bar"))
+        ifc.createIfcExtendedMaterialProperties(material, [prop], None, "Foo_Bar")
+        facet = Property(propertySet="Foo_Bar", baseName="Foo", dataType="IFCLABEL")
+        run("A property in extended material properties passes", facet=facet, inst=material, expected=True)
+        facet = Property(propertySet="Foo_Bar", baseName="Missing", dataType="IFCLABEL")
+        run("A missing property in extended material properties fails", facet=facet, inst=material, expected=False)
+
     def test_filtering_using_a_property_facet(self):
         set_facet("property")
 
