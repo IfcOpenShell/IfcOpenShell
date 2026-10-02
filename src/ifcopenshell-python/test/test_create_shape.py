@@ -272,6 +272,27 @@ def test_logging():
     ]
 
 
+def test_logger_append_in_memory_into_stream_destination():
+    ifcopenshell.get_log()
+    source = ifcopenshell.logger()
+    source.output_format(source.FMT_INMEMORY)
+    source.warning("GEO", 1, "appended warning")
+    source.notice("appended notice")
+    root = ifcopenshell.logger.root()
+    verbosity = root.verbosity()
+    root.verbosity(root.LOG_WARNING)
+    try:
+        root.append(source)
+    finally:
+        root.verbosity(verbosity)
+
+    log = ifcopenshell.get_log()
+    assert "[GEO001]" in log
+    assert "appended warning" in log
+    assert "appended notice" not in log
+    assert len(list(source)) == 0
+
+
 class TestSectionedSolidHorizontalRakedEndCut(test.bootstrap.IFC4X3):
     """An IfcSectionedSolidHorizontal whose two IfcAxis2PlacementLinear cross
     section positions use direction vectors inconsistently -- one raked
