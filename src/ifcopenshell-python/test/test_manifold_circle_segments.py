@@ -18,7 +18,13 @@ pytestmark = pytest.mark.skipif(
 def extruded_volume(make_profile):
     model = ifcopenshell.file(schema="IFC4")
     ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject")
-    ifcopenshell.api.unit.assign_unit(model, length={"is_metric": True, "raw": "METERS"})
+    ifcopenshell.api.unit.assign_unit(
+        model,
+        units=[
+            ifcopenshell.api.unit.add_si_unit(model, unit_type="LENGTHUNIT"),
+            ifcopenshell.api.unit.add_si_unit(model, unit_type="PLANEANGLEUNIT"),
+        ],
+    )
     context = ifcopenshell.api.context.add_context(model, context_type="Model")
     body = ifcopenshell.api.context.add_context(
         model, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=context
