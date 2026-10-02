@@ -1272,6 +1272,11 @@ namespace {
         };
 
 		const auto inside_sign = face->orientation.value_or(false) ? +1. : -1.;
+		const bool bounded = !face->children.empty();
+		// Direction towards the material that is removed: along the normal for an unbounded half space, along the solid's z axis for a bounded one
+		const Eigen::Vector3d direction = bounded
+			? Eigen::Vector3d(extrusion_dir * (extrusion_dir.dot(normal) * inside_sign < 0. ? -1. : 1.))
+			: Eigen::Vector3d(normal * inside_sign);
 		double u_min = std::numeric_limits<double>::infinity();
 		double u_max = -std::numeric_limits<double>::infinity();
 		double v_min = std::numeric_limits<double>::infinity();
@@ -1288,10 +1293,12 @@ namespace {
 			v_max = std::max(v_max, v);
 
 			// Keep in mind that extrusion direction is not necessarily parallel to plane normal, so we need to project corner onto plane along global z and measure distance along extrusion direction
-			if (auto proj = project_along_global_z(corner)) {
-                auto w = (corner - proj->xyz).dot(extrusion_dir);
-                max_depth = std::max(max_depth, inside_sign * w);
-            }
+			if (!bounded) {
+				max_depth = std::max(max_depth, delta.dot(direction));
+			} else if (auto proj = project_along_global_z(corner)) {
+				auto w = (corner - proj->xyz).dot(direction);
+				max_depth = std::max(max_depth, w);
+			}
         }
 		state.depth = max_depth;
 		if (max_depth <= precision * 20. || max_depth <= 0.00002) {
@@ -1324,7 +1331,7 @@ namespace {
 			}
 		}
 
-		return part_from_polygon_extrusion({std::move(polygon)}, 0, normal, extrusion_dir * -inside_sign, max_depth + margin, precision, dilation);
+		return part_from_polygon_extrusion({std::move(polygon)}, 0, normal, direction, max_depth + margin, precision, dilation);
 	}
 
 	std::optional<part> part_from_extrusion(const taxonomy::extrusion::ptr& extrusion, double precision, double dilation, int circle_segments) {
