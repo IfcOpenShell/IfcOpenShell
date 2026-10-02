@@ -113,6 +113,11 @@ class PolylineOperator:
             tool.Blender.update_viewport()
             return is_valid
 
+    def has_polyline_points(self) -> bool:
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline
+        return len(polyline_data) > 0
+
     def choose_axis(self, event: bpy.types.Event, x: bool = True, y: bool = True, z: bool = False) -> None:
         options = {"X", "Y"}
         if z:
@@ -412,11 +417,20 @@ class PolylineOperator:
                 if self.snapping_points[0]["type"] not in {"Plane", "Axis"}:
                     should_round = False
 
+                if not self.has_polyline_points():
+                    should_round = False
+
                 tool.Polyline.calculate_distance_and_angle(
                     context, self.input_ui, self.tool_state, should_round=should_round
                 )
                 if should_round:
                     tool.Polyline.calculate_x_y_and_z(context, self.input_ui, self.tool_state)
+                    snap_prop = tool.Model.get_polyline_props().snap_mouse_point[0]
+                    snap_prop.x = self.input_ui.get_number_value("X")
+                    snap_prop.y = self.input_ui.get_number_value("Y")
+                    z = self.input_ui.get_number_value("Z")
+                    if z is not None and z != "":
+                        snap_prop.z = z
 
                 tool.Blender.update_viewport()
             return {"RUNNING_MODAL"}
