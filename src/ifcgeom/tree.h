@@ -44,7 +44,7 @@ namespace ifcopenshell::geom {
 	struct IFC_GEOM_API ray_intersection_result {
 		double distance;
 		int style_index;
-		express::entity instance;
+		express::base instance;
 		tree_point position;
 		tree_point normal;
 		double ray_distance;
