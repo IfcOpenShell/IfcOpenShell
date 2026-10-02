@@ -22,6 +22,7 @@ import ifcopenshell.api.root
 import ifcopenshell.api.unit
 import ifcopenshell.util.placement
 import numpy as np
+import pytest
 
 import ifcpatch
 import test.bootstrap
@@ -60,6 +61,10 @@ class TestResetSpatialElementLocations(test.bootstrap.IFC4):
         ifcpatch.execute({"file": self.file, "recipe": "ResetSpatialElementLocations", "arguments": ["", True]})
         m = ifcopenshell.util.placement.get_local_placement(site.ObjectPlacement)
         assert np.allclose(m, m2)
+
+    def test_raises_on_missing_project(self):
+        with pytest.raises(ValueError):
+            ifcpatch.execute({"file": self.file, "recipe": "ResetSpatialElementLocations", "arguments": ["", False]})
 
 
 class TestResetSpatialElementLocationsIFC2X3(test.bootstrap.IFC2X3, TestResetSpatialElementLocations):

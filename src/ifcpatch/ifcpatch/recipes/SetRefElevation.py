@@ -45,7 +45,10 @@ class Patcher:
         self.elevation = float(elevation)
 
     def patch(self):
-        project = self.file.by_type("IfcProject")[0]
+        projects = self.file.by_type("IfcProject")
+        if not projects:
+            raise ValueError("The file has no IfcProject, so there is nothing to process.")
+        project = projects[0]
         sites = self.find_decomposed_ifc_class(project, "IfcSite")
         for site in sites:
             site.RefElevation = float(self.elevation)

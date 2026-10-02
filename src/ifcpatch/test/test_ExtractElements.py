@@ -116,6 +116,11 @@ class TestExtractElements(test.bootstrap.IFC4):
         wall_new = output.by_type("IfcWall")[0]
         assert wall_new.ObjectPlacement.RelativePlacement.Location.Coordinates == (5.0, 10.0, 2.0)
 
+    def test_raises_on_missing_project(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        with pytest.raises(ValueError):
+            ifcpatch.execute({"file": self.file, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
+
     @pytest.mark.skipif(
         "IFC4X3" not in ifcopenshell.ifcopenshell_wrapper.schema_names(),
         reason=(

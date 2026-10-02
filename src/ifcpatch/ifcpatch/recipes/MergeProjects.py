@@ -79,6 +79,9 @@ class Patcher(ifcpatch.BasePatcher):
             self.merge(other)
 
     def merge(self, other: ifcopenshell.file) -> None:
+        if not self.file.by_type("IfcProject") or not other.by_type("IfcProject"):
+            raise ValueError("The file has no IfcProject, so there is nothing to process.")
+
         if (main_unit := self.get_unit_name(self.file)) != self.get_unit_name(other):
             other = ifcopenshell.util.unit.convert_file_length_units(other, main_unit)
 
