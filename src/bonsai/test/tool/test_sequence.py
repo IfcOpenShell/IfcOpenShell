@@ -50,6 +50,23 @@ class TestGetElementStatus(NewFile):
         assert subject.get_element_status(element) == {"EXISTING", "TEMPORARY"}
 
 
+class TestAddTextAnimationHandler(NewFile):
+    def test_timeline_text_uses_the_sequence_date_format(self):
+        tool.Ifc.set(ifcopenshell.file())
+        props = subject.get_work_schedule_props()
+        props.visualisation_start = "2026-03-05"
+        props.visualisation_finish = "2026-06-15"
+        handlers = list(bpy.app.handlers.frame_change_post)
+        try:
+            subject.add_text_animation_handler({"start_frame": 1, "total_frames": 100})
+            bpy.context.scene.frame_set(1)
+            assert bpy.data.curves["Timeline"].body == "05/03/26"
+        finally:
+            for handler in list(bpy.app.handlers.frame_change_post):
+                if handler not in handlers:
+                    bpy.app.handlers.frame_change_post.remove(handler)
+
+
 class TestAssignStatus(NewFile):
     def test_run(self):
         bpy.ops.bim.create_project()
