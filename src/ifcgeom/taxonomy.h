@@ -1074,6 +1074,9 @@ typedef item const* ptr;
 				virtual loft* clone_() const { return new loft(*this); }
 				virtual kinds kind() const { return LOFT; }
 
+				// Faceted loft as a shell of planar faces in loft-local coordinates, or nullptr if a profile edge is non-linear.
+				shell::ptr as_shell() const;
+
 				virtual void print_impl(std::ostream& o, int indent) const {
 					o << std::string(indent, ' ') << "axis" << std::endl;
 					axis->print(o, indent + 4);
@@ -1245,6 +1248,9 @@ typedef item const* ptr;
 
 			    // New constructor for fixed reference swept area solid
 			    sweep_along_curve(matrix4::ptr m, face::ptr profile, item::ptr directrix, direction3::ptr ref) : sweep(m, profile), surface(nullptr), curve(directrix), direction(ref) { }
+
+				// Tessellated shell approximation of the swept solid, or nullptr if it cannot be approximated.
+				shell::ptr as_shell(int circle_segments = 16, double deflection = 0.001) const;
 
 				virtual size_t calc_hash() const {
 					auto v = std::make_tuple(static_cast<size_t>(SWEEP_ALONG_CURVE), matrix->hash_components(), basis->calc_hash(), surface->calc_hash(), curve->calc_hash());
