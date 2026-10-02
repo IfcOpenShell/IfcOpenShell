@@ -42,7 +42,16 @@ namespace {
 	}
 
 	std::optional<manifold::Manifold> make_manifold(const mesh_type& mesh) {
-		manifold::Manifold solid(mesh);
+		auto positions = mesh;
+		if (positions.numProp > 3) {
+			const size_t stride = positions.numProp;
+			positions.numProp = 3;
+			positions.vertProperties.clear();
+			for (size_t i = 0; i < mesh.NumVert(); ++i) {
+				positions.vertProperties.insert(positions.vertProperties.end(), mesh.vertProperties.begin() + i * stride, mesh.vertProperties.begin() + i * stride + 3);
+			}
+		}
+		manifold::Manifold solid(positions);
 		if (solid.Status() == manifold::Manifold::Error::NoError) {
 			return solid;
 		}
