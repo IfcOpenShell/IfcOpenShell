@@ -58,6 +58,10 @@ Scenario: Add aggregate - add a nested aggregate
     And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
     When I press "bim.add_aggregate"
+    # Tab into the aggregate to restructure its contents. Outside aggregate mode,
+    # selecting a part collects the whole aggregate instead of extracting the part.
+    And the object "IfcElementAssembly/Default_Name" is selected
+    And I press "bim.override_mode_set_edit"
     And the object "IfcWall/Cube" is selected
     And I press "bim.add_aggregate(aggregate_name='Default_Name2')"
     Then the object "IfcElementAssembly/Default_Name" exists
@@ -83,3 +87,74 @@ Scenario: Add aggregate - add multiple elements to a custom aggregate class
     Then the object "IfcMember/Cube" is aggregated by object "IfcWall/Assembly"
     And the object "IfcCovering/Cube" is aggregated by object "IfcWall/Assembly"
     And the object "IfcWall/Assembly" is contained in object "IfcBuildingStorey/My Storey"
+
+Scenario: Add aggregate - keep linked aggregates intact when their parts are selected
+    Given I load the IFC test file "/test/files/linked-aggregates.ifc"
+    And the object "IfcWall/Wall_01" is selected
+    When I duplicate linked aggregate the selected objects
+    Then the object "Assembly_01" exists
+    When I deselect all objects
+    And the object "IfcElementAssembly/Assembly" is selected
+    And additionally the object "IfcWall/Wall_01" is selected
+    And additionally the object "IfcWall/Wall_02" is selected
+    And additionally the object "Assembly_01" is selected
+    And additionally the object "IfcWall/Wall_01.001" is selected
+    And additionally the object "IfcWall/Wall_02.001" is selected
+    And I press "bim.add_aggregate(aggregate_name='Wrapper')"
+    Then the object "IfcElementAssembly/Assembly" is aggregated by object "IfcElementAssembly/Wrapper"
+    And the object "Assembly_01" is aggregated by object "IfcElementAssembly/Wrapper"
+    And the object "IfcWall/Wall_01" is aggregated by object "IfcElementAssembly/Assembly"
+    And the object "IfcWall/Wall_02" is aggregated by object "IfcElementAssembly/Assembly"
+    And the object "IfcWall/Wall_01.001" is aggregated by object "Assembly_01"
+    And the object "IfcWall/Wall_02.001" is aggregated by object "Assembly_01"
+
+Scenario: Add aggregate - promote a selected part to its whole linked aggregate
+    Given I load the IFC test file "/test/files/linked-aggregates.ifc"
+    And the object "IfcWall/Wall_01" is selected
+    When I duplicate linked aggregate the selected objects
+    Then the object "Assembly_01" exists
+    When I deselect all objects
+    And the object "IfcWall/Wall_01" is selected
+    And additionally the object "IfcWall/Wall_01.001" is selected
+    And I press "bim.add_aggregate(aggregate_name='Wrapper')"
+    Then the object "IfcElementAssembly/Assembly" is aggregated by object "IfcElementAssembly/Wrapper"
+    And the object "Assembly_01" is aggregated by object "IfcElementAssembly/Wrapper"
+    And the object "IfcWall/Wall_01" is aggregated by object "IfcElementAssembly/Assembly"
+    And the object "IfcWall/Wall_02" is aggregated by object "IfcElementAssembly/Assembly"
+    And the object "IfcWall/Wall_01.001" is aggregated by object "Assembly_01"
+    And the object "IfcWall/Wall_02.001" is aggregated by object "Assembly_01"
+
+Scenario: Add aggregate - promote a selected part to its whole aggregate
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
+    And the object "IfcWall/Cube" is selected
+    When I press "bim.add_aggregate"
+    # Not in aggregate mode, so selecting the part collects the whole aggregate.
+    And the object "IfcWall/Cube" is selected
+    And I press "bim.add_aggregate(aggregate_name='Wrapper')"
+    Then the object "IfcElementAssembly/Default_Name" is aggregated by object "IfcElementAssembly/Wrapper"
+    And the object "IfcWall/Cube" is aggregated by object "IfcElementAssembly/Default_Name"
+    And the object "IfcElementAssembly/Wrapper" is contained in object "IfcBuildingStorey/My Storey"
+
+Scenario: Add aggregate - a sub-assembly inside a linked aggregate stays plain
+    Given I load the IFC test file "/test/files/linked-aggregates.ifc"
+    And the object "IfcWall/Wall_01" is selected
+    When I duplicate linked aggregate the selected objects
+    Then the object "Assembly_01" exists
+    # Tab into the linked aggregate, then group one of its parts into a sub-assembly.
+    When I deselect all objects
+    And the object "IfcElementAssembly/Assembly" is selected
+    And I press "bim.override_mode_set_edit"
+    And the object "IfcWall/Wall_01" is selected
+    And I press "bim.add_aggregate(aggregate_name='Sub')"
+    Then the object "IfcWall/Wall_01" is aggregated by object "IfcElementAssembly/Sub"
+    And the object "IfcElementAssembly/Sub" is aggregated by object "IfcElementAssembly/Assembly"
+    And the object "IfcWall/Wall_02" is aggregated by object "IfcElementAssembly/Assembly"
+    # It is structure, not an instance: linked-ness is inherited from the aggregate
+    # above it rather than duplicated onto every level of nesting.
+    And the object "IfcElementAssembly/Sub" is not part of a Linked Aggregate
