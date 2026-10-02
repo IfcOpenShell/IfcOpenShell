@@ -490,15 +490,17 @@ class FilledOpeningGenerator:
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         shape_builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
 
+        context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+        assert context
+
         profile = None
         filling_type = ifcopenshell.util.element.get_type(filling)
         if filling_type:
             profile = ifcopenshell.util.representation.get_representation(
                 filling_type, "Model", "Profile", "ELEVATION_VIEW"
             )
-            filling_obj = tool.Ifc.get_object(filling_type)
-        context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
-        assert context
+            if profile or ifcopenshell.util.representation.get_representation(filling_type, context):
+                filling_obj = tool.Ifc.get_object(filling_type)
 
         if profile:
             profile = ifcopenshell.util.representation.resolve_representation(profile)
