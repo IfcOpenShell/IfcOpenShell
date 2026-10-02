@@ -935,7 +935,9 @@ void mapping::initialize_units_() {
     }
 
     if (!angle_unit_encountered) {
-        logger_.warning("GEO", 313, "No plane angle unit encountered");
+        // Without a PLANEANGLEUNIT, angles are taken as radians (the -1 sentinel flips every angle).
+        angle_unit_ = 1.;
+        logger_.warning("GEO", 313, "No plane angle unit encountered, assuming radians");
     }
 
     // @todo move to a more descriptive function
