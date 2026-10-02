@@ -49,7 +49,7 @@ def edit_layer_usage(file: ifcopenshell.file, usage: ifcopenshell.entity_instanc
         # construction. Let's say it's a 200mm thick concrete layer.
         material_set = ifcopenshell.api.material.add_material_set(model,
             name="CON200", set_type="IfcMaterialLayerSet")
-        layer = ifcopenshell.api.material.add_layer(model, layer_set=material_set, material=steel)
+        layer = ifcopenshell.api.material.add_layer(model, layer_set=material_set, material=concrete)
         ifcopenshell.api.material.edit_layer(model, layer=layer, attributes={"LayerThickness": 200})
 
         # Our wall type now has the layer set assigned to it

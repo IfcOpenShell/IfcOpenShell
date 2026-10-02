@@ -36,7 +36,6 @@ def edit_profile(file: ifcopenshell.file, profile: ifcopenshell.entity_instance,
 
         circle = ifcopenshell.api.profile.add_parameterized_profile(model,
             ifc_class="IfcCircleProfileDef")
-        circle = 1.
 
         ifcopenshell.api.profile.edit_profile(model,
             profile=circle, attributes={"ProfileName": "1000mm Dia"})
