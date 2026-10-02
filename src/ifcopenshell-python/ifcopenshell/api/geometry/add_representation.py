@@ -555,6 +555,13 @@ class Usecase:
                     return self.create_curves_from_mesh_ifc2x3(should_exclude_faces=should_exclude_faces, is_2d=is_2d)
                 return self.create_curves_from_mesh(should_exclude_faces=should_exclude_faces, is_2d=is_2d)
 
+        # Curves without bezier splines skip the mesh round-trip, which welds
+        # splines that share a point (#5268).
+        if isinstance(geom_data, bpy.types.Curve) and not any(spline.type == "BEZIER" for spline in geom_data.splines):
+            if self.file.schema == "IFC2X3":
+                return self.create_curves_from_curve_ifc2x3(is_2d=is_2d, curve_object_data=geom_data)
+            return self.create_curves_from_curve(is_2d=is_2d, curve_object_data=geom_data)
+
         import bonsai.tool as tool
 
         selected_objects = bpy.context.selected_objects
