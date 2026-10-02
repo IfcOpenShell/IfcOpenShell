@@ -580,6 +580,20 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         name="Disable Undo When Saving (Faster saves, no undo for you!)", default=False
     )
 
+    def update_keep_web_connection(self, context: bpy.types.Context) -> None:
+        tool.Web.ensure_keep_connection_timer()
+
+    keep_web_connection: BoolProperty(
+        name="Keep Web Connection",
+        description=(
+            "Stay connected to Bonsai's web server in the background whenever Blender runs - "
+            "starting it if needed, without opening a browser, and reconnecting if it goes away. "
+            "For tools that read from Bonsai live"
+        ),
+        default=False,
+        update=update_keep_web_connection,
+    )
+
     def update_autosave_settings(self, context: bpy.types.Context) -> None:
         if self.autosave_enabled:
             tool.Autosave.reset_timer()
@@ -724,6 +738,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         bsdd_load_test_dictionaries: bool
         bsdd_baseurl: str
         should_disable_undo_on_save: bool
+        keep_web_connection: bool
         autosave_enabled: bool
         autosave_interval_minutes: int
         autosave_mode: Literal["PROMPT", "BACKUP"]
@@ -881,6 +896,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
             layout.prop(self, "autosave_interval_minutes")
             layout.prop(self, "autosave_mode")
         layout.prop(self, "should_stream")
+        layout.label(text="Web UI:")
+        layout.prop(self, "keep_web_connection")
         layout.label(text="bSDD:")
         layout.prop(self, "bsdd_load_preview_dictionaries")
         layout.prop(self, "bsdd_load_inactive_dictionaries")

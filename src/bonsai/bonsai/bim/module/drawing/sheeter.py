@@ -24,19 +24,57 @@ import urllib.parse
 import uuid
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from typing import Union
 from xml.dom import minidom
 
+import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import pystache
 from mathutils import Vector
 
 import bonsai.tool as tool
 
+#: The `data-type` of a group that places something on a sheet. A drawing has
+#: its own; a schedule and a reference carry their document's scope.
+PLACED_GROUPS = ("drawing", "schedule", "reference")
+
 VIEW_TITLE_OFFSET_Y = 5
 DRAWING_PADDING = 10
 DEFAULT_POSITION = Vector((30, 30))
 SVG = "{http://www.w3.org/2000/svg}"
 XLINK = "{http://www.w3.org/1999/xlink}"
+
+#: The spatial elements a sheet can be about, by the prefix of their titleblock
+#: fields - {{SiteName}}, {{BuildingTown}} - with the IFC class of each and the
+#: attribute holding its postal address. The prefix alone names the sheet's link
+#: to one: its value is that element's GlobalId.
+SPATIAL_ELEMENTS = {"Site": ("IfcSite", "SiteAddress"), "Building": ("IfcBuilding", "BuildingAddress")}
+#: What follows the prefix: the element's own attributes, then its address's.
+#: `<prefix>Address` is the whole address on one line.
+ELEMENT_ATTRIBUTES = ("Name", "Description")
+ADDRESS_ATTRIBUTES = ("AddressLines", "PostalBox", "Town", "Region", "PostalCode", "Country")
+#: {field: (prefix, attribute, is_address)} for every such field.
+SPATIAL_FIELDS = {
+    prefix + attribute: (prefix, attribute, attribute in ADDRESS_ATTRIBUTES)
+    for prefix in SPATIAL_ELEMENTS
+    for attribute in ELEMENT_ATTRIBUTES + ADDRESS_ATTRIBUTES
+}
+
+
+def as_template_data(value):
+    """A value as a sheet template sees it, in a form that survives JSON.
+
+    pystache renders a variable with str(), so everything becomes text - an unset
+    attribute is "None" - except what templates test and iterate: booleans, and
+    lists of rows such as the titleblock's revisions.
+    """
+    if isinstance(value, dict):
+        return {k: as_template_data(v) for k, v in value.items()}
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, list) and all(isinstance(v, dict) for v in value):
+        return [as_template_data(v) for v in value]
+    return str(value)
 
 
 class SheetBuilder:
@@ -144,10 +182,12 @@ class SheetBuilder:
 
         # where does the last drawing finish
         try:
-            last = drawings[-1][0]
+            last_group = drawings[-1]
+            last = last_group[0]
+            last_dx, last_dy = self.group_translate(last_group)
             last_width = self.convert_to_mm(last.attrib["width"])
-            last_x = self.convert_to_mm(last.attrib["x"])
-            last_y = self.convert_to_mm(last.attrib["y"])
+            last_x = self.convert_to_mm(last.attrib["x"]) + last_dx
+            last_y = self.convert_to_mm(last.attrib["y"]) + last_dy
         except (IndexError, AttributeError):
             return [DEFAULT_POSITION.x, DEFAULT_POSITION.y]
 
@@ -157,15 +197,37 @@ class SheetBuilder:
 
         # start a new row, find the y
         for drawing in drawings:
+            _, dy = self.group_translate(drawing)
             for image in drawing:
                 try:
-                    image_y = self.convert_to_mm(image.attrib["y"])
+                    image_y = self.convert_to_mm(image.attrib["y"]) + dy
                     image_height = self.convert_to_mm(image.attrib["height"])
                 except AttributeError:
                     return [DEFAULT_POSITION.x, DEFAULT_POSITION.y]
                 if image_y + image_height + DRAWING_PADDING > last_y:
                     last_y = image_y + image_height + DRAWING_PADDING
         return [DEFAULT_POSITION.x, last_y]
+
+    @staticmethod
+    def group_translate(group: ET.Element) -> tuple[float, float]:
+        """A drawing group's own offset, in millimetres.
+
+        Where a drawing sits is its image's x/y composed with its group's
+        transform, and moving one is a change to the transform - that is what
+        `build_drawings` preserves, and what Inkscape writes when you drag a
+        group. So measuring a sheet by image coordinates alone measures where
+        its drawings were rather than where they are: on a sheet whose drawings
+        had been rearranged, the next one was placed hundreds of millimetres
+        below the page, off the sheet entirely.
+
+        Only `translate` is read. A drawing group carrying a matrix or a scale
+        is not something Bonsai or a drag in Inkscape produces, and guessing at
+        one would be worse than treating it as unmoved.
+        """
+        moved = re.search(
+            r"translate\(\s*([-\d.eE]+)[ ,]+([-\d.eE]+)\s*\)", group.attrib.get("transform", "")
+        )
+        return (float(moved.group(1)), float(moved.group(2))) if moved else (0.0, 0.0)
 
     def update_sheet_drawing_sizes(self, sheet: ifcopenshell.entity_instance) -> None:
         ET.register_namespace("", "http://www.w3.org/2000/svg")
@@ -316,10 +378,266 @@ class SheetBuilder:
 
         return {"SHEET": sheet_path}
 
+    def get_titleblock_data(self, sheet: ifcopenshell.entity_instance) -> dict:
+        """Template data for a sheet's titleblock.
+
+        Shared by `build_titleblock` and `get_template_values`.
+        """
+        data = sheet.get_info()
+        data.update(self.get_spatial_data(sheet))
+        return data
+
+    def get_sheet_links(self, sheet: ifcopenshell.entity_instance) -> dict:
+        """The site and building a sheet names itself, as {"Site": ..., "Building": ...}.
+
+        A sheet names them by a document association - the IFC relationship for
+        "this document is about this object" - so the link is ordinary IFC that
+        survives a re-serialised model, and goes when the sheet does.
+
+        A sheet linked to two sites names neither. IFC keeps the links as a set,
+        so "the first" would be whichever the file happens to list first; that is
+        a guess, and the fields stay blank instead. Linking one replaces both.
+        """
+        return {prefix: self._only(elements) for prefix, elements in self.get_all_sheet_links(sheet).items()}
+
+    def get_all_sheet_links(self, sheet: ifcopenshell.entity_instance) -> dict:
+        """Everything a sheet is linked to, by prefix - more than one is a conflict to resolve."""
+        linked = {prefix: [] for prefix in SPATIAL_ELEMENTS}
+        for rel in self._sheet_associations(sheet):
+            for element in rel.RelatedObjects:
+                for prefix, (ifc_class, _) in SPATIAL_ELEMENTS.items():
+                    if element.is_a(ifc_class) and element not in linked[prefix]:
+                        linked[prefix].append(element)
+        return linked
+
+    def get_sheet_spatial(self, sheet: ifcopenshell.entity_instance, links: Union[dict, None] = None) -> dict:
+        """The site and building a sheet is about, as {"Site": ..., "Building": ...}.
+
+        What the sheet links to, or - for one it does not - whatever has a single
+        answer: a building's own site, the model's only top-level site, the site's
+        only building. With several to choose from it is None and its fields are
+        blank. A titleblock quietly showing one building's address on another
+        building's sheet would be worse than an empty box.
+
+        :param links: Links to use in place of the sheet's own, by prefix - to see
+            what an edit would resolve to before making it.
+        """
+        linked = self.get_sheet_links(sheet) | (links or {})
+        site, building = linked["Site"], linked["Building"]
+        if site is None and building is not None:
+            site = self._containing(building, "IfcSite")
+        if site is None:
+            site = self._only(self._top_level_sites(sheet.file))
+        if building is None:
+            building = self._only(self._buildings_in(sheet.file, site))
+        return {"Site": site, "Building": building}
+
+    def get_spatial_data(self, sheet: ifcopenshell.entity_instance) -> dict:
+        """The {{Site...}} and {{Building...}} fields of a sheet's titleblock.
+
+        Unset values are empty rather than "None": an address reading "None, None"
+        on a sheet looks broken where an unset revision code does not.
+        """
+
+        def get(entity, name):
+            return (getattr(entity, name, None) if entity else None) or ""
+
+        data = {}
+        for prefix, element in self.get_sheet_spatial(sheet).items():
+            address = get(element, SPATIAL_ELEMENTS[prefix][1]) or None
+            for name in ELEMENT_ATTRIBUTES:
+                data[prefix + name] = get(element, name)
+            for name in ADDRESS_ATTRIBUTES:
+                data[prefix + name] = get(address, name)
+            # Several lines are shown as one: a field is a single box of text.
+            data[prefix + "AddressLines"] = ", ".join(get(address, "AddressLines"))
+            region = " ".join(p for p in (data[prefix + "Region"], data[prefix + "PostalCode"]) if p)
+            parts = (
+                data[prefix + "AddressLines"],
+                data[prefix + "PostalBox"],
+                data[prefix + "Town"],
+                region,
+                data[prefix + "Country"],
+            )
+            data[prefix + "Address"] = ", ".join(p for p in parts if p)
+        return data
+
+    def get_link_field(self, sheet: ifcopenshell.entity_instance, prefix: str) -> dict:
+        """The Site or Building a sheet is linked to, as a field with a choice of values.
+
+        The first choice is to link nothing, labelled with what that resolves to,
+        so the list says what the sheet will show either way.
+        """
+        ifc_class = SPATIAL_ELEMENTS[prefix][0]
+        noun = ifc_class[3:].lower()
+        linked_all = self.get_all_sheet_links(sheet)[prefix]
+        linked = self._only(linked_all)
+        automatic = self.get_sheet_spatial(sheet, {prefix: None})[prefix]
+        candidates = sorted(tool.Ifc.get().by_type(ifc_class), key=lambda e: (e.Name or "", e.GlobalId))
+        names = [e.Name or f"Unnamed {noun}" for e in candidates]
+
+        if automatic is not None:
+            label = f"Automatic ({automatic.Name or f'Unnamed {noun}'})"
+        elif candidates:
+            label = "Automatic (none - more than one to choose from)"
+        else:
+            label = f"Automatic (none - this model has no {noun})"
+        options = [{"value": "", "label": label}]
+        if len(linked_all) > 1:
+            # Shown as the current value, so the conflict is visible and picking
+            # anything - Automatic included - replaces every link.
+            options.insert(0, {"value": self.CONFLICT, "label": f"{len(linked_all)} {noun}s linked - pick one"})
+        for element, name in zip(candidates, names):
+            # Two with the same name are told apart by their GlobalId.
+            options.append(
+                {"value": element.GlobalId, "label": name if names.count(name) == 1 else f"{name} ({element.GlobalId})"}
+            )
+        return {
+            "name": prefix,
+            "value": self.CONFLICT if len(linked_all) > 1 else (linked.GlobalId if linked else ""),
+            "editable": True,
+            "options": options,
+        }
+
+    #: The Site or Building value of a sheet linked to more than one.
+    CONFLICT = "*"
+
+    def set_sheet_links(self, sheet: ifcopenshell.entity_instance, links: dict) -> None:
+        """Link a sheet to a site or building, replacing what it linked to. None unlinks."""
+        for prefix, element in links.items():
+            ifc_class = SPATIAL_ELEMENTS[prefix][0]
+            for rel in self._sheet_associations(sheet):
+                for current in list(rel.RelatedObjects):
+                    if current.is_a(ifc_class) and current != element:
+                        tool.Ifc.run("document.unassign_document", products=[current], document=sheet)
+            if element is not None:
+                tool.Ifc.run("document.assign_document", products=[element], document=sheet)
+
+    def set_spatial_fields(self, elements: dict, values: dict) -> None:
+        """Write {{Site...}} and {{Building...}} fields to the elements they show."""
+        own, addresses = {}, {}
+        for field, value in values.items():
+            prefix, name, is_address = SPATIAL_FIELDS[field]
+            if is_address and name == "AddressLines":
+                # Typed as one line, kept as one: splitting on commas would break
+                # a line that has one of its own.
+                value = [value] if value else None
+            (addresses if is_address else own).setdefault(prefix, {})[name] = value or None
+        for prefix, attributes in own.items():
+            self._edit_spatial_element(elements[prefix], attributes)
+        for prefix, attributes in addresses.items():
+            self._edit_address(elements[prefix], SPATIAL_ELEMENTS[prefix][1], attributes)
+
+    def _parse_links(self, values: dict) -> dict:
+        """The elements Site and Building values name, by GlobalId; empty unlinks."""
+        links = {}
+        for prefix, (ifc_class, _) in SPATIAL_ELEMENTS.items():
+            if prefix not in values or values[prefix] == self.CONFLICT:
+                continue
+            if not values[prefix]:
+                links[prefix] = None
+                continue
+            try:
+                element = tool.Ifc.get().by_guid(values[prefix])
+            except RuntimeError:
+                element = None
+            if element is None or not element.is_a(ifc_class):
+                raise ValueError(f"That {ifc_class[3:].lower()} is no longer in the model.")
+            links[prefix] = element
+        return links
+
+    def _no_spatial_reason(self, prefix: str) -> str:
+        ifc_class = SPATIAL_ELEMENTS[prefix][0]
+        noun = ifc_class[3:].lower()
+        if not tool.Ifc.get().by_type(ifc_class):
+            return f"This model has no {noun} - add an {ifc_class} in Bonsai first."
+        return f"This sheet has no {noun} - pick one in its {prefix} list first."
+
+    def _edit_spatial_element(self, element: ifcopenshell.entity_instance, attributes: dict) -> None:
+        """Edit a site's or building's attributes, as Bonsai's attribute panel does.
+
+        Its name is also its Blender object's name and its label in the spatial
+        tree, so both are brought up to date with it.
+        """
+        tool.Ifc.run("attribute.edit_attributes", product=element, attributes=attributes)
+        if "Name" in attributes:
+            if obj := tool.Ifc.get_object(element):
+                tool.Root.set_object_name(obj, element)
+            import bonsai.core.spatial
+
+            bonsai.core.spatial.import_spatial_decomposition(tool.Spatial)
+
+    def _edit_address(self, element: ifcopenshell.entity_instance, attribute: str, attributes: dict) -> None:
+        """Edit an element's postal address, giving it one if it has none.
+
+        An address shared with another element - a site and its building often
+        share one - changes for both, which is what sharing it means.
+        """
+        ifc_file = tool.Ifc.get()
+        address = getattr(element, attribute)
+        if address is None:
+            if not any(attributes.values()):
+                return
+            address = ifc_file.createIfcPostalAddress(Purpose="SITE" if element.is_a("IfcSite") else None)
+            tool.Ifc.run("attribute.edit_attributes", product=element, attributes={attribute: address})
+
+        tool.Ifc.run("owner.edit_address", address=address, attributes=attributes)
+
+        # An address with nothing in it is invalid IFC (IfcPostalAddress.WR1), so
+        # clearing every part removes it rather than leaving it empty.
+        parts = ("InternalLocation", "AddressLines", "PostalBox", "PostalCode", "Town", "Region", "Country")
+        if not any(getattr(address, name, None) for name in parts):
+            for inverse in ifc_file.get_inverse(address):
+                for name in ("SiteAddress", "BuildingAddress"):
+                    if getattr(inverse, name, None) == address:
+                        tool.Ifc.run("attribute.edit_attributes", product=inverse, attributes={name: None})
+            if not ifc_file.get_total_inverses(address):
+                ifc_file.remove(address)
+
+    @staticmethod
+    def _sheet_associations(sheet: ifcopenshell.entity_instance) -> list:
+        if sheet.file.schema == "IFC2X3":
+            return [r for r in sheet.file.by_type("IfcRelAssociatesDocument") if r.RelatingDocument == sheet]
+        return list(sheet.DocumentInfoForObjects or [])
+
+    @staticmethod
+    def _only(elements: list) -> Union[ifcopenshell.entity_instance, None]:
+        return elements[0] if len(elements) == 1 else None
+
+    @staticmethod
+    def _containing(element: ifcopenshell.entity_instance, ifc_class: str) -> Union[ifcopenshell.entity_instance, None]:
+        """The nearest element of this class that `element` is part of."""
+        parent = ifcopenshell.util.element.get_aggregate(element)
+        while parent is not None and not parent.is_a(ifc_class):
+            parent = ifcopenshell.util.element.get_aggregate(parent)
+        return parent
+
+    def _top_level_sites(self, ifc_file: ifcopenshell.file) -> list:
+        """Sites directly under the project, or under nothing - not the lots of a site complex."""
+        sites = []
+        for site in ifc_file.by_type("IfcSite"):
+            parent = ifcopenshell.util.element.get_aggregate(site)
+            if parent is None or parent.is_a("IfcProject"):
+                sites.append(site)
+        return sites
+
+    def _buildings_in(self, ifc_file: ifcopenshell.file, site: Union[ifcopenshell.entity_instance, None]) -> list:
+        """The outermost buildings on a site, or in the model - not a building complex's parts."""
+        if site is None:
+            return [b for b in ifc_file.by_type("IfcBuilding") if not self._containing(b, "IfcBuilding")]
+        found, queue = [], [site]
+        while queue:
+            for part in ifcopenshell.util.element.get_parts(queue.pop()):
+                if part.is_a("IfcBuilding"):
+                    found.append(part)
+                elif part.is_a("IfcSite"):
+                    queue.append(part)
+        return found
+
     def build_titleblock(self, root: ET.Element, sheet: ifcopenshell.entity_instance) -> None:
         titleblock = root.findall(f'{SVG}g[@data-type="titleblock"]')[0]
         image = titleblock.findall(f"{SVG}image")[0]
-        g = self.parse_embedded_svg(image, sheet.get_info())
+        g = self.parse_embedded_svg(image, self.get_titleblock_data(sheet))
         grid_north = ifcopenshell.util.geolocation.get_grid_north(tool.Ifc.get()) * -1
         true_north = ifcopenshell.util.geolocation.get_true_north(tool.Ifc.get()) * -1
         for north in g.iterfind(f'.//{SVG}g[@data-type="grid-north"]'):
@@ -432,27 +750,42 @@ class SheetBuilder:
             if view_title is not None:
                 assert foreground is not None
                 foreground_path = self.get_href(foreground)
-                data = reference.get_info()
-                data.update({"Sheet" + k: v for k, v in sheet.get_info().items()})
-                if not data["Name"]:
-                    data["Name"] = ntpath.basename(foreground_path)[0:-4]
-
-                # If a perspective drawing, don't add scale to view title
-                try:
-                    is_perspective = (
-                        drawing.Representation.Representations[0]
-                        .Items[0]
-                        .TreeRootExpression.FirstOperand.is_a("IfcRectangularPyramid")
-                    )
-                except AttributeError:
-                    is_perspective = False
-
-                if not is_perspective:
-                    data["Scale"] = tool.Drawing.get_drawing_human_scale(drawing)
+                data = self.get_drawing_view_title_data(reference, sheet, drawing, foreground_path)
                 view.append(self.parse_embedded_svg(view_title, data))
 
             for image in images:
                 view.remove(image)
+
+    def get_drawing_view_title_data(
+        self,
+        reference: ifcopenshell.entity_instance,
+        sheet: ifcopenshell.entity_instance,
+        drawing: ifcopenshell.entity_instance,
+        foreground_path: str,
+    ) -> dict:
+        """Template data for a drawing's view-title.
+
+        Shared by `build_drawings` and `get_template_values`, so a tool showing a
+        sheet without building it fills the title exactly as a build would.
+        """
+        data = reference.get_info()
+        data.update({"Sheet" + k: v for k, v in sheet.get_info().items()})
+        if not data["Name"]:
+            data["Name"] = ntpath.basename(foreground_path)[0:-4]
+
+        # If a perspective drawing, don't add scale to view title
+        try:
+            is_perspective = (
+                drawing.Representation.Representations[0]
+                .Items[0]
+                .TreeRootExpression.FirstOperand.is_a("IfcRectangularPyramid")
+            )
+        except AttributeError:
+            is_perspective = False
+
+        if not is_perspective:
+            data["Scale"] = tool.Drawing.get_drawing_human_scale(drawing)
+        return data
 
     def build_documents(self, root: ET.Element, sheet: ifcopenshell.entity_instance) -> None:
         schedules = root.findall(f'{SVG}g[@data-type="schedule"]')
@@ -482,14 +815,722 @@ class SheetBuilder:
 
             if view_title is not None:
                 path = self.get_href(table)
-                data = reference.get_info()
-                data.update({"Sheet" + k: v for k, v in sheet.get_info().items()})
-                if not data["Name"]:
-                    data["Name"] = document.Name or "Unnamed"
+                data = self.get_document_view_title_data(reference, sheet, document)
                 view.append(self.parse_embedded_svg(view_title, data))
 
             for image in images:
                 view.remove(image)
+
+    def get_document_view_title_data(
+        self,
+        reference: ifcopenshell.entity_instance,
+        sheet: ifcopenshell.entity_instance,
+        document: ifcopenshell.entity_instance,
+    ) -> dict:
+        """Template data for a schedule's or reference's view-title.
+
+        Shared by `build_documents` and `get_template_values`.
+        """
+        data = reference.get_info()
+        data.update({"Sheet" + k: v for k, v in sheet.get_info().items()})
+        if not data["Name"]:
+            data["Name"] = document.Name or "Unnamed"
+        return data
+
+    def get_template_values(self) -> dict:
+        """The data every sheet's templates are filled with, without building.
+
+        For tools that display sheets from their layouts, rendering them live,
+        so view-titles and titleblocks read as a build would. The data comes from
+        the same methods `build` uses, and from the model in memory, unsaved
+        edits included.
+
+        Sheets are keyed by their layout's path and placements by the path of the
+        file they place: a layout's ``data-id`` is a STEP id, which does not
+        survive a re-serialised model. Values are text, as pystache renders them,
+        except the booleans and lists of rows that templates test and iterate.
+
+        ::
+
+            {
+                "ifc": "<absolute path, or empty if unsaved>",
+                "sheets": [
+                    {
+                        "identification": "A01",
+                        "layout": "<absolute path>",
+                        "values": {...titleblock data...},
+                        "placements": {"<absolute path>": {...view-title data...}},
+                        "drawings": {"<drawing GlobalId>": {...the same, for drawings...}},
+                    }
+                ],
+                "north": {"grid": "rotate(...)", "true": "rotate(...)"},
+            }
+        """
+        ifc_file = tool.Ifc.get()
+        ifc_path = tool.Ifc.get_path()
+        result = {
+            "ifc": os.path.abspath(ifc_path) if ifc_path else "",
+            "sheets": [],
+            "north": {"grid": "rotate(0)", "true": "rotate(0)"},
+        }
+        if not ifc_file:
+            return result
+
+        key = self._path_key
+        drawings = self._drawings_by_uri()
+        documents = self._documents_by_uri()
+
+        for sheet in ifc_file.by_type("IfcDocumentInformation"):
+            if sheet.Scope != "SHEET":
+                continue
+            layout = tool.Drawing.get_document_uri(sheet, "LAYOUT")
+            if not layout:
+                continue
+
+            placements = {}
+            by_drawing = {}
+            for reference in tool.Drawing.get_document_references(sheet):
+                kind = tool.Drawing.get_reference_description(reference)
+                if kind in ("LAYOUT", "TITLEBLOCK", "SHEET"):
+                    continue
+                uri = tool.Drawing.get_document_uri(reference)
+                if not uri:
+                    continue
+                if kind == "DRAWING":
+                    if (drawing := drawings.get(key(uri))) is None:
+                        continue
+                    data = self.get_drawing_view_title_data(reference, sheet, drawing, uri)
+                    by_drawing[drawing.GlobalId] = as_template_data(data)
+                else:
+                    if (document := documents.get(key(uri))) is None:
+                        continue
+                    data = self.get_document_view_title_data(reference, sheet, document)
+                placements[os.path.abspath(uri)] = as_template_data(data)
+
+            result["sheets"].append(
+                {
+                    "identification": str(tool.Drawing.get_sheet_identification(sheet)),
+                    "layout": os.path.abspath(layout),
+                    "values": as_template_data(self.get_titleblock_data(sheet)),
+                    "placements": placements,
+                    "drawings": by_drawing,
+                }
+            )
+
+        grid_north = ifcopenshell.util.geolocation.get_grid_north(ifc_file) * -1
+        true_north = ifcopenshell.util.geolocation.get_true_north(ifc_file) * -1
+        result["north"] = {"grid": f"rotate({grid_north})", "true": f"rotate({true_north})"}
+        return result
+
+    def find_sheet(self, layout: str) -> Union[ifcopenshell.entity_instance, None]:
+        """The sheet whose layout is at `layout`, or None.
+
+        By path, as `get_template_values` keys its sheets: a layout's STEP id
+        does not survive a re-serialised model, and the same file can be spelled
+        several ways on Windows.
+        """
+        ifc_file = tool.Ifc.get()
+        if not ifc_file:
+            return None
+        target = self._path_key(layout)
+        for sheet in ifc_file.by_type("IfcDocumentInformation"):
+            if sheet.Scope != "SHEET":
+                continue
+            uri = tool.Drawing.get_document_uri(sheet, "LAYOUT")
+            if uri and self._path_key(uri) == target:
+                return sheet
+        return None
+
+    def get_editable_fields(self, layout: str, target: dict, fields: list[str]) -> dict:
+        """Which of `fields` can be written back on this view, and what they hold.
+
+        `fields` are the placeholders a template actually uses, so a tool can
+        offer what is on the sheet rather than every attribute of the entity
+        behind it. Whether a field is writable is answered here, beside the
+        operations that would apply it: a tool deciding for itself would drift
+        from what `set_template_values` accepts.
+
+        ::
+
+            {"fields": [{"name": "Name", "value": "SITE PLAN", "editable": True},
+                        {"name": "Scale", "value": "1:100", "editable": False,
+                         "reason": "..."}]}
+        """
+        sheet = self._require_sheet(layout)
+        kind, reference, entity = self._find_target(sheet, target)
+        data = self._view_data(sheet, kind, reference, entity)
+        writable = self.WRITABLE_FIELDS[kind]
+
+        answer = []
+        for name in fields:
+            if kind == "sheet" and name in SPATIAL_ELEMENTS:
+                answer.append(self.get_link_field(sheet, name))
+                continue
+            # Unset reads as empty here, not as the "None" a build prints: this
+            # value goes into a box someone types in, and saving it back would
+            # otherwise set the attribute to the word.
+            value = data.get(name)
+            field = {"name": name, "value": "" if value is None else as_template_data(value)}
+            if name in writable:
+                field["editable"] = True
+            else:
+                field["editable"] = False
+                if reason := self._read_only_reason(kind, name):
+                    field["reason"] = reason
+            answer.append(field)
+        return {"fields": answer, "kind": kind}
+
+    def check_template_values(self, layout: str, target: dict, values: dict) -> dict:
+        """Refuse what `set_template_values` would refuse, without writing anything.
+
+        A caller applying an edit as an undoable operator asks this first, so a
+        refusal comes back as its reason rather than as a failed operator, and
+        leaves nothing in the undo history. Returns the values as text.
+        """
+        sheet = self._require_sheet(layout)
+        kind, _, _ = self._find_target(sheet, target)
+        writable = self.WRITABLE_FIELDS[kind]
+        for name in values:
+            if name not in writable:
+                raise ValueError(f"{name} cannot be edited: {self._read_only_reason(kind, name)}")
+        values = {name: ("" if value is None else str(value)) for name, value in values.items()}
+        if kind == "sheet":
+            # Links first, then whether each field has an element to go to once
+            # they apply.
+            links = self._parse_links(values)
+            elements = self.get_sheet_spatial(sheet, links)
+            for prefix in {SPATIAL_FIELDS[field][0] for field in values if field in SPATIAL_FIELDS}:
+                if elements[prefix] is None:
+                    raise ValueError(self._no_spatial_reason(prefix))
+        return values
+
+    def set_template_values(self, layout: str, target: dict, values: dict) -> dict:
+        """Apply template values to the model in memory, through Bonsai.
+
+        Every field goes through the operation Bonsai itself uses, because
+        several of them are not just an attribute: renaming a sheet moves its
+        layout and its built sheet, renaming a drawing moves its SVG and relinks
+        every layout that places it. Writing the attribute alone would leave the
+        model naming files that are not there.
+
+        Raises ValueError with a reason a person can read - the caller is a
+        remote tool, and the message is what it shows. Everything that can be
+        refused is, before anything is written (`check_template_values`).
+        """
+        import bonsai.core.drawing as core
+
+        values = self.check_template_values(layout, target, values)
+        if not values:
+            return {"changed": []}
+        sheet = self._require_sheet(layout)
+        kind, reference, entity = self._find_target(sheet, target)
+
+        if kind == "sheet":
+            links = self._parse_links(values)
+            spatial = {k: v for k, v in values.items() if k in SPATIAL_FIELDS}
+            elements = self.get_sheet_spatial(sheet, links)
+            # Identification and Name name the layout and sheet files together,
+            # so they are renamed together, keeping whichever is not being set.
+            if "Identification" in values or "Name" in values:
+                core.rename_sheet(
+                    tool.Ifc,
+                    tool.Drawing,
+                    sheet=sheet,
+                    identification=values.get("Identification", str(tool.Drawing.get_sheet_identification(sheet))),
+                    name=values.get("Name", sheet.Name or ""),
+                )
+            if links:
+                self.set_sheet_links(sheet, links)
+            # The site's and building's, not the sheet's: every sheet on them shows it.
+            if spatial:
+                self.set_spatial_fields(elements, spatial)
+            attributes = {
+                k: v
+                for k, v in values.items()
+                if k not in ("Identification", "Name") and k not in SPATIAL_FIELDS and k not in SPATIAL_ELEMENTS
+            }
+            if attributes:
+                tool.Ifc.run("document.edit_information", information=sheet, attributes=attributes)
+            tool.Drawing.import_sheets()
+        else:
+            if "Identification" in values:
+                core.rename_reference(tool.Ifc, tool.Drawing, reference=reference, identification=values["Identification"])
+            if "Name" in values:
+                # A view-title shows the reference's own name when it has one and
+                # falls back to the drawing's, so the edit goes wherever the
+                # displayed value came from (`get_drawing_view_title_data`).
+                if reference.Name:
+                    tool.Ifc.run("document.edit_reference", reference=reference, attributes={"Name": values["Name"]})
+                elif kind == "drawing":
+                    core.update_drawing_name(tool.Ifc, tool.Drawing, drawing=entity, name=values["Name"])
+                else:
+                    tool.Ifc.run("document.edit_information", information=entity, attributes={"Name": values["Name"]})
+            attributes = {k: v for k, v in values.items() if k not in ("Identification", "Name")}
+            if attributes:
+                tool.Ifc.run("document.edit_reference", reference=reference, attributes=attributes)
+            tool.Drawing.import_sheets()
+            if kind == "drawing":
+                tool.Drawing.import_drawings()
+
+        # Where the sheet is now: renaming one moves its layout, so the path the
+        # caller asked about no longer exists. Saying so is what lets a tool ask
+        # again straight away rather than wait to notice the file move.
+        moved = tool.Drawing.get_document_uri(sheet, "LAYOUT")
+        return {"changed": sorted(values), "layout": os.path.abspath(moved) if moved else ""}
+
+    def list_drawings(self, layout: str) -> dict:
+        """Everything the model could put on this sheet, and what is already on it.
+
+        For a tool offering "add something to this sheet": it needs what there
+        is to choose from, named as a person named them, and it needs to know
+        what is already here so it does not offer it twice. Drawings, schedules
+        and references alike - the three things `add_to_sheet` accepts, and the
+        three Bonsai has its own Add … To Sheet operators for.
+
+        A schedule and a reference have no GlobalId, so theirs is empty and they
+        are named to `addToSheet` by `file` instead.
+
+        ::
+
+            {"drawings": [{"kind": "drawing", "globalId": "...",
+                           "name": "PLAN - LEVEL 1", "file": "<absolute path>",
+                           "onSheet": false, "generated": true}]}
+        """
+        sheet = self._require_sheet(layout)
+        here = {
+            r.Location
+            for r in tool.Drawing.get_document_references(sheet)
+            if tool.Drawing.get_reference_description(r) in ("DRAWING", "SCHEDULE", "REFERENCE")
+            and r.Location
+        }
+
+        def entry(kind: str, name: str, guid: str, location: str) -> dict:
+            uri = tool.Ifc.resolve_uri(location)
+            return {
+                "kind": kind,
+                "globalId": guid,
+                "name": name or os.path.splitext(os.path.basename(location))[0],
+                "file": os.path.abspath(uri) if uri else "",
+                "onSheet": location in here,
+                # Never generated means no SVG to place, which Bonsai refuses -
+                # better said before it is offered than after it is picked.
+                "generated": bool(uri) and tool.Drawing.does_file_exist(uri),
+            }
+
+        placeable = []
+        for drawing in tool.Ifc.get().by_type("IfcAnnotation"):
+            if drawing.ObjectType != "DRAWING":
+                continue
+            document = tool.Drawing.get_drawing_document(drawing)
+            if document is not None and document.Location:
+                placeable.append(entry("drawing", drawing.Name, drawing.GlobalId, document.Location))
+
+        for document in tool.Ifc.get().by_type("IfcDocumentInformation"):
+            if document.Scope not in ("SCHEDULE", "REFERENCE"):
+                continue
+            if location := self.document_location(document):
+                placeable.append(entry(document.Scope.lower(), document.Name, "", location))
+
+        placeable.sort(key=lambda d: (d["kind"], d["name"].lower()))
+        return {"drawings": placeable}
+
+    def document_location(self, document: ifcopenshell.entity_instance) -> Union[str, None]:
+        """Where a schedule or reference is placed from, as the model stores it.
+
+        A schedule is authored in a spreadsheet and placed as the SVG rendered
+        beside it; a reference is its own SVG. Both are reached the same way -
+        the document's first reference, with an svg extension - which is what
+        Bonsai's own Add Schedule/Reference To Sheet do.
+        """
+        references = (
+            document.DocumentReferences
+            if tool.Ifc.get_schema() == "IFC2X3"
+            else document.HasDocumentReferences
+        )
+        if not references or not references[0].Location:
+            return None
+        return tool.Drawing.get_path_with_ext(references[0].Location, "svg")
+
+    def find_placeable(self, target: dict) -> tuple[str, ifcopenshell.entity_instance, str]:
+        """What a request names, whether or not it is on any sheet.
+
+        `_find_target` looks among a sheet's references, which is no use for
+        putting something on one. By GlobalId or by the file it is placed from -
+        the same two handles, both of which survive a re-serialised model. A
+        schedule or a reference has no GlobalId of its own, so it is always
+        named by its file.
+
+        :return: (kind, the entity, the Location to put on the sheet's reference)
+        """
+        guid = target.get("globalId")
+        if guid:
+            try:
+                drawing = tool.Ifc.get().by_guid(guid)
+            except RuntimeError:
+                drawing = None
+            if drawing is not None and drawing.is_a("IfcAnnotation") and drawing.ObjectType == "DRAWING":
+                document = tool.Drawing.get_drawing_document(drawing)
+                if document is not None and document.Location:
+                    return "drawing", drawing, document.Location
+
+        if path := target.get("path"):
+            wanted = self._path_key(path)
+            if (drawing := self._drawings_by_uri().get(wanted)) is not None:
+                document = tool.Drawing.get_drawing_document(drawing)
+                if document is not None and document.Location:
+                    return "drawing", drawing, document.Location
+            for document in tool.Ifc.get().by_type("IfcDocumentInformation"):
+                if document.Scope not in ("SCHEDULE", "REFERENCE"):
+                    continue
+                location = self.document_location(document)
+                if location and self._path_key(tool.Ifc.resolve_uri(location)) == wanted:
+                    return document.Scope.lower(), document, location
+
+        if not guid and not target.get("path"):
+            # Worth saying apart: a tool built before schedules were listed sends
+            # an empty GlobalId for one, and "not in this model" sends whoever
+            # sees it looking at the model rather than at the request.
+            raise ValueError("no drawing, schedule or reference was named")
+        raise ValueError("that drawing is not in this model")
+
+    def check_addable(self, layout: str, target: dict) -> None:
+        """Refuse what `add_to_sheet` would refuse, without adding anything.
+
+        Asked first by a caller applying the addition as an undoable operator,
+        so a refusal leaves nothing in the undo history.
+        """
+        sheet = self._require_sheet(layout)
+        kind, entity, location = self.find_placeable(target)
+        name = entity.Name or os.path.basename(location)
+        uri = tool.Ifc.resolve_uri(location)
+        if not tool.Drawing.does_file_exist(uri):
+            # A drawing is generated, a schedule is rendered from its
+            # spreadsheet; either way the SVG is what gets placed.
+            raise ValueError(f"{name} has not been generated yet")
+        for other in tool.Drawing.get_document_references(sheet):
+            if other.Location == location:
+                raise ValueError(f"{name} is already on this sheet")
+
+        # The model is not the only place it can already be. A removal that
+        # takes the reference out but fails to find the group leaves the layout
+        # placing a drawing the model has forgotten - and asking only the model
+        # then allows a second copy, which makes the next removal ambiguous and
+        # the sheet worse with every attempt. Seen in the field: one drawing
+        # placed three times, two groups sharing a data-id.
+        if uri and self._layout_places(layout, uri):
+            raise ValueError(
+                f"the layout for this sheet already places {os.path.basename(uri)}, "
+                "though the model does not reference it. Remove it in Bonsai first."
+            )
+
+    def _layout_places(self, layout: str, drawing_uri: str) -> bool:
+        """Does the layout file itself place this drawing, whatever the model says?"""
+        try:
+            root = ET.parse(layout).getroot()
+        except Exception:
+            return False
+        wanted = self._path_key(drawing_uri)
+        layout_dir = os.path.dirname(layout)
+        for foreground in root.iter(f"{SVG}image"):
+            # A drawing is placed as a `foreground`, a schedule or reference as
+            # a `content`; both are the file the group puts on the sheet.
+            if foreground.attrib.get("data-type") not in ("foreground", "content"):
+                continue
+            href = foreground.attrib.get(f"{XLINK}href") or foreground.attrib.get("href")
+            if not href:
+                continue
+            placed = os.path.join(layout_dir, urllib.parse.unquote(href).replace("\\", "/"))
+            if self._path_key(placed) == wanted:
+                return True
+        return False
+
+    def add_to_sheet(
+        self,
+        layout: str,
+        target: dict,
+        position: Union[dict, None] = None,
+        identification: Union[str, None] = None,
+    ) -> dict:
+        """Put a drawing back on a sheet, where it was and with the number it had.
+
+        The undo of `remove_from_sheet`, for a tool that shows sheets: deleting
+        a drawing there removes it here, so undoing there has to put it back
+        here. Bonsai's own Add Drawing To Sheet places it in the next free spot
+        and numbers it next, which is right for adding a drawing and wrong for
+        undoing - it would come back somewhere else, called something else. So
+        the caller passes what it had, and this restores both.
+
+        :param position: Where the drawing's own image sat, in mm: {"x", "y"}.
+        :param identification: The view number it had.
+        """
+        self.check_addable(layout, target)
+        sheet = self._require_sheet(layout)
+        kind, entity, location = self.find_placeable(target)
+
+        placed = [
+            r
+            for r in tool.Drawing.get_document_references(sheet)
+            if tool.Drawing.get_reference_description(r) in ("DRAWING", "SCHEDULE", "REFERENCE")
+        ]
+        reference = tool.Ifc.run("document.add_reference", information=sheet)
+        attributes = tool.Drawing.generate_reference_attributes(
+            reference,
+            Identification=identification or str(len(placed) + 1),
+            Location=location,
+            Description=kind.upper(),
+        )
+        tool.Ifc.run("document.edit_reference", reference=reference, attributes=attributes)
+
+        # A drawing is placed with its own builder, a schedule or a reference
+        # with the one for documents - the difference Bonsai's own Add … To
+        # Sheet operators make, and the only one between the three here.
+        if kind == "drawing":
+            self.add_drawing(reference, entity, sheet)
+        else:
+            self.add_document(reference, entity, sheet)
+        # A position asked for and not applied leaves the placement at the next
+        # free spot Bonsai chose, which is not where the caller pointed. Say so:
+        # reporting it as added full stop is how a placement that ignored the
+        # click looked like one that worked.
+        moved = self._move_group_to(layout, reference, position) if position else None
+
+        tool.Drawing.import_sheets()
+        return {
+            "added": os.path.basename(location),
+            "layout": os.path.abspath(layout),
+            "moved": moved,
+        }
+
+    def _move_group_to(self, layout: str, reference: ifcopenshell.entity_instance, position: dict) -> bool:
+        """Put a just added group back where it was, with a group transform.
+
+        `add_drawing` lays the drawing out at the next free spot, writing that
+        into the image's own x/y - which are Bonsai's. The group's transform is
+        what a tool moves a placement with, so the offset goes there and the
+        image keeps the coordinates Bonsai gave it. `add_document` places a
+        schedule or a reference the same way, in a group of its own scope whose
+        image is a `content` rather than a `foreground`.
+
+        The group moved is the one just appended - the last with this
+        reference's id, not the first. IfcOpenShell reuses the STEP id of a
+        deleted entity, so an older group left behind by a removal that could
+        not find it can carry the same `data-id`, and moving that one would
+        shift something else while leaving this where Bonsai put it.
+
+        :return: Whether it moved. False leaves the placement where Bonsai's own
+            layout put it, which is somewhere the caller did not ask for, so it
+            is reported rather than passed off as done.
+        """
+        ET.register_namespace("", "http://www.w3.org/2000/svg")
+        ET.register_namespace("xlink", "http://www.w3.org/1999/xlink")
+        tree = ET.parse(layout)
+        root = tree.getroot()
+        mine = [
+            g
+            for g in root.findall(f"{SVG}g")
+            if g.attrib.get("data-type") in PLACED_GROUPS
+            and g.attrib.get("data-id") == str(reference.id())
+        ]
+        if not mine:
+            return False
+        group = mine[-1]
+        # `is None`, not `or`: an <image> has no children, so an element that was
+        # found is still falsy and `a or b` would throw it away.
+        image = group.find(f'.//{SVG}image[@data-type="foreground"]')
+        if image is None:
+            image = group.find(f'.//{SVG}image[@data-type="content"]')
+        if image is None:
+            return False
+        dx = float(position["x"]) - self.convert_to_mm(image.attrib.get("x", "0"))
+        dy = float(position["y"]) - self.convert_to_mm(image.attrib.get("y", "0"))
+        group.attrib["transform"] = f"translate({dx},{dy})"
+        tree.write(layout)
+        return True
+
+    def check_removable(self, layout: str, target: dict) -> None:
+        """Refuse what `remove_from_sheet` would refuse, without removing anything.
+
+        Asked first by a caller applying the removal as an undoable operator, so
+        a refusal comes back as its reason rather than as a failed operator, and
+        leaves nothing in the undo history.
+        """
+        sheet = self._require_sheet(layout)
+        kind, _, _ = self._find_target(sheet, target)
+        if kind == "sheet":
+            raise ValueError("a titleblock cannot be removed from its sheet")
+
+    def remove_from_sheet(self, layout: str, target: dict) -> dict:
+        """Take a view off a sheet, as Bonsai's own Remove Drawing From Sheet does.
+
+        For a tool that shows sheets and lets a drawing be deleted from one.
+        Removing it there cannot be the whole of it: the layout still places the
+        drawing, so the next time the tool reads the sheet it is back.
+
+        This removes the sheet's reference to it and the group from the layout.
+        The drawing itself is untouched - its annotation, its camera and its SVG
+        all remain, and it stays on any other sheet that places it. A titleblock
+        is refused, as Bonsai's own operator refuses it.
+        """
+        sheet = self._require_sheet(layout)
+        kind, reference, entity = self._find_target(sheet, target)
+        if kind == "sheet":
+            raise ValueError("a titleblock cannot be removed from its sheet")
+
+        uri = tool.Drawing.get_document_uri(reference) or ""
+        name = os.path.basename(uri)
+        tool.Drawing.remove_drawing_from_sheet(reference)
+
+        # `remove_drawing` takes the reference out of the model whether or not
+        # it finds the group, so a removal can half happen: the sheet still
+        # shows the drawing while the model has forgotten it. Reporting that as
+        # done is how it stayed invisible - the caller logged "removed" and the
+        # drawing was still there. Say so instead, and let the caller repeat it
+        # or show it.
+        return {
+            "removed": name,
+            "layout": os.path.abspath(layout),
+            "stillPlaced": bool(uri) and self._layout_places(layout, uri),
+        }
+
+    #: What each kind of view can write back. An allow-list, because the rest of
+    #: a document's attributes are either maintained by Bonsai alongside files on
+    #: disk, or are entities rather than text.
+    WRITABLE_FIELDS = {
+        "sheet": (
+            "Identification",
+            "Name",
+            "Description",
+            "Purpose",
+            "IntendedUse",
+            "Revision",
+            "Status",
+            "Confidentiality",
+            "ElectronicFormat",
+            "CreationTime",
+            "LastRevisionTime",
+            "ValidFrom",
+            "ValidUntil",
+            *SPATIAL_ELEMENTS,
+            *SPATIAL_FIELDS,
+        ),
+        "drawing": ("Identification", "Name", "Description"),
+        "document": ("Identification", "Name", "Description"),
+    }
+
+    #: Why a field a template uses cannot be written, where there is more to say
+    #: than that Bonsai has no operation for it.
+    READ_ONLY_REASONS = {
+        "Scale": "The scale comes from the drawing's camera.",
+        "Scope": "Scope is what makes this document a sheet.",
+        "Location": "This is a file path, which Bonsai maintains as things are renamed.",
+        "DocumentOwner": "An owner is a person or organisation in the model, not text.",
+        "Editors": "Editors are people or organisations in the model, not text.",
+        "ReferencedDocument": "This points at another document in the model, not text.",
+        "id": "A STEP id belongs to the file, not the sheet.",
+        "type": "This is the IFC class of the entity behind the view.",
+        "GlobalId": "A GlobalId identifies the drawing; changing it would unlink it.",
+        "OwnerHistory": "Ownership is recorded by IFC, not typed in.",
+        # The whole address on one line, beside its editable parts: plainly what
+        # it is, so nothing is said.
+        "SiteAddress": "",
+        "BuildingAddress": "",
+    }
+
+    def _read_only_reason(self, kind: str, name: str) -> str:
+        if kind != "sheet" and name.startswith("Sheet"):
+            return "This is the sheet's own field - edit it on the titleblock."
+        return self.READ_ONLY_REASONS.get(name, "Bonsai has no operation for this field.")
+
+    @staticmethod
+    def _path_key(path: str) -> str:
+        return os.path.normcase(os.path.abspath(path))
+
+    def _require_sheet(self, layout: str) -> ifcopenshell.entity_instance:
+        sheet = self.find_sheet(layout)
+        if sheet is None:
+            raise ValueError(f"no sheet in this model uses the layout {os.path.basename(layout)}")
+        return sheet
+
+    def _drawings_by_uri(self) -> dict:
+        """Every drawing in the model, by the path of the SVG it is drawn into."""
+        drawings = {}
+        for drawing in tool.Ifc.get().by_type("IfcAnnotation"):
+            if drawing.ObjectType != "DRAWING":
+                continue
+            document = tool.Drawing.get_drawing_document(drawing)
+            if document and (uri := tool.Drawing.get_document_uri(document)):
+                drawings[self._path_key(uri)] = drawing
+        return drawings
+
+    def _documents_by_uri(self) -> dict:
+        """Every schedule and reference, by the path of the file it is kept in.
+
+        A schedule is kept as a spreadsheet and placed as the SVG rendered
+        beside it (`add_document`), so the sheet's reference names a file the
+        document itself never does. Both spellings are keyed, or a schedule
+        would be looked up by the `.svg` and never found.
+        """
+        documents = {}
+        for information in tool.Ifc.get().by_type("IfcDocumentInformation"):
+            if information.Scope not in ("SCHEDULE", "REFERENCE"):
+                continue
+            for reference in tool.Drawing.get_document_references(information):
+                if uri := tool.Drawing.get_document_uri(reference):
+                    for path in (uri, tool.Drawing.get_path_with_ext(uri, "svg")):
+                        documents.setdefault(self._path_key(path), information)
+        return documents
+
+    def _find_target(self, sheet: ifcopenshell.entity_instance, target: dict) -> tuple:
+        """The view a request names, as (kind, reference, entity).
+
+        A view is named by the GlobalId of its drawing or by the path of the file
+        it places - the same two handles `get_template_values` answers with, and
+        the only two that survive a re-serialised model.
+        """
+        kind = target.get("kind", "sheet")
+        if kind in ("sheet", "titleblock"):
+            return "sheet", None, sheet
+
+        wanted_guid = target.get("globalId")
+        wanted_path = self._path_key(target["path"]) if target.get("path") else None
+        if not wanted_guid and not wanted_path:
+            raise ValueError("a view has to be named by its drawing's GlobalId or by its file")
+
+        drawings = self._drawings_by_uri()
+        documents = self._documents_by_uri()
+        for reference in tool.Drawing.get_document_references(sheet):
+            description = tool.Drawing.get_reference_description(reference)
+            if description in ("LAYOUT", "TITLEBLOCK", "SHEET"):
+                continue
+            uri = tool.Drawing.get_document_uri(reference)
+            if not uri:
+                continue
+            uri_key = self._path_key(uri)
+            drawing = drawings.get(uri_key)
+            if wanted_guid and drawing is not None and drawing.GlobalId == wanted_guid:
+                return "drawing", reference, drawing
+            if wanted_path and uri_key == wanted_path:
+                if drawing is not None:
+                    return "drawing", reference, drawing
+                document = documents.get(uri_key)
+                if document is not None:
+                    return "document", reference, document
+        raise ValueError(f"{sheet.Name or 'this sheet'} has no such view - it may have been moved or removed")
+
+    def _view_data(
+        self,
+        sheet: ifcopenshell.entity_instance,
+        kind: str,
+        reference: Union[ifcopenshell.entity_instance, None],
+        entity: ifcopenshell.entity_instance,
+    ) -> dict:
+        """What this view's template is filled with - the same data a build uses."""
+        if kind == "sheet":
+            return self.get_titleblock_data(sheet)
+        if kind == "drawing":
+            uri = tool.Drawing.get_document_uri(reference) or ""
+            return self.get_drawing_view_title_data(reference, sheet, entity, uri)
+        return self.get_document_view_title_data(reference, sheet, entity)
 
     def get_href(self, element: ET.Element) -> str:
         return urllib.parse.unquote(element.attrib[f"{XLINK}href"]).replace("\\", "/")

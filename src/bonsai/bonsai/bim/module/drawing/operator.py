@@ -3079,6 +3079,155 @@ class RemoveSheet(bpy.types.Operator, tool.Ifc.Operator):
         core.remove_sheet(tool.Ifc, tool.Drawing, sheet=tool.Ifc.get().by_id(self.sheet))
 
 
+class EditSheetTemplateValues(bpy.types.Operator, tool.Ifc.Operator):
+    """Apply sheet template values sent by a tool that shows sheets, such as SketchSpace.
+
+    Run as an operator rather than called directly, so the edit is a transaction
+    like any made in Blender: Ctrl+Z undoes it, and it cannot be skipped over by
+    undoing something made before it. `tool.Web` checks the values first
+    (`SheetBuilder.check_template_values`), so a refused edit never gets here.
+    """
+
+    bl_idname = "bim.edit_sheet_template_values"
+    bl_label = "Edit Sheet Template Values"
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+    layout: bpy.props.StringProperty()
+    target: bpy.props.StringProperty(description="JSON: the view, as SheetBuilder._find_target takes it")
+    values: bpy.props.StringProperty(description="JSON: field names to values")
+
+    #: What the last run answered. An operator returns only its status, and the
+    #: caller needs the fields changed and where the sheet's layout is now.
+    result: dict = {}
+
+    def _execute(self, context):
+        EditSheetTemplateValues.result = sheeter.SheetBuilder().set_template_values(
+            self.layout, json.loads(self.target), json.loads(self.values)
+        )
+
+
+class RemoveSheetView(bpy.types.Operator, tool.Ifc.Operator):
+    """Take a view off a sheet for a tool that shows sheets, such as SketchSpace.
+
+    Deleting a drawing in such a tool cannot stop there: the layout still places
+    it, so it reappears the next time the sheet is read. An operator for the
+    same reason as `EditSheetTemplateValues` - removing a drawing from a sheet
+    is a transaction, and one that deserves Ctrl+Z more than most.
+    """
+
+    bl_idname = "bim.remove_sheet_view"
+    bl_label = "Remove View From Sheet"
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+    layout: bpy.props.StringProperty()
+    target: bpy.props.StringProperty(description="JSON: the view, as SheetBuilder._find_target takes it")
+
+    #: What the last run answered - the file removed, and the sheet's layout.
+    result: dict = {}
+
+    def _execute(self, context):
+        RemoveSheetView.result = sheeter.SheetBuilder().remove_from_sheet(
+            self.layout, json.loads(self.target)
+        )
+
+
+class AddSheetView(bpy.types.Operator, tool.Ifc.Operator):
+    """Put a drawing back on a sheet, for a tool that shows sheets.
+
+    The undo of `RemoveSheetView`: deleting a drawing in such a tool removes it
+    here, so undoing there has to put it back here - where it was, and with the
+    number it had, which is what makes it an undo rather than a fresh add.
+    """
+
+    bl_idname = "bim.add_sheet_view"
+    bl_label = "Add View To Sheet"
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+    layout: bpy.props.StringProperty()
+    target: bpy.props.StringProperty(
+        description="JSON: the drawing, schedule or reference, as SheetBuilder.find_placeable takes it"
+    )
+    position: bpy.props.StringProperty(description="JSON: {x, y} in mm, where its image sat")
+    identification: bpy.props.StringProperty(description="The view number it had")
+
+    #: What the last run answered - the file added, and the sheet's layout.
+    result: dict = {}
+
+    def _execute(self, context):
+        AddSheetView.result = sheeter.SheetBuilder().add_to_sheet(
+            self.layout,
+            json.loads(self.target),
+            json.loads(self.position) if self.position else None,
+            self.identification or None,
+        )
+
+
+#: Enum items for the sheet link operators, kept alive here: Blender does not keep
+#: the strings a dynamic enum callback returns, and reading freed ones crashes it.
+_SHEET_LINK_ITEMS: dict[str, list] = {}
+
+
+def _sheet_link_items(prefix: str):
+    def items(self, context):
+        from bonsai.bim.module.drawing.data import SheetsData
+
+        result = []
+        if (item := tool.Drawing.get_active_sheet_item(is_sheet=True)) and tool.Ifc.get():
+            if not SheetsData.is_loaded:
+                SheetsData.load()
+            noun = sheeter.SPATIAL_ELEMENTS[prefix][0][3:].lower()
+            for option in SheetsData.spatial_links(item.ifc_definition_id)[prefix]["options"]:
+                if option["value"] == sheeter.SheetBuilder.CONFLICT:
+                    continue
+                if option["value"]:
+                    result.append((option["value"], option["label"], f"Show this {noun} on the sheet's titleblock"))
+                else:
+                    description = f"Link no {noun}: the titleblock shows the only {noun} there is, if there is only one"
+                    result.append(("AUTOMATIC", option["label"], description))
+        _SHEET_LINK_ITEMS[prefix] = result
+        return result
+
+    return items
+
+
+class LinkSheetSpatialElement:
+    """Choose the site or building a sheet's titleblock shows.
+
+    The {{Site...}} and {{Building...}} fields of a titleblock come from the site
+    and building the sheet is linked to. The link is a document association from
+    the sheet to that element, and linking one replaces any other.
+    """
+
+    bl_options = {"REGISTER", "UNDO"}
+    prefix = ""
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Drawing.get_active_sheet_item(is_sheet=True):
+            cls.poll_message_set("No sheet selected.")
+            return False
+        return True
+
+    def _execute(self, context):
+        item = tool.Drawing.get_active_sheet_item(is_sheet=True)
+        ifc_file = tool.Ifc.get()
+        element = None if self.element == "AUTOMATIC" else ifc_file.by_guid(self.element)
+        sheeter.SheetBuilder().set_sheet_links(ifc_file.by_id(item.ifc_definition_id), {self.prefix: element})
+
+
+class LinkSheetSite(LinkSheetSpatialElement, bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.link_sheet_site"
+    bl_label = "Link Sheet to Site"
+    bl_description = "Choose the site whose name and address the sheet's titleblock shows"
+    prefix = "Site"
+    element: bpy.props.EnumProperty(name="Site", items=_sheet_link_items("Site"))
+
+
+class LinkSheetBuilding(LinkSheetSpatialElement, bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.link_sheet_building"
+    bl_label = "Link Sheet to Building"
+    bl_description = "Choose the building whose name and address the sheet's titleblock shows"
+    prefix = "Building"
+    element: bpy.props.EnumProperty(name="Building", items=_sheet_link_items("Building"))
+
+
 class AddSchedule(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.add_schedule"
     bl_label = "Add Schedule"
