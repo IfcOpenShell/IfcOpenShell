@@ -969,6 +969,30 @@ class Drawing(bonsai.core.tool.Drawing):
                 return product
 
     @classmethod
+    def get_assigned_annotations(cls, element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+        """Get all annotations assigned to a product. The inverse of ``get_assigned_product``."""
+        rels: list[ifcopenshell.entity_instance] = []
+        if element.is_a("IfcGridAxis"):
+            # Axes aren't products, they're identified by name on the grid's assignment.
+            grid = next(
+                (g for a in ("PartOfU", "PartOfV", "PartOfW") for g in getattr(element, a, None) or []),
+                None,
+            )
+            if grid:
+                rels = [r for r in grid.ReferencedBy or [] if r.Name == element.AxisTag]
+        elif element.is_a("IfcProduct"):
+            rels = element.ReferencedBy or []
+
+        annotations: list[ifcopenshell.entity_instance] = []
+        for rel in rels:
+            if not rel.is_a("IfcRelAssignsToProduct"):
+                continue
+            for related_object in rel.RelatedObjects:
+                if related_object.is_a("IfcAnnotation") and related_object not in annotations:
+                    annotations.append(related_object)
+        return annotations
+
+    @classmethod
     def get_assigned_product_workaround(
         cls, element: ifcopenshell.entity_instance
     ) -> list[ifcopenshell.entity_instance]:
@@ -2485,6 +2509,40 @@ class Drawing(bonsai.core.tool.Drawing):
             product_obj = tool.Ifc.get_object(product)
             product_obj.select_set(True)
             context.view_layer.objects.active = product_obj
+
+    @classmethod
+    def select_assigned_annotations(cls, context: bpy.types.Context) -> tuple[int, int]:
+        """Select the annotations assigned to the selected products.
+
+        The inverse of ``select_assigned_product``. Returns how many annotations were found
+        and how many of them could actually be selected - annotations belonging to drawings
+        that aren't loaded in the view layer are counted but left alone.
+        """
+        objs = list(context.selected_objects)
+        # The panel button acts on the active object, which isn't necessarily selected.
+        if (active_obj := context.active_object) and active_obj not in objs:
+            objs.append(active_obj)
+
+        annotations: list[ifcopenshell.entity_instance] = []
+        for obj in objs:
+            element = tool.Ifc.get_entity(obj)
+            if not element or element.is_a("IfcAnnotation"):
+                continue
+            for annotation in cls.get_assigned_annotations(element):
+                if annotation not in annotations:
+                    annotations.append(annotation)
+
+        selected_objs: list[bpy.types.Object] = []
+        for annotation in annotations:
+            annotation_obj = tool.Ifc.get_object(annotation)
+            if annotation_obj is None or annotation_obj.name not in context.view_layer.objects:
+                continue
+            tool.Blender.select_object(annotation_obj)
+            selected_objs.append(annotation_obj)
+
+        if selected_objs:
+            tool.Blender.set_active_object(selected_objs[-1])
+        return len(annotations), len(selected_objs)
 
     @classmethod
     def is_drawing_active(cls) -> bool:
