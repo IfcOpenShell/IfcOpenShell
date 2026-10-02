@@ -70,6 +70,14 @@ def add_topology_representation(
 
     .. code:: python
 
+        model3d = ifcopenshell.api.context.add_context(model, context_type="Model")
+        ifcopenshell.api.context.add_context(model,
+            context_type="Model", context_identifier="Reference", target_view="GRAPH_VIEW", parent=model3d)
+        member = ifcopenshell.api.root.create_entity(model, ifc_class="IfcStructuralSurfaceMember")
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(model)
+        bounds = builder.face([(0., 0., 0.), (1., 0., 0.), (1., 1., 0.)]).Bounds
+        surface = builder.plane()
+
         context = ifcopenshell.util.representation.get_context(
             model, "Model", "Reference", "GRAPH_VIEW")
         face = model.createIfcFaceSurface(bounds, surface, True)
