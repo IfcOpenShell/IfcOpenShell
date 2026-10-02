@@ -128,7 +128,7 @@ def update_grid_is_locked(self: "BIMGridProperties", context: bpy.types.Context)
     if tool.Ifc.get().schema in ("IFC2X3", "IFC4"):
         elements = tool.Ifc.get().by_type("IfcGrid") + tool.Ifc.get().by_type("IfcGridAxis")
     else:
-        elements = tool.Ifc.get().by_type("IfcPositioningElement")
+        elements = tool.Ifc.get().by_type("IfcPositioningElement") + tool.Ifc.get().by_type("IfcGridAxis")
     for element in elements:
         if obj := tool.Ifc.get_object(element):
             if self.is_locked:
