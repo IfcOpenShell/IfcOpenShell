@@ -82,9 +82,12 @@ def disable_editing_materials(material: type[tool.Material]) -> None:
 
 
 def select_by_material(
-    material_tool: type[tool.Material], spatial: type[tool.Spatial], material: ifcopenshell.entity_instance
+    material_tool: type[tool.Material],
+    spatial: type[tool.Spatial],
+    material: ifcopenshell.entity_instance,
+    should_unhide: bool = False,
 ) -> None:
-    spatial.select_products(material_tool.get_elements_by_material(material))
+    spatial.select_products(material_tool.get_elements_by_material(material), unhide=should_unhide)
 
 
 def enable_editing_material(material_tool: type[tool.Material], material: ifcopenshell.entity_instance) -> None:
