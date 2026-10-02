@@ -746,6 +746,42 @@ def run(cmds: Sequence[str], cwd: str | None = None, can_fail: bool = False, env
 
 
 # Helper functions
+def fix_libtool_mac_install_names(install_dir: str) -> None:
+    """Switch macOS dylibs in `install_dir/lib` from absolute to `@rpath/` install names.
+
+    Unlike cmake or b2, autoconf/libtool always hardcodes install names
+    as absolute `$prefix/lib/libX.dylib` and has no option to use relocatable
+    `@rpath/libX.dylib` instead.
+
+    This later becomes a problem, since those paths are propagated to the plugins
+    and other binaries linked against them.
+
+    To fix this, we patch install names right after dependency installation.
+    Otherwise, we would need to patch every consumer (plugins, executables, other libs), which may be very tricky,
+    because you first need to identify all targets to patch and then identify
+    which paths are patchable and which are legit system dependencies.
+    """
+
+    class Dylib(NamedTuple):
+        path: Path
+        install_name: str
+
+    def get_install_name(dylib: Path) -> str:
+        # `-D` output: dylib's path, followed by its install name.
+        return run(["otool", "-D", str(dylib)]).splitlines()[1].strip()
+
+    dylibs = [Dylib(p, get_install_name(p)) for p in Path(install_dir, "lib").glob("*.dylib") if not p.is_symlink()]
+    for dylib in dylibs:
+        args = ["-id", f"@rpath/{dylib.path.name}"]
+        # dylib may link other libs of the same package
+        # (e.g. `libpcrecpp.0.dylib` -> `libpcre.1.dylib`).
+        for other in dylibs:
+            # `-change` is a no-op if old path is not found, so we just apply it for all libs,
+            # instead of parsing `otool -L` first and doing it more precisely.
+            args += ["-change", other.install_name, f"@rpath/{other.path.name}"]
+        run(["install_name_tool", *args, str(dylib.path)])
+        # Need to re-sign after editing Mach-O.
+        run(["codesign", "--force", "--sign", "-", str(dylib.path)])
 
 
 def run_autoconf(dependency_name: str, configure_args: list[str], cwd: str) -> None:
@@ -990,6 +1026,8 @@ def build_dependency(
             run([make, f"-j{IFCOS_NUM_BUILD_PROCS}", "VERBOSE=1"], cwd=extract_build_dir)
             logger.info(f"\rInstalling {name}... ")
             run([make, "install"], cwd=extract_build_dir)
+            if APPLE:
+                fix_libtool_mac_install_names(check_dir)
         else:
             assert_never(mode)
         logger.info(f"\rInstalled {name}     \n")
