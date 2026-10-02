@@ -89,6 +89,7 @@ def edit_georeferencing(
         if projected_crs:
             if crs := ifcopenshell.util.element.get_pset(project, "ePSet_ProjectedCRS"):
                 crs = file.by_id(crs["id"])
+                crs_properties = {}
                 for k, v in projected_crs.items():
                     if k == "Description":
                         v = file.createIfcText(v)
@@ -96,16 +97,21 @@ def edit_georeferencing(
                         v = file.createIfcLabel(v)
                     elif v is not None:
                         v = file.createIfcIdentifier(v)
-                ifcopenshell.api.pset.edit_pset(file, crs, properties=projected_crs)
+                    crs_properties[k] = v
+                ifcopenshell.api.pset.edit_pset(file, crs, properties=crs_properties)
         if coordinate_operation:
             if conversion := ifcopenshell.util.element.get_pset(project, "ePSet_MapConversion"):
                 conversion = file.by_id(conversion["id"])
+                conversion_properties = {}
                 for k, v in coordinate_operation.items():
-                    if k in ("XAxisAbscissa", "XAxisOrdinate", "Scale"):
+                    if v is None:
+                        pass
+                    elif k in ("XAxisAbscissa", "XAxisOrdinate", "Scale"):
                         v = file.createIfcReal(v)
                     else:
                         v = file.createIfcLengthMeasure(v)
-                ifcopenshell.api.pset.edit_pset(file, conversion, properties=coordinate_operation)
+                    conversion_properties[k] = v
+                ifcopenshell.api.pset.edit_pset(file, conversion, properties=conversion_properties)
         return
     if projected_crs:
         crs = file.by_type("IfcProjectedCRS")[0]
