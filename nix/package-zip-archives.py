@@ -515,16 +515,23 @@ def package_app_bundle(
     output_dir: Path,
     autodesk_connector_dir: Path,
     arch_suffix: str,
+    runtime_dirs: list[Path],
 ) -> None:
     """Zip a `.app` bundle (e.g. BonsaiViewer.app) living at the install-prefix root.
 
     Their install rule uses `BUNDLE DESTINATION "."` - that's the layout Qt's
     macdeployqt expects. macdeployqt has already embedded the Qt frameworks
-    inside each bundle during install/strip, so the only thing left to stage
-    is the connector.
+    inside each bundle during install/strip, so the only things left to stage
+    are the shared dependencies (e.g. boost) and the connector.
     """
     app = app_path.stem
     logger.info(f"Packaging app bundle '{app}'")
+
+    frameworks_dir = app_path / "Contents" / "Frameworks"
+    dependency_libs = []
+    for runtime_dir in runtime_dirs:
+        dependency_libs += stage_runtime_payload(runtime_dir, frameworks_dir)
+    prune_unused_libraries(app_path, dependency_libs)
 
     if app == "BonsaiViewer":
         # ConnectorDiscovery looks in applicationDirPath()/connectors,
@@ -643,7 +650,13 @@ def main() -> None:
     if not ARGS.no_executables and is_platform("MAC"):
         for app_path in sorted(ifcopenshell_install_dir.glob("*.app")):
             package_app_bundle(
-                app_path, ifcopenshell_install_dir, github_sha, output_dir, autodesk_connector_dir, ARGS.arch_suffix
+                app_path,
+                ifcopenshell_install_dir,
+                github_sha,
+                output_dir,
+                autodesk_connector_dir,
+                ARGS.arch_suffix,
+                runtime_dirs,
             )
 
     if ARGS.fail_on_missing_deps and HAS_MISSING_DEPENDENCIES:

@@ -15,6 +15,7 @@ jobs:
             arch: x64
             oldarch: ""
             without: -without-bonsaiviewer
+            test_args: --skip-bonsaiviewer
           - os: macos
             # macos-14 no longer receives Homebrew bottles, so `brew install qt`
             # compiles Qt (and QtWebEngine) from source there and fails.
@@ -22,6 +23,7 @@ jobs:
             arch: arm64
             oldarch: m1
             without: ""
+            test_args: ""
 
     steps:
       - name: Checkout Repository
@@ -89,17 +91,6 @@ jobs:
           if [ "${{ matrix.arch }}" == "arm64" ]; then
             export QT_DIR="$(brew --prefix qt)"
           fi
-          # --ifcopenshell-shared mirrors build_rocky.yml after 27249770e: builds
-          # IfcOpenShell as shared libs so each plug-in dylib references
-          # libIfcParse / libIfcGeom via @rpath instead of statically
-          # embedding them — the dominant size win for BonsaiViewer.app
-          # (per-plugin libs go from ~30-50 MB to a few MB).
-          #
-          # IfcOpenShell-Python is back on after the ifcwrap rpath fix:
-          # INSTALL_RPATH "$ORIGIN" is a Linux-ism that macOS dyld bakes
-          # in as a literal string, so `@rpath/ifcopenshell.document.rdb
-          # .dylib` failed to resolve at import time. ifcwrap now sets
-          # INSTALL_RPATH to "@loader_path" on Apple.
           CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" \
             QT_DIR="${QT_DIR}" \
             uv run ./nix/build-all.py \
@@ -141,11 +132,9 @@ jobs:
         run: |
           uv run nix/package-zip-archives.py "macos${{ matrix.oldarch }}64" --shared
 
-      - name: Test packaged Python wrapper
-        # Imports the *packaged* wrapper and exercises the cross-plug-in hand-offs
-        # (kernel -> tree, kernel -> SVG serializer) that a duplicated OCCT breaks.
+      - name: Test packages
         run: |
-          uv run --python 3.13 test/package/run_against_package.py "$HOME/output/ifcopenshell-python-313-*-macos${{ matrix.oldarch }}64.zip"
+          uv run test/package/run_against_package.py ${{ matrix.test_args }} "$HOME/output"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6

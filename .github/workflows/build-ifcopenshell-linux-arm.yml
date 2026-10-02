@@ -128,12 +128,10 @@ jobs:
         run: |
           uv run nix/package-zip-archives.py linuxarm64 --shared
 
-      - name: Test packaged Python wrapper
-        # Imports the *packaged* wrapper and exercises the cross-plug-in hand-offs
-        # (kernel -> tree, kernel -> SVG serializer) that a duplicated OCCT breaks.
+      - name: Test packages
         shell: bash
         run: |
-          uv run --python 3.13 test/package/run_against_package.py "$HOME/output/ifcopenshell-python-313-*-linuxarm64.zip"
+          uv run test/package/run_against_package.py "$HOME/output"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6

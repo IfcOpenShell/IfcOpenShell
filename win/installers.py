@@ -814,8 +814,17 @@ def install_qt6(
     ifcos_install_qt6: bool,
     qt6_version: str,
     pythonhome: Path | None,
+    qt6_install_dir: Path | None,
 ) -> None:
     build_deps_cache.add_entry("QT6_VERSION", qt6_version)
+
+    if qt6_install_dir is not None:
+        if not (qt6_install_dir / "lib" / "cmake" / "Qt6" / "Qt6Config.cmake").exists():
+            logger.error(f"'{qt6_install_dir}' is not a Qt6 installation, Qt6Config.cmake not found.")
+            sys.exit(1)
+        logger.info(f"Using Qt6 installation at '{qt6_install_dir}'.")
+        build_deps_cache.add_entry("QT6_INSTALL_DIR", str(qt6_install_dir))
+        return
 
     vs_toolset = vs_cfg_vars.vs_toolset
     QT6_MSVC_YEAR = VS_TOOLSET_TO_VS_VER[vs_toolset]
@@ -826,22 +835,15 @@ def install_qt6(
     if QT6_MSVC_YEAR == 2026:
         QT6_MSVC_YEAR = 2022
 
-    QT6_CROSS_COMPILING = False
-    QT6_HOST_ARCH = None
-    QT6_HOST_INSTALL_SUFFIX = None
     if vs_cfg_vars.is_vs_platform("x64"):
+        QT6_HOST = "windows"
         QT6_ARCH = f"win64_msvc{QT6_MSVC_YEAR}_64"
         QT6_INSTALL_SUFFIX = f"msvc{QT6_MSVC_YEAR}_64"
     elif vs_cfg_vars.is_vs_platform("ARM64"):
-        QT6_CROSS_COMPILING = True
-        QT6_ARCH = f"win64_msvc{QT6_MSVC_YEAR}_arm64_cross_compiled"
+        # Native Windows on Arm Qt (with arm64 host tools), requires an arm64 build machine.
+        QT6_HOST = "windows_arm64"
+        QT6_ARCH = f"win64_msvc{QT6_MSVC_YEAR}_arm64"
         QT6_INSTALL_SUFFIX = f"msvc{QT6_MSVC_YEAR}_arm64"
-        # Qt publishes Windows ARM64 packages as cross-compiled Qt. Even on the
-        # windows-11-arm runner, Qt CMake requires host tools such as moc/rcc.
-        # Use the x64 host tools; Windows 11 on Arm runs them through x64
-        # emulation while cl.exe still builds ARM64 binaries against target Qt.
-        QT6_HOST_ARCH = f"win64_msvc{QT6_MSVC_YEAR}_64"
-        QT6_HOST_INSTALL_SUFFIX = f"msvc{QT6_MSVC_YEAR}_64"
     else:
         logger.error(
             f"Automatic Qt6 installation is only supported for x64 and arm64 builds, got '{vs_cfg_vars.vs_platform}'."
@@ -851,16 +853,6 @@ def install_qt6(
     DEPENDENCY_INSTALL_NAME = f"qt6-{qt6_version}-{QT6_INSTALL_SUFFIX}"
     QT6_AQT_OUTPUT_DIR = vs_cfg_vars.install_dir / DEPENDENCY_INSTALL_NAME
     QT6_INSTALL_DIR = QT6_AQT_OUTPUT_DIR / qt6_version / QT6_INSTALL_SUFFIX
-    QT_DIR = QT6_INSTALL_DIR
-
-    QT6_HOST_AQT_OUTPUT_DIR = None
-    QT6_HOST_INSTALL_DIR = None
-    QT_HOST_PATH = None
-    if QT6_CROSS_COMPILING:
-        assert QT6_HOST_INSTALL_SUFFIX is not None
-        QT6_HOST_AQT_OUTPUT_DIR = vs_cfg_vars.install_dir / f"qt6-{qt6_version}-{QT6_HOST_INSTALL_SUFFIX}"
-        QT6_HOST_INSTALL_DIR = QT6_HOST_AQT_OUTPUT_DIR / qt6_version / QT6_HOST_INSTALL_SUFFIX
-        QT_HOST_PATH = QT6_HOST_INSTALL_DIR
 
     QT6_CONFIG_DLL = "Qt6Cored.dll" if debug_or_release(build_cfg) == "Debug" else "Qt6Core.dll"
 
@@ -869,36 +861,20 @@ def install_qt6(
         return
 
     build_deps_cache.add_entry("QT6_INSTALL_DIR", str(QT6_INSTALL_DIR))
-    build_deps_cache.add_entry("QT_DIR", str(QT_DIR))
-    if QT6_CROSS_COMPILING:
-        assert QT6_HOST_INSTALL_DIR is not None
-        assert QT_HOST_PATH is not None
-        build_deps_cache.add_entry("QT6_HOST_INSTALL_DIR", str(QT6_HOST_INSTALL_DIR))
-        build_deps_cache.add_entry("QT_HOST_PATH", str(QT_HOST_PATH))
 
-    QT6_TARGET_EXPECTED_FILES = [
+    # TODO: drop this TRANSITION check once ARM64 dependency caches no longer contain the
+    # cross-compiled Qt, which was installed at the same path as the native one.
+    if (QT6_INSTALL_DIR / "bin" / "target_qt.conf").exists():
+        logger.info(f"Removing cross-compiled Qt at '{QT6_AQT_OUTPUT_DIR}' to replace it with native Qt.")
+        shutil.rmtree(QT6_AQT_OUTPUT_DIR)
+
+    QT6_EXPECTED_FILES = [
         QT6_INSTALL_DIR / "lib" / "cmake" / "Qt6" / "Qt6Config.cmake",
         QT6_INSTALL_DIR / "bin" / QT6_CONFIG_DLL,
         QT6_INSTALL_DIR / "lib" / "cmake" / "Qt6Svg" / "Qt6SvgConfig.cmake",
     ]
-    QT6_TARGET_INSTALLED = all(path.exists() for path in QT6_TARGET_EXPECTED_FILES)
-
-    QT6_HOST_EXPECTED_FILES = None
-    QT6_HOST_INSTALLED = True
-    if QT6_CROSS_COMPILING:
-        assert QT6_HOST_INSTALL_DIR is not None
-        QT6_HOST_EXPECTED_FILES = [
-            QT6_HOST_INSTALL_DIR / "lib" / "cmake" / "Qt6" / "Qt6Config.cmake",
-            QT6_HOST_INSTALL_DIR / "bin" / "moc.exe",
-            QT6_HOST_INSTALL_DIR / "bin" / "rcc.exe",
-            QT6_HOST_INSTALL_DIR / "lib" / "cmake" / "Qt6Svg" / "Qt6SvgConfig.cmake",
-        ]
-        QT6_HOST_INSTALLED = all(path.exists() for path in QT6_HOST_EXPECTED_FILES)
-
-    if QT6_TARGET_INSTALLED and QT6_HOST_INSTALLED:
+    if all(path.exists() for path in QT6_EXPECTED_FILES):
         logger.info(f"Found existing '{QT6_INSTALL_DIR}' for {build_cfg}, skipping")
-        if QT6_CROSS_COMPILING:
-            logger.info(f"Found existing Qt host tools at '{QT6_HOST_INSTALL_DIR}', skipping")
         return
 
     def install_via_pip(python_exe: str) -> tuple[str, ...]:
@@ -921,19 +897,22 @@ def install_qt6(
         )
         AQT_CMD = install_via_pip(AQT_PYTHON)
 
-    def aqt_install_qt(arch: str, output_dir: Path) -> None:
+    def aqt_install_qt(host: str, arch: str, output_dir: Path) -> None:
         # Qt's official archives always bundle both RelWithDebInfo and Debug builds together.
         # aqtinstall has no option to download only one of them, or other configs
         # (Release/MinSizeRel) instead.
         run_streamed(
             *AQT_CMD,
             "install-qt",
-            "windows",
+            host,
             "desktop",
             qt6_version,
             arch,
             "-O",
             str(output_dir),
+            # Keep the install lean by filtering archives: qtbase provides
+            # Core/Gui/Widgets (and the Qt6::CorePrivate target), qtsvg provides
+            # Qt6::Svg. Both are base-Qt archives, not add-on modules.
             "--archives",
             "qtbase",
             "qtsvg",
@@ -942,31 +921,12 @@ def install_qt6(
             cwd=vs_cfg_vars.deps_dir,
         )
 
-    if not QT6_TARGET_INSTALLED:
-        # Keep the install lean by filtering archives: qtbase provides
-        # Core/Gui/Widgets (and the Qt6::CorePrivate target), qtsvg provides
-        # Qt6::Svg. Both are base-Qt archives, not add-on modules.
-        aqt_install_qt(QT6_ARCH, QT6_AQT_OUTPUT_DIR)
+    aqt_install_qt(QT6_HOST, QT6_ARCH, QT6_AQT_OUTPUT_DIR)
 
-    if QT6_CROSS_COMPILING and not QT6_HOST_INSTALLED:
-        assert QT6_HOST_ARCH is not None
-        assert QT6_HOST_AQT_OUTPUT_DIR is not None
-        # windeployqt runs from the host Qt when cross-compiling ARM64, so the
-        # host Qt needs qtsvg too to deploy the Bonsai Viewer's Qt6Svg dependency.
-        aqt_install_qt(QT6_HOST_ARCH, QT6_HOST_AQT_OUTPUT_DIR)
-
-    def require_exists(label: str, path: Path) -> None:
+    for path in QT6_EXPECTED_FILES:
         if not path.exists():
-            logger.error(f"{label} did not produce '{path.name}' at '{path.parent}'.")
+            logger.error(f"Qt6 installation did not produce '{path.name}' at '{path.parent}'.")
             sys.exit(1)
-
-    for path in QT6_TARGET_EXPECTED_FILES:
-        require_exists("Qt6 installation", path)
-
-    if QT6_CROSS_COMPILING:
-        assert QT6_HOST_EXPECTED_FILES is not None
-        for path in QT6_HOST_EXPECTED_FILES:
-            require_exists("Qt6 host installation", path)
 
 
 def python_consider_rc(python_version: str) -> str:
@@ -983,8 +943,17 @@ def install_python(
     python_version: str,
     build_deps_cache: BuildDepsCache,
     nuget_exe: Path,
+    pythonhome: Path | None,
 ) -> Path | None:
     """Returns PYTHONHOME, or None if IFCOS_INSTALL_PYTHON is not set."""
+    if pythonhome is not None:
+        if not (pythonhome / "python.exe").exists():
+            logger.error(f"'{pythonhome}' is not a Python installation, python.exe not found.")
+            sys.exit(1)
+        logger.info(f"Using Python installation at '{pythonhome}'.")
+        build_deps_cache.add_entry("PYTHONHOME", str(pythonhome))
+        return pythonhome
+
     if not ifcos_install_python:
         logger.info("IFCOS_INSTALL_PYTHON not 'TRUE', skipping installation of Python.")
         return None
