@@ -40,7 +40,9 @@ def add_resource_quantity(
         IfcQuantityArea (for material), IfcQuantityCount (for products),
         IfcQuantityLength (for material), IfcQuantityTime (for equipment or
         labour), IfcQuantityVolume (for material), and IfcQuantityWeight
-        (for material).
+        (for material). Subcontract resources may be quantified in time or,
+        since subcontracts are commonly let per unit of work, in any
+        physical quantity.
     :return: The newly created quantity depending on the IFC class
 
     Example:
