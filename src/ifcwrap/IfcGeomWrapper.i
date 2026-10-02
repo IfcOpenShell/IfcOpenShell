@@ -1005,7 +1005,24 @@ struct shape_rtti : public boost::static_visitor<PyObject*>
 				throw ifcopenshell::exception("Supplied representation not of type IfcRepresentation");
 			}
 
-			auto selected_representation = representation ? representation : kernel.mapping()->representation_of(instance);
+			auto selected_representation = representation;
+			if (!selected_representation) {
+				// Prefer Body/Facetation (Plan/Axis for curves) before the generic context based choice
+				const bool curves = settings.get<ifcopenshell::geom::settings::OutputDimensionality>().get() == ifcopenshell::geom::settings::CURVES;
+				auto product_representation = instance.as<express::entity>().get("Representation");
+				if (!product_representation.isNull()) {
+					for (auto& r : ((express::base)product_representation).as<express::entity>().get_value<std::vector<express::base>>("Representations", {})) {
+						auto identifier = r.as<express::entity>().get_value<std::string>("RepresentationIdentifier", "");
+						if (curves ? (identifier == "Plan" || identifier == "Axis") : (identifier == "Body" || identifier == "Facetation")) {
+							selected_representation = r;
+							break;
+						}
+					}
+				}
+			}
+			if (!selected_representation) {
+				selected_representation = kernel.mapping()->representation_of(instance);
+			}
 			if (!selected_representation) {
 				throw ifcopenshell::exception("No suitable IfcRepresentation found");
 			}
