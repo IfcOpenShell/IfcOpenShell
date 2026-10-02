@@ -2208,6 +2208,7 @@ class Drawing(bonsai.core.tool.Drawing):
         text: str,
         product: Optional[ifcopenshell.entity_instance] = None,
     ) -> str:
+        text = cls.strip_text_comments(text)
         if not product:
             return text
 
@@ -2223,7 +2224,13 @@ class Drawing(bonsai.core.tool.Drawing):
             if isinstance(value, (list, tuple)):
                 value = ", ".join(str(v) for v in value)
             text = text.replace(variable, str(value))
-        return text
+        # Values pulled in by variables (e.g. a material name) may carry comments too.
+        return cls.strip_text_comments(text)
+
+    @classmethod
+    def strip_text_comments(cls, text: str) -> str:
+        """Remove `<!-- ... -->` comments, before wrapping so they don't count toward Newline_At."""
+        return re.sub(r"[ \t]*<!--.*?-->", "", text, flags=re.S)
 
     @classmethod
     def sync_object_representation(cls, obj: bpy.types.Object) -> None:
