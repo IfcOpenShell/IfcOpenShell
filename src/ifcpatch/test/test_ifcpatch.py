@@ -16,10 +16,15 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ast
+import importlib
+import logging
+import re
 import tempfile
 from pathlib import Path
 
 import ifcopenshell.api.root
+import pytest
 
 import ifcpatch
 
@@ -36,6 +41,15 @@ class Test:
             expected_keys = ("class_", "description", "output", "inputs")
             for key in expected_keys:
                 assert key in docs
+
+    @pytest.mark.parametrize("recipe", ["FixRevitTINs", "ResetAbsoluteCoordinates"])
+    def test_docstring_examples_construct_the_patcher(self, recipe):
+        module = importlib.import_module(f"ifcpatch.recipes.{recipe}")
+        examples = re.findall(r'"arguments": (\[.*\])\}\)', module.Patcher.__init__.__doc__)
+        assert examples
+        ifc_file = ifcopenshell.file()
+        for example in examples:
+            module.Patcher(ifc_file, logging.getLogger("test"), *ast.literal_eval(example))
 
     def test_static_ifcpatch_execution(self):
         from ifcpatch.recipes import ExtractElements
