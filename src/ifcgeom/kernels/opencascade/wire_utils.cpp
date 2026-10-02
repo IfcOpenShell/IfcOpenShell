@@ -420,6 +420,13 @@ bool ifcopenshell::geom::util::wire_intersections(const TopoDS_Wire& wire, NColl
 
 	bool intersected = false;
 
+	// Per-edge boxes padded by eps, to skip the extrema test for distant edge pairs (#5999).
+	std::vector<Bnd_Box> edge_boxes(n);
+	for (int e = 0; e < n; ++e) {
+		BRepBndLib::Add(wd->Edge(e + 1), edge_boxes[e]);
+		edge_boxes[e].Enlarge(eps);
+	}
+
 	// tfk: Extrema on infinite curves proved to be more robust.
 	// TopoDS_Face face = BRepBuilderAPI_MakeFace(wire, true).Face();
 	// ShapeAnalysis_Wire saw(wd, face, getValue(GV_PRECISION));
@@ -451,6 +458,11 @@ bool ifcopenshell::geom::util::wire_intersections(const TopoDS_Wire& wire, NColl
 
 			// Only check non-consecutive edges
 			if (i == n - 1 && j == 0) continue;
+
+			// Disjoint padded boxes cannot hold a qualifying crossing.
+			if (edge_boxes[i].IsOut(edge_boxes[j])) {
+				continue;
+			}
 
 			double u11, u12, u21, u22, U1, U2;
 			GeomAPI_ExtremaCurveCurve ecc(
