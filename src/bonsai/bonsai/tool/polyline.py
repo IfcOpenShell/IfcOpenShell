@@ -19,7 +19,7 @@
 import math
 from dataclasses import dataclass, field
 from math import radians
-from typing import Literal, Optional, Union
+from typing import TYPE_CHECKING, Literal, Optional, Union
 
 import bpy
 import ifcopenshell.util.unit
@@ -29,6 +29,9 @@ from mathutils import Matrix, Vector
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.helper import format_distance
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.model.prop import Polyline as PolylineProperty
 
 
 class Polyline(bonsai.core.tool.Polyline):
@@ -92,6 +95,7 @@ class Polyline(bonsai.core.tool.Polyline):
         snap_info: str = None
         mode: Literal["Mouse", "Select", "Edit", None] = None
         input_type: "Polyline.InputType" = None
+        rectangle_mode: bool = False
 
     @classmethod
     def create_input_ui(cls, input_options: list[str] = []) -> PolylineUI:
@@ -147,7 +151,7 @@ class Polyline(bonsai.core.tool.Polyline):
                 mouse_vector = Vector((mouse_point.x, mouse_point.y, mouse_point.z))
 
         second_to_last_point = None
-        if len(polyline_points) > 1:
+        if len(polyline_points) > 1 and not tool_state.rectangle_mode:
             second_to_last_point_data = polyline_points[len(polyline_points) - 2]
             second_to_last_point = Vector(
                 (second_to_last_point_data.x, second_to_last_point_data.y, second_to_last_point_data.z)
@@ -294,7 +298,7 @@ class Polyline(bonsai.core.tool.Polyline):
             else:
                 snap_vector = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
 
-        if len(polyline_points) > 1:
+        if len(polyline_points) > 1 and not tool_state.rectangle_mode:
             second_to_last_point_data = polyline_points[len(polyline_points) - 2]
             second_to_last_point = Vector(
                 (second_to_last_point_data.x, second_to_last_point_data.y, second_to_last_point_data.z)
@@ -498,15 +502,14 @@ class Polyline(bonsai.core.tool.Polyline):
         )
 
     @classmethod
-    def insert_polyline_point(cls, input_ui: PolylineUI, tool_state: Optional[ToolState] = None) -> Union[str, None]:
+    def get_polyline_point_coords(cls, input_ui: PolylineUI, tool_state: ToolState) -> Vector:
+        """Get the coordinates of the point that is about to be added to the polyline."""
         x = input_ui.get_number_value("X")
         y = input_ui.get_number_value("Y")
         if input_ui.get_number_value("Z") is not None:
             z = input_ui.get_number_value("Z")
         else:
             z = 0
-        d = input_ui.get_formatted_value("D")
-        a = input_ui.get_formatted_value("A")
 
         polyline_props = tool.Model.get_polyline_props()
         snap_vertex = polyline_props.snap_mouse_point[0]
@@ -528,6 +531,17 @@ class Polyline(bonsai.core.tool.Polyline):
             y = snap_vertex.y
             z = snap_vertex.z
 
+        return Vector((x, y, z))
+
+    @classmethod
+    def insert_polyline_point(cls, input_ui: PolylineUI, tool_state: Optional[ToolState] = None) -> Union[str, None]:
+        d = input_ui.get_formatted_value("D")
+        a = input_ui.get_formatted_value("A")
+
+        assert tool_state
+        x, y, z = cls.get_polyline_point_coords(input_ui, tool_state)
+
+        polyline_props = tool.Model.get_polyline_props()
         polyline_data = polyline_props.insertion_polyline
         if not polyline_data:
             polyline_data = polyline_props.insertion_polyline.add()
@@ -560,15 +574,106 @@ class Polyline(bonsai.core.tool.Polyline):
         polyline_point.angle = a
         polyline_point.position = Vector((x, y, z))
 
-        # Add total length
+        cls.update_total_length(polyline_data)
+
+    @classmethod
+    def update_total_length(cls, polyline_data: "PolylineProperty") -> None:
         total_length = 0
-        for i, point in enumerate(polyline_points):
+        for i, point in enumerate(polyline_data.polyline_points):
             if i == 0:
                 continue
             dim = float(tool.Polyline.validate_input(point.dim, "D")[1])
             total_length += dim
-        total_length = tool.Polyline.format_input_ui_units(total_length)
-        polyline_data.total_length = total_length
+        polyline_data.total_length = tool.Polyline.format_input_ui_units(total_length)
+
+    @classmethod
+    def get_rectangle_corners(
+        cls,
+        first_corner: Vector,
+        opposite_corner: Vector,
+        round_factor: Optional[float] = None,
+        plane_method: Literal["XY", "XZ", "YZ", None] = None,
+    ) -> list[Vector]:
+        """Get the 4 corners of a rectangle defined by two opposite corners.
+
+        The rectangle lies on the plane currently being used by the tool, defaulting to a
+        plane parallel to XY, and is aligned to the custom transform orientation, when there
+        is one. The corner that is not being defined by the mouse is always taken from the
+        first corner, so that the result is planar even when the two corners are not.
+        When a round factor is provided, the sides of the rectangle are rounded to it, instead
+        of rounding the diagonal that goes from the first corner to the opposite one.
+        """
+        # Axes that are spanned by the rectangle. The remaining one is fixed.
+        axes = {"XY": (0, 1), "XZ": (0, 2), "YZ": (1, 2)}.get(plane_method or "XY")
+        assert axes
+
+        matrix = Matrix()
+        if custom_orientation := bpy.context.scene.transform_orientation_slots[0].custom_orientation:
+            matrix = custom_orientation.matrix.to_4x4()
+        matrix_i = matrix.inverted()
+        p1 = matrix_i @ first_corner
+        opposite_corner = matrix_i @ opposite_corner
+
+        sides = [opposite_corner[axis] - p1[axis] for axis in axes]
+        if round_factor:
+            sides = [round(side / round_factor) * round_factor for side in sides]
+
+        p2, p3, p4 = p1.copy(), p1.copy(), p1.copy()
+        p2[axes[0]] += sides[0]
+        p3[axes[0]] += sides[0]
+        p3[axes[1]] += sides[1]
+        p4[axes[1]] += sides[1]
+        return [matrix @ p for p in (p1, p2, p3, p4)]
+
+    @classmethod
+    def update_rectangle_polyline(cls, input_ui: PolylineUI, tool_state: ToolState, should_round: bool = False) -> None:
+        """Rebuild the polyline as a rectangle based on its first point and the point under the mouse.
+
+        The first point is repeated at the end so that the shape is drawn closed and so that
+        the inputs keep being calculated relative to the first corner.
+        """
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline
+        if not polyline_data:
+            return
+        polyline_data = polyline_data[0]
+        polyline_points = polyline_data.polyline_points
+        if not polyline_points:
+            return
+
+        round_factor = tool.Snap.get_increment_snap_value(bpy.context) if should_round else None
+        first_corner = Vector((polyline_points[0].x, polyline_points[0].y, polyline_points[0].z))
+        corners = cls.get_rectangle_corners(
+            first_corner,
+            cls.get_polyline_point_coords(input_ui, tool_state),
+            round_factor,
+            tool_state.plane_method,
+        )
+
+        while len(polyline_points) > 1:
+            polyline_points.remove(len(polyline_points) - 1)
+
+        previous_corner = corners[0]
+        for corner in corners[1:] + [corners[0]]:
+            polyline_point = polyline_points.add()
+            polyline_point.x, polyline_point.y, polyline_point.z = corner
+            polyline_point.position = corner
+            polyline_point.dim = cls.format_input_ui_units((corner - previous_corner).length)
+            polyline_point.angle = f"{90:.2f}°"
+            previous_corner = corner
+
+        cls.update_total_length(polyline_data)
+
+    @classmethod
+    def is_rectangle_valid(cls) -> bool:
+        """Check that the rectangle currently stored in the polyline has no zero length side."""
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline
+        polyline_points = polyline_data[0].polyline_points if polyline_data else []
+        if len(polyline_points) < 4:
+            return False
+        corners = [Vector((p.x, p.y, p.z)) for p in polyline_points[:3]]
+        return all(not tool.Cad.is_x((b - a).length, 0) for a, b in zip(corners, corners[1:]))
 
     @classmethod
     def clear_polyline(cls) -> None:
