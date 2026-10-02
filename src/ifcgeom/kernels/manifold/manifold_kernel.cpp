@@ -398,11 +398,32 @@ namespace {
 		return true;
 	}
 
-	bool append_extrusion_loop_points(const taxonomy::loop::ptr& loop, int circle_segments, double precision, std::vector<Eigen::Vector3d>& points);
+	struct conic_discretisation {
+		int circle_segments = settings::CircleSegments::defaultvalue;
+		double linear_deflection = settings::MesherLinearDeflection::defaultvalue;
+		double angular_deflection = settings::MesherAngularDeflection::defaultvalue;
+
+		int segments(double span, double radius) const {
+			if (circle_segments > 0) {
+				return std::max(1, (int)std::ceil(span / (2. * std::acos(-1.)) * circle_segments));
+			}
+			// Same rule as the CGAL kernel: the strictest of pi/2, the sagitta bound and the angular deflection
+			double max_segment_angle = std::acos(-1.) / 2.;
+			if (linear_deflection > 0. && radius > linear_deflection) {
+				max_segment_angle = std::min(max_segment_angle, 2. * std::acos(1. - linear_deflection / radius));
+			}
+			if (angular_deflection > 0.) {
+				max_segment_angle = std::min(max_segment_angle, angular_deflection);
+			}
+			return std::max(1, (int)std::ceil(span / max_segment_angle));
+		}
+	};
+
+	bool append_extrusion_loop_points(const taxonomy::loop::ptr& loop, const conic_discretisation& conics, double precision, std::vector<Eigen::Vector3d>& points);
 	bool loop_polygon_from_points(const std::vector<Eigen::Vector3d>& points, const Eigen::Vector3d& origin, const Eigen::Vector3d& x, const Eigen::Vector3d& y, double precision, loop_polygon& polygon);
 	double signed_area(const loop_polygon& polygon);
 
-	bool extrusion_face_polygons(const taxonomy::face::ptr& face, int circle_segments, double precision, Eigen::Vector3d& origin, Eigen::Vector3d& x, Eigen::Vector3d& y, std::vector<loop_polygon>& polygons, size_t& outer_index) {
+	bool extrusion_face_polygons(const taxonomy::face::ptr& face, const conic_discretisation& conics, double precision, Eigen::Vector3d& origin, Eigen::Vector3d& x, Eigen::Vector3d& y, std::vector<loop_polygon>& polygons, size_t& outer_index) {
 		polygons.clear();
 		outer_index = 0;
 		if (!extrusion_face_supported(face)) {
@@ -414,7 +435,7 @@ namespace {
 		loops.reserve(face->children.size());
 		for (const auto& loop : face->children) {
 			std::vector<Eigen::Vector3d> points;
-			if (!append_extrusion_loop_points(loop, circle_segments, precision, points)) {
+			if (!append_extrusion_loop_points(loop, conics, precision, points)) {
 				return false;
 			}
 			Eigen::Vector3d loop_origin;
@@ -819,7 +840,7 @@ namespace {
 		}
 	}
 
-	bool append_extrusion_edge_points(const taxonomy::edge::ptr& edge, int circle_segments, double precision, std::vector<Eigen::Vector3d>& points) {
+	bool append_extrusion_edge_points(const taxonomy::edge::ptr& edge, const conic_discretisation& conics, double precision, std::vector<Eigen::Vector3d>& points) {
 		if (!edge) {
 			return false;
 		}
@@ -865,7 +886,7 @@ namespace {
 			if (b <= a) {
 				b += two_pi;
 			}
-			const auto num_segments = std::max(1, (int)std::ceil(std::fabs(a - b) / two_pi * circle_segments));
+			const auto num_segments = conics.segments(std::fabs(a - b), circle->radius);
 			const auto du = (b - a) / num_segments;
 			evaluate_curve(circle, a, point);
 			edge_points.push_back(point);
@@ -881,7 +902,7 @@ namespace {
 			if (b <= a) {
 				b += two_pi;
 			}
-			const auto num_segments = std::max(1, (int)std::ceil(std::fabs(a - b) / two_pi * circle_segments));
+			const auto num_segments = conics.segments(std::fabs(a - b), std::max(std::fabs(ellipse->radius), std::fabs(ellipse->radius2)));
 			const auto du = (b - a) / num_segments;
 			evaluate_curve(ellipse, a, point);
 			edge_points.push_back(point);
@@ -901,13 +922,13 @@ namespace {
 		return true;
 	}
 
-	bool append_extrusion_loop_points(const taxonomy::loop::ptr& loop, int circle_segments, double precision, std::vector<Eigen::Vector3d>& points) {
+	bool append_extrusion_loop_points(const taxonomy::loop::ptr& loop, const conic_discretisation& conics, double precision, std::vector<Eigen::Vector3d>& points) {
 		points.clear();
 		if (!loop || loop->children.empty()) {
 			return false;
 		}
 		for (const auto& edge : loop->children) {
-			if (!append_extrusion_edge_points(edge, circle_segments, precision, points)) {
+			if (!append_extrusion_edge_points(edge, conics, precision, points)) {
 				return false;
 			}
 		}
@@ -1080,7 +1101,7 @@ namespace {
 	}
 
 	mesh_type transform_mesh(const mesh_type& mesh, const taxonomy::matrix4::ptr& place);
-    std::optional<part> part_from_extrusion(const taxonomy::extrusion::ptr& extrusion, double precision, double dilation, int circle_segments);
+    std::optional<part> part_from_extrusion(const taxonomy::extrusion::ptr& extrusion, double precision, double dilation, const conic_discretisation& conics);
 
 	Eigen::Matrix4d matrix_or_identity(const taxonomy::matrix4::ptr& matrix) {
 		return matrix ? matrix->ccomponents() : Eigen::Matrix4d::Identity();
@@ -1327,7 +1348,7 @@ namespace {
 		return part_from_polygon_extrusion({std::move(polygon)}, 0, normal, extrusion_dir * -inside_sign, max_depth + margin, precision, dilation);
 	}
 
-	std::optional<part> part_from_extrusion(const taxonomy::extrusion::ptr& extrusion, double precision, double dilation, int circle_segments) {
+	std::optional<part> part_from_extrusion(const taxonomy::extrusion::ptr& extrusion, double precision, double dilation, const conic_discretisation& conics) {
 		if (extrusion->depth < precision) {
 			return std::nullopt;
 		}
@@ -1340,7 +1361,7 @@ namespace {
 		Eigen::Vector3d y;
 		std::vector<loop_polygon> polygons;
 		size_t outer_index = 0;
-		if (!extrusion_face_polygons(face, circle_segments, precision, origin, x, y, polygons, outer_index)) {
+		if (!extrusion_face_polygons(face, conics, precision, origin, x, y, polygons, outer_index)) {
 			return std::nullopt;
 		}
 		auto normal = x.cross(y);
@@ -1363,7 +1384,7 @@ namespace {
 		Eigen::Vector3d y;
 		std::vector<loop_polygon> polygons;
 		size_t outer_index = 0;
-		if (!extrusion_face_polygons(face, settings::CircleSegments::defaultvalue, precision, origin, x, y, polygons, outer_index)) {
+		if (!extrusion_face_polygons(face, conic_discretisation{}, precision, origin, x, y, polygons, outer_index)) {
 			return false;
 		}
 		auto dir = extrusion->direction->ccomponents();
@@ -1490,7 +1511,7 @@ namespace {
 }
 
 bool manifold_kernel::convert_impl(const taxonomy::extrusion::ptr extrusion, std::vector<ifcopenshell::geom::conversion_result>& results) {
-	auto part = part_from_extrusion(extrusion, settings_.get<settings::Precision>().get(), dilation_hack, settings_.get<settings::CircleSegments>().get());
+	auto part = part_from_extrusion(extrusion, settings_.get<settings::Precision>().get(), dilation_hack, conic_discretisation{settings_.get<settings::CircleSegments>().get(), settings_.get<settings::MesherLinearDeflection>().get(), settings_.get<settings::MesherAngularDeflection>().get()});
 	if (!part) {
 		ifcopenshell::logger::root().warning("Manifold kernel: failed to convert extrusion, requires planar bounds with line, circle or ellipse edges", extrusion->instance);
 		return false;
