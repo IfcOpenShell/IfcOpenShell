@@ -880,7 +880,12 @@ void mapping::initialize_units_() {
     IfcSchema::IfcUnitAssignment unit_assignment;
     if (projects.size() == 1) {
         auto& project = projects.front();
-        unit_assignment = project.UnitsInContext();
+        try {
+            // UnitsInContext is mandatory, but the IFC2X3 accessor throws on a blank value.
+            unit_assignment = project.UnitsInContext();
+        } catch (const ifcopenshell::exception& ex) {
+            logger_.warning("GEO", 308, std::string("Invalid UnitsInContext: ") + ex.what());
+        }
     } else {
         logger_.warning("GEO", 308, "Not a single project or context in file");
     }
