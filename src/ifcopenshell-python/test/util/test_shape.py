@@ -108,3 +108,12 @@ class TestGetVolume:
         faces[i] = (1, 6, 2)
         geometry = FakeTriangulation(verts, faces)
         assert math.isnan(subject.get_volume(geometry))
+
+    def test_wall_in_map_coordinates_keeps_its_volume(self):
+        verts, faces = cube()
+        far_verts = [(5 * x + 500000, 0.2 * y + 5000000, 2.8 * z + 450) for x, y, z in verts]
+        geometry = FakeTriangulation(far_verts, faces)
+        assert math.isclose(subject.get_volume(geometry), 2.8, abs_tol=1e-6)
+
+    def test_geometry_without_faces_has_no_volume(self):
+        assert subject.get_volume(FakeTriangulation([], [])) == 0.0

@@ -126,8 +126,10 @@ def get_volume(geometry: W.triangulation) -> float:
 
     # Can't optimize it using buffers - performance seems to get only worse.
     verts = geometry.verts
-    faces = geometry.faces
-    grouped_verts = [[verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)]
+    if not (faces := geometry.faces):
+        return 0.0
+    x0, y0, z0 = verts[0], verts[1], verts[2]
+    grouped_verts = [[verts[i] - x0, verts[i + 1] - y0, verts[i + 2] - z0] for i in range(0, len(verts), 3)]
     volumes = [
         signed_triangle_volume(grouped_verts[faces[i]], grouped_verts[faces[i + 1]], grouped_verts[faces[i + 2]])
         for i in range(0, len(faces), 3)
