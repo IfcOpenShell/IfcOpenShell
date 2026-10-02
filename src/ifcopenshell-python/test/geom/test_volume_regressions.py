@@ -6,6 +6,11 @@ from pathlib import Path
 import pytest
 
 import ifcopenshell
+import ifcopenshell.api.context
+import ifcopenshell.api.geometry
+import ifcopenshell.api.project
+import ifcopenshell.api.root
+import ifcopenshell.api.unit
 import ifcopenshell.geom
 import ifcopenshell.guid
 import ifcopenshell.util.shape
@@ -58,3 +63,38 @@ def test_advanced_brep_through_hole_volume_9570(deflection):
     expected = 1.0 * 0.8 * 0.6 - math.pi * 0.15**2 * 0.6
     # Allow tessellation error, but reject the reported 12.9% excess volume.
     assert ifcopenshell.util.shape.get_volume(shape.geometry) == pytest.approx(expected, rel=0.005)
+
+
+@pytest.mark.parametrize("axis_first", [True, False], ids=["axis_first", "body_first"])
+def test_create_shape_prefers_body_over_axis_9771(axis_first):
+    model = ifcopenshell.api.project.create_file(version="IFC4")
+    ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject")
+    ifcopenshell.api.unit.assign_unit(model)
+    model_context = ifcopenshell.api.context.add_context(model, context_type="Model")
+    axis_context = ifcopenshell.api.context.add_context(
+        model,
+        context_type="Model",
+        context_identifier="Axis",
+        target_view="GRAPH_VIEW",
+        parent=model_context,
+    )
+    body_context = ifcopenshell.api.context.add_context(
+        model,
+        context_type="Model",
+        context_identifier="Body",
+        target_view="MODEL_VIEW",
+        parent=model_context,
+    )
+    column = ifcopenshell.api.root.create_entity(model, ifc_class="IfcColumn")
+    points = [model.createIfcCartesianPoint((0.0, 0.0, 0.0)), model.createIfcCartesianPoint((0.0, 0.0, 3.0))]
+    axis = model.createIfcShapeRepresentation(axis_context, "Axis", "Curve3D", [model.createIfcPolyline(points)])
+    body = ifcopenshell.api.geometry.add_profile_representation(
+        model,
+        context=body_context,
+        profile=model.createIfcRectangleProfileDef("AREA", None, None, 0.3, 0.5),
+        depth=3.0,
+    )
+    representations = [axis, body] if axis_first else [body, axis]
+    column.Representation = model.createIfcProductDefinitionShape(Representations=representations)
+    shape = ifcopenshell.geom.create_shape(ifcopenshell.geom.settings(), column)
+    assert len(shape.geometry.verts) // 3 == 8
