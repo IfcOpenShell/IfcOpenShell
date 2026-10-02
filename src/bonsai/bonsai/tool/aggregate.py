@@ -57,6 +57,12 @@ class Aggregate(bonsai.core.tool.Aggregate):
             "IfcElement"
         ):
             is_compatible_class = True
+        elif (
+            relating_object.is_a("IfcElement")
+            or relating_object.is_a("IfcElementType")
+            or relating_object.is_a("IfcAnnotation")
+        ) and related_object.is_a("IfcAnnotation"):
+            is_compatible_class = True
         elif tool.Ifc.get_schema() == "IFC2X3":
             if relating_object.is_a("IfcSpatialStructureElement") and related_object.is_a("IfcSpatialStructureElement"):
                 is_compatible_class = True
