@@ -46,6 +46,8 @@ def duplicate_task(
     Example:
     .. code:: python
 
+        work_schedule = ifcopenshell.api.sequence.add_work_schedule(model, name="Construction Schedule A")
+
         # We have a task
         original_task = ifcopenshell.api.sequence.add_task(
             model, work_schedule=work_schedule,
@@ -53,7 +55,7 @@ def duplicate_task(
         )
 
         # And now we have two
-        original_tasks, duplicated_tasks = ifcopenshell.api.sequence.duplicate_task(original_task)
+        original_tasks, duplicated_tasks = ifcopenshell.api.sequence.duplicate_task(model, task=original_task)
         print(duplicated_tasks[0])  # A copy of ``original_task``.
     """
     usecase = Usecase()
