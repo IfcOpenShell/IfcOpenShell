@@ -1299,13 +1299,6 @@ class Model(bonsai.core.tool.Model):
             children_elements = []
             children_objs = []
 
-            # calculate offset
-            if array["method"] == "DISTRIBUTE":
-                divider = 1 if ((array["count"] - 1) == 0) else (array["count"] - 1)
-                base_offset = Vector([array["x"], array["y"], array["z"]]) / divider * unit_scale
-            else:
-                base_offset = Vector([array["x"], array["y"], array["z"]]) * unit_scale
-
             target_new_in_this_layer = (array["count"] - 1) * len(obj_stack)
             missing_count = max(0, target_new_in_this_layer - total_existing_children)
             new_entities_pool: list[ifcopenshell.entity_instance] = []
@@ -1317,7 +1310,6 @@ class Model(bonsai.core.tool.Model):
             for i in range(array["count"]):
                 if i == 0:
                     continue
-                offset = base_offset * i
 
                 for obj in obj_stack:
                     # IndexError when child_i is past the recorded children list
@@ -1352,14 +1344,11 @@ class Model(bonsai.core.tool.Model):
                         should_purge=False,
                     )
 
-                    # set child object position
-                    new_matrix = obj.matrix_world.copy()
-                    if array["use_local_space"]:
-                        current_obj_translation = obj.matrix_world @ offset
-                    else:
-                        current_obj_translation = obj.matrix_world.translation + offset
-                    new_matrix.translation = current_obj_translation
-                    child_obj.matrix_world = new_matrix
+                    # Set child object position. All placement math — linear
+                    # offsets and radial/helical rotation alike — lives in
+                    # ``tool.Array.child_matrix`` so the drag-time ghost preview
+                    # renders from the exact same function.
+                    child_obj.matrix_world = tool.Array.child_matrix(obj.matrix_world, array, i, unit_scale)
 
                     children_objs.append(child_obj)
                     children_elements.append(child_element)
