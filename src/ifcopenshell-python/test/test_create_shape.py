@@ -368,6 +368,16 @@ class TestSectionedSolidHorizontalRakedEndCut(test.bootstrap.IFC4X3):
         assert np.ptp(v[xs > xs.max() - 1e-4][:, 0]) < 1e-4
         assert xs.min() == pytest.approx(-0.5 * self.w * math.tan(theta), abs=1e-4)
 
+    @pytest.mark.skipif(
+        not ifcopenshell.geom.has_geometry_library("opencascade"), reason="requires the OpenCASCADE kernel"
+    )
+    def test_loft_writes_nothing_to_stdout(self, capfd):
+        representation = self._build_wingwall(0.0)
+        settings = ifcopenshell.geom.settings()
+        capfd.readouterr()
+        ifcopenshell.geom.create_shape(settings, representation)
+        assert capfd.readouterr().out == ""
+
 
 class TestSectionedSolidHorizontalHonoursAxis(test.bootstrap.IFC4X3):
     """An IfcSectionedSolidHorizontal whose cross section placements carry an
@@ -540,6 +550,53 @@ class TestSectionedSolidHorizontalOffsetUnits(test.bootstrap.IFC4X3):
         assert np.ptp(v[:, 0]) == pytest.approx(length_mm / 1000.0, abs=1e-4)
         assert np.ptp(v[:, 1]) == pytest.approx(width_mm / 1000.0, abs=1e-4)
         assert v[:, 1].mean() == pytest.approx(offset_mm / 1000.0, abs=1e-3)
+
+    @pytest.mark.skipif(
+        not ifcopenshell.geom.has_geometry_library("opencascade"), reason="requires the OpenCASCADE kernel"
+    )
+    def test_vertical_offset_writes_nothing_to_stdout(self, capfd):
+        f = self.file
+        ifcopenshell.api.root.create_entity(f, ifc_class="IfcProject", name="Test")
+        ctx = ifcopenshell.api.context.add_context(f, context_type="Model")
+        body = ifcopenshell.api.context.add_context(
+            f, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=ctx
+        )
+        directrix = f.createIfcPolyline(
+            Points=[f.createIfcCartesianPoint((0.0, 0.0, 0.0)), f.createIfcCartesianPoint((20.0, 0.0, 0.0))]
+        )
+        placement = f.createIfcLinearPlacement(
+            RelativePlacement=f.createIfcAxis2PlacementLinear(
+                Location=f.createIfcPointByDistanceExpression(
+                    DistanceAlong=f.createIfcLengthMeasure(5.0), OffsetVertical=1.0, BasisCurve=directrix
+                ),
+                Axis=f.createIfcDirection((0.0, 0.0, 1.0)),
+            )
+        )
+        solid = f.createIfcExtrudedAreaSolid(
+            SweptArea=f.createIfcRectangleProfileDef(ProfileType="AREA", XDim=1.0, YDim=1.0),
+            ExtrudedDirection=f.createIfcDirection((0.0, 0.0, 1.0)),
+            Depth=1.0,
+        )
+        proxy = f.createIfcBuildingElementProxy(
+            GlobalId=ifcopenshell.guid.new(),
+            ObjectPlacement=placement,
+            Representation=f.createIfcProductDefinitionShape(
+                Representations=[
+                    f.createIfcShapeRepresentation(
+                        ContextOfItems=body,
+                        RepresentationIdentifier="Body",
+                        RepresentationType="SweptSolid",
+                        Items=[solid],
+                    )
+                ]
+            ),
+        )
+
+        settings = ifcopenshell.geom.settings()
+        settings.set("use-world-coords", True)
+        capfd.readouterr()
+        ifcopenshell.geom.create_shape(settings, proxy)
+        assert capfd.readouterr().out == ""
 
 
 if __name__ == "__main__":

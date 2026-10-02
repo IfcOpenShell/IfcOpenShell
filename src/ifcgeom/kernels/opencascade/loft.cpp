@@ -173,12 +173,6 @@ bool open_cascade_kernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& 
     std::vector<std::vector<std::set<std::string>>> all_tags;
 
 
-	std::ostringstream oss;
-    loft->children[0]->print(oss);
-    loft->children[1]->print(oss);
-    auto s = oss.str();
-    std::wcout << s.c_str() << std::endl;
-
 	// First convert all taxonomy items to TopoDS_Wire/Face
     for (auto it = loft->children.begin(); it < loft->children.end(); ++it) {
 		auto i = std::distance(loft->children.begin(), it);
