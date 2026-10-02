@@ -852,6 +852,9 @@ namespace {
 			}
 			edge_points.push_back(*std::get<taxonomy::point3::ptr>(edge->start));
 			edge_points.push_back(*std::get<taxonomy::point3::ptr>(edge->end));
+			if (!edge->orientation.value_or(true)) {
+				std::reverse(edge_points.begin(), edge_points.end());
+			}
 			extend_points(points, edge_points, precision);
 			return true;
 		}
@@ -915,7 +918,7 @@ namespace {
 		} else {
 			return false;
 		}
-		if (reverse) {
+		if (reverse != !edge->orientation.value_or(true)) {
 			std::reverse(edge_points.begin(), edge_points.end());
 		}
 		extend_points(points, edge_points, precision);

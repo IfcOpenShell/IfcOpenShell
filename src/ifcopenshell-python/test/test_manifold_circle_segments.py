@@ -55,3 +55,31 @@ def test_i_shape_fillets_are_not_reduced_to_chords():
     )
     expected = 2 * 0.2 * 0.013 + (0.4 - 2 * 0.013) * 0.008 + (4 - math.pi) * 0.016**2
     assert volume == pytest.approx(expected, rel=1e-2)
+
+
+def square_with_reversed_concave_corner(model, origin):
+    def line(start, end):
+        polyline = model.createIfcPolyline([model.createIfcCartesianPoint(start), model.createIfcCartesianPoint(end)])
+        return model.createIfcCompositeCurveSegment("CONTINUOUS", True, polyline)
+
+    circle = model.createIfcCircle(model.createIfcAxis2Placement2D(model.createIfcCartesianPoint((1.0, 1.0))), 0.2)
+    arc = model.createIfcTrimmedCurve(
+        circle,
+        [model.createIfcParameterValue(math.pi)],
+        [model.createIfcParameterValue(1.5 * math.pi)],
+        True,
+        "PARAMETER",
+    )
+    segments = [
+        line((0.0, 0.0), (1.0, 0.0)),
+        line((1.0, 0.0), (1.0, 0.8)),
+        model.createIfcCompositeCurveSegment("CONTINUOUS", False, arc),
+        line((0.8, 1.0), (0.0, 1.0)),
+        line((0.0, 1.0), (0.0, 0.0)),
+    ]
+    return model.createIfcArbitraryClosedProfileDef("AREA", None, model.createIfcCompositeCurve(segments, False))
+
+
+def test_arc_used_in_reverse_by_a_composite_curve_segment_keeps_its_outline():
+    volume = extruded_volume(square_with_reversed_concave_corner)
+    assert volume == pytest.approx(1.0 - math.pi * 0.2**2 / 4, rel=1e-2)
