@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.api.pset
+import ifcopenshell.api.pset_template
 import ifcopenshell.api.root
 import test.bootstrap
 
@@ -73,6 +74,24 @@ class TestEditQto(test.bootstrap.IFC4):
         ifcopenshell.api.pset.edit_qto(self.file, qto=qto, name="bar")
         qto = element.IsDefinedBy[0].RelatingPropertyDefinition
         assert qto.Name == "bar"
+
+    def test_editing_a_qto_with_a_user_defined_template(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        template = ifcopenshell.api.pset_template.add_pset_template(
+            self.file, name="Foo_Wall", template_type="QTO_OCCURRENCEDRIVEN", applicable_entity="IfcWall"
+        )
+        ifcopenshell.api.pset_template.add_prop_template(
+            self.file,
+            pset_template=template,
+            name="OverhangLength",
+            template_type="Q_AREA",
+            primary_measure_type="IfcAreaMeasure",
+        )
+        qto = ifcopenshell.api.pset.add_qto(self.file, product=element, name="Foo_Wall")
+        ifcopenshell.api.pset.edit_qto(self.file, qto=qto, properties={"OverhangLength": 42.3}, pset_template=template)
+        assert qto.Quantities[0].Name == "OverhangLength"
+        assert qto.Quantities[0].is_a("IfcQuantityArea")
+        assert qto.Quantities[0].AreaValue == 42.3
 
     def test_adding_quantities_without_a_template_with_autodetected_and_manual_data_types(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
