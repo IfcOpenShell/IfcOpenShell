@@ -177,7 +177,7 @@ class Usecase:
 
     def load_qto_template(self) -> None:
         if self.settings["pset_template"]:
-            self.pset_template = self.settings["pset_template"]
+            self.qto_template = self.settings["pset_template"]
         else:
             self.psetqto = ifcopenshell.util.pset.get_template(self.file.schema_identifier)
             self.qto_template = self.psetqto.get_by_name(self.settings["qto"].Name)
