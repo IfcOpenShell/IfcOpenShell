@@ -2418,7 +2418,11 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
         props = tool.Geometry.get_geometry_props()
         props.is_changing_mode = True
         if props.mode != "EDIT":
-            props.mode = "EDIT"
+            try:
+                props.mode = "EDIT"
+            except TypeError:
+                # The dynamic mode enum may not offer EDIT for every element; keep the current mode (#8066).
+                pass
         props.is_changing_mode = False
 
     def has_aggregates(self, objs):
@@ -2706,7 +2710,11 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
         props = tool.Geometry.get_geometry_props()
         props.is_changing_mode = True
         if props.mode != "EDIT":
-            props.mode = "EDIT"
+            try:
+                props.mode = "EDIT"
+            except TypeError:
+                # The dynamic mode enum may not offer EDIT for every element; keep the current mode (#8066).
+                pass
         props.is_changing_mode = False
 
     def _is_annotation_object(self, element: ifcopenshell.entity_instance) -> bool:
