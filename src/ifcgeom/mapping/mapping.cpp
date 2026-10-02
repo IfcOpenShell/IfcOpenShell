@@ -262,6 +262,16 @@ void mapping::get_representations(std::vector<geometry_conversion_task>& tasks, 
 
         std::vector<IfcSchema::IfcRepresentationMap> maps = representation.RepresentationMap();
 
+        // IfcShapeModel WR11: a representation is used by exactly one of product, map or shape aspect
+        if (!representation.OfProductRepresentation().empty()) {
+            for (auto& used_map : maps) {
+                if (!used_map.MapUsage().empty()) {
+                    logger_.warning("GEO", 329, "Representation is used both directly by a product and as a mapped item (IfcShapeModel WR11):", representation);
+                    break;
+                }
+            }
+        }
+
         if (!geometry_reuse_ok_for_current_representation_ && maps.size() == 1) {
             // unfiltered_products contains products represented by this representation by means of mapped items.
             // For example because of openings applied to products, reuse might not be acceptable and then the
