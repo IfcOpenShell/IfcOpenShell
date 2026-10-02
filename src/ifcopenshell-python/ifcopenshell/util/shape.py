@@ -67,13 +67,48 @@ def is_x(value: float, x: float, tolerance: Optional[float] = None) -> bool:
     return abs(x - value) < tolerance
 
 
+def is_manifold(geometry: W.triangulation) -> bool:
+    """Checks whether a triangulated geometry is closed and consistently oriented
+
+    Vertices at the same position count as one vertex, so seams and unwelded
+    meshes are handled. Every edge must be traversed as often in one direction
+    as in the other. An unbalanced edge means an open boundary or inconsistent
+    winding (e.g. a flipped or duplicated face), both of which invalidate
+    volume calculations. Closed solids that touch along an edge are accepted.
+
+    :param geometry: Geometry output calculated by IfcOpenShell
+    :return: ``True`` if the geometry is closed and consistently oriented
+    """
+    faces = geometry.faces
+    verts = geometry.verts
+    welded: dict[tuple[float, float, float], int] = {}
+    ids = [
+        welded.setdefault((round(verts[i], 9), round(verts[i + 1], 9), round(verts[i + 2], 9)), len(welded))
+        for i in range(0, len(verts), 3)
+    ]
+    edge_balance: dict[tuple[int, int], int] = {}
+    for i in range(0, len(faces), 3):
+        a, b, c = ids[faces[i]], ids[faces[i + 1]], ids[faces[i + 2]]
+        for u, v in ((a, b), (b, c), (c, a)):
+            if u < v:
+                edge_balance[(u, v)] = edge_balance.get((u, v), 0) + 1
+            elif v < u:
+                edge_balance[(v, u)] = edge_balance.get((v, u), 0) - 1
+    return not any(edge_balance.values())
+
+
 def get_volume(geometry: W.triangulation) -> float:
     """Calculates the total internal volume of a geometry
 
-    Volumes of non-manifold geometry will be unpredictable.
+    The volume is derived from the divergence theorem (summing signed
+    tetrahedra), which is only meaningful for a closed, consistently oriented
+    manifold (watertight) mesh. For non-manifold or open geometry that value
+    is undefined and can be wildly over- or under-estimated, so
+    ``float("nan")`` is returned instead of a bogus number. See
+    https://github.com/IfcOpenShell/IfcOpenShell/issues/6125.
 
     :param geometry: Geometry output calculated by IfcOpenShell
-    :return: The volume in m3
+    :return: The volume in m3, or ``nan`` if the mesh is not a closed manifold
     """
 
     # https://stackoverflow.com/questions/1406029/how-to-calculate-the-volume-of-a-3d-mesh-object-the-surface-of-which-is-made-up
@@ -86,10 +121,15 @@ def get_volume(geometry: W.triangulation) -> float:
         v123 = p1[0] * p2[1] * p3[2]
         return (1.0 / 6.0) * (-v321 + v231 + v312 - v132 - v213 + v123)
 
+    if not is_manifold(geometry):
+        return float("nan")
+
     # Can't optimize it using buffers - performance seems to get only worse.
     verts = geometry.verts
-    faces = geometry.faces
-    grouped_verts = [[verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)]
+    if not (faces := geometry.faces):
+        return 0.0
+    x0, y0, z0 = verts[0], verts[1], verts[2]
+    grouped_verts = [[verts[i] - x0, verts[i + 1] - y0, verts[i + 2] - z0] for i in range(0, len(verts), 3)]
     volumes = [
         signed_triangle_volume(grouped_verts[faces[i]], grouped_verts[faces[i + 1]], grouped_verts[faces[i + 2]])
         for i in range(0, len(faces), 3)
