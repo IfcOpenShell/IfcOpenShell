@@ -130,7 +130,7 @@ jobs:
 
       - name: Package .zip archives
         run: |
-          uv run nix/package-zip-archives.py "macos${{ matrix.oldarch }}64" --shared
+          uv run nix/package-zip-archives.py "macos${{ matrix.oldarch }}64"
 
       - name: Test packages
         run: |

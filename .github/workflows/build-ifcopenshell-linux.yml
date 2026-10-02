@@ -114,7 +114,7 @@ jobs:
       - name: Package .zip archives
         shell: bash
         run: |
-          uv run nix/package-zip-archives.py linux64 --shared
+          uv run nix/package-zip-archives.py linux64
 
       - name: Test packages
         shell: bash
