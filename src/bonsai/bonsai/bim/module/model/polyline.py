@@ -113,6 +113,13 @@ class PolylineOperator:
             tool.Blender.update_viewport()
             return is_valid
 
+    def set_initial_plane_method(self, context: bpy.types.Context, event: bpy.types.Event, plane_method: str) -> None:
+        self.tool_state.plane_method = plane_method
+        detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox, self.tool_state)
+        self.snapping_points = tool.Snap.select_snapping_points(context, event, self.tool_state, detected_snaps)
+        tool.Polyline.calculate_distance_and_angle(context, self.input_ui, self.tool_state)
+        tool.Blender.update_viewport()
+
     def has_polyline_points(self) -> bool:
         polyline_props = tool.Model.get_polyline_props()
         polyline_data = polyline_props.insertion_polyline

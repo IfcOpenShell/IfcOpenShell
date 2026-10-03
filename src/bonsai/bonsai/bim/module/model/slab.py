@@ -970,7 +970,7 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
         super().invoke(context, event)
         ProductDecorator.install(context)
         self.tool_state.use_default_container = True
-        self.tool_state.plane_method = "XY"
+        self.set_initial_plane_method(context, event, "XY")
         self.set_offset(context, self.relating_type)
         return {"RUNNING_MODAL"}
 
