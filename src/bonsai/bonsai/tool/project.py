@@ -38,9 +38,11 @@ from typing import (
 import bpy
 import ifcopenshell
 import ifcopenshell.api.document
+import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder
+import ifcpatch
 import numpy as np
 import numpy.typing as npt
 from ifcopenshell.api.project.append_asset import APPENDABLE_ASSET_TYPES
@@ -126,6 +128,22 @@ class Project(bonsai.core.tool.Project):
             return
         for element in IfcStore.library_file.by_type("IfcTypeProduct"):
             bpy.ops.bim.append_library_element(definition=element.id())
+
+    @classmethod
+    def append_structure_from_template(cls, template: str) -> bool:
+        """Merge a template's IfcSite (and everything below it) in as the project's site. Returns False if the template has no site (e.g. a plain type library)."""
+        filepath = tool.Blender.get_data_dir_path(Path("templates") / "projects" / template)
+        template_file = ifcopenshell.open(filepath)
+        ifc_file = tool.Ifc.get()
+        if template_file.schema != ifc_file.schema or not template_file.by_type("IfcSite"):
+            return False
+
+        before = set(ifc_file)
+        ifcpatch.execute({"file": ifc_file, "recipe": "MergeProjects", "arguments": [[template_file]]})
+        for element in set(ifc_file) - before:
+            if element.is_a("IfcRoot"):
+                element.GlobalId = ifcopenshell.guid.new()
+        return True
 
     @classmethod
     def create_empty(cls, name: str) -> bpy.types.Object:
