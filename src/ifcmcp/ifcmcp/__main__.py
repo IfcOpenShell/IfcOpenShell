@@ -28,7 +28,7 @@ def main():
 
     args = parser.parse_args()
 
-    if importlib.util.find_spec("mcp.server.fastmcp") is None:
+    if importlib.util.find_spec("mcp.server.mcpserver") is None:
         import sys
 
         print(

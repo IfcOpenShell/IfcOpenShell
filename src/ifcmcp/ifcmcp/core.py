@@ -233,10 +233,10 @@ class IfcSessionError(RuntimeError):
 
 @dataclass
 class IfcSession:
-    """In-memory IFC session (no FastMCP dependency).
+    """In-memory IFC session (no MCP SDK dependency).
 
     Designed to work in:
-      - FastMCP server (single global session)
+      - MCP server (MCPServer, single global session)
       - Embedded runtimes like Pyodide (one session per browser tab/worker)
     """
 
