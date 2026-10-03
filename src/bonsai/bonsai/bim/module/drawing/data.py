@@ -55,6 +55,14 @@ class ProductAssignmentsData:
         element = tool.Ifc.get_entity(bpy.context.active_object)
         if not element or not element.is_a("IfcAnnotation"):
             return
+        # Document-reference annotations link to an IfcDocumentInformation, not a product.
+        if tool.Drawing.is_document_reference(element):
+            for rel in element.HasAssociations:
+                if rel.is_a("IfcRelAssociatesDocument"):
+                    doc = rel.RelatingDocument
+                    if doc.is_a("IfcDocumentInformation"):
+                        return doc.Name or "Unnamed"
+            return None
         for rel in element.HasAssignments:
             if rel.is_a("IfcRelAssignsToProduct"):
                 name = rel.RelatingProduct.Name or "Unnamed"

@@ -1340,6 +1340,12 @@ class BIMAnnotationProperties(PropertyGroup):
         get=_get_line_position,
         set=_set_line_position,
     )
+    is_manual_reference: bpy.props.BoolProperty(
+        name="Is a Reference",
+        default=False,
+        description="Place as a manual reference tag (IsManualDrawingReference). "
+        "Exempt from automatic drawing regeneration. Optionally link to a drawing or external reference.",
+    )
     tag_rotation_mode: bpy.props.EnumProperty(
         name="Tag Rotation Mode",
         description="How to orient the tag relative to the tagged object",
@@ -1360,3 +1366,4 @@ class BIMAnnotationProperties(PropertyGroup):
         create_representation_for_type: bool
         is_adding_type: bool
         type_name: str
+        is_manual_reference: bool

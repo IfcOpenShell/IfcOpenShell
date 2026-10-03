@@ -33,6 +33,7 @@ classes = (
     operator.AddAnnotation,
     operator.AddAnnotationType,
     operator.AddElevationAnnotation,
+    operator.AssignManualDrawingReference,
     operator.AddDrawing,
     operator.AddDrawingStyle,
     operator.AddDrawingToSheet,
