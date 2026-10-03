@@ -1,4 +1,5 @@
 # This file was generated with the assistance of an AI coding tool.
+import asyncio
 from unittest.mock import patch
 
 import pytest
@@ -35,6 +36,31 @@ class TestServerRegistration:
         tools = server._tool_manager.list_tools()
         missing = [t.name for t in tools if not (t.description or "").strip()]
         assert not missing, f"Tools with no description: {missing}"
+
+
+class TestToolErrorsKeepTheirReason:
+    """MCPServer replaces the text of any exception but ToolError with a bare
+    "Error executing tool <name>". Each tool raises ToolError, so the agent is told
+    why its call failed."""
+
+    @pytest.mark.parametrize(
+        "name, arguments, reason",
+        [
+            ("ifc_summary", {}, "No model loaded"),
+            ("ifc_load", {"path": "/nonexistent/model.ifc"}, "/nonexistent/model.ifc"),
+            ("ifc_info", {"element_id": 999999}, "#999999"),
+        ],
+    )
+    def test_reason_reaches_the_client(self, name, arguments, reason):
+        from mcp.server.mcpserver.exceptions import ToolError, UnexpectedToolError
+
+        server = build_server()
+        if name == "ifc_info":
+            asyncio.run(server.call_tool("ifc_new", {}))
+        with pytest.raises(ToolError) as caught:
+            asyncio.run(server.call_tool(name, arguments))
+        assert not isinstance(caught.value, UnexpectedToolError)
+        assert reason in str(caught.value)
 
 
 @pytest.fixture

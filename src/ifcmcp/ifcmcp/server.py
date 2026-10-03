@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import base64
+import functools
 import inspect
 from typing import Any
 
@@ -9,9 +10,11 @@ from ifcmcp.core import IfcSession
 
 try:
     from mcp.server.mcpserver import MCPServer  # type: ignore
+    from mcp.server.mcpserver.exceptions import ToolError  # type: ignore
     from mcp.types import ImageContent  # type: ignore
 except ImportError:  # pragma: no cover
     MCPServer = None  # type: ignore
+    ToolError = None  # type: ignore
     ImageContent = None  # type: ignore
 
 
@@ -26,8 +29,23 @@ def build_server() -> Any:
 
     def _tool(fn):
         """Register a tool, taking its MCP description from the identically-named
-        IfcSession method rather than duplicating it here."""
-        return server.tool(description=inspect.getdoc(getattr(IfcSession, fn.__name__)))(fn)
+        IfcSession method rather than duplicating it here.
+
+        A failure is raised as ToolError so its reason reaches the agent. MCPServer
+        passes on a ToolError's text but replaces any other exception with a bare
+        "Error executing tool <name>", which leaves the agent nothing to correct.
+        """
+
+        @functools.wraps(fn)
+        def call(*args, **kwargs):
+            try:
+                return fn(*args, **kwargs)
+            except ToolError:
+                raise
+            except Exception as e:
+                raise ToolError(str(e) or type(e).__name__) from e
+
+        return server.tool(description=inspect.getdoc(getattr(IfcSession, fn.__name__)))(call)
 
     server = MCPServer(
         name="ifc-mcp",
