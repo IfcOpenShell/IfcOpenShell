@@ -11,10 +11,15 @@ import platform
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 from typing import Literal, NamedTuple
 
 from common import REPO_ROOT, logger, run
+
+sys.path.insert(0, str(Path(__file__).parent.parent / "packaging"))
+
+import check_runtime_plugins  # ty: ignore[unresolved-import]
 
 VERSION = "v" + (REPO_ROOT / "VERSION").read_text().strip()
 
@@ -433,6 +438,11 @@ def package_python_wrapper(
     else:
         check_runtime_dependencies(ifcopenshell_dir)
 
+    check_runtime_plugins.check(
+        [str(p.relative_to(ifcopenshell_dir)) for p in ifcopenshell_dir.rglob("*")],
+        f"staged python wrapper package '{py_version_major}'",
+    )
+
     if ARGS.no_zip:
         return
     zip_path = output_dir / f"ifcopenshell-{py_version_major}-{VERSION}-{github_sha}-{arch_suffix}.zip"
@@ -489,6 +499,11 @@ def package_executable(
             shutil.copytree(autodesk_connector_dir, connectors_dir / autodesk_connector_dir.name, symlinks=True)
 
         check_runtime_dependencies(package_dir)
+
+    check_runtime_plugins.check(
+        [str(p.relative_to(package_dir)) for p in package_dir.rglob("*")],
+        f"staged executable package '{exe}'",
+    )
 
     if ARGS.no_zip:
         return
