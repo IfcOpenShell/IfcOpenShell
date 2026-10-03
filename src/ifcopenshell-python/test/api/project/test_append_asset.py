@@ -543,6 +543,39 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         )
         str(reuse_identities)  # Will trigger crash if there are no removed entities.
 
+    def test_appending_many_assets_does_not_rescan_reuse_identities(self):
+        class CountingDict(dict):
+            scanned = 0
+
+            def items(self):
+                for pair in super().items():
+                    self.scanned += 1
+                    yield pair
+
+        self.file.create_entity("IfcProject")
+        context = ifcopenshell.api.context.add_context(self.file, context_type="Model")
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        library.create_entity("IfcProject")
+        lib_context = ifcopenshell.api.context.add_context(library, context_type="Model")
+        elements = []
+        for i in range(10):
+            element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall", name=f"Wall {i}")
+            item = library.create_entity("IfcBoundingBox")
+            representation = library.create_entity("IfcShapeRepresentation", Items=[item], ContextOfItems=lib_context)
+            element.Representation = library.create_entity(
+                "IfcProductDefinitionShape", Representations=[representation]
+            )
+            elements.append(element)
+        reuse_identities = CountingDict()
+        for element in elements:
+            ifcopenshell.api.project.append_asset(
+                self.file, library=library, element=element, reuse_identities=reuse_identities
+            )
+        assert len(self.file.by_type("IfcWall")) == 10
+        assert {r.ContextOfItems for r in self.file.by_type("IfcShapeRepresentation")} == {context}
+        assert len(self.file.by_type("IfcGeometricRepresentationContext")) == 1
+        assert reuse_identities.scanned == 0
+
     def test_file_add_to_convert_units(self):
         library = ifcopenshell.file()
         builder = ShapeBuilder(library)
