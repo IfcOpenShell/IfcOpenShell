@@ -454,11 +454,12 @@ class Usecase:
                     door_items.append(second_swing_line)
                 else:
                     trim_points_mask = (0, 1)
+                # Swing path is a true circle: both radii equal panel_size[np_Y].
                 semicircle = builder.create_ellipse_curve(
-                    panel_size[np_Y] - panel_size[np_X],
+                    panel_size[np_Y],
                     panel_size[np_Y],
                     trim_points_mask=trim_points_mask,
-                    position=(panel_size[np_X], 0),
+                    position=(0, 0),
                 )
                 door_items.append(semicircle)
 
