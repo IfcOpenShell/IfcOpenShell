@@ -1002,7 +1002,8 @@ class Geometry(bonsai.core.tool.Geometry):
         cls, obj: bpy.types.Object, only_assigned_to_faces: bool = False
     ) -> list[Union[ifcopenshell.entity_instance, None]]:
         styles = [tool.Ifc.get_entity(s.material) for s in obj.material_slots if s.material]
-        if not only_assigned_to_faces:
+        # Face-usage filtering needs polygons; curves (#3496) return every style.
+        if not only_assigned_to_faces or not isinstance(obj.data, bpy.types.Mesh):
             return styles
 
         usage_count = [0] * len(obj.material_slots)
