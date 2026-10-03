@@ -153,6 +153,7 @@ class Material(PropertyGroup):
     is_expanded: BoolProperty(name="Is Expanded", default=False)
     has_style: BoolProperty(name="Has Style", default=True)
     total_elements: IntProperty(name="Total Elements")
+    is_selected: BoolProperty(name="Is Selected", description="Selected as a source material to merge", default=False)
 
     if TYPE_CHECKING:
         name: str
@@ -161,6 +162,7 @@ class Material(PropertyGroup):
         is_expanded: bool
         has_style: bool
         total_elements: int
+        is_selected: bool
 
 
 class BIMMaterialProperties(PropertyGroup):
@@ -181,6 +183,7 @@ class BIMMaterialProperties(PropertyGroup):
     editing_material_type: StringProperty(name="Editing Material Type")
     styles: EnumProperty(items=get_styles, name="Styles")
     contexts: EnumProperty(items=get_contexts, name="Contexts")
+    is_merging_materials: BoolProperty(name="Is Merging Materials", default=False)
 
     @property
     def active_material(self) -> Material | None:
@@ -199,6 +202,7 @@ class BIMMaterialProperties(PropertyGroup):
         editing_material_type: str
         styles: str
         contexts: str
+        is_merging_materials: bool
 
 
 class BIMObjectMaterialProperties(PropertyGroup):
