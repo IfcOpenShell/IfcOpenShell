@@ -583,6 +583,8 @@ class BIM_PT_product_assignments(Panel):
             col.enabled = bool(ProductAssignmentsData.data["relating_product"])
 
 
+
+
 def get_category_icon(category_name):
     """Get appropriate icon for each category"""
     icons = {
