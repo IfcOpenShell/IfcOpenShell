@@ -396,6 +396,7 @@ class TestRecalculateWallsWithNewConnections(NewFile):
 
         with (
             patch.object(tool.Ifc, "get_object", return_value=wall_obj),
+            patch.object(tool.Root, "get_element_type", return_value=None),
             patch.object(tool.Model, "recalculate_walls") as recalc_mock,
         ):
             tool.Geometry._recalculate_walls_with_new_connections(old_to_new)
@@ -455,6 +456,7 @@ class TestRecalculateWallsWithNewConnections(NewFile):
 
         with (
             patch.object(tool.Ifc, "get_object", side_effect=lambda e: objs.get(e)),
+            patch.object(tool.Root, "get_element_type", return_value=None),
             patch.object(tool.Model, "recalculate_walls") as recalc_mock,
         ):
             tool.Geometry._recalculate_walls_with_new_connections(old_to_new)
