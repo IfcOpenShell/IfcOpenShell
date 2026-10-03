@@ -2523,11 +2523,8 @@ void svg_serializer::finalize() {
 				write(e);
 			}
 
-			if (use_hlr) {
-				const auto& section = boost::get<vertical_section>(sd);
-				const auto& ax = section.plane.Position();
-
-				draw_hlr(ax, { express::base{}, drawing_name });
+			if (use_hlr && pln) {
+				draw_hlr(pln->Position(), { express::base{}, drawing_name });
 			}
 
 			addTextAnnotations({express::base{}, drawing_name});
@@ -2588,6 +2585,7 @@ void svg_serializer::finalize() {
 			resetScale();
 
 			delete hlr;
+			hlr = nullptr;
 		}
 	}
 
