@@ -2264,6 +2264,24 @@ class Geometry(bonsai.core.tool.Geometry):
             tool.Root.reload_item_decorator()
 
     @classmethod
+    def sync_active_item_index(cls) -> None:
+        """Highlight the active representation item's row in the Representation Items list (Item Mode only)."""
+        props = tool.Geometry.get_geometry_props()
+        if not (rep_obj := props.representation_obj):
+            return
+        obj = tool.Blender.get_active_object()
+        if not obj or obj == rep_obj or not cls.has_mesh_properties(obj.data):
+            return
+        if not (ifc_definition_id := cls.get_mesh_props(obj.data).ifc_definition_id):
+            return
+        obj_props = cls.get_object_geometry_props(rep_obj)
+        for i, item in enumerate(obj_props.items):
+            if item.ifc_definition_id == ifc_definition_id:
+                if obj_props.active_item_index != i:
+                    obj_props.active_item_index = i
+                return
+
+    @classmethod
     def import_item_attributes(cls, obj: bpy.types.Object) -> None:
         props = tool.Geometry.get_mesh_props(obj.data)
         props.item_attributes.clear()

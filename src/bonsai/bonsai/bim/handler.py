@@ -122,6 +122,7 @@ def active_object_callback():
     refresh_ui_data()
     update_bim_tool_props()
     tool.Geometry.sync_item_positions()
+    tool.Geometry.sync_active_item_index()
 
 
 def update_bim_tool_props():
