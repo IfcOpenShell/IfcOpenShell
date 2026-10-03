@@ -66,6 +66,9 @@ def add_axis_representation(
 
     .. code:: python
 
+        plan = ifcopenshell.api.context.add_context(model, context_type="Plan")
+        ifcopenshell.api.context.add_context(model,
+            context_type="Plan", context_identifier="Axis", target_view="GRAPH_VIEW", parent=plan)
         context = ifcopenshell.util.representation.get_context(model, "Plan", "Axis", "GRAPH_VIEW")
         axis = ifcopenshell.api.geometry.add_axis_representation(model,
             context=context, axis=[(0.0, 0.0), (1.0, 0.0)])

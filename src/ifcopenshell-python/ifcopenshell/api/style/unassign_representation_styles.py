@@ -47,6 +47,19 @@ def unassign_representation_styles(
 
     .. code:: python
 
+        model3d = ifcopenshell.api.context.add_context(model, context_type="Model")
+        body = ifcopenshell.api.context.add_context(model,
+            context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model3d)
+        wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
+        representation = ifcopenshell.api.geometry.add_wall_representation(model,
+            context=body, length=5, height=3, thickness=0.2)
+        ifcopenshell.api.geometry.assign_representation(model,
+            product=wall, representation=representation)
+        style = ifcopenshell.api.style.add_style(model)
+        ifcopenshell.api.style.add_surface_style(model, style=style, ifc_class="IfcSurfaceStyleShading",
+            attributes={"SurfaceColour": {"Name": None, "Red": 0.5, "Green": 0.5, "Blue": 0.5}})
+        ifcopenshell.api.style.assign_representation_styles(model,
+            shape_representation=representation, styles=[style])
         ifcopenshell.api.style.unassign_representation_styles(model,
             shape_representation=representation, styles=[style])
     """
