@@ -21,7 +21,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Literal, Optional
 
 if TYPE_CHECKING:
     import ifcopenshell
@@ -109,6 +109,21 @@ def calculate_resource_work(
 def enable_editing_resource_costs(resource_tool: type[tool.Resource], resource: ifcopenshell.entity_instance) -> None:
     resource_tool.enable_editing_resource_costs(resource)
     resource_tool.disable_editing_resource_cost_value()
+
+
+def add_resource_cost_value(
+    ifc: type[tool.Ifc],
+    resource_tool: type[tool.Resource],
+    parent: ifcopenshell.entity_instance,
+    cost_type: Literal["FIXED", "SUM", "CATEGORY"],
+    cost_category: Optional[str] = None,
+) -> None:
+    value = ifc.run("cost.add_cost_value", parent=parent)
+    ifc.run(
+        "cost.edit_cost_value",
+        cost_value=value,
+        attributes=resource_tool.get_attributes_for_cost_value(cost_type, cost_category),
+    )
 
 
 def disable_editing_resource_cost_value(resource_tool: type[tool.Resource]) -> None:

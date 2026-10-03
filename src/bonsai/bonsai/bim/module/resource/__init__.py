@@ -22,6 +22,7 @@ from . import operator, prop, ui
 
 classes = (
     operator.AddResource,
+    operator.AddResourceCostValue,
     operator.AddResourceQuantity,
     operator.AddProductivityData,
     operator.AssignResource,
