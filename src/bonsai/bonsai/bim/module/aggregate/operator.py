@@ -27,6 +27,15 @@ import ifcopenshell.util.element
 import bonsai.core.aggregate as core
 import bonsai.core.spatial
 import bonsai.tool as tool
+from bonsai.bim.helper import (
+    SELECT_FILTER_TOOLTIP,
+    SELECT_REMOVE_TOOLTIP,
+    SELECT_UNHIDE_TOOLTIP,
+    RegexSelectMixin,
+    decode_select_click,
+    select_regex_tooltip,
+    selection_mode,
+)
 
 
 class BIM_OT_aggregate_assign_object(bpy.types.Operator, tool.Ifc.Operator):
@@ -254,7 +263,7 @@ class BIM_OT_select_parts(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BIM_OT_select_aggregate(bpy.types.Operator):
+class BIM_OT_select_aggregate(RegexSelectMixin, bpy.types.Operator):
     """Select Aggregate"""
 
     bl_idname = "bim.select_aggregate"
@@ -267,73 +276,110 @@ class BIM_OT_select_aggregate(bpy.types.Operator):
         name="One Level Deep", description="Select only immediate children, not recursively", default=False
     )
     should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    remove_from_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    filter_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+
+    regex_clipboard_key = "parent"
+    regex_count_noun = "aggregates"
 
     @classmethod
     def description(cls, context, properties):
-        if properties.select_parts:
-            return "Select Aggregate and Parts.\n\nCtrl+click to select only one level deep\nALT+Click to also unhide hidden objects (viewport and local hide)"
-        else:
-            return "Select Aggregate\n\nALT+Click to also unhide hidden objects (viewport and local hide)"
+        base = "Select Aggregate and Parts." if properties.select_parts else "Select Aggregate"
+        one_level_deep = "\nCTRL+SHIFT+Click to select only one level deep" if properties.select_parts else ""
+        return (
+            base
+            + f"\n\n{SELECT_REMOVE_TOOLTIP}"
+            + f"\n{SELECT_FILTER_TOOLTIP}"
+            + one_level_deep
+            + f"\n{select_regex_tooltip('aggregate names')}"
+            + f"\n{SELECT_UNHIDE_TOOLTIP}"
+        )
 
     def invoke(self, context, event):
-        if event.type == "LEFTMOUSE" and event.ctrl:
-            self.one_level_deep = True
-        self.should_unhide = event.alt
+        mods = decode_select_click(event)
+        if mods.regex_dialog:
+            return self.invoke_regex_dialog(context)
+        self.one_level_deep = mods.legacy
+        self.should_unhide = mods.unhide
+        self.remove_from_selection = mods.remove
+        self.filter_selection = mods.filter
         return self.execute(context)
 
-    def execute(self, context):
+    def get_regex_prefill(self, context):
+        if context.active_object and (element := tool.Ifc.get_entity(context.active_object)):
+            aggregate = ifcopenshell.util.element.get_aggregate(element)
+            if aggregate:
+                return aggregate.Name
+        return None
+
+    def draw_regex_options(self, context, layout):
+        layout.prop(self, "select_parts", text="Also Select Parts")
+        if self.select_parts:
+            layout.prop(self, "one_level_deep")
+
+    def apply_regex(self, context, pattern):
         aggregates = {}
-        for obj in context.selected_objects:
+        for rel in tool.Ifc.get().by_type("IfcRelAggregates"):
+            aggregate = rel.RelatingObject
+            if not aggregate.is_a("IfcElement"):
+                continue
+            if not aggregate.Name or not pattern.search(aggregate.Name):
+                continue
+            aggregates[aggregate.id()] = aggregate
+
+        products = set()
+        for aggregate in aggregates.values():
+            products.add(aggregate)
+            if self.select_parts:
+                if self.one_level_deep:
+                    products.update(ifcopenshell.util.element.get_parts(aggregate))
+                else:
+                    products.update(ifcopenshell.util.element.get_decomposition(aggregate))
+
+        self.select_regex_products(products)
+        return len(aggregates)
+
+    def execute(self, context):
+        if self.use_regex:
+            return self.execute_regex(context)
+        keep_current_selection = self.remove_from_selection or self.filter_selection
+        if keep_current_selection:
+            objects = [context.active_object] if context.active_object else []
+        else:
+            objects = context.selected_objects
+        aggregates = {}
+        for obj in objects:
             element = tool.Ifc.get_entity(obj)
             if element:
                 aggregate = ifcopenshell.util.element.get_aggregate(element)
                 if aggregate:
                     aggregates[aggregate.id()] = aggregate
-                    obj.select_set(False)
+                    if not keep_current_selection:
+                        obj.select_set(False)
                 else:
                     pass
-            if not element:
+            if not element and not keep_current_selection:
                 obj.select_set(False)
 
         all_parts = list(aggregates.values())
 
+        products = set(all_parts)
         if self.select_parts:
-            selected_parts = []
+            for aggregate in all_parts:
+                if self.one_level_deep:
+                    products.update(ifcopenshell.util.element.get_parts(aggregate))
+                else:
+                    products.update(ifcopenshell.util.element.get_decomposition(aggregate))
 
-            for part in all_parts:
-                if part.IsDecomposedBy:
-                    for rel in part.IsDecomposedBy:
-                        for subpart in rel.RelatedObjects:
-                            selected_parts.append(subpart)
+        tool.Spatial.select_products(
+            products,
+            unhide=self.should_unhide,
+            mode=selection_mode(self.remove_from_selection, self.filter_selection),
+        )
 
-                            # If not limited to one level, traverse deeper
-                            if not self.one_level_deep:
-
-                                def add_descendants(elem):
-                                    if elem.IsDecomposedBy:
-                                        for rel in elem.IsDecomposedBy:
-                                            for deeper in rel.RelatedObjects:
-                                                selected_parts.append(deeper)
-                                                add_descendants(deeper)
-
-                                add_descendants(subpart)
-
-            for element in set(selected_parts + all_parts):
-                obj = tool.Ifc.get_object(element)
-                if obj:
-                    if self.should_unhide:
-                        obj.hide_viewport = False
-                        obj.hide_set(False)
-                    obj.select_set(True)
-
-        else:
+        if not self.select_parts and not keep_current_selection:
             for aggregate_element in all_parts:
-                aggregate_obj = tool.Ifc.get_object(aggregate_element)
-                if aggregate_obj:
-                    if self.should_unhide:
-                        aggregate_obj.hide_viewport = False
-                        aggregate_obj.hide_set(False)
-                    aggregate_obj.select_set(True)
+                if aggregate_obj := tool.Ifc.get_object(aggregate_element):
                     bpy.context.view_layer.objects.active = aggregate_obj
 
         # copy selection query to clipboard
@@ -418,21 +464,35 @@ class BIM_OT_select_linked_aggregates(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     select_parts: bpy.props.BoolProperty(default=False)
     should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    remove_from_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    filter_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
     @classmethod
     def description(cls, context, properties):
-        if properties.select_parts:
-            return "Select all aggregates, subaggregates and all their parts\n\nALT+Click to also unhide hidden objects (viewport and local hide)"
-        else:
-            return "Select all aggregates\n\nALT+Click to also unhide hidden objects (viewport and local hide)"
+        base = (
+            "Select all aggregates, subaggregates and all their parts"
+            if properties.select_parts
+            else "Select all aggregates"
+        )
+        return base + f"\n\n{SELECT_REMOVE_TOOLTIP}" + f"\n{SELECT_FILTER_TOOLTIP}" + f"\n{SELECT_UNHIDE_TOOLTIP}"
 
     def invoke(self, context, event):
-        self.should_unhide = event.alt
+        mods = decode_select_click(event)
+        self.should_unhide = mods.unhide
+        self.remove_from_selection = mods.remove
+        self.filter_selection = mods.filter
         return self.execute(context)
 
     def execute(self, context):
-        for obj in context.selected_objects:
-            obj.select_set(False)
+        keep_current_selection = self.remove_from_selection or self.filter_selection
+        if keep_current_selection:
+            objects = [context.active_object] if context.active_object else []
+        else:
+            objects = context.selected_objects
+        products = set()
+        for obj in objects:
+            if not keep_current_selection:
+                obj.select_set(False)
             element = tool.Ifc.get_entity(obj)
             aggregate = ifcopenshell.util.element.get_aggregate(element)
             if not aggregate:
@@ -451,28 +511,17 @@ class BIM_OT_select_linked_aggregates(bpy.types.Operator):
             for group_link in group_rel:
                 parts = list(group_link.RelatedObjects)
                 if self.select_parts:
-                    parts_objs = []
                     for part in parts:
                         if part.IsDecomposedBy:
                             for subpart in part.IsDecomposedBy[0].RelatedObjects:
                                 parts.append(subpart)
-                        parts_objs.append(part)
+                products.update(parts)
 
-                    for element in parts_objs:
-                        obj = tool.Ifc.get_object(element)
-                        if obj:
-                            if self.should_unhide:
-                                obj.hide_viewport = False
-                                obj.hide_set(False)
-                            obj.select_set(True)
-                else:
-                    for element in parts:
-                        obj = tool.Ifc.get_object(element)
-                        if obj:
-                            if self.should_unhide:
-                                obj.hide_viewport = False
-                                obj.hide_set(False)
-                            obj.select_set(True)
+        tool.Spatial.select_products(
+            products,
+            unhide=self.should_unhide,
+            mode=selection_mode(self.remove_from_selection, self.filter_selection),
+        )
 
         return {"FINISHED"}
 

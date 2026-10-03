@@ -30,6 +30,15 @@ import bonsai.bim.helper
 import bonsai.bim.module.model.profile as model_profile
 import bonsai.core.material as core
 import bonsai.tool as tool
+from bonsai.bim.helper import (
+    SELECT_FILTER_TOOLTIP,
+    SELECT_REMOVE_TOOLTIP,
+    SELECT_UNHIDE_TOOLTIP,
+    RegexSelectMixin,
+    decode_select_click,
+    select_regex_tooltip,
+    selection_mode,
+)
 from bonsai.bim.module.model import slab, wall
 
 if TYPE_CHECKING:
@@ -58,19 +67,65 @@ class DisableEditingMaterials(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SelectByMaterial(bpy.types.Operator):
+class SelectByMaterial(RegexSelectMixin, bpy.types.Operator):
     bl_idname = "bim.select_by_material"
     bl_label = "Select By Material"
-    bl_description = "Select objects using the provided material\n\nALT+Click to also unhide hidden objects (viewport and local hide)"
+    bl_description = (
+        "Select objects using the provided material"
+        + f"\n\n{SELECT_REMOVE_TOOLTIP}"
+        + f"\n{SELECT_FILTER_TOOLTIP}"
+        + f"\n{select_regex_tooltip('material names')}"
+        + f"\n{SELECT_UNHIDE_TOOLTIP}"
+    )
     bl_options = {"REGISTER", "UNDO"}
     material: bpy.props.IntProperty()
     should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    remove_from_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    filter_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+
+    regex_clipboard_key = "material"
 
     def invoke(self, context, event):
-        self.should_unhide = event.alt
+        mods = decode_select_click(event)
+        if mods.regex_dialog:
+            return self.invoke_regex_dialog(context)
+        self.should_unhide = mods.unhide
+        self.remove_from_selection = mods.remove
+        self.filter_selection = mods.filter
         return self.execute(context)
 
+    def get_regex_prefill(self, context):
+        name = None
+        if context.active_object:
+            name = self._get_material_name(context.active_object, self._get_reference_layer_index())
+        if name is None and self.material:
+            name = self._get_name(tool.Ifc.get().by_id(self.material))
+        return name
+
+    def _get_reference_layer_index(self):
+        if not self.material:
+            return None
+        return self._get_layer_index(tool.Ifc.get().by_id(self.material))
+
+    def _get_material_name(self, obj, layer_index):
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return None
+        mat = ifcopenshell.util.element.get_material(element)
+        if not mat:
+            return None
+        resolved = self._resolve_material(mat, layer_index)
+        if not resolved:
+            return None
+        return self._get_name(resolved)
+
+    def apply_regex(self, context, pattern):
+        layer_index = self._get_reference_layer_index()
+        return self.apply_regex_by_value(context, pattern, lambda obj: self._get_material_name(obj, layer_index))
+
     def execute(self, context):
+        if self.use_regex:
+            return self.execute_regex(context)
         # Determine the layer index hint from the explicit material prop, if any.
         # When the user clicks a specific layer in the UI, self.material is that
         # layer's IfcMaterial. We find its index so we can pull the same layer
@@ -80,8 +135,12 @@ class SelectByMaterial(bpy.types.Operator):
             ref_mat = tool.Ifc.get().by_id(self.material)
             layer_index = self._get_layer_index(ref_mat)
 
+        if self.remove_from_selection or self.filter_selection:
+            objects = [context.active_object] if context.active_object else []
+        else:
+            objects = context.selected_objects
         materials = {}
-        for obj in context.selected_objects:
+        for obj in objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
@@ -100,8 +159,11 @@ class SelectByMaterial(bpy.types.Operator):
         if not materials:
             return {"FINISHED"}
 
+        mode = selection_mode(self.remove_from_selection, self.filter_selection)
         for mat in materials.values():
-            core.select_by_material(tool.Material, tool.Spatial, material=mat, should_unhide=self.should_unhide)
+            core.select_by_material(
+                tool.Material, tool.Spatial, material=mat, should_unhide=self.should_unhide, mode=mode
+            )
 
         result = " + ".join(f'material = "{self._get_name(m)}"' for m in materials.values())
         bpy.context.window_manager.clipboard = result

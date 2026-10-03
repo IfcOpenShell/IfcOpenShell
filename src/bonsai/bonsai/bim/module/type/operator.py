@@ -30,6 +30,15 @@ import bonsai.core.geometry
 import bonsai.core.root
 import bonsai.core.type as core
 import bonsai.tool as tool
+from bonsai.bim.helper import (
+    SELECT_FILTER_TOOLTIP,
+    SELECT_REMOVE_TOOLTIP,
+    SELECT_UNHIDE_TOOLTIP,
+    RegexSelectMixin,
+    decode_select_click,
+    select_regex_tooltip,
+    selection_mode,
+)
 
 
 class AssignType(bpy.types.Operator, tool.Ifc.Operator):
@@ -282,22 +291,60 @@ class SelectType(bpy.types.Operator):
             return collection_in_view_layer
 
 
-class SelectSimilarType(bpy.types.Operator):
-    """Select Similar Type\nALT+Click to also unhide hidden objects (viewport and local hide)"""
-
+class SelectSimilarType(RegexSelectMixin, bpy.types.Operator):
     bl_idname = "bim.select_similar_type"
     bl_label = "Select Similar Type"
+    bl_description = (
+        "Select Similar Type"
+        + f"\n{SELECT_REMOVE_TOOLTIP}"
+        + f"\n{SELECT_FILTER_TOOLTIP}"
+        + f"\n{select_regex_tooltip('type names')}"
+        + f"\n{SELECT_UNHIDE_TOOLTIP}"
+    )
     bl_options = {"REGISTER", "UNDO"}
     related_object: bpy.props.StringProperty()
     should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    remove_from_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    filter_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+
+    regex_clipboard_key = "type"
 
     def invoke(self, context, event):
-        self.should_unhide = event.alt
+        mods = decode_select_click(event)
+        if mods.regex_dialog:
+            return self.invoke_regex_dialog(context)
+        self.should_unhide = mods.unhide
+        self.remove_from_selection = mods.remove
+        self.filter_selection = mods.filter
         return self.execute(context)
+
+    def get_regex_prefill(self, context):
+        if context.active_object and (element := tool.Ifc.get_entity(context.active_object)):
+            relating_type = ifcopenshell.util.element.get_type(element)
+            if relating_type:
+                return relating_type.Name
+        return None
+
+    def _get_type_name(self, obj):
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return None
+        relating_type = ifcopenshell.util.element.get_type(element)
+        if not relating_type:
+            return None
+        return relating_type.Name
+
+    def apply_regex(self, context, pattern):
+        return self.apply_regex_by_value(context, pattern, self._get_type_name)
 
     def execute(self, context):
         self.file = tool.Ifc.get()
-        objects = bpy.context.selected_objects
+        if self.use_regex:
+            return self.execute_regex(context)
+        if self.remove_from_selection or self.filter_selection:
+            objects = [context.active_object] if context.active_object else []
+        else:
+            objects = bpy.context.selected_objects
 
         # store relating types to avoid selecting same elements multiple times
         relating_types = set()
@@ -309,25 +356,27 @@ class SelectSimilarType(bpy.types.Operator):
                 continue
             relating_types.add(relating_type)
 
+        elements = []
         result = ""
         for relating_type in relating_types:
             related_objects = ifcopenshell.util.element.get_types(relating_type)
+            elements.extend(related_objects)
 
-            for element in related_objects:
-                obj = tool.Ifc.get_object(element)
-                if obj and (self.should_unhide or obj in context.visible_objects):
-                    if self.should_unhide:
-                        obj.hide_viewport = False
-                        obj.hide_set(False)
-                    obj.select_set(True)
-
-            # copy selection query to clipboard
+            # build selection query for the clipboard
             related_objects_class = related_objects[0].is_a()
             relating_type_name = relating_type.Name
             if not result:
                 result = f'{related_objects_class}, type="{relating_type_name}"'
             else:
                 result += f' + {related_objects_class}, type="{relating_type_name}"'
+
+        tool.Spatial.select_products(
+            elements,
+            unhide=self.should_unhide,
+            mode=selection_mode(self.remove_from_selection, self.filter_selection),
+        )
+
+        if result:
             bpy.context.window_manager.clipboard = result
             self.report({"INFO"}, f"({result}) was copied to the clipboard.")
 
