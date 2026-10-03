@@ -898,9 +898,12 @@ class CreateDrawing(bpy.types.Operator):
         context.scene.collection.objects.link(edge_obj)
         edge_bm = bmesh.new()
 
+        ifc_only = self.cprops.freestyle_ifc_only
         visible_object_names = {obj.name for obj in bpy.context.visible_objects}
         for obj in bpy.context.view_layer.objects:
             is_visible = obj.name in visible_object_names
+            if is_visible and ifc_only and obj is not edge_obj and tool.Ifc.get_entity(obj) is None:
+                is_visible = False
             obj.hide_render = not is_visible
             if (
                 is_visible
@@ -917,6 +920,10 @@ class CreateDrawing(bpy.types.Operator):
                 finally:
                     if tmp_mesh:
                         bpy.data.meshes.remove(tmp_mesh)
+
+        # The merged-edge helper object is internal render scaffolding, not user content,
+        # so it must always render regardless of the IFC-only filter above.
+        edge_obj.hide_render = False
 
         ret = bmesh.ops.extrude_edge_only(edge_bm, edges=edge_bm.edges)
         verts_extruded = [e for e in ret["geom"] if isinstance(e, bmesh.types.BMVert)]
