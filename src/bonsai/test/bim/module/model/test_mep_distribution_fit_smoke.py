@@ -144,6 +144,7 @@ def test_fit_flow_segments_with_single_segment_dispatches_obstruction():
     context.selected_objects = [segment_obj]
 
     op = _make_op()
+    op._call_fitting_op = lambda fitting_op: mep.FitFlowSegments._call_fitting_op(op, fitting_op)
     with (
         patch.object(mep.tool.Ifc, "get_entity", return_value=segment_entity),
         patch.object(mep.tool.Model, "get_flow_segment_profile", return_value=segment_profile),
