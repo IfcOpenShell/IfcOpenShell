@@ -385,13 +385,6 @@ void ifcopenshell::geom::cgal_shape::triangulate(ifcopenshell::geom::settings se
 
 	const bool setting_use_original_edges = settings.get<ifcopenshell::geom::settings::CgalEmitOriginalEdges>().get();
 
-	std::set<std::set<kernel_::Point_3>> original_edges;
-	if (setting_use_original_edges) {
-		for (auto it = shape_to_use->edges_begin(); it != shape_to_use->edges_end(); ++it) {
-			original_edges.insert({ it->vertex()->point(), it->prev()->vertex()->point() });
-		}
-	}
-
 	if (!has_iden_transform) {
 		const auto& m = place.ccomponents();
 
@@ -404,6 +397,14 @@ void ifcopenshell::geom::cgal_shape::triangulate(ifcopenshell::geom::settings se
 		// Apply transformation
 		for (auto &vertex : shape_to_use->vertex_handles()) {
 			vertex->point() = vertex->point().transform(trsf);
+		}
+	}
+
+	// Collected after the placement transform so the keys match the emitted vertices
+	std::set<std::set<kernel_::Point_3>> original_edges;
+	if (setting_use_original_edges) {
+		for (auto it = shape_to_use->edges_begin(); it != shape_to_use->edges_end(); ++it) {
+			original_edges.insert({ it->vertex()->point(), it->prev()->vertex()->point() });
 		}
 	}
 
