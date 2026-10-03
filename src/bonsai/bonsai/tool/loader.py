@@ -727,6 +727,9 @@ class Loader(bonsai.core.tool.Loader):
             settings.set("layerset-first", True)
             # Wire intersection checks is prohibitively slow on advanced breps. See bug #5999.
             settings.set("no-wire-intersection-check", True)
+            # Keep edges between coplanar faces of the CGAL kernel, or they are
+            # dissolved on entering edit mode. See #5711.
+            settings.set("cgal-original-edges", True)
             # settings.set("triangulation-type", ifcopenshell.ifcopenshell_wrapper.POLYHEDRON_WITHOUT_HOLES)
             if is_gross:
                 settings.set("disable-opening-subtractions", True)
