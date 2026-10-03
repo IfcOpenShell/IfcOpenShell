@@ -141,6 +141,25 @@ def mac_add_rpath(binary: Path, rpath: str) -> None:
     run("codesign", "--force", "--sign", "-", str(binary))
 
 
+def mac_fix_absolute_dependencies(binary: Path, staged_names: set[str]) -> None:
+    """Point absolute dependencies on staged libraries at `@loader_path`, fix own id, re-sign `binary`.
+    An absolute install name ignores LC_RPATH, so it only resolves on the build machine."""
+    changed = False
+    for line in run("otool", "-L", str(binary)).splitlines()[1:]:
+        dependency = line.strip().split(" (")[0]
+        if not dependency.startswith("/") or dependency.startswith(MAC_SYSTEM_LIBRARY_PREFIXES):
+            continue
+        name = os.path.basename(dependency)
+        if name == binary.name:
+            run("install_name_tool", "-id", f"@rpath/{name}", str(binary))
+            changed = True
+        elif name in staged_names:
+            run("install_name_tool", "-change", dependency, f"@loader_path/{name}", str(binary))
+            changed = True
+    if changed:
+        run("codesign", "--force", "--sign", "-", str(binary))
+
+
 def mac_fix_rpaths(package_dir: Path, executables: tuple[Path, ...] = ()) -> None:
     """Make every shared library in `package_dir` resolve its @rpath dependencies next to itself.
 
@@ -149,12 +168,14 @@ def mac_fix_rpaths(package_dir: Path, executables: tuple[Path, ...] = ()) -> Non
     dlopen'd through the wrapper (dyld accumulates rpaths along the load chain) but not
     for IfcConvert & co, whose plug-ins would otherwise fail to find OCCT and each other.
     """
-    for binary in package_dir.rglob("*"):
-        if not binary.is_file() or binary.is_symlink() or not is_shared_library(binary):
-            continue
+    libraries = [p for p in package_dir.rglob("*") if p.is_file() and not p.is_symlink() and is_shared_library(p)]
+    staged_names = {p.name for p in libraries}
+    for binary in libraries:
         mac_add_rpath(binary, "@loader_path")
+        mac_fix_absolute_dependencies(binary, staged_names)
     for exe in executables:
         mac_add_rpath(exe, "@executable_path")
+        mac_fix_absolute_dependencies(exe, staged_names)
 
 
 def stage_runtime_payload(install_dir: Path, dest: Path, *, include_geometry_writers: bool = True) -> list[Path]:
@@ -342,6 +363,7 @@ def check_runtime_dependencies_mac(package_dir: Path) -> None:
     build machine.
     """
     missing = False
+    absolute = False
     staged = {p.name for p in package_dir.rglob("*") if is_shared_library(p)}
     for binary_file in package_dir.rglob("*"):
         if not binary_file.is_file() or binary_file.is_symlink():
@@ -364,6 +386,7 @@ def check_runtime_dependencies_mac(package_dir: Path) -> None:
                     problems.append(f"{dependency} => not found")
             elif dependency.startswith("/"):
                 problems.append(f"{dependency} => absolute path outside the package")
+                absolute = True
         if problems:
             logger.warning(f"Missing runtime dependencies for {binary_file}")
             for problem in problems:
@@ -374,6 +397,8 @@ def check_runtime_dependencies_mac(package_dir: Path) -> None:
         global HAS_MISSING_DEPENDENCIES
         HAS_MISSING_DEPENDENCIES = True
         logger.warning("Runtime dependency check found issues; continuing packaging.")
+    if absolute:
+        raise Exception("Build-machine absolute dependency paths found; see warnings above.")
 
 
 def package_python_wrapper(
