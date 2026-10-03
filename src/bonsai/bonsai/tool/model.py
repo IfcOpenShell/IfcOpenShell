@@ -625,6 +625,12 @@ class Model(bonsai.core.tool.Model):
             for segment in curve.Segments:
                 cls.convert_curve_to_mesh(obj, position, segment.ParentCurve)
 
+        elif curve.is_a("IfcGeometricCurveSet"):
+            # A set of independent curves (e.g. dimension annotations). Each element is
+            # imported as its own disconnected edge loop within the same mesh.
+            for sub_curve in curve.Elements:
+                cls.convert_curve_to_mesh(obj, position, sub_curve, x_angle=x_angle)
+
         elif curve.is_a("IfcIndexedPolyCurve"):
             for local_point in curve.Points.CoordList:
                 global_point = position @ Vector(cls.convert_unit_to_si(local_point)).to_3d()
