@@ -126,6 +126,16 @@ def is_shared_library(path: Path) -> bool:
     return name.endswith((".so", ".dylib", ".dll")) or ".so." in name
 
 
+# Runtime plug-ins use underscore-prefixed `ifcopenshell_` names with no platform prefix;
+# core libraries keep the dotted `ifcopenshell.` names and the platform `lib` prefix.
+IFC_GEOMETRY_WRITER_PREFIXES = ("ifcopenshell.geometry.writer.", "ifcopenshell_geometry_writer_")
+
+
+def is_geometry_writer(path: Path) -> bool:
+    name = path.name.removeprefix("lib")
+    return name.startswith(IFC_GEOMETRY_WRITER_PREFIXES)
+
+
 def mac_rpaths(binary: Path) -> list[str]:
     """LC_RPATH entries of a Mach-O binary."""
     output = run("otool", "-l", str(binary))
@@ -176,7 +186,7 @@ def stage_runtime_payload(install_dir: Path, dest: Path, *, include_geometry_wri
                 continue
             if not is_shared_library(runtime_file):
                 continue
-            if not include_geometry_writers and runtime_file.name.startswith("ifcopenshell.geometry.writer."):
+            if not include_geometry_writers and is_geometry_writer(runtime_file):
                 continue
             dest_file = dest / (get_soname(runtime_file) or runtime_file.name)
             staged_files.append(dest_file)
