@@ -141,6 +141,51 @@ void json_message(T& out, const express::base& current_product, logger::severity
 #endif
 }
 
+template <typename T>
+void plain_text_message(T& out, const ifcopenshell::log_message& m) {
+    out << "[" << severity_strings<typename T::char_type>::value[m.severity] << "] ";
+    write_code(out, m.code);
+    out << "[" << m.timestamp.c_str() << "] ";
+    if (!m.product.empty()) {
+        out << "{" << m.product.c_str() << "} ";
+    }
+    out << m.message.c_str() << std::endl;
+    if (!m.instance.empty()) {
+        out << m.instance.c_str() << std::endl;
+    }
+}
+
+template <typename T>
+void json_message(T& out, const ifcopenshell::log_message& m) {
+    boost::property_tree::basic_ptree<std::basic_string<typename T::char_type>, std::basic_string<typename T::char_type>> property_tree;
+
+    static const typename T::char_type time_string[] = {'t', 'i', 'm', 'e', 0};
+    static const typename T::char_type level_string[] = {'l', 'e', 'v', 'e', 'l', 0};
+    static const typename T::char_type code_string[] = {'c', 'o', 'd', 'e', 0};
+    static const typename T::char_type product_string[] = {'p', 'r', 'o', 'd', 'u', 'c', 't', 0};
+    static const typename T::char_type message_string[] = {'m', 'e', 's', 's', 'a', 'g', 'e', 0};
+    static const typename T::char_type instance_string[] = {'i', 'n', 's', 't', 'a', 'n', 'c', 'e', 0};
+
+    property_tree.put(level_string, severity_strings<typename T::char_type>::value[m.severity]);
+    if (m.code[0] != '\0') {
+        property_tree.put(code_string, string_as<typename T::char_type>(m.code));
+    }
+    if (!m.product.empty()) {
+        property_tree.put(product_string, string_as<typename T::char_type>(m.product));
+    }
+    property_tree.put(message_string, string_as<typename T::char_type>(m.message));
+    if (!m.instance.empty()) {
+        property_tree.put(instance_string, string_as<typename T::char_type>(m.instance));
+    }
+    property_tree.put(time_string, string_as<typename T::char_type>(m.timestamp));
+
+    boost::property_tree::write_json(out, property_tree, false);
+
+#if BOOST_VERSION >= 108600
+    out << '\n';
+#endif
+}
+
 } // namespace
 
 namespace ifcopenshell {
@@ -323,6 +368,29 @@ void logger::append(logger& other) {
 
     if (format_ == FMT_INMEMORY) {
         log_messages_.insert(log_messages_.end(), other.log_messages_.begin(), other.log_messages_.end());
+    } else if (other.format_ == FMT_INMEMORY) {
+        for (const auto& m : other.log_messages_) {
+            if (m.severity < verbosity_) {
+                continue;
+            }
+            if (format_ == FMT_JSON) {
+                if (log2_ != nullptr) {
+                    json_message(*log2_, m);
+                } else if (wlog2_ != nullptr) {
+                    json_message(*wlog2_, m);
+                } else {
+                    json_message(log_stream_, m);
+                }
+            } else {
+                if (log2_ != nullptr) {
+                    plain_text_message(*log2_, m);
+                } else if (wlog2_ != nullptr) {
+                    plain_text_message(*wlog2_, m);
+                } else {
+                    plain_text_message(log_stream_, m);
+                }
+            }
+        }
     } else {
         const std::string log = other.log_stream_.str();
         if (!log.empty()) {
