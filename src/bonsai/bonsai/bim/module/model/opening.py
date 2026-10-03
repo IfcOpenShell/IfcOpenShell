@@ -420,6 +420,25 @@ class FilledOpeningGenerator:
 
                 tool.Geometry.recut_host(voided_obj, representation)
 
+    def preserve_opening_on_type_change(
+        self, usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]
+    ) -> None:
+        """Pre-listener for type.assign_type: anchor the old type's void before reassigning.
+
+        A custom void that lives only on an occurrence (the type has no 'Reference'
+        template) would be lost when that occurrence is moved to another type - the
+        post-assign regeneration replaces it. Promoting it onto its current type first
+        keeps it durable, so switching back later restores it. Idempotent and only acts on
+        genuinely custom (non-extrusion) voids.
+        """
+        relating_type = settings.get("relating_type")
+        for related_object in settings.get("related_objects") or []:
+            if not getattr(related_object, "FillsVoids", None):
+                continue
+            old_type = ifcopenshell.util.element.get_type(related_object)
+            if old_type and old_type != relating_type:
+                self.promote_opening_to_type(old_type)
+
     def regenerate_from_type(self, usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
         relating_type = settings["relating_type"]
 
@@ -437,6 +456,13 @@ class FilledOpeningGenerator:
         opening = filling.FillsVoids[0].RelatingOpeningElement
         voided_element = opening.VoidsElements[0].RelatingBuildingElement
 
+        # Always regenerate the opening to reflect the *assigned* type's void: its
+        # 'Reference' template if it has one (generate_opening_from_filling consults it),
+        # else a sibling occurrence's opening, else a generated extrusion. We deliberately
+        # do NOT preserve the previous type's custom void on a type change - a custom void
+        # now survives duplicate_type/append by being anchored on the type as a template
+        # (promote_opening_to_type / harvest), so keeping the old void here would just show
+        # the wrong type's opening (e.g. switching to a plain type would keep the faceset).
         opening_rep = ifcopenshell.util.representation.get_representation(opening, "Model", "Body", "MODEL_VIEW")
         ifcopenshell.api.geometry.unassign_representation(tool.Ifc.get(), product=opening, representation=opening_rep)
         ifcopenshell.api.geometry.remove_representation(tool.Ifc.get(), representation=opening_rep)
@@ -493,6 +519,14 @@ class FilledOpeningGenerator:
         profile = None
         filling_type = ifcopenshell.util.element.get_type(filling)
         if filling_type:
+            # A stored opening template (e.g. a custom IfcPolygonalFaceSet carried
+            # across bim.duplicate_type / append) takes priority over generating a
+            # default extrusion. Returning the shared template representation lets the
+            # caller's map_representation reuse its IfcRepresentationMap, so this
+            # opening stays in sync with the type template and its sibling occurrences.
+            opening_template = self.get_type_opening_representation(filling_type)
+            if opening_template is not None:
+                return opening_template
             profile = ifcopenshell.util.representation.get_representation(
                 filling_type, "Model", "Profile", "ELEVATION_VIEW"
             )
@@ -589,6 +623,228 @@ class FilledOpeningGenerator:
             if tool.Ifc.get_object(opening):
                 return True
         return False
+
+    def is_opening_representation_custom(self, opening: ifcopenshell.entity_instance) -> bool:
+        """Whether the opening's Body has user-authored geometry rather than a generated extrusion.
+
+        Openings produced by ``generate_opening_from_filling`` always consist of a
+        single ``IfcExtrudedAreaSolid``. Anything else (a tessellation such as an
+        ``IfcPolygonalFaceSet``, a brep, a CSG solid, etc.) was authored by the user
+        and must not be silently replaced with a default extrusion.
+        """
+        representation = ifcopenshell.util.representation.get_representation(opening, "Model", "Body", "MODEL_VIEW")
+        if not representation:
+            return False
+        representation = ifcopenshell.util.representation.resolve_representation(representation)
+        return any(not item.is_a("IfcExtrudedAreaSolid") for item in representation.Items)
+
+    def should_preserve_opening(self, opening: ifcopenshell.entity_instance) -> bool:
+        """Whether an opening's geometry is worth anchoring on the type as a template.
+
+        True for user-authored geometry (a tessellation, brep, etc.) or a *manually adjusted*
+        extrusion - one that no longer matches the default ``generate_opening_from_filling``
+        would produce for its filling. A plain generated extrusion is regenerable, so it
+        returns False and is left to regenerate.
+        """
+        if self.is_opening_representation_custom(opening):
+            return True
+        return self._is_adjusted_extrusion(opening)
+
+    def _is_adjusted_extrusion(self, opening: ifcopenshell.entity_instance) -> bool:
+        """Whether the opening's extrusion diverges from the default for its filling.
+
+        Generates the default transiently, compares the axis-aligned bounding boxes of the
+        two bodies (both in the opening's local frame), then removes the temporary default.
+        A conservative False is returned when the default cannot be computed.
+        """
+        filling = opening.HasFillings[0].RelatedBuildingElement if getattr(opening, "HasFillings", None) else None
+        filling_obj = tool.Ifc.get_object(filling) if filling else None
+        current = ifcopenshell.util.representation.get_representation(opening, "Model", "Body", "MODEL_VIEW")
+        if not filling_obj or current is None:
+            return False
+        current = ifcopenshell.util.representation.resolve_representation(current)
+        default_representation = self.generate_opening_from_filling(filling, filling_obj)
+        try:
+            settings = ifcopenshell.geom.settings()
+            current_bbox = self._representation_bbox(settings, current)
+            default_bbox = self._representation_bbox(settings, default_representation)
+        finally:
+            ifcopenshell.api.geometry.remove_representation(tool.Ifc.get(), representation=default_representation)
+        if current_bbox is None or default_bbox is None:
+            return False
+        (cur_min, cur_max), (def_min, def_max) = current_bbox, default_bbox
+        tolerance = 1e-3  # 1 mm; differing extents/position => manually adjusted
+        return bool(np.any(np.abs(cur_min - def_min) > tolerance) or np.any(np.abs(cur_max - def_max) > tolerance))
+
+    @staticmethod
+    def _representation_bbox(settings: Any, representation: ifcopenshell.entity_instance):
+        try:
+            geometry = ifcopenshell.geom.create_shape(settings, representation)
+        except Exception:
+            return None
+        verts = ifcopenshell.util.shape.get_vertices(geometry)
+        if len(verts) == 0:
+            return None
+        return verts.min(axis=0), verts.max(axis=0)
+
+    def get_type_opening_representation(
+        self, filling_type: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        """Return the type's stored opening template (its 'Reference' representation), if any.
+
+        The template is the shared opening body anchored on the type as a
+        'Reference'-identified representation map (see
+        :meth:`set_type_opening_representation`). Storing it on the type lets a
+        custom opening survive ``bim.duplicate_type`` and project append, which copy
+        the type's ``RepresentationMaps`` but not an opening shared only between
+        occurrences.
+        """
+        for representation_map in filling_type.RepresentationMaps or []:
+            representation = representation_map.MappedRepresentation
+            if representation.RepresentationIdentifier == "Reference":
+                return representation
+
+    def set_type_opening_representation(
+        self, filling_type: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
+    ) -> None:
+        """Anchor an opening body representation on the type as its 'Reference' template.
+
+        ``representation`` is tagged 'Reference' (so it is excluded from the
+        occurrence body geometry, see
+        ``ifcopenshell.api.type.map_type_representations``) and the
+        ``IfcRepresentationMap`` wrapping it is registered in the type's
+        ``RepresentationMaps``, replacing any previous 'Reference' map. The existing map
+        is reused when present so that occurrences mapping over it stay in sync with the
+        type template. Idempotent.
+        """
+        ifc_file = tool.Ifc.get()
+        representation.RepresentationIdentifier = "Reference"
+        representation_map = next(
+            (i for i in ifc_file.get_inverse(representation) if i.is_a("IfcRepresentationMap")), None
+        )
+        if representation_map is None:
+            mapping_origin = ifc_file.createIfcAxis2Placement3D(
+                ifc_file.createIfcCartesianPoint((0.0, 0.0, 0.0)),
+                ifc_file.createIfcDirection((0.0, 0.0, 1.0)),
+                ifc_file.createIfcDirection((1.0, 0.0, 0.0)),
+            )
+            representation_map = ifc_file.createIfcRepresentationMap(mapping_origin, representation)
+        # Keep all non-'Reference' maps (Body, Annotation, ...) plus this one, dropping any
+        # previous 'Reference' template so the type carries exactly one.
+        new_maps = [
+            m
+            for m in (filling_type.RepresentationMaps or [])
+            if m == representation_map or m.MappedRepresentation.RepresentationIdentifier != "Reference"
+        ]
+        if representation_map not in new_maps:
+            new_maps.append(representation_map)
+        filling_type.RepresentationMaps = new_maps
+
+    def update_type_template_from_opening(self, opening: ifcopenshell.entity_instance) -> None:
+        """Write an edited opening's geometry back to its filling type's 'Reference' template.
+
+        After a user edits an opening's void shape, anchor the new geometry on the type so
+        the change is durable (survives duplicate_type/append and switching the type away
+        and back) and propagates to sibling occurrences. Only acts on custom (non-extrusion)
+        geometry; a re-generated extrusion needs no template.
+        """
+        if not getattr(opening, "HasFillings", None) or not self.is_opening_representation_custom(opening):
+            return
+        ifc_file = tool.Ifc.get()
+        new_representation = ifcopenshell.util.representation.get_representation(opening, "Model", "Body", "MODEL_VIEW")
+        if not new_representation:
+            return
+        new_representation = ifcopenshell.util.representation.resolve_representation(new_representation)
+        voided_objs_to_reload: set[bpy.types.Object] = set()
+        for rel in opening.HasFillings:
+            filling_type = ifcopenshell.util.element.get_type(rel.RelatedBuildingElement)
+            if not filling_type:
+                continue
+            old_template = self.get_type_opening_representation(filling_type)
+            if old_template is not None and old_template != new_representation:
+                # The edit gave this opening its own geometry; re-point the shared template
+                # map - and therefore every sibling occurrence mapping over it - at the
+                # edited geometry, then drop the now-orphaned old template.
+                for inverse in ifc_file.get_inverse(old_template):
+                    if inverse.is_a("IfcRepresentationMap"):
+                        inverse.MappedRepresentation = new_representation
+                ifcopenshell.api.geometry.remove_representation(ifc_file, representation=old_template)
+            self.set_type_opening_representation(filling_type, new_representation)
+
+            # Re-map every other occurrence's opening onto the type template so the edit
+            # propagates even to siblings that have their own independent opening geometry
+            # (i.e. openings that never shared the template's IfcRepresentationMap).
+            for occurrence in ifcopenshell.util.element.get_types(filling_type):
+                sibling_opening = (
+                    occurrence.FillsVoids[0].RelatingOpeningElement
+                    if getattr(occurrence, "FillsVoids", None)
+                    else None
+                )
+                if not sibling_opening or sibling_opening == opening:
+                    continue
+                if not self._remap_opening_to_template(sibling_opening, new_representation):
+                    continue
+                if sibling_opening.VoidsElements:
+                    voided_element = sibling_opening.VoidsElements[0].RelatingBuildingElement
+                    for part in ifcopenshell.util.element.get_parts(voided_element) or [voided_element]:
+                        if voided_obj := tool.Ifc.get_object(part):
+                            voided_objs_to_reload.add(voided_obj)
+
+        # Reload affected host objects so the viewport re-booleans with the propagated void.
+        for voided_obj in voided_objs_to_reload:
+            representation = tool.Geometry.get_active_representation(voided_obj)
+            if representation:
+                bonsai.core.geometry.switch_representation(
+                    tool.Ifc, tool.Geometry, obj=voided_obj, representation=representation
+                )
+
+    def _remap_opening_to_template(
+        self, opening: ifcopenshell.entity_instance, template_representation: ifcopenshell.entity_instance
+    ) -> bool:
+        """Point an opening's Body at the shared type template, purging its old standalone body.
+
+        :return: True if the opening was changed, False if it already maps over the template.
+        """
+        ifc_file = tool.Ifc.get()
+        old_body = ifcopenshell.util.representation.get_representation(opening, "Model", "Body", "MODEL_VIEW")
+        if old_body is not None and (
+            ifcopenshell.util.representation.resolve_representation(old_body) == template_representation
+        ):
+            return False
+        mapped_representation = ifcopenshell.api.geometry.map_representation(
+            ifc_file, representation=template_representation
+        )
+        # The mapped wrapper is the opening's own Body (the 'Reference' identifier belongs to
+        # the type template it maps over, not to the occurrence's representation).
+        mapped_representation.RepresentationIdentifier = "Body"
+        if old_body is not None:
+            ifcopenshell.api.geometry.unassign_representation(ifc_file, product=opening, representation=old_body)
+            ifcopenshell.api.geometry.remove_representation(ifc_file, representation=old_body)
+        ifcopenshell.api.geometry.assign_representation(ifc_file, product=opening, representation=mapped_representation)
+        return True
+
+    def promote_opening_to_type(self, filling_type: ifcopenshell.entity_instance) -> None:
+        """Promote a custom opening from an occurrence to a 'Reference' template on the type.
+
+        Called before a type is copied (``bim.duplicate_type``) so that a custom
+        (non-extrusion) opening, currently shared only between occurrences, is
+        anchored on the type itself and therefore carried to the copy. No-op if the
+        type already has a template or has no custom opening to promote.
+        """
+        if self.get_type_opening_representation(filling_type):
+            return
+        for occurrence in ifcopenshell.util.element.get_types(filling_type):
+            if not getattr(occurrence, "FillsVoids", None):
+                continue
+            opening = occurrence.FillsVoids[0].RelatingOpeningElement
+            if not self.should_preserve_opening(opening):
+                continue
+            representation = ifcopenshell.util.representation.get_representation(
+                opening, "Model", "Body", "MODEL_VIEW"
+            )
+            representation = ifcopenshell.util.representation.resolve_representation(representation)
+            self.set_type_opening_representation(filling_type, representation)
+            return
 
     def get_existing_opening_occurrence_if_any(
         self, filling: ifcopenshell.entity_instance
@@ -1000,6 +1256,9 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                     building_objs.update(similar_openings_building_objs)
                     if opening_edited:
                         tool.Geometry.run_geometry_update_representation(obj=opening_obj)
+                        # Persist the edited void onto the filling type's 'Reference' template so
+                        # it survives type duplication/append/switching and propagates to siblings.
+                        self.update_type_template_from_opening(opening_element)
                     else:
                         bonsai.core.geometry.edit_object_placement(
                             tool.Ifc, tool.Geometry, tool.Surveyor, obj=opening_obj
