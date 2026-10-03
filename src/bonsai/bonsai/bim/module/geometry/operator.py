@@ -1298,6 +1298,10 @@ class OverrideDuplicateMove(bpy.types.Operator):
                             related_obj=new_obj,
                         )
 
+        # Duplicated aggregates re-join their BBIM_Linked_Aggregate group so edits still propagate.
+        if copy_linked_aggregate and any(old.is_a("IfcElementAssembly") for old in old_to_new):
+            copy_linked_aggregate_data(tool.Ifc.get(), old_to_new)
+
         # Select all duplicated objects and their parts
         all_objects_to_select = set()
         for old_elem, new_elems in old_to_new.items():
@@ -1326,10 +1330,6 @@ class OverrideDuplicateMove(bpy.types.Operator):
 
         if new_active_obj:
             context.view_layer.objects.active = new_active_obj
-
-        # Duplicated aggregates re-join their BBIM_Linked_Aggregate group so edits still propagate.
-        if copy_linked_aggregate and any(old.is_a("IfcElementAssembly") for old in old_to_new):
-            copy_linked_aggregate_data(tool.Ifc.get(), old_to_new)
 
         return old_to_new
 
