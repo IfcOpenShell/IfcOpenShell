@@ -1408,7 +1408,7 @@ class CreateDrawing(bpy.types.Operator):
         self.svg_buffer = ifcopenshell.geom.serializers.buffer()
         self.svg_settings.set("svg-without-storeys", True)
         self.svg_settings.set("svg-write-poly", True)
-        self.svg_settings.set("svg-poly", True)
+        self.svg_settings.set("svg-poly", self.props.should_use_hlr_poly)
         # Objects with more than these edges are rendered as wireframe instead of HLR for optimisation
         self.svg_settings.set("profile-threshold", 10000)
         self.svg_settings.set("svg-xmlns", True)
