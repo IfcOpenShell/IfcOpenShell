@@ -7,6 +7,7 @@
 #include <TopExp_Explorer.hxx>
 #include <GProp_GProps.hxx>
 #include <BRepGProp.hxx>
+#include <BRepClass3d_SolidClassifier.hxx>
 #include <TopExp.hxx>
 #include <TopoDS.hxx>
 #include <Bnd_Box.hxx>
@@ -29,6 +30,33 @@
 
 #include <vector>
 #include <thread>
+
+namespace {
+	bool has_vertex_inside(const TopoDS_Shape& vertices, const TopoDS_Shape& solid, double tolerance) {
+		BRepClass3d_SolidClassifier classifier(solid);
+		for (TopExp_Explorer exp(vertices, TopAbs_VERTEX); exp.More(); exp.Next()) {
+			classifier.Perform(BRep_Tool::Pnt(TopoDS::Vertex(exp.Current())), tolerance);
+			if (classifier.State() == TopAbs_IN) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	// #5630 the volume is unchanged although the operands overlap
+	bool cut_removed_nothing(const TopoDS_Shape& a, const TopoDS_Shape& r, const NCollection_List<TopoDS_Shape>& b, double tolerance) {
+		const double va = ifcopenshell::geom::util::shape_volume(a);
+		if (va < 1.e-9 || va - ifcopenshell::geom::util::shape_volume(r) > va * 1.e-6) {
+			return false;
+		}
+		for (NCollection_List<TopoDS_Shape>::Iterator it(b); it.More(); it.Next()) {
+			if (has_vertex_inside(a, it.Value(), tolerance) || has_vertex_inside(it.Value(), a, tolerance)) {
+				return true;
+			}
+		}
+		return false;
+	}
+}
 
 void ifcopenshell::geom::util::copy_operand(const NCollection_List<TopoDS_Shape>& l, NCollection_List<TopoDS_Shape>& r) {
 #if OCC_VERSION_HEX < 0x70000
@@ -1202,6 +1230,11 @@ bool ifcopenshell::geom::util::boolean_operation(const boolean_settings& setting
 
 					settings.log().notice("GEO", 148, str.str());
 				}
+			}
+
+			if (success && op == BOPAlgo_CUT && allow_retry && cut_removed_nothing(a, r, b, settings.precision)) {
+				success = false;
+				settings.log().notice("GEO", 406, "Boolean subtraction removed no volume, retrying with higher fuzziness");
 			}
 
 			if (success) {
