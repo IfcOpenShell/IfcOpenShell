@@ -19,7 +19,9 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
+import re
 import shutil
 from collections import defaultdict
 from math import radians
@@ -135,6 +137,58 @@ class Project(bonsai.core.tool.Project):
     def load_default_thumbnails(cls) -> None:
         if tool.Ifc.get().by_type("IfcElementType"):
             bpy.ops.bim.load_type_thumbnails()
+
+    @classmethod
+    def reload_ifc_file(cls, path_ifc: str = "") -> None:
+        """Clear the current IFC session and reimport ``path_ifc`` in place.
+
+        Unlike ``bim.load_project`` with ``should_start_fresh_session`` (used
+        by ``bim.revert_project``), this does not restart the Blender session,
+        so the viewport camera, non-IFC objects and UI layout are preserved.
+        Promoted from the IfcGit tool so that non-git workflows (reloading a
+        file edited by an external tool) can reuse it.
+        """
+        # This method was generated with the assistance of an AI coding tool.
+        if path_ifc:
+            IfcStore.purge()
+        # Delete any IfcProject/* collections.
+        for collection in bpy.data.collections:
+            if re.match("^IfcProject/", collection.name):
+                for obj in collection.objects:
+                    bpy.data.objects.remove(obj, do_unlink=True)
+                bpy.data.collections.remove(collection)
+        # Delete any Ifc* objects not in an IfcProject/ hierarchy.
+        for obj in bpy.data.objects:
+            if re.match("^Ifc", obj.name):
+                bpy.data.objects.remove(obj, do_unlink=True)
+
+        bpy.data.orphans_purge(do_recursive=True)
+
+        import bonsai.bim.handler
+        from bonsai.bim import import_ifc
+        from bonsai.bim.module.model.data import AuthoringData
+        from bonsai.bim.module.root.data import IfcClassData
+
+        AuthoringData.type_thumbnails = {}
+
+        IfcClassData.is_loaded = False
+
+        settings = import_ifc.IfcImportSettings.factory(bpy.context, path_ifc, logging.getLogger("ImportIFC"))
+        settings.should_setup_viewport_camera = False
+        ifc_importer = import_ifc.IfcImporter(settings)
+        ifc_importer.execute()
+        tool.Project.load_default_thumbnails()
+        tool.Project.set_default_context()
+        tool.Project.set_default_modeling_dimensions()
+        tool.Root.reload_grid_decorator()
+        bonsai.bim.handler.refresh_ui_data()
+        bpy.ops.object.select_all(action="DESELECT")
+        # The session now matches the file on disk.
+        tool.Blender.get_bim_props().is_dirty = False
+        # Every caller reimports from disk here (including IfcGit checkout/
+        # merge/revert, which bypass the bim.reload_project operator), so
+        # the watcher's baseline must be refreshed here, not per-caller.
+        tool.FileWatcher.take_snapshot()
 
     @classmethod
     def load_project_pset_templates(cls) -> None:
