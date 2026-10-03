@@ -210,6 +210,31 @@ class TestAssignType(test.bootstrap.IFC4):
         assert ifcopenshell.util.element.get_type(wall) is None
         assert ifcopenshell.util.element.get_type(door) is None
 
+    def test_concrete_subtype_of_allowed_occurrence_accepted(self):
+        terminal = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcFlowTerminal")
+        distribution_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDistributionElementType")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[terminal], relating_type=distribution_type)
+        assert ifcopenshell.util.element.get_type(terminal) == distribution_type
+
+    def test_genuine_mismatch_of_unrelated_occurrence_still_raises(self):
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        air_terminal_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcAirTerminalType")
+        with pytest.raises(TypeError, match=r"IfcAirTerminalType cannot type IfcWall"):
+            ifcopenshell.api.type.assign_type(self.file, related_objects=[wall], relating_type=air_terminal_type)
+
+    def test_generic_type_product_without_applicable_occurrence_types_any_product(self):
+        stair = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStair")
+        generic_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTypeProduct")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[stair], relating_type=generic_type)
+        assert ifcopenshell.util.element.get_type(stair) == generic_type
+
+    def test_generic_type_product_with_applicable_occurrence_still_rejects_other_classes(self):
+        stair = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcStair")
+        generic_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTypeProduct")
+        generic_type.ApplicableOccurrence = "IfcWall"
+        with pytest.raises(TypeError):
+            ifcopenshell.api.type.assign_type(self.file, related_objects=[stair], relating_type=generic_type)
+
     def test_untypable_occurrence_rejected(self):
         opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
         any_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
