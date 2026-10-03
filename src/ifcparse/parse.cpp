@@ -3503,6 +3503,19 @@ void file::process_deletion_(const express::base& entity) {
                     }
                 } break;
                 case ifcopenshell::Argument_AGGREGATE_OF_ENTITY_INSTANCE: {
+                    // In memory the aggregate is edited in place: it is
+                    // neither copied out nor diffed against itself, and only
+                    // the erased occurrences leave the inverse index. The
+                    // rewrite below remains for storage that cannot do that.
+                    if (auto erased = related_instance.erase_from_aggregate(i, entity)) {
+                        for (size_t n = 0; n < *erased; ++n) {
+                            unregister_inverse(related_instance.id(), decl.as_entity(), entity, (int)i);
+                        }
+                        if (*erased != 0 && related_instance.get_attribute_value(i).size() == 0 && decl.as_entity()->attribute_by_index(i)->optional()) {
+                            related_instance.set_attribute_value(i, blank{});
+                        }
+                        break;
+                    }
                     std::vector<express::base> instance_list = attr;
                     auto it = std::remove(instance_list.begin(), instance_list.end(), entity);
                     if (it != instance_list.end()) {
@@ -3516,6 +3529,12 @@ void file::process_deletion_(const express::base& entity) {
                     }
                 } break;
                 case ifcopenshell::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE: {
+                    if (auto erased = related_instance.erase_from_aggregate(i, entity)) {
+                        for (size_t n = 0; n < *erased; ++n) {
+                            unregister_inverse(related_instance.id(), decl.as_entity(), entity, (int)i);
+                        }
+                        break;
+                    }
                     std::vector<std::vector<express::base>> instance_list_list = attr;
                     for (auto& li : instance_list_list) {
                         auto it = std::remove(li.begin(), li.end(), entity);
@@ -4118,6 +4137,10 @@ void express::base::unset_attribute_value(size_t index) {
 
 attribute_value express::base::get_attribute_value(size_t index) const {
     return data()->get_attribute_value(index);
+}
+
+std::optional<size_t> express::base::erase_from_aggregate(size_t index, const express::base& instance) {
+    return data()->erase_from_aggregate(index, instance);
 }
 
 void express::base::to_string(std::ostream& out, bool upper) const

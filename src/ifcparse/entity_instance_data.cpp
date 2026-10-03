@@ -3,6 +3,9 @@
 #include "exception.h"
 #include "file.h"
 
+#include <algorithm>
+#include <optional>
+
 using namespace ifcopenshell;
 
 // @todo is size() still needed?
@@ -620,3 +623,27 @@ template IFC_PARSE_API ifcopenshell::impl::in_memory_file_storage* instance_data
 template IFC_PARSE_API ifcopenshell::impl::rocks_db_file_storage* instance_data::get_storage_of_type<ifcopenshell::impl::rocks_db_file_storage>() const;
 
 #endif
+
+std::optional<size_t> ifcopenshell::instance_data::erase_from_aggregate(std::size_t attribute_index, const express::base& instance) {
+    ensure_loaded();
+    if (!storage_) {
+        return std::nullopt;
+    }
+    if (storage_->has<std::vector<express::base>>(attribute_index)) {
+        auto& list = storage_->get<std::vector<express::base>>(attribute_index);
+        const auto end = std::remove(list.begin(), list.end(), instance);
+        const size_t erased = (size_t)(list.end() - end);
+        list.erase(end, list.end());
+        return erased;
+    }
+    if (storage_->has<std::vector<std::vector<express::base>>>(attribute_index)) {
+        size_t erased = 0;
+        for (auto& list : storage_->get<std::vector<std::vector<express::base>>>(attribute_index)) {
+            const auto end = std::remove(list.begin(), list.end(), instance);
+            erased += (size_t)(list.end() - end);
+            list.erase(end, list.end());
+        }
+        return erased;
+    }
+    return std::nullopt;
+}
