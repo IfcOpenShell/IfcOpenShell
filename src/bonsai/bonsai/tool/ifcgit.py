@@ -61,7 +61,13 @@ class IfcGit(bonsai.core.tool.IfcGit):
 
     @classmethod
     def init_repo(cls, path_dir: str) -> None:
-        IfcGitRepo.repo = git.Repo.init(path_dir)
+        kwargs = {}
+        try:
+            git.Git().config("--global", "--get", "init.defaultBranch")
+        except git.exc.GitCommandError:
+            # No global init.defaultBranch, so avoid the legacy "master" default.
+            kwargs["initial_branch"] = "main"
+        IfcGitRepo.repo = git.Repo.init(path_dir, **kwargs)
         cls.config_info_attributes(IfcGitRepo.repo)
 
     @classmethod
