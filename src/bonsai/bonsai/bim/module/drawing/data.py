@@ -845,9 +845,12 @@ class DecoratorData:
 
         results = []
         viewport = tool.Blender.get_view3d_space()
+        # Item/Edit mode hides the original object while its items are edited.
+        # Keep decorating it so the annotation preview survives the hide.
+        editing_obj = tool.Geometry.get_geometry_props().representation_obj
 
         for obj in collection.all_objects:
-            if not obj.visible_get(viewport=viewport):
+            if not obj.visible_get(viewport=viewport) and obj is not editing_obj:
                 continue
             element = tool.Ifc.get_entity(obj)
             if not element:
