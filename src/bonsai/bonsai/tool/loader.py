@@ -656,16 +656,21 @@ class Loader(bonsai.core.tool.Loader):
         elif len(texture_map) != len(faces_remap):
             print(f"Warning: invalid index map found: {index_map}")
         else:
+
+            def rotate_to_lowest_vertex(face: list[int] | tuple[int, ...]) -> tuple[int, ...]:
+                start = min(range(len(face)), key=lambda i: face[i])
+                return tuple(int(v) for v in (*face[start:], *face[:start]))
+
             faces_tex_coord_data = {}
             for tex_coord_index, face_remap in zip(texture_map, faces_remap, strict=True):
-                faces_tex_coord_data[tuple(face_remap)] = (tex_coord_index, face_remap)
+                faces_tex_coord_data[rotate_to_lowest_vertex(face_remap)] = (tex_coord_index, face_remap)
 
             # Apply attribute to each face
             for bface in bm.faces:
                 face = tuple(loop.vert.index for loop in bface.loops)
                 # Find the corresponding index in data list by matching ifc faceset with blender face.
                 data_index = None
-                if tex_coord_data := faces_tex_coord_data.get(face):
+                if tex_coord_data := faces_tex_coord_data.get(rotate_to_lowest_vertex(face)):
                     tex_coord_index, face_remap = tex_coord_data
                     # Subtract 1 as tex_coord_index starts with 1.
                     if map_type == "UV":
