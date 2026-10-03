@@ -27,7 +27,7 @@ When adding or removing a supported Python version, update the following:
      - - ``requires-python`` lower bound
        - except ``bonsai`` and ``ifcsverchok`` - they're maintained separately
        - ``ifcopenshell-python`` also has an upper bound to maintain
-   * - ``src/ifcopenshell-python/docs/ifcopenshell-python/installation.rst``
+   * - ``docs/ifcopenshell-python/installation.rst``
      - add or remove the row in the ZIP packages table
    * - ``src/ifcopenshell-python/Makefile``
      - ``SUPPORTED_PYVERSIONS``

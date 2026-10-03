@@ -1,0 +1,14 @@
+# This file was generated with the assistance of an AI coding tool.
+#
+# The versions are pinned so that the documentation build is reproducible, and
+# so that the interfaces between autoapi, breathe, exhale, and Sphinx stay in
+# the combination that is known to work.
+
+Sphinx==9.1.0
+# breathe 5 renders template partial specialisations as duplicate C++
+# declarations, so stay on the 4.x series for now.
+breathe==4.36.0
+exhale==0.3.7
+furo==2025.12.19
+sphinx-autoapi==3.8.1
+sphinx-copybutton==0.5.2
