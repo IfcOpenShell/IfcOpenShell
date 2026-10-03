@@ -174,6 +174,15 @@ class TestAddConversionBasedUnit:
         assert subject.add_conversion_based_unit(ifc, unit, name="name") == "unit"
 
 
+class TestAddDerivedUnit:
+    def test_run(self, ifc, unit):
+        ifc.run(
+            "unit.add_derived_unit", unit_type="unit_type", userdefinedtype=None, attributes="elements"
+        ).should_be_called().will_return("unit")
+        unit.import_units().should_be_called()
+        assert subject.add_derived_unit(ifc, unit, unit_type="unit_type", elements="elements") == "unit"
+
+
 class TestEnableEditingUnit:
     def test_run(self, unit):
         unit.set_active_unit("unit").should_be_called()

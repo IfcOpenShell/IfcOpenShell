@@ -85,7 +85,16 @@ class BIM_PT_units(Panel):
             op = row.operator("bim.add_conversion_based_unit", text="", icon="ADD")
             op.name = self.props.conversion_unit_types
         elif self.props.unit_classes == "IfcDerivedUnit":
-            pass  # TODO
+            prop_with_search(row, self.props, "derived_unit_types", text="")
+            row.operator("bim.add_derived_unit", text="", icon="ADD")
+            box = self.layout.box()
+            for i, element in enumerate(self.props.derived_unit_elements):
+                row = box.row(align=True)
+                prop_with_search(row, element, "unit", text="")
+                row.prop(element, "exponent", text="")
+                row.operator("bim.remove_derived_unit_element", text="", icon="X").index = i
+            row = box.row()
+            row.operator("bim.add_derived_unit_element", text="Add Element", icon="ADD")
         elif self.props.unit_classes == "IfcSIUnit":
             prop_with_search(row, self.props, "named_unit_types", text="")
             op = row.operator("bim.add_si_unit", text="", icon="ADD")
