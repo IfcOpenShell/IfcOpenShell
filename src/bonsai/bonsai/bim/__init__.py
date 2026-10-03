@@ -47,6 +47,7 @@ modules = {
     "georeference": None,
     "context": None,
     "drawing": None,
+    "status_render": None,
     "misc": None,
     "attribute": None,
     "type": None,
@@ -91,7 +92,6 @@ modules = {
     "light": None,
     "alignment": None,
     "clip_box": None,
-    "status_render": None,
     # Uncomment this line to enable loading of the demo module. Happy hacking!
     # The name "demo" must correlate to a folder name in `bim/module/`.
     # "demo": None,
