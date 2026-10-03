@@ -2879,7 +2879,8 @@ class Drawing(bonsai.core.tool.Drawing):
     @classmethod
     def get_sheet_references(cls, drawing: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         sheet_references: list[ifcopenshell.entity_instance] = []
-        drawing_reference = cls.get_drawing_document(drawing)
+        if not (drawing_reference := cls.get_drawing_document(drawing)):
+            return sheet_references
         for sheet in tool.Ifc.get().by_type("IfcDocumentInformation"):
             if not sheet.Scope == "SHEET":
                 continue
