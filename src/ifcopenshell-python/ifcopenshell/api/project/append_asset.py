@@ -520,10 +520,12 @@ class Usecase:
         # Still need to recreate it again - e.g. it could be some rel
         # that now needs it's RelatingObjects to be extended by the current asset.
         existing_rel = None
+        reused_element = None
         if (new := self.reuse_identities.get(element_identity)) is not None:
-            # Currently known cases requiring attributes reassignment are rels.
-            if not new.is_a("IfcRelationship"):
+            # Rels and layer assignments need their sets extended by the current asset.
+            if not new.is_a("IfcRelationship") and skip_not_reused_entities_attr_i is None:
                 return
+            reused_element = new
         elif element.is_a("IfcRelationship") and (existing_rel := self.by_guid(element.GlobalId)):
             new = existing_rel
         else:
@@ -550,8 +552,7 @@ class Usecase:
                     if self.is_another_asset(item):
                         continue
                     if skip_not_reused_entities_attr_i is not None and i == skip_not_reused_entities_attr_i:
-                        identity = item.identity()
-                        if (item := self.reuse_identities.get(identity)) is None:
+                        if (item := self.get_appended_element(item)) is None:
                             continue
                     else:
                         item = self.add_element(item)
@@ -561,10 +562,22 @@ class Usecase:
                 if existing_rel:
                     new_attribute.extend(existing_rel[i])
                     new_attribute = list(set(new_attribute))
+                elif reused_element is not None and i == skip_not_reused_entities_attr_i:
+                    existing_items = list(reused_element[i] or ())
+                    new_attribute = existing_items + [e for e in new_attribute if e not in existing_items]
             else:
                 new_attribute = attribute
             if new_attribute is not None:
                 new[i] = new_attribute
+
+    def get_appended_element(self, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+        """Get the current file's counterpart of a library element, if it was appended."""
+        new = self.reuse_identities.get(element.identity())
+        if new is None:
+            # With assume_asset_uniqueness_by_name=False, file_add defers to file.add
+            # and fills only added_elements, not reuse_identities.
+            new = self.added_elements.get(element.id())
+        return new
 
     def is_another_asset(self, element: ifcopenshell.entity_instance) -> bool:
         """Is IFC entity from inverse attribute is another asset to append that should be skipped."""

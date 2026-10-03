@@ -37,6 +37,7 @@ import ifcopenshell.api.unit
 import ifcopenshell.util.classification
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
+import ifcopenshell.validate
 import test.bootstrap
 from ifcopenshell.util.shape_builder import ShapeBuilder
 
@@ -610,6 +611,56 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         ifcopenshell.api.project.append_asset(self.file, library=library, element=element)
         representations = tuple(self.file.by_type("IfcRepresentation"))
         assert self.file.by_type("IfcPresentationLayerAssignment")[0].AssignedItems == representations
+
+    def test_append_presentation_layer_accumulating_items_across_assets(self):
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject")
+        builder = ShapeBuilder(library)
+        model = ifcopenshell.api.context.add_context(library, context_type="Model")
+        layer = ifcopenshell.api.layer.add_layer(library, name="TestLayer")
+        elements = []
+        for _ in range(2):
+            element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
+            item = builder.extrude(builder.profile(builder.rectangle((1, 1))))
+            representation = builder.get_representation(model, item)
+            ifcopenshell.api.geometry.assign_representation(library, element, representation)
+            ifcopenshell.api.layer.assign_layer(library, items=[representation], layer=layer)
+            elements.append(element)
+
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        reuse_identities = {}
+        for element in elements:
+            ifcopenshell.api.project.append_asset(
+                self.file, library=library, element=element, reuse_identities=reuse_identities
+            )
+        layers = self.file.by_type("IfcPresentationLayerAssignment")
+        assert len(layers) == 1
+        representations = self.file.by_type("IfcShapeRepresentation")
+        assert len(representations) == 2
+        assert set(layers[0].AssignedItems) == set(representations)
+
+    def test_append_presentation_layer_when_asset_uniqueness_is_not_assumed(self):
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject")
+        builder = ShapeBuilder(library)
+        model = ifcopenshell.api.context.add_context(library, context_type="Model")
+        layer = ifcopenshell.api.layer.add_layer(library, name="TestLayer")
+        element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
+        item = builder.extrude(builder.profile(builder.rectangle((1, 1))))
+        representation = builder.get_representation(model, item)
+        ifcopenshell.api.geometry.assign_representation(library, element, representation)
+        ifcopenshell.api.layer.assign_layer(library, items=[representation], layer=layer)
+
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.project.append_asset(
+            self.file, library=library, element=element, assume_asset_uniqueness_by_name=False
+        )
+        layer = self.file.by_type("IfcPresentationLayerAssignment")[0]
+        assert set(layer.AssignedItems) == set(self.file.by_type("IfcShapeRepresentation"))
+        assert len(layer.AssignedItems) == 1
+        logger = ifcopenshell.validate.json_logger()
+        ifcopenshell.validate.validate(self.file, logger)
+        assert not [s for s in logger.statements if "AssignedItems" in str(s)]
 
     def test_append_owner_history_without_producing_duplicates(self):
         ifc_file = ifcopenshell.file()
