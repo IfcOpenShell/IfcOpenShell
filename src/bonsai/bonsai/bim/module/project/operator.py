@@ -2214,13 +2214,13 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
                 self.report({"ERROR"}, "No filepath available for saving.")
                 return {"CANCELLED"}
 
+        # Links loaded and visible right now auto-load on the next open.
+        tool.Project.update_linked_models_state()
         committed, failed_commits = tool.Parametric.commit_pending_edits()
         # Previews are session-transient — discard rather than commit. Sibling
         # gizmo polls gate on each preview's is_active flag, and a stuck flag
         # persisted through the save would silently hide them on reload.
         preview_base.discard_pending_previews(context.scene)
-        # Links loaded and visible right now auto-load on the next open.
-        tool.Project.update_linked_models_state()
         # Suffix is appended to the IFC save-success report below so the auto-commit
         # info isn't immediately overwritten by the success message in Blender's
         # status bar (only the latest self.report({"INFO"}, ...) sticks).
