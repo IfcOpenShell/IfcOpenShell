@@ -23,6 +23,7 @@ import pytest
 import ifcopenshell.api.alignment
 import ifcopenshell.api.unit
 import ifcopenshell.util
+import ifcopenshell.util.element
 import ifcopenshell.util.unit
 
 try:
@@ -139,8 +140,16 @@ def test_create_as_offset_curve():
         ),
     ]
 
-    offset_alignment = ifcopenshell.api.alignment.create_as_offset_curve(file, "A2", offsets)
+    offset_alignment = ifcopenshell.api.alignment.create_as_offset_curve(file, "A2", offsets, start_station=1000.0)
     assert offset_alignment.is_a("IfcAlignment")
     curve = ifcopenshell.api.alignment.get_curve(offset_alignment)
     assert curve.is_a("IfcOffsetCurveByDistances")
     assert curve.BasisCurve == basis_curve
+
+    # start_station must be honored with a stationing referent, same as every other create path
+    referent_nest = ifcopenshell.api.alignment.get_stationing_nest(file, offset_alignment)
+    assert referent_nest is not None
+    referent = referent_nest.RelatedObjects[0]
+    assert referent.is_a("IfcReferent")
+    assert referent.PredefinedType == "STATION"
+    assert ifcopenshell.util.element.get_pset(referent, name="Pset_Stationing", prop="Station") == 1000.0
