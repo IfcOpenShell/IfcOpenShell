@@ -249,6 +249,28 @@ def is_filling_supported(element) -> bool:
     return element is not None and element.is_a() in ("IfcDoor", "IfcWindow")
 
 
+FILLING_HOST_CLASSES = ("IfcWall", "IfcWallStandardCase", "IfcCovering", "IfcElementAssembly")
+
+
+def get_filling_host(element: Union[ifcopenshell.entity_instance, None]) -> Union[ifcopenshell.entity_instance, None]:
+    """The host a filling belongs in, walking up the aggregation from whatever part was picked."""
+    seen = set()
+    while element is not None and element.id() not in seen:
+        if element.is_a() in FILLING_HOST_CLASSES:
+            return element
+        seen.add(element.id())
+        element = ifcopenshell.util.element.get_aggregate(element)
+    return None
+
+
+def closest_point_on_host(obj: bpy.types.Object, target: Vector, distance: float) -> tuple[bool, Vector, Vector, int]:
+    """``Object.closest_point_on_mesh`` that reports a miss instead of raising on a mesh without faces."""
+    try:
+        return obj.closest_point_on_mesh(obj.matrix_world.inverted() @ target, distance=distance)
+    except RuntimeError:
+        return (False, Vector(), Vector(), -1)
+
+
 class FilledOpeningGenerator:
     def generate(
         self,
@@ -286,10 +308,10 @@ class FilledOpeningGenerator:
 
         # Sometimes, the voided_obj may be an aggregate, which won't have any representation.
         if not preserve_placement and voided_obj.data:
-            raycast = voided_obj.closest_point_on_mesh(voided_obj.matrix_world.inverted() @ target, distance=0.01)
+            raycast = closest_point_on_host(voided_obj, target, 0.01)
             if not raycast[0]:
                 target = filling_obj.matrix_world.translation.copy()
-                raycast = voided_obj.closest_point_on_mesh(voided_obj.matrix_world.inverted() @ target, distance=0.5)
+                raycast = closest_point_on_host(voided_obj, target, 0.5)
                 if not raycast[0]:
                     return "TARGET is too far away from the voided object's mesh."
 
@@ -347,7 +369,7 @@ class FilledOpeningGenerator:
         ifcopenshell.api.geometry.edit_object_placement(
             tool.Ifc.get(),
             product=opening,
-            matrix=np.array(filling_obj.matrix_world),
+            matrix=tool.Surveyor.get_absolute_matrix(filling_obj),
             is_si=True,
         )
 
@@ -651,7 +673,7 @@ class RecalculateFill(bpy.types.Operator, tool.Ifc.Operator):
             for opening in openings:
                 bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
                 ifcopenshell.api.geometry.edit_object_placement(
-                    tool.Ifc.get(), product=opening, matrix=obj.matrix_world
+                    tool.Ifc.get(), product=opening, matrix=tool.Surveyor.get_absolute_matrix(obj)
                 )
 
             decomposed_building_elements = set()
@@ -723,7 +745,9 @@ class FlipFill(bpy.types.Operator, tool.Ifc.Operator):
                 bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
             tool.Geometry.flip_object(obj, "XY")
-            ifcopenshell.api.geometry.edit_object_placement(tool.Ifc.get(), filled_opening, obj.matrix_world)
+            ifcopenshell.api.geometry.edit_object_placement(
+                tool.Ifc.get(), filled_opening, tool.Surveyor.get_absolute_matrix(obj)
+            )
             tool.Geometry.reload_representation(filled_object)
 
         return {"FINISHED"}
