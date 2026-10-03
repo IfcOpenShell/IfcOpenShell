@@ -68,7 +68,7 @@ def add_qto(file: ifcopenshell.file, product: ifcopenshell.entity_instance, name
         # Note that this only creates and assigns an empty quantity set. We
         # still need to add quantities into the property set. Having blank
         # quantity sets are invalid.
-        qto = ifcopenshell.api.pset.add_qto(model, product=wall_type, name="Qto_WallBaseQuantities")
+        qto = ifcopenshell.api.pset.add_qto(model, product=wall, name="Qto_WallBaseQuantities")
 
         # Add a side area property standardised by buildingSMART. This
         # allows quantity take-off to occur, even though no geometry has

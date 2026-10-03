@@ -71,7 +71,7 @@ def add_cost_value(file: ifcopenshell.file, parent: ifcopenshell.entity_instance
         quantity = ifcopenshell.api.cost.add_cost_item_quantity(model,
             cost_item=item2, ifc_class="IfcQuantityVolume")
         ifcopenshell.api.cost.edit_cost_item_quantity(model,
-            physical_quantity=quantity, "attributes": {"VolumeValue": 3.0})
+            physical_quantity=quantity, attributes={"VolumeValue": 3.0})
 
         # A cost value may also be specified in terms of the sum of its
         # subcomponents. In this case, it's broken down into 2 subvalues.

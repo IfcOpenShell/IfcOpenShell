@@ -38,14 +38,15 @@ def unshare_pset(
 
     .. code:: python
 
-        element1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
-        element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
-        ifcopenshell.api.pset.assign_pset(self.file, [element1, element2], pset)
+        element1 = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(model, product=element1, name="Foo_Bar")
+        ifcopenshell.api.pset.assign_pset(model, [element1, element2], pset)
 
         # Pset is now shared by 2 elements.
         assert ifcopenshell.util.element.get_elements_by_pset(pset) == {element1, element2}
 
-        new_psets = ifcopenshell.api.pset.unshare_pset(self.file, [element2], pset)
+        new_psets = ifcopenshell.api.pset.unshare_pset(model, [element2], pset)
 
         # element2 was unassigned from the original pset.
         assert ifcopenshell.util.element.get_elements_by_pset(pset) == {element1}
