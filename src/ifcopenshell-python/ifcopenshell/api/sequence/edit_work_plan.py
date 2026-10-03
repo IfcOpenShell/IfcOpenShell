@@ -45,7 +45,7 @@ def edit_work_plan(
             work_plan=work_plan, attributes={"Description": "Construction of phase 1"})
     """
     for name, value in attributes.items():
-        if value:
+        if value is not None:
             if "Date" in name or "Time" in name:
                 value = ifcopenshell.util.date.datetime2ifc(value, "IfcDateTime")
             elif name == "Duration" or name == "TotalFloat":
