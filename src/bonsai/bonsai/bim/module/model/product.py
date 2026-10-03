@@ -19,12 +19,16 @@
 # pyright: reportUnnecessaryTypeIgnoreComment=error
 
 import json
+import math
 from typing import TYPE_CHECKING, Any, Literal, get_args
+
+import numpy as np
 
 import bmesh
 import bpy
 import ifcopenshell
 import ifcopenshell.api.geometry
+import ifcopenshell.api.pset
 import ifcopenshell.api.system
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
@@ -46,6 +50,7 @@ import bonsai.tool as tool
 from bonsai.bim.helper import get_enum_items
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.model.data import AuthoringData
+from bonsai.bim.module.model.door import update_door_modifier_representation
 from bonsai.bim.module.model.decorator import PolylineDecorator, ProductDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
 
@@ -670,6 +675,552 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             newmat.translation = Vector(newmat.translation) - (newmat.to_quaternion() @ centroid)
 
             obj.matrix_world = newmat
+
+class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.mirror_geometry"
+    bl_label = "Mirror Element Geometry"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = (
+        "Mirrors the selected objects by inverting their representation. "
+        "If an active object is set, mirrors about its YZ plane; otherwise mirrors in place along the X axis. "
+        "Shift: duplicate and mirror, leaving the original in place"
+    )
+    keep_original: bpy.props.BoolProperty(name="Keep Original", default=False)
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
+    def _execute(self, context):
+        active_obj = context.active_object
+        mirror_ref = None
+        if active_obj:
+            objs_to_mirror = [obj for obj in context.selected_objects if obj != active_obj]
+            if objs_to_mirror:
+                mirror_ref = active_obj
+        if mirror_ref is None:
+            objs_to_mirror = list(context.selected_objects)
+
+        if self.keep_original:
+            if mirror_ref:
+                mirror_ref.select_set(False)
+            bpy.ops.bim.override_object_duplicate_move(is_interactive=False)
+            objs_to_mirror = [obj for obj in context.selected_objects if obj != mirror_ref]
+            if mirror_ref:
+                mirror_ref.select_set(True)
+
+        for obj in objs_to_mirror:
+            self.mirror_obj(context, obj, mirror_ref)
+        return {"FINISHED"}
+
+    def mirror_obj(self, context: bpy.types.Context, obj: bpy.types.Object, mirror_ref: bpy.types.Object = None):
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return
+        type_element = ifcopenshell.util.element.get_type(element)
+
+        active_context = tool.Geometry.get_active_representation_context(obj)
+
+        bb_data = tool.Blender.get_object_bounding_box(obj)
+
+        # Compute the geometry inversion axis from the mirror reference's local X (= mirror plane normal).
+        # Without a reference, always fall back to inverting along the object's local X.
+        mirror_normal_local = None
+        if mirror_ref:
+            mirror_normal_world = mirror_ref.matrix_world.to_3x3().col[0].normalized()
+            mirror_normal_local = obj.matrix_world.to_3x3().inverted() @ mirror_normal_world
+            mirror_axes = (
+                1.0 if abs(mirror_normal_local.x) > 0.5 else 0.0,
+                1.0 if abs(mirror_normal_local.y) > 0.5 else 0.0,
+                1.0 if abs(mirror_normal_local.z) > 0.5 else 0.0,
+            )
+            # True 2D Householder for the mirror normal's XY component.
+            # builder.mirror(axes=(1,1)) applies diag(-1,-1) — a 180° rotation — instead of
+            # the correct Householder [[0,-1],[-1,0]] for a diagonal normal. Computing the
+            # Householder directly fixes geometry and the P_local used in new_R.
+            n_xy = np.array([mirror_normal_local.x, mirror_normal_local.y], dtype=float)
+            n_xy_len = float(np.linalg.norm(n_xy))
+            if n_xy_len > 1e-6:
+                n_xy /= n_xy_len
+                _h = np.eye(2, dtype=float) - 2.0 * np.outer(n_xy, n_xy)
+                mirror_H_local_2d = _h
+                mirror_P_local = Matrix(
+                    [[_h[0, 0], _h[0, 1], 0.0], [_h[1, 0], _h[1, 1], 0.0], [0.0, 0.0, 1.0]]
+                )
+            else:
+                sx = -1.0 if mirror_axes[0] > 0.5 else 1.0
+                sy = -1.0 if mirror_axes[1] > 0.5 else 1.0
+                # Pure Z-local mirror: H_2d=identity (det=+1) makes the object-matrix
+                # det negative, so the RH correction fires and flips local Y.
+                # Pre-compensate by including a Y-flip so H_2d stays a proper reflection
+                # (det=-1) and the RH correction never fires.
+                if mirror_axes[2] > 0.5 and not (mirror_axes[0] > 0.5 or mirror_axes[1] > 0.5):
+                    sy = -1.0
+                mirror_H_local_2d = np.array([[sx, 0.0], [0.0, sy]])
+                mirror_P_local = Matrix([[sx, 0, 0], [0, sy, 0], [0, 0, 1]])
+        else:
+            mirror_axes = (1, 0, 0)
+            mirror_H_local_2d = np.array([[-1.0, 0.0], [0.0, 1.0]])
+            mirror_P_local = Matrix([[-1, 0, 0], [0, 1, 0], [0, 0, 1]])
+
+        # Snapshot opening world placements AND slab placement BEFORE any geometry or origin changes.
+        # We work in the slab's LOCAL coordinate space so the mirrored relative offset is correct
+        # regardless of when (or whether) the slab's own IFC ObjectPlacement gets synced by the depsgraph.
+        opening_placements_before: dict[int, np.ndarray] = {}
+        M_slab_before: np.ndarray | None = None
+        if hasattr(element, "HasOpenings") and element.HasOpenings:
+            M_slab_before = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement).copy()
+            for rel in element.HasOpenings:
+                opening = rel.RelatedOpeningElement
+                M = ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement)
+                opening_placements_before[opening.id()] = M.copy()
+
+        usage_type = tool.Model.get_usage_type(element)
+        type_has_reps = bool(type_element and (type_element.RepresentationMaps or []))
+        # LAYER2 (walls) and LAYER3 (slabs) generate instance-specific bodies via DumbWallGenerator /
+        # DumbSlabGenerator rather than mapping the type's RepresentationMaps.  assign_inverted_type
+        # only flips the *type* geometry and would leave the instance body unchanged, so both layer
+        # usage types must go through invert_representation instead.
+        is_assign_type_path = bool(type_element and element.id() != type_element.id() and usage_type not in ("LAYER2", "LAYER3") and type_has_reps)
+        if is_assign_type_path:
+            self.assign_inverted_type(element, mirror_axes)
+        else:
+            # invert representation of entity directly;
+            # LAYER2/LAYER3 (walls/slabs) and elements whose type carries no geometry use this path
+            # Update opening placements BEFORE invert_representation so its internal reload
+            # sees the correct positions.  No element rotation change on this path → frame_change = I.
+            if opening_placements_before and M_slab_before is not None:
+                self._apply_opening_mirror(element, mirror_axes, M_slab_before, opening_placements_before, np.eye(3))
+            self.invert_representation(element, mirror_axes, mirror_normal_local, mirror_H_local_2d)
+            # For LAYER2 walls, layers stack along local Y (LayerSetDirection=AXIS2).  A Y-axis flip
+            # reverses that direction, so DirectionSense and OffsetFromReferenceLine must both invert.
+            # (X/Z flips don't touch local Y, and the assign_inverted_type path handles Y-mirror via
+            # a 180°Z element rotation which implicitly flips local Y without changing the IFC attribute.)
+            if usage_type == "LAYER2" and mirror_axes[1] > 0.5:
+                mat_usage = ifcopenshell.util.element.get_material(element, should_inherit=False)
+                if mat_usage and mat_usage.is_a("IfcMaterialLayerSetUsage"):
+                    mat_usage.DirectionSense = "NEGATIVE" if mat_usage.DirectionSense == "POSITIVE" else "POSITIVE"
+                    mat_usage.OffsetFromReferenceLine = -mat_usage.OffsetFromReferenceLine
+
+        context.view_layer.update()
+
+        if mirror_ref:
+            if is_assign_type_path:
+                # assign_inverted_type already applied any needed rotation change; only reflect translation.
+                origin_in_mirror = mirror_ref.matrix_world.inverted() @ obj.matrix_world.translation
+                origin_in_mirror.x *= -1
+                obj.matrix_world.translation = mirror_ref.matrix_world @ origin_in_mirror
+            else:
+                # invert_representation path: reflect translation AND rotation.
+                # P_world  = Householder from mirror plane normal (mirror_ref local X).
+                # P_local  = Householder of the mirror normal in the element's local XY plane.
+                #            invert_general_object applies the same Householder to the geometry.
+                # new_R = P_world @ R_obj @ P_local
+                #   det(P_world)*det(P_local) = (-1)*(-1) = +1 → valid rotation, no RH fix needed.
+                n_world = mirror_ref.matrix_world.to_3x3().col[0].normalized()
+                P_world = Matrix.Scale(-1, 4, n_world).to_3x3()
+                R_obj = obj.matrix_world.to_3x3()
+                new_R = P_world @ R_obj @ mirror_P_local
+                # Safety: if P_local is not a proper Householder (e.g. Z-only mirror fallback),
+                # det may be -1; enforce right-handedness by recomputing col[1].
+                if new_R.determinant() < 0:
+                    new_R.col[1] = new_R.col[2].cross(new_R.col[0])
+                t_mr = mirror_ref.matrix_world.translation
+                t_obj = obj.matrix_world.translation.copy()
+                new_t = t_mr + P_world @ (t_obj - t_mr)
+                new_mat = new_R.to_4x4()
+                new_mat.translation = new_t
+                obj.matrix_world = new_mat
+                # For non-layer elements (e.g. PROFILE beams) the IFC ObjectPlacement is the
+                # element's origin and must be kept in sync with obj.matrix_world.  Without this
+                # call, clicking the element after the mirror triggers a Bonsai depsgraph sync
+                # that reads the stale IFC placement and teleports the element back.
+                # LAYER2/LAYER3 walls/slabs are excluded: their geometry is expressed in local
+                # space and their placement is managed separately by the layer generators.
+                if usage_type not in ("LAYER2", "LAYER3"):
+                    bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj, apply_scale=False)
+        else:
+            # Fall back: nudge in place to compensate for bounding box shift after inversion
+            mirrored_bb_data = tool.Blender.get_object_bounding_box(obj)
+            x_correction_factor = mirrored_bb_data["min_x"] - bb_data["min_x"]
+            x_correction_vec = (obj.matrix_world @ Vector((x_correction_factor, 0, 0, 0))).xyz
+            obj.location -= x_correction_vec
+
+        if element.is_a("IfcElement") and element.FillsVoids:
+            tool.Model.update_simple_openings(element)
+
+        # For the assign_inverted_type path, mirror opening placements here (after origin reflection
+        # so obj.matrix_world already has the final rotation, needed to compute frame_change).
+        # The LAYER3 / invert_representation path already did this before invert_representation.
+        if is_assign_type_path and opening_placements_before and M_slab_before is not None:
+            R_elem_old = M_slab_before[:3, :3]
+            _, R_quat, _ = obj.matrix_world.decompose()
+            R_elem_new = np.array(R_quat.to_matrix())
+            frame_change = np.linalg.inv(R_elem_new) @ R_elem_old
+            # Sync element IFC placement to the post-reflection Blender position NOW, before
+            # computing opening positions.  The geometry engine uses the element's IFC placement
+            # to convert opening world-space positions to element-local positions when applying
+            # boolean voids.  If the placement is stale the void lands at the wrong offset.
+            # Calling edit_object_placement here also makes the depsgraph handler skip a
+            # redundant second call (record_object_position marks it up-to-date).
+            bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj, apply_scale=False)
+            M_slab_new = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+            self._apply_opening_mirror(element, mirror_axes, M_slab_before, opening_placements_before, frame_change, M_slab_new)
+            for rel in element.HasOpenings:
+                opening = rel.RelatedOpeningElement
+                tool.Geometry.clear_cache(opening)
+                opening_obj = tool.Ifc.get_object(opening)
+                if opening_obj:
+                    tool.Geometry.reload_representation(opening_obj)
+
+        # bonsai does not automatically switch to the representation that should be active in the given context
+        # when switching to a type that was previously viewed in another context (e.g. plan view),
+        # the wrong representation will be used.
+        bonsai.core.geometry.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=ifcopenshell.util.representation.get_representation(element, active_context),
+        )
+
+        # For LAYER2/LAYER3 elements, _apply_opening_mirror computes opening positions
+        # relative to the wall's pre-move IFC origin.  When the wall's Blender matrix is
+        # subsequently updated (wall moves to its mirrored world position), that origin
+        # becomes stale and the opening's IFC placement ends up in the wrong location.
+        # Fix: rebuild each filled opening from the filling's current (already-mirrored)
+        # world position, which produces the correct placement and void geometry.
+        if usage_type in ("LAYER2", "LAYER3") and element.HasOpenings:
+            from bonsai.bim.module.model.opening import FilledOpeningGenerator
+            for rel in element.HasOpenings:
+                opening = rel.RelatedOpeningElement
+                for fill_rel in opening.HasFillings:
+                    filling = fill_rel.RelatedBuildingElement
+                    fill_obj = tool.Ifc.get_object(filling)
+                    if fill_obj:
+                        FilledOpeningGenerator().generate(
+                            fill_obj,
+                            obj,
+                            target=fill_obj.matrix_world.translation,
+                            preserve_placement=True,
+                        )
+
+    def _apply_opening_mirror(self, element, mirror_axes, M_slab_before, opening_placements_before, frame_change, M_slab_new=None):
+        """Mirror IfcOpeningElement placements and geometry in element-local space.
+
+        frame_change = inv(R_elem_new) @ R_elem_old accounts for any element rotation change
+        (e.g. 180° Z for Y-mirror via assign_inverted_type). Pass np.eye(3) when the element
+        rotation does not change (LAYER3 / invert_representation path).
+
+        M_slab_new: element IFC world matrix after the mirror.  If None, M_slab_before is used
+        (correct for the LAYER3 path where the element placement stays the same).
+        """
+        M_slab_anchor = M_slab_new if M_slab_new is not None else M_slab_before
+        N_local = np.zeros(3)
+        for i, flip in enumerate(mirror_axes[:3]):
+            if flip > 0.0:
+                N_local[i] = 1.0
+        norm = np.linalg.norm(N_local)
+        if norm > 0:
+            N_local /= norm
+
+        for rel in element.HasOpenings:
+            opening = rel.RelatedOpeningElement
+            if opening.id() not in opening_placements_before:
+                continue
+            M_abs_old = opening_placements_before[opening.id()]
+            M_rel = np.linalg.inv(M_slab_before) @ M_abs_old
+            M_rel_new = M_rel.copy()
+
+            t = M_rel[:3, 3].copy()
+            t_refl = t - 2 * np.dot(t, N_local) * N_local
+            M_rel_new[:3, 3] = frame_change @ t_refl
+
+            # Mirror rotation by conjugation: H@R@H keeps det=+1 and gives the correct mirrored
+            # rotation.  Direct Householder on columns yields det=-1; IFC's Y=Z×X normalization
+            # then introduces a spurious 180°Z error.  Conjugation avoids this.
+            H = np.eye(3) - 2 * np.outer(N_local, N_local)
+            R_mirrored = H @ M_rel[:3, :3] @ H
+            M_rel_new[:3, :3] = frame_change @ R_mirrored
+
+            M_abs_new = M_slab_anchor @ M_rel_new
+            ifcopenshell.api.geometry.edit_object_placement(
+                tool.Ifc.get(), product=opening, matrix=M_abs_new, is_si=False
+            )
+
+            if not opening.Representation:
+                continue
+            builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+            mirror_axes_2d = mirror_axes[:2]
+            for rep in opening.Representation.Representations:
+                for item in rep.Items:
+                    if item.is_a("IfcExtrudedAreaSolid"):
+                        # H (wall-local Householder) is already computed above for the placement
+                        # mirror.  Applying it as T_geom to opening-local coords is correct because:
+                        #   M_rel_new @ T_geom = H @ M_rel  (the true geometric mirror)
+                        # with M_rel_new = H@R@H (conjugation) → T_geom = H (wall-local numerics
+                        # applied to opening-local coords).  Conjugating into Position-local gives:
+                        #   H_pos = placement_mat.T @ H @ placement_mat
+                        placement_mat = ifcopenshell.util.placement.get_axis2placement(item.Position)[:3, :3]
+                        H_pos = placement_mat.T @ H @ placement_mat
+
+                        # Mirror Position.Location (opening-local 3D point) by H
+                        pos_coords = item.Position.Location.Coordinates
+                        pos3 = np.array([pos_coords[0], pos_coords[1], pos_coords[2] if len(pos_coords) > 2 else 0.0])
+                        pos3_new = H @ pos3
+                        if len(pos_coords) > 2:
+                            item.Position.Location.Coordinates = tuple(float(v) for v in pos3_new)
+                        else:
+                            item.Position.Location.Coordinates = (float(pos3_new[0]), float(pos3_new[1]))
+
+                        # Mirror profile coords in Position-local via H_pos.
+                        # H_pos is a reflection (det=-1) so winding must be reversed.
+                        profile = item.SweptArea
+                        for curve in [getattr(profile, "OuterCurve", None)]:
+                            if curve is None:
+                                continue
+                            coords = builder.get_polyline_coords(curve)
+                            coords3 = np.hstack([coords, np.zeros((len(coords), 1))])
+                            coords_new = (H_pos @ coords3.T).T[:, :2][::-1]
+                            builder.set_polyline_coords(curve, coords_new)
+                        for inner in getattr(profile, "InnerCurves", None) or []:
+                            coords = builder.get_polyline_coords(inner)
+                            coords3 = np.hstack([coords, np.zeros((len(coords), 1))])
+                            coords_new = (H_pos @ coords3.T).T[:, :2][::-1]
+                            builder.set_polyline_coords(inner, coords_new)
+
+                        # Mirror ExtrudedDirection in Position-local via H_pos
+                        dir_local = np.array(item.ExtrudedDirection.DirectionRatios)
+                        dir_local_new = H_pos @ dir_local
+                        item.ExtrudedDirection.DirectionRatios = tuple(float(v) for v in dir_local_new)
+                    elif not item.is_a("IfcMappedItem"):
+                        # IfcMappedItem references shared type geometry that must not be
+                        # modified in-place; its opening placement is already handled above.
+                        builder.mirror(item, mirror_axes_2d, create_copy=False)
+
+    def invert_general_object(self, element, mirror_axes=(1, 0, 0), mirror_normal_local=None, H_local_2d=None):
+        # Derive the 2×2 Householder from the continuous local normal when available.
+        # builder.mirror(axes=(1,1)) applies diag(-1,-1) — a 180° rotation — instead of
+        # the correct Householder for a diagonal mirror normal; so we apply H_2d directly.
+        if H_local_2d is not None:
+            H_2d = H_local_2d
+        elif mirror_normal_local is not None:
+            n_xy = np.array([mirror_normal_local.x, mirror_normal_local.y], dtype=float)
+            n_len = float(np.linalg.norm(n_xy))
+            if n_len > 1e-6:
+                n_xy /= n_len
+                H_2d = np.eye(2, dtype=float) - 2.0 * np.outer(n_xy, n_xy)
+            else:
+                sx = -1.0 if mirror_axes[0] > 0.5 else 1.0
+                sy = -1.0 if mirror_axes[1] > 0.5 else 1.0
+                H_2d = np.array([[sx, 0.0], [0.0, sy]])
+        else:
+            sx = -1.0 if mirror_axes[0] > 0.5 else 1.0
+            sy = -1.0 if mirror_axes[1] > 0.5 else 1.0
+            H_2d = np.array([[sx, 0.0], [0.0, sy]])
+
+        z_flip = mirror_axes[2] > 0.5
+        mirror_axes_2d = mirror_axes[:2]
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+
+        def apply_H2d_to_indexed_poly_curve(ipc):
+            pts = ipc.Points
+            new_coords = []
+            for co in pts.CoordList:
+                xy = H_2d @ np.array(co[:2], dtype=float)
+                new_coords.append([float(xy[0]), float(xy[1])] + list(co[2:]))
+            pts.CoordList = new_coords
+
+        def mirror_item(item, rep_id="?"):
+            if item.is_a("IfcBooleanResult"):
+                mirror_item(item.FirstOperand, rep_id)
+                try:
+                    mirror_item(item.SecondOperand, rep_id)
+                except Exception:
+                    pass
+            elif item.is_a("IfcFacetedBrep") or item.is_a("IfcFacetedBrepWithVoids"):
+                shells = [item.Outer]
+                if item.is_a("IfcFacetedBrepWithVoids"):
+                    shells.extend(item.Voids)
+
+                # Apply H_2d to XY of each vertex; flip Z separately if needed
+                points_done = set()
+                for shell in shells:
+                    for face in shell.CfsFaces:
+                        for bound in face.Bounds:
+                            if not bound.Bound.is_a("IfcPolyLoop"):
+                                continue
+                            for pt in bound.Bound.Polygon:
+                                if pt.id() in points_done:
+                                    continue
+                                points_done.add(pt.id())
+                                coords = list(pt.Coordinates)
+                                if len(coords) >= 2:
+                                    xy = H_2d @ np.array(coords[:2], dtype=float)
+                                    coords[0] = float(xy[0])
+                                    coords[1] = float(xy[1])
+                                if z_flip and len(coords) >= 3:
+                                    coords[2] = -coords[2]
+                                pt.Coordinates = coords
+
+                # Reverse winding when the combined 3D det < 0 (odd number of reflections).
+                # H_2d is -1 for any proper Householder; +1 for the identity fallback (Z-only mirror).
+                h2d_det = int(round(float(np.linalg.det(H_2d))))
+                combined_det = h2d_det * (-1 if z_flip else 1)
+                if combined_det < 0:
+                    for shell in shells:
+                        for face in shell.CfsFaces:
+                            for bound in face.Bounds:
+                                if bound.Bound.is_a("IfcPolyLoop"):
+                                    bound.Bound.Polygon = list(reversed(bound.Bound.Polygon))
+            elif item.is_a("IfcMappedItem"):
+                for sub in item.MappingSource.MappedRepresentation.Items:
+                    mirror_item(sub, rep_id)
+            elif item.is_a("IfcExtrudedAreaSolid"):
+                sw = item.SweptArea
+                oc = getattr(sw, "OuterCurve", None) if sw else None
+                if oc and oc.is_a("IfcIndexedPolyCurve"):
+                    # Profile coords live in the Position frame, which may be rotated within
+                    # element-local XY.  Applying H_2d directly to profile coords is only correct
+                    # when RefDirection == element X.  The general form is a change-of-basis:
+                    #   T = A_2d^T @ H_2d @ A_2d
+                    # where A_2d = [RefDir_2d | Y_2d] (the Position frame in element-local 2D).
+                    # For axis-aligned RefDir (the common slab case) T == H_2d; for rotated RefDir
+                    # T accounts for the frame orientation without touching RefDirection itself.
+                    # RefDirection and Axis must NOT be updated — updating them double-flips the
+                    # geometry for axis-aligned RefDir slabs (the two flips cancel, giving no mirror).
+                    pos_H_2d = H_2d
+                    if item.Position is not None and item.Position.RefDirection is not None:
+                        ref_ratios = item.Position.RefDirection.DirectionRatios
+                        refdir_2d = np.array([ref_ratios[0], ref_ratios[1]], dtype=float)
+                        axis_dir = np.array(
+                            item.Position.Axis.DirectionRatios if item.Position.Axis else [0.0, 0.0, 1.0],
+                            dtype=float,
+                        )
+                        refdir_3d = np.array([refdir_2d[0], refdir_2d[1], 0.0])
+                        y_3d = np.cross(axis_dir, refdir_3d)
+                        y_2d = y_3d[:2]
+                        A_2d = np.column_stack([refdir_2d, y_2d])
+                        if abs(np.linalg.det(A_2d)) > 1e-6:
+                            pos_H_2d = A_2d.T @ H_2d @ A_2d
+                    def _apply_pos_H2d(ipc):
+                        pts = ipc.Points
+                        new_coords = []
+                        for co in pts.CoordList:
+                            xy = pos_H_2d @ np.array(co[:2], dtype=float)
+                            new_coords.append([float(xy[0]), float(xy[1])] + list(co[2:]))
+                        pts.CoordList = new_coords
+                    _apply_pos_H2d(oc)
+                    for inner in getattr(sw, "InnerCurves", None) or []:
+                        if inner.is_a("IfcIndexedPolyCurve"):
+                            _apply_pos_H2d(inner)
+                    # Mirror Position.Location only (RefDirection and Axis are intentionally
+                    # left unchanged — see comment above)
+                    if item.Position is not None:
+                        base = list(item.Position.Location.Coordinates)
+                        xy = H_2d @ np.array(base[:2], dtype=float)
+                        item.Position.Location.Coordinates = [float(xy[0]), float(xy[1])] + list(base[2:])
+                    # Mirror extrusion direction (XY only; Z unchanged)
+                    ext = list(item.ExtrudedDirection.DirectionRatios)
+                    xy_ext = H_2d @ np.array(ext[:2], dtype=float)
+                    item.ExtrudedDirection.DirectionRatios = [float(xy_ext[0]), float(xy_ext[1])] + list(ext[2:])
+                else:
+                    # Outer curve type not directly supported (e.g. IfcIShapeProfileDef has no
+                    # OuterCurve); builder.mirror raises AttributeError for these profiles.
+                    # Symmetric parametric profiles look the same after mirror, so silently skip.
+                    try:
+                        builder.mirror(item, mirror_axes_2d, create_copy=False)
+                    except Exception:
+                        pass
+            else:
+                if item.is_a("IfcIndexedPolyCurve"):
+                    apply_H2d_to_indexed_poly_curve(item)
+                else:
+                    try:
+                        builder.mirror(item, mirror_axes_2d, create_copy=False)
+                    except Exception:
+                        pass
+
+        if element.is_a("IfcProduct"):
+            if not element.Representation:
+                return
+            for representation in element.Representation.Representations:
+                for item in representation.Items:
+                    mirror_item(item, representation.RepresentationIdentifier)
+        elif element.is_a("IfcTypeProduct"):
+            for representation_map in (element.RepresentationMaps or []):
+                for item in representation_map.MappedRepresentation.Items:
+                    mirror_item(item)
+
+        tool.Geometry.reload_representation(tool.Ifc.get_object(element))
+
+    def invert_door_swing(self, element):
+        obj = tool.Ifc.get_object(element)
+
+        pset_data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Door", "Data"))
+
+        if "LEFT" in pset_data["door_type"]:
+            pset_data["door_type"] = pset_data["door_type"].replace("LEFT", "RIGHT")
+        elif "RIGHT" in pset_data["door_type"]:
+            pset_data["door_type"] = pset_data["door_type"].replace("RIGHT", "LEFT")
+
+        pset = tool.Pset.get_element_pset(element, "BBIM_Door")
+        pset_data_str = tool.Ifc.get().createIfcText(json.dumps(pset_data, default=list))
+        ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": pset_data_str})
+
+        pset_data.update(pset_data.pop("lining_properties"))
+        pset_data.update(pset_data.pop("panel_properties"))
+        pset_data.update(tool.Model.get_constituents_props_data(element))
+
+        # we need this workaround because set_props_kwargs_from_ifc_data will
+        # "update" the mesh of the active object, which will switch its representation
+        prev_active = bpy.context.view_layer.objects.active
+        bpy.context.view_layer.objects.active = obj
+
+        props = tool.Model.get_door_props(obj)
+        props.set_props_kwargs_from_ifc_data(pset_data)
+
+        bpy.context.view_layer.objects.active = prev_active
+
+        # regenerate door geometry
+        update_door_modifier_representation(obj)
+
+        tool.Model.mark_thumbnail_for_update(element)
+
+    def invert_representation(self, element, mirror_axes=(1, 0, 0), mirror_normal_local=None, H_local_2d=None):
+        if ifcopenshell.util.element.get_pset(element, "BBIM_Door", "Data"):
+            self.invert_door_swing(element)
+        else:
+            self.invert_general_object(element, mirror_axes, mirror_normal_local, H_local_2d)
+
+    def assign_inverted_type(self, element, mirror_axes=(1, 0, 0)):
+        type_element = ifcopenshell.util.element.get_type(element)
+
+        inverted_type = tool.Blender.Modifier.has_mirrored_type(type_element)
+        if not inverted_type:
+            old_to_new, _ = tool.Geometry.duplicate_ifc_objects([tool.Ifc.get_object(type_element)])
+            inverted_type = old_to_new[type_element][0]
+            self.invert_representation(inverted_type)  # always X-flip for the cached type
+            tool.Blender.Modifier.set_mirrored_type(inverted_type, type_element)
+            tool.Blender.Modifier.set_mirrored_type(type_element, inverted_type)
+            inverted_type.Name = f"{inverted_type.Name}.Mirror"
+
+        bonsai.core.type.assign_type(tool.Ifc, tool.Model, tool.Type, element, inverted_type)
+
+        # The cached type is always X-flipped. Apply rotation compensation for other axes:
+        # flip_Y = Rotate_Z_180 ∘ flip_X
+        # flip_Z = Rotate_Y_180 ∘ flip_X
+        if mirror_axes == (0.0, 1.0, 0.0):
+            obj = tool.Ifc.get_object(element)
+            loc = obj.matrix_world.translation.copy()
+            rot_180_z = Matrix.Rotation(math.pi, 4, "Z")
+            obj.matrix_world = rot_180_z @ obj.matrix_world
+            obj.matrix_world.translation = loc
+        elif mirror_axes == (0.0, 0.0, 1.0):
+            obj = tool.Ifc.get_object(element)
+            loc = obj.matrix_world.translation.copy()
+            rot_180_y = Matrix.Rotation(math.pi, 4, "Y")
+            obj.matrix_world = rot_180_y @ obj.matrix_world
+            obj.matrix_world.translation = loc
 
 
 def generate_box(usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
