@@ -47,14 +47,13 @@ class ExportOBJ(bpy.types.Operator):
         return True
 
     def _get_geom_settings(self):
-        """Create standard geometry and serializer settings for OBJ export."""
+        """Create standard geometry settings for OBJ export."""
         settings = ifcopenshell.geom.settings()
-        serializer_settings = ifcopenshell.geom.serializer_settings()
         settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.SURFACES_AND_SOLIDS)
         settings.set("apply-default-materials", True)
-        serializer_settings.set("use-element-guids", True)
+        settings.set("use-element-guids", True)
         settings.set("use-world-coords", True)
-        return settings, serializer_settings
+        return settings
 
     def _get_exportable_elements(self, ifc_file, filter_visibility=True):
         """Get the list of elements to export from an IFC file."""
@@ -87,10 +86,10 @@ class ExportOBJ(bpy.types.Operator):
                 print(f"Skipping hidden element: {element.GlobalId if hasattr(element, 'GlobalId') else element.id()}")
         return visible_elements
 
-    def _export_ifc_to_obj(self, ifc_file, obj_path, mtl_path, settings, serializer_settings, elements):
+    def _export_ifc_to_obj(self, ifc_file, obj_path, mtl_path, settings, elements):
         """Export elements from an IFC file to OBJ format. Returns collected material names."""
         materials_collected = []
-        serialiser = ifcopenshell.geom.serializers.obj(obj_path, mtl_path, settings, serializer_settings)
+        serialiser = ifcopenshell.geom.serializers.obj(obj_path, mtl_path, settings)
         serialiser.setFile(ifc_file)
         serialiser.setUnitNameAndMagnitude("METER", 1.0)
         serialiser.writeHeader()
@@ -327,7 +326,7 @@ class ExportOBJ(bpy.types.Operator):
         # Sync all moved Blender object positions to IFC before export.
         self._sync_moved_object_placements()
 
-        settings, serializer_settings = self._get_geom_settings()
+        settings = self._get_geom_settings()
 
         ifc_file = tool.Ifc.get()
 
@@ -337,14 +336,14 @@ class ExportOBJ(bpy.types.Operator):
 
         visible_elements = self._get_exportable_elements(ifc_file, filter_visibility=True)
         mats = self._export_ifc_to_obj(
-            ifc_file, obj_file_path, mtl_file_path, settings, serializer_settings, visible_elements
+            ifc_file, obj_file_path, mtl_file_path, settings, visible_elements
         )
         ifc_materials.extend(mats)
 
         self.report({"INFO"}, f"Exported main model OBJ to: {obj_file_path}")
 
         # --- Export linked models (external IFC files) ---
-        self._export_linked_models(ifc_file, output_dir, settings, serializer_settings)
+        self._export_linked_models(ifc_file, output_dir, settings)
 
         # --- Export collection instances (Blender-level linked copies) ---
         self._export_collection_instances_obj(context, output_dir)
@@ -358,7 +357,7 @@ class ExportOBJ(bpy.types.Operator):
             self.report({"INFO"}, f"Also exported {total_linked} linked/instanced model(s)")
         return {"FINISHED"}
 
-    def _export_linked_models(self, main_ifc_file, output_dir, settings, serializer_settings):
+    def _export_linked_models(self, main_ifc_file, output_dir, settings):
         """Detect and export all linked IFC models."""
         try:
             project_props = tool.Project.get_project_props()
@@ -408,7 +407,7 @@ class ExportOBJ(bpy.types.Operator):
                 continue
 
             mats = self._export_ifc_to_obj(
-                linked_ifc, link_obj_path, link_mtl_path, settings, serializer_settings, elements
+                linked_ifc, link_obj_path, link_mtl_path, settings, elements
             )
             ifc_materials.extend(mats)
 
