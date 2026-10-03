@@ -61,7 +61,7 @@ class DumbSlabGenerator:
         if not sum(thicknesses):
             return
 
-        self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+        self.body_context = tool.Model.get_body_context()
         self.footprint_context = ifcopenshell.util.representation.get_context(
             tool.Ifc.get(), "Plan", "FootPrint", "SKETCH_VIEW"
         )
@@ -252,7 +252,7 @@ class DumbSlabPlaner:
             return
         layer_params = tool.Model.get_material_layer_parameters(element)
         ifc_file = tool.Ifc.get()
-        body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+        body_context = tool.Model.get_body_context()
         obj = tool.Ifc.get_object(element)
         if not obj:
             return
