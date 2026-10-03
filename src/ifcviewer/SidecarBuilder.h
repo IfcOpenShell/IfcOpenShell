@@ -20,19 +20,14 @@
 #ifndef SIDECARBUILDER_H
 #define SIDECARBUILDER_H
 
-#include "Federation.h"
-#include "GeometryStreamer.h"
-#include "InstancedGeometry.h"
-#include "SidecarCache.h"
+#include "SidecarSerializer.h"
 
 #include <QObject>
 #include <QString>
 
-#include <vector>
-
-// Assembles a .ifcview SidecarData from streamer output, then finalizes it
-// (LOD build, georef, packed elements) ready for writeSidecar() and/or
-// ViewportWindow::applyLodExtension(). Two use modes:
+// Thin QObject wrapper around SidecarSerializer: the Qt bits a desktop app
+// needs (QObject, QString, QEventLoop) live here, the assembly itself does not.
+// Two use modes:
 //
 //   1. Live load — host (SceneLoader) drives its own GeometryStreamer and
 //      forwards meshReady/instanceReady chunks via onMeshReady/onInstanceReady
@@ -71,8 +66,8 @@ public:
     const QString& lastError() const { return last_error_; }
 
 private:
-    SidecarData sidecar_data_;
-    QString     last_error_;
+    SidecarSerializer serializer_;
+    QString            last_error_;
 };
 
 #endif // SIDECARBUILDER_H
