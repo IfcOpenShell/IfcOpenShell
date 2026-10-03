@@ -40,7 +40,8 @@ def copy_property_to_selection(
     element = ifc.get_entity(obj)
     if not element:
         return
-    ifc_pset = pset.get_element_pset(element, pset_name)
+    # Never edit a pset inherited from the type; create an override on the element.
+    ifc_pset = pset.get_element_pset(element, pset_name, should_inherit=False)
     if not ifc_pset:
         ifc_pset = ifc.run("pset.add_pset" if is_pset else "pset.add_qto", product=element, name=pset_name)
     if is_pset:
