@@ -558,6 +558,7 @@ class BIM_PT_product_assignments(Panel):
 
         assert self.layout
         assert (obj := context.active_object)
+        props = tool.Drawing.get_object_assigned_product_props(obj)
 
         element = tool.Ifc.get_entity(obj)
         if element and not element.is_a("IfcAnnotation"):
@@ -570,8 +571,6 @@ class BIM_PT_product_assignments(Panel):
             if len(annotations) > 10:
                 self.layout.label(text=f"...and {len(annotations) - 10} more")
             return
-
-        props = tool.Drawing.get_object_assigned_product_props(obj)
 
         if props.is_editing_product:
             row = self.layout.row(align=True)
