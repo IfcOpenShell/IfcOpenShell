@@ -241,12 +241,12 @@ class Usecase:
                 prop = self.update_existing_prop_enum(prop)
                 if prop:
                     existing_props.append(prop)
-            elif prop.is_a("IfcPropertySingleValue"):
-                prop = self.update_existing_prop_single_value(prop)
-                if prop:
-                    existing_props.append(prop)
             elif prop.is_a("IfcPropertyBoundedValue"):
                 prop = self.update_existing_prop_bounded_value(prop)
+                if prop:
+                    existing_props.append(prop)
+            elif prop.is_a("IfcPropertySingleValue"):
+                prop = self.update_existing_prop_single_value(prop)
                 if prop:
                     existing_props.append(prop)
             else:
@@ -313,31 +313,6 @@ class Usecase:
         del self.settings["properties"][prop.Name]
         return prop
 
-    def update_existing_prop_single_value(
-        self, prop: ifcopenshell.entity_instance
-    ) -> Union[ifcopenshell.entity_instance, None]:
-        """
-        NOTE: Assumes the prop exists
-        """
-        value = self.settings["properties"][prop.Name]
-        unit, value = self.unpack_unit_value(value)
-        if value is None:
-            if self._try_purge(prop):
-                return
-            prop.NominalValue = None
-        elif isinstance(value, ifcopenshell.entity_instance):
-            prop.NominalValue = value
-        else:
-            primary_measure_type = self.get_primary_measure_type(
-                prop.Name, old_value=prop.NominalValue, new_value=value
-            )
-            value = self.cast_value_to_primary_measure_type(value, primary_measure_type)
-            prop.NominalValue = self.file.create_entity(primary_measure_type, value)
-        if unit is not _NO_UNIT:
-            prop.Unit = unit
-        del self.settings["properties"][prop.Name]
-        return prop
-
     def update_existing_prop_bounded_value(
         self, prop: ifcopenshell.entity_instance
     ) -> Union[ifcopenshell.entity_instance, None]:
@@ -385,6 +360,31 @@ class Usecase:
                 f"Expected None or a dict with any of {BOUNDED_VALUE_KEYS} keys."
             )
 
+        del self.settings["properties"][prop.Name]
+        return prop
+
+    def update_existing_prop_single_value(
+        self, prop: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        """
+        NOTE: Assumes the prop exists
+        """
+        value = self.settings["properties"][prop.Name]
+        unit, value = self.unpack_unit_value(value)
+        if value is None:
+            if self._try_purge(prop):
+                return
+            prop.NominalValue = None
+        elif isinstance(value, ifcopenshell.entity_instance):
+            prop.NominalValue = value
+        else:
+            primary_measure_type = self.get_primary_measure_type(
+                prop.Name, old_value=prop.NominalValue, new_value=value
+            )
+            value = self.cast_value_to_primary_measure_type(value, primary_measure_type)
+            prop.NominalValue = self.file.create_entity(primary_measure_type, value)
+        if unit is not _NO_UNIT:
+            prop.Unit = unit
         del self.settings["properties"][prop.Name]
         return prop
 
