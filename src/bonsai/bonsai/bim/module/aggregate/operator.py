@@ -228,25 +228,38 @@ class BIM_OT_add_aggregate(bpy.types.Operator, tool.Ifc.Operator):
 
         aggregate = self.create_aggregate(context, ifc_class, self.aggregate_name)
 
-        if current_aggregate:
-            core.assign_object(
-                tool.Ifc,
-                tool.Aggregate,
-                tool.Collector,
-                relating_obj=tool.Ifc.get_object(current_aggregate),
-                related_obj=aggregate,
-            )
-        elif current_container:
-            bonsai.core.spatial.assign_container(
-                tool.Ifc,
-                tool.Collector,
-                tool.Spatial,
-                container=current_container,
-                objs=[aggregate],
-            )
+        # Report an aggregation the schema does not allow instead of raising (#7983).
+        try:
+            if current_aggregate:
+                core.assign_object(
+                    tool.Ifc,
+                    tool.Aggregate,
+                    tool.Collector,
+                    relating_obj=tool.Ifc.get_object(current_aggregate),
+                    related_obj=aggregate,
+                )
+            elif current_container:
+                bonsai.core.spatial.assign_container(
+                    tool.Ifc,
+                    tool.Collector,
+                    tool.Spatial,
+                    container=current_container,
+                    objs=[aggregate],
+                )
+        except core.IncompatibleAggregateError:
+            self.report({"ERROR"}, f"Cannot aggregate {objs[0][0].name} to {aggregate.name}")
+            return
+        except core.AggregateRepresentationError:
+            self.report({"ERROR"}, f"Cannot aggregate to {aggregate.name} with a body representation")
+            return
 
         for obj, _ in objs:
-            core.assign_object(tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=aggregate, related_obj=obj)
+            try:
+                core.assign_object(tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=aggregate, related_obj=obj)
+            except core.IncompatibleAggregateError:
+                self.report({"ERROR"}, f"Cannot aggregate {obj.name} to {aggregate.name}")
+            except core.AggregateRepresentationError:
+                self.report({"ERROR"}, f"Cannot aggregate to {aggregate.name} with a body representation")
 
     def get_promotion_target(self, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         """The aggregate to collect in place of element.
