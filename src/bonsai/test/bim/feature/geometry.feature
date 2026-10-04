@@ -614,6 +614,20 @@ Scenario: Duplicate linked aggregate
     And the object "Assembly_01" exists
     Then the object "IfcElementAssembly/Assembly" and "Assembly_01" belong to the same Linked Aggregate Group
 
+Scenario: Refresh linked aggregate
+    Given I load the IFC test file "/test/files/linked-aggregates.ifc"
+    And the object "IfcWall/Wall_01" is selected
+    When I duplicate linked aggregate the selected objects
+    Then the object "IfcWall/Wall_01.001" exists
+    When I deselect all objects
+    And the object "IfcWall/Wall_01.001" is selected
+    When the object layer length is set to "3"
+    # Extra 0.1 due to mitre
+    Then the object "IfcWall/Wall_01.001" dimensions are "3.1,0.1,3"
+    When I refresh linked aggregate the selected object
+    Then the object "IfcWall/Wall_01" exists
+    And the object "IfcWall/Wall_01" dimensions are "3.1,0.1,3"
+
 Scenario: Duplicate linked aggregate - a nested aggregate stays inside its parent
     Given I load the IFC test file "/test/files/linked-aggregates.ifc"
     # Tab in, so the parts group into a sub-assembly instead of collecting the aggregate.
@@ -628,20 +642,6 @@ Scenario: Duplicate linked aggregate - a nested aggregate stays inside its paren
     # msgbus updates don't happen in background mode, so obj is not renamed to "IfcElementAssembly/Nested_01"
     Then the object "Nested_01" exists
     And the object "Nested_01" is aggregated by object "IfcElementAssembly/Assembly"
-
-Scenario: Refresh linked aggregate
-    Given I load the IFC test file "/test/files/linked-aggregates.ifc"
-    And the object "IfcWall/Wall_01" is selected
-    When I duplicate linked aggregate the selected objects
-    Then the object "IfcWall/Wall_01.001" exists
-    When I deselect all objects
-    And the object "IfcWall/Wall_01.001" is selected
-    When the object layer length is set to "3"
-    # Extra 0.1 due to mitre
-    Then the object "IfcWall/Wall_01.001" dimensions are "3.1,0.1,3"
-    When I refresh linked aggregate the selected object
-    Then the object "IfcWall/Wall_01" exists
-    And the object "IfcWall/Wall_01" dimensions are "3.1,0.1,3"
 
 Scenario: Refresh linked aggregate - after deleting an object
     Given I load the IFC test file "/test/files/linked-aggregates.ifc"
