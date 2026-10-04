@@ -255,6 +255,9 @@ class BIM_OT_add_aggregate(bpy.types.Operator, tool.Ifc.Operator):
         on its own fragments that aggregate, and a fragmented linked aggregate
         silently stops matching its linked copies. Tabbing into an aggregate is how
         you say you want to restructure its contents, so promotion stops there.
+        It also stops at the spatial structure: a storey, building, site or the
+        project is not an aggregate a part travels with, so only element aggregates
+        (an IfcElement, such as an assembly) are climbed.
         """
         props = tool.Aggregate.get_aggregate_props()
         boundary = None
@@ -265,6 +268,8 @@ class BIM_OT_add_aggregate(bpy.types.Operator, tool.Ifc.Operator):
         seen = {element.id()}
         parent = ifcopenshell.util.element.get_aggregate(element)
         while parent is not None and parent.id() not in seen:
+            if not parent.is_a("IfcElement"):
+                break
             if boundary is not None and parent.id() == boundary.id():
                 break
             seen.add(parent.id())
