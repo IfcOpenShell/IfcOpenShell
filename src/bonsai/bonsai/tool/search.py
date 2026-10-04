@@ -119,9 +119,11 @@ class Search(bonsai.core.tool.Search):
     def import_filter_query(
         cls, query: str, filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]
     ) -> None:
-        filter_groups.clear()
         if not query.strip():
-            return  # An empty query means "no filter"; clearing the groups is enough.
+            # An empty query means "no filter"; clearing the groups is enough.
+            filter_groups.clear()
+            return
+        filter_groups.clear()
         transformer = ImportFilterQueryTransformer(filter_groups)
         transformer.transform(ifcopenshell.util.selector.filter_elements_grammar.parse(query))
 
