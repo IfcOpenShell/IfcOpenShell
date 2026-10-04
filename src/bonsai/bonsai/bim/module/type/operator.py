@@ -431,6 +431,32 @@ class SelectTypeIsolation:
                 layer_collection.exclude = exclude
 
 
+class ExitTypeIsolation(bpy.types.Operator):
+    bl_idname = "bim.exit_type_isolation"
+    bl_label = "Exit Type Isolation"
+    bl_description = "Leave the local view that ALT+Click Select Type opened, back to whatever was on screen before"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return SelectTypeIsolation.stash is not None
+
+    def execute(self, context):
+        stash = SelectTypeIsolation.stash
+        if stash is None or not tool.Blender.get_view3d_area():
+            return {"CANCELLED"}
+        context_override = tool.Blender.get_viewport_context()
+        space = context_override["space_data"]
+        if stash["local_view"] is None:
+            # We opened local view ourselves, so closing it is enough - Blender restores the view.
+            with context.temp_override(**context_override):
+                bpy.ops.view3d.localview()
+            SelectTypeIsolation.restore()
+        else:
+            SelectTypeIsolation.pop_local_view(space)
+        return {"FINISHED"}
+
+
 class SelectType(bpy.types.Operator):
     bl_idname = "bim.select_type"
     bl_label = "Select Type"
@@ -542,32 +568,6 @@ class SelectType(bpy.types.Operator):
         if ifc_project_collection:
             collection_in_view_layer = ifc_project_collection.children.get(collection_name)
             return collection_in_view_layer
-
-
-class ExitTypeIsolation(bpy.types.Operator):
-    bl_idname = "bim.exit_type_isolation"
-    bl_label = "Exit Type Isolation"
-    bl_description = "Leave the local view that ALT+Click Select Type opened, back to whatever was on screen before"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        return SelectTypeIsolation.stash is not None
-
-    def execute(self, context):
-        stash = SelectTypeIsolation.stash
-        if stash is None or not tool.Blender.get_view3d_area():
-            return {"CANCELLED"}
-        context_override = tool.Blender.get_viewport_context()
-        space = context_override["space_data"]
-        if stash["local_view"] is None:
-            # We opened local view ourselves, so closing it is enough - Blender restores the view.
-            with context.temp_override(**context_override):
-                bpy.ops.view3d.localview()
-            SelectTypeIsolation.restore()
-        else:
-            SelectTypeIsolation.pop_local_view(space)
-        return {"FINISHED"}
 
 
 class SelectSimilarType(bpy.types.Operator):
