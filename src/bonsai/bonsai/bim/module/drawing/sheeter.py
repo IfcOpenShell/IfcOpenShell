@@ -336,16 +336,16 @@ class SheetBuilder:
         titleblock = root.findall(f'{SVG}g[@data-type="titleblock"]')[0]
         image = titleblock.findall(f"{SVG}image")[0]
         g = self.parse_embedded_svg(image, sheet.get_info())
-        # the titleblock shares the sheet with the drawings and references, so its
-        # ids need the same namespacing. `sheet.id()` cannot collide with the
-        # document ids used for the other views, they all come from the same file.
-        g = self.ensure_unique_ids(g, sheet.id())
         grid_north = ifcopenshell.util.geolocation.get_grid_north(tool.Ifc.get()) * -1
         true_north = ifcopenshell.util.geolocation.get_true_north(tool.Ifc.get()) * -1
         for north in g.iterfind(f'.//{SVG}g[@data-type="grid-north"]'):
             north.attrib["transform"] = f"rotate({grid_north})"
         for north in g.iterfind(f'.//{SVG}g[@data-type="true-north"]'):
             north.attrib["transform"] = f"rotate({true_north})"
+        # the titleblock shares the sheet with the drawings and references, so its
+        # ids need the same namespacing. `sheet.id()` cannot collide with the
+        # document ids used for the other views, they all come from the same file.
+        g = self.ensure_unique_ids(g, sheet.id())
         titleblock.append(g)
         titleblock.remove(image)
 
