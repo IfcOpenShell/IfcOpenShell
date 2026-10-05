@@ -228,14 +228,6 @@ class Drawing(bonsai.core.tool.Drawing):
         return obj
 
     @classmethod
-    def get_annotation_drawing(cls, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance | None:
-        for rel in element.HasAssignments:
-            if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.ObjectType == "DRAWING":
-                for e in rel.RelatedObjects:
-                    if e.ObjectType == "DRAWING":
-                        return e
-
-    @classmethod
     def get_annotation_drawings(cls, element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         """Return every drawing (camera) this annotation is assigned to.
 
@@ -249,6 +241,14 @@ class Drawing(bonsai.core.tool.Drawing):
                     if e.ObjectType == "DRAWING" and e not in drawings:
                         drawings.append(e)
         return drawings
+
+    @classmethod
+    def get_annotation_drawing(cls, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance | None:
+        for rel in element.HasAssignments:
+            if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.ObjectType == "DRAWING":
+                for e in rel.RelatedObjects:
+                    if e.ObjectType == "DRAWING":
+                        return e
 
     @classmethod
     def exclude_annotation_from_drawing(

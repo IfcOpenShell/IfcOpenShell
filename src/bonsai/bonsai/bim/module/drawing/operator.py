@@ -2037,6 +2037,17 @@ class AssignManualDrawingReference(bpy.types.Operator, tool.Ifc.Operator):
                 area.tag_redraw()
 
 
+class AddSheet(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_sheet"
+    bl_label = "Add Sheet"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Add a sheet to the project"
+
+    def _execute(self, context):
+        props = tool.Drawing.get_document_props()
+        core.add_sheet(tool.Ifc, tool.Drawing, titleblock=props.titleblock)
+
+
 def _get_unassigned_drawing_enum_items(self, context):
     """Drawings the active annotation is NOT yet assigned to."""
     items = []
@@ -2179,17 +2190,6 @@ class SelectSharedAnnotations(bpy.types.Operator):
             context.view_layer.objects.active = active
         self.report({"INFO"}, f"Selected {selected} shared annotation(s).")
         return {"FINISHED"}
-
-
-class AddSheet(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.add_sheet"
-    bl_label = "Add Sheet"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Add a sheet to the project"
-
-    def _execute(self, context):
-        props = tool.Drawing.get_document_props()
-        core.add_sheet(tool.Ifc, tool.Drawing, titleblock=props.titleblock)
 
 
 class DuplicateSheet(bpy.types.Operator, tool.Ifc.Operator):
