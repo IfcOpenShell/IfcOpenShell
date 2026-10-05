@@ -117,7 +117,7 @@ class IfcOpenShellConan(ConanFile):
         if self.options.build_ifcgeom:
             # Without tk to avoid "src/unix/../generic/tkEntry.c:3226:15: error: expected identifier or ‘(’ before ‘bool’" error with shared build
             self.requires(
-                "opencascade/[>=7.8 <8]", options={"with_tk": False}, transitive_headers=True, transitive_libs=True
+                "opencascade/[>=8 <9]", options={"with_tk": False}, transitive_headers=True, transitive_libs=True
             )
             self.requires("eigen/3.4.0", transitive_headers=True)
             if self.options.with_cgal:
