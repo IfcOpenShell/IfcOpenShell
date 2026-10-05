@@ -33,44 +33,6 @@ class TestImplementsTool(NewFile):
         assert isinstance(subject(), bonsai.core.tool.Sequence)
 
 
-class TestGetElementStatus(NewFile):
-    def test_common_pset(self):
-        ifc = ifcopenshell.file()
-        element = ifcopenshell.api.root.create_entity(ifc, "IfcWall")
-        pset = ifcopenshell.api.pset.add_pset(ifc, element, "Pset_WallCommon")
-        ifcopenshell.api.pset.edit_pset(ifc, pset, properties={"Status": ["EXISTING", "TEMPORARY"]})
-        assert subject.get_element_status(element) == {"EXISTING", "TEMPORARY"}
-
-    def test_epset(self):
-        bpy.ops.bim.create_project()
-        ifc = tool.Ifc.get()
-        element = ifcopenshell.api.root.create_entity(ifc, "IfcWall")
-        pset = ifcopenshell.api.pset.add_pset(ifc, element, "EPset_Status")
-        ifcopenshell.api.pset.edit_pset(ifc, pset, properties={"Status": ["EXISTING", "TEMPORARY"]})
-        assert subject.get_element_status(element) == {"EXISTING", "TEMPORARY"}
-
-
-class TestAssignStatus(NewFile):
-    def test_run(self):
-        bpy.ops.bim.create_project()
-        ifc = tool.Ifc.get()
-
-        bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
-        obj = bpy.data.objects["Cube"]
-        bpy.ops.bim.assign_class(ifc_class="IfcActuator", predefined_type="ELECTRICACTUATOR", userdefined_type="")
-        element = tool.Ifc.get_entity(obj)
-        assert element
-
-        bpy.ops.bim.assign_status(status="NEW")
-        assert subject.get_element_status(element) == {"NEW"}
-
-        bpy.ops.bim.assign_status(status="EXISTING")
-        assert subject.get_element_status(element) == {"EXISTING"}
-
-        bpy.ops.bim.assign_status(status="EXISTING", should_unassign_status=True)
-        assert subject.get_element_status(element) == set()
-
-
 class TestApplyVisibilityToVoids(NewFile):
     def create_wall_with_opening(self):
         bpy.ops.bim.create_project()
@@ -115,3 +77,41 @@ class TestApplyVisibilityToVoids(NewFile):
 
         subject.apply_visibility_to_voids({wall, opening})
         assert subject.get_geometry_file(ifc, [wall]) is ifc
+
+
+class TestGetElementStatus(NewFile):
+    def test_common_pset(self):
+        ifc = ifcopenshell.file()
+        element = ifcopenshell.api.root.create_entity(ifc, "IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(ifc, element, "Pset_WallCommon")
+        ifcopenshell.api.pset.edit_pset(ifc, pset, properties={"Status": ["EXISTING", "TEMPORARY"]})
+        assert subject.get_element_status(element) == {"EXISTING", "TEMPORARY"}
+
+    def test_epset(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        element = ifcopenshell.api.root.create_entity(ifc, "IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(ifc, element, "EPset_Status")
+        ifcopenshell.api.pset.edit_pset(ifc, pset, properties={"Status": ["EXISTING", "TEMPORARY"]})
+        assert subject.get_element_status(element) == {"EXISTING", "TEMPORARY"}
+
+
+class TestAssignStatus(NewFile):
+    def test_run(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+
+        bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
+        obj = bpy.data.objects["Cube"]
+        bpy.ops.bim.assign_class(ifc_class="IfcActuator", predefined_type="ELECTRICACTUATOR", userdefined_type="")
+        element = tool.Ifc.get_entity(obj)
+        assert element
+
+        bpy.ops.bim.assign_status(status="NEW")
+        assert subject.get_element_status(element) == {"NEW"}
+
+        bpy.ops.bim.assign_status(status="EXISTING")
+        assert subject.get_element_status(element) == {"EXISTING"}
+
+        bpy.ops.bim.assign_status(status="EXISTING", should_unassign_status=True)
+        assert subject.get_element_status(element) == set()
