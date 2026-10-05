@@ -892,7 +892,7 @@ class EditObjectUI:
             add_layout_hotkey_operator(row, "Extend", "S_E", "", ui_context)
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             add_layout_hotkey_operator(
-                row, "Extend Height", "C_E", "Extend wall height to 3D cursor Z position", ui_context
+                row, "Extend to Cursor", "C_E", "Extend profile/extrusion to 3D cursor", ui_context
             )
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             if AuthoringData.data["active_class"] in (
@@ -943,6 +943,11 @@ class EditObjectUI:
                 row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
                 add_layout_hotkey_operator(
                     cls.layout, "Extend To Underside", "S_E", bpy.ops.bim.extend_walls_to_underside.__doc__, ui_context
+                )
+            if AuthoringData.data["has_extrusion"]:
+                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+                add_layout_hotkey_operator(
+                    row, "Extend to Cursor", "C_E", "Extend extrusion to 3D cursor", ui_context
                 )
 
         if AuthoringData.data["is_flippable_element"]:
@@ -1467,10 +1472,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             else:
                 other_objects.append(obj)
 
-        if not layer2_objects:
-            self.report({"ERROR"}, "No LAYER2 objects selected")
-            return
-
+        # Handle LAYER2 objects - extend height to cursor Z.
         # ``bim.change_extrusion_depth`` applies a single depth to every selected
         # object, so the walls are grouped by base level and each group is applied on
         # its own pass with only that group selected. Each wall is then extended by
@@ -1524,10 +1526,22 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
         if skipped:
             self.report(
-                {"WARNING"} if groups else {"ERROR"},
+                {"WARNING"} if groups or other_objects else {"ERROR"},
                 f"Skipped {len(skipped)} LAYER2 object(s) with a base at or above the cursor "
                 f"({cursor_z:.2f}m). Walls can only be extended upwards.",
             )
+
+        # Handle PROFILE objects and basic extrusions - extend to 3D cursor
+        if other_objects:
+            # Temporarily deselect layer2 objects
+            for obj in layer2_objects:
+                obj.select_set(False)
+
+            bpy.ops.bim.extend_profile(join_type="E")
+
+            # Restore selection
+            for obj in layer2_objects:
+                obj.select_set(True)
 
 
 custom_icon_previews = None
