@@ -110,31 +110,15 @@ def get_volume(geometry: W.triangulation) -> float:
     :param geometry: Geometry output calculated by IfcOpenShell
     :return: The volume in m3, or ``nan`` if the mesh is not a closed manifold
     """
-
-    # https://stackoverflow.com/questions/1406029/how-to-calculate-the-volume-of-a-3d-mesh-object-the-surface-of-which-is-made-up
-    def signed_triangle_volume(p1, p2, p3):
-        v321 = p3[0] * p2[1] * p1[2]
-        v231 = p2[0] * p3[1] * p1[2]
-        v312 = p3[0] * p1[1] * p2[2]
-        v132 = p1[0] * p3[1] * p2[2]
-        v213 = p2[0] * p1[1] * p3[2]
-        v123 = p1[0] * p2[1] * p3[2]
-        return (1.0 / 6.0) * (-v321 + v231 + v312 - v132 - v213 + v123)
-
     if not is_manifold(geometry):
         return float("nan")
 
-    # Can't optimize it using buffers - performance seems to get only worse.
-    verts = geometry.verts
     if not (faces := geometry.faces):
         return 0.0
-    x0, y0, z0 = verts[0], verts[1], verts[2]
-    grouped_verts = [[verts[i] - x0, verts[i + 1] - y0, verts[i + 2] - z0] for i in range(0, len(verts), 3)]
-    volumes = [
-        signed_triangle_volume(grouped_verts[faces[i]], grouped_verts[faces[i + 1]], grouped_verts[faces[i + 2]])
-        for i in range(0, len(faces), 3)
-    ]
-    return abs(sum(volumes))
+    verts = np.array(geometry.verts, dtype=float).reshape(-1, 3)
+    triangles = (verts - verts.mean(axis=0))[np.array(faces).reshape(-1, 3)]
+    volumes = np.einsum("ij,ij->i", triangles[:, 0], np.cross(triangles[:, 1], triangles[:, 2])) / 6.0
+    return abs(volumes.sum()).item()
 
 
 def get_x(geometry: W.triangulation) -> float:
