@@ -83,6 +83,11 @@ class TestExtractElements(test.bootstrap.IFC4):
         assert output.by_type("IfcWall")
         assert not output.by_type("IfcSlab")
 
+    def test_raises_on_missing_project(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        with pytest.raises(ValueError):
+            ifcpatch.execute({"file": self.file, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
+
     def test_preserving_georeferencing(self):
         # Regression test for #8199: ExtractElements must carry IfcMapConversion
         # and IfcProjectedCRS into the output. Without the fix these entities are
@@ -115,11 +120,6 @@ class TestExtractElements(test.bootstrap.IFC4):
         # placements of the extracted elements.
         wall_new = output.by_type("IfcWall")[0]
         assert wall_new.ObjectPlacement.RelativePlacement.Location.Coordinates == (5.0, 10.0, 2.0)
-
-    def test_raises_on_missing_project(self):
-        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
-        with pytest.raises(ValueError):
-            ifcpatch.execute({"file": self.file, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
 
     @pytest.mark.skipif(
         "IFC4X3" not in ifcopenshell.ifcopenshell_wrapper.schema_names(),
