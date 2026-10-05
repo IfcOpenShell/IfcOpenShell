@@ -620,24 +620,6 @@ class IfcOpenShell(QtoCalculator):
             z = item.Depth
             return max([x, y, z])
 
-    @classmethod
-    def get_extrusion_length(cls, element: ifcopenshell.entity_instance) -> Union[float, None]:
-        """Get the extruded length of a member with a single parameterized extrusion as its Body.
-
-        :param element: IFC element entity.
-        :return: Length in project units, or ``None`` if the body is not such an extrusion.
-        """
-        for rep in ifcopenshell.util.representation.get_representations_iter(element):
-            if rep.RepresentationIdentifier != "Body":
-                continue
-            items = rep.Items or []
-            # IfcExtrudedAreaSolidTapered is a subtype and still has a Depth.
-            if len(items) == 1 and items[0].is_a("IfcExtrudedAreaSolid"):
-                if items[0].SweptArea.is_a("IfcParameterizedProfileDef"):
-                    return items[0].Depth
-            return None
-        return None
-
     # Footings are authored two ways, so a single static axis rule cannot be correct for both.
     # Beam-like footings (STRIP_FOOTING, FOOTING_BEAM) are a profile extruded along the local Z
     # axis, so the run (Length) is local Z and the cross section sits on local X (Width) and
@@ -667,6 +649,24 @@ class IfcOpenShell(QtoCalculator):
         if predefined_type in cls._beam_like_footings:
             return ifcopenshell.util.shape.get_y(geometry)
         return ifcopenshell.util.shape.get_z(geometry)
+
+    @classmethod
+    def get_extrusion_length(cls, element: ifcopenshell.entity_instance) -> Union[float, None]:
+        """Get the extruded length of a member with a single parameterized extrusion as its Body.
+
+        :param element: IFC element entity.
+        :return: Length in project units, or ``None`` if the body is not such an extrusion.
+        """
+        for rep in ifcopenshell.util.representation.get_representations_iter(element):
+            if rep.RepresentationIdentifier != "Body":
+                continue
+            items = rep.Items or []
+            # IfcExtrudedAreaSolidTapered is a subtype and still has a Depth.
+            if len(items) == 1 and items[0].is_a("IfcExtrudedAreaSolid"):
+                if items[0].SweptArea.is_a("IfcParameterizedProfileDef"):
+                    return items[0].Depth
+            return None
+        return None
 
     @classmethod
     def get_weight(
