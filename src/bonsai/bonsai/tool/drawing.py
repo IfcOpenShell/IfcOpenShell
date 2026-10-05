@@ -1027,6 +1027,9 @@ class Drawing(bonsai.core.tool.Drawing):
             mat[1][1] *= -1
         return mat
 
+    class CameraGeometryError(Exception):
+        pass
+
     @classmethod
     def get_camera_representation(cls, drawing: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         """Get the Model/Body/MODEL_VIEW camera box, else any Body representation, never an annotation."""
@@ -1037,7 +1040,9 @@ class Drawing(bonsai.core.tool.Drawing):
                     representation = r
                     break
         if representation is None:
-            raise ValueError(f"Drawing {drawing.Name!r} has no camera representation and cannot be opened.")
+            raise cls.CameraGeometryError(
+                f"Drawing {drawing.Name!r} has no camera representation and cannot be opened."
+            )
         return representation
 
     # NOTE: EPsetDrawing pset is completely synced with BIMCameraProperties
@@ -1052,7 +1057,7 @@ class Drawing(bonsai.core.tool.Drawing):
         try:
             shape = ifcopenshell.geom.create_shape(settings, drawing)
         except RuntimeError as e:
-            raise ValueError(
+            raise cls.CameraGeometryError(
                 f"Drawing {drawing.Name!r} camera geometry could not be built and cannot be opened."
             ) from e
         camera = tool.Loader.create_camera(drawing, representation, shape)
@@ -1078,7 +1083,7 @@ class Drawing(bonsai.core.tool.Drawing):
         try:
             shape = ifcopenshell.geom.create_shape(settings, drawing)
         except RuntimeError as e:
-            raise ValueError(
+            raise cls.CameraGeometryError(
                 f"Drawing {drawing.Name!r} camera geometry could not be built and cannot be opened."
             ) from e
         camera = tool.Loader.create_camera(drawing, representation, shape)
