@@ -737,18 +737,6 @@ class Drawing(bonsai.core.tool.Drawing):
         return context
 
     @classmethod
-    def get_drawing_camera_representation(
-        cls, drawing: ifcopenshell.entity_instance
-    ) -> Union[ifcopenshell.entity_instance, None]:
-        # New drawings keep the camera view volume in the dedicated context
-        # (see #4800). Drawings created before that change keep it in Model/Body,
-        # so fall back to Body for backwards compatibility.
-        representation = ifcopenshell.util.representation.get_representation(drawing, *cls.DRAWING_CAMERA_CONTEXT)
-        if representation is None:
-            representation = ifcopenshell.util.representation.get_representation(drawing, "Model", "Body", "MODEL_VIEW")
-        return representation
-
-    @classmethod
     def get_document_uri(
         cls, document: ifcopenshell.entity_instance, description: Optional[str] = None
     ) -> Union[str, None]:
@@ -1066,6 +1054,26 @@ class Drawing(bonsai.core.tool.Drawing):
             mat[1][1] *= -1
         return mat
 
+    class CameraGeometryError(Exception):
+        pass
+
+    @classmethod
+    def get_camera_representation(cls, drawing: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        """Get the camera box (camera context, else Model/Body), else any Body representation, never an annotation."""
+        representation = ifcopenshell.util.representation.get_representation(drawing, *cls.DRAWING_CAMERA_CONTEXT)
+        if representation is None:
+            representation = ifcopenshell.util.representation.get_representation(drawing, "Model", "Body", "MODEL_VIEW")
+        if representation is None:
+            for r in ifcopenshell.util.representation.get_representations_iter(drawing):
+                if ifcopenshell.util.representation.resolve_representation(r).RepresentationIdentifier == "Body":
+                    representation = r
+                    break
+        if representation is None:
+            raise cls.CameraGeometryError(
+                f"Drawing {drawing.Name!r} has no camera representation and cannot be opened."
+            )
+        return representation
+
     # NOTE: EPsetDrawing pset is completely synced with BIMCameraProperties
     # but BIMCameraProperties are only synced with EPsetDrawing at drawing import
     # therefore camera props can differ from pset if the user changed them from pset.
@@ -1073,10 +1081,14 @@ class Drawing(bonsai.core.tool.Drawing):
     def import_drawing(cls, drawing: ifcopenshell.entity_instance) -> bpy.types.Object:
         settings = ifcopenshell.geom.settings()
 
-        representation = cls.get_drawing_camera_representation(drawing)
-        assert representation
+        representation = cls.get_camera_representation(drawing)
 
-        shape = ifcopenshell.geom.create_shape(settings, drawing)
+        try:
+            shape = ifcopenshell.geom.create_shape(settings, drawing)
+        except RuntimeError as e:
+            raise cls.CameraGeometryError(
+                f"Drawing {drawing.Name!r} camera geometry could not be built and cannot be opened."
+            ) from e
         camera = tool.Loader.create_camera(drawing, representation, shape)
         tool.Loader.link_mesh(shape, camera)
         obj = bpy.data.objects.new(tool.Loader.get_name(drawing), camera)
@@ -1095,10 +1107,14 @@ class Drawing(bonsai.core.tool.Drawing):
     def import_temporary_drawing_camera(cls, drawing: ifcopenshell.entity_instance) -> bpy.types.Object:
         settings = ifcopenshell.geom.settings()
 
-        representation = cls.get_drawing_camera_representation(drawing)
-        assert representation
+        representation = cls.get_camera_representation(drawing)
 
-        shape = ifcopenshell.geom.create_shape(settings, drawing)
+        try:
+            shape = ifcopenshell.geom.create_shape(settings, drawing)
+        except RuntimeError as e:
+            raise cls.CameraGeometryError(
+                f"Drawing {drawing.Name!r} camera geometry could not be built and cannot be opened."
+            ) from e
         camera = tool.Loader.create_camera(drawing, representation, shape)
         if obj := bpy.data.objects.get("TemporaryDrawingCamera"):
             obj.data = camera

@@ -465,7 +465,7 @@ class TestGetDrawingCameraContext(NewFile):
         assert subject.get_drawing_camera_context() == context
 
 
-class TestGetDrawingCameraRepresentation(NewFile):
+class TestGetCameraRepresentation(NewFile):
     def create_drawing(self, ifc, context):
         representation = ifc.createIfcShapeRepresentation(context, context.ContextIdentifier, "CSG", [])
         drawing = ifc.createIfcAnnotation(
@@ -478,7 +478,7 @@ class TestGetDrawingCameraRepresentation(NewFile):
         tool.Ifc.set(ifc)
         ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
         drawing, representation = self.create_drawing(ifc, subject.get_drawing_camera_context())
-        assert subject.get_drawing_camera_representation(drawing) == representation
+        assert subject.get_camera_representation(drawing) == representation
 
     def test_falls_back_to_the_body_context_for_older_drawings(self):
         ifc = ifcopenshell.file()
@@ -487,7 +487,7 @@ class TestGetDrawingCameraRepresentation(NewFile):
             ContextType="Model", ContextIdentifier="Body", TargetView="MODEL_VIEW"
         )
         drawing, representation = self.create_drawing(ifc, body)
-        assert subject.get_drawing_camera_representation(drawing) == representation
+        assert subject.get_camera_representation(drawing) == representation
 
 
 class TestGetDocumentUri(NewFile):
