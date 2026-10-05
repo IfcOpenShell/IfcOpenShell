@@ -468,58 +468,6 @@ class IfcOpenShell(QtoCalculator):
     ) + footing_functions
 
     @classmethod
-    def _overall_dimensions(
-        cls, element: ifcopenshell.entity_instance
-    ) -> tuple[Union[float, None], Union[float, None]]:
-        """Return ``(OverallWidth, OverallHeight)`` of an element in SI metres.
-
-        Reads the attributes directly and rescales them from project units to SI
-        so the result is consistent with the geometry based calculators. Missing
-        attributes are returned as ``None``.
-        """
-        width = getattr(element, "OverallWidth", None)
-        height = getattr(element, "OverallHeight", None)
-        if width is not None:
-            width *= cls.unit_scale
-        if height is not None:
-            height *= cls.unit_scale
-        return width, height
-
-    @classmethod
-    def get_overall_width(cls, element: ifcopenshell.entity_instance) -> Union[float, None]:
-        """Door/window width from ``OverallWidth`` (SI metres), or ``None`` if unset."""
-        width, _ = cls._overall_dimensions(element)
-        return width
-
-    @classmethod
-    def get_overall_height(cls, element: ifcopenshell.entity_instance) -> Union[float, None]:
-        """Door/window height from ``OverallHeight`` (SI metres), or ``None`` if unset."""
-        _, height = cls._overall_dimensions(element)
-        return height
-
-    @classmethod
-    def get_lining_area(cls, element: ifcopenshell.entity_instance) -> Union[float, None]:
-        """Door/window outer lining area ``OverallWidth * OverallHeight`` (SI m2).
-
-        Returns ``None`` when either attribute is unset.
-        """
-        width, height = cls._overall_dimensions(element)
-        if width is None or height is None:
-            return None
-        return width * height
-
-    @classmethod
-    def get_lining_perimeter(cls, element: ifcopenshell.entity_instance) -> Union[float, None]:
-        """Door/window outer lining perimeter ``2 * (width + height)`` (SI metres).
-
-        Returns ``None`` when either attribute is unset.
-        """
-        width, height = cls._overall_dimensions(element)
-        if width is None or height is None:
-            return None
-        return (width + height) * 2
-
-    @classmethod
     def calculate(cls, ifc_file, elements, qtos, results):
         formula_functions: dict[str, types.FunctionType] = {}
 
@@ -633,6 +581,58 @@ class IfcOpenShell(QtoCalculator):
                 ifcopenshell.geom.iterator(settings, ifc_file, multiprocessing.cpu_count(), include=elements)
             )
         return iterators
+
+    @classmethod
+    def _overall_dimensions(
+        cls, element: ifcopenshell.entity_instance
+    ) -> tuple[Union[float, None], Union[float, None]]:
+        """Return ``(OverallWidth, OverallHeight)`` of an element in SI metres.
+
+        Reads the attributes directly and rescales them from project units to SI
+        so the result is consistent with the geometry based calculators. Missing
+        attributes are returned as ``None``.
+        """
+        width = getattr(element, "OverallWidth", None)
+        height = getattr(element, "OverallHeight", None)
+        if width is not None:
+            width *= cls.unit_scale
+        if height is not None:
+            height *= cls.unit_scale
+        return width, height
+
+    @classmethod
+    def get_overall_width(cls, element: ifcopenshell.entity_instance) -> Union[float, None]:
+        """Door/window width from ``OverallWidth`` (SI metres), or ``None`` if unset."""
+        width, _ = cls._overall_dimensions(element)
+        return width
+
+    @classmethod
+    def get_overall_height(cls, element: ifcopenshell.entity_instance) -> Union[float, None]:
+        """Door/window height from ``OverallHeight`` (SI metres), or ``None`` if unset."""
+        _, height = cls._overall_dimensions(element)
+        return height
+
+    @classmethod
+    def get_lining_area(cls, element: ifcopenshell.entity_instance) -> Union[float, None]:
+        """Door/window outer lining area ``OverallWidth * OverallHeight`` (SI m2).
+
+        Returns ``None`` when either attribute is unset.
+        """
+        width, height = cls._overall_dimensions(element)
+        if width is None or height is None:
+            return None
+        return width * height
+
+    @classmethod
+    def get_lining_perimeter(cls, element: ifcopenshell.entity_instance) -> Union[float, None]:
+        """Door/window outer lining perimeter ``2 * (width + height)`` (SI metres).
+
+        Returns ``None`` when either attribute is unset.
+        """
+        width, height = cls._overall_dimensions(element)
+        if width is None or height is None:
+            return None
+        return (width + height) * 2
 
     @classmethod
     def get_opening_quantity(cls, geometry: ifcopenshell.geom.ShapeType, formula: str) -> float:
