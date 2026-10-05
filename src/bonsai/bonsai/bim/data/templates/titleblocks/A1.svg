@@ -323,5 +323,14 @@
          x="160.29811"
          y="250.54721"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.24897px;line-height:100%;font-family:'OpenGost Type B TT';-inkscape-font-specification:'OpenGost Type B TT';text-align:center;text-anchor:middle;stroke-width:0.25;stroke-miterlimit:4;stroke-dasharray:none">DATE</tspan></text>
+    <g transform="translate(0,285.54)">
+      {{#revisions}}
+      <text x="11" y="{{y}}" style="font-size:3.175px;font-family:sans-serif;fill:#000000">{{rev}}</text>
+      <text x="31" y="{{y}}" style="font-size:3.175px;font-family:sans-serif;fill:#000000">{{description}}</text>
+      <text x="111" y="{{y}}" style="font-size:3.175px;font-family:sans-serif;fill:#000000">{{author}}</text>
+      <text x="131" y="{{y}}" style="font-size:3.175px;font-family:sans-serif;fill:#000000">{{issued}}</text>
+      <text x="151" y="{{y}}" style="font-size:3.175px;font-family:sans-serif;fill:#000000">{{date}}</text>
+      {{/revisions}}
+    </g>
   </g>
 </svg>

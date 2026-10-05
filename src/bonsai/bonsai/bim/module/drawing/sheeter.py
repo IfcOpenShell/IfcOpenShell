@@ -23,6 +23,7 @@ import shutil
 import urllib.parse
 import uuid
 import xml.etree.ElementTree as ET
+from datetime import datetime
 from pathlib import Path
 from typing import Union
 from xml.dom import minidom
@@ -33,6 +34,8 @@ import pystache
 from mathutils import Vector
 
 import bonsai.tool as tool
+
+os.environ.setdefault("GIT_PYTHON_REFRESH", "quiet")
 
 #: The `data-type` of a group that places something on a sheet. A drawing has
 #: its own; a schedule and a reference carry their document's scope.
@@ -385,7 +388,58 @@ class SheetBuilder:
         """
         data = sheet.get_info()
         data.update(self.get_spatial_data(sheet))
+        revisions = self._get_git_revisions()
+        data["revisions"] = revisions
+        data["has_revisions"] = bool(revisions)
         return data
+
+    def _get_git_revisions(self) -> list[dict]:
+        try:
+            import git
+        except ImportError:
+            return []
+
+        ifc_path = tool.Ifc.get_path()
+        if not ifc_path:
+            return []
+        try:
+            repo = git.Repo(ifc_path, search_parent_directories=True)
+        except Exception:
+            return []
+
+        # Oldest-first so the SVG template can anchor at the bottom: oldest
+        # tag sits at y=0 (the anchor point) and newer tags stack upward.
+        # Always sort and date by the tagged commit, not when the tag was applied.
+        tags = sorted(repo.tags, key=lambda t: t.commit.committed_date)
+
+        def initials(actor) -> str:
+            if not actor or not actor.name:
+                return ""
+            return "".join(w[0].upper() for w in actor.name.split() if w)
+
+        rows = []
+        for i, tag_ref in enumerate(tags):
+            date = datetime.fromtimestamp(tag_ref.commit.committed_date).date().isoformat()
+            if tag_ref.tag:
+                description = (tag_ref.tag.message or "").strip().splitlines()[0]
+                author = initials(tag_ref.tag.tagger)
+            else:
+                description = ""
+                author = initials(tag_ref.commit.author)
+            # y is a negative offset from the group anchor (5 mm row height to
+            # match the A3 titleblock grid). Oldest tag sits at y=0 (the anchor);
+            # newer tags stack upward so the oldest stays at a fixed position.
+            rows.append(
+                {
+                    "rev": tag_ref.name,
+                    "date": date,
+                    "description": description,
+                    "author": author,
+                    "issued": "",
+                    "y": -i * 5,
+                }
+            )
+        return rows
 
     def get_sheet_links(self, sheet: ifcopenshell.entity_instance) -> dict:
         """The site and building a sheet names itself, as {"Site": ..., "Building": ...}.
