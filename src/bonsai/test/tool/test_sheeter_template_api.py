@@ -216,6 +216,37 @@ class TestGetEditableFields:
         # The reference has no name of its own, so the title shows the drawing's.
         assert answer["fields"][0]["value"] == "MY STOREY PLAN"
 
+    def test_a_reference_shows_the_scale_its_svg_was_drawn_at(self, sheet_model, monkeypatch):
+        # As a build does: a reference's view-title takes the scale from the
+        # scale- class in its SVG, so the web API has to read the same file.
+        import bonsai.tool as tool
+
+        os.makedirs(os.path.dirname(sheet_model.reference_path))
+        with open(sheet_model.reference_path, "w") as f:
+            f.write('<svg xmlns="http://www.w3.org/2000/svg"><g class="survey scale-48"/></svg>')
+        kept = next(
+            r
+            for r in sheet_model.ifc.by_type("IfcDocumentReference")
+            if r.ReferencedDocument == sheet_model.reference_doc
+        )
+        placed = sheet_model.ifc.createIfcDocumentReference(
+            Location=sheet_model.reference_path, Description="REFERENCE"
+        )
+        sheet_model.references.append(placed)
+        sheet_model.uris[kept.id()] = sheet_model.reference_path
+        sheet_model.uris[placed.id()] = sheet_model.reference_path
+        sheet_refs = tool.Drawing.get_document_references
+        monkeypatch.setattr(
+            tool.Drawing,
+            "get_document_references",
+            staticmethod(lambda info: [kept] if info == sheet_model.reference_doc else sheet_refs(info)),
+        )
+
+        answer = sheet_model.builder.get_editable_fields(
+            sheet_model.layout, {"kind": "placement", "path": sheet_model.reference_path}, ["Scale"]
+        )
+        assert answer["fields"][0]["value"] == '1/4"=1\'-0"'
+
     def test_an_unknown_view_is_refused_by_name(self, sheet_model, tmp_path):
         with pytest.raises(ValueError, match="no such view"):
             sheet_model.builder.get_editable_fields(

@@ -884,15 +884,21 @@ class SheetBuilder:
         reference: ifcopenshell.entity_instance,
         sheet: ifcopenshell.entity_instance,
         document: ifcopenshell.entity_instance,
+        svg_path: Union[str, None] = None,
     ) -> dict:
         """Template data for a schedule's or reference's view-title.
 
-        Shared by `build_documents` and `get_template_values`.
+        Shared by `build_documents` and `get_template_values`. Given `svg_path`, a
+        reference also gets the scale its SVG was drawn at, as `build_documents`
+        adds it from the layout's link to that same file.
         """
         data = reference.get_info()
         data.update({"Sheet" + k: v for k, v in sheet.get_info().items()})
         if not data["Name"]:
             data["Name"] = document.Name or "Unnamed"
+        if svg_path and document.Scope == "REFERENCE":
+            if human_scale := self.get_scale_from_svg(svg_path):
+                data["Scale"] = human_scale
         return data
 
     def get_template_values(self) -> dict:
@@ -962,7 +968,7 @@ class SheetBuilder:
                 else:
                     if (document := documents.get(key(uri))) is None:
                         continue
-                    data = self.get_document_view_title_data(reference, sheet, document)
+                    data = self.get_document_view_title_data(reference, sheet, document, uri)
                 placements[os.path.abspath(uri)] = as_template_data(data)
 
             result["sheets"].append(
@@ -1588,7 +1594,7 @@ class SheetBuilder:
         if kind == "drawing":
             uri = tool.Drawing.get_document_uri(reference) or ""
             return self.get_drawing_view_title_data(reference, sheet, entity, uri)
-        return self.get_document_view_title_data(reference, sheet, entity)
+        return self.get_document_view_title_data(reference, sheet, entity, tool.Drawing.get_document_uri(reference))
 
     def get_scale_from_svg(self, svg_path: str) -> str:
         try:
