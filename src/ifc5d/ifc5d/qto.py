@@ -563,50 +563,6 @@ class IfcOpenShell(QtoCalculator):
 
         cls._void_shape_cache = {}
 
-    @staticmethod
-    def create_iterators(
-        ifc_file: ifcopenshell.file, settings: ifcopenshell.geom.settings, elements: list[ifcopenshell.entity_instance]
-    ) -> list[Union[ifcopenshell.geom.iterator, IteratorForTypes]]:
-        elements_sorted: defaultdict[bool, list[ifcopenshell.entity_instance]] = defaultdict(list)
-        iterators = []
-        for element in elements:
-            elements_sorted[element.is_a("IfcTypeProduct")].append(element)
-        if True in elements_sorted:
-            iterators.append(IteratorForTypes(ifc_file, settings, elements_sorted[True]))
-        if False in elements_sorted:
-            iterators.append(
-                ifcopenshell.geom.iterator(settings, ifc_file, multiprocessing.cpu_count(), include=elements)
-            )
-        return iterators
-
-    @classmethod
-    def get_opening_quantity(cls, geometry: ifcopenshell.geom.ShapeType, formula: str) -> float:
-        """Get an opening dimension or area, guessing the opening orientation.
-
-        Vertical (wall) openings are measured in a Z-up local frame: X along
-        the voided element, Y through it, Z vertical. An opening is treated as
-        horizontal (e.g. voiding a slab) when its Z extent is smaller than
-        both X and Y, matching the Blender calculator's heuristic.
-
-        :param geometry: Geometry output calculated by IfcOpenShell
-        :param formula: One of the ``get_opening_*`` internal function names.
-        :return: The dimension or area in SI units.
-        """
-        x = ifcopenshell.util.shape.get_x(geometry)
-        y = ifcopenshell.util.shape.get_y(geometry)
-        z = ifcopenshell.util.shape.get_z(geometry)
-        is_horizontal = z < x and z < y
-        if formula == "get_opening_width":
-            return x
-        if formula == "get_opening_height":
-            return min(x, y) if is_horizontal else z
-        if formula == "get_opening_depth":
-            return z if is_horizontal else y
-        assert formula == "get_opening_area"
-        if is_horizontal:
-            return ifcopenshell.util.shape.get_footprint_area(geometry)
-        return ifcopenshell.util.shape.get_side_area(geometry)
-
     @classmethod
     def _create_void_shape(cls, element, settings):
         key = (element.id(), settings is cls.gross_settings)
@@ -666,6 +622,50 @@ class IfcOpenShell(QtoCalculator):
         upper = np.minimum(cut_verts.max(axis=0), host_verts.max(axis=0))
         extents = np.maximum(upper - lower, 0.0)
         return float(extents["xyz".index(formula[-1])])
+
+    @staticmethod
+    def create_iterators(
+        ifc_file: ifcopenshell.file, settings: ifcopenshell.geom.settings, elements: list[ifcopenshell.entity_instance]
+    ) -> list[Union[ifcopenshell.geom.iterator, IteratorForTypes]]:
+        elements_sorted: defaultdict[bool, list[ifcopenshell.entity_instance]] = defaultdict(list)
+        iterators = []
+        for element in elements:
+            elements_sorted[element.is_a("IfcTypeProduct")].append(element)
+        if True in elements_sorted:
+            iterators.append(IteratorForTypes(ifc_file, settings, elements_sorted[True]))
+        if False in elements_sorted:
+            iterators.append(
+                ifcopenshell.geom.iterator(settings, ifc_file, multiprocessing.cpu_count(), include=elements)
+            )
+        return iterators
+
+    @classmethod
+    def get_opening_quantity(cls, geometry: ifcopenshell.geom.ShapeType, formula: str) -> float:
+        """Get an opening dimension or area, guessing the opening orientation.
+
+        Vertical (wall) openings are measured in a Z-up local frame: X along
+        the voided element, Y through it, Z vertical. An opening is treated as
+        horizontal (e.g. voiding a slab) when its Z extent is smaller than
+        both X and Y, matching the Blender calculator's heuristic.
+
+        :param geometry: Geometry output calculated by IfcOpenShell
+        :param formula: One of the ``get_opening_*`` internal function names.
+        :return: The dimension or area in SI units.
+        """
+        x = ifcopenshell.util.shape.get_x(geometry)
+        y = ifcopenshell.util.shape.get_y(geometry)
+        z = ifcopenshell.util.shape.get_z(geometry)
+        is_horizontal = z < x and z < y
+        if formula == "get_opening_width":
+            return x
+        if formula == "get_opening_height":
+            return min(x, y) if is_horizontal else z
+        if formula == "get_opening_depth":
+            return z if is_horizontal else y
+        assert formula == "get_opening_area"
+        if is_horizontal:
+            return ifcopenshell.util.shape.get_footprint_area(geometry)
+        return ifcopenshell.util.shape.get_side_area(geometry)
 
     @classmethod
     def get_segment_length(cls, element: ifcopenshell.entity_instance) -> Union[float, None]:
