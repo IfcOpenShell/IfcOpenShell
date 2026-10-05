@@ -581,6 +581,8 @@ class BIM_PT_product_assignments(Panel):
             col = row.column()
             col.operator("bim.select_assigned_product", icon="RESTRICT_SELECT_OFF", text="")
             col.enabled = bool(ProductAssignmentsData.data["relating_product"])
+
+
 def get_category_icon(category_name):
     """Get appropriate icon for each category"""
     icons = {
@@ -634,9 +636,6 @@ def get_category_icon(category: str) -> str:
         "Custom String": "SMALL_CAPS",
     }
     return icons.get(category, "DOT")
-
-
-
 
 
 class BIM_PT_annotation_drawings(Panel):
