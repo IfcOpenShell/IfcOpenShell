@@ -417,8 +417,8 @@ class Drawing:
     def remove_element_class(cls, element, name): pass
     def run_drawing_activate_model(cls): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
-    def run_type_assign_type(cls, element=None, relating_type=None): pass
     def sanitise_class_name(cls, name): pass
+    def run_type_assign_type(cls, element=None, relating_type=None): pass
     def select_assigned_product(cls, drawing): pass
     def set_camera_name(cls, drawing, name): pass
     def set_drawing_collection_name(cls, drawing, collection): pass
