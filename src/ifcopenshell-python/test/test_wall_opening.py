@@ -230,13 +230,23 @@ VOIDED_CASES = {
     "wall-circular-opening": ("IfcWall", "wall", "circle", WALL_VOLUME, WALL_VOLUME - CIRCLE_CUT),
 }
 
-# Per kernel, the cases where the opening subtraction fails and the PR keeps the uncut host (GEO034 is logged).
-# hybrid-manifold-opencascade may also fall through to OpenCASCADE, so either host or cut volume is accepted.
-FALLS_BACK_TO_HOST = {
-    "cgal-simple": set(VOIDED_CASES),
-    "manifold": {"wall-circular-opening"},
-    "hybrid-manifold-opencascade": {"wall-circular-opening"},
-}
+
+# cgal-simple cannot subtract openings, so it keeps the uncut host. manifold cannot convert a circular opening
+# at the default circle-segments, so there the host is kept unless that conversion gets fixed.
+def expected_volumes(library, case):
+    entity, host, opening_body, uncut, cut = VOIDED_CASES[case]
+    if library == "cgal-simple":
+        return (uncut,)
+    if case == "wall-circular-opening" and "manifold" in library:
+        return (uncut, cut)
+    return (cut,)
+
+
+def assert_voided_volume(library, case, volume, log):
+    uncut = VOIDED_CASES[case][3]
+    assert any(volume == pytest.approx(expected, rel=1e-3) for expected in expected_volumes(library, case))
+    if volume == pytest.approx(uncut, rel=1e-3):
+        assert "GEO034" in log
 
 
 class TestVoidedElementFallback:
@@ -245,20 +255,25 @@ class TestVoidedElementFallback:
     def test_voided_element_is_never_empty(self, library, case):
         if library not in AVAILABLE_KERNELS:
             pytest.skip(f"{library} kernel is not available")
-        entity, host, opening_body, uncut, cut = VOIDED_CASES[case]
-        f, element = build_voided_element(entity, host, opening_body)
+        f, element = build_voided_element(*VOIDED_CASES[case][:3])
         ifcopenshell.get_log()
         shape = ifcopenshell.geom.create_shape(ifcopenshell.geom.settings(), element, geometry_library=library)
         volume = ifcopenshell.util.shape.get_volume(shape.geometry)
-        log = ifcopenshell.get_log()
+        assert_voided_volume(library, case, volume, ifcopenshell.get_log())
 
-        if library not in FALLS_BACK_TO_HOST or case not in FALLS_BACK_TO_HOST[library]:
-            assert volume == pytest.approx(cut, rel=1e-3)
-        elif library == "hybrid-manifold-opencascade":
-            assert volume == pytest.approx(uncut, rel=1e-3) or volume == pytest.approx(cut, rel=1e-3)
-        else:
-            assert volume == pytest.approx(uncut, rel=1e-3)
-            assert "GEO034" in log
+    @pytest.mark.parametrize("case", VOIDED_CASES)
+    @pytest.mark.parametrize("library", KERNELS)
+    def test_iterator_yields_voided_element(self, library, case):
+        if library not in AVAILABLE_KERNELS:
+            pytest.skip(f"{library} kernel is not available")
+        f, element = build_voided_element(*VOIDED_CASES[case][:3])
+        ifcopenshell.get_log()
+        shapes = list(
+            ifcopenshell.geom.iterate(ifcopenshell.geom.settings(), f, 1, include=[element], geometry_library=library)
+        )
+        assert len(shapes) == 1
+        volume = ifcopenshell.util.shape.get_volume(shapes[0].geometry)
+        assert_voided_volume(library, case, volume, ifcopenshell.get_log())
 
 
 class TestWallOpenings:
