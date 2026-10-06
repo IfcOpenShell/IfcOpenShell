@@ -17,23 +17,16 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import pytest
-
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 import ifcopenshell.api.unit
-
-try:
-    ifcopenshell.file(schema="IFC4X3_ADD2")
-    IFC4X3_AVAILABLE = True
-except RuntimeError:
-    IFC4X3_AVAILABLE = False
+import test.bootstrap
 
 
 # other test cases cover the typical vertical by PI method (test_create_alignment_by_pi_method)
 # this test will focus on the edge cases of no initial tangent run, no final tangent run, and
 # compound curve (no tangent between curves)
-@pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
+@test.bootstrap.requires_ifc4x3
 def test_horizontal_layout_by_pi_method():
     file = ifcopenshell.file(schema="IFC4X3_ADD2")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")

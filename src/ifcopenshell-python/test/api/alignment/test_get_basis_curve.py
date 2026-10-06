@@ -17,17 +17,10 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import pytest
-
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 import ifcopenshell.api.unit
-
-try:
-    ifcopenshell.file(schema="IFC4X3")
-    IFC4X3_AVAILABLE = True
-except RuntimeError:
-    IFC4X3_AVAILABLE = False
+import test.bootstrap
 
 
 def _test_horizontal():
@@ -87,7 +80,7 @@ def _test_horizontal_and_vertical_and_cant():
     assert basis_curve.is_a("IfcCompositeCurve")
 
 
-@pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
+@test.bootstrap.requires_ifc4x3
 def test_get_basis_curve():
     _test_horizontal()
     _test_horizontal_and_vertical()
