@@ -84,7 +84,7 @@ if(APPLE)
     install(CODE [[
         set(_fw "${CMAKE_INSTALL_PREFIX}/IfcViewerMinimal.app/Contents/Frameworks")
         file(GLOB _ifc_dylibs "${CMAKE_INSTALL_PREFIX}/lib/*.dylib")
-        list(FILTER _ifc_dylibs EXCLUDE REGEX "ifcopenshell\\.geometry\\.writer\\.")
+        list(FILTER _ifc_dylibs EXCLUDE REGEX "ifcopenshell[._]geometry[._]writer")
         if(_ifc_dylibs)
             message(STATUS "Staging IfcOpenShell dylibs (linked core + plug-ins) into IfcViewerMinimal.app/Contents/Frameworks")
             file(COPY ${_ifc_dylibs} DESTINATION "${_fw}")
