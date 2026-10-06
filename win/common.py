@@ -203,3 +203,12 @@ def validate_cmake_version() -> None:
     if not match or tuple(map(int, match.groups())) < MIN_CMAKE_VERSION:
         logger.error(error_msg)
         sys.exit(1)
+
+
+def is_geometry_writer(path: Path) -> bool:
+    # Per-schema geometry writers ship with the Python package only, not next to the executables.
+    prefixes = (
+        "ifcopenshell.geometry.writer.",  # Core library, `lib`-prefixed on Unix.
+        "ifcopenshell_geometry_writer_",  # Per-schema plugins.
+    )
+    return path.name.removeprefix("lib").startswith(prefixes)
