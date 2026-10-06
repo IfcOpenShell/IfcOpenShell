@@ -23,7 +23,14 @@ from pathlib import Path
 from typing import NamedTuple
 from zipfile import ZipFile
 
-from common import is_geometry_writer, is_json_or_xml_document_serializer, logger, run, run_streamed
+from common import (
+    is_geometry_serializer,
+    is_geometry_writer,
+    is_json_or_xml_document_serializer,
+    logger,
+    run,
+    run_streamed,
+)
 from vs_cfg import VsCfg, get_vs_var
 
 
@@ -341,7 +348,11 @@ def archive_executables(zip_template: str, connector_dir: Path, no_zip: bool) ->
         if not file.name.lower().startswith("svgfill"):
             plugins = ifc_runtime_plugins
             if file.stem != "IfcConvert":
-                plugins = {plugin for plugin in plugins if not is_json_or_xml_document_serializer(plugin)}
+                plugins = {
+                    plugin
+                    for plugin in plugins
+                    if not is_json_or_xml_document_serializer(plugin) and not is_geometry_serializer(plugin)
+                }
             roots.update(plugins)
             for plugin in plugins:
                 files[plugin.name] = plugin

@@ -14,7 +14,14 @@ import subprocess
 from pathlib import Path
 from typing import Literal, NamedTuple
 
-from common import REPO_ROOT, is_geometry_writer, is_json_or_xml_document_serializer, logger, run
+from common import (
+    REPO_ROOT,
+    is_geometry_serializer,
+    is_geometry_writer,
+    is_json_or_xml_document_serializer,
+    logger,
+    run,
+)
 
 VERSION = "v" + (REPO_ROOT / "VERSION").read_text().strip()
 
@@ -157,7 +164,13 @@ def mac_fix_rpaths(package_dir: Path, executables: tuple[Path, ...] = ()) -> Non
         mac_add_rpath(exe, "@executable_path")
 
 
-def stage_runtime_payload(install_dir: Path, dest: Path, *, include_json_xml_serializers: bool = False) -> list[Path]:
+def stage_runtime_payload(
+    install_dir: Path,
+    dest: Path,
+    *,
+    include_json_xml_serializers: bool = False,
+    include_geometry_serializers: bool = True,
+) -> list[Path]:
     """Copy all libs from `install_dir/{bin,lib,lib64}` into `dest` and return where they ended up.
 
     Every library is staged once, under the name the dynamic loader looks it up by (see `get_soname`).
@@ -179,6 +192,8 @@ def stage_runtime_payload(install_dir: Path, dest: Path, *, include_json_xml_ser
             if is_geometry_writer(runtime_file):
                 continue
             if not include_json_xml_serializers and is_json_or_xml_document_serializer(runtime_file):
+                continue
+            if not include_geometry_serializers and is_geometry_serializer(runtime_file):
                 continue
             dest_file = dest / (get_soname(runtime_file) or runtime_file.name)
             staged_files.append(dest_file)
@@ -467,7 +482,13 @@ def package_executable(
     package_dir.mkdir(parents=True)
 
     shutil.copy(exe_path, package_dir / exe)
-    stage_runtime_payload(ifcopenshell_install_dir, package_dir, include_json_xml_serializers=exe == "IfcConvert")
+    stage_runtime_payload(
+        ifcopenshell_install_dir,
+        package_dir,
+        include_json_xml_serializers=exe == "IfcConvert",
+        # svgfill links ifcopenshell_geometry_svgfill directly.
+        include_geometry_serializers=exe in ("IfcConvert", "svgfill"),
+    )
 
     dependency_libs = []
     for runtime_dir in runtime_dirs:

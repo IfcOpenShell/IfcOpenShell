@@ -242,6 +242,8 @@ function(ifcopenshell_stage_app_bundle_dylibs APP_NAME)
         set(_fw "${CMAKE_INSTALL_PREFIX}/${_app}/Contents/Frameworks")
         file(GLOB _ifc_dylibs "${CMAKE_INSTALL_PREFIX}/lib/*.dylib")
         list(FILTER _ifc_dylibs EXCLUDE REGEX "ifcopenshell[._]geometry[._]writer")
+        # Geometry serializers (obj, svg, glb, ...) and svgfill are only used by IfcConvert and Python.
+        list(FILTER _ifc_dylibs EXCLUDE REGEX "ifcopenshell_geometry_[A-Za-z]+\\.dylib$")
 
         set(_ifc_unused_documents ${_ifc_dylibs})
         list(FILTER _ifc_unused_documents INCLUDE REGEX "ifcopenshell_document_")
