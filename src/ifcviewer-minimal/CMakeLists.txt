@@ -66,12 +66,8 @@ install(TARGETS IfcViewerMinimal
     BUNDLE  DESTINATION .
 )
 ifcopenshell_deploy_qt_runtime(IfcViewerMinimal)
+ifcopenshell_stage_app_bundle_dylibs(IfcViewerMinimal)
 
-# Mirror BonsaiViewer.app's bundle staging on macOS — see
-# src/bonsaiviewer/CMakeLists.txt for the long-form rationale (macdeployqt
-# doesn't follow non-Qt @rpath deps, the lib-prefixed core libs vs
-# ifcopenshell.* plug-in naming split, the geometry-writer EXCLUDE filter
-# that keeps the bundle small).
 if(APPLE)
     # libwgpu_native.dylib lives in WGPU_NATIVE_LIB_DIR (set by
     # src/ifcviewer/CMakeLists.txt). Glob it rather than hard-code the
@@ -80,16 +76,4 @@ if(APPLE)
     file(GLOB _wgpu_native_dylib "${WGPU_NATIVE_LIB_DIR}/libwgpu_native.*")
     install(FILES ${_wgpu_native_dylib}
             DESTINATION "IfcViewerMinimal.app/Contents/Frameworks")
-
-    install(CODE [[
-        set(_fw "${CMAKE_INSTALL_PREFIX}/IfcViewerMinimal.app/Contents/Frameworks")
-        file(GLOB _ifc_dylibs "${CMAKE_INSTALL_PREFIX}/lib/*.dylib")
-        list(FILTER _ifc_dylibs EXCLUDE REGEX "ifcopenshell[._]geometry[._]writer")
-        if(_ifc_dylibs)
-            message(STATUS "Staging IfcOpenShell dylibs (linked core + plug-ins) into IfcViewerMinimal.app/Contents/Frameworks")
-            file(COPY ${_ifc_dylibs} DESTINATION "${_fw}")
-        else()
-            message(WARNING "No IfcOpenShell *.dylib found in lib/ — IfcViewerMinimal.app will fail to launch (missing @rpath linked deps) or at IFC load time (missing plug-ins)")
-        endif()
-    ]])
 endif()
