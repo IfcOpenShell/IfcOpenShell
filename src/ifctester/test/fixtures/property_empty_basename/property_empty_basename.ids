@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This file was generated with the assistance of an AI coding tool. -->
+<ids xmlns="http://standards.buildingsmart.org/IDS" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/1.0/ids.xsd">
+    <info>
+        <title>Property requirement with an empty baseName</title>
+    </info>
+    <specifications>
+        <specification name="Walls must have a property in MyPset" ifcVersion="IFC4">
+            <applicability minOccurs="0" maxOccurs="unbounded">
+                <entity>
+                    <name>
+                        <simpleValue>IFCWALL</simpleValue>
+                    </name>
+                </entity>
+            </applicability>
+            <requirements>
+                <property>
+                    <propertySet>
+                        <simpleValue>MyPset</simpleValue>
+                    </propertySet>
+                    <baseName>
+                        <simpleValue></simpleValue>
+                    </baseName>
+                </property>
+            </requirements>
+        </specification>
+    </specifications>
+</ids>

@@ -74,6 +74,11 @@ def get_psets(element):
 
 
 Cardinality = Literal["required", "optional", "prohibited"]
+MANDATORY_PARAMETERS = ("name", "system", "propertySet", "baseName")
+
+
+class IdsEmptyParameterError(Exception):
+    pass
 
 
 class FacetFailure(TypedDict):
@@ -109,6 +114,8 @@ class Facet:
         for name, value in xml.items():
             name = name.replace("@", "")
             if isinstance(value, dict) and "simpleValue" in value.keys():
+                if not value["simpleValue"] and name in MANDATORY_PARAMETERS:
+                    raise IdsEmptyParameterError(f'The {type(self).__name__} facet has an empty mandatory "{name}".')
                 setattr(self, name, value["simpleValue"])
             elif isinstance(value, dict) and "restriction" in value.keys():
                 setattr(self, name, Restriction().parse(value["restriction"]))

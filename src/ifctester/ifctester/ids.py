@@ -34,6 +34,7 @@ from .facet import (
     Entity,
     Facet,
     FacetFailure,
+    IdsEmptyParameterError,
     Material,
     PartOf,
     Property,
@@ -42,7 +43,16 @@ from .facet import (
     get_psets,
 )
 
-__all__ = ["Attribute", "Classification", "Entity", "Material", "PartOf", "Property", "Restriction"]
+__all__ = [
+    "Attribute",
+    "Classification",
+    "Entity",
+    "IdsEmptyParameterError",
+    "Material",
+    "PartOf",
+    "Property",
+    "Restriction",
+]
 cwd = os.path.dirname(os.path.realpath(__file__))
 schema = None
 

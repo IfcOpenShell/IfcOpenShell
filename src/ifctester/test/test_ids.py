@@ -57,6 +57,26 @@ class TestIds:
         with pytest.raises(ids.IdsXmlValidationError):
             ids.open("""<?xml version="1.0" encoding="UTF-8"?><clearly_not_an_ids/>""")
 
+    @pytest.mark.parametrize(
+        "facet, parameter",
+        [
+            (ids.Entity(name=""), "name"),
+            (ids.Attribute(name=""), "name"),
+            (ids.Classification(system=""), "system"),
+            (ids.PartOf(name=""), "name"),
+            (ids.Property(propertySet=""), "propertySet"),
+            (ids.Property(baseName=""), "baseName"),
+        ],
+    )
+    def test_failing_on_reading_an_empty_mandatory_facet_parameter(self, facet, parameter):
+        specs = ids.Ids()
+        spec = ids.Specification(name="Name")
+        spec.applicability.append(ids.Entity(name="IFCWALL"))
+        spec.requirements.append(facet)
+        specs.specifications.append(spec)
+        with pytest.raises(ids.IdsEmptyParameterError, match=f'"{parameter}"'):
+            ids.from_string(specs.to_string())
+
     def test_create_an_ids_with_minimal_information(self):
         specs = ids.Ids()
         assert specs.asdict() == {
