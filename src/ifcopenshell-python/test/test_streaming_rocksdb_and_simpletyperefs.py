@@ -18,12 +18,14 @@
 
 import gc
 import os
+import re
 import struct
 import tempfile
 
 import pytest
 
 import ifcopenshell
+import ifcopenshell.guid
 
 try:
     import psutil
@@ -31,6 +33,18 @@ except ImportError:
     psutil = None
 
 fn = os.path.join(os.path.dirname(__file__), "fixtures/ColumnPSetsOfSets.ifc")
+
+needs_rocksdb = pytest.mark.skipif(
+    not hasattr(ifcopenshell.ifcopenshell_wrapper, "RocksDBPrefixIterator"),
+    reason="IfcOpenShell was built without RocksDB support",
+)
+SCHEMAS = ["IFC2X3", "IFC4", "IFC4X3"]
+STORAGES = [
+    "memory",
+    pytest.param("rocksdb_readonly", marks=needs_rocksdb),
+    pytest.param("rocksdb", marks=needs_rocksdb),
+]
+WRITABLE_STORAGES = ["memory", pytest.param("rocksdb", marks=needs_rocksdb)]
 
 
 def test_stream():
@@ -125,6 +139,134 @@ def test_rocks():
         del g
         del f
         gc.collect()
+
+
+def create_guid_model(directory, schema):
+    f = ifcopenshell.file(schema=schema)
+    f.create_entity("IfcProject", GlobalId=ifcopenshell.guid.new(), Name="Project")
+    for i in range(5):
+        f.create_entity("IfcWall", GlobalId=ifcopenshell.guid.new(), Name=f"Wall {i}")
+    for i in range(200):
+        f.create_entity("IfcCartesianPoint", Coordinates=(float(i), 0.0, 0.0))
+    spf_path = os.path.join(directory, "model.ifc")
+    f.write(spf_path)
+    return spf_path, {inst.GlobalId: inst.id() for inst in f.by_type("IfcRoot")}
+
+
+def open_guid_model(directory, schema, storage):
+    spf_path, roots = create_guid_model(directory, schema)
+    if storage == "memory":
+        return ifcopenshell.open(spf_path), roots
+    rocks_path = os.path.join(directory, "model.rdb")
+    ifcopenshell.convert_path_to_rocksdb(spf_path, rocks_path)
+    return ifcopenshell.open(rocks_path, readonly=storage == "rocksdb_readonly"), roots
+
+
+@pytest.mark.parametrize("schema", SCHEMAS)
+@pytest.mark.parametrize("storage", STORAGES)
+def test_by_guid_resolves_every_converted_global_id(tmp_path, schema, storage):
+    g, roots = open_guid_model(str(tmp_path), schema, storage)
+    assert len(roots) == 6
+    for guid, instance_id in roots.items():
+        found = g.by_guid(guid)
+        assert found.id() == instance_id
+        assert found.GlobalId == guid
+    del g
+    gc.collect()
+
+
+@pytest.mark.parametrize("schema", SCHEMAS)
+@pytest.mark.parametrize("storage", STORAGES)
+def test_by_guid_unknown_global_id_raises(tmp_path, schema, storage):
+    g, roots = open_guid_model(str(tmp_path), schema, storage)
+    unknown = ifcopenshell.guid.new()
+    with pytest.raises(RuntimeError, match=re.escape(f"GlobalId '{unknown}' not found")):
+        g.by_guid(unknown)
+    del g
+    gc.collect()
+
+
+@pytest.mark.parametrize("schema", SCHEMAS)
+@pytest.mark.parametrize("storage", WRITABLE_STORAGES)
+def test_by_guid_resolves_added_entity(tmp_path, schema, storage):
+    g, roots = open_guid_model(str(tmp_path), schema, storage)
+    guid = ifcopenshell.guid.new()
+    added = g.create_entity("IfcBuildingElementProxy", GlobalId=guid, Name="Added")
+    assert added.id() not in roots.values()
+    found = g.by_guid(guid)
+    assert found.id() == added.id()
+    assert found.is_a("IfcBuildingElementProxy")
+    assert found.GlobalId == guid
+    for existing_guid, instance_id in roots.items():
+        assert g.by_guid(existing_guid).id() == instance_id
+    del g
+    gc.collect()
+
+
+@pytest.mark.parametrize("schema", SCHEMAS)
+@pytest.mark.parametrize("storage", WRITABLE_STORAGES)
+def test_by_guid_follows_changed_global_id(tmp_path, schema, storage):
+    g, roots = open_guid_model(str(tmp_path), schema, storage)
+    wall = g.by_type("IfcWall")[0]
+    old_guid = wall.GlobalId
+    new_guid = ifcopenshell.guid.new()
+    wall.GlobalId = new_guid
+    found = g.by_guid(new_guid)
+    assert found.id() == wall.id()
+    assert found.is_a("IfcWall")
+    with pytest.raises(RuntimeError, match=re.escape(f"GlobalId '{old_guid}' not found")):
+        g.by_guid(old_guid)
+    for existing_guid, instance_id in roots.items():
+        if existing_guid != old_guid:
+            assert g.by_guid(existing_guid).id() == instance_id
+    del g
+    gc.collect()
+
+
+@pytest.mark.parametrize("schema", SCHEMAS)
+@pytest.mark.parametrize("storage", WRITABLE_STORAGES)
+def test_by_guid_removed_entity_raises(tmp_path, schema, storage):
+    g, roots = open_guid_model(str(tmp_path), schema, storage)
+    added_guid = ifcopenshell.guid.new()
+    added = g.create_entity("IfcBuildingElementProxy", GlobalId=added_guid, Name="Added")
+    assert g.by_guid(added_guid).id() == added.id()
+    g.remove(added)
+    with pytest.raises(RuntimeError, match=re.escape(f"GlobalId '{added_guid}' not found")):
+        g.by_guid(added_guid)
+    wall = g.by_type("IfcWall")[0]
+    wall_guid = wall.GlobalId
+    g.remove(wall)
+    with pytest.raises(RuntimeError, match=re.escape(f"GlobalId '{wall_guid}' not found")):
+        g.by_guid(wall_guid)
+    for existing_guid, instance_id in roots.items():
+        if existing_guid != wall_guid:
+            assert g.by_guid(existing_guid).id() == instance_id
+    del g
+    gc.collect()
+
+
+@needs_rocksdb
+@pytest.mark.parametrize("schema", SCHEMAS)
+def test_rocks_by_guid_added_entity_does_not_resolve_to_another_entity(tmp_path, schema):
+    import subprocess
+    import sys
+
+    spf_path, roots = create_guid_model(str(tmp_path), schema)
+    rocks_path = str(tmp_path / "model.rdb")
+    ifcopenshell.convert_path_to_rocksdb(spf_path, rocks_path)
+    script = """
+import sys
+import ifcopenshell
+import ifcopenshell.guid
+
+g = ifcopenshell.open(sys.argv[1], readonly=False)
+guid = ifcopenshell.guid.new()
+added = g.create_entity("IfcBuildingElementProxy", GlobalId=guid, Name="Added")
+found = g.by_guid(guid)
+assert found.id() == added.id(), f"{guid} resolved to #{found.id()} {found.is_a()}, expected #{added.id()}"
+"""
+    result = subprocess.run([sys.executable, "-c", script, rocks_path], capture_output=True, text=True, cwd=tmp_path)
+    assert result.returncode == 0, result.stderr or result.stdout
 
 
 def test_rocks_storage_getattr_invalid_attribute():
