@@ -184,6 +184,8 @@ else()
     set(_ifcwrap_cgal_libraries ${CGAL_LIBRARIES})
     set(_ifcwrap_swig_depends ${IFCOPENSHELL_LIBRARIES})
 endif()
+# Not used by the Python bindings, see `serialise` in ifcopenshell/geom/main.py.
+list(REMOVE_ITEM _ifcwrap_ifcopenshell_libraries geometry_serializer IfcOpenShell::geometry_serializer)
 set_property(TARGET ifcopenshell_wrapper PROPERTY SWIG_DEPENDS ${_ifcwrap_swig_depends})
 if(WASM_BUILD)
     # SIDE_MODULE=1 - add to .so all symbols from linked archives (default used by pyodide).
@@ -298,12 +300,14 @@ IF(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
                 ${kernel_libraries}
                 ${tree_libraries}
                 ${mapping_libraries}
-                geometry_serializer
+                # Not exposed in Python bindings yet, see `serialise` in ifcopenshell/geom/main.py.
+                # geometry_serializer
                 ${geometry_serializer_libraries}
                 ${document_serializer_libraries}
                 ${linework_processing_libraries}
                 plugin
             )
+            list(FILTER _ifcopenshell_python_runtime_targets EXCLUDE REGEX "^geometry_serializer_ifc")
 
             list(REMOVE_DUPLICATES _ifcopenshell_python_runtime_targets)
 
