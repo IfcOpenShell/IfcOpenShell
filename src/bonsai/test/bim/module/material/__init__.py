@@ -1,5 +1,5 @@
 # Bonsai - OpenBIM Blender Add-on
-# Copyright (C) 2026
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of Bonsai.
 #
@@ -15,5 +15,5 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
-#
+
 # This file was generated with the assistance of an AI coding tool.
