@@ -649,7 +649,6 @@ class BIM_PT_swept_disk_solid(bpy.types.Panel):
         body = get_swept_disk_solid_body(element)
 
         if body:
-            self.layout.label(text="Tab into Edit Mode to edit the directrix path.", icon="INFO")
             row = self.layout.row(align=True)
             row.prop(obj.data, "bevel_depth", text="Radius")
             row.operator("bim.update_representation", icon="FILE_REFRESH", text="")

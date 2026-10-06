@@ -46,8 +46,7 @@ class BIM_OT_add_swept_disk_solid(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = (
         "Add a generic IfcBuildingElementProxy whose Body representation is an "
         "IfcSweptDiskSolid: a circular disk profile swept along a directrix path.\n"
-        "Useful for cables, rebar, pipes and similar linear elements.\n"
-        "Tab into Edit Mode to edit the directrix path directly (it's a native Blender curve)."
+        "Useful for cables, rebar, pipes and similar linear elements"
     )
     bl_options = {"REGISTER", "UNDO"}
 
@@ -74,10 +73,8 @@ class BIM_OT_add_swept_disk_solid(bpy.types.Operator, tool.Ifc.Operator):
         else:
             spawn_location = context.scene.cursor.location.copy()
 
-        # A native swept disk solid is loaded as (and, per Loader.create_native_swept_disk_solid,
-        # expected to be) a beveled 3D POLY curve: add_representation's create_variable_representation
-        # already special-cases a Curve with bevel_depth into IfcSweptDiskSolid, so a plain 2-point
-        # directrix is all that's needed here; Blender's own curve Edit Mode (Tab) does the rest.
+        # A bevelled 3D POLY curve is written as an IfcSweptDiskSolid by add_representation,
+        # so a 2 point path is all that is needed here.
         curve = bpy.data.curves.new("IfcBuildingElementProxy", type="CURVE")
         curve.dimensions = "3D"
         curve.resolution_u = 2
