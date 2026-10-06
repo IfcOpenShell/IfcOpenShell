@@ -209,8 +209,9 @@ endfunction()
 #
 # The geometry-writer filter drops libifcopenshell.geometry.writer.dylib
 # and the per-schema ifcopenshell_geometry_writer_*.dylib plug-ins
-# (OCCT -> IFC serialization, unused by the apps). Mirrors
-# `is_geometry_writer` in win/common.py.
+# (OCCT -> IFC serialization, unused by the apps), and all document
+# serializers except rdb (json/xml are only used by IfcConvert). Mirrors
+# `is_geometry_writer` and `is_json_or_xml_document_serializer` in win/common.py.
 #
 # <prefix>/lib/ is IfcOpenShell-exclusive — Qt / boost / eigen live in
 # their own brew / build prefixes — so a broad *.dylib glob is safe
@@ -241,6 +242,15 @@ function(ifcopenshell_stage_app_bundle_dylibs APP_NAME)
         set(_fw "${CMAKE_INSTALL_PREFIX}/${_app}/Contents/Frameworks")
         file(GLOB _ifc_dylibs "${CMAKE_INSTALL_PREFIX}/lib/*.dylib")
         list(FILTER _ifc_dylibs EXCLUDE REGEX "ifcopenshell[._]geometry[._]writer")
+
+        set(_ifc_unused_documents ${_ifc_dylibs})
+        list(FILTER _ifc_unused_documents INCLUDE REGEX "ifcopenshell_document_")
+        # Other document serializers (json, xml) are only used by IfcConvert.
+        list(FILTER _ifc_unused_documents EXCLUDE REGEX "ifcopenshell_document_rdb")
+        if(_ifc_unused_documents)
+            list(REMOVE_ITEM _ifc_dylibs ${_ifc_unused_documents})
+        endif()
+
         if(_ifc_dylibs)
             message(STATUS "Staging IfcOpenShell dylibs (linked core + plug-ins) into ${_app}/Contents/Frameworks")
             file(COPY ${_ifc_dylibs} DESTINATION "${_fw}")

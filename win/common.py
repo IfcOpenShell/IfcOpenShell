@@ -213,3 +213,8 @@ def is_geometry_writer(path: Path) -> bool:
         "ifcopenshell_geometry_writer_",  # Per-schema plugins.
     )
     return path.name.removeprefix("lib").startswith(prefixes)
+
+
+def is_json_or_xml_document_serializer(path: Path) -> bool:
+    # Only IfcConvert writes .json and .xml documents, the rest of the packages leave them out.
+    return path.name.startswith(("ifcopenshell_document_json_", "ifcopenshell_document_xml_"))

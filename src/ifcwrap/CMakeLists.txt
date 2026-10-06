@@ -303,11 +303,14 @@ IF(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
                 # Not exposed in Python bindings yet, see `serialise` in ifcopenshell/geom/main.py.
                 # geometry_serializer
                 ${geometry_serializer_libraries}
-                ${document_serializer_libraries}
                 ${linework_processing_libraries}
                 plugin
             )
             list(FILTER _ifcopenshell_python_runtime_targets EXCLUDE REGEX "^geometry_serializer_ifc")
+            # Other document serializers (json, xml) are only used by IfcConvert.
+            if(TARGET document_serializer_rdb)
+                list(APPEND _ifcopenshell_python_runtime_targets document_serializer_rdb)
+            endif()
 
             list(REMOVE_DUPLICATES _ifcopenshell_python_runtime_targets)
 
