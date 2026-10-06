@@ -218,3 +218,9 @@ def is_geometry_writer(path: Path) -> bool:
 def is_json_or_xml_document_serializer(path: Path) -> bool:
     # Only IfcConvert writes .json and .xml documents, the rest of the packages leave them out.
     return path.name.startswith(("ifcopenshell_document_json_", "ifcopenshell_document_xml_"))
+
+
+def is_geometry_serializer(path: Path) -> bool:
+    # Besides the Python bindings, geometry serializers (obj, svg, glb, ...) are only used by IfcConvert
+    # and svgfill only by the svgfill executable, so the other executables leave them out.
+    return re.fullmatch(r"ifcopenshell_geometry_[A-Za-z]+", path.stem) is not None
