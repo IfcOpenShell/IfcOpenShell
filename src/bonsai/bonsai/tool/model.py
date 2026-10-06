@@ -2361,8 +2361,9 @@ class Model(bonsai.core.tool.Model):
                 if group_index in v[deform_layer]:
                     return group_index
 
-        # Convert all loops into IFC curves
+        # Convert all loops into IFC curves. closed_curves: loops authored closed (or circles).
         curves: list[ifcopenshell.entity_instance] = []
+        closed_curves: set[ifcopenshell.entity_instance] = set()
         for loop in loops:
             if len(loop) == 1 and all([is_in_group(v, "IFCCIRCLE") for v in loop[0].verts]):
                 v1, v2 = loop[0].verts
@@ -2373,6 +2374,7 @@ class Model(bonsai.core.tool.Model):
                 curves.append(
                     tmp.createIfcCircle(tmp.createIfcAxis2Placement2D(tmp.createIfcCartesianPoint(list(mid))), radius)
                 )
+                closed_curves.add(curves[-1])
             else:
                 loop_verts: list[bmesh.types.BMVert] = []
                 for i, edge in enumerate(loop):
@@ -2448,6 +2450,8 @@ class Model(bonsai.core.tool.Model):
                         coord_list.append(coord_list[0])
                     points = tmp.createIfcCartesianPointList2D(coord_list)
                     curves.append(tmp.createIfcIndexedPolyCurve(points))
+                if is_closed:
+                    closed_curves.add(curves[-1])
 
         # Sort IFC curves into either closed, or closed with void profile defs
         profile_defs: list[ifcopenshell.entity_instance] = []
@@ -2464,10 +2468,13 @@ class Model(bonsai.core.tool.Model):
             edges = ifcopenshell.util.shape.get_edges(geometry)
             boundary_lines = [shapely.LineString([v[e[0]], v[e[1]]]) for e in edges]
             unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
-            closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
-            for polygon in closed_polygons.geoms:
-                polygons[curve] = polygon
-                break
+            # GEOS >= 3.14 returns a scalar LineString for a single closed ring, so use get_parts() (#9230).
+            closed_polygons = list(shapely.polygonize(shapely.get_parts(unioned_boundaries)).geoms)
+            # A closed curve must resolve to exactly one polygon (#8983).
+            if len(closed_polygons) == 1:
+                polygons[curve] = closed_polygons[0]
+            elif curve in closed_curves:
+                return (False, "INVALID_LOOP")
 
         # Check for contains properly (IFC doesn't allow common boundary points)
         outer_inner = {}
@@ -2480,9 +2487,9 @@ class Model(bonsai.core.tool.Model):
                     outer_inner.setdefault(curve, []).append(curve2)
                     inner_outer.setdefault(curve2, []).append(curve)
 
-        # Odd-even rule for nested curves
-        nested_level = {c: len(inner_outer[c]) if c in inner_outer else 0 for c in curves}
-        for curve in sorted(curves, key=lambda c: nested_level[c]):
+        # Odd-even rule for nested curves; only resolved curves are candidates.
+        nested_level = {c: len(inner_outer[c]) if c in inner_outer else 0 for c in polygons}
+        for curve in sorted(polygons, key=lambda c: nested_level[c]):
             level = nested_level[curve]
             if level % 2 == 0:
                 if curve in outer_inner:
