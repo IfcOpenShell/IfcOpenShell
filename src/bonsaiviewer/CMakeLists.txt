@@ -138,12 +138,15 @@ target_link_libraries(BonsaiViewer PRIVATE
     # GeometryStreamer, SidecarBuilder, ViewportWindow, OverlayRenderer,
     # BufferPool, …) since the wgpu/ifcviewer merge.
     IfcViewer
+    plugin
     Qt${QT_VERSION}::Core
     Qt${QT_VERSION}::CorePrivate
     Qt${QT_VERSION}::Gui
     Qt${QT_VERSION}::Svg
     Qt${QT_VERSION}::Widgets
 )
+# Match the plugin library's boost::dll path type (plugin.h includes boost/dll).
+target_compile_definitions(BonsaiViewer PRIVATE BOOST_DLL_USE_STD_FS)
 
 # BUNDLE DESTINATION must be "." (install-prefix root) on macOS — Qt's
 # deploy generator emits `macdeployqt BonsaiViewer.app` (no path

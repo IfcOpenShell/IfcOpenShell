@@ -9,7 +9,8 @@ temporary directory that is put on PYTHONPATH, so the tests import the *packaged
 wrapper and plug-ins, not a source build. pytest is run through uv with the Python
 version matching the zip.
 
-Unless `--skip-bonsaiviewer` is passed, `BonsaiViewer --version` is run from the BonsaiViewer zip as well.
+Unless `--skip-bonsaiviewer` is passed, the BonsaiViewer zip is extracted as well: its path is passed
+to the tests in `IFCOPENSHELL_PACKAGE_TESTS_BONSAIVIEWER` and `BonsaiViewer --version` is run.
 """
 
 import argparse
@@ -66,7 +67,7 @@ def find_oldest_zip(output_dir: Path) -> tuple[Path, str]:
     return zips[version][0], ".".join(map(str, version))
 
 
-def run_python_tests(output_dir: Path, pytest_args: list[str]) -> int:
+def run_python_tests(output_dir: Path, pytest_args: list[str], bonsaiviewer: Path | None) -> int:
     zip_path, python_version = find_oldest_zip(output_dir)
     python_request = python_version
     if sys.platform == "win32" and platform.machine() == "ARM64":
@@ -77,6 +78,8 @@ def run_python_tests(output_dir: Path, pytest_args: list[str]) -> int:
         print(f"Extracting {zip_path} into {tmp}")
         extract_preserving_symlinks(zip_path, Path(tmp))
         env = dict(os.environ, PYTHONPATH=tmp, PYTEST_DISABLE_PLUGIN_AUTOLOAD="1")
+        if bonsaiviewer:
+            env["IFCOPENSHELL_PACKAGE_TESTS_BONSAIVIEWER"] = str(bonsaiviewer)
         with_args = [arg for dep in TEST_DEPENDENCIES for arg in ("--with", dep)]
         # Run from the temp dir so a checked-out `src/ifcopenshell-python` can never shadow the package.
         cmd = [
@@ -88,35 +91,39 @@ def run_python_tests(output_dir: Path, pytest_args: list[str]) -> int:
         return proc.returncode
 
 
-def run_bonsaiviewer(output_dir: Path) -> int:
-    """Run `BonsaiViewer --version` from the packaged zip to catch missing runtime libraries."""
+def run_bonsaiviewer(exe: Path | str, *args: str) -> subprocess.CompletedProcess[str]:
+    """Run BonsaiViewer with `args` and print its output."""
+    cmd = [str(exe), *args]
+    print("$", " ".join(cmd))
+    env = dict(os.environ)
+    if sys.platform.startswith("linux"):
+        # TODO: in theory `BonsaiViewer` should be runnable as cli too?
+        # No display on CI, and the default xcb platform plugin needs one (and libxcb-cursor0).
+        env["QT_QPA_PLATFORM"] = "offscreen"
+    # `capture_output` is attaching stdio.
+    # `--version` without stdio shows a message box and leaves the process hanging.
+    proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
+    print(proc.stdout + proc.stderr, end="")
+    return proc
+
+
+def extract_bonsaiviewer(output_dir: Path, dest: Path) -> Path:
+    """Extract the BonsaiViewer zip into `dest` and return the path to the executable."""
     matches = sorted(output_dir.glob("BonsaiViewer-*.zip"))
     if len(matches) != 1:
         sys.exit(f"Expected exactly one BonsaiViewer zip in {str(output_dir)!r}, found: {matches}")
     zip_path = matches[0]
-    with tempfile.TemporaryDirectory(prefix="bonsaiviewer-package-") as tmp:
-        print(f"Extracting {zip_path} into {tmp}")
-        extract_preserving_symlinks(zip_path, Path(tmp))
-        executables = (
-            "BonsaiViewer.app/Contents/MacOS/BonsaiViewer",
-            "BonsaiViewer.exe",
-            "BonsaiViewer",
-        )
-        exe = next((Path(tmp) / c for c in executables if (Path(tmp) / c).is_file()), None)
-        if exe is None:
-            sys.exit(f"No BonsaiViewer executable found in {zip_path}")
-        cmd = [str(exe), "--version"]
-        print("$", " ".join(cmd))
-        env = dict(os.environ)
-        if sys.platform.startswith("linux"):
-            # TODO: in theory `BonsaiViewer` should be runnable as cli too?
-            # No display on CI, and the default xcb platform plugin needs one (and libxcb-cursor0).
-            env["QT_QPA_PLATFORM"] = "offscreen"
-        # `capture_output` is attaching stdio.
-        # `--version` without stdio shows a message box and leaves the process hanging.
-        proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
-        print(proc.stdout + proc.stderr, end="")
-        return proc.returncode
+    print(f"Extracting {zip_path} into {dest}")
+    extract_preserving_symlinks(zip_path, dest)
+    executables = (
+        "BonsaiViewer.app/Contents/MacOS/BonsaiViewer",
+        "BonsaiViewer.exe",
+        "BonsaiViewer",
+    )
+    exe = next((dest / c for c in executables if (dest / c).is_file()), None)
+    if exe is None:
+        sys.exit(f"No BonsaiViewer executable found in {zip_path}")
+    return exe
 
 
 class Args(NamedTuple):
@@ -138,12 +145,17 @@ def parse_args() -> Args:
     )
 
 
-ARGS = parse_args()
-
-
 def main() -> int:
-    python_returncode = run_python_tests(ARGS.output_dir, ARGS.pytest_args)
-    bonsaiviewer_returncode = 0 if ARGS.skip_bonsaiviewer else run_bonsaiviewer(ARGS.output_dir)
+    args = parse_args()
+    if args.skip_bonsaiviewer:
+        return run_python_tests(args.output_dir, args.pytest_args, None)
+    with tempfile.TemporaryDirectory(prefix="bonsaiviewer-package-") as tmp:
+        exe = extract_bonsaiviewer(args.output_dir, Path(tmp))
+        python_returncode = run_python_tests(args.output_dir, args.pytest_args, exe)
+        # Catch missing runtime libraries.
+        bonsaiviewer_returncode = run_bonsaiviewer(exe, "--version").returncode
+        # Just for the log, the result is checked by the tests.
+        run_bonsaiviewer(exe, "--list-plugins")
     return python_returncode or bonsaiviewer_returncode
 
 
