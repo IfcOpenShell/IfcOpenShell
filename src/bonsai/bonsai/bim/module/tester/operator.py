@@ -261,6 +261,9 @@ class ExecuteIfcTester(bpy.types.Operator):
                     {"ERROR"}, "Provided IDS file appears to be invalid. Open system console to see the details."
                 )
                 return {"CANCELLED"}
+            except ifctester.ids.IdsEmptyParameterError as e:
+                self.report({"ERROR"}, f"Provided IDS file is invalid. {e}")
+                return {"CANCELLED"}
             print("Finished loading:", time.time() - start)
             start = time.time()
             specs.validate(ifc_data, filepath=ifc_path)
