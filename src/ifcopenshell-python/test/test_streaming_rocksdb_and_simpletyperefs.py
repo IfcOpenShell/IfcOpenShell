@@ -24,6 +24,7 @@ import tempfile
 import pytest
 
 import ifcopenshell
+import ifcopenshell.guid
 
 try:
     import psutil
@@ -31,6 +32,7 @@ except ImportError:
     psutil = None
 
 fn = os.path.join(os.path.dirname(__file__), "fixtures/ColumnPSetsOfSets.ifc")
+HAS_ROCKSDB = hasattr(ifcopenshell.ifcopenshell_wrapper, "RocksDBPrefixIterator")
 
 
 def test_stream():
@@ -117,6 +119,34 @@ def test_rocks():
 
         del f
         gc.collect()
+
+
+@pytest.mark.skipif(not HAS_ROCKSDB, reason="IfcOpenShell was built without RocksDB support")
+@pytest.mark.parametrize("schema", ["IFC2X3", "IFC4", "IFC4X3"])
+@pytest.mark.parametrize("readonly", [False, True])
+def test_rocks_by_guid_resolves_every_global_id(tmp_path, schema, readonly):
+    f = ifcopenshell.file(schema=schema)
+    f.createIfcProject(ifcopenshell.guid.new(), Name="Project")
+    for i in range(5):
+        f.createIfcWall(ifcopenshell.guid.new(), Name=f"Wall {i}")
+    f.createIfcCartesianPoint((0.0, 0.0, 0.0))
+    spf_path = str(tmp_path / "model.ifc")
+    rocks_path = str(tmp_path / "model.rdb")
+    f.write(spf_path)
+    ifcopenshell.convert_path_to_rocksdb(spf_path, rocks_path)
+
+    g = ifcopenshell.open(rocks_path, readonly=readonly)
+    roots = f.by_type("IfcRoot")
+    assert len(roots) == 6
+    for inst in roots:
+        found = g.by_guid(inst.GlobalId)
+        assert found.id() == inst.id()
+        assert found.is_a() == inst.is_a()
+    with pytest.raises(RuntimeError, match="not found"):
+        g.by_guid(ifcopenshell.guid.new())
+
+    del g
+    gc.collect()
 
 
 if __name__ == "__main__":

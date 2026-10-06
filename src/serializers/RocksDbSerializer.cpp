@@ -133,6 +133,10 @@ void RocksDbSerializer::write_streaming_() {
 
 	std::string tmp;
 
+	// Resolved lazily from the first non-header declaration encountered, because
+	// the schema is only known once the header has been read.
+	const IfcParse::declaration* ifcroot_type = nullptr;
+
 	IfcParse::InstanceStreamer streamer(input_filename);
 
 	// We do not want to coerce attribute counts here, because we want
@@ -282,6 +286,25 @@ void RocksDbSerializer::write_streaming_() {
 					std::string s(sizeof(size_t), ' ');
 					memcpy(s.data(), &v, sizeof(size_t));
 					storage.db->Merge(storage.wopts, "t|" + std::to_string(decl->index_in_schema()), s);
+				}
+
+				// GlobalId as numeric ref to instance name, so that the guid map in
+				// rocks_db_file_storage can resolve by_guid() lookups.
+				if (ifcroot_type == nullptr) {
+					ifcroot_type = decl->schema()->declaration_by_name("IfcRoot");
+				}
+				if (decl->is(*ifcroot_type)) {
+					// @nb attribute counts are not coerced, so the attribute may be absent
+					const auto guid_attr = data.get_attribute_value(nullptr, decl, 0, 0);
+					const bool has_guid = data.storage_->size() > 0 && guid_attr.type() == IfcUtil::Argument_STRING;
+					if (has_guid) {
+						size_t v = name;
+						std::string s(sizeof(size_t), ' ');
+						memcpy(s.data(), &v, sizeof(size_t));
+						storage.db->Put(storage.wopts, "g|" + (std::string)guid_attr, s);
+					} else {
+						logger_.Error("SER", 38, "Instance #" + std::to_string(name) + " has no GlobalId, omitted from guid index");
+					}
 				}
 			}
 
