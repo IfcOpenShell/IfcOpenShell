@@ -122,10 +122,8 @@ class FileWatcher:
 
         def on_timer() -> Union[float, None]:
             cls._on_timer_expired()
-            # Reschedule by returning the next interval rather than calling
-            # reset_timer(), which would unregister this timer from within
-            # its own callback and corrupt Blender's timer registry (see the
-            # matching comment in tool.Autosave.reset_timer).
+            # Return the next interval instead of calling reset_timer(), which would
+            # unregister this timer from inside its own callback (see tool.Autosave).
             return cls._next_interval_seconds() if cls.is_eligible() else None
 
         global _timer_callback
@@ -148,8 +146,7 @@ class FileWatcher:
             # First poll for this file (or the active path changed).
             cls.take_snapshot()
             return
-        stat = cls.stat_file(path)
-        if stat is None:
+        if (stat := cls.stat_file(path)) is None:
             return
         current = (path.as_posix(), *stat)
         if current == _snapshot:
@@ -157,9 +154,8 @@ class FileWatcher:
             _idle_polls = min(_idle_polls + 1, cls.IDLE_BACKOFF_CAP)
             return
         if _pending_change != current:
-            # A change was detected, but wait until two consecutive polls
-            # agree so we never reload a half-written file. Keep polling at
-            # the base interval until it settles.
+            # Wait for two consecutive polls to agree so a half-written file is never
+            # reloaded, polling at the base interval until it settles.
             _pending_change = current
             _idle_polls = 0
             return

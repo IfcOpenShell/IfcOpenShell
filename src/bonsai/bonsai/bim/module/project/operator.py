@@ -1303,9 +1303,8 @@ class FileChangedReloadPrompt(bpy.types.Operator):
         return bpy.ops.bim.reload_project("EXEC_DEFAULT")
 
     def cancel(self, context):
-        # Also reached via Escape or a click outside the dialog. The watcher
-        # snapshot was already updated when the change was detected, so the
-        # prompt will not reappear until the file changes again.
+        # Also reached via Escape or a click outside the dialog; the prompt
+        # reappears only when the file changes again.
         tool.FileWatcher.set_prompt_active(False)
 
 
