@@ -157,6 +157,22 @@ class TestTransaction(test.bootstrap.IFC4):
         assert len(list(self.file)) == 2
 
 
+GUID = "0YvctVUKr0kugbFTf53O9L"
+GUID_OTHER = "1F$7lN9$r5MOA_lpAoNM52"
+GUID_SHORT = "0SYNTH000000156"
+GUID_FILES = pytest.mark.parametrize(
+    "schema,source", [(schema, source) for schema in ("IFC2X3", "IFC4") for source in ("created", "parsed", "lazy")]
+)
+
+
+def reopen(f: ifcopenshell.file, source: str, tmp_path) -> ifcopenshell.file:
+    if source == "created":
+        return f
+    path = str(tmp_path / "model.ifc")
+    f.write(path)
+    return ifcopenshell.open(path, lazy=source == "lazy")
+
+
 class TestFile(test.bootstrap.IFC4):
     def test_creating_a_new_file(self):
         f = ifcopenshell.file(schema="IFC4")
@@ -197,13 +213,58 @@ class TestFile(test.bootstrap.IFC4):
             self.file.by_id("id")
 
     def test_getting_an_element_by_guid(self):
-        # Only a 22-character GlobalId is indexed.
         element = self.file.createIfcWall("0YvctVUKr0kugbFTf53O9L")
         with pytest.raises(TypeError):
             self.file.by_guid(1)
         assert self.file.by_guid("0YvctVUKr0kugbFTf53O9L") == element
         with pytest.raises(RuntimeError):
             self.file.by_guid("id")
+
+    @GUID_FILES
+    def test_getting_an_element_by_a_guid_of_any_length(self, schema, source, tmp_path):
+        f = ifcopenshell.file(schema=schema)
+        f.create_entity("IfcWall")
+        guids = ("A", GUID_SHORT, GUID_OTHER, GUID + "A", GUID + "B", GUID + "ABCDEFGH")
+        ids = {guid: f.create_entity("IfcWall", GlobalId=guid).id() for guid in guids}
+        f = reopen(f, source, tmp_path)
+        assert {guid: f.by_guid(guid).id() for guid in guids} == ids
+        for guid in ("", GUID, GUID + "AB", GUID_SHORT[:-1], GUID_SHORT.ljust(22), GUID_SHORT.ljust(22, "\0")):
+            with pytest.raises(RuntimeError):
+                f.by_guid(guid)
+
+    @GUID_FILES
+    def test_getting_an_element_by_an_empty_guid(self, schema, source, tmp_path):
+        f = ifcopenshell.file(schema=schema)
+        f.create_entity("IfcWall")
+        wall = f.create_entity("IfcWall", GlobalId="").id()
+        f = reopen(f, source, tmp_path)
+        assert f.by_guid("").id() == wall
+
+    @GUID_FILES
+    def test_getting_an_element_by_guid_after_changing_its_length(self, schema, source, tmp_path):
+        f = ifcopenshell.file(schema=schema)
+        ids = [f.create_entity("IfcWall", GlobalId=guid).id() for guid in (GUID_SHORT, GUID + "A", GUID)]
+        f = reopen(f, source, tmp_path)
+        short, long, valid = (f.by_id(i) for i in ids)
+        short.GlobalId = GUID + "B"
+        long.GlobalId = GUID_OTHER
+        valid.GlobalId = GUID_SHORT[:-1]
+        for guid in (GUID_SHORT, GUID + "A", GUID):
+            with pytest.raises(RuntimeError):
+                f.by_guid(guid)
+        assert [f.by_guid(guid).id() for guid in (GUID + "B", GUID_OTHER, GUID_SHORT[:-1])] == ids
+
+    @GUID_FILES
+    def test_not_getting_a_removed_element_by_a_guid_of_any_length(self, schema, source, tmp_path):
+        f = ifcopenshell.file(schema=schema)
+        ids = [f.create_entity("IfcWall", GlobalId=guid).id() for guid in (GUID_SHORT, GUID + "A", GUID + "B")]
+        f = reopen(f, source, tmp_path)
+        f.remove(f.by_id(ids[0]))
+        f.remove(f.by_id(ids[1]))
+        for guid in (GUID_SHORT, GUID + "A"):
+            with pytest.raises(RuntimeError):
+                f.by_guid(guid)
+        assert f.by_guid(GUID + "B").id() == ids[2]
 
     def test_adding_an_element(self):
         g = ifcopenshell.file()

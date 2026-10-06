@@ -609,6 +609,7 @@ namespace ifcopenshell {
             // inline so a lookup allocates nothing. Only a 22-character key can
             // be stored or found; guid_key() says whether a string is one, and
             // variant_map converts from std::string at the file's interface.
+            // A GlobalId of any other length is invalid; byguid_other_ holds it.
             struct guid_key_hash {
                 size_t operator()(const std::array<char, 22>& key) const {
                     return std::hash<std::string_view>()(std::string_view(key.data(), key.size()));
@@ -668,6 +669,7 @@ namespace ifcopenshell {
             entities_by_type bytype_excl_;
             entities_by_ref byref_excl_;
             entity_instance_by_guid byguid_;
+            std::map<std::string, express::base> byguid_other_;
             entity_instance_by_name byid_read_;
 
             template <typename Reader>

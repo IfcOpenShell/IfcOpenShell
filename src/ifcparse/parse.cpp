@@ -1589,6 +1589,11 @@ express::base::set_attribute_value(size_t i, const T& t) {
                 if (p.second == *this) {
                     file()->internal_guid_map().erase(it);
                 }
+            } else if (auto* other = file()->other_guid_map(guid)) {
+                auto found = other->find(guid);
+                if (found != other->end() && found->second == *this) {
+                    other->erase(found);
+                }
             }
         } catch (ifcopenshell::exception& e) {
             file()->logger().error(e);
@@ -1651,6 +1656,11 @@ express::base::set_attribute_value(size_t i, const T& t) {
                     file()->logger().warning("Duplicate guid " + guid);
                 }
                 file()->internal_guid_map().insert({guid, *this});
+                if (auto* other = file()->other_guid_map(guid)) {
+                    if (!other->insert({guid, *this}).second) {
+                        file()->logger().warning("Duplicate guid " + guid);
+                    }
+                }
             } catch (ifcopenshell::exception& e) {
                 file()->logger().error(e);
             }
@@ -2842,7 +2852,7 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
             express::base instance(data);
             bytype_excl_[declaration].push_back(instance);
             max_id = (std::max)(max_id, (unsigned int)name);
-            if (guid_end > guid_begin && declaration->is(*ifcroot)) {
+            if (guid_begin != 0 && declaration->is(*ifcroot)) {
                 std::string guid;
                 guid.reserve(guid_end - guid_begin);
                 for (size_t at = guid_begin; at < guid_end; ++at) {
@@ -2857,6 +2867,11 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
                         logger_.get().message(ifcopenshell::logger::LOG_WARNING, "Instance encountered with non-unique GlobalId " + guid);
                     }
                     byguid_[key] = instance;
+                } else {
+                    if (byguid_other_.count(guid) != 0) {
+                        logger_.get().message(ifcopenshell::logger::LOG_WARNING, "Instance encountered with non-unique GlobalId " + guid);
+                    }
+                    byguid_other_[guid] = instance;
                 }
             }
             return true;
@@ -2952,6 +2967,11 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
                         logger_.get().message(ifcopenshell::logger::LOG_WARNING, ss.str());
                     }
                     byguid_[key] = instance;
+                } else {
+                    if (byguid_other_.count(guid) != 0) {
+                        logger_.get().message(ifcopenshell::logger::LOG_WARNING, "Instance encountered with non-unique GlobalId " + guid);
+                    }
+                    byguid_other_[guid] = instance;
                 }
             } catch (const exception& ex) {
                 logger_.get().message(ifcopenshell::logger::LOG_ERROR, ex.what());
@@ -3537,6 +3557,7 @@ void file::process_deletion_(const express::base& entity) {
         auto it = byguid_.find(global_id);
         if (it != byguid_.end()) {
             byguid_.erase(it);
+        } else if (auto* other = other_guid_map(global_id); other && other->erase(global_id)) {
         } else {
             logger_.get().warning("GlobalId on rooted instance not encountered in map");
         }
@@ -3748,9 +3769,23 @@ void ifcopenshell::file::process_deletion_inverse(const express::base& inst) {
     }, storage_);
 }
 
+std::map<std::string, express::base>* file::other_guid_map(const std::string& guid) {
+    if (guid.size() == 22) {
+        return nullptr;
+    }
+    auto* storage = std::get_if<impl::in_memory_file_storage>(&storage_);
+    return storage ? &storage->byguid_other_ : nullptr;
+}
+
 express::base file::instance_by_guid(const std::string& guid) {
     auto it = byguid_.find(guid);
     if (it == byguid_.end()) {
+        if (auto* other = other_guid_map(guid)) {
+            auto found = other->find(guid);
+            if (found != other->end()) {
+                return found->second;
+            }
+        }
         throw exception("Instance with GlobalId '" + guid + "' not found");
     }
     return it->second;

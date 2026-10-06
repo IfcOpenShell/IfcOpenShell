@@ -32,6 +32,7 @@
 %ignore ifcopenshell::file::types_begin;
 %ignore ifcopenshell::file::types_end;
 %ignore ifcopenshell::file::internal_guid_map;
+%ignore ifcopenshell::file::other_guid_map;
 %ignore ifcopenshell::file::storage_;
 %ignore ifcopenshell::file::byguid_;
 %ignore ifcopenshell::file::byid_;
