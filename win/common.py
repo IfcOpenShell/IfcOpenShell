@@ -206,7 +206,8 @@ def validate_cmake_version() -> None:
 
 
 def is_geometry_writer(path: Path) -> bool:
-    # Per-schema geometry writers ship with the Python package only, not next to the executables.
+    # Geometry writers are left out of the packages: only `geom::serialise` and `geom::tesselate`
+    # load them, and neither the executables nor the Python bindings currently use those.
     prefixes = (
         "ifcopenshell.geometry.writer.",  # Core library, `lib`-prefixed on Unix.
         "ifcopenshell_geometry_writer_",  # Per-schema plugins.

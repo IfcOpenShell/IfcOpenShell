@@ -157,7 +157,7 @@ def mac_fix_rpaths(package_dir: Path, executables: tuple[Path, ...] = ()) -> Non
         mac_add_rpath(exe, "@executable_path")
 
 
-def stage_runtime_payload(install_dir: Path, dest: Path, *, include_geometry_writers: bool = True) -> list[Path]:
+def stage_runtime_payload(install_dir: Path, dest: Path, *, include_geometry_writers: bool = False) -> list[Path]:
     """Copy all libs from `install_dir/{bin,lib,lib64}` into `dest` and return where they ended up.
 
     Every library is staged once, under the name the dynamic loader looks it up by (see `get_soname`).
