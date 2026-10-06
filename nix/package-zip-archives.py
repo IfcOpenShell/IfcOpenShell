@@ -17,6 +17,7 @@ from typing import Literal, NamedTuple
 from common import (
     REPO_ROOT,
     is_geometry_serializer,
+    is_geometry_tree,
     is_geometry_writer,
     is_json_or_xml_document_serializer,
     logger,
@@ -170,6 +171,7 @@ def stage_runtime_payload(
     *,
     include_json_xml_serializers: bool = False,
     include_geometry_serializers: bool = True,
+    include_geometry_trees: bool = True,
 ) -> list[Path]:
     """Copy all libs from `install_dir/{bin,lib,lib64}` into `dest` and return where they ended up.
 
@@ -194,6 +196,8 @@ def stage_runtime_payload(
             if not include_json_xml_serializers and is_json_or_xml_document_serializer(runtime_file):
                 continue
             if not include_geometry_serializers and is_geometry_serializer(runtime_file):
+                continue
+            if not include_geometry_trees and is_geometry_tree(runtime_file):
                 continue
             dest_file = dest / (get_soname(runtime_file) or runtime_file.name)
             staged_files.append(dest_file)
@@ -488,6 +492,7 @@ def package_executable(
         include_json_xml_serializers=exe == "IfcConvert",
         # svgfill links ifcopenshell_geometry_svgfill directly.
         include_geometry_serializers=exe in ("IfcConvert", "svgfill"),
+        include_geometry_trees=False,
     )
 
     dependency_libs = []

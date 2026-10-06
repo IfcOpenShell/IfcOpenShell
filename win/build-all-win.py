@@ -25,6 +25,7 @@ from zipfile import ZipFile
 
 from common import (
     is_geometry_serializer,
+    is_geometry_tree,
     is_geometry_writer,
     is_json_or_xml_document_serializer,
     logger,
@@ -346,7 +347,7 @@ def archive_executables(zip_template: str, connector_dir: Path, no_zip: bool) ->
         # IfcOpenShell plugins are loaded by name at runtime, so dumpbin cannot discover them.
         # svgfill links its provider plugin directly, so dumpbin can discover that dependency.
         if not file.name.lower().startswith("svgfill"):
-            plugins = ifc_runtime_plugins
+            plugins = {plugin for plugin in ifc_runtime_plugins if not is_geometry_tree(plugin)}
             if file.stem != "IfcConvert":
                 plugins = {
                     plugin

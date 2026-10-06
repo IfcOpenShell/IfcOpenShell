@@ -224,3 +224,8 @@ def is_geometry_serializer(path: Path) -> bool:
     # Besides the Python bindings, geometry serializers (obj, svg, glb, ...) are only used by IfcConvert
     # and svgfill only by the svgfill executable, so the other executables leave them out.
     return re.fullmatch(r"ifcopenshell_geometry_[A-Za-z]+", path.stem) is not None
+
+
+def is_geometry_tree(path: Path) -> bool:
+    # Geometry trees are only used by the Python bindings (`ifcopenshell.geom.tree`), the executables leave them out.
+    return path.name.startswith("ifcopenshell_geometry_tree_")
