@@ -23,6 +23,7 @@ import ifcopenshell
 import ifcopenshell.api.geometry
 import ifcopenshell.api.root
 import ifcopenshell.api.type
+import ifcopenshell.util.representation
 import numpy as np
 
 import bonsai.core.tool
@@ -354,6 +355,26 @@ class TestRecordObjectPosition(NewFile):
         subject.record_object_position(obj)
         assert props.location_checksum == repr(tool.Blender.np_array_legacy(obj.matrix_world.translation).tobytes())
         assert props.rotation_checksum == repr(tool.Blender.np_array_legacy(obj.matrix_world.to_3x3()).tobytes())
+
+
+class TestReimportElementRepresentations(NewFile):
+    def test_a_beveled_curve_in_a_fresh_project_becomes_a_swept_disk_curve(self):
+        bpy.ops.bim.create_project()
+        tool.Loader.set_settings(None)
+        curve = bpy.data.curves.new("Curve", "CURVE")
+        curve.dimensions = "3D"
+        curve.bevel_depth = 0.03
+        spline = curve.splines.new("POLY")
+        spline.points.add(2)
+        for point, co in zip(spline.points, [(0, 0, 0, 1), (2, 0, 0, 1), (2, 1, 0, 1)]):
+            point.co = co
+        obj = bpy.data.objects.new("Curve", curve)
+        bpy.context.scene.collection.objects.link(obj)
+        bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcCovering", predefined_type="MOLDING")
+        element = tool.Ifc.get_entity(obj)
+        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        assert {i.is_a() for i in body.Items} == {"IfcSweptDiskSolid"}
+        assert isinstance(obj.data, bpy.types.Curve)
 
 
 class TestRemoveConnection(NewFile):
