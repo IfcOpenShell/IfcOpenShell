@@ -157,7 +157,7 @@ def mac_fix_rpaths(package_dir: Path, executables: tuple[Path, ...] = ()) -> Non
         mac_add_rpath(exe, "@executable_path")
 
 
-def stage_runtime_payload(install_dir: Path, dest: Path, *, include_geometry_writers: bool = False) -> list[Path]:
+def stage_runtime_payload(install_dir: Path, dest: Path) -> list[Path]:
     """Copy all libs from `install_dir/{bin,lib,lib64}` into `dest` and return where they ended up.
 
     Every library is staged once, under the name the dynamic loader looks it up by (see `get_soname`).
@@ -176,7 +176,7 @@ def stage_runtime_payload(install_dir: Path, dest: Path, *, include_geometry_wri
                 continue
             if not is_shared_library(runtime_file):
                 continue
-            if not include_geometry_writers and is_geometry_writer(runtime_file):
+            if is_geometry_writer(runtime_file):
                 continue
             dest_file = dest / (get_soname(runtime_file) or runtime_file.name)
             staged_files.append(dest_file)
@@ -465,9 +465,7 @@ def package_executable(
     package_dir.mkdir(parents=True)
 
     shutil.copy(exe_path, package_dir / exe)
-    # TODO: kept `is_platform(MAC)` to retain original bash script behaviour,
-    # but is this guard needed or it should be always False?
-    stage_runtime_payload(ifcopenshell_install_dir, package_dir, include_geometry_writers=is_platform("MAC"))
+    stage_runtime_payload(ifcopenshell_install_dir, package_dir)
 
     dependency_libs = []
     for runtime_dir in runtime_dirs:
