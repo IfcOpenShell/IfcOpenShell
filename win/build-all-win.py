@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import NamedTuple
 from zipfile import ZipFile
 
-from common import logger, run, run_streamed
+from common import is_geometry_writer, logger, run, run_streamed
 from vs_cfg import VsCfg, get_vs_var
 
 
@@ -204,14 +204,6 @@ def trace_runtime_dependencies(roots: set[Path], candidates: set[Path]) -> set[P
             queue.append(dependent)
 
     return resolved
-
-
-def is_geometry_writer(file: Path) -> bool:
-    # Per-schema geometry writers ship with the Python package only, not next to the
-    # executables. 'ifcopenshell.geometry.writer.' covers the core library, the
-    # underscore form covers the per-schema plugins.
-    ifc_geometry_writer_prefixes = ("ifcopenshell.geometry.writer.", "ifcopenshell_geometry_writer_")
-    return file.name.startswith(ifc_geometry_writer_prefixes)
 
 
 def collect_ifc_runtime_plugins(dlls: set[Path], dependencies: set[Path]) -> set[Path]:

@@ -14,7 +14,7 @@ import subprocess
 from pathlib import Path
 from typing import Literal, NamedTuple
 
-from common import REPO_ROOT, logger, run
+from common import REPO_ROOT, is_geometry_writer, logger, run
 
 VERSION = "v" + (REPO_ROOT / "VERSION").read_text().strip()
 
@@ -176,7 +176,7 @@ def stage_runtime_payload(install_dir: Path, dest: Path, *, include_geometry_wri
                 continue
             if not is_shared_library(runtime_file):
                 continue
-            if not include_geometry_writers and runtime_file.name.startswith("ifcopenshell.geometry.writer."):
+            if not include_geometry_writers and is_geometry_writer(runtime_file):
                 continue
             dest_file = dest / (get_soname(runtime_file) or runtime_file.name)
             staged_files.append(dest_file)
