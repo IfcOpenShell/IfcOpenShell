@@ -185,6 +185,76 @@ function(ifcopenshell_deploy_qt_runtime TARGET)
     install(SCRIPT ${deploy_script})
 endfunction()
 
+# Stage IfcOpenShell dylibs into the macOS .app bundle's Frameworks/ directory.
+#
+# Two flavours sit alongside each other in <prefix>/lib/ after install:
+#
+#   1. Linked core libs (lib*.dylib) — IfcParse, IfcGeom (output-named
+#      libifcopenshell.geometry.dylib), IfcViewer, plug-in / mapping /
+#      kernel shared libs. With --shared these are runtime @rpath deps
+#      of the app executable. macdeployqt is *supposed* to follow them
+#      but in practice misses non-Qt @rpath deps when the source lib
+#      lives outside the standard system / Qt prefixes, so we stage
+#      them explicitly. (In a static build these are absent from lib/
+#      and the glob just no-ops, so this rule is safe in both modes.)
+#
+#   2. Plug-ins (ifcopenshell_*.dylib, no `lib` prefix) — dlopen-only
+#      deps the plug-in loader resolves at runtime. macdeployqt has
+#      no way to know about these.
+#
+# Both kinds get a flat copy into Contents/Frameworks/. The plug-in
+# loader's primary search path is dirname(libIfcParse) (= Frameworks/
+# inside the bundle), so plug-ins and core libs both find each other
+# on the first probe.
+#
+# The geometry-writer filter drops libifcopenshell.geometry.writer.dylib
+# and the per-schema ifcopenshell_geometry_writer_*.dylib plug-ins
+# (OCCT -> IFC serialization, unused by the apps). Mirrors
+# `is_geometry_writer` in win/common.py.
+#
+# <prefix>/lib/ is IfcOpenShell-exclusive — Qt / boost / eigen live in
+# their own brew / build prefixes — so a broad *.dylib glob is safe
+# here and automatically picks up any future shared libs without
+# needing to maintain an explicit name list.
+#
+# Subdirectory order in cmake/CMakeLists.txt guarantees that ifcparse/
+# / ifcgeom/ / serializers/ are add_subdirectory'd before the apps,
+# so by the time this install rule fires the *.dylib files are already
+# on disk under <prefix>/lib/.
+function(ifcopenshell_stage_app_bundle_dylibs APP_NAME)
+    if(NOT APPLE)
+        return()
+    endif()
+
+    # A shared OCCT lives in its own dependency prefix, outside the glob below,
+    # and the plug-ins resolve it through @rpath, so it has to be staged too.
+    set(occt_shared_lib_dir "")
+    if(TARGET TKernel)
+        get_target_property(occt_library_type TKernel TYPE)
+        if(occt_library_type STREQUAL "SHARED_LIBRARY")
+            get_target_property(occt_location TKernel LOCATION)
+            get_filename_component(occt_shared_lib_dir "${occt_location}" DIRECTORY)
+        endif()
+    endif()
+    install(CODE "set(_app \"${APP_NAME}.app\")\nset(_occt_shared_lib_dir \"${occt_shared_lib_dir}\")")
+    install(CODE [[
+        set(_fw "${CMAKE_INSTALL_PREFIX}/${_app}/Contents/Frameworks")
+        file(GLOB _ifc_dylibs "${CMAKE_INSTALL_PREFIX}/lib/*.dylib")
+        list(FILTER _ifc_dylibs EXCLUDE REGEX "ifcopenshell[._]geometry[._]writer")
+        if(_ifc_dylibs)
+            message(STATUS "Staging IfcOpenShell dylibs (linked core + plug-ins) into ${_app}/Contents/Frameworks")
+            file(COPY ${_ifc_dylibs} DESTINATION "${_fw}")
+        else()
+            message(WARNING "No IfcOpenShell *.dylib found in lib/ — ${_app} will fail to launch (missing @rpath linked deps) or at IFC load time (missing plug-ins)")
+        endif()
+        if(_occt_shared_lib_dir)
+            file(GLOB _occt_dylibs "${_occt_shared_lib_dir}/libTK*.dylib")
+            message(STATUS "Staging shared OCCT dylibs into ${_app}/Contents/Frameworks")
+            file(COPY ${_occt_dylibs} DESTINATION "${_fw}")
+        endif()
+    ]])
+endfunction()
+
 # Get a list of all OPTION flags from the CMakeLists.txt and store in an output LIST
 function(get_all_option_flags output_list)
     # Read the contents of the CMakeLists.txt
