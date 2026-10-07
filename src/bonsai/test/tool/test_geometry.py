@@ -191,6 +191,16 @@ class TestGetStyles(NewFile):
         obj.data.materials.append(material)
         assert subject.get_styles(obj) == [style]
 
+    def test_a_curve_keeps_every_style_when_filtering_by_face_usage(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        style = ifc.createIfcSurfaceStyle()
+        material = bpy.data.materials.new("Material")
+        tool.Ifc.link(style, material)
+        obj = bpy.data.objects.new("Object", bpy.data.curves.new("Curve", "CURVE"))
+        obj.data.materials.append(material)
+        assert subject.get_styles(obj, only_assigned_to_faces=True) == [style]
+
 
 class TestGetTextLiteral(NewFile):
     def test_run(self):
