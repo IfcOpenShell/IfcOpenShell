@@ -491,13 +491,13 @@ def get_type_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_inst
 
     for pset_name, props in ifcopenshell.util.element.get_psets(element).items():
         if pset_name == "COBie_Warranty":
-            if warranty_guarantor_parts is None:
+            if warranty_guarantor_parts in (None, ""):
                 warranty_guarantor_parts = props.get("WarrantyGuarantorParts", None)
-            if warranty_guarantor_labor is None:
+            if warranty_guarantor_labor in (None, ""):
                 warranty_guarantor_labor = props.get("WarrantyGuarantorLabor", None)
-            if warranty_duration_parts is None:
+            if warranty_duration_parts in (None, ""):
                 warranty_duration_parts = props.get("WarrantyDurationParts", None)
-            if warranty_duration_labor is None:
+            if warranty_duration_labor in (None, ""):
                 warranty_duration_labor = props.get("WarrantyDurationLabor", None)
             warranty_duration_unit = props.get("WarrantyDurationUnit", None)
             warranty_description = props.get("WarrantyDescription", None)
@@ -537,13 +537,13 @@ def get_type_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_inst
             # with this, assuming the user either specifically targets
             # COBie_Waranty, or if they use the built-in Pset_Warranty, we
             # assume it affects both type sof warranty.
-            if warranty_guarantor_parts is None:
+            if warranty_guarantor_parts in (None, ""):
                 warranty_guarantor_parts = props.get("PointOfContact", None)
-            if warranty_guarantor_labor is None:
+            if warranty_guarantor_labor in (None, ""):
                 warranty_guarantor_labor = props.get("PointOfContact", None)
-            if warranty_duration_parts is None:
+            if warranty_duration_parts in (None, ""):
                 warranty_duration_parts = props.get("WarrantyPeriod", None)
-            if warranty_duration_labor is None:
+            if warranty_duration_labor in (None, ""):
                 warranty_duration_labor = props.get("WarrantyPeriod", None)
 
     return {

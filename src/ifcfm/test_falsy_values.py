@@ -117,6 +117,21 @@ class TestZeroValuePropertiesAreNotDroppedAsAbsent:
         ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"TaskDuration": 0})
         assert cobie24legacy.get_job_data(ifc_file, job)["Duration"] == "0"
 
+    def test_cobie24_get_type_data_blank_warranty_falls_back_to_pset_warranty(self):
+        ifc_file, *_ = setup_project()
+        etype = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcFurnitureType", name="Chair")
+        cobie_warranty = ifcopenshell.api.pset.add_pset(ifc_file, product=etype, name="COBie_Warranty")
+        ifcopenshell.api.pset.edit_pset(
+            ifc_file, pset=cobie_warranty, properties={"WarrantyGuarantorParts": "", "WarrantyDurationParts": ""}
+        )
+        legacy_warranty = ifcopenshell.api.pset.add_pset(ifc_file, product=etype, name="Pset_Warranty")
+        ifcopenshell.api.pset.edit_pset(
+            ifc_file, pset=legacy_warranty, properties={"PointOfContact": "acme@example.com", "WarrantyPeriod": "P5Y"}
+        )
+        data = cobie24.get_type_data(ifc_file, etype)
+        assert data["WarrantyGuarantorParts"] == "acme@example.com"
+        assert data["WarrantyDurationParts"] == "P5Y"
+
     def test_cobie24_get_type_data_warranty_zero_is_not_overridden_by_fallback_pset(self):
         ifc_file, *_ = setup_project()
         etype = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcFurnitureType", name="Chair")
