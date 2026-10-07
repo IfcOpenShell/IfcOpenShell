@@ -1956,7 +1956,37 @@ class OpenLayout(bpy.types.Operator, tool.Ifc.Operator):
         sheet = tool.Ifc.get().by_id(sheet_item.ifc_definition_id)
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.update_sheet_drawing_sizes(sheet)
+        self.ensure_web_connection()
         core.open_layout(tool.Drawing, sheet=sheet)
+
+    def ensure_web_connection(self) -> None:
+        """Start the web server, if a tool is about to want it.
+
+        Opening a layout hands it to something outside Blender, and anything that
+        edits what a sheet says asks this Blender for the values over the web
+        server - the model in memory holds the unsaved ones, and the file does
+        not. Nothing starts that server on its own: Bonsai has no auto-start, and
+        `load_post` only mirrors a connection that already exists.
+
+        So a layout opened in a Blender freshly launched reaches a tool that can
+        read the saved file and nothing else. Every field it offers is read-only,
+        and the tool cannot tell that from "this model is not open anywhere",
+        which is the version of this that was reported from the field.
+
+        Without the browser: Bonsai's own web page is not what was asked for.
+        A failure here is reported and not raised - the layout still opens, and
+        read-only values are better than no sheet.
+        """
+        if tool.Web.is_connected():
+            return
+        try:
+            bpy.ops.bim.connect_websocket_server(open_browser=False)
+        except Exception as exception:
+            self.report(
+                {"WARNING"},
+                "Could not start Bonsai's web server, so a tool opening this layout will "
+                f"only see values from the saved file: {exception}",
+            )
 
 
 class SelectAllSheets(bpy.types.Operator):
