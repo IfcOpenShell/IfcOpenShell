@@ -162,7 +162,7 @@ BUNDLED_WHEELS += pyradiance
 BUNDLED_WHEELS += flask
 
 # Current build commit hash.
-OLD:=6022a6d
+OLD:=7b8f129
 .PHONY: bump
 bump:
 ifndef NEW
