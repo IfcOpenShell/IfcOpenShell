@@ -168,7 +168,8 @@ class Type(bonsai.core.tool.Type):
         ]:
             if usage_attributes["type"] == "IfcMaterialLayerSetUsage":
                 for attr in ("LayerSetDirection", "DirectionSense", "OffsetFromReferenceLine", "ReferenceExtent"):
-                    setattr(material, attr, usage_attributes.get(attr))
+                    if attr in usage_attributes:
+                        setattr(material, attr, usage_attributes[attr])
             elif usage_attributes["type"] == "IfcMaterialProfileSetUsage":
                 for attr in ("CardinalPoint", "ReferenceExtent"):
                     setattr(material, attr, usage_attributes.get(attr))
