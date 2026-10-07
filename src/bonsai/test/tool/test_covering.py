@@ -18,17 +18,6 @@
 #
 # This file was generated with the assistance of an AI coding tool.
 
-"""Pure-geometry coverage for the wall-covering side-face helpers.
-
-These back ``bim.add_instance_wall_coverings_from_walls`` (the single
-operator that survived collapsing the wall-covering pair in review on
-PR #8699 — see ``test/bim/feature/covering.feature`` for the end-to-end,
-IFC-relationship-level coverage of that operator). Here we pin the pure
-mesh geometry math directly: which side a cursor position resolves to, and
-that the side-face extraction picks up exactly the polygons on the
-requested face and none from the opposite one.
-"""
-
 import bpy
 
 from bonsai.tool.covering import Covering as subject
@@ -78,21 +67,12 @@ class TestGetWallSideFacingCursor(NewFile):
         assert subject.get_wall_side_facing_cursor(obj) == -1.0
 
     def test_cursor_exactly_on_the_wall_centerline_defaults_to_positive_side(self):
-        """``get_wall_side_facing_cursor`` uses ``>=`` against the bound-box
-        centre, so a cursor sitting exactly on the wall's midplane (e.g. the
-        user hasn't moved it off the wall yet) resolves to the +Y side
-        rather than raising or picking arbitrarily."""
         obj = _make_wall_obj()
         center_y = THICKNESS / 2
         bpy.context.scene.cursor.location = (1.0, center_y, 1.0)
         assert subject.get_wall_side_facing_cursor(obj) == 1.0
 
     def test_respects_the_wall_objects_world_transform(self):
-        """The cursor comparison happens in the wall's local space, so a
-        wall that's been moved/rotated in the scene must still resolve
-        correctly — this is what makes a single "facing cursor" side check
-        work for an arbitrarily placed wall, without needing a per-wall
-        cursor-relative operator."""
         obj = _make_wall_obj()
         obj.location = (10.0, 10.0, 0.0)
         bpy.context.view_layer.update()
@@ -120,10 +100,6 @@ class TestGetWallSideFace(NewFile):
         assert abs(face_polys[0].area - LENGTH * HEIGHT) < 1e-6
 
     def test_no_matching_face_returns_none(self):
-        """A mesh with no polygon whose normal matches the requested side
-        (e.g. a degenerate/non-wall mesh) must fail soft, not crash — the
-        caller (``create_wall_covering``) relies on this to bail out
-        cleanly instead of the operator raising mid-selection loop."""
         mesh = bpy.data.meshes.new("FlatMesh")
         mesh.from_pydata([(0, 0, 0), (1, 0, 0), (1, 0, 1), (0, 0, 1)], [], [(0, 1, 2, 3)])
         mesh.update()
