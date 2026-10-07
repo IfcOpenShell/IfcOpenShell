@@ -426,10 +426,9 @@ class DecoratorData:
                 element_type = ifcopenshell.util.element.get_type(element)
                 if element_type and element_type != element:
                     occurrence_count = 0
-                    if hasattr(element_type, "Types"):
-                        for rel in element_type.Types:
-                            if hasattr(rel, "RelatedObjects"):
-                                occurrence_count += len(rel.RelatedObjects)
+                    for rel in getattr(element_type, "Types", None) or getattr(element_type, "ObjectTypeOf", ()):
+                        if hasattr(rel, "RelatedObjects"):
+                            occurrence_count += len(rel.RelatedObjects)
                     return occurrence_count
 
             elif key == "occurrences.count":
@@ -1114,10 +1113,9 @@ class ElementValuesData:
 
         elif is_typed:
             occurrence_count = 0
-            if hasattr(element_type, "Types"):
-                for rel in element_type.Types:
-                    if hasattr(rel, "RelatedObjects"):
-                        occurrence_count += len(rel.RelatedObjects)
+            for rel in getattr(element_type, "Types", None) or getattr(element_type, "ObjectTypeOf", ()):
+                if hasattr(rel, "RelatedObjects"):
+                    occurrence_count += len(rel.RelatedObjects)
             keys.append(("types.count", f"Type Occurrence Count: {occurrence_count}"))
 
         return keys
