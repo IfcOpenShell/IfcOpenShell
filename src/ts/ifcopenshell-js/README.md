@@ -98,10 +98,9 @@ modules have been removed. The generated declarations reference `ESNext.Disposab
 Build and stage the WASM artifacts before building the TS package:
 
 ```bash
-python nix/wasm_native.py build
-python nix/wasm_native.py package
+python nix/build-all.py --native-wasm
 cd src/ts/ifcopenshell-wasm
-IFCOPENSHELL_WASM_DIR=/path/to/dist npm run stage
+npm run stage
 cd ../ifcopenshell-js
 npm run build
 npm test
