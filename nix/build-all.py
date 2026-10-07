@@ -2090,7 +2090,11 @@ if "IfcOpenShell-Python" in targets:
             dest.parent.mkdir(parents=True, exist_ok=True)
             if dest.exists():
                 shutil.rmtree(dest)
-            shutil.copytree(module_dir, dest)
+            if PYTHON_USER_SITE:
+                shutil.copytree(module_dir, dest)
+            else:
+                # Move, so the wrapper won't end up in the Python dependency cache.
+                shutil.move(module_dir, dest)
 
 Dependencies.write_install_dirs_json()
 
