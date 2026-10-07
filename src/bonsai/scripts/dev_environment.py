@@ -208,6 +208,7 @@ def main() -> None:
             shutil.copy(path, dest)
 
     print("Symlinking extension to the git repo...")
+    # Keep in sync with DEV_LINKED_PACKAGES in bonsai/__init__.py.
     # fmt: off
     symlinks = (
         (BONSAI_PATH / "__init__.py",  REPO_PATH / "src/bonsai/bonsai/__init__.py"),
