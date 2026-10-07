@@ -1221,12 +1221,18 @@ from .entity_instance import entity_instance_mixin
 %}
 
 %{
-	PyObject* get_info_cpp(const express::base& v, bool recursive, bool include_identifier);
+	// An instance being expanded by get_info_cpp, linked to the one that referenced it
+	struct get_info_path {
+		uint32_t identity;
+		const get_info_path* parent;
+	};
+
+	PyObject* get_info_cpp(const express::base& v, bool recursive, bool include_identifier, const get_info_path* path);
 
 	// @todo refactor this to remove duplication with the typemap.
 	// except this is calls the above function in case of instances.
-	PyObject* convert_cpp_attribute_to_python(const express::base& instance, size_t attribute_index, bool recursive, bool include_identifier) {
-		return instance.get_attribute_value(attribute_index).apply_visitor([recursive, include_identifier](const auto& v){
+	PyObject* convert_cpp_attribute_to_python(const express::base& instance, size_t attribute_index, bool recursive, bool include_identifier, const get_info_path* path) {
+		return instance.get_attribute_value(attribute_index).apply_visitor([recursive, include_identifier, path](const auto& v){
 			using u = std::decay_t<decltype(v)>;
             if constexpr (std::is_same_v<u, ifcopenshell::enumeration_reference>) {
                 return pythonize(std::string(v.value()));
@@ -1239,7 +1245,7 @@ from .entity_instance import entity_instance_mixin
 				}
 			} else if constexpr (std::is_same_v<u, express::base>) {
 				if (recursive) {
-					return get_info_cpp(v, recursive, include_identifier);
+					return get_info_cpp(v, recursive, include_identifier, path);
 				} else {
 					return pythonize(v);
 				}
@@ -1247,7 +1253,7 @@ from .entity_instance import entity_instance_mixin
 				if (recursive) {
 					PyObject* t = PyTuple_New(v.size());
                     for (size_t i = 0; i < v.size(); ++i) {
-                        PyObject* item = get_info_cpp(v[i], recursive, include_identifier);
+                        PyObject* item = get_info_cpp(v[i], recursive, include_identifier, path);
                         PyTuple_SET_ITEM(t, i, item);
                     }
                     return t;
@@ -1261,7 +1267,7 @@ from .entity_instance import entity_instance_mixin
                         const auto& inner_vec = v[i];
                         PyObject* inner = PyTuple_New(inner_vec.size());
                         for (size_t j = 0; j < inner_vec.size(); ++j) {
-                            PyObject* item = get_info_cpp(inner_vec[j], recursive, include_identifier);
+                            PyObject* item = get_info_cpp(inner_vec[j], recursive, include_identifier, path);
                             PyTuple_SET_ITEM(inner, j, item);
                         }
                         PyTuple_SET_ITEM(outer, i, inner);
@@ -1282,11 +1288,31 @@ from .entity_instance import entity_instance_mixin
 		});
 	}
 %}
-%inline %{
-	PyObject* get_info_cpp(const express::base& v, bool recursive, bool include_identifier) {
+%{
+	PyObject* get_info_cpp(const express::base& v, bool recursive, bool include_identifier, const get_info_path* parent) {
 		PyObject *d = PyDict_New();
 
 		if (v.declaration().as_entity()) {
+			const get_info_path path_here = {v.identity(), parent};
+			const get_info_path* path = &path_here;
+			// Stop at an instance that is already being expanded on the current path
+			int levels = 1;
+			for (auto ancestor = parent; ancestor; ancestor = ancestor->parent, ++levels) {
+				if (ancestor->identity == path_here.identity) {
+					auto levels_py = pythonize(levels);
+					PyDict_SetItemString(d, "_CYCLE", levels_py);
+					Py_DECREF(levels_py);
+					if (include_identifier) {
+						auto id_v_py = pythonize(v.id());
+						PyDict_SetItemString(d, "id", id_v_py);
+						Py_DECREF(id_v_py);
+					}
+					auto type_v_py = pythonize(v.declaration().name());
+					PyDict_SetItemString(d, "type", type_v_py);
+					Py_DECREF(type_v_py);
+					return d;
+				}
+			}
 			const std::vector<const ifcopenshell::attribute*> attrs = v.declaration().as_entity()->all_attributes();
 			std::vector<const ifcopenshell::attribute*>::const_iterator it = attrs.begin();
 			auto dit = v.declaration().as_entity()->derived().begin();
@@ -1296,7 +1322,7 @@ from .entity_instance import entity_instance_mixin
 				auto attr_type = *dit
 					? ifcopenshell::Argument_DERIVED
 					: ifcopenshell::from_parameter_type((*it)->type_of_attribute());
-				auto value_py = convert_cpp_attribute_to_python(v, std::distance(attrs.begin(), it), recursive, include_identifier);
+				auto value_py = convert_cpp_attribute_to_python(v, std::distance(attrs.begin(), it), recursive, include_identifier, path);
 				PyDict_SetItem(d, name_py, value_py);
 				Py_DECREF(name_py);
 				Py_DECREF(value_py);
@@ -1307,7 +1333,7 @@ from .entity_instance import entity_instance_mixin
 				Py_DECREF(id_v_py);
 			}
 		} else {
-			auto value_py = convert_cpp_attribute_to_python(v, 0, recursive, include_identifier);
+			auto value_py = convert_cpp_attribute_to_python(v, 0, recursive, include_identifier, parent);
 			PyDict_SetItemString(d, "wrappedValue", value_py);
 			Py_DECREF(value_py);
 		}
@@ -1318,6 +1344,11 @@ from .entity_instance import entity_instance_mixin
 		Py_DECREF(type_v_py);
 
 		return d;
+	}
+%}
+%inline %{
+	PyObject* get_info_cpp(const express::base& v, bool recursive, bool include_identifier) {
+		return get_info_cpp(v, recursive, include_identifier, nullptr);
 	}
 %}
 
