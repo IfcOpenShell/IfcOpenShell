@@ -115,7 +115,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSurface& inst) {
 		}
 	}
 
-	return make_loft(settings_, inst, fn, cross_sections);
+	return make_loft(settings_, inst, fn, cross_sections, logger_);
 }
 
 #endif

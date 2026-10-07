@@ -35,6 +35,26 @@ bool has_intersection(const std::set<T, Cmp>& A,
     return false;
 }
 
+// Every edge a straight segment between two explicit points
+bool loop_is_polygonal(const taxonomy::loop::ptr& loop) {
+	for (const auto& e : loop->children) {
+		if ((e->basis && e->basis->kind() != taxonomy::LINE) ||
+			!std::holds_alternative<taxonomy::point3::ptr>(e->start) ||
+			!std::holds_alternative<taxonomy::point3::ptr>(e->end)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+bool profile_is_polygonal(const taxonomy::geom_item::ptr& profile) {
+	if (profile->kind() == taxonomy::FACE) {
+		const auto& loops = std::static_pointer_cast<taxonomy::face>(profile)->children;
+		return std::all_of(loops.begin(), loops.end(), loop_is_polygonal);
+	}
+	return loop_is_polygonal(std::static_pointer_cast<taxonomy::loop>(profile));
+}
+
 }
 
 taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::settings& settings, const express::base inst, const taxonomy::function_item::ptr& fn, std::vector<cross_section>& cross_sections, logger& logger)
@@ -157,6 +177,8 @@ taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::sett
 			std::optional<Eigen::Vector3d> interpolated_ref_direction;
 			Eigen::Matrix3d section_basis_a = Eigen::Matrix3d::Identity();
 			Eigen::Matrix3d section_basis_b = Eigen::Matrix3d::Identity();
+			// Offset of a curved profile that is placed as a whole instead of point by point
+			std::optional<Eigen::Vector3d> passthrough_offset;
 
 			if (should_interpolate) {
 				taxonomy::geom_item::ptr profile_b;
@@ -184,7 +206,15 @@ taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::sett
 
 					std::vector<taxonomy::loop::ptr> loops_a, loops_b;
 
-					if (profile_a->kind() == taxonomy::FACE) {
+					const bool curved = !profile_is_polygonal(profile_a) || !profile_is_polygonal(profile_b);
+					if (curved && (rotation_a != rotation_b || (profile_a->instance != profile_b->instance && profile_a->hash() != profile_b->hash()))) {
+						logger.error("GEO", 329, "Curved cross sections that differ in shape or orientation cannot be interpolated", inst);
+						return nullptr;
+					}
+
+					if (curved) {
+						passthrough_offset = lerp(offset_a, offset_b, relative_dist_along);
+					} else if (profile_a->kind() == taxonomy::FACE) {
 						interpolated = taxonomy::make<taxonomy::face>();
 
 						auto profile_a_f = std::static_pointer_cast<taxonomy::face>(profile_a);
@@ -207,7 +237,7 @@ taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::sett
 					}
 
 					// @todo should_interpolate should also be informed based by different face matrices.
-					if (profile_a->matrix || profile_b->matrix) {
+					if (interpolated && (profile_a->matrix || profile_b->matrix)) {
 						interpolated->matrix = taxonomy::make<taxonomy::matrix4>();
 						Eigen::Matrix4d m4a = Eigen::Matrix4d::Identity();
 						Eigen::Matrix4d m4b = Eigen::Matrix4d::Identity();
@@ -509,6 +539,11 @@ taxonomy::loft::ptr ifcopenshell::geom::make_loft(const ifcopenshell::geom::sett
 			if (!loft->children.back()->matrix) {
 				// @todo should this not be initialized by default? matrix4 already has a 'lazy identity' mechanism.
 				loft->children.back()->matrix = taxonomy::make<taxonomy::matrix4>();
+			}
+			if (passthrough_offset) {
+				Eigen::Matrix4d t = Eigen::Matrix4d::Identity();
+				t.col(3).head<3>() = *passthrough_offset;
+				loft->children.back()->matrix->components() = (loft->children.back()->matrix->ccomponents() * t).eval();
 			}
 			auto m = (m4b * loft->children.back()->matrix->ccomponents()).eval();
 			loft->children.back()->matrix->components() = m;
