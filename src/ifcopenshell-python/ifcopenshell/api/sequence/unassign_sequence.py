@@ -78,4 +78,4 @@ def unassign_sequence(
         file.remove(rel)
         if history:
             ifcopenshell.util.element.remove_deep2(file, history)
-    ifcopenshell.api.sequence.cascade_schedule(file, task=related_process)
+    ifcopenshell.api.sequence.cascade_schedule(file, task=related_process, recalculate_start_task=False)
