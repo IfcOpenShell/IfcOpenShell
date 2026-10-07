@@ -16,7 +16,7 @@ import ifcopenshell.util.shape
 CURVE_POINTS = [(5.0, 0.0, 0.0), (6.0, 0.0, 0.0), (6.0, 1.0, 0.0)]
 
 WRITE_SCRIPT = """
-import sys
+import sys; sys.path[:] = [p for p in sys.path if p]
 import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper as W
