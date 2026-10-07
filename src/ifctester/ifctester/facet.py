@@ -353,7 +353,9 @@ class Attribute(Facet):
                 else:
                     argument_index = inst.get_argument_index(names[i])
                     try:
-                        inst.attribute_type(argument_index)
+                        attribute_type = inst.attribute_type(argument_index)
+                        if attribute_type == "LOGICAL" and value == "UNKNOWN":
+                            is_empty = True
                     except:
                         if names[i] in inst.get_inverse_attribute_names():
                             is_empty = True
@@ -364,7 +366,7 @@ class Attribute(Facet):
             else:
                 is_pass = False
                 reason = {"type": "FALSEY", "actual": values if len(values) > 1 else values[0]}
-                if self.cardinality == "optional":
+                if self.cardinality == "optional" and all(value is None for value in values):
                     return AttributeResult(True)
 
         if is_pass and self.value:

@@ -398,10 +398,10 @@ class TestAttribute:
         )
         unset_element.Description = ""
         run(
-            "An optional facet passes when a valid attribute is an empty string",
+            "An optional facet fails when a valid attribute is an empty string",
             facet=facet,
             inst=unset_element,
-            expected=True,
+            expected=False,
         )
 
         ifc = ifcopenshell.file()
@@ -451,14 +451,7 @@ class TestAttribute:
 
         layer.LayerOn = "UNKNOWN"
         facet = Attribute(name="LayerOn")
-        run("A logical unknown is a real value and passes an existence check", facet=facet, inst=layer, expected=True)
-        facet = Attribute(name="LayerOn", cardinality="prohibited")
-        run(
-            "A logical unknown is present, so a prohibited attribute fails",
-            facet=facet,
-            inst=layer,
-            expected=False,
-        )
+        run("Attributes with a logical unknown always fail", facet=facet, inst=layer, expected=False)
 
         facet = Attribute(name="ScheduleDuration")
         ifc = ifcopenshell.file()
