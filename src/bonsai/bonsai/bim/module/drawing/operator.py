@@ -1950,13 +1950,14 @@ class OpenLayout(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
+        # First, clear of the lines other PRs add before open_layout.
+        self.ensure_web_connection()
         self.props = tool.Drawing.get_document_props()
         sheet_item = tool.Drawing.get_active_sheet_item()
         assert sheet_item
         sheet = tool.Ifc.get().by_id(sheet_item.ifc_definition_id)
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.update_sheet_drawing_sizes(sheet)
-        self.ensure_web_connection()
         core.open_layout(tool.Drawing, sheet=sheet)
 
     def ensure_web_connection(self) -> None:
