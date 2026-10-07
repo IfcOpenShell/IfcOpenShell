@@ -120,9 +120,9 @@ def _render_result_struct_field_assignments(
             assignments.append(f"{indent}{target_field} = {helper}({value_expr});")
         elif field_type.kind == "handle":
             if field_type.sequence_depth == 1:
-                assignment = f"{_handle_list_helper_name(spec.handles[field_type.handle])}" f"({field_expr})"
+                assignment = f"{_handle_list_helper_name(spec.handles[field_type.handle])}({field_expr})"
             elif field_type.sequence_depth == 2:
-                assignment = f"{_handle_list_list_helper_name(spec.handles[field_type.handle])}" f"({field_expr})"
+                assignment = f"{_handle_list_list_helper_name(spec.handles[field_type.handle])}({field_expr})"
             else:
                 assignment = _wrap_handle_expr(field_type, field_expr, spec)
             assignments.append(f"{indent}{target_field} = {assignment};")
@@ -132,7 +132,7 @@ def _render_result_struct_field_assignments(
             nested = spec.result_structs[field_type.struct]
             if field_type.sequence_depth == 1:
                 assignments.append(
-                    f"{indent}{target_field} = " f"{_result_record_list_make_name(nested)}(std::move({field_expr}));"
+                    f"{indent}{target_field} = {_result_record_list_make_name(nested)}(std::move({field_expr}));"
                 )
             else:
                 assignments.append(f"{indent}{target_field} = {{}};")
@@ -462,7 +462,7 @@ def _render_param_prelude(param: ParamSpec, spec: BindingIR) -> str:
                 f"    std::set<{set_element}> {param.name}_cpp({param.name}_vec.begin(), {param.name}_vec.end());"
             )
         converted = _fixed_sequence_cpp_expr(type_spec, f"{to_cpp}({param.name})")
-        return f"{_null_check(param.name, 'Parameter')}\n" f"    auto {param.name}_cpp = {converted};"
+        return f"{_null_check(param.name, 'Parameter')}\n    auto {param.name}_cpp = {converted};"
     if kind == "variant":
         alternative_types = [alternative.cpp_type for alternative in type_spec.variants]
         if any(cpp_type is None for cpp_type in alternative_types):
@@ -494,7 +494,7 @@ def _render_param_prelude(param: ParamSpec, spec: BindingIR) -> str:
                     f"    if ({param.name} != nullptr) {{ {param.name}_cpp = std::string({param.name}); }}"
                 )
             return f"    const char* {param.name}_str = {param.name};"
-        return f"{_null_check(param.name, 'Parameter')}\n" f"    std::string {param.name}_cpp({param.name});"
+        return f"{_null_check(param.name, 'Parameter')}\n    std::string {param.name}_cpp({param.name});"
     if kind == "handle":
         if type_spec.sequence_depth == 1:
             handle = spec.handles[type_spec.handle]
@@ -507,15 +507,11 @@ def _render_param_prelude(param: ParamSpec, spec: BindingIR) -> str:
                     f"    auto {param.name}_vec = {helper_name}({param.name});\n"
                     f"    std::set<{set_element}> {param.name}_cpp({param.name}_vec.begin(), {param.name}_vec.end());"
                 )
-            return (
-                f"{_null_check(param.name, 'Parameter')}\n" f"    auto {param.name}_cpp = {helper_name}({param.name});"
-            )
+            return f"{_null_check(param.name, 'Parameter')}\n    auto {param.name}_cpp = {helper_name}({param.name});"
         if type_spec.sequence_depth == 2:
             handle = spec.handles[type_spec.handle]
             helper_name = f"to_cpp_{_snake_name(_handle_list_list_c_type(handle))}"
-            return (
-                f"{_null_check(param.name, 'Parameter')}\n" f"    auto {param.name}_cpp = {helper_name}({param.name});"
-            )
+            return f"{_null_check(param.name, 'Parameter')}\n    auto {param.name}_cpp = {helper_name}({param.name});"
         handle = spec.handles[type_spec.handle]
         if type_spec.nullable and _is_optional_cpp_type(type_spec):
             inner_type = _extract_optional_inner_type(type_spec.cpp_type) or handle.cpp_type
@@ -539,9 +535,7 @@ def _render_param_prelude(param: ParamSpec, spec: BindingIR) -> str:
                 f"    if ({param.name} != nullptr && {param.name}->ptr != nullptr) {{ {param.name}_cpp = *{param.name}->ptr; }}"
             )
         if handle.name == "attribute_value":
-            return (
-                f"{_null_check(param.name, 'Handle parameter')}\n" f"    auto {param.name}_cpp = {param.name}->value;"
-            )
+            return f"{_null_check(param.name, 'Handle parameter')}\n    auto {param.name}_cpp = {param.name}->value;"
         if handle.ptr_type == "value":
             cpp_type = _normalize_cpp_type(type_spec.cpp_type)
             if not cpp_type:
@@ -554,8 +548,7 @@ def _render_param_prelude(param: ParamSpec, spec: BindingIR) -> str:
                 )
             if cpp_type.endswith("*"):
                 return (
-                    f"{_null_check(param.name, 'Handle parameter')}\n"
-                    f"    auto {param.name}_cpp = &{param.name}->value;"
+                    f"{_null_check(param.name, 'Handle parameter')}\n    auto {param.name}_cpp = &{param.name}->value;"
                 )
             if cpp_type.endswith("&"):
                 auto_kw = "const auto&" if cpp_type.startswith("const ") else "auto&"
@@ -563,9 +556,7 @@ def _render_param_prelude(param: ParamSpec, spec: BindingIR) -> str:
                     f"{_null_check(param.name, 'Handle parameter')}\n"
                     f"    {auto_kw} {param.name}_cpp = {param.name}->value;"
                 )
-            return (
-                f"{_null_check(param.name, 'Handle parameter')}\n" f"    auto {param.name}_cpp = {param.name}->value;"
-            )
+            return f"{_null_check(param.name, 'Handle parameter')}\n    auto {param.name}_cpp = {param.name}->value;"
         cpp_type = _normalize_cpp_type(type_spec.cpp_type)
         is_shared = handle.ptr_type == "shared_ptr"
         # Check if cpp_type refers to the shared_ptr itself (e.g., "const T::ptr &")
@@ -886,8 +877,7 @@ def _render_call_impl(call: CallIR, spec: BindingIR) -> str:
         body_line = f"*out_result = static_cast<bool>(self_cpp->{op.field_name});"
     elif isinstance(op, OptionalGetOp):
         null_guard = (
-            f"if (!self_cpp->{op.field_name}) "
-            f'{{ throw std::runtime_error("{op.field_name} is not set"); }}\n        '
+            f'if (!self_cpp->{op.field_name}) {{ throw std::runtime_error("{op.field_name} is not set"); }}\n        '
         )
         body_line = null_guard + _render_result_assignment(call, spec, f"*self_cpp->{op.field_name}")
     elif isinstance(op, StaticCastOp):

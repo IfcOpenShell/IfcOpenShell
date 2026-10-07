@@ -12,7 +12,6 @@ from .abi_ir import (
     _sequence_kind_parts,
     _sequence_prev_kind,
     _snake_name,
-    _type_spec_sequence_kind,
 )
 from .binding_ir import BindingIR
 from .binding_model import HandleSpec
@@ -89,9 +88,7 @@ def _render_sequence_destroy_impl(kind: str) -> str:
         body = ""
     else:
         child_destroy = _sequence_destroy_name(_sequence_prev_kind(kind))
-        body = (
-            "    for (size_t i = 0; i < value->size; ++i) {\n" f"        {child_destroy}(&value->items[i]);\n" "    }"
-        )
+        body = f"    for (size_t i = 0; i < value->size; ++i) {{\n        {child_destroy}(&value->items[i]);\n    }}"
     return f"""void {_sequence_destroy_name(kind)}({_sequence_c_type(kind)}* value) {{
     if (value == nullptr) {{
         return;
@@ -109,7 +106,8 @@ def _render_sequence_destroy_impl(kind: str) -> str:
 
 
 def _render_common_type_impls(sequence_kinds: tuple[str, ...]) -> str:
-    impls = ["""void ifcopenshell_buffer_owner_destroy(void** owner) {
+    impls = [
+        """void ifcopenshell_buffer_owner_destroy(void** owner) {
     if (owner == nullptr || *owner == nullptr) {
         return;
     }
@@ -130,7 +128,8 @@ void ifcopenshell_string_destroy(ifcopenshell_string_t* value) {
     value->size = 0;
     value->owned = false;
     value->owner = nullptr;
-}"""]
+}"""
+    ]
     impls.extend(_render_sequence_destroy_impl(kind) for kind in sequence_kinds)
     return "\n\n".join(impls)
 

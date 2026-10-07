@@ -72,7 +72,8 @@ struct Holder {
     Node::ptr axis;
 };
 }
-""".strip() + "\n",
+""".strip()
+        + "\n",
         encoding="utf-8",
     )
     source.write_text('#include "shared_ptr_alias.h"\n', encoding="utf-8")

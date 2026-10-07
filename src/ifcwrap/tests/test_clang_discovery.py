@@ -63,7 +63,8 @@ int walk(int steps);
 void hop(int count);
 void hop(const std::string& guid);
 }
-""".strip() + "\n",
+""".strip()
+        + "\n",
         encoding="utf-8",
     )
     source.write_text('#include "sample.h"\n', encoding="utf-8")
@@ -165,7 +166,8 @@ namespace bindings {
 int nested_count(const std::string& name);
 }
 }
-""".strip() + "\n",
+""".strip()
+        + "\n",
         encoding="utf-8",
     )
     source.write_text(
@@ -175,7 +177,8 @@ int nested_count(const std::string& name);
 namespace ifcapi::bindings {
 double qualified_scale(double value) { return value; }
 }
-""".strip() + "\n",
+""".strip()
+        + "\n",
         encoding="utf-8",
     )
 
@@ -211,7 +214,8 @@ def test_discover_namespace_functions_with_synthetic_contract_source(
 namespace ifcapi::bindings {
 int contract_count(const std::string& name);
 }
-""".strip() + "\n",
+""".strip()
+        + "\n",
         encoding="utf-8",
     )
     header_b.write_text(
@@ -219,7 +223,8 @@ int contract_count(const std::string& name);
 namespace ifcapi::bindings {
 double contract_scale(double value);
 }
-""".strip() + "\n",
+""".strip()
+        + "\n",
         encoding="utf-8",
     )
     source.write_text("int reference() { return 0; }\n", encoding="utf-8")
@@ -260,7 +265,8 @@ public:
 
 int walk(int steps);
 }
-""".strip() + "\n",
+""".strip()
+        + "\n",
         encoding="utf-8",
     )
     source.write_text('#include "sample.h"\n', encoding="utf-8")
@@ -290,7 +296,8 @@ def test_synthetic_contract_discovery_uses_explicit_compilation(tmp_path: Path) 
 namespace ifcapi::bindings {
 int contract_count(const std::string& name);
 }
-""".strip() + "\n",
+""".strip()
+        + "\n",
         encoding="utf-8",
     )
     environment = DiscoveryEnvironment(
@@ -345,7 +352,8 @@ public:
     int wrong;
 };
 }
-""".strip() + "\n",
+""".strip()
+        + "\n",
         encoding="utf-8",
     )
     source.write_text('#include "fields.h"\n', encoding="utf-8")
@@ -404,7 +412,8 @@ struct Widget {
     void set_mode(Mode value);
 };
 }
-""".strip() + "\n",
+""".strip()
+        + "\n",
         encoding="utf-8",
     )
     source.write_text('#include "enums.h"\n', encoding="utf-8")
@@ -443,7 +452,8 @@ struct SimpleType {
     data_type declared_type() const;
 };
 }
-""".strip() + "\n",
+""".strip()
+        + "\n",
         encoding="utf-8",
     )
     source.write_text('#include "typedef_enums.h"\n', encoding="utf-8")
@@ -480,7 +490,8 @@ struct Widget {
 };
 }
 }
-""".strip() + "\n",
+""".strip()
+        + "\n",
         encoding="utf-8",
     )
     source.write_text('#include "enum_fields.h"\n', encoding="utf-8")
@@ -519,7 +530,8 @@ struct Container {
     const std::string& name() const;
 };
 }
-""".strip() + "\n",
+""".strip()
+        + "\n",
         encoding="utf-8",
     )
     source.write_text('#include "scoped.h"\n', encoding="utf-8")
@@ -553,7 +565,8 @@ struct schema_definition {
     declaration declared() const;
 };
 }
-""".strip() + "\n",
+""".strip()
+        + "\n",
         encoding="utf-8",
     )
     source.write_text('#include "lowercase.h"\n', encoding="utf-8")
@@ -591,7 +604,8 @@ public:
     it index() const;
 };
 }
-""".strip() + "\n",
+""".strip()
+        + "\n",
         encoding="utf-8",
     )
     source.write_text('#include "aliases.h"\n', encoding="utf-8")
