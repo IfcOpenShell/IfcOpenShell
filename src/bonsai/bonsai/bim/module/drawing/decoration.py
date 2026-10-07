@@ -570,7 +570,8 @@ class BaseDecorator:
         viewportDrawingScale = self.get_viewport_drawing_scale(context)
         v0 = worldspace_to_winspace([pos], context)[0]
         rot_matrix = Matrix.Rotation(rotation, 2)
-        glyph_scale = viewportDrawingScale * scale
+        # Symbol units are paper mm, the viewport drawing scale is a quarter of one.
+        glyph_scale = viewportDrawingScale * 4 * scale
 
         output_verts = []
         output_edges = []

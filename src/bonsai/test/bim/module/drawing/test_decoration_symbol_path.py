@@ -19,15 +19,38 @@
 # This file was generated with the assistance of an AI coding tool.
 
 import os
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
 
 import bpy
 import ifcopenshell.api.pset
+import pytest
+from mathutils import Vector
 
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.decoration import BaseDecorator
 from test.bim.bootstrap import NewFile
 
 CUSTOM_SYMBOLS = '<svg xmlns="http://www.w3.org/2000/svg"><g id="custom-tag"><circle cx="0" cy="0" r="5"/></g></svg>'
+
+
+class TestDrawGlyph(NewFile):
+    def test_glyph_is_drawn_at_its_printed_size(self):
+        decorator = Mock()
+        decorator.get_symbols_path.return_value = BaseDecorator.get_symbols_path(None)
+        decorator.camera_zoom_to_factor.return_value = 1
+        decorator.get_camera_width_mm.return_value = 0.5
+        decorator.get_viewport_drawing_scale = lambda context: BaseDecorator.get_viewport_drawing_scale(
+            decorator, context
+        )
+        region_3d = SimpleNamespace(view_camera_zoom=0)
+        context = SimpleNamespace(region=SimpleNamespace(width=1000), space_data=SimpleNamespace(region_3d=region_3d))
+
+        with patch("bonsai.bim.module.drawing.decoration.worldspace_to_winspace", return_value=[Vector((0, 0, 0))]):
+            BaseDecorator.draw_glyph(decorator, context, "door-tag", Vector((0, 0, 0)))
+
+        xs = [vert[0] for vert in decorator.draw_lines.call_args.args[2]]
+        assert max(xs) - min(xs) == pytest.approx(20)
 
 
 class TestGetSymbolsPath(NewFile):
