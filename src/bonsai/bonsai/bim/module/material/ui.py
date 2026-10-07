@@ -519,7 +519,39 @@ class BIM_PT_object_material(Panel):
             box_row.enabled = self.props.use_custom_offset
 
 
+def get_material_filter_flags(
+    materials: bpy.types.bpy_prop_collection_idprop[Material], filter_name: str, filter_flag: int
+) -> list[int]:
+    filter_name = filter_name.strip().lower()
+    matches = [filter_name in material.name.lower() for material in materials]
+    flags = [0] * len(materials)
+    category_index = None
+    for index, material in enumerate(materials):
+        if material.is_category:
+            category_index = index
+        if matches[index]:
+            flags[index] = filter_flag
+            if not material.is_category and category_index is not None:
+                flags[category_index] = filter_flag
+    return flags
+
+
 class BIM_UL_materials(UIList):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.use_filter_show = True
+
+    def draw_filter(self, context, layout):
+        props = tool.Material.get_material_props()
+        row = layout.row()
+        row.prop(props, "material_filter", text="", icon="VIEWZOOM")
+
+    def filter_items(self, context: bpy.types.Context, data: BIMMaterialProperties, propname: str):
+        items = getattr(data, propname)
+        if not data.material_filter.strip():
+            return [], []
+        return get_material_filter_flags(items, data.material_filter, self.bitflag_filter_item), []
+
     def draw_item(
         self,
         context,

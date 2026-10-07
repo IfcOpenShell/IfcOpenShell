@@ -68,20 +68,9 @@ def get_runtime_info(install_root: Path, qt6_version: str) -> RuntimeInfo:
     qt_dir_env = os.getenv("QT_DIR")
     qt_dir = Path(qt_dir_env) if qt_dir_env else find_qt_dir(install_root, qt6_version, qt6_install_root)
 
-    if ARGS.shared:
-        dependencies_to_stage = set(install_dirs.keys())
-    else:
-        # OCCT is shared by default (see `build-all.py --occt-static`): a static OCCT gets a
-        # private copy in every plug-in and shapes handed between plug-ins are misread.
-        # Whatever was built shared is staged; `--occt-shared` additionally insists on it.
-        dependencies_to_stage = {
-            name for name in ("occt",) if name in install_dirs and "-shared-" in Path(install_dirs[name]).name
-        }
-        if ARGS.occt_shared:
-            assert "occt" in dependencies_to_stage, f"Expected a shared OCCT build, found: {install_dirs.get('occt')}"
-
+    # Stage shared dependencies using `-shared-` added to their install dirs by `build-all.py`.
     runtime_dirs = []
-    for name in sorted(dependencies_to_stage):
+    for name in sorted(install_dirs):
         runtime_dir = Path(install_dirs[name])
         if "-shared-" not in runtime_dir.name:
             continue
@@ -515,16 +504,23 @@ def package_app_bundle(
     output_dir: Path,
     autodesk_connector_dir: Path,
     arch_suffix: str,
+    runtime_dirs: list[Path],
 ) -> None:
     """Zip a `.app` bundle (e.g. BonsaiViewer.app) living at the install-prefix root.
 
     Their install rule uses `BUNDLE DESTINATION "."` - that's the layout Qt's
     macdeployqt expects. macdeployqt has already embedded the Qt frameworks
-    inside each bundle during install/strip, so the only thing left to stage
-    is the connector.
+    inside each bundle during install/strip, so the only things left to stage
+    are the shared dependencies (e.g. boost) and the connector.
     """
     app = app_path.stem
     logger.info(f"Packaging app bundle '{app}'")
+
+    frameworks_dir = app_path / "Contents" / "Frameworks"
+    dependency_libs = []
+    for runtime_dir in runtime_dirs:
+        dependency_libs += stage_runtime_payload(runtime_dir, frameworks_dir)
+    prune_unused_libraries(app_path, dependency_libs)
 
     if app == "BonsaiViewer":
         # ConnectorDiscovery looks in applicationDirPath()/connectors,
@@ -546,8 +542,6 @@ LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR")
 class Args(NamedTuple):
     arch_suffix: str
     log_level: str
-    occt_shared: bool
-    shared: bool
     no_zip: bool
     fail_on_missing_deps: bool
     no_executables: bool
@@ -561,12 +555,6 @@ def main() -> None:
     parser.add_argument("arch_suffix", choices=ARCH_SUFFIXES, help="Zip filename suffix.")
     # TODO: relax default to INFO once things get more stable.
     parser.add_argument("--log-level", default="DEBUG", choices=LOG_LEVELS, help="Logging verbosity.")
-    parser.add_argument(
-        "--occt-shared",
-        action="store_true",
-        help="Insist that OCCT was built as shared libraries (the default; a shared OCCT is always staged).",
-    )
-    parser.add_argument("--shared", action="store_true", help="Build was made with shared libraries.")
     parser.add_argument(
         "--no-zip",
         action="store_true",
@@ -591,8 +579,6 @@ def main() -> None:
     ARGS = Args(
         arch_suffix=args.arch_suffix,
         log_level=args.log_level,
-        occt_shared=args.occt_shared,
-        shared=args.shared,
         no_zip=args.no_zip,
         fail_on_missing_deps=args.fail_on_missing_deps,
         no_executables=args.no_executables,
@@ -643,7 +629,13 @@ def main() -> None:
     if not ARGS.no_executables and is_platform("MAC"):
         for app_path in sorted(ifcopenshell_install_dir.glob("*.app")):
             package_app_bundle(
-                app_path, ifcopenshell_install_dir, github_sha, output_dir, autodesk_connector_dir, ARGS.arch_suffix
+                app_path,
+                ifcopenshell_install_dir,
+                github_sha,
+                output_dir,
+                autodesk_connector_dir,
+                ARGS.arch_suffix,
+                runtime_dirs,
             )
 
     if ARGS.fail_on_missing_deps and HAS_MISSING_DEPENDENCIES:

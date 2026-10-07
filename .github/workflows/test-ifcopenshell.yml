@@ -120,6 +120,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2.24
         with:
           key: ubuntu-22.04-${{ runner.arch }}
+          # Distro ccache is < 4.10, too old for the job summary, install from GitHub releases.
+          install: binary
 
       # RTTI is only enabled by default in Debug builds of rocksdb.
       # Distros are using Release builds, so we're compiling it ourselves with RTTI forced on.
@@ -129,7 +131,8 @@ jobs:
           git clone https://github.com/facebook/rocksdb --branch v9.11.2
           cd rocksdb
           mkdir build && cd build
-          # rocksdb is using ccache automatically.
+          # rocksdb autodetects ccache on PATH and uses it as a compiler launcher,
+          # so no need to pass CMAKE_<LANG>_COMPILER_LAUNCHER=ccache here.
           cmake .. \
             -G Ninja \
             -DFAIL_ON_WARNINGS=Off \
@@ -142,6 +145,7 @@ jobs:
             -DWITH_CORE_TOOLS=OFF \
             -DWITH_TRACE_TOOLS=OFF \
             -DROCKSDB_BUILD_SHARED=Off \
+            -DPORTABLE=1 \
             -DCMAKE_POSITION_INDEPENDENT_CODE=On \
             -DUSE_RTTI=On
           sudo cmake --build . --target install -j $(nproc)
@@ -265,7 +269,7 @@ jobs:
                -DUSE_MMAP=On \
                -DUSE_CCACHE=ON \
                -DBUILD_SHARED_LIBS=${{ matrix.build_shared_libs == 'shared' && 'ON' || 'OFF' }} \
-               "-DSCHEMA_VERSIONS=2x3;4;4x3_add2" \
+               -DBUILD_ONLY_COMMON_SCHEMAS=ON \
                -DGLTF_SUPPORT=On \
                -DWITH_ROCKSDB=On \
                -DWITH_MANIFOLD=ON \

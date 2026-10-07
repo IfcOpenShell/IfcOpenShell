@@ -16,12 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import importlib.util
-from pathlib import Path
+import pkgutil
 from typing import TYPE_CHECKING, Literal, Union
 
 import bpy
 import ifcpatch
+import ifcpatch.recipes
 from bpy.props import (
     BoolProperty,
     CollectionProperty,
@@ -47,11 +47,8 @@ def get_ifcpatch_recipes(self: "BIMPatchProperties", context: bpy.types.Context)
         # properly (need to ensure bim.update_ifc_patch_arguments will be called). See #5540.
         ifcpatchrecipes_enum.append(("-", "-", ""))
 
-        ifcpatch_path = Path(importlib.util.find_spec("ifcpatch").submodule_search_locations[0])
-        for filename in ifcpatch_path.joinpath("recipes").glob("*.py"):
-            f = str(filename.stem)
-            if f == "__init__":
-                continue
+        for module_info in pkgutil.iter_modules(ifcpatch.recipes.__path__):
+            f = module_info.name
             docs = ifcpatch.extract_docs(f, "Patcher", "__init__", ("src", "file", "logger", "args"))
             if docs is None:
                 description = ""

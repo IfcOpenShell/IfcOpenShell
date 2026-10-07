@@ -110,6 +110,8 @@ class Deps:
         # TODO: drop this TRANSITION check once everyone has re-run build-deps.py with proj support.
         "proj": Dep("PROJ_INSTALL_DIR", None, required=False),
         "pythonhome": Dep("PYTHONHOME", None, cmake_prefix=False),
+        # required=False: unset if build-deps.py was run with --no-install-qt6.
+        "qt6": Dep("QT6_INSTALL_DIR", None, required=False),
     }
 
     _values: dict[str, Path | None] | None = None
@@ -282,9 +284,6 @@ def main() -> None:
     ADD_COMMIT_SHA = OFF_ON[ARGS.add_commit_sha]
     VERSION_OVERRIDE = ADD_COMMIT_SHA
 
-    qt_dir = get_var(deps_cache, "QT_DIR") or get_var(deps_cache, "QT6_INSTALL_DIR")
-    qt_host_path = get_var(deps_cache, "QT_HOST_PATH") or get_var(deps_cache, "QT6_HOST_INSTALL_DIR")
-
     cmake_install_prefix = REPO_ROOT / f"_installed-{vs_cfg_vars.gen_shorthand}"
 
     logger.info("")
@@ -295,13 +294,11 @@ def main() -> None:
     logger.info(f"  Arguments    = {ARGS.extra_args}")
     logger.info("")
 
-    # Some deps are a bit less trivial to get, so we calculate them outside `Deps`.
-    extra_vars: dict[str, object] = {
+    # Some cmake vars are a bit less trivial to get, so we calculate them outside `Deps`.
+    extra_vars: dict[str, str | Path] = {
         "PYTHON_INCLUDE_DIR": python_include_dir,
         "PYTHON_LIBRARY": python_library,
         "PYTHON_EXECUTABLE": python_executable,
-        "QT_DIR": qt_dir,
-        "QT_HOST_PATH": qt_host_path,
         "CMAKE_INSTALL_PREFIX": cmake_install_prefix,
     }
     dep_vars = ((dep.env_var, Deps.values()[name]) for name, dep in Deps.DEPS.items())
@@ -323,10 +320,7 @@ def main() -> None:
             cmake_cache_path.unlink()
     logger.info(f'"Running CMake for {PROJECT_NAME}."')
 
-    cmake_prefix_path_parts = Deps.cmake_prefix_paths()
-    if qt_dir:
-        cmake_prefix_path_parts.append(Path(qt_dir))
-    cmake_prefix_path = ";".join(str(part) for part in cmake_prefix_path_parts)
+    cmake_prefix_path = ";".join(str(part) for part in Deps.cmake_prefix_paths())
 
     if ARGS.use_ninja:
         cmake_generator = "Ninja"
@@ -343,20 +337,14 @@ def main() -> None:
         cmake_generator,
         *arch_option,
         *build_type_option,
-        f"-DCMAKE_INSTALL_PREFIX={cmake_install_prefix}",
         "-DWITH_ROCKSDB=ON",
         "-DWITH_ZSTD=ON",
+        "-DBUILD_ONLY_COMMON_SCHEMAS=ON",
         f"-DCMAKE_PREFIX_PATH={cmake_prefix_path}",
         f"-DADD_COMMIT_SHA={ADD_COMMIT_SHA}",
         f"-DVERSION_OVERRIDE={VERSION_OVERRIDE}",
-        f"-DPYTHON_EXECUTABLE={python_executable}",
-        f"-DPYTHON_INCLUDE_DIR={python_include_dir}",
-        f"-DPYTHON_LIBRARY={python_library}",
     ]
-    if qt_dir:
-        cmake_args.append(f"-DQT_DIR={qt_dir}")
-    if qt_host_path:
-        cmake_args.append(f"-DQT_HOST_PATH={qt_host_path}")
+    cmake_args.extend(f"-D{var}={value}" for var, value in extra_vars.items())
     if Deps.values()["manifold"]:
         cmake_args.append("-DWITH_MANIFOLD=ON")
     cmake_args += Deps.cmake_args()

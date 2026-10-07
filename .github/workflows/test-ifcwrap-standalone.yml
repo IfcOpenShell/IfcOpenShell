@@ -62,6 +62,8 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2.24
         with:
           key: ci-ifcwrap-standalone-ubuntu-22.04-${{ runner.arch }}
+          # Distro ccache is < 4.10, too old for the job summary, install from GitHub releases.
+          install: binary
 
       - name: Build SWIG
         # IfcOpenShell requires SWIG 4.1+, ubuntu-22.04 ships 4.0.2.

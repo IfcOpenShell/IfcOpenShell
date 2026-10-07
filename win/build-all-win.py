@@ -1,4 +1,8 @@
 # /// script
+# # 3.12+ for `platform.machine()` reporting the actual machine architecture on Windows.
+# # On <3.12 it falls back to `PROCESSOR_ARCHITECTURE`,
+# # reporting the current process's architecture instead.
+# requires-python = ">=3.12"
 # [tool.ty.environment]
 # root = ["."]
 # ///
@@ -67,7 +71,7 @@ def parse_args() -> Args:
 
 
 def is_arm64() -> bool:
-    return platform.machine().lower() in ("arm64", "aarch64")
+    return platform.machine() == "ARM64"
 
 
 def build_generator() -> str:
@@ -78,7 +82,7 @@ def build_generator() -> str:
 
 assert Path.cwd() == Path(__file__).parent, "Run this script from the 'win' directory."
 
-PYTHON_VERSIONS = ["3.10.3", "3.11.8", "3.12.1", "3.13.6", "3.14.0", "3.15.0"]
+PYTHON_VERSIONS = ["3.11.8", "3.12.1", "3.13.6", "3.14.0", "3.15.0"]
 REPO_PATH = Path(__file__).parent.parent
 REPO_WIN = REPO_PATH / "win"
 OUTPUT_DIR = Path.home() / "output"

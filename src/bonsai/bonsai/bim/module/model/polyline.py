@@ -113,6 +113,18 @@ class PolylineOperator:
             tool.Blender.update_viewport()
             return is_valid
 
+    def set_initial_plane_method(self, context: bpy.types.Context, event: bpy.types.Event, plane_method: str) -> None:
+        self.tool_state.plane_method = plane_method
+        detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox, self.tool_state)
+        self.snapping_points = tool.Snap.select_snapping_points(context, event, self.tool_state, detected_snaps)
+        tool.Polyline.calculate_distance_and_angle(context, self.input_ui, self.tool_state)
+        tool.Blender.update_viewport()
+
+    def has_polyline_points(self) -> bool:
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline
+        return len(polyline_data) > 0
+
     def choose_axis(self, event: bpy.types.Event, x: bool = True, y: bool = True, z: bool = False) -> None:
         options = {"X", "Y"}
         if z:
@@ -412,11 +424,20 @@ class PolylineOperator:
                 if self.snapping_points[0]["type"] not in {"Plane", "Axis"}:
                     should_round = False
 
+                if not self.has_polyline_points():
+                    should_round = False
+
                 tool.Polyline.calculate_distance_and_angle(
                     context, self.input_ui, self.tool_state, should_round=should_round
                 )
                 if should_round:
                     tool.Polyline.calculate_x_y_and_z(context, self.input_ui, self.tool_state)
+                    snap_prop = tool.Model.get_polyline_props().snap_mouse_point[0]
+                    snap_prop.x = self.input_ui.get_number_value("X")
+                    snap_prop.y = self.input_ui.get_number_value("Y")
+                    z = self.input_ui.get_number_value("Z")
+                    if z is not None and z != "":
+                        snap_prop.z = z
 
                 tool.Blender.update_viewport()
             return {"RUNNING_MODAL"}
