@@ -158,10 +158,10 @@ def guess_type(items: Sequence[ifcopenshell.entity_instance]) -> Union[str, None
     """
     if all([True if i.is_a("IfcMappedItem") else False for i in items]):
         return "MappedRepresentation"
-    elif all([True if i.is_a("IfcPoint") or i.is_a("IfcCartesianPointList") else False for i in items]):
-        return "Point"
     elif all([True if i.is_a("IfcCartesianPointList3d") else False for i in items]):
         return "PointCloud"
+    elif all([True if i.is_a("IfcPoint") or i.is_a("IfcCartesianPointList") else False for i in items]):
+        return "Point"
     elif all([True if i.is_a("IfcCurve") and i.Dim == 2 else False for i in items]):
         return "Curve2D"
     elif all([True if i.is_a("IfcCurve") and i.Dim == 3 else False for i in items]):

@@ -70,6 +70,20 @@ class TestValidateType(test.bootstrap.IFC4):
         assert ifcopenshell.api.geometry.validate_type(self.file, rep) is True
         assert rep.RepresentationType == "GeometricSet"
 
+    def test_keeping_a_point_cloud_type(self):
+        if self.file.schema == "IFC2X3":
+            return
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        model = ifcopenshell.api.context.add_context(self.file, context_type="Model")
+        body = ifcopenshell.api.context.add_context(
+            self.file, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+        )
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(self.file)
+        points = self.file.createIfcCartesianPointList3D([(0.0, 0.0, 0.0), (1.0, 0.0, 0.0)])
+        rep = builder.get_representation(body, [points], "PointCloud")
+        assert ifcopenshell.api.geometry.validate_type(self.file, rep) is True
+        assert rep.RepresentationType == "PointCloud"
+
     def test_validating_a_correct_representation(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         model = ifcopenshell.api.context.add_context(self.file, context_type="Model")
