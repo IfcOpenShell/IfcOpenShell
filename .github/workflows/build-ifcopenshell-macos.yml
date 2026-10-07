@@ -47,7 +47,7 @@ jobs:
         run: |
           brew update
           # preinstalled: xz, cmake
-          brew install git bison autoconf automake libffi findutils
+          brew install bison autoconf automake libffi findutils
           # qt brings in Qt6 + Svg; nix/build-all.py honours pre-set
           # QT_DIR so BonsaiViewer doesn't try to aqtinstall (which is
           # Linux-only). Only the viewer needs it.
