@@ -5,6 +5,9 @@
 # ]
 # [tool.ty.environment]
 # root = ["."]
+# # `common` and the `nix` package live outside this script's directory but are
+# # put on `sys.path` at runtime below.
+# extra-paths = ["../win", ".."]
 # ///
 ###############################################################################
 #                                                                             #

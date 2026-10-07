@@ -351,8 +351,7 @@ def _find_handle_for_cpp_type(cpp_type: str | DiscoveredCppType, handles: dict[s
                     matches.add(handle_name)
     if len(matches) > 1:
         msg = (
-            f"C++ type '{_cpp_type_debug(cpp_type)}' matches multiple registered handles: "
-            f"{', '.join(sorted(matches))}"
+            f"C++ type '{_cpp_type_debug(cpp_type)}' matches multiple registered handles: {', '.join(sorted(matches))}"
         )
         raise AmbiguousHandleMatchError(msg)
     return next(iter(matches), None)

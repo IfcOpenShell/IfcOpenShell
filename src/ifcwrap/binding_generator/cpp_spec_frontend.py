@@ -327,7 +327,7 @@ def discover_cpp_spec_methods(
         )
         key = (method.handle, method.expose_as, method.params)
         if key in seen:
-            msg = f"C++ spec method '{method.handle}.{method.expose_as}' " "is declared more than once"
+            msg = f"C++ spec method '{method.handle}.{method.expose_as}' is declared more than once"
             raise ValueError(msg)
         seen.add(key)
         methods.append(method)
@@ -437,7 +437,7 @@ def lower_cpp_spec_methods_to_calls(
             method_cache[method.handle] = discovered_by_name
         overloads = discovered_by_name.get(method.cpp_name)
         if overloads is None:
-            msg = f"Unable to discover method '{method.cpp_name}' " f"for handle '{method.handle}'"
+            msg = f"Unable to discover method '{method.cpp_name}' for handle '{method.handle}'"
             raise ValueError(msg)
         requested_params = tuple(
             param.removeprefix("IFCAPI_INT32(").removesuffix(")") if param.startswith("IFCAPI_INT32(") else param
@@ -635,7 +635,7 @@ def discover_cpp_spec_policy(
             policy.array_pair_fields.update((value, None) for value in values)
         elif operation == "ccomponents":
             if not 1 <= len(values) <= 3:
-                msg = f"{marker} ccomponents expects an exposed name and optional " "access path and dimensions"
+                msg = f"{marker} ccomponents expects an exposed name and optional access path and dimensions"
                 raise ValueError(msg)
             access_via = (
                 _strip_string_literal(access)
@@ -655,7 +655,7 @@ def discover_cpp_spec_policy(
             policy.compile_guard = values[0]
         elif operation == "variant":
             if len(values) < 5:
-                msg = f"{marker} variant expects get method, set method, variant " "type, suffix, and C++ type"
+                msg = f"{marker} variant expects get method, set method, variant type, suffix, and C++ type"
                 raise ValueError(msg)
             get_method, set_method, variant_type, suffix, cpp_type, *getter_types = values
             if policy.variant_accessors is None:
@@ -686,7 +686,7 @@ def discover_cpp_spec_policy(
     for raw_args, _ in _find_macro_invocations(text, constructor_marker):
         args = _split_macro_args(raw_args)
         if len(args) != 6:
-            msg = f"{constructor_marker} expects handle, class, exposed name, " "mode, guard, and message"
+            msg = f"{constructor_marker} expects handle, class, exposed name, mode, guard, and message"
             raise ValueError(msg)
         handle, cpp_class, expose_as, mode, guard, message = args
         if handle not in handles:
@@ -712,7 +712,7 @@ def discover_cpp_spec_policy(
     for raw_args, _ in _find_macro_invocations(text, param_marker):
         args = _split_macro_args(raw_args)
         if len(args) != 4:
-            msg = f"{param_marker} expects exposed name, source name, public name, " "and C++ type"
+            msg = f"{param_marker} expects exposed name, source name, public name, and C++ type"
             raise ValueError(msg)
         expose_as, source_name, public_name, cpp_type = args
         constructor = constructors.get(expose_as)

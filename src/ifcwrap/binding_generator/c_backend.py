@@ -43,12 +43,15 @@ def _render_cpp(ir: BindingIR, header_name: str) -> str:
         else:
             handle_structs.append(f"struct {handle.c_type} {{\n    {storage_type} ptr;\n    bool owned;\n}};")
 
-    destroy_impls = [f"""void ifcopenshell_{_snake_name(handle.c_type)}_destroy({handle.c_type}* handle) {{
+    destroy_impls = [
+        f"""void ifcopenshell_{_snake_name(handle.c_type)}_destroy({handle.c_type}* handle) {{
     if (handle == nullptr) {{
         return;
     }}
     {_destroy_body(handle)}
-}}""" for handle in ir.handles.values()]
+}}"""
+        for handle in ir.handles.values()
+    ]
 
     rendered_calls: list[str] = []
     total_calls = len(ir.calls)
