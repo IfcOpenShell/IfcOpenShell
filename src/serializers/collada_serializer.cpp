@@ -428,6 +428,9 @@ std::string collada_serializer::differentiateSlabTypes(const express::entity& sl
 
 std::string collada_serializer::object_id(const ifcopenshell::geom::element* o) /*override*/
 {
+    if (settings_.get<ifcopenshell::geom::settings::NameTemplate>().has()) {
+        return ifcopenshell::geom::geometry_serializer::object_id(o);
+    }
     if (settings_.get<ifcopenshell::geom::settings::UseElementTypes>().get()) {
         const std::string slabSuffix = (o->product() && o->product().declaration().name() == "IfcSlab")
             ? differentiateSlabTypes(o->product())
