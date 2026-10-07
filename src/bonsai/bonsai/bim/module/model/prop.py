@@ -719,7 +719,7 @@ class BIMStairProperties(PropertyGroup):
         return stair_kwargs
 
     def set_props_kwargs_from_ifc_data(self, kwargs):
-        kwargs = tool.Model.convert_data_to_si_units(kwargs, self.non_si_units_props)
+        kwargs = tool.Model.convert_data_to_si_units(kwargs, (*self.non_si_units_props, "custom_tread_lock"))
         tread_run = kwargs.get("tread_run", 0.3)
 
         # Backwards compatibility with files saved before first/last treads had
