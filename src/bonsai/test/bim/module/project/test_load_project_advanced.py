@@ -26,14 +26,43 @@ from test.bim.bootstrap import NewFile
 
 
 class TestLoadProjectAdvanced(NewFile):
-    def test_preview_does_not_rebind_the_save_target(self, tmp_path):
-        path = tmp_path / "preview.ifc"
+    def _write_project(self, path, name: str) -> str:
         ifc = ifcopenshell.file()
-        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject", name=name)
         ifc.write(str(path))
-        tool.Blender.get_bim_props().ifc_file = "/original.ifc"
+        return str(path)
 
-        bpy.ops.bim.load_project(filepath=str(path), is_advanced=True, should_start_fresh_session=False)
+    def test_preview_does_not_rebind_the_save_target(self, tmp_path):
+        path = self._write_project(tmp_path / "preview.ifc", "Picked")
 
-        assert tool.Blender.get_bim_props().ifc_file == "/original.ifc"
-        assert tool.Project.get_project_props().advanced_load_filepath == str(path)
+        bpy.ops.bim.load_project(filepath=path, is_advanced=True, should_start_fresh_session=False)
+
+        assert tool.Blender.get_bim_props().ifc_file == ""
+        assert tool.Project.get_project_props().advanced_load_filepath == path
+
+    def test_preview_over_an_open_project_reads_the_picked_file(self, tmp_path):
+        path = self._write_project(tmp_path / "preview.ifc", "Picked")
+        bpy.ops.bim.create_project()
+
+        bpy.ops.bim.load_project(filepath=path, is_advanced=True, should_start_fresh_session=False)
+
+        assert tool.Ifc.get().by_type("IfcProject")[0].Name == "Picked"
+
+    def test_loading_elements_binds_the_save_target(self, tmp_path):
+        path = self._write_project(tmp_path / "loaded.ifc", "Picked")
+
+        bpy.ops.bim.load_project(filepath=path, is_advanced=True, should_start_fresh_session=False)
+        bpy.ops.bim.load_project_elements()
+
+        assert tool.Blender.get_bim_props().ifc_file == path
+
+    def test_geometry_only_import_never_becomes_the_save_target(self, tmp_path):
+        path = self._write_project(tmp_path / "imported.ifc", "Picked")
+
+        bpy.ops.bim.load_project(
+            filepath=path, is_advanced=True, should_start_fresh_session=False, import_without_ifc_data=True
+        )
+        bpy.ops.bim.load_project_elements()
+
+        assert tool.Blender.get_bim_props().ifc_file == ""
+        assert tool.Ifc.get() is None

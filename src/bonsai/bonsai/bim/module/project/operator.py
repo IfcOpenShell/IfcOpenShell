@@ -1138,7 +1138,7 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
                     bpy.data.objects.remove(obj)
 
             # To be safe from any accidental IFC data in the previous session.
-            if not self.is_advanced and not self.should_start_fresh_session:
+            if not self.should_start_fresh_session:
                 bpy.ops.bim.convert_to_blender()
 
             # #8611: set_path() rebinds the Save target; in Advanced mode that must wait for
@@ -1168,6 +1168,7 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
             props.is_loading = True
             # Clear any stale pending-preview path from an earlier, abandoned Advanced load.
             props.advanced_load_filepath = ""
+            props.advanced_load_without_ifc_data = False
             props.total_elements = len(tool.Ifc.get().by_type("IfcElement"))
             props.use_relative_project_path = self.use_relative_path
 
@@ -1182,6 +1183,7 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
                 # #8611: preview only; roll back the Save target and stash the path for LoadProjectElements.
                 bim_props.ifc_file = previous_ifc_file
                 props.advanced_load_filepath = str(filepath)
+                props.advanced_load_without_ifc_data = self.import_without_ifc_data
             elif len(tool.Ifc.get().by_type("IfcElement")) > 30000:
                 self.report({"WARNING"}, "Warning: large model. Please review advanced settings to continue.")
             else:
@@ -1263,9 +1265,13 @@ class LoadProjectElements(bpy.types.Operator):
         props = tool.Blender.get_bim_props()
         # #8611: a pending Advanced preview binds the Save target here, on the explicit commit.
         pending_filepath = self.props.advanced_load_filepath
+        without_ifc_data = self.props.advanced_load_without_ifc_data
         if pending_filepath:
             self.props.advanced_load_filepath = ""
-            tool.Ifc.set_path(pending_filepath)
+            self.props.advanced_load_without_ifc_data = False
+            # A geometry only import never becomes the Save target.
+            if not without_ifc_data:
+                tool.Ifc.set_path(pending_filepath)
         settings = import_ifc.IfcImportSettings.factory(context, pending_filepath or props.ifc_file, logger)
         settings.has_filter = self.props.filter_mode != "NONE"
         settings.should_filter_spatial_elements = self.props.should_filter_spatial_elements
@@ -1320,6 +1326,8 @@ class LoadProjectElements(bpy.types.Operator):
             for area in screen.areas:
                 if area.type == "VIEW_3D":
                     bonsai.bim.handler.viewport_shading_changed_callback(area)
+        if without_ifc_data:
+            bpy.ops.bim.convert_to_blender()
         return {"FINISHED"}
 
     def get_decomposition_elements(self) -> set[ifcopenshell.entity_instance]:
