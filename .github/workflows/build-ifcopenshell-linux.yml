@@ -96,7 +96,7 @@ jobs:
           name: build-logs-rocky
           path: |
             build.log
-            build/*/*/logs/*.log
+            build/*/*/logs/latest.log
           retention-days: 30
 
       - name: Pack Dependencies

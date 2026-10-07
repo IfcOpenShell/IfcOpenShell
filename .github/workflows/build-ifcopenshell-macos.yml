@@ -110,7 +110,7 @@ jobs:
           name: build-logs-osx-${{ matrix.arch }}
           path: |
             build.log
-            build/*/*/*/logs/*.log
+            build/*/*/*/logs/latest.log
             build/*/*/*/build/ifcopenshell/**/CMakeCache.txt
           retention-days: 30
 
