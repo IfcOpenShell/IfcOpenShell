@@ -712,15 +712,13 @@ class CreateDrawing(bpy.types.Operator):
                     geom_settings.set("model-offset", (0.0, 0.0, z_offset))
 
                 geom_settings.set("context-ids", context)
-                geometry_file = tool.Sequence.get_geometry_file(ifc, drawing_elements)
                 it = ifcopenshell.geom.iterator(
-                    geom_settings,
-                    geometry_file,
-                    multiprocessing.cpu_count(),
-                    include=[geometry_file.by_id(e.id()) for e in drawing_elements],
+                    geom_settings, ifc, multiprocessing.cpu_count(), include=drawing_elements
                 )
+                with tool.Sequence.status_hidden_openings_uncut(ifc, drawing_elements):
+                    shapes = list(it)
                 processed = set()
-                for elem in it:
+                for elem in shapes:
                     processed.add(ifc.by_id(elem.id))
                     self.serialiser.write(elem)
                     tree.add_element(elem)
