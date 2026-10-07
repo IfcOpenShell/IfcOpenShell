@@ -579,8 +579,7 @@ ARGS: Args
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("arch_suffix", choices=ARCH_SUFFIXES, help="Zip filename suffix.")
-    # TODO: relax default to INFO once things get more stable.
-    parser.add_argument("--log-level", default="DEBUG", choices=LOG_LEVELS, help="Logging verbosity.")
+    parser.add_argument("--log-level", default="INFO", choices=LOG_LEVELS, help="Logging verbosity.")
     parser.add_argument(
         "--no-zip",
         action="store_true",
