@@ -264,8 +264,7 @@ def collapse_entity_node(tree: bpy.types.NodeTree, node: bpy.types.Node) -> None
     while len(node.attributes) > node.expansion_base_attr_count:
         node.attributes.remove(len(node.attributes) - 1)
     for other_name in touched:
-        other = tree.nodes.get(other_name)
-        if not other or other.is_origin:
+        if not (other := tree.nodes.get(other_name)) or other.is_origin:
             continue
         if any(socket.is_linked for socket in other.inputs) or any(socket.is_linked for socket in other.outputs):
             continue
@@ -305,8 +304,7 @@ class LoadIfcGraph(bpy.types.Operator):
         elements = []
         seen = set()
         for obj in context.selected_objects:
-            step_id = tool.Blender.get_ifc_definition_id(obj)
-            if not step_id or step_id in seen:
+            if not (step_id := tool.Blender.get_ifc_definition_id(obj)) or step_id in seen:
                 continue
             try:
                 elements.append(ifc_file.by_id(step_id))
