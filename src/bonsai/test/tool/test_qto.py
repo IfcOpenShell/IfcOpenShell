@@ -79,6 +79,23 @@ class TestQuantifyElementWithoutObject(test.bim.bootstrap.NewFile):
             "Perimeter": pytest.approx(5800.0),
         }
 
+    def test_a_wall_whose_object_is_not_a_mesh_is_not_given_zero_dimensions(self):
+        import ifc5d.qto
+
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject", name="My Project")
+        ifcopenshell.api.unit.assign_unit(ifc)
+        wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        obj = bpy.data.objects.new("Wall", None)
+        bpy.context.scene.collection.objects.link(obj)
+        tool.Ifc.link(wall, obj)
+        assert obj.type == "EMPTY"
+
+        results = ifc5d.qto.quantify(ifc, {wall}, ifc5d.qto.rules["IFC4QtoBaseQuantitiesBlender"])
+
+        assert wall not in results
+
 
 class TestGetCalculatedObjectQuantities(test.bim.bootstrap.NewFile):
     def setup_file(self):

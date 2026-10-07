@@ -908,23 +908,21 @@ class Blender(QtoCalculator):
 
         for element in elements:
             obj = tool.Ifc.get_object(element)
-            # Without a Blender object the IFC element is the target, so attribute
-            # based calculators still work.
-            target = obj if obj is not None else element
+            # Without a mesh the IFC element is the target and only attribute
+            # based calculators run.
+            is_mesh = obj is not None and obj.type == "MESH"
+            target = obj if is_mesh else element
             element_results = results.setdefault(element, {})
             for name, quantities in qtos.items():
                 qto_results = element_results.setdefault(name, {})
                 for quantity, formula in quantities.items():
                     if not formula:
                         continue
+                    if not is_mesh and formula not in IfcOpenShell.attribute_functions:
+                        continue
                     if not (formula_function := formula_functions.get(formula)):
                         formula_function = formula_functions[formula] = getattr(calculator, formula)
-                    # Geometry calculators raise on a non-mesh target; skip that quantity.
-                    try:
-                        value = formula_function(target)
-                    except Exception:
-                        value = None
-                    if value is not None:
+                    if (value := formula_function(target)) is not None:
                         qto_results[quantity] = unit_converter.convert(value, Blender.functions[formula].measure)
                 # Avoid leaving an empty qset behind if nothing was calculated.
                 if not qto_results:
