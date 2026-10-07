@@ -20,16 +20,17 @@ Source installation
 1. :doc:`Install IfcOpenShell <ifcopenshell-python/installation>`
 2. `Clone the source code <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.9.0/src/ifcpatch>`_.
 3. ``cd /path/to/src/ifcpatch``
+4. ``pip install -e .``
 
 Here is a minimal example of how to use IfcPatch as a Python module or CLI
 utility:
 
 .. code-block:: console
 
-    $ python -m ifcpatch -h
+    $ ifcpatch -h
 
-    usage: __main__.py [-h] -i INPUT [-o OUTPUT] -r RECIPE [-l LOG]
-                       [-a ARGUMENTS [ARGUMENTS ...]]
+    usage: ifcpatch [-h] -i INPUT [-o OUTPUT] -r RECIPE [-l LOG]
+                    [-a ARGUMENTS [ARGUMENTS ...]]
 
     Patches IFC files to fix badly formatted data
 
@@ -56,19 +57,6 @@ example, we'll extract out all `IfcWall` elements.
 
     ifcpatch -i input.ifc -o output.ifc -r ExtractElements -a "IfcWall"
     cat output.ifc
-
-You can also alias it to a command:
-
-.. code-block:: bash
-
-    alias ifcpatch='python -m ifcpatch'
-
-Alternatively, you can package it as an executable.
-
-.. code-block:: bash
-
-    python make.py
-    ./dist/ifcpatch
 
 Here is a minimal example of how to use IfcPatch as a library:
 
