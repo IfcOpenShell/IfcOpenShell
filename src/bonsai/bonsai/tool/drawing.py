@@ -2397,12 +2397,14 @@ class Drawing(bonsai.core.tool.Drawing):
                 base_elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialStructureElement"))
             else:
                 base_elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialElement"))
+            base_elements.update(e for e in ifc_file.by_type("IfcAnnotation") if tool.Terrain.is_contour(e))
             elements = {e for e in (elements & base_elements) if e.is_a() != "IfcSpace"}
 
         updated_set = set()
         for i in elements:
-            # exclude annotations to avoid including annotations from other drawings
-            if not i.is_a("IfcAnnotation"):
+            # exclude annotations to avoid including annotations from other drawings,
+            # except terrain contours, which belong to the model rather than a drawing
+            if not i.is_a("IfcAnnotation") or tool.Terrain.is_contour(i):
                 updated_set.add(i)
                 # add aggregate too, if element is host by one
                 if hasattr(i, "Decomposes") and (decomposes := i.Decomposes):

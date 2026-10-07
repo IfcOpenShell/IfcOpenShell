@@ -258,6 +258,13 @@ def system():
 
 
 @pytest.fixture
+def terrain():
+    prophet = Prophecy(bonsai.core.tool.Terrain)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
 def type():
     prophet = Prophecy(bonsai.core.tool.Type)
     yield prophet

@@ -75,6 +75,7 @@ from bonsai.tool.structural import Structural
 from bonsai.tool.style import Style
 from bonsai.tool.surveyor import Surveyor
 from bonsai.tool.system import System
+from bonsai.tool.terrain import Terrain
 from bonsai.tool.tester import Tester
 from bonsai.tool.type import Type
 from bonsai.tool.unit import Unit
