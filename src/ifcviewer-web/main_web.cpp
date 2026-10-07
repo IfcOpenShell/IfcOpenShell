@@ -255,10 +255,15 @@ EM_BOOL onMouseDown(int, const EmscriptenMouseEvent* e, void* user) {
         app->nav_drag_px = 0.0f;
         app->down_x      = e->targetX;  // canvas-relative CSS px
         app->down_y      = e->targetY;
-        // Show the pivot triad for the duration of an orbit / pan drag, so
-        // it's visible what the camera turns around (matches the desktop).
-        if (kind == NavKind::Orbit || kind == NavKind::Pan)
+        // Show the pivot triad for the duration of an orbit / pan drag. Revit
+        // resolves an off-axis pivot from the full selection before showing it;
+        // other presets keep the current camera target.
+        if (kind == NavKind::Orbit) {
+            app->core.beginOrbit();
             app->core.setPivotIndicatorVisible(true);
+        } else if (kind == NavKind::Pan) {
+            app->core.setPivotIndicatorVisible(true);
+        }
     }
     return EM_TRUE;
 }

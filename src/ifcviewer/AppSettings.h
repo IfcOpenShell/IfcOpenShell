@@ -29,14 +29,12 @@
 class AppSettings : public QObject {
     Q_OBJECT
 public:
-    // Navigation preset.  Selects which mouse button (+ optional Shift)
-    // drives orbit and pan.  Selection is unaffected and stays on LMB
-    // for every preset — these three intentionally don't take LMB so
-    // click + box-select remain available without modifier gymnastics.
+    // Navigation preset. Selects which mouse button (+ optional Shift) drives
+    // orbit and pan. Blender/Rhino/Revit select with LMB; Web selects with RMB.
     //
     //   Blender   — Orbit MMB,        Pan Shift+MMB   (current default)
     //   Rhino     — Orbit RMB,        Pan Shift+RMB
-    //   Revit     — Orbit Shift+MMB,  Pan MMB
+    //   Revit     — Orbit Shift+MMB,  Pan MMB, pivot on combined selection AABB
     //   Web       — Orbit LMB,        Pan MMB,        Select RMB
     enum class NavPreset {
         Blender = 0,
