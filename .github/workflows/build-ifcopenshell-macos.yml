@@ -55,14 +55,12 @@ jobs:
           # Intel bottles disappear on bison's next release,
           # so build it from source now to avoid surprises later.
           brew install ${{ matrix.arch == 'x64' && '--build-from-source' || '' }} bison
-          brew install libffi findutils
           # qt brings in Qt6 + Svg; nix/build-all.py honours pre-set
           # QT_DIR so BonsaiViewer doesn't try to aqtinstall (which is
           # Linux-only). Only the viewer needs it.
           if [ "${{ matrix.arch }}" == "arm64" ]; then
             brew install qt
           fi
-          echo "$(brew --prefix findutils)/libexec/gnubin" >> $GITHUB_PATH
           # Mac is using bison 2.5 by default, but we need 3.5+ for swig.
           echo "$(brew --prefix bison)/bin" >> $GITHUB_PATH
 
