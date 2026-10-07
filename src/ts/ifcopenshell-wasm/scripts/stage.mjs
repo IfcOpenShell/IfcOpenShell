@@ -10,9 +10,9 @@ const DEST = join(PACKAGE_ROOT, 'wasm');
 
 const DEFAULT_SOURCES = [
   process.env.IFCOPENSHELL_WASM_DIR,
-  resolve(REPO_ROOT, 'build', 'wasm-native', 'ifcopenshell', 'ifcwrap', 'wasm'),
-  resolve(REPO_ROOT, 'build', 'wasm-native', 'dist'),
-  resolve(REPO_ROOT, 'build-wasm', 'ifcwrap', 'wasm'),
+  // Output layout of `nix/build-all.py --native-wasm`, one entry per supported host.
+  resolve(REPO_ROOT, 'build', 'Linux', 'wasm', 'build', 'ifcopenshell', 'ifcwrap', 'wasm'),
+  resolve(REPO_ROOT, 'build', 'Darwin', 'wasm', 'build', 'ifcopenshell', 'ifcwrap', 'wasm'),
 ].filter(Boolean);
 
 const REQUIRED = [
@@ -107,7 +107,7 @@ const source = resolveSource();
 if (!source) {
   console.error(
     'No WASM build output found. Build the WASM target first, then rerun stage:\n' +
-      '  python nix/wasm_native.py build\n' +
+      '  python nix/build-all.py --native-wasm\n' +
       'Or set IFCOPENSHELL_WASM_DIR to an existing ifcwrap/wasm directory.',
   );
   process.exit(1);

@@ -7,7 +7,7 @@ WASM binaries and generated API glue for [`ifcopenshell`](../ifcopenshell-js/).
 This package does not commit multi-megabyte WASM artifacts. Stage them from a local build:
 
 ```bash
-python nix/wasm_native.py build
+python nix/build-all.py --native-wasm
 cd src/ts/ifcopenshell-wasm && npm run stage
 
 # Or point at an existing build directory

@@ -66,4 +66,4 @@ cmake --build build/capi --target ifcopenshell_bindings_codegen
 CMake finds the same Boost, Eigen, OpenCASCADE, CGAL, GMP, and MPFR headers used
 by the configured native build and passes their include directories and active
 feature definitions to the generator. The native WASM build follows the same
-path after installing its pinned dependencies under `build/wasm-native`.
+path after installing its pinned dependencies under `build/<OS>/wasm`.
