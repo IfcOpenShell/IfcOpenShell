@@ -597,6 +597,25 @@ class Model(bonsai.core.tool.Model):
         pass
 
     @classmethod
+    def weld_curve_vertices(cls, offset: int) -> None:
+        """Merge coincident vertices from `offset` onwards so adjoining segments share their end points."""
+        remap: dict[int, int] = {}
+        vertices = cls.vertices[:offset]
+        for i in range(offset, len(cls.vertices)):
+            for j in range(offset, len(vertices)):
+                if (cls.vertices[i] - vertices[j]).length < WELD_TOLERANCE:
+                    remap[i] = j
+                    break
+            else:
+                remap[i] = len(vertices)
+                vertices.append(cls.vertices[i])
+        cls.vertices = vertices
+        edges = [tuple(remap.get(i, i) for i in edge) for edge in cls.edges]
+        cls.edges = [edge for edge in edges if edge[0] != edge[1]]
+        cls.arcs = [[remap.get(i, i) for i in arc] for arc in cls.arcs]
+        cls.circles = [[remap.get(i, i) for i in circle] for circle in cls.circles]
+
+    @classmethod
     def convert_curve_to_mesh(
         cls,
         obj: Union[bpy.types.Object, None],  # Unused argument.
@@ -624,6 +643,7 @@ class Model(bonsai.core.tool.Model):
             # This is a first pass incomplete implementation only for simple polylines, and misses many details.
             for segment in curve.Segments:
                 cls.convert_curve_to_mesh(obj, position, segment.ParentCurve)
+            cls.weld_curve_vertices(offset)
 
         elif curve.is_a("IfcIndexedPolyCurve"):
             for local_point in curve.Points.CoordList:
