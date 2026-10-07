@@ -297,27 +297,50 @@ void gltf_serializer::write(const ifcopenshell::geom::triangulation_element* o) 
 	auto it = meshes_.find(o->geometry().id());
 	if (it == meshes_.end()) {
 
-		auto mid1 = o->geometry().material_ids().begin();
-		auto mid0 = mid1;
+		const auto& mids = o->geometry().material_ids();
+		const auto& faces = o->geometry().faces();
+		const auto& edges = o->geometry().edges();
 
-		std::vector<int>::const_iterator fid0;
-		int stride;
-		int primitive_type;
-
-		if (!o->geometry().faces().empty()) {
-			stride = 3;
-			fid0 = o->geometry().faces().begin();
-			primitive_type = PRIM_TRIANGLES;
-		} else {
-			stride = 2;
-			fid0 = o->geometry().edges().begin();
-			primitive_type = PRIM_LINES;
+		// Edges that do not bound a face. Their material ids are interleaved with those of faces in item order.
+		std::vector<bool> in_face(o->geometry().verts().size() / 3, false);
+		for (int i : faces) {
+			in_face[i] = true;
 		}
+		std::vector<int> loose_edges;
+		for (size_t i = 0; i + 1 < edges.size(); i += 2) {
+			if (!in_face[edges[i]] && !in_face[edges[i + 1]]) {
+				loose_edges.push_back(edges[i]);
+				loose_edges.push_back(edges[i + 1]);
+			}
+		}
+
+		// Vertex indices increase with every item, so the lowest index tells whose material id is next
+		std::vector<bool> is_edge;
+		for (size_t fi = 0, ei = 0; is_edge.size() < mids.size();) {
+			const bool has_face = fi < faces.size();
+			const bool has_edge = ei < loose_edges.size();
+			if (!has_face && !has_edge) {
+				break;
+			}
+			is_edge.push_back(has_edge && (!has_face || loose_edges[ei] < faces[fi]));
+			if (is_edge.back()) {
+				ei += 2;
+			} else {
+				fi += 3;
+			}
+		}
+
+		auto mid1 = mids.begin();
+		auto mid0 = mid1;
+		const auto mid_end = mid1 + is_edge.size();
+
+		auto face_it = faces.begin();
+		auto edge_it = loose_edges.cbegin();
 
 		json mesh;
 		mesh["name"] = o->geometry().id();
 
-		while (true) {
+		while (mid1 != mid_end) {
 			// In glTF we need to decompose a mesh into several primitives
 			// with a constant material. In the triangulations coming from
 			// IfcOpenShell the materials are encoded in an additional set
@@ -327,7 +350,11 @@ void gltf_serializer::write(const ifcopenshell::geom::triangulation_element* o) 
 			// material.
 			mid1++;
 
-			if ((mid1 == o->geometry().material_ids().end()) || (*mid1 != *mid0)) {
+			if ((mid1 == mid_end) || (*mid1 != *mid0) || (is_edge[mid1 - mids.begin()] != is_edge[mid0 - mids.begin()])) {
+				const bool is_line = is_edge[mid0 - mids.begin()];
+				auto& fid0 = is_line ? edge_it : face_it;
+				const int stride = is_line ? 2 : 3;
+
 				auto n = std::distance(mid0, mid1);
 				auto fid1 = fid0 + n * stride;
 
@@ -349,7 +376,7 @@ void gltf_serializer::write(const ifcopenshell::geom::triangulation_element* o) 
 				std::vector<float> vf(vbegin + idx_begin * 3, vbegin + idx_end * 3);
 				primitive["attributes"]["POSITION"] = write_accessor<3U>(json_, tmp_fstream2_, vf.begin(), vf.end(), bufferViewId++);
 
-				if (o->geometry().normals().size()) {
+				if (!is_line && o->geometry().normals().size()) {
 					auto nbegin = o->geometry().normals().begin();
 					std::vector<float> nf(nbegin + idx_begin * 3, nbegin + idx_end * 3);
 					primitive["attributes"]["NORMAL"] = write_accessor<3U>(json_, tmp_fstream2_, nf.begin(), nf.end(), bufferViewId++);
@@ -358,11 +385,11 @@ void gltf_serializer::write(const ifcopenshell::geom::triangulation_element* o) 
 				if (*mid0 >= 0) {
 					primitive["material"] = writeMaterial(o->geometry().materials()[*mid0]);
 				}
-				primitive["mode"] = primitive_type;
+				primitive["mode"] = is_line ? PRIM_LINES : PRIM_TRIANGLES;
 
 				mesh["primitives"].push_back(primitive);
 
-				if (mid1 == o->geometry().material_ids().end()) {
+				if (mid1 == mid_end) {
 					break;
 				}
 
