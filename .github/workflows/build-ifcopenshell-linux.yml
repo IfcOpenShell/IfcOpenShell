@@ -120,6 +120,9 @@ jobs:
 
       - name: Test packages
         shell: bash
+        env:
+          # Colored output for pytest.
+          FORCE_COLOR: 1
         run: |
           uv run test/package/run_against_package.py "$HOME/output"
 
