@@ -18,9 +18,12 @@
 
 import datetime
 
+import pytest
+
 import ifcopenshell.api.control
 import ifcopenshell.api.root
 import ifcopenshell.api.sequence
+import ifcopenshell.util.sequence
 import test.bootstrap
 
 # NOTE: IfcTaskTime was introduced in IFC4
@@ -109,6 +112,43 @@ class TestEditTaskTime(test.bootstrap.IFC4):
         assert task_time.ScheduleStart == "2000-01-01T09:00:00"
         assert task_time.ScheduleFinish is None
         assert task_time.ScheduleDuration is None
+
+    def test_editing_a_start_date_with_a_calendar_that_never_has_a_working_day(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        calendar = ifcopenshell.api.sequence.add_work_calendar(self.file, name="Site")
+        work_time = ifcopenshell.api.sequence.add_work_time(self.file, work_calendar=calendar, time_type="WorkingTimes")
+        pattern = ifcopenshell.api.sequence.assign_recurrence_pattern(
+            self.file, parent=work_time, recurrence_type="WEEKLY"
+        )
+        ifcopenshell.api.sequence.edit_recurrence_pattern(
+            self.file, recurrence_pattern=pattern, attributes={"WeekdayComponent": []}
+        )
+        task = self.file.createIfcTask()
+        ifcopenshell.api.control.assign_control(self.file, relating_control=calendar, related_objects=[task])
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=task)
+        with pytest.raises(ifcopenshell.util.sequence.NoWorkingDayError, match='"Site" has no working day'):
+            ifcopenshell.api.sequence.edit_task_time(
+                self.file, task_time=task_time, attributes={"ScheduleStart": datetime.datetime(2000, 1, 1)}
+            )
+        assert task_time.ScheduleStart is None
+
+    def test_editing_a_start_date_with_a_calendar_whose_next_working_day_is_years_away(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        calendar = ifcopenshell.api.sequence.add_work_calendar(self.file)
+        work_time = ifcopenshell.api.sequence.add_work_time(self.file, work_calendar=calendar, time_type="WorkingTimes")
+        pattern = ifcopenshell.api.sequence.assign_recurrence_pattern(
+            self.file, parent=work_time, recurrence_type="YEARLY_BY_DAY_OF_MONTH"
+        )
+        ifcopenshell.api.sequence.edit_recurrence_pattern(
+            self.file, recurrence_pattern=pattern, attributes={"DayComponent": [29], "MonthComponent": [2]}
+        )
+        task = self.file.createIfcTask()
+        ifcopenshell.api.control.assign_control(self.file, relating_control=calendar, related_objects=[task])
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=task)
+        ifcopenshell.api.sequence.edit_task_time(
+            self.file, task_time=task_time, attributes={"ScheduleStart": datetime.datetime(2096, 3, 1)}
+        )
+        assert task_time.ScheduleStart == "2104-02-29T09:00:00"
 
     def test_schedule_finish_dates_are_auto_calculated_if_possible(self):
         task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=self.file.createIfcTask())
