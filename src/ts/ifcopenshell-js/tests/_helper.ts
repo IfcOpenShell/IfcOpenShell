@@ -1,8 +1,8 @@
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe } from 'vitest';
-import { init } from '../src/index.js';
-import type { IfcOpenShell } from '../src/index.js';
+import { init } from 'ifcopenshell';
+import type { IfcOpenShell } from 'ifcopenshell';
 
 const wasmDir = process.env.IFCOPENSHELL_WASM_DIR
   ? resolve(process.env.IFCOPENSHELL_WASM_DIR)

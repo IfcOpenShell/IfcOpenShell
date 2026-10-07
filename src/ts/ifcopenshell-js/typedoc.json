@@ -1,6 +1,6 @@
 {
   "$schema": "https://typedoc.org/schema.json",
-  "name": "@ifcopenshell-js/web",
+  "name": "ifcopenshell",
   "entryPoints": [
     "src/index.ts",
     "src/geom/index.ts",

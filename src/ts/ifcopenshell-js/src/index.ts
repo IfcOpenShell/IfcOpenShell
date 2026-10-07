@@ -1,14 +1,14 @@
 
 /**
- * Core `@ifcopenshell-js/web` API.
+ * Core `ifcopenshell` API.
  *
  * @module Core
  */
 
-import './disposable.js';
 
 export {
   init,
+  ifcopenshell,
   IfcOpenShellError,
   IfcOpenShellErrorCode,
   IfcOpenShellErrorKind,
@@ -16,33 +16,13 @@ export {
   isIfcOpenShellAbortError,
 } from './init.js';
 export type { IfcOpenShell } from './init.js';
-export { IfcFile } from './file.js';
+export { file, open } from './file.js';
 export type { FileInfo, HeaderInfo, OpenOptions } from './file.js';
-export { Entity } from './entity.js';
-export type { AttributeInput, EntityInfo } from './entity.js';
-export { AttributeValue } from './attribute.js';
-export type { IfcLogical, IfcValue, NestedEntityIds } from './attribute.js';
-export {
-  GeomIterator,
-  GeomSettings,
-  columnMajorToRowMajor4,
-  rowMajorToColumnMajor4,
-  transformPoint4,
-} from './geom/index.js';
-export type {
-  CollectOptions,
-  CollectResult,
-  IteratorFilter,
-  IteratorMetadata,
-  IteratorOptions,
-  Mesh,
-  MeshFloatArray,
-  MeshPrecision,
-  MatrixPoint3,
-  OperationProgress,
-} from './geom/index.js';
+export { entity_instance } from './entity_instance.js';
+export type { AttributeValueType, entity_instance_info } from './entity_instance.js';
 export { exportToBuffer } from './serializers/index.js';
 export type {
+  OperationProgress,
   ExportOptions,
   ExportResult,
   SerializerFormat,

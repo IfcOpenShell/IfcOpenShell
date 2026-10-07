@@ -46,7 +46,11 @@ def _ts_type_from_c_type(c_type: str, metadata: BindingABI) -> str:
         None,
     )
     if handle_name is not None:
-        return _type_name(metadata.handles[handle_name].c_type)
+        return (
+            "AttributeValueType"
+            if metadata.handles[handle_name].c_type == "ifcopenshell_parse_attribute_value_t"
+            else _type_name(metadata.handles[handle_name].c_type)
+        )
     if normalized in {"bool", "ifcopenshell_logical_t"}:
         return "boolean"
     if normalized in {"int32_t", "uint32_t", "double", "size_t", "void*"}:
@@ -170,7 +174,11 @@ def _ts_type(type_spec: TypeSpec, metadata: BindingABI) -> str:
     elif type_spec.kind == "void":
         result = "void"
     elif type_spec.kind == "handle" and type_spec.handle is not None:
-        result = _type_name(metadata.handles[type_spec.handle].c_type)
+        result = (
+            "AttributeValueType"
+            if metadata.handles[type_spec.handle].c_type == "ifcopenshell_parse_attribute_value_t"
+            else _type_name(metadata.handles[type_spec.handle].c_type)
+        )
     elif type_spec.kind == "struct" and type_spec.struct is not None:
         struct = metadata.value_types[type_spec.struct]
         result = _interface_name(struct.c_type)
@@ -238,10 +246,26 @@ def _render_handle_classes(metadata: BindingABI) -> str:
 
     chunks: list[str] = []
     for handle_name, handle in sorted(metadata.handles.items()):
-        methods = ["    readonly ptr: number;", "    destroy(): void;"]
+        if handle.c_type == "ifcopenshell_parse_attribute_value_t":
+            continue
+        methods = [
+            "    /** Transfer a live handle into a subclass; invalidates source. */",
+            f"    protected constructor(source: {_type_name(handle.c_type)});",
+            "    readonly ptr: number;",
+            "    destroy(): void;",
+            "    dispose(): void;",
+            "    [Symbol.dispose](): void;",
+            "    [Symbol.asyncDispose](): Promise<void>;",
+        ]
         for function in sorted(receiver_groups.get(handle_name, []), key=lambda item: item.c_name):
             name = _public_name(function, metadata.c_prefix)
             methods.append(_render_function_signature(name, function, metadata))
+        if handle.c_type == "ifcopenshell_instance_t":
+            methods.append("    setArgument(index: number, value: AttributeValueType): void;")
+        if handle.c_type == "ifcopenshell_geom_settings_t":
+            setting_type = "boolean | number | string | number[] | string[]"
+            methods.append(f"    set(name: string, value: {setting_type}): void;")
+            methods.append(f"    get(name: string): {setting_type};")
         method_block = "\n".join(methods)
         chunks.append(f"  export class {_type_name(handle.c_type)} {{\n{method_block}\n  }}")
     return "\n\n".join(chunks)
@@ -340,6 +364,8 @@ def _render_nested_module_interfaces(metadata: BindingABI) -> str:
 def _render_module_interface(metadata: BindingABI, module_members: dict[str, list[str]]) -> str:
     members: list[str] = []
     for handle in sorted(metadata.handles.values(), key=lambda item: item.c_type):
+        if handle.c_type == "ifcopenshell_parse_attribute_value_t":
+            continue
         type_name = _type_name(handle.c_type)
         members.append(f"    {type_name}: typeof {type_name};")
     for function in sorted(metadata.functions.values(), key=lambda item: item.c_name):
@@ -357,6 +383,7 @@ def _render_module_interface(metadata: BindingABI, module_members: dict[str, lis
         [
             "    loadPlugin(kind: 'schema' | 'kernel' | 'mapping' | 'tree' | 'document' | 'geometry_serializer', id: string): Promise<void>;",
             "    loadedPlugins(): string[];",
+            "    setInstanceFactory(factory: (handle: IfcOpenshellInstance) => IfcOpenshellInstance): void;",
         ]
     )
     return "  export interface IfcOpenshellModule {\n" + "\n".join(members) + "\n  }"
@@ -372,6 +399,7 @@ def render_typescript_declarations(metadata: BindingABI, handles: dict[str, CTyp
     module_interface = _render_module_interface(metadata, module_members)
     sections = [
         "",
+        '/// <reference lib="esnext.disposable" />',
         "declare module 'ifcopenshell-api' {",
         "  export type IfcOpenshellRawValue = null | boolean | number | bigint | string | object | IfcOpenshellRawValue[];",
         *_render_error_declaration("IfcOpenShellErrorKind", metadata.error_catalog.kinds),
@@ -398,6 +426,10 @@ def render_typescript_declarations(metadata: BindingABI, handles: dict[str, CTyp
         sections.extend([struct_interfaces, ""])
     if semantic_aliases:
         sections.extend([semantic_aliases, ""])
+    if "instance" in metadata.handles:
+        sections.append(
+            "  export type AttributeValueType<T = IfcOpenshellInstance> = null | boolean | number | bigint | string | T | AttributeValueType<T>[];"
+        )
     if handle_classes:
         sections.extend([handle_classes, ""])
     if nested_module_interfaces:

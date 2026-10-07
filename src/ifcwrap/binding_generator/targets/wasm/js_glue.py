@@ -67,7 +67,7 @@ def _enum_input_expr(name: str, type_spec: TypeSpec) -> str:
     if values is None:
         return name
     if type_spec.sequence_depth > 0:
-        return f"_mapEnumInput({name}, {json.dumps(values)}, " f"{type_spec.sequence_depth}, {json.dumps(name)})"
+        return f"_mapEnumInput({name}, {json.dumps(values)}, {type_spec.sequence_depth}, {json.dumps(name)})"
     return f"_enumInputValue({name}, {json.dumps(values)}, {json.dumps(name)})"
 
 
@@ -77,7 +77,7 @@ def _enum_output_expr(expression: str, type_spec: TypeSpec) -> str:
         return expression
     names = {value: name for name, value in values.items()}
     if type_spec.sequence_depth > 0:
-        return f"_mapEnumOutput({expression}, {json.dumps(names)}, " f"{type_spec.sequence_depth}, 'result')"
+        return f"_mapEnumOutput({expression}, {json.dumps(names)}, {type_spec.sequence_depth}, 'result')"
     return f"_enumOutputValue({expression}, {json.dumps(names)}, 'result')"
 
 
@@ -346,9 +346,28 @@ def _render_handle_classes(metadata: BindingABI) -> str:
         if function.receiver is not None:
             receiver_groups.setdefault(function.receiver, []).append(function)
 
-    chunks: list[str] = []
+    chunks: list[str] = [
+        "const _handleTransfer = Symbol.for('ifcopenshell.wasm.handle.transfer.v1');\n"
+        "// Only adopted handles get automatic cleanup; factory handles retain explicit ownership.\n"
+        "const _adoptedHandleFinalizers = typeof FinalizationRegistry === 'function'\n"
+        "    ? new FinalizationRegistry(({ module, ptr, destroy }) => {\n"
+        "        try { module[destroy]?.(ptr); } catch { /* runtime may already be gone */ }\n"
+        "    }) : null;"
+    ]
     for handle_name, handle in sorted(metadata.handles.items()):
         type_name = _type_name(handle.c_type)
+        if handle.c_type == "ifcopenshell_parse_attribute_value_t":
+            chunks.append(
+                f"function _wrap{type_name}(ptr, owned, module) {{\n"
+                "    if (!ptr) return null;\n"
+                "    try {\n"
+                "        return module.attributeValueToJs(ptr, p => _wrapIfcOpenshellInstance(p, true, module));\n"
+                "    } finally {\n"
+                "        if (owned) module._ifcopenshell_parse_attribute_value_destroy(ptr);\n"
+                "    }\n"
+                "}\n"
+            )
+            continue
         method_groups: dict[str, list[tuple[CFunctionIR, list[str]]]] = {}
         for function in sorted(receiver_groups.get(handle_name, []), key=lambda item: item.c_name):
             if function.c_name == handle.destroy_function:
@@ -358,7 +377,35 @@ def _render_handle_classes(metadata: BindingABI) -> str:
             if _typed_buffer_element(function, metadata) is not None:
                 param_names.append("arrayType")
             method_groups.setdefault(method, []).append((function, param_names))
-        methods = [_render_handle_method(method, overloads) for method, overloads in method_groups.items()]
+        methods = [
+            _render_handle_method(method, overloads)
+            for method, overloads in method_groups.items()
+            if not (handle.c_type == "ifcopenshell_instance_t" and method == "setAttributeValue")
+        ]
+        if handle.c_type == "ifcopenshell_instance_t":
+            methods.append(
+                "    setArgument(index, value) {\n"
+                "        if (!this.#ptr) throw new IfcOpenShellError('Handle has been disposed or transferred');\n"
+                "        if (!Number.isInteger(index) || index < 0 || index > 0xffffffff) throw new RangeError('Invalid attribute index');\n"
+                "        return this.#module.setAttributeValueFromJs(this.#ptr, index, value, item => {\n"
+                "            if (!(item instanceof IfcOpenshellInstance) || !item.ptr || item.#module !== this.#module)\n"
+                "                throw new TypeError('Expected a live entity_instance from this runtime');\n"
+                "            return item.ptr;\n"
+                "        });\n"
+                "    }\n"
+                "    setAttributeValue(name, value) { this.setArgument(this.getArgumentIndex(name), value); }"
+            )
+        if handle.c_type == "ifcopenshell_geom_settings_t":
+            methods.append(
+                "    set(name, value) {\n"
+                "        if (!this.#ptr) throw new IfcOpenShellError('Handle has been disposed or transferred');\n"
+                "        this.#module.setSettingFromJs(this.#ptr, name, value);\n"
+                "    }\n"
+                "    get(name) {\n"
+                "        if (!this.#ptr) throw new IfcOpenShellError('Handle has been disposed or transferred');\n"
+                "        return this.#module.settingToJs(this.#ptr, name);\n"
+                "    }"
+            )
         method_block = "\n\n".join(methods)
         destroy = handle.destroy_function or f"ifcopenshell_{_snake_name(handle.c_type)}_destroy"
         chunks.append(
@@ -367,23 +414,55 @@ def _render_handle_classes(metadata: BindingABI) -> str:
             "    #envelopeOwned;\n"
             "    #module;\n\n"
             "    constructor(ptr, envelopeOwned, module) {\n"
+            "        if (typeof ptr !== 'number') {\n"
+            "            if (typeof ptr?.[_handleTransfer] !== 'function') {\n"
+            f"                throw new IfcOpenShellError('Cannot adopt an incompatible {type_name}');\n"
+            "            }\n"
+            f"            const state = ptr[_handleTransfer]('{handle.c_type}');\n"
+            "            ({ ptr, envelopeOwned, module } = state);\n"
+            "            if (envelopeOwned) {\n"
+            f"                _adoptedHandleFinalizers?.register(this, {{ module, ptr, destroy: '_{destroy}' }}, this);\n"
+            "            }\n"
+            "        }\n"
             "        this.#ptr = ptr;\n"
             "        this.#envelopeOwned = envelopeOwned;\n"
             "        this.#module = module;\n"
+            "    }\n\n"
+            "    [_handleTransfer](type) {\n"
+            f"        if (type !== '{handle.c_type}' || !this.#ptr) {{\n"
+            f"            throw new IfcOpenShellError('Cannot adopt a disposed or incompatible {type_name}');\n"
+            "        }\n"
+            "        const state = { ptr: this.#ptr, envelopeOwned: this.#envelopeOwned, module: this.#module };\n"
+            "        _adoptedHandleFinalizers?.unregister(this);\n"
+            "        this.#ptr = 0;\n"
+            "        this.#envelopeOwned = false;\n"
+            "        return state;\n"
             "    }\n\n"
             "    get ptr() {\n"
             "        return this.#ptr;\n"
             "    }\n\n"
             "    destroy() {\n"
-            f"        if (this.#ptr && this.#envelopeOwned && this.#module._{destroy}) {{\n"
-            f"            this.#module._{destroy}(this.#ptr);\n"
-            "            this.#ptr = 0;\n"
-            "            this.#envelopeOwned = false;\n"
-            "        }\n"
-            "    }" + ("\n\n" + method_block if method_block else "") + "\n}\n\n"
+            "        const ptr = this.#ptr;\n"
+            "        const owned = this.#envelopeOwned;\n"
+            "        this.#ptr = 0;\n"
+            "        this.#envelopeOwned = false;\n"
+            "        _adoptedHandleFinalizers?.unregister(this);\n"
+            f"        if (ptr && owned) this.#module._{destroy}?.(ptr);\n"
+            "    }\n\n"
+            "    dispose() { this.destroy(); }\n"
+            "    [Symbol.dispose]() { this.destroy(); }\n"
+            "    async [Symbol.asyncDispose]() { this.destroy(); }"
+            + ("\n\n" + method_block if method_block else "")
+            + "\n}\n\n"
             f"function _wrap{type_name}(ptr, envelopeOwned, module) {{\n"
-            f"    return ptr ? new {type_name}(ptr, envelopeOwned, module) : null;\n"
-            "}"
+            + (
+                f"    const handle = ptr ? new {type_name}(ptr, envelopeOwned, module) : null;\n"
+                "    if (!handle || !module._instanceFactory) return handle;\n"
+                "    try { return module._instanceFactory(handle); } catch (error) { handle.destroy(); throw error; }\n"
+                if handle.c_type == "ifcopenshell_instance_t"
+                else f"    return ptr ? new {type_name}(ptr, envelopeOwned, module) : null;\n"
+            )
+            + "}"
         )
     return "\n\n".join(chunks)
 
@@ -394,6 +473,7 @@ def _render_handle_method(method: str, overloads: list[tuple[CFunctionIR, list[s
         params = ", ".join(param_names)
         return (
             f"    {method}({params}) {{\n"
+            "        if (!this.#ptr) throw new IfcOpenShellError('Handle has been disposed or transferred');\n"
             f"        return invoke_{function.c_name}(this.#module, this{', ' if params else ''}{params});\n"
             "    }"
         )
@@ -415,6 +495,7 @@ def _render_handle_method(method: str, overloads: list[tuple[CFunctionIR, list[s
     expected = ", ".join(str(arity) for arity in sorted(by_arity))
     return (
         f"    {method}(...args) {{\n"
+        "        if (!this.#ptr) throw new IfcOpenShellError('Handle has been disposed or transferred');\n"
         "        switch (args.length) {\n"
         f"{cases}\n"
         f"            default: throw new TypeError({method!r} + ' expects {expected} arguments');\n"
@@ -566,6 +647,8 @@ def _render_module_factory(metadata: BindingABI) -> str:
     members: list[str] = []
     module_members: dict[str, list[str]] = {}
     for handle in sorted(metadata.handles.values(), key=lambda item: item.c_type):
+        if handle.c_type == "ifcopenshell_parse_attribute_value_t":
+            continue
         type_name = _type_name(handle.c_type)
         members.append(f"        {type_name},")
     for function in sorted(metadata.functions.values(), key=lambda item: item.c_name):
@@ -637,7 +720,7 @@ def _render_module_factory(metadata: BindingABI) -> str:
         "        const path = virtualFilePath(entry.wasm);\n"
         "        module.FS.writeFile(path, bytes);\n"
         "        try {\n"
-        "            module.loadDynamicLibrary(path, { global: true, allowUndefined: true });\n"
+        "            await module.loadDynamicLibrary(path, { loadAsync: true, global: true, allowUndefined: true });\n"
         "        } finally {\n"
         "            module.FS.unlink(path);\n"
         "        }\n"
@@ -725,6 +808,7 @@ def _render_module_factory(metadata: BindingABI) -> str:
         "    }\n"
         "\n"
         "    return Object.freeze({\n" + joined + "\n"
+        "        setInstanceFactory(factory) { module._instanceFactory = factory; },\n"
         "        loadPlugin,\n"
         "        loadedPlugins: () => Array.from(loadedPlugins),\n"
         "    });\n"

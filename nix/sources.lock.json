@@ -71,7 +71,7 @@
     "url": "https://download.gnome.org/sources/libxml2/2.13/libxml2-2.13.8.tar.xz",
     "version": "2.13.8",
     "archive_type": "tar.xz",
-    "sha256": "72014489b1b6e22ca47d3cb11af4becb706faa997ac7be1846c478f50214ca81",
+    "sha256": "277294cb33119ab71b2bc81f2f445e9bc9435b893ad15bb2cd2b0e859a0ee84a",
     "patches": []
   },
   "pcre": {

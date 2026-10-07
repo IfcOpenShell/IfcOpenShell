@@ -16,6 +16,9 @@ file(WRITE "${IFCOPENSHELL_WASM_ENTRYPOINT}"
     "extern \"C\" EMSCRIPTEN_KEEPALIVE void ifcopenshell_wasm_keep_setjmp(void) { jmp_buf env; if (setjmp(env)) {} }\n"
 )
 
+target_sources(ifcopenshell_capi PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/binding_generator/targets/wasm/attribute_value.cpp")
+target_sources(ifcopenshell_capi PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/binding_generator/targets/wasm/settings.cpp")
+
 function(ifcopenshell_configure_wasm_main TARGET ENVIRONMENT OUTPUT_NAME)
     ifcopenshell_wasm_main_module_link(${TARGET})
     add_dependencies(${TARGET} ifcopenshell_capi ifcopenshell_bindings_codegen)
@@ -40,6 +43,7 @@ function(ifcopenshell_configure_wasm_main TARGET ENVIRONMENT OUTPUT_NAME)
         ${TARGET}
         PRIVATE
             "SHELL:--no-entry"
+            "SHELL:--bind"
             "SHELL:-fwasm-exceptions"
             "SHELL:-sWASM=1"
             "SHELL:-sMAIN_MODULE=1"
@@ -59,6 +63,7 @@ function(ifcopenshell_configure_wasm_main TARGET ENVIRONMENT OUTPUT_NAME)
             "SHELL:-Wl,--export=__c_longjmp"
             "SHELL:-Wl,--export=__wasm_longjmp"
             "SHELL:-Wl,--export=__wasm_setjmp"
+            "SHELL:-Wl,--export=isspace"
             "SHELL:-sSUPPORT_LONGJMP=wasm"
             -Oz
     )

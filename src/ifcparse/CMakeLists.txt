@@ -72,7 +72,7 @@ if(WITH_ROCKSDB)
 endif()
 
 if(WASM_BUILD)
-    ifcopenshell_wasm_define_main_import_target(IfcParse)
+    ifcopenshell_wasm_define_main_import_target(IfcParse INTERFACE_LINK_LIBRARIES Boost::headers)
 endif()
 
 ifcopenshell_wasm_plugin_dependency(plugin_when_not_wasm)

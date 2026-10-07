@@ -235,6 +235,7 @@ IFCAPI_DISCOVER_POLICY(settings, variant, get, set, ifcopenshell::geom::settings
 IFCAPI_DISCOVER_POLICY(settings, variant, get, set, ifcopenshell::geom::settings::value_variant_t, int_set, std::set<int>)
 IFCAPI_DISCOVER_POLICY(settings, variant, get, set, ifcopenshell::geom::settings::value_variant_t, string_set, std::set<std::string>)
 IFCAPI_DISCOVER_POLICY(settings, variant, get, set, ifcopenshell::geom::settings::value_variant_t, double_list, std::vector<double>)
+IFCAPI_DISCOVER_POLICY(settings, variant, get, set, ifcopenshell::geom::settings::value_variant_t, string_list, std::vector<std::string>)
 IFCAPI_DISCOVER_POLICY(triangulation, method_size, verts, verts_buffer_size)
 IFCAPI_DISCOVER_POLICY(triangulation, method_size, faces, faces_buffer_size)
 IFCAPI_DISCOVER_POLICY(triangulation, method_size, normals, normals_buffer_size)
@@ -1415,6 +1416,7 @@ inline express::base product(const ifcopenshell::geom::element* self) {
     return self->product();
 }
 
+IFCAPI_OWNED
 inline ifcopenshell::geom::triangulation_element* get_as_triangulation_element(ifcopenshell::geom::iterator* self) {
     auto elem = self->get();
     auto* tri = dynamic_cast<ifcopenshell::geom::triangulation_element*>(elem.get());
@@ -1422,6 +1424,14 @@ inline ifcopenshell::geom::triangulation_element* get_as_triangulation_element(i
         throw std::runtime_error("Current element is not a TriangulationElement");
     }
     return static_cast<ifcopenshell::geom::triangulation_element*>(elem.release());
+}
+
+inline ifcopenshell::geom::element* as_element(ifcopenshell::geom::triangulation_element* self) {
+    return self;
+}
+
+inline ifcopenshell::geom::triangulation_element* as_triangulation_element(ifcopenshell::geom::element* self) {
+    return dynamic_cast<ifcopenshell::geom::triangulation_element*>(self);
 }
 
 inline ifcopenshell::geom::native_element* get_as_brep_element(ifcopenshell::geom::iterator* self) {

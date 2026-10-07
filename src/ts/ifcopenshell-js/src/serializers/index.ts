@@ -5,7 +5,6 @@
  * @module Serializers
  */
 
-import '../disposable.js';
 
 import type {
   IfcOpenshellGeomBrepElement,
@@ -14,10 +13,16 @@ import type {
   IfcOpenshellGeomIterator,
   IfcOpenshellGeomTriangulationElement,
 } from '@ifcopenshell-js/wasm/api';
-import type { IfcFile } from '../file.js';
-import { loadGeometry, type OperationProgress } from '../geom/iterator.js';
-import type { GeomSettings } from '../geom/settings.js';
-import { IfcOpenShellError, abortError, type IfcOpenShell } from '../init.js';
+import type { file } from '../file.js';
+/** Serializer progress in native processing order. */
+export interface OperationProgress {
+  phase: string;
+  message: string;
+  ratio?: number;
+  current?: number;
+}
+import type { settings } from '../geom/settings.js';
+import { IfcOpenShellError, abortError, ifcopenshell, fs } from '../init.js';
 
 /** Formats supported by {@link exportToBuffer}. */
 export type SerializerFormat = 'obj' | 'svg' | 'ttl';
@@ -32,7 +37,7 @@ export interface ExportResult {
 
 /** Geometry loading, serializer, cancellation, and progress options. */
 export interface ExportOptions {
-  /** Geometry kernel to load before export. Defaults to `passthrough`. */
+  /** Previously loaded geometry kernel. Defaults to `passthrough`. */
   kernel?: string;
   /** Number of native geometry iterator threads. */
   numThreads?: number;
@@ -41,21 +46,20 @@ export interface ExportOptions {
    * native calls; it cannot interrupt one native call already in progress.
    */
   signal?: AbortSignal;
-  /** Receive plugin, write, and completion progress events. */
+  /** Receive write and completion progress events. */
   onProgress?(progress: OperationProgress): void;
 }
 
 /**
- * Load geometry and serialize the file into in-memory text buffers.
+ * Serialize the file into in-memory text buffers. Load kernel, mapping and serializer plugins first.
  *
  * OBJ returns its material data in `secondary`; SVG and TTL return an empty
  * secondary buffer. The function returns `null` when the native iterator
  * cannot initialize and throws when a serializer or geometry element fails.
  */
 export async function exportToBuffer(
-  shell: IfcOpenShell,
-  file: IfcFile,
-  geomSettings: GeomSettings,
+  file: file,
+  geomSettings: settings,
   format: SerializerFormat,
   options: ExportOptions = {},
 ): Promise<ExportResult | null> {
@@ -64,11 +68,6 @@ export async function exportToBuffer(
   }
   throwIfAborted(options.signal);
   const kernel = options.kernel ?? 'passthrough';
-  options.onProgress?.({ phase: 'plugin', message: `Loading ${kernel} kernel` });
-  await loadGeometry(shell, file.raw, kernel);
-  options.onProgress?.({ phase: 'plugin', message: `Loading ${format} serializer` });
-  await shell.loadPlugin('geometry_serializer', format);
-
   let obj: IfcOpenshellGeomBuffer | null = null;
   let mtl: IfcOpenshellGeomBuffer | null = null;
   let serializer: IfcOpenshellGeomGeometrySerializer | null = null;
@@ -77,22 +76,22 @@ export async function exportToBuffer(
 
   try {
     if (format === 'obj') {
-      obj = shell.raw.geom.createBuffer();
-      mtl = shell.raw.geom.createBuffer();
-      serializer = shell.raw.geom.createGeometrySerializerByStream(
-        'obj', mtl, obj, geomSettings.raw,
+      obj = ifcopenshell.geom.createBuffer();
+      mtl = ifcopenshell.geom.createBuffer();
+      serializer = ifcopenshell.geom.createGeometrySerializerByStream(
+        'obj', mtl, obj, geomSettings,
       );
     } else {
       outputPath = uniquePath(format);
-      serializer = shell.raw.geom.createGeometrySerializerByPath(
-        format, outputPath, outputPath, geomSettings.raw,
+      serializer = ifcopenshell.geom.createGeometrySerializerByPath(
+        format, outputPath, outputPath, geomSettings,
       );
     }
     if (!serializer || serializer.ptr === 0) throw new IfcOpenShellError(`Failed to create ${format} serializer`);
-    serializer.setFile(file.raw);
+    serializer.setFile(file);
     serializer.writeHeader();
 
-    iterator = shell.raw.geom.createIterator(kernel, geomSettings.raw, file.raw, options.numThreads ?? 1);
+    iterator = ifcopenshell.geom.createIterator(kernel, geomSettings, file, options.numThreads ?? 1);
     if (!iterator || iterator.ptr === 0) throw new IfcOpenShellError('Failed to create geometry iterator');
     if (!iterator.initialize()) return null;
 
@@ -120,17 +119,17 @@ export async function exportToBuffer(
         secondary: mtl?.isReady() ? mtl.getValue() : '',
       };
     }
-    if (!shell.fs) throw new IfcOpenShellError(`Cannot read ${format} output without Emscripten FS`);
-    const bytes = shell.fs.readFile(outputPath!, { encoding: 'utf8' });
+    if (!fs) throw new IfcOpenShellError(`Cannot read ${format} output without Emscripten FS`);
+    const bytes = fs.readFile(outputPath!, { encoding: 'utf8' });
     return { primary: typeof bytes === 'string' ? bytes : new TextDecoder().decode(bytes), secondary: '' };
   } finally {
     release(iterator);
     release(serializer);
     release(obj);
     release(mtl);
-    if (outputPath && shell.fs) {
+    if (outputPath && fs) {
       try {
-        shell.fs.unlink(outputPath);
+        fs.unlink(outputPath);
       } catch {
         // ignore cleanup failure
       }

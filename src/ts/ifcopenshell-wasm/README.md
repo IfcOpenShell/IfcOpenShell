@@ -1,6 +1,6 @@
 # @ifcopenshell-js/wasm
 
-WASM binaries and generated API glue for [`@ifcopenshell-js/web`](../ifcopenshell-js/).
+WASM binaries and generated API glue for [`ifcopenshell`](../ifcopenshell-js/).
 
 ## Staging assets
 
@@ -17,12 +17,12 @@ IFCOPENSHELL_WASM_DIR=/path/to/ifcwrap/wasm npm run stage
 ## Default usage
 
 ```js
-import { init } from '@ifcopenshell-js/web';
+import { init } from 'ifcopenshell';
 
 const shell = await init();
 ```
 
-`@ifcopenshell-js/web` depends on this package and uses `resolveWasmAssets()` by
+`ifcopenshell` depends on this package and uses `resolveWasmAssets()` by
 default. Browser bundlers copy and rewrite the packaged WASM assets
 from static `new URL(..., import.meta.url)` references generated into
 `asset-manifest.js`.
@@ -47,7 +47,7 @@ Most browser apps should use `init()` and let the bundler copy assets. If you
 need to serve a custom full `wasm/` directory yourself, pass explicit URLs:
 
 ```js
-import { init } from '@ifcopenshell-js/web';
+import { init } from 'ifcopenshell';
 import { resolveUrls } from '@ifcopenshell-js/wasm';
 
 const shell = await init({ wasmAssets: await resolveUrls('/wasm/') });

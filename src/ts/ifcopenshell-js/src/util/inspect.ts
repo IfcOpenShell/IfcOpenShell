@@ -1,73 +1,33 @@
+import { entity_instance, type AttributeValueType } from '../entity_instance.js';
+import type { file } from '../file.js';
 
-import { AttributeValue } from '../attribute.js';
-import type { IfcFile } from '../file.js';
-
-/** A single named attribute snapshot produced by {@link inspectEntity}. */
-export interface AttributeEntry {
-  name: string;
-  value: string;
-}
-
-/** A plain-object snapshot of an entity's metadata. */
-export interface EntityInfo {
+export interface AttributeEntry { name: string; value: string; }
+export interface entity_instance_info {
   id: number;
   type: string;
   guid: string | null;
   attributes: AttributeEntry[];
 }
 
-/** Format one attribute as a compact human-readable string. */
-export async function formatAttributeValue(attr: AttributeValue): Promise<string> {
-  try {
-    if (attr.isNull) return '∅';
-    const normalizedType = attr.type.replace(/\s+/g, '_');
-    if (normalizedType === 'DERIVED') return '*';
-    if (normalizedType === 'INSTANCE' || normalizedType === 'ENTITY_INSTANCE') {
-      const inst = await attr.entity();
-      try {
-        return inst ? `#${inst.id} · ${inst.typeName}` : '$';
-      } finally {
-        await inst?.dispose();
-      }
-    }
-    if (normalizedType === 'ENUM' || normalizedType === 'ENUMERATION') return await attr.string();
-    if (normalizedType.startsWith('AGGREGATE') || normalizedType.includes('LIST')) {
-      try {
-        return `[…${await attr.size()}]`;
-      } catch {
-        return '[…]';
-      }
-    }
-    try { return await attr.string(); } catch {}
-    try { return String(await attr.integer()); } catch {}
-    try { return String(await attr.number()); } catch {}
-    try { return String(await attr.boolean()); } catch {}
-    return attr.type;
-  } catch {
-    return '?';
-  }
+export function formatAttributeValue(value: AttributeValueType): string {
+  if (value === null) return '$';
+  if (value instanceof entity_instance) return `#${value.id()} - ${value.typeName}`;
+  if (Array.isArray(value)) return `[${value.map(formatAttributeValue).join(', ')}]`;
+  return String(value);
 }
 
-/** Inspect an entity and return its id, type, GlobalId, and formatted attributes. */
-export async function inspectEntity(file: IfcFile, id: number): Promise<EntityInfo | null> {
-  const entity = file.get(id);
+function release(value: AttributeValueType): void {
+  if (value instanceof entity_instance) value.dispose();
+  else if (Array.isArray(value)) value.forEach(release);
+}
+
+export async function inspectEntity(file: file, id: number): Promise<entity_instance_info | null> {
+  using entity = file.get(id);
   if (!entity) return null;
-  try {
-    const attributes = await Promise.all(entity.attributes().map(async (name) => {
-      using attr = entity.attribute(name);
-      return { name, value: await formatAttributeValue(attr) };
-    }));
-    let guid: string | null = null;
-    if (attributes.some((item) => item.name === 'GlobalId')) {
-      try {
-        const value = entity.get('GlobalId');
-        guid = typeof value === 'string' ? value : null;
-      } catch {
-        guid = null;
-      }
-    }
-    return { id: entity.id, type: entity.type, guid, attributes };
-  } finally {
-    entity.dispose();
-  }
+  const attributes = entity.attributes().map(name => {
+    const value = entity.get(name);
+    try { return { name, value: formatAttributeValue(value) }; } finally { release(value); }
+  });
+  const guid = attributes.some(item => item.name === 'GlobalId') ? entity.get('GlobalId') : null;
+  return { id: entity.id(), type: entity.type, guid: typeof guid === 'string' ? guid : null, attributes };
 }
