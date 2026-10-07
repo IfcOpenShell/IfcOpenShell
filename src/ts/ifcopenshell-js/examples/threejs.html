@@ -1,0 +1,179 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>IfcOpenShell Native WASM ThreeJS demo</title>
+
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+  }
+
+  aside {
+    position: absolute;
+    inset: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 10px;
+    font: 14px sans-serif;
+  }
+
+  aside div {
+    padding: 5vh 10vh;
+    border-radius: 1vh;
+    background: #fff;
+    border: solid 1px #e0e0e0;
+    text-align: center;
+  }
+
+  canvas {
+    display: block;
+  }
+</style>
+
+<aside>
+  <div>
+    IfcOpenShell Native WASM Three.js demo<br><br><br>
+    <input id="upload" type="file" accept=".ifc">
+  </div>
+</aside>
+<script type="importmap">
+{
+  "imports": {
+    "ifcopenshell": "../dist/index.js",
+    "ifcopenshell/geom": "../dist/geom/index.js",
+    "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
+    "@ifcopenshell-js/wasm": "../../ifcopenshell-wasm/browser.js",
+    "@ifcopenshell-js/wasm/api": "../../ifcopenshell-wasm/wasm/ifcopenshell_api.mjs"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import * as ifcopenshell from 'ifcopenshell';
+import * as ifcopenshell_geom from 'ifcopenshell/geom';
+
+// Setup Three.js scene, camera, renderer, and controls
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xeeeeee);
+const model = new THREE.Group();
+scene.add(model, new THREE.HemisphereLight(0xffffff, 0x666666, 3));
+const camera = new THREE.PerspectiveCamera(45, 1, 0.01, 10000);
+camera.up.set(0, 0, 1);
+camera.position.set(10, -10, 10);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+document.body.append(renderer.domElement);
+const controls = new OrbitControls(camera, renderer.domElement);
+function resize() {
+  renderer.setSize(innerWidth, innerHeight);
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize);
+resize();
+renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
+
+let runtime;
+document.querySelector('#upload').onchange = async () => {
+  document.querySelector('aside').style.display = 'none';
+  const selected = document.querySelector('#upload').files[0];
+  if (!selected) return;
+  let file, iterator, settings;
+  try {
+    runtime ??= await ifcopenshell.init();
+    const bytes = await selected.arrayBuffer();
+    const stream = runtime.raw.parse.streamFromString(new TextDecoder().decode(bytes.slice(0, 4096)));
+    let header, declaration, schema;
+    try {
+      header = stream.header();
+      declaration = header.fileSchema();
+      schema = declaration.schemaIdentifiers()[0].toLowerCase();
+    } finally {
+      declaration?.destroy(); header?.destroy(); stream.destroy();
+    }
+
+    await runtime.loadPlugin('schema', schema);
+    await runtime.loadPlugin('mapping', schema);
+    await runtime.loadPlugin('kernel', 'manifold');
+    await runtime.loadPlugin('kernel', 'opencascade');
+
+    file = ifcopenshell.open(bytes, selected.name);
+
+    settings = new ifcopenshell_geom.settings();
+    settings.set('weld-vertices', false);
+
+    iterator = new ifcopenshell_geom.iterator(settings, file, { geometryLibrary: 'manifold' });
+    let nextYield = performance.now() + 30;
+    if (iterator.initialize()) do {
+      if (performance.now() >= nextYield) {
+        await new Promise(requestAnimationFrame);
+        nextYield = performance.now() + 30;
+      }
+      const shape = iterator.get();
+      const tri = shape.asTriangulationElement();
+      const nativeGeometry = tri.geometry();
+      let data;
+      try {
+        data = {
+          vertices: nativeGeometry.vertsBuffer(Float32Array),
+          faces: nativeGeometry.facesBuffer(Uint32Array),
+          normals: nativeGeometry.normalsBuffer(Float32Array),
+          colors: nativeGeometry.colorsBuffer(Float32Array),
+          materialIds: nativeGeometry.materialIdsBuffer(Int32Array),
+          transform: shape.transformationBuffer(Float64Array),
+        };
+      } finally {
+        nativeGeometry.destroy(); tri.destroy(); shape.destroy();
+      }
+
+      if (!data.faces.length) continue;
+
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(data.vertices, 3));
+      geometry.setIndex(new THREE.BufferAttribute(data.faces, 1));
+      geometry.setAttribute('normal', new THREE.BufferAttribute(data.normals, 3));
+
+      const materials = [new THREE.MeshLambertMaterial({ color: 0xcccccc, side: THREE.DoubleSide })];
+      for (let i = 0; i < data.colors.length; i += 4) {
+        const [r, g, b, a] = data.colors.subarray(i, i + 4);
+        materials.push(new THREE.MeshLambertMaterial({
+          color: new THREE.Color().setRGB(r, g, b), opacity: a,
+          transparent: a < 1, depthWrite: a === 1, side: THREE.DoubleSide,
+        }));
+
+      }
+      for (let start = 0, end; start < data.faces.length / 3; start = end) {
+        const material = data.materialIds[start] ?? -1;
+        for (end = start + 1; end < data.faces.length / 3 && (data.materialIds[end] ?? -1) === material; end++);
+        geometry.addGroup(start * 3, (end - start) * 3, material + 1);
+      }
+
+      const mesh = new THREE.Mesh(geometry, materials);
+      mesh.applyMatrix4(new THREE.Matrix4().fromArray(data.transform));
+      model.add(mesh);
+    } while (iterator.next());
+
+    const bounds = new THREE.Box3().setFromObject(model);
+    if (!bounds.isEmpty()) {
+      const sphere = bounds.getBoundingSphere(new THREE.Sphere());
+      const radius = Math.max(sphere.radius, 0.01);
+      const fov = Math.min(camera.fov * Math.PI / 180, 2 * Math.atan(Math.tan(camera.fov * Math.PI / 360) * camera.aspect));
+      controls.target.copy(sphere.center);
+      camera.position.copy(sphere.center).addScaledVector(new THREE.Vector3(1, -1, 1).normalize(), radius / Math.sin(fov / 2) * 1.2);
+      camera.near = radius / 1000;
+      camera.far = radius * 100;
+      camera.updateProjectionMatrix();
+    }
+  } catch (error) {
+    console.error(error);
+  } finally {
+    iterator?.dispose();
+    settings?.dispose();
+    file?.dispose();
+  }
+};
+</script>

@@ -29,7 +29,8 @@ addToLibrary({
     return x * Math.pow(2, exp);
   },
   llround: function(x) {
-    return x >= 0 ? Math.floor(x + 0.5) : Math.ceil(x - 0.5);
+    // WASM_BIGINT represents the C long long / WASM i64 return value as BigInt.
+    return BigInt(x >= 0 ? Math.floor(x + 0.5) : Math.ceil(x - 0.5));
   },
   log: 'Math.log',
   log10: 'Math.log10',

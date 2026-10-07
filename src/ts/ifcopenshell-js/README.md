@@ -1,45 +1,101 @@
-# @ifcopenshell-js/web
+# ifcopenshell
 
-Ergonomic TypeScript and JavaScript wrappers for the generated low-level
-IfcOpenShell WASM API. The package uses the same contract in browsers and Node.
-
-## Install
-
-```bash
-npm install @ifcopenshell-js/web
-```
-
-## Usage
+TypeScript/JavaScript bindings for the IfcOpenShell WASM runtime.
 
 ```ts
-import { IfcFile, init } from '@ifcopenshell-js/web';
+import * as ifcopenshell from 'ifcopenshell';
+import * as ifcopenshell_geom from 'ifcopenshell/geom';
 
-const shell = await init();
-await shell.loadPlugin('schema', 'ifc4');
-
-const response = await fetch('/model.ifc');
-const file = await IfcFile.open(
-  shell,
-  new Uint8Array(await response.arrayBuffer()),
-  'model.ifc',
-);
-
-console.log(file.schema, file.entityCount);
-const walls = file.all('IfcWall');
-console.log(walls.map((wall) => wall.get('Name')));
+const runtime = await ifcopenshell.init();
+await runtime.loadPlugin('schema', 'ifc4');
+using model = new ifcopenshell.file('IFC4');
+using wall = model.createEntity('IfcWall', { name: 'Example' });
+console.log(wall.id(), wall.get('Name'));
+wall.set('Name', 'Updated');
 ```
 
-The `raw` property exposes the generated C/WASM surface when a wrapper is not
-appropriate. Files, entities, geometry objects, and settings own native handles;
-call `dispose()` or use explicit resource management (`using`).
+`new file(schema)` creates an empty file. `open(bytes, filename?)`
+parses a `Uint8Array` or `ArrayBuffer`. Both return synchronously after runtime
+initialization and explicit schema plugin loading.
 
-Geometry iteration helpers are exported from `@ifcopenshell-js/web/geom`, serializers from
-`@ifcopenshell-js/web/serializers`, and inspection helpers from
-`@ifcopenshell-js/web/util`.
+`init()` initializes one shared runtime per module instance. Concurrent and later
+parameterless calls reuse it. Supply configuration only on the first call; failed
+initialization can be retried. Core and geometry functions share this runtime through the live `ifcopenshell` export.
+Always await `init()` before accessing it or constructing native objects.
+
+```js
+import { init, ifcopenshell } from 'ifcopenshell';
+
+await init();
+const settings = ifcopenshell.geom.createSettings();
+settings.dispose();
+```
+
+`file`, `entity_instance`, `settings` and `iterator` are exported classes
+that extend the generated binding classes. Construct them with `new`. They expose the native methods
+directly and can be passed to generated functions without a `.raw` wrapper.
+Call `dispose()` / `destroy()` or use `using` to release handles.
+
+## Geometry
+
+```ts
+await runtime.loadPlugin('mapping', 'ifc4');
+await runtime.loadPlugin('kernel', 'opencascade');
+using settings = new ifcopenshell_geom.settings();
+settings.set('weld-vertices', false);
+using iterator = new ifcopenshell_geom.iterator(settings, model, {
+  numThreads: 1,
+  geometryLibrary: 'opencascade',
+});
+if (iterator.initialize()) do {
+  using shape = iterator.get()!;
+  // Read shape.asTriangulationElement().geometry() here.
+} while (iterator.next());
+
+// For a product with a representation:
+// using shape = ifcopenshell_geom.create_shape(settings, product);
+```
+
+`settings.set(name, value)` and `settings.get(name)` convert values in the native
+WASM binding using `emscripten::val`. Booleans, numbers, strings and arrays map
+to the setting's declared C++ type; enums use numbers and sets return arrays.
+`value(name)` is an alias for `get(name)`.
+
+The optional third argument accepts `numThreads` (default `1`),
+`geometryLibrary` (default `'opencascade'`), and either `include` or `exclude`
+(arrays of entity ids or IFC type names).
+
+`initialize()` positions at the first shape; `get()` takes ownership of that
+shape; `next()` advances and returns a boolean. Call `get()` once per position.
+`create_shape(settings, instance, representation?, geometry_library?)` defaults
+to OpenCASCADE. Neither path loads plugins automatically.
+Destroy borrowed geometry handles before their owning shape. Typed geometry
+buffers are detached copies. Serializers are exported from `ifcopenshell/serializers`
+and also require explicit plugin loading.
+
+## Attribute values
+
+`entity_instance.get(nameOrIndex)` and the inherited `getArgument()` /
+`getArgumentByName()` return `AttributeValueType`. Conversion is performed in
+C++ using `emscripten::val`, not by a JS attribute wrapper. `set()` and
+`setArgument()` convert JS inputs in the same native binding.
+
+Values are null, booleans, numbers, strings, bigints, entity instances or arrays
+of these (including nested arrays). Enumerations are strings; an indeterminate
+IFC logical is `'UNKNOWN'`. Integers within the JS safe range are numbers;
+larger signed 64-bit integers are bigints. Null, derived and empty-aggregate
+markers follow the Python output typemap and become null; typed vectors become
+arrays, including empty arrays. Entity references remain live `entity_instance`
+objects, including inline typed values and nested aggregates; dispose them when
+finished. Passing an entity from another IFC file or runtime is rejected.
+
+There is no `attribute()` or `AttributeValue` handle in the JS API. `entity.ts`
+is now `entity_instance.ts`. Matrix conversion and disposable declaration helper
+modules have been removed. The generated declarations reference `ESNext.Disposable`.
 
 ## Development
 
-Build and stage WASM before compiling or testing:
+Build and stage the WASM artifacts before building the TS package:
 
 ```bash
 python nix/wasm_native.py build
@@ -49,7 +105,16 @@ IFCOPENSHELL_WASM_DIR=/path/to/dist npm run stage
 cd ../ifcopenshell-js
 npm run build
 npm test
+npm run test:browser
+npm run docs:check
 ```
 
-Use `npm run test:browser` for the browser runtime smoke test and
-`npm run docs:check` to validate the public API documentation.
+The package name is `ifcopenshell`; install the local package or its `npm pack`
+archive when consuming this checkout.
+
+For the minimal Three.js viewer, serve `src/ts` with `python3 -m http.server 8766`
+and open `http://localhost:8766/ifcopenshell-js/examples/threejs.html`.
+Its import map uses `ifcopenshell` and `ifcopenshell/geom`. The example reads
+`FILE_SCHEMA` with `instance_streamer`, manually loads that schema, its mapping
+and OpenCASCADE, and uses `weld-vertices = false`. Three.js comes from a pinned
+CDN URL; conversion runs on the main thread.

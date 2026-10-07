@@ -1114,6 +1114,7 @@ def discover_namespace_functions_with_synthetic_source(
 
 
 def _normalize_cpp_type_text(text: str) -> str:
+    text = text.replace("std::basic_string<char>", "std::string")
     return " ".join(text.replace(" &", "&").replace(" *", "*").split())
 
 

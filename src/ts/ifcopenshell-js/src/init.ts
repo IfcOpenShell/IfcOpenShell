@@ -1,4 +1,6 @@
+import { entity_instance } from './entity_instance.js';
 import {
+  IfcOpenshellInstance,
   IfcOpenShellError,
   IfcOpenShellErrorCode,
   IfcOpenShellErrorKind,
@@ -40,7 +42,31 @@ export {
  * @param options Asset locations and optional plugin-loader overrides.
  * @returns An initialized, frozen runtime facade.
  */
-export async function init(options: InitOptions = {}): Promise<IfcOpenShell> {
+export function init(options: InitOptions = {}): Promise<IfcOpenShell> {
+  if (initialization) {
+    if (Object.keys(options).length) {
+      return Promise.reject(new IfcOpenShellError('Runtime is already initializing or initialized; configure it only on the first init() call'));
+    }
+    return initialization;
+  }
+  initialization = initialize(options).then(value => {
+    ifcopenshell = value.raw;
+    fs = value.fs;
+    return value;
+  }).catch(error => {
+    initialization = undefined;
+    throw error;
+  });
+  return initialization;
+}
+
+/** Native module, available after awaiting init(). */
+export let ifcopenshell: IfcOpenshellModule;
+/** Emscripten filesystem, available after awaiting init(). */
+export let fs: EmscriptenFS | null;
+let initialization: Promise<IfcOpenShell> | undefined;
+
+async function initialize(options: InitOptions): Promise<IfcOpenShell> {
   let assets: WasmAssets;
   if (options.wasmAssets) {
     assets = options.wasmAssets;
@@ -74,13 +100,14 @@ export async function init(options: InitOptions = {}): Promise<IfcOpenShell> {
     throw new IfcOpenShellError('Failed to instantiate IfcOpenShell WASM', error);
   }
 
-  const shell: IfcOpenShell = {
+  const runtime: IfcOpenShell = {
     raw,
     fs,
     loadPlugin: (kind, id) => loadPlugin(raw, kind, id),
     loadedPlugins: () => raw.loadedPlugins(),
   };
-  return Object.freeze(shell);
+  raw.setInstanceFactory((handle: IfcOpenshellInstance) => new entity_instance(handle));
+  return Object.freeze(runtime);
 }
 
 async function resolveRuntime(): Promise<WasmAssets> {

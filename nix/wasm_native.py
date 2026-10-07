@@ -85,6 +85,7 @@ DEPENDENCIES = (
     "mpfr",
     "cgal",
     "manifold",
+    "libxml2",
 )
 
 CMAKE_FLAGS = {
@@ -256,6 +257,8 @@ def cmd_build_deps(args: argparse.Namespace) -> int:
             deps.build_occt(src, install_prefix / "occt", env)
         elif dep_name == "manifold":
             deps.build_manifold(src, install_prefix / "manifold", env)
+        elif dep_name == "libxml2":
+            deps.build_libxml2(src, install_prefix / "libxml2", env)
         else:
             raise ValueError(f"No build recipe for dependency '{dep_name}'")
 

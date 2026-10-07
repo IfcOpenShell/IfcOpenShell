@@ -2,6 +2,13 @@
 
 from __future__ import annotations
 
+import shutil
+import subprocess
+from dataclasses import replace
+from pathlib import Path
+
+import pytest
+
 from src.ifcwrap.binding_generator.abi_ir import (
     BindingABI,
     CFieldIR,
@@ -62,8 +69,9 @@ def test_wasm_glue_wraps_handles() -> None:
     assert "ifcopenshell_file_destroy" in javascript
     assert "class IfcOpenshellFile" in javascript
     assert "UTF8ToString" in javascript
-    assert "module.loadDynamicLibrary(path, { global: true, allowUndefined: true });" in javascript
-    assert "loadAsync" not in javascript
+    assert (
+        "await module.loadDynamicLibrary(path, { loadAsync: true, global: true, allowUndefined: true });" in javascript
+    )
     assert "IfcOpenShellErrorKind.CANCELLED" in javascript
     assert "IfcOpenShellErrorCode.OPERATION_CANCELLED" in javascript
     assert "Cyclic WASM plugin dependency" in javascript
@@ -76,3 +84,129 @@ def test_typescript_declares_low_level_contract() -> None:
     assert "open(path: string, streaming: boolean)" in declarations
     assert "CANCELLED: 4" in declarations
     assert "OPERATION_CANCELLED: 4" in declarations
+
+
+def test_handle_subclass_ownership(tmp_path: Path) -> None:
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("Node is required to execute generated JavaScript")
+    javascript, declarations = render_wasm_bindings(make_metadata())
+    assert "protected constructor(source: IfcOpenshellFile);" in declarations
+    assert "[Symbol.dispose](): void;" in declarations
+    (tmp_path / "api.mjs").write_text(javascript)
+    (tmp_path / "test.mjs").write_text("""
+import assert from 'node:assert/strict';
+// Exercise finalizer registration deterministically, without depending on GC timing.
+let registry;
+globalThis.FinalizationRegistry = class {
+    entries = new Map();
+    constructor(callback) { this.callback = callback; registry = this; }
+    register(target, held, token) { this.entries.set(token, held); }
+    unregister(token) { return this.entries.delete(token); }
+};
+const { IfcOpenshellFile } = await import('./api.mjs');
+class File extends IfcOpenshellFile { constructor(source) { super(source); } }
+const destroyed = [];
+const module = { _ifcopenshell_file_destroy: ptr => destroyed.push(ptr) };
+const source = new IfcOpenshellFile(42, true, module);
+assert.throws(() => source[Symbol.for('ifcopenshell.wasm.handle.transfer.v1')]('wrong_type'), /incompatible/);
+assert.equal(source.ptr, 42);
+const first = new File(source);
+assert(first instanceof IfcOpenshellFile);
+assert.equal(source.ptr, 0);
+assert.equal(first.ptr, 42);
+source.destroy();
+assert.deepEqual(destroyed, []);
+assert.throws(() => new File(source), /disposed/);
+assert.throws(() => new File({ ptr: 42 }), /incompatible/);
+assert.throws(() => new File(null), /incompatible/);
+const second = new File(first);
+assert.equal(first.ptr, 0);
+assert.equal(registry.entries.has(first), false);
+assert.equal(registry.entries.size, 1);
+second.dispose();
+second.destroy();
+second[Symbol.dispose]();
+await second[Symbol.asyncDispose]();
+assert.equal(second.ptr, 0);
+assert.equal(registry.entries.size, 0);
+assert.deepEqual(destroyed, [42]);
+const borrowed = new File(new IfcOpenshellFile(43, false, module));
+assert.equal(registry.entries.size, 0);
+borrowed.destroy();
+assert.equal(borrowed.ptr, 0);
+assert.deepEqual(destroyed, [42]);
+const abandoned = new File(new IfcOpenshellFile(44, true, module));
+registry.callback(registry.entries.get(abandoned));
+assert.deepEqual(destroyed, [42, 44]);
+assert.doesNotThrow(() => registry.callback({ module: {
+    _ifcopenshell_file_destroy() { throw new Error('runtime gone'); }
+}, ptr: 45, destroy: '_ifcopenshell_file_destroy' }));
+const failing = new File(new IfcOpenshellFile(46, true, {
+    _ifcopenshell_file_destroy() { throw new Error('explicit failure'); }
+}));
+assert.throws(() => failing.destroy(), /explicit failure/);
+assert.equal(failing.ptr, 0);
+assert.equal(registry.entries.has(failing), false);
+// A separately loaded API module has different class identities/private brands.
+const ownRegistry = registry;
+const { IfcOpenshellFile: OtherFile } = await import('./api.mjs?another-copy');
+class OtherSubclass extends OtherFile { constructor(source) { super(source); } }
+const other = new OtherSubclass(new OtherFile(47, true, module));
+const otherRegistry = registry;
+assert.equal(otherRegistry.entries.size, 1);
+const adopted = new File(other);
+assert.equal(other.ptr, 0);
+assert.equal(otherRegistry.entries.size, 0);
+assert.equal(ownRegistry.entries.has(adopted), true);
+assert(adopted instanceof IfcOpenshellFile);
+adopted.destroy();
+assert.deepEqual(destroyed, [42, 44, 47]);
+""")
+    subprocess.run([node, str(tmp_path / "test.mjs")], check=True, capture_output=True, text=True)
+
+
+def test_attribute_values_are_converted_in_the_native_binding(tmp_path: Path) -> None:
+    metadata = make_metadata()
+    handles = dict(metadata.handles)
+    for name, c_type in [
+        ("instance", "ifcopenshell_instance_t"),
+        ("attribute_value", "ifcopenshell_parse_attribute_value_t"),
+    ]:
+        handles[name] = CTypeIR(
+            c_type=c_type,
+            kind="handle",
+            fields=(CFieldIR("ptr", "void*"), CFieldIR("owned", "bool")),
+            destroy_function=c_type.removesuffix("_t") + "_destroy",
+            layout="ptr_owned",
+        )
+    javascript, declarations = render_wasm_bindings(replace(metadata, handles=handles))
+    assert "module.attributeValueToJs(ptr," in javascript
+    assert "setAttributeValueFromJs(this.#ptr, index, value," in javascript
+    assert "class IfcOpenshellParseAttributeValue" not in javascript
+    assert "class IfcOpenshellParseAttributeValue" not in declarations
+    assert "export type AttributeValueType" in declarations
+    node = shutil.which("node")
+    if node:
+        path = tmp_path / "api.mjs"
+        path.write_text(javascript)
+        subprocess.run([node, "--check", str(path)], check=True, capture_output=True, text=True)
+
+
+def test_math_llround_returns_bigint(tmp_path: Path) -> None:
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("Node.js is required")
+    script = tmp_path / "math.cjs"
+    script.write_text(
+        "const assert = require('node:assert/strict');\n"
+        "let math; global.addToLibrary = value => { math = value; };\n"
+        + (Path(__file__).parents[1] / "wasm_math_imports.js").read_text()
+        + "\nfor (const [input, expected] of [[86000, 86000n], [0, 0n], [1.5, 2n], [-1.5, -2n], "
+        "[1.4, 1n], [-1.4, -1n], [2 ** 40, 1099511627776n]]) {\n"
+        "  assert.equal(math.llround(input), expected);\n"
+        "}\n"
+        "assert.equal(math.lround(1.5), 2);\n"
+        "assert.equal(math.round(-1.5), -2);\n"
+    )
+    subprocess.run([node, str(script)], check=True, capture_output=True, text=True)

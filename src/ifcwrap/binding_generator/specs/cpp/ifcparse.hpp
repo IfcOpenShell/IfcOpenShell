@@ -184,6 +184,7 @@ IFCAPI_DISCOVER_METHOD(inverse_attribute, entity_reference, entity_reference)
 IFCAPI_DISCOVER_METHOD(inverse_attribute, name, name)
 IFCAPI_DISCOVER_METHOD(instance_streamer, bypassed_instances, bypassed_instances)
 IFCAPI_DISCOVER_METHOD(instance_streamer, has_semicolon, has_semicolon)
+IFCAPI_DISCOVER_METHOD(instance_streamer, header, header)
 IFCAPI_DISCOVER_METHOD(instance_streamer, push_page, push_page, const std::string&)
 IFCAPI_DISCOVER_METHOD(instance_streamer, semicolon_count, semicolon_count)
 

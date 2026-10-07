@@ -14,5 +14,5 @@ export {
   formatAttributeValue,
   inspectEntity,
   type AttributeEntry,
-  type EntityInfo,
+  type entity_instance_info,
 } from './inspect.js';
