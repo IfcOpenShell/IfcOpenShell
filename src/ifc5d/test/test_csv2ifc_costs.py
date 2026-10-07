@@ -48,6 +48,22 @@ class TestCostCategoryTotals:
 
 
 class TestLocaleIndependentCostValueImport:
+    def test_category_cost_values_in_locale_format_are_still_read(self, monkeypatch):
+        import locale
+
+        monkeypatch.setattr(locale, "atof", lambda text: float(text.replace(",", "")))
+
+        importer = ifc5d.csv2ifc.Csv2Ifc(csv=None)
+        importer.has_categories = True
+        importer.has_rates = False
+        importer.has_formula = False
+        importer.categories = {"Material": 4}
+        importer.headers = {"Name": 0, "Unit": 1, "Identification": 2, "Description": 3, "Material Cost": 4}
+
+        cost_data = importer.get_row_cost_data(["Wall", "unit", "1", "", "1,234.56"])
+
+        assert cost_data["CostValues"] == {"Material": 1234.56}
+
     def test_category_cost_values_parse_with_plain_float_not_locale_atof(self, monkeypatch):
         import locale
 
