@@ -581,22 +581,14 @@ class PartOf(Facet):
             if not is_pass:
                 reason = {"type": "NOVALUE"}
             if is_pass and self.name:
-                is_pass = False
-                ancestors = []
-                while container is not None:
-                    ancestors.append(container.is_a().upper())
-                    if container.is_a().upper() == self.name:
-                        if self.predefinedType:
-                            predefined_type = ifcopenshell.util.element.get_predefined_type(container)
-                            ancestors[-1] += f".{predefined_type}"
-                            if self.predefined_type_matches(container):
-                                is_pass = True
-                        else:
-                            is_pass = True
-                        break
-                    container = ifcopenshell.util.element.get_aggregate(container)
-                if not is_pass:
-                    reason = {"type": "ENTITY", "actual": ancestors}
+                if container.is_a().upper() != self.name:
+                    is_pass = False
+                    reason = {"type": "ENTITY", "actual": container.is_a().upper()}
+                if is_pass and self.predefinedType:
+                    predefined_type = ifcopenshell.util.element.get_predefined_type(container)
+                    if not self.predefined_type_matches(container):
+                        is_pass = False
+                        reason = {"type": "PREDEFINEDTYPE", "actual": predefined_type}
         elif self.relation == "IFCRELNESTS":
             nest = ifcopenshell.util.element.get_nest(inst)
             is_pass = nest is not None

@@ -1718,6 +1718,13 @@ class TestPartOf:
         facet = PartOf(relation="IFCRELCONTAINEDINSPATIALSTRUCTURE", name="IFCSPACE")
         run("The container entity must match exactly 2/2", facet=facet, inst=element, expected=True)
 
+        storey = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcBuildingStorey")
+        ifcopenshell.api.aggregate.assign_object(ifc, products=[container], relating_object=storey)
+        facet = PartOf(relation="IFCRELCONTAINEDINSPATIALSTRUCTURE", name="IFCBUILDINGSTOREY")
+        run("The whole that aggregates the container is not the container", facet=facet, inst=element, expected=False)
+        facet = PartOf(relation="IFCRELCONTAINEDINSPATIALSTRUCTURE", name="IFCBUILDINGSTOREY", cardinality="prohibited")
+        run("A prohibited container ignores the whole that aggregates it", facet=facet, inst=element, expected=True)
+
         container.ObjectType = "BURROW"
         facet = PartOf(relation="IFCRELCONTAINEDINSPATIALSTRUCTURE", name="IFCSPACE", predefinedType="WARREN")
         run("The container predefined type must match exactly 1/2", facet=facet, inst=element, expected=False)
