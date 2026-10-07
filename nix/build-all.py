@@ -185,8 +185,6 @@ bunzip2 = "bunzip2"
 tar = "tar"
 cc = "cc"
 cplusplus = "c++"
-autoconf = "autoconf"
-automake = "automake"
 make = "make"
 strip = "strip"
 xz = "xz"  # Used implicitly for `tar -xf *.tar.xz`.
@@ -651,7 +649,12 @@ yacc = "yacc"  # Used during swig building process, installed with `bison` on De
 bison = "bison"
 
 missing_commands: list[str] = []
-required_commands = [git, bunzip2, tar, cc, cplusplus, autoconf, automake, make, "patch", "cmake", yacc, xz, bison]
+# autoconf and automake also might be required in case one of autoconf builds
+# will actually get to ./autogen.sh.
+# But currently we always use tar-balls with `./configure` prebuilt.
+# And it's annoying to install autotools and automake on Mac Intel CI,
+# because there are no more prebuilt binaries and downloading/building takes too long.
+required_commands = [git, bunzip2, tar, cc, cplusplus, make, "patch", "cmake", yacc, xz, bison]
 if WASM:
     required_commands.append("pyodide")
 if platform.system() == "Linux" and "BonsaiViewer" in targets:

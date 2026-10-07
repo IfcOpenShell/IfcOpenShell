@@ -11,6 +11,11 @@ jobs:
       matrix:
         include:
           - os: macos
+            # Why not cross-compilation.
+            # Brew dropped support for Intel bottles,
+            # but Intel runner has some brew dependencies we need preinstalled (e.g. openssl, gettext).
+            # If we'd cross-compile, then we would need to either build it ourselves (update build-all)
+            # or build it from brew using formula (which is very slow, it pulls other dependencies).
             runner: macos-15-intel
             arch: x64
             oldarch: ""
@@ -47,7 +52,10 @@ jobs:
         run: |
           brew update
           # preinstalled: xz, cmake
-          brew install bison autoconf automake libffi findutils
+          # Intel bottles disappear on bison's next release,
+          # so build it from source now to avoid surprises later.
+          brew install ${{ matrix.arch == 'x64' && '--build-from-source' || '' }} bison
+          brew install libffi findutils
           # qt brings in Qt6 + Svg; nix/build-all.py honours pre-set
           # QT_DIR so BonsaiViewer doesn't try to aqtinstall (which is
           # Linux-only). Only the viewer needs it.
