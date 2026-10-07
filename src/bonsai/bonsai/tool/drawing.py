@@ -26,7 +26,6 @@ import platform
 import re
 import shutil
 import subprocess
-import tempfile
 from collections.abc import Iterable, Sequence
 from fractions import Fraction
 from pathlib import Path
@@ -3045,6 +3044,10 @@ class Drawing(bonsai.core.tool.Drawing):
     @classmethod
     def snapshot_layout_svg(cls, layout_path: str) -> str:
         """Copy a sheet layout SVG into a temp file and return its path."""
+        # Imported here, not with the module imports: the line after
+        # `import subprocess` is where #9557 adds its own import.
+        import tempfile
+
         fd, snapshot_path = tempfile.mkstemp(prefix="bonsai_sheet_layout_", suffix=".svg")
         os.close(fd)
         shutil.copyfile(layout_path, snapshot_path)
