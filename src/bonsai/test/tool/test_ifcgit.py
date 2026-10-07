@@ -642,8 +642,6 @@ class TestCommitChangesRealProject(NewFile):
 
     @requires_git
     def test_commits_cleanly_when_no_drawings_are_configured(self):
-        """Matches brunopostle's own report: a branch/project with no drawings
-        configured must commit exactly as it did before asset tracking existed."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
             bpy.ops.bim.create_project()
