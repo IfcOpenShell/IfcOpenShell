@@ -61,6 +61,8 @@ jobs:
           if [ "${{ matrix.arch }}" == "arm64" ]; then
             brew install qt
           fi
+          # build-all's gmp has no gmpxx, so CGAL would pick up the preinstalled one.
+          brew uninstall --ignore-dependencies gmp
           # Mac is using bison 2.5 by default, but we need 3.5+ for swig.
           echo "$(brew --prefix bison)/bin" >> $GITHUB_PATH
 
