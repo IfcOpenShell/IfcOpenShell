@@ -54,6 +54,9 @@
 #include <Geom_SurfaceOfRevolution.hxx>
 #include <BRepPrimAPI_MakeRevol.hxx>
 
+#include <algorithm>
+#include <vector>
+
 #if OCC_VERSION_HEX < 0x70600
 #include <BRepAdaptor_HCompCurve.hxx>
 #endif
@@ -254,6 +257,33 @@ namespace {
 			return result;
 		}
 	};
+
+	// The loops, at least a tenth of the largest in area, that touch neither it nor each other
+	std::vector<TopoDS_Wire> loops_apart_from(const NCollection_List<TopoDS_Shape>& loops, const TopoDS_Wire& largest, double precision) {
+		std::vector<TopoDS_Wire> result;
+		BRepBuilderAPI_MakeFace largest_face(largest, false);
+		if (!largest_face.IsDone()) {
+			return result;
+		}
+		std::vector<TopoDS_Face> kept{ largest_face.Face() };
+		const double min_area = face_area(kept.front()) / 10.;
+		for (NCollection_List<TopoDS_Shape>::Iterator it(loops); it.More(); it.Next()) {
+			const TopoDS_Wire& loop = TopoDS::Wire(it.Value());
+			BRepBuilderAPI_MakeFace mf(loop, false);
+			if (loop.IsSame(largest) || !mf.IsDone() || face_area(mf.Face()) < min_area) {
+				continue;
+			}
+			const bool apart = std::all_of(kept.begin(), kept.end(), [&](const TopoDS_Face& f) {
+				BRepExtrema_DistShapeShape dss(f, mf.Face());
+				return dss.IsDone() && dss.Value() > precision;
+			});
+			if (apart) {
+				kept.push_back(mf.Face());
+				result.push_back(loop);
+			}
+		}
+		return result;
+	}
 }
 
 Handle(Geom_Surface) open_cascade_kernel::convert_surface(const taxonomy::ptr surface) {
@@ -359,14 +389,24 @@ bool open_cascade_kernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& 
 				settings_.get<settings::Precision>().get()
 			};
 			NCollection_List<TopoDS_Shape> results;
+			std::vector<TopoDS_Wire> separate_loops;
 			if (settings.use_wire_intersection_check && util::wire_intersections(wire, results, settings)) {
 				ifcopenshell::logger::root().warning("GEO", 161, "Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
 				util::select_largest(results, wire);
+				if (num_bounds == 1) {
+					separate_loops = loops_apart_from(results, wire, settings.precision);
+				}
 			}
 
 			wire_senses.Bind(wire.Oriented(TopAbs_FORWARD), same_sense ? TopAbs_FORWARD : TopAbs_REVERSED);
 
 			fd.wires().emplace_back(wire);
+
+			for (const auto& loop : separate_loops) {
+				wire_senses.Bind(loop.Oriented(TopAbs_FORWARD), same_sense ? TopAbs_FORWARD : TopAbs_REVERSED);
+				fd.wires().emplace_back(loop);
+				fd.all_outer() = true;
+			}
 		}
 	}
 
