@@ -2397,7 +2397,6 @@ class Drawing(bonsai.core.tool.Drawing):
                 base_elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialStructureElement"))
             else:
                 base_elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialElement"))
-            base_elements.update(e for e in ifc_file.by_type("IfcAnnotation") if tool.Terrain.is_contour(e))
             elements = {e for e in (elements & base_elements) if e.is_a() != "IfcSpace"}
 
         updated_set = set()
@@ -2413,6 +2412,14 @@ class Drawing(bonsai.core.tool.Drawing):
                     if aggregate.is_a("IfcProduct"):
                         updated_set.add(aggregate)
         elements = updated_set
+        if not include and param_was_none and camera_view_elements:
+            # Terrain contours belong to the model, not to a drawing, so the
+            # element filter above drops them like any other annotation; put back
+            # the ones in view. Added here rather than to that filter, which other
+            # PRs rewrite.
+            elements.update(
+                e for e in camera_view_elements if e.is_a("IfcAnnotation") and tool.Terrain.is_contour(e)
+            )
 
         # add annotations from the current drawing
         annotations = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(drawing))
