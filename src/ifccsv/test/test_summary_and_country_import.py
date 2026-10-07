@@ -48,6 +48,27 @@ class TestSummaryTotal:
 
         assert ifc_csv.summaries[2] == "Sum: 350.0"
 
+    def test_summary_of_a_grouped_column_is_taken_from_the_group_values(self):
+        ifc_file = ifcopenshell.file(schema="IFC4")
+        walls = []
+        for name, area in (("A", 100.0), ("A", 150.0), ("B", 100.0)):
+            wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall", name=name)
+            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=wall, name="Pset_Test")
+            ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"Area": area})
+            walls.append(wall)
+
+        ifc_csv = ifccsv.IfcCsv()
+        ifc_csv.export(
+            ifc_file,
+            walls,
+            ["Name", "Pset_Test.Area"],
+            groups=[{"name": "Name", "type": "GROUP"}, {"name": "Pset_Test.Area", "type": "SUM"}],
+            summaries=[{"name": "Pset_Test.Area", "type": "MAX"}],
+        )
+
+        assert [row[2] for row in ifc_csv.results] == [250.0, 100.0]
+        assert ifc_csv.summaries[2] == "Max: 250.0"
+
 
 class TestImportReadOnlyColumns:
     def test_country_is_imported_while_count_is_skipped(self, tmp_path, monkeypatch):

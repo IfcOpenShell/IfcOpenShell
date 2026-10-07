@@ -130,9 +130,9 @@ class IfcCsv:
             else:
                 self.headers.append(attribute)
 
-        # Summarise before grouping so totals cover every exported element.
-        self.summarise_results(summaries, attributes)
+        ungrouped_results = self.results
         self.group_results(groups, attributes)
+        self.summarise_results(summaries, attributes, groups, ungrouped_results)
         self.sort_results(sort, attributes, include_global_id)
         self.format_results(formatting, attributes, null)
 
@@ -207,7 +207,7 @@ class IfcCsv:
 
         self.results = group_results.values()
 
-    def summarise_results(self, summaries, attributes):
+    def summarise_results(self, summaries, attributes, groups=None, ungrouped_results=None):
         self.summaries = [None] * len(attributes)
 
         if not summaries:
@@ -215,17 +215,20 @@ class IfcCsv:
 
         summary_indices = {}
         summary_values = {}
+        grouped_indices = {attributes.index(group["name"]) for group in groups or []}
 
         for summary in summaries:
             index = attributes.index(summary["name"])
             summary_indices.setdefault(summary["type"], [])
             summary_indices[summary["type"]].append(index)
 
-        for row in self.results:
-            for summary_type, sis in summary_indices.items():
-                if summary_type in ("SUM", "AVERAGE", "MIN", "MAX"):
-                    for si in sis:
-                        summary_values.setdefault(si, [])
+        for summary_type, sis in summary_indices.items():
+            if summary_type in ("SUM", "AVERAGE", "MIN", "MAX"):
+                for si in sis:
+                    summary_values.setdefault(si, [])
+                    # A column the grouping leaves alone is summarised over every exported element.
+                    rows = self.results if si in grouped_indices or ungrouped_results is None else ungrouped_results
+                    for row in rows:
                         try:
                             value = float(row[si])
                         except:
