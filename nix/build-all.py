@@ -683,6 +683,10 @@ log_dir = Path(DEPS_DIR) / "logs"
 log_dir.mkdir(parents=True, exist_ok=True)
 LOG_FILE = log_dir / f"{date.today().strftime('%Y%m%d')}.log"
 LOG_FILE.touch(exist_ok=True)
+# Stable name to follow with `tail -F`.
+latest_log = log_dir / "latest.log"
+latest_log.unlink(missing_ok=True)
+latest_log.symlink_to(LOG_FILE.name)
 logger.info(f"using command log file '{LOG_FILE}'")
 
 # Causing havoc in python 3.11 build

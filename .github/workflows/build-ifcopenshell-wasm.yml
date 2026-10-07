@@ -55,7 +55,7 @@ jobs:
         with:
           name: build-logs-pyodide
           path: |
-            ifcopenshell_build/*/*/logs/*.log
+            ifcopenshell_build/*/*/logs/latest.log
           retention-days: 30
 
       - name: Pack Dependencies
