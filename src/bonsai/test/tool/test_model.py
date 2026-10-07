@@ -28,6 +28,7 @@ import ifcopenshell.api.root
 import ifcopenshell.api.style
 import ifcopenshell.api.type
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder
 import numpy as np
@@ -85,6 +86,54 @@ class TestExportCurves(NewFile):
         assert curves[0].Points.is_a("IfcCartesianPointList2D")
         assert sorted(curves[0].Points.CoordList) == coords
 
+    def _make_circle(self, axis):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        placement = ifc.createIfcAxis2Placement3D(
+            ifc.createIfcCartesianPoint((2.0, 3.0, 1.5)),
+            ifc.createIfcDirection(axis),
+            ifc.createIfcDirection((1.0, 0.0, 0.0)),
+        )
+        return ifc.createIfcCircle(placement, 1.0)
+
+    def _get_placement(self, circle):
+        return ifcopenshell.util.placement.get_axis2placement(circle.Position)
+
+    def test_a_tilted_circle_survives_an_unchanged_round_trip(self):
+        circle = self._make_circle((0.5, 0.0, 0.75**0.5))
+        obj = subject.import_curve(circle)
+        curves = subject.export_curves(obj, preserve_z=subject.should_preserve_curve_z(circle), original=circle)
+        assert np.isclose(curves[0].Radius, 1.0)
+        assert np.allclose(self._get_placement(curves[0]), self._get_placement(circle), atol=1e-6)
+
+    def test_a_tilted_circle_survives_its_diameter_being_reversed(self):
+        circle = self._make_circle((0.5, 0.0, 0.75**0.5))
+        obj = subject.import_curve(circle)
+        v1, v2 = obj.data.vertices
+        v1.co, v2.co = v2.co.copy(), v1.co.copy()
+        curves = subject.export_curves(obj, preserve_z=subject.should_preserve_curve_z(circle), original=circle)
+        assert np.allclose(self._get_placement(curves[0]), self._get_placement(circle), atol=1e-6)
+
+    def test_a_circle_tilts_with_its_diameter(self):
+        circle = self._make_circle((0.0, 0.0, 1.0))
+        obj = subject.import_curve(circle)
+        obj.data.vertices[0].co = (2.0, 3.0 - 0.75**0.5, 1.0)
+        obj.data.vertices[1].co = (2.0, 3.0 + 0.75**0.5, 2.0)
+        curves = subject.export_curves(obj, preserve_z=subject.should_preserve_curve_z(circle), original=circle)
+        assert np.isclose(curves[0].Radius, 1.0)
+        tilted = self._get_placement(self._make_circle((0.0, -0.5, 0.75**0.5)))
+        assert np.allclose(self._get_placement(curves[0]), tilted, atol=1e-6)
+
+    def test_a_2d_circle_survives_an_unchanged_round_trip(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        circle = ifc.createIfcCircle(ifc.createIfcAxis2Placement2D(ifc.createIfcCartesianPoint((2.0, 3.0))), 1.0)
+        obj = subject.import_curve(circle)
+        curves = subject.export_curves(obj, preserve_z=subject.should_preserve_curve_z(circle), original=circle)
+        assert curves[0].Position.is_a("IfcAxis2Placement2D")
+        assert curves[0].Position.Location.Coordinates == (2.0, 3.0)
+        assert curves[0].Radius == 1.0
+
 
 class TestShouldPreserveCurveZ(NewFile):
     def test_a_3d_polyline_keeps_z(self):
@@ -111,6 +160,13 @@ class TestShouldPreserveCurveZ(NewFile):
         assert subject.should_preserve_curve_z(curve, annotation) is True
         annotation.ObjectType = "DIMENSION"
         assert subject.should_preserve_curve_z(curve, annotation) is False
+
+    def test_a_circle_follows_its_placement(self):
+        ifc = ifcopenshell.file()
+        placement_3d = ifc.createIfcAxis2Placement3D(ifc.createIfcCartesianPoint((0.0, 0.0, 0.0)))
+        placement_2d = ifc.createIfcAxis2Placement2D(ifc.createIfcCartesianPoint((0.0, 0.0)))
+        assert subject.should_preserve_curve_z(ifc.createIfcCircle(placement_3d, 1.0)) is True
+        assert subject.should_preserve_curve_z(ifc.createIfcCircle(placement_2d, 1.0)) is False
 
 
 class TestGenerateOccurrenceName(NewFile):
