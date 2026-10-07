@@ -746,6 +746,42 @@ def run(cmds: Sequence[str], cwd: str | None = None, can_fail: bool = False, env
 
 
 # Helper functions
+def fix_libtool_mac_install_names(install_dir: str) -> None:
+    """Switch macOS dylibs in `install_dir/lib` from absolute to `@rpath/` install names.
+
+    Unlike cmake or b2, autoconf/libtool always hardcodes install names
+    as absolute `$prefix/lib/libX.dylib` and has no option to use relocatable
+    `@rpath/libX.dylib` instead.
+
+    This later becomes a problem, since those paths are propagated to the plugins
+    and other binaries linked against them.
+
+    To fix this, we patch install names right after dependency installation.
+    Otherwise, we would need to patch every consumer (plugins, executables, other libs), which may be very tricky,
+    because you first need to identify all targets to patch and then identify
+    which paths are patchable and which are legit system dependencies.
+    """
+
+    class Dylib(NamedTuple):
+        path: Path
+        install_name: str
+
+    def get_install_name(dylib: Path) -> str:
+        # `-D` output: dylib's path, followed by its install name.
+        return run(["otool", "-D", str(dylib)]).splitlines()[1].strip()
+
+    dylibs = [Dylib(p, get_install_name(p)) for p in Path(install_dir, "lib").glob("*.dylib") if not p.is_symlink()]
+    for dylib in dylibs:
+        args = ["-id", f"@rpath/{dylib.path.name}"]
+        # dylib may link other libs of the same package
+        # (e.g. `libpcrecpp.0.dylib` -> `libpcre.1.dylib`).
+        for other in dylibs:
+            # `-change` is a no-op if old path is not found, so we just apply it for all libs,
+            # instead of parsing `otool -L` first and doing it more precisely.
+            args += ["-change", other.install_name, f"@rpath/{other.path.name}"]
+        run(["install_name_tool", *args, str(dylib.path)])
+        # Need to re-sign after editing Mach-O.
+        run(["codesign", "--force", "--sign", "-", str(dylib.path)])
 
 
 def run_autoconf(dependency_name: str, configure_args: list[str], cwd: str) -> None:
@@ -990,6 +1026,8 @@ def build_dependency(
             run([make, f"-j{IFCOS_NUM_BUILD_PROCS}", "VERBOSE=1"], cwd=extract_build_dir)
             logger.info(f"\rInstalling {name}... ")
             run([make, "install"], cwd=extract_build_dir)
+            if APPLE:
+                fix_libtool_mac_install_names(check_dir)
         else:
             assert_never(mode)
         logger.info(f"\rInstalled {name}     \n")
@@ -1444,8 +1482,8 @@ if "OpenCOLLADA" in targets:
 
 def python_consider_rc(python_version: str) -> str:
     # TODO: remove after Python 3.15 release.
-    # Python 3.15.0 is released on 2026-10-01, before that only rc builds are available.
-    if python_version == "3.15.0" and date.today() < date(2026, 10, 2):
+    # Python 3.15.0 final was postponed to ~2026-10-09, before that only rc builds are available.
+    if python_version == "3.15.0" and date.today() < date(2026, 11, 1):
         python_version += "rc2"
     return python_version
 
@@ -1842,7 +1880,6 @@ if "swig" in targets:
 
 if os.environ.get("QT_DIR"):
     cmake_args_prefix_path.append(os.environ["QT_DIR"])
-    cmake_args.append(f"-DQT_DIR={os.environ['QT_DIR']}")
 
 IFCOPENSHELL_INSTALL_PATH = f"{DEPS_DIR}/install/ifcopenshell"
 ifcos_build_args = [
@@ -1851,7 +1888,10 @@ ifcos_build_args = [
     f"-DBUILD_CONVERT={OFF_ON['IfcConvert' in targets]}",
     f"-DBUILD_BONSAIVIEWER={OFF_ON['BonsaiViewer' in targets]}",
     "-DUSE_CCACHE=ON",
-    "-DIFCOPENSHELL_DEPLOY_QT_RUNTIME=OFF",
+    # On macOS macdeployqt embeds Qt into the .app bundle, `package-zip-archives` relies on it.
+    # Elsewhere it's disabled since Qt deploy installs everything to `lib`, making it hard to filter out
+    # libs not needed for the Python wrapper. Qt is staged by `package-zip-archives` itself instead.
+    f"-DIFCOPENSHELL_DEPLOY_QT_RUNTIME={OFF_ON[APPLE]}",
 ]
 
 ld_library_paths = [

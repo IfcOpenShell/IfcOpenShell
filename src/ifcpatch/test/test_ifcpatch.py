@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import importlib
+import pkgutil
 import tempfile
 import tomllib
 from pathlib import Path
@@ -25,16 +26,13 @@ import ifcopenshell
 import ifcopenshell.api.root
 
 import ifcpatch
+import ifcpatch.recipes
 
 
 class Test:
     def test_parsing_docs(self):
-        recipes = Path(ifcpatch.__file__).parent / "recipes"
-
-        for f in recipes.glob("*.py"):
-            if f.stem in "__init__":
-                continue
-            docs = ifcpatch.extract_docs(f.stem, "Patcher", "__init__", ("src", "file", "logger", "args"))
+        for module_info in pkgutil.iter_modules(ifcpatch.recipes.__path__):
+            docs = ifcpatch.extract_docs(module_info.name, "Patcher", "__init__", ("src", "file", "logger", "args"))
             assert docs is not None
             expected_keys = ("class_", "description", "output", "inputs")
             for key in expected_keys:

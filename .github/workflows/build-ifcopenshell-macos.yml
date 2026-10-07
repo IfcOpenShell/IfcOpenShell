@@ -15,6 +15,7 @@ jobs:
             arch: x64
             oldarch: ""
             without: -without-bonsaiviewer
+            test_args: --skip-bonsaiviewer
           - os: macos
             # macos-14 no longer receives Homebrew bottles, so `brew install qt`
             # compiles Qt (and QtWebEngine) from source there and fails.
@@ -22,6 +23,7 @@ jobs:
             arch: arm64
             oldarch: m1
             without: ""
+            test_args: ""
 
     steps:
       - name: Checkout Repository
@@ -128,13 +130,11 @@ jobs:
 
       - name: Package .zip archives
         run: |
-          uv run nix/package-zip-archives.py "macos${{ matrix.oldarch }}64" --shared
+          uv run nix/package-zip-archives.py "macos${{ matrix.oldarch }}64"
 
-      - name: Test packaged Python wrapper
-        # Imports the *packaged* wrapper and exercises the cross-plug-in hand-offs
-        # (kernel -> tree, kernel -> SVG serializer) that a duplicated OCCT breaks.
+      - name: Test packages
         run: |
-          uv run --python 3.13 test/package/run_against_package.py "$HOME/output/ifcopenshell-python-313-*-macos${{ matrix.oldarch }}64.zip"
+          uv run test/package/run_against_package.py ${{ matrix.test_args }} "$HOME/output"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6

@@ -120,7 +120,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2.24
         with:
           key: ubuntu-22.04-${{ runner.arch }}
-          # The prebuilt ccache 4.13.6 handles native CPU flags correctly across runners.
+          # Distro ccache is < 4.10, too old for the job summary, install from GitHub releases.
           install: binary
 
       # RTTI is only enabled by default in Debug builds of rocksdb.

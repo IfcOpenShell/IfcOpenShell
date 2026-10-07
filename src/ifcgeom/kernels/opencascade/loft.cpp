@@ -173,12 +173,6 @@ bool open_cascade_kernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& 
     std::vector<std::vector<std::set<std::string>>> all_tags;
 
 
-	std::ostringstream oss;
-    loft->children[0]->print(oss);
-    loft->children[1]->print(oss);
-    auto s = oss.str();
-    std::wcout << s.c_str() << std::endl;
-
 	// First convert all taxonomy items to TopoDS_Wire/Face
     for (auto it = loft->children.begin(); it < loft->children.end(); ++it) {
 		auto i = std::distance(loft->children.begin(), it);
@@ -310,19 +304,6 @@ bool open_cascade_kernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& 
                 ws[0][i] = TopoDS::Wire(*fa[i]);
 			}
 		}
-        if (it->ShapeType() == TopAbs_FACE) {
-			// When processing a sectioned *surface* there are no
-			// begin and end caps that need to be added.
-			if (it == shps.begin()) {
-				// faces.append(shps[0]);
-				BB.Add(comp, shps[0]);
-			}
-            if (jt == shps.end() - 1) {
-				// faces.append(shps[1]);
-				BB.Add(comp, shps[1]);
-			}
-		}
-
 		if (!all_tags.empty()) {
 			// only open profiles have tags for now, so there is only one wire, no inner wires
             const auto& wp = ws[0];
