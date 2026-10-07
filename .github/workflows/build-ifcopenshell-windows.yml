@@ -97,6 +97,9 @@ jobs:
       - name: Test packages
         # Runs after the dependency cache is pushed, so a failing package never
         # costs the cache.
+        env:
+          # Colored output for pytest.
+          FORCE_COLOR: 1
         run: |
           uv run test/package/run_against_package.py "$env:USERPROFILE\output"
 
