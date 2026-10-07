@@ -271,8 +271,21 @@ class Web(bonsai.core.tool.Web):
         and resetting the global variables related to the WebSocket connection.
         """
         global ws_thread, sio, connected_port
-        ws_thread.run_coro(cls.sio_disconnect())
-        ws_thread.stop()
+        # The server can go away without Blender being told: killed, crashed, or
+        # - the common one - it belonged to another Blender that has since
+        # closed, because the server outlives the Blender that started it and the
+        # next one reuses it. What is left is a scene that says connected and no
+        # thread to disconnect.
+        #
+        # This matters more here than it did before: `connect_websocket_server`
+        # now calls this when it finds a client whose server has gone, so without
+        # the guard that recovery path raises instead of recovering, and both
+        # buttons in the Web UI panel are dead ends. The panel then cannot be
+        # fixed from the UI at all - only from the Python console, or by
+        # restarting Blender.
+        if ws_thread is not None:
+            ws_thread.run_coro(cls.sio_disconnect())
+            ws_thread.stop()
         ws_thread = None
         sio = None
         connected_port = None
