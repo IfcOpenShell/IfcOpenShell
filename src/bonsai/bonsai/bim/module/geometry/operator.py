@@ -2658,15 +2658,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             tool.Geometry.import_item_attributes(obj)
         elif tool.Geometry.is_curvelike_item(item):
             ProfileDecorator.uninstall()
-            # Fall / slope annotations encode their slope in the points' Z, so it must not be flattened.
-            preserve_z = False
-            if rep_obj and (rep_element := tool.Ifc.get_entity(rep_obj)) and rep_element.is_a("IfcAnnotation"):
-                preserve_z = ifcopenshell.util.element.get_predefined_type(rep_element) in (
-                    "FALL",
-                    "SLOPE_ANGLE",
-                    "SLOPE_FRACTION",
-                    "SLOPE_PERCENT",
-                )
+            preserve_z = tool.Model.should_preserve_curve_z(item, tool.Ifc.get_entity(rep_obj))
             new = tool.Model.export_curves(obj, preserve_z=preserve_z)
 
             if not new:
@@ -2870,7 +2862,8 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
 
                 ProfileDecorator.uninstall()
 
-                new = tool.Model.export_curves(obj)
+                preserve_z = tool.Model.should_preserve_curve_z(item, tool.Ifc.get_entity(rep_obj))
+                new = tool.Model.export_curves(obj, preserve_z=preserve_z)
 
                 if not new:
 

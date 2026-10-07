@@ -57,6 +57,61 @@ class TestExportCurves(NewFile):
         assert curves[0].Points.is_a("IfcCartesianPointList3D")
         assert sorted(p[2] for p in curves[0].Points.CoordList) == [0.0, 0.5, 1.0]
 
+    def test_z_is_kept_in_a_curve_with_an_arc(self):
+        obj = self._make_curve_object()
+        obj.data.vertices[1].co.y = 1.0
+        obj.vertex_groups.new(name="IFCARCINDEX").add([0, 1, 2], 1, "REPLACE")
+        curves = subject.export_curves(obj, preserve_z=True)
+        assert curves[0].Points.is_a("IfcCartesianPointList3D")
+        assert sorted(curves[0].Points.CoordList) == [(0.0, 0.0, 0.0), (1.0, 1.0, 0.5), (2.0, 0.0, 1.0)]
+
+    def test_a_3d_curve_survives_an_unchanged_round_trip(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        coords = [(0.0, 0.0, 0.0), (1.0, 0.0, 0.5), (2.0, 0.0, 1.0)]
+        curve = ifc.createIfcIndexedPolyCurve(ifc.createIfcCartesianPointList3D(coords))
+        obj = subject.import_curve(curve)
+        curves = subject.export_curves(obj, preserve_z=subject.should_preserve_curve_z(curve))
+        assert curves[0].Points.is_a("IfcCartesianPointList3D")
+        assert sorted(curves[0].Points.CoordList) == coords
+
+    def test_a_2d_curve_survives_an_unchanged_round_trip(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        coords = [(0.0, 0.0), (1.0, 0.0), (2.0, 1.0)]
+        curve = ifc.createIfcIndexedPolyCurve(ifc.createIfcCartesianPointList2D(coords))
+        obj = subject.import_curve(curve)
+        curves = subject.export_curves(obj, preserve_z=subject.should_preserve_curve_z(curve))
+        assert curves[0].Points.is_a("IfcCartesianPointList2D")
+        assert sorted(curves[0].Points.CoordList) == coords
+
+
+class TestShouldPreserveCurveZ(NewFile):
+    def test_a_3d_polyline_keeps_z(self):
+        ifc = ifcopenshell.file()
+        points = [ifc.createIfcCartesianPoint(p) for p in ((0.0, 0.0, 0.0), (1.0, 0.0, 0.5))]
+        assert subject.should_preserve_curve_z(ifc.createIfcPolyline(points)) is True
+
+    def test_a_2d_polyline_stays_2d(self):
+        ifc = ifcopenshell.file()
+        points = [ifc.createIfcCartesianPoint(p) for p in ((0.0, 0.0), (1.0, 0.0))]
+        assert subject.should_preserve_curve_z(ifc.createIfcPolyline(points)) is False
+
+    def test_a_composite_curve_follows_its_segments(self):
+        ifc = ifcopenshell.file()
+        curve = ifc.createIfcIndexedPolyCurve(ifc.createIfcCartesianPointList3D([(0.0, 0.0, 0.0), (1.0, 0.0, 0.5)]))
+        segment = ifc.createIfcCompositeCurveSegment("CONTINUOUS", True, curve)
+        assert subject.should_preserve_curve_z(ifc.createIfcCompositeCurve([segment], False)) is True
+
+    def test_a_fall_annotation_keeps_z_of_a_2d_curve(self):
+        ifc = ifcopenshell.file()
+        curve = ifc.createIfcIndexedPolyCurve(ifc.createIfcCartesianPointList2D([(0.0, 0.0), (1.0, 0.0)]))
+        annotation = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcAnnotation")
+        annotation.ObjectType = "FALL"
+        assert subject.should_preserve_curve_z(curve, annotation) is True
+        annotation.ObjectType = "DIMENSION"
+        assert subject.should_preserve_curve_z(curve, annotation) is False
+
 
 class TestGenerateOccurrenceName(NewFile):
     def test_generating_based_on_class(self):

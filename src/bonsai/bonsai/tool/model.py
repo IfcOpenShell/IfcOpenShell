@@ -2641,10 +2641,12 @@ class Model(bonsai.core.tool.Model):
 
                 if tmp.schema != "IFC2X3" and any([is_in_group(v, "IFCARCINDEX") for v in loop_verts]):
                     # We need to specify segments
-                    coord_list: list[list[float]] = [
-                        list(((position_i @ v.co) / unit_scale).to_2d()) for v in loop_verts
-                    ]
-                    points = tmp.createIfcCartesianPointList2D(coord_list)
+                    coords = [(position_i @ v.co) / unit_scale for v in loop_verts]
+                    coord_list: list[list[float]] = [list(co if preserve_z else co.to_2d()) for co in coords]
+                    if preserve_z:
+                        points = tmp.createIfcCartesianPointList3D(coord_list)
+                    else:
+                        points = tmp.createIfcCartesianPointList2D(coord_list)
                     i = 0
                     segments = []
                     total_verts = len(loop_verts)
@@ -2685,6 +2687,26 @@ class Model(bonsai.core.tool.Model):
                     curves.append(tmp.createIfcIndexedPolyCurve(points))
 
         return {"ifc_file": tmp, "curves": curves}
+
+    @classmethod
+    def should_preserve_curve_z(
+        cls, curve: ifcopenshell.entity_instance, element: ifcopenshell.entity_instance | None = None
+    ) -> bool:
+        """Whether an edited curve is saved in 3D: it is 3D already, or it is a fall / slope annotation."""
+        if (
+            element
+            and element.is_a("IfcAnnotation")
+            and ifcopenshell.util.element.get_predefined_type(element)
+            in ("FALL", "SLOPE_ANGLE", "SLOPE_FRACTION", "SLOPE_PERCENT")
+        ):
+            return True
+        if curve.is_a("IfcIndexedPolyCurve"):
+            return curve.Points.is_a("IfcCartesianPointList3D")
+        elif curve.is_a("IfcPolyline"):
+            return len(curve.Points[0].Coordinates) == 3
+        elif curve.is_a("IfcCompositeCurve"):
+            return any(cls.should_preserve_curve_z(segment.ParentCurve) for segment in curve.Segments)
+        return False
 
     @classmethod
     def get_booleaned_obj(cls, obj: bpy.types.Object) -> Union[bpy.types.Object, None]:
