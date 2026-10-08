@@ -16,17 +16,18 @@ export interface entity_instance_info {
 
 /** IFC entity instance with attribute conveniences. */
 export class entity_instance extends IfcOpenshellInstance {
-  readonly type: string;
-
   constructor(
     handle: IfcOpenshellInstance,
   ) {
     super(handle);
-    this.type = this.className(false);
   }
 
-  get typeName(): string {
-    return this.type;
+  override isA(name: string): boolean;
+  override isA(withSchema?: boolean): string;
+  override isA(nameOrSchema: string | boolean = false): string | boolean {
+    return typeof nameOrSchema === 'string'
+      ? super.isA(nameOrSchema)
+      : this.className(nameOrSchema);
   }
 
   get(nameOrIndex: string | number): AttributeValueType {
@@ -51,35 +52,33 @@ export class entity_instance extends IfcOpenshellInstance {
   /**
    * Return the entity id, type, and decoded forward attributes.
    *
-   * With `recursive`, referenced entities are expanded as well. Entities that
-   * were already visited are replaced by their id, as Python's get_info() does.
+   * With `recursive`, referenced entities are expanded as well.
    */
-  getInfo(options: { recursive?: boolean } = {}): entity_instance_info {
-    return this.buildInfo(options.recursive ? new Set([this.id()]) : null);
-  }
-
-  toJSON(): entity_instance_info {
-    return this.getInfo();
-  }
-
-  private buildInfo(ignore: Set<number> | null): entity_instance_info {
-    const attributes: Record<string, AttributeValueType> = {};
-    for (const [name, value] of this.entries()) {
-      attributes[name] = ignore ? this.expand(value, ignore) : value;
+  getInfo(options: { recursive?: boolean, include_identifier?: boolean, ignore?: Set<string> } = {}): entity_instance_info {
+    const visited = new Set<number>();
+    const mapValue = (value: AttributeValueType): AttributeValueType => {
+      if (value instanceof entity_instance) {
+        return buildInfo(value) as unknown as AttributeValueType;
+      }
+      if (Array.isArray(value)) {
+        return (value as AttributeValueType[]).map(mapValue) as AttributeValueType;
+      }
+      return value;
     }
-    return { id: this.id(), type: this.type, attributes };
-  }
+    const buildInfo = (instance: entity_instance): entity_instance_info => {
+      if (visited.has(instance.id())) {
+        return { id: instance.id(), type: instance.isA(), attributes: {} };
+      }
+      visited.add(instance.id());
+      const attributes: Record<string, AttributeValueType> = {};
+      for (const [name, value] of instance.entries()) {
+        if (options.ignore?.has(name)) continue;
 
-  private expand(value: AttributeValueType, ignore: Set<number>): AttributeValueType {
-    if (value instanceof entity_instance) {
-      if (ignore.has(value.id())) return value.id();
-      ignore.add(value.id());
-      return value.buildInfo(ignore) as unknown as AttributeValueType;
-    }
-    if (Array.isArray(value)) {
-      return (value as AttributeValueType[]).map((item) => this.expand(item, ignore)) as AttributeValueType;
-    }
-    return value;
+        attributes[name] = mapValue(value);
+      }
+      return { id: instance.id(), type: instance.isA(), attributes };
+    };
+    return buildInfo(this);
   }
 
   inverseAttributes(): string[] {
@@ -123,15 +122,5 @@ export class entity_instance extends IfcOpenshellInstance {
       throw new IfcOpenShellError(`Cannot set inverse attribute ${nameOrIndex}`);
     }
     this.setArgument(typeof nameOrIndex === 'number' ? nameOrIndex : this.getArgumentIndex(nameOrIndex), value);
-  }
-
-  /** Clear an attribute by name or zero-based index. */
-  unset(nameOrIndex: string | number): void {
-    this.set(nameOrIndex, null);
-  }
-
-  /** Serialize the entity as STEP text. */
-  text(validSpf = false): string {
-    return this.toString(validSpf);
   }
 }

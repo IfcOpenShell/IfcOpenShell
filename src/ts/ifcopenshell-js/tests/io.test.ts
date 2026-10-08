@@ -51,18 +51,20 @@ describeOrSkip('basic I/O', () => {
 
     // f[1].is_a("IfcCartesianPoint") / f.by_id(1)
     using point = file.get(1)!;
-    expect(point.type).toBe('IfcCartesianPoint');
+    expect(point.isA()).toBe('IfcCartesianPoint');
+    expect(point.isA(false)).toBe('IfcCartesianPoint');
+    expect(point.isA(true)).toBe('IFC4.IfcCartesianPoint');
+    expect(point.isA('IfcCartesianPoint')).toBe(true);
+    expect(point.isA('IfcRepresentationItem')).toBe(true);
+    expect(point.isA('IfcWall')).toBe(false);
     expect(point.className(false)).toBe('IfcCartesianPoint');
 
     // f["28pa2ppDf1IA$BaQrvAf48"].is_a("IfcProject") / f.by_guid(...)
-    try {
-      console.log('byGuid raw:', file.byGuid(WALL_GUID));
-    } catch (error) {
-      console.log('byGuid threw:', (error as Error).message);
-    }
-    const wall = file.find(WALL_GUID)!;
-    expect(wall?.type).toBe('IfcWall');
+    using wall = file.byGuid(WALL_GUID)!;
+    expect(wall?.isA()).toBe('IfcWall');
     expect(wall.id()).toBe(2);
+    using found = file.find(WALL_GUID)!;
+    expect(found.id()).toBe(2);
 
     // f.by_type("IfcProject")
     expect(file.all('IfcCartesianPoint').map(entity => entity.id())).toEqual([1]);
@@ -112,8 +114,8 @@ describeOrSkip('basic I/O', () => {
     expect(reopened.entityCount).toBe(file.entityCount);
 
     const reopenedWall = reopened.find(WALL_GUID);
-    console.log('GUID lookup:', reopenedWall?.type, 'count:', reopened.entityCount, 'guid in text:', text.includes(WALL_GUID));
-    expect(reopenedWall?.type).toBe('IfcWall');
+    console.log('GUID lookup:', reopenedWall?.isA(), 'count:', reopened.entityCount, 'guid in text:', text.includes(WALL_GUID));
+    expect(reopenedWall?.isA()).toBe('IfcWall');
     expect(reopenedWall.get('Name')).toBe('Wall');
   });
 
@@ -124,17 +126,17 @@ describeOrSkip('basic I/O', () => {
     // f.createIfcCartesianPoint((0.0, 0.0, 0.0))
     using point = file.createEntity('IfcCartesianPoint');
     point.set('Coordinates', [0, 0, 0]);
-    expect(point.type).toBe('IfcCartesianPoint');
+    expect(point.isA()).toBe('IfcCartesianPoint');
     expect(point.get('Coordinates')).toEqual([0, 0, 0]);
 
     using wall = file.createEntity('IfcWall', { name: 'Wall' });
     // f[22].Id = "123" / "123" in str(f[22])
     wall.set('Description', '123');
-    expect(wall.text(true)).toContain('123');
+    expect(wall.toString(true)).toContain('123');
     expect(wall.get('Description')).toBe('123');
-    wall.unset('Description');
+    wall.unsetAttributeValue('Description');
     expect(wall.get('Description')).toBeNull();
-    expect(wall.text(true)).not.toContain('123');
+    expect(wall.toString(true)).not.toContain('123');
 
     const text = file.text();
     expect(text).toContain('IFCWALL');

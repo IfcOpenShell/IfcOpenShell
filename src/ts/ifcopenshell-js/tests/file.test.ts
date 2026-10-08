@@ -50,7 +50,7 @@ describeOrSkip('file and entity_instance', () => {
         expect(entities.length).toBeGreaterThan(0);
         for (const entity of entities) {
           expect(entity).toBeInstanceOf(ifcopenshell.entity_instance);
-          expect(entity.type).toBe(entity.className(false));
+          expect(entity.isA()).toBe(entity.className(false));
           expect(entity.id()).toBeGreaterThan(0);
         }
       } finally { entities.forEach(entity => entity.dispose()); }
@@ -102,7 +102,7 @@ describeOrSkip('file and entity_instance', () => {
     using unit = file.createEntity('IfcSIUnit');
     unit.set('Dimensions', null);
     expect(unit.get('Dimensions')).toBeNull();
-    expect(unit.text(true)).toContain('IFCSIUNIT(*,');
+    expect(unit.toString(true)).toContain('IFCSIUNIT(*,');
   });
 
   it('preserves int64 values, logical UNKNOWN and inline typed values', () => {
