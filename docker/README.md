@@ -91,6 +91,9 @@ docker build -f docker/test-lint.Dockerfile -t ifcos-test-lint .
 
 # .github/workflows/build-ifcopenshell-native-wasm.yml
 docker build -f docker/native-wasm.Dockerfile -t ifcos-native-wasm .
+
+# or
+docker build -f docker/native-wasm.Dockerfile -t ifcos-native-wasm --build-arg IFCOS_CMAKE_ARGS="-DIFCOPENSHELL_WASM_LINK_OPTIMIZATION=-O0" .
 ```
 
 Both take the repository root as the build context.
@@ -101,6 +104,8 @@ Both take the repository root as the build context.
   mount, so a failed build resumes instead of starting from scratch. The steps that only make sense on
   CI - the ccache action, uploading artifacts, and pushing the refreshed dependency cache back to
   `IfcOpenShell/build-outputs` - are intentionally not reproduced.
+  Compiler results are cached across builds, and the finished WASM artifacts are retained in the image
+  at `/opt/ifcopenshell-wasm` (also exposed as `IFCOPENSHELL_WASM_DIR`).
 
 The mirrors normalise the copied tree to the line endings CI checks out, so they measure the sources
 rather than the checkout they were built from.

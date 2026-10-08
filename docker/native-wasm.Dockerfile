@@ -67,9 +67,11 @@ RUN git -C /__w/IfcOpenShell submodule update --init --recursive
 ENV BUILD_DIR=/__w/ifcopenshell_build
 ENV IFCOS_NUM_BUILD_PROCS=6
 
+# Option to pass additional args, in particular -O0 to reduce link (wasm-opt) times
 ARG IFCOS_CMAKE_ARGS=""
 
-RUN --mount=type=cache,target=/__w/ifcopenshell_build \
+RUN --mount=type=cache,target=/__w/ifcopenshell_build,sharing=locked \
+    --mount=type=cache,target=/root/.cache/ccache,sharing=locked \
     set -eux; \
     if [ ! -d /__w/ifcopenshell_build/.git ]; then \
         git clone --depth 1 --branch wasm-native \
@@ -78,20 +80,20 @@ RUN --mount=type=cache,target=/__w/ifcopenshell_build \
     cd /__w/ifcopenshell_build; \
     uv run ../IfcOpenShell/nix/cache_dependencies.py unpack; \
     cd /__w/IfcOpenShell; \
-    IFCOS_CMAKE_ARGS="${IFCOS_CMAKE_ARGS}" uv run --with clang==21.1.7 ./nix/build-all.py -v --native-wasm --build-cfg Release
+    IFCOS_CMAKE_ARGS="${IFCOS_CMAKE_ARGS}" uv run --with clang==21.1.7 ./nix/build-all.py -v --native-wasm --build-cfg Release; \
+    mkdir -p /opt/ifcopenshell-wasm; \
+    cp -a /__w/ifcopenshell_build/Linux/wasm/build/ifcopenshell/build/ifcwrap/wasm/. /opt/ifcopenshell-wasm/
 
 # "Verify artifacts" step.
-RUN --mount=type=cache,target=/__w/ifcopenshell_build \
-    cd /__w/IfcOpenShell \
+RUN cd /__w/IfcOpenShell \
     && python3 .github/scripts/verify-wasm-artifacts.py \
-        /__w/ifcopenshell_build/Linux/wasm/build/ifcopenshell/build/ifcwrap/wasm
+        /opt/ifcopenshell-wasm
 
 # "Run the basic I/O tests" step. `tests/io.test.ts` is the port of
 # `test/tests.py` and drives the artifacts built above through the TypeScript API.
-ENV IFCOPENSHELL_WASM_DIR=/__w/ifcopenshell_build/Linux/wasm/build/ifcopenshell/build/ifcwrap/wasm
+ENV IFCOPENSHELL_WASM_DIR=/opt/ifcopenshell-wasm
 
-RUN --mount=type=cache,target=/__w/ifcopenshell_build \
-    cd /__w/IfcOpenShell/src/ts/ifcopenshell-wasm \
+RUN cd /__w/IfcOpenShell/src/ts/ifcopenshell-wasm \
     && npm ci \
     && npm run stage \
     && cd ../ifcopenshell-js \
