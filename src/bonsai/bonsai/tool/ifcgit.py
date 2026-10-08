@@ -416,9 +416,10 @@ class IfcGit(bonsai.core.tool.IfcGit):
                 for product in entity.PlacesObject:
                     modified_step_ids["modified"].add(product.id())
             elif entity.is_a("IfcTypeProduct"):
-                for rel in entity.Types:
-                    for obj in rel.RelatedObjects:
-                        modified_step_ids["modified"].add(obj.id())
+                for rel in model.get_inverse(entity):
+                    if rel.is_a("IfcRelDefinesByType"):
+                        for obj in rel.RelatedObjects:
+                            modified_step_ids["modified"].add(obj.id())
             elif entity.is_a("IfcShapeRepresentation"):
                 for prod_rep in entity.OfProductRepresentation:
                     for product in prod_rep.ShapeOfProduct:
@@ -428,12 +429,14 @@ class IfcGit(bonsai.core.tool.IfcGit):
                     if referencing.is_a("IfcShapeRepresentation"):
                         collect(referencing, depth + 1)
             elif entity.is_a("IfcPropertySet"):
-                for rel in entity.DefinesOccurrence:
-                    for obj in rel.RelatedObjects:
-                        modified_step_ids["modified"].add(obj.id())
+                for rel in model.get_inverse(entity):
+                    if rel.is_a("IfcRelDefinesByProperties"):
+                        for obj in rel.RelatedObjects:
+                            modified_step_ids["modified"].add(obj.id())
             elif entity.is_a("IfcProperty"):
-                for pset in entity.PartOfPset:
-                    collect(pset, depth + 1)
+                for pset in model.get_inverse(entity):
+                    if pset.is_a("IfcPropertySet"):
+                        collect(pset, depth + 1)
 
         for step_id in step_ids["modified"] | step_ids["added"]:
             try:
