@@ -50,6 +50,9 @@ jobs:
 
       - name: Install Dependencies
         run: |
+          # Since 2023, brew doesn't need taps and having them slows down the update for no reason.
+          # See https://github.com/actions/runner-images/issues/14882
+          brew untap homebrew/core homebrew/cask
           brew update
           # preinstalled: xz, cmake
           # Intel bottles disappear on bison's next release,
