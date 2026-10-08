@@ -15,6 +15,24 @@ jobs:
         # Installs latest Python version so it's preferred by uv over system Python.
         run: uv python install
 
+      - name: Install Clang
+        # The binding generator's `clang` bindings are pinned in pyproject.toml and
+        # need a matching libclang, which is newer than the runner's distribution
+        # Clang, so the LLVM repository's Clang is registered as the default one.
+        run: |
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc > /dev/null
+          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+          sudo apt-get update
+          sudo apt-get install -y clang-21 libclang-21-dev
+          sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/lib/llvm-21/bin/clang++ 200
+
+      - name: Set up Node
+        # For the basic I/O tests, which drive the built artifacts through the
+        # TypeScript API on Node.
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
       - name: Checkout Repository
         uses: actions/checkout@v7
         with:
@@ -56,70 +74,26 @@ jobs:
         env:
           # Keep the dependency install dir inside the cached repository, matching the pyodide flow.
           BUILD_DIR: ${{ github.workspace }}/ifcopenshell_build
-        run: uv run ./IfcOpenShell/nix/build-all.py -v --native-wasm --build-cfg Release
+        # `--with` provides the bindgen extra to the interpreter that cmake uses
+        # to regenerate the C API bindings.
+        run: uv run --with clang==21.1.7 ./IfcOpenShell/nix/build-all.py -v --native-wasm --build-cfg Release
 
       - name: Verify artifacts
+        run: python3 IfcOpenShell/.github/scripts/verify-wasm-artifacts.py
+
+      - name: Run the basic I/O tests
+        # `tests/io.test.ts` is the port of `test/tests.py`; it runs against the
+        # artifacts built above, through the `ifcopenshell` package on Node.
+        env:
+          IFCOPENSHELL_WASM_DIR: ${{ github.workspace }}/ifcopenshell_build/Linux/wasm/build/ifcopenshell/build/ifcwrap/wasm
         run: |
-          WASM_DIR=ifcopenshell_build/Linux/wasm/build/ifcopenshell/build/ifcwrap/wasm
-          python3 - "$WASM_DIR" <<'PY'
-          import json
-          import sys
-          from pathlib import Path
-
-          wasm_dir = Path(sys.argv[1])
-
-          expected = {
-              "schema": ["ifc2x3", "ifc4", "ifc4x3_add2"],
-              "kernel": ["passthrough", "opencascade", "cgal", "cgalsimple", "manifold"],
-              "tree": ["opencascade.brep", "opencascade.trianglebvh"],
-              "mapping": ["ifc2x3", "ifc4", "ifc4x3_add2"],
-              "document": [
-                  "xml.ifc2x3",
-                  "json.ifc2x3",
-                  "xml.ifc4",
-                  "json.ifc4",
-                  "xml.ifc4x3_add2",
-                  "json.ifc4x3_add2",
-              ],
-              "geometry_serializer": ["ttl", "obj", "glb", "stp", "igs", "svg"],
-          }
-
-          artifacts = [
-              "ifcopenshell_wasm.wasm",
-              "ifcopenshell_wasm.mjs",
-              "ifcopenshell_wasm.node.mjs",
-              "ifcopenshell_api.mjs",
-              "ifcopenshell_api.d.ts",
-              "ifcopenshell_plugins.json",
-          ]
-
-          errors = []
-          for name in artifacts:
-              if not (wasm_dir / name).exists():
-                  errors.append(f"missing artifact: {name}")
-
-          manifest = json.loads((wasm_dir / "ifcopenshell_plugins.json").read_text())
-          if set(manifest) != set(expected):
-              errors.append(f"unexpected plugin kinds: {sorted(set(manifest) ^ set(expected))}")
-          for kind, ids in expected.items():
-              missing = set(ids) - set(manifest.get(kind, {}))
-              unexpected = set(manifest.get(kind, {})) - set(ids)
-              if missing:
-                  errors.append(f"missing {kind} plugins: {sorted(missing)}")
-              if unexpected:
-                  errors.append(f"unexpected {kind} plugins: {sorted(unexpected)}")
-
-          for entries in manifest.values():
-              for entry in entries.values():
-                  if not (wasm_dir / entry["wasm"]).exists():
-                      errors.append(f"missing plugin artifact: {entry['wasm']}")
-
-          if errors:
-              for error in errors:
-                  print(f"::error::{error}")
-              sys.exit(1)
-          print(f"Verified {len(artifacts)} artifacts and {sum(len(v) for v in manifest.values())} plugins.")
-          PY
+          cd IfcOpenShell/src/ts/ifcopenshell-wasm
+          npm ci
+          npm run stage
+          cd ../ifcopenshell-js
+          npm ci
+          npm run build
+          npm test -- tests/io.test.ts
 
       - name: Upload Build Logs
         if: always()
