@@ -35,6 +35,7 @@
 #include <iterator>
 #include <map>
 #include <memory>
+#include <optional>
 #include <cstdint>
 
 #ifdef IFOPSH_WITH_ROCKSDB
@@ -212,6 +213,7 @@ public:
 
   private:
     bool lazy_loading_ = false;
+    std::optional<unsigned> parse_threads_;
     bool paged_reading_ = false;
     file_open_status good_ = file_open_status::SUCCESS;
     std::reference_wrapper<ifcopenshell::logger> logger_;
@@ -289,6 +291,13 @@ public:
     // anything it does not handle.
     void lazy_loading(bool value) { lazy_loading_ = value; }
     bool lazy_loading() const { return lazy_loading_; }
+    // Threads used to parse instances. Unset, the parse is serial unless
+    // the IFCOPENSHELL_PARSE_THREADS environment variable says otherwise;
+    // n >= 1 uses n threads; 0 (in either place) picks one per core, capped
+    // at 16, the ceiling of the automatic choice only. The getter returns
+    // the count initialize() will use. Set before initialize().
+    void parse_threads(unsigned value) { parse_threads_ = value; }
+    unsigned parse_threads() const;
     // Read the file through the paged reader (64 KB pages, 4 MB cache)
     // instead of loading it into memory as a whole. Set before
     // initialize(). Applies to the full parse; lazy loading always reads

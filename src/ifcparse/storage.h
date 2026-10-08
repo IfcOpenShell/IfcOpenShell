@@ -379,6 +379,53 @@ namespace ifcopenshell {
                 return true;
             }
 
+            // Takes over several indexes whose records are each already
+            // sorted (e.g. by their parser workers) by merging them pairwise,
+            // O(n log k), so no sort() follows. Both sides must be in bulk-load
+            // mode (no delta).
+            void merge_sorted(std::vector<inverse_index*> runs) {
+                std::vector<std::vector<inverse_record>> parts;
+                if (!base_.empty()) {
+                    sort();
+                    parts.push_back(std::move(base_));
+                    base_.clear();
+                }
+                for (auto* run : runs) {
+                    run->sort();
+                    parts.push_back(std::move(run->base_));
+                    run->clear();
+                }
+                while (parts.size() > 1) {
+                    std::vector<std::vector<inverse_record>> next;
+                    for (size_t i = 0; i + 1 < parts.size(); i += 2) {
+                        std::vector<inverse_record> merged;
+                        merged.reserve(parts[i].size() + parts[i + 1].size());
+                        std::merge(parts[i].begin(), parts[i].end(), parts[i + 1].begin(), parts[i + 1].end(), std::back_inserter(merged), record_less);
+                        next.push_back(std::move(merged));
+                    }
+                    if (parts.size() % 2 == 1) {
+                        next.push_back(std::move(parts.back()));
+                    }
+                    parts.swap(next);
+                }
+                if (!parts.empty()) {
+                    base_ = std::move(parts.front());
+                }
+                sorted_ = true;
+                invalidate_materialized();
+            }
+
+            void append(inverse_index&& other) {
+                if (base_.empty()) {
+                    base_ = std::move(other.base_);
+                } else {
+                    base_.insert(base_.end(), other.base_.begin(), other.base_.end());
+                }
+                sorted_ = false;
+                other.clear();
+                invalidate_materialized();
+            }
+
             // Sorts records into record_less order. Large inputs go through a
             // stable LSD radix sort on referenced_id (11 bits per pass, as many
             // passes as the largest id needs) followed by record_less within
@@ -429,6 +476,17 @@ namespace ifcopenshell {
                 if (!sorted_) {
                     sort_records(base_);
                     base_.shrink_to_fit();
+                    sorted_ = true;
+                    invalidate_materialized();
+                }
+            }
+
+            // For a worker's run that merge_sorted() copies anyway: no radix buffer
+            // (it would be allocated on the worker's arena and stay there) and no
+            // shrink.
+            void sort_in_place() const {
+                if (!sorted_) {
+                    std::sort(base_.begin(), base_.end(), record_less);
                     sorted_ = true;
                     invalidate_materialized();
                 }
@@ -595,6 +653,17 @@ namespace ifcopenshell {
             std::vector<std::pair<uint32_t, uint64_t>> lazy_offsets_;
             bool index_lazily(const std::string& path, const ifcopenshell::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& types_to_bypass);
 
+            // Number of threads read_from_stream() may use to parse instances;
+            // 1 parses serially. Set by file::initialize().
+            unsigned parse_threads = 1;
+
+            // Parses the DATA section with `threads` workers, each running the
+            // same per-instance reader over its own chunk, and merges the
+            // results in file order. Returns false, without side effects, when
+            // the file is too small to be worth it or no split points were
+            // found; the caller then parses serially.
+            template <typename Reader>
+            bool read_instances_parallel(Reader* stream, const ifcopenshell::schema_definition* schema, const std::set<std::string>& types_to_bypass, unsigned int& max_id, unsigned threads, std::vector<unsigned>& bypassed, unresolved_references& mixed_references, std::vector<shared_pointer_type>& instances);
             void materialize(instance_data* data);
 
             // The instances of one concrete entity type, sorted by id. Loading
