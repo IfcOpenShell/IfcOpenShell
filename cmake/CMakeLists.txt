@@ -81,6 +81,13 @@ if(WASM_BUILD)
     set(CMAKE_SHARED_LIBRARY_SUFFIX ".wasm")
     set(BUILD_SHARED_LIBS OFF)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fwasm-exceptions>)
+    # Emscripten optimization level used when linking the main module and the
+    # plugins, which is what drives wasm-opt. `-Oz` keeps the side modules small,
+    # `-O1` trades size for a considerably shorter link stage.
+    set(
+        IFCOPENSHELL_WASM_LINK_OPTIMIZATION "-Oz" CACHE STRING
+        "Emscripten optimization level used when linking WASM modules and plugins."
+    )
 endif()
 
 option(ENABLE_BUILD_OPTIMIZATIONS "Enable certain compiler and linker optimizations on RelWithDebInfo and Release builds." OFF)

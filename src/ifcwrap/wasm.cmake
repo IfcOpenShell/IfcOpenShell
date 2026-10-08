@@ -65,7 +65,7 @@ function(ifcopenshell_configure_wasm_main TARGET ENVIRONMENT OUTPUT_NAME)
             "SHELL:-Wl,--export=__wasm_setjmp"
             "SHELL:-Wl,--export=isspace"
             "SHELL:-sSUPPORT_LONGJMP=wasm"
-            -Oz
+            "${IFCOPENSHELL_WASM_LINK_OPTIMIZATION}"
     )
     set_target_properties(${TARGET} PROPERTIES
         OUTPUT_NAME "${OUTPUT_NAME}"
