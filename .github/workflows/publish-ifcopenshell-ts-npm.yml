@@ -1,0 +1,103 @@
+# This file was generated with the assistance of an AI coding tool.
+
+name: Publish IfcOpenShell TypeScript npm
+
+# Publishes the two npm packages of the TypeScript API:
+#
+#   @ifcopenshell/wasm  - the standalone WASM build (artifacts staged from CI)
+#   ifcopenshell           - the ergonomic TypeScript/JavaScript wrapper
+#
+# `ifcopenshell` depends on `@ifcopenshell/wasm`, so the WASM package goes
+# first. Both are published from one job because the wrapper's type checks read
+# the staged artifacts through the workspace link rather than from the registry.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish, for example 0.1.1. Defaults to the version in package.json.'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  # Required for the npm provenance attestation that ties the tarballs to this run.
+  id-token: write
+
+concurrency:
+  group: publish-ts-npm
+  cancel-in-progress: false
+
+jobs:
+  upstream-only:
+    runs-on: ubuntu-latest
+    if: |
+      github.repository == 'IfcOpenShell/IfcOpenShell'
+    steps:
+      - name: Set env
+        run: echo ok go
+
+  publish:
+    needs: upstream-only
+    runs-on: ubuntu-latest
+    env:
+      WASM_PACKAGE_DIR: src/ts/ifcopenshell-wasm
+      TS_PACKAGE_DIR: src/ts/ifcopenshell-js
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Download the standalone WASM build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # The WASM artifacts are not committed, so they come from the newest
+          # successful standalone build rather than from a rebuild here.
+          run_id="$(gh run list \
+            --repo IfcOpenShell/IfcOpenShell \
+            --workflow build-ifcopenshell-native-wasm.yml \
+            --status success --limit 1 --json databaseId --jq '.[0].databaseId')"
+          if [ -z "${run_id}" ]; then
+            echo '::error::No successful standalone WASM build found, run build-ifcopenshell-native-wasm.yml first.'
+            exit 1
+          fi
+
+          gh run download "${run_id}" \
+            --repo IfcOpenShell/IfcOpenShell \
+            --name ifcopenshell-native-wasm \
+            --dir "${RUNNER_TEMP}/ifcopenshell-native-wasm"
+
+      - name: Stage the artifacts
+        working-directory: ${{ env.WASM_PACKAGE_DIR }}
+        run: |
+          npm ci
+          IFCOPENSHELL_WASM_DIR="${RUNNER_TEMP}/ifcopenshell-native-wasm" npm run stage
+
+      - name: Set the version
+        if: inputs.version != ''
+        working-directory: ${{ env.WASM_PACKAGE_DIR }}
+        run: npm version "${{ inputs.version }}" --no-git-tag-version --allow-same-version
+
+      - name: Publish the WASM package
+        working-directory: ${{ env.WASM_PACKAGE_DIR }}
+        run: npm publish --provenance --access public
+
+      - name: Build the TypeScript package
+        working-directory: ${{ env.TS_PACKAGE_DIR }}
+        run: |
+          npm ci
+          npm run build
+
+      - name: Set the version
+        if: inputs.version != ''
+        working-directory: ${{ env.TS_PACKAGE_DIR }}
+        run: npm version "${{ inputs.version }}" --no-git-tag-version --allow-same-version
+
+      - name: Publish the TypeScript package
+        working-directory: ${{ env.TS_PACKAGE_DIR }}
+        run: npm publish --provenance --access public
