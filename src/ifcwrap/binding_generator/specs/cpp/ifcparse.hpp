@@ -1207,15 +1207,6 @@ inline std::optional<express::base> get(
     return self[static_cast<int>(index)];
 }
 
-inline int operator_token_ptr(std::size_t start, const std::string& data) {
-    const char value = data.empty() ? '$' : data.front();
-    return static_cast<int>(ifcopenshell::token(start, value).type);
-}
-
-inline int general_token_ptr(std::size_t start, const std::string& token) {
-    return static_cast<int>(ifcopenshell::token(start, ifcopenshell::token::Token_STRING, token).type);
-}
-
 } // namespace ifcparse::bindings
 
 #endif // IFCWRAP_BINDING_GENERATOR_IFCPARSE_SPEC_HPP
