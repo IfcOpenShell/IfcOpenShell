@@ -41,9 +41,10 @@ def cast_to_value(from_value, to_value):
             # We do not cast to int because 42.0 == 42 and 42.3 != 42
             return float(from_value)
         elif target_type == "bool":
-            if from_value in ("true", "1"):
+            text = str(from_value).strip().lower()
+            if text in ("true", "1"):
                 return True
-            elif from_value in ("false", "0"):
+            elif text in ("false", "0"):
                 return False
         return builtins.__dict__[target_type](from_value)
     except ValueError:
