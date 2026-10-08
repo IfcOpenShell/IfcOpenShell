@@ -214,14 +214,8 @@ IFCAPI_DISCOVER_METHOD(tree, uint8_to_b64, uint8_to_b64, const std::vector<unsig
  * selection and parameter names, field selection and renaming, collection
  * accessors, ownership details, and compile guards.
  */
-IFCAPI_DISCOVER_CONSTRUCTOR(tree, ifcopenshell::geom::tree, create_tree, explicit, IFOPSH_WITH_OPENCASCADE, _)
-IFCAPI_DISCOVER_CONSTRUCTOR(tree, ifcopenshell::geom::tree, create_tree_from_file, explicit, IFOPSH_WITH_OPENCASCADE, _)
-IFCAPI_CONSTRUCTOR_PARAM(create_tree_from_file, f, file, ifcopenshell::file&)
-IFCAPI_DISCOVER_CONSTRUCTOR(tree, ifcopenshell::geom::tree, create_tree_from_file_with_settings, explicit, IFOPSH_WITH_OPENCASCADE, _)
-IFCAPI_CONSTRUCTOR_PARAM(create_tree_from_file_with_settings, f, file, ifcopenshell::file&)
-IFCAPI_CONSTRUCTOR_PARAM(create_tree_from_file_with_settings, settings, settings, const ifcopenshell::geom::settings&)
-IFCAPI_DISCOVER_CONSTRUCTOR(tree, ifcopenshell::geom::tree, create_tree_from_iterator, explicit, IFOPSH_WITH_OPENCASCADE, _)
-IFCAPI_CONSTRUCTOR_PARAM(create_tree_from_iterator, it, iterator, ifcopenshell::geom::iterator&)
+// Trees come from the plugin registry, so they are exposed as free functions
+// rather than constructors; see the ifcgeom::bindings factories in this file.
 IFCAPI_DISCOVER_CONSTRUCTOR(buffer, stream_or_filename, create_buffer, explicit, _, _)
 IFCAPI_DISCOVER_CONSTRUCTOR(buffer, stream_or_filename, create_buffer_from_filename, explicit, _, _)
 IFCAPI_CONSTRUCTOR_PARAM(create_buffer_from_filename, fn, filename, const std::string&)
@@ -313,6 +307,10 @@ IFCAPI_DISCOVER_POLICY(transformation, ccomponents, matrix, "data()->ccomponents
 
 // Free functions outside the spec namespace that are selected for the C ABI.
 IFCAPI_DISCOVER_FUNCTION(ifcopenshell::geom, helmert_curve_point)
+IFCAPI_DISCOVER_FUNCTION(ifcgeom::bindings, create_tree)
+IFCAPI_DISCOVER_FUNCTION(ifcgeom::bindings, create_tree_from_file)
+IFCAPI_DISCOVER_FUNCTION(ifcgeom::bindings, create_tree_from_file_with_settings)
+IFCAPI_DISCOVER_FUNCTION(ifcgeom::bindings, create_tree_from_iterator)
 
 namespace ifcgeom::bindings {
 
@@ -419,15 +417,6 @@ private:
 
     std::shared_ptr<ifcopenshell::geom::geometry_serializer> serializer_;
 };
-
-inline std::vector<express::base> to_base_vector(const std::vector<express::entity>& entities) {
-    std::vector<express::base> result;
-    result.reserve(entities.size());
-    for (const auto& entity : entities) {
-        result.emplace_back(entity);
-    }
-    return result;
-}
 
 inline std::unique_ptr<ifcopenshell::geom::iterator> create_iterator(
     const std::string& geometry_library_cpp,
@@ -1332,7 +1321,7 @@ inline std::vector<express::base> select_element(
     if (!entity) {
         throw std::runtime_error("Instance should be an IfcProduct entity");
     }
-    return to_base_vector(self->select(entity, completely_within, extend));
+    return self->select(entity, completely_within, extend);
 }
 
 inline std::vector<express::base> select_point(
@@ -1342,7 +1331,7 @@ inline std::vector<express::base> select_point(
     double z,
     double extend
 ) {
-    return to_base_vector(self->select(ifcopenshell::geom::tree_point{x, y, z}, extend));
+    return self->select(ifcopenshell::geom::tree_point{x, y, z}, extend);
 }
 
 inline std::vector<express::base> select_brep_element(
@@ -1351,7 +1340,7 @@ inline std::vector<express::base> select_brep_element(
     bool completely_within,
     double extend
 ) {
-    return to_base_vector(self->select(element, completely_within, extend));
+    return self->select(element, completely_within, extend);
 }
 
 inline std::vector<express::base> select_box_point(
@@ -1362,7 +1351,7 @@ inline std::vector<express::base> select_box_point(
     double extend
 ) {
     (void)extend;
-    return to_base_vector(self->select_box(ifcopenshell::geom::tree_point{x, y, z}));
+    return self->select_box(ifcopenshell::geom::tree_point{x, y, z});
 }
 
 inline std::vector<express::base> select_box_element(
@@ -1375,7 +1364,7 @@ inline std::vector<express::base> select_box_element(
     if (!entity) {
         throw std::runtime_error("Instance should be an IfcProduct entity");
     }
-    return to_base_vector(self->select_box(entity, completely_within, extend));
+    return self->select_box(entity, completely_within, extend);
 }
 
 inline std::vector<express::base> select_box_bounds(
@@ -1388,8 +1377,10 @@ inline std::vector<express::base> select_box_bounds(
     double zmax,
     bool completely_within
 ) {
-    return to_base_vector(
-        self->select_box(ifcopenshell::geom::tree_box{{ifcopenshell::geom::tree_point{xmin, ymin, zmin}, ifcopenshell::geom::tree_point{xmax, ymax, zmax}}}, completely_within));
+    return self->select_box(
+        ifcopenshell::geom::tree_box{{ifcopenshell::geom::tree_point{xmin, ymin, zmin}, ifcopenshell::geom::tree_point{xmax, ymax, zmax}}},
+        completely_within
+    );
 }
 
 inline std::vector<ifcopenshell::geom::ray_intersection_result> select_ray(
@@ -1742,6 +1733,31 @@ inline std::vector<double> evaluate_at(
         }
     }
     return result;
+}
+
+// Tree backends live in the plugin registry, so a tree is created by backend id
+// instead of constructing one of the (now abstract) tree classes.
+inline std::unique_ptr<ifcopenshell::geom::tree> create_tree(const std::string& backend_id) {
+    return ifcopenshell::geom::trees::construct(backend_id);
+}
+
+inline std::unique_ptr<ifcopenshell::geom::tree> create_tree_from_file_with_settings(
+    ifcopenshell::file& f,
+    const ifcopenshell::geom::settings& settings
+) {
+    auto tree = create_tree("opencascade.brep");
+    tree->add_file(f, settings);
+    return tree;
+}
+
+inline std::unique_ptr<ifcopenshell::geom::tree> create_tree_from_file(ifcopenshell::file& f) {
+    return create_tree_from_file_with_settings(f, ifcopenshell::geom::settings());
+}
+
+inline std::unique_ptr<ifcopenshell::geom::tree> create_tree_from_iterator(ifcopenshell::geom::iterator& it) {
+    auto tree = create_tree("opencascade.brep");
+    tree->add_file(it);
+    return tree;
 }
 
 inline bool plugin_is_loaded(const std::string& kind, const std::string& id) {
