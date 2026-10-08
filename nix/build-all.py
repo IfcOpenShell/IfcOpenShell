@@ -50,11 +50,6 @@ Used environment variables:
     (installed dependencies are never cleared).
     By default option is disabled, to enable pass any value from `1`, `on`, `true`.
     - ``IFCOS_SCHEMAS`` - schemas to be built; defaults to common schemas (`2x3;4;4x3_add2`), to be supplied in the same format
-    - ``WASM_PYTHON_PATH`` - path to WASM Python installation,
-    used to deduce `PYVERSION` (e.g. '3.13.2'), `PYTHONINCLUDE`,
-    `SIDE_MODULE_CFLAGS`, `SIDE_MODULE_LDFLAGS`.
-    Allows to build wasm without pyodide build environment, which can be useful for debugging build issues.
-    Example value: 'pyodide/cpython/installs/python-3.13.2'
     - ``ADD_COMMIT_SHA`` - `off` by default. If enabled
     `ADD_COMMIT_SHA` and `VERSION_OVERRIDE` will be set to `ON` while configuring IfcOpenShell
     - ``IFCOS_BUILD_PYTHON_WRAPPER`` - enable building the Python wrapper, `on` by default.
