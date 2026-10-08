@@ -45,8 +45,6 @@ Used environment variables:
     - ``BUILD_DIR`` - build directory. By default will use "build" folder in IfcOpenShell repository.
     - ``DEPS_DIR`` - dependencies directory. By default will create automatic folder in build directory.
     - ``BUILD_CFG`` - build configuration, 'RelWithDebInfo' by default.
-    - ``USE_CURRENT_PYTHON_VERSION`` - use current python config instead of compile from source
-    `off` by default.
     - ``IFCOS_NUM_BUILD_PROCS`` - number of concurrent processes defaults to available cores + 1
     - ``NO_CLEAN`` - do not clean `ifcopenshell` build directories but continue working on current build
     (installed dependencies are never cleared).
@@ -60,8 +58,6 @@ Used environment variables:
     - ``ADD_COMMIT_SHA`` - `off` by default. If enabled
     `ADD_COMMIT_SHA` and `VERSION_OVERRIDE` will be set to `ON` while configuring IfcOpenShell
     - ``IFCOS_BUILD_PYTHON_WRAPPER`` - enable building the Python wrapper, `on` by default.
-    - ``PYTHON_USER_SITE`` - install the Python wrapper into the user's site-packages directory
-    instead of the interpreter's prefix, `off` by default.
     - ``QT_DIR`` - optional path to a pre-installed Qt6 (e.g. `brew --prefix qt` on Mac`).
     Skips fetching Qt6 via aqtinstall if the install is found there.
     - ``QT6_VERSION`` - Qt6 version to fetch via aqtinstall when building the viewer,
@@ -153,9 +149,7 @@ from common import (
 logger = logging.getLogger()
 
 
-USE_CURRENT_PYTHON_VERSION = is_on_off(os.getenv("USE_CURRENT_PYTHON_VERSION"), default=False)
 IFCOS_BUILD_PYTHON_WRAPPER = is_on_off(os.getenv("IFCOS_BUILD_PYTHON_WRAPPER"), default=True)
-PYTHON_USER_SITE = is_on_off(os.getenv("PYTHON_USER_SITE"), default=False)
 
 PYTHON_VERSIONS = ["3.11.8", "3.12.1", "3.13.6", "3.14.0", "3.15.0"]
 JSON_VERSION = "3.11.3"
@@ -215,6 +209,8 @@ class Args(NamedTuple):
     build_cfg: BuildCfg
     add_commit_sha: bool
     use_ninja: bool
+    use_current_python_version: bool
+    python_user_site: bool
 
 
 class DynamicArgs(NamedTuple):
@@ -366,6 +362,23 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         default=False,
         help="Use Ninja instead of Make to configure and build CMake-based targets.",
     )
+    arg_parser.add_argument(
+        "--use-current-python-version",
+        dest="use_current_python_version",
+        action=argparse.BooleanOptionalAction,
+        default=argparse.SUPPRESS,
+        help="Build the Python wrapper for the current Python instead of building Pythons from source. "
+        "Also can be specified by using USE_CURRENT_PYTHON_VERSION env variable. (default: False)",
+    )
+    arg_parser.add_argument(
+        "--python-user-site",
+        dest="python_user_site",
+        action=argparse.BooleanOptionalAction,
+        default=argparse.SUPPRESS,
+        help="Install the Python wrapper into the user's site-packages directory "
+        "instead of the interpreter's prefix. Requires --use-current-python-version. "
+        "Also can be specified by using PYTHON_USER_SITE env variable. (default: False)",
+    )
     namespace, unknown_flags = arg_parser.parse_known_args()
     num_build_procs = resolve_cli_or_env(
         getattr(namespace, "num_build_procs", None),
@@ -380,6 +393,17 @@ def parse_args() -> tuple[Args, DynamicArgs]:
     add_commit_sha = resolve_cli_or_env(
         getattr(namespace, "add_commit_sha", None), "ADD_COMMIT_SHA", ADD_COMMIT_SHA_DEFAULT, arg_type="bool"
     )
+    use_current_python_version = resolve_cli_or_env(
+        getattr(namespace, "use_current_python_version", None), "USE_CURRENT_PYTHON_VERSION", False, arg_type="bool"
+    )
+    python_user_site = resolve_cli_or_env(
+        getattr(namespace, "python_user_site", None), "PYTHON_USER_SITE", False, arg_type="bool"
+    )
+    if python_user_site and not use_current_python_version:
+        arg_parser.error(
+            "--python-user-site (PYTHON_USER_SITE) is only supported with "
+            "--use-current-python-version (USE_CURRENT_PYTHON_VERSION)."
+        )
     args = Args(
         explicit_targets=namespace.explicit_targets,
         build_examples=namespace.build_examples,
@@ -399,6 +423,8 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         build_cfg=build_cfg,
         add_commit_sha=add_commit_sha,
         use_ninja=namespace.use_ninja,
+        use_current_python_version=use_current_python_version,
+        python_user_site=python_user_site,
     )
 
     dynamic_args = DynamicArgs.from_unknown_flags(unknown_flags, arg_parser)
@@ -409,6 +435,8 @@ ARGS, DYNAMIC_ARGS = parse_args()
 
 explicit_targets: set[str] = set(ARGS.explicit_targets)
 """Targets provided by CLI."""
+USE_CURRENT_PYTHON_VERSION = ARGS.use_current_python_version
+PYTHON_USER_SITE = ARGS.python_user_site
 
 # Helper function for coloured printing
 
