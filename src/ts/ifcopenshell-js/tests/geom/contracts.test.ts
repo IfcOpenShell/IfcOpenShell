@@ -1,5 +1,5 @@
 import { afterEach, beforeAll, expect, it, vi } from 'vitest';
-import { IfcOpenshellGeomIterator } from '@ifcopenshell-js/wasm/api';
+import { IfcOpenshellGeomIterator } from '@ifcopenshell/wasm/api';
 import { file as makeFile, type IfcOpenShell } from 'ifcopenshell';
 import * as geomApi from 'ifcopenshell/geom';
 import { createInstance, describeOrSkip } from '../_helper.js';

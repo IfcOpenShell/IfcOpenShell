@@ -1,5 +1,5 @@
 import { beforeAll, expect, it } from 'vitest';
-import { IfcOpenshellGeomSettings } from '@ifcopenshell-js/wasm/api';
+import { IfcOpenshellGeomSettings } from '@ifcopenshell/wasm/api';
 import { createInstance, describeOrSkip } from '../_helper.js';
 import { IfcOpenShellError, type IfcOpenShell } from 'ifcopenshell';
 import * as geom from 'ifcopenshell/geom';

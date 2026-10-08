@@ -12,7 +12,7 @@ import type {
   IfcOpenshellGeomGeometrySerializer,
   IfcOpenshellGeomIterator,
   IfcOpenshellGeomTriangulationElement,
-} from '@ifcopenshell-js/wasm/api';
+} from '@ifcopenshell/wasm/api';
 import type { file } from '../file.js';
 /** Serializer progress in native processing order. */
 export interface OperationProgress {

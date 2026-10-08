@@ -1,6 +1,6 @@
 import { beforeAll, expect, it } from 'vitest';
 import * as ifcopenshell from 'ifcopenshell';
-import { IfcOpenshellFile, IfcOpenshellInstance } from '@ifcopenshell-js/wasm/api';
+import { IfcOpenshellFile, IfcOpenshellInstance } from '@ifcopenshell/wasm/api';
 import { createInstance, describeOrSkip } from './_helper.js';
 
 describeOrSkip('file and entity_instance', () => {

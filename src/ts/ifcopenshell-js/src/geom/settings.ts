@@ -1,5 +1,5 @@
 
-import { IfcOpenshellGeomSettings } from '@ifcopenshell-js/wasm/api';
+import { IfcOpenshellGeomSettings } from '@ifcopenshell/wasm/api';
 import { ifcopenshell } from '../init.js';
 
 /** Value accepted by a geometry setting setter. */

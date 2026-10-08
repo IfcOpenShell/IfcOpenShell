@@ -6,7 +6,7 @@ import {
   IfcOpenShellErrorKind,
   abortError,
   isIfcOpenShellAbortError,
-} from '@ifcopenshell-js/wasm/api';
+} from '@ifcopenshell/wasm/api';
 import type {
   EmscriptenFS,
   EmscriptenOptions,
@@ -111,7 +111,7 @@ async function initialize(options: InitOptions): Promise<IfcOpenShell> {
 }
 
 async function resolveRuntime(): Promise<WasmAssets> {
-  const wasm = await import('@ifcopenshell-js/wasm');
+  const wasm = await import('@ifcopenshell/wasm');
   return await wasm.resolveWasmAssets() as WasmAssets;
 }
 
