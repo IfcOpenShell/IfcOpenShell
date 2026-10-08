@@ -44,9 +44,11 @@ Main components
     code.
 
 ``GeometryStreamer``
-    Runs ``ifcopenshell::geom::iterator`` on a worker thread for raw IFC loads. It emits a
-    ``StreamedMesh`` once for each unique representation mesh and a
-    ``StreamedInstance`` for each placed occurrence.
+    Runs ``ifcopenshell::geom::iterator`` on a worker thread for raw IFC loads.
+    It emits a ``StreamedMesh`` once for each unique mesh and a
+    ``StreamedInstance`` for each placed occurrence. A mesh is considered
+    unique first by representation id (mapped items), and then by shape:
+    ``MeshDedup`` deduplicates congruent meshes.
 
 ``SidecarBuilder``
     Optionally mirrors the streamer's output while a raw IFC is loading. It

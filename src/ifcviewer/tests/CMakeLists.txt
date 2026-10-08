@@ -80,6 +80,11 @@ add_ifcviewer_unit_test(test_streaming_loader
 
 add_ifcviewer_unit_test(test_instanced_geometry)
 
+add_ifcviewer_unit_test(test_mesh_dedup
+    SOURCES ${IFCVIEWER_SRC}/MeshDedup.cpp
+    LIBS Eigen3::Eigen
+)
+
 # ChunkPlanner: Morton sort + greedy-pack — pure CPU, no Qt / no wgpu.
 add_ifcviewer_unit_test(test_chunk_planner
     SOURCES ${IFCVIEWER_SRC}/ChunkPlanner.cpp
