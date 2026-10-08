@@ -44,14 +44,9 @@ Used environment variables:
     - ``CXXFLAGS``, ``CPPFLAGS``, ``CFLAGS``, ``LDFLAGS``
     - ``BUILD_DIR`` - build directory. By default will use "build" folder in IfcOpenShell repository.
     - ``DEPS_DIR`` - dependencies directory. By default will create automatic folder in build directory.
-    - ``BUILD_CFG`` - build configuration, 'RelWithDebInfo' by default.
-    - ``IFCOS_NUM_BUILD_PROCS`` - number of concurrent processes defaults to available cores + 1
     - ``NO_CLEAN`` - do not clean `ifcopenshell` build directories but continue working on current build
     (installed dependencies are never cleared).
     By default option is disabled, to enable pass any value from `1`, `on`, `true`.
-    - ``IFCOS_SCHEMAS`` - schemas to be built; defaults to common schemas (`2x3;4;4x3_add2`), to be supplied in the same format
-    - ``ADD_COMMIT_SHA`` - `off` by default. If enabled
-    `ADD_COMMIT_SHA` and `VERSION_OVERRIDE` will be set to `ON` while configuring IfcOpenShell
     - ``IFCOS_BUILD_PYTHON_WRAPPER`` - enable building the Python wrapper, `on` by default.
     - ``QT_DIR`` - optional path to a pre-installed Qt6 (e.g. `brew --prefix qt` on Mac`).
     Skips fetching Qt6 via aqtinstall if the install is found there.
