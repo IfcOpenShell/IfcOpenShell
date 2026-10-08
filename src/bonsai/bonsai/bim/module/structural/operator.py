@@ -20,7 +20,6 @@ from math import degrees
 from typing import TYPE_CHECKING, Literal
 
 import bpy
-import ifcopenshell.api.aggregate
 import ifcopenshell.api.group
 import ifcopenshell.api.structural
 from mathutils import Matrix, Vector
@@ -495,15 +494,17 @@ class EditStructuralConnectionCS(bpy.types.Operator, tool.Ifc.Operator):
 class AssignStructuralLoadCase(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_structural_load_case"
     bl_label = "Assign Structural Load Case"
-    work_plan: bpy.props.IntProperty()
+    bl_description = "Assign the load case to the structural analysis model selected in the list"
+    bl_options = {"REGISTER", "UNDO"}
+    structural_analysis_model: bpy.props.IntProperty()
     load_case: bpy.props.IntProperty()
 
     def _execute(self, context):
         self.file = tool.Ifc.get()
-        ifcopenshell.api.aggregate.assign_object(
+        ifcopenshell.api.structural.assign_structural_load_group(
             self.file,
-            relating_object=self.file.by_id(self.work_plan),
-            products=[self.file.by_id(self.load_case)],
+            load_groups=[self.file.by_id(self.load_case)],
+            structural_analysis_model=self.file.by_id(self.structural_analysis_model),
         )
         return {"FINISHED"}
 
@@ -511,14 +512,17 @@ class AssignStructuralLoadCase(bpy.types.Operator, tool.Ifc.Operator):
 class UnassignStructuralLoadCase(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_structural_load_case"
     bl_label = "Unassign Structural Load Case"
-    work_plan: bpy.props.IntProperty()
+    bl_description = "Unassign the load case from the structural analysis model selected in the list"
+    bl_options = {"REGISTER", "UNDO"}
+    structural_analysis_model: bpy.props.IntProperty()
     load_case: bpy.props.IntProperty()
 
     def _execute(self, context):
         self.file = tool.Ifc.get()
-        ifcopenshell.api.aggregate.unassign_object(
+        ifcopenshell.api.structural.unassign_structural_load_group(
             self.file,
-            products=[self.file.by_id(self.load_case)],
+            load_groups=[self.file.by_id(self.load_case)],
+            structural_analysis_model=self.file.by_id(self.structural_analysis_model),
         )
         return {"FINISHED"}
 

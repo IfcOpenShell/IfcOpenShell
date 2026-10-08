@@ -419,6 +419,13 @@ class BIM_PT_structural_load_cases(Panel):
     def draw_load_case_ui(self, load_case):
         row = self.layout.row(align=True)
         row.label(text=load_case["name"], icon="CON_CLAMPTO")
+        if model_id := self.get_selected_model_id():
+            if model_id in load_case["model_ids"]:
+                op = row.operator("bim.unassign_structural_load_case", text="", icon="KEYFRAME_HLT", emboss=False)
+            else:
+                op = row.operator("bim.assign_structural_load_case", text="", icon="KEYFRAME", emboss=False)
+            op.load_case = load_case["id"]
+            op.structural_analysis_model = model_id
 
         if self.props.active_load_case_id and self.props.active_load_case_id == load_case["id"]:
             if self.props.load_case_editing_type == "ATTRIBUTES":
@@ -442,6 +449,15 @@ class BIM_PT_structural_load_cases(Panel):
                 self.draw_editable_load_case_ui()
             elif self.props.load_case_editing_type == "GROUPS":
                 self.draw_editable_load_case_group_ui(load_case)
+
+    def get_selected_model_id(self) -> int | None:
+        if not self.props.is_editing:
+            return None
+        models = self.props.structural_analysis_models
+        index = self.props.active_structural_analysis_model_index
+        if 0 <= index < len(models):
+            return models[index].ifc_definition_id
+        return None
 
     def draw_editable_load_case_ui(self):
         draw_attributes(self.props.load_case_attributes, self.layout)
