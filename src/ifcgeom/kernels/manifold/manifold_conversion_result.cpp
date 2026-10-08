@@ -510,7 +510,11 @@ conversion_result_shape* ifcopenshell::geom::manifold_shape::moved(ifcopenshell:
 		if (part.solid && !solid) {
 			throw std::runtime_error("Failed to transform shape");
 		}
-		moved_parts.emplace_back(mesh, *solid);
+        if (solid) {
+            moved_parts.emplace_back(mesh, *solid);
+        } else {
+            moved_parts.emplace_back(mesh);
+        }
 	}
 	return new manifold_shape(std::move(moved_parts));
 }
