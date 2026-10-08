@@ -10,7 +10,6 @@ jobs:
       matrix:
         workflow:
           - 'Build IfcOpenShell Linux'
-          - 'Build IfcOpenShell Linux ARM'
           - 'Build IfcOpenShell macOS'
           - 'Build IfcOpenShell WASM'
           - 'Build IfcOpenShell Windows'
