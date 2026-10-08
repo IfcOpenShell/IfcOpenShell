@@ -44,6 +44,9 @@ jobs:
 
       - name: Install Dependencies
         run: |
+          # Some mirrors serve the repo metadata at ~100 kB/s, taking minutes.
+          # fastestmirror makes dnf check mirror response times first and pick the quickest one.
+          echo "fastestmirror=True" >> /etc/dnf/dnf.conf
           dnf update -y
           dnf install -y epel-release
           # --enablerepo=crb: libstdc++-static (libsupc++.a, needed by the
