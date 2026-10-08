@@ -54,11 +54,13 @@ class EnableStatusFilters(bpy.types.Operator):
 
         statuses_used: Counter[str] = Counter()
         user_defined_statuses: set[str] = set()
-        for element in tool.Ifc.get().by_type("IfcPropertyEnumeratedValue"):
+        ifc_file = tool.Ifc.get()
+        for element in ifc_file.by_type("IfcPropertyEnumeratedValue"):
             if element.Name == "Status":
                 enum_values = element.EnumerationValues
-                if element.PartOfPset and isinstance(enum_values, tuple):
-                    pset = element.PartOfPset[0]
+                psets = [i for i in ifc_file.get_inverse(element) if i.is_a("IfcPropertySet")]
+                if psets and isinstance(enum_values, tuple):
+                    pset = psets[0]
                     pset_name: str = pset.Name
                     if pset_name.startswith("Pset_") and pset_name.endswith("Common"):
                         statuses_used.update([s.wrappedValue for s in enum_values])
