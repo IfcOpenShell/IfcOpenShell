@@ -556,6 +556,8 @@ if NATIVE_WASM:
     EMSDK_DIR = Path(os.environ.get("WASM_NATIVE_TOOLCHAIN", Path(DEPS_DIR) / "emsdk"))
     core.bootstrap_emsdk(core.load_lockfile(), EMSDK_DIR)
     os.environ.update(core.emsdk_env(EMSDK_DIR))
+    for flag in ("CFLAGS", "CXXFLAGS", "LDFLAGS"):
+        os.environ[flag] = f"{os.environ.get(flag, '')} -fwasm-exceptions -sSUPPORT_LONGJMP=wasm"
     # Unlike pyodide, emsdk does not inject flags through `SIDE_MODULE_*`. The emscripten
     # toolchain reads them from the environment, so they must not become cache variables.
     WASM_CMAKE_IS_USING_INIT_VARS = True
@@ -1404,6 +1406,9 @@ if "occ" in targets:
 
     if WASM:
         patches.append("./patches/occt/no_em_js.patch")
+    if NATIVE_WASM:
+        # Override cached CMake flags as well as flags for a fresh dependency build.
+        occt_args.extend([f"-DCMAKE_CXX_FLAGS={CXXFLAGS}", f"-DCMAKE_C_FLAGS={CFLAGS}"])
 
     if ARGS.occt_shared:
         # Using static flags for shared builds break it

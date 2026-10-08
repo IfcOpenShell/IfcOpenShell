@@ -55,6 +55,9 @@ function(ifcopenshell_configure_wasm_main TARGET ENVIRONMENT OUTPUT_NAME)
             "SHELL:--js-library=${IFCOPENSHELL_WASM_MATH_IMPORTS_JS}"
             "SHELL:-sEXPORTED_RUNTIME_METHODS=[\"stringToUTF8\",\"UTF8ToString\",\"lengthBytesUTF8\",\"getValue\",\"setValue\",\"HEAP32\",\"HEAPU32\",\"loadDynamicLibrary\",\"FS\"]"
             "SHELL:-sALLOW_MEMORY_GROWTH=1"
+            # Match Pyodide's 20 MiB initial memory and 5 MiB stack.
+            "SHELL:-sINITIAL_MEMORY=20971520"
+            "SHELL:-sSTACK_SIZE=5242880"
             "SHELL:-sMAXIMUM_MEMORY=4294967296"
             "SHELL:-sALLOW_TABLE_GROWTH=1"
             "SHELL:-sAUTOLOAD_DYLIBS=0"
