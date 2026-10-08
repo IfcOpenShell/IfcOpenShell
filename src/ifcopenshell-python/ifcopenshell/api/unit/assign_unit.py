@@ -43,6 +43,12 @@ def assign_unit(
     :param units: A list of units to assign as project defaults. See
         ifcopenshell.api.unit.add_si_unit, unit.add_conversion_based_unit,
         and unit.add_monetary_unit for information on how to create units.
+    :param length: Only used if ``units`` is not provided. A dict like
+        ``{"is_metric": True, "raw": "MILLIMETERS"}`` to create the default
+        length unit. Imperial ``raw`` values are INCHES, FEET, MILES, or THOU.
+        Defaults to millimeters.
+    :param area: Same as ``length``, for the area unit. Defaults to square meters.
+    :param volume: Same as ``length``, for the volume unit. Defaults to cubic meters.
     :return: The IfcUnitAssignment element
 
     Example:
