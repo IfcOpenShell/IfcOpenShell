@@ -436,9 +436,6 @@ public:
     void unregister_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, const express::base& entity, int attribute_index);
 
     entity_instance_by_guid internal_guid_map() { return byguid_; };
-    /// The index for a GlobalId that is not 22 characters long. Null for one
-    /// that is, and on RocksDB, where internal_guid_map() holds any length.
-    std::map<std::string, express::base>* other_guid_map(const std::string& global_id);
 
     void add_type_ref(const express::base& new_entity);
     void remove_type_ref(const express::base& new_entity);

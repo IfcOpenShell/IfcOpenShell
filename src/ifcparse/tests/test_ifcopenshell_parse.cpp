@@ -264,35 +264,39 @@ TEST_CASE("Batch deletion prunes surviving referencers and leaves no stale recor
     CHECK(file.instances_by_reference(doomed_referencer.id()).empty());
 }
 
-TEST_CASE("A GlobalId of any length is indexed by its full text", "[ifcparse]") {
+TEST_CASE("A GlobalId of up to 22 characters is indexed", "[ifcparse]") {
     const std::string data =
         "ISO-10303-21;\nHEADER;\nFILE_DESCRIPTION((''),'2;1');\nFILE_NAME('','',(''),(''),'','','');\nFILE_SCHEMA(('IFC4'));\nENDSEC;\nDATA;\n"
         "#1=IFCWALL('0YvctVUKr0kugbFTf53O9L',$,$,$,$,$,$,$,$);\n"
         "#2=IFCWALL('id',$,$,$,$,$,$,$,$);\n"
-        "#3=IFCWALL('0YvctVUKr0kugbFTf53O9LA',$,$,$,$,$,$,$,$);\n"
-        "#4=IFCWALL('0YvctVUKr0kugbFTf53O9LB',$,$,$,$,$,$,$,$);\n"
+        "#3=IFCWALL('1F$7lN9$r5MOA_lpAoNM52A',$,$,$,$,$,$,$,$);\n"
+        "#4=IFCWALL('1F$7lN9$r5MOA_lpAoNM52B',$,$,$,$,$,$,$,$);\n"
+        "#5=IFCWALL('',$,$,$,$,$,$,$,$);\n"
         "ENDSEC;\nEND-ISO-10303-21;\n";
     std::string copy(data);
     ifcopenshell::file file(copy.data(), (int)copy.size());
     REQUIRE(file.good());
     CHECK(file.instance_by_guid("0YvctVUKr0kugbFTf53O9L").id() == 1);
     CHECK(file.instance_by_guid("id").id() == 2);
-    CHECK(file.instance_by_guid("0YvctVUKr0kugbFTf53O9LA").id() == 3);
-    CHECK(file.instance_by_guid("0YvctVUKr0kugbFTf53O9LB").id() == 4);
+    CHECK(file.instance_by_guid("").id() == 5);
     CHECK_THROWS(file.instance_by_guid("i"));
+    CHECK_THROWS(file.instance_by_guid(std::string("id\0", 3)));
     CHECK_THROWS(file.instance_by_guid("0YvctVUKr0kugbFTf53O9M"));
-    CHECK_THROWS(file.instance_by_guid("0YvctVUKr0kugbFTf53O9LC"));
+    // A GlobalId of more than 22 characters is not found, and neither is its start.
+    CHECK_THROWS(file.instance_by_guid("1F$7lN9$r5MOA_lpAoNM52A"));
+    CHECK_THROWS(file.instance_by_guid("1F$7lN9$r5MOA_lpAoNM52B"));
+    CHECK_THROWS(file.instance_by_guid("1F$7lN9$r5MOA_lpAoNM52"));
     // A GlobalId set after the open follows the same rule.
     express::base wall = file.instance_by_id(2);
     wall.set_attribute_value(0, std::string("1F$7lN9$r5MOA_lpAoNM52"));
     CHECK(file.instance_by_guid("1F$7lN9$r5MOA_lpAoNM52").id() == 2);
     CHECK_THROWS(file.instance_by_guid("id"));
-    wall.set_attribute_value(0, std::string("0YvctVUKr0kugbFTf53O9LC"));
-    CHECK(file.instance_by_guid("0YvctVUKr0kugbFTf53O9LC").id() == 2);
+    wall.set_attribute_value(0, std::string("0SYNTH000000156"));
+    CHECK(file.instance_by_guid("0SYNTH000000156").id() == 2);
     CHECK_THROWS(file.instance_by_guid("1F$7lN9$r5MOA_lpAoNM52"));
-    file.remove_entity(file.instance_by_id(3));
-    CHECK_THROWS(file.instance_by_guid("0YvctVUKr0kugbFTf53O9LA"));
-    CHECK(file.instance_by_guid("0YvctVUKr0kugbFTf53O9LB").id() == 4);
+    file.remove_entity(wall);
+    CHECK_THROWS(file.instance_by_guid("0SYNTH000000156"));
+    CHECK(file.instance_by_guid("").id() == 5);
 }
 namespace {
 struct recording_consumer {
