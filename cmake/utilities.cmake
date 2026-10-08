@@ -260,7 +260,7 @@ function(ifcopenshell_wasm_plugin_link_options TARGET REGISTRATION_SYMBOL)
     cmake_parse_arguments(PLUGIN "EXPORT_DYNAMIC" "OPTIMIZATION;SIDE_MODULE" "" ${ARGN})
     if(NOT PLUGIN_OPTIMIZATION)
         # WASM plugins optimize for size by default (side modules download on demand).
-        set(PLUGIN_OPTIMIZATION -Oz)
+        set(PLUGIN_OPTIMIZATION "${IFCOPENSHELL_WASM_LINK_OPTIMIZATION}")
     endif()
     if(NOT PLUGIN_SIDE_MODULE)
         set(PLUGIN_SIDE_MODULE 2)
