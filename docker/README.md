@@ -76,3 +76,32 @@ System requirements
    particularly if you intent on having multiple clones building.
 5. ... I think that covers most of it.
 
+
+Workflow mirrors
+================
+
+`Dockerfile` above (driven by `ifcos_env`/`compose.yaml`) prepares a long-lived container you exec
+commands in. The Dockerfiles below work differently: a single `docker build` runs one GitHub Actions
+workflow's steps in order, so a build that succeeds means the workflow passes, and a failure leaves you
+looking at the same problem CI would report.
+
+``` bash
+# .github/workflows/test-lint.yml
+docker build -f docker/test-lint.Dockerfile -t ifcos-test-lint .
+
+# .github/workflows/build-ifcopenshell-native-wasm.yml
+docker build -f docker/native-wasm.Dockerfile -t ifcos-native-wasm .
+```
+
+Both take the repository root as the build context.
+
+- `test-lint.Dockerfile` keeps the workflow's `continue-on-error` semantics: those steps record their
+  status and the final step aggregates them, exactly like the workflow's "Final check" step.
+- `native-wasm.Dockerfile` puts the emsdk bootstrap and the dependency/build tree in a BuildKit cache
+  mount, so a failed build resumes instead of starting from scratch. The steps that only make sense on
+  CI - the ccache action, uploading artifacts, and pushing the refreshed dependency cache back to
+  `IfcOpenShell/build-outputs` - are intentionally not reproduced.
+
+The mirrors normalise the copied tree to the line endings CI checks out, so they measure the sources
+rather than the checkout they were built from.
+
