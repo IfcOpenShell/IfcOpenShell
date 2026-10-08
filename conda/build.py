@@ -54,7 +54,7 @@ def main() -> None:
         "-B",
         str(BUILD_DIR),
         *shlex.split(get_conda_var("CMAKE_ARGS"), posix=UNIX),
-        "-DSCHEMA_VERSIONS:STRING=2x3;4;4x1;4x3_add2",
+        "-DBUILD_ONLY_COMMON_SCHEMAS:BOOL=ON",
         "-DBUILD_EXAMPLES:BOOL=OFF",
         "-DBUILD_GEOMSERVER:BOOL=OFF",
         "-DBUILD_IFCPYTHON:BOOL=ON",
