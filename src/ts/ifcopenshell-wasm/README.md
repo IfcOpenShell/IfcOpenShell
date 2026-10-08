@@ -1,4 +1,4 @@
-# @ifcopenshell-js/wasm
+# @ifcopenshell/wasm
 
 WASM binaries and generated API glue for [`ifcopenshell`](../ifcopenshell-js/).
 
@@ -48,7 +48,7 @@ need to serve a custom full `wasm/` directory yourself, pass explicit URLs:
 
 ```js
 import { init } from 'ifcopenshell';
-import { resolveUrls } from '@ifcopenshell-js/wasm';
+import { resolveUrls } from '@ifcopenshell/wasm';
 
 const shell = await init({ wasmAssets: await resolveUrls('/wasm/') });
 ```

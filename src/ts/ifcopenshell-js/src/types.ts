@@ -1,5 +1,5 @@
 
-import type { IfcOpenshellModule } from '@ifcopenshell-js/wasm/api';
+import type { IfcOpenshellModule } from '@ifcopenshell/wasm/api';
 
 export type { IfcOpenshellModule };
 

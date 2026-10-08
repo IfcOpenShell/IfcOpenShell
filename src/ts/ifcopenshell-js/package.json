@@ -40,7 +40,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@ifcopenshell-js/wasm": "^0.1.0"
+    "@ifcopenshell/wasm": "^0.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

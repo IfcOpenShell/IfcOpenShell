@@ -1,5 +1,5 @@
 {
-  "name": "@ifcopenshell-js/wasm",
+  "name": "@ifcopenshell/wasm",
   "version": "0.1.0",
   "description": "IfcOpenShell WASM binaries and generated API glue for browser and Node",
   "license": "LGPL-3.0-or-later",

@@ -21,8 +21,8 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "@ifcopenshell-js/wasm": ["../ifcopenshell-wasm/index.d.ts"],
-      "@ifcopenshell-js/wasm/api": ["../ifcopenshell-wasm/api.d.ts"]
+      "@ifcopenshell/wasm": ["../ifcopenshell-wasm/index.d.ts"],
+      "@ifcopenshell/wasm/api": ["../ifcopenshell-wasm/api.d.ts"]
     }
   },
   "include": ["src/**/*.ts"]

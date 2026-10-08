@@ -1,4 +1,4 @@
-import { IfcOpenshellGeomIterator } from '@ifcopenshell-js/wasm/api';
+import { IfcOpenshellGeomIterator } from '@ifcopenshell/wasm/api';
 import type { file } from '../file.js';
 import { IfcOpenShellError, ifcopenshell } from '../init.js';
 import type { settings } from './settings.js';
