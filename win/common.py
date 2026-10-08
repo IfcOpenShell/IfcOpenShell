@@ -230,3 +230,8 @@ def is_geometry_serializer(path: Path) -> bool:
 def is_geometry_tree(path: Path) -> bool:
     # Geometry trees are only used by the Python bindings (`ifcopenshell.geom.tree`), the executables leave them out.
     return path.name.startswith("ifcopenshell_geometry_tree_")
+
+
+def is_wgpu_native(path: Path) -> bool:
+    # wgpu-native is only used by the viewers (BonsaiViewer, IfcViewerMinimal), the other packages leave it out.
+    return path.name.removeprefix("lib").startswith("wgpu_native.")
