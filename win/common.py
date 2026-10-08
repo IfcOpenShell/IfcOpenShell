@@ -157,6 +157,7 @@ class HelpStrings:
 
     ADD_COMMIT_SHA = (
         "Add the commit SHA to the built version string. "
+        "Sets ADD_COMMIT_SHA and VERSION_OVERRIDE CMake options to ON. "
         "Also can be specified by using ADD_COMMIT_SHA env variable. "
         f"(default: {ADD_COMMIT_SHA_DEFAULT})"
     )
