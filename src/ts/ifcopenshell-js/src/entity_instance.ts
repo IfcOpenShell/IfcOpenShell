@@ -1,12 +1,13 @@
 // This file was generated with the assistance of an AI coding tool.
 
-import { IfcOpenshellInstance } from '@ifcopenshell-js/wasm/api';
-import type { AttributeValueType as NativeAttributeValueType } from '@ifcopenshell-js/wasm/api';
+import { IfcOpenshellInstance } from '@ifcopenshell/wasm/api';
+import type { AttributeValueType as NativeAttributeValueType } from '@ifcopenshell/wasm/api';
+import { IfcOpenShellError } from './init.js';
 
 /** Values decoded by the native WASM attribute typemap. */
 export type AttributeValueType = NativeAttributeValueType<entity_instance>;
 
-/** Plain-object snapshot returned by `entity_instance.info()`. */
+/** Plain-object snapshot returned by `entity_instance.getInfo()`. */
 export interface entity_instance_info {
   id: number;
   type: string;
@@ -29,9 +30,14 @@ export class entity_instance extends IfcOpenshellInstance {
   }
 
   get(nameOrIndex: string | number): AttributeValueType {
-    return (typeof nameOrIndex === 'string'
-      ? this.getArgumentByName(nameOrIndex)
-      : this.getArgument(nameOrIndex)) as AttributeValueType;
+    if (typeof nameOrIndex === 'string') {
+      // Inverse attributes are served through the same accessor, as getattr() does in Python.
+      if (this.inverseAttributes().includes(nameOrIndex)) {
+        return this.inverse(nameOrIndex) as unknown as AttributeValueType;
+      }
+      return this.getArgumentByName(nameOrIndex) as AttributeValueType;
+    }
+    return this.getArgument(nameOrIndex) as AttributeValueType;
   }
 
   attributes(): string[] {
@@ -42,17 +48,38 @@ export class entity_instance extends IfcOpenshellInstance {
     return this.attributes().map((name) => [name, this.get(name)]);
   }
 
-  /** Return the entity id, type, and decoded forward attributes. */
-  info(): entity_instance_info {
-    return {
-      id: this.id(),
-      type: this.type,
-      attributes: Object.fromEntries(this.entries()),
-    };
+  /**
+   * Return the entity id, type, and decoded forward attributes.
+   *
+   * With `recursive`, referenced entities are expanded as well. Entities that
+   * were already visited are replaced by their id, as Python's get_info() does.
+   */
+  getInfo(options: { recursive?: boolean } = {}): entity_instance_info {
+    return this.buildInfo(options.recursive ? new Set([this.id()]) : null);
   }
 
   toJSON(): entity_instance_info {
-    return this.info();
+    return this.getInfo();
+  }
+
+  private buildInfo(ignore: Set<number> | null): entity_instance_info {
+    const attributes: Record<string, AttributeValueType> = {};
+    for (const [name, value] of this.entries()) {
+      attributes[name] = ignore ? this.expand(value, ignore) : value;
+    }
+    return { id: this.id(), type: this.type, attributes };
+  }
+
+  private expand(value: AttributeValueType, ignore: Set<number>): AttributeValueType {
+    if (value instanceof entity_instance) {
+      if (ignore.has(value.id())) return value.id();
+      ignore.add(value.id());
+      return value.buildInfo(ignore) as unknown as AttributeValueType;
+    }
+    if (Array.isArray(value)) {
+      return (value as AttributeValueType[]).map((item) => this.expand(item, ignore)) as AttributeValueType;
+    }
+    return value;
   }
 
   inverseAttributes(): string[] {
@@ -92,6 +119,9 @@ export class entity_instance extends IfcOpenshellInstance {
   }
 
   set(nameOrIndex: string | number, value: AttributeValueType): void {
+    if (typeof nameOrIndex === 'string' && this.inverseAttributes().includes(nameOrIndex)) {
+      throw new IfcOpenShellError(`Cannot set inverse attribute ${nameOrIndex}`);
+    }
     this.setArgument(typeof nameOrIndex === 'number' ? nameOrIndex : this.getArgumentIndex(nameOrIndex), value);
   }
 

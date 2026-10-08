@@ -1,5 +1,5 @@
 
-import { IfcOpenshellFile } from '@ifcopenshell-js/wasm/api';
+import { IfcOpenshellFile } from '@ifcopenshell/wasm/api';
 import type { entity_instance } from './entity_instance.js';
 import { IfcOpenShellError, abortError, ifcopenshell } from './init.js';
 import { inspectEntity, type entity_instance_info } from './util/inspect.js';
@@ -72,7 +72,8 @@ export class file extends IfcOpenshellFile {
   }
 
   get ids(): number[] {
-    return this.entityNames();
+    // The C API yields entities in reverse insertion order; Python iterates by id.
+    return this.entityNames().sort((a, b) => a - b);
   }
 
   get entityCount(): number {
@@ -119,12 +120,24 @@ export class file extends IfcOpenshellFile {
     return entity;
   }
 
+  /** Add an entity, assigning a new id unless `instanceId` is given explicitly. */
+  override add(entity: entity_instance, instanceId = -1): entity_instance {
+    const added = super.add(entity, instanceId) as entity_instance | null;
+    if (!added) throw new IfcOpenShellError(`Failed to add ${entity.type} to file`);
+    return added;
+  }
+
+  /** Remove an entity and the relationships referencing it. */
+  override remove(entity: entity_instance): void {
+    super.remove(entity);
+  }
+
   text(): string {
     return this.toString();
   }
 
   /** Return schema, entity-id, validity, storage, and header summary data. */
-  info(): FileInfo {
+  getInfo(): FileInfo {
     const ids = this.ids;
     return {
       schema: this.schemaName(),
