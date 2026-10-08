@@ -7,6 +7,7 @@ from .abi_ir import (
     _SCALAR_PARAM_TYPES,
     _result_record_list_make_name,
     _snake_name,
+    _type_spec_sequence_kind,
     _variant_c_type,
 )
 from .binding_ir import (
@@ -45,7 +46,6 @@ from .c_sequence_helpers import (
     _handle_list_list_helper_name,
     _sequence_make_helper,
     _sequence_to_cpp_helper,
-    _type_spec_sequence_kind,
 )
 from .c_type_rendering import (
     _normalize_cpp_type,
