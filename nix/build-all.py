@@ -699,9 +699,9 @@ if WASM:
     }
     if NATIVE_WASM:
         # The standalone WASM targets ship the geometry stack and the generated C API.
-        # SWIG and Python are only needed by the pyodide-hosted Python wrapper.
+        # SWIG, Python and the Python wrapper are only needed by the pyodide-hosted flow.
         SKIP_TARGETS_FOR_WASM.discard("IfcGeom")
-        SKIP_TARGETS_FOR_WASM.update(("swig", "python"))
+        SKIP_TARGETS_FOR_WASM.update(("swig", "python", "IfcOpenShell-Python"))
     SKIP_TARGETS_FOR_WASM = {t.lower() for t in SKIP_TARGETS_FOR_WASM}
     skip_targets = {t for t in targets if t.lower() in SKIP_TARGETS_FOR_WASM}
     if skip_targets:
@@ -1839,6 +1839,10 @@ if WASM:
     # inside of the sysroot set by the emscriptem toolchain
     cmake_args.append("-DWASM_BUILD=On")
 
+extra_cmake_args = os.environ.get("IFCOS_CMAKE_ARGS")
+if extra_cmake_args:
+    cmake_args.extend(extra_cmake_args.split())
+
 if ARGS.schemas:
     cmake_args.append(f"-DSCHEMA_VERSIONS={ARGS.schemas}")
 else:
@@ -2158,6 +2162,9 @@ if NATIVE_WASM:
             # The standalone targets are driven by the generated C API, not SWIG.
             "-DBUILD_IFCAPI=ON",
             "-DBUILD_IFCPYTHON=OFF",
+            # WASM builds always regenerate the C API, which needs the `clang`
+            # bindings, so the discovery has to run in this interpreter.
+            f"-DPYTHON_EXECUTABLE={sys.executable}",
             # `WASM_BUILD` defaults these to off because the pyodide flow ships no geometry.
             "-DWITH_OPENCASCADE=ON",
             "-DWITH_CGAL=ON",
