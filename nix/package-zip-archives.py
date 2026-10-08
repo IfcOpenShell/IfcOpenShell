@@ -164,8 +164,8 @@ def stage_runtime_payload(
     dest: Path,
     *,
     include_json_xml_serializers: bool = False,
-    include_geometry_serializers: bool = True,
-    include_geometry_trees: bool = True,
+    include_geometry_serializers: bool = False,
+    include_geometry_trees: bool = False,
 ) -> list[Path]:
     """Copy all libs from `install_dir/{bin,lib,lib64}` into `dest` and return where they ended up.
 
@@ -416,6 +416,7 @@ def package_python_wrapper(
 
     ifcopenshell_dir = package_dir / "ifcopenshell"
     ifcopenshell_dir.mkdir()
+    # Relies on CREATE_BUNDLE, which installs IfcOpenShell's own libraries into `py_dir`.
     for item in py_dir.iterdir():
         dest = ifcopenshell_dir / item.name
         if item.is_dir():
@@ -434,8 +435,6 @@ def package_python_wrapper(
         shutil.rmtree(pycache_dir)
     for pyc_file in ifcopenshell_dir.rglob("*.pyc"):
         pyc_file.unlink()
-
-    stage_runtime_payload(ifcopenshell_install_dir, ifcopenshell_dir)
 
     dependency_libs = []
     for runtime_dir in runtime_dirs:
@@ -486,7 +485,6 @@ def package_executable(
         include_json_xml_serializers=exe == "IfcConvert",
         # svgfill links ifcopenshell_geometry_svgfill directly.
         include_geometry_serializers=exe in ("IfcConvert", "svgfill"),
-        include_geometry_trees=False,
     )
 
     dependency_libs = []
