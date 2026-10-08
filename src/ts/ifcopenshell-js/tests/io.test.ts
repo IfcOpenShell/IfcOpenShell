@@ -17,6 +17,9 @@ import * as ifcopenshell from 'ifcopenshell';
 import { createInstance, describeOrSkip } from './_helper.js';
 
 /** Minimal IFC4 sample with a wall, a point and a typed property value. */
+
+const WALL_GUID = '2oDrMkUQb3vB0ekOiTdteW';
+
 const SAMPLE = `ISO-10303-21;
 HEADER;
 FILE_DESCRIPTION((''),'2;1');
@@ -25,12 +28,10 @@ FILE_SCHEMA(('IFC4'));
 ENDSEC;
 DATA;
 #1=IFCCARTESIANPOINT((0.,0.,0.));
-#2=IFCWALL('0j$1cJ2rL4$v8Z1y4X9w2',$,'Wall',$,$,$,$,$,$);
+#2=IFCWALL('${WALL_GUID}',$,'Wall',$,$,$,$,$,$);
 #3=IFCPROPERTYSINGLEVALUE('FireRating',$,IFCLABEL('F30'),$);
 ENDSEC;
 END-ISO-10303-21;`;
-
-const WALL_GUID = '0j$1cJ2rL4$v8Z1y4X9w2';
 
 function openSample(): ifcopenshell.file {
   return ifcopenshell.open(new TextEncoder().encode(SAMPLE));
