@@ -107,6 +107,7 @@ import multiprocessing
 import os
 import platform
 import shutil
+import site
 import subprocess as sp
 import sys
 import sysconfig
@@ -357,7 +358,7 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         dest="use_current_python_version",
         action=argparse.BooleanOptionalAction,
         default=argparse.SUPPRESS,
-        help="Build the Python wrapper for the current Python instead of building Pythons from source. "
+        help="Build the Python wrapper for the current Python instead of installing Pythons with uv. "
         "Also can be specified by using USE_CURRENT_PYTHON_VERSION env variable. (default: False)",
     )
     arg_parser.add_argument(
@@ -682,6 +683,8 @@ missing_commands: list[str] = []
 required_commands = [git, bunzip2, tar, cc, cplusplus, make, "patch", "cmake", yacc, xz, bison]
 if WASM:
     required_commands.append("pyodide")
+else:
+    required_commands.append("uv")
 if platform.system() == "Linux" and "BonsaiViewer" in targets:
     required_commands.append("patchelf")
 if "proj" in targets:
@@ -1119,6 +1122,7 @@ def install_qt6() -> str:
 
     # Prefer uv when available: uvx runs aqtinstall in an ephemeral env, avoiding polluting
     # any Python installation (isolated or global) with aqtinstall and its dependencies.
+    # TODO: uv is now required for non-WASM builds, consider dropping the aqtinstall fallback.
     if uv_path := shutil.which("uv"):
         logger.info(f"Using uv ('{uv_path}') to run aqtinstall in an ephemeral env.")
         AQT_CMD = ["uvx", "--from", "aqtinstall", "aqt"]
@@ -1520,69 +1524,24 @@ def python_consider_rc(python_version: str) -> str:
     return python_version
 
 
+PYTHON_INSTALL_DIRS: dict[str, Path] = {}
+"""Python version -> install dir."""
+
 if "python" in targets and not USE_CURRENT_PYTHON_VERSION and not WASM:
-    # Python should not be built with -fvisibility=hidden, from experience that introduces segfaults
-    OLD_CPP_FLAGS = os.environ["CPPFLAGS"]
-    OLD_CXX_FLAGS = os.environ["CXXFLAGS"]
-    OLD_C_FLAGS = os.environ["CFLAGS"]
-    os.environ["CXXFLAGS"] = CXXFLAGS_MINIMAL
-    os.environ["CPPFLAGS"] = CXXFLAGS_MINIMAL
-    os.environ["CFLAGS"] = CFLAGS_MINIMAL
-
-    # On OSX a dynamic python library is built or it would not be compatible
-    # with the system python because of some threading initialization
-    PYTHON_CONFIGURE_ARGS: list[str] = []
-    original_path = ""
-    if APPLE:
-        PYTHON_CONFIGURE_ARGS = ["--enable-shared"]
-        open_ssl_prefix = run([brew, "--prefix", "openssl@3"]).strip()
-        # I'm not sure why, but if I do `"{open_ssl_prefix}"` (keep the quotes),
-        # autconf fails to find ssl.
-        PYTHON_CONFIGURE_ARGS.append(f"--with-openssl={open_ssl_prefix}")
-
-    if MAC_CROSS_COMPILE_INTEL:
-        original_path = os.environ["PATH"]
-        # Need to ensure python will pick up intel's `pkg-config`,
-        # otherwise it might attempt to use ARM libraries (e.g. `zstd`) and fail.
-        os.environ["PATH"] = f"{MAC_INTEL_BIN_PATH}{os.pathsep}{original_path}"
-        PYTHON_CONFIGURE_ARGS.extend(["--with-universal-archs=intel-64", "--enable-universalsdk"])
+    # Use build dir to avoid pushing Python installations to `build-outputs`.
+    UV_PYTHON_INSTALL_DIR = Path(BUILD_DIR) / "uv-python"
+    # Provide `UV_PYTHON_INSTALL_DIR` to avoid polluting global uv installation.
+    uv_env = os.environ | {"UV_PYTHON_INSTALL_DIR": str(UV_PYTHON_INSTALL_DIR)}
 
     for PYTHON_VERSION in PYTHON_VERSIONS:
-        python_version_url = PYTHON_VERSION
         PYTHON_VERSION = python_consider_rc(PYTHON_VERSION)
+        python_request = f"cpython-{PYTHON_VERSION}-macos-x86_64" if MAC_CROSS_COMPILE_INTEL else PYTHON_VERSION
 
-        python_name = Dependencies.register(
-            "python", PYTHON_VERSION, use_shared_suffix=False, bundle_as_runtime_dependency=False
-        )
-        # Don't fail silently on missing Python dependencies (e.g. openssl or zlib),
-        # because later ifcopenshell-python build will fail too but in a more confusing way.
-        build_dependency(
-            python_name,
-            "autoconf",
-            PYTHON_CONFIGURE_ARGS,
-            f"http://www.python.org/ftp/python/{python_version_url}/",
-            f"Python-{PYTHON_VERSION}.tgz",
-        )
-        python_install = Dependencies.get_install_dir("python")
-        python_bin = python_install / "bin" / "python3"
-        # `_ssl` module is present -> we will be able to install `numpy` later
-        # to verify IfcOpenShell installation
-        try:
-            run([str(python_bin), "-c", "import _ssl"])
-        except RuntimeError:
-            logger.error(
-                "Python was built without SSL support (_ssl module is missing). "
-                f"To fix this: remove the installed Python at {python_install}; "
-                "install OpenSSL development libraries and re-run."
-            )
-            raise
-
-    if MAC_CROSS_COMPILE_INTEL:
-        assert original_path
-        os.environ["PATH"] = original_path
-    os.environ["CPPFLAGS"] = OLD_CPP_FLAGS
-    os.environ["CXXFLAGS"] = OLD_CXX_FLAGS
-    os.environ["CFLAGS"] = OLD_C_FLAGS
+        logger.info(f"\rInstalling Python {PYTHON_VERSION} with uv...")
+        # `--no-bin` - skip installing Python to `~/.local/bin`.
+        run(["uv", "python", "install", "--no-bin", python_request], env=uv_env)
+        python_executable = Path(run(["uv", "python", "find", "--managed-python", python_request], env=uv_env))
+        PYTHON_INSTALL_DIRS[PYTHON_VERSION] = python_executable.parent.parent
 
 if "boost" in targets:
     BOOST_LOCATION = f"https://github.com/boostorg/boost/releases/download/boost-{BOOST_VERSION}/"
@@ -2006,9 +1965,12 @@ if "IfcOpenShell-Python" in targets:
         python_include: str | None = None,
         python_executable: str | None = None,
         python_path: Path | None = None,
-    ) -> str | None:
+        *,
+        package_install_dir: Path,
+    ) -> Path:
         """
-        :return: Path to module dir if ``python_executable`` was provided, otherwise ``None``.
+        :param package_install_dir: Directory to install `ifcopenshell` package to (site-packages equivalent).
+        :return: Path to module dir.
         """
         assert bool(python_path) ^ bool(python_include)
 
@@ -2050,11 +2012,9 @@ if "IfcOpenShell-Python" in targets:
                 + get_cmake_args_prefix_path()
                 + [
                     *([f"-DPYTHON_EXECUTABLE={python_executable}"] if python_executable else []),
-                    # Needed because pyodide is expecting setup.py to be in the root.
-                    *([f"-DPYTHON_MODULE_INSTALL_DIR={REPO_PATH}"] * WASM),
+                    f"-DPYTHON_MODULE_INSTALL_DIR={package_install_dir}",
                     f"-DPYTHON_INCLUDE_DIR={python_include}",
                     f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/ifcopenshell/tmp",
-                    "-DUSERSPACE_PYTHON_PREFIX=" + OFF_ON[PYTHON_USER_SITE],
                 ],
                 cmake_dir=CMAKE_DIR,
                 cwd=wrapper_build_dir,
@@ -2070,39 +2030,50 @@ if "IfcOpenShell-Python" in targets:
         else:
             run([make, "install"], cwd=os.path.join(wrapper_build_dir, "ifcwrap"))
 
-        if python_executable:
-            run([python_executable, "-m", "ensurepip"])
-            run([python_executable, "-m", "pip", "install", "--user", "numpy", "typing_extensions"])
-            env = os.environ.copy()
-            env[LIBRARY_PATH_ENV_VAR] = os.pathsep.join(
-                ld_library_paths[2:] if ARGS.split_instance_builds else ld_library_paths
-            )
-            module_dir = run(
-                [python_executable, "-c", "import inspect, ifcopenshell; print(inspect.getfile(ifcopenshell))"],
-                env=env,
-            )
-            # Use just the last line is used,
-            # because output might contain warning like `No stream support: No module named 'lark'`.
-            module_dir = module_dir.strip().splitlines()[-1]
-            module_dir = os.path.dirname(module_dir)
+        module_dir = package_install_dir / "ifcopenshell"
+        if not WASM:
+            assert python_executable
 
             if not APPLE:
                 if BUILD_CFG == "Release":
                     for so in glob.glob(os.path.join(module_dir, "*.so")):
                         if WASM:
+                            # TODO: dead code, still can be useful?
                             run(["wasm-strip", so, "-k", "dylink.0"])
                         elif os.path.basename(so).startswith("_ifcopenshell_wrapper"):
                             # TODO: This symbol name depends on the Python version?
-                            run([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", so], cwd=module_dir)
+                            run([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", so], cwd=str(module_dir))
                         else:
-                            run([strip, "--strip-unneeded", so], cwd=module_dir)
+                            run([strip, "--strip-unneeded", so], cwd=str(module_dir))
 
-            return module_dir
+            # Verify the installed wrapper can be imported,
+            # without installing dependencies in the target Python.
+            env = os.environ | {
+                LIBRARY_PATH_ENV_VAR: os.pathsep.join(
+                    ld_library_paths[2:] if ARGS.split_instance_builds else ld_library_paths
+                ),
+                "PYTHONPATH": str(package_install_dir),
+            }
+            # fmt: off
+            run(
+                [
+                    "uv", "run", "--no-project", "--python", python_executable,
+                    "--with", "numpy",
+                    "--with", "typing_extensions",
+                    "python", "-c", "import ifcopenshell",
+                ],
+                env=env,
+            )
+            # fmt: on
+
+        return module_dir
 
     if WASM:
         compile_python_wrapper(
             run(["pyodide", "config", "get", "python_version"]),
             run(["pyodide", "config", "get", "python_include_dir"]),
+            # Needed because pyodide is expecting setup.py to be in the root.
+            package_install_dir=REPO_PATH,
         )
         # Copy setup.py where pyodide build system expects it.
         shutil.copy(REPO_PATH / "pyodide" / "setup.py", REPO_PATH)
@@ -2112,13 +2083,28 @@ if "IfcOpenShell-Python" in targets:
 
     elif USE_CURRENT_PYTHON_VERSION:
         python_info = sysconfig.get_paths()
-        compile_python_wrapper(platform.python_version(), python_info["include"], sys.executable)
+        if PYTHON_USER_SITE:
+            assert site.USER_SITE
+            package_install_dir = Path(site.USER_SITE)
+        else:
+            package_install_dir = Path(python_info["platlib"])
+        compile_python_wrapper(
+            platform.python_version(),
+            python_info["include"],
+            sys.executable,
+            package_install_dir=package_install_dir,
+        )
     else:
         for python_version in PYTHON_VERSIONS:
             python_version = python_consider_rc(python_version)
-            python_path = INSTALL_DIR / f"python-{python_version}"
-            module_dir = compile_python_wrapper(python_version, python_path=python_path)
-            assert module_dir
+            python_path = PYTHON_INSTALL_DIRS[python_version]
+            # Install to a staging dir, so the wrapper won't end up in the Python installation.
+            package_install_dir = Path(DEPS_DIR) / "install" / "ifcopenshell" / "tmp" / f"python-{python_version}"
+            if package_install_dir.exists():
+                shutil.rmtree(package_install_dir)
+            module_dir = compile_python_wrapper(
+                python_version, python_path=python_path, package_install_dir=package_install_dir
+            )
             # Not sure why, but added after reading this in the logs
             # cp: /Users/runner/work/IfcOpenShell/IfcOpenShell/build/Darwin/x86_64/10.15/install/ifcopenshell/python-3.9.11: No such file or directory
             # D'oh this was just due to a missing f-string f but doesn't hurt to keep it in.
@@ -2126,11 +2112,7 @@ if "IfcOpenShell-Python" in targets:
             dest.parent.mkdir(parents=True, exist_ok=True)
             if dest.exists():
                 shutil.rmtree(dest)
-            if PYTHON_USER_SITE:
-                shutil.copytree(module_dir, dest)
-            else:
-                # Move, so the wrapper won't end up in the Python dependency cache.
-                shutil.move(module_dir, dest)
+            shutil.move(module_dir, dest)
 
 Dependencies.write_install_dirs_json()
 
