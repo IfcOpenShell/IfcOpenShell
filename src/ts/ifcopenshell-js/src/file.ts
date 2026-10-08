@@ -123,7 +123,7 @@ export class file extends IfcOpenshellFile {
   /** Add an entity, assigning a new id unless `instanceId` is given explicitly. */
   override add(entity: entity_instance, instanceId = -1): entity_instance {
     const added = super.add(entity, instanceId) as entity_instance | null;
-    if (!added) throw new IfcOpenShellError(`Failed to add ${entity.type} to file`);
+    if (!added) throw new IfcOpenShellError(`Failed to add ${entity.isA()} to file`);
     return added;
   }
 

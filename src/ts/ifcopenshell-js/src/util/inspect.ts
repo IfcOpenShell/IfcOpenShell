@@ -11,7 +11,7 @@ export interface entity_instance_info {
 
 export function formatAttributeValue(value: AttributeValueType): string {
   if (value === null) return '$';
-  if (value instanceof entity_instance) return `#${value.id()} - ${value.typeName}`;
+  if (value instanceof entity_instance) return `#${value.id()} - ${value.isA()}`;
   if (Array.isArray(value)) return `[${value.map(formatAttributeValue).join(', ')}]`;
   return String(value);
 }
@@ -29,5 +29,5 @@ export async function inspectEntity(file: file, id: number): Promise<entity_inst
     try { return { name, value: formatAttributeValue(value) }; } finally { release(value); }
   });
   const guid = attributes.some(item => item.name === 'GlobalId') ? entity.get('GlobalId') : null;
-  return { id: entity.id(), type: entity.type, guid: typeof guid === 'string' ? guid : null, attributes };
+  return { id: entity.id(), type: entity.isA(), guid: typeof guid === 'string' ? guid : null, attributes };
 }
