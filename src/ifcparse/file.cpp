@@ -158,7 +158,7 @@ ifcopenshell::impl::rocks_db_file_storage::rocks_db_file_storage(const std::stri
     , instance_by_name_(&instance_ids_, [this](size_t v) { return assert_existance(v, entityinstance_ref); })
     , bytype_(db.get(), "t|")
     , byguid_internal_(db.get(), "g|"),
-      byguid_(&byguid_internal_, [this](size_t v) { return assert_existance(v, entityinstance_ref); }, [](const express::base& v) { return v.identity(); })
+      byguid_(&byguid_internal_, [this](size_t v) { return assert_existance(v, entityinstance_ref); }, [](const express::base& v) { return v.id(); })
     , byref_excl_(db.get(), "v|")
     // @todo by_identity is probably not correct here, this mapping is Name -> Identity, so Fn should have access to full pair?
     // , byidentity_(&byid_, [this](size_t v) { return assert_existance(v, by_identity); }, [](ifcopenshell::IfcBaseClass* v) { return v->identity(); })
