@@ -24,8 +24,12 @@ RUN --mount=type=cache,target=/__w/ifcopenshell_build \
     && npm run stage \
     && cd ../ifcopenshell-js \
     && npm ci \
+    && npm run build \
     && npm run docs \
-    && mkdir -p /artifacts \
+    && mkdir -p /artifacts/demo/ifcopenshell-js \
     && cp -r docs/api /artifacts/typescript-api \
     && cp -r "${IFCOPENSHELL_WASM_DIR}" /artifacts/wasm \
+    && cp -r dist examples /artifacts/demo/ifcopenshell-js/ \
+    && cp -r ../ifcopenshell-wasm/. /artifacts/demo/ifcopenshell-wasm/ \
+    && rm -rf /artifacts/demo/ifcopenshell-wasm/node_modules \
     && ls -la /artifacts /artifacts/typescript-api | head -40

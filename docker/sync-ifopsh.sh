@@ -28,6 +28,7 @@ fi
 echo
 echo "TypeScript API : http://localhost:${PORT}/typescript-api/index.html"
 echo "WASM module    : http://localhost:${PORT}/wasm/ifcopenshell_wasm.mjs"
+echo "Three.js demo  : http://localhost:${PORT}/demo/ifcopenshell-js/examples/threejs.html"
 echo "scratch page   : http://localhost:${PORT}/inspect.html"
 echo
 
