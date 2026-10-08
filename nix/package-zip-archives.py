@@ -91,27 +91,21 @@ def get_soname(shared_object: Path) -> str | None:
 
     `None` for binaries that don't have one (e.g. Python extension modules).
     """
-    try:
-        if is_platform("MAC"):
-            # Prints the binary's path, followed by its install name if it has one.
-            lines = run("otool", "-D", str(shared_object), stderr=subprocess.DEVNULL).splitlines()
-            return lines[1].strip().rsplit("/", 1)[-1] if len(lines) > 1 else None
-        readelf_output = run("readelf", "-d", str(shared_object), stderr=subprocess.DEVNULL)
-    except subprocess.CalledProcessError:
-        return None
+    if is_platform("MAC"):
+        # Prints the binary's path, followed by its install name if it has one.
+        lines = run("otool", "-D", str(shared_object)).splitlines()
+        return lines[1].strip().rsplit("/", 1)[-1] if len(lines) > 1 else None
+    readelf_output = run("readelf", "-d", str(shared_object))
     match = re.search(r"\(SONAME\).*Library soname: \[(.*)\]", readelf_output)
     return match.group(1) if match else None
 
 
 def get_needed_libraries(binary: Path) -> list[str]:
     """File names of the shared libraries `binary` is linked to."""
-    try:
-        if is_platform("MAC"):
-            lines = run("otool", "-L", str(binary), stderr=subprocess.DEVNULL).splitlines()[1:]
-            return [line.strip().split(" (")[0].rsplit("/", 1)[-1] for line in lines if line.strip()]
-        readelf_output = run("readelf", "-d", str(binary), stderr=subprocess.DEVNULL)
-    except subprocess.CalledProcessError:
-        return []  # Not a binary.
+    if is_platform("MAC"):
+        lines = run("otool", "-L", str(binary)).splitlines()[1:]
+        return [line.strip().split(" (")[0].rsplit("/", 1)[-1] for line in lines if line.strip()]
+    readelf_output = run("readelf", "-d", str(binary))
     return re.findall(r"\(NEEDED\).*Shared library: \[(.*)\]", readelf_output)
 
 
