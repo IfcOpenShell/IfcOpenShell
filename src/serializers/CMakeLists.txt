@@ -159,6 +159,7 @@ if(NOT WASM_BUILD)
             ${ifcviewer_sidecar_dir}/IfcViewSerializer.cpp
             ${ifcviewer_sidecar_dir}/SidecarSerializer.cpp
             ${ifcviewer_sidecar_dir}/StreamedRecords.cpp
+            ${ifcviewer_sidecar_dir}/MeshDedup.cpp
             ${ifcviewer_sidecar_dir}/SidecarCache.cpp
             ${ifcviewer_sidecar_dir}/SidecarCompress.cpp
             ${ifcviewer_sidecar_dir}/SidecarLayout.cpp

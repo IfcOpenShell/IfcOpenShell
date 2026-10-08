@@ -295,16 +295,11 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
             gross_ids.size());
     }
 
-    // Shared dedup + AABB state across passes — same geom.id() across
-    // net/gross passes still maps to one mesh upload.
-    std::unordered_map<std::string, uint32_t> geom_to_local_mesh_id;
-    // Per-unique-mesh state shared across instances.  `offset` is the stage-1
-    // rebase applied to verts (zero when the mesh's first vert is near origin
-    // and rebasing wasn't worth it); MeshAabb is shared with the .ifcview bake.
-    std::vector<MeshAabb> mesh_aabbs;
+    // Shared across passes: the same geom.id() across net/gross passes still
+    // maps to one mesh upload, and MeshDedup folds congruent meshes.
+    MeshRegistry mesh_registry;
 
     uint32_t total_shapes = 0;
-    uint32_t total_meshes = 0;
     QElapsedTimer stream_timer;
     stream_timer.start();
 
@@ -396,65 +391,37 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
                     pending_elements_.push_back(std::move(info));
                 }
 
-                const std::string& geom_id = geom.id();
-                uint32_t local_mesh_id;
-                bool first_sight = false;
-                if (geom_id.empty()) {
-                    local_mesh_id = total_meshes++;
-                    first_sight = true;
-                } else {
-                    auto it = geom_to_local_mesh_id.find(geom_id);
-                    if (it == geom_to_local_mesh_id.end()) {
-                        local_mesh_id = total_meshes++;
-                        geom_to_local_mesh_id.emplace(geom_id, local_mesh_id);
-                        first_sight = true;
-                    } else {
-                        local_mesh_id = it->second;
+                // Vertex rebasing: pick a rebase offset when the mesh's
+                // first source vertex is far from origin (>1 km in metres,
+                // matching bonsai's distance_limit default).  Iterator
+                // outputs metres, so the threshold is in metres directly.
+                Eigen::Vector3d rebase_offset = Eigen::Vector3d::Zero();
+                constexpr double kFarAwayThresholdMeters = 1000.0;
+                const auto& src_verts = geom.verts();
+                if (src_verts.size() >= 3) {
+                    const double x = src_verts[0];
+                    const double y = src_verts[1];
+                    const double z = src_verts[2];
+                    if (std::abs(x) > kFarAwayThresholdMeters ||
+                        std::abs(y) > kFarAwayThresholdMeters ||
+                        std::abs(z) > kFarAwayThresholdMeters) {
+                        rebase_offset = Eigen::Vector3d(x, y, z);
                     }
                 }
 
-                if (first_sight) {
-                    // Vertex rebasing: pick a rebase offset when the mesh's
-                    // first source vertex is far from origin (>1 km in metres,
-                    // matching bonsai's distance_limit default).  Iterator
-                    // outputs metres, so the threshold is in metres directly.
-                    Eigen::Vector3d offset = Eigen::Vector3d::Zero();
-                    constexpr double kFarAwayThresholdMeters = 1000.0;
-                    const auto& src_verts = tri_elem->geometry().verts();
-                    if (src_verts.size() >= 3) {
-                        const double x = src_verts[0];
-                        const double y = src_verts[1];
-                        const double z = src_verts[2];
-                        if (std::abs(x) > kFarAwayThresholdMeters ||
-                            std::abs(y) > kFarAwayThresholdMeters ||
-                            std::abs(z) > kFarAwayThresholdMeters) {
-                            offset = Eigen::Vector3d(x, y, z);
-                        }
-                    }
+                std::optional<StreamedMesh> new_mesh;
+                const UniqueMesh unique_mesh = mesh_registry.resolve(
+                    session_model_id_, *tri_elem, rebase_offset, new_mesh);
+                if (new_mesh) emit meshReady(std::move(*new_mesh));
 
-                    StreamedMesh streamed_mesh =
-                        buildStreamedMesh(session_model_id_, local_mesh_id, tri_elem, offset);
-                    MeshAabb mesh_aabb;
-                    for (int a = 0; a < 3; ++a) {
-                        mesh_aabb.lmin[a] = streamed_mesh.local_aabb_min[a];
-                        mesh_aabb.lmax[a] = streamed_mesh.local_aabb_max[a];
-                        mesh_aabb.offset[a] = offset[a];
-                    }
-                    mesh_aabb.has_offset = (offset.squaredNorm() > 0.0);
-                    if (mesh_aabbs.size() <= local_mesh_id) mesh_aabbs.resize(local_mesh_id + 1);
-                    mesh_aabbs[local_mesh_id] = mesh_aabb;
-                    if (!streamed_mesh.indices.empty()) {
-                        emit meshReady(std::move(streamed_mesh));
-                    }
-                }
-
-                // Vertex rebasing (when enabled) is folded into the placement
-                // by the shared builder; the raw placement stays in double so
-                // later CoordinateOperation / false-origin composition can
-                // cancel large translations before the final GPU float upload.
+                // The rebase and the dedup transform are folded into the
+                // placement by the shared builder; the raw placement stays in
+                // double so later CoordinateOperation / false-origin
+                // composition can cancel large translations before the final
+                // GPU float upload.
                 StreamedInstance inst = makeStreamedInstance(
-                    session_model_id_, local_mesh_id, object_id, *tri_elem,
-                    mesh_aabbs[local_mesh_id]);
+                    session_model_id_, object_id, *tri_elem, unique_mesh,
+                    mesh_registry.aabb(unique_mesh.mesh_id));
 
                 emit instanceReady(std::move(inst));
                 total_shapes++;
@@ -501,11 +468,13 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
     progress_ = 100;
     emit progressChanged(100);
 
+    const uint32_t total_meshes = mesh_registry.meshCount();
     double dedup_ratio = total_meshes > 0
         ? static_cast<double>(total_shapes) / static_cast<double>(total_meshes) : 1.0;
     std::fprintf(stderr,
-        "[info] Streamer done: %s  %.2fs  shapes=%u  unique_meshes=%u  dedup=%.2fx\n",
+        "[info] Streamer done: %s  %.2fs  shapes=%u  unique_meshes=%u  dedup=%.2fx  "
+        "congruent_meshes=%u\n",
         path.c_str(), stream_timer.elapsed() / 1000.0,
-        total_shapes, total_meshes, dedup_ratio);
+        total_shapes, total_meshes, dedup_ratio, mesh_registry.congruentMeshCount());
     succeeded_ = !cancel_requested_.load();
 }

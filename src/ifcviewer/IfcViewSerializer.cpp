@@ -59,48 +59,16 @@ void IfcViewSerializer::write(const ifcopenshell::geom::triangulation_element* o
     info.type = o->type();
     elements_.push_back(std::move(info));
 
-    const std::string& geom_id = geom.id();
-    uint32_t local_mesh_id;
-    bool first_sight = false;
-    if (geom_id.empty()) {
-        local_mesh_id = total_meshes_++;
-        first_sight = true;
-    } else {
-        auto it = geom_to_local_mesh_id_.find(geom_id);
-        if (it == geom_to_local_mesh_id_.end()) {
-            local_mesh_id = total_meshes_++;
-            geom_to_local_mesh_id_.emplace(geom_id, local_mesh_id);
-            first_sight = true;
-        } else {
-            local_mesh_id = it->second;
-        }
-    }
+    // Zero offset = no vertex rebasing (see the header note).  The placement
+    // is left untouched, so local coords + placement stay consistent; only the
+    // float-precision headroom differs from the streamer bake.
+    std::optional<StreamedMesh> new_mesh;
+    const UniqueMesh unique_mesh = mesh_registry_.resolve(
+        kSessionModelId, *o, Eigen::Vector3d::Zero(), new_mesh);
+    if (new_mesh) serializer_.onMeshReady(*new_mesh);
 
-    if (first_sight) {
-        // Zero offset = no vertex rebasing (see the header note).  The
-        // placement is left untouched, so local coords + placement stay
-        // consistent; only the float-precision headroom differs from the
-        // streamer bake.
-        const Eigen::Vector3d offset = Eigen::Vector3d::Zero();
-        StreamedMesh streamed_mesh = buildStreamedMesh(kSessionModelId, local_mesh_id, o, offset);
-
-        MeshAabb mesh_aabb;
-        for (int a = 0; a < 3; ++a) {
-            mesh_aabb.lmin[a] = streamed_mesh.local_aabb_min[a];
-            mesh_aabb.lmax[a] = streamed_mesh.local_aabb_max[a];
-        }
-        mesh_aabb.has_offset = false;
-        if (mesh_aabbs_.size() <= local_mesh_id) mesh_aabbs_.resize(local_mesh_id + 1);
-        mesh_aabbs_[local_mesh_id] = mesh_aabb;
-
-        if (!streamed_mesh.indices.empty()) {
-            serializer_.onMeshReady(streamed_mesh);
-        }
-    }
-
-    StreamedInstance inst = makeStreamedInstance(
-        kSessionModelId, local_mesh_id, object_id, *o, mesh_aabbs_[local_mesh_id]);
-    serializer_.onInstanceReady(inst);
+    serializer_.onInstanceReady(makeStreamedInstance(
+        kSessionModelId, object_id, *o, unique_mesh, mesh_registry_.aabb(unique_mesh.mesh_id)));
 }
 
 void IfcViewSerializer::finalize() {

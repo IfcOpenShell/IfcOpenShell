@@ -28,7 +28,6 @@
 
 #include <cstdint>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 // .ifcview geometry serializer: bakes the viewer's sidecar cache from a normal
@@ -62,14 +61,12 @@ private:
     std::string output_path_;
     SidecarSerializer serializer_;
 
-    // Mesh dedup keyed on the triangulation's geom.id(), same as the streamer:
-    // repeated geometry becomes one mesh + N instances.  object_ids are
-    // model-local here; the viewer reassigns session-global ids at install.
-    std::unordered_map<std::string, uint32_t> geom_to_local_mesh_id_;
-    std::vector<MeshAabb> mesh_aabbs_;
+    // Mesh sharing and dedup, same as the streamer: repeated geometry becomes
+    // one mesh + N instances.  object_ids are model-local here; the viewer
+    // reassigns session-global ids at install.
+    MeshRegistry mesh_registry_;
     std::vector<ElementInfo> elements_;
     uint32_t next_object_id_ = 1;
-    uint32_t total_meshes_ = 0;
 };
 
 #endif // IFCVIEWSERIALIZER_H
