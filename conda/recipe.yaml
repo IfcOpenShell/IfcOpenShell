@@ -69,7 +69,16 @@ tests:
         - ifcopenshell
       pip_check: false
   - script:
-      - python -c "import ifcopenshell; assert ifcopenshell.version == '${{ version }}', 'print(ifcopenshell.version)'"
+      env:
+        # Force pytest to keep the colors.
+        FORCE_COLOR: "1"
+      content:
+        - python -c "import ifcopenshell; assert ifcopenshell.version == '${{ version }}', 'print(ifcopenshell.version)'"
+        - pytest -vv test/package/test_ifcopenshell_python_shared_libraries.py --not-bundled
+    files:
+      source:
+        - test/package/conftest.py
+        - test/package/test_ifcopenshell_python_shared_libraries.py
     requirements:
       run:
         - occt * *novtk*  # Ensure that even though compiled against OCCT with VTK, it can still run with OCCT without VTK
