@@ -55,6 +55,6 @@ template IFC_SCHEMA_API double ifcopenshell::get_SI_equivalent<IfcSchema>(const 
 
 #include "hierarchy_helper.i"
 
-BOOST_DLL_ALIAS(ifcopenshell::schema_plugin::plugin_abi, ifcopenshell_plugin_abi_v1)
+BOOST_DLL_ALIAS(ifcopenshell::schema_plugin::plugin_abi, ifcopenshell_plugin_abi_v2)
 BOOST_DLL_ALIAS(ifcopenshell::schema_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
 BOOST_DLL_ALIAS(ifcopenshell::schema_plugin::register_plugin, ifcopenshell_register_schema_plugin_v1)

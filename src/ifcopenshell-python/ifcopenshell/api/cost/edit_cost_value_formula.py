@@ -49,22 +49,20 @@ def edit_cost_value_formula(file: ifcopenshell.file, cost_value: ifcopenshell.en
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {"cost_value": cost_value, "formula": formula or {}}
-    return usecase.execute()
+    return usecase.execute(cost_value, formula)
 
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
 
-    def execute(self):
+    def execute(self, cost_value: ifcopenshell.entity_instance, formula: str) -> None:
         try:
-            data = ifcopenshell.util.cost.unserialise_cost_value(self.settings["formula"], self.settings["cost_value"])
+            data = ifcopenshell.util.cost.unserialise_cost_value(formula, cost_value)
         except:
             return
         self.edit_cost_value(data)
 
-    def edit_cost_value(self, data, parent=None):
+    def edit_cost_value(self, data: dict[str, Any], parent: ifcopenshell.entity_instance | None = None) -> None:
         ifc = data.get("ifc", None)
         if not ifc:
             ifc = ifcopenshell.api.cost.add_cost_value(self.file, parent=parent)

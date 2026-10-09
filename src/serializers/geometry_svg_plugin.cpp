@@ -66,7 +66,7 @@ void register_plugin(geometry_serializer_registry& registry, const plugin::modul
 }
 }
 
-BOOST_DLL_ALIAS(ifcopenshell::serializers::geometry_svg_plugin::plugin_abi, ifcopenshell_plugin_abi_v1)
+BOOST_DLL_ALIAS(ifcopenshell::serializers::geometry_svg_plugin::plugin_abi, ifcopenshell_plugin_abi_v2)
 BOOST_DLL_ALIAS(ifcopenshell::serializers::geometry_svg_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
 BOOST_DLL_ALIAS(ifcopenshell::serializers::geometry_svg_plugin::register_plugin, ifcopenshell_register_geometry_serializer_plugin_v1)
 

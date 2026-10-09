@@ -157,6 +157,7 @@ class HelpStrings:
 
     ADD_COMMIT_SHA = (
         "Add the commit SHA to the built version string. "
+        "Sets ADD_COMMIT_SHA and VERSION_OVERRIDE CMake options to ON. "
         "Also can be specified by using ADD_COMMIT_SHA env variable. "
         f"(default: {ADD_COMMIT_SHA_DEFAULT})"
     )
@@ -221,11 +222,21 @@ def is_json_or_xml_document_serializer(path: Path) -> bool:
 
 
 def is_geometry_serializer(path: Path) -> bool:
-    # Besides the Python bindings, geometry serializers (obj, svg, glb, ...) are only used by IfcConvert
-    # and svgfill only by the svgfill executable, so the other executables leave them out.
-    return re.fullmatch(r"ifcopenshell_geometry_[A-Za-z]+", path.stem) is not None
+    # Besides the Python bindings, geometry serializers (obj, svg, glb, ...) are only used by IfcConvert,
+    # the other executables leave them out.
+    return not is_svgfill(path) and re.fullmatch(r"ifcopenshell_geometry_[A-Za-z]+", path.stem) is not None
+
+
+def is_svgfill(path: Path) -> bool:
+    # Besides the Python bindings, svgfill is only used by the svgfill executable, the other executables leave it out.
+    return path.stem == "ifcopenshell_geometry_svgfill"
 
 
 def is_geometry_tree(path: Path) -> bool:
     # Geometry trees are only used by the Python bindings (`ifcopenshell.geom.tree`), the executables leave them out.
     return path.name.startswith("ifcopenshell_geometry_tree_")
+
+
+def is_wgpu_native(path: Path) -> bool:
+    # wgpu-native is only used by the viewers (BonsaiViewer, IfcViewerMinimal), the other packages leave it out.
+    return path.name.removeprefix("lib").startswith("wgpu_native.")

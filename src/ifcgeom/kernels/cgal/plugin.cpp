@@ -67,6 +67,6 @@ namespace ifcopenshell {
 	}
 }
 
-BOOST_DLL_ALIAS(ifcopenshell::geom::kernels::cgal_plugin::plugin_abi, ifcopenshell_plugin_abi_v1)
+BOOST_DLL_ALIAS(ifcopenshell::geom::kernels::cgal_plugin::plugin_abi, ifcopenshell_plugin_abi_v2)
 BOOST_DLL_ALIAS(ifcopenshell::geom::kernels::cgal_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
 BOOST_DLL_ALIAS(ifcopenshell::geom::kernels::cgal_plugin::register_plugin, ifcopenshell_register_kernel_plugin_v1)

@@ -71,7 +71,7 @@ jobs:
         run: |
           call ${{ matrix.vcvars }}
           cd win
-          uv run build-all-win.py
+          uv run build-all-win.py --split-instance-builds
 
       - name: Pack Dependencies
         run: |

@@ -147,4 +147,16 @@ struct StreamedInstance {
     float    world_aabb_max[3]{};
 };
 
+// Element metadata for the sidecar's element table (UI + picking).  The
+// streamer discovers these as it iterates; SidecarSerializer::finalize packs
+// them (strings into the string table) into the .ifcview element block.
+struct ElementInfo {
+    uint32_t object_id;
+    uint32_t session_model_id;
+    int ifc_id;
+    std::string guid;
+    std::string name;
+    std::string type;
+};
+
 #endif // INSTANCEDGEOMETRY_H

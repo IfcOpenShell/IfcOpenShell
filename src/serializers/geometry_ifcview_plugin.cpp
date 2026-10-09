@@ -1,3 +1,4 @@
+// This file was generated with the assistance of an AI coding tool.
 /********************************************************************************
  *                                                                              *
  * This file is part of IfcOpenShell.                                           *
@@ -17,47 +18,48 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "../document_serializer_plugin.h"
-#include "xml_serializer.h"
-
-#include "../../ifcparse/macros.h"
+#include "geometry_serializer_plugin.h"
+#include "../ifcviewer/IfcViewSerializer.h"
 
 #include <boost/dll/alias.hpp>
 #include <memory>
 
-namespace {
-
-std::shared_ptr<ifcopenshell::geom::serializer> create_serializer(const ifcopenshell::serializers::document_serializer_context& context) {
-	return std::make_shared<POSTFIX_SCHEMA(xml_serializer)>(context.file, context.output_filename);
-}
-
-}
-
 namespace ifcopenshell {
 namespace serializers {
-namespace xml_document_serializer_plugin {
+namespace geometry_ifcview_plugin {
 
 plugin::abi_info plugin_abi() {
 	return plugin::host_abi();
 }
 
 plugin::metadata plugin_metadata() {
-	return document_serializer_plugin_metadata("xml", STRINGIFY(IfcSchema));
+	return geometry_serializer_plugin_metadata("ifcview");
 }
 
-void register_plugin(document_serializer_registry& registry, const plugin::module& module) {
-	document_serializer_info info;
-	info.format = "xml";
-	info.name = "XML";
-	info.description = "Property definitions and decomposition tree.";
-	info.schema_name = STRINGIFY(IfcSchema);
-	registry.bind(info, create_serializer, module);
+std::shared_ptr<geometry_serializer> create_serializer(const geometry_serializer_context& context) {
+	// writes_final_output is set below, so output_filename is the final
+	// <stem>.ifcview path (writeSidecar normalises the stem itself).
+	return std::make_shared<IfcViewSerializer>(context.output_filename, context.settings);
+}
+
+void register_plugin(geometry_serializer_registry& registry, const plugin::module& module) {
+	geometry_serializer_info info;
+	info.format = "ifcview";
+	info.name = "IfcView sidecar";
+	info.description = "Instanced viewer cache (.ifcview) consumed by the IfcOpenShell viewer.";
+	info.extensions = { ".ifcview" };
+	info.supports_triangulation = true;
+	info.bypass_properties = true;
+	// The serializer writes the final file itself via writeSidecar(), so
+	// IfcConvert must not rename a temp output over it.
+	info.writes_final_output = true;
+	registry.bind(info, create_serializer, geometry_serializer_registry::configure_fn(), module);
 }
 
 }
 }
 }
 
-BOOST_DLL_ALIAS(ifcopenshell::serializers::xml_document_serializer_plugin::plugin_abi, ifcopenshell_plugin_abi_v2)
-BOOST_DLL_ALIAS(ifcopenshell::serializers::xml_document_serializer_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
-BOOST_DLL_ALIAS(ifcopenshell::serializers::xml_document_serializer_plugin::register_plugin, ifcopenshell_register_document_serializer_plugin_v1)
+BOOST_DLL_ALIAS(ifcopenshell::serializers::geometry_ifcview_plugin::plugin_abi, ifcopenshell_plugin_abi_v1)
+BOOST_DLL_ALIAS(ifcopenshell::serializers::geometry_ifcview_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
+BOOST_DLL_ALIAS(ifcopenshell::serializers::geometry_ifcview_plugin::register_plugin, ifcopenshell_register_geometry_serializer_plugin_v1)

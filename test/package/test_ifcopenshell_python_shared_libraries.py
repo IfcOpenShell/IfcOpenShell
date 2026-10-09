@@ -8,6 +8,7 @@ Not covered currently - local dependencies, e.g.:
 - dependencies on build artifacts (absolute install names or rpaths into the build tree)
 """
 
+import os
 from pathlib import Path
 
 import ifcopenshell
@@ -15,6 +16,8 @@ import ifcopenshell.geom
 import pytest
 
 PACKAGE_DIR = Path(ifcopenshell.__file__).parent
+CONDA = "CONDA_PREFIX" in os.environ
+SKIP_ON_CONDA = pytest.mark.skipif(CONDA, reason="plug-in is not registered in the conda package")
 
 
 @pytest.mark.parametrize(
@@ -47,7 +50,7 @@ def test_geometry_mapping_loads(schema: str):
         pytest.param("opencascade", id="ifcopenshell_geometry_kernel_opencascade"),
         pytest.param("cgal", id="ifcopenshell_geometry_kernel_cgal"),
         pytest.param("cgal-simple", id="ifcopenshell_geometry_kernel_cgalsimple"),
-        pytest.param("manifold", id="ifcopenshell_geometry_kernel_manifold"),
+        pytest.param("manifold", id="ifcopenshell_geometry_kernel_manifold", marks=SKIP_ON_CONDA),
         pytest.param("passthrough", id="ifcopenshell_geometry_kernel_passthrough"),
     ],
 )
@@ -58,7 +61,7 @@ def test_geometry_kernel_loads(kernel: str):
 @pytest.mark.parametrize(
     "extension",
     [
-        pytest.param("dae", id="ifcopenshell_geometry_dae"),
+        pytest.param("dae", id="ifcopenshell_geometry_dae", marks=SKIP_ON_CONDA),
         pytest.param("glb", id="ifcopenshell_geometry_glb"),
         pytest.param("igs", id="ifcopenshell_geometry_igs"),
         pytest.param("obj", id="ifcopenshell_geometry_obj"),
@@ -89,7 +92,7 @@ def test_geometry_tree_loads(backend: str):
     ifcopenshell.geom.tree(backend=backend)
 
 
-@pytest.mark.parametrize([], [pytest.param(id="ifcopenshell_document_rdb")])
+@pytest.mark.parametrize([], [pytest.param(id="ifcopenshell_document_rdb", marks=SKIP_ON_CONDA)])
 def test_document_rdb_loads(tmp_path: Path):
     ifc_path = tmp_path / "model.ifc"
     ifcopenshell.file().write(ifc_path)
@@ -98,7 +101,9 @@ def test_document_rdb_loads(tmp_path: Path):
     assert rdb_path.exists()
 
 
-def test_every_plugin_is_tested():
+def test_every_plugin_is_tested(request: pytest.FixtureRequest):
+    if request.config.getoption("not_bundled"):
+        pytest.skip("plug-ins are not installed next to the package")
     tested = {
         param.id
         for test in list(globals().values())

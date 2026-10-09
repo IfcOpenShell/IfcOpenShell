@@ -24,6 +24,7 @@
 import argparse
 import multiprocessing
 import sys
+from pathlib import Path
 from typing import NamedTuple, NoReturn
 
 from common import (
@@ -49,6 +50,7 @@ class Args(NamedTuple):
     build_cfg: BuildCfg
     num_build_procs: int
     target: str | None
+    build_dir: Path | None
     extra_args: list[str]
 
 
@@ -113,6 +115,7 @@ def parse_args() -> Args:
         ),
     )
     argv = sys.argv[1:]
+    parser.add_argument("--build-dir", type=Path, help="Build a separately configured IfcOpenShell tree.")
     if "--" in argv:
         separator_idx = argv.index("--")
         own_argv, extra_args = argv[:separator_idx], argv[separator_idx + 1 :]
@@ -136,6 +139,7 @@ def parse_args() -> Args:
         build_cfg=build_cfg,
         num_build_procs=num_build_procs,
         target=args.target,
+        build_dir=args.build_dir,
         extra_args=extra_args,
     )
 
@@ -162,7 +166,7 @@ def main() -> None:
     logger.info(
         colorize(f"Building {vs_cfg_vars.vs_platform} {ARGS.build_cfg} {PROJECT_NAME}{target_suffix}", C.PURPLE)
     )
-    build_dir = REPO_ROOT / vs_cfg_vars.build_dir
+    build_dir = (REPO_ROOT / ARGS.build_dir).resolve() if ARGS.build_dir else REPO_ROOT / vs_cfg_vars.build_dir
     build_ninja_path = build_dir / "build.ninja"
     if build_ninja_path.exists():
         logger.info(f"Found {build_ninja_path}, building with Ninja.")

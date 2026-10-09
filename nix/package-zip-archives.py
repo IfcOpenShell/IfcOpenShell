@@ -20,6 +20,8 @@ from common import (
     is_geometry_tree,
     is_geometry_writer,
     is_json_or_xml_document_serializer,
+    is_svgfill,
+    is_wgpu_native,
     logger,
     run,
 )
@@ -91,27 +93,21 @@ def get_soname(shared_object: Path) -> str | None:
 
     `None` for binaries that don't have one (e.g. Python extension modules).
     """
-    try:
-        if is_platform("MAC"):
-            # Prints the binary's path, followed by its install name if it has one.
-            lines = run("otool", "-D", str(shared_object), stderr=subprocess.DEVNULL).splitlines()
-            return lines[1].strip().rsplit("/", 1)[-1] if len(lines) > 1 else None
-        readelf_output = run("readelf", "-d", str(shared_object), stderr=subprocess.DEVNULL)
-    except subprocess.CalledProcessError:
-        return None
+    if is_platform("MAC"):
+        # Prints the binary's path, followed by its install name if it has one.
+        lines = run("otool", "-D", str(shared_object)).splitlines()
+        return lines[1].strip().rsplit("/", 1)[-1] if len(lines) > 1 else None
+    readelf_output = run("readelf", "-d", str(shared_object))
     match = re.search(r"\(SONAME\).*Library soname: \[(.*)\]", readelf_output)
     return match.group(1) if match else None
 
 
 def get_needed_libraries(binary: Path) -> list[str]:
     """File names of the shared libraries `binary` is linked to."""
-    try:
-        if is_platform("MAC"):
-            lines = run("otool", "-L", str(binary), stderr=subprocess.DEVNULL).splitlines()[1:]
-            return [line.strip().split(" (")[0].rsplit("/", 1)[-1] for line in lines if line.strip()]
-        readelf_output = run("readelf", "-d", str(binary), stderr=subprocess.DEVNULL)
-    except subprocess.CalledProcessError:
-        return []  # Not a binary.
+    if is_platform("MAC"):
+        lines = run("otool", "-L", str(binary)).splitlines()[1:]
+        return [line.strip().split(" (")[0].rsplit("/", 1)[-1] for line in lines if line.strip()]
+    readelf_output = run("readelf", "-d", str(binary))
     return re.findall(r"\(NEEDED\).*Shared library: \[(.*)\]", readelf_output)
 
 
@@ -170,8 +166,10 @@ def stage_runtime_payload(
     dest: Path,
     *,
     include_json_xml_serializers: bool = False,
-    include_geometry_serializers: bool = True,
-    include_geometry_trees: bool = True,
+    include_geometry_serializers: bool = False,
+    include_svgfill: bool = False,
+    include_geometry_trees: bool = False,
+    include_wgpu: bool = False,
 ) -> list[Path]:
     """Copy all libs from `install_dir/{bin,lib,lib64}` into `dest` and return where they ended up.
 
@@ -197,7 +195,11 @@ def stage_runtime_payload(
                 continue
             if not include_geometry_serializers and is_geometry_serializer(runtime_file):
                 continue
+            if not include_svgfill and is_svgfill(runtime_file):
+                continue
             if not include_geometry_trees and is_geometry_tree(runtime_file):
+                continue
+            if not include_wgpu and is_wgpu_native(runtime_file):
                 continue
             dest_file = dest / (get_soname(runtime_file) or runtime_file.name)
             staged_files.append(dest_file)
@@ -422,6 +424,7 @@ def package_python_wrapper(
 
     ifcopenshell_dir = package_dir / "ifcopenshell"
     ifcopenshell_dir.mkdir()
+    # Relies on CREATE_BUNDLE, which installs IfcOpenShell's own libraries into `py_dir`.
     for item in py_dir.iterdir():
         dest = ifcopenshell_dir / item.name
         if item.is_dir():
@@ -440,8 +443,6 @@ def package_python_wrapper(
         shutil.rmtree(pycache_dir)
     for pyc_file in ifcopenshell_dir.rglob("*.pyc"):
         pyc_file.unlink()
-
-    stage_runtime_payload(ifcopenshell_install_dir, ifcopenshell_dir)
 
     dependency_libs = []
     for runtime_dir in runtime_dirs:
@@ -490,9 +491,10 @@ def package_executable(
         ifcopenshell_install_dir,
         package_dir,
         include_json_xml_serializers=exe == "IfcConvert",
+        include_geometry_serializers=exe == "IfcConvert",
         # svgfill links ifcopenshell_geometry_svgfill directly.
-        include_geometry_serializers=exe in ("IfcConvert", "svgfill"),
-        include_geometry_trees=False,
+        include_svgfill=exe == "svgfill",
+        include_wgpu=exe in ("BonsaiViewer", "IfcViewerMinimal"),
     )
 
     dependency_libs = []

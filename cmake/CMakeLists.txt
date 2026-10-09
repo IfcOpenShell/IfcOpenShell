@@ -87,6 +87,7 @@ option(CREATE_BUNDLE "Copy .so files and don't create RPATHS or SOVERSION symlin
 
 option(BUILD_IFCGEOM "Build IfcGeom." ON)
 option(BUILD_IFCPYTHON "Build IfcPython." ON)
+option(IFOPSH_SAFE_INSTANCE "Use checked weak instance handles (must match across all libraries and plug-ins)." ON)
 option(BUILD_IFCPARSE_EXPERIMENTAL_WRAPPER "Build the experimental Clang-generated ifcparse Python wrapper." OFF)
 option(BUILD_CONVERT "Build IfcConvert executable." ON)
 option(BUILD_DOCUMENTATION "Build IfcOpenShell Documentation." OFF)
@@ -273,6 +274,9 @@ foreach(option_flag IN LISTS option_flags)
 endforeach()
 
 set(SWIG_DEFINES "")
+if(IFOPSH_SAFE_INSTANCE)
+    list(APPEND SWIG_DEFINES -DIFOPSH_SAFE_INSTANCE)
+endif()
 
 if(WITH_CGAL)
     # 5.4 is the version shipped with Ubuntu 22.04.

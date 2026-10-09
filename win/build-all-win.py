@@ -28,6 +28,7 @@ from common import (
     is_geometry_tree,
     is_geometry_writer,
     is_json_or_xml_document_serializer,
+    is_svgfill,
     logger,
     run,
     run_streamed,
@@ -40,6 +41,7 @@ class Args(NamedTuple):
     skip_executables: bool
     no_zip: bool
     fail_on_missing_deps: bool
+    split_instance_builds: bool
 
 
 def parse_args() -> Args:
@@ -69,12 +71,18 @@ def parse_args() -> Args:
         action="store_true",
         help="exit with an error if any runtime DLL dependencies were not found among candidates",
     )
+    parser.add_argument(
+        "--split-instance-builds",
+        action="store_true",
+        help="Build native tools with raw instance handles and Python with safe handles in separate trees.",
+    )
     namespace = parser.parse_args()
     return Args(
         skip_ifcopenshell_build=namespace.skip_ifcopenshell_build,
         skip_executables=namespace.skip_executables,
         no_zip=namespace.no_zip,
         fail_on_missing_deps=namespace.fail_on_missing_deps,
+        split_instance_builds=namespace.split_instance_builds,
     )
 
 
@@ -291,7 +299,20 @@ def stage_symlinks(package_dir: Path, files: dict[str, Path], generated_files: d
         dest.write_text(contents)
 
 
-def build() -> None:
+def build(split_instance_builds: bool = False) -> None:
+    python_tree = REPO_PATH / f"_build-{build_generator()}-python"
+    python_prefix = REPO_PATH / f"_installed-{build_generator()}-python"
+    python_tree_args = ["--build-dir", str(python_tree)] if split_instance_builds else []
+    python_cmake_args = (
+        [
+            "-DBUILD_CONVERT=OFF",
+            "-DBUILD_GEOMSERVER=OFF",
+            "-DBUILD_BONSAIVIEWER=OFF",
+            f"-DCMAKE_INSTALL_PREFIX={python_prefix}",
+        ]
+        if split_instance_builds
+        else ["-DBUILD_CONVERT=ON", "-DBUILD_GEOMSERVER=ON", "-DBUILD_BONSAIVIEWER=ON"]
+    )
     for python_version in PYTHON_VERSIONS:
         logger.info(f"Building for Python {python_version}...")
         run_streamed(
@@ -317,17 +338,52 @@ def build() -> None:
                 "--use-ninja",
                 "--build-cfg",
                 "Release",
+                *python_tree_args,
                 "--",
                 "-DENABLE_BUILD_OPTIMIZATIONS=ON",
                 "-DGLTF_SUPPORT=ON",
                 "-DWITH_PROJ=ON",
                 "-DBUILD_EXAMPLES=OFF",
-                "-DBUILD_BONSAIVIEWER=ON",
+                "-DBUILD_IFCPYTHON=ON",
+                "-DIFOPSH_SAFE_INSTANCE=ON",
+                *python_cmake_args,
                 "-DUSE_CCACHE=ON",
                 "-DCREATE_BUNDLE=ON",
             ]
         )
-        run_streamed(*[sys.executable, str(REPO_WIN / "install-ifcopenshell.py"), build_generator(), "Release"])
+        run_streamed(
+            *[
+                sys.executable,
+                str(REPO_WIN / "install-ifcopenshell.py"),
+                build_generator(),
+                "Release",
+                *python_tree_args,
+            ]
+        )
+
+    if split_instance_builds:
+        run_streamed(
+            sys.executable,
+            str(REPO_WIN / "run-cmake.py"),
+            build_generator(),
+            "--add-commit-sha",
+            "--use-ninja",
+            "--build-cfg",
+            "Release",
+            "--",
+            "-DENABLE_BUILD_OPTIMIZATIONS=ON",
+            "-DGLTF_SUPPORT=ON",
+            "-DWITH_PROJ=ON",
+            "-DBUILD_EXAMPLES=OFF",
+            "-DBUILD_BONSAIVIEWER=ON",
+            "-DBUILD_CONVERT=ON",
+            "-DBUILD_GEOMSERVER=ON",
+            "-DBUILD_IFCPYTHON=OFF",
+            "-DIFOPSH_SAFE_INSTANCE=OFF",
+            "-DUSE_CCACHE=ON",
+            "-DCREATE_BUNDLE=ON",
+        )
+        run_streamed(sys.executable, str(REPO_WIN / "install-ifcopenshell.py"), build_generator(), "Release")
 
 
 def archive_executables(zip_template: str, connector_dir: Path, no_zip: bool) -> None:
@@ -347,7 +403,9 @@ def archive_executables(zip_template: str, connector_dir: Path, no_zip: bool) ->
         # IfcOpenShell plugins are loaded by name at runtime, so dumpbin cannot discover them.
         # svgfill links its provider plugin directly, so dumpbin can discover that dependency.
         if not file.name.lower().startswith("svgfill"):
-            plugins = {plugin for plugin in ifc_runtime_plugins if not is_geometry_tree(plugin)}
+            plugins = {
+                plugin for plugin in ifc_runtime_plugins if not is_geometry_tree(plugin) and not is_svgfill(plugin)
+            }
             if file.stem != "IfcConvert":
                 plugins = {
                     plugin
@@ -443,7 +501,7 @@ def main() -> None:
 
     logger.info(f"Output directory: {OUTPUT_DIR}")
     if not ARGS.skip_ifcopenshell_build:
-        build()
+        build(ARGS.split_instance_builds)
     if not ARGS.skip_executables:
         connector_dir = build_connector()
         archive_executables(zip_template, connector_dir, ARGS.no_zip)

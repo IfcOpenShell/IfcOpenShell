@@ -45,10 +45,11 @@ enum class kind {
 };
 
 struct PLUGIN_API abi_info {
-	uint32_t plugin_api_version = 1;
-	uint32_t pointer_size = sizeof(void*);
+    uint32_t plugin_api_version = 2;
+    uint32_t pointer_size = sizeof(void*);
 	bool debug_build = false;
-	std::string compiler_id;
+    bool safe_instance = false;
+    std::string compiler_id;
 	std::string compiler_version;
 	std::string ifcopenshell_version;
 };
@@ -102,7 +103,14 @@ private:
 	std::vector<std::filesystem::path> search_paths_;
 };
 
-PLUGIN_API abi_info host_abi();
+// The default is evaluated in the calling module, including each plug-in.
+PLUGIN_API abi_info host_abi(bool safe_instance =
+#ifdef IFOPSH_SAFE_INSTANCE
+                                 true
+#else
+                                 false
+#endif
+);
 PLUGIN_API void validate_abi(const abi_info& abi);
 PLUGIN_API std::filesystem::path module_directory(const void* symbol);
 PLUGIN_API void set_search_paths(const std::vector<std::string>& paths);

@@ -5,8 +5,34 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
-    container: rockylinux:9
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch_suffix: linux64
+            runner: ubuntu-22.04
+            container:
+              image: rockylinux:9
+            ccache_key_suffix: rockylinux9
+          - arch_suffix: linuxarm64
+            runner: ubuntu-22.04-arm
+            container:
+              # Rocky 10 (glibc 2.39) — aqt's official Qt6 ARM binaries are built
+              # against glibc 2.38, which Rocky 9 (glibc 2.34) can't run (moc fails to
+              # load). The legacy arm64v8/rockylinux Docker image stopped at 9; Rocky 10
+              # is published under the rockylinux/rockylinux namespace.
+              image: rockylinux/rockylinux:10
+              # The community rockylinux image omits PATH from its config (the old
+              # Docker Official arm64v8/rockylinux set it), so GitHub Actions `run:`
+              # steps fail with `exec: "sh": not found` — docker exec has no /usr/bin
+              # to resolve the shell. Restore a standard PATH; GITHUB_PATH prepends
+              # (uv, cargo) are still layered on top by the runner.
+              env:
+                PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+            ccache_key_suffix: rockylinux10
+    name: build (${{ matrix.arch_suffix }})
+    runs-on: ${{ matrix.runner }}
+    container: ${{ matrix.container }}
 
     steps:
       - name: Set up uv
@@ -18,6 +44,9 @@ jobs:
 
       - name: Install Dependencies
         run: |
+          # Some mirrors serve the repo metadata at ~100 kB/s, taking minutes.
+          # fastestmirror makes dnf check mirror response times first and pick the quickest one.
+          echo "fastestmirror=True" >> /etc/dnf/dnf.conf
           dnf update -y
           dnf install -y epel-release
           # --enablerepo=crb: libstdc++-static (libsupc++.a, needed by the
@@ -41,8 +70,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
 
       - name: Install aws cli
+        env:
+          AWS_ARCH: ${{ matrix.arch_suffix == 'linuxarm64' && 'aarch64' || 'x86_64' }}
         run: |
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-$AWS_ARCH.zip" -o "awscliv2.zip"
           unzip awscliv2.zip
           ./aws/install
           rm -rf awscliv2.zip aws
@@ -58,7 +89,7 @@ jobs:
         with:
           repository: IfcOpenShell/build-outputs
           path: ./build
-          ref: rockylinux9-x64
+          ref: ${{ matrix.arch_suffix == 'linuxarm64' && 'rockylinux9-arm64' || 'rockylinux9-x64' }}
           lfs: true
           token: ${{ secrets.BUILD_REPO_TOKEN }}
 
@@ -70,9 +101,9 @@ jobs:
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1.2.24
         with:
-          key: ubuntu-22.04-${{ runner.arch }}-rockylinux9
-          # Distro ccache is < 4.10, too old for the job summary, install from GitHub releases.
-          install: binary
+          key: ubuntu-22.04-${{ runner.arch }}-${{ matrix.ccache_key_suffix }}
+          # Distro ccache is < 4.10 on Rocky 9, too old for the job summary, install from GitHub releases.
+          install: ${{ matrix.arch_suffix == 'linuxarm64' && 'detect' || 'binary' }}
 
       - name: Run Build Script
         shell: bash
@@ -83,6 +114,7 @@ jobs:
               -v \
               --diskcleanup \
               --shared \
+              --split-instance-builds \
               --add-commit-sha \
               --build-cfg Release \
               --use-ninja \
@@ -93,7 +125,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: build-logs-rocky
+          name: build-logs-rocky-${{ matrix.arch_suffix }}
           path: |
             build.log
             build/*/*/logs/latest.log
@@ -116,7 +148,7 @@ jobs:
       - name: Package .zip archives
         shell: bash
         run: |
-          uv run nix/package-zip-archives.py linux64
+          uv run nix/package-zip-archives.py ${{ matrix.arch_suffix }}
 
       - name: Test packages
         shell: bash

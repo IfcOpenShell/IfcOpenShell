@@ -1,3 +1,4 @@
+// This file was generated with the assistance of an AI coding tool.
 /********************************************************************************
  *                                                                              *
  * This file is part of IfcOpenShell.                                           *
@@ -17,39 +18,37 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "../../tree_plugin.h"
-#include "ub_tree.h"
+#ifndef SIDECARSERIALIZER_H
+#define SIDECARSERIALIZER_H
 
-#include <boost/dll/alias.hpp>
+#include "FederationMath.h"
+#include "InstancedGeometry.h"
+#include "SidecarCache.h"
 
-namespace ifcopenshell {
-	namespace geom {
-		namespace trees {
-			namespace opencascade_brep_tree_plugin {
+#include <vector>
 
-				plugin::abi_info plugin_abi() {
-					return plugin::host_abi();
-				}
+// Assembles a .ifcview SidecarData from streamer output and finalizes it
+// (LOD build, element packing, Morton chunk layout + chunk TOC).
+//
+// Deliberately Qt-free: SidecarBuilder (the QObject that drives a live
+// GeometryStreamer) and the IfcConvert .ifcview serializer plugin both wrap
+// this class instead of each carrying its own copy of the assembly logic.
+class SidecarSerializer {
+public:
+    // Accumulator interface. Safe to call repeatedly from a single thread.
+    void onMeshReady(const StreamedMesh& mesh);
+    void onInstanceReady(const StreamedInstance& instance_record);
 
-				plugin::metadata plugin_metadata() {
-					return tree_plugin_metadata("opencascade.brep");
-				}
+    // Finishes assembly using the georef + element batch the caller collected
+    // during streaming. Returns the assembled SidecarData by move; the
+    // serializer's internal state is left empty so the same instance can be
+    // reused for another load. The returned data is laid out in streaming
+    // chunk order (SidecarLayout) so it is ready for writeSidecar() as-is.
+    SidecarData finalize(const ModelGeoref& georef,
+                         const std::vector<ElementInfo>& elements);
 
-				ifcopenshell::geom::tree* create_tree() {
-					return new ifcopenshell::geom::impl::ub_tree<express::base>();
-				}
+private:
+    SidecarData sidecar_data_;
+};
 
-				void register_plugin(tree_registry& registry, const plugin::module& module) {
-					tree_info info;
-					info.backend_id = "opencascade.brep";
-					registry.bind(info, create_tree, module);
-				}
-
-			}
-		}
-	}
-}
-
-BOOST_DLL_ALIAS(ifcopenshell::geom::trees::opencascade_brep_tree_plugin::plugin_abi, ifcopenshell_plugin_abi_v2)
-BOOST_DLL_ALIAS(ifcopenshell::geom::trees::opencascade_brep_tree_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
-BOOST_DLL_ALIAS(ifcopenshell::geom::trees::opencascade_brep_tree_plugin::register_plugin, ifcopenshell_register_tree_plugin_v1)
+#endif // SIDECARSERIALIZER_H
