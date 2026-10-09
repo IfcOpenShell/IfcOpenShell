@@ -48,29 +48,22 @@ class LoadGroupDecorationData:
     @classmethod
     def load_groups_to_show(cls) -> list[tuple[str, str, str]]:
         ret: list[tuple[str, str, str]] = []
-        abrv = {
-            "LOAD_CASE": "L.Case: ",
-            "LOAD_COMBINATION": "L.Comb: ",
-            "LOAD_GROUP": "L.Gr: ",
-            "USERDEFINED": "U.Def: ",
-            "NOTDEFINED": "N.Def: ",
-        }
-        models = tool.Ifc.get().by_type("IfcStructuralAnalysisModel")
-        if not models:
-            return ret
-
-        m = models[0]
+        # Load cases are the usual choice, so only other kinds of load group are marked.
+        kinds = {"LOAD_COMBINATION": " (combination)", "LOAD_GROUP": " (group)"}
+        m = tool.Structural.get_current_structural_analysis_model()
         props = tool.Structural.get_structural_props()
         if props.activity_type == "Action":
-            groups = m.LoadedBy or []
+            # Without an analysis model, loads can still be shown by load case.
+            groups = (m.LoadedBy or []) if m else tool.Ifc.get().by_type("IfcStructuralLoadCase")
             for g in groups:
-                ret.append((str(g.id()), ".   " + abrv[g.PredefinedType] + "   " + g.Name, ""))
+                ret.append((str(g.id()), (g.Name or "Unnamed") + kinds.get(g.PredefinedType, ""), ""))
                 related_objects = [rel.RelatedObjects for rel in g.IsGroupedBy]
                 for item in related_objects:
                     for subgoup in [sg for sg in item if sg.is_a("IfcStructuralLoadGroup")]:
-                        ret.append((str(subgoup.id()), ".       " + abrv[subgoup.PredefinedType] + subgoup.Name, ""))
+                        name = (subgoup.Name or "Unnamed") + kinds.get(subgoup.PredefinedType, "")
+                        ret.append((str(subgoup.id()), "    " + name, ""))
 
-        elif props.activity_type == "External Reaction":
+        elif props.activity_type == "External Reaction" and m:
             groups = m.HasResults or []
             for g in groups:
                 result_name = g.ResultForLoadGroup.Name or ""
