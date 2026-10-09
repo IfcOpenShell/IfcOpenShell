@@ -45,6 +45,13 @@ class BIM_PT_terrain_contours(bpy.types.Panel):
         props = tool.Terrain.get_terrain_props()
         layout = self.layout
 
+        if TerrainData.data["datum_source"]:
+            layout.label(
+                text=f"Datum: {TerrainData.data['datum_height']} ({TerrainData.data['datum_source']})", icon="WORLD"
+            )
+        else:
+            layout.label(text="Datum: none (model elevation)", icon="WORLD")
+
         if TerrainData.data["interval"]:
             box = layout.box()
             row = box.row()

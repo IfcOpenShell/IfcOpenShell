@@ -35,7 +35,10 @@ class TerrainData:
     def load(cls):
         element = tool.Ifc.get_entity(bpy.context.active_object) if bpy.context.active_object else None
         settings = tool.Terrain.get_contour_settings(element) if element else None
+        datum = tool.Terrain.get_datum(element) if element else None
         cls.data = {
+            "datum_source": datum.source if datum else None,
+            "datum_height": tool.Unit.blender_format_unit(datum.origin_height) if datum else None,
             "interval": tool.Unit.blender_format_unit(settings[0]) if settings else None,
             "index_interval": settings[1] if settings else None,
             "total_contours": len(tool.Terrain.get_contours(element)) if element else 0,

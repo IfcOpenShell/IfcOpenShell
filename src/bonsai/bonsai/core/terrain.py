@@ -35,14 +35,25 @@ def generate_contours(
 
     :return: The number of contours created.
     """
-    # Slice first: if the interval is unusable this raises before anything is removed.
+    # Slice first: if the interval is unusable this raises before anything is changed.
     levels = terrain.get_contour_levels(element, interval)
     terrain.set_contour_settings(element, interval, index_interval)
+    # Reuse the contour already at each elevation, so whatever points at it (e.g. a label) stays linked.
+    existing = {}
     for contour in terrain.get_contours(element):
-        terrain.remove_contour(contour)
+        if (elevation := terrain.get_contour_elevation(contour)) is not None:
+            existing[round(elevation, 6)] = contour
+        else:
+            terrain.remove_contour(contour)
     for i, z, polylines in levels:
+        elevation = i * interval
         is_index = bool(index_interval) and i % index_interval == 0
-        terrain.create_contour(element, i * interval, z, polylines, is_index)
+        if contour := existing.pop(round(elevation, 6), None):
+            terrain.update_contour(contour, element, elevation, z, polylines, is_index)
+        else:
+            terrain.create_contour(element, elevation, z, polylines, is_index)
+    for contour in existing.values():
+        terrain.remove_contour(contour)
     return len(levels)
 
 

@@ -21,17 +21,18 @@
 from __future__ import annotations
 
 import math
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Union
 
 import bpy
 import ifcopenshell
 import ifcopenshell.api.context
 import ifcopenshell.api.drawing
-import ifcopenshell.api.geometry
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
 import ifcopenshell.util.element
+import ifcopenshell.util.geolocation
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import numpy as np
@@ -39,7 +40,6 @@ from ifcopenshell.util.shape_builder import ShapeBuilder
 from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
 
-import bonsai.core.geometry
 import bonsai.core.root
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -55,6 +55,25 @@ CONTOUR_PSET = "BBIM_Contours"
 MAX_CONTOUR_LEVELS = 2000
 # Faces steeper than this (|normal.z| below it) are treated as walls, not terrain.
 TOP_FACE_NORMAL_THRESHOLD = 0.1
+
+
+@dataclass
+class ElevationDatum:
+    """Maps Blender world Z (SI) to the height contours are cut and labelled at (SI)."""
+
+    source: Union[str, None]
+    # Datum height of the project origin (project Z = 0).
+    origin_height: float
+    # Datum height change per unit of project Z (map conversion FactorZ, normally 1).
+    slope: float
+    # Project Z minus Blender Z.
+    blender_offset: float
+
+    def to_height(self, z):
+        return self.origin_height + self.slope * (z + self.blender_offset)
+
+    def to_z(self, height):
+        return (height - self.origin_height) / self.slope - self.blender_offset
 
 
 class Terrain(bonsai.core.tool.Terrain):
@@ -116,7 +135,15 @@ class Terrain(bonsai.core.tool.Terrain):
             ifcopenshell.api.root.remove_product(tool.Ifc.get(), product=contour)
 
     @classmethod
-    def get_elevation_offset(cls) -> float:
+    def get_contour_elevation(cls, contour: ifcopenshell.entity_instance) -> Union[float, None]:
+        """The contour's ContourValue in SI metres."""
+        value = ifcopenshell.util.element.get_pset(contour, "Pset_AnnotationContourLine", "ContourValue")
+        if value is None:
+            return None
+        return value * ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
+    @classmethod
+    def get_blender_offset_z(cls) -> float:
         """SI offset to add to a Blender Z to get the project (IFC) Z."""
         if not tool.Georeference.has_blender_offset():
             return 0.0
@@ -125,13 +152,45 @@ class Terrain(bonsai.core.tool.Terrain):
         return float(props.blender_offset_z) * unit_scale
 
     @classmethod
+    def get_datum(cls, element: ifcopenshell.entity_instance) -> ElevationDatum:
+        """How Blender Z maps to the height contours are cut and labelled at.
+
+        Surveys give heights above a vertical datum (e.g. sea level), not above the project
+        origin. That datum comes from the map conversion's OrthogonalHeight if the project is
+        georeferenced, otherwise from the site's RefElevation, otherwise there is none.
+        """
+        ifc_file = tool.Ifc.get()
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        blender_offset = cls.get_blender_offset_z()
+        if ifcopenshell.util.geolocation.get_helmert_transformation_parameters(ifc_file):
+            # auto_z2e is linear in z, so two samples give its slope and origin height.
+            origin = ifcopenshell.util.geolocation.auto_z2e(ifc_file, 0.0, should_return_in_map_units=False)
+            slope = ifcopenshell.util.geolocation.auto_z2e(ifc_file, 1.0, should_return_in_map_units=False) - origin
+            return ElevationDatum("Map Conversion", origin * unit_scale, slope, blender_offset)
+        if (site := cls.get_site(element)) and site.RefElevation:
+            return ElevationDatum("Site RefElevation", site.RefElevation * unit_scale, 1.0, blender_offset)
+        return ElevationDatum(None, 0.0, 1.0, blender_offset)
+
+    @classmethod
+    def get_site(cls, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+        current = element
+        while current:
+            if current.is_a("IfcSite"):
+                return current
+            current = ifcopenshell.util.element.get_container(current) or ifcopenshell.util.element.get_aggregate(
+                current
+            )
+        sites = tool.Ifc.get().by_type("IfcSite")
+        return sites[0] if len(sites) == 1 else None
+
+    @classmethod
     def get_contour_levels(
         cls, element: ifcopenshell.entity_instance, interval: float
     ) -> list[tuple[int, float, list[Polyline]]]:
-        """Slice the terrain's top surface every ``interval`` (SI) metres of project elevation.
+        """Slice the terrain's top surface every ``interval`` (SI) metres of datum height.
 
         :return: (level index, Blender world Z, polylines in Blender world coordinates) per
-            elevation that has at least one contour. The project elevation is ``index * interval``.
+            elevation that has at least one contour. The datum height is ``index * interval``.
         """
         obj = tool.Ifc.get_object(element)
         if not isinstance(obj, bpy.types.Object) or not isinstance(obj.data, bpy.types.Mesh):
@@ -140,10 +199,10 @@ class Terrain(bonsai.core.tool.Terrain):
         if not len(tris):
             return []
 
-        offset = cls.get_elevation_offset()
-        used_z = verts[np.unique(tris), 2]
-        first = math.ceil((used_z.min() + offset) / interval)
-        last = math.floor((used_z.max() + offset) / interval)
+        datum = cls.get_datum(element)
+        heights = datum.to_height(verts[np.unique(tris), 2])
+        first = math.ceil(heights.min() / interval)
+        last = math.floor(heights.max() / interval)
         if last - first + 1 > MAX_CONTOUR_LEVELS:
             raise ValueError(
                 f"An interval of {interval}m would create {last - first + 1} contours. "
@@ -152,7 +211,7 @@ class Terrain(bonsai.core.tool.Terrain):
 
         levels = []
         for i in range(first, last + 1):
-            z = i * interval - offset
+            z = datum.to_z(i * interval)
             if polylines := cls.slice_triangles(verts, tris, z):
                 levels.append((i, z, polylines))
         return levels
@@ -318,18 +377,11 @@ class Terrain(bonsai.core.tool.Terrain):
     ) -> ifcopenshell.entity_instance:
         """Create one IfcAnnotation CONTOURLINE holding every polyline at one elevation.
 
-        :param elevation: Project elevation in SI metres, stored as the ContourValue.
+        :param elevation: Datum height in SI metres, stored as the ContourValue.
         :param z: Blender world Z of the contour, used as the annotation's placement.
         """
-        ifc_file = tool.Ifc.get()
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-        elevation_label = f"{round(elevation / unit_scale, 6):g}"
-
-        terrain_obj = tool.Ifc.get_object(terrain)
-        origin = Vector((terrain_obj.matrix_world.translation.x, terrain_obj.matrix_world.translation.y, z))
-        obj = bpy.data.objects.new(f"Contour {elevation_label}", bpy.data.meshes.new("Mesh"))
-        obj.matrix_world = Matrix.Translation(origin)
-
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        obj = bpy.data.objects.new(f"Contour {round(elevation / unit_scale, 6):g}", bpy.data.meshes.new("Mesh"))
         contour = bonsai.core.root.assign_class(
             tool.Ifc,
             tool.Collector,
@@ -339,24 +391,53 @@ class Terrain(bonsai.core.tool.Terrain):
             predefined_type="CONTOURLINE",
             should_add_representation=False,
         )
+        ifcopenshell.api.drawing.assign_product(tool.Ifc.get(), relating_product=terrain, related_object=contour)
+        cls.place_contour_with_terrain(terrain, contour, obj)
+        cls.update_contour(contour, terrain, elevation, z, polylines, is_index)
+        return contour
+
+    @classmethod
+    def update_contour(
+        cls,
+        contour: ifcopenshell.entity_instance,
+        terrain: ifcopenshell.entity_instance,
+        elevation: float,
+        z: float,
+        polylines: list[Polyline],
+        is_index: bool,
+    ) -> None:
+        """Replace a contour's geometry and data in place, keeping the same annotation.
+
+        Anything pointing at the contour, such as a label, stays linked across an Update.
+        """
+        ifc_file = tool.Ifc.get()
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        obj = tool.Ifc.get_object(contour)
+        terrain_obj = tool.Ifc.get_object(terrain)
+        origin = Vector((terrain_obj.matrix_world.translation.x, terrain_obj.matrix_world.translation.y, z))
+        obj.matrix_world = Matrix.Translation(origin)
         tool.Geometry.run_edit_object_placement(obj)
 
         builder = ShapeBuilder(ifc_file)
         origin_np = np.array(origin)
         items = [builder.polyline((points - origin_np) / unit_scale, closed=closed) for points, closed in polylines]
-        representation = builder.get_representation(cls.get_contour_context(), items)
-        ifcopenshell.api.geometry.assign_representation(ifc_file, contour, representation)
-        bonsai.core.geometry.switch_representation(tool.Ifc, tool.Geometry, obj=obj, representation=representation)
+        context = cls.get_contour_context()
+        tool.Model.replace_object_ifc_representation(context, obj, builder.get_representation(context, items))
 
-        pset = ifcopenshell.api.pset.add_pset(ifc_file, product=contour, name="Pset_AnnotationContourLine")
+        pset = tool.Pset.get_element_pset(contour, "Pset_AnnotationContourLine")
+        if not pset:
+            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=contour, name="Pset_AnnotationContourLine")
         ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"ContourValue": elevation / unit_scale})
-        if is_index:
-            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=contour, name="EPset_Annotation")
-            ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"Classes": "IndexContour"})
 
-        ifcopenshell.api.drawing.assign_product(ifc_file, relating_product=terrain, related_object=contour)
-        cls.place_contour_with_terrain(terrain, contour, obj)
-        return contour
+        # Only touch the IndexContour token, so classes a user added survive an Update.
+        pset = tool.Pset.get_element_pset(contour, "EPset_Annotation")
+        classes = (ifcopenshell.util.element.get_pset(contour, "EPset_Annotation", "Classes") or "").split()
+        new_classes = [c for c in classes if c != "IndexContour"] + (["IndexContour"] if is_index else [])
+        if new_classes == classes:
+            return
+        if not pset:
+            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=contour, name="EPset_Annotation")
+        ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"Classes": " ".join(new_classes) or None})
 
     @classmethod
     def place_contour_with_terrain(

@@ -1199,12 +1199,14 @@ class System:
 @interface
 class Terrain:
     def create_contour(cls, terrain, elevation, z, polylines, is_index): pass
+    def get_contour_elevation(cls, contour): pass
     def get_contour_levels(cls, element, interval): pass
     def get_contour_settings(cls, element): pass
     def get_contours(cls, element): pass
     def remove_contour(cls, contour): pass
     def remove_contour_settings(cls, element): pass
     def set_contour_settings(cls, element, interval, index_interval): pass
+    def update_contour(cls, contour, terrain, elevation, z, polylines, is_index): pass
 
 
 @interface

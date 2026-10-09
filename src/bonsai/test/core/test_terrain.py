@@ -27,11 +27,24 @@ class TestGenerateContours:
         levels = [(4, "z4", "polylines4"), (5, "z5", "polylines5")]
         terrain.get_contour_levels("element", 0.5).should_be_called().will_return(levels)
         terrain.set_contour_settings("element", 0.5, 5).should_be_called()
-        terrain.get_contours("element").should_be_called().will_return(["old"])
-        terrain.remove_contour("old").should_be_called()
+        terrain.get_contours("element").should_be_called().will_return([])
         terrain.create_contour("element", 2.0, "z4", "polylines4", False).should_be_called()
         terrain.create_contour("element", 2.5, "z5", "polylines5", True).should_be_called()
         assert subject.generate_contours(terrain, "element", interval=0.5, index_interval=5) == 2
+
+    def test_existing_contours_are_reused_by_elevation_and_stale_ones_removed(self, terrain):
+        levels = [(4, "z4", "polylines4"), (5, "z5", "polylines5")]
+        terrain.get_contour_levels("element", 0.5).should_be_called().will_return(levels)
+        terrain.set_contour_settings("element", 0.5, 5).should_be_called()
+        terrain.get_contours("element").should_be_called().will_return(["at2", "at9", "unknown"])
+        terrain.get_contour_elevation("at2").should_be_called().will_return(2.0000000001)
+        terrain.get_contour_elevation("at9").should_be_called().will_return(9.0)
+        terrain.get_contour_elevation("unknown").should_be_called().will_return(None)
+        terrain.remove_contour("unknown").should_be_called()
+        terrain.update_contour("at2", "element", 2.0, "z4", "polylines4", False).should_be_called()
+        terrain.create_contour("element", 2.5, "z5", "polylines5", True).should_be_called()
+        terrain.remove_contour("at9").should_be_called()
+        subject.generate_contours(terrain, "element", interval=0.5, index_interval=5)
 
     def test_no_index_contours_when_index_interval_is_zero(self, terrain):
         terrain.get_contour_levels("element", 1.0).should_be_called().will_return([(0, "z0", "polylines0")])
