@@ -74,6 +74,9 @@ def run_python_tests(output_dir: Path, pytest_args: list[str], bonsaiviewer: Pat
         # On Windows ARM64 uv defaults to x86_64 Python, which can't load an ARM64 .pyd.
         # See https://github.com/astral-sh/uv/issues/12906
         python_request = f"{python_version}-aarch64"
+    elif sys.platform == "darwin" and platform.machine() == "arm64" and zip_path.stem.endswith("-macos64"):
+        # x64 package cross-compiled on Apple Silicon, run it under Rosetta.
+        python_request = f"cpython-{python_version}-macos-x86_64"
     with tempfile.TemporaryDirectory(prefix="ifcopenshell-package-") as tmp:
         print(f"Extracting {zip_path} into {tmp}")
         extract_preserving_symlinks(zip_path, Path(tmp))
