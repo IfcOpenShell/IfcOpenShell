@@ -24,6 +24,7 @@ from . import operator, prop, ui
 
 classes = (
     operator.AddAnimationCamera,
+    operator.AddAnimationTaskTypeColor,
     operator.AddSummaryTask,
     operator.AddTask,
     operator.AddTaskBars,
@@ -96,6 +97,7 @@ classes = (
     operator.LoadProductTasks,
     operator.LoadTaskProperties,
     operator.RecalculateSchedule,
+    operator.RemoveAnimationTaskTypeColor,
     operator.RemoveTask,
     operator.RemoveTaskCalendar,
     operator.RemoveTaskColumn,

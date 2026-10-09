@@ -1173,6 +1173,30 @@ class Sequence(bonsai.core.tool.Sequence):
                 predefined_type_item.color = data["Color"]
 
     @classmethod
+    def add_animation_task_type_color(cls, group: str, object_type: str) -> None:
+        if not (object_type := object_type.strip()):
+            return
+        props = cls.get_animation_props()
+        colors = props.task_input_colors if group == "input" else props.task_output_colors
+        if object_type in colors:
+            return
+        item = colors.add()
+        item.name = object_type
+        item.color = (1.0, 1.0, 1.0)
+
+    @classmethod
+    def remove_animation_task_type_color(cls, group: str) -> None:
+        props = cls.get_animation_props()
+        if group == "input":
+            colors = props.task_input_colors
+            index = props.active_color_component_inputs_index
+        else:
+            colors = props.task_output_colors
+            index = props.active_color_component_outputs_index
+        if 0 <= index < len(colors):
+            colors.remove(index)
+
+    @classmethod
     def get_start_date(cls) -> Union[datetime, None]:
         props = cls.get_work_schedule_props()
         start = parser.parse(props.visualisation_start, dayfirst=True, fuzzy=True)
@@ -1333,6 +1357,9 @@ class Sequence(bonsai.core.tool.Sequence):
     @classmethod
     def get_animation_product_frames(cls, work_schedule: ifcopenshell.entity_instance, settings: dict[str, Any]):
         def preprocess_task(task):
+            if task.id() in contracted_tasks and ifcopenshell.util.sequence.get_nested_tasks(task):
+                preprocess_aggregated_task(task)
+                return
             for subtask in ifcopenshell.util.sequence.get_nested_tasks(task):
                 preprocess_task(subtask)
             start = ifcopenshell.util.sequence.derive_date(task, "ScheduleStart", is_earliest=True)
@@ -1340,14 +1367,28 @@ class Sequence(bonsai.core.tool.Sequence):
             if not start or not finish:
                 return
             for output in ifcopenshell.util.sequence.get_task_outputs(task):
-                add_product_frame(output.id(), task.PredefinedType, start, finish, "output")
+                add_product_frame(output.id(), task.PredefinedType, task.ObjectType, start, finish, "output")
             for input in cls.get_task_inputs(task):
-                add_product_frame(input.id(), task.PredefinedType, start, finish, "input")
+                add_product_frame(input.id(), task.PredefinedType, task.ObjectType, start, finish, "input")
 
-        def add_product_frame(product_id, type, product_start, product_finish, relationship):
+        def preprocess_aggregated_task(task):
+            # A collapsed task animates as a single unit: all products of its
+            # nested tasks use the collapsed task's derived date range.
+            start = ifcopenshell.util.sequence.derive_date(task, "ScheduleStart", is_earliest=True)
+            finish = ifcopenshell.util.sequence.derive_date(task, "ScheduleFinish", is_latest=True)
+            if not start or not finish:
+                return
+            for subtask in [task, *ifcopenshell.util.sequence.get_all_nested_tasks(task)]:
+                for output in ifcopenshell.util.sequence.get_task_outputs(subtask):
+                    add_product_frame(output.id(), subtask.PredefinedType, subtask.ObjectType, start, finish, "output")
+                for input in ifcopenshell.util.sequence.get_task_inputs(subtask):
+                    add_product_frame(input.id(), subtask.PredefinedType, subtask.ObjectType, start, finish, "input")
+
+        def add_product_frame(product_id, type, object_type, product_start, product_finish, relationship):
             product_frames.setdefault(product_id, []).append(
                 {
                     "type": type,
+                    "object_type": object_type,
                     "relationship": relationship,
                     "STARTED": round(
                         settings["start_frame"]
@@ -1361,6 +1402,10 @@ class Sequence(bonsai.core.tool.Sequence):
             )
 
         product_frames = {}
+        contracted_tasks: set[int] = set()
+        props = cls.get_work_schedule_props()
+        if props.should_aggregate_contracted_tasks:
+            contracted_tasks = set(json.loads(props.contracted_tasks))
         for root_task in ifcopenshell.util.sequence.get_root_tasks(work_schedule):
             preprocess_task(root_task)
         return product_frames
@@ -1417,9 +1462,23 @@ class Sequence(bonsai.core.tool.Sequence):
         bpy.context.scene.frame_end = int(settings["start_frame"] + settings["total_frames"] + 1)
 
     @classmethod
+    def get_animation_color(
+        cls, colors: Any, predefined_type: Optional[str], object_type: Optional[str] = None
+    ) -> Color:
+        if predefined_type == "USERDEFINED" and object_type and object_type in colors:
+            return colors[object_type].color
+        if predefined_type and predefined_type in colors:
+            return colors[predefined_type].color
+        if "NOTDEFINED" in colors:
+            return colors["NOTDEFINED"].color
+        return Color((0.2, 0.2, 0.2))
+
+    @classmethod
     def animate_input(cls, obj, start_frame, product_frame, animation_type):
         props = cls.get_animation_props()
-        color = props.task_input_colors[product_frame["type"]].color
+        color = cls.get_animation_color(
+            props.task_input_colors, product_frame["type"], product_frame.get("object_type")
+        )
         if product_frame["type"] in ["LOGISTIC", "MOVE", "DISPOSAL"]:
             cls.animate_destruction(obj, start_frame, product_frame, color, animation_type)
         else:
@@ -1428,7 +1487,9 @@ class Sequence(bonsai.core.tool.Sequence):
     @classmethod
     def animate_output(cls, obj, start_frame, product_frame, animation_type):
         props = cls.get_animation_props()
-        color = props.task_output_colors[product_frame["type"]].color
+        color = cls.get_animation_color(
+            props.task_output_colors, product_frame["type"], product_frame.get("object_type")
+        )
         if product_frame["type"] in ["CONSTRUCTION", "INSTALLATION", "NOTDEFINED"]:
             cls.animate_creation(obj, start_frame, product_frame, color)
         elif product_frame["type"] in ["DEMOLITION", "DISMANTLE", "DISPOSAL", "REMOVAL"]:
