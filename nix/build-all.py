@@ -173,7 +173,6 @@ cplusplus = "c++"
 make = "make"
 strip = "strip"
 xz = "xz"  # Used implicitly for `tar -xf *.tar.xz`.
-brew = "brew"
 
 
 class ArgFormatter(argparse.RawDescriptionHelpFormatter, argparse.ArgumentDefaultsHelpFormatter):
@@ -698,11 +697,6 @@ for cmd in required_commands:
 
 if missing_commands:
     raise ValueError(f"Required tools not installed or not added to PATH: {', '.join(missing_commands)}")
-
-MAC_INTEL_BIN_PATH = "/usr/local/bin"
-if MAC_CROSS_COMPILE_INTEL:
-    brew = f"{MAC_INTEL_BIN_PATH}/brew"
-    assert os.path.exists(brew), f"For intel cross compilation the brew path is expected to be '{brew}'."
 
 # identifiers for the download tool (could be less memory consuming as ints, but are more verbose as strings)
 download_tool_default = download_tool_py = "py"
