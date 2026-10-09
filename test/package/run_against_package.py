@@ -10,7 +10,7 @@ wrapper and plug-ins, not a source build. pytest is run through uv with the Pyth
 version matching the zip.
 
 Unless `--skip-bonsaiviewer` is passed, the BonsaiViewer zip is extracted as well: its path is passed
-to the tests in `IFCOPENSHELL_PACKAGE_TESTS_BONSAIVIEWER` and `BonsaiViewer --version` is run.
+to the tests in `--bonsaiviewer` and `BonsaiViewer --version` is run.
 """
 
 import argparse
@@ -81,9 +81,9 @@ def run_python_tests(output_dir: Path, pytest_args: list[str], bonsaiviewer: Pat
         print(f"Extracting {zip_path} into {tmp}")
         extract_preserving_symlinks(zip_path, Path(tmp))
         env = dict(os.environ, PYTHONPATH=tmp, PYTEST_DISABLE_PLUGIN_AUTOLOAD="1")
-        if bonsaiviewer:
-            env["IFCOPENSHELL_PACKAGE_TESTS_BONSAIVIEWER"] = str(bonsaiviewer)
         with_args = [arg for dep in TEST_DEPENDENCIES for arg in ("--with", dep)]
+        if bonsaiviewer:
+            pytest_args = ["--bonsaiviewer", str(bonsaiviewer), *pytest_args]
         # Run from the temp dir so a checked-out `src/ifcopenshell-python` can never shadow the package.
         cmd = [
             *("uv", "run", "--python", python_request, *with_args),
