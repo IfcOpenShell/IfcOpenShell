@@ -18,7 +18,7 @@
 
 from collections.abc import Iterable
 from math import sin
-from typing import Literal, TypedDict
+from typing import Literal, TypedDict, Union
 
 import bmesh
 import bpy
@@ -544,6 +544,10 @@ class ShaderInfo:
         start = location
         running = np.zeros(3)
         arcs_at_tail: dict[tuple, int] = {}
+        # In a tip-to-tail chain every tip is the next tail, so labels go at the middle of each arrow, outside
+        # the polygon the chain and its resultant make; elsewhere tails are shared, so labels go at the tips.
+        chain = np.cumsum([np.zeros(3)] + [vector for vector, _, _ in vectors], axis=0) * scale + location
+        centre = chain.mean(axis=0) if mode == "TIP_TO_TAIL" else None
         for i, (vector, color, has_angle) in enumerate(vectors):
             tail = start if mode == "TIP_TO_TAIL" else location
             if mode == "PARALLELOGRAM" and i:
@@ -556,9 +560,12 @@ class ShaderInfo:
                 if i < len(vectors) - 1:
                     self.add_dashed_line(location, corner, size, (1, 1, 1, 1))  # An intermediate resultant.
             tip = tail + vector * scale
-            self.add_force_arrow(
-                tail, tip, color, f"{np.linalg.norm(vector):.{props.force_decimals}f} {self.force_unit}", size
-            )
+            label = f"{np.linalg.norm(vector):.{props.force_decimals}f} {self.force_unit}"
+            if centre is None:
+                self.add_force_arrow(tail, tip, color, label, size)
+            else:
+                side = self.get_label_side(vector, (tail + tip) / 2 - centre)
+                self.add_force_arrow(tail, tip, color, label, size, label_away=side, label_at_middle=True)
             if props.show_force_angles and has_angle:
                 self.add_force_angle(tail, vector, size, color, arcs_at_tail)
             start = tip
@@ -569,7 +576,20 @@ class ShaderInfo:
             if abs(resultant[1]) < 1e-9 and not props.show_force_angles:
                 label += f" at {np.degrees(np.arctan2(resultant[2], resultant[0])):.{props.angle_decimals}f} deg"
             # Alpha 2 because the shader caps opacity at half of it; the resultant draws fully opaque.
-            self.add_force_arrow(location, location + resultant * scale, (1, 1, 1, 2), label, size, spacing=0.3)
+            # Labelled to the side, as a resultant often runs along one of the forces: outside the chain's
+            # polygon, or else above.
+            tip = location + resultant * scale
+            outside = np.array((0, 0, 1.0)) if centre is None else (location + tip) / 2 - centre
+            self.add_force_arrow(
+                location,
+                tip,
+                (1, 1, 1, 2),
+                label,
+                size,
+                spacing=0.3,
+                label_away=self.get_label_side(resultant, outside),
+                label_at_middle=centre is not None,
+            )
             if props.show_force_angles:
                 self.add_force_angle(location, resultant, size, (1, 1, 1, 1), arcs_at_tail)
 
@@ -596,9 +616,28 @@ class ShaderInfo:
         for a, b in zip(points, points[1:]):
             self.add_dashed_line(a, b, size, color, dashed=False)
         middle = np.radians(angle / 2)
-        position = tail + radius * 1.15 * np.array((np.cos(middle), 0, np.sin(middle)))
+        outward = np.array((np.cos(middle), 0, np.sin(middle)))
+        # Away from the arc, and above or below the reference axis so small angles keep off the lines.
+        away = outward + np.array((0, 0, np.sign(angle)))
         decimals = tool.Structural.get_structural_props().angle_decimals
-        self.text_info.append({"position": position, "text": f"θ = {angle:.{decimals}f}°"})
+        self.text_info.append(
+            {
+                "position": tail + radius * outward,
+                "text": f"θ = {angle:.{decimals}f}°",
+                "color": color,
+                "away": away / np.linalg.norm(away),
+            }
+        )
+
+    def get_label_side(self, vector: np.ndarray, towards: np.ndarray) -> np.ndarray:
+        """Get the direction square to a vector, in the X-Z plane where possible, on the side of towards"""
+        direction = vector / np.linalg.norm(vector)
+        side = np.array((-direction[2], 0, direction[0]))
+        if not np.linalg.norm(side):
+            side = self.get_perpendicular_axes(direction)[0]
+        if np.dot(side, towards) < 0 or (abs(np.dot(side, towards)) < 1e-9 and side[2] < 0):
+            side = -side
+        return side / np.linalg.norm(side)
 
     def get_perpendicular_axes(self, direction: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         helper = np.array((0, 0, 1)) if abs(direction[2]) < 0.9 else np.array((1, 0, 0))
@@ -607,7 +646,15 @@ class ShaderInfo:
         return d2, np.cross(direction, d2)
 
     def add_force_arrow(
-        self, tail: np.ndarray, tip: np.ndarray, color: tuple, label: str, size: float, spacing: float = 0.2
+        self,
+        tail: np.ndarray,
+        tip: np.ndarray,
+        color: tuple,
+        label: str,
+        size: float,
+        spacing: float = 0.2,
+        label_away: Union[np.ndarray, None] = None,
+        label_at_middle: bool = False,
     ) -> None:
         """Add an arrow from tail to tip, its head and shaft sized to size, the longest arrow drawn with it"""
         length = np.linalg.norm(tip - tail)
@@ -635,8 +682,10 @@ class ShaderInfo:
                 "uniforms": [["color", color], ["spacing", spacing]],
             }
         )
-        # Labelled at the tip, as arrows often share their tail.
-        self.text_info.append({"position": tip + direction * unit * 0.3, "text": label})
+        # Labelled beside the tip, as arrows often share their tail.
+        away = direction if label_away is None else label_away
+        position = (tail + tip) / 2 if label_at_middle else tip
+        self.text_info.append({"position": position, "text": label, "color": color, "away": away})
 
     def add_dashed_line(
         self, start: np.ndarray, end: np.ndarray, size: float, color: tuple, dashed: bool = True
@@ -691,7 +740,11 @@ class ShaderInfo:
             )
             decimals = tool.Structural.get_structural_props().force_decimals
             self.text_info.append(
-                {"position": location + 0.25 * (d1 + d2), "text": f"{moment:.{decimals}f} {self.moment_unit}"}
+                {
+                    "position": location + 0.25 * (d1 + d2),
+                    "text": f"{moment:.{decimals}f} {self.moment_unit}",
+                    "color": color,
+                }
             )
 
     def get_point_loads_values(
