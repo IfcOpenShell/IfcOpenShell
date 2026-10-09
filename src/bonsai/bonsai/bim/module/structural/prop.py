@@ -244,10 +244,15 @@ class BIMStructuralProperties(PropertyGroup):
         default="BOTH",
         update=update_loads_display,
     )
+    show_force_angles: BoolProperty(
+        name="Angles",
+        description="Mark the angle of each point force from a horizontal reference axis",
+        default=True,
+        update=update_loads_display,
+    )
     force_scale: FloatProperty(
         name="Force Scale",
-        description="Force per unit length to draw point forces to scale in the parallelogram and tip-to-tail modes."
-        " Zero fits them automatically",
+        description="Force per unit length to draw point forces to scale. Zero fits them automatically",
         min=0,
         update=update_loads_display,
     )
@@ -292,6 +297,7 @@ class BIMStructuralProperties(PropertyGroup):
         load_group_to_show: str
         force_display: str
         force_scale: float
+        show_force_angles: bool
 
 
 class BIMObjectStructuralProperties(PropertyGroup):
