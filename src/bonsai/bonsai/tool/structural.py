@@ -110,21 +110,34 @@ class Structural(bonsai.core.tool.Structural):
 
     @classmethod
     def get_in_plane_components(
-        cls, mode: str, magnitude: float = 0.0, angle: float = 0.0, rise: float = 0.0, run: float = 0.0
+        cls,
+        mode: str,
+        magnitude: float = 0.0,
+        angle: float = 0.0,
+        rise: float = 0.0,
+        run: float = 0.0,
+        direction: str = "UP_RIGHT",
     ) -> tuple[float, float]:
         """Get the horizontal and vertical components of a force in a vertical plane.
 
         :param mode: ANGLE for an angle in degrees above the horizontal, or SLOPE
             for a rise over a run. Negative angles, rises or runs give downward
             or leftward components.
+        :param direction: UP_RIGHT, UP_LEFT, DOWN_LEFT or DOWN_RIGHT. The angle or
+            slope is measured from the horizontal towards this quadrant, so that
+            40 degrees UP_LEFT points 140 degrees from +X.
         :return: The horizontal (X) and vertical (Z) components.
         """
         if mode == "ANGLE":
-            return magnitude * math.cos(math.radians(angle)), magnitude * math.sin(math.radians(angle))
-        length = math.hypot(rise, run)
-        if not length:
+            x, z = magnitude * math.cos(math.radians(angle)), magnitude * math.sin(math.radians(angle))
+        elif length := math.hypot(rise, run):
+            x, z = magnitude * run / length, magnitude * rise / length
+        else:
             return 0.0, 0.0
-        return magnitude * run / length, magnitude * rise / length
+        sign_x, sign_z = {"UP_RIGHT": (1, 1), "UP_LEFT": (-1, 1), "DOWN_LEFT": (-1, -1), "DOWN_RIGHT": (1, -1)}[
+            direction
+        ]
+        return sign_x * x, sign_z * z
 
     @classmethod
     def get_simple_slope(cls, x: float, z: float, max_denominator: int = 24) -> tuple[float, float]:
