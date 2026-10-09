@@ -2366,6 +2366,14 @@ class Geometry(bonsai.core.tool.Geometry):
             if position or not is_swept_area:
                 unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
                 position = ifcopenshell.util.placement.get_axis2placement(position)
+                # RefDirection may be non perpendicular to Axis, but Blender cannot store shear.
+                z_axis = position[:3, 2]
+                x_axis = position[:3, 0] - np.dot(position[:3, 0], z_axis) * z_axis
+                x_axis_length = np.linalg.norm(x_axis)
+                if x_axis_length > 1e-12:
+                    x_axis /= x_axis_length
+                    position[:3, 0] = x_axis
+                    position[:3, 1] = np.cross(z_axis, x_axis)
                 position[:, 3][0:3] *= unit_scale
                 item_matrix = np.array(rep_obj.matrix_world.copy())
                 if cartesian_point_offset is not None:
