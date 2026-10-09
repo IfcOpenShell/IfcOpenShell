@@ -72,6 +72,19 @@ make html
 Alternatively, configure the main CMake project with
 `-DBUILD_DOCUMENTATION=ON` and build the `docs` target.
 
+To skip the slow Python API generation when building the Docker image, run
+this from the repository root:
+
+```shell
+docker build -f docker/docs.Dockerfile --build-arg SKIP_PYTHON_API=1 -t ifcos-docs .
+```
+
+The default is `SKIP_PYTHON_API=0`, which builds all API references. Setting it
+to `1` disables AutoAPI and omits the Python API reference from navigation,
+while still building the C++ and TypeScript references and Python guides.
+Links from guides to the omitted reference may produce Sphinx warnings.
+For a local Sphinx build, set the environment variable `SKIP_PYTHON_API=1`.
+
 To preview the built documentation, run:
 
 ```shell
