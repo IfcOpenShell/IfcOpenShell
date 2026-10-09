@@ -127,9 +127,17 @@ static void appendInstanceInfos(std::vector<std::uint8_t>& buffer,
     appendBytes(buffer, &count, 4);
     buffer.reserve(buffer.size() + instances.size() * SIDECAR_INSTANCE_RECORD_BYTES);
     for (const InstanceInfo& inst : instances) {
+        const double* p = inst.placement_transformation;  // column-major
+        const double translation[3] = { p[12], p[13], p[14] };
+        const float linear[9] = {
+            float(p[0]), float(p[1]), float(p[2]),
+            float(p[4]), float(p[5]), float(p[6]),
+            float(p[8]), float(p[9]), float(p[10]),
+        };
         appendBytes(buffer, &inst.mesh_id, 4);
         appendBytes(buffer, &inst.object_id, 4);
-        appendBytes(buffer, inst.placement_transformation, sizeof(inst.placement_transformation));
+        appendBytes(buffer, translation, sizeof(translation));
+        appendBytes(buffer, linear, sizeof(linear));
     }
 }
 #endif  // !__EMSCRIPTEN__ (bake-only serialisation helpers)
@@ -148,10 +156,17 @@ bool readInstanceInfos(const std::uint8_t*& cursor, std::size_t& remaining,
     const float zero[3] = {0.0f, 0.0f, 0.0f};
     out.assign(count, InstanceInfo{});
     for (InstanceInfo& inst : out) {
+        double translation[3];
+        float linear[9];
         std::memcpy(&inst.mesh_id, cursor, 4);              cursor += 4;
         std::memcpy(&inst.object_id, cursor, 4);            cursor += 4;
-        std::memcpy(inst.placement_transformation, cursor, sizeof(inst.placement_transformation));
-        cursor += sizeof(inst.placement_transformation);
+        std::memcpy(translation, cursor, sizeof(translation)); cursor += sizeof(translation);
+        std::memcpy(linear, cursor, sizeof(linear));           cursor += sizeof(linear);
+        double* p = inst.placement_transformation;  // column-major
+        p[0] = linear[0]; p[1] = linear[1]; p[2]  = linear[2]; p[3]  = 0.0;
+        p[4] = linear[3]; p[5] = linear[4]; p[6]  = linear[5]; p[7]  = 0.0;
+        p[8] = linear[6]; p[9] = linear[7]; p[10] = linear[8]; p[11] = 0.0;
+        p[12] = translation[0]; p[13] = translation[1]; p[14] = translation[2]; p[15] = 1.0;
 
         // An instance naming a mesh the file does not have gets an empty
         // world box, as ViewportCore::composeInstanceFromPlacement does, so

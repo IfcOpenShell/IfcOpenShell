@@ -99,14 +99,25 @@ static constexpr uint32_t SIDECAR_MAGIC   = 0x49465657;  // "IFVW"
 //       from the placement and the mesh's local AABB (identity stage matrices)
 //       by the readers, exactly as the baker used to derive them before
 //       writing.  No back-compat: regenerate sidecars.
-static constexpr uint32_t SIDECAR_VERSION = 18;
+// v19 = The placement is stored as a double[3] translation plus a float[9]
+//       column-major linear part (68 B per instance, down from 136).  The
+//       bottom row of an IFC placement is always 0 0 0 1, and float holds the
+//       rotation to ~1e-7 relative, under a micron over any mesh extent, while
+//       the translation keeps the double precision that large placements need
+//       until the federation false origin cancels them.  The geometry metadata
+//       block is what the web loader must finish reading before it can fetch
+//       any chunk, so its size is on the path to first paint.  No back-compat:
+//       regenerate sidecars.
+static constexpr uint32_t SIDECAR_VERSION = 19;
 static constexpr uint32_t SIDECAR_ENDIAN  = 0x01020304;
 
-// On-disk per-instance record (v18): two uint32 fields then the placement,
-// written field by field so there is no alignment padding.
-static constexpr std::size_t SIDECAR_INSTANCE_RECORD_BYTES = 2 * 4 + 16 * sizeof(double);
+// On-disk per-instance record (v19): mesh_id, object_id, translation as
+// double[3], then the 3x3 linear part of the placement as float[9]
+// (column-major), written field by field so there is no alignment padding.
+static constexpr std::size_t SIDECAR_INSTANCE_RECORD_BYTES =
+    2 * sizeof(uint32_t) + 3 * sizeof(double) + 9 * sizeof(float);
 
-// Parse a count-prefixed run of v18 instance records from
+// Parse a count-prefixed run of v19 instance records from
 // [cursor, cursor + remaining), advancing both, and expand them into
 // InstanceInfo with transform and world AABB derived from `meshes` under
 // identity stage matrices.  False when the data is truncated.
