@@ -15,16 +15,12 @@ struct IFC_GEOMLIBRARY_API manifold_part {
 	manifold::MeshGL64 mesh;
 	std::optional<manifold::Manifold> solid;
 
-	manifold_part(const manifold::Manifold& s) {
-        auto copy = s;
-        copy.CalculateNormals(3);
-        mesh = copy.GetMeshGL64();
-        solid = s;
-	}
+	manifold_part(const manifold::Manifold& s)
+		: mesh(s.CalculateNormals(0).GetMeshGL64()), solid(s) {}
 
 	manifold_part(const manifold::MeshGL64& s) : mesh(s) {}
 
-	manifold_part(const manifold::MeshGL64& s, const manifold::Manifold& m) : mesh(s), solid(m) {}
+	manifold_part(const manifold::MeshGL64&, const manifold::Manifold& m) : manifold_part(m) {}
 };
 
 class IFC_GEOMLIBRARY_API manifold_shape : public ifcopenshell::geom::conversion_result_shape {
