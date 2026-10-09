@@ -96,13 +96,25 @@ jobs:
             anaconda-client
             rattler-build
 
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2.24
+        with:
+          key: conda-${{ matrix.platform.pkg_dir }}
+          # By default it's installed from apt on Linux, ubuntu-latest is 24.04 with ccache 4.9,
+          # too old for the job summary (needs 4.10+).
+          install: binary
+
       - name: create conda package dist dir
         run: |
           mkdir -p ${{ env.ARTIFACTS_DIR }}
 
       - name: build & test ifcopenshell
         run: |
-          rattler-build  build -r conda/recipe.yaml --output-dir '${{ env.ARTIFACTS_DIR }}'
+          # `--no-build-id` keeps the build dir path stable between runs, needed for ccache.
+          rattler-build build \
+            --no-build-id \
+            -r conda/recipe.yaml \
+            --output-dir '${{ env.ARTIFACTS_DIR }}'
         env:
           VERSION_OVERRIDE: ${{ needs.resolve-version.outputs.verdate }}
 
