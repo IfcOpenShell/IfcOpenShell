@@ -37,7 +37,13 @@ ifcopenshell::spf_header::spf_header(ifcopenshell::file* file, ifcopenshell::log
     header_entities_[2] = make_header_entity(file_, Header_section_schema::file_schema::Class(), logger_);
 }
 
-ifcopenshell::spf_header::~spf_header() = default;
+ifcopenshell::spf_header::~spf_header() {
+#ifndef IFOPSH_SAFE_INSTANCE
+    for (auto data : header_entities_) {
+        delete data;
+    }
+#endif
+}
 
 void spf_header::write(std::ostream& out) const {
     out << ISO_10303_21 << ";"
@@ -64,14 +70,29 @@ void ifcopenshell::spf_header::owner_file(ifcopenshell::file* file) {
 }
 
 void ifcopenshell::spf_header::set_file_description(const shared_pointer_type& data) {
+#ifndef IFOPSH_SAFE_INSTANCE
+    if (header_entities_[0] != data) {
+        delete header_entities_[0];
+    }
+#endif
     header_entities_[0] = data;
 }
 
 void ifcopenshell::spf_header::set_file_name(const shared_pointer_type& data) {
+#ifndef IFOPSH_SAFE_INSTANCE
+    if (header_entities_[1] != data) {
+        delete header_entities_[1];
+    }
+#endif
     header_entities_[1] = data;
 }
 
 void ifcopenshell::spf_header::set_file_schema(const shared_pointer_type& data) {
+#ifndef IFOPSH_SAFE_INSTANCE
+    if (header_entities_[2] != data) {
+        delete header_entities_[2];
+    }
+#endif
     header_entities_[2] = data;
 }
 
