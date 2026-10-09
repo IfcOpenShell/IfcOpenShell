@@ -68,3 +68,32 @@ def remove_contours(terrain: type[tool.Terrain], element: ifcopenshell.entity_in
     for contour in terrain.get_contours(element):
         terrain.remove_contour(contour)
     terrain.remove_contour_settings(element)
+
+
+def label_contours(
+    terrain: type[tool.Terrain],
+    element: ifcopenshell.entity_instance,
+    drawing: ifcopenshell.entity_instance,
+    relating_type: ifcopenshell.entity_instance | None = None,
+    spacing: float = 15.0,
+) -> int:
+    """Label the terrain's contours in a plan drawing with their elevations.
+
+    Labels the user has moved are kept, and new ones keep clear of them; the rest of the
+    previously generated labels in this drawing are replaced.
+
+    :param spacing: Distance between labels along a contour, in SI metres.
+    :return: The number of labels created.
+    """
+    kept = []
+    for contour in terrain.get_contours(element):
+        for label in terrain.get_contour_labels(contour, drawing):
+            if terrain.is_label_moved(label):
+                kept.append(label)
+            else:
+                terrain.remove_contour_label(label)
+    template = terrain.get_label_template(element)
+    placements = terrain.get_label_placements(element, drawing, relating_type, spacing, kept)
+    for contour, matrix in placements:
+        terrain.create_contour_label(drawing, contour, matrix, relating_type, template)
+    return len(placements)

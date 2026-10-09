@@ -74,3 +74,19 @@ class TestRemoveContours:
         terrain.remove_contour("b").should_be_called()
         terrain.remove_contour_settings("element").should_be_called()
         subject.remove_contours(terrain, "element")
+
+
+class TestLabelContours:
+    def test_run(self, terrain):
+        terrain.get_contours("element").should_be_called().will_return(["contour"])
+        terrain.get_contour_labels("contour", "drawing").should_be_called().will_return(["moved", "generated"])
+        terrain.is_label_moved("moved").should_be_called().will_return(True)
+        terrain.is_label_moved("generated").should_be_called().will_return(False)
+        terrain.remove_contour_label("generated").should_be_called()
+        terrain.get_label_template("element").should_be_called().will_return("template")
+        terrain.get_label_placements("element", "drawing", "type", 15.0, ["moved"]).should_be_called().will_return(
+            [("contour", "matrix1"), ("contour", "matrix2")]
+        )
+        terrain.create_contour_label("drawing", "contour", "matrix1", "type", "template").should_be_called()
+        terrain.create_contour_label("drawing", "contour", "matrix2", "type", "template").should_be_called()
+        assert subject.label_contours(terrain, "element", "drawing", relating_type="type", spacing=15.0) == 2

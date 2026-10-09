@@ -28,14 +28,19 @@ import bpy
 import ifcopenshell
 import ifcopenshell.api.context
 import ifcopenshell.api.drawing
+import ifcopenshell.api.geometry
+import ifcopenshell.api.group
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
+import ifcopenshell.api.type
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import numpy as np
+import shapely
+import shapely.affinity
 from ifcopenshell.util.shape_builder import ShapeBuilder
 from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
@@ -52,6 +57,7 @@ if TYPE_CHECKING:
 Polyline = tuple[np.ndarray, bool]
 
 CONTOUR_PSET = "BBIM_Contours"
+LABEL_PSET = "BBIM_ContourLabel"
 MAX_CONTOUR_LEVELS = 2000
 # Faces steeper than this (|normal.z| below it) are treated as walls, not terrain.
 TOP_FACE_NORMAL_THRESHOLD = 0.1
@@ -83,7 +89,11 @@ class Terrain(bonsai.core.tool.Terrain):
 
     @classmethod
     def is_terrain(cls, element: ifcopenshell.entity_instance) -> bool:
-        return element.is_a("IfcGeographicElement") or element.is_a("IfcSite")
+        if element.is_a("IfcSite"):
+            return True
+        return (
+            element.is_a("IfcGeographicElement") and ifcopenshell.util.element.get_predefined_type(element) == "TERRAIN"
+        )
 
     @classmethod
     def get_contour_settings(cls, element: ifcopenshell.entity_instance) -> Union[tuple[float, int], None]:
@@ -129,6 +139,9 @@ class Terrain(bonsai.core.tool.Terrain):
 
     @classmethod
     def remove_contour(cls, contour: ifcopenshell.entity_instance) -> None:
+        # A label without its contour would show an empty value.
+        for label in cls.get_contour_labels(contour):
+            cls.remove_contour_label(label)
         if obj := tool.Ifc.get_object(contour):
             tool.Geometry.delete_ifc_object(obj)
         else:
@@ -356,6 +369,82 @@ class Terrain(bonsai.core.tool.Terrain):
         return chains
 
     @classmethod
+    def place_labels(
+        cls,
+        polylines: list[np.ndarray],
+        lengths: list[float],
+        height: float,
+        spacing: float,
+        bounds: tuple[float, float, float, float],
+        obstacles: list = (),
+    ) -> list[tuple[int, float, float, float]]:
+        """Choose where to put a label along each 2D polyline.
+
+        Labels are spread evenly, about every ``spacing``. Near each target spot the label slides
+        to where the line is straightest over its length, must sit fully inside ``bounds`` and must
+        not overlap a label already placed or an obstacle. Angles are kept readable: never
+        upside down.
+
+        :param polylines: (N, 2) points per polyline, in the drawing plane.
+        :param lengths: Label length per polyline (its text width), same units as the points.
+        :param height: Label height.
+        :param bounds: (min x, min y, max x, max y) of the drawing frame.
+        :param obstacles: shapely geometries labels must not overlap.
+        :return: (polyline index, x, y, angle in degrees) per label.
+        """
+        frame = shapely.box(*bounds)
+        placed = list(obstacles)
+        labels = []
+        for index, (points, length) in enumerate(zip(polylines, lengths)):
+            if len(points) < 2:
+                continue
+            distances = np.concatenate([[0.0], np.cumsum(np.linalg.norm(np.diff(points, axis=0), axis=1))])
+            total = distances[-1]
+            if total < length * 1.5:
+                continue
+
+            def point_at(s):
+                return np.array([np.interp(s, distances, points[:, 0]), np.interp(s, distances, points[:, 1])])
+
+            count = max(1, int(total // spacing))
+            window = min(spacing, total) / 4
+            for target in (np.arange(count) + 0.5) * total / count:
+                best = None
+                for centre in np.linspace(target - window, target + window, 9):
+                    start, end = centre - length / 2, centre + length / 2
+                    if start < 0 or end > total:
+                        continue
+                    a, b = point_at(start), point_at(end)
+                    chord = b - a
+                    chord_length = np.linalg.norm(chord)
+                    if chord_length < length * 0.8:
+                        continue  # Too curvy for the text to sit on.
+                    direction = chord / chord_length
+                    inside = points[(distances > start) & (distances < end)]
+                    offsets = inside - a
+                    deviation = np.abs(offsets[:, 0] * direction[1] - offsets[:, 1] * direction[0]).max(initial=0.0)
+                    x, y = point_at(centre)
+                    angle = math.degrees(math.atan2(direction[1], direction[0]))
+                    if angle > 90:
+                        angle -= 180
+                    elif angle <= -90:
+                        angle += 180
+                    box = shapely.affinity.translate(
+                        shapely.affinity.rotate(shapely.box(-length / 2, -height / 2, length / 2, height / 2), angle),
+                        x,
+                        y,
+                    )
+                    if not frame.contains(box) or any(box.intersects(p) for p in placed):
+                        continue
+                    score = deviation + abs(centre - target) * 0.01
+                    if best is None or score < best[0]:
+                        best = (score, x, y, angle, box)
+                if best:
+                    placed.append(best[4])
+                    labels.append((index, float(best[1]), float(best[2]), best[3]))
+        return labels
+
+    @classmethod
     def get_contour_context(cls) -> ifcopenshell.entity_instance:
         ifc_file = tool.Ifc.get()
         context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Annotation", "MODEL_VIEW")
@@ -451,3 +540,196 @@ class Terrain(bonsai.core.tool.Terrain):
         if container:
             ifcopenshell.api.spatial.assign_container(tool.Ifc.get(), products=[contour], relating_structure=container)
             tool.Collector.assign(obj)
+
+    @classmethod
+    def get_selected_terrain(cls, obj: Union[bpy.types.Object, None]) -> Union[ifcopenshell.entity_instance, None]:
+        if obj and (element := tool.Ifc.get_entity(obj)) and cls.is_terrain(element):
+            return element
+
+    @classmethod
+    def get_active_drawing(cls) -> Union[ifcopenshell.entity_instance, None]:
+        camera = bpy.context.scene.camera
+        if camera and (drawing := tool.Ifc.get_entity(camera)) and drawing.ObjectType == "DRAWING":
+            return drawing
+
+    @classmethod
+    def get_contour_labels(
+        cls, contour: ifcopenshell.entity_instance, drawing: Union[ifcopenshell.entity_instance, None] = None
+    ) -> list[ifcopenshell.entity_instance]:
+        """Generated labels of a contour, optionally only those in one drawing."""
+        labels = []
+        for rel in getattr(contour, "ReferencedBy", []) or []:
+            if not rel.is_a("IfcRelAssignsToProduct"):
+                continue
+            for label in rel.RelatedObjects:
+                if not ifcopenshell.util.element.get_pset(label, LABEL_PSET):
+                    continue
+                if drawing and tool.Drawing.get_annotation_drawing(label) != drawing:
+                    continue
+                labels.append(label)
+        return labels
+
+    @classmethod
+    def remove_contour_label(cls, label: ifcopenshell.entity_instance) -> None:
+        if obj := tool.Ifc.get_object(label):
+            tool.Geometry.delete_ifc_object(obj)
+        else:
+            ifcopenshell.api.root.remove_product(tool.Ifc.get(), product=label)
+
+    @classmethod
+    def get_label_signature(cls, matrix: Matrix) -> str:
+        angle = math.degrees(math.atan2(matrix[1][0], matrix[0][0]))
+        return f"{matrix.translation.x:.4f},{matrix.translation.y:.4f},{angle:.2f}"
+
+    @classmethod
+    def is_label_moved(cls, label: ifcopenshell.entity_instance) -> bool:
+        """Whether a label is no longer where it was generated, i.e. the user placed it."""
+        obj = tool.Ifc.get_object(label)
+        placed = ifcopenshell.util.element.get_pset(label, LABEL_PSET, "Placement")
+        return bool(obj and placed and placed != cls.get_label_signature(obj.matrix_world))
+
+    @classmethod
+    def get_label_font_size(cls, relating_type: Union[ifcopenshell.entity_instance, None]) -> float:
+        """Paper font height in mm, from the type's font size class (Bonsai's default is regular)."""
+        from bonsai.bim.module.drawing.data import FONT_SIZES
+
+        classes = ""
+        if relating_type:
+            classes = ifcopenshell.util.element.get_pset(relating_type, "EPset_Annotation", "Classes") or ""
+        for name in classes.split():
+            if name in FONT_SIZES:
+                return FONT_SIZES[name]
+        return FONT_SIZES["regular"]
+
+    @classmethod
+    def get_label_template(cls, element: ifcopenshell.entity_instance) -> str:
+        """Label text that reads the contour's own ContourValue, rounded to the interval's precision."""
+        nearest = "1"
+        if settings := cls.get_contour_settings(element):
+            interval = settings[0] / ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            for places in range(1, 4):
+                if abs(interval - round(interval)) < 1e-6:
+                    break
+                interval *= 10
+                nearest = f"{10**-places:.{places}f}"
+        return "``round({{Pset_AnnotationContourLine.ContourValue}}, " + nearest + ")``"
+
+    @classmethod
+    def get_label_placements(
+        cls,
+        element: ifcopenshell.entity_instance,
+        drawing: ifcopenshell.entity_instance,
+        relating_type: Union[ifcopenshell.entity_instance, None],
+        spacing: float,
+        kept_labels: list[ifcopenshell.entity_instance],
+    ) -> list[tuple[ifcopenshell.entity_instance, Matrix]]:
+        """Where to put labels on the terrain's contours in a plan drawing.
+
+        :param spacing: Distance between labels along a contour, in SI metres.
+        :param kept_labels: Labels the user moved; new labels keep clear of them.
+        :return: (contour, label world matrix) per label.
+        """
+        camera = tool.Ifc.get_object(drawing)
+        camera_matrix = tool.Drawing.get_camera_matrix(camera)
+        to_camera = camera_matrix.inverted()
+        scale = ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing", "Scale") or "1/100"
+        paper_to_model = 1 / 1000 / tool.Drawing.get_scale_ratio(scale)
+        font_size = cls.get_label_font_size(relating_type)
+        height = (font_size + 1.0) * paper_to_model
+
+        def label_length(contour: ifcopenshell.entity_instance) -> float:
+            value = ifcopenshell.util.element.get_pset(contour, "Pset_AnnotationContourLine", "ContourValue") or 0
+            return (len(f"{value:g}") * 0.6 * font_size + 2.0) * paper_to_model
+
+        corners = [to_camera @ Vector(v) for v in tool.Drawing.get_camera_block(camera)["verts"]]
+        bounds = (
+            min(v.x for v in corners),
+            min(v.y for v in corners),
+            max(v.x for v in corners),
+            max(v.y for v in corners),
+        )
+
+        contours, polylines, lengths = [], [], []
+        for contour in cls.get_contours(element):
+            obj = tool.Ifc.get_object(contour)
+            if not obj or not isinstance(obj.data, bpy.types.Mesh):
+                continue
+            coords = [(to_camera @ (obj.matrix_world @ v.co)).xy for v in obj.data.vertices]
+            for keys, closed in cls.chain_segments([tuple(e.vertices) for e in obj.data.edges]):
+                points = np.array([coords[k] for k in keys])
+                if closed:
+                    points = np.vstack([points, points[:1]])
+                contours.append(contour)
+                polylines.append(points)
+                lengths.append(label_length(contour))
+
+        obstacles = []
+        for label in kept_labels:
+            label_obj = tool.Ifc.get_object(label)
+            contour = tool.Drawing.get_assigned_product(label)
+            if not label_obj or not contour:
+                continue
+            local = to_camera @ label_obj.matrix_world
+            angle = math.degrees(math.atan2(local[1][0], local[0][0]))
+            length = label_length(contour)
+            box = shapely.affinity.rotate(shapely.box(-length / 2, -height / 2, length / 2, height / 2), angle)
+            obstacles.append(shapely.affinity.translate(box, local.translation.x, local.translation.y))
+
+        # Annotations sit just in front of the camera's clipping plane, as Bonsai places them.
+        z = -(camera.data.clip_start + 0.05)
+        placements = []
+        for index, x, y, angle in cls.place_labels(polylines, lengths, height, spacing, bounds, obstacles):
+            matrix = camera_matrix @ Matrix.Translation((x, y, z)) @ Matrix.Rotation(math.radians(angle), 4, "Z")
+            placements.append((contours[index], matrix))
+        return placements
+
+    @classmethod
+    def create_contour_label(
+        cls,
+        drawing: ifcopenshell.entity_instance,
+        contour: ifcopenshell.entity_instance,
+        matrix: Matrix,
+        relating_type: Union[ifcopenshell.entity_instance, None],
+        template: str,
+    ) -> ifcopenshell.entity_instance:
+        """Create a TEXT annotation in the drawing that shows the contour's elevation.
+
+        With a text type that has its own text, that text is the template (mapped from the type);
+        otherwise the label gets ``template``. Without a type, the label is styled ``fill-bg
+        ContourLabel`` itself; with one, styling comes from the type.
+        """
+        ifc_file = tool.Ifc.get()
+        obj = bpy.data.objects.new("Contour Label", None)
+        obj.matrix_world = matrix
+        label = bonsai.core.root.assign_class(
+            tool.Ifc,
+            tool.Collector,
+            tool.Root,
+            obj=obj,
+            ifc_class="IfcAnnotation",
+            predefined_type="TEXT",
+            should_add_representation=False,
+        )
+        target_view = tool.Drawing.get_drawing_target_view(drawing)
+        context = tool.Drawing.get_annotation_context(target_view, "TEXT") or tool.Drawing.create_annotation_context(
+            target_view, "TEXT"
+        )
+        if relating_type:
+            ifcopenshell.api.type.assign_type(ifc_file, related_objects=[label], relating_type=relating_type)
+        if not (representation := tool.Drawing.get_representation(label, context)):
+            literal = tool.Drawing.add_literal(Literal=template, BoxAlignment="center")
+            representation = ifc_file.createIfcShapeRepresentation(context, "Annotation", "Annotation2D", [literal])
+            ifcopenshell.api.geometry.assign_representation(ifc_file, product=label, representation=representation)
+        if not relating_type:
+            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=label, name="EPset_Annotation")
+            ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"Classes": "fill-bg ContourLabel"})
+
+        ifcopenshell.api.group.assign_group(ifc_file, group=tool.Drawing.get_drawing_group(drawing), products=[label])
+        ifcopenshell.api.drawing.assign_product(ifc_file, relating_product=contour, related_object=label)
+        tool.Geometry.run_edit_object_placement(obj)
+        pset = ifcopenshell.api.pset.add_pset(ifc_file, product=label, name=LABEL_PSET)
+        signature = cls.get_label_signature(obj.matrix_world)
+        ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"Placement": signature})
+        tool.Collector.assign(obj)
+        tool.Drawing.reload_representation(obj, representation)
+        return label

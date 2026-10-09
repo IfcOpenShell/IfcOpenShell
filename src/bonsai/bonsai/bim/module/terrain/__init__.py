@@ -26,6 +26,7 @@ classes = (
     operator.GenerateContours,
     operator.UpdateContours,
     operator.RemoveContours,
+    operator.LabelContours,
     prop.BIMTerrainProperties,
     ui.BIM_PT_terrain_contours,
 )

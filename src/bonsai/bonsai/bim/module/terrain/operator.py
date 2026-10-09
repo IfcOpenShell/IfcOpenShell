@@ -89,3 +89,41 @@ class RemoveContours(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.remove_contours(tool.Terrain, get_active_terrain(context))
+
+
+class LabelContours(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.label_contours"
+    bl_label = "Label Contours"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = (
+        "Add elevation labels to the selected terrain's contours in the active plan drawing, using the "
+        "Annotation Tool's text type. Labels you have moved are kept; the other generated labels are replaced"
+    )
+
+    @classmethod
+    def poll(cls, context):
+        if not (terrain := tool.Terrain.get_selected_terrain(context.active_object)):
+            return False
+        if not tool.Terrain.get_contours(terrain):
+            cls.poll_message_set("Generate contours first")
+            return False
+        return True
+
+    def _execute(self, context):
+        drawing = tool.Terrain.get_active_drawing()
+        if not drawing or tool.Drawing.get_drawing_target_view(drawing) != "PLAN_VIEW":
+            self.report({"ERROR"}, "Contour labels need an active plan drawing")
+            return {"CANCELLED"}
+        # The label type is whatever text type the Annotation Tool has selected ("0" is Untyped).
+        annotation_props = tool.Drawing.get_annotation_props()
+        relating_type = None
+        if annotation_props.object_type == "TEXT" and annotation_props.relating_type_id not in ("", "0"):
+            relating_type = tool.Ifc.get().by_id(int(annotation_props.relating_type_id))
+        total = core.label_contours(
+            tool.Terrain,
+            tool.Terrain.get_selected_terrain(context.active_object),
+            drawing,
+            relating_type=relating_type,
+            spacing=tool.Terrain.get_terrain_props().label_spacing,
+        )
+        self.report({"INFO"}, f"Created {total} labels")

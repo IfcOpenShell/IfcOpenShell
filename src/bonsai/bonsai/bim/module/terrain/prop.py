@@ -39,6 +39,15 @@ class BIMTerrainProperties(PropertyGroup):
         min=0,
     )
 
+    label_spacing: bpy.props.FloatProperty(
+        name="Label Spacing",
+        description="Distance between labels along a contour",
+        default=15.0,
+        min=0.1,
+        subtype="DISTANCE",
+    )
+
     if TYPE_CHECKING:
         contour_interval: float
         contour_index_interval: int
+        label_spacing: float

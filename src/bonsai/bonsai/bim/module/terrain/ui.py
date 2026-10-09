@@ -67,3 +67,6 @@ class BIM_PT_terrain_contours(bpy.types.Panel):
         layout.prop(props, "contour_index_interval")
         text = "Regenerate With These Settings" if TerrainData.data["interval"] else "Generate Contours"
         layout.operator("bim.generate_contours", icon="MOD_WAVE", text=text)
+
+        if TerrainData.data["total_contours"]:
+            layout.label(text="Label contours with the Annotation Tool (Text)", icon="INFO")
