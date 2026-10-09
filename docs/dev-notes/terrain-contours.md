@@ -20,8 +20,9 @@
 
 Decisions made while coding:
 
-- Terrain = active mesh object whose element is an `IfcGeographicElement` **or `IfcSite`**
-  (many real files keep the terrain as the site's Body).
+- Terrain = active mesh object whose element is an `IfcGeographicElement` with predefined
+  type **TERRAIN**, **or an `IfcSite`** (many real files keep the terrain as the site's Body).
+  Other geographic elements (e.g. VEGETATION trees) are not terrain.
 - `root.create_entity(predefined_type="CONTOURLINE")` already does the schema switch:
   IFC4X3 → `PredefinedType`, IFC4 → `ObjectType = "CONTOURLINE"`. Kept upper-case in IFC4
   (Bonsai convention; `get_predefined_type` reads both). `Pset_AnnotationContourLine` is
@@ -229,7 +230,43 @@ level is "Contour 436", `ContourValue = 436`. Source, in priority order:
 source. Precedent: drawing data's `elevation` key is placement Z + `OrthogonalHeight`.
 Changing the datum then pressing Update re-cuts everything (new elevations → new annotations).
 
-## Contour labels — decisions (phase 2, not built yet)
+## Contour labels (2026-10-09, built; not yet checked in Blender)
+
+**Where:** Annotation Tool (`bim.annotation_tool`) Active Tool panel, in the TEXT block, shown
+only when the active object is a terrain or site: **Spacing** + **Label Contours**
+(`bim.label_contours`, `core.label_contours`). Greyed out with "Generate contours first" until
+the terrain has contours. Needs an active **plan** drawing. The Contours properties panel only
+points to it.
+
+**What it makes:** one TEXT `IfcAnnotation` per label in the drawing's group, assigned to its
+contour (`drawing.assign_product`), text `` ``round({{Pset_AnnotationContourLine.ContourValue}},
+N)`` `` with N from the interval's decimals (checked: 436.0000000247 → "436", 436.5 → "436.5"),
+literal `BoxAlignment = center`, Plan/Annotation context. `BBIM_ContourLabel.Placement` stores
+the generated world x, y, angle; a label whose placement no longer matches was moved by the user
+and is kept on re-label (and new labels avoid it). Removing a contour (incl. via Update)
+removes its labels.
+
+**Type:** the Annotation Tool's own type picker (`relating_type_id`, "0" = Untyped). Untyped →
+`EPset_Annotation.Classes = "fill-bg ContourLabel"` on each label. Typed → `type.assign_type`;
+if the type has a representation it is mapped, so its text is the template for every label;
+styling and font size come from the type's classes.
+
+**Spacing:** a model distance along each contour (scene units, `subtype=DISTANCE`, default
+15 m) — Ryan's choice over paper distance. Label *size* still follows the drawing scale (font
+height from the type's `FONT_SIZES` class, default regular 2.5 mm; width ≈ 0.6 × height per
+character + 2 mm).
+
+**Placement** (`tool.Terrain.place_labels`, pure, shapely): contours chained from the contour
+objects' mesh edges and projected into camera-local XY; labels spread evenly per polyline; each
+slides within ±¼ spacing to the straightest stretch (max deviation from the chord), must lie
+fully in the camera frame, not overlap placed labels or kept ones; angle normalised to
+(-90°, 90°]. 11 checks outside Blender (straight, reversed, diagonal, vertical, short, frame
+edge, kink, close parallels, obstacle, circle).
+
+**Still to verify in Blender:** text direction sign vs. Bonsai's `get_empty_object_angle`;
+the `fill-bg` box rotating with the text; moved-label detection; sheet output.
+
+### Decisions behind it
 
 - **Real TEXT annotations in a specific drawing** ("Label Contours in Active Drawing"), not
   computed at drawing time — so they're sized for that drawing's scale, cropped to it, and
@@ -270,3 +307,5 @@ Changing the datum then pressing Update re-cuts everything (new elevations → n
 - [ ] Site RefElevation only — same, source "Site RefElevation".
 - [ ] Contours appear in a plan drawing with index/intermediate styling.
 - [ ] Interval change 2 ft → 5 ft regenerates correctly.
+- [ ] Labels: direction follows the lines, `fill-bg` box rotates with the text, moved labels
+  survive re-labelling, Untyped and typed labels render on the sheet.
