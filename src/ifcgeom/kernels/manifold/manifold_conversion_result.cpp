@@ -21,6 +21,7 @@ namespace {
 		mesh_type result = mesh;
 		const auto& m = place.ccomponents();
 		const bool flip = m.block<3, 3>(0, 0).determinant() < 0.;
+		const auto normal_transform = m.block<3, 3>(0, 0).inverse().transpose();
 		for (size_t i = 0; i < mesh.NumVert(); ++i) {
 			Eigen::Vector4d v(
 				mesh.vertProperties[i * mesh.numProp + 0],
@@ -31,6 +32,19 @@ namespace {
 			result.vertProperties[i * result.numProp + 0] = v2(0);
 			result.vertProperties[i * result.numProp + 1] = v2(1);
 			result.vertProperties[i * result.numProp + 2] = v2(2);
+			if (mesh.numProp == 6) {
+				Eigen::Vector3d normal(
+					mesh.vertProperties[i * mesh.numProp + 3],
+					mesh.vertProperties[i * mesh.numProp + 4],
+					mesh.vertProperties[i * mesh.numProp + 5]);
+				normal = normal_transform * normal;
+				if (normal.squaredNorm() > 0.) {
+					normal.normalize();
+				}
+				result.vertProperties[i * result.numProp + 3] = normal(0);
+				result.vertProperties[i * result.numProp + 4] = normal(1);
+				result.vertProperties[i * result.numProp + 5] = normal(2);
+			}
 		}
 		if (flip) {
 			for (size_t i = 0; i < mesh.NumTri(); ++i) {
@@ -145,6 +159,31 @@ namespace {
 		return edges;
 	}
 
+	std::vector<Eigen::Vector3d> calculate_vertex_normals(const mesh_type& mesh) {
+		std::vector<Eigen::Vector3d> normals(mesh.NumVert(), Eigen::Vector3d::Zero());
+		auto point = [&](uint32_t i) {
+			return Eigen::Vector3d(
+				mesh.vertProperties[i * mesh.numProp + 0],
+				mesh.vertProperties[i * mesh.numProp + 1],
+				mesh.vertProperties[i * mesh.numProp + 2]);
+		};
+		for (size_t i = 0; i < mesh.NumTri(); ++i) {
+			const uint32_t a = (uint32_t)mesh.triVerts[i * 3 + 0];
+			const uint32_t b = (uint32_t)mesh.triVerts[i * 3 + 1];
+			const uint32_t c = (uint32_t)mesh.triVerts[i * 3 + 2];
+			const auto normal = (point(b) - point(a)).cross(point(c) - point(a));
+			for (const auto vertex : { a, b, c }) {
+				normals[vertex] += normal;
+			}
+		}
+		for (size_t i = 0; i < normals.size(); ++i) {
+			if (normals[i].squaredNorm() > 0.) {
+				normals[i].normalize();
+			}
+		}
+		return normals;
+	}
+
 	double mesh_length(const mesh_type& mesh) {
 		double length = 0.;
 		auto edges = count_edges(mesh);
@@ -180,9 +219,7 @@ namespace {
 }
 
 ifcopenshell::geom::manifold_shape::manifold_shape(const manifold::Manifold& solid) {
-    auto copy = solid;
-    auto with_normals = copy.CalculateNormals(3);
-    parts_.push_back({with_normals.GetMeshGL64(), solid});
+	parts_.emplace_back(solid);
 }
 
 ifcopenshell::geom::manifold_shape::manifold_shape(const manifold_part& part)
@@ -221,6 +258,12 @@ void ifcopenshell::geom::manifold_shape::triangulate(ifcopenshell::geom::setting
 
 	for (const auto& part : parts_) {
 		auto mesh = transform_mesh(part.mesh, place);
+
+		// For non-manifold cases where we have only the IO layer we need to calculate ourselves.
+		const auto fallback_normals = emit_normals && mesh.numProp == 3
+			? calculate_vertex_normals(mesh)
+			: std::vector<Eigen::Vector3d>();
+		
 		std::vector<int> indices(mesh.NumVert());
 		for (size_t i = 0; i < mesh.NumVert(); ++i) {
 			indices[i] = t->addVertex(
@@ -229,12 +272,14 @@ void ifcopenshell::geom::manifold_shape::triangulate(ifcopenshell::geom::setting
 				mesh.vertProperties[i * mesh.numProp + 0],
 				mesh.vertProperties[i * mesh.numProp + 1],
 				mesh.vertProperties[i * mesh.numProp + 2]);
-            if (mesh.numProp >= 6 && emit_normals) {
+			if (mesh.numProp == 6 && emit_normals) {
 				t->addNormal(
 					mesh.vertProperties[i * mesh.numProp + 3],
 					mesh.vertProperties[i * mesh.numProp + 4],
 					mesh.vertProperties[i * mesh.numProp + 5]);
-            }
+			} else if (!fallback_normals.empty()) {
+				t->addNormal(fallback_normals[i](0), fallback_normals[i](1), fallback_normals[i](2));
+			}
 		}
 		auto edges = count_edges(mesh);
 		for (size_t i = 0; i < mesh.NumTri(); ++i) {
