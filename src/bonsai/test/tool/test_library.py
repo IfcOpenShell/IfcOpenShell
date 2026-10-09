@@ -110,6 +110,15 @@ class TestImportReferences(NewFile):
         assert props.references[0].name == "Reference"
 
 
+class TestImportReferencesIfc2x3(NewFile):
+    def test_library_without_references(self):
+        ifc = ifcopenshell.file(schema="IFC2X3")
+        tool.Ifc.set(ifc)
+        library = ifc.createIfcLibraryInformation(Name="Library")
+        subject.import_references(library)
+        assert len(tool.Library.get_library_props().references) == 0
+
+
 class TestSetActiveLibrary(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
