@@ -32,6 +32,19 @@ import bonsai.tool as tool
 from bonsai.bim.module.structural.load_decoration_data import ShaderInfo
 
 
+def update_loads_after_moves(scene: bpy.types.Scene, depsgraph: bpy.types.Depsgraph) -> None:
+    """Redraw the shown loads when a structural item moves, so that they follow it"""
+    if not tool.Ifc.get():
+        return
+    for update in depsgraph.updates:
+        if update.is_updated_transform and isinstance(update.id, bpy.types.Object):
+            element = tool.Ifc.get_entity(update.id.original)
+            if element and element.is_a("IfcStructuralItem"):
+                LoadsDecorator.update()
+                tool.Blender.update_all_viewports()
+                return
+
+
 class LoadsDecorator(tool.Blender.ViewportDecorator):
     """Decorator to show structural loads in 3D"""
 
@@ -60,6 +73,14 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
         cls.decoration_data = ShaderInfo()
         cls.update()
         cls.is_installed = True
+        if update_loads_after_moves not in bpy.app.handlers.depsgraph_update_post:
+            bpy.app.handlers.depsgraph_update_post.append(update_loads_after_moves)
+
+    @classmethod
+    def uninstall(cls) -> None:
+        if update_loads_after_moves in bpy.app.handlers.depsgraph_update_post:
+            bpy.app.handlers.depsgraph_update_post.remove(update_loads_after_moves)
+        super().uninstall()
 
     @classmethod
     def update(cls) -> None:
