@@ -137,3 +137,23 @@ at the point, so separate forces and how they combine could not be seen.
 
 Not yet exercised: point loads placed along curve members, which are drawn through the same
 code but which nothing creates yet.
+
+## 4. Editing loads from the viewport
+
+- While Show Loads runs, hovering a force arrow that stands for one applied load highlights
+  it, and clicking it opens Edit Load for that load. The tail of each arrow is left out, so
+  the loaded point can still be selected; arrows that sum several loads are not pickable.
+  Light arrows darken when highlighted, others brighten.
+- Edit Load **previews** its values in the viewport as they change, until the dialog is
+  confirmed or cancelled; `cancel()` restores the saved values, as Bonsai's attribute
+  explorer already relies on for dialogs.
+- **Edit Resultant** (`bim.edit_structural_resultant`). Clicking a resultant of several
+  forces sets a target resultant and solves for the magnitudes of two of the forces, keeping
+  their directions; any others are kept, and with three or more forces the two are ticked.
+  `tool.Structural.solve_two_force_magnitudes` solves the two-by-two system and returns
+  nothing when the two directions are parallel or cannot make the target, as when it is out
+  of their plane. The dialog previews the result, warns when a force must reverse (a pull
+  becomes a push) or is shared by other applied loads, and reports when there is no
+  solution. Only forces in global coordinates are handled.
+- Dialogs open at the cursor, so before opening one from a clicked load the cursor is moved
+  just clear of the diagram, on the side of the clicked arrow, within the window.
