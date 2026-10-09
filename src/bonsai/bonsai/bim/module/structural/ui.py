@@ -564,7 +564,10 @@ class BIM_PT_show_structural_activities(Panel):
         row = self.layout.row(align=True)
         row.prop(self.props, "load_group_to_show")
         row = self.layout.row(align=True)
-        row.prop(self.props, "force_display", expand=True)
+        row.prop(self.props, "force_display")
+        if self.props.force_display in ("PARALLELOGRAM", "TIP_TO_TAIL"):
+            row = self.layout.row(align=True)
+            row.prop(self.props, "force_scale")
 
 
 class BIM_PT_structural_loads(Panel):

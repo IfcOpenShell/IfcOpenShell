@@ -480,8 +480,133 @@ class ShaderInfo:
             if blender_object.type == "MESH":
                 conn_location = blender_object.matrix_world @ blender_object.data.vertices[0].co
                 rotation = self.get_point_connection_rotation(conn)
+                if tool.Structural.get_structural_props().force_display in ("PARALLELOGRAM", "TIP_TO_TAIL"):
+                    self.get_vector_addition_args(activity_list, conn_location, rotation)
+                    continue
                 loads = self.get_point_loads_values(activity_list, rotation)
                 self.get_point_shader_args(loads, conn_location, rotation)
+
+    def get_vector_addition_args(
+        self, activity_list: list[tuple[ifcopenshell.entity_instance, float]], location: Vector, rotation: np.ndarray
+    ) -> None:
+        """Draw each point force from its point, added into their resultant by the parallelogram law or tip to tail"""
+        props = tool.Structural.get_structural_props()
+        location = np.array(location)
+        forces = []
+        for item in activity_list:
+            components = self.get_point_loads_values([item], rotation)[:3]
+            if props.reference_frame == "LOCAL_COORDS":
+                components = rotation @ components
+            if np.linalg.norm(components):
+                forces.append((item[0].AppliedLoad, components))
+        if not forces:
+            return
+        resultant = sum(force for _, force in forces)
+
+        # All forces share one scale so that their lengths compare, as in a graphical solution.
+        if props.force_scale:
+            scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get()) / props.force_scale
+        else:
+            scale = 2 / max(np.linalg.norm(resultant), *(np.linalg.norm(force) for _, force in forces))
+        # Arrowheads, shafts and dashes are sized to the longest arrow, so they read the same at any scale.
+        size = max(np.linalg.norm(resultant), *(np.linalg.norm(force) for _, force in forces)) * scale
+
+        colors = [(0.3, 0.8, 1, 1), (1, 0.4, 0.8, 1), (1, 0.9, 0.3, 1), (0.5, 1, 0.5, 1)]
+        vectors = [(force, colors[i % len(colors)]) for i, (_, force) in enumerate(forces)]
+        if len(forces) == 1:
+            # A single force has nothing to add to, so show it resolved into its components instead:
+            # they are the legs of its parallelogram, and it is the diagonal.
+            axes = rotation if props.reference_frame == "LOCAL_COORDS" else np.eye(3)
+            components = axes.T @ resultant
+            axis_colors = [(1, 0, 0, 1), (0, 1, 0, 1), (0, 0, 1, 1)]
+            vectors = [(components[j] * axes[:, j], axis_colors[j]) for j in range(3) if abs(components[j]) > 1e-9]
+
+        start = location
+        running = np.zeros(3)
+        for i, (vector, color) in enumerate(vectors):
+            if props.force_display == "PARALLELOGRAM":
+                tail = location
+                if i:
+                    # Complete the parallelogram of the vectors so far and this one. Each side is coloured
+                    # as the vector it is parallel to; the sum of the vectors so far is a resultant, in white.
+                    corner = location + (running + vector) * scale
+                    running_color = vectors[0][1] if i == 1 else (1, 1, 1, 1)
+                    self.add_dashed_line(location + running * scale, corner, size, color)
+                    self.add_dashed_line(location + vector * scale, corner, size, running_color)
+                    if i < len(vectors) - 1:
+                        self.add_dashed_line(location, corner, size, (1, 1, 1, 1))  # An intermediate resultant.
+            else:
+                tail = start
+            tip = tail + vector * scale
+            label = f"{np.linalg.norm(vector):.2f} {self.force_unit}"
+            self.add_force_arrow(tail, tip, color, label, size)
+            start = tip
+            running = running + vector
+
+        if len(vectors) > 1:
+            label = f"{'R = ' if len(forces) > 1 else ''}{np.linalg.norm(resultant):.2f} {self.force_unit}"
+            if abs(resultant[1]) < 1e-9:
+                label += f" at {np.degrees(np.arctan2(resultant[2], resultant[0])):.2f} deg"
+            # Alpha 2 because the shader caps opacity at half of it; the resultant draws fully opaque.
+            self.add_force_arrow(location, location + resultant * scale, (1, 1, 1, 2), label, size, spacing=0.3)
+
+    def get_perpendicular_axes(self, direction: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        helper = np.array((0, 0, 1)) if abs(direction[2]) < 0.9 else np.array((1, 0, 0))
+        d2 = np.cross(direction, helper)
+        d2 = d2 / np.linalg.norm(d2)
+        return d2, np.cross(direction, d2)
+
+    def add_force_arrow(
+        self, tail: np.ndarray, tip: np.ndarray, color: tuple, label: str, size: float, spacing: float = 0.2
+    ) -> None:
+        """Add an arrow from tail to tip, its head and shaft sized to size, the longest arrow drawn with it"""
+        length = np.linalg.norm(tip - tail)
+        if not length:
+            return
+        direction = (tip - tail) / length
+        # The shader works in units of a fifth of size: the head is 2 * spacing of them long.
+        unit = size / 5
+        d2, d3 = self.get_perpendicular_axes(direction)
+        d2, d3 = d2 * unit, d3 * unit
+        self.info.append(
+            {
+                "shader": self.shader.new("SINGLE FORCE"),
+                "args": {
+                    "position": [tip, tail + d2, tail - d2, tail + d3, tail - d3],
+                    "coord": [
+                        (0, 0, 0),
+                        (1, length / unit, 0),
+                        (-1, length / unit, 0),
+                        (1, length / unit, 0),
+                        (-1, length / unit, 0),
+                    ],
+                },
+                "indices": [(0, 1, 2), (0, 3, 4)],
+                "uniforms": [["color", color], ["spacing", spacing]],
+            }
+        )
+        # Labelled at the tip, as arrows often share their tail.
+        self.text_info.append({"position": tip + direction * unit * 0.3, "text": label})
+
+    def add_dashed_line(self, start: np.ndarray, end: np.ndarray, size: float, color: tuple) -> None:
+        width = size * 0.003
+        length = np.linalg.norm(end - start)
+        if not length:
+            return
+        d2, d3 = self.get_perpendicular_axes((end - start) / length)
+        position, indices = [], []
+        for axis in (d2, d3):
+            n = len(position)
+            position += [start + width * axis, start - width * axis, end + width * axis, end - width * axis]
+            indices += [(n, n + 1, n + 2), (n + 1, n + 3, n + 2)]
+        self.info.append(
+            {
+                "shader": self.shader.new("DASHED LINE"),
+                "args": {"position": position, "coord": [(1, 0, 0), (-1, 0, 0), (1, length, 0), (-1, length, 0)] * 2},
+                "indices": indices,
+                "uniforms": [["color", color], ["spacing", size * 0.03]],
+            }
+        )
 
     def get_point_shader_args(self, loads: Iterable, location: np.ndarray, rotation: np.ndarray) -> None:
         """get the args to the point shader"""
@@ -526,8 +651,8 @@ class ShaderInfo:
                 color = (0, 0, 1, 1)
             d1 = -(direction_dict[key][0] * loads[i])
             d1 = d1 / np.linalg.norm(d1)
-            if i < 3 and show_resultant:
-                # Scale components to the resultant so they draw its parallelogram.
+            if i < 3 and resultant:
+                # Scale components to the resultant so they draw its parallelogram, shown or not.
                 d1 = d1 * abs(loads[i]) / resultant
             if i < 3:
                 d2 = direction_dict[key][1]

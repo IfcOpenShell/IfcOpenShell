@@ -229,9 +229,26 @@ class BIMStructuralProperties(PropertyGroup):
             ("BOTH", "Both", "Show the resultant of point forces with their components"),
             ("RESULTANT", "Resultant", "Show only the resultant of point forces"),
             ("COMPONENTS", "Components", "Show only the X, Y and Z components of point forces"),
+            (
+                "PARALLELOGRAM",
+                "Parallelogram",
+                "Show each point force from its point, adding them into their resultant by the parallelogram law",
+            ),
+            (
+                "TIP_TO_TAIL",
+                "Tip-to-Tail",
+                "Show each point force tip to tail, with their resultant closing the chain",
+            ),
         ],
         name="Point Forces",
         default="BOTH",
+        update=update_loads_display,
+    )
+    force_scale: FloatProperty(
+        name="Force Scale",
+        description="Force per unit length to draw point forces to scale in the parallelogram and tip-to-tail modes."
+        " Zero fits them automatically",
+        min=0,
         update=update_loads_display,
     )
 
@@ -274,6 +291,7 @@ class BIMStructuralProperties(PropertyGroup):
         activity_type: str
         load_group_to_show: str
         force_display: str
+        force_scale: float
 
 
 class BIMObjectStructuralProperties(PropertyGroup):
