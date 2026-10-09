@@ -185,18 +185,21 @@ class ShaderInfo:
             symbol += unit_symbols.get(unit.Name.replace("METER", "METRE"), "?")
             return symbol
 
-        length_units = [u for u in tool.Ifc.get().by_type("IfcNamedUnit") if u.UnitType == "LENGTHUNIT"]
-        force_units = [u for u in tool.Ifc.get().by_type("IfcNamedUnit") if u.UnitType == "FORCEUNIT"]
-        linear_force_units = [u for u in tool.Ifc.get().by_type("IfcDerivedUnit") if u.UnitType == "LINEARFORCEUNIT"]
-        linear_moment_units = [u for u in tool.Ifc.get().by_type("IfcDerivedUnit") if u.UnitType == "LINEARMOMENTUNIT"]
-        planar_force_units = [u for u in tool.Ifc.get().by_type("IfcDerivedUnit") if u.UnitType == "PLANARFORCEUNIT"]
+        # Only units assigned to the project apply. Missing ones fall back to SI, as ifcopenshell.util.unit assumes.
+        ifc_file = tool.Ifc.get()
+        project_units = {
+            t: ifcunit.get_project_unit(ifc_file, t)
+            for t in ("FORCEUNIT", "LENGTHUNIT", "LINEARFORCEUNIT", "LINEARMOMENTUNIT", "PLANARFORCEUNIT")
+        }
+        linear_force_units = [u for u in [project_units["LINEARFORCEUNIT"]] if u]
+        linear_moment_units = [u for u in [project_units["LINEARMOMENTUNIT"]] if u]
+        planar_force_units = [u for u in [project_units["PLANARFORCEUNIT"]] if u]
 
-        # Units missing from the file fall back to SI, as ifcopenshell.util.unit assumes elsewhere.
-        conversion_force_unit = [u for u in force_units if u.is_a("IfcConversionBasedUnit")] or force_units
-        self.force_unit = ifcunit.get_unit_symbol(conversion_force_unit[0]) if conversion_force_unit else "N"
+        force_unit = project_units["FORCEUNIT"]
+        self.force_unit = ifcunit.get_unit_symbol(force_unit) if force_unit else "N"
 
-        conversion_length_unit = [u for u in length_units if u.is_a("IfcConversionBasedUnit")] or length_units
-        length_unit = ifcunit.get_unit_symbol(conversion_length_unit[0]) if conversion_length_unit else "m"
+        length_unit = project_units["LENGTHUNIT"]
+        length_unit = ifcunit.get_unit_symbol(length_unit) if length_unit else "m"
         self.moment_unit = self.force_unit + "." + length_unit
 
         # Derived units missing from the file are composed from the force and length units.
