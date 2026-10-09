@@ -266,6 +266,19 @@ class BIMStructuralProperties(PropertyGroup):
         default=True,
         update=update_loads_display,
     )
+    angle_reference: EnumProperty(
+        items=[
+            (
+                "HORIZONTAL",
+                "Nearest Horizontal",
+                "The acute angle from the nearest horizontal axis, as statics texts draw",
+            ),
+            ("POSITIVE_X", "+X Axis", "The angle counter-clockwise from the +X axis"),
+        ],
+        name="Angle From",
+        default="HORIZONTAL",
+        update=update_loads_display,
+    )
     force_scale: FloatProperty(
         name="Force Scale",
         description="Force per unit length to draw point forces to scale. Zero fits them automatically",
@@ -314,6 +327,7 @@ class BIMStructuralProperties(PropertyGroup):
         force_display: str
         force_scale: float
         show_force_angles: bool
+        angle_reference: str
         force_decimals: int
         angle_decimals: int
 

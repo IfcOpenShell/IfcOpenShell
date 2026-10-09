@@ -544,6 +544,7 @@ class ShaderInfo:
         start = location
         running = np.zeros(3)
         arcs_at_tail: dict[tuple, int] = {}
+        reference_axes: dict[tuple, tuple] = {}
         # In a tip-to-tail chain every tip is the next tail, so labels go at the middle of each arrow, outside
         # the polygon the chain and its resultant make; elsewhere tails are shared, so labels go at the tips.
         chain = np.cumsum([np.zeros(3)] + [vector for vector, _, _ in vectors], axis=0) * scale + location
@@ -567,7 +568,7 @@ class ShaderInfo:
                 side = self.get_label_side(vector, (tail + tip) / 2 - centre)
                 self.add_force_arrow(tail, tip, color, label, size, label_away=side, label_at_middle=True)
             if props.show_force_angles and has_angle:
-                self.add_force_angle(tail, vector, size, color, arcs_at_tail)
+                self.add_force_angle(tail, vector, size, color, arcs_at_tail, reference_axes)
             start = tip
             running = running + vector
 
@@ -591,43 +592,67 @@ class ShaderInfo:
                 label_at_middle=centre is not None,
             )
             if props.show_force_angles:
-                self.add_force_angle(location, resultant, size, (1, 1, 1, 1), arcs_at_tail)
+                self.add_force_angle(location, resultant, size, (1, 1, 1, 1), arcs_at_tail, reference_axes)
+        self.add_reference_axes(reference_axes, size)
 
     def add_force_angle(
-        self, tail: np.ndarray, vector: np.ndarray, size: float, color: tuple, arcs_at_tail: dict[tuple, int]
+        self,
+        tail: np.ndarray,
+        vector: np.ndarray,
+        size: float,
+        color: tuple,
+        arcs_at_tail: dict[tuple, int],
+        reference_axes: dict[tuple, tuple],
     ) -> None:
         """Mark a force's angle from a horizontal reference axis, as an arc in the X-Z plane"""
         if abs(vector[1]) > 1e-9 * np.linalg.norm(vector):
             return  # Not in the X-Z plane, so one angle does not describe it.
-        angle = np.degrees(np.arctan2(vector[2], vector[0]))
-        if abs(angle) < 0.01:
+        props = tool.Structural.get_structural_props()
+        end = np.degrees(np.arctan2(vector[2], vector[0]))
+        start = 0.0
+        if props.angle_reference == "HORIZONTAL" and vector[0] < -1e-9 * np.linalg.norm(vector):
+            # Measured from -X, so that the angle is the acute one statics texts draw.
+            start = 180.0
+            end = end if end > 0 else end + 360
+        if abs(end - start) < 0.01:
             return
         key = tuple(np.round(tail, 6))
-        if key not in arcs_at_tail:
-            arcs_at_tail[key] = 0
-            self.add_dashed_line(tail, tail + np.array((size * 0.45, 0, 0)), size, (1, 1, 1, 1))  # Reference axis.
+        arcs_at_tail.setdefault(key, 0)
         # Arcs sharing a tail get growing radii so that they do not overlap.
         radius = size * (0.18 + 0.05 * arcs_at_tail[key])
         arcs_at_tail[key] += 1
-        steps = max(4, int(abs(angle) / 5))
+        reference_axes.setdefault((key, start), (tail, start, []))[2].append((radius, color))
+        steps = max(4, int(abs(end - start) / 5))
         points = [
-            tail + radius * np.array((np.cos(a), 0, np.sin(a))) for a in np.radians(np.linspace(0, angle, steps + 1))
+            tail + radius * np.array((np.cos(a), 0, np.sin(a))) for a in np.radians(np.linspace(start, end, steps + 1))
         ]
         for a, b in zip(points, points[1:]):
             self.add_dashed_line(a, b, size, color, dashed=False)
-        middle = np.radians(angle / 2)
+        middle = np.radians((start + end) / 2)
         outward = np.array((np.cos(middle), 0, np.sin(middle)))
         # Away from the arc, and above or below the reference axis so small angles keep off the lines.
-        away = outward + np.array((0, 0, np.sign(angle)))
-        decimals = tool.Structural.get_structural_props().angle_decimals
+        away = outward + np.array((0, 0, np.sign(vector[2])))
+        angle = abs(end - start) if props.angle_reference == "HORIZONTAL" else end
         self.text_info.append(
             {
                 "position": tail + radius * outward,
-                "text": f"θ = {angle:.{decimals}f}°",
+                "text": f"θ = {angle:.{props.angle_decimals}f}°",
                 "color": color,
                 "away": away / np.linalg.norm(away),
             }
         )
+
+    def add_reference_axes(self, reference_axes: dict[tuple, tuple], size: float) -> None:
+        """Draw the horizontal axes angles are measured from, each band coloured as the arc that starts in it"""
+        for tail, start, arcs in reference_axes.values():
+            direction = np.array((np.cos(np.radians(start)), 0, 0))
+            arcs.sort(key=lambda arc: arc[0])
+            band_start = 0.0
+            for i, (radius, color) in enumerate(arcs):
+                # Bands end just past their arc, before the next arc out; the last runs on to the axis' length.
+                band_end = radius + size * 0.04 if i < len(arcs) - 1 else max(radius + size * 0.04, size * 0.45)
+                self.add_dashed_line(tail + direction * band_start, tail + direction * band_end, size, color)
+                band_start = band_end
 
     def get_label_side(self, vector: np.ndarray, towards: np.ndarray) -> np.ndarray:
         """Get the direction square to a vector, in the X-Z plane where possible, on the side of towards"""
