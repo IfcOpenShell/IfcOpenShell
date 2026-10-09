@@ -146,7 +146,12 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
 
                 for key, value in info["uniforms"]:
                     if key == "color" and i == hovered:
-                        value = tuple(min(c, 1.0) + (1 - min(c, 1.0)) * 0.6 for c in value[:3]) + (2,)
+                        rgb = [min(c, 1.0) for c in value[:3]]
+                        # Highlight by contrast: light arrows, such as white resultants, darken; others brighten.
+                        if 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2] > 0.85:
+                            value = tuple(c * 0.5 for c in rgb) + (2,)
+                        else:
+                            value = tuple(c + (1 - c) * 0.6 for c in rgb) + (2,)
                     shader.uniform_float(key, value)
 
                 batch.draw(shader)
