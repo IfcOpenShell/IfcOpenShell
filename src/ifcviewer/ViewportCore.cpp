@@ -970,11 +970,17 @@ struct PerModel {
 
 struct VsOut {
     @builtin(position) clip_pos: vec4<f32>,
-    @location(0) normal:    vec3<f32>,
     @location(1) color:     vec4<f32>,
     @location(2) world_pos: vec3<f32>,
     @location(3) @interpolate(flat) object_id: u32,
 };
+
+// Normal of the fragment's triangle, facing the viewer.
+fn flatNormal(world_pos: vec3<f32>, front_facing: bool) -> vec3<f32> {
+    // Window y runs downwards, so cross(dpdy, dpdx) faces a front-facing triangle's viewer.
+    let n = normalize(cross(dpdy(world_pos), dpdx(world_pos)));
+    return select(-n, n, front_facing);
+}
 
 // Sign-extend an i8 packed into the byte_idx'th byte of `packed`.
 fn extractI8(packed: u32, byte_idx: u32) -> i32 {
@@ -1039,22 +1045,12 @@ fn vs_main(@builtin(vertex_index) vid: u32) -> VsOut {
     let pz = f32(w1 & 0xFFFFu)         / 65535.0;
     let pos_local = mix(mq.aabb_min.xyz, mq.aabb_max.xyz, vec3<f32>(px, py, pz));
 
-    let nx = f32(extractI8(w1, 2u)) / 127.0;
-    let ny = f32(extractI8(w1, 3u)) / 127.0;
-    let n_local = octDecode(vec2<f32>(nx, ny));
-
     let r = f32(w2 & 0xFFu)          / 255.0;
     let g = f32((w2 >>  8u) & 0xFFu) / 255.0;
     let b = f32((w2 >> 16u) & 0xFFu) / 255.0;
     let a = f32((w2 >> 24u) & 0xFFu) / 255.0;
 
     let world4 = inst.transform * vec4<f32>(pos_local, 1.0);
-    let rot = mat3x3<f32>(inst.transform[0].xyz,
-                          inst.transform[1].xyz,
-                          inst.transform[2].xyz);
-    let n_world = normalize(rot * n_local);
-    let det = determinant(rot);
-    let n_final = select(n_world, -n_world, det < 0.0);
 
     var color = vec4<f32>(r, g, b, a);
     if (inst.color_override != 0u) {
@@ -1067,7 +1063,6 @@ fn vs_main(@builtin(vertex_index) vid: u32) -> VsOut {
 
     var out: VsOut;
     out.clip_pos  = u_frame.view_proj * world4;
-    out.normal    = n_final;
     out.color     = color;
     out.world_pos = world4.xyz;
     out.object_id = inst.object_id;
@@ -1087,10 +1082,10 @@ fn srgbToLinear(s: vec3<f32>) -> vec3<f32> {
 }
 
 @fragment
-fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
+fn fs_main(in: VsOut, @builtin(front_facing) front_facing: bool) -> @location(0) vec4<f32> {
     if (is_section_clipped(in.world_pos)) { discard; }
 
-    var n = normalize(in.normal);
+    let n = flatNormal(in.world_pos, front_facing);
 
     // World +Z is up (BIM convention). Hemisphere ambient: faces pointing
     // up read sky, faces pointing down read ground, lerp by n.z.
@@ -1101,12 +1096,6 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     let fill = max(dot(n, u_frame.fill_dir.xyz),  0.0) * 0.35;
 
     var color = in.color.xyz * (ambient + (key + fill) * 0.7);
-
-    // Cavity shading: where adjacent fragments have a sharp normal change
-    // (concave creases, edges where two faces meet), darken slightly so
-    // shape boundaries read on flat-colour models. Matches the GL shader.
-    let cavity = clamp(length(fwidth(n)) * 1.5, 0.0, 0.35);
-    color = color * (1.0 - cavity);
 
     // Selection tint. bit 0 = in selection (cool blue mix), bit 1 = active
     // (slightly stronger blue mix). Matches the GL main shader.
@@ -1147,7 +1136,6 @@ struct VsOutPick {
     @builtin(position) clip_pos: vec4<f32>,
     @location(0) @interpolate(flat) object_id: u32,
     @location(1) world_pos: vec3<f32>,
-    @location(2) normal:    vec3<f32>,
 };
 
 // Section tool needs the actual per-fragment normal (the AABB face was
@@ -1168,7 +1156,6 @@ fn vs_pick(@builtin(vertex_index) vid: u32) -> VsOutPick {
         out.clip_pos  = vec4<f32>(0.0, 0.0, 0.0, 0.0);
         out.object_id = 0u;
         out.world_pos = vec3<f32>(0.0, 0.0, 0.0);
-        out.normal    = vec3<f32>(0.0, 0.0, 1.0);
         return out;
     }
 
@@ -1190,32 +1177,19 @@ fn vs_pick(@builtin(vertex_index) vid: u32) -> VsOutPick {
     let pos_local = mix(mq.aabb_min.xyz, mq.aabb_max.xyz, pos_norm);
     let world4    = inst.transform * vec4<f32>(pos_local, 1.0);
 
-    // Decode the same octahedral normal as vs_main — pick needs it so
-    // the section tool can drop perpendicular cuts.
-    let nx = f32(extractI8(w1, 2u)) / 127.0;
-    let ny = f32(extractI8(w1, 3u)) / 127.0;
-    let n_local = octDecode(vec2<f32>(nx, ny));
-    let rot = mat3x3<f32>(inst.transform[0].xyz,
-                          inst.transform[1].xyz,
-                          inst.transform[2].xyz);
-    let n_world = normalize(rot * n_local);
-    let det = determinant(rot);
-    let n_final = select(n_world, -n_world, det < 0.0);
-
     out.clip_pos  = u_frame.view_proj * world4;
     out.object_id = inst.object_id;
     out.world_pos = world4.xyz;
-    out.normal    = n_final;
     return out;
 }
 
 @fragment
-fn fs_pick(in: VsOutPick) -> FsOutPick {
+fn fs_pick(in: VsOutPick, @builtin(front_facing) front_facing: bool) -> FsOutPick {
     if (is_section_clipped(in.world_pos)) { discard; }
     var out: FsOutPick;
     out.object_id = in.object_id;
     // Pack signed normal into RGBA16F (unsigned-ish half range) as ×0.5+0.5.
-    out.normal = vec4<f32>(normalize(in.normal) * 0.5 + vec3<f32>(0.5), 1.0);
+    out.normal = vec4<f32>(flatNormal(in.world_pos, front_facing) * 0.5 + vec3<f32>(0.5), 1.0);
     // Exact surface world position (F32) so surface pick lands on the true face,
     // not a ray-AABB approximation.
     out.world_pos = vec4<f32>(in.world_pos, 1.0);
