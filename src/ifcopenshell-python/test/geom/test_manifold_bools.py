@@ -25,9 +25,7 @@ def test_manifold_emits_normals():
     settings = ifcopenshell.geom.settings()
     settings.set("weld-vertices", False)
     shapes = [
-        *ifcopenshell.geom.consume_iterator(
-            ifcopenshell.geom.iterator(settings, model, geometry_library="manifold")
-        )
+        *ifcopenshell.geom.consume_iterator(ifcopenshell.geom.iterator(settings, model, geometry_library="manifold"))
     ]
 
     assert shapes
@@ -51,6 +49,4 @@ def test_manifold_mesh_fallback_emits_normals():
 
     assert geometry.verts
     assert len(geometry.normals) == len(geometry.verts)
-    assert all(
-        component == pytest.approx(expected) for component, expected in zip(geometry.normals, (0, 0, 1) * 4)
-    )
+    assert all(component == pytest.approx(expected) for component, expected in zip(geometry.normals, (0, 0, 1) * 4))
