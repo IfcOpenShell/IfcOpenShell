@@ -509,6 +509,8 @@ class BIM_UL_structural_activities(UIList):
             row = layout.row(align=True)
             row.label(text=item.name)
             row.label(text=item.applied_load_class)
+            op = row.operator("bim.remove_structural_activity", text="", icon="X")
+            op.activity = item.ifc_definition_id
 
 
 class BIM_PT_show_structural_activities(Panel):

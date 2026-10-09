@@ -54,6 +54,7 @@ classes = (
     operator.AddStructuralLoadGroup,
     operator.RemoveStructuralLoadGroup,
     operator.AddStructuralActivity,
+    operator.RemoveStructuralActivity,
     operator.EnableEditingStructuralLoadCase,
     operator.EnableEditingStructuralLoadCaseGroups,
     operator.DisableEditingStructuralLoadCase,
