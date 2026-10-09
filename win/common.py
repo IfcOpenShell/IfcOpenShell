@@ -222,9 +222,14 @@ def is_json_or_xml_document_serializer(path: Path) -> bool:
 
 
 def is_geometry_serializer(path: Path) -> bool:
-    # Besides the Python bindings, geometry serializers (obj, svg, glb, ...) are only used by IfcConvert
-    # and svgfill only by the svgfill executable, so the other executables leave them out.
-    return re.fullmatch(r"ifcopenshell_geometry_[A-Za-z]+", path.stem) is not None
+    # Besides the Python bindings, geometry serializers (obj, svg, glb, ...) are only used by IfcConvert,
+    # the other executables leave them out.
+    return not is_svgfill(path) and re.fullmatch(r"ifcopenshell_geometry_[A-Za-z]+", path.stem) is not None
+
+
+def is_svgfill(path: Path) -> bool:
+    # Besides the Python bindings, svgfill is only used by the svgfill executable, the other executables leave it out.
+    return path.stem == "ifcopenshell_geometry_svgfill"
 
 
 def is_geometry_tree(path: Path) -> bool:
