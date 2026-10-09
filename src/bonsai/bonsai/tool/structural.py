@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 import json
+import math
 from typing import TYPE_CHECKING, Any, Union
 
 import bpy
@@ -105,6 +106,24 @@ class Structural(bonsai.core.tool.Structural):
         props = cls.get_structural_props()
         model = tool.Ifc.get().by_id(props.active_structural_analysis_model_id)
         return model
+
+    @classmethod
+    def get_in_plane_components(
+        cls, mode: str, magnitude: float = 0.0, angle: float = 0.0, rise: float = 0.0, run: float = 0.0
+    ) -> tuple[float, float]:
+        """Get the horizontal and vertical components of a force in a vertical plane.
+
+        :param mode: ANGLE for an angle in degrees above the horizontal, or SLOPE
+            for a rise over a run. Negative angles, rises or runs give downward
+            or leftward components.
+        :return: The horizontal (X) and vertical (Z) components.
+        """
+        if mode == "ANGLE":
+            return magnitude * math.cos(math.radians(angle)), magnitude * math.sin(math.radians(angle))
+        length = math.hypot(rise, run)
+        if not length:
+            return 0.0, 0.0
+        return magnitude * run / length, magnitude * rise / length
 
     @classmethod
     def get_current_structural_analysis_model(cls) -> Union[ifcopenshell.entity_instance, None]:

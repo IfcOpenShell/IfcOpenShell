@@ -55,6 +55,10 @@ def get_applicable_structural_load_types(
 ) -> list[tuple[str, str, str]]:
     if not StructuralLoadCasesData.is_loaded:
         StructuralLoadCasesData.load()
+    # Recomputed on every call so the choices follow the current selection.
+    StructuralLoadCasesData.data["applicable_structural_load_types"] = (
+        StructuralLoadCasesData.applicable_structural_load_types()
+    )
     return StructuralLoadCasesData.data["applicable_structural_load_types"]
 
 

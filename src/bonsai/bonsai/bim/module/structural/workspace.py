@@ -36,7 +36,7 @@ class StructuralTool(WorkSpaceTool):
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.structural")
     bl_widget = None
     bl_keymap = tool.Blender.get_default_selection_keypmap() + (
-        ("bim.structural_hotkey", {"type": "A", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_A")]}),
+        ("bim.structural_hotkey", {"type": "L", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_L")]}),
     )
 
     def draw_settings(context, layout, ws_tool):
@@ -74,11 +74,11 @@ class StructuralToolUI:
 
     @classmethod
     def draw_default_interface(cls):
-        add_layout_hotkey(cls.layout, "Placeholder", "S_A", "Placeholder Operator")
+        pass
 
     @classmethod
     def draw_selected_object_interface(cls, context):
-        pass
+        add_layout_hotkey(cls.layout, "Apply Load", "S_L", "Apply a force to the selected structural items")
 
     @classmethod
     def draw_type_selection_interface(cls, context):
@@ -112,5 +112,5 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     def draw(self, context):
         pass
 
-    def hotkey_S_A(self):
-        pass
+    def hotkey_S_L(self):
+        bpy.ops.bim.apply_structural_load("INVOKE_DEFAULT")
