@@ -148,14 +148,18 @@ TEST_CASE("a mirror image does not match", "[mesh_dedup]") {
     CHECK_FALSE(dedup.findCongruentMesh(transformed(base, mirror)).has_value());
 }
 
-TEST_CASE("different triangles or colours over the same points do not match", "[mesh_dedup]") {
+TEST_CASE("a retriangulation of the same points matches, other colours do not", "[mesh_dedup]") {
     MeshDedup dedup;
     const StreamedMesh base = tetrahedron();
     dedup.registerMesh(0, base);
 
     StreamedMesh reindexed = base;
     std::swap(reindexed.indices[0], reindexed.indices[1]);
-    CHECK_FALSE(dedup.findCongruentMesh(reindexed).has_value());
+    CHECK(dedup.findCongruentMesh(reindexed).has_value());
+
+    StreamedMesh fewer_triangles = base;
+    fewer_triangles.indices.resize(fewer_triangles.indices.size() - 3);
+    CHECK_FALSE(dedup.findCongruentMesh(fewer_triangles).has_value());
 
     CHECK_FALSE(dedup.findCongruentMesh(tetrahedron(0xFF112233u)).has_value());
 }
