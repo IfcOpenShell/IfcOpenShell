@@ -38,11 +38,13 @@
 // Matching is order-dependent (Procrustes): vertex i of the candidate must
 // correspond to vertex i of the registered mesh. A mesh matches a prior
 // registered mesh when:
-//   * cheap filter: vertex count, index list and vertex colours are identical;
-//   * the radius of gyration agrees within the tolerance;
+//   * cheap filter: vertex / index count and vertex colours are identical;
+//   * the radius of gyration and every vertex's distance from the centroid
+//     agree, in order, within the tolerance (both are rotation-invariant);
 //   * the best-fit proper rotation + translation (Kabsch) carries every
 //     registered vertex onto the candidate vertex within the tolerance.
-// Mirror images will not match.
+// Note the iterator may vary triangulation diagonals between identical shapes,
+// so we don't check ordered indices. Mirror images will not match.
 //
 // The tolerance is absolute (metres) plus a float-precision allowance that
 // grows with the coordinate magnitude, so meshes far from the origin still
@@ -63,17 +65,17 @@ public:
 private:
     struct Key {
         uint32_t vertex_count = 0;
-        uint64_t index_hash = 0;
+        uint32_t index_count = 0;
         uint64_t color_hash = 0;
         bool operator==(const Key& o) const {
-            return vertex_count == o.vertex_count && index_hash == o.index_hash
+            return vertex_count == o.vertex_count && index_count == o.index_count
                 && color_hash == o.color_hash;
         }
     };
     struct KeyHash {
         std::size_t operator()(const Key& k) const {
-            return std::size_t(k.index_hash ^ (k.color_hash * 0x9E3779B97F4A7C15ull)
-                               ^ (uint64_t(k.vertex_count) << 32));
+            return std::size_t((k.color_hash * 0x9E3779B97F4A7C15ull)
+                               ^ (uint64_t(k.vertex_count) << 32) ^ k.index_count);
         }
     };
     struct CanonicalMesh {
@@ -82,6 +84,7 @@ private:
         double max_abs_coordinate = 0.0;
         Eigen::Vector3d centroid = Eigen::Vector3d::Zero();
         std::vector<float> centered_positions;  // xyz per vertex, relative to centroid
+        std::vector<float> centroid_distances;  // |centered position| per vertex
     };
 
     static Key getMeshKey(const StreamedMesh& mesh);

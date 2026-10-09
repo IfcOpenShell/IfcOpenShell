@@ -53,8 +53,7 @@ MeshDedup::Key MeshDedup::getMeshKey(const StreamedMesh& mesh) {
     const std::size_t vertex_count = mesh.vertices.size() / INSTANCED_VERTEX_STRIDE_FLOATS;
 
     key.vertex_count = static_cast<uint32_t>(vertex_count);
-    key.index_hash = hashBytes(mesh.indices.data(),
-                                     mesh.indices.size() * sizeof(uint32_t));
+    key.index_count = static_cast<uint32_t>(mesh.indices.size());
 
     std::vector<uint32_t> colors(vertex_count);
     for (std::size_t i = 0; i < vertex_count; ++i) {
@@ -82,6 +81,7 @@ MeshDedup::CanonicalMesh MeshDedup::canonicaliseMesh(const StreamedMesh& mesh) {
     if (vertex_count > 0) canonical_mesh.centroid = sum / double(vertex_count);
 
     canonical_mesh.centered_positions.resize(vertex_count * 3);
+    canonical_mesh.centroid_distances.resize(vertex_count);
     double sq = 0.0;
     for (std::size_t i = 0; i < vertex_count; ++i) {
         const float* v = mesh.vertices.data() + i * INSTANCED_VERTEX_STRIDE_FLOATS;
@@ -89,6 +89,7 @@ MeshDedup::CanonicalMesh MeshDedup::canonicaliseMesh(const StreamedMesh& mesh) {
         canonical_mesh.centered_positions[i * 3 + 0] = static_cast<float>(c.x());
         canonical_mesh.centered_positions[i * 3 + 1] = static_cast<float>(c.y());
         canonical_mesh.centered_positions[i * 3 + 2] = static_cast<float>(c.z());
+        canonical_mesh.centroid_distances[i] = static_cast<float>(c.norm());
         sq += c.squaredNorm();
     }
     if (vertex_count > 0) canonical_mesh.radius_of_gyration = std::sqrt(sq / double(vertex_count));
@@ -102,6 +103,13 @@ bool MeshDedup::rigidFit(const CanonicalMesh& registered, const CanonicalMesh& c
                                          candidate.max_abs_coordinate);
     if (std::fabs(registered.radius_of_gyration - candidate.radius_of_gyration) > tol) {
         return false;
+    }
+    // Rotation-invariant and order-dependent: a necessary condition for the
+    // fit below, at a fraction of its cost.
+    for (std::size_t i = 0; i < registered.centroid_distances.size(); ++i) {
+        if (std::fabs(registered.centroid_distances[i] - candidate.centroid_distances[i]) > tol) {
+            return false;
+        }
     }
 
     const Eigen::Index n = static_cast<Eigen::Index>(registered.centered_positions.size() / 3);
