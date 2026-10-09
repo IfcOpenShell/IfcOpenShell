@@ -931,6 +931,10 @@ class ApplyStructuralLoad(bpy.types.Operator, tool.Ifc.Operator, StructuralForce
         self.draw_force_inputs(layout, category)
         if category:
             layout.label(text=f"Applies to {len(elements)} {category[3:]}", icon="INFO")
+        if not tool.Ifc.get().by_type("IfcStructuralAnalysisModel"):
+            layout.label(text="A structural analysis model will be created", icon="INFO")
+        elif not tool.Structural.get_current_structural_analysis_model():
+            layout.label(text="No current analysis model: choose one to assign the load case to", icon="ERROR")
 
     def _execute(self, context):
         category, elements = self.get_targets(context)
@@ -938,13 +942,29 @@ class ApplyStructuralLoad(bpy.types.Operator, tool.Ifc.Operator, StructuralForce
             self.report({"ERROR"}, "Select point connections, curve members or surface members, but only one kind.")
             return {"CANCELLED"}
         ifc_file = tool.Ifc.get()
+        if not ifc_file.by_type("IfcStructuralAnalysisModel"):
+            # Loads only take part in an analysis through a model, so start one.
+            model = core.add_structural_analysis_model(tool.Ifc, tool.Structural)
+            project = ifc_file.by_type("IfcProject")[0]
+            ifcopenshell.api.structural.edit_structural_analysis_model(
+                ifc_file, structural_analysis_model=model, attributes={"Name": project.Name or "Structural Analysis"}
+            )
+        for element in elements:
+            # Items made before there was a current model belong to none yet.
+            if not any(
+                rel.RelatingGroup and rel.RelatingGroup.is_a("IfcStructuralAnalysisModel")
+                for rel in element.HasAssignments
+                if rel.is_a("IfcRelAssignsToGroup")
+            ):
+                tool.Structural.assign_to_current_structural_analysis_model(element)
         if self.load_group in ("", "0"):
             group = ifcopenshell.api.structural.add_structural_load_case(
                 ifc_file, name=self.new_load_case_name or "Load Case"
             )
-            tool.Structural.assign_to_current_structural_analysis_model(group)
         else:
             group = ifc_file.by_id(int(self.load_group))
+        if group.is_a("IfcStructuralLoadCase") and not group.LoadGroupFor:
+            tool.Structural.assign_to_current_structural_analysis_model(group)
 
         load_class, activity_class, _, _ = APPLY_LOAD_CLASSES[category]
         load = ifcopenshell.api.structural.add_structural_load(
