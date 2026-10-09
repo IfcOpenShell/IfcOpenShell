@@ -247,7 +247,8 @@ class StructuralLoadCasesData:
             load_groups = []
             for rel in load_case.IsGroupedBy or []:
                 for related_object in rel.RelatedObjects:
-                    load_groups.append({"id": related_object.id(), "name": related_object.Name or "Unnamed"})
+                    if related_object.is_a("IfcStructuralLoadGroup"):
+                        load_groups.append({"id": related_object.id(), "name": related_object.Name or "Unnamed"})
             results.append(
                 {
                     "id": load_case.id(),

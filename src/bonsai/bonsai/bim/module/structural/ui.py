@@ -466,6 +466,13 @@ class BIM_PT_structural_load_cases(Panel):
 
     def draw_editable_load_case_group_ui(self, load_case):
         box = self.layout.box()
+        row = box.row(align=True)
+        row.label(text="Load Case Activities", icon="ANIM_DATA")
+        op = row.operator("bim.enable_editing_structural_load_group_activities", text="", icon="GHOST_ENABLED")
+        op.load_group = load_case["id"]
+        if self.props.active_load_group_id == load_case["id"] and self.props.load_group_editing_type == "ACTIVITY":
+            self.draw_editable_load_group_activities_ui(box, load_case)
+
         if not load_case["load_groups"]:
             row = box.row(align=True)
             row.label(text="No Load Groups Found")
