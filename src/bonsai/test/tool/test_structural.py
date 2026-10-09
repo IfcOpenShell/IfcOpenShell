@@ -68,3 +68,24 @@ class TestGetSimpleSlope(NewFile):
         rise, run = subject.get_simple_slope(3, 7.1)
         assert math.isclose(math.hypot(rise, run), 1)
         assert math.isclose(rise / run, 7.1 / 3)
+
+
+class TestSolveTwoForceMagnitudes(NewFile):
+    def test_two_pulls_making_a_resultant(self):
+        # Two pulls at 20 degrees up and 30 degrees down from a horizontal 120.
+        first = (math.cos(math.radians(20)), 0, math.sin(math.radians(20)))
+        second = (math.cos(math.radians(30)), 0, -math.sin(math.radians(30)))
+        a, b = subject.solve_two_force_magnitudes((120, 0, 0), first, second)
+        assert math.isclose(a, 120 * math.sin(math.radians(30)) / math.sin(math.radians(130)))
+        assert math.isclose(b, 120 * math.sin(math.radians(20)) / math.sin(math.radians(130)))
+
+    def test_a_negative_magnitude_reverses_a_force(self):
+        a, b = subject.solve_two_force_magnitudes((-1, 0, 0), (1, 0, 0), (0, 0, 1))
+        assert math.isclose(a, -1)
+        assert math.isclose(b, 0, abs_tol=1e-12)
+
+    def test_parallel_directions_have_no_solution(self):
+        assert subject.solve_two_force_magnitudes((1, 0, 1), (1, 0, 0), (-1, 0, 0)) is None
+
+    def test_a_target_out_of_their_plane_has_no_solution(self):
+        assert subject.solve_two_force_magnitudes((0, 10, 0), (1, 0, 0), (0, 0, 1)) is None
