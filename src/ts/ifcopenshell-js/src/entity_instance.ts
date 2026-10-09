@@ -5,17 +5,26 @@ import type { AttributeValueType as NativeAttributeValueType } from '@ifcopenshe
 import { IfcOpenShellError } from './init.js';
 
 /** Values decoded by the native WASM attribute typemap. */
-export type AttributeValueType = NativeAttributeValueType<entity_instance>;
+export type AttributeValueType = NativeAttributeValueType<EntityInstance>;
 
-/** Plain-object snapshot returned by `entity_instance.getInfo()`. */
-export interface entity_instance_info {
-  id: number;
+export type EntityInfoValue<T = never> = null | boolean | number | bigint | string | EntityInstance | EntityInstanceInfo<T> | T | EntityInfoValue<T>[];
+
+/** Flat dictionary returned by `EntityInstance.getInfo()`. */
+export interface EntityInstanceInfo<T = never> {
+  id?: number;
   type: string;
-  attributes: Record<string, AttributeValueType>;
+  [attribute: string]: EntityInfoValue<T> | undefined;
+}
+
+export interface GetInfoOptions<T = EntityInstanceInfo> {
+  includeIdentifier?: boolean;
+  recursive?: boolean;
+  ignore?: readonly string[];
+  returnType?: (info: EntityInstanceInfo<unknown>) => T;
 }
 
 /** IFC entity instance with attribute conveniences. */
-export class entity_instance extends IfcOpenshellInstance {
+export class EntityInstance extends IfcOpenshellInstance {
   constructor(
     handle: IfcOpenshellInstance,
   ) {
@@ -54,29 +63,45 @@ export class entity_instance extends IfcOpenshellInstance {
    *
    * With `recursive`, referenced entities are expanded as well.
    */
-  getInfo(options: { recursive?: boolean, include_identifier?: boolean, ignore?: Set<string> } = {}): entity_instance_info {
-    const visited = new Set<number>();
-    const mapValue = (value: AttributeValueType): AttributeValueType => {
-      if (value instanceof entity_instance) {
-        return buildInfo(value) as unknown as AttributeValueType;
+  getInfo(options?: GetInfoOptions): EntityInstanceInfo;
+  getInfo<T>(options: Omit<GetInfoOptions<T>, 'returnType'> & { returnType: (info: EntityInstanceInfo<unknown>) => T }): T;
+  getInfo<T = EntityInstanceInfo>(options: GetInfoOptions<T> = {}): T | EntityInstanceInfo<T> {
+    const active = new Set<number>();
+    const ignore = new Set(options.ignore);
+    const mapValue = (value: AttributeValueType): EntityInfoValue<T> => {
+      if (value instanceof EntityInstance) {
+        return buildInfo(value);
       }
       if (Array.isArray(value)) {
-        return (value as AttributeValueType[]).map(mapValue) as AttributeValueType;
+        return value.map(mapValue);
       }
       return value;
     }
-    const buildInfo = (instance: entity_instance): entity_instance_info => {
-      if (visited.has(instance.id())) {
-        return { id: instance.id(), type: instance.isA(), attributes: {} };
+    const release = (value: AttributeValueType): void => {
+      if (value instanceof EntityInstance) value.dispose();
+      else if (Array.isArray(value)) value.forEach(release);
+    };
+    const buildInfo = (instance: EntityInstance): T | EntityInstanceInfo<T> => {
+      const identity = instance.identity();
+      if (active.has(identity)) throw new RangeError('Cyclic entity reference in recursive getInfo');
+      active.add(identity);
+      const info: EntityInstanceInfo<T> = options.includeIdentifier ?? true
+        ? { id: instance.id(), type: instance.isA() }
+        : { type: instance.isA() };
+      try {
+        for (const name of instance.attributes()) {
+          if (ignore.has(name)) continue;
+          const value = instance.get(name);
+          if (options.recursive) {
+            try { info[name] = mapValue(value); } finally { release(value); }
+          } else {
+            info[name] = value;
+          }
+        }
+        return options.returnType ? options.returnType(info) : info;
+      } finally {
+        active.delete(identity);
       }
-      visited.add(instance.id());
-      const attributes: Record<string, AttributeValueType> = {};
-      for (const [name, value] of instance.entries()) {
-        if (options.ignore?.has(name)) continue;
-
-        attributes[name] = mapValue(value);
-      }
-      return { id: instance.id(), type: instance.isA(), attributes };
     };
     return buildInfo(this);
   }
@@ -86,12 +111,12 @@ export class entity_instance extends IfcOpenshellInstance {
   }
 
   /** Return entities referenced by the named inverse attribute. */
-  inverse(name: string): entity_instance[] {
+  inverse(name: string): EntityInstance[] {
     const list = this.getInverse(name);
     try {
-      const out: entity_instance[] = [];
+      const out: EntityInstance[] = [];
       for (let i = 0; i < list.size(); i++) {
-        const item = list.get(i) as entity_instance | null;
+        const item = list.get(i) as EntityInstance | null;
         if (item) out.push(item);
       }
       return out;

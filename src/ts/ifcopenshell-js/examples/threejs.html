@@ -36,7 +36,26 @@
 <aside>
   <div>
     IfcOpenShell Native WASM Three.js demo<br><br><br>
-    <input id="upload" type="file" accept=".ifc">
+    <form>
+      <input id="upload" type="file" accept=".ifc">
+      <label>
+        <input id="opencascade" type="checkbox" onchange="ensureChecked(this)">
+        OpenCASCADE
+      </label>
+      <label>
+        <input id="manifold" type="checkbox" checked onchange="ensureChecked(this)">
+        Manifold
+      </label>
+
+      <script>
+        function ensureChecked(changed) {
+          if (!document.querySelector('#opencascade').checked &&
+              !document.querySelector('#manifold').checked) {
+            changed.checked = true;
+          }
+        }
+      </script>
+    </form>
   </div>
 </aside>
 <script type="importmap">
@@ -103,10 +122,10 @@ document.querySelector('#upload').onchange = async () => {
 
     file = ifcopenshell.open(bytes, selected.name);
 
-    settings = new ifcopenshell_geom.settings();
+    settings = new ifcopenshell_geom.Settings();
     settings.set('weld-vertices', false);
 
-    iterator = new ifcopenshell_geom.iterator(settings, file, { geometryLibrary: 'manifold' });
+    iterator = new ifcopenshell_geom.Iterator(settings, file, { geometryLibrary: 'manifold' });
     let nextYield = performance.now() + 30;
     if (iterator.initialize()) do {
       if (performance.now() >= nextYield) {

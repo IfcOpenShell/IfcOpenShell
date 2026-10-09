@@ -13,7 +13,7 @@ import type {
   IfcOpenshellGeomIterator,
   IfcOpenshellGeomTriangulationElement,
 } from '@ifcopenshell/wasm/api';
-import type { file } from '../file.js';
+import type { File } from '../file.js';
 /** Serializer progress in native processing order. */
 export interface OperationProgress {
   phase: string;
@@ -21,7 +21,7 @@ export interface OperationProgress {
   ratio?: number;
   current?: number;
 }
-import type { settings } from '../geom/settings.js';
+import type { Settings } from '../geom/settings.js';
 import { IfcOpenShellError, abortError, ifcopenshell, fs } from '../init.js';
 
 /** Formats supported by {@link exportToBuffer}. */
@@ -58,8 +58,8 @@ export interface ExportOptions {
  * cannot initialize and throws when a serializer or geometry element fails.
  */
 export async function exportToBuffer(
-  file: file,
-  geomSettings: settings,
+  file: File,
+  geomSettings: Settings,
   format: SerializerFormat,
   options: ExportOptions = {},
 ): Promise<ExportResult | null> {

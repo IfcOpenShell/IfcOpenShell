@@ -1,8 +1,7 @@
 
 import { IfcOpenshellFile } from '@ifcopenshell/wasm/api';
-import type { entity_instance } from './entity_instance.js';
+import type { AttributeValueType, EntityInstance } from './entity_instance.js';
 import { IfcOpenShellError, abortError, ifcopenshell } from './init.js';
-import { inspectEntity, type entity_instance_info } from './util/inspect.js';
 
 /** Options controlling IFC byte-stream loading. */
 export interface OpenOptions {
@@ -12,34 +11,13 @@ export interface OpenOptions {
   readonly?: boolean;
 }
 
-/** Header values exposed from an IFC file's STEP header. */
-export interface HeaderInfo {
-  description: string[];
-  implementationLevel: string;
-  name: string;
-  timeStamp: string;
-  author: string[];
-  organization: string[];
-  preprocessorVersion: string;
-  originatingSystem: string;
-  authorization: string;
-  schemas: string[];
-}
-
-/** Summary information for an opened IFC file. */
-export interface FileInfo {
-  schema: string;
-  ids: number[];
-  types: string[];
-  entityCount: number;
-  maxId: number;
-  good: number;
-  storageMode: number;
-  header: HeaderInfo | null;
+export interface GetInverseOptions {
+  allowDuplicate?: boolean;
+  withAttributeIndices?: boolean;
 }
 
 /** High-level wrapper for an IFC file and its entity graph. */
-export class file extends IfcOpenshellFile {
+export class File extends IfcOpenshellFile {
   /** Create an empty file, or take ownership of an existing native file handle. */
   constructor(schemaOrHandle: string | IfcOpenshellFile = 'IFC4') {
     const handle = typeof schemaOrHandle === 'string'
@@ -54,7 +32,7 @@ export class file extends IfcOpenshellFile {
     bytes: Uint8Array | ArrayBuffer,
     filename?: string,
     options: OpenOptions = {},
-  ): file {
+  ): File {
     if (options.signal?.aborted) {
       throw abortError('Opening IFC file was aborted', options.signal.reason);
     }
@@ -64,7 +42,7 @@ export class file extends IfcOpenshellFile {
       throw abortError('Opening IFC file was aborted', options.signal.reason);
     }
     if (!handle || handle.ptr === 0) throw new IfcOpenShellError('Failed to open IFC file');
-    return new file(handle);
+    return new File(handle);
   }
 
   get maxId(): number {
@@ -80,171 +58,104 @@ export class file extends IfcOpenshellFile {
     return this.ids.length;
   }
 
-  get isValid(): boolean {
-    return this.good() !== 0;
-  }
+  declare byId: (id: number) => EntityInstance;
+  declare byGuid: (guid: string) => EntityInstance;
 
-  /** Return an entity by numeric STEP id, or `null` when it is absent. */
-  get(id: number): entity_instance | null {
-    return catchNull(() => this.byId(id)) as entity_instance | null;
-  }
-
-  /** Return an entity by GlobalId, or `null` when it is absent. */
-  find(guid: string): entity_instance | null {
-    return catchNull(() => this.byGuid(guid)) as entity_instance | null;
-  }
-
-  /** Return all entities of a type, optionally excluding its subtypes. */
-  all(typeName: string, options: { includeSubtypes?: boolean } = {}): entity_instance[] {
-    const list = options.includeSubtypes === false
-      ? this.byTypeExclSubtypes(typeName)
-      : this.byType(typeName);
+  /** Create an entity with any of its IFC attributes, using their schema names. */
+  create(ifcClass: string, attributes: Record<string, AttributeValueType> = {}): EntityInstance {
+    const entity = this.createEntityByName(ifcClass) as EntityInstance | null;
+    if (!entity) throw new IfcOpenShellError(`Failed to create ${ifcClass}`);
     try {
-      const out: entity_instance[] = [];
-      for (let i = 0; i < list.size(); i++) {
-        const item = list.get(i) as entity_instance | null;
-        if (item) out.push(item);
-      }
-      return out;
-    } finally {
-      list.destroy();
+      for (const [name, value] of Object.entries(attributes)) entity.set(name, value);
+      return entity;
+    } catch (error) {
+      try { this.remove(entity); } finally { entity.dispose(); }
+      throw error;
     }
   }
 
-  /** Create an entity through the low-level file API. */
-  createEntity(ifcClass: string, options: { predefinedType?: string | null; name?: string | null } = {}): entity_instance {
-    const entity = this.createEntityByName(ifcClass) as entity_instance | null;
-    if (!entity) throw new IfcOpenShellError(`Failed to create ${ifcClass}`);
-    if (options.name != null) entity.set('Name', options.name);
-    if (options.predefinedType != null) entity.set('PredefinedType', options.predefinedType);
-    return entity;
+  /** General IFC schema version, without addendum or technical corrigendum suffixes. */
+  schema(): string {
+    return this.schemaIdentifier().replace(/(_ADD|_TC)\d+.*$/, '');
   }
 
   /** Add an entity, assigning a new id unless `instanceId` is given explicitly. */
-  override add(entity: entity_instance, instanceId = -1): entity_instance {
-    const added = super.add(entity, instanceId) as entity_instance | null;
+  override add(entity: EntityInstance, instanceId = -1): EntityInstance {
+    const added = super.add(entity, instanceId) as EntityInstance | null;
     if (!added) throw new IfcOpenShellError(`Failed to add ${entity.isA()} to file`);
     return added;
   }
 
-  /** Remove an entity and the relationships referencing it. */
-  override remove(entity: entity_instance): void {
-    super.remove(entity);
-  }
-
-  text(): string {
-    return this.toString();
-  }
-
-  /** Return schema, entity-id, validity, storage, and header summary data. */
-  getInfo(): FileInfo {
-    const ids = this.ids;
-    return {
-      schema: this.schemaName(),
-      ids,
-      types: this.types(),
-      entityCount: ids.length,
-      maxId: this.getMaxId(),
-      good: this.good(),
-      storageMode: this.storageMode(),
-      header: this.headerInfo(),
-    };
-  }
-
-  /** Read the STEP header, returning `null` when no header is available. */
-  headerInfo(): HeaderInfo | null {
-    const header = this.header();
-    if (!header || header.ptr === 0) return null;
-    try {
-      const description = header.fileDescription();
-      const name = header.fileName();
-      const schema = header.fileSchema();
-      try {
-        return {
-          description: description.description(),
-          implementationLevel: description.implementationLevel(),
-          name: name.name(),
-          timeStamp: name.timeStamp(),
-          author: name.author(),
-          organization: name.organization(),
-          preprocessorVersion: name.preprocessorVersion(),
-          originatingSystem: name.originatingSystem(),
-          authorization: name.authorization(),
-          schemas: schema.schemaIdentifiers(),
-        };
-      } finally {
-        schema.destroy();
-        name.destroy();
-        description.destroy();
-      }
-    } finally {
-      header.destroy();
+  getInverse(entity: EntityInstance, options: { allowDuplicate?: false; withAttributeIndices?: false }): Set<EntityInstance>;
+  getInverse(entity: EntityInstance, options: { allowDuplicate: true; withAttributeIndices: true }): [EntityInstance, number][];
+  getInverse(entity: EntityInstance, options: { allowDuplicate: true; withAttributeIndices?: false }): EntityInstance[];
+  getInverse(entity: EntityInstance): Set<EntityInstance>;
+  getInverse(entity: EntityInstance, options: GetInverseOptions): Set<EntityInstance> | EntityInstance[] | [EntityInstance, number][];
+  getInverse(entity: EntityInstance, options: GetInverseOptions = {}): Set<EntityInstance> | EntityInstance[] | [EntityInstance, number][] {
+    const { allowDuplicate = false, withAttributeIndices = false } = options;
+    if (withAttributeIndices && !allowDuplicate) {
+      throw new IfcOpenShellError('withAttributeIndices requires allowDuplicate to be true');
     }
-  }
-
-  status(): number {
-    return this.good();
-  }
-
-  unit(unitType: string): number {
-    return this.getUnit(unitType);
-  }
-
-  totalInverses(entity: entity_instance): number {
-    return this.getTotalInverses(entity);
-  }
-
-  inverses(entity: entity_instance): entity_instance[] {
-    const list = this.getInverse(entity);
-    try {
-      const out: entity_instance[] = [];
-      for (let i = 0; i < list.size(); i++) {
-        const item = list.get(i) as entity_instance | null;
-        if (item) out.push(item);
-      }
-      return out;
-    } finally {
-      list.destroy();
+    using list = this.getInverseList(entity);
+    const entities: EntityInstance[] = [];
+    for (let i = 0; i < list.size(); i++) {
+      const item = list.get(i) as EntityInstance | null;
+      if (item) entities.push(item);
     }
-  }
-
-  inverseIndices(entity: entity_instance): number[] {
-    return this.getInverseIndices(entity);
-  }
-
-  traverseEntities(entity: entity_instance, options: { maxDepth?: number; breadthFirst?: boolean } = {}): entity_instance[] {
-    const maxDepth = options.maxDepth ?? -1;
-    const list = options.breadthFirst
-      ? this.traverseBreadthFirst(entity, maxDepth)
-      : this.traverse(entity, maxDepth);
-    try {
-      const out: entity_instance[] = [];
-      for (let i = 0; i < list.size(); i++) {
-        const item = list.get(i) as entity_instance | null;
-        if (item) out.push(item);
-      }
-      return out;
-    } finally {
-      list.destroy();
+    if (withAttributeIndices) {
+      const indices = this.getInverseIndices(entity);
+      return entities.map((item, i) => [item, indices[i]!] as [EntityInstance, number]);
     }
+    if (allowDuplicate) return entities;
+    // JS Set uses object identity; native getters produce a fresh handle for each occurrence.
+    const unique = new Map<number, EntityInstance>();
+    for (const item of entities) {
+      if (unique.has(item.identity())) item.dispose();
+      else unique.set(item.identity(), item);
+    }
+    return new EntityInstanceSet(unique.values());
   }
 
-  /** Return a plain-object inspection snapshot for an entity id. */
-  inspect(id: number): Promise<entity_instance_info | null> {
-    return inspectEntity(this, id);
-  }
+
 }
 
-function catchNull<T>(fn: () => T): T | null {
-  try {
-    const value = fn();
-    return value && typeof value === 'object' && 'ptr' in value && value.ptr === 0 ? null : value;
-  } catch {
-    return null;
+/** Set membership follows IFC identity, like Python entity equality. */
+class EntityInstanceSet extends Set<EntityInstance> {
+  private readonly byIdentity = new Map<number, EntityInstance>();
+
+  constructor(values: Iterable<EntityInstance>) {
+    super();
+    for (const value of values) this.add(value);
+  }
+
+  override add(value: EntityInstance): this {
+    const identity = value.identity();
+    if (!this.byIdentity.has(identity)) {
+      this.byIdentity.set(identity, value);
+      super.add(value);
+    }
+    return this;
+  }
+
+  override has(value: EntityInstance): boolean {
+    return this.byIdentity.has(value.identity());
+  }
+
+  override delete(value: EntityInstance): boolean {
+    const identity = value.identity();
+    const member = this.byIdentity.get(identity);
+    if (!member) return false;
+    this.byIdentity.delete(identity);
+    return super.delete(member);
+  }
+
+  override clear(): void {
+    this.byIdentity.clear();
+    super.clear();
   }
 }
 
 /** Parse IFC bytes after explicitly loading their schema plugin. */
-export function open(bytes: Uint8Array | ArrayBuffer, filename?: string, options?: OpenOptions): file {
-  return file.open(bytes, filename, options);
+export function open(bytes: Uint8Array | ArrayBuffer, filename?: string, options?: OpenOptions): File {
+  return File.open(bytes, filename, options);
 }

@@ -1,4 +1,4 @@
-import { entity_instance } from './entity_instance.js';
+import { EntityInstance } from './entity_instance.js';
 import {
   IfcOpenshellInstance,
   IfcOpenShellError,
@@ -62,6 +62,11 @@ export function init(options: InitOptions = {}): Promise<IfcOpenShell> {
 
 /** Native module, available after awaiting init(). */
 export let ifcopenshell: IfcOpenshellModule;
+/** Retrieve the loaded schema declaration by its full identifier. */
+export function schemaByName(name: string) {
+  return ifcopenshell.parse.schemaByName(name);
+}
+
 /** Emscripten filesystem, available after awaiting init(). */
 export let fs: EmscriptenFS | null;
 let initialization: Promise<IfcOpenShell> | undefined;
@@ -106,7 +111,7 @@ async function initialize(options: InitOptions): Promise<IfcOpenShell> {
     loadPlugin: (kind, id) => loadPlugin(raw, kind, id),
     loadedPlugins: () => raw.loadedPlugins(),
   };
-  raw.setInstanceFactory((handle: IfcOpenshellInstance) => new entity_instance(handle));
+  raw.setInstanceFactory((handle: IfcOpenshellInstance) => new EntityInstance(handle));
   return Object.freeze(runtime);
 }
 
