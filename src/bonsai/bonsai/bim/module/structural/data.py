@@ -48,29 +48,22 @@ class LoadGroupDecorationData:
     @classmethod
     def load_groups_to_show(cls) -> list[tuple[str, str, str]]:
         ret: list[tuple[str, str, str]] = []
-        abrv = {
-            "LOAD_CASE": "L.Case: ",
-            "LOAD_COMBINATION": "L.Comb: ",
-            "LOAD_GROUP": "L.Gr: ",
-            "USERDEFINED": "U.Def: ",
-            "NOTDEFINED": "N.Def: ",
-        }
-        models = tool.Ifc.get().by_type("IfcStructuralAnalysisModel")
-        if not models:
-            return ret
-
-        m = models[0]
+        # Load cases are the usual choice, so only other kinds of load group are marked.
+        kinds = {"LOAD_COMBINATION": " (combination)", "LOAD_GROUP": " (group)"}
+        m = tool.Structural.get_current_structural_analysis_model()
         props = tool.Structural.get_structural_props()
         if props.activity_type == "Action":
-            groups = m.LoadedBy or []
+            # Without an analysis model, loads can still be shown by load case.
+            groups = (m.LoadedBy or []) if m else tool.Ifc.get().by_type("IfcStructuralLoadCase")
             for g in groups:
-                ret.append((str(g.id()), ".   " + abrv[g.PredefinedType] + "   " + g.Name, ""))
+                ret.append((str(g.id()), (g.Name or "Unnamed") + kinds.get(g.PredefinedType, ""), ""))
                 related_objects = [rel.RelatedObjects for rel in g.IsGroupedBy]
                 for item in related_objects:
                     for subgoup in [sg for sg in item if sg.is_a("IfcStructuralLoadGroup")]:
-                        ret.append((str(subgoup.id()), ".       " + abrv[subgoup.PredefinedType] + subgoup.Name, ""))
+                        name = (subgoup.Name or "Unnamed") + kinds.get(subgoup.PredefinedType, "")
+                        ret.append((str(subgoup.id()), "    " + name, ""))
 
-        elif props.activity_type == "External Reaction":
+        elif props.activity_type == "External Reaction" and m:
             groups = m.HasResults or []
             for g in groups:
                 result_name = g.ResultForLoadGroup.Name or ""
@@ -192,12 +185,21 @@ class StructuralAnalysisModelsData:
 
     @classmethod
     def load(cls):
-        cls.data = {"total_models": cls.total_models(), "active_model_ids": cls.active_model_ids()}
+        cls.data = {
+            "total_models": cls.total_models(),
+            "active_model_ids": cls.active_model_ids(),
+            "current_model": cls.current_model(),
+        }
         cls.is_loaded = True
 
     @classmethod
     def total_models(cls):
         return len(tool.Ifc.get().by_type("IfcStructuralAnalysisModel"))
+
+    @classmethod
+    def current_model(cls):
+        if model := tool.Structural.get_current_structural_analysis_model():
+            return {"id": model.id(), "name": model.Name or "Unnamed"}
 
     @classmethod
     def active_model_ids(cls):
@@ -221,23 +223,42 @@ class StructuralLoadCasesData:
         cls.is_loaded = True
         cls.data = {
             "load_cases": cls.load_cases(),
+            "models": cls.models(),
             "applicable_structural_load_types": cls.applicable_structural_load_types(),
             "applicable_structural_loads": cls.applicable_structural_loads(),
         }
+
+    @classmethod
+    def models(cls):
+        return [
+            {"id": m.id(), "name": m.Name or "Unnamed"} for m in tool.Ifc.get().by_type("IfcStructuralAnalysisModel")
+        ]
+
+    @classmethod
+    def activity_name(cls, activity: ifcopenshell.entity_instance) -> str:
+        load = activity.AppliedLoad
+        rels = activity.AssignedToStructuralItem
+        item = rels[0].RelatingElement if rels else None
+        return f"{(load.Name if load else None) or 'Unnamed'} on {(item.Name if item else None) or 'Unnamed'}"
 
     @classmethod
     def load_cases(cls):
         results = []
         for load_case in tool.Ifc.get().by_type("IfcStructuralLoadCase"):
             load_groups = []
+            activities = []
             for rel in load_case.IsGroupedBy or []:
                 for related_object in rel.RelatedObjects:
-                    load_groups.append({"id": related_object.id(), "name": related_object.Name or "Unnamed"})
+                    if related_object.is_a("IfcStructuralLoadGroup"):
+                        load_groups.append({"id": related_object.id(), "name": related_object.Name or "Unnamed"})
+                    elif related_object.is_a("IfcStructuralActivity"):
+                        activities.append({"id": related_object.id(), "name": cls.activity_name(related_object)})
             results.append(
                 {
                     "id": load_case.id(),
                     "name": load_case.Name or "Unnamed",
                     "load_groups": load_groups,
+                    "activities": activities,
                     "model_ids": [m.id() for m in load_case.LoadGroupFor],
                 }
             )

@@ -18,7 +18,9 @@
 
 from __future__ import annotations
 
+import fractions
 import json
+import math
 from typing import TYPE_CHECKING, Any, Union
 
 import bpy
@@ -105,6 +107,86 @@ class Structural(bonsai.core.tool.Structural):
         props = cls.get_structural_props()
         model = tool.Ifc.get().by_id(props.active_structural_analysis_model_id)
         return model
+
+    @classmethod
+    def get_in_plane_components(
+        cls,
+        mode: str,
+        magnitude: float = 0.0,
+        angle: float = 0.0,
+        rise: float = 0.0,
+        run: float = 0.0,
+        direction: str = "UP_RIGHT",
+    ) -> tuple[float, float]:
+        """Get the horizontal and vertical components of a force in a vertical plane.
+
+        :param mode: ANGLE for an angle in degrees above the horizontal, or SLOPE
+            for a rise over a run. Negative angles, rises or runs give downward
+            or leftward components.
+        :param direction: UP_RIGHT, UP_LEFT, DOWN_LEFT or DOWN_RIGHT. The angle or
+            slope is measured from the horizontal towards this quadrant, so that
+            40 degrees UP_LEFT points 140 degrees from +X.
+        :return: The horizontal (X) and vertical (Z) components.
+        """
+        if mode == "ANGLE":
+            x, z = magnitude * math.cos(math.radians(angle)), magnitude * math.sin(math.radians(angle))
+        elif length := math.hypot(rise, run):
+            x, z = magnitude * run / length, magnitude * rise / length
+        else:
+            return 0.0, 0.0
+        sign_x, sign_z = {"UP_RIGHT": (1, 1), "UP_LEFT": (-1, 1), "DOWN_LEFT": (-1, -1), "DOWN_RIGHT": (1, -1)}[
+            direction
+        ]
+        return sign_x * x, sign_z * z
+
+    @classmethod
+    def get_simple_slope(cls, x: float, z: float, max_denominator: int = 24) -> tuple[float, float]:
+        """Get a rise and run along the in-plane components x and z, as small whole numbers if they make one.
+
+        For example, components of -160 and -120 give a rise of -3 and a run of -4.
+        """
+        if not x or not z:
+            return (math.copysign(1.0, z) if z else 0.0), (math.copysign(1.0, x) if x else 0.0)
+        exact = abs(z) / abs(x)
+        ratio = fractions.Fraction(exact).limit_denominator(max_denominator)
+        if ratio and math.isclose(float(ratio), exact, rel_tol=1e-6):
+            return math.copysign(ratio.numerator, z), math.copysign(ratio.denominator, x)
+        length = math.hypot(x, z)
+        return z / length, x / length
+
+    @classmethod
+    def get_current_structural_analysis_model(cls) -> Union[ifcopenshell.entity_instance, None]:
+        """Get the model that new structural items and load cases are assigned to.
+
+        Falls back to the only model in the project when none has been chosen.
+        """
+        ifc_file = tool.Ifc.get()
+        if model_id := cls.get_structural_props().current_structural_analysis_model_id:
+            try:
+                model = ifc_file.by_id(model_id)
+                if model.is_a("IfcStructuralAnalysisModel"):
+                    return model
+            except RuntimeError:
+                pass
+        models = ifc_file.by_type("IfcStructuralAnalysisModel")
+        return models[0] if len(models) == 1 else None
+
+    @classmethod
+    def set_current_structural_analysis_model(cls, model: ifcopenshell.entity_instance) -> None:
+        cls.get_structural_props().current_structural_analysis_model_id = model.id()
+
+    @classmethod
+    def assign_to_current_structural_analysis_model(cls, element: ifcopenshell.entity_instance) -> None:
+        if not (model := cls.get_current_structural_analysis_model()):
+            return
+        if element.is_a("IfcStructuralLoadGroup"):
+            ifcopenshell.api.structural.assign_structural_load_group(
+                tool.Ifc.get(), load_groups=[element], structural_analysis_model=model
+            )
+        elif element.is_a("IfcStructuralItem"):
+            ifcopenshell.api.structural.assign_structural_analysis_model(
+                tool.Ifc.get(), products=[element], structural_analysis_model=model
+            )
 
     @classmethod
     def get_ifc_structural_analysis_model_attributes(cls, model: Union[int, None]) -> Union[dict[str, Any], None]:

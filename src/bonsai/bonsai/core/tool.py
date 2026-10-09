@@ -1129,13 +1129,16 @@ class Structural:
     def enable_structural_analysis_model_editing_ui(cls): pass
     def enabled_structural_analysis_model_editing_ui(cls): pass
     def ensure_representation_contexts(cls): pass
+    def assign_to_current_structural_analysis_model(cls, element): pass
     def get_active_structural_analysis_model(cls): pass
+    def get_current_structural_analysis_model(cls): pass
     def get_ifc_structural_analysis_model_attributes(cls, model): pass
     def get_ifc_structural_analysis_models(cls): pass
     def get_product_or_active_object(cls): pass
     def get_structural_analysis_model_attributes(cls): pass
     def load_structural_analysis_model_attributes(cls, data): pass
     def load_structural_analysis_models(cls): pass
+    def set_current_structural_analysis_model(cls, model): pass
 
 
 @interface

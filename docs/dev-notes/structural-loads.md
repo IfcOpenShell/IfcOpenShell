@@ -72,3 +72,39 @@ its rotations restrained, or PyNite reports it unstable.
 
 Library changes come with tests under `test/api/structural`. Bonsai changes were tested by
 hand in Blender 5.1.
+
+## 2. Applying and editing loads
+
+Applying one force to one point took about twenty clicks across four panels, and a step left
+out, such as assigning the load case or the point to the model, failed silently.
+
+- **Current analysis model.** A model can be made current (radio button in the models list);
+  a new model becomes current, and a project's only model is current by default. New
+  structural items and load cases are assigned to it. This is separate from the existing
+  `active_structural_analysis_model_id`, which means "the model whose attributes are being
+  edited". It is a scene property, not saved in the IFC.
+- **Activities directly in load cases.** A load case is a load group, so it can hold
+  activities itself; the extra load group inside a case is now optional.
+- **Apply Load** (`bim.apply_structural_load`; Structural Tool header and Shift+L). One
+  dialog applies a force to the selected point connections, curve members or surface members,
+  in an existing load case or a new one. Forces are entered as components, or as a magnitude
+  with an angle or a slope and a direction (up-right, up-left, down-left, down-right) measured
+  from the nearest horizontal, as statics texts give them; the components are shown before
+  applying. A project without an analysis model gets one, named after the project. The
+  Structural Tool's placeholder Shift+A binding, which hid Blender's Add menu, is removed.
+- **Edit Load** (`bim.edit_structural_load_values`). Editing a force opens the same dialog.
+  IFC stores only components, so the dialog reopens a force the way it was entered when its
+  generated name records it, and otherwise as an angle and slope from the nearest
+  horizontal. The name is prefilled and follows the values while it is still a generated
+  one. Opened from an applied load, the dialog can move it to another load case; opened from
+  the loads list, it moves every use of the load when they share one load case.
+- **One edit view per load case.** The pencil shows its attributes (collapsed), a checklist of
+  the analysis models it belongs to (a load case may belong to several), its applied loads
+  with edit and remove buttons, and its load groups. It replaces three partial views and their
+  ghost icons.
+- Show Loads lists the load cases of the current model, or every load case when there is no
+  model; it previously used the first model in the file.
+
+An operator property's `update` callback receives the operator's properties, not the
+operator, so the dialogs' shared input logic is in module-level functions that the callbacks
+and the operator methods both call.
