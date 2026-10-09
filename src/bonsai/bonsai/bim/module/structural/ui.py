@@ -462,7 +462,13 @@ class BIM_PT_structural_load_cases(Panel):
             row.label(text=model["name"])
 
     def draw_editable_load_case_ui(self):
-        draw_attributes(self.props.load_case_attributes, self.layout)
+        bonsai.bim.helper.draw_expandable_panel(
+            self.layout,
+            bpy.context,
+            "Attributes",
+            lambda layout, context: draw_attributes(self.props.load_case_attributes, layout),
+            panel_id="structural_load_case_attributes",
+        )
 
     def draw_editable_load_case_group_ui(self, load_case):
         box = self.layout.box()
