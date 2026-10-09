@@ -61,6 +61,7 @@ def add_representation(
             "IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage",
             "IfcGeometricCurveSet/IfcTextLiteral",
             "IfcTextLiteral",
+            "IfcTessellatedFaceSet",
         ]
     ] = None,
     profile_set_usage: Optional[ifcopenshell.entity_instance] = None,
