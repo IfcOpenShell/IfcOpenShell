@@ -470,6 +470,7 @@ class BIM_PT_structural_load_cases(Panel):
         for activity in load_case["activities"]:
             row = box.row(align=True)
             row.label(text=activity["name"])
+            row.operator("bim.edit_structural_load_values", text="", icon="GREASEPENCIL").activity = activity["id"]
             row.operator("bim.remove_structural_activity", text="", icon="X").activity = activity["id"]
         row = box.row(align=True)
         row.prop(self.props, "applicable_structural_load_types", text="")
@@ -521,6 +522,9 @@ class BIM_UL_structural_activities(UIList):
             row = layout.row(align=True)
             row.label(text=item.name)
             row.label(text=item.applied_load_class)
+            row.operator(
+                "bim.edit_structural_load_values", text="", icon="GREASEPENCIL"
+            ).activity = item.ifc_definition_id
             op = row.operator("bim.remove_structural_activity", text="", icon="X")
             op.activity = item.ifc_definition_id
 
@@ -627,7 +631,7 @@ class BIM_UL_structural_loads(UIList):
                 op = row.operator("bim.remove_structural_load", text="", icon="X")
                 op.structural_load = item.ifc_definition_id
             else:
-                op = row.operator("bim.enable_editing_structural_load", text="", icon="GREASEPENCIL")
+                op = row.operator("bim.edit_structural_load_values", text="", icon="GREASEPENCIL")
                 op.structural_load = item.ifc_definition_id
                 op = row.operator("bim.remove_structural_load", text="", icon="X")
                 op.structural_load = item.ifc_definition_id
