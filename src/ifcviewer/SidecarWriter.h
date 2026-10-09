@@ -17,35 +17,27 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef SIDECARCOMPRESS_H
-#define SIDECARCOMPRESS_H
+#ifndef SIDECARWRITER_H
+#define SIDECARWRITER_H
 
-// zstd wrappers for the .ifcview format (v16+). Geometry chunks and metadata
-// blocks are stored zstd-compressed so the network pulls far fewer bytes while
-// keeping HTTP Range streaming intact (unlike server Content-Encoding, which
-// can't be byte-ranged). The baker compresses (desktop only); every loader —
-// desktop and web — decompresses. The web build links the vendored single-file
-// zstd DECODER (third_party/zstddeclib.c); desktop links the full libzstd.
+// Baking a .ifcview (format in SidecarFormat.h).  Desktop only: the web build
+// never writes a sidecar and links a decompress-only zstd, so this file is not
+// compiled under Emscripten.
+
+#include "SidecarFormat.h"
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
 #include <vector>
 
-namespace SidecarCompress {
+// Compress [src, src+n) as one zstd frame at `level`. Returns the frame, or an
+// empty vector on error.
+std::vector<std::uint8_t> compressSidecarFrame(const std::uint8_t* src, std::size_t n,
+                                               int level);
 
-// Decompress a zstd frame in [src, src+src_size) into dst, which must have room
-// for exactly raw_size bytes. Returns false on any zstd error or if the frame
-// doesn't expand to exactly raw_size. Available on all platforms.
-bool decompress(const std::uint8_t* src, std::size_t src_size,
-                std::uint8_t* dst, std::size_t raw_size);
+// Write `data` to the sidecar path for `ifc_path` (see sidecarPathFor),
+// compressing every chunk's geometry in parallel.
+bool writeSidecar(const std::string& ifc_path, const SidecarData& data);
 
-#if !defined(__EMSCRIPTEN__)
-// Compress [src, src+n) with zstd at `level`. Returns the compressed frame, or
-// an empty vector on error. Bake/desktop only — the web build never compresses.
-std::vector<std::uint8_t> compress(const std::uint8_t* src, std::size_t n,
-                                   int level);
-#endif
-
-}  // namespace SidecarCompress
-
-#endif  // SIDECARCOMPRESS_H
+#endif // SIDECARWRITER_H

@@ -2205,8 +2205,7 @@ void ViewportCore::shutdown() {
 // computeMeshLocalVolumeQuantised
 // ===========================================================================
 
-#include "StreamingLoader.h"
-#include "SidecarCompress.h"
+#include "SidecarReader.h"
 
 namespace {
 
@@ -4170,9 +4169,9 @@ void ViewportCore::beginWebChunkLoad(std::uint32_t session_model_id, std::size_t
         std::vector<std::uint8_t>  vbytes(static_cast<std::size_t>(v_raw));
         std::vector<std::uint32_t> idx(static_cast<std::size_t>(i_raw / sizeof(std::uint32_t)));
         const bool ok = join->v_ok && join->i_ok
-            && SidecarCompress::decompress(join->vz.data(), join->vz.size(),
+            && decompressSidecarFrame(join->vz.data(), join->vz.size(),
                                            vbytes.data(), vbytes.size())
-            && SidecarCompress::decompress(join->iz.data(), join->iz.size(),
+            && decompressSidecarFrame(join->iz.data(), join->iz.size(),
                                            reinterpret_cast<std::uint8_t*>(idx.data()),
                                            std::size_t(i_raw));
         chunk_apply_ms_total_ += emscripten_get_now() - apply_t0;
@@ -4279,7 +4278,7 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                             }
                             std::vector<std::uint8_t> geometry_metadata(
                                 static_cast<std::size_t>(geometry_metadata_raw));
-                            if (!SidecarCompress::decompress(cz.data(), cz.size(),
+                            if (!decompressSidecarFrame(cz.data(), cz.size(),
                                                              geometry_metadata.data(),
                                                              geometry_metadata.size())) {
                                 Log::warn() << "loadSidecarMetadataWeb: geometry metadata decompress failed";
@@ -4380,7 +4379,7 @@ void ViewportCore::loadElementMetadataWeb(std::uint32_t session_model_id,
             std::vector<std::uint8_t> buf(static_cast<std::size_t>(raw_size));
             SidecarData tmp;
             if (!ok ||
-                !SidecarCompress::decompress(cz.data(), cz.size(), buf.data(), buf.size()) ||
+                !decompressSidecarFrame(cz.data(), cz.size(), buf.data(), buf.size()) ||
                 !parseSidecarElementMetadata(buf.data(), buf.size(), tmp)) {
                 Log::warn() << "loadElementMetadataWeb: read/decompress/parse failed";
                 if (done) done(false);

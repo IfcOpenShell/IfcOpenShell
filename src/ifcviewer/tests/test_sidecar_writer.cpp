@@ -19,16 +19,20 @@
 
 #include "InstanceCompose.h"
 #include "InstancedGeometry.h"
-#include "SidecarCache.h"
+#include "SidecarFormat.h"
+#include "SidecarReader.h"
+#include "SidecarWriter.h"
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <algorithm>
 #include <atomic>
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
-#include <random>
+#include <optional>
 #include <string>
+#include <vector>
 
 namespace fs = std::filesystem;
 
@@ -157,6 +161,58 @@ bool sidecarDataEqual(const SidecarData& a, const SidecarData& b) {
     return true;
 }
 
+// The viewer never loads a sidecar whole: it reads the metadata, then fetches
+// and decompresses chunks on demand.  Do the same here and scatter each
+// chunk's geometry back by the mesh offsets, so a round trip is checked
+// through the production reader.
+std::optional<SidecarData> readWholeSidecar(const std::string& ifc_path) {
+    auto meta = readSidecarMetadata(ifc_path);
+    if (!meta) return std::nullopt;
+    SidecarData data = meta->meta;
+
+    size_t vertex_bytes = 0, index_count = 0;
+    for (const MeshInfo& m : data.meshes) {
+        vertex_bytes = std::max(vertex_bytes,
+            size_t(m.vbo_byte_offset) + size_t(m.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES);
+        index_count = std::max(index_count, size_t(m.ebo_byte_offset / 4) + m.index_count);
+        index_count = std::max(index_count, size_t(m.lod1_ebo_byte_offset / 4) + m.lod1_index_count);
+    }
+    data.vertices.assign(vertex_bytes, 0);
+    data.indices.assign(index_count, 0);
+
+    std::vector<uint8_t>  vbytes;
+    std::vector<uint32_t> idx;
+    for (const SidecarChunk& c : data.chunks) {
+        if (!readChunkGeometryCompressed(ifc_path, meta->geometry_section_offset,
+                                         c.v_comp_off, c.v_comp_size, c.v_raw_size,
+                                         c.i_comp_off, c.i_comp_size, c.i_raw_size, vbytes, idx)) {
+            return std::nullopt;
+        }
+        // Chunk-local layout: the vertices of its meshes in order, then LOD0
+        // indices per mesh, then LOD1 indices per mesh.
+        size_t vcur = 0, icur = 0;
+        const uint32_t end = c.first_mesh + c.mesh_count;
+        for (uint32_t m = c.first_mesh; m < end; ++m) {
+            const MeshInfo& mi = data.meshes[m];
+            const size_t n = size_t(mi.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
+            std::memcpy(data.vertices.data() + mi.vbo_byte_offset, vbytes.data() + vcur, n);
+            vcur += n;
+        }
+        for (uint32_t m = c.first_mesh; m < end; ++m) {
+            const MeshInfo& mi = data.meshes[m];
+            std::copy_n(idx.data() + icur, mi.index_count, data.indices.data() + mi.ebo_byte_offset / 4);
+            icur += mi.index_count;
+        }
+        for (uint32_t m = c.first_mesh; m < end; ++m) {
+            const MeshInfo& mi = data.meshes[m];
+            std::copy_n(idx.data() + icur, mi.lod1_index_count,
+                        data.indices.data() + mi.lod1_ebo_byte_offset / 4);
+            icur += mi.lod1_index_count;
+        }
+    }
+    return data;
+}
+
 } // namespace
 
 TEST_CASE("MeshInfo and the instance record have stable layouts (sidecar wire format)", "[sidecar]") {
@@ -169,13 +225,13 @@ TEST_CASE("MeshInfo and the instance record have stable layouts (sidecar wire fo
     REQUIRE(SIDECAR_MAGIC == 0x49465657u);
 }
 
-TEST_CASE("writeSidecar/readSidecar round-trip the v14 chunk TOC", "[sidecar]") {
+TEST_CASE("writeSidecar round-trips the v14 chunk TOC", "[sidecar]") {
     fs::path dir = makeScratchDir("chunks");
     fs::path ifc = dir / "model.ifc";
     SidecarData sd = buildFixture();
     sd.chunks = { {0, 1}, {1, 1} };  // two chunks over the two meshes
     REQUIRE(writeSidecar(ifc.string(), sd));
-    auto loaded = readSidecar(ifc.string());
+    auto loaded = readWholeSidecar(ifc.string());
     REQUIRE(loaded.has_value());
     REQUIRE(loaded->chunks.size() == 2);
     REQUIRE(loaded->chunks[0].first_mesh == 0);
@@ -184,7 +240,7 @@ TEST_CASE("writeSidecar/readSidecar round-trip the v14 chunk TOC", "[sidecar]") 
     REQUIRE(loaded->chunks[1].mesh_count == 1);
 }
 
-TEST_CASE("writeSidecar then readSidecar round-trips the full fixture", "[sidecar]") {
+TEST_CASE("writeSidecar round-trips the full fixture through the reader", "[sidecar]") {
     fs::path dir = makeScratchDir("roundtrip");
     fs::path ifc = dir / "model.ifc";
     fs::path expected = dir / "model.ifcview";
@@ -193,51 +249,9 @@ TEST_CASE("writeSidecar then readSidecar round-trips the full fixture", "[sideca
     REQUIRE(writeSidecar(ifc.string(), original));
     REQUIRE(fs::exists(expected));
 
-    auto loaded = readSidecar(ifc.string());
+    auto loaded = readWholeSidecar(ifc.string());
     REQUIRE(loaded.has_value());
     REQUIRE(sidecarDataEqual(original, *loaded));
-}
-
-TEST_CASE("readSidecar returns nullopt when the sidecar is missing", "[sidecar]") {
-    fs::path dir = makeScratchDir("missing");
-    fs::path ifc = dir / "absent.ifc";
-    auto loaded = readSidecar(ifc.string());
-    REQUIRE_FALSE(loaded.has_value());
-}
-
-TEST_CASE("readSidecar rejects a truncated header", "[sidecar]") {
-    fs::path dir = makeScratchDir("truncated");
-    fs::path ifc = dir / "bad.ifc";
-    fs::path bad = dir / "bad.ifcview";
-    {
-        FILE* f = std::fopen(bad.string().c_str(), "wb");
-        REQUIRE(f);
-        const char junk[] = "X";
-        std::fwrite(junk, 1, sizeof(junk), f);
-        std::fclose(f);
-    }
-    auto loaded = readSidecar(ifc.string());
-    REQUIRE_FALSE(loaded.has_value());
-}
-
-TEST_CASE("readSidecar rejects a wrong magic / version", "[sidecar]") {
-    fs::path dir = makeScratchDir("wrongver");
-    fs::path ifc = dir / "old.ifc";
-    fs::path old = dir / "old.ifcview";
-    struct Hdr { uint32_t magic, version, endian; } h{
-        SIDECAR_MAGIC, SIDECAR_VERSION - 1, SIDECAR_ENDIAN
-    };
-    {
-        FILE* f = std::fopen(old.string().c_str(), "wb");
-        REQUIRE(f);
-        std::fwrite(&h, sizeof(h), 1, f);
-        // Write zeroed payload so the failure must come from the header check.
-        uint32_t zero = 0;
-        for (int i = 0; i < 6; ++i) std::fwrite(&zero, 4, 1, f);
-        std::fclose(f);
-    }
-    auto loaded = readSidecar(ifc.string());
-    REQUIRE_FALSE(loaded.has_value());
 }
 
 TEST_CASE("Empty SidecarData round-trips cleanly", "[sidecar]") {
@@ -245,7 +259,7 @@ TEST_CASE("Empty SidecarData round-trips cleanly", "[sidecar]") {
     fs::path ifc = dir / "empty.ifc";
     SidecarData empty;
     REQUIRE(writeSidecar(ifc.string(), empty));
-    auto loaded = readSidecar(ifc.string());
+    auto loaded = readWholeSidecar(ifc.string());
     REQUIRE(loaded.has_value());
     REQUIRE(loaded->vertices.empty());
     REQUIRE(loaded->indices.empty());
@@ -283,7 +297,7 @@ TEST_CASE("CoordinateOperation + unit scales round-trip through the sidecar", "[
     sd.coordinate_operation_meters[15] =  1.0;
 
     REQUIRE(writeSidecar(ifc.string(), sd));
-    auto loaded = readSidecar(ifc.string());
+    auto loaded = readWholeSidecar(ifc.string());
     REQUIRE(loaded.has_value());
 
     REQUIRE(loaded->has_coordinate_operation == 1);
@@ -308,7 +322,7 @@ TEST_CASE("Sidecar without a CoordinateOperation reports none", "[sidecar]") {
     for (int i = 0; i < 16; ++i) sd.coordinate_operation_meters[i] = (i % 5 == 0) ? 1.0 : 0.0;
 
     REQUIRE(writeSidecar(ifc.string(), sd));
-    auto loaded = readSidecar(ifc.string());
+    auto loaded = readWholeSidecar(ifc.string());
     REQUIRE(loaded.has_value());
     REQUIRE(loaded->has_coordinate_operation == 0);
     for (int i = 0; i < 16; ++i) {
@@ -330,13 +344,56 @@ TEST_CASE("Sidecar path stem maps .ifc / .ifcdb / extensionless to .ifcview", "[
     REQUIRE(writeSidecar(ifc_path.string(), sd));
     REQUIRE(fs::exists(dir / "shared.ifcview"));
 
-    auto a = readSidecar(ifcdb_path.string());
-    auto b = readSidecar(ifcdb_slash.string());
-    auto c = readSidecar(noext_path.string());
+    auto a = readWholeSidecar(ifcdb_path.string());
+    auto b = readWholeSidecar(ifcdb_slash.string());
+    auto c = readWholeSidecar(noext_path.string());
     REQUIRE(a.has_value());
     REQUIRE(b.has_value());
     REQUIRE(c.has_value());
     REQUIRE(sidecarDataEqual(sd, *a));
     REQUIRE(sidecarDataEqual(sd, *b));
     REQUIRE(sidecarDataEqual(sd, *c));
+}
+
+// --- zstd frames -------------------------------------------------------------
+
+TEST_CASE("a zstd frame round-trips and shrinks structured bytes", "[sidecar]") {
+    // Structured data like the sidecar carries (repeated matrices, patterned
+    // indices) — should both round-trip AND actually shrink.
+    std::vector<uint8_t> raw;
+    for (int i = 0; i < 20000; ++i) {
+        raw.push_back(uint8_t(i & 0xFF));
+        raw.push_back(uint8_t((i >> 8) & 0x07));  // low-entropy high byte
+        raw.push_back(0);
+        raw.push_back(0xAA);
+    }
+
+    auto packed = compressSidecarFrame(raw.data(), raw.size(), 19);
+    REQUIRE_FALSE(packed.empty());
+    REQUIRE(packed.size() < raw.size());  // it compressed
+
+    std::vector<uint8_t> out(raw.size());
+    REQUIRE(decompressSidecarFrame(packed.data(), packed.size(), out.data(), out.size()));
+    REQUIRE(out == raw);
+}
+
+TEST_CASE("decompressSidecarFrame rejects a wrong raw size and garbage", "[sidecar]") {
+    std::vector<uint8_t> raw(1024, 0x42);
+    auto packed = compressSidecarFrame(raw.data(), raw.size(), 3);
+    REQUIRE_FALSE(packed.empty());
+
+    // Wrong declared raw size must fail, not silently truncate.
+    std::vector<uint8_t> too_small(512);
+    REQUIRE_FALSE(decompressSidecarFrame(packed.data(), packed.size(),
+                                         too_small.data(), too_small.size()));
+
+    // Garbage input fails cleanly.
+    std::vector<uint8_t> junk = { 1, 2, 3, 4, 5, 6, 7, 8 };
+    std::vector<uint8_t> dst(1024);
+    REQUIRE_FALSE(decompressSidecarFrame(junk.data(), junk.size(), dst.data(), dst.size()));
+}
+
+TEST_CASE("an empty zstd frame round-trips to empty", "[sidecar]") {
+    std::vector<uint8_t> dst;
+    REQUIRE(decompressSidecarFrame(nullptr, 0, dst.data(), 0));
 }

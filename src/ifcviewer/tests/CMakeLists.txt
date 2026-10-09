@@ -46,39 +46,29 @@ if(WITH_MESH_OPTIMIZER)
     target_compile_definitions(test_lod_builder PRIVATE -DWITH_MESH_OPTIMIZER)
 endif()
 
-# SidecarCompress: zstd compress/decompress wrappers. Prefer the imported zstd
-# config target (carries include dirs on Windows/pixi builds); fall back to
-# find_library for distro packages. SidecarCache now (de)compresses geometry +
-# metadata, so every test that compiles SidecarCache.cpp needs SidecarCompress.cpp
-# + libzstd too.
+# The sidecar writer and reader are tested against each other: the writer's
+# tests read back through the production reader, the reader's tests lay down
+# fixtures with the writer. Both link zstd (the imported config target where
+# it exists, since it carries include dirs on Windows/pixi builds; else the
+# distro library) and InstanceCompose for the transforms the reader derives
+# from the instance records.
 find_package(zstd QUIET)
 if(TARGET zstd::libzstd_static)
     set(ZSTD_LIBRARY zstd::libzstd_static)
 else()
     find_library(ZSTD_LIBRARY NAMES zstd libzstd)
 endif()
-add_ifcviewer_unit_test(test_sidecar_compress
-    SOURCES ${IFCVIEWER_SRC}/SidecarCompress.cpp
-    LIBS ${ZSTD_LIBRARY}
+set(SIDECAR_TEST_SOURCES
+    ${IFCVIEWER_SRC}/SidecarReader.cpp
+    ${IFCVIEWER_SRC}/SidecarWriter.cpp
+    ${IFCVIEWER_SRC}/InstanceCompose.cpp
 )
-
-add_ifcviewer_unit_test(test_sidecar_cache
-    SOURCES
-        ${IFCVIEWER_SRC}/SidecarCache.cpp
-        ${IFCVIEWER_SRC}/SidecarCompress.cpp
-        ${IFCVIEWER_SRC}/InstanceCompose.cpp
+add_ifcviewer_unit_test(test_sidecar_writer
+    SOURCES ${SIDECAR_TEST_SOURCES}
     LIBS ${ZSTD_LIBRARY} Eigen3::Eigen
 )
-
-# StreamingLoader: metadata-only read + range readers + the pure buffer-based
-# parse / read-plan helpers shared with the web (Blob.slice) path. Needs
-# SidecarCache.cpp for writeSidecar (to lay down on-disk fixtures).
-add_ifcviewer_unit_test(test_streaming_loader
-    SOURCES
-        ${IFCVIEWER_SRC}/StreamingLoader.cpp
-        ${IFCVIEWER_SRC}/SidecarCache.cpp
-        ${IFCVIEWER_SRC}/SidecarCompress.cpp
-        ${IFCVIEWER_SRC}/InstanceCompose.cpp
+add_ifcviewer_unit_test(test_sidecar_reader
+    SOURCES ${SIDECAR_TEST_SOURCES}
     LIBS ${ZSTD_LIBRARY} Eigen3::Eigen
 )
 
@@ -95,16 +85,11 @@ add_ifcviewer_unit_test(test_chunk_planner
 )
 
 # SidecarLayout: bake-time reorder of geometry into the loader's chunk order
-# for streaming locality. Needs ChunkPlanner (Morton sort) + SidecarCache
-# (SidecarData). Pure.
+# for streaming locality. Needs ChunkPlanner (Morton sort). Pure.
 add_ifcviewer_unit_test(test_sidecar_layout
     SOURCES
         ${IFCVIEWER_SRC}/SidecarLayout.cpp
         ${IFCVIEWER_SRC}/ChunkPlanner.cpp
-        ${IFCVIEWER_SRC}/SidecarCache.cpp
-        ${IFCVIEWER_SRC}/SidecarCompress.cpp
-        ${IFCVIEWER_SRC}/InstanceCompose.cpp
-    LIBS ${ZSTD_LIBRARY} Eigen3::Eigen
 )
 
 # SidecarSerializer: the Qt-free assembly shared by SidecarBuilder and the
@@ -114,9 +99,7 @@ find_package(Eigen3 ${EIGEN_MIN_VERSION} REQUIRED)
 add_ifcviewer_unit_test(test_sidecar_serializer
     SOURCES
         ${IFCVIEWER_SRC}/SidecarSerializer.cpp
-        ${IFCVIEWER_SRC}/SidecarCache.cpp
-        ${IFCVIEWER_SRC}/SidecarCompress.cpp
-        ${IFCVIEWER_SRC}/InstanceCompose.cpp
+        ${SIDECAR_TEST_SOURCES}
         ${IFCVIEWER_SRC}/SidecarLayout.cpp
         ${IFCVIEWER_SRC}/ChunkPlanner.cpp
         ${IFCVIEWER_SRC}/LodBuilder.cpp

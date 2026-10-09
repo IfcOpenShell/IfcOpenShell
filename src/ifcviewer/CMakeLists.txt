@@ -149,9 +149,7 @@ set(IFCVIEWER_CORE_SOURCES
     GpuAllocScope.cpp
     GpuBudget.cpp
     GpuMemory.cpp
-    SidecarCache.cpp
-    SidecarCompress.cpp
-    StreamingLoader.cpp
+    SidecarReader.cpp
     StreamingThread.cpp
     SectionGizmoRenderer.cpp
     ViewportCore.cpp
@@ -210,9 +208,8 @@ set(IFCVIEWER_CORE_HEADERS
     SectionPlane.h
     SelectionState.h
     FederationMath.h
-    SidecarCache.h
-    SidecarCompress.h
-    StreamingLoader.h
+    SidecarFormat.h
+    SidecarReader.h
     StreamingThread.h
     VertexQuantization.h
     ViewportCore.h

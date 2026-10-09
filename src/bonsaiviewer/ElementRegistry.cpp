@@ -22,7 +22,7 @@
 
 #include "../ifcviewer/GeometryStreamer.h"
 #include "../ifcviewer/SceneLoader.h"
-#include "../ifcviewer/SidecarCache.h"
+#include "../ifcviewer/SidecarFormat.h"
 
 namespace bonsaiviewer {
 

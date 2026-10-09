@@ -20,7 +20,7 @@
 
 #include "IfcViewSerializer.h"
 
-#include "SidecarCache.h"
+#include "SidecarWriter.h"
 
 #include <utility>
 

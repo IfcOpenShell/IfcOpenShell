@@ -17,22 +17,41 @@
  *                                                                              *
  ********************************************************************************/
 
-// NOTE: Sidecar format v3 is being rewritten to v4 (instanced geometry layout).
-// During the instancing rewrite (Commit A) the cache is a no-op: reads always
-// miss and writes always succeed without producing a file. Commit B will
-// re-introduce the on-disk format with MeshInfo + InstanceGpu sections.
+#ifndef SIDECARFORMAT_H
+#define SIDECARFORMAT_H
 
-#ifndef SIDECARCACHE_H
-#define SIDECARCACHE_H
+// The .ifcview sidecar: everything a loader needs to display an already
+// tessellated model without re-running the iterator.  This header is the
+// on-disk format (constants, records, SidecarData).  SidecarWriter bakes it,
+// SidecarReader loads it.
+//
+// File layout (v19; multi-byte fields native-endian, see SIDECAR_ENDIAN):
+//
+//   SidecarHeader             magic, version, endian
+//   uint64 geometry_bytes     length of the geometry section
+//   geometry section          per chunk: zstd(vertex bytes), zstd(index bytes)
+//   geometry metadata block   [uint64 comp][uint64 raw][zstd frame] holding
+//       uint32 num_meshes + MeshInfo[]
+//       uint32 num_instances + instance records (SIDECAR_INSTANCE_RECORD_BYTES each)
+//       uint32 has_coordinate_operation, double[16] coordinate_operation_meters,
+//       double project_length_to_meters, double map_unit_to_meters
+//       uint32 num_chunks + SidecarChunk[]
+//   element metadata block    [uint64 comp][uint64 raw][zstd frame] holding
+//       uint32 num_elements + ElementTableRecord[]
+//       uint32 string_table_bytes + char[]
+//
+// A chunk's bytes are chunk-local (the vertices of its meshes in order, then
+// LOD0 indices per mesh, then LOD1 indices per mesh), so a loader fetches and
+// decompresses one chunk without touching the rest.  The web loader reads only
+// the geometry metadata block before first paint and fetches the element block
+// on demand.
 
 #include "InstancedGeometry.h"
 
 #include <cstddef>
 #include <cstdint>
-#include <optional>
 #include <string>
 #include <vector>
-#include <memory>
 
 static constexpr uint32_t SIDECAR_MAGIC   = 0x49465657;  // "IFVW"
 // v5 = MeshInfo extended with lod1_ebo_byte_offset + lod1_index_count (56 B).
@@ -111,19 +130,22 @@ static constexpr uint32_t SIDECAR_MAGIC   = 0x49465657;  // "IFVW"
 static constexpr uint32_t SIDECAR_VERSION = 19;
 static constexpr uint32_t SIDECAR_ENDIAN  = 0x01020304;
 
+struct SidecarHeader {
+    uint32_t magic;
+    uint32_t version;
+    uint32_t endian;
+};
+static_assert(sizeof(SidecarHeader) == 12, "SidecarHeader must be 12 bytes");
+
+// Bytes before the geometry section: the header plus the uint64 geometry
+// section length.  The metadata blocks follow at SIDECAR_HEAD_BYTES + length.
+inline constexpr std::size_t SIDECAR_HEAD_BYTES = sizeof(SidecarHeader) + sizeof(uint64_t);
+
 // On-disk per-instance record (v19): mesh_id, object_id, translation as
 // double[3], then the 3x3 linear part of the placement as float[9]
 // (column-major), written field by field so there is no alignment padding.
 static constexpr std::size_t SIDECAR_INSTANCE_RECORD_BYTES =
     2 * sizeof(uint32_t) + 3 * sizeof(double) + 9 * sizeof(float);
-
-// Parse a count-prefixed run of v19 instance records from
-// [cursor, cursor + remaining), advancing both, and expand them into
-// InstanceInfo with transform and world AABB derived from `meshes` under
-// identity stage matrices.  False when the data is truncated.
-bool readInstanceInfos(const uint8_t*& cursor, std::size_t& remaining,
-                       const std::vector<MeshInfo>& meshes,
-                       std::vector<InstanceInfo>& out);
 
 // Chunk table-of-contents entry (v16).  A chunk is a CONTIGUOUS range of meshes
 // [first_mesh, first_mesh + mesh_count).  Its vertex + index bytes are stored as
@@ -193,11 +215,21 @@ struct SidecarData {
     std::vector<SidecarChunk> chunks;
 };
 
-// Sidecar is keyed on the path stem: foo.ifc and foo.ifcdb/ both resolve to
-// foo.ifcview alongside the source.  No staleness check — callers delete the
-// file to invalidate.
-bool writeSidecar(const std::string& ifc_path, const SidecarData& data);
+// The sidecar is keyed on the path stem, alongside the source:
+//   foo.ifc  ->  foo.ifcview
+//   foo.ifcdb/  foo.ifcdb  ->  foo.ifcview
+//   foo (no extension)  ->  foo.ifcview
+// No staleness check — callers delete the file to invalidate.
+inline std::string sidecarPathFor(const std::string& ifc_path) {
+    std::string path = ifc_path;
+    while (!path.empty() && (path.back() == '/' || path.back() == '\\')) path.pop_back();
+    const auto slash = path.find_last_of("/\\");
+    const auto dot   = path.find_last_of('.');
+    const std::string stem = (dot != std::string::npos &&
+                              (slash == std::string::npos || dot > slash))
+                                 ? path.substr(0, dot)
+                                 : path;
+    return stem + ".ifcview";
+}
 
-std::optional<SidecarData> readSidecar(const std::string& ifc_path);
-
-#endif // SIDECARCACHE_H
+#endif // SIDECARFORMAT_H

@@ -39,7 +39,7 @@
 #include <unordered_set>
 
 #include "FrameStats.h"
-#include "SidecarCache.h"
+#include "SidecarFormat.h"
 #include "BufferPool.h"
 #include "ModelLookup.h"
 #include "ModelGpuData.h"
@@ -101,7 +101,7 @@ public:
 
     // Queue a sidecar path to be loaded after wgpu init completes. Safe to
     // call before the window is exposed. The path is resolved against the
-    // working directory and read via SidecarCache::readSidecar (which
+    // working directory and read via readSidecarMetadata (which
     // normalises stem → .ifcview).
     void queueLoadSidecar(const std::string& path);
 

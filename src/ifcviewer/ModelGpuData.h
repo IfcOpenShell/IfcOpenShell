@@ -35,7 +35,7 @@
 #include "BufferPool.h"
 #include "FederationMath.h"   // ModelUnits
 #include "ChunkPlanner.h"  // WGPU_CHUNK_VERTEX_BYTES_LIMIT (shared with bake)
-#include "SidecarCache.h"  // ElementTableRecord (element metadata)
+#include "SidecarFormat.h"  // ElementTableRecord (element metadata)
 
 // Per-model wgpu state. Mirrors the GL backend's ModelGpuData but with
 // wgpu handles. Stage 2 only allocates and uploads the four core buffers;
