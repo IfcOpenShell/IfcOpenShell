@@ -3905,17 +3905,17 @@ void ViewportCore::uploadStreamedMesh(const StreamedMesh& mesh) {
     info.lod1_ebo_byte_offset = 0;
     info.lod1_index_count     = 0;
 
-    if (staging.meshes.size() <= mesh.local_mesh_id) {
-        staging.meshes.resize(mesh.local_mesh_id + 1);
+    if (staging.meshes.size() <= mesh.mesh_id) {
+        staging.meshes.resize(mesh.mesh_id + 1);
     }
-    staging.meshes[mesh.local_mesh_id] = info;
+    staging.meshes[mesh.mesh_id] = info;
 }
 
 void ViewportCore::uploadStreamedInstance(const StreamedInstance& instance_record) {
     SidecarData& staging = getOrCreateDirectStaging(pending_direct_loads_, instance_record.session_model_id);
 
     InstanceInfo instance{};
-    instance.mesh_id              = instance_record.local_mesh_id;
+    instance.mesh_id              = instance_record.mesh_id;
     instance.object_id            = instance_record.object_id;
     instance.color_override_rgba8 = instance_record.color_override_rgba8;
     instance.session_model_id             = instance_record.session_model_id;

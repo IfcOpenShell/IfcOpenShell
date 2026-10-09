@@ -70,12 +70,12 @@ static inline uint32_t packRGBA8(const MaterialInfo& material) {
 // T(+rebase_offset), which is mathematically the identity overall but moves
 // the magnitude off the float-precision-sensitive vertex column.
 StreamedMesh buildStreamedMesh(uint32_t session_model_id,
-                               uint32_t local_mesh_id,
+                               uint32_t mesh_id,
                                const ifcopenshell::geom::triangulation_element* elem,
                                const Eigen::Vector3d& rebase_offset) {
     StreamedMesh mesh;
     mesh.session_model_id = session_model_id;
-    mesh.local_mesh_id = local_mesh_id;
+    mesh.mesh_id = mesh_id;
 
     const auto& geom = elem->geometry();
     const auto& verts = geom.verts();
@@ -213,7 +213,7 @@ StreamedInstance makeStreamedInstance(uint32_t session_model_id,
 
     StreamedInstance inst;
     inst.session_model_id = session_model_id;
-    inst.local_mesh_id = unique_mesh.mesh_id;
+    inst.mesh_id = unique_mesh.mesh_id;
     inst.object_id = object_id;
     inst.color_override_rgba8 = 0;
     for (int i = 0; i < 16; ++i) {
