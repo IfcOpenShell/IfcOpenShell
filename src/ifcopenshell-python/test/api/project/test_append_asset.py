@@ -32,6 +32,7 @@ import ifcopenshell.api.project
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.style
+import ifcopenshell.api.system
 import ifcopenshell.api.type
 import ifcopenshell.api.unit
 import ifcopenshell.util.classification
@@ -465,6 +466,44 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
             )
         )
         assert np.array_equal(ifcopenshell.util.placement.get_local_placement(new.ObjectPlacement), resulting_matrix)
+
+    def test_append_a_distribution_element_with_its_ports(self):
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcFlowSegment")
+        port1 = ifcopenshell.api.system.add_port(library, element=element)
+        port2 = ifcopenshell.api.system.add_port(library, element=element)
+
+        new_element = ifcopenshell.api.project.append_asset(self.file, library=library, element=element)
+
+        ports = self.file.by_type("IfcDistributionPort")
+        assert len(ports) == 2
+        if self.file.schema == "IFC2X3":
+            rels = self.file.by_type("IfcRelConnectsPortToElement")
+            assert len(rels) == 2
+            assert {rel.RelatedElement for rel in rels} == {new_element}
+            assert {rel.RelatingPort for rel in rels} == set(ports)
+        else:
+            rels = new_element.IsNestedBy
+            assert len(rels) == 1
+            assert set(rels[0].RelatedObjects) == set(ports)
+
+    def test_append_a_non_distribution_element_with_its_ports(self):
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcBuildingElementProxy")
+        ifcopenshell.api.system.add_port(library, element=element)
+        ifcopenshell.api.system.add_port(library, element=element)
+
+        new_element = ifcopenshell.api.project.append_asset(self.file, library=library, element=element)
+
+        ports = self.file.by_type("IfcDistributionPort")
+        if self.file.schema == "IFC2X3":
+            assert len(ports) == 2
+            rels = self.file.by_type("IfcRelConnectsPortToElement")
+            assert len(rels) == 2
+            assert {rel.RelatedElement for rel in rels} == {new_element}
+            assert {rel.RelatingPort for rel in rels} == set(ports)
+        else:
+            assert len(ports) == 0
 
     def test_append_a_surface_style(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
