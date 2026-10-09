@@ -32,6 +32,7 @@ from bonsai.bim.module.structural.data import (
     StructuralAnalysisModelsData,
     StructuralBoundaryConditionsData,
     StructuralConnectionData,
+    StructuralItemLoadsData,
     StructuralLoadCasesData,
     StructuralLoadsData,
     StructuralMemberData,
@@ -245,6 +246,52 @@ class BIM_PT_structural_member(Panel):
         else:
             row = self.layout.row()
             row.label(text="TODO")
+
+
+class BIM_PT_structural_item_loads(Panel):
+    bl_label = "Applied Loads"
+    bl_idname = "BIM_PT_structural_item_loads"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+    bl_order = 1
+    bl_parent_id = "BIM_PT_tab_misc"
+
+    @classmethod
+    def poll(cls, context):
+        if not (obj := context.active_object) or not tool.Ifc.get():
+            return False
+        element = tool.Ifc.get_entity(obj)
+        return bool(element and element.is_a("IfcStructuralItem"))
+
+    def draw_header(self, context):
+        self.layout.operator("bim.apply_structural_load", text="", icon="ADD")
+
+    def draw(self, context):
+        if not StructuralItemLoadsData.is_loaded:
+            StructuralItemLoadsData.load()
+        layout = self.layout
+        load_cases = StructuralItemLoadsData.data["load_cases"]
+        if not load_cases:
+            layout.label(text="No loads applied", icon="INFO")
+        for load_case in load_cases:
+            box = layout.box()
+            row = box.row(align=True)
+            row.label(text=load_case["name"], icon="CON_CLAMPTO")
+            if load_case["resultant"]:
+                row.label(text=load_case["resultant"])
+            if load_case["id"]:
+                row.operator("bim.show_structural_load_case", text="", icon="HIDE_OFF").load_case = load_case["id"]
+            for load in load_case["loads"]:
+                row = box.row(align=True)
+                name = f"{load['group']}: {load['name']}" if load["group"] else load["name"]
+                row.label(text=name, icon="FORCE_FORCE")
+                row.operator("bim.edit_structural_load_values", text="", icon="GREASEPENCIL").activity = load[
+                    "activity"
+                ]
+                row.operator("bim.remove_structural_activity", text="", icon="X").activity = load["activity"]
+        if unloaded := StructuralItemLoadsData.data["unloaded_cases"]:
+            layout.label(text=f"No loads in: {', '.join(unloaded)}")
 
 
 class BIM_PT_structural_connection(Panel):

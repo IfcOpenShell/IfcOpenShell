@@ -16,8 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import math
+from typing import Union
+
 import bpy
+import ifcopenshell
 import ifcopenshell.util.doc
+import ifcopenshell.util.unit
 
 import bonsai.tool as tool
 
@@ -32,6 +37,7 @@ def refresh():
     StructuralLoadsData.is_loaded = False
     BoundaryConditionsData.is_loaded = False
     LoadGroupDecorationData.is_loaded = False
+    StructuralItemLoadsData.is_loaded = False
 
     # Keep the loads shown in the viewport in step with every change, undo included.
     from bonsai.bim.module.structural.decorator import LoadsDecorator
@@ -184,6 +190,104 @@ class StructuralConnectionData:
         element = tool.Ifc.get_entity(obj)
         if element:
             return element.is_a()
+
+
+class StructuralItemLoadsData:
+    """The loads applied to the active structural item, by load case"""
+
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {"load_cases": cls.load_cases(), "unloaded_cases": cls.unloaded_cases()}
+        cls.is_loaded = True
+
+    @classmethod
+    def get_item(cls) -> Union[ifcopenshell.entity_instance, None]:
+        element = tool.Ifc.get_entity(bpy.context.active_object) if bpy.context.active_object else None
+        return element if element and element.is_a("IfcStructuralItem") else None
+
+    @classmethod
+    def get_load_case(
+        cls, group: ifcopenshell.entity_instance
+    ) -> tuple[ifcopenshell.entity_instance, Union[ifcopenshell.entity_instance, None]]:
+        """The load case a load group belongs to, and the group itself if it is a group within the case"""
+        if not group.is_a("IfcStructuralLoadCase"):
+            for rel in group.HasAssignments:
+                if (
+                    rel.is_a("IfcRelAssignsToGroup")
+                    and rel.RelatingGroup
+                    and rel.RelatingGroup.is_a("IfcStructuralLoadCase")
+                ):
+                    return rel.RelatingGroup, group
+        return group, None
+
+    @classmethod
+    def load_cases(cls) -> list[dict]:
+        if not (item := cls.get_item()):
+            return []
+        cases: dict[int, dict] = {}
+        for rel in item.AssignedStructuralActivity:
+            activity = rel.RelatedStructuralActivity
+            if not activity:
+                continue
+            groups = [
+                r.RelatingGroup
+                for r in activity.HasAssignments
+                if r.is_a("IfcRelAssignsToGroup") and r.RelatingGroup and r.RelatingGroup.is_a("IfcStructuralLoadGroup")
+            ]
+            for group in groups or [None]:
+                case, subgroup = cls.get_load_case(group) if group else (None, None)
+                entry = cases.setdefault(
+                    case.id() if case else 0,
+                    {
+                        "id": case.id() if case else 0,
+                        "name": (case.Name or "Unnamed") if case else "No load case",
+                        "loads": [],
+                        "forces": [],
+                    },
+                )
+                load = activity.AppliedLoad
+                entry["loads"].append(
+                    {
+                        "activity": activity.id(),
+                        "name": (load.Name if load else None) or "Unnamed",
+                        "group": (subgroup.Name or "Unnamed") if subgroup else None,
+                    }
+                )
+                if load and load.is_a("IfcStructuralLoadSingleForce") and activity.GlobalOrLocal != "LOCAL_COORDS":
+                    entry["forces"].append(tuple(getattr(load, a) or 0.0 for a in ("ForceX", "ForceY", "ForceZ")))
+        for entry in cases.values():
+            entry["resultant"] = cls.get_resultant_label(entry.pop("forces"))
+        return sorted(cases.values(), key=lambda entry: entry["name"])
+
+    @classmethod
+    def get_resultant_label(cls, forces: list[tuple[float, float, float]]) -> Union[str, None]:
+        if not forces:
+            return None
+        x, y, z = (sum(force[k] for force in forces) for k in range(3))
+        props = tool.Structural.get_structural_props()
+        force_unit = ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "FORCEUNIT")
+        unit = ifcopenshell.util.unit.get_unit_symbol(force_unit) if force_unit else "N"
+        label = f"R = {math.sqrt(x * x + y * y + z * z):.{props.force_decimals}f} {unit}"
+        if not y and (x or z):
+            # From the nearest horizontal, as forces are entered and shown.
+            angle = math.degrees(math.atan2(abs(z), abs(x)))
+            direction = f"{'up' if z >= 0 else 'down'}-{'right' if x >= 0 else 'left'}"
+            label += f" at {angle:.{props.angle_decimals}f}° {direction}"
+        return label
+
+    @classmethod
+    def unloaded_cases(cls) -> list[str]:
+        if not cls.get_item() or not (model := tool.Structural.get_current_structural_analysis_model()):
+            return []
+        loaded = {entry["id"] for entry in cls.load_cases()}
+        return [
+            g.Name or "Unnamed"
+            for g in model.LoadedBy or []
+            if g.is_a("IfcStructuralLoadCase") and g.id() not in loaded
+        ]
 
 
 class StructuralAnalysisModelsData:

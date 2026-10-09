@@ -1415,6 +1415,25 @@ class EditStructuralResultant(bpy.types.Operator, tool.Ifc.Operator, StructuralF
         return {"FINISHED"}
 
 
+class ShowStructuralLoadCase(bpy.types.Operator):
+    bl_idname = "bim.show_structural_load_case"
+    bl_label = "Show Load Case"
+    bl_description = "Show the loads of this load case in the viewport"
+    bl_options = {"REGISTER"}
+    load_case: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = tool.Structural.get_structural_props()
+        try:
+            props.load_group_to_show = str(self.load_case)
+        except TypeError:
+            self.report({"WARNING"}, "This load case is not in the current analysis model.")
+            return {"CANCELLED"}
+        if not LoadsDecorator.is_installed:
+            bpy.ops.bim.show_loads("INVOKE_DEFAULT")
+        return {"FINISHED"}
+
+
 class LoadStructuralLoads(bpy.types.Operator):
     bl_idname = "bim.load_structural_loads"
     bl_label = "Load Structural Loads"
