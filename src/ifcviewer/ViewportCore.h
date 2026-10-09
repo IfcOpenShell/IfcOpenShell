@@ -51,7 +51,7 @@
 #include "BufferPool.h"
 #include "GpuBudget.h"
 #include "GpuMemory.h"
-#include "InstanceCompose.h"
+#include "ModelLookup.h"
 #include "InstancedGeometry.h"
 #include "ModelGpuData.h"
 #include "SectionGizmoRenderer.h"
@@ -120,10 +120,10 @@ public:
                                       const ModelGpuData& m) const;
 
     // Cross-model object_id lookup. Delegates to
-    // InstanceCompose::findInstanceInModels; the wrapper exists so
+    // ModelLookup::findInstanceInModels; the wrapper exists so
     // callers don't have to know about the underlying map of models.
     bool findInstance(uint32_t object_id,
-                      InstanceCompose::InstanceLookup& out) const;
+                      ModelLookup::InstanceLookup& out) const;
 
     // A point that actually lies on the model's first instance — used
     // by the federation false-origin guess on first geometry. Pure

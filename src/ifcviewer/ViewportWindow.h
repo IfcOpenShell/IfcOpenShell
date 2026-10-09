@@ -41,7 +41,7 @@
 #include "FrameStats.h"
 #include "SidecarCache.h"
 #include "BufferPool.h"
-#include "InstanceCompose.h"
+#include "ModelLookup.h"
 #include "ModelGpuData.h"
 #include "OverlayRenderer.h"
 #include "SelectionState.h"
@@ -399,7 +399,7 @@ public:
     // / ModelTransformation). Mirrors GL ViewportWindow::InstanceLookup
     // so Measurement.cpp ports unchanged. The canonical struct lives in
     // InstanceCompose so the lookup can be unit-tested without Qt.
-    using InstanceLookup = InstanceCompose::InstanceLookup;
+    using InstanceLookup = ModelLookup::InstanceLookup;
     bool findInstance(uint32_t object_id, InstanceLookup& out) const;
 
     // A point that actually lies on the model's first instance — the
