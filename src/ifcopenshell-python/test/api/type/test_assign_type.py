@@ -18,6 +18,7 @@
 
 import pytest
 
+import ifcopenshell.api.aggregate
 import ifcopenshell.api.geometry
 import ifcopenshell.api.material
 import ifcopenshell.api.root
@@ -28,6 +29,12 @@ import test.bootstrap
 
 
 class TestAssignType(test.bootstrap.IFC4):
+    def _create_typed_part(self, context, name):
+        part_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcPlateType", name=name)
+        rep = self.file.createIfcShapeRepresentation(ContextOfItems=context)
+        ifcopenshell.api.geometry.assign_representation(self.file, product=part_type, representation=rep)
+        return part_type
+
     def test_assigning_a_type(self):
         element1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
@@ -215,6 +222,84 @@ class TestAssignType(test.bootstrap.IFC4):
         any_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
         with pytest.raises(TypeError):
             ifcopenshell.api.type.assign_type(self.file, related_objects=[opening], relating_type=any_type)
+
+    def test_instantiating_parts_from_a_typed_decomposition(self):
+        """A type with no representation of its own but decomposed (IfcRelAggregates)
+        into other types that do have geometry must reflect that decomposition at
+        the occurrence level too, e.g. an assembly type built from front/back plate
+        types (see #2052, #5505)."""
+        context = self.file.createIfcGeometricRepresentationContext()
+        front = self._create_typed_part(context, "Front")
+        back = self._create_typed_part(context, "Back")
+        assembly_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[front, back], relating_object=assembly_type)
+
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=assembly_type)
+
+        assert element.Representation is None
+        parts = ifcopenshell.util.element.get_parts(element)
+        assert {ifcopenshell.util.element.get_type(p) for p in parts} == {front, back}
+        for part in parts:
+            assert part.is_a("IfcPlate")
+            assert ifcopenshell.util.representation.get_representation(part, context=context) is not None
+
+    def test_instantiating_parts_from_a_typed_decomposition_is_idempotent(self):
+        context = self.file.createIfcGeometricRepresentationContext()
+        front = self._create_typed_part(context, "Front")
+        assembly_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[front], relating_object=assembly_type)
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=assembly_type)
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=assembly_type)
+
+        assert len(ifcopenshell.util.element.get_parts(element)) == 1
+
+    def test_instantiating_parts_repairs_an_already_typed_occurrence(self):
+        """A file authored before this repair existed may already have the type
+        assignment but be missing its aggregated parts. Re-running assign_type
+        with the same type must still synthesize the missing parts."""
+        context = self.file.createIfcGeometricRepresentationContext()
+        front = self._create_typed_part(context, "Front")
+        assembly_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=assembly_type)
+        assert ifcopenshell.util.element.get_parts(element) == []
+
+        # The decomposition is only added to the type after the occurrence was
+        # already typed, mirroring a file authored before this repair existed.
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[front], relating_object=assembly_type)
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=assembly_type)
+
+        parts = ifcopenshell.util.element.get_parts(element)
+        assert len(parts) == 1
+        assert ifcopenshell.util.element.get_type(parts[0]) == front
+
+    def test_not_instantiating_parts_when_no_part_type_has_a_representation(self):
+        part_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcPlateType", name="Front")
+        assembly_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[part_type], relating_object=assembly_type)
+
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=assembly_type)
+
+        assert ifcopenshell.util.element.get_parts(element) == []
+
+    def test_not_instantiating_parts_when_the_type_has_its_own_representation(self):
+        context = self.file.createIfcGeometricRepresentationContext()
+        front = self._create_typed_part(context, "Front")
+        assembly_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[front], relating_object=assembly_type)
+        rep = self.file.createIfcShapeRepresentation(ContextOfItems=context)
+        ifcopenshell.api.geometry.assign_representation(self.file, product=assembly_type, representation=rep)
+
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=assembly_type)
+
+        assert element.Representation is not None
+        assert ifcopenshell.util.element.get_parts(element) == []
 
 
 class TestAssignTypeIFC2X3(test.bootstrap.IFC2X3, TestAssignType):
