@@ -169,8 +169,30 @@ ifcopenshell::impl::rocks_db_file_storage::rocks_db_file_storage(const std::stri
 #endif
 }
 
+ifcopenshell::impl::in_memory_file_storage::~in_memory_file_storage() {
+#ifndef IFOPSH_SAFE_INSTANCE
+    for (const auto& entry : byid_) {
+        delete entry.second;
+    }
+    for (const auto& entry : tbyid_) {
+        delete entry.second;
+    }
+    for (auto data : read_simple_type_instances) {
+        delete data;
+    }
+#endif
+}
+
 ifcopenshell::impl::rocks_db_file_storage::~rocks_db_file_storage()
 {
+#ifndef IFOPSH_SAFE_INSTANCE
+    for (const auto& entry : instance_cache_) {
+        delete entry.second;
+    }
+    for (const auto& entry : type_instance_cache_) {
+        delete entry.second;
+    }
+#endif
 #ifdef IFOPSH_WITH_ROCKSDB
     if (db != nullptr) {
         if (!read_only_) {
@@ -271,6 +293,12 @@ void ifcopenshell::impl::rocks_db_file_storage::erase_instances(const std::vecto
 
     std::lock_guard<std::mutex> lock(instance_cache_mutex_);
     for (auto id : ids) {
+#ifndef IFOPSH_SAFE_INSTANCE
+        auto it = instance_cache_.find(id);
+        if (it != instance_cache_.end()) {
+            delete it->second;
+        }
+#endif
         instance_cache_.erase(id);
     }
 #endif

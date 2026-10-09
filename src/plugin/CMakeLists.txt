@@ -22,6 +22,7 @@ target_compile_definitions(plugin PRIVATE
     PLUGIN_IFCOPENSHELL_VERSION="${PROJECT_VERSION}"
     IFCOPENSHELL_INSTALL_PLUGIN_DIRECTORY="${CMAKE_INSTALL_FULL_LIBDIR}"
 )
+target_compile_definitions(plugin PUBLIC $<$<BOOL:${IFOPSH_SAFE_INSTANCE}>:IFOPSH_SAFE_INSTANCE>)
 
 target_link_libraries(plugin PRIVATE ${Boost_LIBRARIES})
 

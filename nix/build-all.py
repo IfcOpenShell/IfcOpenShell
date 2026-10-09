@@ -205,6 +205,7 @@ class Args(NamedTuple):
     lto: bool
     verbose: bool
     shared: bool
+    split_instance_builds: bool
     ifcopenshell_shared: bool
     occt_shared: bool
     mac_cross_compile_intel: bool
@@ -303,6 +304,11 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         "Redundant if -shared is also passed.",
     )
     arg_parser.add_argument(
+        "--split-instance-builds",
+        action="store_true",
+        help="Build native tools with raw instance handles and Python with safe handles in separate trees.",
+    )
+    arg_parser.add_argument(
         "--occt-shared",
         action=argparse.BooleanOptionalAction,
         # None (rather than True) so the -wasm fallback below can tell "unset" apart from
@@ -381,6 +387,7 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         lto=namespace.lto,
         verbose=namespace.verbose,
         shared=namespace.shared,
+        split_instance_builds=namespace.split_instance_builds,
         ifcopenshell_shared=namespace.ifcopenshell_shared or namespace.shared,
         # -shared implies a shared OCCT too, even overriding an explicit --no-occt-shared.
         occt_shared=namespace.shared
@@ -1922,6 +1929,7 @@ if not WASM and (
     exec_args = [
         *ifcos_build_args,
         f"-DBUILD_IFCPYTHON=OFF",
+        "-DIFOPSH_SAFE_INSTANCE=" + OFF_ON[not ARGS.split_instance_builds],
     ]
 
     run_cmake(
@@ -2001,6 +2009,16 @@ if "IfcOpenShell-Python" in targets:
             )
 
         assert python_include
+        wrapper_build_dir = ifcos_build_dir + "-python" if ARGS.split_instance_builds and not WASM else ifcos_build_dir
+        os.makedirs(wrapper_build_dir, exist_ok=True)
+        wrapper_args = ["-DBUILD_IFCPYTHON=ON", "-DIFOPSH_SAFE_INSTANCE=ON"]
+        if ARGS.split_instance_builds and not WASM:
+            wrapper_args += [
+                "-DBUILD_CONVERT=OFF",
+                "-DBUILD_GEOMSERVER=OFF",
+                "-DBUILD_BONSAIVIEWER=OFF",
+                "-DBUILD_EXAMPLES=OFF",
+            ]
         old_ldflags = os.environ["LDFLAGS"]
         if wrapper_ldflags:
             os.environ["LDFLAGS"] = f"{old_ldflags} {wrapper_ldflags}"
@@ -2009,10 +2027,8 @@ if "IfcOpenShell-Python" in targets:
             run_cmake(
                 "ifcopenshell",
                 ifcos_build_args
-                + [
-                    "-DBUILD_IFCPYTHON=ON",
-                ]
                 + cmake_args
+                + wrapper_args
                 + get_cmake_args_prefix_path()
                 + [
                     *([f"-DPYTHON_EXECUTABLE={python_executable}"] if python_executable else []),
@@ -2023,24 +2039,26 @@ if "IfcOpenShell-Python" in targets:
                     "-DUSERSPACE_PYTHON_PREFIX=" + OFF_ON[PYTHON_USER_SITE],
                 ],
                 cmake_dir=CMAKE_DIR,
-                cwd=ifcos_build_dir,
+                cwd=wrapper_build_dir,
             )
         finally:
             os.environ["LDFLAGS"] = old_ldflags
 
         logger.info(f"\rBuilding python {python_version} wrapper...   ")
 
-        cmake_build(ifcos_build_dir, ["ifcopenshell_wrapper"])
+        cmake_build(wrapper_build_dir, ["ifcopenshell_wrapper"])
         if ARGS.use_ninja:
-            cmake_build(ifcos_build_dir, ["ifcwrap/install"])
+            cmake_build(wrapper_build_dir, ["ifcwrap/install"])
         else:
-            run([make, "install"], cwd=os.path.join(ifcos_build_dir, "ifcwrap"))
+            run([make, "install"], cwd=os.path.join(wrapper_build_dir, "ifcwrap"))
 
         if python_executable:
             run([python_executable, "-m", "ensurepip"])
             run([python_executable, "-m", "pip", "install", "--user", "numpy", "typing_extensions"])
             env = os.environ.copy()
-            env[LIBRARY_PATH_ENV_VAR] = os.pathsep.join(ld_library_paths)
+            env[LIBRARY_PATH_ENV_VAR] = os.pathsep.join(
+                ld_library_paths[2:] if ARGS.split_instance_builds else ld_library_paths
+            )
             module_dir = run(
                 [python_executable, "-c", "import inspect, ifcopenshell; print(inspect.getfile(ifcopenshell))"],
                 env=env,

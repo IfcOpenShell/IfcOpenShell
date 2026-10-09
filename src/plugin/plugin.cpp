@@ -297,8 +297,11 @@ ifcopenshell::plugin::module ifcopenshell::plugin::manager::load(const std::file
 	const auto load_mode = boost::dll::load_mode::default_mode;
 #endif
 	auto library = std::make_shared<boost::dll::shared_library>(path, load_mode);
-	auto abi = library->get_alias<plugin_abi_fn>("ifcopenshell_plugin_abi_v1")();
-	validate_abi(abi);
+    if (!library->has("ifcopenshell_plugin_abi_v2")) {
+        throw std::runtime_error("Incompatible plugin ABI: expected ifcopenshell_plugin_abi_v2 in " + path_string(path));
+    }
+    auto abi = library->get_alias<plugin_abi_fn>("ifcopenshell_plugin_abi_v2")();
+    validate_abi(abi);
 	auto metadata = library->get_alias<plugin_metadata_fn>("ifcopenshell_plugin_metadata_v1")();
 	plugin_debug(std::string("load metadata kind=") + plugin_kind_name(metadata.kind_) +
 		" id='" + metadata.id + "' schema='" + metadata.schema + "' format='" + metadata.format + "'");
@@ -393,10 +396,11 @@ PLUGIN_API std::filesystem::path ifcopenshell::plugin::add_search_paths_or_defau
 	return path;
 }
 
-ifcopenshell::plugin::abi_info ifcopenshell::plugin::host_abi() {
-	abi_info abi;
+ifcopenshell::plugin::abi_info ifcopenshell::plugin::host_abi(bool safe_instance) {
+    abi_info abi;
 	abi.debug_build = is_debug_build();
-	abi.compiler_id = compiler_id();
+    abi.safe_instance = safe_instance;
+    abi.compiler_id = compiler_id();
 	abi.compiler_version = compiler_version();
 	abi.ifcopenshell_version = PLUGIN_IFCOPENSHELL_VERSION;
 	return abi;
@@ -412,23 +416,25 @@ void ifcopenshell::plugin::validate_abi(const abi_info& abi) {
 		" host_pointer_size=" + std::to_string(host.pointer_size) +
 		" plugin_debug=" + std::to_string(abi.debug_build) +
 		" host_debug=" + std::to_string(host.debug_build));
-	if (abi.plugin_api_version == host.plugin_api_version &&
-		abi.pointer_size == host.pointer_size &&
-		abi.debug_build == host.debug_build &&
-		abi.compiler_id == host.compiler_id &&
-		abi.compiler_version == host.compiler_version) {
-		plugin_debug("validate_abi compatible");
+    if (abi.plugin_api_version == host.plugin_api_version &&
+        abi.pointer_size == host.pointer_size &&
+        abi.debug_build == host.debug_build &&
+        abi.safe_instance == host.safe_instance &&
+        abi.compiler_id == host.compiler_id &&
+        abi.compiler_version == host.compiler_version) {
+        plugin_debug("validate_abi compatible");
 		return;
-	}
+    }
 
-	std::ostringstream stream;
+    std::ostringstream stream;
 	stream << "Incompatible plugin ABI";
 	stream << " (plugin api " << abi.plugin_api_version << ", host api " << host.plugin_api_version << ")";
 	stream << " (plugin compiler " << abi.compiler_id << " " << abi.compiler_version;
 	stream << ", host compiler " << host.compiler_id << " " << host.compiler_version << ")";
 	stream << " (plugin pointer size " << abi.pointer_size << ", host pointer size " << host.pointer_size << ")";
 	stream << " (plugin debug " << abi.debug_build << ", host debug " << host.debug_build << ")";
-	plugin_debug(stream.str());
+    stream << " (plugin safe instance " << abi.safe_instance << ", host safe instance " << host.safe_instance << ")";
+    plugin_debug(stream.str());
 	throw std::runtime_error(stream.str());
 }
 

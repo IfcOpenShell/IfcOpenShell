@@ -176,6 +176,9 @@ private:
 
     ~instance_streamer() = default;
 
+    // Without IFOPSH_SAFE_INSTANCE, the caller owns returned DATA instances;
+    // HEADER instances remain owned by header(). Inline values are transferred
+    // by steal_instances(), or freed with the streamer.
     std::optional<std::tuple<size_t, const ifcopenshell::declaration*, shared_pointer_type>> read_instance();
 };
 

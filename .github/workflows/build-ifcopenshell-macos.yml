@@ -105,6 +105,7 @@ jobs:
               -v \
               --diskcleanup \
               --shared \
+              --split-instance-builds \
               --add-commit-sha \
               --build-cfg Release \
               --use-ninja \

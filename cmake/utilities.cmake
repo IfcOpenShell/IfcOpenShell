@@ -78,7 +78,7 @@ function(ifcopenshell_wasm_plugin_link_options TARGET REGISTRATION_SYMBOL)
     endif()
 
     set(plugin_symbols
-        ifcopenshell_plugin_abi_v1
+        ifcopenshell_plugin_abi_v2
         ifcopenshell_plugin_metadata_v1
         ${REGISTRATION_SYMBOL}
     )
