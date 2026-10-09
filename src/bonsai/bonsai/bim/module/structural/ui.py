@@ -37,6 +37,7 @@ from bonsai.bim.module.structural.data import (
     StructuralLoadsData,
     StructuralMemberData,
 )
+from bonsai.bim.module.structural.decorator import LoadsDecorator
 
 if TYPE_CHECKING:
     from bonsai.bim.module.structural.prop import (
@@ -248,6 +249,12 @@ class BIM_PT_structural_member(Panel):
             row.label(text="TODO")
 
 
+def get_load_case_eye(load_case: int) -> str:
+    """An open eye for the load case whose loads are shown, closed for the others"""
+    shown = LoadsDecorator.is_installed and tool.Structural.get_structural_props().load_group_to_show == str(load_case)
+    return "HIDE_OFF" if shown else "HIDE_ON"
+
+
 class BIM_PT_structural_item_loads(Panel):
     bl_label = "Applied Loads"
     bl_idname = "BIM_PT_structural_item_loads"
@@ -281,7 +288,9 @@ class BIM_PT_structural_item_loads(Panel):
             if load_case["resultant"]:
                 row.label(text=load_case["resultant"])
             if load_case["id"]:
-                row.operator("bim.show_structural_load_case", text="", icon="HIDE_OFF").load_case = load_case["id"]
+                row.operator(
+                    "bim.show_structural_load_case", text="", icon=get_load_case_eye(load_case["id"]), emboss=False
+                ).load_case = load_case["id"]
             for load in load_case["loads"]:
                 row = box.row(align=True)
                 name = f"{load['group']}: {load['name']}" if load["group"] else load["name"]
@@ -477,6 +486,10 @@ class BIM_PT_structural_load_cases(Panel):
     def draw_load_case_ui(self, load_case):
         row = self.layout.row(align=True)
         row.label(text=load_case["name"], icon="CON_CLAMPTO")
+        op = row.operator(
+            "bim.show_structural_load_case", text="", icon=get_load_case_eye(load_case["id"]), emboss=False
+        )
+        op.load_case = load_case["id"]
 
         if self.props.active_load_case_id and self.props.active_load_case_id == load_case["id"]:
             row.operator("bim.edit_structural_load_case", text="", icon="CHECKMARK")

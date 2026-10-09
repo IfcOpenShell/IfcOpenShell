@@ -45,6 +45,8 @@ class ShowLoads(bpy.types.Operator):
 
     def modal(self, context, event):
         assert context.screen
+        if not LoadsDecorator.is_installed:
+            return {"FINISHED"}  # Loads were hidden from a load case's eye.
         if event.type == "F5":
             LoadsDecorator.update()
             tool.Blender.update_all_viewports(context)
@@ -1418,12 +1420,16 @@ class EditStructuralResultant(bpy.types.Operator, tool.Ifc.Operator, StructuralF
 class ShowStructuralLoadCase(bpy.types.Operator):
     bl_idname = "bim.show_structural_load_case"
     bl_label = "Show Load Case"
-    bl_description = "Show the loads of this load case in the viewport"
+    bl_description = "Show the loads of this load case in the viewport, or stop showing them if they are shown"
     bl_options = {"REGISTER"}
     load_case: bpy.props.IntProperty()
 
     def execute(self, context):
         props = tool.Structural.get_structural_props()
+        if LoadsDecorator.is_installed and props.load_group_to_show == str(self.load_case):
+            LoadsDecorator.uninstall()
+            tool.Blender.update_all_viewports(context)
+            return {"FINISHED"}
         try:
             props.load_group_to_show = str(self.load_case)
         except TypeError:
