@@ -142,6 +142,49 @@ class TestGetElementValue(test.bootstrap.IFC4):
         element_without_placement = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         assert subject.get_element_value(element_without_placement, "rotation_z") is None
 
+    def test_selecting_an_elements_position_using_a_query(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(self.file)
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        matrix = np.eye(4)
+        matrix[:3, 3] = [1.0, 2.0, 3.0]
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=element, matrix=matrix, is_si=False)
+        assert subject.get_element_value(element, "x") == pytest.approx(1.0)
+        assert subject.get_element_value(element, "y") == pytest.approx(2.0)
+        assert subject.get_element_value(element, "z") == pytest.approx(3.0)
+
+    def test_selecting_an_elements_position_when_represented_via_a_mapped_item(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(self.file)
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        matrix = np.eye(4)
+        matrix[:3, 3] = [1.0, 2.0, 3.0]
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=element, matrix=matrix, is_si=False)
+
+        mapped_representation = self.file.createIfcShapeRepresentation(Items=[self.file.createIfcExtrudedAreaSolid()])
+        representation_map = self.file.createIfcRepresentationMap(
+            MappingOrigin=self.file.createIfcAxis2Placement3D(
+                Location=self.file.createIfcCartesianPoint((0.0, 0.0, 0.0))
+            ),
+            MappedRepresentation=mapped_representation,
+        )
+        mapped_item = self.file.createIfcMappedItem(
+            MappingSource=representation_map,
+            MappingTarget=self.file.createIfcCartesianTransformationOperator3D(
+                LocalOrigin=self.file.createIfcCartesianPoint((10.0, 20.0, 30.0))
+            ),
+        )
+        representation = self.file.createIfcShapeRepresentation(
+            RepresentationIdentifier="Body",
+            RepresentationType="MappedRepresentation",
+            Items=[mapped_item],
+        )
+        element.Representation = self.file.createIfcProductDefinitionShape(Representations=[representation])
+
+        assert subject.get_element_value(element, "x") == pytest.approx(11.0)
+        assert subject.get_element_value(element, "y") == pytest.approx(22.0)
+        assert subject.get_element_value(element, "z") == pytest.approx(33.0)
+
     def test_selecting_using_a_multiple_key_query(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         material = ifcopenshell.api.material.add_material(self.file, name="CON01")
