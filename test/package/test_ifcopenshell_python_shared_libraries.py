@@ -98,7 +98,9 @@ def test_document_rdb_loads(tmp_path: Path):
     assert rdb_path.exists()
 
 
-def test_every_plugin_is_tested():
+def test_every_plugin_is_tested(request: pytest.FixtureRequest):
+    if request.config.getoption("not_bundled"):
+        pytest.skip("plug-ins are not installed next to the package")
     tested = {
         param.id
         for test in list(globals().values())

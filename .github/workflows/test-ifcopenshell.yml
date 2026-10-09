@@ -321,6 +321,8 @@ jobs:
           ERROR=0
           cd test
           python tests.py || fail "tests.py"
+          pytest -vv package/test_ifcopenshell_python_shared_libraries.py --not-bundled \
+            || fail "test_ifcopenshell_python_shared_libraries.py"
           cd ../src/ifcopenshell-python
           pip install -e ../ifcpatch --no-deps # Needed for sql.py tests.
           make test-parallel || fail "ifcopenshell-python"
