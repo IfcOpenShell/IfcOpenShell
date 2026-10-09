@@ -15,8 +15,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
-from typing import Any
-
 import ifcopenshell
 
 
@@ -52,25 +50,23 @@ def unassign_representation_styles(
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {
-        "shape_representation": shape_representation,
-        "styles": styles or [],
-        "should_use_presentation_style_assignment": should_use_presentation_style_assignment,
-    }
-    return usecase.execute()
+    return usecase.execute(shape_representation, styles, should_use_presentation_style_assignment)
 
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
 
-    def execute(self):
-        if not self.settings["styles"]:
-            return []
-        self.results = []
-        use_style_assignment = self.file.schema == "IFC2X3" or self.settings["should_use_presentation_style_assignment"]
+    def execute(
+        self,
+        shape_representation: ifcopenshell.entity_instance,
+        styles: list[ifcopenshell.entity_instance],
+        should_use_presentation_style_assignment: bool,
+    ) -> None:
+        if not styles:
+            return
+        use_style_assignment = self.file.schema == "IFC2X3" or should_use_presentation_style_assignment
 
-        for element in self.file.traverse(self.settings["shape_representation"]):
+        for element in self.file.traverse(shape_representation):
             if not element.is_a("IfcShapeRepresentation"):
                 continue
             for item in element.Items:
@@ -84,13 +80,15 @@ class Usecase:
                 if use_style_assignment:
                     for style_ in item.Styles:
                         if style_.is_a("IfcPresentationStyleAssignment"):
-                            self.remove_styles(style_)
-                self.remove_styles(item)
+                            self.remove_styles(style_, styles)
+                self.remove_styles(item, styles)
 
-    def remove_styles(self, item):
+    def remove_styles(
+        self, item: ifcopenshell.entity_instance, removed_styles: list[ifcopenshell.entity_instance]
+    ) -> None:
         """Removes styles from a styled item or a style assignment
         and purges item if doesn't have any styles after"""
-        styles = [s for s in item.Styles if s not in self.settings["styles"]]
+        styles = [s for s in item.Styles if s not in removed_styles]
         if not styles:
             self.file.remove(item)
         elif len(styles) != len(item.Styles):

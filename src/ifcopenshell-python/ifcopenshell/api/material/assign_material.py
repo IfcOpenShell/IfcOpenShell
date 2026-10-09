@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 from collections import defaultdict
-from typing import Any, Optional, Union
+from typing import assert_never
 
 import ifcopenshell
 import ifcopenshell.api.material
@@ -31,8 +31,8 @@ def assign_material(
     file: ifcopenshell.file,
     products: list[ifcopenshell.entity_instance],
     type: ifcopenshell.util.element.MATERIAL_TYPE = "IfcMaterial",
-    material: Optional[ifcopenshell.entity_instance] = None,
-) -> Union[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance], None]:
+    material: ifcopenshell.entity_instance | None = None,
+) -> ifcopenshell.entity_instance | list[ifcopenshell.entity_instance] | None:
     """Assigns a material to the list of products
 
     Will unassign previously assigned material.
@@ -147,16 +147,20 @@ def assign_material(
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {"products": products, "type": type, "material": material}
-    return usecase.execute()
+    return usecase.execute(products, type, material)
 
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
+    products: set[ifcopenshell.entity_instance]
 
-    def execute(self):
-        self.products: set[ifcopenshell.entity_instance] = set(self.settings["products"])
+    def execute(
+        self,
+        products: list[ifcopenshell.entity_instance],
+        type: ifcopenshell.util.element.MATERIAL_TYPE,
+        material: ifcopenshell.entity_instance | None,
+    ) -> ifcopenshell.entity_instance | list[ifcopenshell.entity_instance] | None:
+        self.products = set(products)
         if not self.products:
             return
 
@@ -165,22 +169,18 @@ class Usecase:
         if products_to_unassign_material:
             ifcopenshell.api.material.unassign_material(self.file, products=products_to_unassign_material)
 
-        if self.settings["type"] == "IfcMaterial" or (
-            self.settings["material"]
-            and not self.settings["material"].is_a("IfcMaterial")
-            and not self.settings["type"].endswith("Usage")
-        ):
-            return self.assign_ifc_material()
+        if type == "IfcMaterial" or (material and not material.is_a("IfcMaterial") and not type.endswith("Usage")):
+            return self.assign_ifc_material(material)
 
-        elif self.settings["type"] == "IfcMaterialConstituentSet":
-            material_set = self.file.create_entity(self.settings["type"])
+        elif type == "IfcMaterialConstituentSet":
+            material_set = self.file.create_entity(type)
             return self.create_material_association(material_set)
 
-        elif self.settings["type"] == "IfcMaterialLayerSet":
-            material_set = self.file.create_entity(self.settings["type"])
+        elif type == "IfcMaterialLayerSet":
+            material_set = self.file.create_entity(type)
             return self.create_material_association(material_set)
 
-        elif self.settings["type"] == "IfcMaterialLayerSetUsage":
+        elif type == "IfcMaterialLayerSetUsage":
             AXIS3_CLASSES = [
                 "IfcSlab",
                 "IfcSlabStandardCase",
@@ -194,8 +194,8 @@ class Usecase:
             ]
 
             provided_material_set = None
-            if self.settings["material"]:
-                provided_material_set = self.settings["material"]
+            if material:
+                provided_material_set = material
                 material_set_class = provided_material_set.is_a()
                 assert material_set_class == "IfcMaterialLayerSet", (
                     f"{material_set_class} cannot be assiged as a IfcMaterialLayerSetUsage."
@@ -205,7 +205,7 @@ class Usecase:
                 tuple[ifcopenshell.entity_instance, str], list[ifcopenshell.entity_instance]
             ]
             layer_types_to_products = defaultdict(list)
-            types_to_material_sets: dict[Union[ifcopenshell.entity_instance, None], ifcopenshell.entity_instance]
+            types_to_material_sets: dict[ifcopenshell.entity_instance | None, ifcopenshell.entity_instance]
             types_to_material_sets = {}
 
             for product in self.products:
@@ -236,14 +236,14 @@ class Usecase:
             ]
             return rels[0] if len(rels) == 1 else rels
 
-        elif self.settings["type"] == "IfcMaterialProfileSet":
-            material_set = self.file.create_entity(self.settings["type"])
+        elif type == "IfcMaterialProfileSet":
+            material_set = self.file.create_entity(type)
             return self.create_material_association(material_set)
 
-        elif self.settings["type"] == "IfcMaterialProfileSetUsage":
+        elif type == "IfcMaterialProfileSetUsage":
             provided_material_set = None
-            if self.settings["material"]:
-                provided_material_set = self.settings["material"]
+            if material:
+                provided_material_set = material
                 material_set_class = provided_material_set.is_a()
                 assert material_set_class == "IfcMaterialProfileSet", (
                     f"{material_set_class} cannot be assiged as a IfcMaterialProfileSetUsage."
@@ -251,7 +251,7 @@ class Usecase:
 
             material_sets_to_products: dict[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]
             material_sets_to_products = defaultdict(list)
-            types_to_material_sets: dict[Union[ifcopenshell.entity_instance, None], ifcopenshell.entity_instance]
+            types_to_material_sets: dict[ifcopenshell.entity_instance | None, ifcopenshell.entity_instance]
             types_to_material_sets = {}
 
             for product in self.products:
@@ -281,10 +281,13 @@ class Usecase:
                 rels.append(self.create_material_association(material_set_usage, products))
             return rels[0] if len(rels) == 1 else rels
 
-        elif self.settings["type"] == "IfcMaterialList":
-            material_set = self.file.create_entity(self.settings["type"])
-            material_set.Materials = [self.settings["material"]]
+        elif type == "IfcMaterialList":
+            material_set = self.file.create_entity(type)
+            material_set.Materials = [material]
             return self.create_material_association(material_set)
+
+        else:
+            assert_never(type)
 
     def update_representation_profile(
         self, material_set: ifcopenshell.entity_instance, products: list[ifcopenshell.entity_instance]
@@ -322,8 +325,8 @@ class Usecase:
     def create_profile_set_usage(self, material_set: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         return self.file.create_entity("IfcMaterialProfileSetUsage", **{"ForProfileSet": material_set})
 
-    def assign_ifc_material(self) -> ifcopenshell.entity_instance:
-        material = self.settings["material"] or self.file.create_entity("IfcMaterial")
+    def assign_ifc_material(self, material: ifcopenshell.entity_instance | None) -> ifcopenshell.entity_instance:
+        material = material or self.file.create_entity("IfcMaterial")
         rel = self.get_rel_associates_material(material)
         if not rel:
             return self.create_material_association(material)
@@ -335,7 +338,7 @@ class Usecase:
     def create_material_association(
         self,
         relating_material: ifcopenshell.entity_instance,
-        products: Optional[list[ifcopenshell.entity_instance]] = None,
+        products: list[ifcopenshell.entity_instance] | None = None,
     ) -> ifcopenshell.entity_instance:
         if products is None:
             products = list(self.products)
@@ -351,14 +354,10 @@ class Usecase:
 
     def get_rel_associates_material(
         self, material: ifcopenshell.entity_instance
-    ) -> Union[ifcopenshell.entity_instance, None]:
+    ) -> ifcopenshell.entity_instance | None:
         if self.file.schema == "IFC2X3" or material.is_a("IfcMaterialList"):
             return next(
-                (
-                    r
-                    for r in self.file.by_type("IfcRelAssociatesMaterial")
-                    if r.RelatingMaterial == self.settings["material"]
-                ),
+                (r for r in self.file.by_type("IfcRelAssociatesMaterial") if r.RelatingMaterial == material),
                 None,
             )
         return next(iter(material.AssociatedTo), None)
