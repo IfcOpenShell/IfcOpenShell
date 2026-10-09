@@ -58,6 +58,9 @@ jobs:
           # QT_DIR so BonsaiViewer doesn't try to aqtinstall (which is
           # Linux-only). Only the viewer needs it.
           if [ "${{ matrix.arch }}" == "arm64" ]; then
+            # Unlinking openssl@3 is currently required for `qt` to succeed,
+            # see https://github.com/Homebrew/brew/issues/24204
+            brew unlink openssl@3
             brew install qt
           fi
           # build-all's gmp has no gmpxx, so CGAL would pick up the preinstalled one.
