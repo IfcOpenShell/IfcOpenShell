@@ -56,9 +56,9 @@ class TestAssignMaterialStyleIFC2X3(test.bootstrap.IFC2X3):
         if self.file.schema != "IFC2X3":
             assert representation.Items[0].Styles == (style2,)
         else:
-            # IfcPresentationStyleAssignment
             assert len(representation.Items[0].Styles) == 1
-            assert representation.Items[0].Styles == (style2,)
+            assert representation.Items[0].Styles[0].is_a("IfcPresentationStyleAssignment")
+            assert representation.Items[0].Styles[0].Styles == (style2,)
 
 
 class TestAssignMaterialStyleIFC4(test.bootstrap.IFC4, TestAssignMaterialStyleIFC2X3):
