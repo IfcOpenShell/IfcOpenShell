@@ -490,7 +490,8 @@ class ShaderInfo:
     ) -> None:
         """Draw the point forces applied at a point"""
         forces = []
-        for item in activity_list:
+        # In the order they were applied, which is how a tip-to-tail chain is usually drawn.
+        for item in sorted(activity_list, key=lambda item: item[0].id()):
             forces.append(self.get_point_loads_values([item], rotation)[:3])
         self.draw_point_forces(forces, location, rotation)
 

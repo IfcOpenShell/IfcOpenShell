@@ -71,14 +71,19 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
         # set open gl configurations
         original_blend = gpu.state.blend_get()
         original_depth_test = gpu.state.depth_test_get()
+        original_depth_mask = gpu.state.depth_mask_get()
         gpu.state.blend_set("ALPHA")
         gpu.state.depth_test_set("LESS_EQUAL")
+        # Load glyphs stay behind the model but don't write depth, so they neither hide each other (later ones,
+        # such as resultants, draw on top) nor hide the load values, whose visibility is tested against depth.
+        gpu.state.depth_mask_set(False)
 
         self.draw_batch()
 
         # restore opengl configurations
         gpu.state.blend_set(original_blend)
         gpu.state.depth_test_set(original_depth_test)
+        gpu.state.depth_mask_set(original_depth_mask)
 
     def draw_batch(self) -> None:
         """draw the 3D representation of loads"""
