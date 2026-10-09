@@ -555,16 +555,18 @@ class ShaderInfo:
                 if i < len(vectors) - 1:
                     self.add_dashed_line(location, corner, size, (1, 1, 1, 1))  # An intermediate resultant.
             tip = tail + vector * scale
-            self.add_force_arrow(tail, tip, color, f"{np.linalg.norm(vector):.2f} {self.force_unit}", size)
+            self.add_force_arrow(
+                tail, tip, color, f"{np.linalg.norm(vector):.{props.force_decimals}f} {self.force_unit}", size
+            )
             if props.show_force_angles and has_angle:
                 self.add_force_angle(tail, vector, size, color, arcs_at_tail)
             start = tip
             running = running + vector
 
         if show_resultant:
-            label = f"{'R = ' if len(forces) > 1 else ''}{np.linalg.norm(resultant):.2f} {self.force_unit}"
+            label = f"{'R = ' if len(forces) > 1 else ''}{np.linalg.norm(resultant):.{props.force_decimals}f} {self.force_unit}"
             if abs(resultant[1]) < 1e-9 and not props.show_force_angles:
-                label += f" at {np.degrees(np.arctan2(resultant[2], resultant[0])):.2f} deg"
+                label += f" at {np.degrees(np.arctan2(resultant[2], resultant[0])):.{props.angle_decimals}f} deg"
             # Alpha 2 because the shader caps opacity at half of it; the resultant draws fully opaque.
             self.add_force_arrow(location, location + resultant * scale, (1, 1, 1, 2), label, size, spacing=0.3)
             if props.show_force_angles:
@@ -594,7 +596,8 @@ class ShaderInfo:
             self.add_dashed_line(a, b, size, color, dashed=False)
         middle = np.radians(angle / 2)
         position = tail + radius * 1.15 * np.array((np.cos(middle), 0, np.sin(middle)))
-        self.text_info.append({"position": position, "text": f"θ = {angle:.2f}°"})
+        decimals = tool.Structural.get_structural_props().angle_decimals
+        self.text_info.append({"position": position, "text": f"θ = {angle:.{decimals}f}°"})
 
     def get_perpendicular_axes(self, direction: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         helper = np.array((0, 0, 1)) if abs(direction[2]) < 0.9 else np.array((1, 0, 0))
@@ -685,7 +688,10 @@ class ShaderInfo:
                     "uniforms": [["color", color]],
                 }
             )
-            self.text_info.append({"position": location + 0.25 * (d1 + d2), "text": f"{moment:.2f} {self.moment_unit}"})
+            decimals = tool.Structural.get_structural_props().force_decimals
+            self.text_info.append(
+                {"position": location + 0.25 * (d1 + d2), "text": f"{moment:.{decimals}f} {self.moment_unit}"}
+            )
 
     def get_point_loads_values(
         self, activity_list: list[tuple[ifcopenshell.entity_instance, float]], element_rotation_matrix: np.ndarray
@@ -823,7 +829,7 @@ class ShaderInfo:
                             self.text_info.append(
                                 {
                                     "position": -1 * direction * func / maxforce + start_co + x_axis * current.x,
-                                    "text": f"{func:.2f} {unit}",
+                                    "text": f"{func:.{props.force_decimals}f} {unit}",
                                 }
                             )
 
@@ -850,7 +856,7 @@ class ShaderInfo:
                                 self.text_info.append(
                                     {
                                         "position": -1 * direction * func / maxforce + start_co + x_axis * nextitem.x,
-                                        "text": f"{func:.2f} {unit}",
+                                        "text": f"{func:.{props.force_decimals}f} {unit}",
                                     }
                                 )
 

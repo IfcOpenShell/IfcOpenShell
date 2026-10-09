@@ -244,6 +244,22 @@ class BIMStructuralProperties(PropertyGroup):
         default="BOTH",
         update=update_loads_display,
     )
+    force_decimals: IntProperty(
+        name="Force Decimals",
+        description="Decimal places of force and moment values shown with loads",
+        default=2,
+        min=0,
+        max=8,
+        update=update_loads_display,
+    )
+    angle_decimals: IntProperty(
+        name="Angle Decimals",
+        description="Decimal places of angles shown with loads",
+        default=2,
+        min=0,
+        max=8,
+        update=update_loads_display,
+    )
     show_force_angles: BoolProperty(
         name="Angles",
         description="Mark the angle of each point force from a horizontal reference axis",
@@ -298,6 +314,8 @@ class BIMStructuralProperties(PropertyGroup):
         force_display: str
         force_scale: float
         show_force_angles: bool
+        force_decimals: int
+        angle_decimals: int
 
 
 class BIMObjectStructuralProperties(PropertyGroup):
