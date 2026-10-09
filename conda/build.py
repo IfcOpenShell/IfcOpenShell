@@ -63,6 +63,7 @@ def main() -> None:
         "-DBUILD_IFCMAX:BOOL=OFF",
         "-DCOLLADA_SUPPORT:BOOL=OFF",
         "-DGLTF_SUPPORT:BOOL=ON",
+        "-DUSE_CCACHE:BOOL=ON",
         # Dependencies.
         "-DBoost_USE_STATIC_LIBS:BOOL=OFF",
         f"-DCMAKE_PREFIX_PATH:FILEPATH={DEPENDENCY_PREFIX}",
