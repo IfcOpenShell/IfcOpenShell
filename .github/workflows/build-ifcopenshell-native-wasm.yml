@@ -53,7 +53,7 @@ jobs:
         run: echo "version=$(jq -r .emsdk.version IfcOpenShell/nix/sources.lock.json)" >> "$GITHUB_OUTPUT"
 
       - name: Cache emsdk
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ifcopenshell_build/Linux/wasm/emsdk
           key: emsdk-${{ steps.emsdk.outputs.version }}-${{ runner.os }}
