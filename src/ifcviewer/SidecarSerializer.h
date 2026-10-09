@@ -23,7 +23,7 @@
 
 #include "FederationMath.h"
 #include "InstancedGeometry.h"
-#include "SidecarCache.h"
+#include "SidecarFormat.h"
 
 #include <vector>
 

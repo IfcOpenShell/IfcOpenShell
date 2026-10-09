@@ -21,7 +21,7 @@
 
 #include "Federation.h"
 #include "GeometryStreamer.h"
-#include "SidecarCache.h"
+#include "SidecarWriter.h"
 
 #include <QEventLoop>
 

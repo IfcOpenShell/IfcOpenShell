@@ -20,7 +20,7 @@
 #ifndef LODBUILDER_H
 #define LODBUILDER_H
 
-#include "SidecarCache.h"
+#include "SidecarFormat.h"
 
 // Build a LOD1 index slice for every mesh in `sd` whose triangle count is
 // above `min_triangles`, using meshoptimizer's sloppy (voxel-clustering)

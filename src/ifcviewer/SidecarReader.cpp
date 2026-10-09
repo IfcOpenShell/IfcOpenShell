@@ -17,24 +17,10 @@
  *                                                                              *
  ********************************************************************************/
 
-// v13 sidecar layout (matched against SidecarCache.cpp):
-//
-//   SidecarHeader (12 bytes)
-//   uint32 num_vertex_bytes
-//   uint8[num_vertex_bytes] vertex data            <-- streaming skips
-//   uint32 num_indices
-//   uint32[num_indices] index data                  <-- streaming skips
-//   uint32 num_meshes + MeshInfo[]                  <-- streaming reads
-//   uint32 num_instances + InstanceInfo[]            <-- streaming reads
-//   uint32 has_coord_op + double[16] + 2× double    <-- streaming reads
-//   uint32 num_elements + ElementTableRecord[]       <-- streaming reads
-//   uint32 string_table_bytes + char[]              <-- streaming reads
-//
-// Streaming reader returns offsets to the two skipped sections so chunks
-// can be range-read on demand. File handle is closed before return.
+#include "SidecarReader.h"
+#include "InstanceCompose.h"
 
-#include "StreamingLoader.h"
-#include "SidecarCompress.h"
+#include <zstd.h>
 
 #include <algorithm>
 #include <cstdio>
@@ -42,15 +28,8 @@
 
 namespace {
 
-struct SidecarHeaderRaw {
-    uint32_t magic;
-    uint32_t version;
-    uint32_t endian;
-};
-
-// Bounds-checked forward cursor over an in-memory buffer. parseSidecarTail
-// walks the metadata tail through one of these so a truncated buffer fails
-// cleanly (return false) instead of reading out of bounds.
+// Bounds-checked forward cursor over an in-memory buffer, so a truncated
+// block fails cleanly (return false) instead of reading out of bounds.
 struct BufCursor {
     const uint8_t* cursor;
     size_t remaining_bytes;
@@ -75,33 +54,71 @@ struct BufCursor {
     }
 };
 
-std::string sidecarPath(const std::string& ifc_path) {
-    std::string p = ifc_path;
-    while (!p.empty() && (p.back() == '/' || p.back() == '\\')) p.pop_back();
-    auto slash = p.find_last_of("/\\");
-    auto dot   = p.find_last_of('.');
-    std::string stem = (dot != std::string::npos &&
-                        (slash == std::string::npos || dot > slash))
-                           ? p.substr(0, dot)
-                           : p;
-    return stem + ".ifcview";
+}  // namespace
+
+bool decompressSidecarFrame(const std::uint8_t* src, std::size_t src_size,
+                            std::uint8_t* dst, std::size_t raw_size) {
+    if (raw_size == 0) return src_size == 0;  // empty in ↔ empty out
+    if (!src || !dst || src_size == 0) return false;
+    const size_t got = ZSTD_decompress(dst, raw_size, src, src_size);
+    return !ZSTD_isError(got) && got == raw_size;
 }
 
-}  // namespace
+bool readInstanceInfos(const std::uint8_t*& cursor, std::size_t& remaining,
+                       const std::vector<MeshInfo>& meshes,
+                       std::vector<InstanceInfo>& out) {
+    std::uint32_t count = 0;
+    if (remaining < 4) return false;
+    std::memcpy(&count, cursor, 4);
+    cursor += 4;
+    remaining -= 4;
+    if (std::uint64_t(count) * SIDECAR_INSTANCE_RECORD_BYTES > remaining) return false;
+
+    const Eigen::Matrix4d identity = Eigen::Matrix4d::Identity();
+    const float zero[3] = {0.0f, 0.0f, 0.0f};
+    out.assign(count, InstanceInfo{});
+    for (InstanceInfo& inst : out) {
+        double translation[3];
+        float linear[9];
+        std::memcpy(&inst.mesh_id, cursor, 4);              cursor += 4;
+        std::memcpy(&inst.object_id, cursor, 4);            cursor += 4;
+        std::memcpy(translation, cursor, sizeof(translation)); cursor += sizeof(translation);
+        std::memcpy(linear, cursor, sizeof(linear));           cursor += sizeof(linear);
+        double* p = inst.placement_transformation;  // column-major
+        p[0] = linear[0]; p[1] = linear[1]; p[2]  = linear[2]; p[3]  = 0.0;
+        p[4] = linear[3]; p[5] = linear[4]; p[6]  = linear[5]; p[7]  = 0.0;
+        p[8] = linear[6]; p[9] = linear[7]; p[10] = linear[8]; p[11] = 0.0;
+        p[12] = translation[0]; p[13] = translation[1]; p[14] = translation[2]; p[15] = 1.0;
+
+        // An instance naming a mesh the file does not have gets an empty
+        // world box, as ViewportCore::composeInstanceFromPlacement does, so
+        // it never passes a cull.
+        const bool known_mesh = inst.mesh_id < meshes.size();
+        InstanceCompose::composeInstance(
+            inst.placement_transformation, identity, identity, identity,
+            known_mesh ? meshes[inst.mesh_id].local_aabb_min : zero,
+            known_mesh ? meshes[inst.mesh_id].local_aabb_max : zero,
+            inst.transform, inst.world_aabb_min, inst.world_aabb_max);
+        if (!known_mesh) {
+            for (int a = 0; a < 3; ++a) inst.world_aabb_min[a] = inst.world_aabb_max[a] = 0.0f;
+        }
+    }
+    remaining -= std::size_t(count) * SIDECAR_INSTANCE_RECORD_BYTES;
+    return true;
+}
 
 bool parseSidecarHead(const uint8_t* data, size_t n, uint64_t& out_geom_bytes) {
     if (n < SIDECAR_HEAD_BYTES) return false;
-    SidecarHeaderRaw hdr;
+    SidecarHeader hdr;
     std::memcpy(&hdr, data, sizeof(hdr));
     if (hdr.magic   != SIDECAR_MAGIC)  return false;
     if (hdr.version != SIDECAR_VERSION) return false;
     if (hdr.endian  != SIDECAR_ENDIAN) return false;
-    std::memcpy(&out_geom_bytes, data + sizeof(hdr), 8);
+    std::memcpy(&out_geom_bytes, data + sizeof(hdr), sizeof(out_geom_bytes));
     return true;
 }
 
 bool parseSidecarGeometryMetadata(const uint8_t* data, size_t n, SidecarData& out) {
-    // Geometry metadata block: meshes, instances (v19 records), georef, chunk TOC.
     BufCursor c{data, n};
     if (!c.readVec(out.meshes))    return false;
     if (!readInstanceInfos(c.cursor, c.remaining_bytes, out.meshes, out.instances)) return false;
@@ -114,7 +131,6 @@ bool parseSidecarGeometryMetadata(const uint8_t* data, size_t n, SidecarData& ou
 }
 
 bool parseSidecarElementMetadata(const uint8_t* data, size_t n, SidecarData& out) {
-    // v15+ element metadata block: elements + string table (UI/picking, not rendered).
     BufCursor c{data, n};
     if (!c.readVec(out.elements)) return false;
     uint32_t stbl_len = 0;
@@ -126,7 +142,7 @@ bool parseSidecarElementMetadata(const uint8_t* data, size_t n, SidecarData& out
 }
 
 std::optional<StreamingSidecar> readSidecarMetadata(const std::string& ifc_path) {
-    const std::string path = sidecarPath(ifc_path);
+    const std::string path = sidecarPathFor(ifc_path);
     FILE* f = std::fopen(path.c_str(), "rb");
     if (!f) return std::nullopt;
 
@@ -135,8 +151,6 @@ std::optional<StreamingSidecar> readSidecarMetadata(const std::string& ifc_path)
         return std::nullopt;
     };
 
-    // Head (v16): 12-byte header + the compressed-geometry-section length. The
-    // metadata blocks follow the geometry at SIDECAR_HEAD_BYTES + geom_bytes.
     uint8_t head[SIDECAR_HEAD_BYTES];
     if (std::fread(head, 1, SIDECAR_HEAD_BYTES, f) != SIDECAR_HEAD_BYTES) return fail();
     uint64_t geom_bytes = 0;
@@ -163,7 +177,7 @@ std::optional<StreamingSidecar> readSidecarMetadata(const std::string& ifc_path)
         if (comp_off) *comp_off = uint64_t(here);
         if (comp_sz)  *comp_sz  = comp;
         if (raw_sz)   *raw_sz   = rawn;
-        return SidecarCompress::decompress(z.data(), z.size(), raw.data(), raw.size());
+        return decompressSidecarFrame(z.data(), z.size(), raw.data(), raw.size());
     };
 
     std::vector<uint8_t> geometry_metadata, element_metadata;
@@ -189,7 +203,7 @@ bool readChunkGeometryCompressed(const std::string& ifc_path,
                                  std::uint64_t i_raw_size,
                                  std::vector<std::uint8_t>&  out_vbytes,
                                  std::vector<std::uint32_t>& out_idx) {
-    const std::string path = sidecarPath(ifc_path);
+    const std::string path = sidecarPathFor(ifc_path);
     FILE* f = std::fopen(path.c_str(), "rb");
     if (!f) return false;
     auto readFrame = [&](std::uint64_t off, std::uint64_t comp, std::uint64_t raw,
@@ -198,7 +212,7 @@ bool readChunkGeometryCompressed(const std::string& ifc_path,
         std::vector<std::uint8_t> z(static_cast<size_t>(comp));
         if (std::fseek(f, long(geometry_section_offset + off), SEEK_SET) != 0) return false;
         if (comp && std::fread(z.data(), 1, z.size(), f) != z.size()) return false;
-        return SidecarCompress::decompress(z.data(), z.size(), dst, size_t(raw));
+        return decompressSidecarFrame(z.data(), z.size(), dst, size_t(raw));
     };
     out_vbytes.assign(size_t(v_raw_size), 0);
     out_idx.assign(size_t(i_raw_size / sizeof(std::uint32_t)), 0);
@@ -208,48 +222,6 @@ bool readChunkGeometryCompressed(const std::string& ifc_path,
                   reinterpret_cast<std::uint8_t*>(out_idx.data()));
     std::fclose(f);
     return ok;
-}
-
-bool readSidecarVertexChunk(const std::string& ifc_path,
-                            uint64_t vertex_section_offset,
-                            uint64_t chunk_byte_offset,
-                            uint64_t chunk_byte_size,
-                            std::vector<uint8_t>& out_bytes) {
-    if (chunk_byte_size == 0) { out_bytes.clear(); return true; }
-
-    const std::string path = sidecarPath(ifc_path);
-    FILE* f = std::fopen(path.c_str(), "rb");
-    if (!f) return false;
-    if (std::fseek(f, long(vertex_section_offset + chunk_byte_offset), SEEK_SET) != 0) {
-        std::fclose(f);
-        return false;
-    }
-    out_bytes.resize(size_t(chunk_byte_size));
-    const size_t got = std::fread(out_bytes.data(), 1, size_t(chunk_byte_size), f);
-    std::fclose(f);
-    return got == size_t(chunk_byte_size);
-}
-
-bool readSidecarIndexChunk(const std::string& ifc_path,
-                           uint64_t index_section_offset,
-                           uint64_t chunk_first_index,
-                           uint64_t chunk_index_count,
-                           std::vector<uint32_t>& out_indices) {
-    if (chunk_index_count == 0) { out_indices.clear(); return true; }
-
-    const std::string path = sidecarPath(ifc_path);
-    FILE* f = std::fopen(path.c_str(), "rb");
-    if (!f) return false;
-    const uint64_t byte_offset = index_section_offset + chunk_first_index * 4u;
-    if (std::fseek(f, long(byte_offset), SEEK_SET) != 0) {
-        std::fclose(f);
-        return false;
-    }
-    out_indices.resize(size_t(chunk_index_count));
-    const size_t got = std::fread(out_indices.data(), sizeof(uint32_t),
-                                  size_t(chunk_index_count), f);
-    std::fclose(f);
-    return got == size_t(chunk_index_count);
 }
 
 // Coalesce ranges that are close in file order into single reads. The input
@@ -302,79 +274,4 @@ std::vector<SidecarReadPlan> planSidecarReadRanges(
         plans.push_back(std::move(np));
     }
     return plans;
-}
-
-bool readSidecarVertexRanges(const std::string& ifc_path,
-                             uint64_t vertex_section_offset,
-                             const std::vector<std::pair<uint64_t, uint64_t>>& ranges,
-                             std::vector<uint8_t>& out_bytes) {
-    uint64_t total = 0;
-    for (const auto& r : ranges) total += r.second;
-    out_bytes.resize(size_t(total));
-    if (total == 0) return true;
-
-    // 64 KB max gap: on SSDs a small contiguous read is much cheaper
-    // than a seek + fresh read, even if some bytes are discarded.
-    auto plans = planSidecarReadRanges(vertex_section_offset, ranges, 64 * 1024);
-
-    const std::string path = sidecarPath(ifc_path);
-    FILE* f = std::fopen(path.c_str(), "rb");
-    if (!f) return false;
-
-    std::vector<uint8_t> scratch;
-    for (const auto& p : plans) {
-        scratch.resize(size_t(p.read_size));
-        if (std::fseek(f, long(p.file_offset), SEEK_SET) != 0) { std::fclose(f); return false; }
-        if (std::fread(scratch.data(), 1, scratch.size(), f) != scratch.size()) {
-            std::fclose(f); return false;
-        }
-        for (const auto& s : p.slices) {
-            std::memcpy(out_bytes.data() + s.dst_offset,
-                        scratch.data() + s.src_offset, size_t(s.bytes));
-        }
-    }
-    std::fclose(f);
-    return true;
-}
-
-bool readSidecarIndexRanges(const std::string& ifc_path,
-                            uint64_t index_section_offset,
-                            const std::vector<std::pair<uint64_t, uint64_t>>& ranges,
-                            std::vector<uint32_t>& out_indices) {
-    uint64_t total = 0;
-    for (const auto& r : ranges) total += r.second;
-    out_indices.resize(size_t(total));
-    if (total == 0) return true;
-
-    // Convert u32-range (first_u32, count_u32) to byte-range
-    // (file_offset, byte_size). Then coalesce + read.
-    std::vector<std::pair<uint64_t, uint64_t>> byte_ranges;
-    byte_ranges.reserve(ranges.size());
-    uint64_t out_byte_cursor = 0;
-    for (const auto& [first_u32, count] : ranges) {
-        // Store byte offsets relative to the index section.
-        byte_ranges.emplace_back(first_u32 * 4u, count * 4u);
-        out_byte_cursor += count * 4u;
-    }
-    auto plans = planSidecarReadRanges(index_section_offset, byte_ranges, 64 * 1024);
-
-    const std::string path = sidecarPath(ifc_path);
-    FILE* f = std::fopen(path.c_str(), "rb");
-    if (!f) return false;
-
-    std::vector<uint8_t> scratch;
-    uint8_t* out_bytes = reinterpret_cast<uint8_t*>(out_indices.data());
-    for (const auto& p : plans) {
-        scratch.resize(size_t(p.read_size));
-        if (std::fseek(f, long(p.file_offset), SEEK_SET) != 0) { std::fclose(f); return false; }
-        if (std::fread(scratch.data(), 1, scratch.size(), f) != scratch.size()) {
-            std::fclose(f); return false;
-        }
-        for (const auto& s : p.slices) {
-            std::memcpy(out_bytes + s.dst_offset,
-                        scratch.data() + s.src_offset, size_t(s.bytes));
-        }
-    }
-    std::fclose(f);
-    return true;
 }

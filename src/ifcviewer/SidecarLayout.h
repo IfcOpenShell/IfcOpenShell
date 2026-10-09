@@ -20,7 +20,7 @@
 #ifndef SIDECARLAYOUT_H
 #define SIDECARLAYOUT_H
 
-#include "SidecarCache.h"
+#include "SidecarFormat.h"
 
 // Reorder a sidecar's geometry for streaming locality.
 //

@@ -19,7 +19,8 @@
  ********************************************************************************/
 
 #include "SidecarSerializer.h"
-#include "SidecarCache.h"
+#include "SidecarReader.h"
+#include "SidecarWriter.h"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -158,13 +159,24 @@ TEST_CASE("SidecarSerializer output round-trips through the on-disk cache", "[si
     const fs::path ifc_path = dir / "model.ifc";
     REQUIRE(writeSidecar(ifc_path.string(), data));
 
-    auto loaded = readSidecar(ifc_path.string());
+    // Read back the way the viewer does: metadata first, then every chunk.
+    auto loaded = readSidecarMetadata(ifc_path.string());
     REQUIRE(loaded.has_value());
-    REQUIRE(loaded->meshes.size() == data.meshes.size());
-    REQUIRE(loaded->instances.size() == data.instances.size());
-    REQUIRE(loaded->vertices == data.vertices);
-    REQUIRE(loaded->indices == data.indices);
-    REQUIRE(loaded->chunks.size() == data.chunks.size());
+    REQUIRE(loaded->meta.meshes.size() == data.meshes.size());
+    REQUIRE(loaded->meta.instances.size() == data.instances.size());
+    REQUIRE(loaded->meta.chunks.size() == data.chunks.size());
+    size_t vertex_bytes = 0, index_count = 0;
+    for (const SidecarChunk& c : loaded->meta.chunks) {
+        std::vector<uint8_t>  vbytes;
+        std::vector<uint32_t> idx;
+        REQUIRE(readChunkGeometryCompressed(ifc_path.string(), loaded->geometry_section_offset,
+                                            c.v_comp_off, c.v_comp_size, c.v_raw_size,
+                                            c.i_comp_off, c.i_comp_size, c.i_raw_size, vbytes, idx));
+        vertex_bytes += vbytes.size();
+        index_count  += idx.size();
+    }
+    REQUIRE(vertex_bytes == data.vertices.size());
+    REQUIRE(index_count  == data.indices.size());
 
     fs::remove_all(dir);
 }

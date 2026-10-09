@@ -36,10 +36,10 @@
 
 #include "Federation.h"
 #include "../ifcviewer/ViewportWindow.h"
-#include "../ifcviewer/StreamingLoader.h"
+#include "../ifcviewer/SidecarReader.h"
 #include "GeometryStreamer.h"
 #include "SidecarBuilder.h"
-#include "SidecarCache.h"
+#include "SidecarWriter.h"
 
 // Drives IFC file loading into a ViewportWindow.  Owns the per-model
 // GeometryStreamer, the load queue, the sidecar read thread, and the

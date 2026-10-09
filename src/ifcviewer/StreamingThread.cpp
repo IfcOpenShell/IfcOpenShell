@@ -19,7 +19,7 @@
 
 #include "StreamingThread.h"
 
-#include "StreamingLoader.h"
+#include "SidecarReader.h"
 
 StreamingThread::~StreamingThread() {
     stop();

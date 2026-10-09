@@ -17,9 +17,9 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "SidecarCache.h"
-#include "SidecarCompress.h"
-#include "StreamingLoader.h"
+#include "SidecarFormat.h"
+#include "SidecarReader.h"
+#include "SidecarWriter.h"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -143,6 +143,22 @@ TEST_CASE("readSidecarMetadata rejects missing / corrupt files", "[streaming]") 
     REQUIRE_FALSE(readSidecarMetadata(bad.string()).has_value());
 }
 
+TEST_CASE("readSidecarMetadata rejects a wrong version", "[streaming]") {
+    fs::path dir = makeScratchDir("wrongver");
+    fs::path ifc = dir / "old.ifc";
+    SidecarHeader h{ SIDECAR_MAGIC, SIDECAR_VERSION - 1, SIDECAR_ENDIAN };
+    {
+        FILE* f = std::fopen((dir / "old.ifcview").string().c_str(), "wb");
+        REQUIRE(f);
+        std::fwrite(&h, sizeof(h), 1, f);
+        // Write a zeroed payload so the failure must come from the header check.
+        uint64_t zero = 0;
+        for (int i = 0; i < 4; ++i) std::fwrite(&zero, 8, 1, f);
+        std::fclose(f);
+    }
+    REQUIRE_FALSE(readSidecarMetadata(ifc.string()).has_value());
+}
+
 TEST_CASE("readChunkGeometryCompressed decompresses a chunk's blobs", "[streaming]") {
     fs::path dir = makeScratchDir("chunkgeom");
     fs::path ifc = dir / "model.ifc";
@@ -219,7 +235,7 @@ TEST_CASE("v16 element metadata block: fetch via locator, decompress, parse", "[
     std::fclose(f);
 
     std::vector<uint8_t> raw(size_t(meta->element_metadata_raw_size));
-    REQUIRE(SidecarCompress::decompress(cz.data(), cz.size(), raw.data(), raw.size()));
+    REQUIRE(decompressSidecarFrame(cz.data(), cz.size(), raw.data(), raw.size()));
     SidecarData d;
     REQUIRE(parseSidecarElementMetadata(raw.data(), raw.size(), d));
     REQUIRE(d.elements.size()  == sd.elements.size());

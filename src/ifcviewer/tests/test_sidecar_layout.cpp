@@ -19,7 +19,7 @@
 
 #include "ChunkPlanner.h"
 #include "InstancedGeometry.h"
-#include "SidecarCache.h"
+#include "SidecarFormat.h"
 #include "SidecarLayout.h"
 
 #include <catch2/catch_test_macros.hpp>

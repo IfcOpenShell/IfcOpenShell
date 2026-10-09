@@ -24,7 +24,7 @@
 #include "LengthMeasurement.h"
 #include "Log.h"
 #include "LogQt.h"
-#include "StreamingLoader.h"
+#include "SidecarReader.h"
 #include "VertexQuantization.h"
 
 #include <QCoreApplication>
