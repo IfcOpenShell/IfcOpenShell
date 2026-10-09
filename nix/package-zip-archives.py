@@ -20,6 +20,7 @@ from common import (
     is_geometry_tree,
     is_geometry_writer,
     is_json_or_xml_document_serializer,
+    is_svgfill,
     is_wgpu_native,
     logger,
     run,
@@ -166,6 +167,7 @@ def stage_runtime_payload(
     *,
     include_json_xml_serializers: bool = False,
     include_geometry_serializers: bool = False,
+    include_svgfill: bool = False,
     include_geometry_trees: bool = False,
     include_wgpu: bool = False,
 ) -> list[Path]:
@@ -192,6 +194,8 @@ def stage_runtime_payload(
             if not include_json_xml_serializers and is_json_or_xml_document_serializer(runtime_file):
                 continue
             if not include_geometry_serializers and is_geometry_serializer(runtime_file):
+                continue
+            if not include_svgfill and is_svgfill(runtime_file):
                 continue
             if not include_geometry_trees and is_geometry_tree(runtime_file):
                 continue
@@ -487,8 +491,9 @@ def package_executable(
         ifcopenshell_install_dir,
         package_dir,
         include_json_xml_serializers=exe == "IfcConvert",
+        include_geometry_serializers=exe == "IfcConvert",
         # svgfill links ifcopenshell_geometry_svgfill directly.
-        include_geometry_serializers=exe in ("IfcConvert", "svgfill"),
+        include_svgfill=exe == "svgfill",
         include_wgpu=exe in ("BonsaiViewer", "IfcViewerMinimal"),
     )
 
