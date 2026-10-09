@@ -110,8 +110,9 @@ static_assert(sizeof(InstanceGpu) == 80, "InstanceGpu must be 80 bytes");
 // stage matrices are all identity (default), transform is the float rendering
 // copy of placement_transformation.
 //
-// Only mesh_id, object_id and placement_transformation are stored in the
-// sidecar (v18). The rest is session specific and derived on read.
+// Only mesh_id, object_id, placement_transformation (as a double translation
+// plus a float linear part) are stored in the sidecar. The rest is session
+// specific and derived on read.
 struct InstanceInfo {
     uint32_t mesh_id                  = 0;  // index into meshes array
     uint32_t object_id                = 0;

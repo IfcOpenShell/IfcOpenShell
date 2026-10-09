@@ -101,7 +101,7 @@ bool parseSidecarHead(const uint8_t* data, size_t n, uint64_t& out_geom_bytes) {
 }
 
 bool parseSidecarGeometryMetadata(const uint8_t* data, size_t n, SidecarData& out) {
-    // Geometry metadata block: meshes, instances (v18 records), georef, chunk TOC.
+    // Geometry metadata block: meshes, instances (v19 records), georef, chunk TOC.
     BufCursor c{data, n};
     if (!c.readVec(out.meshes))    return false;
     if (!readInstanceInfos(c.cursor, c.remaining_bytes, out.meshes, out.instances)) return false;
