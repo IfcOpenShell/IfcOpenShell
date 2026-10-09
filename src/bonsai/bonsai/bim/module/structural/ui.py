@@ -339,6 +339,9 @@ class BIM_PT_structural_analysis_models(Panel):
         else:
             row.operator("bim.load_structural_analysis_models", text="", icon="GREASEPENCIL")
 
+        if current_model := StructuralAnalysisModelsData.data["current_model"]:
+            self.layout.label(text=f"Current Model: {current_model['name']}", icon="RADIOBUT_ON")
+
         if self.props.is_editing:
             self.layout.template_list(
                 "BIM_UL_structural_analysis_models",
@@ -366,6 +369,14 @@ class BIM_UL_structural_analysis_models(UIList):
     ):
         if item:
             row = layout.row(align=True)
+            current_model = StructuralAnalysisModelsData.data["current_model"]
+            if current_model and current_model["id"] == item.ifc_definition_id:
+                row.label(text="", icon="RADIOBUT_ON")
+            else:
+                op = row.operator(
+                    "bim.set_current_structural_analysis_model", text="", icon="RADIOBUT_OFF", emboss=False
+                )
+                op.structural_analysis_model = item.ifc_definition_id
             row.label(text=item.name)
 
             if context.active_object:
@@ -419,7 +430,7 @@ class BIM_PT_structural_load_cases(Panel):
     def draw_load_case_ui(self, load_case):
         row = self.layout.row(align=True)
         row.label(text=load_case["name"], icon="CON_CLAMPTO")
-        if model_id := self.get_selected_model_id():
+        if model_id := StructuralLoadCasesData.data["current_model_id"]:
             if model_id in load_case["model_ids"]:
                 op = row.operator("bim.unassign_structural_load_case", text="", icon="KEYFRAME_HLT", emboss=False)
             else:
@@ -449,15 +460,6 @@ class BIM_PT_structural_load_cases(Panel):
                 self.draw_editable_load_case_ui()
             elif self.props.load_case_editing_type == "GROUPS":
                 self.draw_editable_load_case_group_ui(load_case)
-
-    def get_selected_model_id(self) -> int | None:
-        if not self.props.is_editing:
-            return None
-        models = self.props.structural_analysis_models
-        index = self.props.active_structural_analysis_model_index
-        if 0 <= index < len(models):
-            return models[index].ifc_definition_id
-        return None
 
     def draw_editable_load_case_ui(self):
         draw_attributes(self.props.load_case_attributes, self.layout)

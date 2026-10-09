@@ -107,6 +107,40 @@ class Structural(bonsai.core.tool.Structural):
         return model
 
     @classmethod
+    def get_current_structural_analysis_model(cls) -> Union[ifcopenshell.entity_instance, None]:
+        """Get the model that new structural items and load cases are assigned to.
+
+        Falls back to the only model in the project when none has been chosen.
+        """
+        ifc_file = tool.Ifc.get()
+        if model_id := cls.get_structural_props().current_structural_analysis_model_id:
+            try:
+                model = ifc_file.by_id(model_id)
+                if model.is_a("IfcStructuralAnalysisModel"):
+                    return model
+            except RuntimeError:
+                pass
+        models = ifc_file.by_type("IfcStructuralAnalysisModel")
+        return models[0] if len(models) == 1 else None
+
+    @classmethod
+    def set_current_structural_analysis_model(cls, model: ifcopenshell.entity_instance) -> None:
+        cls.get_structural_props().current_structural_analysis_model_id = model.id()
+
+    @classmethod
+    def assign_to_current_structural_analysis_model(cls, element: ifcopenshell.entity_instance) -> None:
+        if not (model := cls.get_current_structural_analysis_model()):
+            return
+        if element.is_a("IfcStructuralLoadGroup"):
+            ifcopenshell.api.structural.assign_structural_load_group(
+                tool.Ifc.get(), load_groups=[element], structural_analysis_model=model
+            )
+        elif element.is_a("IfcStructuralItem"):
+            ifcopenshell.api.structural.assign_structural_analysis_model(
+                tool.Ifc.get(), products=[element], structural_analysis_model=model
+            )
+
+    @classmethod
     def get_ifc_structural_analysis_model_attributes(cls, model: Union[int, None]) -> Union[dict[str, Any], None]:
         if model:
             ifc_model = tool.Ifc.get().by_id(model)

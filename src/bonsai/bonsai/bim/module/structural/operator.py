@@ -27,6 +27,7 @@ from mathutils import Matrix, Vector
 import bonsai.bim.helper
 import bonsai.core.structural as core
 import bonsai.tool as tool
+from bonsai.bim.module.structural.data import StructuralAnalysisModelsData, StructuralLoadCasesData
 from bonsai.bim.module.structural.decorator import LoadsDecorator
 
 
@@ -246,6 +247,20 @@ class AddStructuralAnalysisModel(bpy.types.Operator, tool.Ifc.Operator):
         model = core.add_structural_analysis_model(tool.Ifc, tool.Structural)
         core.load_structural_analysis_model_attributes(tool.Structural, model=model.id())
         core.enable_editing_structural_analysis_model(tool.Structural, model=model.id())
+
+
+class SetCurrentStructuralAnalysisModel(bpy.types.Operator):
+    bl_idname = "bim.set_current_structural_analysis_model"
+    bl_label = "Set Current Structural Analysis Model"
+    bl_description = "New structural items and load cases are assigned to the current model"
+    bl_options = {"REGISTER", "UNDO"}
+    structural_analysis_model: bpy.props.IntProperty()
+
+    def execute(self, context):
+        tool.Structural.set_current_structural_analysis_model(tool.Ifc.get().by_id(self.structural_analysis_model))
+        StructuralAnalysisModelsData.is_loaded = False
+        StructuralLoadCasesData.is_loaded = False
+        return {"FINISHED"}
 
 
 class EditStructuralAnalysisModel(bpy.types.Operator, tool.Ifc.Operator):
@@ -494,7 +509,7 @@ class EditStructuralConnectionCS(bpy.types.Operator, tool.Ifc.Operator):
 class AssignStructuralLoadCase(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_structural_load_case"
     bl_label = "Assign Structural Load Case"
-    bl_description = "Assign the load case to the structural analysis model selected in the list"
+    bl_description = "Assign the load case to the current structural analysis model"
     bl_options = {"REGISTER", "UNDO"}
     structural_analysis_model: bpy.props.IntProperty()
     load_case: bpy.props.IntProperty()
@@ -512,7 +527,7 @@ class AssignStructuralLoadCase(bpy.types.Operator, tool.Ifc.Operator):
 class UnassignStructuralLoadCase(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_structural_load_case"
     bl_label = "Unassign Structural Load Case"
-    bl_description = "Unassign the load case from the structural analysis model selected in the list"
+    bl_description = "Unassign the load case from the current structural analysis model"
     bl_options = {"REGISTER", "UNDO"}
     structural_analysis_model: bpy.props.IntProperty()
     load_case: bpy.props.IntProperty()
@@ -533,7 +548,8 @@ class AddStructuralLoadCase(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        ifcopenshell.api.structural.add_structural_load_case(tool.Ifc.get())
+        load_case = ifcopenshell.api.structural.add_structural_load_case(tool.Ifc.get())
+        tool.Structural.assign_to_current_structural_analysis_model(load_case)
         return {"FINISHED"}
 
 

@@ -192,12 +192,21 @@ class StructuralAnalysisModelsData:
 
     @classmethod
     def load(cls):
-        cls.data = {"total_models": cls.total_models(), "active_model_ids": cls.active_model_ids()}
+        cls.data = {
+            "total_models": cls.total_models(),
+            "active_model_ids": cls.active_model_ids(),
+            "current_model": cls.current_model(),
+        }
         cls.is_loaded = True
 
     @classmethod
     def total_models(cls):
         return len(tool.Ifc.get().by_type("IfcStructuralAnalysisModel"))
+
+    @classmethod
+    def current_model(cls):
+        if model := tool.Structural.get_current_structural_analysis_model():
+            return {"id": model.id(), "name": model.Name or "Unnamed"}
 
     @classmethod
     def active_model_ids(cls):
@@ -221,9 +230,15 @@ class StructuralLoadCasesData:
         cls.is_loaded = True
         cls.data = {
             "load_cases": cls.load_cases(),
+            "current_model_id": cls.current_model_id(),
             "applicable_structural_load_types": cls.applicable_structural_load_types(),
             "applicable_structural_loads": cls.applicable_structural_loads(),
         }
+
+    @classmethod
+    def current_model_id(cls):
+        if model := tool.Structural.get_current_structural_analysis_model():
+            return model.id()
 
     @classmethod
     def load_cases(cls):
