@@ -60,6 +60,8 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
     text_info = []
     shader_info = []
     depth_array = None
+    pickables = []
+    hovered: Union[dict, None] = None
 
     @classmethod
     def install(cls, context: bpy.types.Context) -> None:
@@ -87,6 +89,26 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
         cls.decoration_data.update()
         cls.text_info = cls.decoration_data.text_info
         cls.shader_info = cls.decoration_data.info
+        cls.pickables = cls.decoration_data.pickables
+        cls.hovered = None
+
+    @classmethod
+    def pick(cls, region: bpy.types.Region, rv3d: bpy.types.RegionView3D, x: float, y: float) -> Union[dict, None]:
+        """Get the pickable arrow nearest the region coordinates x and y, if one is within a few pixels"""
+        mouse = Vector((x, y))
+        best, best_distance = None, 10.0
+        for pickable in cls.pickables:
+            tail = location_3d_to_region_2d(region, rv3d, Vector(pickable["tail"]))
+            tip = location_3d_to_region_2d(region, rv3d, Vector(pickable["tip"]))
+            if tail is None or tip is None or not (tip - tail).length:
+                continue
+            along = max(0.0, min(1.0, (mouse - tail).dot(tip - tail) / (tip - tail).length_squared))
+            if along * (tip - tail).length < 15:
+                continue  # Leave the tail, where the loaded point is, free for selecting it.
+            distance = (tail + (tip - tail) * along - mouse).length
+            if distance < best_distance:
+                best, best_distance = pickable, distance
+        return best
 
     def __call__(self) -> None:
         """set gpu configurations to draw 3D representations"""
@@ -110,7 +132,8 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
     def draw_batch(self) -> None:
         """draw the 3D representation of loads"""
         if not self.decoration_data.is_empty:
-            for info in self.shader_info:
+            hovered = self.hovered["info"] if self.hovered else -1
+            for i, info in enumerate(self.shader_info):
                 shader = info["shader"]
                 args = info["args"]
                 indices = info["indices"]
@@ -122,6 +145,8 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
                 shader.uniform_float("viewProjectionMatrix", matrix)
 
                 for key, value in info["uniforms"]:
+                    if key == "color" and i == hovered:
+                        value = tuple(min(c, 1.0) + (1 - min(c, 1.0)) * 0.6 for c in value[:3]) + (2,)
                     shader.uniform_float(key, value)
 
                 batch.draw(shader)

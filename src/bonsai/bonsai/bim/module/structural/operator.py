@@ -50,7 +50,37 @@ class ShowLoads(bpy.types.Operator):
             LoadsDecorator.uninstall()
             tool.Blender.update_all_viewports(context)
             return {"FINISHED"}
+        if event.type == "MOUSEMOVE":
+            hovered = None
+            if view := self.get_view_under_mouse(context, event):
+                area, region, rv3d = view
+                hovered = LoadsDecorator.pick(region, rv3d, event.mouse_x - region.x, event.mouse_y - region.y)
+            if hovered is not LoadsDecorator.hovered:
+                LoadsDecorator.hovered = hovered
+                tool.Blender.update_all_viewports(context)
+        elif event.type == "LEFTMOUSE" and event.value == "PRESS" and LoadsDecorator.hovered:
+            if view := self.get_view_under_mouse(context, event):
+                area, region, _ = view
+                with context.temp_override(window=context.window, area=area, region=region):
+                    bpy.ops.bim.edit_structural_load_values(
+                        "INVOKE_DEFAULT", activity=LoadsDecorator.hovered["activity"]
+                    )
+                return {"RUNNING_MODAL"}
         return {"PASS_THROUGH"}
+
+    def get_view_under_mouse(
+        self, context: bpy.types.Context, event: bpy.types.Event
+    ) -> Union[tuple[bpy.types.Area, bpy.types.Region, bpy.types.RegionView3D], None]:
+        for area in context.window.screen.areas:
+            if area.type != "VIEW_3D":
+                continue
+            for region in area.regions:
+                if (
+                    region.type == "WINDOW"
+                    and region.x <= event.mouse_x < region.x + region.width
+                    and region.y <= event.mouse_y < region.y + region.height
+                ):
+                    return area, region, area.spaces.active.region_3d
 
     def invoke(self, context, event):
         assert context.window and context.window_manager and context.screen

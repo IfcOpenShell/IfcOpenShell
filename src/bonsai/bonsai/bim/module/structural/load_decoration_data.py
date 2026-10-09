@@ -88,6 +88,7 @@ class ShaderInfo:
         self.surface_members: dict[str, MemberInfo] = {}
         self.text_info = []
         self.info = []
+        self.pickables = []
         self.force_unit = ""
         self.moment_unit = ""
         self.linear_force_unit = ""
@@ -97,6 +98,8 @@ class ShaderInfo:
     def update(self) -> None:
         self.info = []
         self.text_info = []
+        # Arrows that stand for one applied load, so that they can be picked in the viewport to edit it.
+        self.pickables = []
         self.curve_members = {}
         self.point_members = {}
         self.surface_members = {}
@@ -489,25 +492,39 @@ class ShaderInfo:
         self, activity_list: list[tuple[ifcopenshell.entity_instance, float]], location: Vector, rotation: np.ndarray
     ) -> None:
         """Draw the point forces applied at a point"""
-        forces = []
         # In the order they were applied, which is how a tip-to-tail chain is usually drawn.
-        for item in sorted(activity_list, key=lambda item: item[0].id()):
-            forces.append(self.get_point_loads_values([item], rotation)[:3])
-        self.draw_point_forces(forces, location, rotation)
+        items = sorted(activity_list, key=lambda item: item[0].id())
+        forces = [self.get_point_loads_values([item], rotation)[:3] for item in items]
+        self.draw_point_forces(forces, location, rotation, [item[0].id() for item in items])
 
-    def draw_point_forces(self, forces: list[np.ndarray], location: Vector, rotation: np.ndarray) -> None:
+    def draw_point_forces(
+        self,
+        forces: list[np.ndarray],
+        location: Vector,
+        rotation: np.ndarray,
+        activities: Union[list[int], None] = None,
+    ) -> None:
         """Draw point forces at a point from the point outwards, to scale, as chosen by force_display:
         the components or resultant of their sum, or each force added by the parallelogram law or tip to tail.
 
         forces: the X, Y and Z components of each force, in the reference frame being shown
+        activities: the id of the activity applying each force, if any
         """
         props = tool.Structural.get_structural_props()
         location = np.array(location)
         if props.reference_frame == "LOCAL_COORDS":
             forces = [rotation @ force for force in forces]
-        forces = [force for force in forces if np.linalg.norm(force)]
-        if not forces:
+        kept = [
+            (force, activity)
+            for force, activity in zip(forces, activities or [0] * len(forces))
+            if np.linalg.norm(force)
+        ]
+        if not kept:
             return
+        forces = [force for force, _ in kept]
+        activities = [activity for _, activity in kept]
+        # Arrows can be picked to edit their load only when they stand for one applied load.
+        single = activities[0] if len(activities) == 1 else 0
         resultant = sum(forces)
 
         # All forces share one scale so that their lengths compare, as in a graphical solution.
@@ -523,7 +540,9 @@ class ShaderInfo:
         axes = rotation if props.reference_frame == "LOCAL_COORDS" else np.eye(3)
         values = axes.T @ resultant
         axis_colors = [(1, 0, 0, 1), (0, 1, 0, 1), (0, 0, 1, 1)]
-        components = [(values[j] * axes[:, j], axis_colors[j], False) for j in range(3) if abs(values[j]) > 1e-9]
+        components = [
+            (values[j] * axes[:, j], axis_colors[j], False, single) for j in range(3) if abs(values[j]) > 1e-9
+        ]
         colors = [(0.3, 0.8, 1, 1), (1, 0.4, 0.8, 1), (1, 0.9, 0.3, 1), (0.5, 1, 0.5, 1)]
 
         mode = props.force_display
@@ -531,7 +550,9 @@ class ShaderInfo:
             # A single force has nothing to add to, so show it resolved into its components instead:
             # they are the legs of its parallelogram, and it is the diagonal.
             vectors = (
-                components if len(forces) == 1 else [(f, colors[i % len(colors)], True) for i, f in enumerate(forces)]
+                components
+                if len(forces) == 1
+                else [(f, colors[i % len(colors)], True, activities[i]) for i, f in enumerate(forces)]
             )
             show_resultant = len(vectors) > 1
         elif mode == "RESULTANT":
@@ -547,9 +568,9 @@ class ShaderInfo:
         reference_axes: dict[tuple, tuple] = {}
         # In a tip-to-tail chain every tip is the next tail, so labels go at the middle of each arrow, outside
         # the polygon the chain and its resultant make; elsewhere tails are shared, so labels go at the tips.
-        chain = np.cumsum([np.zeros(3)] + [vector for vector, _, _ in vectors], axis=0) * scale + location
+        chain = np.cumsum([np.zeros(3)] + [vector for vector, *_ in vectors], axis=0) * scale + location
         centre = chain.mean(axis=0) if mode == "TIP_TO_TAIL" else None
-        for i, (vector, color, has_angle) in enumerate(vectors):
+        for i, (vector, color, has_angle, activity) in enumerate(vectors):
             tail = start if mode == "TIP_TO_TAIL" else location
             if mode == "PARALLELOGRAM" and i:
                 # Complete the parallelogram of the vectors so far and this one. Each side is coloured
@@ -563,10 +584,12 @@ class ShaderInfo:
             tip = tail + vector * scale
             label = f"{np.linalg.norm(vector):.{props.force_decimals}f} {self.force_unit}"
             if centre is None:
-                self.add_force_arrow(tail, tip, color, label, size)
+                self.add_force_arrow(tail, tip, color, label, size, activity=activity)
             else:
                 side = self.get_label_side(vector, (tail + tip) / 2 - centre)
-                self.add_force_arrow(tail, tip, color, label, size, label_away=side, label_at_middle=True)
+                self.add_force_arrow(
+                    tail, tip, color, label, size, label_away=side, label_at_middle=True, activity=activity
+                )
             if props.show_force_angles and has_angle:
                 self.add_force_angle(tail, vector, size, color, arcs_at_tail, reference_axes)
             start = tip
@@ -590,6 +613,7 @@ class ShaderInfo:
                 spacing=0.3,
                 label_away=self.get_label_side(resultant, outside),
                 label_at_middle=centre is not None,
+                activity=single,
             )
             if props.show_force_angles:
                 self.add_force_angle(location, resultant, size, (1, 1, 1, 1), arcs_at_tail, reference_axes)
@@ -680,6 +704,7 @@ class ShaderInfo:
         spacing: float = 0.2,
         label_away: Union[np.ndarray, None] = None,
         label_at_middle: bool = False,
+        activity: int = 0,
     ) -> None:
         """Add an arrow from tail to tip, its head and shaft sized to size, the longest arrow drawn with it"""
         length = np.linalg.norm(tip - tail)
@@ -707,6 +732,8 @@ class ShaderInfo:
                 "uniforms": [["color", color], ["spacing", spacing]],
             }
         )
+        if activity:
+            self.pickables.append({"tail": tail, "tip": tip, "activity": activity, "info": len(self.info) - 1})
         # Labelled beside the tip, as arrows often share their tail.
         away = direction if label_away is None else label_away
         position = (tail + tip) / 2 if label_at_middle else tip
