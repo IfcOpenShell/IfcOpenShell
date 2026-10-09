@@ -11,12 +11,8 @@ jobs:
       matrix:
         include:
           - os: macos
-            # Why not cross-compilation.
-            # Brew dropped support for Intel bottles,
-            # but Intel runner has some brew dependencies we need preinstalled (e.g. openssl, gettext).
-            # If we'd cross-compile, then we would need to either build it ourselves (update build-all)
-            # or build it from brew using formula (which is very slow, it pulls other dependencies).
-            runner: macos-15-intel
+            # Cross-compiled on Apple Silicon, it's about twice as fast as the Intel runner.
+            runner: macos-15
             arch: x64
             oldarch: ""
             without: -without-bonsaiviewer
@@ -55,9 +51,9 @@ jobs:
           brew untap homebrew/core homebrew/cask
           brew update
           # preinstalled: xz, cmake
-          # Intel bottles disappear on bison's next release,
-          # so build it from source now to avoid surprises later.
-          brew install ${{ matrix.arch == 'x64' && '--build-from-source' || '' }} bison
+          # If we drop cross-compilation:
+          # build bison from source on the Intel runner, as Intel bottles disappear soon.
+          brew install bison
           # qt brings in Qt6 + Svg; nix/build-all.py honours pre-set
           # QT_DIR so BonsaiViewer doesn't try to aqtinstall (which is
           # Linux-only). Only the viewer needs it.
@@ -88,9 +84,9 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2.24
         with:
           key: mac-${{ matrix.arch }}
-          # No Intel bottle in brew, so use the prebuilt release binary.
+          # If we drop cross-compilation:
+          # use `install: binary` on the Intel runner, as there's no Intel bottle in brew.
           # See https://github.com/hendrikmuhs/ccache-action/issues/374
-          install: ${{ matrix.arch == 'x64' && 'binary' || 'detect' }}
 
       - name: Run Build Script
         shell: bash
@@ -112,6 +108,7 @@ jobs:
               --add-commit-sha \
               --build-cfg Release \
               --use-ninja \
+              ${{ matrix.arch == 'x64' && '--mac-cross-compile-intel' || '' }} \
               ${{ matrix.without }} \
             | tee build.log
 
