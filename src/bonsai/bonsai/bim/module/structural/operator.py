@@ -769,10 +769,43 @@ def get_load_category(load: ifcopenshell.entity_instance) -> Union[str, None]:
     return next((c for c, (load_class, *_) in APPLY_LOAD_CLASSES.items() if load.is_a(load_class)), None)
 
 
+# Property update callbacks get the operator's properties, not the operator, so the name helpers are functions.
+def get_force_components(props: "StructuralForceInput") -> tuple[float, float, float]:
+    if props.input_mode == "COMPONENTS":
+        return props.x, props.y, props.z
+    x, z = tool.Structural.get_in_plane_components(
+        props.input_mode, magnitude=props.magnitude, angle=props.angle, rise=props.rise, run=props.run
+    )
+    return x, 0.0, z
+
+
+def get_load_unit_symbol(category: str) -> str:
+    ifc_file = tool.Ifc.get()
+    force_unit = ifcopenshell.util.unit.get_project_unit(ifc_file, "FORCEUNIT")
+    length_unit = ifcopenshell.util.unit.get_project_unit(ifc_file, "LENGTHUNIT")
+    symbol = ifcopenshell.util.unit.get_unit_symbol(force_unit) if force_unit else "N"
+    length = ifcopenshell.util.unit.get_unit_symbol(length_unit) if length_unit else "m"
+    if category == "IfcStructuralCurveMember":
+        return f"{symbol}/{length}"
+    elif category == "IfcStructuralSurfaceMember":
+        return f"{symbol}/{length}2"
+    return symbol
+
+
+def get_default_load_name(props: "StructuralForceInput", category: str) -> str:
+    unit = get_load_unit_symbol(category)
+    if props.input_mode == "ANGLE":
+        return f"{props.magnitude:g} {unit} at {props.angle:g} deg"
+    elif props.input_mode == "SLOPE":
+        return f"{props.magnitude:g} {unit} at {props.rise:g}:{props.run:g}"
+    values = [f"{axis} {value:g}" for axis, value in zip("XYZ", get_force_components(props)) if value]
+    return f"{', '.join(values) or '0'} {unit}"
+
+
 def update_load_name(self: "StructuralForceInput", context: bpy.types.Context) -> None:
     # Keep a generated name in step with the values, but never overwrite a name the user typed.
     if self.load_category and (not self.load_name or DEFAULT_LOAD_NAME.match(self.load_name)):
-        self.load_name = self.get_default_load_name(self.load_category)
+        self.load_name = get_default_load_name(self, self.load_category)
 
 
 class StructuralForceInput:
@@ -801,12 +834,7 @@ class StructuralForceInput:
     load_name: bpy.props.StringProperty(name="Load Name")
 
     def get_components(self) -> tuple[float, float, float]:
-        if self.input_mode == "COMPONENTS":
-            return self.x, self.y, self.z
-        x, z = tool.Structural.get_in_plane_components(
-            self.input_mode, magnitude=self.magnitude, angle=self.angle, rise=self.rise, run=self.run
-        )
-        return x, 0.0, z
+        return get_force_components(self)
 
     def get_load_attributes(self, category: str) -> dict[str, Union[float, None]]:
         _, _, force_attributes, moment_attributes = APPLY_LOAD_CLASSES[category]
@@ -818,25 +846,10 @@ class StructuralForceInput:
         return {name: value or None for name, value in zip(force_attributes + moment_attributes, values)}
 
     def get_unit_symbol(self, category: str) -> str:
-        ifc_file = tool.Ifc.get()
-        force_unit = ifcopenshell.util.unit.get_project_unit(ifc_file, "FORCEUNIT")
-        length_unit = ifcopenshell.util.unit.get_project_unit(ifc_file, "LENGTHUNIT")
-        symbol = ifcopenshell.util.unit.get_unit_symbol(force_unit) if force_unit else "N"
-        length = ifcopenshell.util.unit.get_unit_symbol(length_unit) if length_unit else "m"
-        if category == "IfcStructuralCurveMember":
-            return f"{symbol}/{length}"
-        elif category == "IfcStructuralSurfaceMember":
-            return f"{symbol}/{length}2"
-        return symbol
+        return get_load_unit_symbol(category)
 
     def get_default_load_name(self, category: str) -> str:
-        unit = self.get_unit_symbol(category)
-        if self.input_mode == "ANGLE":
-            return f"{self.magnitude:g} {unit} at {self.angle:g} deg"
-        elif self.input_mode == "SLOPE":
-            return f"{self.magnitude:g} {unit} at {self.rise:g}:{self.run:g}"
-        values = [f"{axis} {value:g}" for axis, value in zip("XYZ", self.get_components()) if value]
-        return f"{', '.join(values) or '0'} {unit}"
+        return get_default_load_name(self, category)
 
     def draw_force_inputs(self, layout: bpy.types.UILayout, category: Union[str, None]) -> None:
         layout.row().prop(self, "input_mode", expand=True)
