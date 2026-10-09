@@ -83,6 +83,30 @@ def test_typescript_declares_low_level_contract() -> None:
     assert "export class IfcOpenshellFile" in declarations
     assert "open(path: string, streaming: boolean)" in declarations
     assert "CANCELLED: 4" in declarations
+
+
+@pytest.mark.parametrize(
+    ("native_name", "public_name"),
+    [
+        ("create", "createByDeclaration"),
+        ("get_inverse", "getInverseList"),
+        ("schema", "schemaDefinition"),
+        ("schema_name", "schemaIdentifier"),
+    ],
+)
+def test_file_native_names_leave_room_for_python_compatible_methods(native_name: str, public_name: str) -> None:
+    metadata = make_metadata()
+    function = replace(
+        metadata.functions["ifcopenshell_parse_open"],
+        c_name=f"ifcopenshell_file_{native_name}",
+        receiver="file",
+        params=(CParamIR("self", "ifcopenshell_file_t*", "receiver", "handle"),),
+        returns=TypeSpec(kind="void"),
+    )
+    javascript, declarations = render_wasm_bindings(replace(metadata, functions={function.c_name: function}))
+    assert f"    {public_name}() {{" in javascript
+    assert f"    {public_name}(): void;" in declarations
+    assert f"module._ifcopenshell_file_{native_name}(" in javascript
     assert "OPERATION_CANCELLED: 4" in declarations
 
 

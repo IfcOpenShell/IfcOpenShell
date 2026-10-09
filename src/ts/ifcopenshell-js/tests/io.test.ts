@@ -14,7 +14,7 @@
 
 import { beforeAll, expect, it } from 'vitest';
 import * as ifcopenshell from 'ifcopenshell';
-import { createInstance, describeOrSkip } from './_helper.js';
+import { createInstance, describeOrSkip, listEntities } from './_helper.js';
 
 /** Minimal IFC4 sample with a wall, a point and a typed property value. */
 
@@ -33,7 +33,7 @@ DATA;
 ENDSEC;
 END-ISO-10303-21;`;
 
-function openSample(): ifcopenshell.file {
+function openSample(): ifcopenshell.File {
   return ifcopenshell.open(new TextEncoder().encode(SAMPLE));
 }
 
@@ -44,14 +44,27 @@ describeOrSkip('basic I/O', () => {
     await runtime.loadPlugin('schema', 'ifc4');
   });
 
+  it('keeps formatted inspection separate from entity info and handles absent ids', async () => {
+    using file = openSample();
+    expect(await ifcopenshell.util.inspectEntity(file, 2)).toMatchObject({
+      id: 2,
+      type: 'IfcWall',
+      guid: WALL_GUID,
+      attributes: expect.arrayContaining([{ name: 'Name', value: 'Wall' }]),
+    });
+    expect(await ifcopenshell.util.inspectEntity(file, 999)).toBeNull();
+    expect(() => file.byId(999)).toThrow();
+    expect(() => file.byGuid('missing')).toThrow();
+  });
+
   it('opens a model and answers the by_id, by_guid and by_type queries', () => {
     using file = openSample();
-    expect(file.schemaName()).toBe('IFC4');
+    expect(file.schema()).toBe('IFC4');
     expect(file.entityCount).toBe(3);
     expect(file.ids).toEqual([1, 2, 3]);
 
     // f[1].is_a("IfcCartesianPoint") / f.by_id(1)
-    using point = file.get(1)!;
+    using point = file.byId(1)!;
     expect(point.isA()).toBe('IfcCartesianPoint');
     expect(point.isA(false)).toBe('IfcCartesianPoint');
     expect(point.isA(true)).toBe('IFC4.IfcCartesianPoint');
@@ -64,37 +77,37 @@ describeOrSkip('basic I/O', () => {
     using wall = file.byGuid(WALL_GUID)!;
     expect(wall?.isA()).toBe('IfcWall');
     expect(wall.id()).toBe(2);
-    using found = file.find(WALL_GUID)!;
+    using found = file.byGuid(WALL_GUID)!;
     expect(found.id()).toBe(2);
 
     // f.by_type("IfcProject")
-    expect(file.all('IfcCartesianPoint').map(entity => entity.id())).toEqual([1]);
+    expect(listEntities(file.byType('IfcCartesianPoint')).map(entity => entity.id())).toEqual([1]);
 
     // is_a() reports the declaration, so a declared supertype only matches when
     // subtypes are requested; they are included by default.
-    expect(file.all('IfcRepresentationItem', { includeSubtypes: false })).toEqual([]);
-    expect(file.all('IfcRepresentationItem').map(entity => entity.id())).toEqual([1]);
+    expect(listEntities(file.byTypeExclSubtypes('IfcRepresentationItem'))).toEqual([]);
+    expect(listEntities(file.byType('IfcRepresentationItem')).map(entity => entity.id())).toEqual([1]);
   });
 
   it('reads attributes, typed values and inverses', () => {
     using file = openSample();
-    using wall = file.get(2)!;
-    using property = file.get(3)!;
+    using wall = file.byId(2)!;
+    using property = file.byId(3)!;
 
     // f[22].Id == "" / f[22].Addresses is None
     expect(wall.get('Name')).toBe('Wall');
     expect(wall.get('Description')).toBeNull();
 
     // prop.NominalValue.wrappedValue: the inline IfcLabel carries the value.
-    using nominal = property.get('NominalValue') as ifcopenshell.entity_instance;
+    using nominal = property.get('NominalValue') as ifcopenshell.EntityInstance;
     expect(nominal.get(0)).toBe('F30');
 
     // get_info() returns the id, type and decoded forward attributes.
     const info = wall.getInfo();
     expect(info.id).toBe(2);
     expect(info.type).toBe('IfcWall');
-    expect(info.attributes.Name).toBe('Wall');
-    expect(Object.keys(info.attributes)).toContain('Name');
+    expect(info.Name).toBe('Wall');
+    expect(Object.keys(info)).toContain('Name');
 
     // Inverse attributes of a wall that nothing points at yet.
     expect(wall.inverseAttributes()).toContain('HasAssociations');
@@ -103,34 +116,34 @@ describeOrSkip('basic I/O', () => {
 
   it('serializes and reopens with the same queries answered', () => {
     using file = openSample();
-    using wall = file.get(2)!;
+    using wall = file.byId(2)!;
 
     // f.write("output.ifc") then reading the file back.
-    const text = file.text();
+    const text = file.toString();
     expect(text).toContain('IFCWALL');
     expect(text).toContain('Wall');
 
     using reopened = ifcopenshell.open(new TextEncoder().encode(text));
-    expect(reopened.schemaName()).toBe('IFC4');
+    expect(reopened.schema()).toBe('IFC4');
     expect(reopened.entityCount).toBe(file.entityCount);
 
-    const reopenedWall = reopened.find(WALL_GUID);
+    const reopenedWall = reopened.byGuid(WALL_GUID);
     console.log('GUID lookup:', reopenedWall?.isA(), 'count:', reopened.entityCount, 'guid in text:', text.includes(WALL_GUID));
     expect(reopenedWall?.isA()).toBe('IfcWall');
     expect(reopenedWall.get('Name')).toBe('Wall');
   });
 
   it('creates entities, mutates attributes and writes valid SPF', () => {
-    using file = new ifcopenshell.file('IFC4');
-    expect(file.schemaName()).toBe('IFC4');
+    using file = new ifcopenshell.File('IFC4');
+    expect(file.schema()).toBe('IFC4');
 
     // f.createIfcCartesianPoint((0.0, 0.0, 0.0))
-    using point = file.createEntity('IfcCartesianPoint');
+    using point = file.create('IfcCartesianPoint');
     point.set('Coordinates', [0, 0, 0]);
     expect(point.isA()).toBe('IfcCartesianPoint');
     expect(point.get('Coordinates')).toEqual([0, 0, 0]);
 
-    using wall = file.createEntity('IfcWall', { name: 'Wall' });
+    using wall = file.create('IfcWall', { Name: 'Wall' });
     // f[22].Id = "123" / "123" in str(f[22])
     wall.set('Description', '123');
     expect(wall.toString(true)).toContain('123');
@@ -139,7 +152,7 @@ describeOrSkip('basic I/O', () => {
     expect(wall.get('Description')).toBeNull();
     expect(wall.toString(true)).not.toContain('123');
 
-    const text = file.text();
+    const text = file.toString();
     expect(text).toContain('IFCWALL');
 
     // The ids and the entity count agree on what the file holds.
@@ -148,27 +161,27 @@ describeOrSkip('basic I/O', () => {
   });
 
   it('keeps inverses and traversals consistent when references move', () => {
-    using file = new ifcopenshell.file('IFC4');
-    using building = file.createEntity('IfcBuilding');
-    using wall = file.createEntity('IfcWall');
-    using relation = file.createEntity('IfcRelAggregates');
+    using file = new ifcopenshell.File('IFC4');
+    using building = file.create('IfcBuilding');
+    using wall = file.create('IfcWall');
+    using relation = file.create('IfcRelAggregates');
 
     relation.set('RelatingObject', building);
     relation.set('RelatedObjects', [wall]);
 
     // f[16] in f.get_inverse(f[15])
-    expect(file.inverses(wall).map(entity => entity.id())).toContain(relation.id());
+    expect([...file.getInverse(wall)].map(entity => entity.id())).toContain(relation.id());
     expect(wall.inverse('Decomposes').map(entity => entity.id())).toContain(relation.id());
 
     // f.traverse(f[35], 1) / f.traverse(f[35])
-    const shallow = file.traverseEntities(relation, { maxDepth: 1 });
-    const deep = file.traverseEntities(relation);
+    const shallow = listEntities(file.traverse(relation, 1));
+    const deep = listEntities(file.traverse(relation, -1));
     expect(deep.length).toBeGreaterThanOrEqual(shallow.length);
     expect(deep.map(entity => entity.id())).toContain(wall.id());
 
     // f[288].ConnectedTo[0].RelatingElement = f[340], then f[288].ConnectedTo == ()
-    using otherWall = file.createEntity('IfcWall');
-    using connects = file.createEntity('IfcRelConnectsPathElements');
+    using otherWall = file.create('IfcWall');
+    using connects = file.create('IfcRelConnectsPathElements');
     connects.set('RelatingElement', wall);
     expect(wall.inverse('ConnectedTo').map(entity => entity.id())).toEqual([connects.id()]);
     connects.set('RelatingElement', otherWall);

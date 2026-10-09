@@ -12,7 +12,7 @@ describeOrSkip('GeomSettings', () => {
   });
 
   it('lists setting names', async () => {
-    await using settings = new geom.settings();
+    await using settings = new geom.Settings();
     expect(settings).toBeInstanceOf(IfcOpenshellGeomSettings);
     expect(settings.set).toBe(IfcOpenshellGeomSettings.prototype.set);
     expect(settings.get).toBe(IfcOpenshellGeomSettings.prototype.get);
@@ -22,7 +22,7 @@ describeOrSkip('GeomSettings', () => {
   });
 
   it('sets common values through the generic API', async () => {
-    await using settings = new geom.settings();
+    await using settings = new geom.Settings();
     settings.set('weld-vertices', false);
     expect(settings.get('weld-vertices')).toBe(false);
     expect(settings.getBool('weld-vertices')).toBe(false);
@@ -32,13 +32,13 @@ describeOrSkip('GeomSettings', () => {
   });
 
   it('retains typed methods for explicit native setting types', async () => {
-    await using settings = new geom.settings();
+    await using settings = new geom.Settings();
     await settings.setBool('weld-vertices', false);
     expect(await settings.value('weld-vertices')).toBe(false);
   });
 
   it('uses the exact native types for enums and empty collection values', () => {
-    using settings = new geom.settings();
+    using settings = new geom.Settings();
     const values: [string, string, number | number[] | string[]][] = [
       ['iterator-output', 'IteratorOutputOptions', 0],
       ['dimensionality', 'OutputDimensionalityTypes', 1],
@@ -78,7 +78,7 @@ describeOrSkip('GeomSettings', () => {
   });
 
   it('dispose is idempotent and guards released handles', async () => {
-    const settings = new geom.settings();
+    const settings = new geom.Settings();
     settings.dispose();
     settings.dispose();
     expect(() => settings.names()).toThrow(IfcOpenShellError);

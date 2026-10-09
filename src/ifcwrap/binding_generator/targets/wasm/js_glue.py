@@ -14,12 +14,12 @@ from .._shared import (
     _INTERNAL_C_FUNCTIONS,
     _buffer_size_function,
     _public_module_members,
-    _public_name,
     _public_params,
     _snake_name,
     _type_name,
     _typed_buffer_element,
 )
+from .names import public_name
 
 _POINTER_SIZE = 4
 
@@ -372,7 +372,7 @@ def _render_handle_classes(metadata: BindingABI) -> str:
         for function in sorted(receiver_groups.get(handle_name, []), key=lambda item: item.c_name):
             if function.c_name == handle.destroy_function:
                 continue
-            method = _public_name(function, metadata.c_prefix)
+            method = public_name(function, metadata.c_prefix)
             param_names = [param.name for param in _public_params(function)]
             if _typed_buffer_element(function, metadata) is not None:
                 param_names.append("arrayType")
@@ -656,7 +656,7 @@ def _render_module_factory(metadata: BindingABI) -> str:
             continue
         if function.c_name in _INTERNAL_C_FUNCTIONS:
             continue
-        name = _public_name(function, metadata.c_prefix)
+        name = public_name(function, metadata.c_prefix)
         param_names = [param.name for param in _public_params(function)]
         if _typed_buffer_element(function, metadata) is not None:
             param_names.append("arrayType")

@@ -4,7 +4,7 @@ import * as ifcopenshell from 'ifcopenshell';
 import * as geom from 'ifcopenshell/geom';
 import { describeOrSkip } from '../_helper.js';
 
-describeOrSkip('create_shape', () => {
+describeOrSkip('createShape', () => {
   it.each(['opencascade', 'manifold'])('creates the same triangulation as the %s iterator', async (kernel) => {
     const runtime = await ifcopenshell.init();
     await runtime.loadPlugin('schema', 'ifc4');
@@ -30,14 +30,14 @@ DATA;
 ENDSEC;
 END-ISO-10303-21;`;
     using model = ifcopenshell.open(new TextEncoder().encode(source));
-    using product = model.get(10)!;
-    using settings = new geom.settings();
+    using product = model.byId(10)!;
+    using settings = new geom.Settings();
     settings.set('weld-vertices', false);
-    using shape = geom.create_shape(settings, product, undefined, kernel)!;
+    using shape = geom.createShape(settings, product, undefined, kernel)!;
     using triangulation = shape.asTriangulationElement()!;
     using geometry = triangulation.geometry();
     expect(geometry.facesBuffer(Uint32Array).length).toBe(36);
-    using iterator = new geom.iterator(settings, model, { geometryLibrary: kernel });
+    using iterator = new geom.Iterator(settings, model, { geometryLibrary: kernel });
     expect(iterator.initialize()).toBe(true);
     using iterated = iterator.get()!;
     using iteratedTriangulation = iterated.asTriangulationElement()!;

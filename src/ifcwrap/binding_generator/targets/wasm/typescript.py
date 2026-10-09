@@ -14,12 +14,12 @@ from ...binding_model import TypeSpec
 from .._shared import (
     _INTERNAL_C_FUNCTIONS,
     _public_module_members,
-    _public_name,
     _public_params,
     _sequence_leaf_type,
     _type_name,
     _typed_buffer_element,
 )
+from .names import public_name
 
 _HIDDEN_FUNCTIONS = frozenset({"ifcopenshell_project_append_asset_cache_free"})
 
@@ -258,7 +258,7 @@ def _render_handle_classes(metadata: BindingABI) -> str:
             "    [Symbol.asyncDispose](): Promise<void>;",
         ]
         for function in sorted(receiver_groups.get(handle_name, []), key=lambda item: item.c_name):
-            name = _public_name(function, metadata.c_prefix)
+            name = public_name(function, metadata.c_prefix)
             methods.append(_render_function_signature(name, function, metadata))
         if handle.c_type == "ifcopenshell_instance_t":
             methods.append("    setArgument(index: number, value: AttributeValueType): void;")
@@ -375,7 +375,7 @@ def _render_module_interface(metadata: BindingABI, module_members: dict[str, lis
             continue
         if _public_module_members(function, metadata.c_prefix):
             continue
-        name = _public_name(function, metadata.c_prefix)
+        name = public_name(function, metadata.c_prefix)
         members.append(_render_function_signature(name, function, metadata))
     for module_name in sorted(module_members):
         members.append(f"    {module_name}: {_module_interface_name(module_name)};")

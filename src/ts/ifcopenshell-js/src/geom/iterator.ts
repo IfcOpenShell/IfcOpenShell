@@ -1,7 +1,7 @@
 import { IfcOpenshellGeomIterator } from '@ifcopenshell/wasm/api';
-import type { file } from '../file.js';
+import type { File } from '../file.js';
 import { IfcOpenShellError, ifcopenshell } from '../init.js';
-import type { settings } from './settings.js';
+import type { Settings } from './settings.js';
 
 /** Entity ids or IFC type names, matching the native include/exclude filters. */
 export type IteratorFilter = number[] | string[];
@@ -15,12 +15,12 @@ export interface IteratorOptions {
 }
 
 /** Synchronous native iterator. Load schema, mapping and kernel plugins before construction. */
-export class iterator extends IfcOpenshellGeomIterator {
-  private readonly sourceFile: file;
+export class Iterator extends IfcOpenshellGeomIterator {
+  private readonly sourceFile: File;
 
   constructor(
-    readonly settings: settings,
-    file: file,
+    readonly settings: Settings,
+    file: File,
     options: IteratorOptions = {},
   ) {
     const { numThreads = 1, include, exclude, geometryLibrary = 'opencascade' } = options;

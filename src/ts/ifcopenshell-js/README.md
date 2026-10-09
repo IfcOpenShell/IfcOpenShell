@@ -8,13 +8,13 @@ import * as ifcopenshell_geom from 'ifcopenshell/geom';
 
 const runtime = await ifcopenshell.init();
 await runtime.loadPlugin('schema', 'ifc4');
-using model = new ifcopenshell.file('IFC4');
-using wall = model.createEntity('IfcWall', { name: 'Example' });
+using model = new ifcopenshell.File('IFC4');
+using wall = model.create('IfcWall', { Name: 'Example' });
 console.log(wall.id(), wall.get('Name'));
 wall.set('Name', 'Updated');
 ```
 
-`new file(schema)` creates an empty file. `open(bytes, filename?)`
+`new File(schema)` creates an empty file. `open(bytes, filename?)`
 parses a `Uint8Array` or `ArrayBuffer`. Both return synchronously after runtime
 initialization and explicit schema plugin loading.
 
@@ -31,19 +31,41 @@ const settings = ifcopenshell.geom.createSettings();
 settings.dispose();
 ```
 
-`file`, `entity_instance`, `settings` and `iterator` are exported classes
+`File`, `EntityInstance`, `Settings` and `Iterator` are exported classes
 that extend the generated binding classes. Construct them with `new`. They expose the native methods
 directly and can be passed to generated functions without a `.raw` wrapper.
 Call `dispose()` / `destroy()` or use `using` to release handles.
+
+## Python API alignment
+
+`File.create(type, attributes)` accepts any IFC attribute by its schema name,
+for example `{ Name: 'Wall', Tag: 'W1', PredefinedType: 'STANDARD' }`.
+Use inherited `byId`, `byGuid` and `byType` for queries. Native `byType` and
+`traverse` return disposable list handles; release the list and each retrieved
+entity when finished.
+
+`EntityInstance.getInfo()` returns a flat dictionary `{ id, type, ...attributes }`.
+Options use camelCase: `includeIdentifier` (default `true`), `recursive` (default
+`false`), `ignore` (an array of attribute names), and `returnType` (a result
+factory, applied recursively). Nonrecursive snapshots contain live entity
+handles; recursive snapshots release temporary handles after conversion.
+
+`File.getInverse(entity)` returns an IFC-identity-aware set. Pass
+`{ allowDuplicate: true }` for an array, adding `withAttributeIndices: true`
+for `[entity, attributeIndex]` pairs. Dispose the returned entity handles.
+
+`File.schema()` returns the schema family, while `schemaIdentifier()` returns
+its full name. Import `schemaByName` from `ifcopenshell` to retrieve a disposable
+schema declaration. See [the alignment and review list](../../../docs/python-typescript-api-alignment.md).
 
 ## Geometry
 
 ```ts
 await runtime.loadPlugin('mapping', 'ifc4');
 await runtime.loadPlugin('kernel', 'opencascade');
-using settings = new ifcopenshell_geom.settings();
+using settings = new ifcopenshell_geom.Settings();
 settings.set('weld-vertices', false);
-using iterator = new ifcopenshell_geom.iterator(settings, model, {
+using iterator = new ifcopenshell_geom.Iterator(settings, model, {
   numThreads: 1,
   geometryLibrary: 'opencascade',
 });
@@ -53,7 +75,7 @@ if (iterator.initialize()) do {
 } while (iterator.next());
 
 // For a product with a representation:
-// using shape = ifcopenshell_geom.create_shape(settings, product);
+// using shape = ifcopenshell_geom.createShape(settings, product);
 ```
 
 `settings.set(name, value)` and `settings.get(name)` convert values in the native
@@ -67,7 +89,7 @@ The optional third argument accepts `numThreads` (default `1`),
 
 `initialize()` positions at the first shape; `get()` takes ownership of that
 shape; `next()` advances and returns a boolean. Call `get()` once per position.
-`create_shape(settings, instance, representation?, geometry_library?)` defaults
+`createShape(settings, instance, representation?, geometryLibrary?)` defaults
 to OpenCASCADE. Neither path loads plugins automatically.
 Destroy borrowed geometry handles before their owning shape. Typed geometry
 buffers are detached copies. Serializers are exported from `ifcopenshell/serializers`
@@ -75,7 +97,7 @@ and also require explicit plugin loading.
 
 ## Attribute values
 
-`entity_instance.get(nameOrIndex)` and the inherited `getArgument()` /
+`EntityInstance.get(nameOrIndex)` and the inherited `getArgument()` /
 `getArgumentByName()` return `AttributeValueType`. Conversion is performed in
 C++ using `emscripten::val`, not by a JS attribute wrapper. `set()` and
 `setArgument()` convert JS inputs in the same native binding.
@@ -85,7 +107,7 @@ of these (including nested arrays). Enumerations are strings; an indeterminate
 IFC logical is `'UNKNOWN'`. Integers within the JS safe range are numbers;
 larger signed 64-bit integers are bigints. Null, derived and empty-aggregate
 markers follow the Python output typemap and become null; typed vectors become
-arrays, including empty arrays. Entity references remain live `entity_instance`
+arrays, including empty arrays. Entity references remain live `EntityInstance`
 objects, including inline typed values and nested aggregates; dispose them when
 finished. Passing an entity from another IFC file or runtime is rejected.
 

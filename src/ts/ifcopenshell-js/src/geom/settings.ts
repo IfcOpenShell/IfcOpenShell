@@ -5,7 +5,7 @@ import { ifcopenshell } from '../init.js';
 /** Value accepted by a geometry setting setter. */
 export type SettingInput = boolean | number | string | number[] | string[];
 /** Owned wrapper for native geometry interpretation settings. */
-export class settings extends IfcOpenshellGeomSettings {
+export class Settings extends IfcOpenshellGeomSettings {
   constructor() {
     super(ifcopenshell.geom.createSettings());
   }
