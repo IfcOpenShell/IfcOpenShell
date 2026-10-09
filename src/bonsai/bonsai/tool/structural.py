@@ -140,6 +140,28 @@ class Structural(bonsai.core.tool.Structural):
         return sign_x * x, sign_z * z
 
     @classmethod
+    def solve_two_force_magnitudes(
+        cls, target: tuple[float, float, float], first: tuple[float, float, float], second: tuple[float, float, float]
+    ) -> Union[tuple[float, float], None]:
+        """Get the magnitudes along two unit directions whose forces add up to a target force.
+
+        A negative magnitude reverses that direction. Returns None if the directions are
+        parallel, or if together they cannot make the target, as when it is out of their plane.
+        """
+        dot = lambda a, b: sum(i * j for i, j in zip(a, b))
+        cosine = dot(first, second)
+        determinant = 1 - cosine * cosine
+        if determinant < 1e-12:
+            return None
+        along_first, along_second = dot(first, target), dot(second, target)
+        a = (along_first - cosine * along_second) / determinant
+        b = (along_second - cosine * along_first) / determinant
+        error = math.dist([a * i + b * j for i, j in zip(first, second)], target)
+        if error > 1e-6 * max(1.0, math.hypot(*target)):
+            return None
+        return a, b
+
+    @classmethod
     def get_simple_slope(cls, x: float, z: float, max_denominator: int = 24) -> tuple[float, float]:
         """Get a rise and run along the in-plane components x and z, as small whole numbers if they make one.
 

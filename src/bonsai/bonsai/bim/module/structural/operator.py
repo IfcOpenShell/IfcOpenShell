@@ -62,10 +62,13 @@ class ShowLoads(bpy.types.Operator):
         elif event.type == "LEFTMOUSE" and event.value == "PRESS" and LoadsDecorator.hovered:
             if view := self.get_view_under_mouse(context, event):
                 area, region, _ = view
+                hovered = LoadsDecorator.hovered
                 with context.temp_override(window=context.window, area=area, region=region):
-                    bpy.ops.bim.edit_structural_load_values(
-                        "INVOKE_DEFAULT", activity=LoadsDecorator.hovered["activity"]
-                    )
+                    if hovered.get("activities"):
+                        activities = ",".join(str(i) for i in hovered["activities"])
+                        bpy.ops.bim.edit_structural_resultant("INVOKE_DEFAULT", activities=activities)
+                    else:
+                        bpy.ops.bim.edit_structural_load_values("INVOKE_DEFAULT", activity=hovered["activity"])
                 return {"RUNNING_MODAL"}
         return {"PASS_THROUGH"}
 
@@ -862,6 +865,72 @@ def update_force_inputs(self: "StructuralForceInput", context: bpy.types.Context
         ShaderInfo.preview = {self.preview_load: get_load_attributes(self, self.load_category)}
         LoadsDecorator.update()
         tool.Blender.update_all_viewports(context)
+    elif getattr(self, "is_previewing", False) and LoadsDecorator.is_installed:
+        forces, _ = solve_resultant(self)
+        ShaderInfo.preview = {load.id(): get_force_attributes(load, force) for load, force in (forces or {}).items()}
+        LoadsDecorator.update()
+        tool.Blender.update_all_viewports(context)
+
+
+def get_resultant_activities(props: "EditStructuralResultant") -> list[ifcopenshell.entity_instance]:
+    ifc_file = tool.Ifc.get()
+    return [ifc_file.by_id(int(i)) for i in props.activities.split(",") if i]
+
+
+def get_force(load: ifcopenshell.entity_instance) -> tuple[float, float, float]:
+    return tuple(getattr(load, a) or 0.0 for a in ("ForceX", "ForceY", "ForceZ"))
+
+
+def get_force_attributes(load: ifcopenshell.entity_instance, force: tuple) -> dict[str, Union[float, None]]:
+    """The attributes of a single force load with new force components and its own moments"""
+    attributes = {a: getattr(load, a) for a in ("MomentX", "MomentY", "MomentZ")}
+    attributes.update({a: value or None for a, value in zip(("ForceX", "ForceY", "ForceZ"), force)})
+    return attributes
+
+
+def get_adjusted_indices(props: "EditStructuralResultant") -> list[int]:
+    count = len(get_resultant_activities(props))
+    return [0, 1] if count == 2 else [i for i in range(min(count, 32)) if props.adjust[i]]
+
+
+def solve_resultant(
+    props: "EditStructuralResultant",
+) -> tuple[Union[dict[ifcopenshell.entity_instance, tuple], None], str]:
+    """Get the loads to change, and their new forces, for the target resultant, or why it cannot be made.
+
+    Two of the forces keep their directions and change magnitude; the others are kept.
+    """
+    loads = [activity.AppliedLoad for activity in get_resultant_activities(props)]
+    adjusted = get_adjusted_indices(props)
+    if len(adjusted) != 2:
+        return None, "Tick exactly two forces to adjust"
+    forces = [get_force(load) for load in loads]
+    kept = [forces[i] for i in range(len(loads)) if i not in adjusted]
+    target = [t - sum(force[k] for force in kept) for k, t in enumerate(get_force_components(props))]
+    directions = []
+    for i in adjusted:
+        length = math.hypot(*forces[i])
+        if not length:
+            return None, f"{loads[i].Name or 'Unnamed'} has no direction to keep"
+        directions.append(tuple(c / length for c in forces[i]))
+    magnitudes = tool.Structural.solve_two_force_magnitudes(target, directions[0], directions[1])
+    if magnitudes is None:
+        return None, "The two forces adjusted are parallel, so they cannot make this resultant"
+    return {
+        loads[i]: tuple(magnitude * c for c in direction)
+        for i, magnitude, direction in zip(adjusted, magnitudes, directions)
+    }, ""
+
+
+def get_force_name(force: tuple[float, float, float], unit: str) -> str:
+    """A generated name for a force, by its angle from the nearest horizontal if it lies in the X-Z plane"""
+    x, y, z = force
+    if y:
+        values = [f"{axis} {value:g}" for axis, value in zip("XYZ", force) if value]
+        return f"{', '.join(values) or '0'} {unit}"
+    direction = DIRECTION_NAMES[f"{'UP' if z >= 0 else 'DOWN'}_{'RIGHT' if x >= 0 else 'LEFT'}"]
+    angle = math.degrees(math.atan2(abs(z), abs(x)))
+    return f"{math.hypot(x, z):g} {unit} at {angle:g} deg{direction}"
 
 
 def clear_load_preview(context: bpy.types.Context) -> None:
@@ -915,13 +984,20 @@ class StructuralForceInput:
     def get_load_attributes(self, category: str) -> dict[str, Union[float, None]]:
         return get_load_attributes(self, category)
 
+    def set_in_plane_inputs(self, x: float, z: float) -> None:
+        """Fill the angle and slope inputs from in-plane components, measured from the nearest horizontal"""
+        self.direction = f"{'UP' if z >= 0 else 'DOWN'}_{'RIGHT' if x >= 0 else 'LEFT'}"
+        self.magnitude = math.hypot(x, z)
+        self.angle = math.degrees(math.atan2(abs(z), abs(x)))
+        self.rise, self.run = tool.Structural.get_simple_slope(abs(x), abs(z))
+
     def get_unit_symbol(self, category: str) -> str:
         return get_load_unit_symbol(category)
 
     def get_default_load_name(self, category: str) -> str:
         return get_default_load_name(self, category)
 
-    def draw_force_inputs(self, layout: bpy.types.UILayout, category: Union[str, None]) -> None:
+    def draw_force_inputs(self, layout: bpy.types.UILayout, category: Union[str, None], show_name: bool = True) -> None:
         layout.row().prop(self, "input_mode", expand=True)
         if self.input_mode == "COMPONENTS":
             for prop in ("x", "y", "z"):
@@ -941,7 +1017,8 @@ class StructuralForceInput:
             x, _, z = self.get_components()
             unit = self.get_unit_symbol(category) if category else ""
             layout.label(text=f"X = {x:.4f}   Z = {z:.4f} {unit}", icon="ORIENTATION_GLOBAL")
-        layout.prop(self, "load_name")
+        if show_name:
+            layout.prop(self, "load_name")
 
     def get_load_name(self, category: str) -> str:
         return self.load_name or self.get_default_load_name(category)
@@ -1111,10 +1188,7 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         )
         # IFC only stores components, so derive the in-plane inputs from them, from the nearest horizontal...
         x, y, z = (getattr(load, a) or 0.0 for a in force_attributes)
-        self.direction = f"{'UP' if z >= 0 else 'DOWN'}_{'RIGHT' if x >= 0 else 'LEFT'}"
-        self.magnitude = math.hypot(x, z)
-        self.angle = math.degrees(math.atan2(abs(z), abs(x)))
-        self.rise, self.run = tool.Structural.get_simple_slope(abs(x), abs(z))
+        self.set_in_plane_inputs(x, z)
         self.input_mode = "COMPONENTS"
         # ... but reopen in the way the load was entered if its generated name records it and still fits.
         name = load.Name or ""
@@ -1218,6 +1292,82 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         for group in groups:
             ifcopenshell.api.group.unassign_group(ifc_file, products=[activity], group=group)
         ifcopenshell.api.group.assign_group(ifc_file, products=[activity], group=target)
+
+
+class EditStructuralResultant(bpy.types.Operator, tool.Ifc.Operator, StructuralForceInput):
+    bl_idname = "bim.edit_structural_resultant"
+    bl_label = "Edit Resultant"
+    bl_description = "Set the resultant of the forces at a point, adjusting the magnitudes of two of them"
+    bl_options = {"REGISTER", "UNDO"}
+    activities: bpy.props.StringProperty(description="Ids of the activities whose forces add up", options={"SKIP_SAVE"})
+    adjust: bpy.props.BoolVectorProperty(
+        name="Adjust",
+        description="Adjust the magnitude of this force, keeping its direction",
+        size=32,
+        options={"SKIP_SAVE"},
+        update=update_force_inputs,
+    )
+    is_previewing: bpy.props.BoolProperty(options={"HIDDEN", "SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        activities = get_resultant_activities(self)
+        if len(activities) < 2:
+            return {"CANCELLED"}
+        if any(activity.GlobalOrLocal == "LOCAL_COORDS" for activity in activities):
+            self.report({"ERROR"}, "Only forces in global coordinates can be adjusted to a resultant.")
+            return {"CANCELLED"}
+        self.load_category = "IfcStructuralPointConnection"
+        x, y, z = (sum(get_force(a.AppliedLoad)[k] for a in activities) for k in range(3))
+        self.x, self.y, self.z = x, y, z
+        self.set_in_plane_inputs(x, z)
+        self.input_mode = "ANGLE" if not y else "COMPONENTS"
+        self.adjust = [i < 2 for i in range(32)]
+        self.is_previewing = True  # Set last, so that filling in the values above does not start a preview.
+        return context.window_manager.invoke_props_dialog(self, width=380)
+
+    def draw(self, context):
+        layout = self.layout
+        activities = get_resultant_activities(self)
+        layout.label(text=f"Resultant of {len(activities)} forces", icon="INFO")
+        self.draw_force_inputs(layout, self.load_category, show_name=False)
+        unit = self.get_unit_symbol(self.load_category)
+        if len(activities) > 2:
+            layout.label(text="Adjust two forces, keeping their directions:")
+            for i, activity in enumerate(activities[:32]):
+                layout.prop(self, "adjust", index=i, text=activity.AppliedLoad.Name or "Unnamed")
+        forces, error = solve_resultant(self)
+        if error:
+            layout.label(text=error, icon="ERROR")
+            return
+        box = layout.box()
+        ifc_file = tool.Ifc.get()
+        for load, force in forces.items():
+            old = get_force(load)
+            new = math.copysign(math.hypot(*force), sum(a * b for a, b in zip(force, old)))
+            box.label(text=f"{load.Name or 'Unnamed'}: {math.hypot(*old):.2f} → {abs(new):.2f} {unit}")
+            if new < 0:
+                box.label(text="  reverses its direction (a pull becomes a push)", icon="ERROR")
+            users = [i for i in ifc_file.get_inverse(load) if i.is_a("IfcStructuralActivity")]
+            if len(users) > 1:
+                box.label(text=f"  also used by {len(users) - 1} other applied load(s)", icon="INFO")
+
+    def cancel(self, context):
+        clear_load_preview(context)
+
+    def _execute(self, context):
+        ShaderInfo.preview = {}  # The edit below refreshes the shown loads.
+        forces, error = solve_resultant(self)
+        if error:
+            self.report({"ERROR"}, error)
+            return {"CANCELLED"}
+        ifc_file = tool.Ifc.get()
+        unit = self.get_unit_symbol(self.load_category)
+        for load, force in forces.items():
+            attributes = get_force_attributes(load, force)
+            if DEFAULT_LOAD_NAME.match(load.Name or ""):
+                attributes["Name"] = get_force_name(force, unit)
+            ifcopenshell.api.structural.edit_structural_load(ifc_file, structural_load=load, attributes=attributes)
+        return {"FINISHED"}
 
 
 class LoadStructuralLoads(bpy.types.Operator):

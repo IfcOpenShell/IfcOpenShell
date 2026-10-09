@@ -617,6 +617,7 @@ class ShaderInfo:
                 label_away=self.get_label_side(resultant, outside),
                 label_at_middle=centre is not None,
                 activity=single,
+                resultant_of=activities if len(activities) > 1 else None,
             )
             if props.show_force_angles:
                 self.add_force_angle(location, resultant, size, (1, 1, 1, 1), arcs_at_tail, reference_axes)
@@ -708,6 +709,7 @@ class ShaderInfo:
         label_away: Union[np.ndarray, None] = None,
         label_at_middle: bool = False,
         activity: int = 0,
+        resultant_of: Union[list[int], None] = None,
     ) -> None:
         """Add an arrow from tail to tip, its head and shaft sized to size, the longest arrow drawn with it"""
         length = np.linalg.norm(tip - tail)
@@ -735,8 +737,11 @@ class ShaderInfo:
                 "uniforms": [["color", color], ["spacing", spacing]],
             }
         )
-        if activity:
-            self.pickables.append({"tail": tail, "tip": tip, "activity": activity, "info": len(self.info) - 1})
+        if activity or resultant_of:
+            pickable = {"tail": tail, "tip": tip, "activity": activity, "info": len(self.info) - 1}
+            if resultant_of:
+                pickable["activities"] = resultant_of
+            self.pickables.append(pickable)
         # Labelled beside the tip, as arrows often share their tail.
         away = direction if label_away is None else label_away
         position = (tail + tip) / 2 if label_at_middle else tip
