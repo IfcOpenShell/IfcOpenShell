@@ -55,6 +55,7 @@ requirements:
         - libgl-devel
   run:
     - python
+    - numpy
     - shapely
     - typing_extensions
     - ${{ pin_compatible('occt', upper_bound='x.x.x') }}
