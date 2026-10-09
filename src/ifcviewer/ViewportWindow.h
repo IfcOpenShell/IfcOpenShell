@@ -39,7 +39,7 @@
 #include <unordered_set>
 
 #include "FrameStats.h"
-#include "SidecarFormat.h"
+#include "IfcViewFormat.h"
 #include "BufferPool.h"
 #include "ModelLookup.h"
 #include "ModelGpuData.h"
@@ -53,7 +53,7 @@
 // Stage-2 wgpu viewport: opens a native QWindow, brings up a wgpu instance/
 // adapter/device, configures a surface against the platform-native window
 // handle, and clears to background_color_ on every UpdateRequest. Models
-// loaded from `.ifcview` sidecars are uploaded as wgpu buffers (no draw
+// loaded from `.ifcview` .ifcview files are uploaded as wgpu buffers (no draw
 // path yet — that's stage 3).
 //
 // Mirrors the lifecycle shape of the GL ViewportWindow so subsequent stages
@@ -99,18 +99,18 @@ public:
 
     void setBackgroundColor(float r, float g, float b, float a = 1.0f);
 
-    // Queue a sidecar path to be loaded after wgpu init completes. Safe to
+    // Queue a .ifcview path to be loaded after wgpu init completes. Safe to
     // call before the window is exposed. The path is resolved against the
-    // working directory and read via readSidecarMetadata (which
+    // working directory and read via readIfcViewMetadata (which
     // normalises stem → .ifcview).
-    void queueLoadSidecar(const std::string& path);
+    void queueLoadIfcView(const std::string& path);
 
     // Synchronous metadata load + GPU upload. Requires wgpu init to have
     // completed (i.e. the window has been exposed at least once). Returns
     // the assigned session_model_id, or 0 on failure. Reads metadata only (mesh
     // dict + instance dict + georef); per-chunk vertex / index bytes are
     // read on demand by the per-frame loader as chunks become visible.
-    uint32_t loadSidecar(const std::string& path);
+    uint32_t loadIfcView(const std::string& path);
 
     // Allocates per-chunk small buffers and the model-shared mesh /
     // instance storage upfront, but leaves each chunk's pool ranges
@@ -118,7 +118,7 @@ public:
     // (driveStreamingLoads) sub-allocates the chunk's vertex + index
     // ranges from pool_ on demand as cull flags them visible.
     void applyCachedModel(uint32_t session_model_id,
-                          struct StreamingSidecar metadata);
+                          struct StreamingIfcView metadata);
 
     // Direct-IFC ingestion (mirrors GL ViewportWindow). The host (typically
     // a GeometryStreamer running on a worker) calls uploadStreamedMesh +
@@ -126,7 +126,7 @@ public:
     // triangulates; finalizeModel commits when the iterator finishes.
     // Staged in CPU memory; finalizeModel runs the chunk planner over the
     // staged data, allocates pool slices, and uploads — same render path
-    // as a sidecar load. Bytes are gathered from memory (no disk I/O), so
+    // as a .ifcview load. Bytes are gathered from memory (no disk I/O), so
     // every chunk lands `is_resident=true` immediately. The streamer's
     // session_model_id is passed through unchanged; the viewport's globally-unique
     // object_id rebasing happens at finalize time.
@@ -540,7 +540,7 @@ private:
     // any projection is unreliable. True (cull) when AABB is provably
     // behind every relevant pyramid cell.
     bool  aabbOccludedByHiz(const float mn[3], const float mx[3]) const;
-    void  flushPendingSidecarQueue();
+    void  flushPendingIfcViewQueue();
     // computeSceneAabb moved to ViewportCore (#84-h).
 
     // Cull `m`'s instances against the supplied frustum planes (world-space,
@@ -906,8 +906,8 @@ private:
     uint32_t& next_session_model_id_;
     uint32_t& next_object_id_;
 
-    // Sidecar paths queued before init completes.
-    std::deque<std::string> pending_sidecars_;
+    // .ifcview paths queued before init completes.
+    std::deque<std::string> pending_ifcviews_;
 
     // pending_direct_loads_ + initial_view_applied_ moved to ViewportCore
     // (#84-q). initial_view_applied_ stays accessible here as a reference

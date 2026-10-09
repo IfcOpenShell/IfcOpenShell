@@ -17,7 +17,7 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "SidecarLayout.h"
+#include "IfcViewLayout.h"
 
 #include "ChunkPlanner.h"
 #include "InstancedGeometry.h"
@@ -25,7 +25,7 @@
 #include <cstdint>
 #include <vector>
 
-void reorderSidecarByMorton(SidecarData& sd) {
+void reorderIfcViewByMorton(IfcViewData& sd) {
     const std::size_t mesh_count = sd.meshes.size();
     if (mesh_count < 2) return;
 

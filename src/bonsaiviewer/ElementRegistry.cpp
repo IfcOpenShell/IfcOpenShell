@@ -22,7 +22,7 @@
 
 #include "../ifcviewer/GeometryStreamer.h"
 #include "../ifcviewer/SceneLoader.h"
-#include "../ifcviewer/SidecarFormat.h"
+#include "../ifcviewer/IfcViewFormat.h"
 
 namespace bonsaiviewer {
 
@@ -33,8 +33,8 @@ ElementRegistry::ElementRegistry(QObject* parent)
 
 void ElementRegistry::bindLoader(SceneLoader* loader) {
     loader_ = loader;
-    connect(loader, &SceneLoader::sidecarElementsReady,
-            this, &ElementRegistry::onSidecarElementsReady);
+    connect(loader, &SceneLoader::ifcViewElementsReady,
+            this, &ElementRegistry::onIfcViewElementsReady);
     connect(loader, &SceneLoader::streamedElementsReady,
             this, &ElementRegistry::onStreamedElementsReady);
 }
@@ -88,7 +88,7 @@ std::optional<express::base> ElementRegistry::findEntity(uint32_t object_id) con
     }
 }
 
-void ElementRegistry::onSidecarElementsReady(uint32_t /*session_model_id*/,
+void ElementRegistry::onIfcViewElementsReady(uint32_t /*session_model_id*/,
                                              std::vector<ElementTableRecord> elements,
                                              std::string string_table) {
     auto string_from_table = [&](uint32_t offset, uint32_t length) -> QString {

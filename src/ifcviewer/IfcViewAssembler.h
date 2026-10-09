@@ -18,37 +18,37 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef SIDECARSERIALIZER_H
-#define SIDECARSERIALIZER_H
+#ifndef IFCVIEWASSEMBLER_H
+#define IFCVIEWASSEMBLER_H
 
 #include "FederationMath.h"
 #include "InstancedGeometry.h"
-#include "SidecarFormat.h"
+#include "IfcViewFormat.h"
 
 #include <vector>
 
-// Assembles a .ifcview SidecarData from streamer output and finalizes it
+// Assembles a .ifcview IfcViewData from streamer output and finalizes it
 // (LOD build, element packing, Morton chunk layout + chunk TOC).
 //
-// Deliberately Qt-free: SidecarBuilder (the QObject that drives a live
+// Deliberately Qt-free: IfcViewBuilder (the QObject that drives a live
 // GeometryStreamer) and the IfcConvert .ifcview serializer plugin both wrap
 // this class instead of each carrying its own copy of the assembly logic.
-class SidecarSerializer {
+class IfcViewAssembler {
 public:
     // Accumulator interface. Safe to call repeatedly from a single thread.
     void onMeshReady(const StreamedMesh& mesh);
     void onInstanceReady(const StreamedInstance& instance_record);
 
     // Finishes assembly using the georef + element batch the caller collected
-    // during streaming. Returns the assembled SidecarData by move; the
+    // during streaming. Returns the assembled IfcViewData by move; the
     // serializer's internal state is left empty so the same instance can be
     // reused for another load. The returned data is laid out in streaming
-    // chunk order (SidecarLayout) so it is ready for writeSidecar() as-is.
-    SidecarData finalize(const ModelGeoref& georef,
+    // chunk order (IfcViewLayout) so it is ready for writeIfcView() as-is.
+    IfcViewData finalize(const ModelGeoref& georef,
                          const std::vector<ElementInfo>& elements);
 
 private:
-    SidecarData sidecar_data_;
+    IfcViewData ifcview_data_;
 };
 
-#endif // SIDECARSERIALIZER_H
+#endif // IFCVIEWASSEMBLER_H

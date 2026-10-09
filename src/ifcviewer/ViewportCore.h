@@ -58,7 +58,7 @@
 #include "SectionPlane.h"
 #include "SelectionState.h"
 #include "Stopwatch.h"
-#include "SidecarReader.h"
+#include "IfcViewReader.h"
 #include "StreamingThread.h"
 #include "ViewportHost.h"
 #include "VisibilityState.h"
@@ -130,10 +130,10 @@ public:
     bool firstGeometryPointWorldM(uint32_t session_model_id,
                                   Eigen::Vector3d& out) const;
 
-    // The model's georef as seeded from its sidecar by applyCachedModel.
+    // The model's georef as seeded from its .ifcview by applyCachedModel.
     // Returns false when the model is unknown.
     //
-    // This is the sidecar-only equivalent of the desktop's
+    // This is the .ifcview-only equivalent of the desktop's
     // SceneLoader::modelGeoref: composeModelTransformation needs the unit
     // scales and the CoordinateOperation to lift ModelTransformation::a into
     // metres, and on web there is no ifcopenshell::file to re-read them from.
@@ -141,7 +141,7 @@ public:
 
     // The global-id base applyCachedModel added to this model's instance
     // object_ids. Callers that hold the element table separately (the desktop
-    // sidecar path) rebase their element records by the same base so registry
+    // .ifcview path) rebase their element records by the same base so registry
     // ids match the ids pick/selection return. 0 if the model is unknown.
     uint32_t modelObjectIdBase(uint32_t session_model_id) const;
 
@@ -453,7 +453,7 @@ public:
                             const std::vector<std::uint32_t>& idx);
 
     // Synchronous-fallback path: read this chunk's byte ranges from
-    // the sidecar file directly (no worker thread) and apply. Used by
+    // the .ifcview file directly (no worker thread) and apply. Used by
     // the screenshot test on first frame, and any caller that needs a
     // chunk resident inside the same call (no deferred-state to
     // manage). Returns true on success.
@@ -465,7 +465,7 @@ public:
 
     // Build the worker request for a chunk. Walks the chunk's mesh_ids
     // and derives scatter-gather byte/index ranges from each mesh's
-    // sidecar offsets. Pure function of model + chunk metadata; safe to
+    // .ifcview offsets. Pure function of model + chunk metadata; safe to
     // call from the main thread.
     static StreamingThread::Request makeChunkRequest(
         const ModelGpuData& m, std::size_t chunk_idx, std::uint32_t session_model_id);
@@ -483,16 +483,16 @@ public:
     // which is what decouples fetching from the render loop.
     void pumpWebChunkLoads();
 
-    // ---- Sidecar / direct load (#84-q) -----------------------------------
+    // ---- .ifcview / direct load (#84-q) -----------------------------------
     //
-    // Apply a parsed sidecar's metadata + planned chunk layout to
+    // Apply a parsed .ifcview's metadata + planned chunk layout to
     // models_gpu_[session_model_id]. Builds the per-chunk small buffers
     // (visible_draws / prefix_sums / per_chunk_uniform), the per-model
     // mesh + instance storage SSBOs, and the spatial chunk plan; chunk
     // vertex/index slices stay non-resident until the streaming loader
     // brings them in. Triggers an auto-viewAll on the first model (so a
     // freshly-loaded scene frames itself).
-    void applyCachedModel(std::uint32_t session_model_id, StreamingSidecar metadata);
+    void applyCachedModel(std::uint32_t session_model_id, StreamingIfcView metadata);
     // The model's required-tier buffers (mesh + instance storage, per-chunk
     // cull buffers) as one allocation unit — see allocateRequired. False
     // when the device cannot fit them even after the cache yielded.
@@ -500,16 +500,16 @@ public:
                             const std::vector<MeshGpu>& mesh_gpu,
                             const std::vector<InstanceGpu>& inst_gpu);
 
-    // Qt-free sidecar load: readSidecarMetadata + applyCachedModel.
+    // Qt-free .ifcview load: readIfcViewMetadata + applyCachedModel.
     // Used by the web build (and any other non-Qt embedder) so the
-    // public ViewportWindow::loadSidecar's QString + QFile triage
+    // public ViewportWindow::loadIfcView's QString + QFile triage
     // tilde-expansion doesn't have to be replicated. Returns 0 on
     // any failure (device not ready, file missing, magic / version
     // mismatch) and the freshly-assigned session_model_id on success.
-    std::uint32_t loadSidecarFromPath(const std::string& path);
+    std::uint32_t loadIfcViewFromPath(const std::string& path);
 
 #if defined(__EMSCRIPTEN__)
-    // Web byte-range load (#88). Streams a sidecar from a JS-side source
+    // Web byte-range load (#88). Streams a .ifcview from a JS-side source
     // WITHOUT copying the whole file into the wasm heap: head + tail metadata
     // are read via byte ranges, the streaming model is built, and it is tagged
     // web-sourced so each chunk's vertex/index ranges are pulled lazily.
@@ -526,7 +526,7 @@ public:
     // way to learn it — which is what the federation layer needs in order to
     // bind per-model state (transform, display name) that JS may have set
     // against the source_id before the load finished.
-    void loadSidecarMetadataWeb(int source_id, std::string source_label,
+    void loadIfcViewMetadataWeb(int source_id, std::string source_label,
                                 std::function<void(std::uint32_t)> on_loaded = {});
 
     // On-demand fetch of the v15 element metadata block (elements + string
@@ -1166,7 +1166,7 @@ private:
     bool      render_attachments_ok_ = true;
 
     // The scene's models in load order (ascending session_model_id, minted at
-    // request time — see loadSidecarMetadataWeb). Every per-model API indexes
+    // request time — see loadIfcViewMetadataWeb). Every per-model API indexes
     // against this, so a model keeps a stable UI slot instead of hopping with
     // unordered_map iteration order.
     std::vector<std::uint32_t> modelIdsInLoadOrder() const;
@@ -1469,7 +1469,7 @@ private:
     std::unordered_map<uint32_t, ModelGpuData> models_gpu_;
     uint32_t next_session_model_id_  = 1;
     // Globally-unique object_id allocator. Each applyCachedModel rebases
-    // the sidecar's local object_ids by base_object_id_so_far so picks
+    // the .ifcview's local object_ids by base_object_id_so_far so picks
     // are unambiguous across models.
     uint32_t next_object_id_ = 1;
 
@@ -1577,7 +1577,7 @@ private:
     // uploadStreamedInstance append into entries keyed by session_model_id; the
     // finalizeModel call moves the entry out, hands it to
     // applyCachedModel, and uploads the chunk slices synchronously.
-    std::unordered_map<std::uint32_t, std::unique_ptr<SidecarData>>
+    std::unordered_map<std::uint32_t, std::unique_ptr<IfcViewData>>
         pending_direct_loads_;
 
     // ---- Render-loop state (#84-x) ---------------------------------------

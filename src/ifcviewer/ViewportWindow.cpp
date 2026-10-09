@@ -24,7 +24,7 @@
 #include "LengthMeasurement.h"
 #include "Log.h"
 #include "LogQt.h"
-#include "SidecarReader.h"
+#include "IfcViewReader.h"
 #include "VertexQuantization.h"
 
 #include <QCoreApplication>
@@ -485,18 +485,18 @@ void ViewportWindow::setBackgroundColor(float r, float g, float b, float a) {
 }
 
 // -----------------------------------------------------------------------------
-// Sidecar load + GPU upload
+// .ifcview load + GPU upload
 // -----------------------------------------------------------------------------
 
-void ViewportWindow::queueLoadSidecar(const std::string& path) {
+void ViewportWindow::queueLoadIfcView(const std::string& path) {
     if (wgpu_initialized_) {
-        loadSidecar(path);
+        loadIfcView(path);
     } else {
-        pending_sidecars_.push_back(path);
+        pending_ifcviews_.push_back(path);
     }
 }
 
-uint32_t ViewportWindow::loadSidecar(const std::string& path_std) {
+uint32_t ViewportWindow::loadIfcView(const std::string& path_std) {
     // Internal implementation still uses Qt's path helpers (QDir tilde
     // expansion, QFile readability checks, QFileInfo for absolute resolve).
     // Bridging at the entry boundary keeps the public API Qt-free without
@@ -504,7 +504,7 @@ uint32_t ViewportWindow::loadSidecar(const std::string& path_std) {
     // ViewportCore lands (#84).
     const QString path = QString::fromStdString(path_std);
     if (!wgpu_initialized_) {
-        Log::warn().noquote() << "loadSidecar called before wgpu init:" << path;
+        Log::warn().noquote() << "loadIfcView called before wgpu init:" << path;
         return 0;
     }
 
@@ -519,39 +519,39 @@ uint32_t ViewportWindow::loadSidecar(const std::string& path_std) {
     // Metadata-only read: mesh dict + instance dict + georef. Per-chunk
     // vertex/index bytes are deferred to the per-frame loader as chunks
     // become frustum-visible.
-    auto meta_opt = readSidecarMetadata(resolved.toStdString());
+    auto meta_opt = readIfcViewMetadata(resolved.toStdString());
     if (!meta_opt) {
         // Triage: distinguish missing file from magic/version mismatch by
         // peeking the header ourselves, so users know which to fix.
         QFile f(resolved);
         if (!f.exists()) {
-            Log::warn().noquote() << "Sidecar not found:" << resolved;
+            Log::warn().noquote() << ".ifcview not found:" << resolved;
         } else if (!f.open(QIODevice::ReadOnly)) {
-            Log::warn().noquote() << "Sidecar unreadable:" << resolved
+            Log::warn().noquote() << ".ifcview unreadable:" << resolved
                                  << "(" << f.errorString() << ")";
         } else {
             uint32_t header[3] = { 0, 0, 0 };
             const qint64 got = f.read(reinterpret_cast<char*>(header), sizeof(header));
             if (got < qint64(sizeof(header))) {
-                Log::warn().noquote() << "Sidecar truncated:" << resolved
+                Log::warn().noquote() << ".ifcview truncated:" << resolved
                                      << "(only" << got << "bytes — expected ≥ 12)";
-            } else if (header[0] != SIDECAR_MAGIC) {
+            } else if (header[0] != IFCVIEW_MAGIC) {
                 Log::warn().noquote().nospace()
-                    << "Sidecar magic mismatch: " << resolved
+                    << ".ifcview magic mismatch: " << resolved
                     << " — got 0x" << QString::number(header[0], 16)
-                    << ", expected 0x" << QString::number(SIDECAR_MAGIC, 16)
+                    << ", expected 0x" << QString::number(IFCVIEW_MAGIC, 16)
                     << " (\"IFVW\")";
-            } else if (header[1] != SIDECAR_VERSION) {
+            } else if (header[1] != IFCVIEW_VERSION) {
                 Log::warn().noquote().nospace()
-                    << "Sidecar schema mismatch: " << resolved
+                    << ".ifcview schema mismatch: " << resolved
                     << " — file is v" << header[1]
-                    << ", this build expects v" << SIDECAR_VERSION
+                    << ", this build expects v" << IFCVIEW_VERSION
                     << ". Re-bake the .ifc with a viewer at the matching schema.";
-            } else if (header[2] != SIDECAR_ENDIAN) {
-                Log::warn().noquote() << "Sidecar endianness mismatch:" << resolved
+            } else if (header[2] != IFCVIEW_ENDIAN) {
+                Log::warn().noquote() << ".ifcview endianness mismatch:" << resolved
                                      << "(cross-platform load not supported)";
             } else {
-                Log::warn().noquote() << "Sidecar metadata read failed past the header:" << resolved;
+                Log::warn().noquote() << ".ifcview metadata read failed past the header:" << resolved;
             }
         }
         return 0;
@@ -562,15 +562,15 @@ uint32_t ViewportWindow::loadSidecar(const std::string& path_std) {
     return session_model_id;
 }
 
-void ViewportWindow::applyCachedModel(uint32_t session_model_id, StreamingSidecar metadata) {
+void ViewportWindow::applyCachedModel(uint32_t session_model_id, StreamingIfcView metadata) {
     core_.applyCachedModel(session_model_id, std::move(metadata));
 }
 
 // -----------------------------------------------------------------------------
 // Direct-IFC ingestion (mirrors GL ViewportWindow::uploadStreamedMesh /
 // uploadStreamedInstance / finalizeModel). Streamer pushes transfer records; we stage
-// them into a SidecarData-shaped buffer and commit at finalize via the
-// same chunk planner the sidecar load uses.
+// them into a IfcViewData-shaped buffer and commit at finalize via the
+// same chunk planner the .ifcview load uses.
 // -----------------------------------------------------------------------------
 
 // getOrCreateDirectStaging moved to ViewportCore (anon namespace) (#84-q).
@@ -682,11 +682,11 @@ void ViewportWindow::frameOnFederatedOrigin(uint32_t session_model_id,
     if (isExposed()) requestUpdate();
 }
 
-void ViewportWindow::flushPendingSidecarQueue() {
-    while (!pending_sidecars_.empty()) {
-        const std::string p = pending_sidecars_.front();
-        pending_sidecars_.pop_front();
-        loadSidecar(p);
+void ViewportWindow::flushPendingIfcViewQueue() {
+    while (!pending_ifcviews_.empty()) {
+        const std::string p = pending_ifcviews_.front();
+        pending_ifcviews_.pop_front();
+        loadIfcView(p);
     }
 }
 
@@ -703,9 +703,9 @@ void ViewportWindow::exposeEvent(QExposeEvent* /*event*/) {
             return;
         }
         wgpu_initialized_ = true;
-        // Drain any sidecar paths queued before init; uploads run on the
+        // Drain any .ifcview paths queued before init; uploads run on the
         // now-valid device.
-        flushPendingSidecarQueue();
+        flushPendingIfcViewQueue();
     }
 
     const int w = int(width()  * devicePixelRatio());
@@ -1048,7 +1048,7 @@ bool ViewportWindow::meshLocalToGlobal(uint32_t object_id,
                                            double global_out[3]) const {
     // Find the instance via the per-model object_id_to_instance map.
     // Use the live map key (`session_model_id`) — see pickMeshLocalAt comment about
-    // stale InstanceInfo::session_model_id from sidecar writes.
+    // stale InstanceInfo::session_model_id from .ifcview writes.
     for (const auto& [session_model_id, model] : models_gpu_) {
         auto it = model.object_id_to_instance.find(object_id);
         if (it == model.object_id_to_instance.end()) continue;

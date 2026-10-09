@@ -63,7 +63,7 @@ static_assert(sizeof(MeshGpu) == 32, "MeshGpu must be 32 bytes");
 // `ebo_byte_offset` / `index_count` describe it.
 //
 // LOD1 is an optional decimated copy of the same triangles referencing the
-// same vertex buffer.  Built at sidecar time via meshoptimizer for meshes
+// same vertex buffer.  Built at .ifcview time via meshoptimizer for meshes
 // whose triangle count crosses a threshold.  `lod1_index_count == 0`
 // means no LOD1 was built; the renderer must use LOD0 at every distance.
 struct MeshInfo {
@@ -111,7 +111,7 @@ static_assert(sizeof(InstanceGpu) == 80, "InstanceGpu must be 80 bytes");
 // copy of placement_transformation.
 //
 // Only mesh_id, object_id, placement_transformation (as a double translation
-// plus a float linear part) are stored in the sidecar. The rest is session
+// plus a float linear part) are stored in the .ifcview. The rest is session
 // specific and derived on read.
 struct InstanceInfo {
     uint32_t mesh_id                  = 0;  // index into meshes array
@@ -154,8 +154,8 @@ struct StreamedInstance {
     float    world_aabb_max[3]{};
 };
 
-// Element metadata for the sidecar's element table (UI + picking).  The
-// streamer discovers these as it iterates; SidecarSerializer::finalize packs
+// Element metadata for the .ifcview's element table (UI + picking).  The
+// streamer discovers these as it iterates; IfcViewAssembler::finalize packs
 // them (strings into the string table) into the .ifcview element block.
 struct ElementInfo {
     uint32_t object_id;

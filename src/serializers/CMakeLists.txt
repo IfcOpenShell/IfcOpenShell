@@ -145,28 +145,28 @@ if(WITH_OPENCASCADE)
 endif()
 
 # .ifcview: the viewer's cached-geometry format (instanced, Morton-chunked,
-# zstd-compressed). The plugin compiles the ifcviewer sidecar sources directly
+# zstd-compressed). The plugin compiles the ifcviewer .ifcview sources directly
 # (no Qt, no wgpu) so it writes exactly the layout the viewer/loader expect.
 if(NOT WASM_BUILD)
     find_package(zstd ${ZSTD_MIN_VERSION} CONFIG REQUIRED)
     # The imported Eigen target is directory-scoped (created by ifcgeom), so
     # this directory needs its own lookup before it can link against it.
     find_package(Eigen3 ${EIGEN_MIN_VERSION} REQUIRED)
-    set(ifcviewer_sidecar_dir ${CMAKE_CURRENT_SOURCE_DIR}/../ifcviewer)
+    set(ifcviewer_src_dir ${CMAKE_CURRENT_SOURCE_DIR}/../ifcviewer)
     add_geometry_serializer_plugin(geometry_serializer_ifcview "geometry.ifcview"
         SOURCES
             geometry_ifcview_plugin.cpp
-            ${ifcviewer_sidecar_dir}/IfcViewSerializer.cpp
-            ${ifcviewer_sidecar_dir}/SidecarSerializer.cpp
-            ${ifcviewer_sidecar_dir}/StreamedRecords.cpp
-            ${ifcviewer_sidecar_dir}/MeshDedup.cpp
-            ${ifcviewer_sidecar_dir}/SidecarWriter.cpp
-            ${ifcviewer_sidecar_dir}/SidecarLayout.cpp
-            ${ifcviewer_sidecar_dir}/ChunkPlanner.cpp
-            ${ifcviewer_sidecar_dir}/LodBuilder.cpp
+            ${ifcviewer_src_dir}/IfcViewSerializer.cpp
+            ${ifcviewer_src_dir}/IfcViewAssembler.cpp
+            ${ifcviewer_src_dir}/StreamedRecords.cpp
+            ${ifcviewer_src_dir}/MeshDedup.cpp
+            ${ifcviewer_src_dir}/IfcViewWriter.cpp
+            ${ifcviewer_src_dir}/IfcViewLayout.cpp
+            ${ifcviewer_src_dir}/ChunkPlanner.cpp
+            ${ifcviewer_src_dir}/LodBuilder.cpp
         LIBRARIES Eigen3::Eigen zstd::libzstd_static
     )
-    target_include_directories(geometry_serializer_ifcview PRIVATE ${ifcviewer_sidecar_dir})
+    target_include_directories(geometry_serializer_ifcview PRIVATE ${ifcviewer_src_dir})
     if(WITH_MESH_OPTIMIZER)
         find_package(meshoptimizer REQUIRED)
         target_compile_definitions(geometry_serializer_ifcview PRIVATE WITH_MESH_OPTIMIZER)

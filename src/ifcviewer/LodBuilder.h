@@ -20,7 +20,7 @@
 #ifndef LODBUILDER_H
 #define LODBUILDER_H
 
-#include "SidecarFormat.h"
+#include "IfcViewFormat.h"
 
 // Build a LOD1 index slice for every mesh in `sd` whose triangle count is
 // above `min_triangles`, using meshoptimizer's sloppy (voxel-clustering)
@@ -39,7 +39,7 @@
 // dequantized per-mesh (using MeshInfo.local_aabb_min/max) into a temp
 // float array before feeding meshoptimizer.  Vertices are not modified —
 // LOD1 reuses the same VBO, just with a different index list.
-void buildLods(SidecarData& sd,
+void buildLods(IfcViewData& sd,
                int min_triangles = 500,
                float target_ratio = 0.25f,
                float target_error = 0.05f);
@@ -52,6 +52,6 @@ struct LodStats {
     uint32_t tris_lod1          = 0;   // only for meshes that got LOD1
     uint32_t tris_lod0_for_lod1 = 0;   // LOD0 tris of the meshes that got LOD1
 };
-LodStats summariseLods(const SidecarData& sd);
+LodStats summariseLods(const IfcViewData& sd);
 
 #endif // LODBUILDER_H

@@ -2205,7 +2205,7 @@ void ViewportCore::shutdown() {
 // computeMeshLocalVolumeQuantised
 // ===========================================================================
 
-#include "SidecarReader.h"
+#include "IfcViewReader.h"
 
 namespace {
 
@@ -2367,7 +2367,7 @@ bool ViewportCore::applyStreamedChunk(
     // Per-mesh alpha probe. Scan every vertex of every mesh in this chunk
     // for any alpha byte < 255 — fires the mesh_has_alpha flag the cull
     // classifier reads to route instances of this mesh to the transparent
-    // pass. Done here (vs. once at sidecar bake time) because for the
+    // pass. Done here (vs. once at .ifcview bake time) because for the
     // streaming path the bytes only arrive now; the same code services
     // both the worker-result drain and the sync first-frame fallback.
     if (m.mesh_has_alpha.size() == m.meshes.size()) {
@@ -3390,7 +3390,7 @@ void ViewportCore::cullModelCpuUpload(ModelGpuData& m) {
 }
 
 // ===========================================================================
-// Sidecar / direct load (#84-q): applyCachedModel + uploadStreamedMesh +
+// .ifcview / direct load (#84-q): applyCachedModel + uploadStreamedMesh +
 // uploadStreamedInstance + finalizeModel
 // ===========================================================================
 
@@ -3425,13 +3425,13 @@ WGPUBuffer createBufferWithData(WGPUDevice device, WGPUQueue queue,
 
 // Look up (or create) the direct-load staging entry for a given model.
 // Holds a unique_ptr so address stability is preserved as the map grows.
-SidecarData& getOrCreateDirectStaging(
-        std::unordered_map<std::uint32_t, std::unique_ptr<SidecarData>>& staging,
+IfcViewData& getOrCreateDirectStaging(
+        std::unordered_map<std::uint32_t, std::unique_ptr<IfcViewData>>& staging,
         std::uint32_t session_model_id) {
     auto it = staging.find(session_model_id);
     if (it == staging.end()) {
         auto [it_new, _] = staging.emplace(
-            session_model_id, std::make_unique<SidecarData>());
+            session_model_id, std::make_unique<IfcViewData>());
         return *it_new->second;
     }
     return *it->second;
@@ -3498,7 +3498,7 @@ bool ViewportCore::createModelBuffers(std::uint32_t session_model_id,
 }
 
 void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
-                                    StreamingSidecar metadata) {
+                                    StreamingIfcView metadata) {
     if (!device_ || !queue_) {
         Log::warn() << "applyCachedModel without an initialised device";
         return;
@@ -3519,7 +3519,7 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
     model_gpu_data.streaming_file_path      = metadata.file_path;
     model_gpu_data.geometry_section_offset  = metadata.geometry_section_offset;
 
-    // Seed the CoordinateOperation from the sidecar (v11+) so a model lands in
+    // Seed the CoordinateOperation from the .ifcview (v11+) so a model lands in
     // global coordinates without anyone having to push it. Before this, the
     // matrix stayed identity unless a host called setModelCoordinateOperation —
     // which only BonsaiViewer does (modules/viewport/View.cpp), so the web
@@ -3534,7 +3534,7 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
     // setModelCoordinateOperation early-returns when the value is unchanged.
     model_gpu_data.has_coordinate_operation = metadata.meta.has_coordinate_operation != 0;
     if (model_gpu_data.has_coordinate_operation) {
-        // Sidecar stores column-major, matching Eigen's default storage order.
+        // .ifcview stores column-major, matching Eigen's default storage order.
         model_gpu_data.coordinate_operation_meters =
             Eigen::Map<const Eigen::Matrix4d>(metadata.meta.coordinate_operation_meters);
     }
@@ -3542,8 +3542,8 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
     model_gpu_data.units.map_unit_to_meters       = metadata.meta.map_unit_to_meters;
 
     // ---- Spatial chunk plan ----------------------------------------------
-    // A sidecar carries a baked chunk TOC (v14): each chunk is a contiguous
-    // run of meshes, laid out contiguously in the file (see SidecarLayout), so
+    // A .ifcview carries a baked chunk TOC (v14): each chunk is a contiguous
+    // run of meshes, laid out contiguously in the file (see IfcViewLayout), so
     // we build chunks straight from it — one contiguous byte range per chunk.
     // The plan is NOT re-derived here because the float Morton quantisation
     // isn't bit-identical across toolchains (x86 baker vs wasm loader), which
@@ -3562,11 +3562,11 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
     if (!metadata.meta.chunks.empty()) {
         // Baked TOC: chunk ci is meshes [first_mesh, first_mesh + mesh_count).
         chunk_mesh_ids.reserve(metadata.meta.chunks.size());
-        for (const auto& sidecar_chunk : metadata.meta.chunks) {
+        for (const auto& ifcview_chunk : metadata.meta.chunks) {
             std::vector<std::uint32_t> mesh_ids;
-            mesh_ids.reserve(sidecar_chunk.mesh_count);
-            for (std::uint32_t k = 0; k < sidecar_chunk.mesh_count; ++k) {
-                const std::uint32_t mesh_index = sidecar_chunk.first_mesh + k;
+            mesh_ids.reserve(ifcview_chunk.mesh_count);
+            for (std::uint32_t k = 0; k < ifcview_chunk.mesh_count; ++k) {
+                const std::uint32_t mesh_index = ifcview_chunk.first_mesh + k;
                 if (mesh_index < n_meshes) mesh_ids.push_back(mesh_index);
             }
             chunk_mesh_ids.push_back(std::move(mesh_ids));
@@ -3665,11 +3665,11 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
         chunk.lod1_index_count = chunk_local_lod1;
         // v16: compressed-blob locators from the baked TOC (streaming path).
         if (chunk_index < metadata.meta.chunks.size()) {
-            const SidecarChunk& sidecar_chunk = metadata.meta.chunks[chunk_index];
-            chunk.v_comp_off = sidecar_chunk.v_comp_off;
-            chunk.v_comp_size = sidecar_chunk.v_comp_size;
-            chunk.i_comp_off = sidecar_chunk.i_comp_off;
-            chunk.i_comp_size = sidecar_chunk.i_comp_size;
+            const IfcViewChunk& ifcview_chunk = metadata.meta.chunks[chunk_index];
+            chunk.v_comp_off = ifcview_chunk.v_comp_off;
+            chunk.v_comp_size = ifcview_chunk.v_comp_size;
+            chunk.i_comp_off = ifcview_chunk.i_comp_off;
+            chunk.i_comp_size = ifcview_chunk.i_comp_size;
         }
         model_gpu_data.vertex_bytes += chunk.vertex_byte_size;
         model_gpu_data.index_count  += std::uint32_t(chunk.index_count);
@@ -3719,7 +3719,7 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
     model_gpu_data.element_metadata_comp_size   = metadata.element_metadata_comp_size;
     model_gpu_data.element_metadata_raw_size    = metadata.element_metadata_raw_size;
 
-    // Element metadata, when the caller already read it. readSidecarMetadata
+    // Element metadata, when the caller already read it. readIfcViewMetadata
     // parses the block up front, so a path-based load arrives with it in hand;
     // the web byte-range path deliberately skips it (first paint must not wait
     // on it) and fetches later via loadElementMetadataWeb, arriving here empty.
@@ -3799,7 +3799,7 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
         << " instances=" << inserted_model.instance_count
         << " chunks=" << inserted_model.chunks.size();
 
-    // The instance transforms above came straight from the sidecar, where they
+    // The instance transforms above came straight from the .ifcview, where they
     // were baked with identity federation matrices. Recompose whenever any of
     // them is now non-identity, or the model renders in the wrong place:
     //
@@ -3826,11 +3826,11 @@ void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
 
 void ViewportCore::uploadStreamedMesh(const StreamedMesh& mesh) {
     if (mesh.vertices.empty() || mesh.indices.empty()) return;
-    SidecarData& staging = getOrCreateDirectStaging(pending_direct_loads_, mesh.session_model_id);
+    IfcViewData& staging = getOrCreateDirectStaging(pending_direct_loads_, mesh.session_model_id);
 
     // Streamer format: 7 floats / vertex (pos3 + normal3 + color-as-float).
-    // Same quantisation as SidecarBuilder::onMeshReady so direct-load and
-    // sidecar-load produce byte-identical GPU buffers.
+    // Same quantisation as IfcViewBuilder::onMeshReady so direct-load and
+    // .ifcview-load produce byte-identical GPU buffers.
     const std::size_t n_verts = mesh.vertices.size() / INSTANCED_VERTEX_STRIDE_FLOATS;
 
     float bmin[3] = {  std::numeric_limits<float>::infinity(),
@@ -3886,7 +3886,7 @@ void ViewportCore::uploadStreamedMesh(const StreamedMesh& mesh) {
 }
 
 void ViewportCore::uploadStreamedInstance(const StreamedInstance& instance_record) {
-    SidecarData& staging = getOrCreateDirectStaging(pending_direct_loads_, instance_record.session_model_id);
+    IfcViewData& staging = getOrCreateDirectStaging(pending_direct_loads_, instance_record.session_model_id);
 
     InstanceInfo instance{};
     instance.mesh_id              = instance_record.mesh_id;
@@ -3904,14 +3904,14 @@ void ViewportCore::uploadStreamedInstance(const StreamedInstance& instance_recor
     staging.instances.push_back(instance);
 }
 
-std::uint32_t ViewportCore::loadSidecarFromPath(const std::string& path) {
+std::uint32_t ViewportCore::loadIfcViewFromPath(const std::string& path) {
     if (!device_ || !queue_) {
-        Log::warn() << "loadSidecarFromPath: wgpu not initialised";
+        Log::warn() << "loadIfcViewFromPath: wgpu not initialised";
         return 0;
     }
-    auto meta_opt = readSidecarMetadata(path);
+    auto meta_opt = readIfcViewMetadata(path);
     if (!meta_opt) {
-        Log::warn() << "loadSidecarFromPath: could not read sidecar metadata from " << path;
+        Log::warn() << "loadIfcViewFromPath: could not read .ifcview metadata from " << path;
         return 0;
     }
     const std::uint32_t session_model_id = next_session_model_id_++;
@@ -3924,14 +3924,14 @@ std::uint32_t ViewportCore::loadSidecarFromPath(const std::string& path) {
 // Web byte-range streaming (#88): Blob.slice source + async chunk loads
 // ===========================================================================
 //
-// The desktop streaming path fopen()s the sidecar and fread()s chunk byte
+// The desktop streaming path fopen()s the .ifcview and fread()s chunk byte
 // ranges synchronously from a worker thread. On web there is no worker (no
 // pthreads yet) and Blob.slice() is inherently async, so chunk bytes are
 // pulled through the JS event loop: webReadRangesAsync issues one Blob.slice
 // per coalesced read plan, scatters the bytes into the destination, then
 // invokes a continuation once the whole range set has landed. The picked
 // File stays in JS (Module.__ifcvFile) — only chunk-sized slices ever enter
-// the wasm heap, so a 500 MB sidecar never does.
+// the wasm heap, so a 500 MB .ifcview never does.
 
 namespace {
 
@@ -3987,7 +3987,7 @@ EM_JS(void, ifcvReadRangeInto, (int sid, int reqId, double offset, double size, 
 // plan has landed, or on the first failure.
 struct WebRangeRead {
     int                          source_id = 0;  // Module.__ifcvSources index
-    std::vector<SidecarReadPlan> plans;
+    std::vector<IfcViewReadPlan> plans;
     std::size_t                  plan_idx = 0;
     std::vector<std::uint8_t>    scratch;
     std::vector<std::uint8_t>    out;
@@ -4009,7 +4009,7 @@ void webIssueCurrentPlan(int id) {
         if (done) done(true, std::move(out));
         return;
     }
-    const SidecarReadPlan& plan = r.plans[r.plan_idx];
+    const IfcViewReadPlan& plan = r.plans[r.plan_idx];
     r.scratch.assign(std::size_t(plan.read_size), 0);
     ifcvReadRangeInto(r.source_id, id, double(plan.file_offset), double(plan.read_size),
                       r.scratch.data());
@@ -4031,7 +4031,7 @@ void webReadRangesAsync(
     r.out.assign(std::size_t(total), 0);
     // Coalesce within 1 MB: each Blob.slice is an async round trip, so a
     // generous gap trades a few wasted bytes for far fewer JS hops.
-    r.plans = planSidecarReadRanges(section_offset, ranges, std::uint64_t(1) << 20);
+    r.plans = planIfcViewReadRanges(section_offset, ranges, std::uint64_t(1) << 20);
     r.done  = std::move(done);
 
     if (r.plans.empty()) {  // nothing to read — complete synchronously
@@ -4058,7 +4058,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_on_range_done(int reqId, int ok) {
         if (done) done(false, {});
         return;
     }
-    const SidecarReadPlan& plan = r.plans[r.plan_idx];
+    const IfcViewReadPlan& plan = r.plans[r.plan_idx];
     for (const auto& s : plan.slices) {
         std::memcpy(r.out.data() + s.dst_offset,
                     r.scratch.data() + s.src_offset, std::size_t(s.bytes));
@@ -4169,9 +4169,9 @@ void ViewportCore::beginWebChunkLoad(std::uint32_t session_model_id, std::size_t
         std::vector<std::uint8_t>  vbytes(static_cast<std::size_t>(v_raw));
         std::vector<std::uint32_t> idx(static_cast<std::size_t>(i_raw / sizeof(std::uint32_t)));
         const bool ok = join->v_ok && join->i_ok
-            && decompressSidecarFrame(join->vz.data(), join->vz.size(),
+            && decompressIfcViewFrame(join->vz.data(), join->vz.size(),
                                            vbytes.data(), vbytes.size())
-            && decompressSidecarFrame(join->iz.data(), join->iz.size(),
+            && decompressIfcViewFrame(join->iz.data(), join->iz.size(),
                                            reinterpret_cast<std::uint8_t*>(idx.data()),
                                            std::size_t(i_raw));
         chunk_apply_ms_total_ += emscripten_get_now() - apply_t0;
@@ -4208,15 +4208,15 @@ void ViewportCore::beginWebChunkLoad(std::uint32_t session_model_id, std::size_t
 // here — they stream per chunk through beginWebChunkLoad. `source_label` is a
 // log/identity tag stored as file_path (chunk reads go through the JS source,
 // not this path).
-void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_label,
+void ViewportCore::loadIfcViewMetadataWeb(int source_id, std::string source_label,
                                           std::function<void(std::uint32_t)> on_loaded) {
     if (!device_ || !queue_) {
-        Log::warn() << "loadSidecarMetadataWeb: wgpu not initialised";
+        Log::warn() << "loadIfcViewMetadataWeb: wgpu not initialised";
         return;
     }
     const double fsize = ifcvSourceSize(source_id);
     if (fsize <= 0.0) {
-        Log::warn() << "loadSidecarMetadataWeb: source " << source_id << " has zero size";
+        Log::warn() << "loadIfcViewMetadataWeb: source " << source_id << " has zero size";
         return;
     }
 
@@ -4234,19 +4234,19 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
     const std::uint32_t session_model_id = next_session_model_id_++;
 
     // Head (v16): [header 12][geom_bytes 8]. The two compressed metadata blocks
-    // follow the compressed geometry at SIDECAR_HEAD_BYTES + geom_bytes.
-    webReadRangesAsync(source_id, 0, {{0, SIDECAR_HEAD_BYTES}},
+    // follow the compressed geometry at IFCVIEW_HEAD_BYTES + geom_bytes.
+    webReadRangesAsync(source_id, 0, {{0, IFCVIEW_HEAD_BYTES}},
         [this, fsize, source_id, source_label, session_model_id,
          on_loaded = std::move(on_loaded)]
         (bool ok, std::vector<std::uint8_t>&& head) mutable {
             std::uint64_t geom_bytes = 0;
-            if (!ok || !parseSidecarHead(head.data(), head.size(), geom_bytes)) {
-                Log::warn() << "loadSidecarMetadataWeb: bad sidecar head (wrong version?)";
+            if (!ok || !parseIfcViewHead(head.data(), head.size(), geom_bytes)) {
+                Log::warn() << "loadIfcViewMetadataWeb: bad .ifcview head (wrong version?)";
                 return;
             }
-            const std::uint64_t meta_off = std::uint64_t(SIDECAR_HEAD_BYTES) + geom_bytes;
+            const std::uint64_t meta_off = std::uint64_t(IFCVIEW_HEAD_BYTES) + geom_bytes;
             if (double(meta_off + 16) > fsize) {
-                Log::warn() << "loadSidecarMetadataWeb: metadata past EOF";
+                Log::warn() << "loadIfcViewMetadataWeb: metadata past EOF";
                 return;
             }
             // Geometry metadata block on disk: [comp u64][raw u64][zstd frame].
@@ -4255,7 +4255,7 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                  on_loaded = std::move(on_loaded)]
                 (bool ok2, std::vector<std::uint8_t>&& h) {
                     if (!ok2 || h.size() < 16) {
-                        Log::warn() << "loadSidecarMetadataWeb: short geometry metadata header";
+                        Log::warn() << "loadIfcViewMetadataWeb: short geometry metadata header";
                         return;
                     }
                     std::uint64_t geometry_metadata_comp = 0, geometry_metadata_raw = 0;
@@ -4263,7 +4263,7 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                     std::memcpy(&geometry_metadata_raw, h.data() + 8, 8);
                     const std::uint64_t geometry_metadata_off = meta_off + 16;
                     if (double(geometry_metadata_off + geometry_metadata_comp + 16) > fsize) {
-                        Log::warn() << "loadSidecarMetadataWeb: geometry metadata past EOF";
+                        Log::warn() << "loadIfcViewMetadataWeb: geometry metadata past EOF";
                         return;
                     }
                     webReadRangesAsync(source_id, 0,
@@ -4273,23 +4273,23 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                          session_model_id, on_loaded = std::move(on_loaded)]
                         (bool ok3, std::vector<std::uint8_t>&& cz) {
                             if (!ok3) {
-                                Log::warn() << "loadSidecarMetadataWeb: geometry metadata read failed";
+                                Log::warn() << "loadIfcViewMetadataWeb: geometry metadata read failed";
                                 return;
                             }
                             std::vector<std::uint8_t> geometry_metadata(
                                 static_cast<std::size_t>(geometry_metadata_raw));
-                            if (!decompressSidecarFrame(cz.data(), cz.size(),
+                            if (!decompressIfcViewFrame(cz.data(), cz.size(),
                                                              geometry_metadata.data(),
                                                              geometry_metadata.size())) {
-                                Log::warn() << "loadSidecarMetadataWeb: geometry metadata decompress failed";
+                                Log::warn() << "loadIfcViewMetadataWeb: geometry metadata decompress failed";
                                 return;
                             }
-                            StreamingSidecar sc;
+                            StreamingIfcView sc;
                             sc.file_path               = source_label;
-                            sc.geometry_section_offset = SIDECAR_HEAD_BYTES;
-                            if (!parseSidecarGeometryMetadata(geometry_metadata.data(),
+                            sc.geometry_section_offset = IFCVIEW_HEAD_BYTES;
+                            if (!parseIfcViewGeometryMetadata(geometry_metadata.data(),
                                                               geometry_metadata.size(), sc.meta)) {
-                                Log::warn() << "loadSidecarMetadataWeb: bad geometry metadata";
+                                Log::warn() << "loadIfcViewMetadataWeb: bad geometry metadata";
                                 return;
                             }
                             // Read the element metadata block's 16-byte header to
@@ -4299,7 +4299,7 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                             // locator is still zero — and a loadElementMetadataWeb
                             // landing in that window (a host page calling
                             // getObjects() as soon as the model appears) cannot
-                            // tell "locator not read yet" from "this sidecar has no
+                            // tell "locator not read yet" from "this .ifcview has no
                             // element block", so it latches the model as
                             // permanently empty. It costs one extra 16-byte
                             // round-trip before first paint.
@@ -4318,7 +4318,7 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                                         sc.element_metadata_comp_size   = dc;
                                         sc.element_metadata_raw_size    = dr;
                                     } else {
-                                        Log::warn() << "loadSidecarMetadataWeb: element metadata"
+                                        Log::warn() << "loadIfcViewMetadataWeb: element metadata"
                                                        " header read failed — no properties for "
                                                     << source_label;
                                     }
@@ -4342,7 +4342,7 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                                     // Reframing per model would jump the camera
                                     // as each federated model streams in.
                                     host_->requestFrame();
-                                    Log::info() << "ifcviewer-web: loaded sidecar (" << source_label
+                                    Log::info() << "ifcviewer-web: loaded .ifcview (" << source_label
                                                 << ", id " << session_model_id << ", " << n_meshes << " meshes, "
                                                 << n_instances << " instances)";
                                     // Last: the model is fully in the scene, so a
@@ -4377,10 +4377,10 @@ void ViewportCore::loadElementMetadataWeb(std::uint32_t session_model_id,
             auto mit = models_gpu_.find(session_model_id);
             if (mit == models_gpu_.end()) { if (done) done(false); return; }
             std::vector<std::uint8_t> buf(static_cast<std::size_t>(raw_size));
-            SidecarData tmp;
+            IfcViewData tmp;
             if (!ok ||
-                !decompressSidecarFrame(cz.data(), cz.size(), buf.data(), buf.size()) ||
-                !parseSidecarElementMetadata(buf.data(), buf.size(), tmp)) {
+                !decompressIfcViewFrame(cz.data(), cz.size(), buf.data(), buf.size()) ||
+                !parseIfcViewElementMetadata(buf.data(), buf.size(), tmp)) {
                 Log::warn() << "loadElementMetadataWeb: read/decompress/parse failed";
                 if (done) done(false);
                 return;
@@ -4485,7 +4485,7 @@ namespace {
 
 // Resolve one element record against its model's string table. Offsets that run
 // past the table (or carry zero length) yield an empty string rather than a
-// fabricated one — the sidecar writes no string for an unnamed element.
+// fabricated one — the .ifcview writes no string for an unnamed element.
 ViewportCore::ElementRef makeElementRef(const ModelGpuData& m, int model_index,
                                         const ElementTableRecord& e) {
     auto str = [&m](std::uint32_t offset, std::uint32_t length) {
@@ -4597,28 +4597,28 @@ void ViewportCore::finalizeModel(std::uint32_t session_model_id) {
             << ") with no staged data; skipping";
         return;
     }
-    std::unique_ptr<SidecarData> staging_ptr = std::move(it->second);
+    std::unique_ptr<IfcViewData> staging_ptr = std::move(it->second);
     pending_direct_loads_.erase(it);
-    SidecarData& sidecar_data = *staging_ptr;
+    IfcViewData& ifcview_data = *staging_ptr;
 
     if (!device_ || !queue_) {
         Log::warn() << "[wgpu direct] finalizeModel without an initialised device";
         return;
     }
-    if (sidecar_data.meshes.empty() || sidecar_data.instances.empty()) {
+    if (ifcview_data.meshes.empty() || ifcview_data.instances.empty()) {
         Log::info() << "[wgpu direct] finalizeModel(" << session_model_id
-                    << "): empty staging (meshes=" << sidecar_data.meshes.size()
-                    << " instances=" << sidecar_data.instances.size() << ")";
+                    << "): empty staging (meshes=" << ifcview_data.meshes.size()
+                    << " instances=" << ifcview_data.instances.size() << ")";
         return;
     }
 
-    // Build a StreamingSidecar around the staging so applyCachedModel can
+    // Build a StreamingIfcView around the staging so applyCachedModel can
     // run its chunk planner over the same shape it expects from on-disk
     // metadata. file_path is left empty — the streaming worker keys off
     // that to skip these chunks (they're already resident after the
     // applyStreamedChunk loop below).
-    StreamingSidecar metadata;
-    metadata.meta = std::move(sidecar_data);
+    StreamingIfcView metadata;
+    metadata.meta = std::move(ifcview_data);
     // Direct load: geometry is already in memory (uploaded below), streamed
     // from nothing — leave file_path empty so the streaming worker skips it.
     metadata.geometry_section_offset = 0;

@@ -17,23 +17,23 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef SIDECARREADER_H
-#define SIDECARREADER_H
+#ifndef IFCVIEWREADER_H
+#define IFCVIEWREADER_H
 
-// Loading a .ifcview (format in SidecarFormat.h).  Two kinds of entry point:
+// Loading a .ifcview (format in IfcViewFormat.h).  Two kinds of entry point:
 //
-//   * File readers for the desktop (readSidecarMetadata, then
+//   * File readers for the desktop (readIfcViewMetadata, then
 //     readChunkGeometryCompressed per chunk), which open the file with stdio.
-//   * Pure, buffer-based parsers (parseSidecarHead / GeometryMetadata /
-//     ElementMetadata, planSidecarReadRanges) that both the desktop readers
+//   * Pure, buffer-based parsers (parseIfcViewHead / GeometryMetadata /
+//     ElementMetadata, planIfcViewReadRanges) that both the desktop readers
 //     and the web loader (Blob.slice / fetch Range) feed with bytes they
 //     sliced themselves, so the wire-format knowledge lives in one place and
 //     is unit-testable without touching a file.
 //
 // Compiled on every platform.  The web build links a decompress-only zstd, so
-// nothing here compresses; that is SidecarWriter's job.
+// nothing here compresses; that is IfcViewWriter's job.
 
-#include "SidecarFormat.h"
+#include "IfcViewFormat.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -45,23 +45,23 @@
 // Decompress a zstd frame in [src, src+src_size) into dst, which must have room
 // for exactly raw_size bytes. Returns false on any zstd error or if the frame
 // doesn't expand to exactly raw_size.
-bool decompressSidecarFrame(const std::uint8_t* src, std::size_t src_size,
+bool decompressIfcViewFrame(const std::uint8_t* src, std::size_t src_size,
                             std::uint8_t* dst, std::size_t raw_size);
 
-// Metadata-only sidecar load — the foundation for streaming.  Reads the header,
+// Metadata-only .ifcview load — the foundation for streaming.  Reads the header,
 // mesh dict, instance dict, georef, chunk TOC and element table but skips the
 // geometry section, leaving the locators needed for later per-chunk reads.
-// On a typical real-scene sidecar this returns in milliseconds while the
+// On a typical real-scene .ifcview this returns in milliseconds while the
 // geometry is hundreds of MB, so the renderer can set up cull / instance state
 // immediately and load chunks on demand as they become frustum-visible.
-struct StreamingSidecar {
-    // Everything except vertices + indices — same shape as SidecarData but
+struct StreamingIfcView {
+    // Everything except vertices + indices — same shape as IfcViewData but
     // with empty vertices / indices vectors. The renderer uses meshes /
     // instances / georef / chunks immediately (elements/strings are element metadata).
-    SidecarData meta;
+    IfcViewData meta;
 
     // The compressed geometry section starts here. Each chunk's two zstd
-    // blobs live at geometry_section_offset + SidecarChunk.{v_comp_off,i_comp_off};
+    // blobs live at geometry_section_offset + IfcViewChunk.{v_comp_off,i_comp_off};
     // a per-chunk load fetches [that, +*_comp_size) and decompresses to *_raw_size.
     uint64_t geometry_section_offset = 0;
 
@@ -80,7 +80,7 @@ struct StreamingSidecar {
 // Read just the metadata + section offsets. Returns nullopt on any I/O or
 // version error. The file is closed before return — callers re-open for
 // per-chunk reads.
-std::optional<StreamingSidecar> readSidecarMetadata(const std::string& ifc_path);
+std::optional<StreamingIfcView> readIfcViewMetadata(const std::string& ifc_path);
 
 // Read + decompress one chunk's geometry from disk: the vertex zstd frame at
 // [geometry_section_offset + v_comp_off, +v_comp_size) → out_vbytes (v_raw
@@ -98,26 +98,26 @@ bool readChunkGeometryCompressed(const std::string& ifc_path,
 
 // --- Pure, buffer-based building blocks ------------------------------------
 
-// Parse the SIDECAR_HEAD_BYTES-byte head. Validates magic / version / endian
+// Parse the IFCVIEW_HEAD_BYTES-byte head. Validates magic / version / endian
 // and, on success, writes the compressed-geometry-section byte length (the
-// metadata blocks follow at SIDECAR_HEAD_BYTES + out_geom_bytes). Returns false
+// metadata blocks follow at IFCVIEW_HEAD_BYTES + out_geom_bytes). Returns false
 // if `n` is short or the header is wrong. `data` must point at the start of
 // the file.
-bool parseSidecarHead(const std::uint8_t* data, std::size_t n,
+bool parseIfcViewHead(const std::uint8_t* data, std::size_t n,
                       std::uint64_t& out_geom_bytes);
 
 // Parse the decompressed geometry metadata block (mesh dict, instance dict,
 // georef, chunk TOC) — everything needed to set up + draw the scene. `data`
 // points at the first byte of the block; `n` is its raw length. Returns false
 // on any bounds overrun, leaving out_meta partially filled.
-bool parseSidecarGeometryMetadata(const std::uint8_t* data, std::size_t n,
-                                  SidecarData& out_meta);
+bool parseIfcViewGeometryMetadata(const std::uint8_t* data, std::size_t n,
+                                  IfcViewData& out_meta);
 
 // Parse the decompressed element metadata block (element table + string table
 // — used for UI/picking, never for rendering). Fetched on demand. `data`
 // points at the first byte of the block; `n` is its raw length.
-bool parseSidecarElementMetadata(const std::uint8_t* data, std::size_t n,
-                                 SidecarData& out_meta);
+bool parseIfcViewElementMetadata(const std::uint8_t* data, std::size_t n,
+                                 IfcViewData& out_meta);
 
 // Parse a count-prefixed run of instance records from
 // [cursor, cursor + remaining), advancing both, and expand them into
@@ -131,7 +131,7 @@ bool readInstanceInfos(const uint8_t*& cursor, std::size_t& remaining,
 // scattered into the destination at the recorded offsets. Merging adjacent
 // (or near-adjacent, within max_gap_bytes) ranges into one read amortises seek
 // cost on disk and request count over the network / Blob boundary.
-struct SidecarReadPlan {
+struct IfcViewReadPlan {
     std::uint64_t file_offset;   // absolute source offset of this read
     std::uint64_t read_size;     // bytes to read
     struct Slice {
@@ -145,9 +145,9 @@ struct SidecarReadPlan {
 // Build read plans for `ranges` (section-relative (offset, size) pairs) that
 // land in a destination laid out in input order. `section_offset` is added to
 // turn section-relative offsets into absolute source offsets. Pure — no I/O.
-std::vector<SidecarReadPlan> planSidecarReadRanges(
+std::vector<IfcViewReadPlan> planIfcViewReadRanges(
         std::uint64_t section_offset,
         const std::vector<std::pair<std::uint64_t, std::uint64_t>>& ranges,
         std::uint64_t max_gap_bytes);
 
-#endif // SIDECARREADER_H
+#endif // IFCVIEWREADER_H

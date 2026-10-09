@@ -19,7 +19,7 @@
 
 #include "InstancedGeometry.h"
 #include "LodBuilder.h"
-#include "SidecarFormat.h"
+#include "IfcViewFormat.h"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -68,9 +68,9 @@ void appendQuantizedVertex(std::vector<uint8_t>& bytes,
 }
 
 // Build a planar NxN grid mesh: (N-1)^2 quads = 2*(N-1)^2 triangles.  Returns
-// a single-mesh SidecarData with quantized vertex bytes and uint32 indices.
-SidecarData makeGridMesh(int N) {
-    SidecarData sd;
+// a single-mesh IfcViewData with quantized vertex bytes and uint32 indices.
+IfcViewData makeGridMesh(int N) {
+    IfcViewData sd;
     MeshInfo mesh{};
     mesh.local_aabb_min[0] = 0.0f; mesh.local_aabb_min[1] = 0.0f; mesh.local_aabb_min[2] = 0.0f;
     mesh.local_aabb_max[0] = 1.0f; mesh.local_aabb_max[1] = 1.0f; mesh.local_aabb_max[2] = 0.0f;
@@ -110,7 +110,7 @@ SidecarData makeGridMesh(int N) {
 TEST_CASE("buildLods skips meshes below min_triangles", "[lod]") {
     ScopedEnvIsolate guard;
     // 9x9 grid -> 128 triangles. Default min_triangles is 500.
-    SidecarData sd = makeGridMesh(9);
+    IfcViewData sd = makeGridMesh(9);
     REQUIRE(sd.meshes[0].index_count / 3 == 128u);
 
     size_t indices_before = sd.indices.size();
@@ -124,7 +124,7 @@ TEST_CASE("buildLods skips meshes below min_triangles", "[lod]") {
 TEST_CASE("buildLods produces a valid LOD1 slice for a high-tri mesh", "[lod]") {
     ScopedEnvIsolate guard;
     // 30x30 grid -> 1682 triangles. Comfortably above min_triangles.
-    SidecarData sd = makeGridMesh(30);
+    IfcViewData sd = makeGridMesh(30);
     const uint32_t lod0_indices = sd.meshes[0].index_count;
     const size_t indices_before = sd.indices.size();
     REQUIRE(lod0_indices / 3 >= 500u);
@@ -148,8 +148,8 @@ TEST_CASE("buildLods produces a valid LOD1 slice for a high-tri mesh", "[lod]") 
 
 TEST_CASE("buildLods is deterministic for the same input", "[lod]") {
     ScopedEnvIsolate guard;
-    SidecarData a = makeGridMesh(30);
-    SidecarData b = makeGridMesh(30);
+    IfcViewData a = makeGridMesh(30);
+    IfcViewData b = makeGridMesh(30);
 
     buildLods(a);
     buildLods(b);
@@ -161,7 +161,7 @@ TEST_CASE("buildLods is deterministic for the same input", "[lod]") {
 
 TEST_CASE("buildLods is a no-op when sd is empty", "[lod]") {
     ScopedEnvIsolate guard;
-    SidecarData sd;
+    IfcViewData sd;
     buildLods(sd);
     REQUIRE(sd.meshes.empty());
     REQUIRE(sd.vertices.empty());
@@ -170,7 +170,7 @@ TEST_CASE("buildLods is a no-op when sd is empty", "[lod]") {
 
 TEST_CASE("summariseLods is consistent before and after buildLods", "[lod]") {
     ScopedEnvIsolate guard;
-    SidecarData sd = makeGridMesh(30);
+    IfcViewData sd = makeGridMesh(30);
 
     LodStats before = summariseLods(sd);
     REQUIRE(before.meshes_total == 1);

@@ -39,9 +39,9 @@ They have no effect on geometric correctness and ship disabled.
 LOD build tuning
 ----------------
 
-These affect how the LOD1 representation is generated when a sidecar
+These affect how the LOD1 representation is generated when a .ifcview
 is *baked*; loading an existing ``.ifcfed`` does not re-read them.
-Override only when you're regenerating sidecars and want to inspect or
+Override only when you're regenerating .ifcview files and want to inspect or
 adjust the trade-off between LOD0 fidelity and LOD1 triangle savings.
 
 .. csv-table::
@@ -51,4 +51,4 @@ adjust the trade-off between LOD0 fidelity and LOD1 triangle savings.
    "``IFC_LOD_ERROR``", "0.05 (clamped to ≥ 0.2)", "``meshopt_simplify`` ``target_error`` parameter — maximum positional error allowed when collapsing edges, normalised to the mesh AABB diagonal. BIM meshes are typically non-manifold and a 0.2 floor still looks fine at sub-4 pixel sizes; smaller values often produce zero collapses on these inputs."
    "``IFC_LOD_RATIO``", "meshopt default", "``meshopt_simplify`` ``target_ratio`` parameter — desired fraction of the original index count to retain. Combined with ``target_error`` it forms the simplification budget."
    "``IFC_LOD_MIN_SAVINGS``", "0.25", "Minimum fraction of triangles that must be eliminated for the LOD1 result to be accepted. Below this, the LOD1 slot is left empty and LOD0 is always drawn for that mesh — avoids paying upload cost for trivial reductions."
-   "``IFC_LOD_DEBUG``", "off", "Set to ``1`` to print per-mesh LOD build diagnostics for the first few meshes of each ``buildLodsForSidecar`` call: input/output triangle counts, target error, and the accept/reject decision. Caps printing automatically so it can be left on for full builds without flooding the log."
+   "``IFC_LOD_DEBUG``", "off", "Set to ``1`` to print per-mesh LOD build diagnostics for the first few meshes of each ``buildLodsForIfcView`` call: input/output triangle counts, target error, and the accept/reject decision. Caps printing automatically so it can be left on for full builds without flooding the log."

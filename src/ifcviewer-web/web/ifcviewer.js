@@ -40,7 +40,7 @@
 (function (global) {
   'use strict';
 
-  // Resolve a remote sidecar's total size so the loader can bound its ranged
+  // Resolve a remote .ifcview's total size so the loader can bound its ranged
   // reads: HEAD Content-Length, falling back to a 0-0 Range's Content-Range.
   async function sizeUrl(url) {
     const head = await fetch(url, { method: 'HEAD' });
@@ -53,7 +53,7 @@
 
   // ---- OPFS model cache ------------------------------------------------------
   //
-  // addUrl(url, {cache: true}) keeps a local copy of the sidecar in the
+  // addUrl(url, {cache: true}) keeps a local copy of the .ifcview in the
   // Origin Private File System, filled FROM THE VIEWER'S OWN RANGED READS —
   // no second download, and only the bytes the camera actually needed.
   // (Browsers do not populate their HTTP cache from ranged fetches: measured
@@ -545,7 +545,7 @@
     }
 
     // Byte-source registry the wasm reads lazily: a picked File (Blob.slice) or
-    // a remote URL (HTTP Range). load_sidecar_from_source_c(sid) streams one.
+    // a remote URL (HTTP Range). load_ifcview_from_source_c(sid) streams one.
     Module.__ifcvSources = Module.__ifcvSources || [];
 
     // The wasm calls this on every single-object pick; (0, '', -1, -1) means the
@@ -933,7 +933,7 @@
         if (o && o.replace) this.clearScene();
         const sid = registerFile(file);
         if (o && o.name) this.setModelName(sid, o.name);
-        Module._load_sidecar_from_source_c(sid);
+        Module._load_ifcview_from_source_c(sid);
         return sid;
       },
       // `cache: true` keeps a local OPFS copy filled from the viewer's own
@@ -955,7 +955,7 @@
         }
         if (sid === null) sid = await registerUrl(url);
         if (o && o.name) this.setModelName(sid, o.name);
-        Module._load_sidecar_from_source_c(sid);
+        Module._load_ifcview_from_source_c(sid);
         return sid;
       },
 
@@ -1016,7 +1016,7 @@
       // .ifcfed (or any manifest) in your own code and drive these.
       //
       // Models resolve to global coordinates by default: each one's
-      // IfcCoordinateOperation is baked into its sidecar and applied on load,
+      // IfcCoordinateOperation is baked into its .ifcview and applied on load,
       // so models with different map conversions line up. The first model also
       // sets a false origin automatically, which keeps the scene near the
       // origin — necessary because per-instance transforms are float32 and
@@ -1093,7 +1093,7 @@
       },
 
       // The georeferencing a model actually carries, read back from its
-      // sidecar: {hasCoordinateOperation, matrix (16, column-major, metres),
+      // .ifcview: {hasCoordinateOperation, matrix (16, column-major, metres),
       // projectLengthToMeters, mapUnitToMeters}. Null until the model has
       // finished loading.
       getModelGeoref: function (sourceId) {

@@ -17,9 +17,9 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "SidecarFormat.h"
-#include "SidecarReader.h"
-#include "SidecarWriter.h"
+#include "IfcViewFormat.h"
+#include "IfcViewReader.h"
+#include "IfcViewWriter.h"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -46,8 +46,8 @@ fs::path makeScratchDir(const char* tag) {
 // Minimal but representative fixture: two meshes sharing one VBO, a non-default
 // georef block, and a string table with embedded NULs (so the byte-exact tail
 // parse is actually exercised).
-SidecarData buildFixture() {
-    SidecarData sd;
+IfcViewData buildFixture() {
+    IfcViewData sd;
 
     sd.vertices.resize(4 * INSTANCED_VERTEX_STRIDE_BYTES);
     for (size_t i = 0; i < sd.vertices.size(); ++i) sd.vertices[i] = uint8_t(i * 7 + 1);
@@ -93,14 +93,14 @@ SidecarData buildFixture() {
 
 }  // namespace
 
-TEST_CASE("readSidecarMetadata returns metadata, skips bulk geometry",
+TEST_CASE("readIfcViewMetadata returns metadata, skips bulk geometry",
           "[streaming]") {
     fs::path dir = makeScratchDir("metaonly");
     fs::path ifc = dir / "model.ifc";
-    SidecarData sd = buildFixture();
-    REQUIRE(writeSidecar(ifc.string(), sd));
+    IfcViewData sd = buildFixture();
+    REQUIRE(writeIfcView(ifc.string(), sd));
 
-    auto meta = readSidecarMetadata(ifc.string());
+    auto meta = readIfcViewMetadata(ifc.string());
     REQUIRE(meta.has_value());
 
     // Bulk geometry is skipped, not loaded.
@@ -108,7 +108,7 @@ TEST_CASE("readSidecarMetadata returns metadata, skips bulk geometry",
     REQUIRE(meta->meta.indices.empty());
 
     // v16: the compressed geometry section starts right after the 20-byte head.
-    REQUIRE(meta->geometry_section_offset == SIDECAR_HEAD_BYTES);
+    REQUIRE(meta->geometry_section_offset == IFCVIEW_HEAD_BYTES);
     // Chunk TOC carries compressed blob locators for each chunk.
     REQUIRE(meta->meta.chunks.size() == sd.chunks.size());
     REQUIRE(meta->meta.chunks[0].v_comp_size > 0);
@@ -127,9 +127,9 @@ TEST_CASE("readSidecarMetadata returns metadata, skips bulk geometry",
     REQUIRE(std::memcmp(&meta->meta.meshes[1], &sd.meshes[1], sizeof(MeshInfo)) == 0);
 }
 
-TEST_CASE("readSidecarMetadata rejects missing / corrupt files", "[streaming]") {
+TEST_CASE("readIfcViewMetadata rejects missing / corrupt files", "[streaming]") {
     fs::path dir = makeScratchDir("reject");
-    REQUIRE_FALSE(readSidecarMetadata((dir / "absent.ifc").string()).has_value());
+    REQUIRE_FALSE(readIfcViewMetadata((dir / "absent.ifc").string()).has_value());
 
     // Truncated head (under 16 bytes).
     fs::path bad = dir / "bad.ifc";
@@ -140,13 +140,13 @@ TEST_CASE("readSidecarMetadata rejects missing / corrupt files", "[streaming]") 
         std::fwrite(junk, 1, sizeof(junk), f);
         std::fclose(f);
     }
-    REQUIRE_FALSE(readSidecarMetadata(bad.string()).has_value());
+    REQUIRE_FALSE(readIfcViewMetadata(bad.string()).has_value());
 }
 
-TEST_CASE("readSidecarMetadata rejects a wrong version", "[streaming]") {
+TEST_CASE("readIfcViewMetadata rejects a wrong version", "[streaming]") {
     fs::path dir = makeScratchDir("wrongver");
     fs::path ifc = dir / "old.ifc";
-    SidecarHeader h{ SIDECAR_MAGIC, SIDECAR_VERSION - 1, SIDECAR_ENDIAN };
+    IfcViewHeader h{ IFCVIEW_MAGIC, IFCVIEW_VERSION - 1, IFCVIEW_ENDIAN };
     {
         FILE* f = std::fopen((dir / "old.ifcview").string().c_str(), "wb");
         REQUIRE(f);
@@ -156,15 +156,15 @@ TEST_CASE("readSidecarMetadata rejects a wrong version", "[streaming]") {
         for (int i = 0; i < 4; ++i) std::fwrite(&zero, 8, 1, f);
         std::fclose(f);
     }
-    REQUIRE_FALSE(readSidecarMetadata(ifc.string()).has_value());
+    REQUIRE_FALSE(readIfcViewMetadata(ifc.string()).has_value());
 }
 
 TEST_CASE("readChunkGeometryCompressed decompresses a chunk's blobs", "[streaming]") {
     fs::path dir = makeScratchDir("chunkgeom");
     fs::path ifc = dir / "model.ifc";
-    SidecarData sd = buildFixture();
-    REQUIRE(writeSidecar(ifc.string(), sd));
-    auto meta = readSidecarMetadata(ifc.string());
+    IfcViewData sd = buildFixture();
+    REQUIRE(writeIfcView(ifc.string(), sd));
+    auto meta = readIfcViewMetadata(ifc.string());
     REQUIRE(meta.has_value());
     REQUIRE(meta->meta.chunks.size() == 2);
 
@@ -191,9 +191,9 @@ TEST_CASE("readChunkGeometryCompressed decompresses a chunk's blobs", "[streamin
     REQUIRE(std::memcmp(vbytes.data(), sd.vertices.data() + 2 * stride, 2 * stride) == 0);
 }
 
-TEST_CASE("parseSidecarHead validates magic / version, reads geom length", "[streaming]") {
-    uint8_t head[SIDECAR_HEAD_BYTES] = {};
-    uint32_t magic = SIDECAR_MAGIC, version = SIDECAR_VERSION, endian = SIDECAR_ENDIAN;
+TEST_CASE("parseIfcViewHead validates magic / version, reads geom length", "[streaming]") {
+    uint8_t head[IFCVIEW_HEAD_BYTES] = {};
+    uint32_t magic = IFCVIEW_MAGIC, version = IFCVIEW_VERSION, endian = IFCVIEW_ENDIAN;
     uint64_t geom = 123456;
     std::memcpy(head + 0, &magic, 4);
     std::memcpy(head + 4, &version, 4);
@@ -201,24 +201,24 @@ TEST_CASE("parseSidecarHead validates magic / version, reads geom length", "[str
     std::memcpy(head + 12, &geom, 8);
 
     uint64_t got = 0;
-    REQUIRE(parseSidecarHead(head, sizeof(head), got));
+    REQUIRE(parseIfcViewHead(head, sizeof(head), got));
     REQUIRE(got == 123456);
 
-    REQUIRE_FALSE(parseSidecarHead(head, SIDECAR_HEAD_BYTES - 1, got));
+    REQUIRE_FALSE(parseIfcViewHead(head, IFCVIEW_HEAD_BYTES - 1, got));
 
-    uint8_t bad[SIDECAR_HEAD_BYTES];
+    uint8_t bad[IFCVIEW_HEAD_BYTES];
     std::memcpy(bad, head, sizeof(bad));
     bad[0] ^= 0xFF;
-    REQUIRE_FALSE(parseSidecarHead(bad, sizeof(bad), got));
+    REQUIRE_FALSE(parseIfcViewHead(bad, sizeof(bad), got));
 }
 
 TEST_CASE("v16 element metadata block: fetch via locator, decompress, parse", "[streaming]") {
     fs::path dir = makeScratchDir("v16element");
     fs::path ifc = dir / "model.ifc";
-    SidecarData sd = buildFixture();
-    REQUIRE(writeSidecar(ifc.string(), sd));
+    IfcViewData sd = buildFixture();
+    REQUIRE(writeIfcView(ifc.string(), sd));
 
-    auto meta = readSidecarMetadata(ifc.string());
+    auto meta = readIfcViewMetadata(ifc.string());
     REQUIRE(meta.has_value());
     REQUIRE(meta->meta.meshes.size()   == sd.meshes.size());   // geometry metadata
     REQUIRE(meta->meta.chunks.size()   == sd.chunks.size());
@@ -235,17 +235,17 @@ TEST_CASE("v16 element metadata block: fetch via locator, decompress, parse", "[
     std::fclose(f);
 
     std::vector<uint8_t> raw(size_t(meta->element_metadata_raw_size));
-    REQUIRE(decompressSidecarFrame(cz.data(), cz.size(), raw.data(), raw.size()));
-    SidecarData d;
-    REQUIRE(parseSidecarElementMetadata(raw.data(), raw.size(), d));
+    REQUIRE(decompressIfcViewFrame(cz.data(), cz.size(), raw.data(), raw.size()));
+    IfcViewData d;
+    REQUIRE(parseIfcViewElementMetadata(raw.data(), raw.size(), d));
     REQUIRE(d.elements.size()  == sd.elements.size());
     REQUIRE(d.string_table     == sd.string_table);
 
-    SidecarData chopped;
-    REQUIRE_FALSE(parseSidecarElementMetadata(raw.data(), raw.size() - 1, chopped));
+    IfcViewData chopped;
+    REQUIRE_FALSE(parseIfcViewElementMetadata(raw.data(), raw.size() - 1, chopped));
 }
 
-TEST_CASE("planSidecarReadRanges coalesces adjacent ranges, keeps far ones split",
+TEST_CASE("planIfcViewReadRanges coalesces adjacent ranges, keeps far ones split",
           "[streaming]") {
     const uint64_t base = 1000;
 
@@ -253,7 +253,7 @@ TEST_CASE("planSidecarReadRanges coalesces adjacent ranges, keeps far ones split
         // Two ranges that touch (0..16, 16..48) plus a gap small enough to
         // bridge (gap of 8 within a 64-byte tolerance).
         std::vector<std::pair<uint64_t, uint64_t>> ranges = {{0, 16}, {24, 24}};
-        auto plans = planSidecarReadRanges(base, ranges, 64);
+        auto plans = planIfcViewReadRanges(base, ranges, 64);
         REQUIRE(plans.size() == 1);
         REQUIRE(plans[0].file_offset == base + 0);
         REQUIRE(plans[0].read_size == 48);  // 0 .. 24+24
@@ -262,7 +262,7 @@ TEST_CASE("planSidecarReadRanges coalesces adjacent ranges, keeps far ones split
 
     SECTION("far-apart ranges stay separate") {
         std::vector<std::pair<uint64_t, uint64_t>> ranges = {{0, 16}, {1024, 16}};
-        auto plans = planSidecarReadRanges(base, ranges, 64);
+        auto plans = planIfcViewReadRanges(base, ranges, 64);
         REQUIRE(plans.size() == 2);
     }
 
@@ -270,7 +270,7 @@ TEST_CASE("planSidecarReadRanges coalesces adjacent ranges, keeps far ones split
         // Ranges given high-offset-first; dst offsets must follow input order
         // (range 0 -> dst 0, range 1 -> dst 16) regardless of file order.
         std::vector<std::pair<uint64_t, uint64_t>> ranges = {{2048, 16}, {0, 16}};
-        auto plans = planSidecarReadRanges(base, ranges, 64);
+        auto plans = planIfcViewReadRanges(base, ranges, 64);
         REQUIRE(plans.size() == 2);
         uint64_t total_bytes = 0;
         for (const auto& p : plans)

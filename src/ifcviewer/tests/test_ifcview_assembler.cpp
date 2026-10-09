@@ -18,9 +18,9 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "SidecarSerializer.h"
-#include "SidecarReader.h"
-#include "SidecarWriter.h"
+#include "IfcViewAssembler.h"
+#include "IfcViewReader.h"
+#include "IfcViewWriter.h"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -85,14 +85,14 @@ ElementInfo makeElement(uint32_t object_id, std::string guid, std::string name, 
     return info;
 }
 
-std::string stringSlice(const SidecarData& data, uint32_t offset, uint32_t length) {
+std::string stringSlice(const IfcViewData& data, uint32_t offset, uint32_t length) {
     return data.string_table.substr(offset, length);
 }
 
 // Each test creates its own scratch directory under the OS tmp root so they
 // can run in parallel without colliding on file paths.
 fs::path makeScratchDir(const char* tag) {
-    fs::path base = fs::temp_directory_path() / "ifcviewer_test_sidecar";
+    fs::path base = fs::temp_directory_path() / "ifcviewer_test_ifcview";
     fs::create_directories(base);
     static std::atomic<uint64_t> counter{0};
     auto unique = std::to_string(counter.fetch_add(1)) + "_" + tag;
@@ -103,8 +103,8 @@ fs::path makeScratchDir(const char* tag) {
 
 }  // namespace
 
-TEST_CASE("SidecarSerializer accumulates meshes, instances and elements", "[sidecar]") {
-    SidecarSerializer serializer;
+TEST_CASE("IfcViewAssembler accumulates meshes, instances and elements", "[ifcview]") {
+    IfcViewAssembler serializer;
     serializer.onMeshReady(makeQuadMesh(0, 0.0f));
     serializer.onMeshReady(makeQuadMesh(1, 5.0f));
     serializer.onInstanceReady(makeInstance(0, 1, 0.0f));
@@ -115,7 +115,7 @@ TEST_CASE("SidecarSerializer accumulates meshes, instances and elements", "[side
     elements.push_back(makeElement(1, "guid-1", "Wall A", "IfcWall"));
     elements.push_back(makeElement(2, "guid-2", "Slab B", "IfcSlab"));
 
-    SidecarData data = serializer.finalize(ModelGeoref{}, elements);
+    IfcViewData data = serializer.finalize(ModelGeoref{}, elements);
 
     REQUIRE(data.meshes.size() == 2);
     REQUIRE(data.instances.size() == 3);
@@ -146,27 +146,27 @@ TEST_CASE("SidecarSerializer accumulates meshes, instances and elements", "[side
     REQUIRE(stringSlice(data, data.elements[1].type_offset, data.elements[1].type_length) == "IfcSlab");
 }
 
-TEST_CASE("SidecarSerializer output round-trips through the on-disk cache", "[sidecar]") {
-    SidecarSerializer serializer;
+TEST_CASE("IfcViewAssembler output round-trips through the on-disk cache", "[ifcview]") {
+    IfcViewAssembler serializer;
     serializer.onMeshReady(makeQuadMesh(0, 0.0f));
     serializer.onMeshReady(makeQuadMesh(1, 5.0f));
     serializer.onInstanceReady(makeInstance(0, 1, 0.0f));
     serializer.onInstanceReady(makeInstance(1, 2, 9.0f));
 
-    SidecarData data = serializer.finalize(ModelGeoref{}, {});
+    IfcViewData data = serializer.finalize(ModelGeoref{}, {});
 
     const fs::path dir = makeScratchDir("roundtrip");
     const fs::path ifc_path = dir / "model.ifc";
-    REQUIRE(writeSidecar(ifc_path.string(), data));
+    REQUIRE(writeIfcView(ifc_path.string(), data));
 
     // Read back the way the viewer does: metadata first, then every chunk.
-    auto loaded = readSidecarMetadata(ifc_path.string());
+    auto loaded = readIfcViewMetadata(ifc_path.string());
     REQUIRE(loaded.has_value());
     REQUIRE(loaded->meta.meshes.size() == data.meshes.size());
     REQUIRE(loaded->meta.instances.size() == data.instances.size());
     REQUIRE(loaded->meta.chunks.size() == data.chunks.size());
     size_t vertex_bytes = 0, index_count = 0;
-    for (const SidecarChunk& c : loaded->meta.chunks) {
+    for (const IfcViewChunk& c : loaded->meta.chunks) {
         std::vector<uint8_t>  vbytes;
         std::vector<uint32_t> idx;
         REQUIRE(readChunkGeometryCompressed(ifc_path.string(), loaded->geometry_section_offset,
@@ -181,14 +181,14 @@ TEST_CASE("SidecarSerializer output round-trips through the on-disk cache", "[si
     fs::remove_all(dir);
 }
 
-TEST_CASE("SidecarSerializer can be reused after finalize", "[sidecar]") {
-    SidecarSerializer serializer;
+TEST_CASE("IfcViewAssembler can be reused after finalize", "[ifcview]") {
+    IfcViewAssembler serializer;
     serializer.onMeshReady(makeQuadMesh(0, 0.0f));
     serializer.onInstanceReady(makeInstance(0, 1, 0.0f));
     (void)serializer.finalize(ModelGeoref{}, {});
 
     serializer.onMeshReady(makeQuadMesh(0, 1.0f));
-    SidecarData data = serializer.finalize(ModelGeoref{}, {});
+    IfcViewData data = serializer.finalize(ModelGeoref{}, {});
 
     REQUIRE(data.meshes.size() == 1);
     REQUIRE(data.instances.empty());

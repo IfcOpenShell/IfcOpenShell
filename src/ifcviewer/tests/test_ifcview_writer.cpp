@@ -19,9 +19,9 @@
 
 #include "InstanceCompose.h"
 #include "InstancedGeometry.h"
-#include "SidecarFormat.h"
-#include "SidecarReader.h"
-#include "SidecarWriter.h"
+#include "IfcViewFormat.h"
+#include "IfcViewReader.h"
+#include "IfcViewWriter.h"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -41,7 +41,7 @@ namespace {
 // Each test creates its own scratch directory under the OS tmp root so they
 // can run in parallel without colliding on file paths.
 fs::path makeScratchDir(const char* tag) {
-    fs::path base = fs::temp_directory_path() / "ifcviewer_test_sidecar";
+    fs::path base = fs::temp_directory_path() / "ifcviewer_test_ifcview";
     fs::create_directories(base);
     static std::atomic<uint64_t> counter{0};
     auto unique = std::to_string(counter.fetch_add(1)) + "_" + tag;
@@ -50,8 +50,8 @@ fs::path makeScratchDir(const char* tag) {
     return dir;
 }
 
-SidecarData buildFixture() {
-    SidecarData sd;
+IfcViewData buildFixture() {
+    IfcViewData sd;
 
     // 4 vertices worth of arbitrary bytes (12 B/vertex).
     sd.vertices.resize(4 * INSTANCED_VERTEX_STRIDE_BYTES);
@@ -132,7 +132,7 @@ SidecarData buildFixture() {
     return sd;
 }
 
-bool sidecarDataEqual(const SidecarData& a, const SidecarData& b) {
+bool ifcViewDataEqual(const IfcViewData& a, const IfcViewData& b) {
     if (a.vertices != b.vertices) return false;
     if (a.indices  != b.indices)  return false;
     if (a.meshes.size()    != b.meshes.size())    return false;
@@ -161,14 +161,14 @@ bool sidecarDataEqual(const SidecarData& a, const SidecarData& b) {
     return true;
 }
 
-// The viewer never loads a sidecar whole: it reads the metadata, then fetches
+// The viewer never loads a .ifcview whole: it reads the metadata, then fetches
 // and decompresses chunks on demand.  Do the same here and scatter each
 // chunk's geometry back by the mesh offsets, so a round trip is checked
 // through the production reader.
-std::optional<SidecarData> readWholeSidecar(const std::string& ifc_path) {
-    auto meta = readSidecarMetadata(ifc_path);
+std::optional<IfcViewData> readWholeIfcView(const std::string& ifc_path) {
+    auto meta = readIfcViewMetadata(ifc_path);
     if (!meta) return std::nullopt;
-    SidecarData data = meta->meta;
+    IfcViewData data = meta->meta;
 
     size_t vertex_bytes = 0, index_count = 0;
     for (const MeshInfo& m : data.meshes) {
@@ -182,7 +182,7 @@ std::optional<SidecarData> readWholeSidecar(const std::string& ifc_path) {
 
     std::vector<uint8_t>  vbytes;
     std::vector<uint32_t> idx;
-    for (const SidecarChunk& c : data.chunks) {
+    for (const IfcViewChunk& c : data.chunks) {
         if (!readChunkGeometryCompressed(ifc_path, meta->geometry_section_offset,
                                          c.v_comp_off, c.v_comp_size, c.v_raw_size,
                                          c.i_comp_off, c.i_comp_size, c.i_raw_size, vbytes, idx)) {
@@ -215,23 +215,23 @@ std::optional<SidecarData> readWholeSidecar(const std::string& ifc_path) {
 
 } // namespace
 
-TEST_CASE("MeshInfo and the instance record have stable layouts (sidecar wire format)", "[sidecar]") {
+TEST_CASE("MeshInfo and the instance record have stable layouts (.ifcview wire format)", "[ifcview]") {
     REQUIRE(sizeof(MeshInfo) == 56);
-    REQUIRE(SIDECAR_INSTANCE_RECORD_BYTES == 68);
+    REQUIRE(IFCVIEW_INSTANCE_RECORD_BYTES == 68);
     REQUIRE(sizeof(InstanceGpu) == 80);
     REQUIRE(sizeof(ElementTableRecord) == 36);
-    REQUIRE(SIDECAR_VERSION == 19);
-    REQUIRE(sizeof(SidecarChunk) == 56);
-    REQUIRE(SIDECAR_MAGIC == 0x49465657u);
+    REQUIRE(IFCVIEW_VERSION == 19);
+    REQUIRE(sizeof(IfcViewChunk) == 56);
+    REQUIRE(IFCVIEW_MAGIC == 0x49465657u);
 }
 
-TEST_CASE("writeSidecar round-trips the v14 chunk TOC", "[sidecar]") {
+TEST_CASE("writeIfcView round-trips the v14 chunk TOC", "[ifcview]") {
     fs::path dir = makeScratchDir("chunks");
     fs::path ifc = dir / "model.ifc";
-    SidecarData sd = buildFixture();
+    IfcViewData sd = buildFixture();
     sd.chunks = { {0, 1}, {1, 1} };  // two chunks over the two meshes
-    REQUIRE(writeSidecar(ifc.string(), sd));
-    auto loaded = readWholeSidecar(ifc.string());
+    REQUIRE(writeIfcView(ifc.string(), sd));
+    auto loaded = readWholeIfcView(ifc.string());
     REQUIRE(loaded.has_value());
     REQUIRE(loaded->chunks.size() == 2);
     REQUIRE(loaded->chunks[0].first_mesh == 0);
@@ -240,26 +240,26 @@ TEST_CASE("writeSidecar round-trips the v14 chunk TOC", "[sidecar]") {
     REQUIRE(loaded->chunks[1].mesh_count == 1);
 }
 
-TEST_CASE("writeSidecar round-trips the full fixture through the reader", "[sidecar]") {
+TEST_CASE("writeIfcView round-trips the full fixture through the reader", "[ifcview]") {
     fs::path dir = makeScratchDir("roundtrip");
     fs::path ifc = dir / "model.ifc";
     fs::path expected = dir / "model.ifcview";
 
-    SidecarData original = buildFixture();
-    REQUIRE(writeSidecar(ifc.string(), original));
+    IfcViewData original = buildFixture();
+    REQUIRE(writeIfcView(ifc.string(), original));
     REQUIRE(fs::exists(expected));
 
-    auto loaded = readWholeSidecar(ifc.string());
+    auto loaded = readWholeIfcView(ifc.string());
     REQUIRE(loaded.has_value());
-    REQUIRE(sidecarDataEqual(original, *loaded));
+    REQUIRE(ifcViewDataEqual(original, *loaded));
 }
 
-TEST_CASE("Empty SidecarData round-trips cleanly", "[sidecar]") {
+TEST_CASE("Empty IfcViewData round-trips cleanly", "[ifcview]") {
     fs::path dir = makeScratchDir("empty");
     fs::path ifc = dir / "empty.ifc";
-    SidecarData empty;
-    REQUIRE(writeSidecar(ifc.string(), empty));
-    auto loaded = readWholeSidecar(ifc.string());
+    IfcViewData empty;
+    REQUIRE(writeIfcView(ifc.string(), empty));
+    auto loaded = readWholeIfcView(ifc.string());
     REQUIRE(loaded.has_value());
     REQUIRE(loaded->vertices.empty());
     REQUIRE(loaded->indices.empty());
@@ -275,11 +275,11 @@ TEST_CASE("Empty SidecarData round-trips cleanly", "[sidecar]") {
 // if the matrix survives the write/read round-trip in the same storage order it
 // went in — a silent transpose would misplace every georeferenced model rather
 // than fail loudly.
-TEST_CASE("CoordinateOperation + unit scales round-trip through the sidecar", "[sidecar]") {
+TEST_CASE("CoordinateOperation + unit scales round-trip through the .ifcview", "[ifcview]") {
     fs::path dir = makeScratchDir("georef");
     fs::path ifc = dir / "georef.ifc";
 
-    SidecarData sd = buildFixture();
+    IfcViewData sd = buildFixture();
     sd.has_coordinate_operation = 1;
     sd.project_length_to_meters = 0.001;   // model authored in millimetres
     sd.map_unit_to_meters       = 1.0;
@@ -296,8 +296,8 @@ TEST_CASE("CoordinateOperation + unit scales round-trip through the sidecar", "[
     sd.coordinate_operation_meters[14] =  1580.0;            // orthogonal height
     sd.coordinate_operation_meters[15] =  1.0;
 
-    REQUIRE(writeSidecar(ifc.string(), sd));
-    auto loaded = readWholeSidecar(ifc.string());
+    REQUIRE(writeIfcView(ifc.string(), sd));
+    auto loaded = readWholeIfcView(ifc.string());
     REQUIRE(loaded.has_value());
 
     REQUIRE(loaded->has_coordinate_operation == 1);
@@ -312,17 +312,17 @@ TEST_CASE("CoordinateOperation + unit scales round-trip through the sidecar", "[
 // A model with no IfcMapConversion must come back with the flag clear, so the
 // seeding leaves the identity placeholder alone rather than baking in a
 // half-populated matrix.
-TEST_CASE("Sidecar without a CoordinateOperation reports none", "[sidecar]") {
+TEST_CASE(".ifcview without a CoordinateOperation reports none", "[ifcview]") {
     fs::path dir = makeScratchDir("nogeoref");
     fs::path ifc = dir / "nogeoref.ifc";
     // buildFixture() populates the georef block, so clear it back to what a
     // model with no IfcMapConversion bakes: flag down, identity placeholder.
-    SidecarData sd = buildFixture();
+    IfcViewData sd = buildFixture();
     sd.has_coordinate_operation = 0;
     for (int i = 0; i < 16; ++i) sd.coordinate_operation_meters[i] = (i % 5 == 0) ? 1.0 : 0.0;
 
-    REQUIRE(writeSidecar(ifc.string(), sd));
-    auto loaded = readWholeSidecar(ifc.string());
+    REQUIRE(writeIfcView(ifc.string(), sd));
+    auto loaded = readWholeIfcView(ifc.string());
     REQUIRE(loaded.has_value());
     REQUIRE(loaded->has_coordinate_operation == 0);
     for (int i = 0; i < 16; ++i) {
@@ -330,35 +330,35 @@ TEST_CASE("Sidecar without a CoordinateOperation reports none", "[sidecar]") {
     }
 }
 
-TEST_CASE("Sidecar path stem maps .ifc / .ifcdb / extensionless to .ifcview", "[sidecar]") {
+TEST_CASE(".ifcview path stem maps .ifc / .ifcdb / extensionless to .ifcview", "[ifcview]") {
     // The mapping is internal but observable: writing under one source name
     // must be readable under any other name that maps to the same stem.
     fs::path dir = makeScratchDir("stems");
-    SidecarData sd = buildFixture();
+    IfcViewData sd = buildFixture();
 
     fs::path ifc_path    = dir / "shared.ifc";
     fs::path ifcdb_path  = dir / "shared.ifcdb";
     fs::path ifcdb_slash = dir / "shared.ifcdb/";
     fs::path noext_path  = dir / "shared";
 
-    REQUIRE(writeSidecar(ifc_path.string(), sd));
+    REQUIRE(writeIfcView(ifc_path.string(), sd));
     REQUIRE(fs::exists(dir / "shared.ifcview"));
 
-    auto a = readWholeSidecar(ifcdb_path.string());
-    auto b = readWholeSidecar(ifcdb_slash.string());
-    auto c = readWholeSidecar(noext_path.string());
+    auto a = readWholeIfcView(ifcdb_path.string());
+    auto b = readWholeIfcView(ifcdb_slash.string());
+    auto c = readWholeIfcView(noext_path.string());
     REQUIRE(a.has_value());
     REQUIRE(b.has_value());
     REQUIRE(c.has_value());
-    REQUIRE(sidecarDataEqual(sd, *a));
-    REQUIRE(sidecarDataEqual(sd, *b));
-    REQUIRE(sidecarDataEqual(sd, *c));
+    REQUIRE(ifcViewDataEqual(sd, *a));
+    REQUIRE(ifcViewDataEqual(sd, *b));
+    REQUIRE(ifcViewDataEqual(sd, *c));
 }
 
 // --- zstd frames -------------------------------------------------------------
 
-TEST_CASE("a zstd frame round-trips and shrinks structured bytes", "[sidecar]") {
-    // Structured data like the sidecar carries (repeated matrices, patterned
+TEST_CASE("a zstd frame round-trips and shrinks structured bytes", "[ifcview]") {
+    // Structured data like the .ifcview carries (repeated matrices, patterned
     // indices) — should both round-trip AND actually shrink.
     std::vector<uint8_t> raw;
     for (int i = 0; i < 20000; ++i) {
@@ -368,32 +368,32 @@ TEST_CASE("a zstd frame round-trips and shrinks structured bytes", "[sidecar]") 
         raw.push_back(0xAA);
     }
 
-    auto packed = compressSidecarFrame(raw.data(), raw.size(), 19);
+    auto packed = compressIfcViewFrame(raw.data(), raw.size(), 19);
     REQUIRE_FALSE(packed.empty());
     REQUIRE(packed.size() < raw.size());  // it compressed
 
     std::vector<uint8_t> out(raw.size());
-    REQUIRE(decompressSidecarFrame(packed.data(), packed.size(), out.data(), out.size()));
+    REQUIRE(decompressIfcViewFrame(packed.data(), packed.size(), out.data(), out.size()));
     REQUIRE(out == raw);
 }
 
-TEST_CASE("decompressSidecarFrame rejects a wrong raw size and garbage", "[sidecar]") {
+TEST_CASE("decompressIfcViewFrame rejects a wrong raw size and garbage", "[ifcview]") {
     std::vector<uint8_t> raw(1024, 0x42);
-    auto packed = compressSidecarFrame(raw.data(), raw.size(), 3);
+    auto packed = compressIfcViewFrame(raw.data(), raw.size(), 3);
     REQUIRE_FALSE(packed.empty());
 
     // Wrong declared raw size must fail, not silently truncate.
     std::vector<uint8_t> too_small(512);
-    REQUIRE_FALSE(decompressSidecarFrame(packed.data(), packed.size(),
+    REQUIRE_FALSE(decompressIfcViewFrame(packed.data(), packed.size(),
                                          too_small.data(), too_small.size()));
 
     // Garbage input fails cleanly.
     std::vector<uint8_t> junk = { 1, 2, 3, 4, 5, 6, 7, 8 };
     std::vector<uint8_t> dst(1024);
-    REQUIRE_FALSE(decompressSidecarFrame(junk.data(), junk.size(), dst.data(), dst.size()));
+    REQUIRE_FALSE(decompressIfcViewFrame(junk.data(), junk.size(), dst.data(), dst.size()));
 }
 
-TEST_CASE("an empty zstd frame round-trips to empty", "[sidecar]") {
+TEST_CASE("an empty zstd frame round-trips to empty", "[ifcview]") {
     std::vector<uint8_t> dst;
-    REQUIRE(decompressSidecarFrame(nullptr, 0, dst.data(), 0));
+    REQUIRE(decompressIfcViewFrame(nullptr, 0, dst.data(), 0));
 }

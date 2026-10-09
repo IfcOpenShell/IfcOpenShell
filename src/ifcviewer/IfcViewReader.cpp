@@ -17,7 +17,7 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "SidecarReader.h"
+#include "IfcViewReader.h"
 #include "InstanceCompose.h"
 
 #include <zstd.h>
@@ -56,7 +56,7 @@ struct BufCursor {
 
 }  // namespace
 
-bool decompressSidecarFrame(const std::uint8_t* src, std::size_t src_size,
+bool decompressIfcViewFrame(const std::uint8_t* src, std::size_t src_size,
                             std::uint8_t* dst, std::size_t raw_size) {
     if (raw_size == 0) return src_size == 0;  // empty in ↔ empty out
     if (!src || !dst || src_size == 0) return false;
@@ -72,7 +72,7 @@ bool readInstanceInfos(const std::uint8_t*& cursor, std::size_t& remaining,
     std::memcpy(&count, cursor, 4);
     cursor += 4;
     remaining -= 4;
-    if (std::uint64_t(count) * SIDECAR_INSTANCE_RECORD_BYTES > remaining) return false;
+    if (std::uint64_t(count) * IFCVIEW_INSTANCE_RECORD_BYTES > remaining) return false;
 
     const Eigen::Matrix4d identity = Eigen::Matrix4d::Identity();
     const float zero[3] = {0.0f, 0.0f, 0.0f};
@@ -103,22 +103,22 @@ bool readInstanceInfos(const std::uint8_t*& cursor, std::size_t& remaining,
             for (int a = 0; a < 3; ++a) inst.world_aabb_min[a] = inst.world_aabb_max[a] = 0.0f;
         }
     }
-    remaining -= std::size_t(count) * SIDECAR_INSTANCE_RECORD_BYTES;
+    remaining -= std::size_t(count) * IFCVIEW_INSTANCE_RECORD_BYTES;
     return true;
 }
 
-bool parseSidecarHead(const uint8_t* data, size_t n, uint64_t& out_geom_bytes) {
-    if (n < SIDECAR_HEAD_BYTES) return false;
-    SidecarHeader hdr;
+bool parseIfcViewHead(const uint8_t* data, size_t n, uint64_t& out_geom_bytes) {
+    if (n < IFCVIEW_HEAD_BYTES) return false;
+    IfcViewHeader hdr;
     std::memcpy(&hdr, data, sizeof(hdr));
-    if (hdr.magic   != SIDECAR_MAGIC)  return false;
-    if (hdr.version != SIDECAR_VERSION) return false;
-    if (hdr.endian  != SIDECAR_ENDIAN) return false;
+    if (hdr.magic   != IFCVIEW_MAGIC)  return false;
+    if (hdr.version != IFCVIEW_VERSION) return false;
+    if (hdr.endian  != IFCVIEW_ENDIAN) return false;
     std::memcpy(&out_geom_bytes, data + sizeof(hdr), sizeof(out_geom_bytes));
     return true;
 }
 
-bool parseSidecarGeometryMetadata(const uint8_t* data, size_t n, SidecarData& out) {
+bool parseIfcViewGeometryMetadata(const uint8_t* data, size_t n, IfcViewData& out) {
     BufCursor c{data, n};
     if (!c.readVec(out.meshes))    return false;
     if (!readInstanceInfos(c.cursor, c.remaining_bytes, out.meshes, out.instances)) return false;
@@ -130,7 +130,7 @@ bool parseSidecarGeometryMetadata(const uint8_t* data, size_t n, SidecarData& ou
     return true;
 }
 
-bool parseSidecarElementMetadata(const uint8_t* data, size_t n, SidecarData& out) {
+bool parseIfcViewElementMetadata(const uint8_t* data, size_t n, IfcViewData& out) {
     BufCursor c{data, n};
     if (!c.readVec(out.elements)) return false;
     uint32_t stbl_len = 0;
@@ -141,27 +141,27 @@ bool parseSidecarElementMetadata(const uint8_t* data, size_t n, SidecarData& out
     return true;
 }
 
-std::optional<StreamingSidecar> readSidecarMetadata(const std::string& ifc_path) {
-    const std::string path = sidecarPathFor(ifc_path);
+std::optional<StreamingIfcView> readIfcViewMetadata(const std::string& ifc_path) {
+    const std::string path = ifcViewPathFor(ifc_path);
     FILE* f = std::fopen(path.c_str(), "rb");
     if (!f) return std::nullopt;
 
-    auto fail = [&]() -> std::optional<StreamingSidecar> {
+    auto fail = [&]() -> std::optional<StreamingIfcView> {
         std::fclose(f);
         return std::nullopt;
     };
 
-    uint8_t head[SIDECAR_HEAD_BYTES];
-    if (std::fread(head, 1, SIDECAR_HEAD_BYTES, f) != SIDECAR_HEAD_BYTES) return fail();
+    uint8_t head[IFCVIEW_HEAD_BYTES];
+    if (std::fread(head, 1, IFCVIEW_HEAD_BYTES, f) != IFCVIEW_HEAD_BYTES) return fail();
     uint64_t geom_bytes = 0;
-    if (!parseSidecarHead(head, SIDECAR_HEAD_BYTES, geom_bytes)) return fail();
+    if (!parseIfcViewHead(head, IFCVIEW_HEAD_BYTES, geom_bytes)) return fail();
 
-    StreamingSidecar out;
+    StreamingIfcView out;
     out.file_path                = path;
-    out.geometry_section_offset  = SIDECAR_HEAD_BYTES;
+    out.geometry_section_offset  = IFCVIEW_HEAD_BYTES;
 
     // Skip the geometry section; the two compressed metadata blocks follow.
-    if (std::fseek(f, long(SIDECAR_HEAD_BYTES) + long(geom_bytes), SEEK_SET) != 0)
+    if (std::fseek(f, long(IFCVIEW_HEAD_BYTES) + long(geom_bytes), SEEK_SET) != 0)
         return fail();
 
     // Each metadata block on disk is [comp u64][raw u64][zstd frame].
@@ -177,7 +177,7 @@ std::optional<StreamingSidecar> readSidecarMetadata(const std::string& ifc_path)
         if (comp_off) *comp_off = uint64_t(here);
         if (comp_sz)  *comp_sz  = comp;
         if (raw_sz)   *raw_sz   = rawn;
-        return decompressSidecarFrame(z.data(), z.size(), raw.data(), raw.size());
+        return decompressIfcViewFrame(z.data(), z.size(), raw.data(), raw.size());
     };
 
     std::vector<uint8_t> geometry_metadata, element_metadata;
@@ -188,9 +188,9 @@ std::optional<StreamingSidecar> readSidecarMetadata(const std::string& ifc_path)
 
     // Desktop reads both blocks up front; the web path reads only geometry
     // metadata before painting and fetches the element metadata block on demand.
-    if (!parseSidecarGeometryMetadata(geometry_metadata.data(), geometry_metadata.size(), out.meta))
+    if (!parseIfcViewGeometryMetadata(geometry_metadata.data(), geometry_metadata.size(), out.meta))
         return std::nullopt;
-    if (!parseSidecarElementMetadata(element_metadata.data(), element_metadata.size(), out.meta))
+    if (!parseIfcViewElementMetadata(element_metadata.data(), element_metadata.size(), out.meta))
         return std::nullopt;
     return out;
 }
@@ -203,7 +203,7 @@ bool readChunkGeometryCompressed(const std::string& ifc_path,
                                  std::uint64_t i_raw_size,
                                  std::vector<std::uint8_t>&  out_vbytes,
                                  std::vector<std::uint32_t>& out_idx) {
-    const std::string path = sidecarPathFor(ifc_path);
+    const std::string path = ifcViewPathFor(ifc_path);
     FILE* f = std::fopen(path.c_str(), "rb");
     if (!f) return false;
     auto readFrame = [&](std::uint64_t off, std::uint64_t comp, std::uint64_t raw,
@@ -212,7 +212,7 @@ bool readChunkGeometryCompressed(const std::string& ifc_path,
         std::vector<std::uint8_t> z(static_cast<size_t>(comp));
         if (std::fseek(f, long(geometry_section_offset + off), SEEK_SET) != 0) return false;
         if (comp && std::fread(z.data(), 1, z.size(), f) != z.size()) return false;
-        return decompressSidecarFrame(z.data(), z.size(), dst, size_t(raw));
+        return decompressIfcViewFrame(z.data(), z.size(), dst, size_t(raw));
     };
     out_vbytes.assign(size_t(v_raw_size), 0);
     out_idx.assign(size_t(i_raw_size / sizeof(std::uint32_t)), 0);
@@ -231,7 +231,7 @@ bool readChunkGeometryCompressed(const std::string& ifc_path,
 //
 // Callers must lay out the destination in INPUT order; the reader scatters
 // bytes via per-input-range dst offsets after a single coalesced read.
-std::vector<SidecarReadPlan> planSidecarReadRanges(
+std::vector<IfcViewReadPlan> planIfcViewReadRanges(
         uint64_t section_offset,
         const std::vector<std::pair<uint64_t, uint64_t>>& ranges,
         uint64_t max_gap_bytes) {
@@ -248,11 +248,11 @@ std::vector<SidecarReadPlan> planSidecarReadRanges(
     std::sort(sorted.begin(), sorted.end(),
               [](const Indexed& a, const Indexed& b) { return a.off < b.off; });
 
-    std::vector<SidecarReadPlan> plans;
+    std::vector<IfcViewReadPlan> plans;
     for (const auto& r : sorted) {
         if (r.size == 0) continue;
         if (!plans.empty()) {
-            SidecarReadPlan& back = plans.back();
+            IfcViewReadPlan& back = plans.back();
             const uint64_t end_of_back = back.file_offset + back.read_size;
             const uint64_t r_file = section_offset + r.off;
             if (r_file >= end_of_back && r_file - end_of_back <= max_gap_bytes) {
@@ -267,7 +267,7 @@ std::vector<SidecarReadPlan> planSidecarReadRanges(
                 continue;
             }
         }
-        SidecarReadPlan np;
+        IfcViewReadPlan np;
         np.file_offset = section_offset + r.off;
         np.read_size   = r.size;
         np.slices.push_back({0, r.dst, r.size});

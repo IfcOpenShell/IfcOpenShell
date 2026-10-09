@@ -35,7 +35,7 @@
 #include "BufferPool.h"
 #include "FederationMath.h"   // ModelUnits
 #include "ChunkPlanner.h"  // WGPU_CHUNK_VERTEX_BYTES_LIMIT (shared with bake)
-#include "SidecarFormat.h"  // ElementTableRecord (element metadata)
+#include "IfcViewFormat.h"  // ElementTableRecord (element metadata)
 
 // Per-model wgpu state. Mirrors the GL backend's ModelGpuData but with
 // wgpu handles. Stage 2 only allocates and uploads the four core buffers;
@@ -61,7 +61,7 @@
 // chunkmates. Pre-async this size gave 7 fps (the sync loads blocked
 // the render thread); now it's bounded by cull cost not stream cost.
 //
-// Sidecar v14 (on-disk spatial reorder) would let us go smaller still
+// .ifcview v14 (on-disk spatial reorder) would let us go smaller still
 // (~4 MB) with single-fread chunk loads, but the difference between
 // 16 MB and 4 MB is much smaller than the difference between 128 MB
 // and 16 MB.
@@ -220,7 +220,7 @@ struct ModelGpuData {
         // Mesh IDs assigned to this chunk, in chunk-local layout order.
         // Spatial chunk planning sorts meshes by world centroid first,
         // so this list is not in mesh-id order in general — each mesh's
-        // bytes live at scattered offsets in the sidecar file. The
+        // bytes live at scattered offsets in the .ifcview file. The
         // loader walks this list to scatter-gather the chunk's vertex
         // + index bytes; mesh_chunk_local_base_vertex /
         // mesh_chunk_local_ebo_first_u32 are computed in this same
@@ -311,7 +311,7 @@ struct ModelGpuData {
     uint64_t    geometry_section_offset = 0;
     // Web only: chunk byte ranges come from the JS-side source — a picked File
     // (Blob.slice) or a remote URL (HTTP Range) — read asynchronously, not via
-    // a synchronous fopen on streaming_file_path. Set by loadSidecarMetadataWeb
+    // a synchronous fopen on streaming_file_path. Set by loadIfcViewMetadataWeb
     // so driveStreamingLoads routes this model through the async web path
     // instead of the MEMFS sync read.
     bool        streaming_from_web = false;
@@ -339,7 +339,7 @@ struct ModelGpuData {
     uint64_t    element_metadata_raw_size    = 0;
     bool        element_metadata_loaded      = false;
     // applyCachedModel rebases instance object_ids by this base to keep them
-    // globally unique across models; element metadata records carry the sidecar's
+    // globally unique across models; element metadata records carry the .ifcview's
     // original (local) ids, so they're rebased by the same amount on load.
     uint32_t    object_id_base = 0;
 
@@ -499,7 +499,7 @@ struct ModelGpuData {
     Eigen::Matrix4d model_transformation_meters = Eigen::Matrix4d::Identity();
 
     // Whether coordinate_operation_meters came from a real IfcCoordinateOperation
-    // (sidecar v11+ has_coordinate_operation) rather than being the identity
+    // (.ifcview v11+ has_coordinate_operation) rather than being the identity
     // placeholder. The false-origin guess needs to tell those apart: identity
     // because the model is genuinely un-georeferenced is not the same as
     // identity because nothing has been applied yet.
@@ -507,7 +507,7 @@ struct ModelGpuData {
 
     // Per-model unit scales, carried alongside the matrices because
     // composeModelTransformation needs them to lift ModelTransformation::a into
-    // metres. Sourced from the sidecar so this works for sidecar-only loads
+    // metres. Sourced from the .ifcview so this works for .ifcview-only loads
     // where there is no ifcopenshell::file to re-read.
     ModelUnits units;
 };

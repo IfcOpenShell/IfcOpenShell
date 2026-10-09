@@ -153,7 +153,7 @@ needs specific input to trigger, also include:
 2. The model file (or its publicly-shareable equivalent) that triggers
    the crash, plus the smallest model that *doesn't* trigger it.
 3. The terminal output from before the crash (the ``[wgpu …]`` /
-   ``Sidecar metadata read: …`` / ``Streamer done: …`` lines tell us
+   ``.ifcview metadata read: …`` / ``Streamer done: …`` lines tell us
    which subsystem was active when things went south).
 4. Your GPU + driver version and OS version. On Linux: ``glxinfo |
    grep "OpenGL renderer"`` and ``uname -r``. On macOS: Apple menu →
