@@ -762,6 +762,8 @@ DEFAULT_LOAD_NAME = re.compile(
     rf"^(?:{_NUMBER} \S+ at {_NUMBER} deg|{_NUMBER} \S+ at {_NUMBER}:{_NUMBER}"
     rf"|(?:[XYZ] {_NUMBER}(?:, [XYZ] {_NUMBER})*|0) \S+)$"
 )
+SLOPE_LOAD_NAME = re.compile(rf"^{_NUMBER} \S+ at ({_NUMBER}):({_NUMBER})$")
+ANGLE_LOAD_NAME = re.compile(rf"^{_NUMBER} \S+ at ({_NUMBER}) deg$")
 
 
 def get_load_category(load: ifcopenshell.entity_instance) -> Union[str, None]:
@@ -1018,15 +1020,34 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         self.moment_x, self.moment_y, self.moment_z = (
             (getattr(load, a) or 0.0 for a in moment_attributes) if moment_attributes else (0.0, 0.0, 0.0)
         )
+        # IFC only stores components, so derive the in-plane inputs from them...
+        x, y, z = (getattr(load, a) or 0.0 for a in force_attributes)
+        self.magnitude = math.hypot(x, z)
+        self.angle = math.degrees(math.atan2(z, x))
+        self.rise, self.run = tool.Structural.get_simple_slope(x, z)
         self.input_mode = "COMPONENTS"
-        # IFC only stores components, so derive the in-plane inputs from them.
-        self.magnitude = math.hypot(self.x, self.z)
-        self.angle = math.degrees(math.atan2(self.z, self.x))
-        self.rise, self.run = self.z, self.x
-        self.load_name = load.Name or ""
+        # ... but reopen in the way the load was entered if its generated name records it and still fits.
+        name = load.Name or ""
+        if not y and (match := SLOPE_LOAD_NAME.match(name)):
+            rise, run = float(match[1]), float(match[2])
+            if self.fits(x, z, "SLOPE", rise=rise, run=run):
+                self.input_mode, self.rise, self.run = "SLOPE", rise, run
+        elif not y and (match := ANGLE_LOAD_NAME.match(name)):
+            angle = float(match[1])
+            if self.fits(x, z, "ANGLE", angle=angle):
+                self.input_mode, self.angle = "ANGLE", angle
+        self.load_name = name
         if self.activity and (groups := get_activity_load_groups(tool.Ifc.get().by_id(self.activity))):
             self.load_group = str(groups[0].id())
         return context.window_manager.invoke_props_dialog(self, width=350)
+
+    def fits(self, x: float, z: float, mode: str, angle: float = 0.0, rise: float = 0.0, run: float = 0.0) -> bool:
+        """Whether an angle or slope gives the direction of the components x and z"""
+        fx, fz = tool.Structural.get_in_plane_components(
+            mode, magnitude=math.hypot(x, z), angle=angle, rise=rise, run=run
+        )
+        tolerance = 1e-4 * math.hypot(x, z)
+        return math.isclose(fx, x, abs_tol=tolerance) and math.isclose(fz, z, abs_tol=tolerance)
 
     def draw(self, context):
         load = self.get_load()

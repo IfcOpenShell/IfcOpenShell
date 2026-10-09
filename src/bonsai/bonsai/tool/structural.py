@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 
+import fractions
 import json
 import math
 from typing import TYPE_CHECKING, Any, Union
@@ -124,6 +125,21 @@ class Structural(bonsai.core.tool.Structural):
         if not length:
             return 0.0, 0.0
         return magnitude * run / length, magnitude * rise / length
+
+    @classmethod
+    def get_simple_slope(cls, x: float, z: float, max_denominator: int = 24) -> tuple[float, float]:
+        """Get a rise and run along the in-plane components x and z, as small whole numbers if they make one.
+
+        For example, components of -160 and -120 give a rise of -3 and a run of -4.
+        """
+        if not x or not z:
+            return (math.copysign(1.0, z) if z else 0.0), (math.copysign(1.0, x) if x else 0.0)
+        exact = abs(z) / abs(x)
+        ratio = fractions.Fraction(exact).limit_denominator(max_denominator)
+        if ratio and math.isclose(float(ratio), exact, rel_tol=1e-6):
+            return math.copysign(ratio.numerator, z), math.copysign(ratio.denominator, x)
+        length = math.hypot(x, z)
+        return z / length, x / length
 
     @classmethod
     def get_current_structural_analysis_model(cls) -> Union[ifcopenshell.entity_instance, None]:
