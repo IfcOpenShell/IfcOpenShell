@@ -510,7 +510,7 @@ class Usecase:
 
         if len(cur_edges) > 2:
             return False
-        elif cur_edges == 2:
+        elif len(cur_edges) == 2:
             edge0, edge1 = cur_edges
         else:
             edge0, edge1 = cur_edges[0], None
