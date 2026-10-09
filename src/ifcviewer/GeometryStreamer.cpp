@@ -226,7 +226,8 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
     // Instancing path: geometry stays in local coords; the transform is
     // applied on the GPU per instance.
     settings.set("use-world-coords", false);
-    settings.set("weld-vertices", false);
+    // Welded output carries no vertex normals; the shaders don't need them.
+    settings.set("weld-vertices", true);
     settings.set("apply-default-materials", false);
     // Off by default in IfcOpenShell — makes face winding consistent within
     // each shell, which we need for GL_CULL_FACE and for per-vertex normals
