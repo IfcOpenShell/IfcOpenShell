@@ -30,8 +30,8 @@ Decisions made while coding:
   missing), placement at (terrain x, terrain y, contour z), polylines are
   `IfcIndexedPolyCurve`s from `ShapeBuilder.polyline`.
 - Index contours get `EPset_Annotation.Classes = "IndexContour"` → SVG class.
-- Levels are multiples of the interval in **project** Z (Blender Z + georeference
-  `blender_offset_z`), so 2 ft contours land on true 2 ft elevations under a false origin.
+- Levels are multiples of the interval in **datum height** (see "Elevation datum" below),
+  so 2 ft contours land on true 2 ft survey heights, under a false origin too.
 - Slicing runs before anything is deleted, so a too-small interval (> 2000 levels)
   errors without touching existing contours.
 - Contours are contained in the terrain's container (or the site itself) explicitly,
@@ -148,8 +148,13 @@ small PR on a large one. If the CIVIL tab lands, moving the Contours panel there
 
 ## Updating
 
-- **v1:** explicit **Update Contours** — delete the annotations previously generated for
-  this terrain, regenerate from the current mesh and pset.
+- **Update Contours** re-slices from the current mesh and pset, **reusing the annotation
+  already at each elevation** (matched by `ContourValue`, rounded to 1e-6 m): its placement,
+  representation (`tool.Model.replace_object_ifc_representation`), ContourValue and the
+  `IndexContour` token are updated in place, so its GlobalId — and anything pointing at it,
+  e.g. a label — survives. New elevations get new annotations; elevations no longer present
+  are removed. Only the `IndexContour` class token is added/removed, so user classes in
+  `EPset_Annotation` are kept.
 - **Later, opt-in:** regenerate when the terrain representation is saved on leaving Edit
   Mode. Opt-in because terrain meshes are heavy.
 
@@ -203,12 +208,54 @@ because they are the smallest and need no change to the terrain geometry itself.
 Note: projected *materials* in Bonsai would be per-face IFC styles, a harder problem —
 out of scope here.
 
+## Elevation datum (2026-10-09)
+
+Contours are cut and labelled in **height above the vertical datum** (e.g. sea level), not
+model Z: a contour 1 ft above the project origin on a site whose origin is 435 ft above sea
+level is "Contour 436", `ContourValue = 436`. Source, in priority order:
+
+1. `IfcMapConversion.OrthogonalHeight` (IFC2X3: `ePSet_MapConversion`), via
+   `ifcopenshell.util.geolocation.auto_z2e`, which also applies the conversion's `Scale` and
+   `FactorZ`. Note: in IFC4, `Scale` must be set when map units differ from project units
+   (e.g. 0.3048 for a feet project on a metre CRS) — checked: OrthogonalHeight 132.588 m,
+   Scale 0.3048 → z = 1 ft gives 436 ft.
+2. Otherwise `IfcSite.RefElevation` ("datum elevation relative to sea level") of the
+   terrain's site (walk up container/aggregate; fall back to the only site). Not added on top
+   of a map conversion — both usually describe the same datum.
+3. Otherwise none: model elevation.
+
+`ElevationDatum` (tool/terrain.py) maps Blender Z → height:
+`origin_height + slope × (z + blender_offset)`. The Contours panel shows the datum and its
+source. Precedent: drawing data's `elevation` key is placement Z + `OrthogonalHeight`.
+Changing the datum then pressing Update re-cuts everything (new elevations → new annotations).
+
+## Contour labels — decisions (phase 2, not built yet)
+
+- **Real TEXT annotations in a specific drawing** ("Label Contours in Active Drawing"), not
+  computed at drawing time — so they're sized for that drawing's scale, cropped to it, and
+  individually movable. Re-labelling leaves hand-moved labels alone.
+- **Label text reads `ContourValue`** of the contour it's assigned to (text-literal variable),
+  not the line's Z: Blender Z is shifted by a false origin and project Z isn't the survey
+  datum. Requires Update to keep contour identity (done, see "Updating").
+- **Text type:** the operator takes a TEXT annotation type (`ApplicableOccurrence =
+  IfcAnnotation/TEXT`); labels are assigned to it, and styling lives on the type's
+  `EPset_Annotation.Classes` (occurrences inherit type psets). Offer a default "Contour
+  Label" type with `fill-bg ContourLabel`. Still to check: whether a type's text literal can
+  act as the template (e.g. a `'` suffix).
+- **Gap under the label: `fill-bg`** — existing class; svgwriter draws a copy of the text
+  with the `#fill-background` filter (white flood, `markers.svg`) behind it. Verify the box
+  rotates with rotated text.
+- **Orientation: readable** — never upside down (not the "uphill" convention).
+- **Which contours: every contour** by default; maybe configurable later (index only).
+- Placement: every X mm of paper along each line (clipped to the drawing crop), slid to the
+  straightest stretch over the label's width, rejecting overlaps with labels already placed
+  and spots too near the terrain edge. Pure function, tested outside Blender.
+
 ## Open questions
 
 - Existing vs. proposed grade: two terrains with status EXISTING / NEW → dashed vs. solid
   contours. Inherit status onto the generated annotations?
 - Clip contours to the site boundary, or the full terrain extent?
-- Which relationship links annotations to their terrain (see above)?
 - IFC2X3 support — probably not; contours are an IFC4+ feature.
 
 ## To test (once implemented)
@@ -216,6 +263,10 @@ out of scope here.
 - [ ] Heightfield terrain, imperial (2 ft / index 10 ft) and metric (1 m / index 5 m).
 - [ ] Volume (solid) terrain with flipped normals — only top-surface contours.
 - [ ] Rotated / translated terrain object — elevations are world Z.
-- [ ] Update after editing the terrain — old annotations replaced, none orphaned.
+- [ ] Update after editing the terrain — same GlobalIds kept per elevation, stale ones
+  removed, none orphaned.
+- [ ] Georeferenced project (map conversion OrthogonalHeight, feet and metre CRS) — panel
+  shows the datum, contour names/ContourValue are survey heights on interval multiples.
+- [ ] Site RefElevation only — same, source "Site RefElevation".
 - [ ] Contours appear in a plan drawing with index/intermediate styling.
 - [ ] Interval change 2 ft → 5 ft regenerates correctly.
