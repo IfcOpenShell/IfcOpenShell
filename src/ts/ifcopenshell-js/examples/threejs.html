@@ -191,7 +191,6 @@ document.querySelector('#upload').onchange = async () => {
     console.error(error);
   } finally {
     iterator?.dispose();
-    settings?.dispose();
     file?.dispose();
   }
 };

@@ -348,8 +348,7 @@ def _render_handle_classes(metadata: BindingABI) -> str:
 
     chunks: list[str] = [
         "const _handleTransfer = Symbol.for('ifcopenshell.wasm.handle.transfer.v1');\n"
-        "// Only adopted handles get automatic cleanup; factory handles retain explicit ownership.\n"
-        "const _adoptedHandleFinalizers = typeof FinalizationRegistry === 'function'\n"
+        "const _handleFinalizers = typeof FinalizationRegistry === 'function'\n"
         "    ? new FinalizationRegistry(({ module, ptr, destroy }) => {\n"
         "        try { module[destroy]?.(ptr); } catch { /* runtime may already be gone */ }\n"
         "    }) : null;"
@@ -408,6 +407,7 @@ def _render_handle_classes(metadata: BindingABI) -> str:
             )
         method_block = "\n\n".join(methods)
         destroy = handle.destroy_function or f"ifcopenshell_{_snake_name(handle.c_type)}_destroy"
+        disposable = handle.c_type in {"ifcopenshell_file_t", "ifcopenshell_geom_iterator_t"}
         chunks.append(
             f"export class {type_name} {{\n"
             "    #ptr;\n"
@@ -420,20 +420,20 @@ def _render_handle_classes(metadata: BindingABI) -> str:
             "            }\n"
             f"            const state = ptr[_handleTransfer]('{handle.c_type}');\n"
             "            ({ ptr, envelopeOwned, module } = state);\n"
-            "            if (envelopeOwned) {\n"
-            f"                _adoptedHandleFinalizers?.register(this, {{ module, ptr, destroy: '_{destroy}' }}, this);\n"
-            "            }\n"
             "        }\n"
             "        this.#ptr = ptr;\n"
             "        this.#envelopeOwned = envelopeOwned;\n"
             "        this.#module = module;\n"
+            "        if (ptr && envelopeOwned) {\n"
+            f"            _handleFinalizers?.register(this, {{ module, ptr, destroy: '_{destroy}' }}, this);\n"
+            "        }\n"
             "    }\n\n"
             "    [_handleTransfer](type) {\n"
             f"        if (type !== '{handle.c_type}' || !this.#ptr) {{\n"
             f"            throw new IfcOpenShellError('Cannot adopt a disposed or incompatible {type_name}');\n"
             "        }\n"
             "        const state = { ptr: this.#ptr, envelopeOwned: this.#envelopeOwned, module: this.#module };\n"
-            "        _adoptedHandleFinalizers?.unregister(this);\n"
+            "        _handleFinalizers?.unregister(this);\n"
             "        this.#ptr = 0;\n"
             "        this.#envelopeOwned = false;\n"
             "        return state;\n"
@@ -446,12 +446,16 @@ def _render_handle_classes(metadata: BindingABI) -> str:
             "        const owned = this.#envelopeOwned;\n"
             "        this.#ptr = 0;\n"
             "        this.#envelopeOwned = false;\n"
-            "        _adoptedHandleFinalizers?.unregister(this);\n"
-            f"        if (ptr && owned) this.#module._{destroy}?.(ptr);\n"
+            "        _handleFinalizers?.unregister(this);\n"
+            f"        if (ptr && owned) this.#module._{destroy}(ptr);\n"
             "    }\n\n"
-            "    dispose() { this.destroy(); }\n"
-            "    [Symbol.dispose]() { this.destroy(); }\n"
-            "    async [Symbol.asyncDispose]() { this.destroy(); }"
+            + (
+                "    dispose() { this.destroy(); }\n"
+                "    [Symbol.dispose]() { this.destroy(); }\n"
+                "    async [Symbol.asyncDispose]() { this.destroy(); }"
+                if disposable
+                else ""
+            )
             + ("\n\n" + method_block if method_block else "")
             + "\n}\n\n"
             f"function _wrap{type_name}(ptr, envelopeOwned, module) {{\n"
@@ -460,7 +464,20 @@ def _render_handle_classes(metadata: BindingABI) -> str:
                 "    if (!handle || !module._instanceFactory) return handle;\n"
                 "    try { return module._instanceFactory(handle); } catch (error) { handle.destroy(); throw error; }\n"
                 if handle.c_type == "ifcopenshell_instance_t"
-                else f"    return ptr ? new {type_name}(ptr, envelopeOwned, module) : null;\n"
+                else (
+                    f"    const list = ptr ? new {type_name}(ptr, envelopeOwned, module) : null;\n"
+                    "    if (!list) return [];\n"
+                    "    try {\n"
+                    "        const items = [];\n"
+                    "        for (let i = 0, size = list.size(); i < size; i++) {\n"
+                    "            const item = list.get(i);\n"
+                    "            if (item) items.push(item);\n"
+                    "        }\n"
+                    "        return items;\n"
+                    "    } finally { list.destroy(); }\n"
+                    if handle.c_type == "ifcopenshell_parse_instance_list_t"
+                    else f"    return ptr ? new {type_name}(ptr, envelopeOwned, module) : null;\n"
+                )
             )
             + "}"
         )

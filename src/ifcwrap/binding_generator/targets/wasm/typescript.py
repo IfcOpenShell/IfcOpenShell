@@ -179,6 +179,8 @@ def _ts_type(type_spec: TypeSpec, metadata: BindingABI) -> str:
             if metadata.handles[type_spec.handle].c_type == "ifcopenshell_parse_attribute_value_t"
             else _type_name(metadata.handles[type_spec.handle].c_type)
         )
+        if metadata.handles[type_spec.handle].c_type == "ifcopenshell_parse_instance_list_t":
+            result = "IfcOpenshellInstance[]"
     elif type_spec.kind == "struct" and type_spec.struct is not None:
         struct = metadata.value_types[type_spec.struct]
         result = _interface_name(struct.c_type)
@@ -253,10 +255,15 @@ def _render_handle_classes(metadata: BindingABI) -> str:
             f"    protected constructor(source: {_type_name(handle.c_type)});",
             "    readonly ptr: number;",
             "    destroy(): void;",
-            "    dispose(): void;",
-            "    [Symbol.dispose](): void;",
-            "    [Symbol.asyncDispose](): Promise<void>;",
         ]
+        if handle.c_type in {"ifcopenshell_file_t", "ifcopenshell_geom_iterator_t"}:
+            methods.extend(
+                [
+                    "    dispose(): void;",
+                    "    [Symbol.dispose](): void;",
+                    "    [Symbol.asyncDispose](): Promise<void>;",
+                ]
+            )
         for function in sorted(receiver_groups.get(handle_name, []), key=lambda item: item.c_name):
             name = public_name(function, metadata.c_prefix)
             methods.append(_render_function_signature(name, function, metadata))

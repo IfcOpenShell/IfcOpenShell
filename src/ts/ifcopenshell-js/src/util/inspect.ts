@@ -16,18 +16,13 @@ export function formatAttributeValue(value: AttributeValueType): string {
   return String(value);
 }
 
-function release(value: AttributeValueType): void {
-  if (value instanceof EntityInstance) value.dispose();
-  else if (Array.isArray(value)) value.forEach(release);
-}
-
 export async function inspectEntity(file: File, id: number): Promise<EntityInspection | null> {
   if (!file.entityNames().includes(id)) return null;
-  using entity = file.byId(id);
+  const entity = file.byId(id);
   if (!entity) return null;
   const attributes = entity.attributes().map(name => {
     const value = entity.get(name);
-    try { return { name, value: formatAttributeValue(value) }; } finally { release(value); }
+    return { name, value: formatAttributeValue(value) };
   });
   const guid = attributes.some(item => item.name === 'GlobalId') ? entity.get('GlobalId') : null;
   return { id: entity.id(), type: entity.isA(), guid: typeof guid === 'string' ? guid : null, attributes };

@@ -19,14 +19,3 @@ export const describeOrSkip = wasmAvailable ? describe : describe.skip;
 export async function createInstance(): Promise<IfcOpenShell> {
   return init();
 }
-
-export function listEntities(list: import('@ifcopenshell/wasm/api').IfcOpenshellParseInstanceList): import('ifcopenshell').EntityInstance[] {
-  try {
-    const result: import('ifcopenshell').EntityInstance[] = [];
-    for (let i = 0; i < list.size(); i++) {
-      const item = list.get(i) as import('ifcopenshell').EntityInstance | null;
-      if (item) result.push(item);
-    }
-    return result;
-  } finally { list.dispose(); }
-}

@@ -9,7 +9,7 @@ import * as ifcopenshell_geom from 'ifcopenshell/geom';
 const runtime = await ifcopenshell.init();
 await runtime.loadPlugin('schema', 'ifc4');
 using model = new ifcopenshell.File('IFC4');
-using wall = model.create('IfcWall', { Name: 'Example' });
+const wall = model.create('IfcWall', { Name: 'Example' });
 console.log(wall.id(), wall.get('Name'));
 wall.set('Name', 'Updated');
 ```
@@ -28,21 +28,21 @@ import { init, ifcopenshell } from 'ifcopenshell';
 
 await init();
 const settings = ifcopenshell.geom.createSettings();
-settings.dispose();
 ```
 
 `File`, `EntityInstance`, `Settings` and `Iterator` are exported classes
 that extend the generated binding classes. Construct them with `new`. They expose the native methods
 directly and can be passed to generated functions without a `.raw` wrapper.
-Call `dispose()` / `destroy()` or use `using` to release handles.
+Only `File` and `Iterator` implement `Disposable`: call `dispose()` or use `using`
+to invoke their native destructors. Other wrappers use GC cleanup.
 
 ## Python API alignment
 
 `File.create(type, attributes)` accepts any IFC attribute by its schema name,
 for example `{ Name: 'Wall', Tag: 'W1', PredefinedType: 'STANDARD' }`.
-Use inherited `byId`, `byGuid` and `byType` for queries. Native `byType` and
-`traverse` return disposable list handles; release the list and each retrieved
-entity when finished.
+Use inherited `byId`, `byGuid` and `byType` for queries. Instance queries, including `byType` and `traverse`, return ordinary JavaScript
+arrays. The binding releases the temporary native list internally; entities
+and other wrappers use GC cleanup.
 
 `EntityInstance.getInfo()` returns a flat dictionary `{ id, type, ...attributes }`.
 Options use camelCase: `includeIdentifier` (default `true`), `recursive` (default
@@ -63,19 +63,19 @@ schema declaration. See [the alignment and review list](../../../docs/python-typ
 ```ts
 await runtime.loadPlugin('mapping', 'ifc4');
 await runtime.loadPlugin('kernel', 'opencascade');
-using settings = new ifcopenshell_geom.Settings();
+const settings = new ifcopenshell_geom.Settings();
 settings.set('weld-vertices', false);
 using iterator = new ifcopenshell_geom.Iterator(settings, model, {
   numThreads: 1,
   geometryLibrary: 'opencascade',
 });
 if (iterator.initialize()) do {
-  using shape = iterator.get()!;
+  const shape = iterator.get()!;
   // Read shape.asTriangulationElement().geometry() here.
 } while (iterator.next());
 
 // For a product with a representation:
-// using shape = ifcopenshell_geom.createShape(settings, product);
+// const shape = ifcopenshell_geom.createShape(settings, product);
 ```
 
 `settings.set(name, value)` and `settings.get(name)` convert values in the native
@@ -108,8 +108,8 @@ IFC logical is `'UNKNOWN'`. Integers within the JS safe range are numbers;
 larger signed 64-bit integers are bigints. Null, derived and empty-aggregate
 markers follow the Python output typemap and become null; typed vectors become
 arrays, including empty arrays. Entity references remain live `EntityInstance`
-objects, including inline typed values and nested aggregates; dispose them when
-finished. Passing an entity from another IFC file or runtime is rejected.
+objects, including inline typed values and nested aggregates; their binding
+handles use GC cleanup. Keep the file alive while accessing its entities. Passing an entity from another IFC file or runtime is rejected.
 
 There is no `attribute()` or `AttributeValue` handle in the JS API. `entity.ts`
 is now `entity_instance.ts`. Matrix conversion and disposable declaration helper

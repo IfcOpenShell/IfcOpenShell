@@ -36,8 +36,8 @@ export {
 /**
  * Initialize the packaged or explicitly configured WASM runtime.
  *
- * Plugins are loaded lazily through {@link IfcOpenShell.loadPlugin}. Native
- * handles returned by the API must be disposed by their owners.
+ * Plugins are loaded lazily through {@link IfcOpenShell.loadPlugin}.
+ * File and Iterator support explicit disposal; other handles use GC cleanup.
  *
  * @param options Asset locations and optional plugin-loader overrides.
  * @returns An initialized, frozen runtime facade.
