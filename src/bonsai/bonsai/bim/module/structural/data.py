@@ -230,30 +230,42 @@ class StructuralLoadCasesData:
         cls.is_loaded = True
         cls.data = {
             "load_cases": cls.load_cases(),
-            "current_model_id": cls.current_model_id(),
+            "models": cls.models(),
             "applicable_structural_load_types": cls.applicable_structural_load_types(),
             "applicable_structural_loads": cls.applicable_structural_loads(),
         }
 
     @classmethod
-    def current_model_id(cls):
-        if model := tool.Structural.get_current_structural_analysis_model():
-            return model.id()
+    def models(cls):
+        return [
+            {"id": m.id(), "name": m.Name or "Unnamed"} for m in tool.Ifc.get().by_type("IfcStructuralAnalysisModel")
+        ]
+
+    @classmethod
+    def activity_name(cls, activity: ifcopenshell.entity_instance) -> str:
+        load = activity.AppliedLoad
+        rels = activity.AssignedToStructuralItem
+        item = rels[0].RelatingElement if rels else None
+        return f"{(load.Name if load else None) or 'Unnamed'} on {(item.Name if item else None) or 'Unnamed'}"
 
     @classmethod
     def load_cases(cls):
         results = []
         for load_case in tool.Ifc.get().by_type("IfcStructuralLoadCase"):
             load_groups = []
+            activities = []
             for rel in load_case.IsGroupedBy or []:
                 for related_object in rel.RelatedObjects:
                     if related_object.is_a("IfcStructuralLoadGroup"):
                         load_groups.append({"id": related_object.id(), "name": related_object.Name or "Unnamed"})
+                    elif related_object.is_a("IfcStructuralActivity"):
+                        activities.append({"id": related_object.id(), "name": cls.activity_name(related_object)})
             results.append(
                 {
                     "id": load_case.id(),
                     "name": load_case.Name or "Unnamed",
                     "load_groups": load_groups,
+                    "activities": activities,
                     "model_ids": [m.id() for m in load_case.LoadGroupFor],
                 }
             )

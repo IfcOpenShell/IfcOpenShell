@@ -260,7 +260,6 @@ class SetCurrentStructuralAnalysisModel(bpy.types.Operator):
     def execute(self, context):
         tool.Structural.set_current_structural_analysis_model(tool.Ifc.get().by_id(self.structural_analysis_model))
         StructuralAnalysisModelsData.is_loaded = False
-        StructuralLoadCasesData.is_loaded = False
         return {"FINISHED"}
 
 
@@ -510,7 +509,7 @@ class EditStructuralConnectionCS(bpy.types.Operator, tool.Ifc.Operator):
 class AssignStructuralLoadCase(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_structural_load_case"
     bl_label = "Assign Structural Load Case"
-    bl_description = "Assign the load case to the current structural analysis model"
+    bl_description = "Assign the load case to this structural analysis model"
     bl_options = {"REGISTER", "UNDO"}
     structural_analysis_model: bpy.props.IntProperty()
     load_case: bpy.props.IntProperty()
@@ -528,7 +527,7 @@ class AssignStructuralLoadCase(bpy.types.Operator, tool.Ifc.Operator):
 class UnassignStructuralLoadCase(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_structural_load_case"
     bl_label = "Unassign Structural Load Case"
-    bl_description = "Unassign the load case from the current structural analysis model"
+    bl_description = "Unassign the load case from this structural analysis model"
     bl_options = {"REGISTER", "UNDO"}
     structural_analysis_model: bpy.props.IntProperty()
     load_case: bpy.props.IntProperty()
@@ -587,13 +586,13 @@ class RemoveStructuralLoadCase(bpy.types.Operator, tool.Ifc.Operator):
 class EnableEditingStructuralLoadCase(bpy.types.Operator):
     bl_idname = "bim.enable_editing_structural_load_case"
     bl_label = "Enable Editing Structural Load Case"
+    bl_description = "Edit the load case, and show its loads and load groups"
     bl_options = {"REGISTER", "UNDO"}
     load_case: bpy.props.IntProperty()
 
     def execute(self, context):
         self.props = tool.Structural.get_structural_props()
         self.props.active_load_case_id = self.load_case
-        self.props.load_case_editing_type = "ATTRIBUTES"
         self.props.load_case_attributes.clear()
         bonsai.bim.helper.import_attributes(
             tool.Ifc.get().by_id(self.load_case),
@@ -615,19 +614,6 @@ class DisableEditingStructuralLoadCase(bpy.types.Operator):
     def execute(self, context):
         props = tool.Structural.get_structural_props()
         props.active_load_case_id = 0
-        return {"FINISHED"}
-
-
-class EnableEditingStructuralLoadCaseGroups(bpy.types.Operator):
-    bl_idname = "bim.enable_editing_structural_load_case_groups"
-    bl_label = "Enable Editing Structural Load Case Groups"
-    bl_options = {"REGISTER", "UNDO"}
-    load_case: bpy.props.IntProperty()
-
-    def execute(self, context):
-        props = tool.Structural.get_structural_props()
-        props.active_load_case_id = self.load_case
-        props.load_case_editing_type = "GROUPS"
         return {"FINISHED"}
 
 
@@ -659,6 +645,7 @@ class RemoveStructuralLoadGroup(bpy.types.Operator, tool.Ifc.Operator):
 class EnableEditingStructuralLoadGroupActivities(bpy.types.Operator):
     bl_idname = "bim.enable_editing_structural_load_group_activities"
     bl_label = "Enable Editing Structural Load Group Activities"
+    bl_description = "Show the loads applied in this load case or load group"
     bl_options = {"REGISTER", "UNDO"}
     load_group: bpy.props.IntProperty()
 
@@ -676,8 +663,7 @@ class EnableEditingStructuralLoadGroupActivities(bpy.types.Operator):
             for activity in rel.RelatedObjects:
                 new = self.props.load_group_activities.add()
                 new.ifc_definition_id = activity.id()
-                rels = activity.AssignedToStructuralItem
-                new.name = (rels[0].RelatingElement.Name if rels else None) or "Unnamed"
+                new.name = StructuralLoadCasesData.activity_name(activity)
                 new.applied_load_class = activity.AppliedLoad.is_a()
 
 
@@ -741,7 +727,8 @@ class RemoveStructuralActivity(bpy.types.Operator, tool.Ifc.Operator):
         self.file = tool.Ifc.get()
         props = tool.Structural.get_structural_props()
         ifcopenshell.api.structural.remove_structural_activity(self.file, activity=self.file.by_id(self.activity))
-        bpy.ops.bim.enable_editing_structural_load_group_activities(load_group=props.active_load_group_id)
+        if props.active_load_group_id and props.load_group_editing_type == "ACTIVITY":
+            bpy.ops.bim.enable_editing_structural_load_group_activities(load_group=props.active_load_group_id)
         return {"FINISHED"}
 
 

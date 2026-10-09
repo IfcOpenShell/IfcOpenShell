@@ -164,7 +164,6 @@ class BIMStructuralProperties(PropertyGroup):
     active_structural_analysis_model_index: IntProperty(name="Active Structural Analysis Model Index")
     active_structural_analysis_model_id: IntProperty(name="Active Structural Analysis Model Id")
     current_structural_analysis_model_id: IntProperty(name="Current Structural Analysis Model Id")
-    load_case_editing_type: StringProperty(name="Load Case Editing Type")
     load_case_attributes: CollectionProperty(name="Load Case Attributes", type=Attribute)
     active_load_case_id: IntProperty(name="Active Load Case Id")
     load_group_editing_type: StringProperty(name="Load Group Editing Type")
@@ -223,7 +222,6 @@ class BIMStructuralProperties(PropertyGroup):
         active_structural_analysis_model_index: int
         active_structural_analysis_model_id: int
         current_structural_analysis_model_id: int
-        load_case_editing_type: str
         load_case_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
         active_load_case_id: int
         load_group_editing_type: str
