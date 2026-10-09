@@ -39,10 +39,11 @@ RUN --mount=type=cache,target=/__w/ifcopenshell_build,sharing=locked \
     && rm -rf /artifacts/demo/ifcopenshell-wasm/node_modules
 
 WORKDIR /src/docs
-RUN PROJECT_NUMBER="$(git rev-parse --short HEAD)" sphinx-build -j 2 -b html . /artifacts/html \
+ARG SKIP_PYTHON_API=0
+RUN SKIP_PYTHON_API="${SKIP_PYTHON_API}" PROJECT_NUMBER="$(git rev-parse --short HEAD)" sphinx-build -j 2 -b html . /artifacts/html \
     && test -s /artifacts/html/cpp-api.html \
     && test -s /artifacts/html/output/api/library_root.html \
-    && test -s /artifacts/html/autoapi/ifcopenshell/index.html \
+    && { [ "${SKIP_PYTHON_API}" = "1" ] || test -s /artifacts/html/autoapi/ifcopenshell/index.html; } \
     && test -s /artifacts/html/output/typescript-api/index.html
 
 FROM python:3.13-slim AS serve

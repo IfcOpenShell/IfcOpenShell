@@ -87,6 +87,13 @@ def setup(app):
     app.add_role("ios_python_url", ios_python_url)
     app.add_role("ifcconvert_url", ifcconvert_url)
     app.connect("builder-inited", fix_generated_api_pages, priority=600)
+    if skip_python_api:
+        app.connect("source-read", omit_python_api_navigation)
+
+
+def omit_python_api_navigation(app, docname, source):
+    if docname == "index":
+        source[0] = source[0].replace("   Python API Reference <autoapi/index>\n", "")
 
 
 # -- General configuration ---------------------------------------------------
@@ -108,6 +115,9 @@ extensions = [
     "sphinx_copybutton",
     "myst_parser",
 ]
+skip_python_api = os.environ.get("SKIP_PYTHON_API") == "1"
+if skip_python_api:
+    extensions.remove("autoapi.extension")
 
 # TypeDoc's member anchors are converted to explicit MyST targets.
 myst_heading_anchors = 6
@@ -230,6 +240,8 @@ templates_path = ["_templates"]
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", ".venv", "output/doxygen", "README.md"]
+if skip_python_api:
+    exclude_patterns.append("autoapi")
 
 
 # -- Options for HTML output -------------------------------------------------
