@@ -316,7 +316,7 @@ def z2e(z: float, orthogonal_height: float = 0.0, scale: float = 1.0, factor_z: 
     :param scale: The unit scale such that local ordinate * scale = map
         ordinate. E.g. if your project is in millimeters but your CRS is in
         meters, your scale should be 0.001.
-    :param factor_x: The combined scale factor for the Z value to convert from
+    :param factor_z: The combined scale factor for the Z value to convert from
         local coordinates to map coordinates. Your surveyor will typically know
         this number and approximate it as a constant on a small site. This is
         typically just 1.0, as average combined scale factors usually only
@@ -543,8 +543,6 @@ def auto_global2local(
 
     :param ifc_file: The IFC file
     :param matrix: A 4x4 numpy matrix representing local coordinates.
-    :param should_return_in_map_units: If true, the result is given in map units.
-        If false, the result will be converted back into project units.
     :param is_specified_in_map_units: True if the input matrix is in map units.
     :return: A numpy 4x4 array matrix representing global coordinates.
     """

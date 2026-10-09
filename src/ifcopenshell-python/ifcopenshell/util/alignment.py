@@ -70,7 +70,7 @@ def station_as_string(file: ifcopenshell.file, sta: float):
     If the project units are SI-based, the string is in the format xxx+yyy.zzz
     If the project units are Emperial-based, the string is in the format xx+yy.zz
 
-    :param station: the station to be stringized
+    :param sta: the station to be stringized
     :return: stringized station
     """
 
