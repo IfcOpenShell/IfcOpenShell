@@ -25,6 +25,7 @@ import bpy
 import ifcopenshell.api.group
 import ifcopenshell.api.structural
 import ifcopenshell.util.unit
+from bpy_extras.view3d_utils import location_3d_to_region_2d
 from mathutils import Matrix, Vector
 
 import bonsai.bim.helper
@@ -61,8 +62,10 @@ class ShowLoads(bpy.types.Operator):
                 tool.Blender.update_all_viewports(context)
         elif event.type == "LEFTMOUSE" and event.value == "PRESS" and LoadsDecorator.hovered:
             if view := self.get_view_under_mouse(context, event):
-                area, region, _ = view
+                area, region, rv3d = view
                 hovered = LoadsDecorator.hovered
+                # Dialogs open at the cursor, so move it beside the diagram for the dialog not to cover it.
+                self.move_cursor_beside_loads(context, region, rv3d, hovered)
                 with context.temp_override(window=context.window, area=area, region=region):
                     if hovered.get("activities"):
                         activities = ",".join(str(i) for i in hovered["activities"])
@@ -71,6 +74,48 @@ class ShowLoads(bpy.types.Operator):
                         bpy.ops.bim.edit_structural_load_values("INVOKE_DEFAULT", activity=hovered["activity"])
                 return {"RUNNING_MODAL"}
         return {"PASS_THROUGH"}
+
+    def move_cursor_beside_loads(
+        self, context: bpy.types.Context, region: bpy.types.Region, rv3d: bpy.types.RegionView3D, hovered: dict
+    ) -> None:
+        points = [p for pickable in LoadsDecorator.pickables for p in (pickable["tail"], pickable["tip"])]
+        points += [info["position"] for info in LoadsDecorator.text_info]
+        projected = [location_3d_to_region_2d(region, rv3d, Vector(p)) for p in points]
+        projected = [p for p in projected if p is not None]
+        if not projected:
+            return
+        # Work in window coordinates: the dialog may cover other editors, just not the diagram.
+        xs = [region.x + p.x for p in projected]
+        ys = [region.y + p.y for p in projected]
+        left, right, bottom, top = min(xs), max(xs), min(ys), max(ys)
+        window_width, window_height = context.window.width, context.window.height
+        # The dialog's size in pixels: dialogs are sized in UI units, which follow the display and resolution scale.
+        scale = context.preferences.system.ui_scale
+        width, height, margin = 420 * scale, 400 * scale, 20 * scale
+        level_y, level_x = (bottom + top) / 2, (left + right) / 2
+        # A dialog opens centred on the cursor, so put the cursor half a dialog beyond the diagram's edge.
+        candidates = [
+            (window_width - right, width, right + margin + width / 2, level_y),
+            (left, width, left - margin - width / 2, level_y),
+            (bottom, height, level_x, bottom - margin - height / 2),
+            (window_height - top, height, level_x, top + margin + height / 2),
+        ]
+        fitting = [c for c in candidates if c[0] >= c[1] + margin]
+        # Failing a side with room, take the one with most, which covers the least of the diagram.
+        _, _, x, y = fitting[0] if fitting else max(candidates, key=lambda c: c[0] / c[1])
+        # Better, open it on the side of the diagram where the clicked arrow is, just clear of the diagram.
+        middle = location_3d_to_region_2d(region, rv3d, (Vector(hovered["tail"]) + Vector(hovered["tip"])) / 2)
+        if middle is not None:
+            direction = Vector((region.x + middle.x - level_x, region.y + middle.y - level_y))
+            if direction.length > 1:
+                direction.normalize()
+                clear_x = ((right - left) / 2 + margin + width / 2) / abs(direction.x) if direction.x else float("inf")
+                clear_y = ((top - bottom) / 2 + margin + height / 2) / abs(direction.y) if direction.y else float("inf")
+                distance = min(clear_x, clear_y)
+                x, y = level_x + direction.x * distance, level_y + direction.y * distance
+        x = min(max(x, width / 2), window_width - width / 2)
+        y = min(max(y, height / 2), window_height - height / 2)
+        context.window.cursor_warp(int(x), int(y))
 
     def get_view_under_mouse(
         self, context: bpy.types.Context, event: bpy.types.Event
