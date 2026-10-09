@@ -40,6 +40,7 @@ from .edit_structural_connection_cs import edit_structural_connection_cs
 from .edit_structural_item_axis import edit_structural_item_axis
 from .edit_structural_load import edit_structural_load
 from .edit_structural_load_case import edit_structural_load_case
+from .remove_structural_activity import remove_structural_activity
 from .remove_structural_analysis_model import remove_structural_analysis_model
 from .remove_structural_boundary_condition import remove_structural_boundary_condition
 from .remove_structural_connection_condition import (
@@ -71,6 +72,7 @@ __all__ = [
     "edit_structural_item_axis",
     "edit_structural_load",
     "edit_structural_load_case",
+    "remove_structural_activity",
     "remove_structural_analysis_model",
     "remove_structural_boundary_condition",
     "remove_structural_connection_condition",
