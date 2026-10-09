@@ -263,7 +263,7 @@ void ifcopenshell::geom::manifold_shape::triangulate(ifcopenshell::geom::setting
 		const auto fallback_normals = emit_normals && mesh.numProp == 3
 			? calculate_vertex_normals(mesh)
 			: std::vector<Eigen::Vector3d>();
-		
+
 		std::vector<int> indices(mesh.NumVert());
 		for (size_t i = 0; i < mesh.NumVert(); ++i) {
 			indices[i] = t->addVertex(
