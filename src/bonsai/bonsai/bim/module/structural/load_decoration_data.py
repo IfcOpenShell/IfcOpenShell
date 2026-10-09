@@ -325,10 +325,13 @@ class ShaderInfo:
                     recursive_subgroups(subgorups, rec_limit - 1, activity_type, factor=factor)
 
         props = tool.Structural.get_structural_props()
-        group_definition_id = int(props.load_group_to_show)
         file = tool.Ifc.get()
-        groups = [file.by_id(group_definition_id)]
-        recursive_subgroups(groups, 10, props.activity_type)
+        try:
+            group = file.by_id(int(props.load_group_to_show))
+        except (ValueError, RuntimeError):
+            return  # No load group is chosen, or the chosen one was removed.
+        if group.is_a("IfcStructuralLoadGroup"):
+            recursive_subgroups([group], 10, props.activity_type)
 
     def get_planar_loads(self) -> None:
         """get the necessary information to render the planar load representation in 3D and its text information"""
