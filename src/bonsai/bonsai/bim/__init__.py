@@ -174,6 +174,7 @@ classes = [
     ui.BIM_PT_tab_stakeholders,
     # Object information
     ui.BIM_PT_tab_object_metadata,
+    ui.BIM_PT_tab_object_structural,
     ui.BIM_PT_tab_misc,
     # Geometry and materials
     ui.BIM_PT_tab_placement,
