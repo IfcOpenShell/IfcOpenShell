@@ -109,6 +109,9 @@ static_assert(sizeof(InstanceGpu) == 80, "InstanceGpu must be 80 bytes");
 // uploaded to the SSBO, and used to compute world_aabb_*.  When ViewportWindow's
 // stage matrices are all identity (default), transform is the float rendering
 // copy of placement_transformation.
+//
+// Only mesh_id, object_id and placement_transformation are stored in the
+// sidecar (v18). The rest is session specific and derived on read.
 struct InstanceInfo {
     uint32_t mesh_id                  = 0;  // index into meshes array
     uint32_t object_id                = 0;

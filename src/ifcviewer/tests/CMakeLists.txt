@@ -63,8 +63,11 @@ add_ifcviewer_unit_test(test_sidecar_compress
 )
 
 add_ifcviewer_unit_test(test_sidecar_cache
-    SOURCES ${IFCVIEWER_SRC}/SidecarCache.cpp ${IFCVIEWER_SRC}/SidecarCompress.cpp
-    LIBS ${ZSTD_LIBRARY}
+    SOURCES
+        ${IFCVIEWER_SRC}/SidecarCache.cpp
+        ${IFCVIEWER_SRC}/SidecarCompress.cpp
+        ${IFCVIEWER_SRC}/InstanceCompose.cpp
+    LIBS ${ZSTD_LIBRARY} Eigen3::Eigen
 )
 
 # StreamingLoader: metadata-only read + range readers + the pure buffer-based
@@ -75,7 +78,8 @@ add_ifcviewer_unit_test(test_streaming_loader
         ${IFCVIEWER_SRC}/StreamingLoader.cpp
         ${IFCVIEWER_SRC}/SidecarCache.cpp
         ${IFCVIEWER_SRC}/SidecarCompress.cpp
-    LIBS ${ZSTD_LIBRARY}
+        ${IFCVIEWER_SRC}/InstanceCompose.cpp
+    LIBS ${ZSTD_LIBRARY} Eigen3::Eigen
 )
 
 add_ifcviewer_unit_test(test_instanced_geometry)
@@ -99,7 +103,8 @@ add_ifcviewer_unit_test(test_sidecar_layout
         ${IFCVIEWER_SRC}/ChunkPlanner.cpp
         ${IFCVIEWER_SRC}/SidecarCache.cpp
         ${IFCVIEWER_SRC}/SidecarCompress.cpp
-    LIBS ${ZSTD_LIBRARY}
+        ${IFCVIEWER_SRC}/InstanceCompose.cpp
+    LIBS ${ZSTD_LIBRARY} Eigen3::Eigen
 )
 
 # SidecarSerializer: the Qt-free assembly shared by SidecarBuilder and the
@@ -111,6 +116,7 @@ add_ifcviewer_unit_test(test_sidecar_serializer
         ${IFCVIEWER_SRC}/SidecarSerializer.cpp
         ${IFCVIEWER_SRC}/SidecarCache.cpp
         ${IFCVIEWER_SRC}/SidecarCompress.cpp
+        ${IFCVIEWER_SRC}/InstanceCompose.cpp
         ${IFCVIEWER_SRC}/SidecarLayout.cpp
         ${IFCVIEWER_SRC}/ChunkPlanner.cpp
         ${IFCVIEWER_SRC}/LodBuilder.cpp

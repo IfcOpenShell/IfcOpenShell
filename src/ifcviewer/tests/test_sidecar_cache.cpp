@@ -17,6 +17,7 @@
  *                                                                              *
  ********************************************************************************/
 
+#include "InstanceCompose.h"
 #include "InstancedGeometry.h"
 #include "SidecarCache.h"
 
@@ -86,18 +87,17 @@ SidecarData buildFixture() {
         InstanceInfo& inst = sd.instances[i];
         inst.mesh_id   = (i < 3) ? 0u : 1u;
         inst.object_id = uint32_t(100 + i);
-        inst.color_override_rgba8 = uint32_t(0xAA000000u | (i * 0x010203u));
-        inst.session_model_id  = 1;
         for (int k = 0; k < 16; ++k) {
             inst.placement_transformation[k] = double(i) * 0.25 + double(k);
-            inst.transform[k]                = float(i) * 0.5f  + float(k);
         }
-        inst.world_aabb_min[0] = float(i);
-        inst.world_aabb_min[1] = float(i + 1);
-        inst.world_aabb_min[2] = float(i + 2);
-        inst.world_aabb_max[0] = float(i) + 10.0f;
-        inst.world_aabb_max[1] = float(i + 1) + 10.0f;
-        inst.world_aabb_max[2] = float(i + 2) + 10.0f;
+        // Not stored (v18): the session id is the loader's, and transform +
+        // world AABB come back derived from the placement and the mesh AABB.
+        inst.session_model_id = 0;
+        const MeshInfo& mesh = sd.meshes[inst.mesh_id];
+        const Eigen::Matrix4d identity = Eigen::Matrix4d::Identity();
+        InstanceCompose::composeInstance(inst.placement_transformation, identity, identity, identity,
+                                      mesh.local_aabb_min, mesh.local_aabb_max,
+                                      inst.transform, inst.world_aabb_min, inst.world_aabb_max);
     }
 
     // Non-default georef block.
@@ -154,12 +154,12 @@ bool sidecarDataEqual(const SidecarData& a, const SidecarData& b) {
 
 } // namespace
 
-TEST_CASE("MeshInfo and InstanceInfo have stable layouts (sidecar wire format)", "[sidecar]") {
+TEST_CASE("MeshInfo and the instance record have stable layouts (sidecar wire format)", "[sidecar]") {
     REQUIRE(sizeof(MeshInfo) == 56);
-    REQUIRE(sizeof(InstanceInfo) == 232);
+    REQUIRE(SIDECAR_INSTANCE_RECORD_BYTES == 136);
     REQUIRE(sizeof(InstanceGpu) == 80);
     REQUIRE(sizeof(ElementTableRecord) == 36);
-    REQUIRE(SIDECAR_VERSION == 17);
+    REQUIRE(SIDECAR_VERSION == 18);
     REQUIRE(sizeof(SidecarChunk) == 56);
     REQUIRE(SIDECAR_MAGIC == 0x49465657u);
 }

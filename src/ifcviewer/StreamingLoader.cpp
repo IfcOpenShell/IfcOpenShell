@@ -55,7 +55,7 @@ struct BufCursor {
     const uint8_t* cursor;
     size_t remaining_bytes;
 
-    bool take(void* dst, size_t bytes) {
+    bool read(void* dst, size_t bytes) {
         if (bytes > remaining_bytes) return false;
         std::memcpy(dst, cursor, bytes);
         cursor += bytes;
@@ -65,12 +65,12 @@ struct BufCursor {
 
     // Read a uint32 length prefix followed by length*sizeof(T) elements.
     template<typename T>
-    bool takeVec(std::vector<T>& values) {
+    bool readVec(std::vector<T>& values) {
         uint32_t n;
-        if (!take(&n, 4)) return false;
+        if (!read(&n, 4)) return false;
         if (uint64_t(n) * sizeof(T) > remaining_bytes) return false;
         values.resize(n);
-        if (n > 0 && !take(values.data(), size_t(n) * sizeof(T))) return false;
+        if (n > 0 && !read(values.data(), size_t(n) * sizeof(T))) return false;
         return true;
     }
 };
@@ -101,27 +101,27 @@ bool parseSidecarHead(const uint8_t* data, size_t n, uint64_t& out_geom_bytes) {
 }
 
 bool parseSidecarGeometryMetadata(const uint8_t* data, size_t n, SidecarData& out) {
-    // v15 geometry metadata block: meshes, instances, georef, chunk TOC.
+    // Geometry metadata block: meshes, instances (v18 records), georef, chunk TOC.
     BufCursor c{data, n};
-    if (!c.takeVec(out.meshes))    return false;
-    if (!c.takeVec(out.instances)) return false;
-    if (!c.take(&out.has_coordinate_operation, 4))                  return false;
-    if (!c.take(out.coordinate_operation_meters, sizeof(double) * 16)) return false;
-    if (!c.take(&out.project_length_to_meters, sizeof(double)))     return false;
-    if (!c.take(&out.map_unit_to_meters, sizeof(double)))          return false;
-    if (!c.takeVec(out.chunks)) return false;
+    if (!c.readVec(out.meshes))    return false;
+    if (!readInstanceInfos(c.cursor, c.remaining_bytes, out.meshes, out.instances)) return false;
+    if (!c.read(&out.has_coordinate_operation, 4))                  return false;
+    if (!c.read(out.coordinate_operation_meters, sizeof(double) * 16)) return false;
+    if (!c.read(&out.project_length_to_meters, sizeof(double)))     return false;
+    if (!c.read(&out.map_unit_to_meters, sizeof(double)))          return false;
+    if (!c.readVec(out.chunks)) return false;
     return true;
 }
 
 bool parseSidecarElementMetadata(const uint8_t* data, size_t n, SidecarData& out) {
     // v15+ element metadata block: elements + string table (UI/picking, not rendered).
     BufCursor c{data, n};
-    if (!c.takeVec(out.elements)) return false;
+    if (!c.readVec(out.elements)) return false;
     uint32_t stbl_len = 0;
-    if (!c.take(&stbl_len, 4))       return false;
+    if (!c.read(&stbl_len, 4))       return false;
     if (stbl_len > c.remaining_bytes) return false;
     out.string_table.resize(stbl_len);
-    if (stbl_len > 0 && !c.take(out.string_table.data(), stbl_len)) return false;
+    if (stbl_len > 0 && !c.read(out.string_table.data(), stbl_len)) return false;
     return true;
 }
 
