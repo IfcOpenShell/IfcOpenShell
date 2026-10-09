@@ -16,8 +16,8 @@ The renderer is built around a small number of data transformations:
 
    IFC / .ifcview input
        -> SceneLoader
-       -> GeometryStreamer or sidecar metadata reader
-       -> SidecarData-shaped model metadata
+       -> GeometryStreamer or .ifcview metadata reader
+       -> IfcViewData-shaped model metadata
        -> ViewportCore::applyCachedModel()
        -> per-model chunks, mesh table, instance table
        -> cullModelCpuCompute()
@@ -29,7 +29,7 @@ The renderer is built around a small number of data transformations:
 
 The important split is between **metadata** and **geometry bytes**. Metadata
 describes meshes, instances, bounds, transforms, element ids, and chunk layout.
-Geometry bytes are the quantised vertices and indices. A sidecar load reads
+Geometry bytes are the quantised vertices and indices. A .ifcview load reads
 metadata first and leaves geometry chunks non-resident until the camera needs
 them. A direct IFC load builds the same structures from the geometry iterator,
 then uploads all chunks at finalisation.
@@ -39,7 +39,7 @@ Main components
 
 ``SceneLoader``
     Orchestrates model loading. It first tries to read ``.ifcview`` metadata
-    when sidecar reads are enabled. If that fails, it starts the geometry
+    when .ifcview reads are enabled. If that fails, it starts the geometry
     streamer. It also keeps the ``ifcopenshell::file`` used by property and UI
     code.
 
@@ -50,10 +50,10 @@ Main components
     unique first by representation id (mapped items), and then by shape:
     ``MeshDedup`` deduplicates congruent meshes.
 
-``SidecarBuilder``
+``IfcViewBuilder``
     Optionally mirrors the streamer's output while a raw IFC is loading. It
     writes a new ``.ifcview`` cache after the stream finishes, so the next open
-    can use the sidecar fast path.
+    can use the .ifcview fast path.
 
 ``ViewportWindow``
     The Qt-facing window wrapper. It owns UI/window integration and forwards
@@ -75,21 +75,21 @@ Main components
     and out.
 
 ``StreamingThread`` and web range loading
-    Desktop sidecar streaming uses a background worker to read and decompress
+    Desktop .ifcview streaming uses a background worker to read and decompress
     chunk frames. The web build uses asynchronous byte-range reads from a
     registered file or URL source.
 
-Load path 1: sidecar hit
+Load path 1: .ifcview hit
 ------------------------
 
 The fast path starts when ``SceneLoader`` finds a readable ``.ifcview`` cache.
-The reader validates the sidecar header, skips the compressed geometry section,
+The reader validates the .ifcview header, skips the compressed geometry section,
 and reads the metadata blocks.
 
-For desktop loading, ``readSidecarMetadata()`` returns a
-``StreamingSidecar`` containing:
+For desktop loading, ``readIfcViewMetadata()`` returns a
+``StreamingIfcView`` containing:
 
-- the sidecar file path
+- the .ifcview file path
 - the geometry section offset
 - mesh records
 - instance records
@@ -97,16 +97,16 @@ For desktop loading, ``readSidecarMetadata()`` returns a
 - the baked chunk table of contents
 - element metadata
 
-For web loading, ``ViewportCore::loadSidecarMetadataWeb()`` reads only the
+For web loading, ``ViewportCore::loadIfcViewMetadataWeb()`` reads only the
 header and critical metadata before creating the model. It records the location
 of the deferred element metadata block and fetches that later only when UI code
 needs it.
 
-``ViewportCore::applyCachedModel()`` then converts sidecar metadata into
+``ViewportCore::applyCachedModel()`` then converts .ifcview metadata into
 runtime model state:
 
-1. It creates the chunk list. If the sidecar contains a baked
-   ``SidecarChunk`` table, that table is authoritative. Each chunk is a
+1. It creates the chunk list. If the .ifcview contains a baked
+   ``IfcViewChunk`` table, that table is authoritative. Each chunk is a
    consecutive mesh range with compressed vertex and index frame locations. If
    the model came from a direct in-memory load and has no table, the chunk plan
    is derived from mesh centroids with Morton sorting and greedy packing.
@@ -119,13 +119,13 @@ runtime model state:
 6. It leaves the actual chunk vertex and index bytes non-resident. They are
    fetched later by ``driveStreamingLoads()``.
 
-At this point the viewer knows the model's structure and bounds, but a sidecar
+At this point the viewer knows the model's structure and bounds, but a .ifcview
 model has not necessarily uploaded any triangles yet.
 
 Load path 2: direct IFC stream
 ------------------------------
 
-When no usable sidecar exists, ``SceneLoader`` starts ``GeometryStreamer``.
+When no usable .ifcview exists, ``SceneLoader`` starts ``GeometryStreamer``.
 Streamer signals are queued from the worker thread into the UI/render thread:
 
 ``StreamedMesh``
@@ -137,19 +137,19 @@ Streamer signals are queued from the worker thread into the UI/render thread:
     placement transform, and world AABB.
 
 During the stream, ``ViewportCore::uploadStreamedMesh()`` and
-``ViewportCore::uploadStreamedInstance()`` stage the data in a ``SidecarData``
+``ViewportCore::uploadStreamedInstance()`` stage the data in a ``IfcViewData``
 shape. Mesh vertices are converted to the renderer's packed 12-byte format,
 indices are stored, and instance records are accumulated. The viewport does not
 incrementally draw these raw streamed mesh records one by one.
 
 When the streamer finishes, ``SceneLoader::onStreamerFinished()`` calls
 ``ViewportCore::finalizeModel()``. Finalisation wraps the staged data in a
-``StreamingSidecar`` object and calls the same ``applyCachedModel()`` path used
-by sidecar loads. It then gathers the already-staged vertex and index bytes per
+``StreamingIfcView`` object and calls the same ``applyCachedModel()`` path used
+by .ifcview loads. It then gathers the already-staged vertex and index bytes per
 chunk and calls ``applyStreamedChunk()`` for each chunk. Direct IFC loads
 therefore become resident after finalisation rather than streaming from disk.
 
-If sidecar writes are enabled, ``SidecarBuilder`` finalises its mirrored copy,
+If .ifcview writes are enabled, ``IfcViewBuilder`` finalises its mirrored copy,
 builds LOD1 where available, reorders geometry into streaming chunk order, and
 writes the ``.ifcview`` file for the next open.
 
@@ -175,7 +175,7 @@ world space.
 
 Indices are ``uint32``. Each mesh has an LOD0 index range and may have an LOD1
 index range. LOD1 reuses the same vertices with a smaller index list generated
-at sidecar-build time.
+at .ifcview-build time.
 
 Chunk layout and residency
 --------------------------
@@ -186,12 +186,12 @@ bind groups. A chunk owns:
 - a list of mesh ids
 - a list of instance ids
 - a world AABB
-- compressed sidecar frame locations, for sidecar-backed models
+- compressed .ifcview frame locations, for .ifcview-backed models
 - local vertex and index offsets for meshes inside the chunk
 - GPU pool slices when resident
 - cull output buffers
 
-For sidecar-backed models, chunks start non-resident. They have metadata and
+For .ifcview-backed models, chunks start non-resident. They have metadata and
 small cull buffers, but no vertex/index pool slices. A chunk becomes resident
 when ``applyStreamedChunk()`` receives its decompressed vertex and index bytes.
 
@@ -337,7 +337,7 @@ bind group and buffers as the opaque pass.
 Streaming and eviction
 ----------------------
 
-``driveStreamingLoads()`` decides which non-resident sidecar chunks should be
+``driveStreamingLoads()`` decides which non-resident .ifcview chunks should be
 loaded and which resident chunks may be evicted.
 
 Each frame it:
@@ -357,18 +357,18 @@ second pass may evict the lowest-priority resident chunk, but only when the
 candidate has meaningfully higher priority. This hysteresis prevents simple
 swap loops while still allowing a saturated pool to follow the camera.
 
-Desktop sidecar chunks are read by ``StreamingThread``. Each request contains
-the sidecar path, geometry section offset, compressed vertex frame location,
+Desktop .ifcview chunks are read by ``StreamingThread``. Each request contains
+the .ifcview path, geometry section offset, compressed vertex frame location,
 and compressed index frame location. The worker reads and decompresses those
 frames, then ``driveStreamingLoads()`` applies the result on the render thread.
 
-Web sidecar chunks are fetched asynchronously by byte range. Vertex and index
+Web .ifcview chunks are fetched asynchronously by byte range. Vertex and index
 frames are requested separately and joined before decompression and upload.
 The web path caps concurrent chunk downloads so the highest-priority chunks can
 arrive and render progressively instead of sharing bandwidth across the entire
 visible set.
 
-Sidecar format relationship
+.ifcview format relationship
 ---------------------------
 
 The ``.ifcview`` file exists to feed this renderer. Its critical metadata block
@@ -384,7 +384,7 @@ index frame per chunk. The chunk table lets the streaming system jump directly
 to the frames for a visible chunk without scanning the file or reading
 unrelated geometry.
 
-The sidecar version documented by the current code is version 16.
+The .ifcview version documented by the current code is version 16.
 
 Picking, overlays, and tools
 ----------------------------
@@ -416,7 +416,7 @@ Federated models compose several transforms before upload:
        * coordinate_operation
        * placement_transformation
 
-The sidecar stores double-precision placement transforms so large IFC
+The .ifcview stores double-precision placement transforms so large IFC
 coordinates can be combined with coordinate operation and false-origin matrices
 before being narrowed to the float transform used by the GPU. This protects
 rendering precision for survey-coordinate models.
@@ -426,8 +426,8 @@ What to remember
 
 - Raw IFC streaming produces mesh and instance chunks, but the WebGPU viewport
   does not draw each emitted mesh immediately. It stages them, finalises a model,
-  then uses the same chunk path as sidecar loads.
-- Sidecar loads create a renderable model from metadata first. Geometry becomes
+  then uses the same chunk path as .ifcview loads.
+- .ifcview loads create a renderable model from metadata first. Geometry becomes
   visible only as chunks become resident.
 - Culling produces compact visible draw tables per chunk.
 - The renderer draws one flat vertex stream per visible chunk. The shader

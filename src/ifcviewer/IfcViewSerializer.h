@@ -21,7 +21,7 @@
 #ifndef IFCVIEWSERIALIZER_H
 #define IFCVIEWSERIALIZER_H
 
-#include "SidecarSerializer.h"
+#include "IfcViewAssembler.h"
 #include "StreamedRecords.h"
 
 #include "../ifcgeom/geometry_serializer.h"
@@ -30,9 +30,9 @@
 #include <string>
 #include <vector>
 
-// .ifcview geometry serializer: bakes the viewer's sidecar cache from a normal
+// .ifcview geometry serializer: bakes the viewer's .ifcview cache from a normal
 // IfcGeom iteration — one accumulate per triangulation element, then
-// writeSidecar() in finalize().  Qt-free on purpose, so it can live in the
+// writeIfcView() in finalize().  Qt-free on purpose, so it can live in the
 // runtime-loadable serializer plugin (src/serializers/geometry_ifcview_plugin.cpp)
 // and be driven by IfcConvert or any other registry consumer.
 //
@@ -41,7 +41,7 @@
 //    them and leaves the placement untouched (the rebase is the viewer's
 //    float-precision optimisation for far-from-origin meshes);
 //  - no georeferencing: the CoordinateOperation cache stays identity, so a
-//    plugin-baked sidecar loads in project coordinates.
+//    plugin-baked .ifcview loads in project coordinates.
 class IfcViewSerializer : public ifcopenshell::geom::write_only_geometry_serializer {
 public:
     IfcViewSerializer(const std::string& output_path,
@@ -59,7 +59,7 @@ public:
 
 private:
     std::string output_path_;
-    SidecarSerializer serializer_;
+    IfcViewAssembler serializer_;
 
     // Mesh sharing and dedup, same as the streamer: repeated geometry becomes
     // one mesh + N instances.  object_ids are model-local here; the viewer

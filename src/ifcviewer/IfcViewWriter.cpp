@@ -17,7 +17,7 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "SidecarWriter.h"
+#include "IfcViewWriter.h"
 
 #include <zstd.h>
 
@@ -31,7 +31,7 @@ namespace {
 
 // zstd level for baking. 19 is near-max ratio; decode speed is level-
 // independent and the bake is offline, so favour ratio.
-constexpr int kSidecarZstdLevel = 19;
+constexpr int kIfcViewZstdLevel = 19;
 
 // --- In-memory serialisation (a block is built in RAM, then compressed) ------
 template<typename T>
@@ -52,41 +52,41 @@ void appendBytes(std::vector<std::uint8_t>& buffer, const void* data, std::size_
 // Pull one chunk's geometry out of the whole-model vertex/index arrays into the
 // chunk-LOCAL layout applyStreamedChunk expects: vertices of its meshes in chunk
 // order, then indices as LOD0 (per mesh) followed by LOD1 (per mesh).
-void extractChunkGeometry(const SidecarData& sidecar_data, const SidecarChunk& sidecar_chunk,
+void extractChunkGeometry(const IfcViewData& ifcview_data, const IfcViewChunk& ifcview_chunk,
                           std::vector<std::uint8_t>& vbytes,
                           std::vector<std::uint8_t>& ibytes) {
     vbytes.clear();
     ibytes.clear();
-    const std::uint32_t end = sidecar_chunk.first_mesh + sidecar_chunk.mesh_count;
-    for (std::uint32_t mesh_index = sidecar_chunk.first_mesh;
-         mesh_index < end && mesh_index < sidecar_data.meshes.size();
+    const std::uint32_t end = ifcview_chunk.first_mesh + ifcview_chunk.mesh_count;
+    for (std::uint32_t mesh_index = ifcview_chunk.first_mesh;
+         mesh_index < end && mesh_index < ifcview_data.meshes.size();
          ++mesh_index) {
-        const MeshInfo& mesh_info = sidecar_data.meshes[mesh_index];
+        const MeshInfo& mesh_info = ifcview_data.meshes[mesh_index];
         const std::size_t vertex_offset = mesh_info.vbo_byte_offset;
         const std::size_t vertex_byte_count =
             std::size_t(mesh_info.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
-        if (vertex_offset + vertex_byte_count <= sidecar_data.vertices.size())
-            vbytes.insert(vbytes.end(), sidecar_data.vertices.begin() + vertex_offset,
-                          sidecar_data.vertices.begin() + vertex_offset + vertex_byte_count);
+        if (vertex_offset + vertex_byte_count <= ifcview_data.vertices.size())
+            vbytes.insert(vbytes.end(), ifcview_data.vertices.begin() + vertex_offset,
+                          ifcview_data.vertices.begin() + vertex_offset + vertex_byte_count);
     }
     auto appendIdx = [&](std::size_t first_u32, std::size_t count) {
-        if (first_u32 + count > sidecar_data.indices.size()) return;
+        if (first_u32 + count > ifcview_data.indices.size()) return;
         const auto* index_bytes =
-            reinterpret_cast<const std::uint8_t*>(sidecar_data.indices.data() + first_u32);
+            reinterpret_cast<const std::uint8_t*>(ifcview_data.indices.data() + first_u32);
         ibytes.insert(ibytes.end(), index_bytes, index_bytes + count * sizeof(std::uint32_t));
     };
-    for (std::uint32_t mesh_index = sidecar_chunk.first_mesh;
-         mesh_index < end && mesh_index < sidecar_data.meshes.size();
+    for (std::uint32_t mesh_index = ifcview_chunk.first_mesh;
+         mesh_index < end && mesh_index < ifcview_data.meshes.size();
          ++mesh_index) {
-        const MeshInfo& mesh_info = sidecar_data.meshes[mesh_index];
+        const MeshInfo& mesh_info = ifcview_data.meshes[mesh_index];
         if (mesh_info.index_count) {
             appendIdx(mesh_info.ebo_byte_offset / sizeof(std::uint32_t), mesh_info.index_count);
         }
     }
-    for (std::uint32_t mesh_index = sidecar_chunk.first_mesh;
-         mesh_index < end && mesh_index < sidecar_data.meshes.size();
+    for (std::uint32_t mesh_index = ifcview_chunk.first_mesh;
+         mesh_index < end && mesh_index < ifcview_data.meshes.size();
          ++mesh_index) {
-        const MeshInfo& mesh_info = sidecar_data.meshes[mesh_index];
+        const MeshInfo& mesh_info = ifcview_data.meshes[mesh_index];
         if (mesh_info.lod1_index_count) {
             appendIdx(mesh_info.lod1_ebo_byte_offset / sizeof(std::uint32_t), mesh_info.lod1_index_count);
         }
@@ -97,7 +97,7 @@ void appendInstanceInfos(std::vector<std::uint8_t>& buffer,
                          const std::vector<InstanceInfo>& instances) {
     const std::uint32_t count = static_cast<std::uint32_t>(instances.size());
     appendBytes(buffer, &count, 4);
-    buffer.reserve(buffer.size() + instances.size() * SIDECAR_INSTANCE_RECORD_BYTES);
+    buffer.reserve(buffer.size() + instances.size() * IFCVIEW_INSTANCE_RECORD_BYTES);
     for (const InstanceInfo& inst : instances) {
         const double* p = inst.placement_transformation;  // column-major
         const double translation[3] = { p[12], p[13], p[14] };
@@ -115,7 +115,7 @@ void appendInstanceInfos(std::vector<std::uint8_t>& buffer,
 
 }  // namespace
 
-std::vector<std::uint8_t> compressSidecarFrame(const std::uint8_t* src, std::size_t n,
+std::vector<std::uint8_t> compressIfcViewFrame(const std::uint8_t* src, std::size_t n,
                                                int level) {
     if (n == 0) return {};
     std::vector<std::uint8_t> out(ZSTD_compressBound(n));
@@ -125,8 +125,8 @@ std::vector<std::uint8_t> compressSidecarFrame(const std::uint8_t* src, std::siz
     return out;
 }
 
-bool writeSidecar(const std::string& ifc_path, const SidecarData& data) {
-    std::string path = sidecarPathFor(ifc_path);
+bool writeIfcView(const std::string& ifc_path, const IfcViewData& data) {
+    std::string path = ifcViewPathFor(ifc_path);
     FILE* f = fopen(path.c_str(), "wb");
     if (!f) return false;
 
@@ -135,12 +135,12 @@ bool writeSidecar(const std::string& ifc_path, const SidecarData& data) {
     };
     auto wrU64 = [&](std::uint64_t v) { return write_bytes(&v, sizeof(v)); };
     auto wrBlock = [&](const std::vector<std::uint8_t>& raw) -> bool {
-        auto z = compressSidecarFrame(raw.data(), raw.size(), kSidecarZstdLevel);
+        auto z = compressIfcViewFrame(raw.data(), raw.size(), kIfcViewZstdLevel);
         if (raw.size() > 0 && z.empty()) return false;  // compress failed
         return wrU64(z.size()) && wrU64(raw.size()) && (z.empty() || write_bytes(z.data(), z.size()));
     };
 
-    SidecarHeader hdr = { SIDECAR_MAGIC, SIDECAR_VERSION, SIDECAR_ENDIAN };
+    IfcViewHeader hdr = { IFCVIEW_MAGIC, IFCVIEW_VERSION, IFCVIEW_ENDIAN };
     if (!write_bytes(&hdr, sizeof(hdr))) { fclose(f); return false; }
 
     // --- Geometry section: per-chunk zstd(vertex) + zstd(index) frames -------
@@ -150,7 +150,7 @@ bool writeSidecar(const std::string& ifc_path, const SidecarData& data) {
     if (!wrU64(0)) { fclose(f); return false; }  // geom_bytes placeholder
     const long geom_start = ftell(f);
 
-    std::vector<SidecarChunk> chunks = data.chunks;  // fill blob offsets below
+    std::vector<IfcViewChunk> chunks = data.chunks;  // fill blob offsets below
 
     // Compress every chunk's geometry in parallel — zstd is the bulk of the bake
     // cost — then write the frames serially so their offsets stay contiguous.
@@ -172,8 +172,8 @@ bool writeSidecar(const std::string& ifc_path, const SidecarData& data) {
                 extractChunkGeometry(data, chunks[idx], vraw, iraw);
                 blobs[idx].v_raw = vraw.size();
                 blobs[idx].i_raw = iraw.size();
-                blobs[idx].vz = compressSidecarFrame(vraw.data(), vraw.size(), kSidecarZstdLevel);
-                blobs[idx].iz = compressSidecarFrame(iraw.data(), iraw.size(), kSidecarZstdLevel);
+                blobs[idx].vz = compressIfcViewFrame(vraw.data(), vraw.size(), kIfcViewZstdLevel);
+                blobs[idx].iz = compressIfcViewFrame(iraw.data(), iraw.size(), kIfcViewZstdLevel);
                 if ((vraw.size() && blobs[idx].vz.empty()) ||
                     (iraw.size() && blobs[idx].iz.empty())) {
                     compress_ok.store(false, std::memory_order_relaxed);
@@ -189,15 +189,15 @@ bool writeSidecar(const std::string& ifc_path, const SidecarData& data) {
     if (!compress_ok.load()) { fclose(f); return false; }
 
     for (std::size_t idx = 0; idx < chunks.size(); ++idx) {
-        auto& sidecar_chunk = chunks[idx];
+        auto& ifcview_chunk = chunks[idx];
         const ChunkBlob& blob = blobs[idx];
-        sidecar_chunk.v_comp_off  = std::uint64_t(ftell(f) - geom_start);
-        sidecar_chunk.v_comp_size = blob.vz.size();
-        sidecar_chunk.v_raw_size  = blob.v_raw;
+        ifcview_chunk.v_comp_off  = std::uint64_t(ftell(f) - geom_start);
+        ifcview_chunk.v_comp_size = blob.vz.size();
+        ifcview_chunk.v_raw_size  = blob.v_raw;
         if (!blob.vz.empty() && !write_bytes(blob.vz.data(), blob.vz.size())) { fclose(f); return false; }
-        sidecar_chunk.i_comp_off  = std::uint64_t(ftell(f) - geom_start);
-        sidecar_chunk.i_comp_size = blob.iz.size();
-        sidecar_chunk.i_raw_size  = blob.i_raw;
+        ifcview_chunk.i_comp_off  = std::uint64_t(ftell(f) - geom_start);
+        ifcview_chunk.i_comp_size = blob.iz.size();
+        ifcview_chunk.i_raw_size  = blob.i_raw;
         if (!blob.iz.empty() && !write_bytes(blob.iz.data(), blob.iz.size())) { fclose(f); return false; }
     }
     const long geom_end = ftell(f);

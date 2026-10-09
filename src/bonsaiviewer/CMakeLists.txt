@@ -135,7 +135,7 @@ endif()
 
 target_link_libraries(BonsaiViewer PRIVATE
     # IfcViewer is the unified scene + render lib (SceneLoader, Federation,
-    # GeometryStreamer, SidecarBuilder, ViewportWindow, OverlayRenderer,
+    # GeometryStreamer, IfcViewBuilder, ViewportWindow, OverlayRenderer,
     # BufferPool, …) since the wgpu/ifcviewer merge.
     IfcViewer
     plugin

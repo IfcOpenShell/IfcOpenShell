@@ -232,7 +232,7 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
     // Off by default in IfcOpenShell — makes face winding consistent within
     // each shell, which we need for GL_CULL_FACE and for per-vertex normals
     // to shade a solid without dark inside-out patches.  Costs some iterator
-    // time, but results are cached in the sidecar so it's a one-shot hit.
+    // time, but results are cached in the .ifcview so it's a one-shot hit.
     settings.set("reorient-shells", true);
     settings.set("layerset-first", true);
     settings.set("mesher-linear-deflection", AppSettings::instance().deflectionTolerance());

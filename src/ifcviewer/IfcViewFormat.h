@@ -17,25 +17,25 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef SIDECARFORMAT_H
-#define SIDECARFORMAT_H
+#ifndef IFCVIEWFORMAT_H
+#define IFCVIEWFORMAT_H
 
-// The .ifcview sidecar: everything a loader needs to display an already
+// The .ifcview: everything a loader needs to display an already
 // tessellated model without re-running the iterator.  This header is the
-// on-disk format (constants, records, SidecarData).  SidecarWriter bakes it,
-// SidecarReader loads it.
+// on-disk format (constants, records, IfcViewData).  IfcViewWriter bakes it,
+// IfcViewReader loads it.
 //
-// File layout (v19; multi-byte fields native-endian, see SIDECAR_ENDIAN):
+// File layout (v19; multi-byte fields native-endian, see IFCVIEW_ENDIAN):
 //
-//   SidecarHeader             magic, version, endian
+//   IfcViewHeader             magic, version, endian
 //   uint64 geometry_bytes     length of the geometry section
 //   geometry section          per chunk: zstd(vertex bytes), zstd(index bytes)
 //   geometry metadata block   [uint64 comp][uint64 raw][zstd frame] holding
 //       uint32 num_meshes + MeshInfo[]
-//       uint32 num_instances + instance records (SIDECAR_INSTANCE_RECORD_BYTES each)
+//       uint32 num_instances + instance records (IFCVIEW_INSTANCE_RECORD_BYTES each)
 //       uint32 has_coordinate_operation, double[16] coordinate_operation_meters,
 //       double project_length_to_meters, double map_unit_to_meters
-//       uint32 num_chunks + SidecarChunk[]
+//       uint32 num_chunks + IfcViewChunk[]
 //   element metadata block    [uint64 comp][uint64 raw][zstd frame] holding
 //       uint32 num_elements + ElementTableRecord[]
 //       uint32 string_table_bytes + char[]
@@ -53,7 +53,7 @@
 #include <string>
 #include <vector>
 
-static constexpr uint32_t SIDECAR_MAGIC   = 0x49465657;  // "IFVW"
+static constexpr uint32_t IFCVIEW_MAGIC   = 0x49465657;  // "IFVW"
 // v5 = MeshInfo extended with lod1_ebo_byte_offset + lod1_index_count (56 B).
 //      sd.indices may contain an appended LOD1 index slice for each mesh
 //      where meshoptimizer decimation produced useful output.
@@ -61,23 +61,23 @@ static constexpr uint32_t SIDECAR_MAGIC   = 0x49465657;  // "IFVW"
 //      color u8x4).  Dequant basis is per-mesh MeshInfo.local_aabb_min/max.
 // v7 = VBO vertices shrunk to 12 B/vertex (normal oct i8x2 replaces i16x2,
 //      eliminating 2-byte pad + saving 2 bytes on normal).
-// v8 = source_file_size field dropped from header.  Sidecar is keyed purely
+// v8 = source_file_size field dropped from header.  .ifcview is keyed purely
 //      on path stem (foo.ifc and foo.ifcdb/ both map to foo.ifcview) so the
 //      same cache serves either source format.  Staleness is user-managed
-//      (delete the sidecar to force a rebuild).
+//      (delete the .ifcview to force a rebuild).
 // v9 = unused `reserved` field dropped from header (16 B -> 12 B).
 // v10 = InstanceInfo gains placement_transformation[16] alongside transform[16]
 //       — record grew from 104 B to 168 B.  placement_transformation is the
 //       raw streamer output; transform is the composed FederatedFalseOrigin ·
 //       ModelTransformation · CoordinateOperation · placement_transformation
-//       result.  Sidecar serialises both; on load the transform is recomputed
+//       result.  .ifcview serialises both; on load the transform is recomputed
 //       from placement_transformation + the ViewportWindow's current stage
-//       matrices, so v10 sidecars are reusable across .ifcfeds.
-// v11 = SidecarData gains a per-model CoordinateOperation cache:
+//       matrices, so v10 .ifcview files are reusable across .ifcfeds.
+// v11 = IfcViewData gains a per-model CoordinateOperation cache:
 //       coordinate_operation_meters[16] (column-major), unit scales, and a
-//       has_coordinate_operation flag.  Lets sidecar-loaded models apply
+//       has_coordinate_operation flag.  Lets .ifcview-loaded models apply
 //       georef without re-parsing the IFC source.  Edits to the IFC's
-//       IfcMapConversion do NOT invalidate the sidecar — delete the
+//       IfcMapConversion do NOT invalidate the .ifcview — delete the
 //       .ifcview manually if you change the source's georef parameters.
 // v12 = InstanceInfo::placement_transformation is double[16], and
 //       StreamedInstance carries the streamer placement as double[16].  This keeps
@@ -85,13 +85,13 @@ static constexpr uint32_t SIDECAR_MAGIC   = 0x49465657;  // "IFVW"
 //       composition has reduced them to viewport-local float-sized values.
 // v13 = Map unit scale in cached ModelGeoref is derived from
 //       IfcMapConversion.Scale, not IfcProjectedCRS.MapUnit.
-// v14 = Geometry is laid out in streaming-chunk order (SidecarLayout) and a
+// v14 = Geometry is laid out in streaming-chunk order (IfcViewLayout) and a
 //       chunk table-of-contents (`chunks`) is appended.  The loader builds its
 //       chunks from the TOC instead of re-deriving the Morton/greedy plan, so
 //       each chunk is one CONTIGUOUS byte range — fixing network read
 //       amplification.  The plan can't be re-derived at load because the float
 //       Morton quantisation isn't bit-identical across toolchains (x86 baker vs
-//       wasm loader), so it must be baked in.  No back-compat: v13 sidecars are
+//       wasm loader), so it must be baked in.  No back-compat: v13 .ifcview files are
 //       rejected (regenerate them).
 // v15 = The post-index metadata is split into a geometry metadata block (meshes,
 //       instances, georef, chunk TOC) followed by an element metadata block (elements +
@@ -100,7 +100,7 @@ static constexpr uint32_t SIDECAR_MAGIC   = 0x49465657;  // "IFVW"
 //       the index section.  The web loader reads only the geometry block before
 //       painting, so first geometry no longer waits on the property data; the
 //       element block is fetched lazily (or skipped where unused).  Desktop
-//       reads both.  No back-compat: regenerate sidecars.
+//       reads both.  No back-compat: regenerate .ifcview files.
 // v16 = Geometry + metadata are zstd-COMPRESSED.  Each chunk's vertex bytes and
 //       index bytes are stored as two independent zstd frames (so per-chunk
 //       Range streaming still works — you fetch + decompress just one chunk),
@@ -108,16 +108,16 @@ static constexpr uint32_t SIDECAR_MAGIC   = 0x49465657;  // "IFVW"
 //       The chunk TOC records each chunk's compressed blob offsets/sizes plus
 //       the raw (decompressed) sizes.  ~3-5x fewer bytes over the wire while
 //       keeping HTTP Range intact (unlike server Content-Encoding).  No
-//       back-compat: regenerate sidecars.
+//       back-compat: regenerate .ifcview files.
 // v17 = Removes unused element hierarchy metadata. No back-compat: regenerate
-//       sidecars.
+//       .ifcview files.
 // v18 = InstanceInfo is no longer stored verbatim.  The on-disk instance record
 //       is mesh_id, object_id, and the double[16]
 //       placement (136 B, down from 232 B).  session_model_id belongs to the
 //       session that loads the file, and transform / world AABB are derived
 //       from the placement and the mesh's local AABB (identity stage matrices)
 //       by the readers, exactly as the baker used to derive them before
-//       writing.  No back-compat: regenerate sidecars.
+//       writing.  No back-compat: regenerate .ifcview files.
 // v19 = The placement is stored as a double[3] translation plus a float[9]
 //       column-major linear part (68 B per instance, down from 136).  The
 //       bottom row of an IFC placement is always 0 0 0 1, and float holds the
@@ -126,25 +126,25 @@ static constexpr uint32_t SIDECAR_MAGIC   = 0x49465657;  // "IFVW"
 //       until the federation false origin cancels them.  The geometry metadata
 //       block is what the web loader must finish reading before it can fetch
 //       any chunk, so its size is on the path to first paint.  No back-compat:
-//       regenerate sidecars.
-static constexpr uint32_t SIDECAR_VERSION = 19;
-static constexpr uint32_t SIDECAR_ENDIAN  = 0x01020304;
+//       regenerate .ifcview files.
+static constexpr uint32_t IFCVIEW_VERSION = 19;
+static constexpr uint32_t IFCVIEW_ENDIAN  = 0x01020304;
 
-struct SidecarHeader {
+struct IfcViewHeader {
     uint32_t magic;
     uint32_t version;
     uint32_t endian;
 };
-static_assert(sizeof(SidecarHeader) == 12, "SidecarHeader must be 12 bytes");
+static_assert(sizeof(IfcViewHeader) == 12, "IfcViewHeader must be 12 bytes");
 
 // Bytes before the geometry section: the header plus the uint64 geometry
-// section length.  The metadata blocks follow at SIDECAR_HEAD_BYTES + length.
-inline constexpr std::size_t SIDECAR_HEAD_BYTES = sizeof(SidecarHeader) + sizeof(uint64_t);
+// section length.  The metadata blocks follow at IFCVIEW_HEAD_BYTES + length.
+inline constexpr std::size_t IFCVIEW_HEAD_BYTES = sizeof(IfcViewHeader) + sizeof(uint64_t);
 
 // On-disk per-instance record (v19): mesh_id, object_id, translation as
 // double[3], then the 3x3 linear part of the placement as float[9]
 // (column-major), written field by field so there is no alignment padding.
-static constexpr std::size_t SIDECAR_INSTANCE_RECORD_BYTES =
+static constexpr std::size_t IFCVIEW_INSTANCE_RECORD_BYTES =
     2 * sizeof(uint32_t) + 3 * sizeof(double) + 9 * sizeof(float);
 
 // Chunk table-of-contents entry (v16).  A chunk is a CONTIGUOUS range of meshes
@@ -153,7 +153,7 @@ static constexpr std::size_t SIDECAR_INSTANCE_RECORD_BYTES =
 // +v_comp_size) / [i_comp_off, +i_comp_size) (offsets relative to the geometry
 // section start) and decompresses them to v_raw_size / i_raw_size bytes — the
 // chunk-local (vbytes, idx) applyStreamedChunk consumes.
-struct SidecarChunk {
+struct IfcViewChunk {
     uint32_t first_mesh;
     uint32_t mesh_count;
     uint64_t v_comp_off;
@@ -180,7 +180,7 @@ struct ElementTableRecord {
 
 // Everything needed to display an already-tessellated model without
 // re-running the iterator.  v6 schema: instanced + quantized geometry.
-struct SidecarData {
+struct IfcViewData {
     // Per-model GPU geometry (local coords).  Raw VBO bytes at the
     // INSTANCED_VERTEX_STRIDE_BYTES layout (12 B/vertex as of v7).
     std::vector<uint8_t>      vertices;
@@ -190,7 +190,7 @@ struct SidecarData {
     std::vector<MeshInfo>     meshes;        // indexed by mesh_id
     std::vector<InstanceInfo>  instances;     // sorted by mesh_id
 
-    // CoordinateOperation cache (v11+).  Mirrors ModelGeoref so a sidecar
+    // CoordinateOperation cache (v11+).  Mirrors ModelGeoref so a .ifcview
     // load can apply georef without re-parsing the IFC source.
     // has_coordinate_operation == 0 means the model has no
     // IfcMapConversion; the matrix is then the identity placeholder.
@@ -208,19 +208,19 @@ struct SidecarData {
     std::string               string_table;
 
     // Streaming chunk TOC.  Always written on disk (v14); geometry is laid out
-    // in this chunk order (see SidecarLayout) so each chunk is one contiguous
+    // in this chunk order (see IfcViewLayout) so each chunk is one contiguous
     // range and the loader builds chunks directly from it. Stays empty only for
     // in-memory direct loads (finalizeModel), which don't stream and fall back
     // to deriving the plan.
-    std::vector<SidecarChunk> chunks;
+    std::vector<IfcViewChunk> chunks;
 };
 
-// The sidecar is keyed on the path stem, alongside the source:
+// The .ifcview is keyed on the path stem, alongside the source:
 //   foo.ifc  ->  foo.ifcview
 //   foo.ifcdb/  foo.ifcdb  ->  foo.ifcview
 //   foo (no extension)  ->  foo.ifcview
 // No staleness check — callers delete the file to invalidate.
-inline std::string sidecarPathFor(const std::string& ifc_path) {
+inline std::string ifcViewPathFor(const std::string& ifc_path) {
     std::string path = ifc_path;
     while (!path.empty() && (path.back() == '/' || path.back() == '\\')) path.pop_back();
     const auto slash = path.find_last_of("/\\");
@@ -232,4 +232,4 @@ inline std::string sidecarPathFor(const std::string& ifc_path) {
     return stem + ".ifcview";
 }
 
-#endif // SIDECARFORMAT_H
+#endif // IFCVIEWFORMAT_H

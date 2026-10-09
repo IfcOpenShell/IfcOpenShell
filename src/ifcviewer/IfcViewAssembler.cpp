@@ -18,17 +18,17 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "SidecarSerializer.h"
+#include "IfcViewAssembler.h"
 
 #include "LodBuilder.h"
-#include "SidecarLayout.h"
+#include "IfcViewLayout.h"
 #include "VertexQuantization.h"
 
 #include <cstring>
 #include <limits>
 #include <utility>
 
-void SidecarSerializer::onMeshReady(const StreamedMesh& mesh) {
+void IfcViewAssembler::onMeshReady(const StreamedMesh& mesh) {
     if (mesh.vertices.empty() || mesh.indices.empty()) return;
 
     // Streamer format: 7 floats/vertex (pos3 + normal3 + color-as-float).
@@ -56,17 +56,17 @@ void SidecarSerializer::onMeshReady(const StreamedMesh& mesh) {
         extent_recip[a] = ext > 0.0f ? 1.0f / ext : 0.0f;
     }
 
-    const size_t vb_offset = sidecar_data_.vertices.size();
-    sidecar_data_.vertices.resize(vb_offset + n_verts * INSTANCED_VERTEX_STRIDE_BYTES);
+    const size_t vb_offset = ifcview_data_.vertices.size();
+    ifcview_data_.vertices.resize(vb_offset + n_verts * INSTANCED_VERTEX_STRIDE_BYTES);
     for (size_t i = 0; i < n_verts; ++i) {
         quantizeVertex(mesh.vertices.data() + i * INSTANCED_VERTEX_STRIDE_FLOATS,
                        bmin, extent_recip,
-                       sidecar_data_.vertices.data() + vb_offset
+                       ifcview_data_.vertices.data() + vb_offset
                            + i * INSTANCED_VERTEX_STRIDE_BYTES);
     }
 
-    const size_t ib_offset = sidecar_data_.indices.size();
-    sidecar_data_.indices.insert(sidecar_data_.indices.end(),
+    const size_t ib_offset = ifcview_data_.indices.size();
+    ifcview_data_.indices.insert(ifcview_data_.indices.end(),
                                  mesh.indices.begin(), mesh.indices.end());
 
     MeshInfo info;
@@ -83,13 +83,13 @@ void SidecarSerializer::onMeshReady(const StreamedMesh& mesh) {
     info.lod1_ebo_byte_offset = 0;
     info.lod1_index_count     = 0;
 
-    if (sidecar_data_.meshes.size() <= mesh.mesh_id) {
-        sidecar_data_.meshes.resize(mesh.mesh_id + 1);
+    if (ifcview_data_.meshes.size() <= mesh.mesh_id) {
+        ifcview_data_.meshes.resize(mesh.mesh_id + 1);
     }
-    sidecar_data_.meshes[mesh.mesh_id] = info;
+    ifcview_data_.meshes[mesh.mesh_id] = info;
 }
 
-void SidecarSerializer::onInstanceReady(const StreamedInstance& instance_record) {
+void IfcViewAssembler::onInstanceReady(const StreamedInstance& instance_record) {
     InstanceInfo instance;
     instance.mesh_id              = instance_record.mesh_id;
     instance.object_id            = instance_record.object_id;
@@ -108,27 +108,27 @@ void SidecarSerializer::onInstanceReady(const StreamedInstance& instance_record)
     std::memcpy(instance.world_aabb_min, instance_record.world_aabb_min, sizeof(instance.world_aabb_min));
     std::memcpy(instance.world_aabb_max, instance_record.world_aabb_max, sizeof(instance.world_aabb_max));
 
-    sidecar_data_.instances.push_back(instance);
+    ifcview_data_.instances.push_back(instance);
 }
 
-SidecarData SidecarSerializer::finalize(const ModelGeoref& georef,
+IfcViewData IfcViewAssembler::finalize(const ModelGeoref& georef,
                                         const std::vector<ElementInfo>& elements) {
     // Per-mesh instance_count, matching ViewportWindow::finalizeModel.
-    for (auto& mesh : sidecar_data_.meshes) {
+    for (auto& mesh : ifcview_data_.meshes) {
         mesh.first_instance = 0;
         mesh.instance_count = 0;
     }
-    for (const auto& inst : sidecar_data_.instances) {
-        if (inst.mesh_id < sidecar_data_.meshes.size()) {
-            ++sidecar_data_.meshes[inst.mesh_id].instance_count;
+    for (const auto& inst : ifcview_data_.instances) {
+        if (inst.mesh_id < ifcview_data_.meshes.size()) {
+            ++ifcview_data_.meshes[inst.mesh_id].instance_count;
         }
     }
 
-    sidecar_data_.has_coordinate_operation = georef.has_coordinate_operation ? 1 : 0;
+    ifcview_data_.has_coordinate_operation = georef.has_coordinate_operation ? 1 : 0;
     Eigen::Map<Eigen::Matrix<double, 4, 4, Eigen::ColMajor>>(
-        sidecar_data_.coordinate_operation_meters) = georef.coordinate_operation_meters;
-    sidecar_data_.project_length_to_meters = georef.units.project_length_to_meters;
-    sidecar_data_.map_unit_to_meters       = georef.units.map_unit_to_meters;
+        ifcview_data_.coordinate_operation_meters) = georef.coordinate_operation_meters;
+    ifcview_data_.project_length_to_meters = georef.units.project_length_to_meters;
+    ifcview_data_.map_unit_to_meters       = georef.units.map_unit_to_meters;
 
     for (const auto& info : elements) {
         ElementTableRecord packed;
@@ -136,28 +136,28 @@ SidecarData SidecarSerializer::finalize(const ModelGeoref& georef,
         packed.session_model_id  = info.session_model_id;
         packed.ifc_id    = info.ifc_id;
 
-        packed.guid_offset = static_cast<uint32_t>(sidecar_data_.string_table.size());
+        packed.guid_offset = static_cast<uint32_t>(ifcview_data_.string_table.size());
         packed.guid_length = static_cast<uint32_t>(info.guid.size());
-        sidecar_data_.string_table += info.guid;
+        ifcview_data_.string_table += info.guid;
 
-        packed.name_offset = static_cast<uint32_t>(sidecar_data_.string_table.size());
+        packed.name_offset = static_cast<uint32_t>(ifcview_data_.string_table.size());
         packed.name_length = static_cast<uint32_t>(info.name.size());
-        sidecar_data_.string_table += info.name;
+        ifcview_data_.string_table += info.name;
 
-        packed.type_offset = static_cast<uint32_t>(sidecar_data_.string_table.size());
+        packed.type_offset = static_cast<uint32_t>(ifcview_data_.string_table.size());
         packed.type_length = static_cast<uint32_t>(info.type.size());
-        sidecar_data_.string_table += info.type;
+        ifcview_data_.string_table += info.type;
 
-        sidecar_data_.elements.push_back(packed);
+        ifcview_data_.elements.push_back(packed);
     }
 
-    buildLods(sidecar_data_);
+    buildLods(ifcview_data_);
 
     // Lay geometry out in streaming-chunk order and bake the chunk TOC (v14).
     // Lives here (not in the callers) so every producer — the live loader and
-    // the .ifcview bake paths — gets the contiguous layout, since a sidecar
+    // the .ifcview bake paths — gets the contiguous layout, since a .ifcview
     // written without it streams with network read amplification.
-    reorderSidecarByMorton(sidecar_data_);
+    reorderIfcViewByMorton(ifcview_data_);
 
-    return std::exchange(sidecar_data_, SidecarData{});
+    return std::exchange(ifcview_data_, IfcViewData{});
 }

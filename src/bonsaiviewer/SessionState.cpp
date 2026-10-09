@@ -45,8 +45,8 @@ SessionState::SessionState(QObject* parent)
 void SessionState::createLoader(ViewportWindow* viewport) {
     Q_ASSERT(!loader_);
     loader_ = new SceneLoader(viewport, this);
-    loader_->setShouldReadSidecar(true);
-    loader_->setShouldWriteSidecar(true);
+    loader_->setShouldReadIfcView(true);
+    loader_->setShouldWriteIfcView(true);
     element_registry_->bindLoader(loader_);
 
     auto format_elapsed = [](qint64 ms) {
@@ -63,7 +63,7 @@ void SessionState::createLoader(ViewportWindow* viewport) {
         beginProgress(display_name);
     });
     connect(loader_, &SceneLoader::progressChanged, this, &SessionState::setProgress);
-    connect(loader_, &SceneLoader::loadedFromSidecar, this,
+    connect(loader_, &SceneLoader::loadedFromIfcView, this,
             [this, format_elapsed](uint32_t session_model_id, qint64 elapsed_ms) {
         setStatusMessage("Loaded",
             QString("%1 from cache in %2")

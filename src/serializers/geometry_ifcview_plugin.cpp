@@ -38,19 +38,19 @@ plugin::metadata plugin_metadata() {
 
 std::shared_ptr<geometry_serializer> create_serializer(const geometry_serializer_context& context) {
 	// writes_final_output is set below, so output_filename is the final
-	// <stem>.ifcview path (writeSidecar normalises the stem itself).
+	// <stem>.ifcview path (writeIfcView normalises the stem itself).
 	return std::make_shared<IfcViewSerializer>(context.output_filename, context.settings);
 }
 
 void register_plugin(geometry_serializer_registry& registry, const plugin::module& module) {
 	geometry_serializer_info info;
 	info.format = "ifcview";
-	info.name = "IfcView sidecar";
+	info.name = "IfcView .ifcview";
 	info.description = "Instanced viewer cache (.ifcview) consumed by the IfcOpenShell viewer.";
 	info.extensions = { ".ifcview" };
 	info.supports_triangulation = true;
 	info.bypass_properties = true;
-	// The serializer writes the final file itself via writeSidecar(), so
+	// The serializer writes the final file itself via writeIfcView(), so
 	// IfcConvert must not rename a temp output over it.
 	info.writes_final_output = true;
 	registry.bind(info, create_serializer, geometry_serializer_registry::configure_fn(), module);

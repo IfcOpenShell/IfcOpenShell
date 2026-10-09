@@ -20,11 +20,11 @@
 
 #include "IfcViewSerializer.h"
 
-#include "SidecarWriter.h"
+#include "IfcViewWriter.h"
 
 #include <utility>
 
-// Sidecar sessions are single-model; object ids are model-LOCAL and get
+// .ifcview sessions are single-model; object ids are model-LOCAL and get
 // globalized by the viewer when the cached model is installed.
 static constexpr uint32_t kSessionModelId = 1;
 
@@ -38,7 +38,7 @@ IfcViewSerializer::IfcViewSerializer(const std::string& output_path,
 
 bool IfcViewSerializer::ready() {
     // The file is opened (and the directory is expected to exist) by
-    // writeSidecar at finalize() time.
+    // writeIfcView at finalize() time.
     return true;
 }
 
@@ -75,11 +75,11 @@ void IfcViewSerializer::finalize() {
     // Georeferencing is intentionally not baked yet (see the header note):
     // the coordinate-operation cache stays identity/no-op so this plugin does
     // not need the viewer's IfcParse-side georef pipeline.
-    SidecarData data = serializer_.finalize(ModelGeoref{}, elements_);
+    IfcViewData data = serializer_.finalize(ModelGeoref{}, elements_);
 
-    if (!writeSidecar(output_path_, data)) {
-        logger().error("SER", 40, "Unable to write sidecar file '" + output_path_ + "'");
+    if (!writeIfcView(output_path_, data)) {
+        logger().error("SER", 40, "Unable to write .ifcview file '" + output_path_ + "'");
         return;
     }
-    logger().notice("SER", 41, "Sidecar written to '" + output_path_ + "'");
+    logger().notice("SER", 41, ".ifcview written to '" + output_path_ + "'");
 }

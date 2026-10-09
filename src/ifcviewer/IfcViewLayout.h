@@ -17,16 +17,16 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef SIDECARLAYOUT_H
-#define SIDECARLAYOUT_H
+#ifndef IFCVIEWLAYOUT_H
+#define IFCVIEWLAYOUT_H
 
-#include "SidecarFormat.h"
+#include "IfcViewFormat.h"
 
-// Reorder a sidecar's geometry for streaming locality.
+// Reorder a .ifcview's geometry for streaming locality.
 //
 // The streaming loader chunks meshes by 3D Morton (Z-order) over their
 // centroids, then greedy-packs them into ~16 MB chunks; a chunk is always a
-// CONSECUTIVE run of that sorted order. But a freshly-baked sidecar stores
+// CONSECUTIVE run of that sorted order. But a freshly-baked .ifcview stores
 // vertices / indices / meshes in mesh-id (iterator) order, which has no
 // relation to the spatial chunking — so a chunk's meshes are scattered through
 // the file, and streaming one chunk over a network either issues hundreds of
@@ -51,8 +51,8 @@
 // isn't bit-identical across toolchains (x86 baker vs wasm loader) — a re-derived
 // plan disagrees on boundary meshes and the contiguity is lost.
 //
-// Run at bake (writeSidecar path) or as a one-shot migration over existing
+// Run at bake (writeIfcView path) or as a one-shot migration over existing
 // .ifcview files (read → reorder → write).
-void reorderSidecarByMorton(SidecarData& sd);
+void reorderIfcViewByMorton(IfcViewData& sd);
 
-#endif  // SIDECARLAYOUT_H
+#endif  // IFCVIEWLAYOUT_H

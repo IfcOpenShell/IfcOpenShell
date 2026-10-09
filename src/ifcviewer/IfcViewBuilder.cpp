@@ -17,38 +17,38 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "SidecarBuilder.h"
+#include "IfcViewBuilder.h"
 
 #include "Federation.h"
 #include "GeometryStreamer.h"
-#include "SidecarWriter.h"
+#include "IfcViewWriter.h"
 
 #include <QEventLoop>
 
 #include <utility>
 
-SidecarBuilder::SidecarBuilder(QObject* parent)
+IfcViewBuilder::IfcViewBuilder(QObject* parent)
     : QObject(parent)
 {
 }
 
-void SidecarBuilder::onMeshReady(const StreamedMesh& mesh) {
+void IfcViewBuilder::onMeshReady(const StreamedMesh& mesh) {
     serializer_.onMeshReady(mesh);
 }
 
-void SidecarBuilder::onInstanceReady(const StreamedInstance& instance_record) {
+void IfcViewBuilder::onInstanceReady(const StreamedInstance& instance_record) {
     serializer_.onInstanceReady(instance_record);
 }
 
-SidecarData SidecarBuilder::finalize(const ModelGeoref& georef,
+IfcViewData IfcViewBuilder::finalize(const ModelGeoref& georef,
                                      const std::vector<ElementInfo>& elements) {
     return serializer_.finalize(georef, elements);
 }
 
-bool SidecarBuilder::build(const QString& ifc_path,
+bool IfcViewBuilder::build(const QString& ifc_path,
                            const QString& anchor_path,
                            int num_threads) {
-    serializer_ = SidecarSerializer{};
+    serializer_ = IfcViewAssembler{};
     last_error_.clear();
 
     GeometryStreamer streamer;
@@ -56,9 +56,9 @@ bool SidecarBuilder::build(const QString& ifc_path,
     bool failed = false;
 
     connect(&streamer, &GeometryStreamer::meshReady,
-            this, &SidecarBuilder::onMeshReady);
+            this, &IfcViewBuilder::onMeshReady);
     connect(&streamer, &GeometryStreamer::instanceReady,
-            this, &SidecarBuilder::onInstanceReady);
+            this, &IfcViewBuilder::onInstanceReady);
     connect(&streamer, &GeometryStreamer::finished,
             &loop, &QEventLoop::quit);
     connect(&streamer, &GeometryStreamer::cancelled,
@@ -83,10 +83,10 @@ bool SidecarBuilder::build(const QString& ifc_path,
         georef = computeModelGeoref(file);
     }
 
-    SidecarData data = finalize(georef, streamer.drainElements());
+    IfcViewData data = finalize(georef, streamer.drainElements());
 
-    if (!writeSidecar(anchor_path.toStdString(), data)) {
-        last_error_ = "writeSidecar failed";
+    if (!writeIfcView(anchor_path.toStdString(), data)) {
+        last_error_ = "writeIfcView failed";
         return false;
     }
 

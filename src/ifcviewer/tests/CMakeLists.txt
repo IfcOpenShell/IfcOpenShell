@@ -46,7 +46,7 @@ if(WITH_MESH_OPTIMIZER)
     target_compile_definitions(test_lod_builder PRIVATE -DWITH_MESH_OPTIMIZER)
 endif()
 
-# The sidecar writer and reader are tested against each other: the writer's
+# The .ifcview writer and reader are tested against each other: the writer's
 # tests read back through the production reader, the reader's tests lay down
 # fixtures with the writer. Both link zstd (the imported config target where
 # it exists, since it carries include dirs on Windows/pixi builds; else the
@@ -58,17 +58,17 @@ if(TARGET zstd::libzstd_static)
 else()
     find_library(ZSTD_LIBRARY NAMES zstd libzstd)
 endif()
-set(SIDECAR_TEST_SOURCES
-    ${IFCVIEWER_SRC}/SidecarReader.cpp
-    ${IFCVIEWER_SRC}/SidecarWriter.cpp
+set(IFCVIEW_TEST_SOURCES
+    ${IFCVIEWER_SRC}/IfcViewReader.cpp
+    ${IFCVIEWER_SRC}/IfcViewWriter.cpp
     ${IFCVIEWER_SRC}/InstanceCompose.cpp
 )
-add_ifcviewer_unit_test(test_sidecar_writer
-    SOURCES ${SIDECAR_TEST_SOURCES}
+add_ifcviewer_unit_test(test_ifcview_writer
+    SOURCES ${IFCVIEW_TEST_SOURCES}
     LIBS ${ZSTD_LIBRARY} Eigen3::Eigen
 )
-add_ifcviewer_unit_test(test_sidecar_reader
-    SOURCES ${SIDECAR_TEST_SOURCES}
+add_ifcviewer_unit_test(test_ifcview_reader
+    SOURCES ${IFCVIEW_TEST_SOURCES}
     LIBS ${ZSTD_LIBRARY} Eigen3::Eigen
 )
 
@@ -84,30 +84,30 @@ add_ifcviewer_unit_test(test_chunk_planner
     SOURCES ${IFCVIEWER_SRC}/ChunkPlanner.cpp
 )
 
-# SidecarLayout: bake-time reorder of geometry into the loader's chunk order
+# IfcViewLayout: bake-time reorder of geometry into the loader's chunk order
 # for streaming locality. Needs ChunkPlanner (Morton sort). Pure.
-add_ifcviewer_unit_test(test_sidecar_layout
+add_ifcviewer_unit_test(test_ifcview_layout
     SOURCES
-        ${IFCVIEWER_SRC}/SidecarLayout.cpp
+        ${IFCVIEWER_SRC}/IfcViewLayout.cpp
         ${IFCVIEWER_SRC}/ChunkPlanner.cpp
 )
 
-# SidecarSerializer: the Qt-free assembly shared by SidecarBuilder and the
+# IfcViewAssembler: the Qt-free assembly shared by IfcViewBuilder and the
 # ifcconvert .ifcview serializer plugin. finalize() also runs LodBuilder and
-# the SidecarLayout Morton pass, so those sources are pulled in too.
+# the IfcViewLayout Morton pass, so those sources are pulled in too.
 find_package(Eigen3 ${EIGEN_MIN_VERSION} REQUIRED)
-add_ifcviewer_unit_test(test_sidecar_serializer
+add_ifcviewer_unit_test(test_ifcview_assembler
     SOURCES
-        ${IFCVIEWER_SRC}/SidecarSerializer.cpp
-        ${SIDECAR_TEST_SOURCES}
-        ${IFCVIEWER_SRC}/SidecarLayout.cpp
+        ${IFCVIEWER_SRC}/IfcViewAssembler.cpp
+        ${IFCVIEW_TEST_SOURCES}
+        ${IFCVIEWER_SRC}/IfcViewLayout.cpp
         ${IFCVIEWER_SRC}/ChunkPlanner.cpp
         ${IFCVIEWER_SRC}/LodBuilder.cpp
     LIBS ${ZSTD_LIBRARY} Eigen3::Eigen
 )
 if(WITH_MESH_OPTIMIZER)
-    target_compile_definitions(test_sidecar_serializer PRIVATE -DWITH_MESH_OPTIMIZER)
-    target_link_libraries(test_sidecar_serializer PRIVATE meshoptimizer::meshoptimizer)
+    target_compile_definitions(test_ifcview_assembler PRIVATE -DWITH_MESH_OPTIMIZER)
+    target_link_libraries(test_ifcview_assembler PRIVATE meshoptimizer::meshoptimizer)
 endif()
 
 # InstanceCompose: matrix composition + world AABB derivation. Eigen only.

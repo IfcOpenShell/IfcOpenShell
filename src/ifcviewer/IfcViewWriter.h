@@ -17,14 +17,14 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef SIDECARWRITER_H
-#define SIDECARWRITER_H
+#ifndef IFCVIEWWRITER_H
+#define IFCVIEWWRITER_H
 
-// Baking a .ifcview (format in SidecarFormat.h).  Desktop only: the web build
-// never writes a sidecar and links a decompress-only zstd, so this file is not
+// Baking a .ifcview (format in IfcViewFormat.h).  Desktop only: the web build
+// never writes a .ifcview and links a decompress-only zstd, so this file is not
 // compiled under Emscripten.
 
-#include "SidecarFormat.h"
+#include "IfcViewFormat.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -33,11 +33,11 @@
 
 // Compress [src, src+n) as one zstd frame at `level`. Returns the frame, or an
 // empty vector on error.
-std::vector<std::uint8_t> compressSidecarFrame(const std::uint8_t* src, std::size_t n,
+std::vector<std::uint8_t> compressIfcViewFrame(const std::uint8_t* src, std::size_t n,
                                                int level);
 
-// Write `data` to the sidecar path for `ifc_path` (see sidecarPathFor),
+// Write `data` to the .ifcview path for `ifc_path` (see ifcViewPathFor),
 // compressing every chunk's geometry in parallel.
-bool writeSidecar(const std::string& ifc_path, const SidecarData& data);
+bool writeIfcView(const std::string& ifc_path, const IfcViewData& data);
 
-#endif // SIDECARWRITER_H
+#endif // IFCVIEWWRITER_H

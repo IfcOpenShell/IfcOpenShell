@@ -19,8 +19,8 @@
 
 #include "ChunkPlanner.h"
 #include "InstancedGeometry.h"
-#include "SidecarFormat.h"
-#include "SidecarLayout.h"
+#include "IfcViewFormat.h"
+#include "IfcViewLayout.h"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -36,8 +36,8 @@ constexpr int STRIDE = INSTANCED_VERTEX_STRIDE_BYTES;
 // some, and instances spread across 3D space so the Morton sort actually
 // permutes (not already sorted). Geometry is stored in mesh-id order (as a
 // fresh bake produces it).
-SidecarData buildFixture() {
-    SidecarData sd;
+IfcViewData buildFixture() {
+    IfcViewData sd;
     const int N = 6;
 
     // Per-mesh: vertex_count = i+2, index_count = i+2 (mesh-local 0..vc-1),
@@ -114,7 +114,7 @@ struct InstSig {
     }
 };
 
-InstSig sigFor(const SidecarData& sd, const InstanceInfo& inst) {
+InstSig sigFor(const IfcViewData& sd, const InstanceInfo& inst) {
     const MeshInfo& m = sd.meshes.at(inst.mesh_id);
     InstSig s{};
     s.verts.assign(sd.vertices.begin() + m.vbo_byte_offset,
@@ -132,7 +132,7 @@ InstSig sigFor(const SidecarData& sd, const InstanceInfo& inst) {
     return s;
 }
 
-std::map<uint32_t, InstSig> sigMap(const SidecarData& sd) {
+std::map<uint32_t, InstSig> sigMap(const IfcViewData& sd) {
     std::map<uint32_t, InstSig> m;
     for (const auto& inst : sd.instances) m[inst.object_id] = sigFor(sd, inst);
     return m;
@@ -140,12 +140,12 @@ std::map<uint32_t, InstSig> sigMap(const SidecarData& sd) {
 
 }  // namespace
 
-TEST_CASE("reorderSidecarByMorton preserves every instance's drawn geometry", "[layout]") {
-    SidecarData before = buildFixture();
+TEST_CASE("reorderIfcViewByMorton preserves every instance's drawn geometry", "[layout]") {
+    IfcViewData before = buildFixture();
     const auto sig_before = sigMap(before);
 
-    SidecarData after = before;
-    reorderSidecarByMorton(after);
+    IfcViewData after = before;
+    reorderIfcViewByMorton(after);
 
     // Same counts.
     REQUIRE(after.meshes.size()    == before.meshes.size());
@@ -175,9 +175,9 @@ TEST_CASE("reorderSidecarByMorton preserves every instance's drawn geometry", "[
     REQUIRE(moved);
 }
 
-TEST_CASE("reorderSidecarByMorton lays meshes out contiguously per the loader", "[layout]") {
-    SidecarData sd = buildFixture();
-    reorderSidecarByMorton(sd);
+TEST_CASE("reorderIfcViewByMorton lays meshes out contiguously per the loader", "[layout]") {
+    IfcViewData sd = buildFixture();
+    reorderIfcViewByMorton(sd);
 
     // Meshes' vertex + LOD0-index slices are laid down back-to-back in array
     // order (so consecutive meshes — i.e. a chunk — form one contiguous range).
@@ -205,14 +205,14 @@ TEST_CASE("reorderSidecarByMorton lays meshes out contiguously per the loader", 
     for (std::uint32_t i = 0; i < n; ++i) REQUIRE(order[i] == i);
 }
 
-TEST_CASE("reorderSidecarByMorton is a no-op for trivial inputs", "[layout]") {
-    SidecarData empty;
-    reorderSidecarByMorton(empty);
+TEST_CASE("reorderIfcViewByMorton is a no-op for trivial inputs", "[layout]") {
+    IfcViewData empty;
+    reorderIfcViewByMorton(empty);
     REQUIRE(empty.meshes.empty());
 
-    SidecarData one = buildFixture();
+    IfcViewData one = buildFixture();
     one.meshes.resize(1);
     const auto v = one.vertices;
-    reorderSidecarByMorton(one);  // n < 2 path doesn't touch anything
+    reorderIfcViewByMorton(one);  // n < 2 path doesn't touch anything
     REQUIRE(one.vertices == v);
 }

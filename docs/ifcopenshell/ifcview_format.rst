@@ -30,7 +30,7 @@ Top-level layout
 .. csv-table::
    :header: "Section", "Description"
 
-   "SidecarHeader", "Versioning and format metadata"
+   "IfcViewHeader", "Versioning and format metadata"
    "uint64 geometry_section_size", "Number of bytes from start of geometry section to byte immediately before the geometry metadata block. May be used by streaming readers to skip bulk geometry and first fetch metadata."
    "Geometry section", "Streamable compressed chunks of geometry"
    "Geometry metadata block", "Mesh records, instance records, georeferencing data, and chunk frame offsets"
@@ -63,11 +63,11 @@ metadata.
 Sidecar header
 --------------
 
-``SidecarHeader`` is 12 bytes:
+``IfcViewHeader`` is 12 bytes:
 
 .. code-block:: c
 
-   struct SidecarHeader {
+   struct IfcViewHeader {
        uint32 magic;
        uint32 version;
        uint32 endian;
@@ -108,7 +108,7 @@ chunk, two zstd frames:
    ...
 
 The metadata does not discover these frames by scanning. Instead, the geometry
-metadata block stores the ``SidecarChunk`` table that locates each chunk's
+metadata block stores the ``IfcViewChunk`` table that locates each chunk's
 compressed vertex and index frames.
 
 Inside a decompressed chunk, data is chunk-local:
@@ -194,7 +194,7 @@ runtime model and begin painting geometry. Its raw, decompressed order is:
    double[16] coordinate_operation_meters
    double project_length_to_meters
    double map_unit_to_meters
-   vector<SidecarChunk> chunks
+   vector<IfcViewChunk> chunks
 
 ``MeshInfo`` is 56 bytes and describes one reusable mesh:
 
@@ -251,7 +251,7 @@ unit scale to load a sidecar without reparsing the IFC source solely to recover
 map conversion state. If the source map conversion changes, the sidecar must be
 deleted and rebuilt.
 
-``SidecarChunk`` is 56 bytes and records one streamable range of meshes. Each
+``IfcViewChunk`` is 56 bytes and records one streamable range of meshes. Each
 chunk maps to two compressed geometry frames in the geometry section:
 
 .. list-table::
@@ -328,7 +328,7 @@ Chunks are spatial groups of meshes. During sidecar creation, the builder:
    not split.
 4. Reorders meshes, vertices, indices, and instances so each chunk is a
    consecutive mesh range.
-5. Writes these offsets into the ``SidecarChunk`` table so that loaders can
+5. Writes these offsets into the ``IfcViewChunk`` table so that loaders can
    directly jump to the compressed chunk as needed.
 
 How the file is produced

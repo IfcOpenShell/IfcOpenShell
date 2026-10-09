@@ -19,8 +19,8 @@
 
 // Inline helpers that turn streamer-format vertices (7 floats per vertex:
 // pos3 + normal3 + color-as-float) into the 12 B quantized VBO layout used
-// by both the viewport's GPU buffers and the .ifcview sidecar.  Shared
-// between ViewportWindow::uploadStreamedMesh and SidecarBuilder so the
+// by both the viewport's GPU buffers and the .ifcview.  Shared
+// between ViewportWindow::uploadStreamedMesh and IfcViewBuilder so the
 // on-disk format stays identical to what the viewport renders.
 
 #ifndef VERTEXQUANTIZATION_H

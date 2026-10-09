@@ -21,7 +21,7 @@
 #define INSTANCECOMPOSE_H
 
 // Per-instance transform composition and world-AABB derivation: pure matrix
-// maths on plain arrays, Eigen only, so the viewport, the sidecar readers and
+// maths on plain arrays, Eigen only, so the viewport, the .ifcview readers and
 // the bake tool can share it.  Queries over loaded models live in ModelLookup.
 
 #include <Eigen/Dense>

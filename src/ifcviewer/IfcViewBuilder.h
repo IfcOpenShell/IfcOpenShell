@@ -17,34 +17,34 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef SIDECARBUILDER_H
-#define SIDECARBUILDER_H
+#ifndef IFCVIEWBUILDER_H
+#define IFCVIEWBUILDER_H
 
-#include "SidecarSerializer.h"
+#include "IfcViewAssembler.h"
 
 #include <QObject>
 #include <QString>
 
-// Thin QObject wrapper around SidecarSerializer: the Qt bits a desktop app
+// Thin QObject wrapper around IfcViewAssembler: the Qt bits a desktop app
 // needs (QObject, QString, QEventLoop) live here, the assembly itself does not.
 // Two use modes:
 //
 //   1. Live load — host (SceneLoader) drives its own GeometryStreamer and
 //      forwards meshReady/instanceReady chunks via onMeshReady/onInstanceReady
 //      while the viewport also consumes them. When the stream finishes the
-//      host calls finalize(georef, elements) and writeSidecar() with the
+//      host calls finalize(georef, elements) and writeIfcView() with the
 //      returned data. No GPU readback involved.
 //
 //   2. Offline — build() owns a streamer, runs it on a non-GUI worker thread,
-//      and writes the sidecar to disk. Used by the .rdbview export path.
-class SidecarBuilder : public QObject {
+//      and writes the .ifcview to disk. Used by the .rdbview export path.
+class IfcViewBuilder : public QObject {
     Q_OBJECT
 public:
-    explicit SidecarBuilder(QObject* parent = nullptr);
+    explicit IfcViewBuilder(QObject* parent = nullptr);
 
     // Convenience for the offline path: construct an internal streamer,
     // accumulate, finalize, and write to disk. anchor_path is normalised to
-    // <stem>.ifcview by writeSidecar. Call from a non-GUI worker thread with
+    // <stem>.ifcview by writeIfcView. Call from a non-GUI worker thread with
     // a Qt event dispatcher; build() spins a local QEventLoop until the
     // streamer's worker thread completes.
     bool build(const QString& ifc_path,
@@ -57,17 +57,17 @@ public:
     void onInstanceReady(const StreamedInstance& instance_record);
 
     // Finishes assembly using the georef + element batch the host collected
-    // during streaming. Returns the assembled SidecarData by move; the
+    // during streaming. Returns the assembled IfcViewData by move; the
     // builder's internal state is left empty so the same instance can be
     // reused for another load.
-    SidecarData finalize(const ModelGeoref& georef,
+    IfcViewData finalize(const ModelGeoref& georef,
                          const std::vector<ElementInfo>& elements);
 
     const QString& lastError() const { return last_error_; }
 
 private:
-    SidecarSerializer serializer_;
+    IfcViewAssembler serializer_;
     QString            last_error_;
 };
 
-#endif // SIDECARBUILDER_H
+#endif // IFCVIEWBUILDER_H

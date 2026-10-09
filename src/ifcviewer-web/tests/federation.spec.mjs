@@ -14,8 +14,8 @@ import { test, expect } from '@playwright/test';
 // Runs against the embedded sample, which carries NO IfcCoordinateOperation.
 // That is deliberate here: it pins the federation plumbing (staging, applying,
 // events, units) without needing a georeferenced fixture. The georef values
-// themselves are covered by the sidecar round-trip tests in
-// src/ifcviewer/tests/test_sidecar_cache.cpp.
+// themselves are covered by the .ifcview round-trip tests in
+// src/ifcviewer/tests/test_ifcview_cache.cpp.
 
 async function open(page) {
   const errors = [];
@@ -116,7 +116,7 @@ test('model transform moves one model and clears back', async ({ page }) => {
   const errors = await open(page);
 
   // The embedded sample bypasses the source registry, so it has no source id to
-  // address. Add the same sidecar as a real source — the flow a host page
+  // address. Add the same .ifcview as a real source — the flow a host page
   // actually uses — and wait for the load event to hand back its ids.
   const detail = await page.evaluate(async () => {
     const v = window.viewer;
@@ -189,7 +189,7 @@ test('georef readback reports the sample carries no coordinate operation', async
 // positions differ by ~707 m and whose coordinate operations cancel that out
 // exactly. A viewer that applies each model's operation frames one box's worth
 // of scene after loading both; one that ignores it — as this viewer did before
-// applyCachedModel seeded georef from the sidecar — frames ~707 m of empty
+// applyCachedModel seeded georef from the .ifcview — frames ~707 m of empty
 // space between them. The gap is two orders of magnitude larger than the
 // geometry, so this cannot pass by accident.
 test('models with different map conversions resolving to one point align', async ({ page }) => {
