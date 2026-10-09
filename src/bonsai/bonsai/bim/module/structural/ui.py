@@ -563,6 +563,8 @@ class BIM_PT_show_structural_activities(Panel):
         row.prop(self.props, "activity_type")
         row = self.layout.row(align=True)
         row.prop(self.props, "load_group_to_show")
+        row = self.layout.row(align=True)
+        row.prop(self.props, "force_display", expand=True)
 
 
 class BIM_PT_structural_loads(Panel):

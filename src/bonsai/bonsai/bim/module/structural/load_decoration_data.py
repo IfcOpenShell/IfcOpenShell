@@ -503,8 +503,18 @@ class ShaderInfo:
                     li.append(rotation @ item)
                 direction_dict[key] = li
 
+        force_display = props.force_display
+        force = sum(loads[i] * direction_dict[key][0] for i, key in enumerate(keys[:3]))
+        resultant = np.linalg.norm(force)
+        # A resultant drawn over a single component would only hide it.
+        show_resultant = resultant and (
+            force_display == "RESULTANT" or (force_display == "BOTH" and np.count_nonzero(loads[:3]) > 1)
+        )
+
         for i, key in enumerate(keys):
             if loads[i] == 0:
+                continue
+            if i < 3 and force_display == "RESULTANT":
                 continue
             color = (1, 0, 0, 1)
             if i in [1, 4]:
@@ -513,6 +523,9 @@ class ShaderInfo:
                 color = (0, 0, 1, 1)
             d1 = -(direction_dict[key][0] * loads[i])
             d1 = d1 / np.linalg.norm(d1)
+            if i < 3 and show_resultant:
+                # Scale components to the resultant so they draw its parallelogram.
+                d1 = d1 * abs(loads[i]) / resultant
             if i < 3:
                 d2 = direction_dict[key][1]
                 d3 = direction_dict[key][2]
@@ -560,6 +573,32 @@ class ShaderInfo:
                 self.text_info.append(
                     {"position": location + 0.25 * (d1 + d2), "text": f"{loads[i]:.2f} {self.moment_unit}"}
                 )
+
+        if show_resultant:
+            d1 = -force / resultant
+            helper = np.array((0, 0, 1)) if abs(d1[2]) < 0.9 else np.array((1, 0, 0))
+            d2 = np.cross(d1, helper)
+            d2 = d2 / np.linalg.norm(d2)
+            d3 = np.cross(d1, d2)
+            self.info.append(
+                {
+                    "shader": self.shader.new("SINGLE FORCE"),
+                    "args": {
+                        "position": [
+                            location,
+                            location + d1 + d2,
+                            location + d1 - d2,
+                            location + d1 + d3,
+                            location + d1 - d3,
+                        ],
+                        "coord": [(0, 0, 0), (1, 1, 0), (-1, 1, 0), (1, 1, 0), (-1, 1, 0)],
+                    },
+                    "indices": [(0, 1, 2), (0, 3, 4)],
+                    # Alpha 2 because the shader caps opacity at half of it; the resultant draws fully opaque.
+                    "uniforms": [["color", (1, 1, 1, 2)], ["spacing", 0.3]],
+                }
+            )
+            self.text_info.append({"position": location + d1, "text": f"R = {resultant:.2f} {self.force_unit}"})
 
     def get_point_loads_values(
         self, activity_list: list[tuple[ifcopenshell.entity_instance, float]], element_rotation_matrix: np.ndarray

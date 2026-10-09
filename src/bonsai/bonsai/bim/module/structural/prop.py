@@ -31,6 +31,7 @@ from bpy.props import (
 )
 from bpy.types import PropertyGroup
 
+import bonsai.tool as tool
 from bonsai.bim.module.structural.data import (
     BoundaryConditionsData,
     LoadGroupDecorationData,
@@ -48,6 +49,14 @@ def get_load_groups_to_show(self: "BIMStructuralProperties", context: bpy.types.
 
 def update_activity_type(self: "BIMStructuralProperties", context: bpy.types.Context) -> None:
     LoadGroupDecorationData.is_loaded = False
+
+
+def update_loads_display(self: "BIMStructuralProperties", context: bpy.types.Context) -> None:
+    from bonsai.bim.module.structural.decorator import LoadsDecorator
+
+    if LoadsDecorator.is_installed:
+        LoadsDecorator.update()
+        tool.Blender.update_all_viewports(context)
 
 
 def get_applicable_structural_load_types(
@@ -203,6 +212,7 @@ class BIMStructuralProperties(PropertyGroup):
             ("LOCAL_COORDS", "Local", "Show loads in local reference frame"),
         ],
         name="Reference Frame",
+        update=update_loads_display,
     )
     activity_type: EnumProperty(
         items=[
@@ -213,7 +223,17 @@ class BIMStructuralProperties(PropertyGroup):
         name="Activity Type",
         update=update_activity_type,
     )
-    load_group_to_show: EnumProperty(items=get_load_groups_to_show, name="Load Case")
+    load_group_to_show: EnumProperty(items=get_load_groups_to_show, name="Load Case", update=update_loads_display)
+    force_display: EnumProperty(
+        items=[
+            ("BOTH", "Both", "Show the resultant of point forces with their components"),
+            ("RESULTANT", "Resultant", "Show only the resultant of point forces"),
+            ("COMPONENTS", "Components", "Show only the X, Y and Z components of point forces"),
+        ],
+        name="Point Forces",
+        default="BOTH",
+        update=update_loads_display,
+    )
 
     if TYPE_CHECKING:
         structural_analysis_model_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
@@ -253,6 +273,7 @@ class BIMStructuralProperties(PropertyGroup):
         reference_frame: str
         activity_type: str
         load_group_to_show: str
+        force_display: str
 
 
 class BIMObjectStructuralProperties(PropertyGroup):
