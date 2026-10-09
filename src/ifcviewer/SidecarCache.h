@@ -134,7 +134,7 @@ struct SidecarData {
     std::vector<uint32_t>     indices;
 
     // Mesh dictionary and per-instance data.
-    std::vector<MeshInfo>     meshes;        // indexed by local_mesh_id
+    std::vector<MeshInfo>     meshes;        // indexed by mesh_id
     std::vector<InstanceInfo>  instances;     // sorted by mesh_id
 
     // CoordinateOperation cache (v11+).  Mirrors ModelGeoref so a sidecar

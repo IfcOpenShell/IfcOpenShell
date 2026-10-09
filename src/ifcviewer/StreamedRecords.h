@@ -59,7 +59,7 @@ struct UniqueMesh {
 // vertex position is emitted relative to it; the caller compensates by post-
 // multiplying each instance's placement by T(+rebase_offset).
 StreamedMesh buildStreamedMesh(uint32_t session_model_id,
-                               uint32_t local_mesh_id,
+                               uint32_t mesh_id,
                                const ifcopenshell::geom::triangulation_element* elem,
                                const Eigen::Vector3d& rebase_offset);
 

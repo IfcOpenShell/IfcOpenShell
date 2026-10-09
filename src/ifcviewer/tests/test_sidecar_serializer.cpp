@@ -34,10 +34,10 @@ namespace fs = std::filesystem;
 namespace {
 
 // Unit quad at z, in the streamer's 7-floats/vertex transfer layout.
-StreamedMesh makeQuadMesh(uint32_t local_mesh_id, float z) {
+StreamedMesh makeQuadMesh(uint32_t mesh_id, float z) {
     StreamedMesh mesh;
     mesh.session_model_id = 1;
-    mesh.local_mesh_id = local_mesh_id;
+    mesh.mesh_id = mesh_id;
 
     const float corner_x[4] = {0.0f, 1.0f, 1.0f, 0.0f};
     const float corner_y[4] = {0.0f, 0.0f, 1.0f, 1.0f};
@@ -61,10 +61,10 @@ StreamedMesh makeQuadMesh(uint32_t local_mesh_id, float z) {
     return mesh;
 }
 
-StreamedInstance makeInstance(uint32_t local_mesh_id, uint32_t object_id, float x) {
+StreamedInstance makeInstance(uint32_t mesh_id, uint32_t object_id, float x) {
     StreamedInstance inst;
     inst.session_model_id = 1;
-    inst.local_mesh_id = local_mesh_id;
+    inst.mesh_id = mesh_id;
     inst.object_id = object_id;
     for (int i = 0; i < 16; ++i) inst.transform[i] = (i % 5 == 0) ? 1.0 : 0.0;
     inst.transform[12] = x;  // column-major translation x

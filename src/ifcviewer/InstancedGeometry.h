@@ -123,11 +123,11 @@ struct InstanceInfo {
 // Transfer records emitted by the streamer to the viewport (main thread).
 
 // Emitted the first time a representation id is seen.  Carries the mesh
-// geometry in local coords.  `local_mesh_id` is the streamer-assigned id
-// within this model.
+// geometry in local coords.  `mesh_id` indexes the owning model's meshes
+// array; every mesh id is model-local and is never rebased.
 struct StreamedMesh {
-    uint32_t session_model_id      = 0;
-    uint32_t local_mesh_id = 0;
+    uint32_t session_model_id = 0;
+    uint32_t mesh_id          = 0;
     std::vector<float>    vertices;  // 7 floats * N_verts (pos3+norm3+color1_packed)
     std::vector<uint32_t> indices;
     float    local_aabb_min[3]{};
@@ -138,8 +138,11 @@ struct StreamedMesh {
 // iterator).  For the first instance of a mesh, the StreamedMesh is emitted
 // just before this.
 struct StreamedInstance {
-    uint32_t session_model_id             = 0;
-    uint32_t local_mesh_id        = 0;
+    uint32_t session_model_id     = 0;
+    uint32_t mesh_id              = 0;
+    // Model-local from the streamer (numbered from 1 per model); made
+    // session-unique by applyCachedModel, which adds the model's object
+    // id base at install time.
     uint32_t object_id            = 0;
     uint32_t color_override_rgba8 = 0;
     double   transform[16]{};
