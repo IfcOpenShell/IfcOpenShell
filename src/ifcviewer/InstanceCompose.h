@@ -20,19 +20,11 @@
 #ifndef INSTANCECOMPOSE_H
 #define INSTANCECOMPOSE_H
 
-// Instance-transform composition + per-instance world AABB derivation,
-// plus the cross-model object-id → (model, mesh, placement) lookup.
-// Pulled out of ViewportWindow as a free-function module so the matrix
-// math + lookup logic can be unit-tested without spinning up a Qt window
-// or a wgpu device.
+// Per-instance transform composition and world-AABB derivation: pure matrix
+// maths on plain arrays, Eigen only, so the viewport, the sidecar readers and
+// the bake tool can share it.  Queries over loaded models live in ModelLookup.
 
 #include <Eigen/Dense>
-
-#include <cstdint>
-#include <unordered_map>
-#include <vector>
-
-#include "ModelGpuData.h"
 
 namespace InstanceCompose {
 
@@ -65,44 +57,6 @@ void composeInstance(
     float transform_col_major_out[16],
     float world_aabb_min_out[3], float world_aabb_max_out[3]);
 
-// Result of a successful findInstance lookup. The placement_transformation
-// is double[16] column-major (pre-CoordinateOperation / FederatedFalseOrigin
-// / ModelTransformation) — the same convention as InstanceInfo so the
-// measurement / picking tools can re-compose at need.
-struct InstanceLookup {
-    uint32_t session_model_id = 0;
-    uint32_t mesh_id  = 0;
-    double   placement_transformation[16]{};
-};
-
-// Walk a map of models looking for the one that owns `object_id`,
-// fill `out` with that instance's (session_model_id, mesh_id, placement) and
-// return true. Returns false for object_id == 0 (the sentinel for
-// "no object") or when no model owns the id. Defensive: skips
-// instances whose stored index is out-of-range for the model's
-// instance array.
-bool findInstanceInModels(
-    uint32_t object_id,
-    const std::unordered_map<uint32_t, ModelGpuData>& models,
-    InstanceLookup& out);
-
-// Union of every instance's world AABB across every VISIBLE model — the box
-// viewAll frames. Model-hidden models are excluded (framing them would fly the
-// camera at geometry you cannot see).
-//
-// Returns false when nothing contributed, in which case [mn, mx] is left as the
-// empty box (min = +inf, max = -inf) and the caller must not use it.
-bool sceneWorldAabb(const std::unordered_map<uint32_t, ModelGpuData>& models,
-                    float world_min_out[3], float world_max_out[3]);
-
-// The same union restricted to the named models — the box "view selected model"
-// frames. Ids naming a model that isn't loaded contribute nothing. Hidden
-// models are NOT skipped here: the caller named these specifically, so honour
-// the request rather than second-guessing it.
-bool modelsWorldAabb(const std::unordered_map<uint32_t, ModelGpuData>& models,
-                     const std::vector<uint32_t>& session_model_ids,
-                     float world_min_out[3], float world_max_out[3]);
-
-} // namespace InstanceCompose
+}  // namespace InstanceCompose
 
 #endif  // INSTANCECOMPOSE_H

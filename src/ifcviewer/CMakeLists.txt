@@ -143,6 +143,7 @@ set(IFCVIEWER_CORE_SOURCES
     BufferPool.cpp
     ChunkPlanner.cpp
     InstanceCompose.cpp
+    ModelLookup.cpp
     LodBuilder.cpp
     FederationMath.cpp
     GpuAllocScope.cpp
@@ -199,6 +200,7 @@ set(IFCVIEWER_CORE_HEADERS
     InstanceCompose.h
     InstancedGeometry.h
     Log.h
+    ModelLookup.h
     LodBuilder.h
     Stopwatch.h
     ModelGpuData.h

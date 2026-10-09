@@ -121,16 +121,21 @@ if(WITH_MESH_OPTIMIZER)
     target_link_libraries(test_sidecar_serializer PRIVATE meshoptimizer::meshoptimizer)
 endif()
 
-# InstanceCompose: matrix composition + cross-model object_id lookup.
-# Pulls in wgpu_native for the WGPUBuffer typedef via ModelGpuData.h
-# (never touched at runtime). Eigen for Matrix4d.
-find_package(Eigen3 ${EIGEN_MIN_VERSION} REQUIRED)
+# InstanceCompose: matrix composition + world AABB derivation. Eigen only.
 add_ifcviewer_unit_test(test_instance_compose
     SOURCES ${IFCVIEWER_SRC}/InstanceCompose.cpp
+    LIBS Eigen3::Eigen
+)
+
+# ModelLookup: cross-model object_id lookup + scene / per-model AABBs.
+# Pulls in wgpu_native for the WGPUBuffer typedef via ModelGpuData.h
+# (never touched at runtime). Eigen for ModelGpuData's Matrix4d members.
+add_ifcviewer_unit_test(test_model_lookup
+    SOURCES ${IFCVIEWER_SRC}/ModelLookup.cpp
     LIBS wgpu_native Eigen3::Eigen
 )
 if(UNIX AND NOT APPLE AND WGPU_NATIVE_LIB_DIR)
-    set_target_properties(test_instance_compose PROPERTIES
+    set_target_properties(test_model_lookup PROPERTIES
         BUILD_RPATH "${WGPU_NATIVE_LIB_DIR}"
     )
 endif()

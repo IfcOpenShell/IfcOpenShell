@@ -30,6 +30,7 @@
 #include "CameraMath.h"
 #include "GpuAllocScope.h"
 #include "InstanceCompose.h"
+#include "ModelLookup.h"
 #include "Log.h"
 
 
@@ -279,12 +280,12 @@ void ViewportCore::buildViewProj(Eigen::Matrix4f& view_out,
 }
 
 bool ViewportCore::computeSceneAabb(float mn[3], float mx[3]) const {
-    return InstanceCompose::sceneWorldAabb(models_gpu_, mn, mx);
+    return ModelLookup::sceneWorldAabb(models_gpu_, mn, mx);
 }
 
 bool ViewportCore::computeModelsAabb(const std::vector<uint32_t>& session_model_ids,
                                      float mn[3], float mx[3]) const {
-    return InstanceCompose::modelsWorldAabb(models_gpu_, session_model_ids, mn, mx);
+    return ModelLookup::modelsWorldAabb(models_gpu_, session_model_ids, mn, mx);
 }
 
 float ViewportCore::chunkScreenAreaPx(const ModelGpuData::Chunk& c,
@@ -406,8 +407,8 @@ void ViewportCore::recomposeAndUploadModel(uint32_t session_model_id) {
 }
 
 bool ViewportCore::findInstance(uint32_t object_id,
-                                InstanceCompose::InstanceLookup& out) const {
-    return InstanceCompose::findInstanceInModels(object_id, models_gpu_, out);
+                                ModelLookup::InstanceLookup& out) const {
+    return ModelLookup::findInstanceInModels(object_id, models_gpu_, out);
 }
 
 uint32_t ViewportCore::modelObjectIdBase(uint32_t session_model_id) const {
@@ -4415,7 +4416,7 @@ void ViewportCore::loadAllElementMetadataWeb(std::function<void(bool)> done) {
 }
 
 void ViewportCore::logSelectedObjectGuidWeb(std::uint32_t object_id) {
-    InstanceCompose::InstanceLookup lk;
+    ModelLookup::InstanceLookup lk;
     if (!findInstance(object_id, lk)) return;  // empty pick / unknown id
     const std::uint32_t session_model_id = lk.session_model_id;
     loadElementMetadataWeb(session_model_id, [this, object_id](bool ok) {
@@ -4550,7 +4551,7 @@ void ViewportCore::visitModelElements(
 }
 
 bool ViewportCore::elementForObject(std::uint32_t object_id, ElementRef& out) const {
-    InstanceCompose::InstanceLookup lk;
+    ModelLookup::InstanceLookup lk;
     if (!findInstance(object_id, lk)) return false;
     auto it = models_gpu_.find(lk.session_model_id);
     if (it == models_gpu_.end()) return false;

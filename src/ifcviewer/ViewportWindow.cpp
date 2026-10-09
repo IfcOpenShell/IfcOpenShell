@@ -21,7 +21,6 @@
 #include "AreaMeasurement.h"
 #include "CameraMath.h"
 #include "ChunkPlanner.h"
-#include "InstanceCompose.h"
 #include "LengthMeasurement.h"
 #include "Log.h"
 #include "LogQt.h"
