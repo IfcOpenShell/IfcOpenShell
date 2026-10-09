@@ -636,6 +636,45 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
         self.file.by_id(wall_placement_id)
         assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(wall.ObjectPlacement), matrix)
 
+    def test_removing_a_placement_also_removes_unreferenced_ancestors(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(self.file)
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        parent = self.file.createIfcLocalPlacement(
+            None, self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((0.0, 0.0, 0.0)))
+        )
+        old_placement = self.file.createIfcLocalPlacement(
+            parent, self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((1.0, 0.0, 0.0)))
+        )
+        element.ObjectPlacement = old_placement
+
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=element)
+
+        assert len(self.file.by_type("IfcLocalPlacement")) == 1
+        assert not [placement for placement in self.file.by_type("IfcLocalPlacement") if not placement.PlacesObject]
+
+    def test_keeping_placement_ancestors_still_used_by_other_products(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(self.file)
+        storey = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=storey)
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.spatial.assign_container(self.file, products=[element, element2], relating_structure=storey)
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=element)
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=element2)
+        storey_placement = storey.ObjectPlacement
+        storey_placement_subgraph = [item.id() for item in self.file.traverse(storey_placement)]
+
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=element)
+
+        assert storey.ObjectPlacement == storey_placement
+        for item_id in storey_placement_subgraph:
+            self.file.by_id(item_id)
+        assert element.ObjectPlacement.PlacementRelTo == storey_placement
+        assert element2.ObjectPlacement.PlacementRelTo == storey_placement
+        assert not [placement for placement in self.file.by_type("IfcLocalPlacement") if not placement.PlacesObject]
+
 
 class TestEditObjectPlacementIFC2X3(test.bootstrap.IFC2X3, TestEditObjectPlacement):
     def test_changing_placements_relative_to_a_distribution_element(self):

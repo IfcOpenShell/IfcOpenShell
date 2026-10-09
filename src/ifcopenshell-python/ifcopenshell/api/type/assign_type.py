@@ -209,6 +209,15 @@ class Usecase:
                 allowed_occurrences.add(occurrence_class)
             except RuntimeError:
                 pass
+        # A bare IfcTypeProduct is also the only type IFC2X3 offers for
+        # occurrence classes without a dedicated type (IfcStair, IfcRamp,
+        # IfcRoof, ...), and exporters do not always put a class name in its
+        # ApplicableOccurrence. When that names no class, accept any
+        # IfcProduct, as WR41 does: IFC2X3 has no occurrence rule requiring a
+        # specific type. From IFC4 on, rules like IfcStair.CorrectTypeAssigned
+        # do, so the pairing stays rejected there.
+        if self.file.schema == "IFC2X3" and relating_type.is_a() == "IfcTypeProduct" and not allowed_occurrences:
+            allowed_occurrences.add("IfcProduct")
         # The map only covers physical product occurrence/type pairs (e.g.
         # IfcWallType -> IfcWall). Process and resource types (IfcTaskType,
         # IfcCrewResourceType, ...) aren't in it, but the schema's universal
@@ -220,7 +229,14 @@ class Usecase:
                 allowed_occurrences.add(occurrence_class)
             except RuntimeError:
                 pass
-        mismatched_classes = sorted({o.is_a() for o in related_objects if o.is_a() not in allowed_occurrences})
+        # Membership must be subtype aware: allowed_occurrences holds the
+        # abstract occurrence class from the implementer agreement (e.g.
+        # IfcDistributionElement), while o.is_a() returns the concrete
+        # subtype (e.g. IfcFlowTerminal). An exact name match would wrongly
+        # reject valid subtype occurrences. See #9247.
+        mismatched_classes = sorted(
+            {o.is_a() for o in related_objects if not any(o.is_a(allowed) for allowed in allowed_occurrences)}
+        )
         if mismatched_classes:
             raise TypeError(
                 f"{relating_type.is_a()} cannot type {', '.join(mismatched_classes)} "
