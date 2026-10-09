@@ -27,6 +27,7 @@
 
 #include "InstancedGeometry.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -91,8 +92,27 @@ static constexpr uint32_t SIDECAR_MAGIC   = 0x49465657;  // "IFVW"
 //       back-compat: regenerate sidecars.
 // v17 = Removes unused element hierarchy metadata. No back-compat: regenerate
 //       sidecars.
-static constexpr uint32_t SIDECAR_VERSION = 17;
+// v18 = InstanceInfo is no longer stored verbatim.  The on-disk instance record
+//       is mesh_id, object_id, and the double[16]
+//       placement (136 B, down from 232 B).  session_model_id belongs to the
+//       session that loads the file, and transform / world AABB are derived
+//       from the placement and the mesh's local AABB (identity stage matrices)
+//       by the readers, exactly as the baker used to derive them before
+//       writing.  No back-compat: regenerate sidecars.
+static constexpr uint32_t SIDECAR_VERSION = 18;
 static constexpr uint32_t SIDECAR_ENDIAN  = 0x01020304;
+
+// On-disk per-instance record (v18): two uint32 fields then the placement,
+// written field by field so there is no alignment padding.
+static constexpr std::size_t SIDECAR_INSTANCE_RECORD_BYTES = 2 * 4 + 16 * sizeof(double);
+
+// Parse a count-prefixed run of v18 instance records from
+// [cursor, cursor + remaining), advancing both, and expand them into
+// InstanceInfo with transform and world AABB derived from `meshes` under
+// identity stage matrices.  False when the data is truncated.
+bool readInstanceInfos(const uint8_t*& cursor, std::size_t& remaining,
+                       const std::vector<MeshInfo>& meshes,
+                       std::vector<InstanceInfo>& out);
 
 // Chunk table-of-contents entry (v16).  A chunk is a CONTIGUOUS range of meshes
 // [first_mesh, first_mesh + mesh_count).  Its vertex + index bytes are stored as

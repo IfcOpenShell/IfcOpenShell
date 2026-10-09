@@ -43,6 +43,7 @@
 //   char[string_table_bytes]
 
 #include "SidecarCache.h"
+#include "InstanceCompose.h"
 #include "SidecarCompress.h"
 
 #include <algorithm>
@@ -119,7 +120,55 @@ static void extractChunkGeometry(const SidecarData& sidecar_data, const SidecarC
         }
     }
 }
+
+static void appendInstanceInfos(std::vector<std::uint8_t>& buffer,
+                                  const std::vector<InstanceInfo>& instances) {
+    const std::uint32_t count = static_cast<std::uint32_t>(instances.size());
+    appendBytes(buffer, &count, 4);
+    buffer.reserve(buffer.size() + instances.size() * SIDECAR_INSTANCE_RECORD_BYTES);
+    for (const InstanceInfo& inst : instances) {
+        appendBytes(buffer, &inst.mesh_id, 4);
+        appendBytes(buffer, &inst.object_id, 4);
+        appendBytes(buffer, inst.placement_transformation, sizeof(inst.placement_transformation));
+    }
+}
 #endif  // !__EMSCRIPTEN__ (bake-only serialisation helpers)
+
+bool readInstanceInfos(const std::uint8_t*& cursor, std::size_t& remaining,
+                       const std::vector<MeshInfo>& meshes,
+                       std::vector<InstanceInfo>& out) {
+    std::uint32_t count = 0;
+    if (remaining < 4) return false;
+    std::memcpy(&count, cursor, 4);
+    cursor += 4;
+    remaining -= 4;
+    if (std::uint64_t(count) * SIDECAR_INSTANCE_RECORD_BYTES > remaining) return false;
+
+    const Eigen::Matrix4d identity = Eigen::Matrix4d::Identity();
+    const float zero[3] = {0.0f, 0.0f, 0.0f};
+    out.assign(count, InstanceInfo{});
+    for (InstanceInfo& inst : out) {
+        std::memcpy(&inst.mesh_id, cursor, 4);              cursor += 4;
+        std::memcpy(&inst.object_id, cursor, 4);            cursor += 4;
+        std::memcpy(inst.placement_transformation, cursor, sizeof(inst.placement_transformation));
+        cursor += sizeof(inst.placement_transformation);
+
+        // An instance naming a mesh the file does not have gets an empty
+        // world box, as ViewportCore::composeInstanceFromPlacement does, so
+        // it never passes a cull.
+        const bool known_mesh = inst.mesh_id < meshes.size();
+        InstanceCompose::composeInstance(
+            inst.placement_transformation, identity, identity, identity,
+            known_mesh ? meshes[inst.mesh_id].local_aabb_min : zero,
+            known_mesh ? meshes[inst.mesh_id].local_aabb_max : zero,
+            inst.transform, inst.world_aabb_min, inst.world_aabb_max);
+        if (!known_mesh) {
+            for (int a = 0; a < 3; ++a) inst.world_aabb_min[a] = inst.world_aabb_max[a] = 0.0f;
+        }
+    }
+    remaining -= std::size_t(count) * SIDECAR_INSTANCE_RECORD_BYTES;
+    return true;
+}
 
 struct SidecarHeader {
     uint32_t magic;
@@ -245,7 +294,7 @@ bool writeSidecar(const std::string& ifc_path, const SidecarData& data) {
     // --- Geometry metadata block (zstd): meshes, instances, georef, chunk TOC
     std::vector<std::uint8_t> geometry_metadata;
     appendVec(geometry_metadata, data.meshes);
-    appendVec(geometry_metadata, data.instances);
+    appendInstanceInfos(geometry_metadata, data.instances);
     appendBytes(geometry_metadata, &data.has_coordinate_operation, 4);
     appendBytes(geometry_metadata, data.coordinate_operation_meters, sizeof(double) * 16);
     appendBytes(geometry_metadata, &data.project_length_to_meters, sizeof(double));
@@ -272,16 +321,16 @@ struct BufReader {
     const std::uint8_t* p;
     std::size_t n;
     std::size_t pos = 0;
-    bool take(void* dst, std::size_t k) {
+    bool read(void* dst, std::size_t k) {
         if (pos + k > n) return false;
         std::memcpy(dst, p + pos, k);
         pos += k;
         return true;
     }
     template <typename T>
-    bool takeVec(std::vector<T>& v) {
+    bool readVec(std::vector<T>& v) {
         std::uint32_t c = 0;
-        if (!take(&c, 4)) return false;
+        if (!read(&c, 4)) return false;
         if (pos + std::size_t(c) * sizeof(T) > n) return false;
         v.resize(c);
         if (c) { std::memcpy(v.data(), p + pos, std::size_t(c) * sizeof(T)); pos += std::size_t(c) * sizeof(T); }
@@ -329,20 +378,25 @@ std::optional<SidecarData> readSidecar(const std::string& ifc_path) {
 
     SidecarData data;
     BufReader cr{ geometry_metadata.data(), geometry_metadata.size() };
-    if (!cr.takeVec(data.meshes))    return std::nullopt;
-    if (!cr.takeVec(data.instances)) return std::nullopt;
-    if (!cr.take(&data.has_coordinate_operation, 4))                    return std::nullopt;
-    if (!cr.take(data.coordinate_operation_meters, sizeof(double) * 16)) return std::nullopt;
-    if (!cr.take(&data.project_length_to_meters, sizeof(double)))       return std::nullopt;
-    if (!cr.take(&data.map_unit_to_meters, sizeof(double)))             return std::nullopt;
-    if (!cr.takeVec(data.chunks))    return std::nullopt;
+    if (!cr.readVec(data.meshes))    return std::nullopt;
+    {
+        const std::uint8_t* cursor = cr.p + cr.pos;
+        std::size_t remaining = cr.n - cr.pos;
+        if (!readInstanceInfos(cursor, remaining, data.meshes, data.instances)) return std::nullopt;
+        cr.pos = std::size_t(cursor - cr.p);
+    }
+    if (!cr.read(&data.has_coordinate_operation, 4))                    return std::nullopt;
+    if (!cr.read(data.coordinate_operation_meters, sizeof(double) * 16)) return std::nullopt;
+    if (!cr.read(&data.project_length_to_meters, sizeof(double)))       return std::nullopt;
+    if (!cr.read(&data.map_unit_to_meters, sizeof(double)))             return std::nullopt;
+    if (!cr.readVec(data.chunks))    return std::nullopt;
 
     BufReader dr{ element_metadata.data(), element_metadata.size() };
-    if (!dr.takeVec(data.elements)) return std::nullopt;
+    if (!dr.readVec(data.elements)) return std::nullopt;
     std::uint32_t stbl_len = 0;
-    if (!dr.take(&stbl_len, 4)) return std::nullopt;
+    if (!dr.read(&stbl_len, 4)) return std::nullopt;
     data.string_table.resize(stbl_len);
-    if (stbl_len && !dr.take(data.string_table.data(), stbl_len)) return std::nullopt;
+    if (stbl_len && !dr.read(data.string_table.data(), stbl_len)) return std::nullopt;
 
     // Reconstruct the whole-model vertex/index arrays from the per-chunk blobs.
     std::size_t vsize = 0, isize = 0;
