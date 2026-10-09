@@ -77,10 +77,6 @@ export class EntityInstance extends IfcOpenshellInstance {
       }
       return value;
     }
-    const release = (value: AttributeValueType): void => {
-      if (value instanceof EntityInstance) value.dispose();
-      else if (Array.isArray(value)) value.forEach(release);
-    };
     const buildInfo = (instance: EntityInstance): T | EntityInstanceInfo<T> => {
       const identity = instance.identity();
       if (active.has(identity)) throw new RangeError('Cyclic entity reference in recursive getInfo');
@@ -93,7 +89,7 @@ export class EntityInstance extends IfcOpenshellInstance {
           if (ignore.has(name)) continue;
           const value = instance.get(name);
           if (options.recursive) {
-            try { info[name] = mapValue(value); } finally { release(value); }
+            info[name] = mapValue(value);
           } else {
             info[name] = value;
           }
@@ -112,17 +108,7 @@ export class EntityInstance extends IfcOpenshellInstance {
 
   /** Return entities referenced by the named inverse attribute. */
   inverse(name: string): EntityInstance[] {
-    const list = this.getInverse(name);
-    try {
-      const out: EntityInstance[] = [];
-      for (let i = 0; i < list.size(); i++) {
-        const item = list.get(i) as EntityInstance | null;
-        if (item) out.push(item);
-      }
-      return out;
-    } finally {
-      list.destroy();
-    }
+    return this.getInverse(name) as EntityInstance[];
   }
 
   attributeIndex(name: string): number {

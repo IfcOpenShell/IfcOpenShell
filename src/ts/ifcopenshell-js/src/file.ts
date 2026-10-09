@@ -60,6 +60,10 @@ export class File extends IfcOpenshellFile {
 
   declare byId: (id: number) => EntityInstance;
   declare byGuid: (guid: string) => EntityInstance;
+  declare byType: (typeName: string) => EntityInstance[];
+  declare byTypeExclSubtypes: (typeName: string) => EntityInstance[];
+  declare traverse: (entity: EntityInstance, maxDepth: number) => EntityInstance[];
+  declare traverseBreadthFirst: (entity: EntityInstance, maxDepth: number) => EntityInstance[];
 
   /** Create an entity with any of its IFC attributes, using their schema names. */
   create(ifcClass: string, attributes: Record<string, AttributeValueType> = {}): EntityInstance {
@@ -69,7 +73,7 @@ export class File extends IfcOpenshellFile {
       for (const [name, value] of Object.entries(attributes)) entity.set(name, value);
       return entity;
     } catch (error) {
-      try { this.remove(entity); } finally { entity.dispose(); }
+      this.remove(entity);
       throw error;
     }
   }
@@ -96,12 +100,7 @@ export class File extends IfcOpenshellFile {
     if (withAttributeIndices && !allowDuplicate) {
       throw new IfcOpenShellError('withAttributeIndices requires allowDuplicate to be true');
     }
-    using list = this.getInverseList(entity);
-    const entities: EntityInstance[] = [];
-    for (let i = 0; i < list.size(); i++) {
-      const item = list.get(i) as EntityInstance | null;
-      if (item) entities.push(item);
-    }
+    const entities = this.getInverseList(entity) as EntityInstance[];
     if (withAttributeIndices) {
       const indices = this.getInverseIndices(entity);
       return entities.map((item, i) => [item, indices[i]!] as [EntityInstance, number]);
@@ -110,8 +109,7 @@ export class File extends IfcOpenshellFile {
     // JS Set uses object identity; native getters produce a fresh handle for each occurrence.
     const unique = new Map<number, EntityInstance>();
     for (const item of entities) {
-      if (unique.has(item.identity())) item.dispose();
-      else unique.set(item.identity(), item);
+      if (!unique.has(item.identity())) unique.set(item.identity(), item);
     }
     return new EntityInstanceSet(unique.values());
   }

@@ -35,7 +35,7 @@ describeOrSkip('native geometry iterator contract', () => {
   it('inherits native methods and transfers the factory handle without loading or initializing', () => {
     const { geom, runtime, file } = fixture();
     using ownedFile = file;
-    using settings = new geomApi.Settings();
+    const settings = new geomApi.Settings();
     const initialize = vi.spyOn(IfcOpenshellGeomIterator.prototype, 'initialize');
     try {
       using iterator = new geomApi.Iterator(settings, file);
@@ -66,10 +66,10 @@ describeOrSkip('native geometry iterator contract', () => {
   it('passes filters through and rejects simultaneous include/exclude', () => {
     const { geom, file } = fixture();
     using ownedFile = file;
-    using settings = new geomApi.Settings();
-    using included = new geomApi.Iterator(settings, file, { numThreads: 2, include: [123], geometryLibrary: 'opencascade' });
+    const settings = new geomApi.Settings();
+    const included = new geomApi.Iterator(settings, file, { numThreads: 2, include: [123], geometryLibrary: 'opencascade' });
     expect(geom.createIteratorWithIncludeExcludeId).toHaveBeenCalledWith('opencascade', settings, file, [123], true, 2);
-    using excluded = new geomApi.Iterator(settings, file, { exclude: ['IfcSpace'] });
+    const excluded = new geomApi.Iterator(settings, file, { exclude: ['IfcSpace'] });
     expect(geom.createIteratorWithIncludeExclude).toHaveBeenCalledWith('opencascade', settings, file, ['IfcSpace'], false, 1);
     expect(() => new geomApi.Iterator(settings, file, { include: [], exclude: [] })).toThrow('either include or exclude');
   });

@@ -18,6 +18,7 @@ from src.ifcwrap.binding_generator.abi_ir import (
 )
 from src.ifcwrap.binding_generator.binding_model import TypeSpec
 from src.ifcwrap.binding_generator.targets.wasm.backend import render_wasm_bindings
+from src.ifcwrap.binding_generator.targets.wasm.js_glue import _render_handle_classes
 
 
 def make_metadata() -> BindingABI:
@@ -83,6 +84,87 @@ def test_typescript_declares_low_level_contract() -> None:
     assert "export class IfcOpenshellFile" in declarations
     assert "open(path: string, streaming: boolean)" in declarations
     assert "CANCELLED: 4" in declarations
+
+
+def test_gc_handles_and_instance_arrays(tmp_path: Path) -> None:
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("Node is required to execute generated JavaScript")
+    metadata = make_metadata()
+    handles = dict(metadata.handles)
+    for name, c_type in [
+        ("instance", "ifcopenshell_instance_t"),
+        ("instance_list", "ifcopenshell_parse_instance_list_t"),
+        ("geom_iterator", "ifcopenshell_geom_iterator_t"),
+    ]:
+        handles[name] = CTypeIR(
+            c_type=c_type, kind="handle", fields=(), destroy_function=c_type.removesuffix("_t") + "_destroy"
+        )
+    functions = {}
+    for name, returns in [("size", TypeSpec(kind="size")), ("get", TypeSpec(kind="handle", handle="instance"))]:
+        function = replace(
+            metadata.functions["ifcopenshell_parse_open"],
+            c_name=f"ifcopenshell_parse_instance_list_{name}",
+            receiver="instance_list",
+            params=(CParamIR("self", "ifcopenshell_parse_instance_list_t*", "receiver", "handle"),),
+            returns=returns,
+        )
+        functions[function.c_name] = function
+    metadata = replace(metadata, handles=handles, functions=functions)
+    _, declarations = render_wasm_bindings(metadata)
+    assert "get(): IfcOpenshellInstance;" in declarations
+    instance_decl = declarations.split("export class IfcOpenshellInstance {")[1].split("\n  }")[0]
+    assert "dispose" not in instance_decl
+    assert "export class IfcOpenshellGeomIterator" in declarations
+    (tmp_path / "api.mjs").write_text(
+        _render_handle_classes(metadata)
+        + """
+function invoke_ifcopenshell_parse_instance_list_size(module, self) { return 2; }
+function invoke_ifcopenshell_parse_instance_list_get(module, self) {
+    return new IfcOpenshellInstance(++module.next, true, module);
+}
+export const wrapList = _wrapIfcOpenshellParseInstanceList;
+"""
+    )
+    (tmp_path / "test.mjs").write_text("""
+import assert from 'node:assert/strict';
+let registry;
+globalThis.FinalizationRegistry = class {
+    entries = new Map();
+    constructor(callback) { this.callback = callback; registry = this; }
+    register(target, held, token) { this.entries.set(token, held); }
+    unregister(token) { return this.entries.delete(token); }
+};
+const api = await import('./api.mjs');
+const destroyed = [];
+const module = { next: 100,
+    _ifcopenshell_instance_destroy: ptr => destroyed.push(['instance', ptr]),
+    _ifcopenshell_parse_instance_list_destroy: ptr => destroyed.push(['list', ptr]),
+    _ifcopenshell_geom_iterator_destroy: ptr => destroyed.push(['iterator', ptr]),
+};
+const items = api.wrapList(42, true, module);
+assert(Array.isArray(items));
+assert.equal(items.length, 2);
+assert.deepEqual(destroyed, [['list', 42]]);
+for (const item of items) {
+    assert.equal(item.dispose, undefined);
+    assert.equal(item[Symbol.dispose], undefined);
+    assert(registry.entries.has(item));
+}
+const transferred = new api.IfcOpenshellInstance(items[0]);
+assert.equal(items[0].ptr, 0);
+assert(!registry.entries.has(items[0]));
+assert(registry.entries.has(transferred));
+registry.callback(registry.entries.get(transferred));
+assert.deepEqual(destroyed.at(-1), ['instance', 101]);
+const iterator = new api.IfcOpenshellGeomIterator(43, true, module);
+iterator[Symbol.dispose]();
+iterator.dispose();
+assert(!registry.entries.has(iterator));
+assert.equal(iterator.ptr, 0);
+assert.deepEqual(destroyed.filter(([kind]) => kind === 'iterator'), [['iterator', 43]]);
+""")
+    subprocess.run([node, str(tmp_path / "test.mjs")], check=True, capture_output=True, text=True)
 
 
 @pytest.mark.parametrize(
