@@ -80,6 +80,9 @@ ProcessedLoad = TypedDict(
 
 
 class ShaderInfo:
+    # Values of a load being edited, by load id, shown in place of its own until the edit is confirmed or cancelled.
+    preview: dict[int, dict[str, Union[float, None]]] = {}
+
     def __init__(self) -> None:
         self.is_empty = True
         self.shader = DecorationShader()
@@ -809,10 +812,11 @@ class ShaderInfo:
             activity = item[0]
             factor = item[1]
             load = activity.AppliedLoad
+            preview = self.preview.get(load.id()) if load else None
             temp = np.zeros(6)
             for i, attr in enumerate(attr_list):
-                value = 0 if getattr(load, attr, 0) is None else getattr(load, attr, 0)
-                temp[i] += value * factor
+                value = preview.get(attr) if preview is not None else getattr(load, attr, 0)
+                temp[i] += (value or 0) * factor
             transform_3 = self.get_activity_transform_matrix(activity, element_rotation_matrix)
             transform_6 = np.zeros((6, 6))
             transform_6[0:3, 0:3] = transform_3

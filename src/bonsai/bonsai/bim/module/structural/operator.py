@@ -32,6 +32,7 @@ import bonsai.core.structural as core
 import bonsai.tool as tool
 from bonsai.bim.module.structural.data import StructuralAnalysisModelsData, StructuralLoadCasesData
 from bonsai.bim.module.structural.decorator import LoadsDecorator
+from bonsai.bim.module.structural.load_decoration_data import ShaderInfo
 
 
 class ShowLoads(bpy.types.Operator):
@@ -842,16 +843,40 @@ def get_default_load_name(props: "StructuralForceInput", category: str) -> str:
     return f"{', '.join(values) or '0'} {unit}"
 
 
-def update_load_name(self: "StructuralForceInput", context: bpy.types.Context) -> None:
+def get_load_attributes(props: "StructuralForceInput", category: str) -> dict[str, Union[float, None]]:
+    _, _, force_attributes, moment_attributes = APPLY_LOAD_CLASSES[category]
+    values = get_force_components(props)
+    if props.input_mode == "COMPONENTS":
+        values += (props.moment_x, props.moment_y, props.moment_z)
+    else:
+        values += (0.0, 0.0, 0.0)
+    return {name: value or None for name, value in zip(force_attributes + moment_attributes, values)}
+
+
+def update_force_inputs(self: "StructuralForceInput", context: bpy.types.Context) -> None:
     # Keep a generated name in step with the values, but never overwrite a name the user typed.
     if self.load_category and (not self.load_name or DEFAULT_LOAD_NAME.match(self.load_name)):
         self.load_name = get_default_load_name(self, self.load_category)
+    # Show the load being edited with the values in the dialog until it is confirmed or cancelled.
+    if self.preview_load and self.load_category and LoadsDecorator.is_installed:
+        ShaderInfo.preview = {self.preview_load: get_load_attributes(self, self.load_category)}
+        LoadsDecorator.update()
+        tool.Blender.update_all_viewports(context)
+
+
+def clear_load_preview(context: bpy.types.Context) -> None:
+    if ShaderInfo.preview:
+        ShaderInfo.preview = {}
+        if LoadsDecorator.is_installed:
+            LoadsDecorator.update()
+            tool.Blender.update_all_viewports(context)
 
 
 class StructuralForceInput:
     """Force inputs shared by the Apply Load and Edit Load dialogs."""
 
     load_category: bpy.props.StringProperty(options={"HIDDEN", "SKIP_SAVE"})
+    preview_load: bpy.props.IntProperty(options={"HIDDEN", "SKIP_SAVE"})
     input_mode: bpy.props.EnumProperty(
         name="Input",
         items=[
@@ -859,7 +884,7 @@ class StructuralForceInput:
             ("ANGLE", "Angle", "Magnitude and angle above the horizontal, in the X-Z plane"),
             ("SLOPE", "Slope", "Magnitude and rise over run, in the X-Z plane"),
         ],
-        update=update_load_name,
+        update=update_force_inputs,
     )
     direction: bpy.props.EnumProperty(
         name="Direction",
@@ -870,31 +895,25 @@ class StructuralForceInput:
             ("DOWN_LEFT", "Down-Left", "Measured down from -X"),
             ("DOWN_RIGHT", "Down-Right", "Measured down from +X"),
         ],
-        update=update_load_name,
+        update=update_force_inputs,
     )
-    magnitude: bpy.props.FloatProperty(name="Magnitude", update=update_load_name)
-    angle: bpy.props.FloatProperty(name="Angle", description="Degrees from +X towards +Z", update=update_load_name)
-    rise: bpy.props.FloatProperty(name="Rise", description="Towards +Z", default=1.0, update=update_load_name)
-    run: bpy.props.FloatProperty(name="Run", description="Towards +X", default=1.0, update=update_load_name)
-    x: bpy.props.FloatProperty(name="X", update=update_load_name)
-    y: bpy.props.FloatProperty(name="Y", update=update_load_name)
-    z: bpy.props.FloatProperty(name="Z", update=update_load_name)
-    moment_x: bpy.props.FloatProperty(name="Moment X")
-    moment_y: bpy.props.FloatProperty(name="Moment Y")
-    moment_z: bpy.props.FloatProperty(name="Moment Z")
+    magnitude: bpy.props.FloatProperty(name="Magnitude", update=update_force_inputs)
+    angle: bpy.props.FloatProperty(name="Angle", description="Degrees from +X towards +Z", update=update_force_inputs)
+    rise: bpy.props.FloatProperty(name="Rise", description="Towards +Z", default=1.0, update=update_force_inputs)
+    run: bpy.props.FloatProperty(name="Run", description="Towards +X", default=1.0, update=update_force_inputs)
+    x: bpy.props.FloatProperty(name="X", update=update_force_inputs)
+    y: bpy.props.FloatProperty(name="Y", update=update_force_inputs)
+    z: bpy.props.FloatProperty(name="Z", update=update_force_inputs)
+    moment_x: bpy.props.FloatProperty(name="Moment X", update=update_force_inputs)
+    moment_y: bpy.props.FloatProperty(name="Moment Y", update=update_force_inputs)
+    moment_z: bpy.props.FloatProperty(name="Moment Z", update=update_force_inputs)
     load_name: bpy.props.StringProperty(name="Load Name")
 
     def get_components(self) -> tuple[float, float, float]:
         return get_force_components(self)
 
     def get_load_attributes(self, category: str) -> dict[str, Union[float, None]]:
-        _, _, force_attributes, moment_attributes = APPLY_LOAD_CLASSES[category]
-        values = self.get_components()
-        if self.input_mode == "COMPONENTS":
-            values += (self.moment_x, self.moment_y, self.moment_z)
-        else:
-            values += (0.0, 0.0, 0.0)
-        return {name: value or None for name, value in zip(force_attributes + moment_attributes, values)}
+        return get_load_attributes(self, category)
 
     def get_unit_symbol(self, category: str) -> str:
         return get_load_unit_symbol(category)
@@ -1112,6 +1131,8 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         self.load_name = name
         if (activities := self.get_movable_activities()) and (groups := get_activity_load_groups(activities[0])):
             self.load_group = str(groups[0].id())
+        # Set last, so that filling in the values above does not start a preview.
+        self.preview_load = load.id()
         return context.window_manager.invoke_props_dialog(self, width=350)
 
     def fits(
@@ -1148,7 +1169,11 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         if self.input_mode != "COMPONENTS" and (self.y or self.moment_x or self.moment_y or self.moment_z):
             layout.label(text="Y and moments will be set to zero", icon="ERROR")
 
+    def cancel(self, context):
+        clear_load_preview(context)
+
     def _execute(self, context):
+        ShaderInfo.preview = {}  # The edit below refreshes the shown loads.
         load = self.get_load()
         category = get_load_category(load)
         attributes = self.get_load_attributes(category)
