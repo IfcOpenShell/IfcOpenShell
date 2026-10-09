@@ -157,3 +157,34 @@ code but which nothing creates yet.
   solution. Only forces in global coordinates are handled.
 - Dialogs open at the cursor, so before opening one from a clicked load the cursor is moved
   just clear of the diagram, on the side of the clicked arrow, within the window.
+
+## 5. An item's applied loads
+
+Selecting a structural item gave no way to see what loads it.
+
+- An **Applied Loads** panel, for any structural item, lists its loads by load case, with each
+  case's resultant at the item, buttons to edit or remove each load, the current model's load
+  cases that do not load it, and Apply Load in its header.
+- The structural panels of the Object Information tab (Applied Loads, Structural Connection,
+  Structural Member, Structural Boundary Conditions, Connected Structural Members) move out of
+  Misc into a **Structural** section above it, shown only for structural items and collapsed
+  by default, with Applied Loads open.
+- **Load case eyes**, in this panel and on each row of the Structural Load Cases panel, are
+  open for the shown load case and closed for the others: a closed eye shows its case, an
+  open one stops showing loads. One load case is shown at a time, as in analysis software;
+  showing several together is what load combinations are for.
+
+## Next
+
+Load combinations (a load group of type `LOAD_COMBINATION` holding load cases through
+`IfcRelAssignsToGroupByFactor`), then the PyNite bridge. When combinations come, fix
+`recursive_subgroups` in `load_decoration_data.py`, which multiplies factors cumulatively
+across a group's relationships, so that 1.2 D + 1.6 L would draw the live load at 1.92.
+
+Known gaps:
+
+- Removing an activity keeps its load, as loads can be shared, so loads made by Apply Load can
+  accumulate unused.
+- Bonsai's attribute fields are 32-bit floats.
+- IFC requires every `IfcStructuralConnection` to connect at least one member, so a force on a
+  lone point is not valid IFC until members are attached.

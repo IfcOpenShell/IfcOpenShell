@@ -45,6 +45,8 @@ class ShowLoads(bpy.types.Operator):
 
     def modal(self, context, event):
         assert context.screen
+        if not LoadsDecorator.is_installed:
+            return {"FINISHED"}  # Loads were hidden from a load case's eye.
         if event.type == "F5":
             LoadsDecorator.update()
             tool.Blender.update_all_viewports(context)
@@ -1412,6 +1414,29 @@ class EditStructuralResultant(bpy.types.Operator, tool.Ifc.Operator, StructuralF
             if DEFAULT_LOAD_NAME.match(load.Name or ""):
                 attributes["Name"] = get_force_name(force, unit)
             ifcopenshell.api.structural.edit_structural_load(ifc_file, structural_load=load, attributes=attributes)
+        return {"FINISHED"}
+
+
+class ShowStructuralLoadCase(bpy.types.Operator):
+    bl_idname = "bim.show_structural_load_case"
+    bl_label = "Show Load Case"
+    bl_description = "Show the loads of this load case in the viewport, or stop showing them if they are shown"
+    bl_options = {"REGISTER"}
+    load_case: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = tool.Structural.get_structural_props()
+        if LoadsDecorator.is_installed and props.load_group_to_show == str(self.load_case):
+            LoadsDecorator.uninstall()
+            tool.Blender.update_all_viewports(context)
+            return {"FINISHED"}
+        try:
+            props.load_group_to_show = str(self.load_case)
+        except TypeError:
+            self.report({"WARNING"}, "This load case is not in the current analysis model.")
+            return {"CANCELLED"}
+        if not LoadsDecorator.is_installed:
+            bpy.ops.bim.show_loads("INVOKE_DEFAULT")
         return {"FINISHED"}
 
 

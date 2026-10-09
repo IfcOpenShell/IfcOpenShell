@@ -77,12 +77,24 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
         cls.is_installed = True
         if update_loads_after_moves not in bpy.app.handlers.depsgraph_update_post:
             bpy.app.handlers.depsgraph_update_post.append(update_loads_after_moves)
+        cls.redraw_properties()
 
     @classmethod
     def uninstall(cls) -> None:
         if update_loads_after_moves in bpy.app.handlers.depsgraph_update_post:
             bpy.app.handlers.depsgraph_update_post.remove(update_loads_after_moves)
         super().uninstall()
+        cls.pickables = []
+        cls.hovered = None
+        cls.redraw_properties()
+
+    @classmethod
+    def redraw_properties(cls) -> None:
+        """Redraw property editors, whose load case eyes show whether loads are shown"""
+        for window in bpy.context.window_manager.windows:
+            for area in window.screen.areas:
+                if area.type == "PROPERTIES":
+                    area.tag_redraw()
 
     @classmethod
     def update(cls) -> None:
