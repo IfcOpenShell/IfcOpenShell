@@ -222,7 +222,7 @@ void SceneLoader::loadFromGeometryStreamer(uint32_t session_model_id) {
     // naturally produces a cache for the next one — no GPU readback at
     // finish time. Skipped when caching writes are off.
     if (should_write_ifcview_) {
-        model.ifcview_builder = std::make_unique<IfcViewBuilder>();
+        model.ifcview_assembler.emplace();
     }
     // Elements are buffered here and emitted to the registry once at finalize,
     // after applyCachedModel assigns this model's global object_id base.
@@ -334,8 +334,8 @@ void SceneLoader::onStreamerMeshReady(StreamedMesh mesh) {
     viewport_->uploadStreamedMesh(mesh);
     if (loading_session_model_id_ != 0) {
         auto it = models_.find(loading_session_model_id_);
-        if (it != models_.end() && it->second.ifcview_builder) {
-            it->second.ifcview_builder->onMeshReady(mesh);
+        if (it != models_.end() && it->second.ifcview_assembler) {
+            it->second.ifcview_assembler->onMeshReady(mesh);
         }
     }
 }
@@ -343,8 +343,8 @@ void SceneLoader::onStreamerMeshReady(StreamedMesh mesh) {
 void SceneLoader::onStreamerInstanceReady(StreamedInstance instance_record) {
     if (loading_session_model_id_ != 0) {
         auto it = models_.find(loading_session_model_id_);
-        if (it != models_.end() && it->second.ifcview_builder) {
-            it->second.ifcview_builder->onInstanceReady(instance_record);
+        if (it != models_.end() && it->second.ifcview_assembler) {
+            it->second.ifcview_assembler->onInstanceReady(instance_record);
         }
     }
     viewport_->uploadStreamedInstance(instance_record);
@@ -386,12 +386,12 @@ void SceneLoader::onStreamerFinished() {
             // The .ifcview is written from the LOCAL element/instance ids (the
             // globalization below happens after), so a re-opened .ifcview
             // stores model-local ids exactly like a freshly-streamed one.
-            if (model.ifcview_builder) {
+            if (model.ifcview_assembler) {
                 ModelGeoref georef;
                 if (auto* file = model.streamer->ifcFile()) {
                     georef = computeModelGeoref(file);
                 }
-                IfcViewData data = model.ifcview_builder->finalize(georef, model.streamed_elements);
+                IfcViewData data = model.ifcview_assembler->finalize(georef, model.streamed_elements);
                 // Compress + write the .ifcview on a background thread so the
                 // seconds of zstd on a large model don't freeze the UI right at
                 // 100%. The geometry is already on the GPU and the .ifcview is
@@ -402,7 +402,7 @@ void SceneLoader::onStreamerFinished() {
                     [ifc_path = model.file_path.toStdString(), sd = std::move(data)]() {
                         writeIfcView(ifc_path, sd);
                     });
-                model.ifcview_builder.reset();
+                model.ifcview_assembler.reset();
             }
 
             // Globalize the buffered element ids by the base applyCachedModel

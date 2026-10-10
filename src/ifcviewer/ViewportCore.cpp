@@ -3829,7 +3829,7 @@ void ViewportCore::uploadStreamedMesh(const StreamedMesh& mesh) {
     IfcViewData& staging = getOrCreateDirectStaging(pending_direct_loads_, mesh.session_model_id);
 
     // Streamer format: 7 floats / vertex (pos3 + normal3 + color-as-float).
-    // Same quantisation as IfcViewBuilder::onMeshReady so direct-load and
+    // Same quantisation as IfcViewAssembler::onMeshReady so direct-load and
     // .ifcview-load produce byte-identical GPU buffers.
     const std::size_t n_verts = mesh.vertices.size() / INSTANCED_VERTEX_STRIDE_FLOATS;
 

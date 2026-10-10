@@ -30,6 +30,7 @@
 #include <deque>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <thread>
 #include <vector>
@@ -38,7 +39,7 @@
 #include "../ifcviewer/ViewportWindow.h"
 #include "../ifcviewer/IfcViewReader.h"
 #include "GeometryStreamer.h"
-#include "IfcViewBuilder.h"
+#include "IfcViewAssembler.h"
 #include "IfcViewWriter.h"
 
 // Drives IFC file loading into a ViewportWindow.  Owns the per-model
@@ -49,7 +50,7 @@
 // Consumers (MainWindow, MinimalWindow) observe progress through signals
 // and never touch the streamer, .ifcview thread, or queue directly.
 // .ifcview *writes* happen automatically as a side effect of stream loads —
-// the IfcViewBuilder accumulates from the streamer chunks alongside the
+// an IfcViewAssembler accumulates from the streamer chunks alongside the
 // viewport upload, and SceneLoader finalizes + writes the result when the
 // stream finishes. No GPU readback involved.
 class SceneLoader : public QObject {
@@ -150,7 +151,7 @@ private:
 
         // Live-load .ifcview accumulator. Constructed at the start of a
         // stream load when shouldWriteIfcView is on; null otherwise.
-        std::unique_ptr<IfcViewBuilder> ifcview_builder;
+        std::optional<IfcViewAssembler> ifcview_assembler;
         // Element batches accumulated as the streamer yields, mirrored from
         // what's emitted via streamedElementsReady so finalize() has the
         // full set without re-draining.

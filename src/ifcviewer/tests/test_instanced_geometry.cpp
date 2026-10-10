@@ -21,7 +21,7 @@
 // vertex quantization used to fill it.
 //
 // quantizeVertex / octEncodeNormal (VertexQuantization.h) are the shared
-// production helpers: ViewportWindow::uploadStreamedMesh and IfcViewBuilder both
+// production helpers: ViewportWindow::uploadStreamedMesh and IfcViewAssembler both
 // route through them so the rendered VBO and the on-disk .ifcview record are
 // byte-identical.  The tests exercise that real implementation directly:
 //   - runtime size/alignment assertions (defense in depth for the static_asserts)

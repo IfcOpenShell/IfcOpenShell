@@ -30,9 +30,9 @@
 // Assembles a .ifcview IfcViewData from streamer output and finalizes it
 // (LOD build, element packing, Morton chunk layout + chunk TOC).
 //
-// Deliberately Qt-free: IfcViewBuilder (the QObject that drives a live
-// GeometryStreamer) and the IfcConvert .ifcview serializer plugin both wrap
-// this class instead of each carrying its own copy of the assembly logic.
+// Deliberately Qt-free: SceneLoader (the live viewer), IfcViewBuilder (the
+// offline bake) and the IfcConvert .ifcview serializer plugin all drive this
+// class instead of each carrying its own copy of the assembly logic.
 class IfcViewAssembler {
 public:
     // Accumulator interface. Safe to call repeatedly from a single thread.

@@ -21,50 +21,30 @@
 
 #include "Federation.h"
 #include "GeometryStreamer.h"
+#include "IfcViewAssembler.h"
 #include "IfcViewWriter.h"
 
 #include <QEventLoop>
-
-#include <utility>
-
-IfcViewBuilder::IfcViewBuilder(QObject* parent)
-    : QObject(parent)
-{
-}
-
-void IfcViewBuilder::onMeshReady(const StreamedMesh& mesh) {
-    serializer_.onMeshReady(mesh);
-}
-
-void IfcViewBuilder::onInstanceReady(const StreamedInstance& instance_record) {
-    serializer_.onInstanceReady(instance_record);
-}
-
-IfcViewData IfcViewBuilder::finalize(const ModelGeoref& georef,
-                                     const std::vector<ElementInfo>& elements) {
-    return serializer_.finalize(georef, elements);
-}
+#include <QObject>
 
 bool IfcViewBuilder::build(const QString& ifc_path,
                            const QString& anchor_path,
                            int num_threads) {
-    serializer_ = IfcViewAssembler{};
     last_error_.clear();
 
     GeometryStreamer streamer;
+    IfcViewAssembler assembler;
     QEventLoop loop;
     bool failed = false;
 
-    connect(&streamer, &GeometryStreamer::meshReady,
-            this, &IfcViewBuilder::onMeshReady);
-    connect(&streamer, &GeometryStreamer::instanceReady,
-            this, &IfcViewBuilder::onInstanceReady);
-    connect(&streamer, &GeometryStreamer::finished,
-            &loop, &QEventLoop::quit);
-    connect(&streamer, &GeometryStreamer::cancelled,
-            &loop, &QEventLoop::quit);
-    connect(&streamer, &GeometryStreamer::errorOccurred, this,
-            [&](const QString& msg) {
+    QObject::connect(&streamer, &GeometryStreamer::meshReady, &loop,
+                     [&](const StreamedMesh& mesh) { assembler.onMeshReady(mesh); });
+    QObject::connect(&streamer, &GeometryStreamer::instanceReady, &loop,
+                     [&](const StreamedInstance& instance) { assembler.onInstanceReady(instance); });
+    QObject::connect(&streamer, &GeometryStreamer::finished, &loop, &QEventLoop::quit);
+    QObject::connect(&streamer, &GeometryStreamer::cancelled, &loop, &QEventLoop::quit);
+    QObject::connect(&streamer, &GeometryStreamer::errorOccurred, &loop,
+                     [&](const QString& msg) {
         last_error_ = msg;
         failed = true;
         loop.quit();
@@ -83,7 +63,7 @@ bool IfcViewBuilder::build(const QString& ifc_path,
         georef = computeModelGeoref(file);
     }
 
-    IfcViewData data = finalize(georef, streamer.drainElements());
+    IfcViewData data = assembler.finalize(georef, streamer.drainElements());
 
     if (!writeIfcView(anchor_path.toStdString(), data)) {
         last_error_ = "writeIfcView failed";

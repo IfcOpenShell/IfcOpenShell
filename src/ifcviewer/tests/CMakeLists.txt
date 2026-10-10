@@ -92,7 +92,7 @@ add_ifcviewer_unit_test(test_ifcview_layout
         ${IFCVIEWER_SRC}/ChunkPlanner.cpp
 )
 
-# IfcViewAssembler: the Qt-free assembly shared by IfcViewBuilder and the
+# IfcViewAssembler: the Qt-free assembly shared by SceneLoader, IfcViewBuilder and the
 # ifcconvert .ifcview serializer plugin. finalize() also runs LodBuilder and
 # the IfcViewLayout Morton pass, so those sources are pulled in too.
 find_package(Eigen3 ${EIGEN_MIN_VERSION} REQUIRED)
