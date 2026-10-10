@@ -221,6 +221,22 @@ class TestAddPorts(NewFile):
         self.check_ports_matrices(ports, (obj.matrix_world, translated_matrix))
 
 
+class TestGetPortWorldPosition(NewFile):
+    def test_following_the_parent_object_in_a_millimetre_project(self):
+        bpy.ops.bim.new_project(preset="metric_mm")
+        bpy.ops.mesh.primitive_cube_add(size=1, location=(1, 2, 3))
+        obj = bpy.data.objects["Cube"]
+        obj.scale = (1, 1, 5)
+        bpy.ops.bim.assign_class(ifc_class="IfcDuctSegment", predefined_type="RIGIDSEGMENT", userdefined_type="")
+        start_port, end_port = subject.add_ports(obj)
+        assert np.allclose(subject.get_port_world_position(start_port), obj.matrix_world.translation, atol=1.0e-5)
+        assert np.allclose(
+            subject.get_port_world_position(end_port),
+            (obj.matrix_world @ Matrix.Translation((0, 0, 2.5))).translation,
+            atol=1.0e-5,
+        )
+
+
 class TestCreateEmptyAtCursorWithElementOrientation(NewFile):
     def test_run(self):
         assert bpy.context.scene
