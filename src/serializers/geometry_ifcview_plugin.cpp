@@ -19,7 +19,7 @@
  ********************************************************************************/
 
 #include "geometry_serializer_plugin.h"
-#include "../ifcviewer/IfcViewSerializer.h"
+#include "ifcview_serializer.h"
 
 #include <boost/dll/alias.hpp>
 #include <memory>

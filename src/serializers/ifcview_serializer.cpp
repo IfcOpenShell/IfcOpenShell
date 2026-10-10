@@ -18,9 +18,9 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "IfcViewSerializer.h"
+#include "ifcview_serializer.h"
 
-#include "IfcViewWriter.h"
+#include "../ifcviewer/IfcViewWriter.h"
 
 #include <utility>
 

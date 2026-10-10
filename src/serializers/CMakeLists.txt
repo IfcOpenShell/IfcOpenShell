@@ -3,6 +3,8 @@ set(geometry_serializer_plugin_runtime_dir "$<TARGET_FILE_DIR:IfcGeom>")
 ifcopenshell_wasm_plugin_dependency(plugin_when_not_wasm)
 
 file(GLOB SERIALIZERS_H_FILES *.h)
+# ifcview_serializer.h includes src/ifcviewer headers, which are not installed.
+list(REMOVE_ITEM SERIALIZERS_H_FILES ${CMAKE_CURRENT_SOURCE_DIR}/ifcview_serializer.h)
 file(GLOB SERIALIZERS_S_H_FILES schema_dependent/*.h)
 
 function(add_document_serializer_plugin target output_name)
@@ -156,7 +158,7 @@ if(NOT WASM_BUILD)
     add_geometry_serializer_plugin(geometry_serializer_ifcview "geometry.ifcview"
         SOURCES
             geometry_ifcview_plugin.cpp
-            ${ifcviewer_src_dir}/IfcViewSerializer.cpp
+            ifcview_serializer.cpp
             ${ifcviewer_src_dir}/IfcViewAssembler.cpp
             ${ifcviewer_src_dir}/StreamedRecords.cpp
             ${ifcviewer_src_dir}/MeshDedup.cpp

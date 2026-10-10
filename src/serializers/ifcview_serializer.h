@@ -21,10 +21,9 @@
 #ifndef IFCVIEWSERIALIZER_H
 #define IFCVIEWSERIALIZER_H
 
-#include "IfcViewAssembler.h"
-#include "StreamedRecords.h"
-
 #include "../ifcgeom/geometry_serializer.h"
+#include "../ifcviewer/IfcViewAssembler.h"
+#include "../ifcviewer/StreamedRecords.h"
 
 #include <cstdint>
 #include <string>
@@ -33,7 +32,7 @@
 // .ifcview geometry serializer: bakes the viewer's .ifcview cache from a normal
 // IfcGeom iteration — one accumulate per triangulation element, then
 // writeIfcView() in finalize().  Qt-free on purpose, so it can live in the
-// runtime-loadable serializer plugin (src/serializers/geometry_ifcview_plugin.cpp)
+// runtime-loadable serializer plugin (geometry_ifcview_plugin.cpp)
 // and be driven by IfcConvert or any other registry consumer.
 //
 // Two deliberate differences from the live streamer bake:
