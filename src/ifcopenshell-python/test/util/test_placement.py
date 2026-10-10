@@ -18,6 +18,8 @@
 
 import numpy as np
 
+import ifcopenshell.api.root
+import ifcopenshell.api.unit
 import ifcopenshell.util.placement as subject
 import test.bootstrap
 
@@ -53,6 +55,18 @@ class TestGetLocalPlacementIFC4(test.bootstrap.IFC4):
 
     def test_returning_identity_without_a_placement(self):
         assert np.array_equal(subject.get_placement(None), np.eye(4))
+
+    def test_returning_file_units_or_si(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        unit = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="MILLI")
+        ifcopenshell.api.unit.assign_unit(self.file, units=[unit])
+        placement = self.file.createIfcLocalPlacement(
+            RelativePlacement=self.file.createIfcAxis2Placement3D(
+                self.file.createIfcCartesianPoint((1000.0, 2000.0, 3000.0))
+            )
+        )
+        assert np.allclose(subject.get_placement(placement)[:3, 3], (1000.0, 2000.0, 3000.0))
+        assert np.allclose(subject.get_placement(placement, should_return_si=True)[:3, 3], (1.0, 2.0, 3.0))
 
 
 class TestGetStoreyElevationIFC4(test.bootstrap.IFC4):

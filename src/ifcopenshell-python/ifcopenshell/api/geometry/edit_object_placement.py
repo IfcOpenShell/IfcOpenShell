@@ -174,8 +174,9 @@ class Usecase:
         placement_rel_to: ifcopenshell.entity_instance | None,
     ) -> ifcopenshell.entity_instance:
         if placement_rel_to:
-            relating_object_matrix = ifcopenshell.util.placement.get_local_placement(placement_rel_to)
-            relating_object_matrix[:3, 3] = self.convert_unit_to_si(relating_object_matrix[:3, 3])
+            relating_object_matrix = ifcopenshell.util.placement.get_local_placement(
+                placement_rel_to, should_return_si=True
+            )
         else:
             relating_object_matrix = np.eye(4)
         x = matrix[:3, 0]
