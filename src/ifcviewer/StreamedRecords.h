@@ -51,7 +51,7 @@ struct UniqueMesh {
 };
 
 // Record builders shared by the live streamer (GeometryStreamer::run) and the
-// ifcconvert bake (IfcViewSerializer), so both produce the same vertex and
+// ifcconvert bake (src/serializers/ifcview_serializer), so both produce the same vertex and
 // placement encoding.  Pure conversions: no Qt, no I/O.
 
 // One interleaved transfer mesh (7 floats/vertex) from a triangulation
