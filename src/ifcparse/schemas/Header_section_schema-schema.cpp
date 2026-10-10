@@ -46,13 +46,16 @@ const std::string strings[] = {"schema_name"s,"time_stamp_text"s,"file_descripti
     ((entity*)HEADER_SECTION_SCHEMA_types[2])->set_attributes({new attribute(strings[14], new aggregation_type(aggregation_type::list_type, 1, -1, new named_type(HEADER_SECTION_SCHEMA_types[3])), false)}, {false});
     return new schema_definition(strings[15], {HEADER_SECTION_SCHEMA_types[0],HEADER_SECTION_SCHEMA_types[1],HEADER_SECTION_SCHEMA_types[2],HEADER_SECTION_SCHEMA_types[3],HEADER_SECTION_SCHEMA_types[4]});
 }
+static std::mutex schema_mutex;
 static std::unique_ptr<schema_definition> schema;
 
 void Header_section_schema::clear_schema() {
+    std::lock_guard<std::mutex> lock(schema_mutex);
     schema.reset();
 }
 
 const schema_definition& Header_section_schema::get_schema() {
+    std::lock_guard<std::mutex> lock(schema_mutex);
     if (!schema) {
         schema.reset(HEADER_SECTION_SCHEMA_populate_schema());
     }
