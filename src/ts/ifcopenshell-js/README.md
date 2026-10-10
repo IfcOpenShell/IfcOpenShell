@@ -36,4 +36,4 @@ if (iterator.initialize()) do {
 
 ## Documentation
 
-See ![IfcOpenShell JS/TS documentation](https://docs.ifcopenshell.org/ifcopenshell-js.html)
+See [IfcOpenShell JS/TS documentation](https://docs.ifcopenshell.org/ifcopenshell-js.html)
