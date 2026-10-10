@@ -233,7 +233,14 @@ class StructuralLoadCasesData:
             for rel in load_case.IsGroupedBy or []:
                 for related_object in rel.RelatedObjects:
                     load_groups.append({"id": related_object.id(), "name": related_object.Name or "Unnamed"})
-            results.append({"id": load_case.id(), "name": load_case.Name or "Unnamed", "load_groups": load_groups})
+            results.append(
+                {
+                    "id": load_case.id(),
+                    "name": load_case.Name or "Unnamed",
+                    "load_groups": load_groups,
+                    "model_ids": [m.id() for m in load_case.LoadGroupFor],
+                }
+            )
         return results
 
     @classmethod
