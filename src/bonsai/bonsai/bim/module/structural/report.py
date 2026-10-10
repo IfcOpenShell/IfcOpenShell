@@ -179,6 +179,10 @@ class Detail(str):
     """A step shown only in detailed reports: the working between the main steps"""
 
 
+class Lead(Detail):
+    """A detailed step that starts a new piece of working, so is set apart from the working before it"""
+
+
 def get_resultant_calculation(
     activities: list[ifcopenshell.entity_instance],
     unit: str,
@@ -209,9 +213,13 @@ def get_resultant_calculation(
     components, steps, summary = get_sum_steps(forces, text_unit, unit, found if solving else None, resultant_found)
     # The resultant too. What of it was found follows from how many force values were: two unknowns in all.
     total = [sum(force["vector"][k] for force in forces) for k in range(3)]
+    # Rounding noise across an axis would put a resultant along it into the neighbouring eighth.
+    total = [c if abs(c) > 1e-9 * max(map(abs, total), default=0) else 0.0 for c in total]
     magnitude = math.sqrt(sum(c * c for c in total))
     direction = "components given"
-    if not total[1] and magnitude > 1e-9:
+    if magnitude <= 1e-9:
+        direction = "none: the forces are in equilibrium"
+    elif not total[1]:
         eighth, angle, _, _ = tool.Structural.get_eighth(total[0], total[2])
         direction = f"{angle:.1f}° {eighth}, {EIGHTH_AXES[eighth]}"
     found = resultant_found
@@ -220,7 +228,11 @@ def get_resultant_calculation(
     # Detailed steps in grey, applied in LaTeX so that both formats show it; force symbols keep their colours.
     gray = lambda step: f"{{\\color{{#8c8c8c}}\\qquad {step}}}" if isinstance(step, Detail) else step  # Indented.
     render = lambda steps: [
-        {"latex": get_colored_symbols(gray(step), palette), "detail": isinstance(step, Detail)}
+        {
+            "latex": get_colored_symbols(gray(step), palette),
+            "detail": isinstance(step, Detail),
+            "lead": isinstance(step, Lead),
+        }
         for step in steps
         if detailed or not isinstance(step, Detail)
     ]
@@ -375,8 +387,7 @@ def get_sum_steps(
 def get_solving_steps(forces: list[dict[str, Any]], text_unit: str) -> tuple[list[str], str]:
     """The steps finding the unknown (unlocked) values, and what they find, or none if all were known.
 
-    Each unknown magnitude is found by summing along an axis square to the other unknown's line, which
-    leaves it out: X or Z when that line is vertical or horizontal, else an axis tilted to suit.
+    Unknown magnitudes are found from the sums along X and Z, as the book does.
     """
     unknowns = [
         (i, kind)
@@ -388,7 +399,6 @@ def get_solving_steps(forces: list[dict[str, Any]], text_unit: str) -> tuple[lis
         return [], ""
     vectors = [np.array((force["vector"][0], force["vector"][2])) for force in forces]
     resultant = sum(vectors)
-    unit_of = lambda v: v / np.linalg.norm(v)
     steps = []
     if len(unknowns) == 2 and unknowns[0][0] == unknowns[1][0]:
         # A whole force: what the others leave of the resultant.
@@ -414,97 +424,165 @@ def get_solving_steps(forces: list[dict[str, Any]], text_unit: str) -> tuple[lis
         return steps, f"${symbol}$ in magnitude and direction, $R$ being known."
     if any(kind == "DIRECTION" for _, kind in unknowns) or any(not vectors[i].any() for i, _ in unknowns):
         return [], ""
-    if len(unknowns) == 1:
+    found = [i for i, _ in unknowns]
+    lines = [
+        {"symbol": forces[i]["symbol"], "unit": vectors[i] / np.linalg.norm(vectors[i]), "terms": forces[i]["terms"]}
+        for i in found
+    ]
+    if len(found) == 1:
         # A force's magnitude, and the resultant's along its known direction.
-        i = unknowns[0][0]
         if np.linalg.norm(resultant) < 1e-9:
             return [], ""
-        steps += get_elimination_steps(forces, vectors, i, unit_of(resultant), "R", 0.0, text_unit)
         eighth, angle, _, _ = tool.Structural.get_eighth(resultant[0], resultant[1])
+        along = resultant / np.linalg.norm(resultant)
+        terms = get_component_terms(along[0], along[1], eighth, angle)
+        lines.append({"symbol": "R", "unit": along, "terms": terms, "is_resultant": True})
         find = (
-            f"The magnitudes of ${forces[i]['symbol']}$ and $R$, "
+            f"The magnitudes of ${forces[found[0]]['symbol']}$ and $R$, "
             f"$R$ acting at ${angle:.1f}^\\circ$ {eighth}, {EIGHTH_AXES[eighth]}."
         )
-        return steps, find
-    # Two force magnitudes, the resultant being known: each found square to the other's line.
-    (i, _), (j, _) = unknowns
-    for found, other in ((i, j), (j, i)):
-        line = unit_of(vectors[other])
-        steps += get_elimination_steps(
-            forces, vectors, found, line, forces[other]["symbol"], None, text_unit, exclude=other, resultant=resultant
-        )
-    find = f"The magnitudes of ${forces[i]['symbol']}$ and ${forces[j]['symbol']}$, $R$ being known."
-    return steps, find
+    else:
+        find = f"The magnitudes of ${lines[0]['symbol']}$ and ${lines[1]['symbol']}$, $R$ being known."
+    knowns = [vectors[j] for j in range(len(forces)) if j not in found]
+    return get_two_unknown_steps(knowns, lines, None if len(found) == 1 else resultant, text_unit), find
 
 
-def get_elimination_steps(
-    forces: list[dict[str, Any]],
-    vectors: list[np.ndarray],
-    found: int,
-    line: np.ndarray,
-    line_symbol: str,
-    line_value: Union[float, None],
+def get_two_unknown_steps(
+    knowns: list[np.ndarray],
+    lines: list[dict[str, Any]],
+    resultant: Union[np.ndarray, None],
     text_unit: str,
-    exclude: Union[int, None] = None,
-    resultant: Union[np.ndarray, None] = None,
 ) -> list[str]:
-    """Find one force's magnitude by summing along an axis square to another unknown's line, leaving it out.
+    """Find two unknown magnitudes along known lines from the sums along X and Z, as the book does.
 
-    :param line: The unit direction of the other unknown: the resultant, or another force.
-    :param line_value: The resultant's component along the axis, if the other unknown is the resultant
-        (zero, as the axis is square to it); else None, and the known resultant's component is used.
-    :param exclude: The other unknown force, left out of the sum.
+    If one unknown's line is vertical or horizontal, the sum across it leaves it out and finds the other,
+    and the other sum then finds it. Otherwise both sums hold both unknowns: the first is solved for one,
+    which is put into the second.
+
+    :param knowns: The known forces, as X and Z components.
+    :param lines: The unknowns: symbol, unit direction, the trigonometry of its components, and whether
+        it is the resultant, which stands on the right of the sums.
+    :param resultant: The known resultant, or None if it is one of the unknowns.
     """
-    # Along X if the line is vertical, Z if horizontal, else an axis square to it.
-    if abs(line[0]) < 1e-9:
-        axis, name, k = np.array((1.0, 0.0)), "x", 0
-    elif abs(line[1]) < 1e-9:
-        axis, name, k = np.array((0.0, 1.0)), "z", 1
-    else:
-        axis, name, k = np.array((-line[1], line[0])), "n", None
-    steps = []
-    if k is None:
-        eighth, angle, _, _ = tool.Structural.get_eighth(axis[0], axis[1])
+    eps = 1e-9
+    index = {"x": 0, "z": 1}
+    clean = lambda value: value if abs(value) >= 0.005 else 0.0  # Not -0.00 from rounding.
+    number = lambda value: f"({value:.2f})" if clean(value) < 0 else f"{clean(value):.2f}"
+    steps: list[str] = []
+    values: dict[str, float] = {}  # Unknowns found so far.
+
+    def get_coefficient(line: dict[str, Any], axis: str) -> float:
+        """The part of an unknown on the left of a sum: the resultant, on the right, moves across negated"""
+        component = float(line["unit"][index[axis]])
+        return -component if line.get("is_resultant") else component
+
+    def get_equation(axis: str) -> str:
+        """The sum along an axis, the unknowns written with their symbols"""
+        k = index[axis]
+        # Known forces with no part along the axis are left out.
+        left = " + ".join(number(float(v[k])) for v in knowns if abs(v[k]) >= 0.005)
+        right = f"{clean(float(resultant[k])):.2f}" if resultant is not None else "0.00"
+        for line in lines:
+            if abs(line["unit"][k]) < eps:
+                continue
+            term = line["terms"][axis]
+            sign, trig = ("-", term[1:]) if term.startswith("-") else ("+", term)
+            if line.get("is_resultant"):
+                right = f"{'-' if sign == '-' else ''}R {trig}"
+            elif left:
+                left += f" {sign} {line['symbol']} {trig}"
+            else:
+                left = f"{'-' if sign == '-' else ''}{line['symbol']} {trig}"
+        return f"\\Sigma F_{axis} = R_{axis}:\\quad {left or '0'} = {right}"
+
+    def get_rest(axis: str) -> float:
+        """What the known forces and the unknowns found so far leave across the sum, on the right"""
+        k = index[axis]
+        right = float(resultant[k]) if resultant is not None else 0.0
+        left = sum(float(v[k]) for v in knowns)
+        left += sum(values[line["symbol"]] * get_coefficient(line, axis) for line in lines if line["symbol"] in values)
+        return right - left
+
+    def solve(line: dict[str, Any], axis: str) -> None:
+        """Find an unknown from a sum it is the only unknown left in"""
+        rest, factor = get_rest(axis), get_coefficient(line, axis)
+        value = rest / factor
+        term = line["terms"][axis]
+        if line.get("is_resultant"):
+            steps.append(Detail(f"{term}\\, R = {clean(-rest):.2f}"))
+        else:
+            steps.append(Detail(f"{term}\\, {line['symbol']} = {rest:.2f}"))
+        steps.append(Detail(f"{term} = {line['unit'][index[axis]]:.4f}"))
+        numerator, denominator = (rest, term) if not line.get("is_resultant") else (-rest, term)
+        if numerator < 0 and denominator.startswith("-"):
+            numerator, denominator = -numerator, denominator[1:]  # Both signs cancel.
         steps.append(
-            f"\\text{{Axis }} n \\perp {line_symbol}:\\ {angle:.1f}^\\circ\\ \\text{{{eighth}, {EIGHTH_AXES[eighth]}}}"
+            f"{line['symbol']} = \\frac{{{numerator:.2f}}}{{{denominator}}} = {bold(f'{value:.2f}', True, text_unit)}"
         )
-    rhs = line_value if line_value is not None else float(np.dot(resultant, axis))
-    rhs_symbol = "R_" + name
-    known, terms = 0.0, []
-    for j, force in enumerate(forces):
-        if j in (found, exclude):
-            continue
-        value = float(np.dot(vectors[j], axis))
-        known += value
-        terms.append(f"({value:.2f})" if value < 0 else f"{value:.2f}")
-    direction = vectors[found] / np.linalg.norm(vectors[found])
-    factor = float(np.dot(direction, axis))
-    if k is None:
-        between = math.degrees(math.acos(max(-1.0, min(1.0, factor))))
-        trig = f"\\cos {between:.1f}^\\circ"
-    else:
-        trig = forces[found]["terms"][name]
-    symbol = forces[found]["symbol"]
-    unknown_term = f"- {symbol} {trig[1:]}" if trig.startswith("-") else f"+ {symbol} {trig}"
-    left = (" + ".join(terms) + " " if terms else "") + unknown_term
-    if not terms:
-        left = left.lstrip("+ ")
-    reason = f"n \\perp {line_symbol}" if k is None else f"{line_symbol} \\text{{ lies square to }} {name}"
-    steps.append(Detail(f"{line_symbol} \\text{{ has no component along }} {name}"))
-    steps.append(Detail(f"\\text{{as }} {reason}"))
-    steps.append(f"\\Sigma F_{name} = {rhs_symbol}:\\quad {left} = {rhs:.2f}")
+        values[line["symbol"]] = value
+
+    # A line along an axis drops out of the sum across it.
+    for first, second in ((lines[0], lines[1]), (lines[1], lines[0])):
+        for axis, other in (("x", "z"), ("z", "x")):
+            if abs(first["unit"][index[axis]]) < eps and abs(second["unit"][index[axis]]) > eps:
+                steps.append(Detail(f"{first['symbol']} \\text{{ has no component along }} {axis}"))
+                steps.append(Detail(f"\\text{{as }} {first['symbol']} \\text{{ lies square to }} {axis}"))
+                steps.append(get_equation(axis))
+                solve(second, axis)
+                steps.append(get_equation(other))
+                steps.append(Detail(f"\\text{{With }} {second['symbol']} = {values[second['symbol']]:.2f}"))
+                solve(first, other)
+                return steps
+
+    # Neither does, so solve one sum for one unknown and put it into the other.
+    (a, b), symbols = lines, (lines[0]["symbol"], lines[1]["symbol"])
+    p1, q1, h1 = get_coefficient(a, "x"), get_coefficient(b, "x"), clean(get_rest("x"))
+    p2, q2, h2 = get_coefficient(a, "z"), get_coefficient(b, "z"), clean(get_rest("z"))
+    # Each sum, with its working directly under it: its trigonometry, then the sum in numbers.
+    for axis, (p, q, h) in (("x", (p1, q1, h1)), ("z", (p2, q2, h2))):
+        steps.append(get_equation(axis))
+        for line in lines:
+            steps.append(Detail(f"{line['terms'][axis]} = {line['unit'][index[axis]]:.4f}"))
+        steps.append(Detail(f"\\text{{In numbers: }} {p:.4f}\\, {symbols[0]} + ({q:.4f})\\, {symbols[1]} = {h:.2f}"))
+    # From the first: a = h1 / p1 - (q1 / p1) b
+    offset, slope = h1 / p1, -q1 / p1
+    # The first unknown in terms of the second, dropping a zero term when the sum's right is zero.
+    in_terms = (
+        f"{offset:.4f} + ({slope:.4f})\\, {symbols[1]}" if abs(offset) >= 0.00005 else f"{slope:.4f}\\, {symbols[1]}"
+    )
+    # Solve the first sum for the first unknown: move the second's term across, then divide.
+    steps.append(Lead(f"\\text{{Take }} \\Sigma F_x \\text{{ in numbers and solve it for }} {symbols[0]}:"))
+    steps.append(Detail(f"{p1:.4f}\\, {symbols[0]} + ({q1:.4f})\\, {symbols[1]} = {h1:.2f}"))
+    steps.append(Detail(f"\\text{{Subtract }} ({q1:.4f})\\, {symbols[1]} \\text{{ from both sides:}}"))
+    steps.append(Detail(f"({p1:.4f})\\, {symbols[0]} = {h1:.2f} - ({q1:.4f})\\, {symbols[1]}"))
+    steps.append(Detail(f"\\text{{Divide both sides by }} {p1:.4f}:"))
+    steps.append(f"{symbols[0]} = \\frac{{{h1:.2f} - ({q1:.4f})\\, {symbols[1]}}}{{{p1:.4f}}} = {in_terms}")
+    if abs(offset) >= 0.00005:
+        steps.append(Detail(f"\\frac{{{h1:.2f}}}{{{p1:.4f}}} = {offset:.4f}"))
+    steps.append(Detail(f"\\frac{{-({q1:.4f})}}{{{p1:.4f}}} = {slope:.4f}"))
+    # Put it into the second sum, which leaves only the second unknown.
+    steps.append(Lead(f"\\text{{Put }} {symbols[0]} = {in_terms} \\text{{ into }} \\Sigma F_z:"))
+    steps.append(f"({p2:.4f})({in_terms}) + ({q2:.4f})\\, {symbols[1]} = {h2:.2f}")
+    gathered, rest = p2 * slope + q2, h2 - p2 * offset
+    if abs(gathered) < eps:
+        return steps  # Parallel lines, which Edit Resultant does not solve.
+    steps.append(Detail(f"({p2:.4f})({slope:.4f}) = {p2 * slope:.4f}"))
+    if abs(offset) >= 0.00005:
+        steps.append(Detail(f"({p2:.4f})({offset:.4f}) = {p2 * offset:.4f}"))
+        steps.append(Detail(f"\\text{{Moved across: }} {h2:.2f} - ({p2 * offset:.4f}) = {rest:.4f}"))
     steps.append(
         Detail(
-            f"\\text{{Rearranged: }} {trig}\\, {symbol} = {rhs:.2f} - "
-            f"{f'({known:.2f})' if known < 0 else f'{known:.2f}'} = {rhs - known:.2f}"
+            f"\\text{{Gathering the }} {symbols[1]} \\text{{ terms: }} {p2 * slope:.4f} + ({q2:.4f}) = {gathered:.4f}"
         )
     )
-    steps.append(Detail(f"{trig} = {factor:.4f}"))
-    magnitude = (rhs - known) / factor
-    numerator, denominator = rhs - known, trig
-    if numerator < 0 and trig.startswith("-"):
-        numerator, denominator = -numerator, trig[1:]  # Both signs cancel.
-    steps.append(f"{symbol} = \\frac{{{numerator:.2f}}}{{{denominator}}} = {bold(f'{magnitude:.2f}', True, text_unit)}")
+    steps.append(Detail(f"({gathered:.4f})\\, {symbols[1]} = {rest:.4f}"))
+    second = rest / gathered
+    steps.append(f"{symbols[1]} = \\frac{{{rest:.4f}}}{{{gathered:.4f}}} = {bold(f'{second:.2f}', True, text_unit)}")
+    # Then back into the first unknown's expression.
+    steps.append(Lead(f"\\text{{Put }} {symbols[1]} = {second:.2f} \\text{{ back into }} {symbols[0]} = {in_terms}:"))
+    first = offset + slope * second
+    put_in = f"{offset:.4f} + ({slope:.4f})({second:.2f})" if abs(offset) >= 0.00005 else f"({slope:.4f})({second:.2f})"
+    steps.append(f"{symbols[0]} = {put_in} = {bold(f'{first:.2f}', True, text_unit)}")
     return steps
 
 

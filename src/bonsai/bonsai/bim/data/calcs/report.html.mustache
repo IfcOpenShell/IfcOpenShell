@@ -30,6 +30,7 @@
   /* With detailed steps, each main step starts a group, its working below it. */
   .detailed .steps .main { padding-top: 0.5rem; }
   .detailed .steps .main:first-child { padding-top: 0; }
+  .detailed .steps .lead { padding-top: 0.5rem; }  /* Working that starts afresh. */
   h4 { margin: 1rem 0 0.25rem; }
   .result { font-weight: 600; border: 1px solid #222; padding: 0.4rem 0.6rem; display: inline-block; }
   @page { size: letter; margin: 18mm; }
@@ -68,21 +69,21 @@
   <h4>{{#has_solving}}Components{{/has_solving}}{{^has_solving}}Components and resultant{{/has_solving}}</h4>
   <div class="steps">
     {{#components}}
-    <div class="{{#detail}}detail{{/detail}}{{^detail}}main{{/detail}}">$${{latex}}$$</div>
+    <div class="{{#detail}}detail{{/detail}}{{^detail}}main{{/detail}}{{#lead}} lead{{/lead}}">$${{latex}}$$</div>
     {{/components}}
   </div>
   {{#has_solving}}
   <h4>Solving</h4>
   <div class="steps">
     {{#solving}}
-    <div class="{{#detail}}detail{{/detail}}{{^detail}}main{{/detail}}">$${{latex}}$$</div>
+    <div class="{{#detail}}detail{{/detail}}{{^detail}}main{{/detail}}{{#lead}} lead{{/lead}}">$${{latex}}$$</div>
     {{/solving}}
   </div>
   <h4>Resultant</h4>
   {{/has_solving}}
   <div class="steps">
     {{#steps}}
-    <div class="{{#detail}}detail{{/detail}}{{^detail}}main{{/detail}}">$${{latex}}$$</div>
+    <div class="{{#detail}}detail{{/detail}}{{^detail}}main{{/detail}}{{#lead}} lead{{/lead}}">$${{latex}}$$</div>
     {{/steps}}
   </div>
   <p class="result">{{summary}}</p>
