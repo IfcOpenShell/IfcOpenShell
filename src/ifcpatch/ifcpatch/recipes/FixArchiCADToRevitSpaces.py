@@ -142,7 +142,7 @@ class Patcher(ifcpatch.BasePatcher):
         storey = ifcopenshell.util.element.get_aggregate(space) or ifcopenshell.util.element.get_container(space)
         if storey is None or not storey.ObjectPlacement:
             return None
-        return ifcopenshell.util.placement.get_local_placement(storey.ObjectPlacement)[2][3] * self.unit_scale
+        return ifcopenshell.util.placement.get_placement(storey.ObjectPlacement, should_return_si=True)[2][3]
 
     def get_footprints(self, vertices: npt.NDArray[np.float64], faces: npt.NDArray[np.int32]) -> list[shapely.Polygon]:
         """Flatten every downwards facing triangle into a set of 2D footprints

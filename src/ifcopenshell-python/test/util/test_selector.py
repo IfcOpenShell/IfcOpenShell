@@ -486,13 +486,13 @@ class TestSetElementValue(test.bootstrap.IFC4):
         ifcopenshell.api.geometry.edit_object_placement(self.file, product=element, is_si=False)
         for coord, value in items:
             subject.set_element_value(self.file, element, coord, value)
-        assert np.array_equal(ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement), matrix)
+        assert np.array_equal(ifcopenshell.util.placement.get_placement(element.ObjectPlacement), matrix)
 
         element_without_placement = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         for coord, value in items:
             subject.set_element_value(self.file, element_without_placement, coord, value)
         assert np.array_equal(
-            ifcopenshell.util.placement.get_local_placement(element_without_placement.ObjectPlacement), matrix
+            ifcopenshell.util.placement.get_placement(element_without_placement.ObjectPlacement), matrix
         )
 
     def test_set_attribute(self):

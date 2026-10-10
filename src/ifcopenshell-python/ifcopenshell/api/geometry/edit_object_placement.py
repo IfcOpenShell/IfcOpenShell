@@ -149,7 +149,7 @@ class Usecase:
         # NOTE: we ignore subchildren as we already adjust position for their parent
         # therefore they're not present in `results` and `should_transform_children` should be `True`
         for referenced_placement in placement.ReferencedByPlacements:
-            matrix = ifcopenshell.util.placement.get_local_placement(referenced_placement)
+            matrix = ifcopenshell.util.placement.get_placement(referenced_placement)
             for obj in referenced_placement.PlacesObject:
                 if obj.is_a("IfcDistributionPort"):
                     # Although a port is technically a nested child, it is generally
@@ -161,7 +161,7 @@ class Usecase:
                     # subchildren (fillings) shouldn't move.
                     placement2 = obj.ObjectPlacement
                     for referenced_placement2 in placement2.ReferencedByPlacements:
-                        matrix2 = ifcopenshell.util.placement.get_local_placement(referenced_placement2)
+                        matrix2 = ifcopenshell.util.placement.get_placement(referenced_placement2)
                         for obj2 in referenced_placement2.PlacesObject:
                             results.append((obj2, matrix2))
                     continue
@@ -174,9 +174,7 @@ class Usecase:
         placement_rel_to: ifcopenshell.entity_instance | None,
     ) -> ifcopenshell.entity_instance:
         if placement_rel_to:
-            relating_object_matrix = ifcopenshell.util.placement.get_local_placement(
-                placement_rel_to, should_return_si=True
-            )
+            relating_object_matrix = ifcopenshell.util.placement.get_placement(placement_rel_to, should_return_si=True)
         else:
             relating_object_matrix = np.eye(4)
         x = matrix[:3, 0]

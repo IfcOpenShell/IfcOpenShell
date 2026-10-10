@@ -67,8 +67,8 @@ class TestAssignPort(test.bootstrap.IFC4):
             self.file, product=subelement, matrix=submatrix.copy(), is_si=False
         )
         ifcopenshell.api.system.assign_port(self.file, element=element, port=subelement)
-        assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement), matrix)
-        assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(subelement.ObjectPlacement), submatrix)
+        assert numpy.array_equal(ifcopenshell.util.placement.get_placement(element.ObjectPlacement), matrix)
+        assert numpy.array_equal(ifcopenshell.util.placement.get_placement(subelement.ObjectPlacement), submatrix)
         assert subelement.ObjectPlacement.PlacementRelTo == element.ObjectPlacement
 
 
