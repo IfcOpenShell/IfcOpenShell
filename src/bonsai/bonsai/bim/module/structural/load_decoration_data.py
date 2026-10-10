@@ -602,6 +602,8 @@ class ShaderInfo:
                     self.add_dashed_line(location, corner, size, (1, 1, 1, 1))  # An intermediate resultant.
             tip = tail + vector * scale
             label = f"{np.linalg.norm(vector):.{props.force_decimals}f} {self.force_unit}"
+            if has_angle:
+                label += self.get_unknown_marks(activity)[0]
             if centre is None:
                 self.add_force_arrow(tail, tip, color, label, size, activity=activity)
             else:
@@ -618,6 +620,7 @@ class ShaderInfo:
 
         if show_resultant:
             label = f"{'R = ' if len(forces) > 1 else ''}{np.linalg.norm(resultant):.{props.force_decimals}f} {self.force_unit}"
+            label += self.get_unknown_marks(single)[0]  # A single force is drawn as this resultant.
             if abs(resultant[1]) < 1e-9 and not props.show_force_angles:
                 label += f" at {np.degrees(np.arctan2(resultant[2], resultant[0])):.{props.angle_decimals}f} deg"
             # Alpha 2 because the shader caps opacity at half of it; the resultant draws fully opaque.
@@ -639,10 +642,19 @@ class ShaderInfo:
                 resultant_of=activities if len(activities) > 1 else None,
             )
             if props.show_force_angles:
-                self.add_force_angle(location, resultant, size, (1, 1, 1, 1), arcs_at_tail, reference_axes)
+                self.add_force_angle(
+                    location, resultant, size, (1, 1, 1, 1), arcs_at_tail, reference_axes, single or None
+                )
             if props.show_force_slopes:
                 self.add_force_slope(location, tip, size, (1, 1, 1, 1), avoid=side)
         self.add_reference_axes(reference_axes, size)
+
+    def get_unknown_marks(self, activity: Union[int, None]) -> tuple[str, str]:
+        """Marks for an applied load's magnitude and direction labels, if they are unknown: to be found"""
+        if not activity:
+            return "", ""
+        magnitude, direction = tool.Structural.get_locks(tool.Ifc.get().by_id(activity))
+        return ("" if magnitude else " 🔓"), ("" if direction else " 🔓")
 
     def add_force_angle(
         self,
@@ -683,7 +695,8 @@ class ShaderInfo:
         self.text_info.append(
             {
                 "position": tail + radius * outward,
-                "text": f"θ = {angle:.{props.angle_decimals}f}°{f' {eighth}' if eighth else ''}",
+                "text": f"θ = {angle:.{props.angle_decimals}f}°{f' {eighth}' if eighth else ''}"
+                + self.get_unknown_marks(activity)[1],
                 "color": color,
                 "away": away / np.linalg.norm(away),
             }
