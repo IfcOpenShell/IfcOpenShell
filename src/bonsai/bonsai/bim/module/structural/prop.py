@@ -272,12 +272,17 @@ class BIMStructuralProperties(PropertyGroup):
     )
     show_force_angles: BoolProperty(
         name="Angles",
-        description="Mark the angle of each point force from a horizontal reference axis",
+        description="Mark the angle of each point force from a reference axis",
         default=True,
         update=update_loads_display,
     )
     angle_reference: EnumProperty(
         items=[
+            (
+                "EIGHTH",
+                "Load Direction",
+                "The angle from the axis of the eighth (Q1 to Q8) the force points into, as Edit Load enters it",
+            ),
             (
                 "HORIZONTAL",
                 "Nearest Horizontal",
@@ -286,7 +291,7 @@ class BIMStructuralProperties(PropertyGroup):
             ("POSITIVE_X", "+X Axis", "The angle counter-clockwise from the +X axis"),
         ],
         name="Angle From",
-        default="HORIZONTAL",
+        default="EIGHTH",
         update=update_loads_display,
     )
     force_scale: FloatProperty(

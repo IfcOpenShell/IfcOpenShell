@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
 from collections.abc import Iterable
 from math import sin
 from typing import Literal, TypedDict, Union
@@ -609,7 +610,7 @@ class ShaderInfo:
                     tail, tip, color, label, size, label_away=side, label_at_middle=True, activity=activity
                 )
             if props.show_force_angles and has_angle:
-                self.add_force_angle(tail, vector, size, color, arcs_at_tail, reference_axes)
+                self.add_force_angle(tail, vector, size, color, arcs_at_tail, reference_axes, activity)
             start = tip
             running = running + vector
 
@@ -646,14 +647,23 @@ class ShaderInfo:
         color: tuple,
         arcs_at_tail: dict[tuple, int],
         reference_axes: dict[tuple, tuple],
+        activity: Union[int, None] = None,
     ) -> None:
-        """Mark a force's angle from a horizontal reference axis, as an arc in the X-Z plane"""
+        """Mark a force's angle from a reference axis, as an arc in the X-Z plane"""
         if abs(vector[1]) > 1e-9 * np.linalg.norm(vector):
             return  # Not in the X-Z plane, so one angle does not describe it.
         props = tool.Structural.get_structural_props()
         end = np.degrees(np.arctan2(vector[2], vector[0]))
         start = 0.0
-        if props.angle_reference == "HORIZONTAL" and vector[0] < -1e-9 * np.linalg.norm(vector):
+        eighth = None
+        if props.angle_reference == "EIGHTH":
+            # From the axis of the eighth Edit Load enters it in, which its generated name records.
+            load = tool.Ifc.get().by_id(activity).AppliedLoad if activity else None
+            named = re.search(r" (Q[1-8])$", (load.Name or "") if load else "")
+            eighth, angle, _, _ = tool.Structural.get_eighth(vector[0], vector[2], named[1] if named else None)
+            start = 90.0 * (int(eighth[1]) // 2)
+            end = start + (angle if int(eighth[1]) % 2 else -angle)
+        elif props.angle_reference == "HORIZONTAL" and vector[0] < -1e-9 * np.linalg.norm(vector):
             # Measured from -X, so that the angle is the acute one statics texts draw.
             start = 180.0
             end = end if end > 0 else end + 360
@@ -673,22 +683,24 @@ class ShaderInfo:
             self.add_dashed_line(a, b, size, color, dashed=False)
         middle = np.radians((start + end) / 2)
         outward = np.array((np.cos(middle), 0, np.sin(middle)))
-        # Away from the arc, and above or below the reference axis so small angles keep off the lines.
-        away = outward + np.array((0, 0, np.sign(vector[2])))
-        angle = abs(end - start) if props.angle_reference == "HORIZONTAL" else end
+        # Away from the arc, and off the reference axis towards the force so small angles keep off the lines.
+        axis = np.array((np.cos(np.radians(start)), 0, np.sin(np.radians(start))))
+        across = vector / np.linalg.norm(vector) - np.dot(vector, axis) / np.linalg.norm(vector) * axis
+        away = outward + across / (np.linalg.norm(across) or 1)
+        angle = end if props.angle_reference == "POSITIVE_X" else abs(end - start)
         self.text_info.append(
             {
                 "position": tail + radius * outward,
-                "text": f"θ = {angle:.{props.angle_decimals}f}°",
+                "text": f"θ = {angle:.{props.angle_decimals}f}°{f' {eighth}' if eighth else ''}",
                 "color": color,
                 "away": away / np.linalg.norm(away),
             }
         )
 
     def add_reference_axes(self, reference_axes: dict[tuple, tuple], size: float) -> None:
-        """Draw the horizontal axes angles are measured from, each band coloured as the arc that starts in it"""
+        """Draw the axes angles are measured from, each band coloured as the arc that starts in it"""
         for tail, start, arcs in reference_axes.values():
-            direction = np.array((np.cos(np.radians(start)), 0, 0))
+            direction = np.array((np.cos(np.radians(start)), 0, np.sin(np.radians(start))))
             arcs.sort(key=lambda arc: arc[0])
             band_start = 0.0
             for i, (radius, color) in enumerate(arcs):
