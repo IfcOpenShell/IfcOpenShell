@@ -24,6 +24,7 @@ import numpy.typing as npt
 
 import ifcopenshell
 import ifcopenshell.geom
+import ifcopenshell.util.unit
 
 MatrixType = npt.NDArray[np.float64]
 """`npt.NDArray[np.float64]`"""
@@ -84,10 +85,40 @@ def get_placement(
     """
     if placement is None:
         return np.eye(4)
+    # TODO: delete this branch and _operator_placement once BUILD_COMMIT in
+    # src/ifcopenshell-python/Makefile includes 870f06412, which teaches
+    # create_shape to map operators itself. Packaged builds pair this module
+    # with an older wrapper that raises "Failed to process shape" on them.
+    if placement.is_a("IfcCartesianTransformationOperator"):
+        return _operator_placement(placement, should_return_si)
     if (settings := _settings.get(should_return_si)) is None:
         settings = _settings[should_return_si] = ifcopenshell.geom.settings()
         settings.set("convert-back-units", not should_return_si)
     return np.array(ifcopenshell.geom.create_shape(settings, placement).matrix).reshape((4, 4), order="F")
+
+
+def _operator_placement(inst: ifcopenshell.entity_instance, should_return_si: bool) -> MatrixType:
+    origin = np.zeros(3)
+    origin[: len(inst.LocalOrigin.Coordinates)] = inst.LocalOrigin.Coordinates
+    if should_return_si:
+        origin *= ifcopenshell.util.unit.calculate_unit_scale(inst.file)
+    axes = np.eye(3)
+    for axis, direction in zip(axes, (inst.Axis1, inst.Axis2, getattr(inst, "Axis3", None))):
+        if direction:
+            axis[: len(direction.DirectionRatios)] = direction.DirectionRatios
+    matrix = a2p(origin, axes[2], axes[0])
+    # Mirror when the supplied Axis2 opposes the right-handed Y axis
+    if matrix[:3, 1].dot(axes[1]) < 0.0:
+        matrix[:3, 1] *= -1.0
+    scale = inst.Scale or 1.0
+    scales = [scale, scale, scale if inst.is_a("IfcCartesianTransformationOperator3D") else 1.0]
+    if inst.is_a("IfcCartesianTransformationOperator3DnonUniform"):
+        scales[1] = inst.Scale2 if inst.Scale2 is not None else scale
+        scales[2] = inst.Scale3 if inst.Scale3 is not None else scale
+    elif inst.is_a("IfcCartesianTransformationOperator2DnonUniform"):
+        scales[1] = inst.Scale2 if inst.Scale2 is not None else scale
+    matrix[:3, :3] *= scales
+    return matrix
 
 
 def get_mappeditem_transformation(item: ifcopenshell.entity_instance) -> MatrixType:
