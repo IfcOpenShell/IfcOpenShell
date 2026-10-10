@@ -971,6 +971,15 @@ def get_load_attributes(props: "StructuralForceInput", category: str) -> dict[st
 
 
 def update_force_inputs(self: "StructuralForceInput", context: bpy.types.Context) -> None:
+    if self.input_mode == "SLOPE" and self.magnitude:
+        # Both eighths of a quadrant give a slope the same direction, so show the one it lands in.
+        x, z = tool.Structural.get_in_plane_components(
+            "SLOPE", magnitude=self.magnitude, rise=self.rise, run=self.run, direction=self.direction
+        )
+        eighth = tool.Structural.get_eighth(x, z, self.direction)[0]
+        if eighth != self.direction and (int(eighth[1]) + 1) // 2 == (int(self.direction[1]) + 1) // 2:
+            self.direction = eighth  # Which updates again, with this eighth.
+            return
     # Keep a generated name in step with the values, but never overwrite a name the user typed.
     if self.load_category and (not self.load_name or DEFAULT_LOAD_NAME.match(self.load_name)):
         self.load_name = get_default_load_name(self, self.load_category)
@@ -1103,9 +1112,10 @@ class StructuralForceInput:
 
     def set_in_plane_inputs(self, x: float, z: float) -> None:
         """Fill the angle and slope inputs from in-plane components, measured from the nearest axis"""
-        self.direction, self.angle, along, across = tool.Structural.get_eighth(x, z)
+        self.direction, self.angle, _, _ = tool.Structural.get_eighth(x, z)
         self.magnitude = math.hypot(x, z)
-        self.rise, self.run = tool.Structural.get_simple_slope(along, across)
+        # A rise is vertical and a run horizontal, whichever axis the angle is from.
+        self.rise, self.run = tool.Structural.get_simple_slope(abs(x), abs(z))
 
     def get_unit_symbol(self, category: str) -> str:
         return get_load_unit_symbol(category)

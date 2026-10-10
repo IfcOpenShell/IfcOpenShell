@@ -124,19 +124,22 @@ class Structural(bonsai.core.tool.Structural):
 
         :param mode: ANGLE for an angle in degrees, or SLOPE for a rise over a run.
         :param direction: Q1 to Q8, the eighths of a circle counter-clockwise from +X.
-            The angle or slope is measured from the axis the eighth touches,
-            turning into it: Q1 from +X towards +Z, Q2 from +Z towards +X, Q3 from
-            +Z towards -X, and so on, so that 40 degrees Q4 points 140 degrees from
-            +X. Negative angles, rises or runs turn the other way.
+            An angle is measured from the axis the eighth touches, turning into it:
+            Q1 from +X towards +Z, Q2 from +Z towards +X, Q3 from +Z towards -X, and
+            so on, so that 40 degrees Q4 points 140 degrees from +X. A slope's rise is
+            always vertical and its run horizontal, as for a roof pitch, so the eighth
+            only gives the quadrant: Q1 and Q2 are up and right, Q3 and Q4 up and left,
+            and so on. Negative angles, rises or runs turn the other way.
         :return: The horizontal (X) and vertical (Z) components.
         """
-        if mode == "ANGLE":
-            turned = math.radians(angle)
-        elif rise or run:
-            turned = math.atan2(rise, run)
-        else:
-            return 0.0, 0.0
         eighth = int(direction[1])
+        if mode == "SLOPE":
+            if not (length := math.hypot(rise, run)):
+                return 0.0, 0.0
+            sign_x = 1 if eighth in (1, 2, 7, 8) else -1
+            sign_z = 1 if eighth <= 4 else -1
+            return magnitude * sign_x * run / length, magnitude * sign_z * rise / length
+        turned = math.radians(angle)
         theta = math.radians(90 * (eighth // 2)) + (turned if eighth % 2 else -turned)
         x, z = magnitude * math.cos(theta), magnitude * math.sin(theta)
         # Keep components along an axis exactly zero rather than rounding noise.
