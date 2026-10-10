@@ -958,6 +958,9 @@ def get_load_attributes(props: "StructuralForceInput", category: str) -> dict[st
     return {name: value or None for name, value in zip(force_attributes + moment_attributes, values)}
 
 
+is_normalising_angle = False
+
+
 def update_force_inputs(self: "StructuralForceInput", context: bpy.types.Context) -> None:
     if self.input_mode == "SLOPE" and self.magnitude:
         # Both eighths of a quadrant give a slope the same direction, so show the one it lands in.
@@ -968,6 +971,18 @@ def update_force_inputs(self: "StructuralForceInput", context: bpy.types.Context
         if eighth != self.direction and (int(eighth[1]) + 1) // 2 == (int(self.direction[1]) + 1) // 2:
             self.direction = eighth  # Which updates again, with this eighth.
             return
+    global is_normalising_angle
+    if self.input_mode == "ANGLE" and self.magnitude and not 0 <= self.angle <= 45 and not is_normalising_angle:
+        # An angle past its eighth points into another: show it there, from that eighth's axis, as names are read.
+        x, z = tool.Structural.get_in_plane_components(
+            "ANGLE", magnitude=self.magnitude, angle=self.angle, direction=self.direction
+        )
+        is_normalising_angle = True  # Setting each updates again, before the other is set.
+        try:
+            self.direction, angle, _, _ = tool.Structural.get_eighth(x, z, self.direction)
+            self.angle = round(angle, 9)
+        finally:
+            is_normalising_angle = False
     # Keep a generated name in step with the values, but never overwrite a name the user typed.
     if self.load_category and (not self.load_name or DEFAULT_LOAD_NAME.match(self.load_name)):
         self.load_name = get_default_load_name(self, self.load_category)
@@ -1333,13 +1348,15 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
             rise, run = float(match[1]), float(match[2])
             direction = get_named_direction(match[3])
             if self.fits(x, z, "SLOPE", rise=rise, run=run, direction=direction):
-                self.input_mode, self.rise, self.run, self.direction = "SLOPE", rise, run, direction
+                # The eighth first: each value set updates the others, read with the eighth.
+                self.input_mode, self.direction, self.rise, self.run = "SLOPE", direction, rise, run
         elif not y and (match := ANGLE_LOAD_NAME.match(name)):
             angle = float(match[1])
             direction = get_named_direction(match[2])
             if self.fits(x, z, "ANGLE", angle=angle, direction=direction):
-                self.input_mode, self.angle, self.direction = "ANGLE", angle, direction
-        self.load_name = name
+                self.input_mode, self.direction, self.angle = "ANGLE", direction, angle
+        # A generated name is generated again, so that it reads as the inputs now do, as from its eighth's axis.
+        self.load_name = get_default_load_name(self, category) if DEFAULT_LOAD_NAME.match(name) else name
         if (activities := self.get_movable_activities()) and (groups := get_activity_load_groups(activities[0])):
             self.load_group = str(groups[0].id())
         # Set last, so that filling in the values above does not start a preview.
