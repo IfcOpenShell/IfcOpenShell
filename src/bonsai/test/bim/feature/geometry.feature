@@ -614,6 +614,15 @@ Scenario: Duplicate linked aggregate
     And the object "Assembly_01" exists
     Then the object "IfcElementAssembly/Assembly" and "Assembly_01" belong to the same Linked Aggregate Group
 
+Scenario: Duplicate a linked aggregate keeps the copy in its linked aggregate group
+    Given I load the IFC test file "/test/files/linked-aggregates.ifc"
+    And the object "IfcWall/Wall_01" is selected
+    When I duplicate linked aggregate the selected objects
+    And I deselect all objects
+    And the object "IfcElementAssembly/Assembly" is selected
+    And I duplicate the selected objects
+    Then the object "IfcElementAssembly/Assembly" and "IfcElementAssembly/Assembly.001" belong to the same Linked Aggregate Group
+
 Scenario: Refresh linked aggregate
     Given I load the IFC test file "/test/files/linked-aggregates.ifc"
     And the object "IfcWall/Wall_01" is selected
