@@ -560,7 +560,7 @@ class Spatial(bonsai.core.tool.Spatial):
     def create_orientation_slot(cls, container: ifcopenshell.entity_instance) -> None:
         active_slot = bpy.context.scene.transform_orientation_slots[0]
         placement = container.ObjectPlacement
-        combined_matrix = ifcopenshell.util.placement.get_local_placement(placement)[:3, :3]
+        combined_matrix = ifcopenshell.util.placement.get_placement(placement)[:3, :3]
 
         if np.allclose(combined_matrix, np.eye(3), atol=1e-6):
             # this spatial element has global orientation
@@ -573,7 +573,7 @@ class Spatial(bonsai.core.tool.Spatial):
         ):
             # this spatial element is part of a decomposition
             parent_placement = container.Decomposes[0].RelatingObject.ObjectPlacement
-            parent_matrix = ifcopenshell.util.placement.get_local_placement(parent_placement)[:3, :3]
+            parent_matrix = ifcopenshell.util.placement.get_placement(parent_placement)[:3, :3]
             if np.allclose(combined_matrix, parent_matrix, atol=1e-6):
                 # this spatial element has the same orientation as its parent
                 cls.create_orientation_slot(container=container.Decomposes[0].RelatingObject)

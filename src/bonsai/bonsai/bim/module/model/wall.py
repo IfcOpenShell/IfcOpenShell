@@ -1460,7 +1460,7 @@ class DumbWallPlaner:
         tool.Model.recalculate_walls([w for w in set(walls) if w])
 
 
-def _opening_axis_extent(opening, axis_reference, unit_scale):
+def _opening_axis_extent(opening, axis_reference):
     """Return ``(min_t, max_t)``: the opening's world-space footprint
     projected onto ``axis_reference`` as parametric positions along the
     wall axis (``0`` is the start of the axis line, ``1`` is its end).
@@ -1485,8 +1485,9 @@ def _opening_axis_extent(opening, axis_reference, unit_scale):
         shape_matrix = None
 
     if verts is None or shape_matrix is None or len(verts) == 0:
-        placement = Matrix(ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement).tolist())
-        placement.translation *= unit_scale
+        placement = Matrix(
+            ifcopenshell.util.placement.get_placement(opening.ObjectPlacement, should_return_si=True).tolist()
+        )
         _, t = mathutils.geometry.intersect_point_line(placement.translation.to_2d(), *axis_reference)
         return t, t
 
@@ -1602,7 +1603,7 @@ class DumbWallJoiner:
         for opening in [
             r.RelatedOpeningElement for r in element1.HasOpenings if not r.RelatedOpeningElement.HasFillings
         ]:
-            min_t, _ = _opening_axis_extent(opening, axis_world_2d, unit_scale)
+            min_t, _ = _opening_axis_extent(opening, axis_world_2d)
             if min_t > cut_percentage:
                 # Opening lies entirely past the cut — only element2 should keep it.
                 ifcopenshell.api.feature.remove_feature(tool.Ifc.get(), feature=opening)
@@ -1610,7 +1611,7 @@ class DumbWallJoiner:
         for opening in [
             r.RelatedOpeningElement for r in element2.HasOpenings if not r.RelatedOpeningElement.HasFillings
         ]:
-            _, max_t = _opening_axis_extent(opening, axis_world_2d, unit_scale)
+            _, max_t = _opening_axis_extent(opening, axis_world_2d)
             if max_t < cut_percentage:
                 # Opening lies entirely before the cut — only element1 should keep it.
                 ifcopenshell.api.feature.remove_feature(tool.Ifc.get(), feature=opening)
@@ -1624,7 +1625,7 @@ class DumbWallJoiner:
             r.RelatedOpeningElement for r in list(element1.HasOpenings) if r.RelatedOpeningElement.HasFillings
         ]:
             rel = opening.HasFillings[0]
-            min_t, max_t = _opening_axis_extent(opening, axis_world_2d, unit_scale)
+            min_t, max_t = _opening_axis_extent(opening, axis_world_2d)
             # Use the opening's axis-projected midpoint to classify the side.
             # The filling's ``matrix_world.translation`` is flip-fragile —
             # flipping rotates the filler 180° + translates so the bbox
@@ -1691,7 +1692,7 @@ class DumbWallJoiner:
             thickness *= -1
             usage.DirectionSense = "POSITIVE"
 
-        matrix = ifcopenshell.util.placement.get_local_placement(element1.ObjectPlacement)
+        matrix = ifcopenshell.util.placement.get_placement(element1.ObjectPlacement)
         offset = matrix[:, 1] * thickness
         matrix[:, 3] += offset
         ifcopenshell.api.geometry.edit_object_placement(
@@ -1712,8 +1713,8 @@ class DumbWallJoiner:
         p1, p2 = ifcopenshell.util.representation.get_reference_line(element1)
         p3, p4 = ifcopenshell.util.representation.get_reference_line(element2)
 
-        matrix1i = np.linalg.inv(ifcopenshell.util.placement.get_local_placement(element1.ObjectPlacement))
-        matrix2 = ifcopenshell.util.placement.get_local_placement(element2.ObjectPlacement)
+        matrix1i = np.linalg.inv(ifcopenshell.util.placement.get_placement(element1.ObjectPlacement))
+        matrix2 = ifcopenshell.util.placement.get_placement(element2.ObjectPlacement)
 
         p3 = (matrix1i @ matrix2 @ np.concatenate((p3, (0, 1))))[:2]
         p4 = (matrix1i @ matrix2 @ np.concatenate((p4, (0, 1))))[:2]
@@ -1770,7 +1771,7 @@ class DumbWallJoiner:
             opening = rel.RelatedOpeningElement
             rel.RelatingBuildingElement = element1
             if opening.ObjectPlacement:
-                world_matrix = ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement)
+                world_matrix = ifcopenshell.util.placement.get_placement(opening.ObjectPlacement)
                 ifcopenshell.api.geometry.edit_object_placement(
                     ifc_file,
                     product=opening,

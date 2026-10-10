@@ -567,8 +567,9 @@ class Model(bonsai.core.tool.Model):
         cls.circles = []
 
         if surface.is_a("IfcCurveBoundedPlane"):
-            position = Matrix(ifcopenshell.util.placement.get_axis2placement(surface.BasisSurface.Position).tolist())
-            position.translation *= cls.unit_scale
+            position = Matrix(
+                ifcopenshell.util.placement.get_placement(surface.BasisSurface.Position, should_return_si=True).tolist()
+            )
 
             cls.convert_curve_to_mesh(obj, position, surface.OuterBoundary)
             for inner_boundary in surface.InnerBoundaries:
@@ -649,8 +650,9 @@ class Model(bonsai.core.tool.Model):
                 if is_closed:
                     cls.edges.append([len(cls.vertices) - 1, offset])  # Close the loop
         elif curve.is_a("IfcCircle"):
-            circle_position = Matrix(ifcopenshell.util.placement.get_axis2placement(curve.Position).tolist())
-            circle_position.translation *= cls.unit_scale
+            circle_position = Matrix(
+                ifcopenshell.util.placement.get_placement(curve.Position, should_return_si=True).tolist()
+            )
             radius = cls.convert_unit_to_si(curve.Radius)
             cls.vertices.extend(
                 [
@@ -666,8 +668,9 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def import_rectangle(cls, obj: bpy.types.Object, position: Matrix, profile: ifcopenshell.entity_instance) -> None:
         if profile.Position:
-            p_position = Matrix(ifcopenshell.util.placement.get_axis2placement(profile.Position).tolist())
-            p_position.translation *= cls.unit_scale
+            p_position = Matrix(
+                ifcopenshell.util.placement.get_placement(profile.Position, should_return_si=True).tolist()
+            )
         else:
             p_position = Matrix()
 
@@ -1703,9 +1706,9 @@ class Model(bonsai.core.tool.Model):
     def get_element_matrix(cls, element: ifcopenshell.entity_instance, keep_local: bool = False) -> Matrix:
         placement = element.ObjectPlacement
         if keep_local:
-            placement = ifcopenshell.util.placement.get_axis2placement(placement.RelativePlacement)
+            placement = ifcopenshell.util.placement.get_placement(placement.RelativePlacement)
         else:
-            placement = ifcopenshell.util.placement.get_local_placement(placement)
+            placement = ifcopenshell.util.placement.get_placement(placement)
         return Matrix(placement)
 
     @classmethod
@@ -2816,7 +2819,7 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def clip_wall_to_slab(cls, wall: ifcopenshell.entity_instance, clipping_bm: bmesh.types.BMesh) -> None:
-        matrix_i = np.linalg.inv(ifcopenshell.util.placement.get_local_placement(wall.ObjectPlacement))
+        matrix_i = np.linalg.inv(ifcopenshell.util.placement.get_placement(wall.ObjectPlacement))
         bm = clipping_bm.copy()
         bmesh.ops.transform(bm, matrix=Matrix(matrix_i.tolist()), verts=bm.verts)
 
@@ -2875,7 +2878,7 @@ class Model(bonsai.core.tool.Model):
 
         for extrusion in ifcopenshell.util.shape.get_base_extrusions(wall) or []:
             if extrusion.Position:
-                position = ifcopenshell.util.placement.get_axis2placement(extrusion.Position)
+                position = ifcopenshell.util.placement.get_placement(extrusion.Position)
             else:
                 position = np.eye(4)
 
@@ -3170,7 +3173,7 @@ class Model(bonsai.core.tool.Model):
         tool.Geometry.record_object_materials(obj)
 
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        matrix = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+        matrix = ifcopenshell.util.placement.get_placement(element.ObjectPlacement)
         matrix[:, 3] *= unit_scale
         obj.matrix_world = tool.Loader.apply_blender_offset_to_matrix_world(obj, matrix)
         tool.Geometry.record_object_position(obj)

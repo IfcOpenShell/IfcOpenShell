@@ -637,7 +637,7 @@ class DecoratorData:
             # Coordinate keys
             elif key in ("x", "y", "z"):
                 if hasattr(element, "ObjectPlacement") and element.ObjectPlacement:
-                    matrix = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+                    matrix = ifcopenshell.util.placement.get_placement(element.ObjectPlacement)
                     if matrix is not None:
                         if key == "x":
                             return matrix[0][3]
@@ -650,7 +650,7 @@ class DecoratorData:
             elif key in ("easting", "northing", "elevation"):
                 if hasattr(element, "ObjectPlacement") and element.ObjectPlacement:
                     try:
-                        matrix = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+                        matrix = ifcopenshell.util.placement.get_placement(element.ObjectPlacement)
                         if matrix is not None:
                             ifc_file = element.file
                             project = ifc_file.by_type("IfcProject")[0] if ifc_file.by_type("IfcProject") else None

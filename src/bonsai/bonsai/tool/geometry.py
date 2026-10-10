@@ -1473,9 +1473,7 @@ class Geometry(bonsai.core.tool.Geometry):
             "restore_placement_from_ifc requires ObjectPlacement — gate the caller "
             "or use restore_or_rebaseline_placement for the restore-or-clear-drift semantic"
         )
-        matrix_np = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement).copy()
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        matrix_np[:3, 3] *= unit_scale
+        matrix_np = ifcopenshell.util.placement.get_placement(element.ObjectPlacement, should_return_si=True)
         obj.matrix_world = tool.Loader.apply_blender_offset_to_matrix_world(obj, matrix_np)
         cls.record_object_position(obj)
 
@@ -2249,8 +2247,7 @@ class Geometry(bonsai.core.tool.Geometry):
                 surface = item.BaseSurface
                 if surface.is_a("IfcPlane"):
                     position = surface.Position
-                    m = Matrix(ifcopenshell.util.placement.get_axis2placement(position).tolist())
-                    m.translation *= unit_scale
+                    m = Matrix(ifcopenshell.util.placement.get_placement(position, should_return_si=True).tolist())
 
                     new_m = rep_obj.matrix_world.inverted() @ obj.matrix_world
                     new_m.normalize()
@@ -2339,10 +2336,8 @@ class Geometry(bonsai.core.tool.Geometry):
             bm.to_mesh(obj.data)
             bm.free()
 
-            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             position = item.BaseSurface.Position
-            position = Matrix(ifcopenshell.util.placement.get_axis2placement(position).tolist())
-            position.translation *= unit_scale
+            position = Matrix(ifcopenshell.util.placement.get_placement(position, should_return_si=True).tolist())
             obj.matrix_world = rep_obj.matrix_world @ position
         elif item.is_a("IfcVertex"):
             co = np.array(item.VertexGeometry.Coordinates) * ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
@@ -2364,9 +2359,7 @@ class Geometry(bonsai.core.tool.Geometry):
             position = item.Position
             # Positional is optional only for SweptAreaSolid.
             if position or not is_swept_area:
-                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-                position = ifcopenshell.util.placement.get_axis2placement(position)
-                position[:, 3][0:3] *= unit_scale
+                position = ifcopenshell.util.placement.get_placement(position, should_return_si=True)
                 item_matrix = np.array(rep_obj.matrix_world.copy())
                 if cartesian_point_offset is not None:
                     item_matrix[:, 3][0:3] -= cartesian_point_offset

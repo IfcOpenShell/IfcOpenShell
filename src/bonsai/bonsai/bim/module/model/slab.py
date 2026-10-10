@@ -385,7 +385,7 @@ class EnableEditingSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator)
         extrusion = tool.Model.get_extrusion(body)
         profile = extrusion.SweptArea
         if extrusion.Position:
-            position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
+            position = Matrix(ifcopenshell.util.placement.get_placement(extrusion.Position).tolist())
             position.matrix_world.translation *= self.unit_scale
         else:
             position = Matrix()
@@ -471,9 +471,9 @@ class EnableEditingSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator)
             self.edges.extend([(i, i + 1) for i in range(offset, len(self.vertices))])
             self.edges[-1] = (len(self.vertices) - 1, offset)  # Close the loop
         elif curve.is_a("IfcCircle"):
-            center = self.convert_unit_to_si(
-                Matrix(ifcopenshell.util.placement.get_axis2placement(curve.Position).tolist()).translation
-            )
+            center = Matrix(
+                ifcopenshell.util.placement.get_placement(curve.Position, should_return_si=True).tolist()
+            ).translation
             radius = self.convert_unit_to_si(curve.Radius)
             self.vertices.extend(
                 [
@@ -502,7 +502,7 @@ class EditSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         extrusion = tool.Model.get_extrusion(representation)
         if extrusion.Position:
-            position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
+            position = Matrix(ifcopenshell.util.placement.get_placement(extrusion.Position).tolist())
         else:
             position = Matrix()
         position_i = position.inverted()
@@ -646,8 +646,9 @@ class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         # TODO: review #7537 properly, this is a quick fix but something doesn't seem right.
         original_rotation_x = 0
         if extrusion.Position:
-            position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
-            position.translation *= self.unit_scale
+            position = Matrix(
+                ifcopenshell.util.placement.get_placement(extrusion.Position, should_return_si=True).tolist()
+            )
 
             # Restore the position to before it was changed by the offset and x_angle
             rot_matrix = Matrix.Rotation(existing_x_angle, 4, "X")
@@ -696,8 +697,9 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         layer_params = tool.Model.get_material_layer_parameters(element)
 
         if extrusion.Position:
-            position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
-            position.translation *= self.unit_scale
+            position = Matrix(
+                ifcopenshell.util.placement.get_placement(extrusion.Position, should_return_si=True).tolist()
+            )
 
             # Restore the position to after it was changed by the offset and x_angle
             rot_matrix = Matrix.Rotation(existing_x_angle, 4, "X")
