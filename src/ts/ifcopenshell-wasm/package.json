@@ -3,6 +3,11 @@
   "version": "0.1.0",
   "description": "IfcOpenShell WASM binaries and generated API glue for browser and Node",
   "license": "LGPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/IfcOpenShell/IfcOpenShell.git",
+    "directory": "src/ts/ifcopenshell-wasm"
+  },
   "type": "module",
   "main": "index.js",
   "types": "index.d.ts",

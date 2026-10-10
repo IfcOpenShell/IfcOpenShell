@@ -3,6 +3,11 @@
   "version": "0.1.0",
   "description": "Ergonomic TypeScript/JavaScript wrappers for IfcOpenShell WASM",
   "license": "LGPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/IfcOpenShell/IfcOpenShell.git",
+    "directory": "src/ts/ifcopenshell-js"
+  },
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
