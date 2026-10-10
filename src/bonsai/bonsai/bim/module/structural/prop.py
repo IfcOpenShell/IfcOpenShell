@@ -276,6 +276,12 @@ class BIMStructuralProperties(PropertyGroup):
         default=True,
         update=update_loads_display,
     )
+    show_force_slopes: BoolProperty(
+        name="Slopes",
+        description="Mark the slope of each point force as a rise and run triangle beside it",
+        default=False,
+        update=update_loads_display,
+    )
     angle_reference: EnumProperty(
         items=[
             (
@@ -343,6 +349,7 @@ class BIMStructuralProperties(PropertyGroup):
         force_display: str
         force_scale: float
         show_force_angles: bool
+        show_force_slopes: bool
         angle_reference: str
         force_decimals: int
         angle_decimals: int

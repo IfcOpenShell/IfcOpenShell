@@ -611,6 +611,8 @@ class ShaderInfo:
                 )
             if props.show_force_angles and has_angle:
                 self.add_force_angle(tail, vector, size, color, arcs_at_tail, reference_axes, activity)
+            if props.show_force_slopes and has_angle:
+                self.add_force_slope(tail, tip, size, color, activity, avoid=None if centre is None else side)
             start = tip
             running = running + vector
 
@@ -623,6 +625,7 @@ class ShaderInfo:
             # polygon, or else above.
             tip = location + resultant * scale
             outside = np.array((0, 0, 1.0)) if centre is None else (location + tip) / 2 - centre
+            side = self.get_label_side(resultant, outside)
             self.add_force_arrow(
                 location,
                 tip,
@@ -630,13 +633,15 @@ class ShaderInfo:
                 label,
                 size,
                 spacing=0.3,
-                label_away=self.get_label_side(resultant, outside),
+                label_away=side,
                 label_at_middle=centre is not None,
                 activity=single,
                 resultant_of=activities if len(activities) > 1 else None,
             )
             if props.show_force_angles:
                 self.add_force_angle(location, resultant, size, (1, 1, 1, 1), arcs_at_tail, reference_axes)
+            if props.show_force_slopes:
+                self.add_force_slope(location, tip, size, (1, 1, 1, 1), avoid=side)
         self.add_reference_axes(reference_axes, size)
 
     def add_force_angle(
@@ -653,20 +658,7 @@ class ShaderInfo:
         if abs(vector[1]) > 1e-9 * np.linalg.norm(vector):
             return  # Not in the X-Z plane, so one angle does not describe it.
         props = tool.Structural.get_structural_props()
-        end = np.degrees(np.arctan2(vector[2], vector[0]))
-        start = 0.0
-        eighth = None
-        if props.angle_reference == "EIGHTH":
-            # From the axis of the eighth Edit Load enters it in, which its generated name records.
-            load = tool.Ifc.get().by_id(activity).AppliedLoad if activity else None
-            named = re.search(r" (Q[1-8])$", (load.Name or "") if load else "")
-            eighth, angle, _, _ = tool.Structural.get_eighth(vector[0], vector[2], named[1] if named else None)
-            start = 90.0 * (int(eighth[1]) // 2)
-            end = start + (angle if int(eighth[1]) % 2 else -angle)
-        elif props.angle_reference == "HORIZONTAL" and vector[0] < -1e-9 * np.linalg.norm(vector):
-            # Measured from -X, so that the angle is the acute one statics texts draw.
-            start = 180.0
-            end = end if end > 0 else end + 360
+        start, end, eighth = self.get_angle_reference(vector, props.angle_reference, activity)
         if abs(end - start) < 0.01:
             return
         key = tuple(np.round(tail, 6))
@@ -696,6 +688,81 @@ class ShaderInfo:
                 "away": away / np.linalg.norm(away),
             }
         )
+
+    def get_angle_reference(
+        self, vector: np.ndarray, reference: str, activity: Union[int, None] = None
+    ) -> tuple[float, float, Union[str, None]]:
+        """Get the angles in degrees of the axis a force in the X-Z plane is measured from and of the force,
+        counter-clockwise from +X, and the eighth it is measured in, if by eighths"""
+        end = np.degrees(np.arctan2(vector[2], vector[0]))
+        start = 0.0
+        eighth = None
+        if reference == "EIGHTH":
+            # From the axis of the eighth Edit Load enters it in, which its generated name records.
+            load = tool.Ifc.get().by_id(activity).AppliedLoad if activity else None
+            named = re.search(r" (Q[1-8])$", (load.Name or "") if load else "")
+            eighth, angle, _, _ = tool.Structural.get_eighth(vector[0], vector[2], named[1] if named else None)
+            start = 90.0 * (int(eighth[1]) // 2)
+            end = start + (angle if int(eighth[1]) % 2 else -angle)
+        elif reference == "HORIZONTAL" and vector[0] < -1e-9 * np.linalg.norm(vector):
+            # Measured from -X, so that the angle is the acute one statics texts draw.
+            start = 180.0
+            end = end if end > 0 else end + 360
+        return start, end, eighth
+
+    def add_force_slope(
+        self,
+        tail: np.ndarray,
+        tip: np.ndarray,
+        size: float,
+        color: tuple,
+        activity: Union[int, None] = None,
+        avoid: Union[np.ndarray, None] = None,
+    ) -> None:
+        """Mark a force's slope as a triangle beside it, its legs along and across the axis its angle is from.
+
+        :param avoid: The side of the force its label is on, to keep the triangle off it.
+        """
+        vector = tip - tail
+        length = np.linalg.norm(vector)
+        if not length or abs(vector[1]) > 1e-9 * length:
+            return  # Not in the X-Z plane, so one slope does not describe it.
+        props = tool.Structural.get_structural_props()
+        # A full turn from +X makes no triangle, so measure from the nearest horizontal instead.
+        reference = "HORIZONTAL" if props.angle_reference == "POSITIVE_X" else props.angle_reference
+        start, end, _ = self.get_angle_reference(vector, reference, activity)
+        turned = np.radians(end - start)
+        along, across = abs(np.cos(turned)), abs(np.sin(turned))
+        if along < 1e-6 or across < 1e-6:
+            return  # Along or square to the axis, so there is no slope to show.
+        rise, run = tool.Structural.get_simple_slope(along, across)
+        if float(rise).is_integer() and float(run).is_integer():
+            rise_text, run_text = f"{abs(rise):g}", f"{abs(run):g}"
+        else:
+            rise_text, run_text = f"{across / along:.3g}", "1"
+        direction = vector / length
+        axis = np.array((np.cos(np.radians(start)), 0, np.sin(np.radians(start))))
+        # The hypotenuse lies along the force, a little past its middle, and the legs meet off to one side.
+        hypotenuse = min(size * 0.3, length * 0.4)
+        a = tail + direction * (length * 0.6 - hypotenuse / 2)
+        b = a + direction * hypotenuse
+        corner = a + axis * hypotenuse * np.cos(turned)
+        if avoid is not None and np.dot(corner - a, avoid) > 0:
+            corner = b - axis * hypotenuse * np.cos(turned)  # The same triangle turned to the other side.
+        side = corner - a - np.dot(corner - a, direction) * direction
+        offset = side / np.linalg.norm(side) * size * 0.05
+        a, b, corner = a + offset, b + offset, corner + offset
+        for start_point, end_point in ((a, corner), (corner, b), (a, b)):
+            self.add_dashed_line(start_point, end_point, size, color, dashed=False)
+        centroid = (a + b + corner) / 3
+        for p, q in ((a, corner), (corner, b)):
+            # The leg along the axis is the run.
+            text = run_text if abs(np.dot((q - p) / np.linalg.norm(q - p), axis)) > 0.5 else rise_text
+            middle = (p + q) / 2
+            away = middle - centroid
+            self.text_info.append(
+                {"position": middle, "text": text, "color": color, "away": away / np.linalg.norm(away)}
+            )
 
     def add_reference_axes(self, reference_axes: dict[tuple, tuple], size: float) -> None:
         """Draw the axes angles are measured from, each band coloured as the arc that starts in it"""
