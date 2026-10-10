@@ -17,6 +17,7 @@
  *                                                                              *
  ********************************************************************************/
 
+#include "aggregate.h"
 #include "parse.h"
 
 #include "express.h"
@@ -3509,27 +3510,16 @@ void file::process_deletion_(const express::base& entity) {
                     }
                 } break;
                 case ifcopenshell::Argument_AGGREGATE_OF_ENTITY_INSTANCE: {
-                    std::vector<express::base> instance_list = attr;
-                    auto it = std::remove(instance_list.begin(), instance_list.end(), entity);
-                    if (it != instance_list.end()) {
-                        instance_list.erase(it, instance_list.end());
-                        if (instance_list.empty() && related_instance.declaration().as_entity()->attribute_by_index(i)->optional()) {
-                            // @todo we can also check the lower bound of the attribute type before setting to null.
-                            related_instance.set_attribute_value(i, blank{});
-                        } else {
-                            related_instance.set_attribute_value(i, instance_list);
-                        }
+                    auto list = related_instance.get<express::aggregate<express::base>>(i);
+                    if (list.erase(entity) != 0 && list.empty() && decl.as_entity()->attribute_by_index(i)->optional()) {
+                        // @todo we can also check the lower bound of the attribute type before setting to null.
+                        related_instance.set_attribute_value(i, blank{});
                     }
                 } break;
                 case ifcopenshell::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE: {
-                    std::vector<std::vector<express::base>> instance_list_list = attr;
-                    for (auto& li : instance_list_list) {
-                        auto it = std::remove(li.begin(), li.end(), entity);
-                        if (it != li.end()) {
-                            li.erase(it, li.end());
-                        }
+                    for (auto list : related_instance.get<express::aggregate<express::aggregate<express::base>>>(i)) {
+                        list.erase(entity);
                     }
-                    related_instance.set_attribute_value(i, instance_list_list);
                 } break;
                 default:
                     break;
