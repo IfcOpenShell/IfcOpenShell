@@ -992,7 +992,7 @@ def update_force_inputs(self: "StructuralForceInput", context: bpy.types.Context
         LoadsDecorator.update()
         tool.Blender.update_all_viewports(context)
     elif getattr(self, "is_previewing", False) and LoadsDecorator.is_installed:
-        forces, _ = solve_resultant(self)
+        forces, _, _ = solve_resultant(self)
         ShaderInfo.preview = {load.id(): get_force_attributes(load, force) for load, force in (forces or {}).items()}
         LoadsDecorator.update()
         tool.Blender.update_all_viewports(context)
@@ -1014,38 +1014,31 @@ def get_force_attributes(load: ifcopenshell.entity_instance, force: tuple) -> di
     return attributes
 
 
-def get_adjusted_indices(props: "EditStructuralResultant") -> list[int]:
-    count = len(get_resultant_activities(props))
-    return [0, 1] if count == 2 else [i for i in range(min(count, 32)) if props.adjust[i]]
-
-
 def solve_resultant(
     props: "EditStructuralResultant",
-) -> tuple[Union[dict[ifcopenshell.entity_instance, tuple], None], str]:
-    """Get the loads to change, and their new forces, for the target resultant, or why it cannot be made.
-
-    Two of the forces keep their directions and change magnitude; the others are kept.
-    """
-    loads = [activity.AppliedLoad for activity in get_resultant_activities(props)]
-    adjusted = get_adjusted_indices(props)
-    if len(adjusted) != 2:
-        return None, "Tick exactly two forces to adjust"
-    forces = [get_force(load) for load in loads]
-    kept = [forces[i] for i in range(len(loads)) if i not in adjusted]
-    target = [t - sum(force[k] for force in kept) for k, t in enumerate(get_force_components(props))]
-    directions = []
-    for i in adjusted:
-        length = math.hypot(*forces[i])
-        if not length:
-            return None, f"{loads[i].Name or 'Unnamed'} has no direction to keep"
-        directions.append(tuple(c / length for c in forces[i]))
-    magnitudes = tool.Structural.solve_two_force_magnitudes(target, directions[0], directions[1])
-    if magnitudes is None:
-        return None, "The two forces adjusted are parallel, so they cannot make this resultant"
-    return {
-        loads[i]: tuple(magnitude * c for c in direction)
-        for i, magnitude, direction in zip(adjusted, magnitudes, directions)
-    }, ""
+) -> tuple[Union[dict[ifcopenshell.entity_instance, tuple], None], Union[tuple, None], str]:
+    """Get the loads to change, their new forces, and the resultant, by finding what is unlocked, or why not"""
+    loads = [activity.AppliedLoad for activity in get_resultant_activities(props)][:32]
+    locks = [(props.magnitude_locks[i], props.direction_locks[i]) for i in range(len(loads))]
+    if props.magnitude_locked or props.input_mode == "COMPONENTS":
+        resultant = get_force_components(props)
+    else:
+        # Only its direction is known, so take it at any magnitude.
+        x, z = tool.Structural.get_in_plane_components(
+            props.input_mode,
+            magnitude=1.0,
+            angle=props.angle,
+            rise=props.rise,
+            run=props.run,
+            direction=props.direction,
+        )
+        resultant = (x, 0.0, z)
+    forces, resultant, error = tool.Structural.solve_unknowns(
+        [get_force(load) for load in loads], locks, resultant, (props.magnitude_locked, props.direction_locked)
+    )
+    if error:
+        return None, None, error
+    return {load: force for load, force, lock in zip(loads, forces, locks) if not all(lock)}, resultant, ""
 
 
 def get_force_name(force: tuple[float, float, float], unit: str) -> str:
@@ -1106,6 +1099,20 @@ class StructuralForceInput:
     moment_y: bpy.props.FloatProperty(name="Moment Y", update=update_force_inputs)
     moment_z: bpy.props.FloatProperty(name="Moment Z", update=update_force_inputs)
     load_name: bpy.props.StringProperty(name="Load Name")
+    magnitude_locked: bpy.props.BoolProperty(
+        name="Magnitude Known",
+        description="Whether the magnitude is known. Edit Resultant keeps it, or finds it if unlocked",
+        default=True,
+        options={"SKIP_SAVE"},
+        update=update_force_inputs,
+    )
+    direction_locked: bpy.props.BoolProperty(
+        name="Direction Known",
+        description="Whether the direction is known. Edit Resultant keeps it, or finds it if unlocked",
+        default=True,
+        options={"SKIP_SAVE"},
+        update=update_force_inputs,
+    )
 
     def get_components(self) -> tuple[float, float, float]:
         return get_force_components(self)
@@ -1126,9 +1133,35 @@ class StructuralForceInput:
     def get_default_load_name(self, category: str) -> str:
         return get_default_load_name(self, category)
 
-    def draw_force_inputs(self, layout: bpy.types.UILayout, category: Union[str, None], show_name: bool = True) -> None:
+    def draw_force_inputs(
+        self,
+        layout: bpy.types.UILayout,
+        category: Union[str, None],
+        show_name: bool = True,
+        show_locks: bool = False,
+        grey_unknowns: bool = False,
+    ) -> None:
+        """Draw the force inputs.
+
+        :param show_locks: Show whether the magnitude and direction are known, beside them.
+        :param grey_unknowns: Grey out values that are not known, as they are found rather than entered.
+        """
+
+        def draw_with_lock(props: tuple[str, ...], lock: Union[str, None]) -> None:
+            row = layout.row(align=True)
+            values = row.row(align=True)
+            values.enabled = not (lock and grey_unknowns and not getattr(self, lock))
+            for prop in props:
+                values.prop(self, prop)
+            if lock:
+                row.prop(self, lock, text="", icon="LOCKED" if getattr(self, lock) else "UNLOCKED")
+
         layout.row().prop(self, "input_mode", expand=True)
         if self.input_mode == "COMPONENTS":
+            if show_locks:
+                row = layout.row(align=True)
+                for lock, text in (("magnitude_locked", "Magnitude"), ("direction_locked", "Direction")):
+                    row.prop(self, lock, text=text, icon="LOCKED" if getattr(self, lock) else "UNLOCKED")
             for prop in ("x", "y", "z"):
                 layout.prop(self, prop)
             if category in ("IfcStructuralPointConnection", "IfcStructuralCurveMember"):
@@ -1149,13 +1182,11 @@ class StructuralForceInput:
                         row.prop_enum(self, "direction", cell)
                     else:
                         row.label(text="")
-            if self.input_mode == "ANGLE":
-                layout.prop(self, "angle")
-            else:
-                row = layout.row(align=True)
-                row.prop(self, "rise")
-                row.prop(self, "run")
-            layout.prop(self, "magnitude")
+            draw_with_lock(
+                ("angle",) if self.input_mode == "ANGLE" else ("rise", "run"),
+                "direction_locked" if show_locks else None,
+            )
+            draw_with_lock(("magnitude",), "magnitude_locked" if show_locks else None)
             x, _, z = self.get_components()
             unit = self.get_unit_symbol(category) if category else ""
             layout.label(text=f"X = {x:.4f}   Z = {z:.4f} {unit}", icon="ORIENTATION_GLOBAL")
@@ -1357,6 +1388,10 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
                 self.input_mode, self.direction, self.angle = "ANGLE", direction, angle
         # A generated name is generated again, so that it reads as the inputs now do, as from its eighth's axis.
         self.load_name = get_default_load_name(self, category) if DEFAULT_LOAD_NAME.match(name) else name
+        if self.activity:
+            self.magnitude_locked, self.direction_locked = tool.Structural.get_locks(
+                tool.Ifc.get().by_id(self.activity)
+            )
         if (activities := self.get_movable_activities()) and (groups := get_activity_load_groups(activities[0])):
             self.load_group = str(groups[0].id())
         # Set last, so that filling in the values above does not start a preview.
@@ -1393,7 +1428,7 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         load_cases = {g for user in users for g in get_activity_load_groups(user)}
         if len(load_cases) > 1 and not self.get_movable_activities():
             layout.label(text=f"Used in {len(load_cases)} load cases: move one from its applied load", icon="INFO")
-        self.draw_force_inputs(layout, category)
+        self.draw_force_inputs(layout, category, show_locks=bool(self.activity))
         if self.input_mode != "COMPONENTS" and (self.y or self.moment_x or self.moment_y or self.moment_z):
             layout.label(text="Y and moments will be set to zero", icon="ERROR")
 
@@ -1408,6 +1443,8 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         attributes["Name"] = self.get_load_name(category)
         ifc_file = tool.Ifc.get()
         ifcopenshell.api.structural.edit_structural_load(ifc_file, structural_load=load, attributes=attributes)
+        if self.activity:
+            tool.Structural.set_locks(ifc_file.by_id(self.activity), self.magnitude_locked, self.direction_locked)
         activities = self.get_movable_activities()
         if activities and (target := self.get_target_load_group(ifc_file)):
             for activity in activities:
@@ -1451,13 +1488,24 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
 class EditStructuralResultant(bpy.types.Operator, tool.Ifc.Operator, StructuralForceInput):
     bl_idname = "bim.edit_structural_resultant"
     bl_label = "Edit Resultant"
-    bl_description = "Set the resultant of the forces at a point, adjusting the magnitudes of two of them"
+    bl_description = (
+        "Find two unknowns of the forces at a point and their resultant: the magnitudes and directions unlocked"
+    )
     bl_options = {"REGISTER", "UNDO"}
     activities: bpy.props.StringProperty(description="Ids of the activities whose forces add up", options={"SKIP_SAVE"})
-    adjust: bpy.props.BoolVectorProperty(
-        name="Adjust",
-        description="Adjust the magnitude of this force, keeping its direction",
+    magnitude_locks: bpy.props.BoolVectorProperty(
+        name="Magnitude Known",
+        description="Whether this force's magnitude is known. If not, it is found",
         size=32,
+        default=[True] * 32,
+        options={"SKIP_SAVE"},
+        update=update_force_inputs,
+    )
+    direction_locks: bpy.props.BoolVectorProperty(
+        name="Direction Known",
+        description="Whether this force's direction is known. If not, it is found",
+        size=32,
+        default=[True] * 32,
         options={"SKIP_SAVE"},
         update=update_force_inputs,
     )
@@ -1475,7 +1523,12 @@ class EditStructuralResultant(bpy.types.Operator, tool.Ifc.Operator, StructuralF
         self.x, self.y, self.z = x, y, z
         self.set_in_plane_inputs(x, z)
         self.input_mode = "ANGLE" if not y else "COMPONENTS"
-        self.adjust = [i < 2 for i in range(32)]
+        locks = [tool.Structural.get_locks(activity) for activity in activities[:32]]
+        self.magnitude_locks = [lock[0] for lock in locks] + [True] * (32 - len(locks))
+        self.direction_locks = [lock[1] for lock in locks] + [True] * (32 - len(locks))
+        # Leave the resultant as unknown as the forces leave room for: two unknowns in all.
+        unlocked = sum(not locked for lock in locks for locked in lock)
+        self.magnitude_locked, self.direction_locked = unlocked >= 2, unlocked >= 1
         self.is_previewing = True  # Set last, so that filling in the values above does not start a preview.
         return context.window_manager.invoke_props_dialog(self, width=380)
 
@@ -1483,17 +1536,22 @@ class EditStructuralResultant(bpy.types.Operator, tool.Ifc.Operator, StructuralF
         layout = self.layout
         activities = get_resultant_activities(self)
         layout.label(text=f"Resultant of {len(activities)} forces", icon="INFO")
-        self.draw_force_inputs(layout, self.load_category, show_name=False)
+        self.draw_force_inputs(layout, self.load_category, show_name=False, show_locks=True, grey_unknowns=True)
         unit = self.get_unit_symbol(self.load_category)
-        if len(activities) > 2:
-            layout.label(text="Adjust two forces, keeping their directions:")
-            for i, activity in enumerate(activities[:32]):
-                layout.prop(self, "adjust", index=i, text=activity.AppliedLoad.Name or "Unnamed")
-        forces, error = solve_resultant(self)
+        layout.label(text="Forces, and which of their values are known:")
+        for i, activity in enumerate(activities[:32]):
+            row = layout.row(align=True)
+            row.label(text=activity.AppliedLoad.Name or "Unnamed", icon="FORCE_FORCE")
+            for prop, text in (("magnitude_locks", "Magnitude"), ("direction_locks", "Direction")):
+                locked = getattr(self, prop)[i]
+                row.prop(self, prop, index=i, text=text, icon="LOCKED" if locked else "UNLOCKED")
+        forces, resultant, error = solve_resultant(self)
         if error:
             layout.label(text=error, icon="ERROR")
             return
         box = layout.box()
+        if not (self.magnitude_locked and self.direction_locked):
+            box.label(text=f"Resultant: {get_force_name(resultant, unit)}", icon="FORCE_FORCE")
         ifc_file = tool.Ifc.get()
         for load, force in forces.items():
             old = get_force(load)
@@ -1510,11 +1568,13 @@ class EditStructuralResultant(bpy.types.Operator, tool.Ifc.Operator, StructuralF
 
     def _execute(self, context):
         ShaderInfo.preview = {}  # The edit below refreshes the shown loads.
-        forces, error = solve_resultant(self)
+        forces, _, error = solve_resultant(self)
         if error:
             self.report({"ERROR"}, error)
             return {"CANCELLED"}
         ifc_file = tool.Ifc.get()
+        for i, activity in enumerate(get_resultant_activities(self)[:32]):
+            tool.Structural.set_locks(activity, self.magnitude_locks[i], self.direction_locks[i])
         unit = self.get_unit_symbol(self.load_category)
         for load, force in forces.items():
             attributes = get_force_attributes(load, force)

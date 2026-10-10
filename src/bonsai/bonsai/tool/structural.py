@@ -180,13 +180,86 @@ class Structural(bonsai.core.tool.Structural):
     @classmethod
     def set_draw_order(cls, activities: list[ifcopenshell.entity_instance]) -> None:
         """Record the order applied loads are drawn tip to tail, which IFC does not order"""
-        ifc_file = tool.Ifc.get()
         for order, activity in enumerate(activities, 1):
-            if pset := ifcopenshell.util.element.get_pset(activity, "BBIM_Structural"):
-                pset = ifc_file.by_id(pset["id"])
-            else:
-                pset = ifcopenshell.api.pset.add_pset(ifc_file, product=activity, name="BBIM_Structural")
-            ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"DrawOrder": order})
+            cls.edit_bbim_structural(activity, {"DrawOrder": order})
+
+    @classmethod
+    def edit_bbim_structural(cls, activity: ifcopenshell.entity_instance, properties: dict[str, Any]) -> None:
+        """Set properties of an applied load that Bonsai keeps for itself, in its BBIM_Structural property set"""
+        ifc_file = tool.Ifc.get()
+        if pset := ifcopenshell.util.element.get_pset(activity, "BBIM_Structural"):
+            pset = ifc_file.by_id(pset["id"])
+        else:
+            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=activity, name="BBIM_Structural")
+        ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties=properties)
+
+    @classmethod
+    def get_locks(cls, activity: ifcopenshell.entity_instance) -> tuple[bool, bool]:
+        """Whether an applied load's magnitude and direction are known, so kept when solving for a resultant"""
+        pset = ifcopenshell.util.element.get_pset(activity, "BBIM_Structural") or {}
+        return pset.get("MagnitudeLocked", True), pset.get("DirectionLocked", True)
+
+    @classmethod
+    def set_locks(cls, activity: ifcopenshell.entity_instance, magnitude: bool, direction: bool) -> None:
+        if (magnitude, direction) != cls.get_locks(activity):
+            cls.edit_bbim_structural(activity, {"MagnitudeLocked": magnitude, "DirectionLocked": direction})
+
+    @classmethod
+    def solve_unknowns(
+        cls,
+        forces: list[tuple[float, float, float]],
+        locks: list[tuple[bool, bool]],
+        resultant: tuple[float, float, float],
+        resultant_locks: tuple[bool, bool],
+    ) -> tuple[Union[list[tuple[float, float, float]], None], Union[tuple[float, float, float], None], str]:
+        """Find the two unknowns of concurrent forces and their resultant: magnitudes or directions not locked.
+
+        :param forces: The forces, as they are. An unknown magnitude is solved along the force's direction.
+        :param locks: Whether each force's magnitude and direction are known.
+        :param resultant: The resultant. Only its direction counts if its magnitude is unknown.
+        :param resultant_locks: Whether the resultant's magnitude and direction are known.
+        :return: The forces and resultant with the unknowns found, or why they cannot be.
+        """
+        unknowns = [
+            (i, kind)
+            for i, lock in enumerate(locks)
+            for kind, locked in zip(("MAGNITUDE", "DIRECTION"), lock)
+            if not locked
+        ]
+        unknowns += [(None, kind) for kind, locked in zip(("MAGNITUDE", "DIRECTION"), resultant_locks) if not locked]
+        if len(unknowns) != 2:
+            return None, None, f"Unlock exactly two values to find, not {len(unknowns)}"
+        forces = list(forces)
+        total = lambda vectors: tuple(sum(v[k] for v in vectors) for k in range(3))
+        others = lambda i: total([f for k, f in enumerate(forces) if k != i])
+        unit = lambda v: tuple(c / math.hypot(*v) for c in v) if math.hypot(*v) else None
+        (i, first), (j, second) = unknowns
+        if i is None and j is None:
+            return forces, total(forces), ""  # Just their sum.
+        if i == j:
+            forces[i] = tuple(r - o for r, o in zip(resultant, others(i)))  # The force that makes up the rest.
+            return forces, resultant, ""
+        if "DIRECTION" in (first, second):
+            return None, None, "Finding a direction with another unknown is not supported yet"
+        if not (direction := unit(forces[i])) or (j is not None and not unit(forces[j])):
+            return None, None, "A force with an unknown magnitude needs a direction: give it a magnitude first"
+        if j is None:
+            # A force's magnitude and the resultant's: others + a * direction = r * along.
+            if not (along := unit(resultant)):
+                return None, None, "The resultant needs a direction"
+            magnitudes = cls.solve_two_force_magnitudes(tuple(-c for c in others(i)), direction, along)
+            if magnitudes is None:
+                return None, None, "The force and the resultant are parallel, so their magnitudes cannot be found"
+            forces[i] = tuple(magnitudes[0] * c for c in direction)
+            return forces, tuple(-magnitudes[1] * c for c in along), ""
+        kept = total([f for k, f in enumerate(forces) if k not in (i, j)])
+        target = tuple(r - k for r, k in zip(resultant, kept))
+        magnitudes = cls.solve_two_force_magnitudes(target, direction, unit(forces[j]))
+        if magnitudes is None:
+            return None, None, "The two forces are parallel, so they cannot make this resultant"
+        forces[i] = tuple(magnitudes[0] * c for c in direction)
+        forces[j] = tuple(magnitudes[1] * c for c in unit(forces[j]))
+        return forces, resultant, ""
 
     @classmethod
     def get_eighth(cls, x: float, z: float, preferred: Union[str, None] = None) -> tuple[str, float, float, float]:
