@@ -1197,6 +1197,25 @@ class System:
 
 
 @interface
+class Terrain:
+    def create_contour(cls, terrain, elevation, z, polylines, is_index): pass
+    def create_contour_label(cls, drawing, contour, matrix, relating_type, template): pass
+    def get_contour_elevation(cls, contour): pass
+    def get_contour_labels(cls, contour, drawing=None): pass
+    def get_contour_levels(cls, element, interval): pass
+    def get_contour_settings(cls, element): pass
+    def get_contours(cls, element): pass
+    def get_label_placements(cls, element, drawing, relating_type, spacing, kept_labels): pass
+    def get_label_template(cls, element): pass
+    def is_label_moved(cls, label): pass
+    def remove_contour(cls, contour): pass
+    def remove_contour_label(cls, label): pass
+    def remove_contour_settings(cls, element): pass
+    def set_contour_settings(cls, element, interval, index_interval): pass
+    def update_contour(cls, contour, terrain, elevation, z, polylines, is_index): pass
+
+
+@interface
 class Type:
     def change_object_data(cls, obj, data, is_global=False): pass
     def disable_editing(cls, obj): pass

@@ -2397,8 +2397,9 @@ class Drawing(bonsai.core.tool.Drawing):
 
         updated_set = set()
         for i in elements:
-            # exclude annotations to avoid including annotations from other drawings
-            if not i.is_a("IfcAnnotation"):
+            # exclude annotations to avoid including annotations from other drawings,
+            # except terrain contours, which belong to the model rather than a drawing
+            if not i.is_a("IfcAnnotation") or tool.Terrain.is_contour(i):
                 updated_set.add(i)
                 # add aggregate too, if element is host by one
                 if hasattr(i, "Decomposes") and (decomposes := i.Decomposes):
@@ -2407,6 +2408,14 @@ class Drawing(bonsai.core.tool.Drawing):
                     if aggregate.is_a("IfcProduct"):
                         updated_set.add(aggregate)
         elements = updated_set
+        if not include and param_was_none and camera_view_elements:
+            # Terrain contours belong to the model, not to a drawing, so the
+            # element filter above drops them like any other annotation; put back
+            # the ones in view. Added here rather than to that filter, which other
+            # PRs rewrite.
+            elements.update(
+                e for e in camera_view_elements if e.is_a("IfcAnnotation") and tool.Terrain.is_contour(e)
+            )
 
         # add annotations from the current drawing
         annotations = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(drawing))
