@@ -40,24 +40,21 @@ from bonsai.bim.module.structural.decorator import LoadsDecorator
 from bonsai.bim.module.structural.load_decoration_data import ShaderInfo
 
 
-class ShowLoads(bpy.types.Operator):
-    """Draw decorations to show structural actions in 3d view"""
+class PickStructuralLoads(bpy.types.Operator):
+    """Highlight the shown load under the mouse, and edit it when clicked. Runs while loads are shown"""
 
-    bl_idname = "bim.show_loads"
-    bl_label = "Show Loads in 3D View"
-    bl_options = {"REGISTER", "UNDO"}
+    bl_idname = "bim.pick_structural_loads"
+    bl_label = "Pick Structural Loads"
+    bl_options = {"INTERNAL"}
 
     def modal(self, context, event):
         assert context.screen
         if not LoadsDecorator.is_installed:
-            return {"FINISHED"}  # Loads were hidden from a load case's eye.
+            LoadsDecorator.is_picking = False
+            return {"FINISHED"}  # The loads overlay was turned off.
         if event.type == "F5":
             LoadsDecorator.update()
             tool.Blender.update_all_viewports(context)
-        if event.type == "ESC":
-            LoadsDecorator.uninstall()
-            tool.Blender.update_all_viewports(context)
-            return {"FINISHED"}
         if event.type == "MOUSEMOVE":
             hovered = None
             if view := self.get_view_under_mouse(context, event):
@@ -138,24 +135,15 @@ class ShowLoads(bpy.types.Operator):
                     return area, region, area.spaces.active.region_3d
 
     def invoke(self, context, event):
-        assert context.window and context.window_manager and context.screen
-        collection = bpy.data.collections.get("IfcStructuralItem")
-        if collection is None:
-            self.report({"ERROR"}, "No IfcStructuralItems found.")
+        assert context.window_manager
+        if not LoadsDecorator.is_installed or LoadsDecorator.is_picking:
             return {"CANCELLED"}
-
-        collection.hide_viewport = False
-        context.window.cursor_modal_set("WAIT")
-        try:
-            LoadsDecorator.install(context)
-        except Exception as exc:
-            context.window.cursor_modal_restore()
-            raise exc
-        context.window.cursor_modal_restore()
+        LoadsDecorator.is_picking = True
         context.window_manager.modal_handler_add(self)
-        tool.Blender.update_all_viewports(context)
-
         return {"RUNNING_MODAL"}
+
+    def cancel(self, context):
+        LoadsDecorator.is_picking = False
 
 
 class AddStructuralMemberConnection(bpy.types.Operator, tool.Ifc.Operator):
@@ -1275,8 +1263,7 @@ class ApplyStructuralLoad(bpy.types.Operator, tool.Ifc.Operator, StructuralForce
             tool.Structural.get_structural_props().load_group_to_show = str(group.id())
         except TypeError:
             return  # Not in the current analysis model, so it cannot be shown.
-        if not LoadsDecorator.is_installed:
-            bpy.ops.bim.show_loads("INVOKE_DEFAULT")
+        tool.Structural.get_structural_props().show_loads = True
 
 
 edit_load_group_items: list[tuple[str, str, str]] = []
@@ -1529,17 +1516,15 @@ class ShowStructuralLoadCase(bpy.types.Operator):
 
     def execute(self, context):
         props = tool.Structural.get_structural_props()
-        if LoadsDecorator.is_installed and props.load_group_to_show == str(self.load_case):
-            LoadsDecorator.uninstall()
-            tool.Blender.update_all_viewports(context)
+        if props.show_loads and props.load_group_to_show == str(self.load_case):
+            props.show_loads = False
             return {"FINISHED"}
         try:
             props.load_group_to_show = str(self.load_case)
         except TypeError:
             self.report({"WARNING"}, "This load case is not in the current analysis model.")
             return {"CANCELLED"}
-        if not LoadsDecorator.is_installed:
-            bpy.ops.bim.show_loads("INVOKE_DEFAULT")
+        props.show_loads = True
         return {"FINISHED"}
 
 

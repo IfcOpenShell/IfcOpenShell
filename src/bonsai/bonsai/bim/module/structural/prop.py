@@ -55,6 +55,12 @@ def update_activity_type(self: "BIMStructuralProperties", context: bpy.types.Con
     LoadGroupDecorationData.is_loaded = False
 
 
+def update_show_loads(self: "BIMStructuralProperties", context: bpy.types.Context) -> None:
+    from bonsai.bim.module.structural.decorator import show_loads
+
+    show_loads(self.show_loads)
+
+
 def update_loads_display(self: "BIMStructuralProperties", context: bpy.types.Context) -> None:
     from bonsai.bim.module.structural.decorator import LoadsDecorator
 
@@ -213,7 +219,12 @@ class BIMStructuralProperties(PropertyGroup):
     boundary_condition_attributes: CollectionProperty(name="Boundary Condition Attributes", type=Attribute)
     filtered_boundary_conditions: BoolProperty(name="Filtered Boundary Conditions", default=False)
 
-    show_loads: BoolProperty(name="Show Loads", default=False)
+    show_loads: BoolProperty(
+        name="Structural Loads",
+        description="Show the loads on visible structural items in the viewport. Click a load to edit it",
+        default=True,
+        update=update_show_loads,
+    )
     update_load_repr: BoolProperty(name="Update Load Representation", default=False)
     enable_repr_auto_update: BoolProperty(name="Auto Update", default=False)
     reference_frame: EnumProperty(

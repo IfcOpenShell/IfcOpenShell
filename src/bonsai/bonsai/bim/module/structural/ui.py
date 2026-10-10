@@ -38,7 +38,6 @@ from bonsai.bim.module.structural.data import (
     StructuralLoadsData,
     StructuralMemberData,
 )
-from bonsai.bim.module.structural.decorator import LoadsDecorator
 
 if TYPE_CHECKING:
     from bonsai.bim.module.structural.prop import (
@@ -269,7 +268,8 @@ def draw_chain_reverse_button(layout: bpy.types.UILayout, chain: list[int], item
 
 def get_load_case_eye(load_case: int) -> str:
     """An open eye for the load case whose loads are shown, closed for the others"""
-    shown = LoadsDecorator.is_installed and tool.Structural.get_structural_props().load_group_to_show == str(load_case)
+    props = tool.Structural.get_structural_props()
+    shown = props.show_loads and props.load_group_to_show == str(load_case)
     return "HIDE_OFF" if shown else "HIDE_ON"
 
 
@@ -667,11 +667,8 @@ class BIM_PT_show_structural_activities(Panel):
         self.props = tool.Structural.get_structural_props()
 
         row = self.layout.row(align=True)
-        row.operator(
-            "bim.show_loads",
-            text="Show Loads",
-            icon="HIDE_OFF",
-        )
+        # The same setting as in the viewport's overlays.
+        row.prop(self.props, "show_loads", text="Show Loads", icon="HIDE_OFF")
         row = self.layout.row(align=True)
         row.prop(self.props, "reference_frame")
         row = self.layout.row(align=True)

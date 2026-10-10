@@ -45,6 +45,33 @@ def update_loads_after_moves(scene: bpy.types.Scene, depsgraph: bpy.types.Depsgr
                 return
 
 
+def show_loads(shown: bool) -> None:
+    """Show or hide the structural loads overlay, and pick loads to edit while they are shown"""
+    if shown and tool.Ifc.get():
+        LoadsDecorator.install(bpy.context)
+        if not bpy.app.timers.is_registered(start_load_picking):
+            bpy.app.timers.register(start_load_picking)
+    elif LoadsDecorator.is_installed:
+        LoadsDecorator.uninstall()
+    tool.Blender.update_all_viewports()
+
+
+def show_loads_after_load() -> None:
+    """Restore the loads overlay once a file and its IFC have loaded"""
+    show_loads(tool.Structural.get_structural_props().show_loads)
+
+
+def start_load_picking() -> None:
+    """Start picking shown loads to edit, which needs a window to run an operator in"""
+    if (
+        LoadsDecorator.is_installed
+        and not LoadsDecorator.is_picking
+        and (windows := bpy.context.window_manager.windows)
+    ):
+        with bpy.context.temp_override(window=windows[0]):
+            bpy.ops.bim.pick_structural_loads("INVOKE_DEFAULT")
+
+
 class LoadsDecorator(tool.Blender.ViewportDecorator):
     """Decorator to show structural loads in 3D"""
 
@@ -62,6 +89,7 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
     depth_array = None
     pickables = []
     hovered: Union[dict, None] = None
+    is_picking = False  # Whether bim.pick_structural_loads is running.
 
     @classmethod
     def install(cls, context: bpy.types.Context) -> None:
@@ -134,6 +162,8 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
 
     def __call__(self) -> None:
         """set gpu configurations to draw 3D representations"""
+        if not self.shader_info:
+            return  # No loads, as in most models, which show loads by default.
         # set open gl configurations
         original_blend = gpu.state.blend_get()
         original_depth_test = gpu.state.depth_test_get()
@@ -182,6 +212,8 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
 
     def draw_load_values(self, context: bpy.types.Context) -> None:
         """draw text representing the load values"""
+        if not self.text_info:
+            return  # Nothing to draw, so spare reading the depth buffer.
         # getting depth buffer info, code adapted from:
         # https://blender.stackexchange.com/questions/177185/is-there-a-way-to-render-depth-buffer-into-a-texture-with-gpu-bgl-python-modules
         framebuffer = gpu.state.active_framebuffer_get()

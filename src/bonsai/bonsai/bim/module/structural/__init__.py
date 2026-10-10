@@ -21,7 +21,7 @@ import bpy
 from . import operator, prop, ui, workspace
 
 classes = (
-    operator.ShowLoads,
+    operator.PickStructuralLoads,
     operator.LoadStructuralAnalysisModels,
     operator.DisableStructuralAnalysisModelEditingUI,
     operator.AddStructuralAnalysisModel,

@@ -2032,6 +2032,8 @@ class BIM_PT_decorators_overlay(Panel):
         row = col.row(align=True)
         row.prop(model_props, "show_bounding_box", text="Bounding Box Dimensions")
         row = col.row(align=True)
+        row.prop(tool.Structural.get_structural_props(), "show_loads", text="Structural Loads")
+        row = col.row(align=True)
         row.prop(model_props, "show_cut_decorator", text="Cut Decorator")
         row.prop(model_props, "show_cut_decorator_fill", text="Fill Cut Decorator")
         clip_box_props = tool.ClipBox.get_scene_props(context.scene)
