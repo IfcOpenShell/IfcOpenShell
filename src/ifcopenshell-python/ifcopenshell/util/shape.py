@@ -187,7 +187,7 @@ def get_vert_centroid(geometry: W.triangulation) -> tuple[float, float, float]:
 
 
 def get_element_bbox_centroid(
-    element: ifcopenshell.entity_instance, geometry: W.triangulation
+    element: ifcopenshell.entity_instance, geometry: W.triangulation, is_si: bool = True
 ) -> npt.NDArray[np.float64]:
     """Calculates the element's bounding box centroid
 
@@ -196,12 +196,15 @@ def get_element_bbox_centroid(
 
     :param element: The element occurrence
     :param geometry: Geometry output calculated by IfcOpenShell
+    :param is_si: Whether the geometry is in SI metres (the default kernel
+        output) or in the file's length unit (the ``convert-back-units``
+        setting). The placement is applied in the same unit.
     :return: A tuple representing the XYZ centroid
     """
     centroid = get_bbox_centroid(geometry)
     if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
         return np.array(centroid)
-    mat = ifcopenshell.util.placement.get_placement(element.ObjectPlacement)
+    mat = ifcopenshell.util.placement.get_placement(element.ObjectPlacement, should_return_si=is_si)
     return (mat @ np.array([*centroid, 1.0]))[0:3]
 
 
@@ -333,7 +336,9 @@ def get_shape_vertices(shape: ShapeElementType, geometry: W.triangulation) -> np
     return np.delete((mat @ np.hstack((verts, np.ones((len(verts), 1)))).T).T, -1, axis=1)
 
 
-def get_element_vertices(element: ifcopenshell.entity_instance, geometry: W.triangulation) -> npt.NDArray[np.float64]:
+def get_element_vertices(
+    element: ifcopenshell.entity_instance, geometry: W.triangulation, is_si: bool = True
+) -> npt.NDArray[np.float64]:
     """Get the element's vertices as a numpy array
 
     Vertices are in global coordinates. Note that if you have the shape, it is
@@ -343,12 +348,15 @@ def get_element_vertices(element: ifcopenshell.entity_instance, geometry: W.tria
 
     :param element: The element occurrence
     :param geometry: Geometry output calculated by IfcOpenShell
+    :param is_si: Whether the geometry is in SI metres (the default kernel
+        output) or in the file's length unit (the ``convert-back-units``
+        setting). The placement is applied in the same unit.
     :return: A numpy array listing all the vertices. Each vertex is a numpy array with XYZ coordinates.
     """
     verts = get_vertices(geometry)
     if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
         return verts
-    mat = ifcopenshell.util.placement.get_placement(element.ObjectPlacement)
+    mat = ifcopenshell.util.placement.get_placement(element.ObjectPlacement, should_return_si=is_si)
     return np.delete((mat @ np.hstack((verts, np.ones((len(verts), 1)))).T).T, -1, axis=1)
 
 
@@ -398,7 +406,9 @@ def get_shape_top_elevation(shape: ShapeElementType, geometry: W.triangulation) 
     return max([v[2] for v in get_shape_vertices(shape, geometry)])
 
 
-def get_element_bottom_elevation(element: ifcopenshell.entity_instance, geometry: W.triangulation) -> float:
+def get_element_bottom_elevation(
+    element: ifcopenshell.entity_instance, geometry: W.triangulation, is_si: bool = True
+) -> float:
     """Gets the lowest global Z ordinate of the element
 
     Note that if you have the shape, it is more efficient to use
@@ -406,12 +416,15 @@ def get_element_bottom_elevation(element: ifcopenshell.entity_instance, geometry
 
     :param element: The element occurrence
     :param geometry: Geometry output calculated by IfcOpenShell
+    :param is_si: Whether the geometry is in SI metres, see :func:`get_element_vertices`
     :return: The Z value
     """
-    return min([v[2] for v in get_element_vertices(element, geometry)])
+    return min([v[2] for v in get_element_vertices(element, geometry, is_si)])
 
 
-def get_element_top_elevation(element: ifcopenshell.entity_instance, geometry: W.triangulation) -> float:
+def get_element_top_elevation(
+    element: ifcopenshell.entity_instance, geometry: W.triangulation, is_si: bool = True
+) -> float:
     """Gets the highest global Z ordinate of the element
 
     Note that if you have the shape, it is more efficient to use
@@ -419,9 +432,10 @@ def get_element_top_elevation(element: ifcopenshell.entity_instance, geometry: W
 
     :param element: The element occurrence
     :param geometry: Geometry output calculated by IfcOpenShell
+    :param is_si: Whether the geometry is in SI metres, see :func:`get_element_vertices`
     :return: The Z value
     """
-    return max([v[2] for v in get_element_vertices(element, geometry)])
+    return max([v[2] for v in get_element_vertices(element, geometry, is_si)])
 
 
 def get_bbox(vertices: npt.NDArray[np.float64]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
