@@ -96,7 +96,7 @@ def update_railing_modifier_ifc_data(context: bpy.types.Context) -> None:
     )
 
     if props.railing_type == "WALL_MOUNTED_HANDRAIL":
-        body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+        body = tool.Model.get_body_context()
         pset_data = tool.Model.get_modeling_bbim_pset_data(bpy.context.active_object, "BBIM_Railing")
         path_data = pset_data["data_dict"]["path_data"]
         railing_path = [Vector(v) for v in path_data["verts"]]
