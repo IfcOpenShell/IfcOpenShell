@@ -691,6 +691,8 @@ class TestAttribute:
         run("Booleans must be specified as lowercase strings 2/3", facet=facet, inst=element, expected=True)
         facet = Attribute(name="IsMilestone", value="False")
         run("Booleans must be specified as lowercase strings 2/3", facet=facet, inst=element, expected=False)
+        true_element = ifc.createIfcTask(IsMilestone=True)
+        run("Booleans must be specified as lowercase strings 3/3", facet=facet, inst=true_element, expected=False)
 
         facet = Attribute(name="IsMilestone", value="0")
         run("Booleans can be specified as a 0 or 1 1/2", facet=facet, inst=element, expected=True)
