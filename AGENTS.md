@@ -129,6 +129,21 @@ on CI to catch formatting issues.
   within each package under `src/`.
 - Run the existing test suite for the package you modified before submitting.
 
+## In-Progress Feature Notes
+
+Living design and working notes for unmerged feature branches live in
+[`docs/dev-notes/`](docs/dev-notes/), one Markdown file per feature, named after the
+branch. They capture the problem, the design decisions and the *why*, and what still
+needs testing — so collaborators (and their AI agents) can pick up the context behind a
+branch. Because the note is committed on the branch, it travels with the PR.
+
+- Before working on a feature branch, read its note in `docs/dev-notes/` if one exists.
+- Keep the note current as the PR is refined.
+- These are not user documentation; at merge they are removed or their durable parts
+  promoted to code comments / permanent docs.
+
+See [`docs/dev-notes/README.md`](docs/dev-notes/README.md) for details.
+
 ## Architecture Quick Reference
 
 ### Directory Structure
