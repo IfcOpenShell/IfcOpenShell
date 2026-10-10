@@ -773,7 +773,7 @@ class IfcImporter:
                 continue
             tool.Ifc.link(representation, mesh)
 
-            placement_matrix = ifcopenshell.util.placement.get_placement(product.ObjectPlacement)
+            placement_matrix = ifcopenshell.util.placement.get_placement(product.ObjectPlacement, should_return_si=True)
             obj = bpy.data.objects.new(tool.Loader.get_name(product), mesh)
             self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, placement_matrix))
             self.link_element(product, obj)
