@@ -55,8 +55,8 @@ handles; recursive snapshots release temporary handles after conversion.
 for `[entity, attributeIndex]` pairs. Dispose the returned entity handles.
 
 `File.schema()` returns the schema family, while `schemaIdentifier()` returns
-its full name. Import `schemaByName` from `ifcopenshell` to retrieve a disposable
-schema declaration. See [the alignment and review list](../../../docs/python-typescript-api-alignment.md).
+its full name. Import `schemaByName` from `ifcopenshell` to retrieve a
+schema definition class instance to inspect.
 
 ## Geometry
 
