@@ -272,10 +272,9 @@ class StructuralItemLoadsData:
         unit = ifcopenshell.util.unit.get_unit_symbol(force_unit) if force_unit else "N"
         label = f"R = {math.sqrt(x * x + y * y + z * z):.{props.force_decimals}f} {unit}"
         if not y and (x or z):
-            # From the nearest horizontal, as forces are entered and shown.
-            angle = math.degrees(math.atan2(abs(z), abs(x)))
-            direction = f"{'up' if z >= 0 else 'down'}-{'right' if x >= 0 else 'left'}"
-            label += f" at {angle:.{props.angle_decimals}f}° {direction}"
+            # From the nearest axis, as forces are entered.
+            eighth, angle, _, _ = tool.Structural.get_eighth(x, z)
+            label += f" at {angle:.{props.angle_decimals}f}° {eighth}"
         return label
 
     @classmethod
