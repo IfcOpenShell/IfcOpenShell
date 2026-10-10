@@ -2066,6 +2066,19 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         # gizmo polls gate on each preview's is_active flag, and a stuck flag
         # persisted through the save would silently hide them on reload.
         preview_base.discard_pending_previews(context.scene)
+        # Flush pending drawing camera zoom and crop into the IFC representation (#8205).
+        for cam_obj in context.scene.objects:
+            if cam_obj.type != "CAMERA":
+                continue
+            cam_element = tool.Ifc.get_entity(cam_obj)
+            if not cam_element or not cam_element.is_a("IfcAnnotation"):
+                continue
+            cam_props = tool.Drawing.get_camera_props(cam_obj.data)
+            # bim.update_representation asserts on a camera without an active representation.
+            if not tool.Geometry.get_active_representation(cam_obj):
+                continue
+            if cam_props.update_representation(cam_obj.matrix_world):
+                bpy.ops.bim.update_representation(obj=cam_obj.name, ifc_representation_class="")
         # Suffix is appended to the IFC save-success report below so the auto-commit
         # info isn't immediately overwritten by the success message in Blender's
         # status bar (only the latest self.report({"INFO"}, ...) sticks).
