@@ -45,6 +45,7 @@ def a2p(o: Iterable[float], z: Iterable[float], x: Iterable[float]) -> MatrixTyp
     z = z / np.linalg.norm(z)
     y = np.cross(z, x)
     y = y / np.linalg.norm(y)
+    x = np.cross(y, z)  # Project X onto the plane normal to Z, as IfcBuildAxes does
     r = np.eye(4)
     r[:-1, :-1] = x, y, z
     r[-1, :-1] = o
