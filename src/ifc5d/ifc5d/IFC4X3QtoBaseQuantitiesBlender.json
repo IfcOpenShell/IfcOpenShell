@@ -371,6 +371,16 @@
                     "Width": "get_footing_width"
                 }
             },
+            "IfcGeographicElement + IfcGeographicElementType": {
+                "EQto_GeographicElementBaseQuantities": {
+                    "Depth": "get_height",
+                    "GrossArea": "get_gross_footprint_area",
+                    "GrossVolume": "get_gross_volume",
+                    "NetArea": "get_net_footprint_area",
+                    "NetVolume": "get_net_volume",
+                    "Perimeter": "get_gross_perimeter"
+                }
+            },
             "IfcGeotechnicalStratum": {
                 "Qto_ArealStratumBaseQuantities": {
                     "Area": null,
