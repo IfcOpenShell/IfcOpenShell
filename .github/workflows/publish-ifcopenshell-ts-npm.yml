@@ -43,7 +43,6 @@ jobs:
     env:
       WASM_PACKAGE_DIR: src/ts/ifcopenshell-wasm
       TS_PACKAGE_DIR: src/ts/ifcopenshell-js
-      IFCOPENSHELL_WASM_DIR: ${{ runner.temp }}/ifcopenshell-native-wasm
     steps:
       - uses: actions/checkout@v7
 
@@ -72,6 +71,7 @@ jobs:
             --repo IfcOpenShell/IfcOpenShell \
             --name ifcopenshell-native-wasm \
             --dir "${RUNNER_TEMP}/ifcopenshell-native-wasm"
+          echo "IFCOPENSHELL_WASM_DIR=${RUNNER_TEMP}/ifcopenshell-native-wasm" >> "$GITHUB_ENV"
 
       - name: Stage the artifacts
         working-directory: ${{ env.WASM_PACKAGE_DIR }}
