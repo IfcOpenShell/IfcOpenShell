@@ -1523,12 +1523,9 @@ void ViewportWindow::captureNextFrameToPng(const std::string& path, bool quit_af
 // Mouse navigation — orbit, pan, zoom
 // -----------------------------------------------------------------------------
 //
-// LMB drag → orbit (yaw/pitch). MMB drag → pan (target moves in the camera's
-// screen-space plane). Wheel → zoom (camera_distance_ multiplies). Pitch is
-// clamped just shy of ±90° to avoid the gimbal-flip at the poles.
-//
-// No nav-preset awareness yet (Blender/Rhino/Revit bindings come later); we
-// don't have selection bound, so LMB is free to orbit.
+// Button/modifier mapping follows the active preset; wheel always dollies.
+// Blender, Rhino, and Web orbit around camera_target_. Revit does the same
+// unless a valid selection activates its combined-AABB pivot.
 
 #include <QMouseEvent>
 #include <QWheelEvent>
@@ -1563,15 +1560,15 @@ void ViewportWindow::mousePressEvent(QMouseEvent* event) {
         }
     }
 
-    // Classify the drag against the active nav preset. LMB stays free for
-    // selection in every preset (pick on release-without-drag). The modifier
-    // is captured at press time so a mid-drag Shift release doesn't switch
-    // axes (matches GL ViewportWindow behaviour).
+    // Classify the drag against the active nav preset. The modifier is captured
+    // at press time so a mid-drag Shift release doesn't switch axes (matches GL
+    // ViewportWindow behaviour).
     nav_drag_kind_ = NavDrag::Inactive;
     const auto mods = event->modifiers();
     if (event->button() == orbit_button_
         && (mods & Qt::KeyboardModifierMask) == orbit_mods_) {
         nav_drag_kind_ = NavDrag::Orbit;
+        core_.beginOrbit();
         core_.setPivotIndicatorVisible(true);  // hidden again on release
     } else if (event->button() == pan_button_
             && (mods & Qt::KeyboardModifierMask) == pan_mods_) {
