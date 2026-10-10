@@ -75,8 +75,9 @@ def get_placement(
         placement = file.by_type("IfcBeam")[0].ObjectPlacement
         matrix = ifcopenshell.util.placement.get_placement(placement)
 
-    :param placement: The IfcObjectPlacement or IfcPlacement entity. None
-        gives the identity matrix.
+    :param placement: The IfcObjectPlacement, IfcPlacement or
+        IfcCartesianTransformationOperator entity. None gives the identity
+        matrix.
     :param should_return_si: Return the translation in metres instead of the
         file's length unit.
     :return: A 4x4 numpy matrix
@@ -89,51 +90,6 @@ def get_placement(
     return np.array(ifcopenshell.geom.create_shape(settings, placement).matrix).reshape((4, 4), order="F")
 
 
-def get_cartesiantransformationoperator3d(inst: ifcopenshell.entity_instance) -> MatrixType:
-    """Parses an IfcCartesianTransformationOperator into a 4x4 transformation matrix
-
-    Note that in general you will not need to call this directly. See
-    ``get_mappeditem_transformation`` instead.
-
-    :param item: The IfcCartesianTransformationOperator entity
-    :return: A 4x4 numpy transformation matrix
-    """
-    origin = np.array(inst.LocalOrigin.Coordinates)
-    axis1 = np.array((1.0, 0.0, 0.0))
-    axis2 = np.array((0.0, 1.0, 0.0))
-    axis3 = np.array((0.0, 0.0, 1.0))
-
-    if inst.Axis1:
-        axis1[0:3] = inst.Axis1.DirectionRatios
-    if inst.Axis2:
-        axis2[0:3] = inst.Axis2.DirectionRatios
-    if inst.Axis3:
-        axis3[0:3] = inst.Axis3.DirectionRatios
-
-    m4 = a2p(origin, axis3, axis1)
-    # Negate axis2 (introduce mirroring) when supplied axis2
-    # is opposite of constructed axis2, but remains orthogonal
-    if m4.T[1][0:3].dot(axis2) < 0.0:
-        m4.T[1] *= -1.0
-
-    scale1 = scale2 = scale3 = 1.0
-
-    if inst.Scale:
-        scale1 = inst.Scale
-
-    if inst.is_a("IfcCartesianTransformationOperator3DnonUniform"):
-        scale2 = inst.Scale2 if inst.Scale2 is not None else scale1
-        scale3 = inst.Scale3 if inst.Scale3 is not None else scale1
-    else:
-        scale2 = scale3 = scale1
-
-    m4.T[0] *= scale1
-    m4.T[1] *= scale2
-    m4.T[2] *= scale3
-
-    return m4
-
-
 def get_mappeditem_transformation(item: ifcopenshell.entity_instance) -> MatrixType:
     """Parse an IfcMappedItem into a 4x4 transformation matrix
 
@@ -144,10 +100,7 @@ def get_mappeditem_transformation(item: ifcopenshell.entity_instance) -> MatrixT
     :param item: The IfcMappedItem entity
     :return: A 4x4 numpy transformation matrix
     """
-    m4 = get_placement(item.MappingSource.MappingOrigin)
-    # TODO 2d
-    if item.MappingTarget.is_a("IfcCartesianTransformationOperator3D"):
-        return get_cartesiantransformationoperator3d(item.MappingTarget) @ m4
+    return get_placement(item.MappingTarget) @ get_placement(item.MappingSource.MappingOrigin)
 
 
 def get_storey_elevation(storey: ifcopenshell.entity_instance) -> float:
