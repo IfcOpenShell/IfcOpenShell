@@ -255,6 +255,40 @@ def get_load_case_eye(load_case: int) -> str:
     return "HIDE_OFF" if shown else "HIDE_ON"
 
 
+class BIM_PT_structural_item_models(Panel):
+    bl_label = "Analysis Models"
+    bl_idname = "BIM_PT_structural_item_models"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+    bl_order = 1
+    bl_parent_id = "BIM_PT_tab_object_structural"
+
+    @classmethod
+    def poll(cls, context):
+        if not (obj := context.active_object) or not tool.Ifc.get():
+            return False
+        element = tool.Ifc.get_entity(obj)
+        return bool(element and element.is_a("IfcStructuralItem"))
+
+    def draw(self, context):
+        if not StructuralAnalysisModelsData.is_loaded:
+            StructuralAnalysisModelsData.load()
+        data = StructuralAnalysisModelsData.data
+        if not data["models"]:
+            self.layout.label(text="No analysis models", icon="INFO")
+        current = data["current_model"]["id"] if data["current_model"] else None
+        for model in data["models"]:
+            row = self.layout.row(align=True)
+            # Ticking applies to every selected structural item, as the assign operators do.
+            if model["id"] in data["active_model_ids"]:
+                op = row.operator("bim.unassign_structural_analysis_model", text="", icon="CHECKBOX_HLT", emboss=False)
+            else:
+                op = row.operator("bim.assign_structural_analysis_model", text="", icon="CHECKBOX_DEHLT", emboss=False)
+            op.structural_analysis_model = model["id"]
+            row.label(text=model["name"] + (" (current)" if model["id"] == current else ""))
+
+
 class BIM_PT_structural_item_loads(Panel):
     bl_label = "Applied Loads"
     bl_idname = "BIM_PT_structural_item_loads"
@@ -434,16 +468,6 @@ class BIM_UL_structural_analysis_models(UIList):
                 )
                 op.structural_analysis_model = item.ifc_definition_id
             row.label(text=item.name)
-
-            if context.active_object:
-                if item.ifc_definition_id in StructuralAnalysisModelsData.data["active_model_ids"]:
-                    op = row.operator(
-                        "bim.unassign_structural_analysis_model", text="", icon="KEYFRAME_HLT", emboss=False
-                    )
-                    op.structural_analysis_model = item.ifc_definition_id
-                else:
-                    op = row.operator("bim.assign_structural_analysis_model", text="", icon="KEYFRAME", emboss=False)
-                    op.structural_analysis_model = item.ifc_definition_id
 
             if data.active_structural_analysis_model_id == item.ifc_definition_id:
                 row.operator("bim.edit_structural_analysis_model", text="", icon="CHECKMARK")

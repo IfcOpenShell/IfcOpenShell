@@ -300,12 +300,18 @@ class StructuralAnalysisModelsData:
             "total_models": cls.total_models(),
             "active_model_ids": cls.active_model_ids(),
             "current_model": cls.current_model(),
+            "models": cls.models(),
         }
         cls.is_loaded = True
 
     @classmethod
     def total_models(cls):
         return len(tool.Ifc.get().by_type("IfcStructuralAnalysisModel"))
+
+    @classmethod
+    def models(cls):
+        models = tool.Ifc.get().by_type("IfcStructuralAnalysisModel")
+        return [{"id": m.id(), "name": m.Name or "Unnamed"} for m in models]
 
     @classmethod
     def current_model(cls):
@@ -320,7 +326,7 @@ class StructuralAnalysisModelsData:
             return []
         results = []
         for rel in getattr(element, "HasAssignments", []) or []:
-            if rel.is_a("IfcRelAssignsToGroup"):
+            if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup:
                 results.append(rel.RelatingGroup.id())
         return results
 

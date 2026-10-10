@@ -87,6 +87,7 @@ classes = (
     prop.BIMObjectStructuralProperties,
     ui.BIM_PT_structural_analysis_models,
     ui.BIM_PT_structural_member,
+    ui.BIM_PT_structural_item_models,
     ui.BIM_PT_structural_item_loads,
     ui.BIM_PT_structural_connection,
     ui.BIM_PT_structural_boundary_conditions,
