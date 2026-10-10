@@ -894,7 +894,7 @@ def get_coordinate_data_(element: ifcopenshell.entity_instance) -> Generator[dic
     }
 
     if element_class == "IfcBuildingStorey":
-        matrix = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+        matrix = ifcopenshell.util.placement.get_placement(element.ObjectPlacement)
         categories = ("points",)
         rotation = np_matrix_to_euler(matrix)
         translation = matrix[M_TRANSLATION]

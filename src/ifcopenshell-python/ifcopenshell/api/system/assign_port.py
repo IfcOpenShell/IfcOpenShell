@@ -117,6 +117,6 @@ class Usecase:
             ifcopenshell.api.geometry.edit_object_placement(
                 self.file,
                 product=self.port,
-                matrix=ifcopenshell.util.placement.get_local_placement(self.port.ObjectPlacement),
+                matrix=ifcopenshell.util.placement.get_placement(self.port.ObjectPlacement),
                 is_si=False,
             )

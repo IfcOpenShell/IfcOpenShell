@@ -201,7 +201,7 @@ def get_element_bbox_centroid(
     centroid = get_bbox_centroid(geometry)
     if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
         return np.array(centroid)
-    mat = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+    mat = ifcopenshell.util.placement.get_placement(element.ObjectPlacement)
     return (mat @ np.array([*centroid, 1.0]))[0:3]
 
 
@@ -348,7 +348,7 @@ def get_element_vertices(element: ifcopenshell.entity_instance, geometry: W.tria
     verts = get_vertices(geometry)
     if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
         return verts
-    mat = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+    mat = ifcopenshell.util.placement.get_placement(element.ObjectPlacement)
     return np.delete((mat @ np.hstack((verts, np.ones((len(verts), 1)))).T).T, -1, axis=1)
 
 

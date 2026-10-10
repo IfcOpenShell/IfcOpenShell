@@ -690,4 +690,4 @@ def get_wcs(ifc_file: ifcopenshell.file) -> Optional[MatrixType]:
         if context.ContextType == "Model":
             break
     if wcs:
-        return ifcopenshell.util.placement.get_axis2placement(wcs)
+        return ifcopenshell.util.placement.get_placement(wcs)

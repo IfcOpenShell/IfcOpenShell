@@ -33,8 +33,8 @@ def connect_wall(
     wall2: ifcopenshell.entity_instance,
     is_atpath: bool = False,
 ) -> Optional[ifcopenshell.entity_instance]:
-    matrix1i = np.linalg.inv(ifcopenshell.util.placement.get_local_placement(wall1.ObjectPlacement))
-    matrix2 = ifcopenshell.util.placement.get_local_placement(wall2.ObjectPlacement)
+    matrix1i = np.linalg.inv(ifcopenshell.util.placement.get_placement(wall1.ObjectPlacement))
+    matrix2 = ifcopenshell.util.placement.get_placement(wall2.ObjectPlacement)
     axis1 = ifcopenshell.util.representation.get_reference_line(wall1)
     axis2 = ifcopenshell.util.representation.get_reference_line(wall2)
     axis2[0] = (matrix1i @ matrix2 @ np.concatenate((axis2[0], (0, 1))))[:2]

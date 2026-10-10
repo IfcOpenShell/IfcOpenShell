@@ -141,7 +141,7 @@ class Patcher:
 
         for placement in absolute_placements:
             placement.RelativePlacement = self.get_relative_placement(
-                transformation @ ifcopenshell.util.placement.get_local_placement(placement)
+                transformation @ ifcopenshell.util.placement.get_placement(placement)
             )
 
     def get_absolute_placement(self, object_placement):
