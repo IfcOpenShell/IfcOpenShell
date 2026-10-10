@@ -105,6 +105,7 @@ class TestGetPlacementForTransformationOperatorIFC4(test.bootstrap.IFC4):
         matrix = subject.get_placement(operator)
         assert np.allclose(matrix[:3, 0], (0.0, 3.0, 0.0))
         assert np.allclose(matrix[:3, 1], (-3.0, 0.0, 0.0))
+        assert np.allclose(matrix[:3, 2], (0.0, 0.0, 1.0))
         assert np.allclose(matrix[:3, 3], (1.0, 2.0, 0.0))
 
 
