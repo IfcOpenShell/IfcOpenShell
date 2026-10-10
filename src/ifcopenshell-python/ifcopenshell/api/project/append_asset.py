@@ -178,14 +178,27 @@ class SafeRemovalContext:
         if not self.assume_asset_uniqueness_by_name:
             return
 
-        # Collect identities.
+        # Collect identities of removed elements that are tracked in
+        # `reuse_identities` so they can be purged below - otherwise the map
+        # could later hand back a freed entity.
+        #
+        # Not every removed element is necessarily tracked: `remove_deep2` only
+        # purges an element when all of its inverses are inside the deleted
+        # subgraph, so an untracked removed element cannot be referenced by any
+        # surviving `reuse_identities` value and simply needs no cleanup. This
+        # used to be a hard `assert len(removed_identities) == len(removed_elements)`
+        # that turned the benign untracked case into a crash (see #8666).
         removed_identities: dict[ifcopenshell.entity_instance, int] = {}
         assert self.file.to_delete is not None
         removed_elements = self.file.to_delete
         for identity, element in self.reuse_identities.items():
             if element in removed_elements:
                 removed_identities[element] = identity
-        assert len(removed_identities) == len(removed_elements)
+        if len(removed_identities) != len(removed_elements):
+            print(
+                "Warning: append_asset removed %d untracked element(s) during cleanup"
+                % (len(removed_elements) - len(removed_identities))
+            )
 
         # Actually remove elements.
         for element in self.file.to_delete:
