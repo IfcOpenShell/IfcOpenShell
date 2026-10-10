@@ -39,6 +39,7 @@ from markdown_it import MarkdownIt
 from mathutils import Vector, geometry
 
 import bonsai.bim.module.drawing.helper as helper
+import bonsai.bim.module.drawing.text_editing as text_editing
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.data import DecoratorData, DrawingsData
 
@@ -194,6 +195,37 @@ def parse_markdown_it(text: str) -> list[dict[str, Union[str, None]]]:
     if not segments:
         return [{"text": text, "url": None, "break": False, "bold": False, "italic": False}]
     return segments
+
+
+def parse_markdown_lines(lines: list[str]) -> list[dict[str, Union[str, None]]]:
+    """Parse the printed lines of a text literal into the segments of `parse_markdown_it`.
+
+    Each line is parsed on its own, so blank lines, numbered lines and lines starting with
+    characters such as # stay as typed. Only bullet points and inline formatting are
+    interpreted. Tabs, indentation and repeated spaces are kept.
+    """
+    segments = []
+    for i, line in enumerate(lines):
+        if i:
+            segments.append({"text": None, "url": None, "break": True, "bold": False, "italic": False})
+        indent, body = text_editing.split_indent(line)
+        if indent:
+            indent_text = text_editing.NBSP * indent
+            segments.append({"text": indent_text, "url": None, "break": False, "bold": False, "italic": False})
+        for segment in parse_markdown_it(text_editing.escape_block_markdown(body)):
+            if segment["break"] and segment["text"] == "\u2022 ":
+                # The bullet point is already on a line of its own.
+                segment = segment | {"break": False}
+            segments.append(segment)
+    return segments
+
+
+def is_plain_text(segments: list[dict[str, Union[str, None]]], lines: list[str]) -> bool:
+    """Whether parsed lines print exactly as typed, without formatting, links or bullet points."""
+    if any(s["url"] or s["bold"] or s["italic"] for s in segments):
+        return False
+    printed = "".join("\n" if s["break"] else (s["text"] or "") for s in segments)
+    return printed == "\n".join(text_editing.preserve_whitespace(line) for line in lines)
 
 
 class SvgWriter:
@@ -1039,77 +1071,90 @@ class SvgWriter:
             text = tool.Drawing.replace_text_literal_variables(text_literal.Literal, product or element)
             if newline_at:
                 text = helper.add_newline_between_words(text, newline_at)
-            text_segments = parse_markdown_it(text)
+            text_lines = text_editing.split_text_lines(text)
+            text_segments = parse_markdown_lines(text_lines)
 
-            if len(text_segments) == 1 and text_segments[0]["url"] is None and not text_segments[0].get("break", False):
+            if is_plain_text(text_segments, text_lines):
                 text_tags = self.create_text_tag(
                     text,
                     text_position_svg,
                     angle,
                     text_literal.BoxAlignment,
                     classes_str,
+                    text_format=text_editing.preserve_whitespace,
                     fill_bg=fill_bg,
                     line_number_start=line_number,
-                    newline_at=newline_at,
                 )
                 for tag in text_tags:
                     self.svg.add(tag)
-                line_number += len(text_tags)
+                line_number += len(text_lines)
             else:
-                base_text_attrs = SvgWriter.get_box_alignment_parameters(text_literal.BoxAlignment)
-                text_position_svg_str = ", ".join(map(str, text_position_svg))
-                text_transform = f"translate({text_position_svg_str}) rotate({angle})"
-
-                text_tag = self.svg.text("", transform=text_transform, class_=classes_str, **base_text_attrs)
-
-                line_idx = 0
-                new_line = True
-                bullet_next = False
-                for idx, segment in enumerate(text_segments):
-                    if segment.get("break", False):
-                        if segment.get("text") == "\u2022 ":
-                            bullet_next = True
-                        line_idx += 1
-                        new_line = True
-                        continue
-                    if segment["text"] is None:
-                        continue
-                    text_content = segment["text"]
-                    if bullet_next:
-                        text_content = "\u2022 " + (text_content or "")
-                        bullet_next = False
-
-                    if new_line:
-                        dy, x, y = f"{line_idx}em", 0, 0
-                        new_line = False
-                    else:
-                        dy, x, y = None, None, None
-
-                    tspan = self.svg.tspan(text_content, class_=classes_str)
-                    if segment.get("bold", False):
-                        tspan.attribs["font-weight"] = "bold"
-                    if segment.get("italic", False):
-                        tspan.attribs["font-style"] = "italic"
-                    if dy is not None:
-                        tspan.attribs["dy"] = dy
-                    if x is not None:
-                        tspan.attribs["x"] = x
-                    if y is not None:
-                        tspan.attribs["y"] = y
-
-                    if segment["url"]:
-                        link_element = self.svg.a(href=segment["url"], target="_blank")
-                        link_element.add(tspan)
-                        text_tag.add(link_element)
-                    else:
-                        text_tag.add(tspan)
-
+                text_tag, line_count = self.create_markdown_text_tag(
+                    text_segments,
+                    text_position_svg,
+                    angle,
+                    text_literal.BoxAlignment,
+                    classes_str,
+                    line_number_start=line_number,
+                )
                 if fill_bg:
                     fill_bg_tag = self.add_fill_bg(text_tag)
                     self.svg.add(fill_bg_tag)
 
                 self.svg.add(text_tag)
-                line_number += 1
+                line_number += line_count
+
+    def create_markdown_text_tag(
+        self,
+        text_segments: list[dict[str, Union[str, None]]],
+        text_position: Vector,
+        angle: float,
+        box_alignment: str,
+        class_str: str,
+        line_number_start: int = 0,
+    ) -> tuple[svgwrite.text.Text, int]:
+        """Return the text tag for segments from `parse_markdown_lines` and its number of lines."""
+        base_text_attrs = SvgWriter.get_box_alignment_parameters(box_alignment)
+        text_position_svg_str = ", ".join(map(str, text_position))
+        text_transform = f"translate({text_position_svg_str}) rotate({angle})"
+
+        text_tag = self.svg.text("", transform=text_transform, class_=class_str, **base_text_attrs)
+
+        line_idx = 0
+        new_line = True
+        for segment in text_segments:
+            if segment.get("break", False):
+                line_idx += 1
+                new_line = True
+                continue
+            if not segment["text"]:
+                continue
+
+            if new_line:
+                dy, x, y = f"{line_number_start + line_idx}em", 0, 0
+                new_line = False
+            else:
+                dy, x, y = None, None, None
+
+            tspan = self.svg.tspan(segment["text"], class_=class_str)
+            if segment.get("bold", False):
+                tspan.attribs["font-weight"] = "bold"
+            if segment.get("italic", False):
+                tspan.attribs["font-style"] = "italic"
+            if dy is not None:
+                tspan.attribs["dy"] = dy
+            if x is not None:
+                tspan.attribs["x"] = x
+            if y is not None:
+                tspan.attribs["y"] = y
+
+            if segment["url"]:
+                link_element = self.svg.a(href=segment["url"], target="_blank")
+                link_element.add(tspan)
+                text_tag.add(link_element)
+            else:
+                text_tag.add(tspan)
+        return text_tag, line_idx + 1
 
     def draw_empty_annotation(self, obj: bpy.types.Object, classes: list[str]) -> None:
         x_offset = self.raw_width / 2
