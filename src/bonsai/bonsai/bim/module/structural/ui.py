@@ -661,7 +661,8 @@ class BIM_PT_show_structural_activities(Panel):
 
 
 class BIM_PT_structural_loads(Panel):
-    bl_label = "Structural Loads"
+    bl_label = "Load Definitions"
+    bl_description = "Load values that applied loads use. One definition can be shared by several applied loads"
     bl_idname = "BIM_PT_structural_loads"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -680,7 +681,7 @@ class BIM_PT_structural_loads(Panel):
         self.props = tool.Structural.get_structural_props()
 
         row = self.layout.row(align=True)
-        row.label(text=f"{StructuralLoadsData.data['total_loads']} Structural Loads Found", icon="ANIM_DATA")
+        row.label(text=f"{StructuralLoadsData.data['total_loads']} Load Definitions", icon="ANIM_DATA")
         if self.props.is_editing_loads:
             row.operator(
                 "bim.toggle_filter_structural_loads",
