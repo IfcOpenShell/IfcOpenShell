@@ -3172,9 +3172,7 @@ class Model(bonsai.core.tool.Model):
         )
         tool.Geometry.record_object_materials(obj)
 
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        matrix = ifcopenshell.util.placement.get_placement(element.ObjectPlacement)
-        matrix[:, 3] *= unit_scale
+        matrix = ifcopenshell.util.placement.get_placement(element.ObjectPlacement, should_return_si=True)
         obj.matrix_world = tool.Loader.apply_blender_offset_to_matrix_world(obj, matrix)
         tool.Geometry.record_object_position(obj)
 

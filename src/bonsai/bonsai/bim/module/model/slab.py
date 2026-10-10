@@ -385,8 +385,9 @@ class EnableEditingSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator)
         extrusion = tool.Model.get_extrusion(body)
         profile = extrusion.SweptArea
         if extrusion.Position:
-            position = Matrix(ifcopenshell.util.placement.get_placement(extrusion.Position).tolist())
-            position.matrix_world.translation *= self.unit_scale
+            position = Matrix(
+                ifcopenshell.util.placement.get_placement(extrusion.Position, should_return_si=True).tolist()
+            )
         else:
             position = Matrix()
 
