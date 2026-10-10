@@ -95,3 +95,45 @@ class TestBisectMeshPlaneVf:
         for start, end in segments:
             for coord in start + end:
                 assert round(coord, 6) == coord
+
+
+class TestDissolveFaces:
+    def test_dissolve_cube_into_ngons(self):
+        """A triangulated cube (12 triangles) should dissolve into 6 quad faces."""
+        verts, faces = _cube_verts_faces(size=2.0)
+        edges = np.array(
+            [
+                [0, 1],
+                [1, 2],
+                [2, 3],
+                [3, 0],
+                [4, 5],
+                [5, 6],
+                [6, 7],
+                [7, 4],
+                [0, 4],
+                [1, 5],
+                [2, 6],
+                [3, 7],
+            ],
+            dtype=np.int32,
+        )
+        ngons = subject.dissolve_faces(verts, faces, edges)
+        assert len(ngons) == 6
+        for ngon in ngons:
+            assert len(ngon) == 4
+
+    def test_dissolve_no_edges_returns_triangles(self):
+        """With no original edges, triangles should be returned as-is."""
+        verts, faces = _cube_verts_faces(size=2.0)
+        edges = np.array([], dtype=np.int32).reshape(0, 2)
+        ngons = subject.dissolve_faces(verts, faces, edges)
+        assert len(ngons) == 12
+        for ngon in ngons:
+            assert len(ngon) == 3
+
+    def test_dissolve_empty_faces(self):
+        verts = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]], dtype=np.float64)
+        faces = np.array([], dtype=np.int32).reshape(0, 3)
+        edges = np.array([], dtype=np.int32).reshape(0, 2)
+        assert subject.dissolve_faces(verts, faces, edges) == []
