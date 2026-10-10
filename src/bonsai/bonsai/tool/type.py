@@ -103,19 +103,7 @@ class Type(bonsai.core.tool.Type):
         occurrence: ifcopenshell.entity_instance,
         relating_type: ifcopenshell.entity_instance,
     ) -> bool:
-        # IFC's EXPRESS schema has no WHERE rule pairing IfcRelDefinesByType's
-        # RelatingType / RelatedObjects classes; the one-to-one class pairing
-        # is a buildingSMART implementer agreement, not file-validation.
-        schema = occurrence.file.schema
-        if relating_type.is_a() in ifcopenshell.util.type.get_applicable_types(occurrence.is_a(), schema=schema):
-            return True
-        # The implementer agreement map has no entry for the abstract
-        # IfcTypeProduct, which Bonsai uses for annotation types. The schema
-        # defines IfcTypeProduct.ApplicableOccurrence for exactly this purpose,
-        # so honor it. occurrence.is_a() handles subtypes and unknown tokens.
-        if applicable_occurrence := getattr(relating_type, "ApplicableOccurrence", None):
-            return occurrence.is_a(applicable_occurrence.split("/", 1)[0])
-        return False
+        return ifcopenshell.util.type.is_applicable(relating_type, occurrence)
 
     @classmethod
     def has_material_usage(cls, element: ifcopenshell.entity_instance) -> bool:

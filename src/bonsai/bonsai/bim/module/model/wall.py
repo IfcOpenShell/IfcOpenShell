@@ -1433,8 +1433,7 @@ class DumbWallGenerator:
         return obj
 
     def get_relating_type_class(self, relating_type: ifcopenshell.entity_instance) -> str:
-        classes = ifcopenshell.util.type.get_applicable_entities(relating_type.is_a(), tool.Ifc.get().schema)
-        return next(c for c in classes if "StandardCase" not in c)
+        return ifcopenshell.util.type.get_applicable_entities(relating_type.is_a(), tool.Ifc.get().schema)[0].ifc_class
 
 
 class DumbWallPlaner:

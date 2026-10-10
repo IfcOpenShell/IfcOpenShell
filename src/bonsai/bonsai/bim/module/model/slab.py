@@ -128,9 +128,9 @@ class DumbSlabGenerator:
         return self.create_slab()
 
     def create_slab(self):
-        ifc_classes = ifcopenshell.util.type.get_applicable_entities(self.relating_type.is_a(), self.file.schema)
-        # Standard cases are deprecated, so let's cull them
-        ifc_class = next(c for c in ifc_classes if "StandardCase" not in c)
+        ifc_class = ifcopenshell.util.type.get_applicable_entities(self.relating_type.is_a(), self.file.schema)[
+            0
+        ].ifc_class
 
         mesh = bpy.data.meshes.new("Dummy")
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
