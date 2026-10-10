@@ -205,6 +205,62 @@ class Structural(bonsai.core.tool.Structural):
             cls.edit_bbim_structural(activity, {"MagnitudeLocked": magnitude, "DirectionLocked": direction})
 
     @classmethod
+    def get_activity_load_case(
+        cls, activity: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        """The load case an applied load is in, directly or through a load group within it"""
+        for rel in activity.HasAssignments:
+            if not (rel.is_a("IfcRelAssignsToGroup") and (group := rel.RelatingGroup)):
+                continue
+            if group.is_a("IfcStructuralLoadCase"):
+                return group
+            for parent in group.HasAssignments if group.is_a("IfcStructuralLoadGroup") else []:
+                if parent.is_a("IfcRelAssignsToGroup") and parent.RelatingGroup.is_a("IfcStructuralLoadCase"):
+                    return parent.RelatingGroup
+        return None
+
+    @classmethod
+    def get_resultant(
+        cls, item: ifcopenshell.entity_instance, load_case: ifcopenshell.entity_instance
+    ) -> Union[dict[str, Any], None]:
+        """The resultant locked at an item for a load case: MagnitudeLocked, DirectionLocked and Force, if any"""
+        return cls.get_resultants(item).get(load_case.GlobalId)
+
+    @classmethod
+    def get_resultants(cls, item: ifcopenshell.entity_instance) -> dict[str, dict[str, Any]]:
+        value = ifcopenshell.util.element.get_pset(item, "BBIM_Structural", "Resultants")
+        try:
+            return json.loads(value) if value else {}
+        except ValueError:
+            return {}
+
+    @classmethod
+    def set_resultant(
+        cls,
+        item: ifcopenshell.entity_instance,
+        load_case: ifcopenshell.entity_instance,
+        magnitude_locked: bool,
+        direction_locked: bool,
+        force: tuple[float, float, float],
+    ) -> None:
+        """Keep a resultant locked at an item for a load case, so that solving keeps it so, or forget it if unlocked.
+
+        A resultant is no IFC entity, so it is kept on the item, by load case GlobalId.
+        """
+        resultants = cls.get_resultants(item)
+        if magnitude_locked or direction_locked:
+            resultants[load_case.GlobalId] = {
+                "MagnitudeLocked": magnitude_locked,
+                "DirectionLocked": direction_locked,
+                "Force": [float(c) for c in force],
+            }
+        elif load_case.GlobalId not in resultants:
+            return
+        else:
+            del resultants[load_case.GlobalId]
+        cls.edit_bbim_structural(item, {"Resultants": json.dumps(resultants) if resultants else None})
+
+    @classmethod
     def solve_unknowns(
         cls,
         forces: list[tuple[float, float, float]],

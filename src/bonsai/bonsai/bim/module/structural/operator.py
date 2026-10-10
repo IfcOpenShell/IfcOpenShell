@@ -988,7 +988,23 @@ def update_force_inputs(self: "StructuralForceInput", context: bpy.types.Context
         self.load_name = get_default_load_name(self, self.load_category)
     # Show the load being edited with the values in the dialog until it is confirmed or cancelled.
     if self.preview_load and self.load_category and LoadsDecorator.is_installed:
-        ShaderInfo.preview = {self.preview_load: get_load_attributes(self, self.load_category)}
+        attributes = get_load_attributes(self, self.load_category)
+        ShaderInfo.preview = {self.preview_load: attributes}
+        # Where a resultant is locked, the unknowns move to keep it, so show them moving too.
+        get_lock_activity = getattr(self, "get_lock_activity", None)  # Only an applied load being edited.
+        if (
+            get_lock_activity
+            and (activity := get_lock_activity())
+            and self.load_category == "IfcStructuralPointConnection"
+        ):
+            force = get_force_components(self)
+            forces, _ = get_resolved_forces(
+                activity, {activity.id(): force}, {activity.id(): (self.magnitude_locked, self.direction_locked)}
+            )
+            for load, solved in (forces or {}).items():
+                ShaderInfo.preview[load.id()] = get_force_attributes(load, solved)
+                if load.id() == self.preview_load:  # Its own unknowns are found too.
+                    ShaderInfo.preview[load.id()].update({k: v for k, v in attributes.items() if "Moment" in k})
         LoadsDecorator.update()
         tool.Blender.update_all_viewports(context)
     elif getattr(self, "is_previewing", False) and LoadsDecorator.is_installed:
@@ -996,6 +1012,61 @@ def update_force_inputs(self: "StructuralForceInput", context: bpy.types.Context
         ShaderInfo.preview = {load.id(): get_force_attributes(load, force) for load, force in (forces or {}).items()}
         LoadsDecorator.update()
         tool.Blender.update_all_viewports(context)
+
+
+def get_resolved_forces(
+    activity: ifcopenshell.entity_instance,
+    forces: Union[dict[int, tuple], None] = None,
+    locks: Union[dict[int, tuple[bool, bool]], None] = None,
+) -> tuple[Union[dict[ifcopenshell.entity_instance, tuple], None], str]:
+    """Solve again the unknowns at an applied load's item, for its load case, keeping the resultant as locked.
+
+    :param forces: Forces to take instead of applied loads' own, by activity id, as while editing one.
+    :param locks: Locks likewise.
+    :return: The loads to change, and their forces, or none if no resultant is locked there, or why not.
+    """
+    connects = activity.AssignedToStructuralItem
+    item = connects[0].RelatingElement if connects else None
+    load_case = tool.Structural.get_activity_load_case(activity)
+    if not item or not load_case or not (resultant := tool.Structural.get_resultant(item, load_case)):
+        return None, ""
+    activities = [
+        a
+        for a in tool.Structural.get_chain_activities(item, load_case)
+        if a.AppliedLoad and a.AppliedLoad.is_a("IfcStructuralLoadSingleForce") and a.GlobalOrLocal != "LOCAL_COORDS"
+    ]
+    values = [(forces or {}).get(a.id(), get_force(a.AppliedLoad)) for a in activities]
+    lock_values = [(locks or {}).get(a.id(), tool.Structural.get_locks(a)) for a in activities]
+    solved, _, error = tool.Structural.solve_unknowns(
+        values,
+        lock_values,
+        tuple(resultant["Force"]),
+        (resultant["MagnitudeLocked"], resultant["DirectionLocked"]),
+    )
+    if error:
+        return None, error
+    return {a.AppliedLoad: f for a, f, lock in zip(activities, solved, lock_values) if not all(lock)}, ""
+
+
+def write_forces(forces: dict[ifcopenshell.entity_instance, tuple]) -> None:
+    """Set single force loads to new forces, keeping their moments, and their generated names in step"""
+    ifc_file = tool.Ifc.get()
+    unit = get_load_unit_symbol("IfcStructuralPointConnection")
+    for load, force in forces.items():
+        attributes = get_force_attributes(load, force)
+        if DEFAULT_LOAD_NAME.match(load.Name or ""):
+            attributes["Name"] = get_force_name(force, unit)
+        ifcopenshell.api.structural.edit_structural_load(ifc_file, structural_load=load, attributes=attributes)
+
+
+def resolve_resultants(operator: bpy.types.Operator, activities: list[ifcopenshell.entity_instance]) -> None:
+    """After applied loads change, solve again the unknowns where a resultant is locked, so that it stays so"""
+    for activity in activities:
+        forces, error = get_resolved_forces(activity)
+        if error:
+            operator.report({"WARNING"}, f"The locked resultant could not be kept: {error}")
+        elif forces:
+            write_forces(forces)
 
 
 def get_resultant_activities(props: "EditStructuralResultant") -> list[ifcopenshell.entity_instance]:
@@ -1301,6 +1372,7 @@ class ApplyStructuralLoad(bpy.types.Operator, tool.Ifc.Operator, StructuralForce
         ifcopenshell.api.group.assign_group(ifc_file, products=activities, group=group)
         for activity in activities:  # Only an unlocked value is recorded; loads are known unless said.
             tool.Structural.set_locks(activity, self.magnitude_locked, self.direction_locked)
+        resolve_resultants(self, activities)
         self.show_load_group(context, group)
         return {"FINISHED"}
 
@@ -1452,6 +1524,7 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         if activities and (target := self.get_target_load_group(ifc_file)):
             for activity in activities:
                 self.move_activity(ifc_file, activity, target)
+        resolve_resultants(self, [i for i in ifc_file.get_inverse(load) if i.is_a("IfcStructuralActivity")])
         if tool.Structural.get_structural_props().is_editing_loads:
             bpy.ops.bim.load_structural_loads()
         return {"FINISHED"}
@@ -1540,9 +1613,12 @@ class EditStructuralResultant(bpy.types.Operator, tool.Ifc.Operator, StructuralF
         locks = [tool.Structural.get_locks(activity) for activity in activities[:32]]
         self.magnitude_locks = [lock[0] for lock in locks] + [True] * (32 - len(locks))
         self.direction_locks = [lock[1] for lock in locks] + [True] * (32 - len(locks))
-        # Leave the resultant as unknown as the forces leave room for: two unknowns in all.
-        unlocked = sum(not locked for lock in locks for locked in lock)
-        self.magnitude_locked, self.direction_locked = unlocked >= 2, unlocked >= 1
+        if resultant := self.get_locked_resultant():
+            self.magnitude_locked, self.direction_locked = resultant["MagnitudeLocked"], resultant["DirectionLocked"]
+        else:
+            # Leave the resultant as unknown as the forces leave room for: two unknowns in all.
+            unlocked = sum(not locked for lock in locks for locked in lock)
+            self.magnitude_locked, self.direction_locked = unlocked >= 2, unlocked >= 1
         self.is_previewing = True  # Set last, so that filling in the values above does not start a preview.
         return context.window_manager.invoke_props_dialog(self, width=380)
 
@@ -1582,20 +1658,27 @@ class EditStructuralResultant(bpy.types.Operator, tool.Ifc.Operator, StructuralF
 
     def _execute(self, context):
         ShaderInfo.preview = {}  # The edit below refreshes the shown loads.
-        forces, _, error = solve_resultant(self)
+        forces, resultant, error = solve_resultant(self)
         if error:
             self.report({"ERROR"}, error)
             return {"CANCELLED"}
-        ifc_file = tool.Ifc.get()
-        for i, activity in enumerate(get_resultant_activities(self)[:32]):
+        activities = get_resultant_activities(self)
+        for i, activity in enumerate(activities[:32]):
             tool.Structural.set_locks(activity, self.magnitude_locks[i], self.direction_locks[i])
-        unit = self.get_unit_symbol(self.load_category)
-        for load, force in forces.items():
-            attributes = get_force_attributes(load, force)
-            if DEFAULT_LOAD_NAME.match(load.Name or ""):
-                attributes["Name"] = get_force_name(force, unit)
-            ifcopenshell.api.structural.edit_structural_load(ifc_file, structural_load=load, attributes=attributes)
+        write_forces(forces)
+        # Keep the resultant as locked, so that editing a force later solves the unknowns again to keep it.
+        connects = activities[0].AssignedToStructuralItem
+        if connects and (load_case := tool.Structural.get_activity_load_case(activities[0])):
+            tool.Structural.set_resultant(
+                connects[0].RelatingElement, load_case, self.magnitude_locked, self.direction_locked, resultant
+            )
         return {"FINISHED"}
+
+    def get_locked_resultant(self) -> Union[dict, None]:
+        activities = get_resultant_activities(self)
+        connects = activities[0].AssignedToStructuralItem if activities else None
+        if connects and (load_case := tool.Structural.get_activity_load_case(activities[0])):
+            return tool.Structural.get_resultant(connects[0].RelatingElement, load_case)
 
 
 class ShowStructuralLoadCase(bpy.types.Operator):
