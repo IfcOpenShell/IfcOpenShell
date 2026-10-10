@@ -50,10 +50,10 @@ Main components
     unique first by representation id (mapped items), and then by shape:
     ``MeshDedup`` deduplicates congruent meshes.
 
-``IfcViewBuilder``
-    Optionally mirrors the streamer's output while a raw IFC is loading. It
-    writes a new ``.ifcview`` cache after the stream finishes, so the next open
-    can use the .ifcview fast path.
+``IfcViewAssembler``
+    Optionally mirrors the streamer's output while a raw IFC is loading.
+    ``SceneLoader`` finalises it and writes a new ``.ifcview`` cache after the
+    stream finishes, so the next open can use the .ifcview fast path.
 
 ``ViewportWindow``
     The Qt-facing window wrapper. It owns UI/window integration and forwards
@@ -149,7 +149,7 @@ by .ifcview loads. It then gathers the already-staged vertex and index bytes per
 chunk and calls ``applyStreamedChunk()`` for each chunk. Direct IFC loads
 therefore become resident after finalisation rather than streaming from disk.
 
-If .ifcview writes are enabled, ``IfcViewBuilder`` finalises its mirrored copy,
+If .ifcview writes are enabled, ``SceneLoader`` finalises the assembler's mirrored copy,
 builds LOD1 where available, reorders geometry into streaming chunk order, and
 writes the ``.ifcview`` file for the next open.
 
