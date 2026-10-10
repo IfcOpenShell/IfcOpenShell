@@ -1465,6 +1465,8 @@ class LoadStructuralLoads(bpy.types.Operator):
         props = tool.Structural.get_structural_props()
         props.structural_loads.clear()
         loads = tool.Ifc.get().by_type("IfcStructuralLoad")
+        if props.show_unused_loads_only:
+            loads = [load for load in loads if not self.is_used(load)]
         if props.filtered_structural_loads:
             names = [structural_load.Name or "Unnamed" for structural_load in loads]
             for structural_load in loads:
@@ -1487,6 +1489,20 @@ class LoadStructuralLoads(bpy.types.Operator):
         props.is_editing_loads = True
         bpy.ops.bim.disable_editing_structural_load()
         return {"FINISHED"}
+
+    def is_used(self, load: ifcopenshell.entity_instance) -> bool:
+        """Whether a load is applied in a load case or group, or is part of a load configuration"""
+        for inverse in self.file.get_inverse(load):
+            if inverse.is_a("IfcStructuralLoadConfiguration"):
+                return True
+            if inverse.is_a("IfcStructuralActivity") and any(
+                rel.is_a("IfcRelAssignsToGroup")
+                and rel.RelatingGroup
+                and rel.RelatingGroup.is_a("IfcStructuralLoadGroup")
+                for rel in inverse.HasAssignments
+            ):
+                return True
+        return False
 
 
 class DisableStructuralLoadEditingUI(bpy.types.Operator):

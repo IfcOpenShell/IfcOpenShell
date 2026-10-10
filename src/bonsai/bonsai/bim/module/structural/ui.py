@@ -704,6 +704,7 @@ class BIM_PT_structural_loads(Panel):
                 self.props,
                 "active_structural_load_index",
             )
+            self.layout.prop(self.props, "show_unused_loads_only")
 
         if self.props.active_structural_load_id:
             bonsai.bim.helper.draw_attributes(self.props.structural_load_attributes, self.layout)

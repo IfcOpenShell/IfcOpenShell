@@ -47,6 +47,10 @@ def get_load_groups_to_show(self: "BIMStructuralProperties", context: bpy.types.
     return LoadGroupDecorationData.data["load_groups_to_show"]
 
 
+def update_unused_loads_only(self: "BIMStructuralProperties", context: bpy.types.Context) -> None:
+    bpy.ops.bim.load_structural_loads()
+
+
 def update_activity_type(self: "BIMStructuralProperties", context: bpy.types.Context) -> None:
     LoadGroupDecorationData.is_loaded = False
 
@@ -194,6 +198,12 @@ class BIMStructuralProperties(PropertyGroup):
     structural_load_types: EnumProperty(items=get_structural_load_types, name="Structural Load Types")
     structural_load_attributes: CollectionProperty(name="Structural Load Attributes", type=Attribute)
     filtered_structural_loads: BoolProperty(name="Filtered Structural Loads", default=False)
+    show_unused_loads_only: BoolProperty(
+        name="Unused Only",
+        description="Only list load definitions that are not applied in any load case or load group",
+        default=False,
+        update=update_unused_loads_only,
+    )
 
     boundary_conditions: CollectionProperty(name="Boundary Conditions", type=BoundaryCondition)
     active_boundary_condition_index: IntProperty(name="Active Boundary Condition Index")
@@ -309,6 +319,7 @@ class BIMStructuralProperties(PropertyGroup):
         structural_load_types: str
         structural_load_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
         filtered_structural_loads: bool
+        show_unused_loads_only: bool
 
         boundary_conditions: bpy.types.bpy_prop_collection_idprop[BoundaryCondition]
         active_boundary_condition_index: int
