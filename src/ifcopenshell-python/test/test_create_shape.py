@@ -272,6 +272,22 @@ def test_logging():
     ]
 
 
+class TestAxisOnlyPlacement(test.bootstrap.IFC4):
+    @pytest.mark.parametrize(
+        "axis",
+        [(1.0, 0.0, 0.0), (-1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0), (0.0, 0.0, -1.0), (1.0, 0.0, 1.0)],
+    )
+    def test_defaulted_ref_direction_is_perpendicular_to_any_axis(self, axis):
+        placement = self.file.createIfcAxis2Placement3D(
+            self.file.createIfcCartesianPoint((0.0, 0.0, 0.0)), self.file.createIfcDirection(axis)
+        )
+        shape = ifcopenshell.geom.create_shape(ifcopenshell.geom.settings(), placement)
+        rotation = np.array(shape.matrix).reshape((4, 4), order="F")[:3, :3]
+        assert np.allclose(rotation @ rotation.T, np.eye(3))
+        assert np.linalg.det(rotation) == pytest.approx(1.0)
+        assert np.allclose(rotation[:, 2], np.array(axis) / np.linalg.norm(axis))
+
+
 class TestSectionedSolidHorizontalRakedEndCut(test.bootstrap.IFC4X3):
     """An IfcSectionedSolidHorizontal whose two IfcAxis2PlacementLinear cross
     section positions use direction vectors inconsistently -- one raked
