@@ -103,6 +103,7 @@ class ShaderInfo:
         self.text_info = []
         # Arrows that stand for one applied load, so that they can be picked in the viewport to edit it.
         self.pickables = []
+        self.tagging_object = None
         self.curve_members = {}
         self.point_members = {}
         self.surface_members = {}
@@ -111,6 +112,7 @@ class ShaderInfo:
         self.get_linear_loads()
         self.get_point_loads()
         self.get_planar_loads()
+        self.tag_new_entries(None)
         if len(self.info):
             self.is_empty = False
 
@@ -339,6 +341,17 @@ class ShaderInfo:
         if group.is_a("IfcStructuralLoadGroup"):
             recursive_subgroups([group], 10, props.activity_type)
 
+    def tag_new_entries(self, obj: Union[bpy.types.Object, None]) -> None:
+        """Mark the drawing data added so far without an item as belonging to the item just drawn.
+
+        Each load type draws one structural item at a time, calling this with the next item before
+        drawing it, so that a load's arrows and values hide with their item.
+        """
+        if self.tagging_object is not None:
+            for entry in self.info + self.text_info:
+                entry.setdefault("object", self.tagging_object)
+        self.tagging_object = obj.name if obj else None
+
     def get_planar_loads(self) -> None:
         """get the necessary information to render the planar load representation in 3D and its text information"""
 
@@ -347,6 +360,7 @@ class ShaderInfo:
         maximum = 0
         for value in list_of_surfaces.values():
             surf = value["member"]
+            self.tag_new_entries(tool.Ifc.get_object(surf))
             activity_list = value["activities"]
             if len(activity_list) == 0:
                 continue
@@ -479,6 +493,7 @@ class ShaderInfo:
         list_of_point_connections = self.point_members
         for value in list_of_point_connections.values():
             conn = value["member"]
+            self.tag_new_entries(tool.Ifc.get_object(conn))
             activity_list = value["activities"]
             if len(activity_list) == 0:
                 continue
@@ -842,6 +857,7 @@ class ShaderInfo:
         list_of_curve_members = self.curve_members
         for value in list_of_curve_members.values():
             member = value["member"]
+            self.tag_new_entries(tool.Ifc.get_object(member))
             activity_list = value["activities"]
             if len(activity_list) == 0:
                 continue

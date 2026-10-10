@@ -105,11 +105,21 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
         cls.hovered = None
 
     @classmethod
+    def is_visible(cls, info: dict) -> bool:
+        """Whether drawing data is shown: loads hide with their structural item, in the viewport being drawn"""
+        if not (name := info.get("object")) or not (obj := bpy.data.objects.get(name)):
+            return True
+        space = bpy.context.space_data
+        return obj.visible_get(viewport=space) if space and space.type == "VIEW_3D" else obj.visible_get()
+
+    @classmethod
     def pick(cls, region: bpy.types.Region, rv3d: bpy.types.RegionView3D, x: float, y: float) -> Union[dict, None]:
         """Get the pickable arrow nearest the region coordinates x and y, if one is within a few pixels"""
         mouse = Vector((x, y))
         best, best_distance = None, 10.0
         for pickable in cls.pickables:
+            if not cls.is_visible(cls.shader_info[pickable["info"]]):
+                continue
             tail = location_3d_to_region_2d(region, rv3d, Vector(pickable["tail"]))
             tip = location_3d_to_region_2d(region, rv3d, Vector(pickable["tip"]))
             if tail is None or tip is None or not (tip - tail).length:
@@ -146,6 +156,8 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
         if not self.decoration_data.is_empty:
             hovered = self.hovered["info"] if self.hovered else -1
             for i, info in enumerate(self.shader_info):
+                if not self.is_visible(info):
+                    continue
                 shader = info["shader"]
                 args = info["args"]
                 indices = info["indices"]
@@ -184,6 +196,8 @@ class LoadsDecorator(tool.Blender.ViewportDecorator):
         self.depth_array = n / (f - (f - n) * depth_array) * (f - n)
 
         for info in self.text_info:
+            if not self.is_visible(info):
+                continue
             text_position = self.location_3d_to_region_2d(info["position"], context)
             if text_position is not None:
                 font_id = 0
