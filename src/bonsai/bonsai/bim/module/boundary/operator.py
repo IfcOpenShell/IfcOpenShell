@@ -124,11 +124,9 @@ class Loader:
             bm.to_mesh(mesh)
             bm.free()
             tool.Ifc.link(surface, mesh)
-            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             matrix = mathutils.Matrix(
-                ifcopenshell.util.placement.get_axis2placement(surface.BasisSurface.Position).tolist()
+                ifcopenshell.util.placement.get_placement(surface.BasisSurface.Position, should_return_si=True).tolist()
             )
-            matrix.translation *= unit_scale
             mesh.transform(matrix)
         return mesh
 

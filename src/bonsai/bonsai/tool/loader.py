@@ -707,9 +707,9 @@ class Loader(bonsai.core.tool.Loader):
     @classmethod
     def is_element_far_away(cls, element: ifcopenshell.entity_instance) -> bool:
         try:
-            placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+            placement = ifcopenshell.util.placement.get_placement(element.ObjectPlacement, should_return_si=True)
             point = placement[:, 3][0:3]
-            return tool.Loader.is_point_far_away(point, is_meters=False)
+            return tool.Loader.is_point_far_away(point)
         except:
             return False
 
@@ -771,7 +771,7 @@ class Loader(bonsai.core.tool.Loader):
     ) -> None:
         if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
             return
-        placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+        placement = ifcopenshell.util.placement.get_placement(element.ObjectPlacement)
         offset_point = [placement[0][3], placement[1][3], placement[2][3]]
         cls.settings.false_origin = ifcopenshell.util.geolocation.auto_xyz2enh(
             ifc_file, *offset_point, should_return_in_map_units=False

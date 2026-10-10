@@ -773,7 +773,7 @@ class IfcImporter:
                 continue
             tool.Ifc.link(representation, mesh)
 
-            placement_matrix = ifcopenshell.util.placement.get_local_placement(product.ObjectPlacement)
+            placement_matrix = ifcopenshell.util.placement.get_placement(product.ObjectPlacement)
             obj = bpy.data.objects.new(tool.Loader.get_name(product), mesh)
             self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, placement_matrix))
             self.link_element(product, obj)
@@ -1069,12 +1069,11 @@ class IfcImporter:
     def get_element_matrix(self, element: ifcopenshell.entity_instance) -> np.ndarray:
         if isinstance(element, ifcopenshell.sqlite_entity):
             result = self.geometry_cache["shapes"][element.id()]["matrix"]
-        else:
-            result = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
-        result[0][3] *= self.unit_scale
-        result[1][3] *= self.unit_scale
-        result[2][3] *= self.unit_scale
-        return result
+            result[0][3] *= self.unit_scale
+            result[1][3] *= self.unit_scale
+            result[2][3] *= self.unit_scale
+            return result
+        return ifcopenshell.util.placement.get_placement(element.ObjectPlacement, should_return_si=True)
 
     def create_curve(
         self,

@@ -1027,8 +1027,9 @@ class EnableEditingExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
             extrusion = tool.Model.get_extrusion(body)
 
             if extrusion.Position:
-                position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
-                position.translation *= self.unit_scale
+                position = Matrix(
+                    ifcopenshell.util.placement.get_placement(extrusion.Position, should_return_si=True).tolist()
+                )
             else:
                 position = Matrix()
 
