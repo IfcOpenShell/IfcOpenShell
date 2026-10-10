@@ -28,6 +28,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Union
 
 import bpy
+import ifcopenshell.util.element
 
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -402,6 +403,7 @@ class IfcGit(bonsai.core.tool.IfcGit):
     @classmethod
     def get_modified_step_ids(cls, step_ids: STEP_IDS) -> STEP_IDS:
         model = tool.Ifc.get()
+        is_ifc2x3 = model.schema == "IFC2X3"
         modified_step_ids = {"modified": set()}
 
         def collect(entity, depth=0):
@@ -416,10 +418,8 @@ class IfcGit(bonsai.core.tool.IfcGit):
                 for product in entity.PlacesObject:
                     modified_step_ids["modified"].add(product.id())
             elif entity.is_a("IfcTypeProduct"):
-                for rel in model.get_inverse(entity):
-                    if rel.is_a("IfcRelDefinesByType"):
-                        for obj in rel.RelatedObjects:
-                            modified_step_ids["modified"].add(obj.id())
+                for obj in ifcopenshell.util.element.get_types(entity):
+                    modified_step_ids["modified"].add(obj.id())
             elif entity.is_a("IfcShapeRepresentation"):
                 for prod_rep in entity.OfProductRepresentation:
                     for product in prod_rep.ShapeOfProduct:
@@ -429,14 +429,17 @@ class IfcGit(bonsai.core.tool.IfcGit):
                     if referencing.is_a("IfcShapeRepresentation"):
                         collect(referencing, depth + 1)
             elif entity.is_a("IfcPropertySet"):
-                for rel in model.get_inverse(entity):
-                    if rel.is_a("IfcRelDefinesByProperties"):
-                        for obj in rel.RelatedObjects:
-                            modified_step_ids["modified"].add(obj.id())
+                rels = entity.PropertyDefinitionOf if is_ifc2x3 else entity.DefinesOccurrence
+                for rel in rels:
+                    for obj in rel.RelatedObjects:
+                        modified_step_ids["modified"].add(obj.id())
             elif entity.is_a("IfcProperty"):
-                for pset in model.get_inverse(entity):
-                    if pset.is_a("IfcPropertySet"):
-                        collect(pset, depth + 1)
+                if is_ifc2x3:
+                    psets = [e for e in model.get_inverse(entity) if e.is_a("IfcPropertySet")]
+                else:
+                    psets = entity.PartOfPset
+                for pset in psets:
+                    collect(pset, depth + 1)
 
         for step_id in step_ids["modified"] | step_ids["added"]:
             try:
