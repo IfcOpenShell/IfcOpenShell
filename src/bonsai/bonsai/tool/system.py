@@ -621,7 +621,7 @@ class System(bonsai.core.tool.System):
         placement = getattr(port, "ObjectPlacement", None)
         if placement is None:
             return Vector((0.0, 0.0, 0.0))
-        port_ifc_matrix = Matrix(ifcopenshell.util.placement.get_placement(placement).tolist())
+        port_ifc_matrix = Matrix(ifcopenshell.util.placement.get_placement(placement, should_return_si=True).tolist())
 
         parent_element = cls.get_port_relating_element(port)
         if parent_element is None:
@@ -634,7 +634,9 @@ class System(bonsai.core.tool.System):
         parent_placement = getattr(parent_element, "ObjectPlacement", None)
         if parent_placement is None:
             return Vector(port_ifc_matrix.translation)
-        parent_ifc_matrix = Matrix(ifcopenshell.util.placement.get_placement(parent_placement).tolist())
+        parent_ifc_matrix = Matrix(
+            ifcopenshell.util.placement.get_placement(parent_placement, should_return_si=True).tolist()
+        )
 
         try:
             port_local_to_parent = parent_ifc_matrix.inverted() @ port_ifc_matrix
