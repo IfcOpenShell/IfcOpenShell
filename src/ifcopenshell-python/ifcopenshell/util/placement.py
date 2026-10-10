@@ -50,10 +50,12 @@ def a2p(o: Iterable[float], z: Iterable[float], x: Iterable[float]) -> MatrixTyp
     return r.T
 
 
-_settings = None
+_settings: dict[bool, ifcopenshell.geom.settings] = {}
 
 
-def get_placement(placement: Optional[ifcopenshell.entity_instance] = None) -> MatrixType:
+def get_placement(
+    placement: Optional[ifcopenshell.entity_instance] = None, should_return_si: bool = False
+) -> MatrixType:
     """Parse an object or coordinate placement into a 4x4 transformation matrix
 
     If an IfcObjectPlacement is provided, this is the fully composed matrix
@@ -75,15 +77,16 @@ def get_placement(placement: Optional[ifcopenshell.entity_instance] = None) -> M
 
     :param placement: The IfcObjectPlacement or IfcPlacement entity. None
         gives the identity matrix.
+    :param should_return_si: Return the translation in metres instead of the
+        file's length unit.
     :return: A 4x4 numpy matrix
     """
-    global _settings
     if placement is None:
         return np.eye(4)
-    if _settings is None:
-        _settings = ifcopenshell.geom.settings()
-        _settings.set("convert-back-units", True)
-    return np.array(ifcopenshell.geom.create_shape(_settings, placement).matrix).reshape((4, 4), order="F")
+    if (settings := _settings.get(should_return_si)) is None:
+        settings = _settings[should_return_si] = ifcopenshell.geom.settings()
+        settings.set("convert-back-units", not should_return_si)
+    return np.array(ifcopenshell.geom.create_shape(settings, placement).matrix).reshape((4, 4), order="F")
 
 
 def get_cartesiantransformationoperator3d(inst: ifcopenshell.entity_instance) -> MatrixType:
