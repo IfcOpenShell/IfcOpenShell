@@ -84,7 +84,11 @@ class ShaderInfo:
     # Values of a load being edited, by load id, shown in place of its own until the edit is confirmed or cancelled.
     preview: dict[int, dict[str, Union[float, None]]] = {}
 
-    def __init__(self) -> None:
+    def __init__(self, load_group: Union[ifcopenshell.entity_instance, None] = None) -> None:
+        """
+        :param load_group: The load group to draw, rather than the one chosen to show, as for a report.
+        """
+        self.load_group = load_group
         self.is_empty = True
         self.shader = DecorationShader()
         self.curve_members: dict[str, MemberInfo] = {}
@@ -336,7 +340,7 @@ class ShaderInfo:
         props = tool.Structural.get_structural_props()
         file = tool.Ifc.get()
         try:
-            group = file.by_id(int(props.load_group_to_show))
+            group = self.load_group or file.by_id(int(props.load_group_to_show))
         except (ValueError, RuntimeError):
             return  # No load group is chosen, or the chosen one was removed.
         if group.is_a("IfcStructuralLoadGroup"):
@@ -604,12 +608,21 @@ class ShaderInfo:
             label = f"{np.linalg.norm(vector):.{props.force_decimals}f} {self.force_unit}"
             if has_angle:
                 label += self.get_unknown_marks(activity)[0]
+            force_of = activity if has_angle else 0
             if centre is None:
-                self.add_force_arrow(tail, tip, color, label, size, activity=activity)
+                self.add_force_arrow(tail, tip, color, label, size, activity=activity, force_of=force_of)
             else:
                 side = self.get_label_side(vector, (tail + tip) / 2 - centre)
                 self.add_force_arrow(
-                    tail, tip, color, label, size, label_away=side, label_at_middle=True, activity=activity
+                    tail,
+                    tip,
+                    color,
+                    label,
+                    size,
+                    label_away=side,
+                    label_at_middle=True,
+                    activity=activity,
+                    force_of=force_of,
                 )
             if props.show_force_angles and has_angle:
                 self.add_force_angle(tail, vector, size, color, arcs_at_tail, reference_axes, activity)
@@ -640,6 +653,7 @@ class ShaderInfo:
                 label_at_middle=centre is not None,
                 activity=single,
                 resultant_of=activities if len(activities) > 1 else None,
+                force_of=single,
             )
             if props.show_force_angles:
                 self.add_force_angle(
@@ -848,8 +862,12 @@ class ShaderInfo:
         label_at_middle: bool = False,
         activity: int = 0,
         resultant_of: Union[list[int], None] = None,
+        force_of: int = 0,
     ) -> None:
-        """Add an arrow from tail to tip, its head and shaft sized to size, the longest arrow drawn with it"""
+        """Add an arrow from tail to tip, its head and shaft sized to size, the longest arrow drawn with it.
+
+        :param force_of: The activity whose whole force the arrow is, not a component, to name it in a report.
+        """
         length = np.linalg.norm(tip - tail)
         if not length:
             return
@@ -873,6 +891,9 @@ class ShaderInfo:
                 },
                 "indices": [(0, 1, 2), (0, 3, 4)],
                 "uniforms": [["color", color], ["spacing", spacing]],
+                # The arrow itself, for drawing it elsewhere than the viewport, as in a report.
+                "primitive": {"type": "ARROW", "tail": tail, "tip": tip, "size": size, "spacing": spacing},
+                "color": color,
             }
         )
         if activity or resultant_of:
@@ -883,7 +904,10 @@ class ShaderInfo:
         # Labelled beside the tip, as arrows often share their tail.
         away = direction if label_away is None else label_away
         position = (tail + tip) / 2 if label_at_middle else tip
-        self.text_info.append({"position": position, "text": label, "color": color, "away": away})
+        text = {"position": position, "text": label, "color": color, "away": away}
+        if force_of:
+            text["force_of"] = force_of
+        self.text_info.append(text)
 
     def add_dashed_line(
         self, start: np.ndarray, end: np.ndarray, size: float, color: tuple, dashed: bool = True
@@ -905,6 +929,8 @@ class ShaderInfo:
                 "indices": indices,
                 # A spacing far longer than the line draws it solid.
                 "uniforms": [["color", color], ["spacing", size * 0.03 if dashed else size * 1000]],
+                "primitive": {"type": "LINE", "start": start, "end": end, "size": size, "dashed": dashed},
+                "color": color,
             }
         )
 
