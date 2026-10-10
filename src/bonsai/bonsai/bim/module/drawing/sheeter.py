@@ -194,18 +194,13 @@ class SheetBuilder:
 
             # Check if the dimensions have changed
             if current_width != view_width or current_height != view_height:
-                readjust = Vector((current_width - view_width, current_height - view_height)) / 2
+                height_delta = view_height - current_height
 
                 for image in drawing_view.findall(f"{SVG}image"):
-                    x = float(image.attrib["x"])
-                    y = float(image.attrib["y"])
                     if image.attrib["data-type"] == "view-title":
-                        image.attrib["x"] = str(x + readjust.x)
-                        # negate y offset because view-title comes AFTER foreground
-                        image.attrib["y"] = str(y - readjust.y)
+                        # title sits below the drawing, so it tracks the bottom edge
+                        image.attrib["y"] = str(float(image.attrib["y"]) + height_delta)
                     else:
-                        image.attrib["x"] = str(x + readjust.x)
-                        image.attrib["y"] = str(y + readjust.y)
                         image.attrib["width"] = str(view_width)
                         image.attrib["height"] = str(view_height)
 
