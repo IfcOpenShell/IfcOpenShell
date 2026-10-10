@@ -894,13 +894,16 @@ class Root:
     def assign_body_styles(cls, element, obj): pass
     def copy_representation(cls, source, dest): pass
     def does_type_have_representations(cls, element): pass
+    def has_independent_representation(cls, element): pass
     def get_default_container(cls): pass
     def get_element_representation(cls, element, context): pass
     def get_element_type(cls, element): pass
     def get_object_name(cls, obj): pass
     def get_object_representation(cls, obj): pass
     def get_representation_context(cls, representation): pass
+    def has_mapped_representation(cls, element): pass
     def has_material_styles(cls, element): pass
+    def has_transformed_mapped_representation(cls, element): pass
     def is_containable(cls, element): pass
     def is_drawing_annotation(cls, element): pass
     def is_element_a(cls, element, ifc_class): pass

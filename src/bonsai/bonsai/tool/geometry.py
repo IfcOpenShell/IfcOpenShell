@@ -2811,7 +2811,11 @@ class Geometry(bonsai.core.tool.Geometry):
             # immediately shows the unclipped geometry; otherwise the user
             # sees a stale mesh until they Shift+G, which is easy to miss.
             if new.is_a("IfcWall"):
-                if tool.Model.strip_underside_booleans(new):
+                wall_type = tool.Root.get_element_type(new)
+                if wall_type and tool.Root.does_type_have_representations(wall_type):
+                    # Authored imported walls keep their copied body, regenerate_wall would discard it (#7487).
+                    pass
+                elif tool.Model.strip_underside_booleans(new):
                     tool.Model.reload_body_representation(new_obj)
                 # HasOpenings rels don't follow object duplication, so
                 # the duplicate's body must rebuild to match its current
@@ -2828,13 +2832,17 @@ class Geometry(bonsai.core.tool.Geometry):
         """Recalculate new IfcWall duplicates that just received an
         ``IfcRelConnectsPathElements``. The in-loop ``regenerate_wall`` runs
         before ``recreate_connections``, so wall body geometry doesn't reflect
-        the junction until this second pass."""
+        the junction until this second pass. Authored walls backed by type
+        representation maps are skipped."""
         walls_to_recalc: list[bpy.types.Object] = []
         for new_list in old_to_new.values():
             for new_entity in new_list:
                 if not new_entity.is_a("IfcWall"):
                     continue
                 if not (getattr(new_entity, "ConnectedTo", None) or getattr(new_entity, "ConnectedFrom", None)):
+                    continue
+                wall_type = tool.Root.get_element_type(new_entity)
+                if wall_type and tool.Root.does_type_have_representations(wall_type):
                     continue
                 new_obj = tool.Ifc.get_object(new_entity)
                 if new_obj is not None:
