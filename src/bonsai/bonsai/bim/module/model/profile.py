@@ -110,9 +110,9 @@ class DumbProfileGenerator:
         return self.create_profile()
 
     def create_profile(self) -> bpy.types.Object:
-        ifc_classes = ifcopenshell.util.type.get_applicable_entities(self.relating_type.is_a(), self.file.schema)
-        # Standard cases are deprecated, so let's cull them
-        ifc_class = next(c for c in ifc_classes if "StandardCase" not in c)
+        ifc_class = ifcopenshell.util.type.get_applicable_entities(self.relating_type.is_a(), self.file.schema)[
+            0
+        ].ifc_class
 
         mesh = bpy.data.meshes.new("Dummy")
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)

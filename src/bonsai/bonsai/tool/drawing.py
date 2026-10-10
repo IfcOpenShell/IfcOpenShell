@@ -47,6 +47,7 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.selector
 import ifcopenshell.util.shape
+import ifcopenshell.util.type
 import ifcopenshell.util.unit
 import lark
 import mathutils
@@ -407,11 +408,10 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def get_annotation_type_object_type(cls, element_type: ifcopenshell.entity_instance) -> Union[str, None]:
-        applicable_occurrence: Union[str, None]
-        applicable_occurrence = element_type.ApplicableOccurrence
-        if not applicable_occurrence or not applicable_occurrence.startswith("IfcAnnotation/"):
-            return
-        return applicable_occurrence.split("/", 1)[1]
+        for occurrence in ifcopenshell.util.type.get_applicable_entities(element_type):
+            if occurrence.ifc_class == "IfcAnnotation":
+                return occurrence.predefined_type
+        return None
 
     @classmethod
     def get_annotation_representation(

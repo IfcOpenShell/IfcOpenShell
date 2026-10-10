@@ -1182,7 +1182,7 @@ class Spatial(bonsai.core.tool.Spatial):
         relating_type_id = props.relating_type_id
         relating_type = ifc_file.by_id(int(relating_type_id))
         ifc_class = relating_type.is_a()
-        instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, ifc_file.schema)[0]
+        instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, ifc_file.schema)[0].ifc_class
         bonsai.core.root.assign_class(
             tool.Ifc,
             tool.Collector,
