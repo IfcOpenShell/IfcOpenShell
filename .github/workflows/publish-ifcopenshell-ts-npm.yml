@@ -21,7 +21,7 @@ on:
 
 permissions:
   contents: read
-  # Required for the npm provenance attestation that ties the tarballs to this run.
+  # Required for npm trusted publishing and provenance attestations.
   id-token: write
 
 concurrency:
@@ -43,7 +43,7 @@ jobs:
     env:
       WASM_PACKAGE_DIR: src/ts/ifcopenshell-wasm
       TS_PACKAGE_DIR: src/ts/ifcopenshell-js
-      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      IFCOPENSHELL_WASM_DIR: ${{ runner.temp }}/ifcopenshell-native-wasm
     steps:
       - uses: actions/checkout@v7
 
@@ -51,6 +51,7 @@ jobs:
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
 
       - name: Download the standalone WASM build
         env:
@@ -76,27 +77,46 @@ jobs:
         working-directory: ${{ env.WASM_PACKAGE_DIR }}
         run: |
           npm ci
-          IFCOPENSHELL_WASM_DIR="${RUNNER_TEMP}/ifcopenshell-native-wasm" npm run stage
+          npm run stage
 
       - name: Set the version
         if: inputs.version != ''
         working-directory: ${{ env.WASM_PACKAGE_DIR }}
-        run: npm version "${{ inputs.version }}" --no-git-tag-version --allow-same-version
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: npm version "$RELEASE_VERSION" --no-git-tag-version --allow-same-version
 
       - name: Publish the WASM package
         working-directory: ${{ env.WASM_PACKAGE_DIR }}
         run: npm publish --provenance --access public
+
+      - name: Set the TypeScript version and WASM dependency
+        if: inputs.version != ''
+        working-directory: ${{ env.TS_PACKAGE_DIR }}
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          npm version "$RELEASE_VERSION" --no-git-tag-version --allow-same-version
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const readJson = (path) => JSON.parse(readFileSync(path, 'utf8'));
+          const wasm = readJson('../ifcopenshell-wasm/package.json');
+          const pkg = readJson('package.json');
+          const lock = readJson('package-lock.json');
+          const range = `^${wasm.version}`;
+          pkg.dependencies['@ifcopenshell/wasm'] = range;
+          lock.packages[''].dependencies['@ifcopenshell/wasm'] = range;
+          lock.packages['../ifcopenshell-wasm'].version = wasm.version;
+          for (const [path, data] of [['package.json', pkg], ['package-lock.json', lock]]) {
+            writeFileSync(path, JSON.stringify(data, null, 2) + '\n');
+          }
+          NODE
 
       - name: Build the TypeScript package
         working-directory: ${{ env.TS_PACKAGE_DIR }}
         run: |
           npm ci
           npm run build
-
-      - name: Set the version
-        if: inputs.version != ''
-        working-directory: ${{ env.TS_PACKAGE_DIR }}
-        run: npm version "${{ inputs.version }}" --no-git-tag-version --allow-same-version
 
       - name: Publish the TypeScript package
         working-directory: ${{ env.TS_PACKAGE_DIR }}

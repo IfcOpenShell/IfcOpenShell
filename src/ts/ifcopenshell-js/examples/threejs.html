@@ -61,12 +61,12 @@
 <script type="importmap">
 {
   "imports": {
-    "ifcopenshell": "../dist/index.js",
-    "ifcopenshell/geom": "../dist/geom/index.js",
+    "ifcopenshell": "https://cdn.jsdelivr.net/npm/ifcopenshell@latest/dist/index.js",
+    "ifcopenshell/geom": "https://cdn.jsdelivr.net/npm/ifcopenshell@latest/dist/geom/index.js",
     "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
-    "@ifcopenshell/wasm": "../../ifcopenshell-wasm/browser.js",
-    "@ifcopenshell/wasm/api": "../../ifcopenshell-wasm/wasm/ifcopenshell_api.mjs"
+    "@ifcopenshell/wasm": "https://cdn.jsdelivr.net/npm/@ifcopenshell/wasm@latest/browser.js",
+    "@ifcopenshell/wasm/api": "https://cdn.jsdelivr.net/npm/@ifcopenshell/wasm@latest/wasm/ifcopenshell_api.mjs"
   }
 }
 </script>
@@ -101,6 +101,10 @@ document.querySelector('#upload').onchange = async () => {
   document.querySelector('aside').style.display = 'none';
   const selected = document.querySelector('#upload').files[0];
   if (!selected) return;
+  const kernels = ['manifold', 'opencascade'].filter(
+    (kernel) => document.querySelector(`#${kernel}`).checked,
+  );
+  const geometryLibrary = kernels.length === 2 ? 'hybrid-manifold-opencascade' : kernels[0];
   let file, iterator, settings;
   try {
     runtime ??= await ifcopenshell.init();
@@ -117,15 +121,16 @@ document.querySelector('#upload').onchange = async () => {
 
     await runtime.loadPlugin('schema', schema);
     await runtime.loadPlugin('mapping', schema);
-    await runtime.loadPlugin('kernel', 'manifold');
-    await runtime.loadPlugin('kernel', 'opencascade');
+    for (const kernel of kernels) {
+      await runtime.loadPlugin('kernel', kernel);
+    }
 
     file = ifcopenshell.open(bytes, selected.name);
 
     settings = new ifcopenshell_geom.Settings();
     settings.set('weld-vertices', false);
 
-    iterator = new ifcopenshell_geom.Iterator(settings, file, { geometryLibrary: 'manifold' });
+    iterator = new ifcopenshell_geom.Iterator(settings, file, { geometryLibrary });
     let nextYield = performance.now() + 30;
     if (iterator.initialize()) do {
       if (performance.now() >= nextYield) {
