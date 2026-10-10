@@ -57,13 +57,15 @@ def write_report(
     directory: Path,
     model: ifcopenshell.entity_instance,
     items: Union[set[ifcopenshell.entity_instance], None] = None,
+    detailed: bool = False,
 ) -> Path:
     """Write the calculation report of an analysis model into a folder, returning its HTML page.
 
     :param items: Only report these structural items, if given.
+    :param detailed: Show more of how equations resolve, in grey, to learn from.
     """
     directory.mkdir(parents=True, exist_ok=True)
-    data = get_report_data(model, items, directory)
+    data = get_report_data(model, items, directory, detailed)
     for template, name in (("report.html.mustache", "index.html"), ("report.md.mustache", "report.md")):
         source = tool.Blender.get_data_dir_path(Path("calcs") / template).read_text(encoding="utf-8")
         (directory / name).write_text(pystache.render(source, data), encoding="utf-8")
@@ -72,7 +74,10 @@ def write_report(
 
 
 def get_report_data(
-    model: ifcopenshell.entity_instance, items: Union[set[ifcopenshell.entity_instance], None], directory: Path
+    model: ifcopenshell.entity_instance,
+    items: Union[set[ifcopenshell.entity_instance], None],
+    directory: Path,
+    detailed: bool = False,
 ) -> dict[str, Any]:
     ifc_file = tool.Ifc.get()
     unit = get_force_unit_symbol()
@@ -92,9 +97,10 @@ def get_report_data(
             name = f"{get_slug(case.Name)}_{get_slug(item.Name)}_{item.id()}.svg"
             # Forces are numbered as they are drawn, tip to tail; the diagram names them so too.
             symbols = {a.id(): f"F{str(i).translate(SUBSCRIPTS)}" for i, a in enumerate(activities, 1)}
-            has_diagram = write_diagram(drawing, item, directory / "diagrams" / name, symbols)
+            resultant_found = bool(get_resultant_found([tool.Structural.get_locks(a) for a in activities]))
+            has_diagram = write_diagram(drawing, item, directory / "diagrams" / name, symbols, resultant_found)
             point = {"name": item.Name or "Unnamed", "diagram": f"diagrams/{name}" if has_diagram else None}
-            point.update(get_resultant_calculation(activities, unit, get_force_colors(drawing, item)))
+            point.update(get_resultant_calculation(activities, unit, get_force_colors(drawing, item), detailed))
             points.append(point)
         if points:
             cases.append({"name": case.Name or "Unnamed", "points": points})
@@ -107,6 +113,7 @@ def get_report_data(
         "force_unit": unit,
         "cases": cases,
         "has_cases": bool(cases),
+        "detailed": detailed,
     }
 
 
@@ -155,8 +162,28 @@ def get_slug(name: Union[str, None]) -> str:
     return re.sub(r"[^\w.-]+", "_", name or "").strip("_") or "Unnamed"
 
 
+def get_resultant_found(locks: list[tuple[bool, bool]]) -> list[str]:
+    """What of a resultant was found, from how many force values were: Edit Resultant finds two unknowns in all"""
+    unknown = sum(not locked for lock in locks for locked in lock)
+    return [["magnitude", "direction"], ["magnitude"]][unknown] if unknown < 2 else []
+
+
+def bold(text: str, is_bold: bool = True, suffix: str = "") -> str:
+    """A value in bold in LaTeX, for one found by solving, with its suffix, as a unit, bold too"""
+    if not is_bold:
+        return text + suffix
+    return f"\\mathbf{{{text}}}" + suffix.replace("\\text{", "\\textbf{")
+
+
+class Detail(str):
+    """A step shown only in detailed reports: the working between the main steps"""
+
+
 def get_resultant_calculation(
-    activities: list[ifcopenshell.entity_instance], unit: str, colors: Union[dict[int, str], None] = None
+    activities: list[ifcopenshell.entity_instance],
+    unit: str,
+    colors: Union[dict[int, str], None] = None,
+    detailed: bool = False,
 ) -> dict[str, Any]:
     """The steps for concurrent point forces and their resultant.
 
@@ -178,7 +205,8 @@ def get_resultant_calculation(
     found = {
         i: "MAGNITUDE" if force["locks"][1] else "WHOLE" for i, force in enumerate(forces) if not all(force["locks"])
     }
-    components, steps, summary = get_sum_steps(forces, text_unit, unit, found if solving else None)
+    resultant_found = get_resultant_found([force["locks"] for force in forces])
+    components, steps, summary = get_sum_steps(forces, text_unit, unit, found if solving else None, resultant_found)
     # The resultant too. What of it was found follows from how many force values were: two unknowns in all.
     total = [sum(force["vector"][k] for force in forces) for k in range(3)]
     magnitude = math.sqrt(sum(c * c for c in total))
@@ -186,18 +214,23 @@ def get_resultant_calculation(
     if not total[1] and magnitude > 1e-9:
         eighth, angle, _, _ = tool.Structural.get_eighth(total[0], total[2])
         direction = f"{angle:.1f}° {eighth}, {EIGHTH_AXES[eighth]}"
-    unknown = sum(not locked for force in forces for locked in force["locks"])
-    found = [["magnitude", "direction"], ["magnitude"]][unknown] if unknown < 2 else []
+    found = resultant_found
     rows.append(get_table_row("R", "Resultant", magnitude, direction, found, "#222222"))
     rows[-1]["magnitude"] += f" {unit}"
-    color_symbols = lambda step: get_colored_symbols(step, palette)
+    # Detailed steps in grey, applied in LaTeX so that both formats show it; force symbols keep their colours.
+    gray = lambda step: f"{{\\color{{#8c8c8c}}\\qquad {step}}}" if isinstance(step, Detail) else step  # Indented.
+    render = lambda steps: [
+        {"latex": get_colored_symbols(gray(step), palette), "detail": isinstance(step, Detail)}
+        for step in steps
+        if detailed or not isinstance(step, Detail)
+    ]
     return {
         "forces": rows,
         "find": get_colored_symbols(find, palette),  # With inline math, $F_{2}$, as both formats read.
-        "solving": [{"latex": color_symbols(step)} for step in solving],
+        "solving": render(solving),
         "has_solving": bool(solving),
-        "components": [{"latex": color_symbols(step)} for step in components],
-        "steps": [{"latex": color_symbols(step)} for step in steps],
+        "components": render(components),
+        "steps": render(steps),
         "summary": summary,
     }
 
@@ -213,6 +246,9 @@ def get_table_row(
         "magnitude": f"{magnitude:.2f}",
         "direction": direction,
         "found": ", ".join(found),
+        # Values found by solving are set in bold.
+        "magnitude_found": "magnitude" in found,
+        "direction_found": "direction" in found,
     }
 
 
@@ -258,7 +294,11 @@ def get_component_terms(x: float, z: float, eighth: str, angle: float) -> dict[s
 
 
 def get_sum_steps(
-    forces: list[dict[str, Any]], text_unit: str, unit: str, found: Union[dict[int, str], None] = None
+    forces: list[dict[str, Any]],
+    text_unit: str,
+    unit: str,
+    found: Union[dict[int, str], None] = None,
+    resultant_found: tuple[str, ...] = (),
 ) -> tuple[list[str], list[str], str]:
     """Each force's components, then their sums, and the resultant's magnitude and angle.
 
@@ -278,12 +318,17 @@ def get_sum_steps(
                 sign, trig = ("-", term[1:]) if term.startswith("-") else ("", term)
                 symbolic = f"F_{{{axis}{i}}} = {sign}F_{{{i}}} {trig}"
                 numeric = f"{symbolic} = {sign}({force['magnitude']:.2f}) {trig} = {value:.2f}{text_unit}"
+                ratio = abs(value) / force["magnitude"]
+                working = [
+                    Detail(f"{trig} = {ratio:.4f}"),
+                    Detail(f"{sign}({force['magnitude']:.2f})({ratio:.4f}) = {value:.2f}"),
+                ]
                 if i - 1 not in found:
-                    components.append(numeric)
+                    components += [numeric, *working]
                 else:
                     if found[i - 1] == "MAGNITUDE":
                         components.append(symbolic)
-                    steps.append(numeric)
+                    steps += [numeric, *working]
         else:
             for axis, value in (("x", x), ("y", y), ("z", z)):
                 if value or axis != "y":
@@ -298,15 +343,28 @@ def get_sum_steps(
     resultant = math.sqrt(sum(value * value for value in totals.values()))
     squares = " + ".join(f"R_{axis}^2" for axis in axes)
     values = " + ".join(f"{number(totals[axis])}^2" for axis in axes)
-    steps.append(f"R = \\sqrt{{{squares}}} = \\sqrt{{{values}}} = {resultant:.2f}{text_unit}")
+    added = " + ".join(f"{totals[axis] ** 2:.2f}" for axis in axes)
+    steps.append(Detail(f"{squares} = {values} = {added} = {resultant**2:.2f}"))
+    steps.append(
+        f"R = \\sqrt{{{squares}}} = \\sqrt{{{values}}} = {bold(f'{resultant:.2f}', 'magnitude' in resultant_found, text_unit)}"
+    )
     summary = f"R = {resultant:.2f} {unit}"
     if len(axes) == 2 and resultant > 1e-9:
         eighth, angle, _, _ = tool.Structural.get_eighth(totals["x"], totals["z"])
+        angle_text, eighth_text = f"{angle:.1f}^\\circ", f"\\ \\text{{{eighth}}}"
         along, across = ("x", "z") if eighth in ("Q1", "Q4", "Q5", "Q8") else ("z", "x")
+        ratio = abs(totals[across]) / abs(totals[along])
+        steps.append(Detail(f"\\text{{Measured {EIGHTH_AXES[eighth].split(',')[0]}}}"))  # As "from −Z".
+        steps.append(
+            Detail(
+                f"\\tan\\theta_R = \\frac{{|R_{across}|}}{{|R_{along}|}} = "
+                f"\\frac{{{abs(totals[across]):.2f}}}{{{abs(totals[along]):.2f}}} = {ratio:.4f}"
+            )
+        )
         steps.append(
             f"\\theta_R = \\tan^{{-1}}\\left(\\frac{{|R_{across}|}}{{|R_{along}|}}\\right) = "
             f"\\tan^{{-1}}\\left(\\frac{{{abs(totals[across]):.2f}}}{{{abs(totals[along]):.2f}}}\\right) = "
-            f"{angle:.1f}^\\circ\\ \\text{{{eighth}}}"
+            f"{bold(angle_text, 'direction' in resultant_found, eighth_text)}"
         )
         summary += f" at {angle:.1f}° {eighth}, {EIGHTH_AXES[eighth]}"
     elif resultant <= 1e-9:
@@ -342,13 +400,16 @@ def get_solving_steps(forces: list[dict[str, Any]], text_unit: str) -> tuple[lis
             terms = " - ".join(["R_" + axis] + [f"F_{{{axis}{j + 1}}}" for j in range(len(forces)) if j != i])
             numbers = " - ".join([f"({resultant[k]:.2f})"] + [f"({value:.2f})" for value in others])
             steps.append(f"F_{{{axis}{n}}} = {terms} = {numbers} = {vectors[i][k]:.2f}{text_unit}")
-        steps.append(f"{symbol} = \\sqrt{{F_{{x{n}}}^2 + F_{{z{n}}}^2}} = {np.linalg.norm(vectors[i]):.2f}{text_unit}")
+        steps.append(
+            f"{symbol} = \\sqrt{{F_{{x{n}}}^2 + F_{{z{n}}}^2}} = {bold(f'{np.linalg.norm(vectors[i]):.2f}', True, text_unit)}"
+        )
         if vectors[i].any():
             eighth, angle, _, _ = tool.Structural.get_eighth(vectors[i][0], vectors[i][1])
+            angle_text, eighth_text = f"{angle:.1f}^\\circ", f"\\ \\text{{{eighth}}}"
             along, across = ("x", "z") if eighth in ("Q1", "Q4", "Q5", "Q8") else ("z", "x")
             steps.append(
                 f"\\theta_{{{n}}} = \\tan^{{-1}}\\left(\\frac{{|F_{{{across}{n}}}|}}{{|F_{{{along}{n}}}|}}\\right) "
-                f"= {angle:.1f}^\\circ\\ \\text{{{eighth}}}"
+                f"= {bold(angle_text, True, eighth_text)}"
             )
         return steps, f"${symbol}$ in magnitude and direction, $R$ being known."
     if any(kind == "DIRECTION" for _, kind in unknowns) or any(not vectors[i].any() for i, _ in unknowns):
@@ -428,19 +489,36 @@ def get_elimination_steps(
     left = (" + ".join(terms) + " " if terms else "") + unknown_term
     if not terms:
         left = left.lstrip("+ ")
+    reason = f"n \\perp {line_symbol}" if k is None else f"{line_symbol} \\text{{ lies square to }} {name}"
+    steps.append(Detail(f"{line_symbol} \\text{{ has no component along }} {name}"))
+    steps.append(Detail(f"\\text{{as }} {reason}"))
     steps.append(f"\\Sigma F_{name} = {rhs_symbol}:\\quad {left} = {rhs:.2f}")
+    steps.append(
+        Detail(
+            f"\\text{{Rearranged: }} {trig}\\, {symbol} = {rhs:.2f} - "
+            f"{f'({known:.2f})' if known < 0 else f'{known:.2f}'} = {rhs - known:.2f}"
+        )
+    )
+    steps.append(Detail(f"{trig} = {factor:.4f}"))
     magnitude = (rhs - known) / factor
     numerator, denominator = rhs - known, trig
     if numerator < 0 and trig.startswith("-"):
         numerator, denominator = -numerator, trig[1:]  # Both signs cancel.
-    steps.append(f"{symbol} = \\frac{{{numerator:.2f}}}{{{denominator}}} = {magnitude:.2f}{text_unit}")
+    steps.append(f"{symbol} = \\frac{{{numerator:.2f}}}{{{denominator}}} = {bold(f'{magnitude:.2f}', True, text_unit)}")
     return steps
 
 
 def write_diagram(
-    drawing: ShaderInfo, item: ifcopenshell.entity_instance, path: Path, symbols: Union[dict[int, str], None] = None
+    drawing: ShaderInfo,
+    item: ifcopenshell.entity_instance,
+    path: Path,
+    symbols: Union[dict[int, str], None] = None,
+    resultant_found: bool = False,
 ) -> bool:
-    """Write a structural item's load diagram as an SVG, as the X-Z plane is seen from -Y, or nothing if none"""
+    """Write a structural item's load diagram as an SVG, as the X-Z plane is seen from -Y, or nothing if none.
+
+    Values found by solving are labelled larger: those marked unlocked, and the resultant's if it was found.
+    """
     if not (obj := tool.Ifc.get_object(item)):
         return False
     shapes = [
@@ -490,7 +568,8 @@ def write_diagram(
             elements.append(f'<polygon points="{corners}" fill="{color}"/>')
     placed: list[tuple[float, float, float, float]] = []
     for text in texts:
-        elements.append(get_svg_label(text, to_svg(text["position"]), placed))
+        found = "🔓" in text["text"] or (resultant_found and text["text"].startswith("R = "))
+        elements.append(get_svg_label(text, to_svg(text["position"]), placed, found))
     svg = (
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width:.0f}" height="{height:.0f}" '
         f'viewBox="0 0 {width:.0f} {height:.0f}" font-family="sans-serif" font-size="13">\n'
@@ -510,13 +589,17 @@ def get_svg_color(color: tuple) -> str:
     return "#" + "".join(f"{round(c * 0.72 * 255):02x}" for c in rgb)
 
 
-def get_svg_label(text: dict, anchor: np.ndarray, placed: list[tuple[float, float, float, float]]) -> str:
+def get_svg_label(
+    text: dict, anchor: np.ndarray, placed: list[tuple[float, float, float, float]], found: bool = False
+) -> str:
     """A label beside its anchor towards its away direction, moved further until it clears those placed"""
     away = text.get("away")
     direction = np.array((away[0], -away[2])) if away is not None else np.array((1.0, 0.0))
     direction = direction / np.linalg.norm(direction) if np.linalg.norm(direction) else np.array((1.0, 0.0))
     content = str(text["text"])
-    width, height = 7.5 * len(content), 14.0
+    # Found values a little larger than the 13 px of the rest, rather than bold, which reads badly in SVG.
+    font_size = 15 if found else 13
+    width, height = 7.5 * font_size / 13 * len(content), 14.0 * font_size / 13
     align = "start" if direction[0] > 0.3 else "end" if direction[0] < -0.3 else "middle"
     position = anchor + 8 * direction
     for _ in range(40):
@@ -529,9 +612,10 @@ def get_svg_label(text: dict, anchor: np.ndarray, placed: list[tuple[float, floa
     # The label's middle line sits at the box's middle, which is its top plus half its height.
     color = get_svg_color(text.get("color", (0.3, 0.3, 0.3, 1)))
     escaped = content.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    size = f' font-size="{font_size}"' if found else ""
     # On a white box, so that lines running under it do not cross the text.
     return (
         f'<rect x="{left - 2:.1f}" y="{top - 1:.1f}" width="{width + 4:.1f}" height="{height + 2:.1f}" fill="white"/>'
         f'<text x="{position[0]:.1f}" y="{top + height / 2:.1f}" text-anchor="{align}" '
-        f'dominant-baseline="central" fill="{color}">{escaped}</text>'
+        f'dominant-baseline="central" fill="{color}"{size}>{escaped}</text>'
     )

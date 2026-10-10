@@ -287,6 +287,11 @@ class BIMStructuralProperties(PropertyGroup):
         default=True,
         update=update_loads_display,
     )
+    report_detailed_steps: BoolProperty(
+        name="Detailed Steps",
+        description="Show more of how the equations resolve in exported calculations, in grey, to learn from",
+        default=False,
+    )
     show_force_slopes: BoolProperty(
         name="Slopes",
         description="Mark the slope of each point force as a rise and run triangle beside it",
@@ -361,6 +366,7 @@ class BIMStructuralProperties(PropertyGroup):
         force_scale: float
         show_force_angles: bool
         show_force_slopes: bool
+        report_detailed_steps: bool
         angle_reference: str
         force_decimals: int
         angle_decimals: int

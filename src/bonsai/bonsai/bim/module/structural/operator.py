@@ -1751,7 +1751,7 @@ class ExportStructuralCalculations(bpy.types.Operator):
         if self.selected_only:
             items = {e for o in context.selected_objects if (e := tool.Ifc.get_entity(o))}
         folder = Path(self.directory) / f"{report.get_slug(model.Name)}_calcs"
-        page = report.write_report(folder, model, items)
+        page = report.write_report(folder, model, items, tool.Structural.get_structural_props().report_detailed_steps)
         webbrowser.open(page.as_uri())
         self.report({"INFO"}, f"Calculations written to {folder}")
         return {"FINISHED"}

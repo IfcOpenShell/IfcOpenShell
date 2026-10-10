@@ -695,6 +695,7 @@ class BIM_PT_show_structural_activities(Panel):
         # Its diagrams are drawn with the settings above.
         row = self.layout.row(align=True)
         row.operator("bim.export_structural_calculations", icon="EXPORT")
+        row.prop(self.props, "report_detailed_steps")
 
 
 class BIM_PT_structural_loads(Panel):
