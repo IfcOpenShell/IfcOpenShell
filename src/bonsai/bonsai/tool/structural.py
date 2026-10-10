@@ -284,7 +284,15 @@ class Structural(bonsai.core.tool.Structural):
         ]
         unknowns += [(None, kind) for kind, locked in zip(("MAGNITUDE", "DIRECTION"), resultant_locks) if not locked]
         if len(unknowns) != 2:
-            return None, None, f"Unlock exactly two values to find, not {len(unknowns)}"
+            # Name them as forces are numbered in reports, F1, F2 and so on, and say what to do.
+            subscripts = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+            named = [
+                f"{'R' if i is None else 'F' + str(i + 1).translate(subscripts)} {kind.lower()}" for i, kind in unknowns
+            ]
+            if not unknowns:
+                return None, None, "Nothing is unlocked: unlock two values to find"
+            advice = "unlock one more" if len(unknowns) == 1 else f"lock {len(unknowns) - 2} of them"
+            return None, None, f"Unlocked: {', '.join(named)}. Two can be found: {advice}"
         forces = list(forces)
         total = lambda vectors: tuple(sum(v[k] for v in vectors) for k in range(3))
         others = lambda i: total([f for k, f in enumerate(forces) if k != i])

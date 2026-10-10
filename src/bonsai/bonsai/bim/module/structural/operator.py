@@ -1631,7 +1631,9 @@ class EditStructuralResultant(bpy.types.Operator, tool.Ifc.Operator, StructuralF
         layout.label(text="Forces, and which of their values are known:")
         for i, activity in enumerate(activities[:32]):
             row = layout.row(align=True)
-            row.label(text=activity.AppliedLoad.Name or "Unnamed", icon="FORCE_FORCE")
+            # Numbered as reports and unlocked-value messages number them, tip to tail.
+            symbol = "F" + str(i + 1).translate(str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉"))
+            row.label(text=f"{symbol}: {activity.AppliedLoad.Name or 'Unnamed'}", icon="FORCE_FORCE")
             for prop, text in (("magnitude_locks", "Magnitude"), ("direction_locks", "Direction")):
                 locked = getattr(self, prop)[i]
                 row.prop(self, prop, index=i, text=text, icon="LOCKED" if locked else "UNLOCKED")
