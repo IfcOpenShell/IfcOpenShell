@@ -241,7 +241,7 @@ class BIMStructuralProperties(PropertyGroup):
             ),
         ],
         name="Point Forces",
-        default="BOTH",
+        default="PARALLELOGRAM",
         update=update_loads_display,
     )
     force_decimals: IntProperty(
