@@ -124,6 +124,13 @@ class IFC_PARSE_API base {
 
     ifcopenshell::attribute_value get_attribute_value(size_t attribute_index) const;
 
+#ifndef SWIG
+    // An aggregate attribute as a view that reads and edits it in place:
+    // get<express::aggregate<T>>(attribute_index), see aggregate.h.
+    template <typename A>
+    A get(size_t attribute_index);
+#endif
+
     uint32_t identity() const;
 
     uint32_t id() const;
@@ -168,6 +175,9 @@ class IFC_PARSE_API entity : public base {
     using base::base;
 
     ifcopenshell::attribute_value get(const std::string& attribute_name) const;
+#ifndef SWIG
+    using base::get;
+#endif
 
     template <typename T>
     T get_value(const std::string& attribute_name) const;
