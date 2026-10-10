@@ -1247,7 +1247,7 @@ class ApplyStructuralLoad(bpy.types.Operator, tool.Ifc.Operator, StructuralForce
         layout.prop(self, "load_group")
         if self.load_group == "0":
             layout.prop(self, "new_load_case_name")
-        self.draw_force_inputs(layout, category)
+        self.draw_force_inputs(layout, category, show_locks=True)
         if category:
             layout.label(text=f"Applies to {len(elements)} {category[3:]}", icon="INFO")
         if not tool.Ifc.get().by_type("IfcStructuralAnalysisModel"):
@@ -1299,6 +1299,8 @@ class ApplyStructuralLoad(bpy.types.Operator, tool.Ifc.Operator, StructuralForce
             for element in elements
         ]
         ifcopenshell.api.group.assign_group(ifc_file, products=activities, group=group)
+        for activity in activities:  # Only an unlocked value is recorded; loads are known unless said.
+            tool.Structural.set_locks(activity, self.magnitude_locked, self.direction_locked)
         self.show_load_group(context, group)
         return {"FINISHED"}
 
@@ -1388,10 +1390,8 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
                 self.input_mode, self.direction, self.angle = "ANGLE", direction, angle
         # A generated name is generated again, so that it reads as the inputs now do, as from its eighth's axis.
         self.load_name = get_default_load_name(self, category) if DEFAULT_LOAD_NAME.match(name) else name
-        if self.activity:
-            self.magnitude_locked, self.direction_locked = tool.Structural.get_locks(
-                tool.Ifc.get().by_id(self.activity)
-            )
+        if lock_activity := self.get_lock_activity():
+            self.magnitude_locked, self.direction_locked = tool.Structural.get_locks(lock_activity)
         if (activities := self.get_movable_activities()) and (groups := get_activity_load_groups(activities[0])):
             self.load_group = str(groups[0].id())
         # Set last, so that filling in the values above does not start a preview.
@@ -1428,7 +1428,10 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         load_cases = {g for user in users for g in get_activity_load_groups(user)}
         if len(load_cases) > 1 and not self.get_movable_activities():
             layout.label(text=f"Used in {len(load_cases)} load cases: move one from its applied load", icon="INFO")
-        self.draw_force_inputs(layout, category, show_locks=bool(self.activity))
+        lock_activity = self.get_lock_activity()
+        if not lock_activity:
+            layout.label(text="Open it from an applied load to lock its values", icon="INFO")
+        self.draw_force_inputs(layout, category, show_locks=bool(lock_activity))
         if self.input_mode != "COMPONENTS" and (self.y or self.moment_x or self.moment_y or self.moment_z):
             layout.label(text="Y and moments will be set to zero", icon="ERROR")
 
@@ -1443,8 +1446,8 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         attributes["Name"] = self.get_load_name(category)
         ifc_file = tool.Ifc.get()
         ifcopenshell.api.structural.edit_structural_load(ifc_file, structural_load=load, attributes=attributes)
-        if self.activity:
-            tool.Structural.set_locks(ifc_file.by_id(self.activity), self.magnitude_locked, self.direction_locked)
+        if lock_activity := self.get_lock_activity():
+            tool.Structural.set_locks(lock_activity, self.magnitude_locked, self.direction_locked)
         activities = self.get_movable_activities()
         if activities and (target := self.get_target_load_group(ifc_file)):
             for activity in activities:
@@ -1452,6 +1455,17 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         if tool.Structural.get_structural_props().is_editing_loads:
             bpy.ops.bim.load_structural_loads()
         return {"FINISHED"}
+
+    def get_lock_activity(self) -> Union[ifcopenshell.entity_instance, None]:
+        """The applied load whose values are locked as known: the one edited, or the only one using the load.
+
+        Locks belong to applied loads, so a load shared by several has no one set of them.
+        """
+        ifc_file = tool.Ifc.get()
+        if self.activity:
+            return ifc_file.by_id(self.activity)
+        users = [i for i in ifc_file.get_inverse(self.get_load()) if i.is_a("IfcStructuralActivity")]
+        return users[0] if len(users) == 1 else None
 
     def get_movable_activities(self) -> list[ifcopenshell.entity_instance]:
         """The applied loads the load case choice moves: the one edited, or every use of the load if they share one"""
