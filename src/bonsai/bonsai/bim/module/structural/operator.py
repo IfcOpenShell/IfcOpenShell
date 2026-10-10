@@ -31,7 +31,11 @@ from mathutils import Matrix, Vector
 import bonsai.bim.helper
 import bonsai.core.structural as core
 import bonsai.tool as tool
-from bonsai.bim.module.structural.data import StructuralAnalysisModelsData, StructuralLoadCasesData
+from bonsai.bim.module.structural.data import (
+    LoadGroupDecorationData,
+    StructuralAnalysisModelsData,
+    StructuralLoadCasesData,
+)
 from bonsai.bim.module.structural.decorator import LoadsDecorator
 from bonsai.bim.module.structural.load_decoration_data import ShaderInfo
 
@@ -1173,7 +1177,18 @@ class ApplyStructuralLoad(bpy.types.Operator, tool.Ifc.Operator, StructuralForce
             for element in elements
         ]
         ifcopenshell.api.group.assign_group(ifc_file, products=activities, group=group)
+        self.show_load_group(context, group)
         return {"FINISHED"}
+
+    def show_load_group(self, context: bpy.types.Context, group: ifcopenshell.entity_instance) -> None:
+        """Show the loads of the load case just applied to, so that the new load is seen"""
+        LoadGroupDecorationData.is_loaded = False  # A new load case is not listed yet.
+        try:
+            tool.Structural.get_structural_props().load_group_to_show = str(group.id())
+        except TypeError:
+            return  # Not in the current analysis model, so it cannot be shown.
+        if not LoadsDecorator.is_installed:
+            bpy.ops.bim.show_loads("INVOKE_DEFAULT")
 
 
 edit_load_group_items: list[tuple[str, str, str]] = []
