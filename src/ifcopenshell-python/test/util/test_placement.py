@@ -16,8 +16,43 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import numpy as np
+
 import ifcopenshell.util.placement as subject
 import test.bootstrap
+
+
+class TestGetAxis2PlacementIFC4(test.bootstrap.IFC4):
+    def test_2d_placement(self):
+        placement = self.file.createIfcAxis2Placement2D(
+            self.file.createIfcCartesianPoint((1.0, 2.0)), self.file.createIfcDirection((0.0, 1.0))
+        )
+        matrix = subject.get_placement(placement)
+        assert np.allclose(matrix[:, 3], (1.0, 2.0, 0.0, 1.0))
+        assert np.allclose(matrix[:3, 0], (0.0, 1.0, 0.0))
+        assert np.allclose(matrix[:3, 2], (0.0, 0.0, 1.0))
+
+    def test_axis1_placement_along_negative_x(self):
+        placement = self.file.createIfcAxis1Placement(
+            self.file.createIfcCartesianPoint((0.0, 0.0, 0.0)), self.file.createIfcDirection((-1.0, 0.0, 0.0))
+        )
+        rotation = subject.get_placement(placement)[:3, :3]
+        assert np.allclose(rotation @ rotation.T, np.eye(3))
+        assert np.allclose(rotation[:, 2], (-1.0, 0.0, 0.0))
+
+
+class TestGetLocalPlacementIFC4(test.bootstrap.IFC4):
+    def test_composing_parent_placements(self):
+        parent = self.file.createIfcLocalPlacement(
+            RelativePlacement=self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((1.0, 2.0, 3.0)))
+        )
+        child = self.file.createIfcLocalPlacement(
+            parent, self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((10.0, 0.0, 0.0)))
+        )
+        assert np.allclose(subject.get_placement(child)[:, 3], (11.0, 2.0, 3.0, 1.0))
+
+    def test_returning_identity_without_a_placement(self):
+        assert np.array_equal(subject.get_placement(None), np.eye(4))
 
 
 class TestGetStoreyElevationIFC4(test.bootstrap.IFC4):
