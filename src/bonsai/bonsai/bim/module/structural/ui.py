@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 
+import itertools
 from typing import TYPE_CHECKING, Any, Union
 
 import bpy
@@ -249,6 +250,23 @@ class BIM_PT_structural_member(Panel):
             row.label(text="TODO")
 
 
+def draw_chain_order_buttons(layout: bpy.types.UILayout, chain: list[int], i: int, load_case: int) -> None:
+    """Buttons moving the i-th of an item's applied loads in a load case along its tip-to-tail chain"""
+    if len(chain) < 2:
+        return
+    for offset, icon in ((-1, "TRIA_UP"), (1, "TRIA_DOWN")):
+        sub = layout.row(align=True)
+        sub.enabled = 0 <= i + offset < len(chain)
+        op = sub.operator("bim.move_structural_activity", text="", icon=icon)
+        op.activity, op.load_case, op.offset = chain[i], load_case, offset
+
+
+def draw_chain_reverse_button(layout: bpy.types.UILayout, chain: list[int], item: int, load_case: int) -> None:
+    if len(chain) > 1:
+        op = layout.operator("bim.reverse_structural_activities", text="", icon="ARROW_LEFTRIGHT", emboss=False)
+        op.item, op.load_case = item, load_case
+
+
 def get_load_case_eye(load_case: int) -> str:
     """An open eye for the load case whose loads are shown, closed for the others"""
     shown = LoadsDecorator.is_installed and tool.Structural.get_structural_props().load_group_to_show == str(load_case)
@@ -321,14 +339,18 @@ class BIM_PT_structural_item_loads(Panel):
             row.label(text=load_case["name"], icon="CON_CLAMPTO")
             if load_case["resultant"]:
                 row.label(text=load_case["resultant"])
+            # The order they are drawn tip to tail.
+            chain = [load["activity"] for load in load_case["loads"]]
+            draw_chain_reverse_button(row, chain, tool.Ifc.get_entity(context.active_object).id(), load_case["id"])
             if load_case["id"]:
                 row.operator(
                     "bim.show_structural_load_case", text="", icon=get_load_case_eye(load_case["id"]), emboss=False
                 ).load_case = load_case["id"]
-            for load in load_case["loads"]:
+            for i, load in enumerate(load_case["loads"]):
                 row = box.row(align=True)
                 name = f"{load['group']}: {load['name']}" if load["group"] else load["name"]
                 row.label(text=name, icon="FORCE_FORCE")
+                draw_chain_order_buttons(row, chain, i, load_case["id"])
                 row.operator("bim.edit_structural_load_values", text="", icon="GREASEPENCIL").activity = load[
                     "activity"
                 ]
@@ -557,11 +579,20 @@ class BIM_PT_structural_load_cases(Panel):
     def draw_editable_load_case_group_ui(self, load_case):
         box = self.layout.box()
         box.label(text="Applied Loads", icon="FORCE_FORCE")
-        for activity in load_case["activities"]:
-            row = box.row(align=True)
-            row.label(text=activity["name"])
-            row.operator("bim.edit_structural_load_values", text="", icon="GREASEPENCIL").activity = activity["id"]
-            row.operator("bim.remove_structural_activity", text="", icon="X").activity = activity["id"]
+        # Listed by item, each item's in the order they are drawn tip to tail.
+        for item, activities in itertools.groupby(load_case["activities"], key=lambda activity: activity["item"]):
+            activities = list(activities)
+            chain = [activity["id"] for activity in activities]
+            if len(chain) > 1:
+                row = box.row(align=True)
+                row.label(text=activities[0]["item_name"], icon="FORCE_FORCE")
+                draw_chain_reverse_button(row, chain, item, load_case["id"])
+            for i, activity in enumerate(activities):
+                row = box.row(align=True)
+                row.label(text=activity["name"])
+                draw_chain_order_buttons(row, chain, i, load_case["id"])
+                row.operator("bim.edit_structural_load_values", text="", icon="GREASEPENCIL").activity = activity["id"]
+                row.operator("bim.remove_structural_activity", text="", icon="X").activity = activity["id"]
         row = box.row(align=True)
         row.prop(self.props, "applicable_structural_load_types", text="")
         row.prop(self.props, "applicable_structural_loads", text="")

@@ -26,8 +26,10 @@ from typing import TYPE_CHECKING, Any, Union
 import bpy
 import ifcopenshell
 import ifcopenshell.api.context
+import ifcopenshell.api.pset
 import ifcopenshell.api.structural
 import ifcopenshell.util.attribute
+import ifcopenshell.util.element
 import ifcopenshell.util.representation
 
 import bonsai.bim.helper
@@ -139,6 +141,49 @@ class Structural(bonsai.core.tool.Structural):
         x, z = magnitude * math.cos(theta), magnitude * math.sin(theta)
         # Keep components along an axis exactly zero rather than rounding noise.
         return (0.0 if abs(x) < 1e-12 * magnitude else x), (0.0 if abs(z) < 1e-12 * magnitude else z)
+
+    @classmethod
+    def get_draw_order_key(cls, activity: ifcopenshell.entity_instance) -> tuple[int, int, int]:
+        """A sort key for drawing applied loads tip to tail: by their set draw order, else in the order applied"""
+        order = ifcopenshell.util.element.get_pset(activity, "BBIM_Structural", "DrawOrder")
+        return (0, order, activity.id()) if order is not None else (1, 0, activity.id())
+
+    @classmethod
+    def get_chain_activities(
+        cls, item: ifcopenshell.entity_instance, load_case: Union[ifcopenshell.entity_instance, None]
+    ) -> list[ifcopenshell.entity_instance]:
+        """The applied loads on an item in a load case, or in none, in the order they are drawn tip to tail"""
+
+        def is_in_case(activity: ifcopenshell.entity_instance) -> bool:
+            groups = [
+                r.RelatingGroup
+                for r in activity.HasAssignments
+                if r.is_a("IfcRelAssignsToGroup") and r.RelatingGroup and r.RelatingGroup.is_a("IfcStructuralLoadGroup")
+            ]
+            if not load_case:
+                return not groups
+            # Directly, or through a load group within the case.
+            return any(
+                g == load_case
+                or any(r.is_a("IfcRelAssignsToGroup") and r.RelatingGroup == load_case for r in g.HasAssignments)
+                for g in groups
+            )
+
+        activities = [
+            r.RelatedStructuralActivity for r in item.AssignedStructuralActivity if r.RelatedStructuralActivity
+        ]
+        return sorted(filter(is_in_case, activities), key=cls.get_draw_order_key)
+
+    @classmethod
+    def set_draw_order(cls, activities: list[ifcopenshell.entity_instance]) -> None:
+        """Record the order applied loads are drawn tip to tail, which IFC does not order"""
+        ifc_file = tool.Ifc.get()
+        for order, activity in enumerate(activities, 1):
+            if pset := ifcopenshell.util.element.get_pset(activity, "BBIM_Structural"):
+                pset = ifc_file.by_id(pset["id"])
+            else:
+                pset = ifcopenshell.api.pset.add_pset(ifc_file, product=activity, name="BBIM_Structural")
+            ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"DrawOrder": order})
 
     @classmethod
     def get_eighth(cls, x: float, z: float, preferred: Union[str, None] = None) -> tuple[str, float, float, float]:

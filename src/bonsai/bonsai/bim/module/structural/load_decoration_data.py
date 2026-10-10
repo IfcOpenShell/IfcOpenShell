@@ -511,8 +511,8 @@ class ShaderInfo:
         self, activity_list: list[tuple[ifcopenshell.entity_instance, float]], location: Vector, rotation: np.ndarray
     ) -> None:
         """Draw the point forces applied at a point"""
-        # In the order they were applied, which is how a tip-to-tail chain is usually drawn.
-        items = sorted(activity_list, key=lambda item: item[0].id())
+        # In their set draw order, else in the order they were applied.
+        items = sorted(activity_list, key=lambda item: tool.Structural.get_draw_order_key(item[0]))
         forces = [self.get_point_loads_values([item], rotation)[:3] for item in items]
         self.draw_point_forces(forces, location, rotation, [item[0].id() for item in items])
 

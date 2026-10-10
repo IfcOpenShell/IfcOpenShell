@@ -819,6 +819,59 @@ class RemoveStructuralActivity(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
+def get_chain_activities(item: ifcopenshell.entity_instance, load_case: int) -> list[ifcopenshell.entity_instance]:
+    """The applied loads on an item in a load case (0 for none), in their draw order"""
+    return tool.Structural.get_chain_activities(item, tool.Ifc.get().by_id(load_case) if load_case else None)
+
+
+def redraw_loads(context: bpy.types.Context) -> None:
+    if LoadsDecorator.is_installed:
+        LoadsDecorator.update()
+        tool.Blender.update_all_viewports(context)
+
+
+class MoveStructuralActivity(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.move_structural_activity"
+    bl_label = "Move Applied Load"
+    bl_description = "Move the applied load earlier or later in its item's tip-to-tail chain for the load case"
+    bl_options = {"REGISTER", "UNDO"}
+    activity: bpy.props.IntProperty()
+    load_case: bpy.props.IntProperty()
+    offset: bpy.props.IntProperty(default=-1)
+
+    def _execute(self, context):
+        activity = tool.Ifc.get().by_id(self.activity)
+        if not (rels := activity.AssignedToStructuralItem):
+            return {"CANCELLED"}
+        activities = get_chain_activities(rels[0].RelatingElement, self.load_case)
+        if activity not in activities:
+            return {"CANCELLED"}
+        i = activities.index(activity)
+        j = i + self.offset
+        if not 0 <= j < len(activities):
+            return {"CANCELLED"}
+        activities[i], activities[j] = activities[j], activities[i]
+        tool.Structural.set_draw_order(activities)
+        redraw_loads(context)
+        return {"FINISHED"}
+
+
+class ReverseStructuralActivities(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.reverse_structural_activities"
+    bl_label = "Reverse Applied Loads"
+    bl_description = "Reverse the order of the item's applied loads in the load case's tip-to-tail chain"
+    bl_options = {"REGISTER", "UNDO"}
+    item: bpy.props.IntProperty()
+    load_case: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        if len(activities := get_chain_activities(tool.Ifc.get().by_id(self.item), self.load_case)) < 2:
+            return {"CANCELLED"}
+        tool.Structural.set_draw_order(activities[::-1])
+        redraw_loads(context)
+        return {"FINISHED"}
+
+
 # Load class, activity class, force attributes and moment attributes for each kind of structural item.
 APPLY_LOAD_CLASSES = {
     "IfcStructuralPointConnection": (
