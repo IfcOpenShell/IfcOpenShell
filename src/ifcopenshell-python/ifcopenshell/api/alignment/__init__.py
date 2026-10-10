@@ -54,6 +54,7 @@ from .add_positioning_referent import add_positioning_referent
 from .add_stationing_referent import add_stationing_referent
 from .add_vertical_layout import add_vertical_layout
 from .add_zero_length_segment import add_zero_length_segment
+from .clear_layout_segments import clear_layout_segments
 from .create import create
 from .create_as_offset_curve import create_as_offset_curve
 from .create_as_polyline import create_as_polyline
@@ -91,6 +92,7 @@ from .layout_vertical_alignment_by_pi_method import (
     layout_vertical_alignment_by_pi_method,
 )
 from .name_segments import name_segments
+from .segment_vertices import segment_vertices
 from .update_alignment_parameter_segment_tags import update_alignment_parameter_segment_tags
 from .update_end_point import update_end_point
 from .update_fallback_position import update_fallback_position
@@ -102,6 +104,7 @@ __all__ = [
     "add_stationing_referent",
     "add_vertical_layout",
     "add_zero_length_segment",
+    "clear_layout_segments",
     "create",
     "create_as_offset_curve",
     "create_as_polyline",
@@ -136,6 +139,7 @@ __all__ = [
     "layout_vertical_alignment_by_pi_method",
     "name_segments",
     "register_referent_name_callback",
+    "segment_vertices",
     "update_alignment_parameter_segment_tags",
     "update_end_point",
     "update_fallback_position",
