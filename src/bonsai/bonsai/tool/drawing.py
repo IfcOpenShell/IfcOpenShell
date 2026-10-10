@@ -1851,6 +1851,14 @@ class Drawing(bonsai.core.tool.Drawing):
         else:
             return
 
+        # The marker is drawn on the +90 CCW side of start->end, so order the final points to face the view.
+        # Done after clip/elevate as elevate_segment discards any upstream ordering.
+        view_dir = im.to_3x3() @ Vector(-m[:3, 2])
+        edge_dir = points[1] - points[0]
+        if edge_dir.x * view_dir.y - edge_dir.y * view_dir.x < 0:
+            # Reassign (not item-assign): clip_segment returns a tuple, elevate a list.
+            points = [points[1], points[0]]
+
         return points
 
     @classmethod
@@ -1915,6 +1923,14 @@ class Drawing(bonsai.core.tool.Drawing):
                     new_points = (v1, v2)
                 else:
                     new_points = points
+
+        # Also reverse a stored or collinear candidate order that faces opposite to the corrected direction.
+        corrected_dir = points[1] - points[0]
+        if new_points is None:
+            if len(existing_verts) == 2 and (existing_verts[1] - existing_verts[0]).dot(corrected_dir) < 0:
+                new_points = (existing_verts[1], existing_verts[0])
+        elif (new_points[1] - new_points[0]).dot(corrected_dir) < 0:
+            new_points = (new_points[1], new_points[0])
 
         if new_points:
             if representation := ifcopenshell.util.representation.get_representation(annotation, context):
