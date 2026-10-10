@@ -25,6 +25,19 @@ import ifcopenshell.util.placement as subject
 import test.bootstrap
 
 
+class TestA2P(test.bootstrap.IFC4):
+    def test_projecting_a_non_perpendicular_x_axis_onto_the_plane_normal_to_z(self):
+        matrix = subject.a2p((0.0, 0.0, 0.0), (0.0, 0.0, 1.0), (1.0, 0.0, 1.0))
+        assert np.allclose(matrix, np.eye(4))
+
+    def test_keeping_an_already_perpendicular_x_axis_unchanged(self):
+        matrix = subject.a2p((1.0, 2.0, 3.0), (0.0, 0.0, 1.0), (0.0, 1.0, 0.0))
+        assert np.allclose(matrix[:3, 0], (0.0, 1.0, 0.0))
+        assert np.allclose(matrix[:3, 1], (-1.0, 0.0, 0.0))
+        assert np.allclose(matrix[:3, 2], (0.0, 0.0, 1.0))
+        assert np.allclose(matrix[:3, 3], (1.0, 2.0, 3.0))
+
+
 class TestGetAxis2PlacementIFC4(test.bootstrap.IFC4):
     def test_2d_placement(self):
         placement = self.file.createIfcAxis2Placement2D(
