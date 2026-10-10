@@ -257,7 +257,7 @@ class BIMStructuralProperties(PropertyGroup):
     force_decimals: IntProperty(
         name="Force Decimals",
         description="Decimal places of force and moment values shown with loads",
-        default=2,
+        default=0,
         min=0,
         max=8,
         update=update_loads_display,
@@ -265,7 +265,7 @@ class BIMStructuralProperties(PropertyGroup):
     angle_decimals: IntProperty(
         name="Angle Decimals",
         description="Decimal places of angles shown with loads",
-        default=2,
+        default=1,
         min=0,
         max=8,
         update=update_loads_display,
