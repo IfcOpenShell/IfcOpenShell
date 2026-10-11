@@ -93,6 +93,26 @@ class TestGetBooleans(NewFile):
         assert set(subject.get_booleans(element, representation)) == set(bools)
 
 
+class TestImportProfileCircle(NewFile):
+    def test_import_a_circle_profile(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        profile = ifc.createIfcCircleProfileDef("AREA", None, None, 0.5)
+        obj = subject.import_profile(profile)
+        assert obj
+        coords = [tuple(round(c, 3) for c in v.co) for v in obj.data.vertices]
+        assert coords == [(0.0, -0.5, 0.0), (0.0, 0.5, 0.0)]
+        assert "IFCCIRCLE" in obj.vertex_groups
+
+    def test_import_a_hollow_circle_profile(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        profile = ifc.createIfcCircleHollowProfileDef("AREA", None, None, 0.5, 0.1)
+        obj = subject.import_profile(profile)
+        assert obj
+        assert [round(v.co.y, 3) for v in obj.data.vertices] == [-0.5, 0.5, -0.4, 0.4]
+
+
 class TestGetManualBooleans(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
