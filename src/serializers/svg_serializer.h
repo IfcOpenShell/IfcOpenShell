@@ -56,7 +56,9 @@
 #include <string>
 #include <limits>
 #include <array>
+#include <memory>
 #include <tuple>
+#include <type_traits>
 
 typedef std::pair<express::base, std::string> drawing_key;
 
@@ -280,13 +282,12 @@ namespace {
 			TopoDS_Shape* item;
 			TopoDS_Face face;
 			bool is_convex;
-			// @note copying the BRepTopAdaptor_FClass2d didn't work so it's a pointer
-			BRepTopAdaptor_FClass2d* fclass;
+			// @note BRepTopAdaptor_FClass2d is not copyable, hence the owning pointer
+			std::unique_ptr<BRepTopAdaptor_FClass2d> fclass;
 
 			face_info(TopoDS_Shape* it, const TopoDS_Face& fa)
 				: item(it)
 				, face(fa)
-				, fclass(nullptr)
 			{
 				TopExp_Explorer exp(face, TopAbs_WIRE);
 				is_convex = exp.More() && ifcopenshell::geom::util::is_convex(TopoDS::Wire(exp.Current()), 1.e-5) && ([&exp]() {exp.Next(); return true; })() && !exp.More();
@@ -301,10 +302,6 @@ namespace {
 				dxyz = pln->Position().Location().XYZ();
 				xdir = pln->Position().XDirection().XYZ();
 				ydir = pln->Position().YDirection().XYZ();
-			}
-
-			~face_info() {
-				delete fclass;
 			}
 
 			void project(const gp_Pnt& xyz, gp_Pnt2d& uv) {
@@ -326,7 +323,7 @@ namespace {
 
 			bool contains(const gp_Pnt2d& bottomleft, const gp_Pnt2d& topright) {
 				if (!fclass) {
-					fclass = new BRepTopAdaptor_FClass2d(face, 1.e-5);
+					fclass = std::make_unique<BRepTopAdaptor_FClass2d>(face, 1.e-5);
 				}
 				// @todo unify with the 2d boolean algo
 				gp_Pnt2d bottomright(topright.X(), bottomleft.Y());
@@ -367,6 +364,11 @@ namespace {
 				return true;
 			}
 		};
+
+		// face_info owns fclass; a shallow copy would double free, so it is move-only.
+		static_assert(!std::is_copy_constructible_v<face_info>, "face_info must not be copyable");
+		static_assert(!std::is_copy_assignable_v<face_info>, "face_info must not be copy assignable");
+		static_assert(std::is_move_constructible_v<face_info>, "face_info must be movable");
 
 		hlr_brep_or_poly_t engine_;
 		bool use_prefiltering_;
@@ -516,7 +518,7 @@ namespace {
 										auto d = -(pnt.XYZ() - view_direction_.Location().XYZ()).Dot(view_direction_.Direction().XYZ());
 
 										if (d > 1.e-5) {
-											large_ortho_faces_.insert({ d, face_info(&it->second, face) });
+											large_ortho_faces_.emplace(d, face_info(&it->second, face));
 										}
 									}
 								}
