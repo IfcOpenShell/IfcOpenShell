@@ -554,6 +554,12 @@ class TestSetupActiveBsddClassification(NewFile):
         self.run_test("IFC4X3")
 
 
+class TestGuessFalseOrigin(NewFile):
+    def test_a_file_without_a_project_does_not_raise(self):
+        subject.guess_false_origin(ifcopenshell.file(schema="IFC4"))
+        subject.guess_false_origin(ifcopenshell.file(schema="IFC2X3"))
+
+
 class TestCreatePointCloudMesh(NewFile):
     def test_cartesian_point_list_3d(self):
         bpy.ops.bim.create_project()
