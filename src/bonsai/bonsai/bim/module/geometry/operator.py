@@ -2153,7 +2153,7 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
 
                     if item.is_a("IfcSweptAreaSolid"):
                         if copied_item.Position:
-                            position = ifcopenshell.util.placement.get_axis2placement(copied_item.Position)
+                            position = ifcopenshell.util.placement.get_placement(copied_item.Position)
                         else:
                             position = np.eye(4, dtype=float)
                         position = apply_placement(position, placement)

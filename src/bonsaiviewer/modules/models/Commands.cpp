@@ -30,7 +30,7 @@
 #include "../connectors/Registry.h"
 #include "../../../ifcviewer/Federation.h"
 #include "../../../ifcviewer/SceneLoader.h"
-#include "../../../ifcviewer/SidecarBuilder.h"
+#include "../../../ifcviewer/IfcViewBuilder.h"
 #include "../../../ifcviewer/ViewportWindow.h"
 #include "../../../ifcgeom/serializer.h"
 #include "../../../serializers/document_serializer_plugin.h"
@@ -98,7 +98,7 @@ QString rdbviewCacheRoot() {
 }
 
 // A .rdbview is a zip of `model.rdb/` (the data DB) + `model.ifcview` (geometry
-// sidecar). Unzip it into a per-source subdir (hashed from path + mtime + size,
+// .ifcview). Unzip it into a per-source subdir (hashed from path + mtime + size,
 // so a re-open reuses an existing extraction) and return the extracted
 // `model.rdb` path — from there it loads exactly like any pure .rdb (geometry
 // from the co-extracted sibling .ifcview). Returns empty on failure.
@@ -792,7 +792,7 @@ void exportGeometryDatabase(SessionState& session, QWidget& host) {
         QDir().mkpath(tmp_root);
 
         const QString tmp_anchor   = QDir(tmp_root).filePath("model.ifc");
-        const QString tmp_sidecar  = QDir(tmp_root).filePath("model.ifcview");
+        const QString tmp_ifcview  = QDir(tmp_root).filePath("model.ifcview");
         const QString tmp_rdb_dir  = QDir(tmp_root).filePath("model.rdb");
 
         try {
@@ -817,14 +817,14 @@ void exportGeometryDatabase(SessionState& session, QWidget& host) {
             serializer->finalize();
             serializer.reset();
 
-            SidecarBuilder builder;
+            IfcViewBuilder builder;
             if (!builder.build(input_path, tmp_anchor)) {
                 throw ifcopenshell::exception(
-                    ("Sidecar build failed: " + builder.lastError()).toStdString());
+                    (".ifcview build failed: " + builder.lastError()).toStdString());
             }
-            if (!QFileInfo::exists(tmp_sidecar)) {
+            if (!QFileInfo::exists(tmp_ifcview)) {
                 throw ifcopenshell::exception(
-                    ("Sidecar build reported success but " + tmp_sidecar + " is missing").toStdString());
+                    (".ifcview build reported success but " + tmp_ifcview + " is missing").toStdString());
             }
 
             // Write to a sibling `.tmp` then rename so a partial file never
@@ -840,10 +840,10 @@ void exportGeometryDatabase(SessionState& session, QWidget& host) {
                 writer.setCompressionPolicy(QZipWriter::AutoCompress);
 
                 {
-                    QFile sf(tmp_sidecar);
+                    QFile sf(tmp_ifcview);
                     if (!sf.open(QIODevice::ReadOnly)) {
                         throw ifcopenshell::exception(
-                            ("Failed to read sidecar " + tmp_sidecar).toStdString());
+                            ("Failed to read .ifcview " + tmp_ifcview).toStdString());
                     }
                     writer.addFile("model.ifcview", sf.readAll());
                 }

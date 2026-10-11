@@ -23,6 +23,7 @@
 #include "components/Style.h"
 #include "modules/models/Commands.h"
 #include "../ifcparse/parse.h"
+#include "../plugin/plugin.h"
 
 #include <QApplication>
 #include <QCommandLineParser>
@@ -30,7 +31,62 @@
 #include <QFontDatabase>
 #include <QSurfaceFormat>
 
+#include <filesystem>
+#include <iostream>
+
 namespace {
+
+const char* pluginKindName(ifcopenshell::plugin::kind value) {
+    using ifcopenshell::plugin::kind;
+    switch (value) {
+    case kind::parse_schema: return "parse_schema";
+    case kind::mapping: return "mapping";
+    case kind::kernel: return "kernel";
+    case kind::tree: return "tree";
+    case kind::document_serializer: return "document_serializer";
+    case kind::geometry_serializer: return "geometry_serializer";
+    case kind::opencascade_geometry_ifc_writer: return "opencascade_geometry_ifc_writer";
+    case kind::linework_processing: return "linework_processing";
+    }
+    return "unknown";
+}
+
+// Try to load every ifcopenshell_* plugin next to the executable and report the result.
+int listPlugins() {
+    ifcopenshell::plugin::manager manager;
+    std::filesystem::path pluginsDir(QCoreApplication::applicationDirPath().toStdWString());
+#ifdef __APPLE__
+    // Plug-ins are staged into `BonsaiViewer.app/Contents/Frameworks`.
+    pluginsDir = pluginsDir.parent_path() / "Frameworks";
+#endif
+    manager.add_search_path(pluginsDir);
+
+    int failures = 0;
+    for (const auto& dir : manager.search_paths()) {
+        std::cout << "Search path: " << dir.string() << "\n";
+    }
+    for (const auto& path : manager.discover("ifcopenshell_")) {
+        try {
+            const auto module = manager.load(path);
+            const auto& meta = module.meta();
+            std::cout << "OK    " << path.filename().string() << " (" << pluginKindName(meta.kind_);
+            if (!meta.id.empty()) {
+                std::cout << ", id=" << meta.id;
+            }
+            if (!meta.schema.empty()) {
+                std::cout << ", schema=" << meta.schema;
+            }
+            if (!meta.format.empty()) {
+                std::cout << ", format=" << meta.format;
+            }
+            std::cout << ")\n";
+        } catch (const std::exception& e) {
+            ++failures;
+            std::cout << "FAIL  " << path.filename().string() << ": " << e.what() << "\n";
+        }
+    }
+    return failures == 0 ? 0 : 1;
+}
 
 void installUiFont() {
     const int font_id = QFontDatabase::addApplicationFont(
@@ -73,7 +129,14 @@ int main(int argc, char* argv[]) {
     parser.setApplicationDescription("Bonsai Viewer — IfcOpenShell IFC viewer");
     parser.addHelpOption();
     parser.addVersionOption();
+    const QCommandLineOption listPluginsOption(
+        "list-plugins", "Try to load every plugin next to the executable and report the result.");
+    parser.addOption(listPluginsOption);
     parser.process(app);
+
+    if (parser.isSet(listPluginsOption)) {
+        return listPlugins();
+    }
 
     installUiFont();
     const auto applyStyle = [&app]() {

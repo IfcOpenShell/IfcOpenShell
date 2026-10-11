@@ -598,7 +598,7 @@ class Patcher(ifcpatch.BasePatcher):
 
             if self.should_get_geometry:
                 if element.id() not in self.shape_rows and (placement := getattr(element, "ObjectPlacement", None)):
-                    m = ifcopenshell.util.placement.get_local_placement(placement)
+                    m = ifcopenshell.util.placement.get_placement(placement)
                     x, y, z = m[:, 3][0:3].tolist()
                     self.shape_rows[element.id()] = (element.id(), x, y, z, m.tobytes(), None)
 

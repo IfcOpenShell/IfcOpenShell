@@ -57,7 +57,7 @@ def update_end_point(file: ifcopenshell.file, curve: entity_instance):
                 Axis=file.createIfcDirection((0.0, 0.0, 1.0)),
             )
 
-    p = np.array(ifcopenshell.util.placement.get_axis2placement(zero_length_segment.Placement))
+    p = np.array(ifcopenshell.util.placement.get_placement(zero_length_segment.Placement))
 
     x = float(p[0, 3])
     y = float(p[1, 3])

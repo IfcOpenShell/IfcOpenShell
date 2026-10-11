@@ -238,7 +238,7 @@ def get_storey_world_z(obj: bpy.types.Object) -> Union[float, None]:
     if not getattr(storey, "ObjectPlacement", None):
         return None
     unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-    matrix = ifcopenshell.util.placement.get_local_placement(storey.ObjectPlacement)
+    matrix = ifcopenshell.util.placement.get_placement(storey.ObjectPlacement)
     return matrix[2][3] * unit_scale
 
 
