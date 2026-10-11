@@ -162,12 +162,25 @@ def remove_product(file: ifcopenshell.file, product: ifcopenshell.entity_instanc
                 file.remove(inverse)
                 if history:
                     ifcopenshell.util.element.remove_deep2(file, history)
+        elif inverse.is_a("IfcRelReferencedInSpatialStructure"):
+            if inverse.RelatingStructure == product or len(inverse.RelatedElements) == 1:
+                history = inverse.OwnerHistory
+                file.remove(inverse)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(file, history)
         elif inverse.is_a("IfcRelConnectsElements"):
             if inverse.is_a("IfcRelConnectsWithRealizingElements"):
                 if product not in (inverse.RelatingElement, inverse.RelatedElement) and any(
                     el for el in inverse.RealizingElements if el != product
                 ):
                     continue
+            history = inverse.OwnerHistory
+            file.remove(inverse)
+            if history:
+                ifcopenshell.util.element.remove_deep2(file, history)
+        elif inverse.is_a("IfcRelInterferesElements"):
+            # Both RelatingElement and RelatedElement are mandatory, so the
+            # relationship is meaningless once either participant is removed.
             history = inverse.OwnerHistory
             file.remove(inverse)
             if history:
@@ -202,6 +215,20 @@ def remove_product(file: ifcopenshell.file, product: ifcopenshell.entity_instanc
                 if history:
                     ifcopenshell.util.element.remove_deep2(file, history)
             elif len(inverse.RelatedObjects) == 1:
+                history = inverse.OwnerHistory
+                file.remove(inverse)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(file, history)
+        elif inverse.is_a("IfcRelAssigns"):
+            # Remaining IfcRelAssignsTo* subtypes: only remove the relationship if the product is its sole object.
+            if len(inverse.RelatedObjects) == 1:
+                history = inverse.OwnerHistory
+                file.remove(inverse)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(file, history)
+        elif inverse.is_a("IfcRelAssociates"):
+            # IfcRelAssociatesMaterial is handled above; this covers the other associations.
+            if len(inverse.RelatedObjects) == 1:
                 history = inverse.OwnerHistory
                 file.remove(inverse)
                 if history:
