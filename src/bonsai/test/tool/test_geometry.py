@@ -20,6 +20,7 @@ from typing import Union
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api.context
 import ifcopenshell.api.geometry
 import ifcopenshell.api.root
 import ifcopenshell.api.type
@@ -100,6 +101,33 @@ class TestDuplicateObjectData(NewFile):
         new_data = subject.duplicate_object_data(obj)
         assert obj.data == data
         assert isinstance(new_data, bpy.types.Mesh)
+
+
+class TestImportItemWithoutGeometry(NewFile):
+    def test_do_not_fail_if_the_kernel_returns_no_shape(self, monkeypatch):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        model = ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        ifcopenshell.api.context.add_context(
+            ifc, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+        )
+        wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        profile = ifc.createIfcRectangleProfileDef("AREA", None, None, 1.0, 1.0)
+        position = ifc.createIfcAxis2Placement3D(ifc.createIfcCartesianPoint((0.0, 0.0, 0.0)))
+        item = ifc.createIfcExtrudedAreaSolid(profile, position, ifc.createIfcDirection((0.0, 0.0, 1.0)), 1.0)
+        rep_obj = bpy.data.objects.new("Wall", bpy.data.meshes.new("Wall"))
+        tool.Ifc.link(wall, rep_obj)
+        tool.Geometry.get_geometry_props().representation_obj = rep_obj
+        obj = bpy.data.objects.new("Item", bpy.data.meshes.new("Item"))
+        tool.Geometry.get_mesh_props(obj.data).ifc_definition_id = item.id()
+        bpy.context.scene.collection.objects.link(obj)
+        tool.Loader.load_settings()
+        monkeypatch.setattr(tool.Loader, "create_generic_shape", lambda *args, **kwargs: None)
+
+        subject.import_item(obj)
+
+        assert len(obj.data.vertices) == 0
 
 
 class TestGetObjectData(NewFile):
