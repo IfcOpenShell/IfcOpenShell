@@ -244,12 +244,7 @@ def import_attribute(
         is_logical = str(attribute_type) == "<type IfcLogical: <logical>>"
         enum_value = data[new.name]
         if is_logical:
-            new.special_type = "LOGICAL"
-            enum_items = ("TRUE", "FALSE", "UNKNOWN")
-            new.enum_items = json.dumps(enum_items)
-            if enum_value is not None and enum_value != "UNKNOWN":
-                # IfcOpenShell returns bool if IfcLogical is True/False.
-                enum_value = "TRUE" if enum_value else "FALSE"
+            enum_value = set_logical_enum_items(new, enum_value)
         else:
             enum_items = ifcopenshell.util.attribute.get_enum_items(attribute)
             new.enum_items = json.dumps(enum_items)
@@ -281,6 +276,18 @@ def add_attribute_min_max(attribute: W.attribute, attribute_blender: bonsai.bim.
     if attribute_type._is("IfcPositiveLengthMeasure") or attribute_type._is("IfcNonNegativeLengthMeasure"):
         attribute_blender.value_min = 0.0
         attribute_blender.value_min_constraint = True
+
+
+def set_logical_enum_items(metadata: bonsai.bim.prop.Attribute, value: Union[bool, str, None]) -> Union[str, None]:
+    """Mark `metadata` as a TRUE / FALSE / UNKNOWN enum and return `value` as the matching item, or None."""
+    metadata.special_type = "LOGICAL"
+    metadata.enum_items = json.dumps(("TRUE", "FALSE", "UNKNOWN"))
+    if value is None:
+        return None
+    if value != "UNKNOWN":
+        # IfcOpenShell returns bool if IfcLogical is True/False.
+        value = "TRUE" if value else "FALSE"
+    return value
 
 
 def add_attribute_enum_items_descriptions(
