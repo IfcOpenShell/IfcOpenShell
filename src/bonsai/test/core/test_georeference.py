@@ -27,6 +27,26 @@ class TestAddGeoreferencing:
         subject.add_georeferencing(georeference)
 
 
+class TestImportGeoreferencingFromBlenderGIS:
+    def test_run(self, ifc, georeference):
+        georeference.get_blendergis_map_conversion().should_be_called().will_return(
+            ("projected_crs_attributes", "coordinate_operation_attributes")
+        )
+        ifc.run("georeference.add_georeferencing").should_be_called()
+        ifc.run(
+            "georeference.edit_georeferencing",
+            projected_crs="projected_crs_attributes",
+            coordinate_operation="coordinate_operation_attributes",
+        ).should_be_called()
+        georeference.set_model_origin().should_be_called()
+        subject.import_georeferencing_from_blendergis(ifc, georeference)
+
+    def test_doing_nothing_if_blendergis_has_no_georeference_data(self, ifc, georeference):
+        georeference.get_blendergis_map_conversion().should_be_called().will_return(None)
+        result = subject.import_georeferencing_from_blendergis(ifc, georeference)
+        assert isinstance(result, str)
+
+
 class TestEnableEditingGeoreferencing:
     def test_run(self, georeference):
         georeference.import_projected_crs().should_be_called()
