@@ -1164,14 +1164,15 @@ class EnableEditingRailingPath(bpy.types.Operator, tool.Ifc.Operator):
 
 
 def cancel_editing_railing_path(context: bpy.types.Context) -> set[str]:
-    obj = context.active_object
-    assert obj
-    props = tool.Model.get_railing_props(obj)
-
     ProfileDecorator.uninstall()
+
+    # Also the decorator exit callback, which can fire with no active object (#9006).
+    if not (obj := context.active_object):
+        return {"CANCELLED"}
+    props = tool.Model.get_railing_props(obj)
     props.is_editing_path = False
 
-    if bpy.context.active_object.mode == "EDIT":
+    if obj.mode == "EDIT":
         bpy.ops.object.mode_set(mode="OBJECT")
 
     if props.railing_type == "FRAMELESS_PANEL":

@@ -849,11 +849,12 @@ class EnableEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
 
 
 def cancel_editing_roof_path(context: bpy.types.Context) -> set[str]:
-    obj = context.active_object
-    assert obj
-    props = tool.Model.get_roof_props(obj)
-
     ProfileDecorator.uninstall()
+
+    # Also the decorator exit callback, which can fire with no active object (#9006).
+    if not (obj := context.active_object):
+        return {"CANCELLED"}
+    props = tool.Model.get_roof_props(obj)
     props.is_editing_path = False
 
     update_roof_modifier_bmesh(obj)
