@@ -342,6 +342,7 @@ class BIM_PT_drawings(Panel):
                 "BIM_UL_drawinglist", "", self.props, "drawings", self.props, "active_drawing_index"
             )
             self.layout.prop(self.props, "show_drawings_on_sheets_only")
+            self.layout.prop(self.props, "show_selected_drawings_only")
 
 
 class BIM_PT_schedules(Panel):
@@ -529,6 +530,7 @@ class BIM_PT_sheets(Panel):
             row3.operator("bim.open_sheet", icon="HIDE_OFF", text="")
 
         self.layout.template_list("BIM_UL_sheets", "", self.props, "sheets", self.props, "active_sheet_index")
+        self.layout.prop(self.props, "show_selected_sheets_only")
 
 
 class BIM_PT_product_assignments(Panel):
@@ -967,6 +969,24 @@ class BIM_UL_drawinglist(bpy.types.UIList):
                 if not is_visible:
                     flt_flags[i] &= ~self.bitflag_filter_item
 
+        if props.show_selected_drawings_only:
+            # Headers stay visible when collapsed or when they contain a selected drawing.
+            header_index = None
+            header_has_selected = False
+            for i, item in enumerate(drawings):
+                if item.is_drawing:
+                    if item.is_selected:
+                        header_has_selected = True
+                    else:
+                        flt_flags[i] &= ~self.bitflag_filter_item
+                    continue
+                if header_index is not None and not header_has_selected:
+                    flt_flags[header_index] &= ~self.bitflag_filter_item
+                header_index = i if item.is_expanded else None
+                header_has_selected = False
+            if header_index is not None and not header_has_selected:
+                flt_flags[header_index] &= ~self.bitflag_filter_item
+
         return flt_flags, flt_neworder
 
 
@@ -1045,8 +1065,17 @@ class BIM_UL_sheets(bpy.types.UIList):
                 else:
                     flt_flags.append(0)
 
-        if not flt_flags:
-            return flt_flags, flt_neworder
+        if data.show_selected_sheets_only:
+            if not flt_flags:
+                flt_flags = [self.bitflag_filter_item] * len(data.sheets)
+            # References are shown only under a selected sheet.
+            sheet_is_selected = False
+            for i, sheet in enumerate(data.sheets):
+                if sheet.is_sheet:
+                    sheet_is_selected = sheet.is_selected
+                if not sheet_is_selected:
+                    flt_flags[i] &= ~self.bitflag_filter_item
+
         return flt_flags, flt_neworder
 
 
