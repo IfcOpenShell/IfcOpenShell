@@ -20,8 +20,11 @@
 
 import ifcopenshell
 import ifcopenshell.api.context
+import ifcopenshell.api.material
+import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
+import ifcopenshell.guid
 import ifcopenshell.util.element
 import pytest
 
@@ -91,6 +94,94 @@ class TestOpeningQuantities:
         assert quantities["Depth"] == pytest.approx(0.3)
         assert quantities["Area"] == pytest.approx(0.5)
         assert quantities["Volume"] == pytest.approx(0.15)
+
+
+class TestWeightQuantities:
+    """gross_get_weight/net_get_weight for a profile-based element with an
+    opening (#6344): GROSS weight should prefer the authored
+    Pset_ProfileMechanical.MassPerLength over a density*volume estimate, even
+    when the element has openings, since GROSS ignores openings entirely."""
+
+    def setup_method(self):
+        self.file = ifcopenshell.file(schema="IFC4")
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject", name="Test")
+        f = self.file
+        units = [
+            f.createIfcSIUnit(None, "LENGTHUNIT", None, "METRE"),
+            f.createIfcSIUnit(None, "AREAUNIT", None, "SQUARE_METRE"),
+            f.createIfcSIUnit(None, "VOLUMEUNIT", None, "CUBIC_METRE"),
+            f.createIfcSIUnit(None, "MASSUNIT", None, "GRAM"),
+        ]
+        ifcopenshell.api.unit.assign_unit(self.file, units=units)
+        model = ifcopenshell.api.context.add_context(self.file, context_type="Model")
+        self.body = ifcopenshell.api.context.add_context(
+            self.file, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+        )
+
+    def test_gross_weight_prefers_profile_mass_over_density_when_voided(self):
+        f = self.file
+
+        profile = f.createIfcRectangleProfileDef("AREA", "RectProfile", None, 0.1, 0.2)
+        position = f.createIfcAxis2Placement3D(f.createIfcCartesianPoint((0.0, 0.0, 0.0)), None, None)
+        solid = f.createIfcExtrudedAreaSolid(profile, position, f.createIfcDirection((0.0, 0.0, 1.0)), 2.0)
+        rep = f.createIfcShapeRepresentation(self.body, "Body", "SweptSolid", [solid])
+
+        beam = ifcopenshell.api.root.create_entity(f, ifc_class="IfcBeam", name="Beam1")
+        beam.ObjectPlacement = f.createIfcLocalPlacement(
+            None, f.createIfcAxis2Placement3D(f.createIfcCartesianPoint((0.0, 0.0, 0.0)), None, None)
+        )
+        beam.Representation = f.createIfcProductDefinitionShape(None, None, [rep])
+
+        f.create_entity(
+            "IfcProfileProperties",
+            Name="Pset_ProfileMechanical",
+            ProfileDefinition=profile,
+            Properties=[
+                f.create_entity(
+                    "IfcPropertySingleValue",
+                    Name="MassPerLength",
+                    NominalValue=f.create_entity("IfcMassPerLengthMeasure", 50.0),
+                )
+            ],
+        )
+
+        material = ifcopenshell.api.material.add_material(f, name="Steel")
+        ifcopenshell.api.material.assign_material(f, products=[beam], material=material)
+        material_pset = ifcopenshell.api.pset.add_pset(f, product=material, name="Pset_MaterialCommon")
+        ifcopenshell.api.pset.edit_pset(f, pset=material_pset, properties={"MassDensity": 7850.0})
+
+        opening = ifcopenshell.api.root.create_entity(f, ifc_class="IfcOpeningElement", name="Hole")
+        opening.ObjectPlacement = f.createIfcLocalPlacement(
+            None, f.createIfcAxis2Placement3D(f.createIfcCartesianPoint((0.0, 0.0, 0.0)), None, None)
+        )
+        op_profile = f.createIfcRectangleProfileDef("AREA", None, None, 0.02, 0.02)
+        op_position = f.createIfcAxis2Placement3D(
+            f.createIfcCartesianPoint((-0.06, 0.0, 1.0)),
+            f.createIfcDirection((1.0, 0.0, 0.0)),
+            f.createIfcDirection((0.0, 1.0, 0.0)),
+        )
+        op_solid = f.createIfcExtrudedAreaSolid(op_profile, op_position, f.createIfcDirection((0.0, 0.0, 1.0)), 0.2)
+        op_rep = f.createIfcShapeRepresentation(self.body, "Body", "SweptSolid", [op_solid])
+        opening.Representation = f.createIfcProductDefinitionShape(None, None, [op_rep])
+        f.createIfcRelVoidsElement(ifcopenshell.guid.new(), None, None, None, beam, opening)
+
+        rules = {
+            "calculators": {
+                "IfcOpenShell": {
+                    "IfcBeam": {
+                        "Qto_BeamBaseQuantities": {
+                            "GrossWeight": "gross_get_weight",
+                            "NetWeight": "net_get_weight",
+                        }
+                    }
+                }
+            }
+        }
+        results = ifc5d.qto.quantify(self.file, {beam}, rules)
+        quantities = results[beam]["Qto_BeamBaseQuantities"]
+
+        assert quantities["GrossWeight"] == pytest.approx(100.0)
+        assert quantities["NetWeight"] == pytest.approx(7850.0 * (0.1 * 0.2 * 2 - 0.02 * 0.02 * 0.1))
 
 
 class TestGetQuantityMeasures:
