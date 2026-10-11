@@ -1,0 +1,126 @@
+name: Build IfcOpenShell Native WASM
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Set up uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+
+      - name: Install Python
+        # Installs latest Python version so it's preferred by uv over system Python.
+        run: uv python install
+
+      - name: Install Clang
+        # The binding generator's `clang` bindings are pinned in pyproject.toml and
+        # need a matching libclang, which is newer than the runner's distribution
+        # Clang, so the LLVM repository's Clang is registered as the default one.
+        run: |
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc > /dev/null
+          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+          sudo apt-get update
+          sudo apt-get install -y clang-21 libclang-21-dev
+          sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/lib/llvm-21/bin/clang++ 200
+
+      - name: Set up Node
+        # For the basic I/O tests, which drive the built artifacts through the
+        # TypeScript API on Node.
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          path: IfcOpenShell
+
+      - name: Checkout Build Repository
+        uses: actions/checkout@v7
+        with:
+          repository: IfcOpenShell/build-outputs
+          path: ifcopenshell_build
+          ref: wasm-native
+          lfs: true
+          token: ${{ secrets.BUILD_REPO_TOKEN }}
+
+      - name: Read pinned emsdk version
+        id: emsdk
+        run: echo "version=$(jq -r .emsdk.version IfcOpenShell/nix/sources.lock.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache emsdk
+        uses: actions/cache@v6
+        with:
+          path: ifcopenshell_build/Linux/wasm/emsdk
+          key: emsdk-${{ steps.emsdk.outputs.version }}-${{ runner.os }}
+
+      - name: Unpack Dependencies
+        run: |
+          cd ifcopenshell_build
+          uv run ../IfcOpenShell/nix/cache_dependencies.py unpack
+
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2.24
+        with:
+          key: ubuntu-22.04-${{ runner.arch }}-wasm-native
+          # Distro ccache is < 4.10, too old for the job summary, install from GitHub releases.
+          install: binary
+
+      - name: Build
+        env:
+          # Keep the dependency install dir inside the cached repository, matching the pyodide flow.
+          BUILD_DIR: ${{ github.workspace }}/ifcopenshell_build
+        # `--with` provides the bindgen extra to the interpreter that cmake uses
+        # to regenerate the C API bindings.
+        run: uv run --with clang==21.1.7 ./IfcOpenShell/nix/build-all.py -v --native-wasm --build-cfg Release
+
+      - name: Verify artifacts
+        run: python3 IfcOpenShell/.github/scripts/verify-wasm-artifacts.py
+
+      - name: Run the basic I/O tests
+        # `tests/io.test.ts` is the port of `test/tests.py`; it runs against the
+        # artifacts built above, through the `ifcopenshell` package on Node.
+        env:
+          IFCOPENSHELL_WASM_DIR: ${{ github.workspace }}/ifcopenshell_build/Linux/wasm/build/ifcopenshell/build/ifcwrap/wasm
+        run: |
+          cd IfcOpenShell/src/ts/ifcopenshell-wasm
+          npm ci
+          npm run stage
+          cd ../ifcopenshell-js
+          npm ci
+          npm run build
+          npm test -- tests/io.test.ts
+
+      - name: Upload Build Logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-logs-native-wasm
+          path: |
+            ifcopenshell_build/*/*/logs/*.log
+          retention-days: 30
+
+      - name: Pack Dependencies
+        run: |
+          cd ifcopenshell_build
+          uv run ../IfcOpenShell/nix/cache_dependencies.py pack
+
+      - name: Commit and Push Changes to Build Repository
+        run: |
+          cd ifcopenshell_build
+          git config user.name "IfcOpenBot"
+          git config user.email "ifcopenbot@ifcopenshell.org"
+          git add */*/install/cache-*.tar.gz
+          git commit -m "Update build artifacts [skip ci]" || echo "No changes to commit"
+          git push || echo "Push failed"
+
+      - name: Upload WASM artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: ifcopenshell-native-wasm
+          path: ifcopenshell_build/Linux/wasm/build/ifcopenshell/build/ifcwrap/wasm
+          retention-days: 30
