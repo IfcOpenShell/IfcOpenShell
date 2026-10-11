@@ -530,6 +530,20 @@ class TestRemoveDrawing:
         drawing.import_drawings().should_be_called()
         subject.remove_drawing(ifc, drawing, drawing="drawing")
 
+    def test_run_without_a_drawing_document(self, ifc, drawing):
+        drawing.is_active_drawing("drawing").should_be_called().will_return(True)
+        drawing.run_drawing_activate_model().should_be_called()
+        drawing.get_drawing_collection("drawing").should_be_called().will_return("collection")
+        drawing.get_drawing_group("drawing").should_be_called().will_return("group")
+        drawing.get_group_elements("group").should_be_called().will_return("elements")
+        drawing.delete_drawing_elements("elements").should_be_called()
+        ifc.run("group.remove_group", group="group").should_be_called()
+        drawing.delete_collection("collection").should_be_called()
+        drawing.get_drawing_references("drawing").should_be_called().will_return([])
+        drawing.get_drawing_document("drawing").should_be_called().will_return(None)
+        drawing.import_drawings().should_be_called()
+        subject.remove_drawing(ifc, drawing, drawing="drawing")
+
 
 class TestUpdateDrawingName:
     def test_do_not_update_if_name_unchanged(self, ifc, drawing):
