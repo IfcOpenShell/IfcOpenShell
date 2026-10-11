@@ -63,24 +63,23 @@ static inline uint32_t packRGBA8(const MaterialInfo& material) {
 // Build a streamed mesh record (local coords, 28-byte interleaved vertices) from a
 // TriangulationElement. Per-vertex color is baked from material_ids so that
 // triangulations with per-face materials still render correctly.
-// Vertex rebasing: when `offset` is non-zero, every vertex position is
-// subtracted by it so the emitted mesh-local coordinates stay near the
-// origin (and float32 precision survives upload to the GPU).  Caller
-// compensates by post-multiplying each instance's PlacementTransformation
-// by T(+offset), which is mathematically the identity overall but moves
+// Vertex rebasing: when `rebase_offset` is non-zero, every vertex position is
+// subtracted by it so the emitted mesh-local coordinates stay near the origin
+// (and float32 precision survives upload to the GPU).  Caller compensates by
+// post-multiplying each instance's PlacementTransformation by
+// T(+rebase_offset), which is mathematically the identity overall but moves
 // the magnitude off the float-precision-sensitive vertex column.
 StreamedMesh buildStreamedMesh(uint32_t session_model_id,
-                               uint32_t local_mesh_id,
+                               uint32_t mesh_id,
                                const ifcopenshell::geom::triangulation_element* elem,
-                               const Eigen::Vector3d& offset) {
+                               const Eigen::Vector3d& rebase_offset) {
     StreamedMesh mesh;
     mesh.session_model_id = session_model_id;
-    mesh.local_mesh_id = local_mesh_id;
+    mesh.mesh_id = mesh_id;
 
     const auto& geom = elem->geometry();
     const auto& verts = geom.verts();
     const auto& faces = geom.faces();
-    const auto& normals = geom.normals();
     const auto& materials = geom.materials();
     const auto& material_ids = geom.material_ids();
 
@@ -90,9 +89,7 @@ StreamedMesh buildStreamedMesh(uint32_t session_model_id,
     const size_t num_tris = faces.size() / 3;
     const bool have_per_tri_material = (material_ids.size() == num_tris);
 
-    // Dedupe (original vertex index, material id) so vertices shared across
-    // triangles of the same material stay shared; vertices spanning multiple
-    // materials are split (per-face color demands it).
+    // Split a source vertex used by triangles of different materials.
     auto make_key = [](uint32_t orig_idx, int mat_id) -> uint64_t {
         return (static_cast<uint64_t>(orig_idx) << 32) | static_cast<uint32_t>(mat_id);
     };
@@ -118,31 +115,21 @@ StreamedMesh buildStreamedMesh(uint32_t session_model_id,
 
         const uint32_t new_idx = static_cast<uint32_t>(
             mesh.vertices.size() / INSTANCED_VERTEX_STRIDE_FLOATS);
+        remap.emplace(key, new_idx);
 
         // Subtract in double, narrow to float — preserves precision when
-        // verts are far from origin and offset cancels the magnitude.
-        float px = static_cast<float>(verts[orig_idx * 3 + 0] - offset.x());
-        float py = static_cast<float>(verts[orig_idx * 3 + 1] - offset.y());
-        float pz = static_cast<float>(verts[orig_idx * 3 + 2] - offset.z());
-        mesh.vertices.push_back(px);
-        mesh.vertices.push_back(py);
-        mesh.vertices.push_back(pz);
-        if (px < local_aabb_min[0]) local_aabb_min[0] = px;
-        if (px > local_aabb_max[0]) local_aabb_max[0] = px;
-        if (py < local_aabb_min[1]) local_aabb_min[1] = py;
-        if (py > local_aabb_max[1]) local_aabb_max[1] = py;
-        if (pz < local_aabb_min[2]) local_aabb_min[2] = pz;
-        if (pz > local_aabb_max[2]) local_aabb_max[2] = pz;
-
-        if (orig_idx * 3 + 2 < normals.size()) {
-            mesh.vertices.push_back(static_cast<float>(normals[orig_idx * 3 + 0]));
-            mesh.vertices.push_back(static_cast<float>(normals[orig_idx * 3 + 1]));
-            mesh.vertices.push_back(static_cast<float>(normals[orig_idx * 3 + 2]));
-        } else {
-            mesh.vertices.push_back(0.0f);
-            mesh.vertices.push_back(1.0f);
-            mesh.vertices.push_back(0.0f);
+        // verts are far from origin and rebase_offset cancels the magnitude.
+        const float p[3] = {
+            static_cast<float>(verts[orig_idx * 3 + 0] - rebase_offset.x()),
+            static_cast<float>(verts[orig_idx * 3 + 1] - rebase_offset.y()),
+            static_cast<float>(verts[orig_idx * 3 + 2] - rebase_offset.z()),
+        };
+        for (int a = 0; a < 3; ++a) {
+            mesh.vertices.push_back(p[a]);
+            if (p[a] < local_aabb_min[a]) local_aabb_min[a] = p[a];
+            if (p[a] > local_aabb_max[a]) local_aabb_max[a] = p[a];
         }
+        for (int a = 0; a < 3; ++a) mesh.vertices.push_back(0.0f);  // unused normal slot
 
         MaterialInfo m;
         if (mat_id >= 0 && mat_id < static_cast<int>(materials.size())) {
@@ -152,8 +139,6 @@ StreamedMesh buildStreamedMesh(uint32_t session_model_id,
         float packed_as_float;
         std::memcpy(&packed_as_float, &packed, sizeof(float));
         mesh.vertices.push_back(packed_as_float);
-
-        remap.emplace(key, new_idx);
         return new_idx;
     };
 
@@ -197,25 +182,23 @@ static void worldAabbFromLocal(const float local_min[3],
 }
 
 StreamedInstance makeStreamedInstance(uint32_t session_model_id,
-                                      uint32_t local_mesh_id,
                                       uint32_t object_id,
                                       const ifcopenshell::geom::triangulation_element& elem,
+                                      const UniqueMesh& unique_mesh,
                                       const MeshAabb& mesh_aabb) {
     // Vertex rebasing cont.: post-multiply the per-instance
-    // PlacementTransformation by T(+offset) so world position is
-    // preserved.  Keep the emitted placement in double so later
-    // CoordinateOperation / false-origin composition can cancel
-    // large translations before the final GPU float upload.
+    // PlacementTransformation by T(+rebase_offset) so world position is
+    // preserved, then by the dedup transform that carries the shared mesh's
+    // local coordinates onto this geometry's.  Keep the emitted placement in
+    // double so later CoordinateOperation / false-origin composition can
+    // cancel large translations before the final GPU float upload.
     Eigen::Matrix4d mat_d = elem.transformation().data()->ccomponents();
-    if (mesh_aabb.has_offset) {
-        const Eigen::Vector3d mesh_rebase_offset(
-            mesh_aabb.offset[0], mesh_aabb.offset[1], mesh_aabb.offset[2]);
-        mat_d.block<3, 1>(0, 3) += mat_d.block<3, 3>(0, 0) * mesh_rebase_offset;
-    }
+    mat_d.block<3, 1>(0, 3) += mat_d.block<3, 3>(0, 0) * unique_mesh.rebase_offset;
+    mat_d = mat_d * unique_mesh.canonical_to_instance_matrix;
 
     StreamedInstance inst;
     inst.session_model_id = session_model_id;
-    inst.local_mesh_id = local_mesh_id;
+    inst.mesh_id = unique_mesh.mesh_id;
     inst.object_id = object_id;
     inst.color_override_rgba8 = 0;
     for (int i = 0; i < 16; ++i) {
@@ -229,4 +212,37 @@ StreamedInstance makeStreamedInstance(uint32_t session_model_id,
     worldAabbFromLocal(mesh_aabb.lmin, mesh_aabb.lmax, mat_f,
                        inst.world_aabb_min, inst.world_aabb_max);
     return inst;
+}
+
+UniqueMesh MeshRegistry::resolve(uint32_t session_model_id,
+                                 const ifcopenshell::geom::triangulation_element& elem,
+                                 const Eigen::Vector3d& rebase_offset,
+                                 std::optional<StreamedMesh>& new_mesh) {
+    new_mesh.reset();
+    const std::string& geom_id = elem.geometry().id();
+    if (!geom_id.empty()) {
+        auto it = geom_id_to_unique_mesh_.find(geom_id);
+        if (it != geom_id_to_unique_mesh_.end()) return it->second;
+    }
+
+    UniqueMesh unique_mesh;
+    unique_mesh.rebase_offset = rebase_offset;
+    StreamedMesh mesh = buildStreamedMesh(session_model_id, meshCount(), &elem, rebase_offset);
+    if (auto match = mesh_dedup_.findCongruentMesh(mesh)) {
+        unique_mesh.mesh_id = match->mesh_id;
+        unique_mesh.canonical_to_instance_matrix = match->canonical_to_instance_matrix;
+        ++congruent_mesh_count_;
+    } else {
+        unique_mesh.mesh_id = meshCount();
+        mesh_dedup_.registerMesh(unique_mesh.mesh_id, mesh);
+        MeshAabb mesh_aabb;
+        for (int a = 0; a < 3; ++a) {
+            mesh_aabb.lmin[a] = mesh.local_aabb_min[a];
+            mesh_aabb.lmax[a] = mesh.local_aabb_max[a];
+        }
+        mesh_aabbs_.push_back(mesh_aabb);
+        new_mesh = std::move(mesh);
+    }
+    if (!geom_id.empty()) geom_id_to_unique_mesh_.emplace(geom_id, unique_mesh);
+    return unique_mesh;
 }

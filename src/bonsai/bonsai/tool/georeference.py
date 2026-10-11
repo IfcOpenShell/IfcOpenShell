@@ -375,7 +375,7 @@ class Georeference(bonsai.core.tool.Georeference):
                 break
         if not wcs:
             return
-        placement = ifcopenshell.util.placement.get_axis2placement(wcs)
+        placement = ifcopenshell.util.placement.get_placement(wcs)
         if np.allclose(placement, np.eye(4)):
             props.wcs_x = props.wcs_y = props.wcs_z = props.wcs_rotation = "0"
         else:
