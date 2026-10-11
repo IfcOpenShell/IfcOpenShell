@@ -83,8 +83,8 @@ ProcessedLoad = TypedDict(
 class ShaderInfo:
     # Values of a load being edited, by load id, shown in place of its own until the edit is confirmed or cancelled.
     preview: dict[int, dict[str, Union[float, None]]] = {}
-    # A point's axes being edited, by its id, shown in place of its own likewise.
-    preview_axes: dict[int, np.ndarray] = {}
+    # A point's axes being edited, and the slope they are set by if any, by its id, shown in place of its own likewise.
+    preview_axes: dict[int, tuple[np.ndarray, Union[tuple[float, float], None]]] = {}
 
     def __init__(self, load_group: Union[ifcopenshell.entity_instance, None] = None) -> None:
         """
@@ -507,22 +507,26 @@ class ShaderInfo:
             blender_object = tool.Ifc.get_object_by_identifier(getattr(conn, "GlobalId", None))
             if blender_object.type == "MESH":
                 conn_location = blender_object.matrix_world @ blender_object.data.vertices[0].co
-                rotation = self.preview_axes.get(conn.id())
+                rotation, slope = self.preview_axes.get(conn.id(), (None, None))
                 if rotation is None:
-                    rotation = self.get_point_connection_rotation(conn)
-                self.get_point_force_args(activity_list, conn_location, rotation)
+                    rotation, slope = self.get_point_connection_rotation(conn), tool.Structural.get_axes_slope(conn)
+                self.get_point_force_args(activity_list, conn_location, rotation, slope)
                 # Moments keep their own symbol; forces are drawn above.
                 loads = self.get_point_loads_values(activity_list, rotation)
                 self.get_point_moment_args(loads[3:], conn_location, rotation)
 
     def get_point_force_args(
-        self, activity_list: list[tuple[ifcopenshell.entity_instance, float]], location: Vector, rotation: np.ndarray
+        self,
+        activity_list: list[tuple[ifcopenshell.entity_instance, float]],
+        location: Vector,
+        rotation: np.ndarray,
+        slope: Union[tuple[float, float], None] = None,
     ) -> None:
-        """Draw the point forces applied at a point"""
+        """Draw the point forces applied at a point, and its own axes, set by slope if given"""
         # In their set draw order, else in the order they were applied.
         items = sorted(activity_list, key=lambda item: tool.Structural.get_draw_order_key(item[0]))
         forces = [self.get_point_loads_values([item], rotation)[:3] for item in items]
-        self.draw_point_forces(forces, location, rotation, [item[0].id() for item in items])
+        self.draw_point_forces(forces, location, rotation, [item[0].id() for item in items], slope)
 
     def draw_point_forces(
         self,
@@ -530,6 +534,7 @@ class ShaderInfo:
         location: Vector,
         rotation: np.ndarray,
         activities: Union[list[int], None] = None,
+        slope: Union[tuple[float, float], None] = None,
     ) -> None:
         """Draw point forces at a point from the point outwards, to scale, as chosen by force_display:
         the components or resultant of their sum, or each force added by the parallelogram law or tip to tail.
@@ -690,32 +695,119 @@ class ShaderInfo:
                 self.add_force_slope(*arrow, size, (1, 1, 1, 1), avoid=side)
         self.add_reference_axes(reference_axes, size)
         if not np.allclose(rotation, np.eye(3)):
-            self.add_point_axes(location, rotation, size)
+            drawn = [vector * scale for vector, *_ in vectors] + ([resultant * scale] if show_resultant else [])
+            self.add_point_axes(location, rotation, size, slope, drawn)
 
-    def add_point_axes(self, location: np.ndarray, rotation: np.ndarray, size: float) -> None:
-        """Mark a point's own axes, x' and z' coloured as their components, and their tilt from +X if in X-Z"""
+    def draw_resolved_point_forces(
+        self,
+        object_name: str,
+        forces: list[np.ndarray],
+        rotation: np.ndarray,
+        colors: list[tuple],
+        activities: list[int],
+        slope: Union[tuple[float, float], None] = None,
+    ) -> None:
+        """Draw each force at a point resolved along the point's own axes, as a report shows them along an incline.
+
+        Each force is drawn as its components' resultant is, its components along x' and z' in their axes'
+        colours, and the sides of its rectangle dashed, whatever the forces are shown as in the viewport.
+
+        :param forces: The X, Y and Z components of each force, in global coordinates.
+        :param colors: The colour each force is drawn in.
+        :param slope: The rise and run the axes were set by, if they were.
+        """
+        props = tool.Structural.get_structural_props()
+        location = np.zeros(3)  # A report's diagram is drawn on its own, so wherever the point is.
+        longest = max((np.linalg.norm(force) for force in forces), default=0.0)
+        if not longest:
+            return
+        scale, size = 2 / longest, 2.0
+        start = len(self.info), len(self.text_info)
+        drawn = []
+        pushes = {a for a in activities if a and tool.Structural.get_push(tool.Ifc.get().by_id(a))}
+        axes = ((0, "x′", (1, 0, 0, 1)), (2, "z′", (0, 0, 1, 1)))
+        for force, color, activity in zip(forces, colors, activities):
+            tip = location + force * scale
+            for k, name, axis_color in axes:
+                value = float(rotation[:, k] @ force)
+                if abs(value) < 1e-9 * longest:
+                    continue
+                corner = location + rotation[:, k] * value * scale
+                # The side across from a component is parallel to the other axis, so takes its colour.
+                other = next(c for j, _, c in axes if j != k)
+                self.add_dashed_line(corner, tip, size, other)
+                label = f"{abs(value):.{props.force_decimals}f} {self.force_unit}"
+                self.add_force_arrow(location, corner, axis_color, label, size)
+                self.text_info[-1] |= {"component": name, "component_of": activity}
+                drawn.append(corner - location)
+            label = f"{np.linalg.norm(force):.{props.force_decimals}f} {self.force_unit}"
+            label += self.get_unknown_marks(activity)[0] + (" (push)" if activity in pushes else "")
+            self.add_force_arrow(location, tip, color, label, size, spacing=0.3, force_of=activity)
+            drawn.append(tip - location)
+        self.add_point_axes(location, rotation, size, slope, drawn)
+        for entry in self.info[start[0] :] + self.text_info[start[1] :]:
+            entry["object"] = object_name
+
+    def add_point_axes(
+        self,
+        location: np.ndarray,
+        rotation: np.ndarray,
+        size: float,
+        slope: Union[tuple[float, float], None] = None,
+        drawn: Union[list[np.ndarray], None] = None,
+    ) -> None:
+        """Mark a point's own axes, x' and z' coloured as their components, and their tilt if in X-Z.
+
+        :param slope: The rise and run the axes were set by, shown as a triangle under x' beside the angle.
+        :param drawn: The arrows drawn from the point, as drawn, to keep the triangle clear of.
+        """
+        x_axis = rotation[:, 0]
+        # The triangle goes on the side of the point that arrows along x' reach least into.
+        reach = lambda side: max(
+            [side * float(v @ x_axis) for v in drawn or [] if abs(float(v @ x_axis)) > 0.7 * np.linalg.norm(v)] + [0.0]
+        )
+        side = 1.0 if reach(1.0) <= reach(-1.0) else -1.0
         for k, name, color in ((0, "x′", (1, 0.35, 0.35, 1)), (2, "z′", (0.4, 0.55, 1, 1))):
             axis = rotation[:, k]
-            self.add_dashed_line(location - axis * size * 0.3, location + axis * size * 0.85, size, color)
+            back = 0.75 if k == 0 and slope and side < 0 else 0.3  # Far enough back to carry a triangle there.
+            self.add_dashed_line(location - axis * size * back, location + axis * size * 0.85, size, color)
             self.text_info.append(
                 {"position": location + axis * size * 0.85, "text": name, "color": color, "away": axis}
             )
-        x_axis = rotation[:, 0]
         if abs(x_axis[1]) > 1e-6:
             return  # Turned out of the X-Z plane, so one tilt does not describe it.
         tilt = np.degrees(np.arctan2(x_axis[2], x_axis[0]))
         if abs(tilt) < 0.01:
             return
-        # The tilt from +X, as an arc like the force angles, with +X marked where it starts.
-        radius, color = size * 0.12, (1, 0.35, 0.35, 1)
-        self.add_dashed_line(location, location + np.array((size * 0.2, 0, 0)), size, color)
+        color = (1, 0.35, 0.35, 1)
+        if slope and abs(x_axis[0]) > 1e-6 and abs(x_axis[2]) > 1e-6:
+            # The incline as given: its hypotenuse along x', its legs level and plumb, the corner beneath.
+            a, b = location + side * x_axis * size * 0.35, location + side * x_axis * size * 0.7
+            low, high = (a, b) if a[2] < b[2] else (b, a)
+            corner = np.array((high[0], high[1], low[2]))
+            for start, end in ((a, corner), (corner, b), (a, b)):
+                self.add_dashed_line(start, end, size, color, dashed=False)
+            centroid = (a + b + corner) / 3
+            for p, q in ((a, corner), (corner, b)):
+                level = abs(p[2] - q[2]) < 1e-9
+                middle = (p + q) / 2
+                away = (middle - centroid) / np.linalg.norm(middle - centroid)
+                text = f"{abs(slope[1] if level else slope[0]):g}"
+                self.text_info.append({"position": middle, "text": text, "color": color, "away": away})
+        # The tilt from +X, as an arc like the force angles, with +X marked where it starts. On the side kept
+        # clear of arrows, from -X to -x', which makes the same angle with the horizontal.
+        radius = size * 0.12
+        start = 180.0 if side < 0 and abs(tilt) <= 90 else 0.0
+        level = np.array((np.cos(np.radians(start)), 0, 0))
+        self.add_dashed_line(location, location + level * size * 0.2, size, color)
         steps = max(4, int(abs(tilt) / 5))
         points = [
-            location + radius * np.array((np.cos(a), 0, np.sin(a))) for a in np.radians(np.linspace(0, tilt, steps + 1))
+            location + radius * np.array((np.cos(a), 0, np.sin(a)))
+            for a in np.radians(np.linspace(start, start + tilt, steps + 1))
         ]
         for a, b in zip(points, points[1:]):
             self.add_dashed_line(a, b, size, color, dashed=False)
-        middle = np.radians(tilt / 2)
+        middle = np.radians(start + tilt / 2)
         outward = np.array((np.cos(middle), 0, np.sin(middle)))
         self.text_info.append(
             {"position": location + radius * outward, "text": f"{abs(tilt):.1f}°", "color": color, "away": outward}

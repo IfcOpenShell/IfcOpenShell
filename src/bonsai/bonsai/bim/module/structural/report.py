@@ -111,7 +111,14 @@ def get_report_data(
             tilt = tool.Structural.get_axes_tilt(item)
             axis_colors = get_axis_colors(len(activities), tilt)
             slope = tool.Structural.get_axes_slope(item)
-            point.update(get_resultant_calculation(activities, unit, colors, detailed, tilt, axis_colors, slope))
+            svg_colors = {activity: get_svg_color(color) for activity, color in colors.items()}
+            point.update(get_resultant_calculation(activities, unit, svg_colors, detailed, tilt, axis_colors, slope))
+            # Resolved along the point's tilted axes too, whatever the viewport shows.
+            resolved = name.replace(".svg", "_axes.svg")
+            if point["has_tilted"] and write_resolved_diagram(
+                item, activities, colors, directory / "diagrams" / resolved, numbers
+            ):
+                point["tilted_diagram"] = f"diagrams/{resolved}"
             points.append(point)
         if points:
             cases.append({"name": case.Name or "Unnamed", "points": points})
@@ -128,15 +135,39 @@ def get_report_data(
     }
 
 
-def get_force_colors(drawing: ShaderInfo, item: ifcopenshell.entity_instance) -> dict[int, str]:
-    """The colour each activity's force is drawn in at an item, for paper"""
+def get_force_colors(drawing: ShaderInfo, item: ifcopenshell.entity_instance) -> dict[int, tuple]:
+    """The colour each activity's force is drawn in at an item, as in the viewport"""
     if not (obj := tool.Ifc.get_object(item)):
         return {}
     return {
-        text["force_of"]: get_svg_color(text["color"])
+        text["force_of"]: text["color"]
         for text in drawing.text_info
         if text.get("object") == obj.name and text.get("force_of")
     }
+
+
+def write_resolved_diagram(
+    item: ifcopenshell.entity_instance,
+    activities: list[ifcopenshell.entity_instance],
+    colors: dict[int, tuple],
+    path: Path,
+    numbers: dict[int, int],
+) -> bool:
+    """Write a diagram of each force at a point resolved along its tilted axes, as the steps resolve them"""
+    if not (obj := tool.Ifc.get_object(item)):
+        return False
+    drawing = ShaderInfo()
+    drawing.get_force_units()
+    forces = [np.array(get_force_terms(activity, i)["vector"]) for i, activity in enumerate(activities, 1)]
+    drawing.draw_resolved_point_forces(
+        obj.name,
+        forces,
+        tool.Structural.get_axes_rotation(item),
+        [colors.get(activity.id(), (1, 1, 1, 2)) for activity in activities],
+        [activity.id() for activity in activities],
+        tool.Structural.get_axes_slope(item),
+    )
+    return write_diagram(drawing, item, path, numbers)
 
 
 def get_point_items(case: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
@@ -245,9 +276,9 @@ def get_resultant_calculation(
     rows[-1]["magnitude"] += f" {unit}"
     # Detailed steps in grey, applied in LaTeX so that both formats show it; force symbols keep their colours.
     gray = lambda step: f"{{\\color{{#8c8c8c}}\\qquad {step}}}" if isinstance(step, Detail) else step  # Indented.
-    render = lambda steps: [
+    render = lambda steps, colors=axis_colors, resolved=len(forces) == 1: [
         {
-            "latex": get_colored_symbols(gray(step), palette, axis_colors, len(forces) == 1),
+            "latex": get_colored_symbols(gray(step), palette, colors, resolved),
             "detail": isinstance(step, Detail),
             "lead": isinstance(step, Lead),
         }
@@ -263,7 +294,8 @@ def get_resultant_calculation(
         "components": render(components),
         "steps": render(steps),
         "summary": summary,
-        "tilted": render(tilted),
+        # Its diagram draws each force's components along x' and z', so they take their axes' colours.
+        "tilted": render(tilted, {"x'": AXIS_COLORS[(1.0, 0.0, 0.0)], "z'": AXIS_COLORS[(0.0, 0.0, 1.0)]}, True),
         "has_tilted": bool(tilted),
         "tilt_note": (
             (f"x′ runs along a {slope[0]:g}:{slope[1]:g} slope, " if slope else "x′ is ")
@@ -836,7 +868,9 @@ def write_diagram(
     def get_symbol(text: dict) -> Union[str, None]:
         if text.get("force_of") in numbers:
             return f"F_{{{numbers[text['force_of']]}}}"
-        if axis := text.get("component"):
+        if (axis := text.get("component")) and text.get("component_of") in numbers:
+            return f"F_{{{axis}{numbers[text['component_of']]}}}"  # A component of one force, resolved.
+        if axis:
             if len(numbers) == 1:
                 return f"F_{{{axis}{next(iter(numbers.values()))}}}"
             return f"R_{{{axis}}}"

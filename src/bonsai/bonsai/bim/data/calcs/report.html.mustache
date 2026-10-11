@@ -91,6 +91,7 @@
   {{#has_tilted}}
   <h4>Along the point's axes</h4>
   <p>{{tilt_note}}</p>
+  {{#tilted_diagram}}<figure><img src="{{tilted_diagram}}" alt="Forces at {{name}} along its axes"></figure>{{/tilted_diagram}}
   <div class="steps">
     {{#tilted}}
     <div class="{{#detail}}detail{{/detail}}{{^detail}}main{{/detail}}{{#lead}} lead{{/lead}}">$${{latex}}$$</div>

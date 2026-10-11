@@ -587,10 +587,15 @@ def get_dialog_axes(props: "EditStructuralConnectionAxes") -> np.ndarray:
     return np.array(((x, 0.0, -z), (0.0, 1.0, 0.0), (z, 0.0, x)))
 
 
+def get_dialog_slope(props: "EditStructuralConnectionAxes") -> Union[tuple[float, float], None]:
+    """The rise and run the dialog sets the axes by, if it sets them by a slope"""
+    return (props.rise, props.run) if props.input_mode == "SLOPE" and (props.rise or props.run) else None
+
+
 def update_axes_preview(self: "EditStructuralConnectionAxes", context: bpy.types.Context) -> None:
     """Show the point's axes as the dialog has them until it is confirmed or cancelled"""
     if self.item and LoadsDecorator.is_installed:
-        ShaderInfo.preview_axes = {self.item: get_dialog_axes(self)}
+        ShaderInfo.preview_axes = {self.item: (get_dialog_axes(self), get_dialog_slope(self))}
         redraw_loads(context)
 
 
@@ -663,8 +668,7 @@ class EditStructuralConnectionAxes(
         ifcopenshell.api.structural.edit_structural_connection_cs(
             tool.Ifc.get(), structural_item=element, axis=rotation[:, 2].tolist(), ref_direction=rotation[:, 0].tolist()
         )
-        slope = (self.rise, self.run) if self.input_mode == "SLOPE" and (self.rise or self.run) else None
-        tool.Structural.set_axes_slope(element, slope)
+        tool.Structural.set_axes_slope(element, get_dialog_slope(self))
         return {"FINISHED"}
 
 
