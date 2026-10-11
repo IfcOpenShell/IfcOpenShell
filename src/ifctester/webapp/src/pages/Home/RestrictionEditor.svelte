@@ -1,5 +1,6 @@
 <script lang="ts">
     import Svelecte from 'svelecte';
+    import PatternPlayground from '$src/components/PatternPlayground.svelte';
     import {
         getApplicablePsets,
         getClassificationSystems,
@@ -441,6 +442,7 @@
         setFieldValue({ 'restriction': restriction });
     };
 
+    let isPlaygroundOpen = $state(false);
     let restrictionType = $state(getRestrictionType());
     let hasUserSelectedType = $state(false);
     let lastFacetRef = $state(facet);
@@ -582,7 +584,11 @@
                 </div>
             
             {:else if restrictionType === 'Pattern'}
-                <input class="form-input" type="text" bind:value={() => getPatternValue(), (v) => setPatternValue(v)} placeholder="Enter regex pattern (e.g., DT[0-9]{2})" aria-label={`${label} pattern`}>
+                <div class="pattern-controls">
+                    <input class="form-input" type="text" bind:value={() => getPatternValue(), (v) => setPatternValue(v)} placeholder="Enter regex pattern (e.g., DT[0-9]{2})" aria-label={`${label} pattern`}>
+                    <button class="btn-test" type="button" onclick={() => isPlaygroundOpen = true}>Test</button>
+                </div>
+                <PatternPlayground bind:open={isPlaygroundOpen} initialPattern={getPatternValue()} />
             
             {:else if restrictionType === 'Range'}
                 {@const range = getRangeValues()}
@@ -707,6 +713,30 @@
     }
 
     .btn-add:hover {
+        background: #007bff;
+        color: white;
+    }
+
+    .pattern-controls {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .pattern-controls .form-input {
+        flex: 1;
+    }
+
+    .btn-test {
+        background: none;
+        border: 1px solid #007bff;
+        border-radius: 4px;
+        color: #007bff;
+        padding: 8px 12px;
+        cursor: pointer;
+    }
+
+    .btn-test:hover {
         background: #007bff;
         color: white;
     }
