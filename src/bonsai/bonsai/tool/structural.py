@@ -231,7 +231,7 @@ class Structural(bonsai.core.tool.Structural):
     def get_axes_rotation(cls, item: ifcopenshell.entity_instance) -> np.ndarray:
         """A structural item's own axes, as the columns x', y' and z' of a rotation, global ones if it has none"""
         if ccs := getattr(item, "ConditionCoordinateSystem", None):
-            return ifcopenshell.util.placement.get_axis2placement(ccs)[:3, :3]
+            return ifcopenshell.util.placement.get_placement(ccs)[:3, :3]
         return np.eye(3)
 
     @classmethod

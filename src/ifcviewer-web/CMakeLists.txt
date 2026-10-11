@@ -104,9 +104,9 @@ target_link_options(IfcViewerWeb PRIVATE
     "-sMODULARIZE=1"
     "-sEXPORT_NAME=createIfcViewer"
     # Expose the C entry points to JS. _raf_tick_c drives the RAF loop
-    # (the host page (web/ifcviewer.js)); _load_sidecar_from_blob_c loads a user-picked File via
-    # byte-range Blob.slice reads; _load_sidecar_from_url_c streams a remote
-    # sidecar via HTTP Range; _ifcv_on_range_done / _ifcv_source_ready are the
+    # (the host page (web/ifcviewer.js)); _load_ifcview_from_blob_c loads a user-picked File via
+    # byte-range Blob.slice reads; _load_ifcview_from_url_c streams a remote
+    # .ifcview via HTTP Range; _ifcv_on_range_done / _ifcv_source_ready are the
     # JS→C completion callbacks for a landed range / a resolved URL size.
     # The _ifcv_{get,set,apply}_* family is the scripting API (camera, selection,
     # visibility, colour override, object enumeration, mouse nav preset) that
@@ -114,12 +114,12 @@ target_link_options(IfcViewerWeb PRIVATE
     # wasm heap.
     # EMSCRIPTEN_KEEPALIVE alone keeps the symbols in the binary but doesn't
     # add them to Module. ccall lets the host page (web/ifcviewer.js) pass a JS string (the ?model
-    # URL) to load_sidecar_from_url_c without manual heap marshalling.
-    "-sEXPORTED_FUNCTIONS=['_main','_malloc','_free','_raf_tick_c','_load_sidecar_from_source_c','_clear_scene_c','_ifcv_on_range_done','_ifcv_chunks_resident_c','_ifcv_chunks_total_c','_ifcv_model_count_c','_ifcv_model_resident_c','_ifcv_model_total_c','_ifcv_bytes_total_c','_ifcv_bytes_needed_c','_ifcv_bytes_loaded_c','_view_all_c','_frame_selection_c','_toggle_projection_c','_projection_is_ortho_c','_standard_view_c','_toggle_fly_c','_fly_is_active_c','_hide_selected_c','_isolate_selected_c','_show_all_c','_hide_all_c','_toggle_xray_c','_xray_is_active_c','_toggle_section_c','_clear_section_c','_section_is_active_c','_ifcv_get_camera_c','_ifcv_set_camera_c','_ifcv_set_ortho_c','_ifcv_set_nav_preset_c','_ifcv_set_background_c','_ifcv_get_selection_c','_ifcv_get_active_object_c','_ifcv_apply_selection_c','_ifcv_set_visible_c','_ifcv_get_hidden_c','_ifcv_set_color_c','_ifcv_clear_colors_c','_ifcv_request_objects_c','_ifcv_set_selection_outline_c','_ifcv_selection_outline_is_on_c','_ifcv_set_federation_unit_c','_ifcv_set_false_origin_c','_ifcv_get_false_origin_c','_ifcv_set_model_transform_c','_ifcv_clear_model_transform_c','_ifcv_set_model_name_c','_ifcv_get_model_georef_c','_ifcv_get_frame_stats_c','_ifcv_unload_model_c','_ifcv_load_model_c','_ifcv_model_unloaded_c','_ifcv_model_vram_bytes_c']"
-    # ccall: the host page (web/ifcviewer.js) passes the ?model URL string to load_sidecar_from_url_c,
+    # URL) to load_ifcview_from_url_c without manual heap marshalling.
+    "-sEXPORTED_FUNCTIONS=['_main','_malloc','_free','_raf_tick_c','_load_ifcview_from_source_c','_clear_scene_c','_ifcv_on_range_done','_ifcv_chunks_resident_c','_ifcv_chunks_total_c','_ifcv_model_count_c','_ifcv_model_resident_c','_ifcv_model_total_c','_ifcv_bytes_total_c','_ifcv_bytes_needed_c','_ifcv_bytes_loaded_c','_view_all_c','_frame_selection_c','_toggle_projection_c','_projection_is_ortho_c','_standard_view_c','_toggle_fly_c','_fly_is_active_c','_hide_selected_c','_isolate_selected_c','_show_all_c','_hide_all_c','_toggle_xray_c','_xray_is_active_c','_toggle_section_c','_clear_section_c','_section_is_active_c','_ifcv_get_camera_c','_ifcv_set_camera_c','_ifcv_set_ortho_c','_ifcv_set_nav_preset_c','_ifcv_set_background_c','_ifcv_get_selection_c','_ifcv_get_active_object_c','_ifcv_apply_selection_c','_ifcv_set_visible_c','_ifcv_get_hidden_c','_ifcv_set_color_c','_ifcv_clear_colors_c','_ifcv_request_objects_c','_ifcv_set_selection_outline_c','_ifcv_selection_outline_is_on_c','_ifcv_set_federation_unit_c','_ifcv_set_false_origin_c','_ifcv_get_false_origin_c','_ifcv_set_model_transform_c','_ifcv_clear_model_transform_c','_ifcv_set_model_name_c','_ifcv_get_model_georef_c','_ifcv_get_frame_stats_c','_ifcv_unload_model_c','_ifcv_load_model_c','_ifcv_model_unloaded_c','_ifcv_model_vram_bytes_c']"
+    # ccall: the host page (web/ifcviewer.js) passes the ?model URL string to load_ifcview_from_url_c,
     # and the nav-preset name to ifcv_set_nav_preset_c.
     # HEAPU8: lets tooling/tests read the wasm heap size (e.g. to verify a large
-    # sidecar streams by range instead of loading whole). HEAPU32/HEAPF32: the
+    # .ifcview streams by range instead of loading whole). HEAPU32/HEAPF32: the
     # scripting API marshals object-id arrays and the camera state through them.
     "-sEXPORTED_RUNTIME_METHODS=['ccall','HEAPU8','HEAPU32','HEAPF32','HEAPF64','UTF8ToString']"
     # Streaming + chunked geometry want a heap that can grow as buffers
@@ -132,10 +132,10 @@ target_link_options(IfcViewerWeb PRIVATE
     # file path (#88) reads byte ranges via Blob.slice and does NOT need
     # this; it's retained for the remote-URL Range backend (follow-up).
     "-sFETCH=1"
-    # Bundle a small sample sidecar into Emscripten's MEMFS so the page
+    # Bundle a small sample .ifcview into Emscripten's MEMFS so the page
     # renders something on first load without a user pick. The @ separator
     # mounts the file at the virtual path the wasm fopen()s. User-picked
-    # files instead stream via Blob.slice byte ranges (load_sidecar_from_blob_c).
+    # files instead stream via Blob.slice byte ranges (load_ifcview_from_blob_c).
     "--embed-file=${CMAKE_CURRENT_SOURCE_DIR}/sample.ifcview@/sample.ifcview"
 )
 # MODULARIZE emits IfcViewerWeb.js (the createIfcViewer factory) + .wasm.
