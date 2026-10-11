@@ -158,10 +158,10 @@ def guess_type(items: Sequence[ifcopenshell.entity_instance]) -> Union[str, None
     """
     if all([True if i.is_a("IfcMappedItem") else False for i in items]):
         return "MappedRepresentation"
-    elif all([True if i.is_a("IfcPoint") or i.is_a("IfcCartesianPointList") else False for i in items]):
-        return "Point"
     elif all([True if i.is_a("IfcCartesianPointList3d") else False for i in items]):
         return "PointCloud"
+    elif all([True if i.is_a("IfcPoint") or i.is_a("IfcCartesianPointList") else False for i in items]):
+        return "Point"
     elif all([True if i.is_a("IfcCurve") and i.Dim == 2 else False for i in items]):
         return "Curve2D"
     elif all([True if i.is_a("IfcCurve") and i.Dim == 3 else False for i in items]):
@@ -188,19 +188,8 @@ def guess_type(items: Sequence[ifcopenshell.entity_instance]) -> Union[str, None
         [
             (
                 True
-                if i.is_a("IfcGeometricSet") or i.is_a("IfcPoint") or i.is_a("IfcCurve") or i.is_a("IfcSurface")
-                else False
-            )
-            for i in items
-        ]
-    ):
-        return "GeometricSet"
-    elif all(
-        [
-            (
-                True
                 if i.is_a("IfcGeometricCurveSet")
-                or (i.is_a("IfcGeometricSet") and all([e.is_a("IfcSurface") for e in i.Elements]))
+                or (i.is_a("IfcGeometricSet") and not any([e.is_a("IfcSurface") for e in i.Elements]))
                 or i.is_a("IfcPoint")
                 or i.is_a("IfcCurve")
                 else False
@@ -209,6 +198,17 @@ def guess_type(items: Sequence[ifcopenshell.entity_instance]) -> Union[str, None
         ]
     ):
         return "GeometricCurveSet"
+    elif all(
+        [
+            (
+                True
+                if i.is_a("IfcGeometricSet") or i.is_a("IfcPoint") or i.is_a("IfcCurve") or i.is_a("IfcSurface")
+                else False
+            )
+            for i in items
+        ]
+    ):
+        return "GeometricSet"
     elif all(
         [
             (
