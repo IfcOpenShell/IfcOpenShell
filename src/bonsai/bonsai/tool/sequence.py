@@ -20,7 +20,8 @@ from __future__ import annotations
 
 import json
 import re
-from collections.abc import Iterable
+from collections.abc import Generator, Iterable
+from contextlib import contextmanager
 from datetime import datetime
 from datetime import time as datetime_time
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union
@@ -1872,6 +1873,66 @@ class Sequence(bonsai.core.tool.Sequence):
             if not element or not element.is_a("IfcProduct"):
                 continue
             obj.hide_set(element not in visible_elements)
+
+        cls.apply_visibility_to_voids(visible_elements)
+
+    _status_hidden_openings: set[int] = set()
+    _status_hidden_openings_file: Optional[ifcopenshell.file] = None
+
+    @classmethod
+    def apply_visibility_to_voids(cls, visible_elements: set[ifcopenshell.entity_instance]) -> None:
+        """Record the voiding openings hidden by the status filter and recut their hosts.
+
+        The IFC model is left unmodified, see ``status_hidden_openings_uncut``."""
+        ifc_file = tool.Ifc.get()
+        previous = cls._status_hidden_openings if cls._status_hidden_openings_file is ifc_file else set()
+        hosts: dict[int, ifcopenshell.entity_instance] = {}
+        hidden: set[int] = set()
+        for opening in ifc_file.by_type("IfcOpeningElement"):
+            if not opening.Representation or not (rels := opening.VoidsElements):
+                continue
+            if not (host := rels[0].RelatingBuildingElement):
+                continue
+            hosts[opening.id()] = host
+            if opening not in visible_elements:
+                hidden.add(opening.id())
+
+        cls._status_hidden_openings = hidden
+        cls._status_hidden_openings_file = ifc_file if hidden else None
+        if not (affected_hosts := {hosts[i] for i in hidden ^ previous if i in hosts}):
+            return
+        with tool.Geometry.batch_host_recut():
+            for host in affected_hosts:
+                host_obj = tool.Ifc.get_object(host)
+                if not isinstance(host_obj, bpy.types.Object) or not host_obj.data:
+                    continue
+                representation = tool.Geometry.get_active_representation(host_obj)
+                if representation is not None:
+                    tool.Geometry.recut_host(host_obj, representation)
+
+    @classmethod
+    @contextmanager
+    def status_hidden_openings_uncut(
+        cls, ifc_file: ifcopenshell.file, elements: Iterable[ifcopenshell.entity_instance]
+    ) -> Generator[None]:
+        """Unset the representation of the elements' status-hidden openings, so the
+        geometry kernel skips their cuts, and restore it on exit. Not recorded for undo."""
+        hidden = cls._status_hidden_openings if ifc_file is cls._status_hidden_openings_file else ()
+        stashed = [
+            (opening, representation)
+            for element in elements
+            for rel in getattr(element, "HasOpenings", ())
+            if (opening := rel.RelatedOpeningElement).id() in hidden and (representation := opening.Representation)
+        ]
+        transaction, ifc_file.transaction = ifc_file.transaction, None
+        try:
+            for opening, _ in stashed:
+                opening.Representation = None
+            yield
+        finally:
+            for opening, representation in stashed:
+                opening.Representation = representation
+            ifc_file.transaction = transaction
 
     @classmethod
     def copy_work_schedule(cls, work_schedule: ifcopenshell.entity_instance) -> None:
