@@ -49,7 +49,7 @@ def edit_task_time(
         schedule = ifcopenshell.api.sequence.add_work_schedule(model, name="Construction Schedule A")
 
         # Create a task to do formwork
-        task = ifcopenshell.api.sequence.add_task(model,
+        formwork = ifcopenshell.api.sequence.add_task(model,
             work_schedule=schedule, name="Formwork", identification="A")
 
         # Let's say it takes 2 days and starts on the 1st of January, 2000

@@ -38,6 +38,8 @@ def unassign_document(
 
     .. code:: python
 
+        ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject")
+        storey = ifcopenshell.api.root.create_entity(model, ifc_class="IfcBuildingStorey")
         document = ifcopenshell.api.document.add_information(model)
         ifcopenshell.api.document.edit_information(model,
             information=document,
