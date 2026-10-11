@@ -23,7 +23,7 @@ from __future__ import annotations
 import json
 import time
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Literal, Union
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 import bpy
 import ifcopenshell.api.pset
@@ -198,6 +198,22 @@ class Resource(bonsai.core.tool.Resource):
         props.active_cost_value_id = cost_value.id()
         props.cost_value_editing_type = "FORMULA"
         props.cost_value_formula = ifcopenshell.util.cost.serialise_cost_value(cost_value) if cost_value else ""
+
+    @classmethod
+    def get_attributes_for_cost_value(
+        cls, cost_type: Literal["FIXED", "SUM", "CATEGORY"], cost_category: Optional[str] = None
+    ) -> dict[str, Any]:
+        if cost_type == "FIXED":
+            category = None
+            props = cls.get_resource_props()
+            attributes = {"AppliedValue": props.fixed_cost_value}
+        elif cost_type == "SUM":
+            category = "*"
+            attributes = {"Category": category}
+        elif cost_type == "CATEGORY":
+            category = cost_category
+            attributes = {"Category": category}
+        return attributes
 
     @classmethod
     def load_cost_value_attributes(cls, cost_value: ifcopenshell.entity_instance):
