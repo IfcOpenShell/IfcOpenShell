@@ -28,6 +28,7 @@ import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.guid
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
 import mathutils
 import numpy as np
 import pytest
@@ -272,6 +273,23 @@ class TestDisableEditingSheets(NewFile):
         props.is_editing_sheets = True
         subject.disable_editing_sheets()
         assert props.is_editing_sheets == False
+
+
+class TestImportTemporaryDrawingCamera(NewFile):
+    def test_camera_follows_the_blender_offset(self):
+        bpy.ops.bim.create_project()
+        tool.Project.save_test_project()
+        bpy.ops.bim.load_drawings()
+        bpy.ops.bim.add_drawing()
+        drawing = tool.Ifc.get().by_type("IfcAnnotation")[0]
+        placement = ifcopenshell.util.placement.get_local_placement(drawing.ObjectPlacement)
+        props = tool.Georeference.get_georeference_props()
+        props.has_blender_offset = True
+        props.blender_offset_x = "1000"
+        props.blender_offset_y = "2000"
+        translation = subject.import_temporary_drawing_camera(drawing).matrix_world.translation
+        assert translation.x == pytest.approx(placement[0][3] - 1000)
+        assert translation.y == pytest.approx(placement[1][3] - 2000)
 
 
 class TestEditTextLiterals(NewFile):
