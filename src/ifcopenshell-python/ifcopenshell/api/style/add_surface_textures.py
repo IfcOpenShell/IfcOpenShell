@@ -17,7 +17,9 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Literal, NotRequired
+
+from typing_extensions import TypedDict
 
 import ifcopenshell
 
@@ -25,11 +27,15 @@ if TYPE_CHECKING:
     import bpy  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
 
+class TextureDict(TypedDict, extra_items=Any):
+    uv_mode: NotRequired[Literal["UV", "Generated", "Camera"]]
+
+
 def add_surface_textures(
     file: ifcopenshell.file,
-    material: Optional[bpy.types.Material] = None,
-    textures: Optional[list[dict]] = None,
-    uv_maps: Optional[list[ifcopenshell.entity_instance]] = None,
+    material: bpy.types.Material | None = None,
+    textures: list[TextureDict] | None = None,
+    uv_maps: list[ifcopenshell.entity_instance] | None = None,
 ) -> list[ifcopenshell.entity_instance]:
     """Add surface texture based on a Blender material definition or texture data.
 
@@ -59,15 +65,20 @@ def add_surface_textures(
     usecase = Usecase()
     # TODO: This usecase currently depends on Blender's data model
     usecase.file = file
-    usecase.settings = {"material": material, "uv_maps": uv_maps or [], "textures": textures or []}
-    return usecase.execute()
+    return usecase.execute(material, textures or [], uv_maps or [])
 
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
+    textures: list[ifcopenshell.entity_instance]
+    uv_maps: list[ifcopenshell.entity_instance]
 
-    def execute(self):
+    def execute(
+        self,
+        material: bpy.types.Material | None,
+        textures: list[TextureDict],
+        uv_maps: list[ifcopenshell.entity_instance],
+    ) -> list[ifcopenshell.entity_instance]:
         if self.file.schema == "IFC2X3":
             # TODO: research how compatible IFC2X3 and IFC4 textures are
             return []
@@ -77,8 +88,9 @@ class Usecase:
         # glTF, X3D, and IFC are compatible. As long as they have something that
         # loosely resembles the node tree, we treat it as valid.
         self.textures = []
+        self.uv_maps = uv_maps
 
-        for texture in self.settings["textures"]:
+        for texture in textures:
             uv_mode = texture.get("uv_mode", None)
             texture_data = texture.copy()
             texture_data.pop("uv_mode", None)
@@ -91,10 +103,10 @@ class Usecase:
                 self.apply_uv_map_to_texture(texture)
             self.textures.append(texture)
 
-        if self.settings["material"] is None:
+        if material is None:
             return self.textures
 
-        output = {n.type: n for n in self.settings["material"].node_tree.nodes}.get("OUTPUT_MATERIAL", None)
+        output = {n.type: n for n in material.node_tree.nodes}.get("OUTPUT_MATERIAL", None)
 
         if not output:
             return self.textures
@@ -113,24 +125,24 @@ class Usecase:
             self.detect_normal_map(bsdf)
             self.detect_emissive_map(bsdf)
             self.detect_metallicroughness_map(bsdf)
-            self.detect_occlusion_map()
+            self.detect_occlusion_map(material)
             self.detect_diffuse_map(bsdf)
         # We do not support Phong shading. What year is this, 1995?
 
         return self.textures
 
-    def detect_unlit_emissive_map(self, bsdf):
+    def detect_unlit_emissive_map(self, bsdf: bpy.types.Node) -> None:
         for socket in bsdf.inputs:
             if socket.links and socket.links[0].from_node.type == "TEX_IMAGE":
                 return self.create_surface_texture(socket.links[0].from_node, "EMISSIVE")
 
-    def detect_normal_map(self, bsdf):
+    def detect_normal_map(self, bsdf: bpy.types.Node) -> None:
         if bsdf.inputs["Normal"].links and bsdf.inputs["Normal"].links[0].from_node.type == "NORMAL_MAP":
             normal = bsdf.inputs["Normal"].links[0].from_node
             if normal.inputs["Color"].links and normal.inputs["Color"].links[0].from_node.type == "TEX_IMAGE":
                 return self.create_surface_texture(normal.inputs["Color"].links[0].from_node, "NORMAL")
 
-    def detect_emissive_map(self, bsdf):
+    def detect_emissive_map(self, bsdf: bpy.types.Node) -> None:
         if bsdf.outputs[0].links[0].to_node.type != "ADD_SHADER":
             return
         bsdf = bsdf.outputs[0].links[0].to_node
@@ -140,7 +152,7 @@ class Usecase:
                 if bsdf.inputs["Color"].links and bsdf.inputs["Color"].links[0].from_node.type == "TEX_IMAGE":
                     return self.create_surface_texture(bsdf.inputs["Color"].links[0].from_node, "EMISSIVE")
 
-    def detect_metallicroughness_map(self, bsdf):
+    def detect_metallicroughness_map(self, bsdf: bpy.types.Node) -> None:
         if bsdf.inputs["Metallic"].links and bsdf.inputs["Metallic"].links[0].from_node.type == "SEPRGB":
             seprgb = bsdf.inputs["Metallic"].links[0].from_node
             if seprgb.inputs["Image"].links and seprgb.inputs["Image"].links[0].from_node.type == "TEX_IMAGE":
@@ -150,8 +162,8 @@ class Usecase:
             if seprgb.inputs["Image"].links and seprgb.inputs["Image"].links[0].from_node.type == "TEX_IMAGE":
                 return self.create_surface_texture(seprgb.inputs["Image"].links[0].from_node, "METALLICROUGHNESS")
 
-    def detect_occlusion_map(self):
-        for node in self.settings["material"].node_tree.nodes:
+    def detect_occlusion_map(self, material: bpy.types.Material) -> None:
+        for node in material.node_tree.nodes:
             if (
                 node.type != "GROUP"
                 or not node.node_tree
@@ -168,12 +180,16 @@ class Usecase:
             elif from_node.type == "TEX_IMAGE":
                 return self.create_surface_texture(from_node, "OCCLUSION")
 
-    def detect_diffuse_map(self, bsdf):
+    def detect_diffuse_map(self, bsdf: bpy.types.Node) -> None:
         links = bsdf.inputs["Base Color"].links
         if links and links[0].from_node.type == "TEX_IMAGE":
             return self.create_surface_texture(links[0].from_node, "DIFFUSE")
 
-    def create_surface_texture(self, node, mode):
+    def create_surface_texture(
+        self,
+        node: bpy.types.ShaderNodeTexImage,
+        mode: Literal["DIFFUSE", "EMISSIVE", "METALLICROUGHNESS", "NORMAL", "OCCLUSION"],
+    ) -> None:
         import bonsai.tool as tool
 
         texture = self.file.create_entity(
@@ -186,7 +202,9 @@ class Usecase:
         self.textures.append(texture)
         self.process_texture_coordinates(node, texture)
 
-    def process_texture_coordinates(self, node, texture):
+    def process_texture_coordinates(
+        self, node: bpy.types.ShaderNodeTexImage, texture: ifcopenshell.entity_instance
+    ) -> None:
         if node.inputs["Vector"].links and node.inputs["Vector"].links[0].from_node.type == "TEX_COORD":
             if node.inputs["Vector"].links[0].from_socket.name == "UV":
                 self.apply_uv_map_to_texture(texture)
@@ -197,8 +215,8 @@ class Usecase:
         elif node.inputs["Vector"].links and node.inputs["Vector"].links[0].from_node.type == "UVMAP":
             self.apply_uv_map_to_texture(texture)
 
-    def apply_uv_map_to_texture(self, texture):
-        for uv_map in self.settings["uv_maps"]:
+    def apply_uv_map_to_texture(self, texture: ifcopenshell.entity_instance) -> None:
+        for uv_map in self.uv_maps:
             maps = set(uv_map.Maps or [])
             maps.add(texture)
             uv_map.Maps = list(maps)

@@ -1,0 +1,248 @@
+// This file was generated with the assistance of an AI coding tool.
+/********************************************************************************
+ *                                                                              *
+ * This file is part of IfcOpenShell.                                           *
+ *                                                                              *
+ * IfcOpenShell is free software: you can redistribute it and/or modify         *
+ * it under the terms of the Lesser GNU General Public License as published by  *
+ * the Free Software Foundation, either version 3.0 of the License, or          *
+ * (at your option) any later version.                                          *
+ *                                                                              *
+ * IfcOpenShell is distributed in the hope that it will be useful,              *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of               *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                 *
+ * Lesser GNU General Public License for more details.                          *
+ *                                                                              *
+ * You should have received a copy of the Lesser GNU General Public License     *
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.         *
+ *                                                                              *
+ ********************************************************************************/
+
+#include "StreamedRecords.h"
+
+#include "../ifcgeom/element.h"
+#include "../ifcgeom/taxonomy.h"
+
+#include <algorithm>
+#include <cstring>
+#include <limits>
+#include <unordered_map>
+
+struct MaterialInfo {
+    float r = 0.75f, g = 0.75f, b = 0.78f, a = 1.0f;
+};
+
+static MaterialInfo materialFromStyle(const ifcopenshell::geom::taxonomy::style::ptr& style) {
+    MaterialInfo material;
+    if (!style) return material;
+    const auto& color = style->get_color();
+    if (color) {
+        material.r = static_cast<float>(color.r());
+        material.g = static_cast<float>(color.g());
+        material.b = static_cast<float>(color.b());
+    }
+    if (!std::isnan(style->transparency)) {
+        material.a = 1.0f - static_cast<float>(style->transparency);
+    }
+    return material;
+}
+
+static inline uint32_t packRGBA8(const MaterialInfo& material) {
+    auto to_byte = [](float channel_value) -> uint32_t {
+        float clamped_value = std::clamp(channel_value, 0.0f, 1.0f);
+        return static_cast<uint32_t>(clamped_value * 255.0f + 0.5f);
+    };
+    uint32_t r = to_byte(material.r);
+    uint32_t g = to_byte(material.g);
+    uint32_t b = to_byte(material.b);
+    uint32_t a = to_byte(material.a);
+    // Little-endian byte layout [r,g,b,a] for GL_UNSIGNED_BYTE * 4 normalized.
+    return r | (g << 8) | (b << 16) | (a << 24);
+}
+
+// Build a streamed mesh record (local coords, 28-byte interleaved vertices) from a
+// TriangulationElement. Per-vertex color is baked from material_ids so that
+// triangulations with per-face materials still render correctly.
+// Vertex rebasing: when `rebase_offset` is non-zero, every vertex position is
+// subtracted by it so the emitted mesh-local coordinates stay near the origin
+// (and float32 precision survives upload to the GPU).  Caller compensates by
+// post-multiplying each instance's PlacementTransformation by
+// T(+rebase_offset), which is mathematically the identity overall but moves
+// the magnitude off the float-precision-sensitive vertex column.
+StreamedMesh buildStreamedMesh(uint32_t session_model_id,
+                               uint32_t mesh_id,
+                               const ifcopenshell::geom::triangulation_element* elem,
+                               const Eigen::Vector3d& rebase_offset) {
+    StreamedMesh mesh;
+    mesh.session_model_id = session_model_id;
+    mesh.mesh_id = mesh_id;
+
+    const auto& geom = elem->geometry();
+    const auto& verts = geom.verts();
+    const auto& faces = geom.faces();
+    const auto& materials = geom.materials();
+    const auto& material_ids = geom.material_ids();
+
+    if (verts.empty() || faces.empty()) return mesh;
+
+    const size_t num_verts_src = verts.size() / 3;
+    const size_t num_tris = faces.size() / 3;
+    const bool have_per_tri_material = (material_ids.size() == num_tris);
+
+    // Split a source vertex used by triangles of different materials.
+    auto make_key = [](uint32_t orig_idx, int mat_id) -> uint64_t {
+        return (static_cast<uint64_t>(orig_idx) << 32) | static_cast<uint32_t>(mat_id);
+    };
+
+    std::unordered_map<uint64_t, uint32_t> remap;
+    remap.reserve(num_verts_src);
+
+    mesh.vertices.reserve(num_verts_src * INSTANCED_VERTEX_STRIDE_FLOATS);
+    mesh.indices.reserve(faces.size());
+
+    // Track local AABB as we emit vertices.
+    float local_aabb_min[3] = { std::numeric_limits<float>::max(),
+                                std::numeric_limits<float>::max(),
+                                std::numeric_limits<float>::max() };
+    float local_aabb_max[3] = { -std::numeric_limits<float>::max(),
+                                -std::numeric_limits<float>::max(),
+                                -std::numeric_limits<float>::max() };
+
+    auto emit_vertex = [&](uint32_t orig_idx, int mat_id) -> uint32_t {
+        const uint64_t key = make_key(orig_idx, mat_id);
+        auto it = remap.find(key);
+        if (it != remap.end()) return it->second;
+
+        const uint32_t new_idx = static_cast<uint32_t>(
+            mesh.vertices.size() / INSTANCED_VERTEX_STRIDE_FLOATS);
+        remap.emplace(key, new_idx);
+
+        // Subtract in double, narrow to float — preserves precision when
+        // verts are far from origin and rebase_offset cancels the magnitude.
+        const float p[3] = {
+            static_cast<float>(verts[orig_idx * 3 + 0] - rebase_offset.x()),
+            static_cast<float>(verts[orig_idx * 3 + 1] - rebase_offset.y()),
+            static_cast<float>(verts[orig_idx * 3 + 2] - rebase_offset.z()),
+        };
+        for (int a = 0; a < 3; ++a) {
+            mesh.vertices.push_back(p[a]);
+            if (p[a] < local_aabb_min[a]) local_aabb_min[a] = p[a];
+            if (p[a] > local_aabb_max[a]) local_aabb_max[a] = p[a];
+        }
+        for (int a = 0; a < 3; ++a) mesh.vertices.push_back(0.0f);  // unused normal slot
+
+        MaterialInfo m;
+        if (mat_id >= 0 && mat_id < static_cast<int>(materials.size())) {
+            m = materialFromStyle(materials[mat_id]);
+        }
+        uint32_t packed = packRGBA8(m);
+        float packed_as_float;
+        std::memcpy(&packed_as_float, &packed, sizeof(float));
+        mesh.vertices.push_back(packed_as_float);
+        return new_idx;
+    };
+
+    for (size_t t = 0; t < num_tris; ++t) {
+        const int mat_id = have_per_tri_material ? material_ids[t] : -1;
+        mesh.indices.push_back(emit_vertex(static_cast<uint32_t>(faces[t * 3 + 0]), mat_id));
+        mesh.indices.push_back(emit_vertex(static_cast<uint32_t>(faces[t * 3 + 1]), mat_id));
+        mesh.indices.push_back(emit_vertex(static_cast<uint32_t>(faces[t * 3 + 2]), mat_id));
+    }
+
+    if (mesh.vertices.empty()) {
+        for (int a = 0; a < 3; ++a) local_aabb_min[a] = local_aabb_max[a] = 0.0f;
+    }
+    for (int a = 0; a < 3; ++a) {
+        mesh.local_aabb_min[a] = local_aabb_min[a];
+        mesh.local_aabb_max[a] = local_aabb_max[a];
+    }
+    return mesh;
+}
+
+// Compute the world-space AABB by transforming the 8 corners of the local
+// AABB through the column-major 4x4 transform.
+static void worldAabbFromLocal(const float local_min[3],
+                               const float local_max[3],
+                               const float M[16],
+                               float out_min[3], float out_max[3]) {
+    out_min[0] = out_min[1] = out_min[2] =  std::numeric_limits<float>::max();
+    out_max[0] = out_max[1] = out_max[2] = -std::numeric_limits<float>::max();
+    for (int c = 0; c < 8; ++c) {
+        float x = (c & 1) ? local_max[0] : local_min[0];
+        float y = (c & 2) ? local_max[1] : local_min[1];
+        float z = (c & 4) ? local_max[2] : local_min[2];
+        // Column-major: world = M * [x,y,z,1].
+        float wx = M[0]*x + M[4]*y + M[8]*z  + M[12];
+        float wy = M[1]*x + M[5]*y + M[9]*z  + M[13];
+        float wz = M[2]*x + M[6]*y + M[10]*z + M[14];
+        if (wx < out_min[0]) out_min[0] = wx; if (wx > out_max[0]) out_max[0] = wx;
+        if (wy < out_min[1]) out_min[1] = wy; if (wy > out_max[1]) out_max[1] = wy;
+        if (wz < out_min[2]) out_min[2] = wz; if (wz > out_max[2]) out_max[2] = wz;
+    }
+}
+
+StreamedInstance makeStreamedInstance(uint32_t session_model_id,
+                                      uint32_t object_id,
+                                      const ifcopenshell::geom::triangulation_element& elem,
+                                      const UniqueMesh& unique_mesh,
+                                      const MeshAabb& mesh_aabb) {
+    // Vertex rebasing cont.: post-multiply the per-instance
+    // PlacementTransformation by T(+rebase_offset) so world position is
+    // preserved, then by the dedup transform that carries the shared mesh's
+    // local coordinates onto this geometry's.  Keep the emitted placement in
+    // double so later CoordinateOperation / false-origin composition can
+    // cancel large translations before the final GPU float upload.
+    Eigen::Matrix4d mat_d = elem.transformation().data()->ccomponents();
+    mat_d.block<3, 1>(0, 3) += mat_d.block<3, 3>(0, 0) * unique_mesh.rebase_offset;
+    mat_d = mat_d * unique_mesh.canonical_to_instance_matrix;
+
+    StreamedInstance inst;
+    inst.session_model_id = session_model_id;
+    inst.mesh_id = unique_mesh.mesh_id;
+    inst.object_id = object_id;
+    inst.color_override_rgba8 = 0;
+    for (int i = 0; i < 16; ++i) {
+        inst.transform[i] = mat_d.data()[i];
+    }
+
+    float mat_f[16];
+    for (int i = 0; i < 16; ++i) {
+        mat_f[i] = static_cast<float>(inst.transform[i]);
+    }
+    worldAabbFromLocal(mesh_aabb.lmin, mesh_aabb.lmax, mat_f,
+                       inst.world_aabb_min, inst.world_aabb_max);
+    return inst;
+}
+
+UniqueMesh MeshRegistry::resolve(uint32_t session_model_id,
+                                 const ifcopenshell::geom::triangulation_element& elem,
+                                 const Eigen::Vector3d& rebase_offset,
+                                 std::optional<StreamedMesh>& new_mesh) {
+    new_mesh.reset();
+    const std::string& geom_id = elem.geometry().id();
+    if (!geom_id.empty()) {
+        auto it = geom_id_to_unique_mesh_.find(geom_id);
+        if (it != geom_id_to_unique_mesh_.end()) return it->second;
+    }
+
+    UniqueMesh unique_mesh;
+    unique_mesh.rebase_offset = rebase_offset;
+    StreamedMesh mesh = buildStreamedMesh(session_model_id, meshCount(), &elem, rebase_offset);
+    if (auto match = mesh_dedup_.findCongruentMesh(mesh)) {
+        unique_mesh.mesh_id = match->mesh_id;
+        unique_mesh.canonical_to_instance_matrix = match->canonical_to_instance_matrix;
+        ++congruent_mesh_count_;
+    } else {
+        unique_mesh.mesh_id = meshCount();
+        mesh_dedup_.registerMesh(unique_mesh.mesh_id, mesh);
+        MeshAabb mesh_aabb;
+        for (int a = 0; a < 3; ++a) {
+            mesh_aabb.lmin[a] = mesh.local_aabb_min[a];
+            mesh_aabb.lmax[a] = mesh.local_aabb_max[a];
+        }
+        mesh_aabbs_.push_back(mesh_aabb);
+        new_mesh = std::move(mesh);
+    }
+    if (!geom_id.empty()) geom_id_to_unique_mesh_.emplace(geom_id, unique_mesh);
+    return unique_mesh;
+}

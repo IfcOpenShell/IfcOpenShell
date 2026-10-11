@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta
-from typing import Any, TypedDict, Union
+from typing import Any, NotRequired, TypedDict, Union
 
 import ifcopenshell
 import ifcopenshell.api.control
@@ -12,7 +12,6 @@ import ifcopenshell.api.root
 import ifcopenshell.api.sequence
 import ifcopenshell.guid
 import ifcopenshell.util.date
-from typing_extensions import NotRequired
 
 
 class WorkSlot(TypedDict):

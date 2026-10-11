@@ -1,4 +1,6 @@
 # /// script
+# # Python 3.12 is needed for reliable `platform.machine()` on arm, see win/build-all-win.py.
+# requires-python = ">=3.12"
 # ///
 """Build the Autodesk connector bundle for the current OS.
 

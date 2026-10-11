@@ -144,7 +144,7 @@ def add_feature(
         ifcopenshell.api.geometry.edit_object_placement(
             file,
             product=feature,
-            matrix=ifcopenshell.util.placement.get_local_placement(placement),
+            matrix=ifcopenshell.util.placement.get_placement(placement),
             is_si=False,
         )
 

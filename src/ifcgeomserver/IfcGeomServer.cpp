@@ -208,7 +208,7 @@ public:
 	More(bool more) : Command(MORE), more(more) {}
 };
 
-class IfcModel : public Command {
+class Model : public Command {
 private:
 	std::string str;
 protected:
@@ -220,7 +220,7 @@ protected:
 	}
 public:
 	const std::string& string() { return str; }
-	IfcModel() : Command(IFC_MODEL) {};
+	Model() : Command(IFC_MODEL) {};
 };
 
 class Get : public Command {
@@ -578,7 +578,7 @@ int main () {
 		const int32_t msg_type = sread<int32_t>(std::cin);
 		switch (msg_type) {
 		case IFC_MODEL: {
-			IfcModel m; m.read(std::cin);
+			Model m; m.read(std::cin);
 			std::string::size_type len = m.string().size();
 			char* data = new char[len];
 			memcpy(data, m.string().c_str(), len);

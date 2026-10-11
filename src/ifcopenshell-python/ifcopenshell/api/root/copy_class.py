@@ -121,7 +121,7 @@ class Usecase:
                 for port in new_ports:
                     ifcopenshell.api.system.unassign_port(self.file, element=from_element, port=port)
                     ifcopenshell.api.system.disconnect_port(self.file, port=port)
-                    matrix = ifcopenshell.util.placement.get_local_placement(port.ObjectPlacement)
+                    matrix = ifcopenshell.util.placement.get_placement(port.ObjectPlacement)
                     ifcopenshell.api.geometry.edit_object_placement(
                         self.file,
                         product=port,
