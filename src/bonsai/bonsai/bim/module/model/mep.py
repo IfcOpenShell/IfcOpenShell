@@ -49,6 +49,9 @@ from bonsai.tool.cad import VTX_PRECISION
 
 V = lambda *x: Vector([float(i) for i in x])
 
+# In metres. Looser than VTX_PRECISION as float noise in a segment rotation grows with its length.
+BEND_OFFSET_TOLERANCE = 1.0e-4
+
 
 def _segment_port(segment, at_segment_start: bool):
     port_key = "start_port" if at_segment_start else "end_port"
@@ -1324,7 +1327,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
 
             non_lateral_axis = 0 if lateral_axes[0] == 1 else 1
             non_lateral_axis_offset = bend_vector[non_lateral_axis]
-            if not tool.Cad.is_x(non_lateral_axis_offset, 0):
+            if not tool.Cad.is_x(non_lateral_axis_offset, 0, tolerance=BEND_OFFSET_TOLERANCE):
                 return (
                     None,
                     "For now offset by non-lateral axis is not supported for a bend (double bends not supported).\n"
@@ -1338,6 +1341,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, error_msg)
             return {"CANCELLED"}
         non_lateral_axis = 0 if lateral_axis == 1 else 1
+        bend_vector[non_lateral_axis] = 0
 
         def get_bend_rotation():
             O = V(0, 0, 0)
