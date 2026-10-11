@@ -344,7 +344,7 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
 
         relating_type = tool.Ifc.get().by_id(int(relating_type_id))
         ifc_class = relating_type.is_a()
-        instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, tool.Ifc.get().schema)[0]
+        instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, tool.Ifc.get().schema)[0].ifc_class
         material = ifcopenshell.util.element.get_material(relating_type)
 
         existing_context = None
@@ -500,10 +500,8 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
 
         tool.Model.sync_object_ifc_position(obj)
 
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         for port in ifcopenshell.util.system.get_ports(relating_type):
-            mat = Matrix(ifcopenshell.util.placement.get_local_placement(port.ObjectPlacement))
-            mat.translation *= unit_scale
+            mat = Matrix(ifcopenshell.util.placement.get_placement(port.ObjectPlacement, should_return_si=True))
             mat = obj.matrix_world @ mat
             new_port = ifcopenshell.api.system.add_port(ifc_file, element=element)
             new_port.PredefinedType = port.PredefinedType
@@ -769,10 +767,10 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
         opening_placements_before: dict[int, np.ndarray] = {}
         M_slab_before: np.ndarray | None = None
         if hasattr(element, "HasOpenings") and element.HasOpenings:
-            M_slab_before = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement).copy()
+            M_slab_before = ifcopenshell.util.placement.get_placement(element.ObjectPlacement).copy()
             for rel in element.HasOpenings:
                 opening = rel.RelatedOpeningElement
-                M = ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement)
+                M = ifcopenshell.util.placement.get_placement(opening.ObjectPlacement)
                 opening_placements_before[opening.id()] = M.copy()
 
         usage_type = tool.Model.get_usage_type(element)
@@ -864,7 +862,7 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             # Calling edit_object_placement here also makes the depsgraph handler skip a
             # redundant second call (record_object_position marks it up-to-date).
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj, apply_scale=False)
-            M_slab_new = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+            M_slab_new = ifcopenshell.util.placement.get_placement(element.ObjectPlacement)
             self._apply_opening_mirror(element, mirror_axes, M_slab_before, opening_placements_before, frame_change, M_slab_new)
             for rel in element.HasOpenings:
                 opening = rel.RelatedOpeningElement
@@ -960,7 +958,7 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
                         # with M_rel_new = H@R@H (conjugation) → T_geom = H (wall-local numerics
                         # applied to opening-local coords).  Conjugating into Position-local gives:
                         #   H_pos = placement_mat.T @ H @ placement_mat
-                        placement_mat = ifcopenshell.util.placement.get_axis2placement(item.Position)[:3, :3]
+                        placement_mat = ifcopenshell.util.placement.get_placement(item.Position)[:3, :3]
                         H_pos = placement_mat.T @ H @ placement_mat
 
                         # Mirror Position.Location (opening-local 3D point) by H

@@ -376,7 +376,7 @@ class Root(bonsai.core.tool.Root):
                     ifcopenshell.api.geometry.edit_object_placement(
                         tool.Ifc.get(),
                         product=opening,
-                        matrix=ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement),
+                        matrix=ifcopenshell.util.placement.get_placement(opening.ObjectPlacement),
                         is_si=False,
                     )
 

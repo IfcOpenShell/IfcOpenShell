@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 // The JavaScript scripting API (web/ifcviewer.js + the _ifcv_* wasm exports),
 // driven against the real GPU through /scripting.html — the demo page whose
-// buttons ARE the API. Everything runs against the embedded sample sidecar
+// buttons ARE the API. Everything runs against the embedded sample .ifcview
 // (a slab, a wall and a beam), so no fixture file is needed.
 //
 // Each assertion pins a capability a host page depends on: read/set camera,
