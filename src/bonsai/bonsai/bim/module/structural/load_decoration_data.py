@@ -83,6 +83,8 @@ ProcessedLoad = TypedDict(
 class ShaderInfo:
     # Values of a load being edited, by load id, shown in place of its own until the edit is confirmed or cancelled.
     preview: dict[int, dict[str, Union[float, None]]] = {}
+    # A point's axes being edited, by its id, shown in place of its own likewise.
+    preview_axes: dict[int, np.ndarray] = {}
 
     def __init__(self, load_group: Union[ifcopenshell.entity_instance, None] = None) -> None:
         """
@@ -505,7 +507,9 @@ class ShaderInfo:
             blender_object = tool.Ifc.get_object_by_identifier(getattr(conn, "GlobalId", None))
             if blender_object.type == "MESH":
                 conn_location = blender_object.matrix_world @ blender_object.data.vertices[0].co
-                rotation = self.get_point_connection_rotation(conn)
+                rotation = self.preview_axes.get(conn.id())
+                if rotation is None:
+                    rotation = self.get_point_connection_rotation(conn)
                 self.get_point_force_args(activity_list, conn_location, rotation)
                 # Moments keep their own symbol; forces are drawn above.
                 loads = self.get_point_loads_values(activity_list, rotation)

@@ -32,6 +32,7 @@ import ifcopenshell.util.attribute
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import numpy as np
 
 import bonsai.bim.helper
 import bonsai.core.tool
@@ -227,18 +228,47 @@ class Structural(bonsai.core.tool.Structural):
             cls.edit_bbim_structural(activity, {"Push": push})
 
     @classmethod
+    def get_axes_rotation(cls, item: ifcopenshell.entity_instance) -> np.ndarray:
+        """A structural item's own axes, as the columns x', y' and z' of a rotation, global ones if it has none"""
+        if ccs := getattr(item, "ConditionCoordinateSystem", None):
+            return ifcopenshell.util.placement.get_axis2placement(ccs)[:3, :3]
+        return np.eye(3)
+
+    @classmethod
     def get_axes_tilt(cls, item: ifcopenshell.entity_instance) -> Union[float, None]:
         """The degrees a structural item's own axes are tilted by in the X-Z plane, x' turning from +X towards +Z.
 
         :return: 0 if they are not set, or None if they are turned otherwise than in that plane.
         """
-        if not (ccs := getattr(item, "ConditionCoordinateSystem", None)):
+        if not getattr(item, "ConditionCoordinateSystem", None):
             return 0.0
-        rotation = ifcopenshell.util.placement.get_axis2placement(ccs)[:3, :3]
+        rotation = cls.get_axes_rotation(item)
         x, y = rotation[:, 0], rotation[:, 1]
         if abs(x[1]) > 1e-6 or abs(y[1] - 1) > 1e-6:
             return None
         return math.degrees(math.atan2(x[2], x[0]))
+
+    @classmethod
+    def get_axes_slope(cls, item: ifcopenshell.entity_instance) -> Union[tuple[float, float], None]:
+        """The rise and run a point's axes were tilted by, if set as a slope and still matching their tilt"""
+        pset = ifcopenshell.util.element.get_pset(item, "BBIM_Structural") or {}
+        rise, run, tilt = pset.get("AxesRise"), pset.get("AxesRun"), cls.get_axes_tilt(item)
+        if rise is None or run is None or tilt is None or not (rise or run):
+            return None
+        # Against the line's angle from the horizontal, as a slope falling to the right has the same one.
+        line = abs(tilt) % 180
+        if not math.isclose(math.degrees(math.atan2(abs(rise), abs(run))), min(line, 180 - line), abs_tol=1e-6):
+            return None
+        return rise, run
+
+    @classmethod
+    def set_axes_slope(cls, item: ifcopenshell.entity_instance, slope: Union[tuple[float, float], None]) -> None:
+        """Remember the slope a point's axes were tilted by, as an incline is given, or forget it"""
+        pset = ifcopenshell.util.element.get_pset(item, "BBIM_Structural") or {}
+        rise, run = slope or (None, None)
+        # Against what is stored, so that a slope gone stale is cleared too.
+        if (rise, run) != (pset.get("AxesRise"), pset.get("AxesRun")):
+            cls.edit_bbim_structural(item, {"AxesRise": rise, "AxesRun": run})
 
     @classmethod
     def get_activity_load_case(

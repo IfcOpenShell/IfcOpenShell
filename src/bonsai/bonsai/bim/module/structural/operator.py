@@ -27,8 +27,9 @@ import bpy
 import ifcopenshell.api.group
 import ifcopenshell.api.structural
 import ifcopenshell.util.unit
+import numpy as np
 from bpy_extras.view3d_utils import location_3d_to_region_2d
-from mathutils import Matrix, Vector
+from mathutils import Euler, Matrix, Vector
 
 import bonsai.bim.helper
 import bonsai.core.structural as core
@@ -40,6 +41,35 @@ from bonsai.bim.module.structural.data import (
 )
 from bonsai.bim.module.structural.decorator import LoadsDecorator
 from bonsai.bim.module.structural.load_decoration_data import ShaderInfo
+
+# The eighths of a circle, counter-clockwise from +X, that directions are given in.
+EIGHTH_ITEMS = [
+    ("Q1", "Q1", "From → (+X), turning up"),
+    ("Q2", "Q2", "From ↑ (+Z), turning right"),
+    ("Q3", "Q3", "From ↑ (+Z), turning left"),
+    ("Q4", "Q4", "From ← (-X), turning up"),
+    ("Q5", "Q5", "From ← (-X), turning down"),
+    ("Q6", "Q6", "From ↓ (-Z), turning left"),
+    ("Q7", "Q7", "From ↓ (-Z), turning right"),
+    ("Q8", "Q8", "From → (+X), turning down"),
+]
+
+
+def draw_pinwheel(layout: bpy.types.UILayout, props: bpy.types.Operator) -> None:
+    """A pinwheel of the eight directions, counter-clockwise from Q1 just above +X"""
+    pinwheel = layout.column(align=True)
+    for cells in (
+        (None, "Q3", "Q2", None),
+        ("Q4", None, None, "Q1"),
+        ("Q5", None, None, "Q8"),
+        (None, "Q6", "Q7", None),
+    ):
+        row = pinwheel.row(align=True)
+        for cell in cells:
+            if cell:
+                row.prop_enum(props, "direction", cell)
+            else:
+                row.label(text="")
 
 
 class PickStructuralLoads(bpy.types.Operator):
@@ -558,17 +588,61 @@ class DisableEditingStructuralConnectionCS(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class TiltStructuralConnectionAxes(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.tilt_structural_connection_axes"
-    bl_label = "Tilt Axes"
+def get_dialog_axes(props: "EditStructuralConnectionAxes") -> np.ndarray:
+    """The point's axes the dialog describes, as the columns x', y' and z' of a rotation"""
+    if props.input_mode == "THREE_D":
+        euler = Euler([math.radians(a) for a in (props.rotation_x, props.rotation_y, props.rotation_z)], "XYZ")
+        return np.array(euler.to_matrix())
+    x, z = tool.Structural.get_in_plane_components(
+        props.input_mode, magnitude=1.0, angle=props.angle, rise=props.rise, run=props.run, direction=props.direction
+    )
+    if not (length := math.hypot(x, z)):
+        x, z, length = 1.0, 0.0, 1.0
+    x, z = x / length, z / length
+    # In the X-Z plane, z' a quarter turn on from x', so that y' stays +Y.
+    return np.array(((x, 0.0, -z), (0.0, 1.0, 0.0), (z, 0.0, x)))
+
+
+def update_axes_preview(self: "EditStructuralConnectionAxes", context: bpy.types.Context) -> None:
+    """Show the point's axes as the dialog has them until it is confirmed or cancelled"""
+    if self.item and LoadsDecorator.is_installed:
+        ShaderInfo.preview_axes = {self.item: get_dialog_axes(self)}
+        LoadsDecorator.update()
+        tool.Blender.update_all_viewports(context)
+
+
+class EditStructuralConnectionAxes(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.edit_structural_connection_axes"
+    bl_label = "Edit Axes"
     bl_description = (
-        "Tilt the point's own axes in the X-Z plane, as along an inclined surface. Show loads with the local "
-        "reference frame to see forces resolved along them"
+        "Set the point's own axes: x' at an angle or slope, as along an incline, or turned in 3D. Show loads "
+        "with the local reference frame to see forces resolved along them"
     )
     bl_options = {"REGISTER", "UNDO"}
-    angle: bpy.props.FloatProperty(
-        name="Tilt", description="Degrees x' turns from +X towards +Z, z' turning with it", options={"SKIP_SAVE"}
+    item: bpy.props.IntProperty(options={"HIDDEN", "SKIP_SAVE"})
+    input_mode: bpy.props.EnumProperty(
+        name="Input",
+        items=[
+            ("ANGLE", "Angle", "x' at an angle, in the X-Z plane"),
+            ("SLOPE", "Slope", "x' along a rise over a run, as a roof pitch, in the X-Z plane"),
+            ("THREE_D", "3D", "Turned any way, by rotations about X, Y and Z"),
+        ],
+        options={"SKIP_SAVE"},
+        update=update_axes_preview,
     )
+    direction: bpy.props.EnumProperty(
+        name="Direction",
+        description="The eighth of a circle x' points into; the angle or slope is measured from its axis",
+        items=EIGHTH_ITEMS,
+        options={"SKIP_SAVE"},
+        update=update_axes_preview,
+    )
+    angle: bpy.props.FloatProperty(name="Angle", options={"SKIP_SAVE"}, update=update_axes_preview)
+    rise: bpy.props.FloatProperty(name="Rise", default=1.0, options={"SKIP_SAVE"}, update=update_axes_preview)
+    run: bpy.props.FloatProperty(name="Run", default=1.0, options={"SKIP_SAVE"}, update=update_axes_preview)
+    rotation_x: bpy.props.FloatProperty(name="X", options={"SKIP_SAVE"}, update=update_axes_preview)
+    rotation_y: bpy.props.FloatProperty(name="Y", options={"SKIP_SAVE"}, update=update_axes_preview)
+    rotation_z: bpy.props.FloatProperty(name="Z", options={"SKIP_SAVE"}, update=update_axes_preview)
 
     @classmethod
     def poll(cls, context):
@@ -576,18 +650,63 @@ class TiltStructuralConnectionAxes(bpy.types.Operator, tool.Ifc.Operator):
         return bool(element and element.is_a("IfcStructuralPointConnection"))
 
     def invoke(self, context, event):
-        self.angle = tool.Structural.get_axes_tilt(tool.Ifc.get_entity(context.active_object)) or 0.0
-        return context.window_manager.invoke_props_dialog(self)
+        element = tool.Ifc.get_entity(context.active_object)
+        # Reopen in the terms the axes were set in: a slope, an angle in the X-Z plane, or else in 3D.
+        rotation = tool.Structural.get_axes_rotation(element)
+        if tool.Structural.get_axes_tilt(element) is None:
+            self.input_mode = "THREE_D"
+            self.rotation_x, self.rotation_y, self.rotation_z = (
+                math.degrees(a) for a in Matrix(rotation.tolist()).to_euler("XYZ")
+            )
+        else:
+            self.direction, self.angle, _, _ = tool.Structural.get_eighth(rotation[0, 0], rotation[2, 0])
+            if slope := tool.Structural.get_axes_slope(element):
+                self.input_mode, (self.rise, self.run) = "SLOPE", slope
+            else:
+                self.input_mode = "ANGLE"
+        self.item = element.id()  # Set last, so that filling in the values above does not start a preview.
+        return context.window_manager.invoke_props_dialog(self, width=320)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.row().prop(self, "input_mode", expand=True)
+        if self.input_mode == "THREE_D":
+            layout.label(text="Rotations, in degrees:")
+            for prop in ("rotation_x", "rotation_y", "rotation_z"):
+                layout.prop(self, prop)
+        else:
+            draw_pinwheel(layout, self)
+            if self.input_mode == "ANGLE":
+                layout.prop(self, "angle")
+            else:
+                row = layout.row(align=True)
+                row.prop(self, "rise")
+                row.prop(self, "run")
+        rotation = get_dialog_axes(self)
+        for k, name in ((0, "x′"), (2, "z′")):
+            layout.label(text=f"{name} = ({rotation[0, k]:.3f}, {rotation[1, k]:.3f}, {rotation[2, k]:.3f})")
+
+    def cancel(self, context):
+        clear_axes_preview(context)
 
     def _execute(self, context):
-        angle = math.radians(self.angle)
+        clear_axes_preview(context)
+        element = tool.Ifc.get().by_id(self.item)
+        rotation = get_dialog_axes(self)
         ifcopenshell.api.structural.edit_structural_connection_cs(
-            tool.Ifc.get(),
-            structural_item=tool.Ifc.get_entity(context.active_object),
-            axis=(-math.sin(angle), 0.0, math.cos(angle)),
-            ref_direction=(math.cos(angle), 0.0, math.sin(angle)),
+            tool.Ifc.get(), structural_item=element, axis=rotation[:, 2].tolist(), ref_direction=rotation[:, 0].tolist()
         )
+        slope = (self.rise, self.run) if self.input_mode == "SLOPE" and (self.rise or self.run) else None
+        tool.Structural.set_axes_slope(element, slope)
         return {"FINISHED"}
+
+
+def clear_axes_preview(context: bpy.types.Context) -> None:
+    if ShaderInfo.preview_axes:
+        ShaderInfo.preview_axes = {}
+        if LoadsDecorator.is_installed:
+            LoadsDecorator.update()
+            tool.Blender.update_all_viewports(context)
 
 
 class EditStructuralConnectionCS(bpy.types.Operator, tool.Ifc.Operator):
@@ -1200,16 +1319,7 @@ class StructuralForceInput:
     direction: bpy.props.EnumProperty(
         name="Direction",
         description="The eighth of a circle the force points into; the angle or slope is measured from its axis",
-        items=[
-            ("Q1", "Q1", "From → (+X), turning up"),
-            ("Q2", "Q2", "From ↑ (+Z), turning right"),
-            ("Q3", "Q3", "From ↑ (+Z), turning left"),
-            ("Q4", "Q4", "From ← (-X), turning up"),
-            ("Q5", "Q5", "From ← (-X), turning down"),
-            ("Q6", "Q6", "From ↓ (-Z), turning left"),
-            ("Q7", "Q7", "From ↓ (-Z), turning right"),
-            ("Q8", "Q8", "From → (+X), turning down"),
-        ],
+        items=EIGHTH_ITEMS,
         update=update_force_inputs,
     )
     magnitude: bpy.props.FloatProperty(name="Magnitude", update=update_force_inputs)
@@ -1316,20 +1426,7 @@ class StructuralForceInput:
                 for prop in ("moment_x", "moment_y", "moment_z"):
                     layout.prop(self, prop)
         else:
-            # A pinwheel of the eight directions, counter-clockwise from Q1 just above +X.
-            pinwheel = layout.column(align=True)
-            for cells in (
-                (None, "Q3", "Q2", None),
-                ("Q4", None, None, "Q1"),
-                ("Q5", None, None, "Q8"),
-                (None, "Q6", "Q7", None),
-            ):
-                row = pinwheel.row(align=True)
-                for cell in cells:
-                    if cell:
-                        row.prop_enum(self, "direction", cell)
-                    else:
-                        row.label(text="")
+            draw_pinwheel(layout, self)
             draw_with_lock(
                 ("angle",) if self.input_mode == "ANGLE" else ("rise", "run"),
                 "direction_locked" if show_locks else None,
