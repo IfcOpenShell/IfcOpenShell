@@ -505,6 +505,24 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         else:
             assert len(ports) == 0
 
+    def test_append_a_distribution_element_with_a_port_connected_by_port_to_element_rel(self):
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcFlowSegment")
+        port = ifcopenshell.api.root.create_entity(library, ifc_class="IfcDistributionPort")
+        library.create_entity(
+            "IfcRelConnectsPortToElement",
+            GlobalId=ifcopenshell.guid.new(),
+            RelatingPort=port,
+            RelatedElement=element,
+        )
+
+        new_element = ifcopenshell.api.project.append_asset(self.file, library=library, element=element)
+
+        rels = self.file.by_type("IfcRelConnectsPortToElement")
+        assert len(rels) == 1
+        assert rels[0].RelatedElement == new_element
+        assert rels[0].RelatingPort == self.file.by_type("IfcDistributionPort")[0]
+
     def test_append_a_surface_style(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         library = ifcopenshell.api.project.create_file(version=self.file.schema)
