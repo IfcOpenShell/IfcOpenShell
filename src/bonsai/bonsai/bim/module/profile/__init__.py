@@ -22,6 +22,7 @@ from . import data, operator, prop, ui
 
 classes = (
     operator.AddProfileDef,
+    operator.CreateFillAreaFromProfile,
     operator.DuplicateProfileDef,
     operator.DisableEditingArbitraryProfile,
     operator.DisableEditingProfile,
