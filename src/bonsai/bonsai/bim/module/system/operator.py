@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING
 import bpy
 import ifcopenshell.api.attribute
 import ifcopenshell.api.system
+import ifcopenshell.util.element
 import ifcopenshell.util.system
 
 import bonsai.bim.helper
@@ -635,6 +636,56 @@ class RemoveZone(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         ifcopenshell.api.system.remove_system(tool.Ifc.get(), system=tool.Ifc.get().by_id(self.zone))
         bpy.ops.bim.load_zones()
+
+
+def get_assignable_zones(self: "AssignZoneToZone", context: bpy.types.Context) -> list[tuple[str, str, str]]:
+    ifc_file = tool.Ifc.get()
+    target_zone = ifc_file.by_id(self.zone)
+    items = []
+    for zone in ifc_file.by_type("IfcZone"):
+        if zone == target_zone:
+            continue
+        # Assigning an ancestor of the target zone would create a cycle.
+        if target_zone in ifcopenshell.util.element.get_grouped_by(zone):
+            continue
+        items.append((str(zone.id()), zone.Name or "Unnamed", ""))
+    return items or [("0", "No other zones available", "")]
+
+
+class AssignZoneToZone(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.assign_zone_to_zone"
+    bl_label = "Assign Zone To Zone"
+    bl_description = "Assign another zone as a member of the active zone"
+    bl_options = {"REGISTER", "UNDO"}
+    zone: bpy.props.IntProperty(options={"SKIP_SAVE"})
+    zone_to_assign: bpy.props.EnumProperty(items=get_assignable_zones, name="Zone")
+
+    if TYPE_CHECKING:
+        zone: int
+        zone_to_assign: str
+
+    @classmethod
+    def poll(cls, context):
+        if len(tool.Ifc.get().by_type("IfcZone")) < 2:
+            cls.poll_message_set("Need at least two zones to assign one to another.")
+            return False
+        return True
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        self.layout.prop(self, "zone_to_assign", text="Zone")
+
+    def _execute(self, context):
+        if self.zone_to_assign == "0":
+            return {"CANCELLED"}
+        ifc_file = tool.Ifc.get()
+        target_zone = ifc_file.by_id(self.zone)
+        member_zone = ifc_file.by_id(int(self.zone_to_assign))
+        ifcopenshell.api.system.assign_system(ifc_file, system=target_zone, products=[member_zone])
+        self.report({"INFO"}, f"Assigned zone '{member_zone.Name}' to zone '{target_zone.Name}'.")
+        return {"FINISHED"}
 
 
 class AssignUnassignFlowControl(bpy.types.Operator, tool.Ifc.Operator):
