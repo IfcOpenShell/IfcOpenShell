@@ -506,6 +506,25 @@ class TestGetDrawingGroup(NewFile):
         assert subject.get_drawing_group(element) == group
 
 
+class TestGetDiagramScale(NewFile):
+    def get_scale(self, numerator, denominator):
+        camera = bpy.data.cameras.new("Camera")
+        props = subject.get_camera_props(camera)
+        props.diagram_scale = "CUSTOM"
+        props.custom_scale_numerator = numerator
+        props.custom_scale_denominator = denominator
+        return subject.get_diagram_scale(camera)
+
+    def test_a_whole_number_custom_scale_keeps_an_explicit_denominator(self):
+        assert self.get_scale("2", "1") == {"HumanScale": "2:1", "Scale": "2/1"}
+
+    def test_a_unity_custom_scale_keeps_an_explicit_denominator(self):
+        assert self.get_scale("1", "1") == {"HumanScale": "1:1", "Scale": "1/1"}
+
+    def test_a_fractional_custom_scale(self):
+        assert self.get_scale("1", "100") == {"HumanScale": "1:100", "Scale": "1/100"}
+
+
 class TestGetGroupDrawing(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
