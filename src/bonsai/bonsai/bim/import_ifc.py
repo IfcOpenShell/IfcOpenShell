@@ -206,7 +206,13 @@ class IfcImporter:
     """Either provided by user as an attribute or will be loaded from ``input_file`` during ``execute()``."""
 
     elements: set[ifcopenshell.entity_instance]
-    """Set of IfcElements to import. Excluding ``gross_elements`` and ```native_elements``."""
+    """Set of IfcElements to import. Excluding ``gross_elements``, ``baked_void_elements`` and ```native_elements``."""
+
+    gross_elements: set[ifcopenshell.entity_instance]
+    """Elements whose opening cuts were skipped for exceeding ``void_limit``; offered for recut."""
+
+    baked_void_elements: set[ifcopenshell.entity_instance]
+    """Elements whose body already includes their openings; loaded uncut and not offered for recut."""
 
     def __init__(self, ifc_import_settings: IfcImportSettings):
         self.ifc_import_settings = ifc_import_settings
@@ -219,6 +225,7 @@ class IfcImporter:
         self.elements: set[ifcopenshell.entity_instance] = set()
         self.annotations: set[ifcopenshell.entity_instance] = set()
         self.gross_elements: set[ifcopenshell.entity_instance] = set()
+        self.baked_void_elements: set[ifcopenshell.entity_instance] = set()
         self.broken_arrays: set[ifcopenshell.entity_instance] = set()
         self.element_types: set[ifcopenshell.entity_instance] = set()
         self.spatial_elements: set[ifcopenshell.entity_instance] = set()
@@ -369,11 +376,23 @@ class IfcImporter:
             else:
                 self.spatial_elements = set(self.file.by_type("IfcSpatialElement"))
 
-        # Detect excessive voids
-        self.gross_elements = set(
-            filter(lambda e: len(getattr(e, "HasOpenings", [])) > self.ifc_import_settings.void_limit, self.elements)
-        )
-        self.elements = self.elements.difference(self.gross_elements)
+        self.classify_voided_elements()
+
+    def classify_voided_elements(self) -> None:
+        """Split off elements that load without opening cuts: too many voids, or voids already baked in."""
+        void_limit = self.ifc_import_settings.void_limit
+        reference_view = self.ifc_import_settings.is_reference_view
+        self.gross_elements = set()
+        self.baked_void_elements = set()
+        for element in self.elements:
+            if not (openings := getattr(element, "HasOpenings", None) or ()):
+                continue
+            if len(openings) > void_limit:
+                self.gross_elements.add(element)
+            elif reference_view and not self.has_subtractive_void(element):
+                self.baked_void_elements.add(element)
+        self.elements -= self.gross_elements
+        self.elements -= self.baked_void_elements
 
         if self.gross_elements:
             print("Warning! Excessive voids were found and skipped for the following elements:")
@@ -403,6 +422,17 @@ class IfcImporter:
             if self.is_native(element):
                 self.native_elements.add(element)
         self.elements -= self.native_elements
+
+    @staticmethod
+    def has_subtractive_void(element: ifcopenshell.entity_instance) -> bool:
+        """True when an opening still has a Body to subtract, as Bonsai authored ones do.
+
+        Reference View exporters bake the cut into the host and give the opening no Body."""
+        for rel in getattr(element, "HasOpenings", None) or ():
+            definition = getattr(rel.RelatedOpeningElement, "Representation", None)
+            if definition and any(r.RepresentationIdentifier == "Body" for r in definition.Representations):
+                return True
+        return False
 
     def is_native(self, element: ifcopenshell.entity_instance) -> bool:
         if (
@@ -632,7 +662,7 @@ class IfcImporter:
 
     def create_elements(self) -> None:
         self.create_generic_elements(self.elements)
-        self.create_generic_elements(self.gross_elements, is_gross=True)
+        self.create_generic_elements(self.gross_elements | self.baked_void_elements, is_gross=True)
 
     def create_generic_elements(self, elements: set[ifcopenshell.entity_instance], is_gross=False) -> None:
         if isinstance(self.file, ifcopenshell.sqlite):
@@ -954,7 +984,7 @@ class IfcImporter:
         self.file = tool.Ifc.get()
         # IFC4 Reference View shall have no booleans https://github.com/BuildingSMART/IFC4-CV/issues/14
         if self.file.schema == "IFC4" and "ReferenceView" in str(self.file.header.file_description.description):
-            self.ifc_import_settings.void_limit = 0
+            self.ifc_import_settings.is_reference_view = True
 
     def calculate_unit_scale(self):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
@@ -1279,6 +1309,7 @@ class IfcImportSettings:
         self.deflection_tolerance = 0.05  # Default is 0.001, but I find this to be more practical
         self.angular_tolerance = 0.5
         self.void_limit = 30
+        self.is_reference_view = False
         self.style_limit = 300
         # Locations greater than 1km are not considered "small sites" according to the georeferencing guide
         # Users can configure this if they have to handle larger sites but beware of surveying precision
