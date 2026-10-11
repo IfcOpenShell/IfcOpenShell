@@ -707,7 +707,22 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def get_body_context(cls) -> ifcopenshell.entity_instance:
-        return ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+        ifc_file = tool.Ifc.get()
+        context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+        if context is None:
+            # Externally authored IFCs may not include the standard Model/Body
+            # context Bonsai relies on. Create it on demand instead of crashing.
+            parent = ifcopenshell.util.representation.get_context(ifc_file, "Model")
+            if parent is None:
+                parent = ifcopenshell.api.context.add_context(ifc_file, context_type="Model")
+            context = ifcopenshell.api.context.add_context(
+                ifc_file,
+                context_type="Model",
+                context_identifier="Body",
+                target_view="MODEL_VIEW",
+                parent=parent,
+            )
+        return context
 
     @classmethod
     def get_document_uri(
