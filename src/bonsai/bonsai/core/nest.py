@@ -68,7 +68,7 @@ def unassign_object(
     # TODO: this branch is never used?
     if not relating_obj:
         relating_element = nest.get_relating_object(related_element)
-        if related_element:
+        if relating_element:
             relating_obj = ifc.get_object(relating_element)
     else:
         ifc.run("nest.unassign_object", related_objects=[related_element])
