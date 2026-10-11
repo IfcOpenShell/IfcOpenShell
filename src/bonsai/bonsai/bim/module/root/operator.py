@@ -340,6 +340,8 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                     predefined_type=predefined_type,
                     should_add_representation=False,
                 )
+                # Write obj.matrix_world into the new element's IfcLocalPlacement.
+                bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
                 ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
                 bonsai.core.geometry.switch_representation(
                     tool.Ifc, tool.Geometry, obj=obj, representation=representation
