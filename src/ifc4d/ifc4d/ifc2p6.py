@@ -270,6 +270,8 @@ class Ifc2P6:
                     "START_FINISH": "Start to Finish",
                     "FINISH_START": "Finish to Start",
                     "FINISH_FINISH": "Finish to Finish",
+                    "NOTDEFINED": "Finish to Start",
+                    "USERDEFINED": "Finish to Start",
                     None: "Finish to Start",
                 }[rel.SequenceType]
 
