@@ -495,6 +495,26 @@ class TestGetDrawingCollection(NewFile):
         assert subject.get_drawing_collection(element) == collection
 
 
+class TestGetDrawingForSheetReference(NewFile):
+    def test_matches_a_drawing_whose_name_has_punctuation(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        drawing = ifc.createIfcAnnotation(ObjectType="DRAWING", Name="Plan (Level 1), rev: A")
+        document = ifc.createIfcDocumentReference(Location="drawings/Plan Level 1 rev A.svg")
+        ifc.createIfcRelAssociatesDocument(ifcopenshell.guid.new(), RelatedObjects=[drawing], RelatingDocument=document)
+        sheet_reference = ifc.createIfcDocumentReference(Location="drawings/Plan Level 1 rev A.svg")
+        assert subject.get_drawing_for_sheet_reference(sheet_reference) == drawing
+
+    def test_no_drawing_with_the_same_location(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        drawing = ifc.createIfcAnnotation(ObjectType="DRAWING", Name="Plan")
+        document = ifc.createIfcDocumentReference(Location="drawings/Plan.svg")
+        ifc.createIfcRelAssociatesDocument(ifcopenshell.guid.new(), RelatedObjects=[drawing], RelatingDocument=document)
+        sheet_reference = ifc.createIfcDocumentReference(Location="drawings/Other.svg")
+        assert subject.get_drawing_for_sheet_reference(sheet_reference) is None
+
+
 class TestGetDrawingGroup(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
