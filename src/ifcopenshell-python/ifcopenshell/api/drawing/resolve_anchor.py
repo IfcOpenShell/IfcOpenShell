@@ -986,7 +986,7 @@ def _local_to_world_m(
     ensures that elements moved in the Blender viewport but not yet explicitly
     synced to IFC (via "Edit Object Placement") are handled correctly.
 
-    Without an override, falls back to ``get_local_placement`` which reads the IFC
+    Without an override, falls back to ``get_placement`` which reads the IFC
     placement and scales IFC-unit translation to metres via ``unit_scale``.
     """
     x, y, z = float(local_pt_m[0]), float(local_pt_m[1]), float(local_pt_m[2])
@@ -998,7 +998,7 @@ def _local_to_world_m(
             float(m[2][0] * x + m[2][1] * y + m[2][2] * z + m[2][3]),
         )
     unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
-    m = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+    m = ifcopenshell.util.placement.get_placement(element.ObjectPlacement)
     return (
         float(m[0][0] * x + m[0][1] * y + m[0][2] * z + m[0][3] * unit_scale),
         float(m[1][0] * x + m[1][1] * y + m[1][2] * z + m[1][3] * unit_scale),
@@ -1020,7 +1020,7 @@ def _rotate_local_to_world(
             float(m[1][0] * x + m[1][1] * y + m[1][2] * z),
             float(m[2][0] * x + m[2][1] * y + m[2][2] * z),
         )
-    m = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+    m = ifcopenshell.util.placement.get_placement(element.ObjectPlacement)
     return (
         float(m[0][0] * x + m[0][1] * y + m[0][2] * z),
         float(m[1][0] * x + m[1][1] * y + m[1][2] * z),

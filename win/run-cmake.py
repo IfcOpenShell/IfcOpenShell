@@ -172,6 +172,7 @@ class Args(NamedTuple):
     use_ninja: bool
     build_cfg: BuildCfg
     clean: bool
+    build_dir: Path | None
     extra_args: list[str]
 
 
@@ -233,6 +234,7 @@ def parse_args() -> Args:
         help="Remove the existing build directory before running CMake.",
     )
     argv = sys.argv[1:]
+    parser.add_argument("--build-dir", type=Path, help="Use a separate IfcOpenShell build tree.")
     if "--" in argv:
         separator_idx = argv.index("--")
         own_argv, extra_args = argv[:separator_idx], argv[separator_idx + 1 :]
@@ -254,6 +256,7 @@ def parse_args() -> Args:
         use_ninja=args.use_ninja,
         build_cfg=args.build_cfg,
         clean=args.clean,
+        build_dir=args.build_dir,
         extra_args=extra_args,
     )
 
@@ -307,7 +310,7 @@ def main() -> None:
         logger.info(f"   {env_var:<23} = {value}")
     logger.info("")
 
-    build_dir = REPO_ROOT / vs_cfg_vars.build_dir
+    build_dir = (REPO_ROOT / ARGS.build_dir).resolve() if ARGS.build_dir else REPO_ROOT / vs_cfg_vars.build_dir
     if ARGS.clean and build_dir.exists():
         logger.info(f"Removing existing build directory: {build_dir}")
         shutil.rmtree(build_dir)

@@ -1,9 +1,7 @@
 # Lint/test gate for the bonsaiviewer-autodesk crate — nothing here ships.
-# The connector binary that reaches users is built by the platform pipelines
-# (build-ifcopenshell-linux.yml, build-ifcopenshell-linux-arm.yml,
-# build-ifcopenshell-windows.yml, build-ifcopenshell-macos.yml), each of which
-# runs packaging/build.py itself and bundles dist/autodesk/ into the Bonsai
-# Viewer archive.
+# The connector binary that reaches users is built by the native platform pipelines
+# (build-ifcopenshell-*.yml), each of which runs packaging/build.py itself and
+# bundles dist/autodesk/ into the Bonsai Viewer archive.
 name: Test Bonsai Viewer Autodesk
 
 on:

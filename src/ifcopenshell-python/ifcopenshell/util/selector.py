@@ -485,7 +485,7 @@ def _get_element_value(element: ifcopenshell.entity_instance, keys: list[str]) -
             value = ifcopenshell.util.system.get_element_zones(value)
         elif key in ("x", "y", "z", "easting", "northing", "elevation") and hasattr(value, "ObjectPlacement"):
             if getattr(value, "ObjectPlacement", None):
-                matrix = ifcopenshell.util.placement.get_local_placement(value.ObjectPlacement)
+                matrix = ifcopenshell.util.placement.get_placement(value.ObjectPlacement)
                 xyz = matrix[:, 3][:3]
                 if key in ("x", "y", "z"):
                     value = xyz["xyz".index(key)]
@@ -496,7 +496,7 @@ def _get_element_value(element: ifcopenshell.entity_instance, keys: list[str]) -
                 value = None
         elif key in ("rotation_x", "rotation_y", "rotation_z") and hasattr(value, "ObjectPlacement"):
             if getattr(value, "ObjectPlacement", None):
-                matrix = ifcopenshell.util.placement.get_local_placement(value.ObjectPlacement)
+                matrix = ifcopenshell.util.placement.get_placement(value.ObjectPlacement)
                 euler = ifcopenshell.util.shape_builder.np_matrix_to_euler(matrix)
                 value = float(np.degrees(euler[("rotation_x", "rotation_y", "rotation_z").index(key)]))
             else:
@@ -735,7 +735,7 @@ def set_element_value(
             if placement is None:
                 matrix = np.eye(4)
             else:
-                matrix = ifcopenshell.util.placement.get_local_placement(placement)
+                matrix = ifcopenshell.util.placement.get_placement(placement)
 
             # check if value is within tolerance to avoid api calls
             coord_i = "xyz".index(key)
