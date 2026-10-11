@@ -238,7 +238,7 @@ ifcopenshell::geom::native_element* ifcopenshell::geom::converter::create_brep_f
 		}
 	}
 
-	shape = new ifcopenshell::geom::native(settings_, product_type, representation_id_builder.str(), shapes);
+	shape = new ifcopenshell::geom::native(settings_, product_type, representation_id_builder.str(), shapes, &product.declaration());
 
 	std::string context_string = "";
 
