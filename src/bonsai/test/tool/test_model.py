@@ -219,6 +219,55 @@ class TestStairCalculatedParams(NewFile):
         calculated_data["Length"] += 0.1 * pset_data["number_of_treads"]
         self.compare_data(pset_data, calculated_data)
 
+        pset_data = pset_data_base.copy()
+        calculated_data = calculated_data_base.copy()
+        pset_data["custom_first_last_tread_run"] = (0.1, 0.4)
+        pset_data["custom_first_tread_lock"] = False
+        pset_data["custom_last_tread_lock"] = True
+        calculated_data["Length"] = 0.1 + 0.3 * 3
+        self.compare_data(pset_data, calculated_data)
+
+        pset_data = pset_data_base.copy()
+        calculated_data = calculated_data_base.copy()
+        pset_data["custom_first_last_tread_run"] = (0.1, 0.4)
+        pset_data["custom_first_tread_lock"] = True
+        pset_data["custom_last_tread_lock"] = False
+        calculated_data["Length"] = 0.4 + 0.3 * 3
+        self.compare_data(pset_data, calculated_data)
+
+        pset_data = pset_data_base.copy()
+        calculated_data = calculated_data_base.copy()
+        pset_data["custom_first_last_tread_run"] = (0.1, 0.4)
+        pset_data["custom_first_tread_lock"] = False
+        pset_data["custom_last_tread_lock"] = False
+        calculated_data["Length"] = 0.1 + 0.4 + 0.3 * 2
+        self.compare_data(pset_data, calculated_data)
+
+
+class TestEditingStairSavedWithCombinedTreadLock(NewFile):
+    def edit(self, lock, custom_first_last_tread_run):
+        bpy.ops.bim.create_project()
+        bpy.ops.mesh.add_stair()
+        obj = bpy.context.active_object
+        element = tool.Ifc.get_entity(obj)
+        data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Stair", "Data"))
+        data = {k: v for k, v in data.items() if not k.endswith("tread_lock")}
+        data["custom_tread_lock"] = lock
+        data["custom_first_last_tread_run"] = custom_first_last_tread_run
+        pset = tool.Pset.get_element_pset(element, "BBIM_Stair")
+        value = tool.Ifc.get().createIfcText(json.dumps(data))
+        ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": value})
+        bpy.ops.bim.enable_editing_stair()
+        return tool.Model.get_stair_props(obj).get_props_kwargs()["custom_first_last_tread_run"]
+
+    def test_unlocked_treads_keep_their_runs(self):
+        first, last = self.edit(False, [0.5, 0.2])
+        assert tool.Cad.is_x(first, 0.5)
+        assert tool.Cad.is_x(last, 0.2)
+
+    def test_locked_treads_stay_locked(self):
+        assert tuple(self.edit(True, [None, None])) == (None, None)
+
 
 class TestGenerateStair2DProfile(NewFile):
     def compare_data(self, generated_profile, expected_profile):
