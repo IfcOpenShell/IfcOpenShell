@@ -46,7 +46,7 @@ public:
     void cancel();
 
     // Adopt an externally-opened ifcopenshell::file as the data source
-    // (e.g. for the sidecar-hit path, where loadFile never runs).  The
+    // (e.g. for the .ifcview-hit path, where loadFile never runs).  The
     // streamer must not be running geometry iteration when this is called.
     void setIfcFile(std::unique_ptr<ifcopenshell::file> file);
 

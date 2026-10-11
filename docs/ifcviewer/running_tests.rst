@@ -41,23 +41,23 @@ To run only the IfcViewer tests, filter by test name:
 
 .. code-block:: bash
 
-    ctest --test-dir build-viewer-wgpu -R "test_(sidecar|streaming|selection|visibility|buffer|viewport|federation|instance|chunk|lod)" --output-on-failure
+    ctest --test-dir build-viewer-wgpu -R "test_(ifcview|streaming|selection|visibility|buffer|viewport|federation|instance|chunk|lod)" --output-on-failure
 
 You can also build or run a single test executable directly:
 
 .. code-block:: bash
 
-    cmake --build build-viewer-wgpu --target test_sidecar_cache
-    ./build-viewer-wgpu/ifcviewer/tests/test_sidecar_cache
+    cmake --build build-viewer-wgpu --target test_ifcview_writer
+    ./build-viewer-wgpu/ifcviewer/tests/test_ifcview_writer
 
 Common test targets include:
 
-* ``test_sidecar_compress``
-* ``test_sidecar_cache``
-* ``test_streaming_loader``
+* ``test_ifcview_writer``
+* ``test_ifcview_reader``
+* ``test_ifcview_assembler``
 * ``test_instanced_geometry``
 * ``test_chunk_planner``
-* ``test_sidecar_layout``
+* ``test_ifcview_layout``
 * ``test_instance_compose``
 * ``test_selection``
 * ``test_visibility``
