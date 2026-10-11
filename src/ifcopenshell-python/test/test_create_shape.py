@@ -491,6 +491,74 @@ class TestSectionedSolidHorizontalHonoursAxis(test.bootstrap.IFC4X3):
         assert ys.max() == pytest.approx(self.L + 0.5 * self.width * math.tan(theta), abs=1e-4)
 
 
+class TestSectionedSolidHorizontalCurvedSection(test.bootstrap.IFC4X3):
+    length, radius = 10.0, 0.5
+
+    def _shape(self, far_radius=None, offset=None):
+        f = self.file
+        ifcopenshell.api.root.create_entity(f, ifc_class="IfcProject", name="Test")
+        ctx = ifcopenshell.api.context.add_context(f, context_type="Model")
+        body = ifcopenshell.api.context.add_context(
+            f, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=ctx
+        )
+        directrix = f.createIfcPolyline(
+            Points=[f.createIfcCartesianPoint((0.0, 0.0, 0.0)), f.createIfcCartesianPoint((self.length, 0.0, 0.0))]
+        )
+        near = f.createIfcCircleProfileDef(ProfileType="AREA", Radius=self.radius)
+        far = f.createIfcCircleProfileDef(ProfileType="AREA", Radius=far_radius) if far_radius else near
+        axis = f.createIfcDirection((0.0, 0.0, 1.0))
+
+        def position(distance_along):
+            return f.createIfcAxis2PlacementLinear(
+                Location=f.createIfcPointByDistanceExpression(
+                    DistanceAlong=f.createIfcLengthMeasure(distance_along), OffsetLateral=offset, BasisCurve=directrix
+                ),
+                Axis=axis,
+            )
+
+        solid = f.createIfcSectionedSolidHorizontal(
+            Directrix=directrix,
+            CrossSections=[near, far],
+            CrossSectionPositions=[position(0.0), position(self.length)],
+        )
+        representation = f.createIfcShapeRepresentation(
+            ContextOfItems=body, RepresentationIdentifier="Body", RepresentationType="AdvancedSweptSolid", Items=[solid]
+        )
+        self.logger = ifcopenshell.logger()
+        self.logger.output_format(self.logger.FMT_INMEMORY)
+        settings = ifcopenshell.geom.settings()
+        settings.set("use-world-coords", True)
+        return ifcopenshell.geom.create_shape(settings, representation, logger=self.logger)
+
+    @pytest.mark.skipif(
+        not ifcopenshell.geom.has_geometry_library("opencascade"), reason="requires the OpenCASCADE kernel"
+    )
+    def test_constant_circular_section_is_swept_along_the_directrix(self):
+        geometry = self._shape()
+        v = ifcopenshell.util.shape.get_vertices(geometry)
+        assert np.ptp(v[:, 0]) == pytest.approx(self.length, abs=1e-4)
+        assert np.ptp(v[:, 1]) == pytest.approx(2 * self.radius, rel=0.01)
+        assert np.ptp(v[:, 2]) == pytest.approx(2 * self.radius, rel=0.01)
+        volume = ifcopenshell.util.shape.get_volume(geometry)
+        assert volume == pytest.approx(math.pi * self.radius**2 * self.length, rel=0.01)
+
+    @pytest.mark.skipif(
+        not ifcopenshell.geom.has_geometry_library("opencascade"), reason="requires the OpenCASCADE kernel"
+    )
+    def test_lateral_offset_moves_a_circular_section(self):
+        v = ifcopenshell.util.shape.get_vertices(self._shape(offset=2.0))
+        assert v[:, 1].min() == pytest.approx(2.0 - self.radius, rel=0.01)
+        assert v[:, 1].max() == pytest.approx(2.0 + self.radius, rel=0.01)
+
+    @pytest.mark.skipif(
+        not ifcopenshell.geom.has_geometry_library("opencascade"), reason="requires the OpenCASCADE kernel"
+    )
+    def test_differing_circular_sections_are_reported(self):
+        geometry = self._shape(far_radius=2 * self.radius)
+        assert not geometry.verts
+        assert "GEO329" in [msg.code for msg in self.logger]
+
+
 class TestSectionedSolidHorizontalOffsetUnits(test.bootstrap.IFC4X3):
     """IfcPointByDistanceExpression.OffsetLateral / OffsetVertical are
     IfcLengthMeasure and must be scaled by the model length unit, exactly like
