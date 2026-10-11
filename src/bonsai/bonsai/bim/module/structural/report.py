@@ -400,7 +400,40 @@ def get_force_terms(activity: ifcopenshell.entity_instance, i: int) -> dict[str,
         eighth, angle, _, _ = tool.Structural.get_eighth(x, z, named[1] if named else None)
         force["direction"] = f"{angle:.1f}° {eighth}, {EIGHTH_AXES[eighth]}"
         force["terms"] = get_component_terms(x, z, eighth, angle)
+        # Entered as a slope, its components follow by similar triangles, as ratios of the slope's sides.
+        if (slope := get_named_slope(load.Name or "", x, z)) is not None:
+            rise, run = slope
+            force["slope"] = slope
+            force["direction"] = f"{rise:g}:{run:g} slope, {force['direction']}"
+            force["terms"] = get_slope_terms(x, z, rise, run)
     return force
+
+
+def get_named_slope(name: str, x: float, z: float) -> Union[tuple[float, float], None]:
+    """The rise and run a generated load name records, if they are the slope of the components x and z"""
+    if not (match := re.search(r" at (-?[\d.]+):(-?[\d.]+)(?: \S+)?$", name)):
+        return None
+    rise, run = abs(float(match[1])), abs(float(match[2]))
+    if not (rise or run) or not math.isclose(abs(x) * rise, abs(z) * run, rel_tol=1e-6, abs_tol=1e-9):
+        return None
+    return rise, run
+
+
+def get_slope_hypotenuse(rise: float, run: float) -> str:
+    """The slope triangle's hypotenuse, as a number if it is a whole one, as 5 for 3:4, else as a root"""
+    hypotenuse = math.hypot(rise, run)
+    if math.isclose(hypotenuse, round(hypotenuse), abs_tol=1e-9):
+        return f"{round(hypotenuse)}"
+    return f"\\sqrt{{{rise * rise + run * run:g}}}"
+
+
+def get_slope_terms(x: float, z: float, rise: float, run: float) -> dict[str, str]:
+    """The ratios of the X and Z components of a slope to its force, with signs, as -\\left(\\frac{4}{5}\\right)"""
+    hypotenuse = get_slope_hypotenuse(rise, run)
+    return {
+        "x": f"{'-' if x < 0 else ''}\\left(\\frac{{{run:g}}}{{{hypotenuse}}}\\right)",
+        "z": f"{'-' if z < 0 else ''}\\left(\\frac{{{rise:g}}}{{{hypotenuse}}}\\right)",
+    }
 
 
 def get_component_terms(x: float, z: float, eighth: str, angle: float) -> dict[str, str]:
@@ -433,6 +466,17 @@ def get_sum_steps(
     for i, force in enumerate(forces, 1):
         x, y, z = force["vector"]
         if force["in_plane"]:
+            if slope := force.get("slope"):
+                # The slope triangle's sides, the hypotenuse found first.
+                rise, run = slope
+                hypotenuse = get_slope_hypotenuse(rise, run)
+                value = f"{hypotenuse} = {math.hypot(rise, run):.4f}" if "sqrt" in hypotenuse else hypotenuse
+                components.append(
+                    Lead(
+                        f"{force['symbol']} \\text{{ rises }} {rise:g} \\text{{ in }} {run:g} \\text{{ along its slope}}"
+                    )
+                )
+                components.append(Detail(f"\\sqrt{{{rise:g}^2 + {run:g}^2}} = {value}"))
             for axis, value in (("x", x), ("z", z)):
                 term = force["terms"][axis]
                 sign, trig = ("-", term[1:]) if term.startswith("-") else ("", term)
