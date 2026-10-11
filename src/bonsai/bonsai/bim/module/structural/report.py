@@ -108,7 +108,8 @@ def get_report_data(
             colors = get_force_colors(drawing, item)
             tilt = tool.Structural.get_axes_tilt(item)
             axis_colors = get_axis_colors(len(activities), tilt)
-            point.update(get_resultant_calculation(activities, unit, colors, detailed, tilt, axis_colors))
+            slope = tool.Structural.get_axes_slope(item)
+            point.update(get_resultant_calculation(activities, unit, colors, detailed, tilt, axis_colors, slope))
             points.append(point)
         if points:
             cases.append({"name": case.Name or "Unnamed", "points": points})
@@ -195,6 +196,7 @@ def get_resultant_calculation(
     detailed: bool = False,
     tilt: Union[float, None] = 0.0,
     axis_colors: Union[dict[str, str], None] = None,
+    slope: Union[tuple[float, float], None] = None,
 ) -> dict[str, Any]:
     """The steps for concurrent point forces and their resultant.
 
@@ -250,7 +252,7 @@ def get_resultant_calculation(
         for step in steps
         if detailed or not isinstance(step, Detail)
     ]
-    tilted = get_tilted_steps(forces, tilt, text_unit) if tilt else []
+    tilted = get_tilted_steps(forces, tilt, text_unit, slope) if tilt else []
     return {
         "forces": rows,
         "find": get_colored_symbols(find, palette),  # With inline math, $F_{2}$, as both formats read.
@@ -261,7 +263,12 @@ def get_resultant_calculation(
         "summary": summary,
         "tilted": render(tilted),
         "has_tilted": bool(tilted),
-        "tilt_note": f"x′ is tilted {tilt:.1f}° from +X towards +Z, with z′ square to it." if tilted else "",
+        "tilt_note": (
+            (f"x′ runs along a {slope[0]:g}:{slope[1]:g} slope, " if slope else "x′ is ")
+            + f"tilted {tilt:.1f}° from +X towards +Z, with z′ square to it."
+            if tilted
+            else ""
+        ),
         # A push added to other forces is drawn, and added, as a pull along its line.
         "push_note": (
             "By the principle of transmissibility, a push is added as a pull along its line of action."
@@ -271,45 +278,77 @@ def get_resultant_calculation(
     }
 
 
-def get_tilted_steps(forces: list[dict[str, Any]], tilt: float, text_unit: str) -> list[str]:
-    """Each force resolved along a point's tilted axes x' and z', by its angle to each, then their sums"""
-    steps: list[str] = [
-        Detail("\\text{A component along an axis is the force times the cosine of the angle between them}")
-    ]
+def get_tilted_steps(
+    forces: list[dict[str, Any]],
+    tilt: float,
+    text_unit: str,
+    slope: Union[tuple[float, float], None] = None,
+) -> list[str]:
+    """Each force resolved along a point's tilted axes x' and z' as a textbook does, then their sums.
+
+    A component uses the smaller of the two angles the force's line makes with the axes, as P sin θ and
+    P cos θ, and the ratios of the slope's sides when that angle is the slope's own. Its sign is told in
+    words: up or down the slope, away from or into the surface.
+
+    :param slope: The rise and run the axes were tilted by, if they were.
+    """
+    steps: list[str] = [Detail("\\text{Each component uses the smaller angle the force's line makes with the axes}")]
+    x_axis = (math.cos(math.radians(tilt)), math.sin(math.radians(tilt)))
+    z_axis = (-x_axis[1], x_axis[0])
+    # x' points up a slope rising to the right, and down one falling to the right.
+    heading = tilt % 360
+    x_words = ("along +x'", "along -x'")
+    if 0 < heading < 90:
+        x_words = ("up the slope", "down the slope")
+    elif 270 < heading < 360:
+        x_words = ("down the slope", "up the slope")
+    words = {
+        "x'": x_words,
+        "z'": ("away from the surface", "into the surface")
+        if -90 < (tilt + 180) % 360 - 180 < 90
+        else ("along +z'", "along -z'"),
+    }
+    slope_angle = math.degrees(math.atan2(*slope)) if slope else None
     totals = {"x'": [], "z'": []}
     for i, force in enumerate(forces, 1):
         if not force["in_plane"]:
             continue
         x, _, z = force["vector"]
         magnitude, direction = math.hypot(x, z), math.degrees(math.atan2(z, x)) % 360
+        between = abs((direction - tilt + 180) % 360 - 180)  # Between the force and x', 0 to 180.
+        with_x = min(between, 180 - between)  # Between their lines.
+        with_z = 90 - with_x
         steps.append(Lead(f"{force['symbol']} \\text{{ acts at }} {direction:.1f}^\\circ \\text{{ from }} +X"))
-        for name, axis in (("x'", tilt % 360), ("z'", (tilt + 90) % 360)):
-            difference = abs(direction - axis)
-            between = min(difference, 360 - difference)
-            cosine = math.cos(math.radians(between))
-            value = magnitude * cosine
-            steps.append(Lead(f"{name} \\text{{ lies at }} {axis:.1f}^\\circ \\text{{ from }} +X"))
-            steps.append(
-                Detail(
-                    f"\\text{{Angle between: }} |{direction:.1f}^\\circ - {axis:.1f}^\\circ| = {difference:.1f}^\\circ"
-                )
+        steps.append(
+            Detail(
+                f"\\text{{Its line makes }} {with_x:.1f}^\\circ \\text{{ with }} x' \\text{{ and }} {with_z:.1f}^\\circ \\text{{ with }} z'"
             )
-            if difference > 180:
-                steps.append(
-                    Detail(
-                        f"\\text{{The smaller way round: }} 360^\\circ - {difference:.1f}^\\circ = {between:.1f}^\\circ"
-                    )
-                )
+        )
+        angle = min(with_x, with_z)
+        # cos of the angle with its own axis, sin of the angle with the other.
+        functions = {"x'": "\\cos" if with_x <= with_z else "\\sin", "z'": "\\sin" if with_x <= with_z else "\\cos"}
+        by_slope = slope is not None and math.isclose(angle, abs(slope_angle), abs_tol=1e-6)
+        for name, axis in (("x'", x_axis), ("z'", z_axis)):
+            value = x * axis[0] + z * axis[1]
+            if by_slope:
+                rise, run = abs(slope[0]), abs(slope[1])
+                side = rise if functions[name] == "\\sin" else run
+                term = f"\\left(\\frac{{{side:g}}}{{{get_slope_hypotenuse(rise, run)}}}\\right)"
+            else:
+                term = f"{functions[name]} {angle:.1f}^\\circ"
+            sign = "-" if value < -1e-9 else ""
+            part = abs(value) / magnitude
             steps.append(
-                f"F_{{{name}{i}}} = F_{{{i}}} \\cos {between:.1f}^\\circ = ({magnitude:.2f}) \\cos {between:.1f}^\\circ "
-                f"= {value:.2f}{text_unit}"
+                f"F_{{{name}{i}}} = {sign}F_{{{i}}} {term} = {sign}({magnitude:.2f}) {term} = {value:.2f}{text_unit}"
             )
-            steps.append(Detail(f"\\cos {between:.1f}^\\circ = {cosine:.4f}"))
-            steps.append(Detail(f"({magnitude:.2f})({cosine:.4f}) = {value:.2f}"))
-            if value < -0.005:
-                steps.append(Detail(f"\\text{{Negative: it points along }} -{name}"))
-            elif abs(value) < 0.005:
+            steps.append(Detail(f"{term} = {part:.4f}"))
+            steps.append(Detail(f"{sign}({magnitude:.2f})({part:.4f}) = {value:.2f}"))
+            if abs(value) < 0.005:
                 steps.append(Detail(f"\\text{{Zero: it lies square to }} {name}"))
+            else:
+                steps.append(
+                    Detail(f"\\text{{{'Negative' if sign else 'Positive'}: it points {words[name][bool(sign)]}}}")
+                )
             totals[name].append((i, value))
     for name, values in totals.items():
         if len(values) > 1:
