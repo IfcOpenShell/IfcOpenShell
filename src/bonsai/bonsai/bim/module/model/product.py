@@ -640,14 +640,14 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
         reflection = Matrix()
         reflection[0][0] = -1
 
-        mirror.select_set(False)
-
-        if not context.selected_objects:
+        if not any(obj != mirror for obj in context.selected_objects):
             self.report(
-                {"INFO"},
+                {"ERROR"},
                 "At least two objects must be selected: an object to be mirrored, and a mirror axis as the active object.",
             )
-            return {"FINISHED"}
+            return {"CANCELLED"}
+
+        mirror.select_set(False)
 
         bpy.ops.bim.override_object_duplicate_move(is_interactive=False)
 

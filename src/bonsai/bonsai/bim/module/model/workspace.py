@@ -1036,7 +1036,9 @@ class EditObjectUI:
         row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
         add_layout_hotkey_operator(row, "Interior", "S_V", description, ui_context)
         row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-        add_layout_hotkey_operator(row, "Mirror", "S_M", bpy.ops.bim.mirror_elements.__doc__, ui_context)
+        add_layout_hotkey_operator(
+            row, "Mirror", "S_M", bpy.ops.bim.mirror_elements.__doc__, ui_context, operator="bim.mirror_elements"
+        )
 
     @classmethod
     def draw_aggregation(cls, context):
