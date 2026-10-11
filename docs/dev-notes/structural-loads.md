@@ -229,6 +229,47 @@ already express this, but Bonsai's only editor for them turns an empty in 3D by 
 - Loads draw a point's own axes, x' and z' dashed in the colours of their components, with an
   arc for the tilt from +X. The existing local reference frame then shows components along
   them.
+- Section 10 replaces Tilt Axes, and the old 3D editor, with one Edit Axes dialog.
+
+## 9. Calculation reports
+
+- **Export Calculations** writes an analysis model's load cases to a folder as an HTML page,
+  with KaTeX bundled so that it reads offline, and a Markdown page for Git forges. For each
+  point with forces it gives a diagram, a table of the forces and the steps adding them, as a
+  textbook sets them out: components, their sums, the resultant's magnitude and angle.
+- **Diagrams are the drawing's own.** Each arrow and line the viewport draws keeps a simple
+  primitive beside its shader data, and the report writes those to SVG, so the diagram shows
+  what the viewport shows, on white. Forces and components are named as in the steps.
+- **Unknowns are found as posed.** Values unlocked and found by Edit Resultant are solved
+  first, from the sums along X and Z, then the forces are added as a check; found values are
+  in bold. *Detailed Steps* adds the working between steps, in grey.
+- **Markdown math** is inline `$\displaystyle …$` paragraphs, as Forgejo centres fenced math
+  blocks and reads `$$` lines as text. Symbols take their arrows' colours, left uncoloured
+  where the arrow is white, so that they read on dark pages.
+- Forces on a point with tilted axes are resolved along x' and z' too.
+
+## 10. Inclines and known components
+
+- **Edit Axes** sets a point's axes as Edit Load sets a force's direction: the same pinwheel,
+  x' at an angle or a slope in the X-Z plane, or turned in 3D, with a live preview. A slope
+  is kept as `BBIM_Structural.AxesRise` and `AxesRun`, and given back only while it still
+  matches the axes. The panel shows the axes in one row, in the terms they were set in
+  (`tool.Structural.get_axes_terms`). The direction inputs come from one mixin shared with
+  the force dialogs.
+- **Along an incline**, the report resolves each force as a textbook does: the smaller angle
+  its line makes with the axes, as P sin θ and P cos θ, or the slope's ratios when that angle
+  is the slope's own, with signs told in words, up or down the slope, away from or into the
+  surface. A second diagram draws each force with its x' and z' components, whatever the
+  viewport shows.
+- **A slope's triangle.** Forces entered as a slope are resolved by similar triangles, as the
+  ratios of the slope's sides. Axes set by a slope show it as a rise and run triangle under
+  x', beside the angle, in the viewport and in reports.
+- **A push** is drawn arriving at its point rather than leaving it, kept as
+  `BBIM_Structural.Push`, as IFC's force vector cannot tell a strut from a cable. Added to
+  other forces, it is slid along its line and added as a pull, by transmissibility.
+- **A known component.** Apply Load and Edit Load take a force's X or Z component in place of
+  its magnitude, as a capacity often is; the magnitude follows from it and the direction, and
+  the report finds it from that component. Kept as `BBIM_Structural.KnownComponent`.
 
 ## Next
 
