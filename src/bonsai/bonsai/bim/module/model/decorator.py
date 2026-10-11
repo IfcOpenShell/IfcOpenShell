@@ -448,6 +448,55 @@ class PolylineDecorator(tool.Blender.ViewportDecorator):
 
         return (x_axis, y_axis, z_axis), (x_middle, y_middle, z_middle)
 
+    def calculate_measurement_local_x_y_and_z(
+        self, context: bpy.types.Context
+    ) -> tuple[tuple[tuple[Vector, Vector], ...], tuple[Vector, ...], Vector] | tuple[None, None, None]:
+        """Like `calculate_measurement_x_y_and_z`, but decomposed against the active
+        object's own orientation instead of the global axes. The active object acts
+        as the reference frame, so no extra "pick a reference" UI is needed. Returns
+        `None` when there is no active object or its rotation matches the global axes
+        (nothing extra to show)."""
+        if len(self.polyline_points) == 0 or len(self.polyline_points) > 2:
+            return None, None, None
+
+        obj = context.active_object
+        if obj is None:
+            return None, None, None
+
+        rotation = obj.matrix_world.to_3x3().normalized()
+        if rotation.to_quaternion().angle < 1e-6:
+            # Active object isn't rotated, so its local axes match the global ones.
+            return None, None, None
+
+        start = self.polyline_points[0]
+        if len(self.polyline_points) == 1:
+            end = tool.Model.get_polyline_props().snap_mouse_point[0]
+        else:
+            end = self.polyline_points[1]
+
+        start_co = Vector((start.x, start.y, start.z))
+        end_co = Vector((end.x, end.y, end.z))
+        delta = end_co - start_co
+        local_delta = rotation.inverted() @ delta
+
+        local_x_dir = rotation @ Vector((1, 0, 0))
+        local_y_dir = rotation @ Vector((0, 1, 0))
+        local_z_dir = rotation @ Vector((0, 0, 1))
+
+        p0 = start_co
+        p1 = p0 + local_x_dir * local_delta.x
+        p2 = p1 + local_y_dir * local_delta.y
+        p3 = p2 + local_z_dir * local_delta.z
+
+        x_axis = (p0, p1)
+        y_axis = (p1, p2)
+        z_axis = (p2, p3)
+        x_middle = (x_axis[1] + x_axis[0]) / 2
+        y_middle = (y_axis[1] + y_axis[0]) / 2
+        z_middle = (z_axis[1] + z_axis[0]) / 2
+
+        return (x_axis, y_axis, z_axis), (x_middle, y_middle, z_middle), local_delta
+
     @classmethod
     def calculate_polygon(cls, points: list[Vector]) -> dict[str, Any]:
         bm = bmesh.new()
@@ -605,6 +654,17 @@ class PolylineDecorator(tool.Blender.ViewportDecorator):
                     text = f"{prefix}: {formatted_value}"
                     screen_coords[f"xyz_{i}"] = (Vector(dim_text_coords), text)
 
+            local_axis_line, local_axis_line_center, local_delta = self.calculate_measurement_local_x_y_and_z(context)
+            if local_axis_line:
+                for i, dim_text_pos in enumerate(local_axis_line_center):
+                    dim_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, dim_text_pos)
+                    if dim_text_coords:
+                        value = round(local_delta[i], 4)
+                        prefix = "xyz"[i]
+                        formatted_value = tool.Polyline.format_input_ui_units(value)
+                        text = f"local {prefix}: {formatted_value}"
+                        screen_coords[f"local_xyz_{i}"] = (Vector(dim_text_coords), text)
+
         # Area and Length text
         polyline_verts = [Vector((p.x, p.y, p.z)) for p in self.polyline_points]
 
@@ -730,6 +790,15 @@ class PolylineDecorator(tool.Blender.ViewportDecorator):
             self.draw_batch("LINES", [*x_axis], self.decorator_color_x_axis, [(0, 1)])
             self.draw_batch("LINES", [*y_axis], self.decorator_color_y_axis, [(0, 1)])
             self.draw_batch("LINES", [*z_axis], self.decorator_color_z_axis, [(0, 1)])
+
+            local_axis, _, _ = self.calculate_measurement_local_x_y_and_z(context)
+            if local_axis:
+                local_x_axis, local_y_axis, local_z_axis = local_axis
+                # Highlighted colours distinguish the local breakdown from the global one.
+                self.line_shader.uniform_float("lineWidth", 1.5)
+                self.draw_batch("LINES", [*local_x_axis], highlight_color(self.decorator_color_x_axis), [(0, 1)])
+                self.draw_batch("LINES", [*local_y_axis], highlight_color(self.decorator_color_y_axis), [(0, 1)])
+                self.draw_batch("LINES", [*local_z_axis], highlight_color(self.decorator_color_z_axis), [(0, 1)])
 
         # Area highlight
         if self.polyline_data:
