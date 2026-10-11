@@ -303,6 +303,11 @@ ifneq ($(PLATFORM), linux)
 	fi
 endif
 
+	# Fail the build if the bundled pyradiance wheel loses the exec bit on its binaries. See #7156.
+ifneq ($(PLATFORM), win)
+	$(PYTHON) scripts/check_pyradiance_exec_bits.py build/bonsai/wheels
+endif
+
 	$(PYTHON) scripts/get_wheels.py build/bonsai/wheels build/bonsai/blender_manifest.toml
 	rm -rf build/bonsai/bim/
 	rm -rf build/bonsai/core/
