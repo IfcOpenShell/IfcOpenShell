@@ -5,6 +5,9 @@
 # ]
 # [tool.ty.environment]
 # root = ["."]
+# # `common` and the `nix` package live outside this script's directory but are
+# # put on `sys.path` at runtime below.
+# extra-paths = ["../win", ".."]
 # ///
 ###############################################################################
 #                                                                             #
@@ -47,6 +50,8 @@ Used environment variables:
     - ``NO_CLEAN`` - do not clean `ifcopenshell` build directories but continue working on current build
     (installed dependencies are never cleared).
     By default option is disabled, to enable pass any value from `1`, `on`, `true`.
+    - ``WASM_NATIVE_TOOLCHAIN`` - path to an already installed emsdk, used by ``--native-wasm``
+    instead of bootstrapping the pinned one. Example value: '/opt/emsdk'
     - ``IFCOS_BUILD_PYTHON_WRAPPER`` - enable building the Python wrapper, `on` by default.
     - ``QT_DIR`` - optional path to a pre-installed Qt6 (e.g. `brew --prefix qt` on Mac`).
     Skips fetching Qt6 via aqtinstall if the install is found there.
@@ -123,6 +128,10 @@ from urllib.request import urlretrieve
 
 from typing_extensions import assert_never
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "win"))
+# The `nix` package lives next to the repository root, not next to this script.
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
 from common import (
     ADD_COMMIT_SHA_DEFAULT,
     BUILD_CFG_DEFAULT,
@@ -135,6 +144,8 @@ from common import (
     is_on_off,
     resolve_cli_or_env,
 )
+
+from nix import core
 
 # `common` configures the root logger on import, so reuse it here.
 logger = logging.getLogger()
@@ -194,6 +205,7 @@ class Args(NamedTuple):
     occt_shared: bool
     mac_cross_compile_intel: bool
     wasm: bool
+    native_wasm: bool
     num_build_procs: int
     schemas: str | None
     build_cfg: BuildCfg
@@ -316,6 +328,13 @@ def parse_args() -> tuple[Args, DynamicArgs]:
     )
     arg_parser.add_argument("-wasm", "--wasm", action="store_true", default=False, help="Compile for wasm.")
     arg_parser.add_argument(
+        "--native-wasm",
+        action="store_true",
+        default=False,
+        help="Build the standalone WASM targets with the generated C API, using the pinned emsdk "
+        "instead of a pyodide build environment. Implies -wasm.",
+    )
+    arg_parser.add_argument(
         "--num-build-procs",
         dest="num_build_procs",
         type=int,
@@ -405,9 +424,14 @@ def parse_args() -> tuple[Args, DynamicArgs]:
         ifcopenshell_shared=namespace.ifcopenshell_shared or namespace.shared,
         # -shared implies a shared OCCT too, even overriding an explicit --no-occt-shared.
         occt_shared=namespace.shared
-        or (namespace.occt_shared if namespace.occt_shared is not None else not namespace.wasm),
+        or (
+            namespace.occt_shared
+            if namespace.occt_shared is not None
+            else not (namespace.wasm or namespace.native_wasm)
+        ),
         mac_cross_compile_intel=namespace.mac_cross_compile_intel,
-        wasm=namespace.wasm,
+        wasm=namespace.wasm or namespace.native_wasm,
+        native_wasm=namespace.native_wasm,
         num_build_procs=num_build_procs,
         schemas=schemas,
         build_cfg=build_cfg,
@@ -451,9 +475,11 @@ MAC_CROSS_COMPILE_INTEL = ARGS.mac_cross_compile_intel
 assert APPLE or not MAC_CROSS_COMPILE_INTEL
 
 WASM = ARGS.wasm
-"""Build WASM outside pyodide build environment."""
+"""Compile for wasm."""
+NATIVE_WASM = ARGS.native_wasm
+"""Build the standalone WASM targets with the generated C API instead of the pyodide-hosted Python wrapper."""
 WASM_CMAKE_IS_USING_INIT_VARS = False
-if WASM:
+if WASM and not NATIVE_WASM:
 
     def get_pyodide_config_var(var_name: str) -> str:
         output = sp.check_output(["pyodide", "config", "get", var_name], encoding="utf-8").strip()
@@ -523,6 +549,18 @@ if TOOLSET:
 DEFAULT_DEPS_DIR = os.path.realpath(DEFAULT_DEPS_DIR)
 
 DEPS_DIR = os.getenv("DEPS_DIR", DEFAULT_DEPS_DIR)
+
+if NATIVE_WASM:
+    # The pinned emsdk replaces the pyodide build environment. It has to be activated
+    # before the dependency builds so that `emconfigure`/`emcmake` resolve to it.
+    EMSDK_DIR = Path(os.environ.get("WASM_NATIVE_TOOLCHAIN", Path(DEPS_DIR) / "emsdk"))
+    core.bootstrap_emsdk(core.load_lockfile(), EMSDK_DIR)
+    os.environ.update(core.emsdk_env(EMSDK_DIR))
+    for flag in ("CFLAGS", "CXXFLAGS", "LDFLAGS"):
+        os.environ[flag] = f"{os.environ.get(flag, '')} -fwasm-exceptions -sSUPPORT_LONGJMP=wasm"
+    # Unlike pyodide, emsdk does not inject flags through `SIDE_MODULE_*`. The emscripten
+    # toolchain reads them from the environment, so they must not become cache variables.
+    WASM_CMAKE_IS_USING_INIT_VARS = True
 
 if not os.path.exists(DEPS_DIR):
     os.makedirs(DEPS_DIR)
@@ -661,6 +699,11 @@ if WASM:
         # Skipping `proj`, otherwise we would also need to build/install sqlite3 for wasm.
         "proj",
     }
+    if NATIVE_WASM:
+        # The standalone WASM targets ship the geometry stack and the generated C API.
+        # SWIG, Python and the Python wrapper are only needed by the pyodide-hosted flow.
+        SKIP_TARGETS_FOR_WASM.discard("IfcGeom")
+        SKIP_TARGETS_FOR_WASM.update(("swig", "python", "IfcOpenShell-Python"))
     SKIP_TARGETS_FOR_WASM = {t.lower() for t in SKIP_TARGETS_FOR_WASM}
     skip_targets = {t for t in targets if t.lower() in SKIP_TARGETS_FOR_WASM}
     if skip_targets:
@@ -681,7 +724,7 @@ missing_commands: list[str] = []
 # because there are no more prebuilt binaries and downloading/building takes too long.
 required_commands = [git, bunzip2, tar, cc, cplusplus, make, "patch", "cmake", yacc, xz, bison]
 if WASM:
-    required_commands.append("pyodide")
+    required_commands.append("emcmake" if NATIVE_WASM else "pyodide")
 else:
     required_commands.append("uv")
 if platform.system() == "Linux" and "BonsaiViewer" in targets:
@@ -1363,6 +1406,9 @@ if "occ" in targets:
 
     if WASM:
         patches.append("./patches/occt/no_em_js.patch")
+    if NATIVE_WASM:
+        # Override cached CMake flags as well as flags for a fresh dependency build.
+        occt_args.extend([f"-DCMAKE_CXX_FLAGS={CXXFLAGS}", f"-DCMAKE_C_FLAGS={CFLAGS}"])
 
     if ARGS.occt_shared:
         # Using static flags for shared builds break it
@@ -1798,6 +1844,10 @@ if WASM:
     # inside of the sysroot set by the emscriptem toolchain
     cmake_args.append("-DWASM_BUILD=On")
 
+extra_cmake_args = os.environ.get("IFCOS_CMAKE_ARGS")
+if extra_cmake_args:
+    cmake_args.extend(extra_cmake_args.split())
+
 if ARGS.schemas:
     cmake_args.append(f"-DSCHEMA_VERSIONS={ARGS.schemas}")
 else:
@@ -2107,6 +2157,32 @@ if "IfcOpenShell-Python" in targets:
             if dest.exists():
                 shutil.rmtree(dest)
             shutil.move(module_dir, dest)
+
+if NATIVE_WASM:
+    logger.info("\rConfiguring standalone WASM targets...")
+    run_cmake(
+        "ifcopenshell",
+        ifcos_build_args
+        + [
+            # The standalone targets are driven by the generated C API, not SWIG.
+            "-DBUILD_IFCAPI=ON",
+            "-DBUILD_IFCPYTHON=OFF",
+            # WASM builds always regenerate the C API, which needs the `clang`
+            # bindings, so the discovery has to run in this interpreter.
+            f"-DPYTHON_EXECUTABLE={sys.executable}",
+            # `WASM_BUILD` defaults these to off because the pyodide flow ships no geometry.
+            "-DWITH_OPENCASCADE=ON",
+            "-DWITH_CGAL=ON",
+            "-DWITH_MANIFOLD=ON",
+        ]
+        + cmake_args
+        + get_cmake_args_prefix_path(),
+        cmake_dir=CMAKE_DIR,
+        cwd=ifcos_build_dir,
+    )
+
+    logger.info("\rBuilding wasm modules...   ")
+    cmake_build(ifcos_build_dir, ["ifcopenshell_wasm", "ifcopenshell_wasm_node"])
 
 Dependencies.write_install_dirs_json()
 

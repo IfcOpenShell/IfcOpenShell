@@ -24,7 +24,7 @@
 using namespace ifcopenshell::geom;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcAxis2Placement3D& inst) {
-	Eigen::Vector3d o(0, 0, 0), axis(0, 0, 1), refDirection, X(1, 0, 0);
+	Eigen::Vector3d o(0, 0, 0), axis(0, 0, 1), refDirection;
 	try {
 		taxonomy::point3::ptr v = taxonomy::cast<taxonomy::point3>(map(inst.Location()));
 		o = *v->components_;
@@ -47,9 +47,9 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcAxis2Placement3D& inst) {
 		taxonomy::direction3::ptr v = taxonomy::cast<taxonomy::direction3>(map(inst.RefDirection()));
 		refDirection = *v->components_;
 	} else {
-		if (acos(axis.dot(X)) > 1.e-5) {
-			refDirection = { 1., 0., 0. };
-		} else {
+		// Default to +X unless Axis is parallel to it, in either direction.
+		refDirection = { 1., 0., 0. };
+		if (axis.cross(refDirection).squaredNorm() < 1.e-7) {
 			refDirection = { 0., 0., 1. };
 		}
 		auto Xvec = axis.dot(refDirection) * axis;
