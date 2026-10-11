@@ -44,15 +44,27 @@ from bonsai.bim.module.drawing.data import DecoratorData, DrawingsData
 
 
 class External(svgwrite.container.Group):
+    # Parsed elements must use svgwrite's literal xmlns:prefix convention, or
+    # ET.tostring() re-declares the namespace on top of svgwrite's own declaration.
+    _NS_PREFIXES = {
+        "http://www.w3.org/2000/svg": "",
+        "http://www.w3.org/1999/xlink": "xlink",
+    }
+
     def __init__(self, xml, **extra):
         self.xml = xml
 
-        # Remove namespace
-        ns = "{http://www.w3.org/2000/svg}"
-        nsl = len(ns)
         for elem in self.xml.iter():
-            if elem.tag.startswith(ns):
-                elem.tag = elem.tag[nsl:]
+            if elem.tag.startswith("{"):
+                uri, _, local = elem.tag[1:].partition("}")
+                prefix = self._NS_PREFIXES.get(uri, "")
+                elem.tag = f"{prefix}:{local}" if prefix else local
+            for key in list(elem.attrib):
+                if key.startswith("{"):
+                    uri, _, local = key[1:].partition("}")
+                    prefix = self._NS_PREFIXES.get(uri)
+                    new_key = f"{prefix}:{local}" if prefix else local
+                    elem.attrib[new_key] = elem.attrib.pop(key)
 
         super().__init__(**extra)
 
