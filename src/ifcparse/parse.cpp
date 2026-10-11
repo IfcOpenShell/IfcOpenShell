@@ -2842,7 +2842,7 @@ bool ifcopenshell::impl::in_memory_file_storage::index_lazily(const std::string&
             express::base instance(data);
             bytype_excl_[declaration].push_back(instance);
             max_id = (std::max)(max_id, (unsigned int)name);
-            if (guid_end > guid_begin && declaration->is(*ifcroot)) {
+            if (guid_begin != 0 && declaration->is(*ifcroot)) {
                 std::string guid;
                 guid.reserve(guid_end - guid_begin);
                 for (size_t at = guid_begin; at < guid_end; ++at) {
