@@ -23,7 +23,7 @@ No point forces in this analysis model's load cases.
 ### Forces at {{{name}}}
 {{#diagram}}
 
-![Forces at {{{name}}}]({{{diagram}}})
+<p align="center"><img src="{{{diagram}}}" alt="Forces at {{{name}}}"></p>
 {{/diagram}}
 
 | | Load | Magnitude | Direction | Found |
@@ -40,27 +40,21 @@ No point forces in this analysis model's load cases.
 #### {{#has_solving}}Components{{/has_solving}}{{^has_solving}}Components and resultant{{/has_solving}}
 {{#components}}
 
-$$
-{{{latex}}}
-$$
+$\displaystyle {{{latex}}}$
 {{/components}}
 {{#has_solving}}
 
 #### Solving
 {{#solving}}
 
-$$
-{{{latex}}}
-$$
+$\displaystyle {{{latex}}}$
 {{/solving}}
 
 #### Resultant
 {{/has_solving}}
 {{#steps}}
 
-$$
-{{{latex}}}
-$$
+$\displaystyle {{{latex}}}$
 {{/steps}}
 
 **{{{summary}}}**
