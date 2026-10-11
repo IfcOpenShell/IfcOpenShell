@@ -33,6 +33,7 @@ import ifcopenshell.util.shape_builder
 import numpy as np
 from ifcopenshell.util.shape_builder import ShapeBuilder, V
 
+import bonsai.core.root
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.tool.model import Model as subject
@@ -158,7 +159,15 @@ class TestStairCalculatedParams(NewFile):
 
     def test_run(self):
         bpy.ops.bim.create_project()
-        bpy.ops.mesh.add_stair()
+
+        obj = bpy.data.objects.new("StairFlight", bpy.data.meshes.new("IfcStairFlight"))
+        bonsai.core.root.assign_class(
+            tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcStairFlight", should_add_representation=False
+        )
+        bpy.context.view_layer.objects.active = obj
+        tool.Blender.select_object(obj)
+        bpy.ops.bim.add_stair()
+
         pset_data_base = {
             "number_of_treads": 3,
             "height": 1.0,
@@ -218,6 +227,21 @@ class TestStairCalculatedParams(NewFile):
         pset_data["nosing_length"] = -0.1
         calculated_data["Length"] += 0.1 * pset_data["number_of_treads"]
         self.compare_data(pset_data, calculated_data)
+
+
+class TestDeprecatedMeshAddOperatorsAreRemoved(NewFile):
+    NAMES = ("add_stair", "add_window", "add_door", "add_railing", "add_roof")
+
+    @staticmethod
+    def is_registered(operator_module, name: str) -> bool:
+        try:
+            getattr(operator_module, name).get_rna_type()
+        except KeyError:
+            return False
+        return True
+
+    def test_the_mesh_add_operators_are_not_registered(self):
+        assert [name for name in self.NAMES if self.is_registered(bpy.ops.mesh, name)] == []
 
 
 class TestGenerateStair2DProfile(NewFile):
