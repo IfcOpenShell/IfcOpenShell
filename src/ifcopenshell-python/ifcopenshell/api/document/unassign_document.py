@@ -28,7 +28,7 @@ def unassign_document(
 ) -> None:
     """Unassigns a document and an association to the list of products
 
-    :param product: The list of objects that the document reference or information is
+    :param products: The list of objects that the document reference or information is
         related to.
     :param document: The IfcDocumentReference (typically) or in rare cases
         the IfcDocumentInformation that is associated with the product
