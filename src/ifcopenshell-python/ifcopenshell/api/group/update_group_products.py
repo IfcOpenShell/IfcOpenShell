@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Union
+
 import ifcopenshell
 import ifcopenshell.api.owner
 import ifcopenshell.guid
@@ -24,7 +26,7 @@ import ifcopenshell.util.element
 
 def update_group_products(
     file: ifcopenshell.file, group: ifcopenshell.entity_instance, products: list[ifcopenshell.entity_instance]
-) -> ifcopenshell.entity_instance:
+) -> Union[ifcopenshell.entity_instance, None]:
     """Sets a group products to be an explicit list of products
 
     Any previous products assigned to that group will have their assignment
@@ -32,17 +34,21 @@ def update_group_products(
 
     :param products: A list of IfcProduct elements to assign to the group
     :param group: The IfcGroup to assign the products to
-    :return: The IfcRelAssignsToGroup relationship
+    :return: The IfcRelAssignsToGroup relationship, or None if the group has
+        no products (any existing assignment is removed instead)
 
     Example:
 
     .. code:: python
 
         group = ifcopenshell.api.group.add_group(model, name="Furniture")
+        furniture = ifcopenshell.api.root.create_entity(model, ifc_class="IfcFurniture")
         ifcopenshell.api.group.update_group_products(model,
-            products=model.by_type("IfcFurniture"), group=group)
+            products=[furniture], group=group)
     """
     if not group.IsGroupedBy:
+        if not products:
+            return None
         return file.create_entity(
             "IfcRelAssignsToGroup",
             **{
@@ -65,5 +71,12 @@ def update_group_products(
             if history:
                 ifcopenshell.util.element.remove_deep2(file, history)
 
-        rels[0].RelatedObjects = list(objects)
-        return rels[0]
+        if objects:
+            rels[0].RelatedObjects = list(objects)
+            return rels[0]
+        else:
+            history = rels[0].OwnerHistory
+            file.remove(rels[0])
+            if history:
+                ifcopenshell.util.element.remove_deep2(file, history)
+            return None
