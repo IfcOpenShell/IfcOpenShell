@@ -289,14 +289,18 @@ class CopyAnnotationToDrawing(bpy.types.Operator, tool.Ifc.Operator):
         annotations = self.get_selected_annotations(context)
         previous_selection = [obj for a in annotations if (obj := tool.Ifc.get_object(a))]
         previous_active = context.view_layer.objects.active
-        copied = core.copy_annotations_to_drawing(
-            tool.Ifc,
-            tool.Collector,
-            tool.Drawing,
-            tool.Geometry,
-            annotations=annotations,
-            target_drawing=target_drawing,
-        )
+        try:
+            copied = core.copy_annotations_to_drawing(
+                tool.Ifc,
+                tool.Collector,
+                tool.Drawing,
+                tool.Geometry,
+                annotations=annotations,
+                target_drawing=target_drawing,
+            )
+        except tool.Drawing.CameraGeometryError as e:
+            self.report({"ERROR"}, str(e))
+            return {"CANCELLED"}
         for obj in context.selected_objects:
             obj.select_set(False)
         for obj in previous_selection:
@@ -2528,7 +2532,11 @@ class ActivateDrawingBase(tool.Ifc.Operator):
                 # Importing the camera (if missing) ensures the drawing's
                 # collection exists so the annotations get collected into it.
                 if not (camera := tool.Ifc.get_object(selected_drawing)):
-                    camera = tool.Drawing.import_drawing(selected_drawing)
+                    try:
+                        camera = tool.Drawing.import_drawing(selected_drawing)
+                    except tool.Drawing.CameraGeometryError as e:
+                        self.report({"ERROR"}, str(e))
+                        continue
                 group = tool.Drawing.get_drawing_group(selected_drawing)
                 tool.Drawing.import_annotations_in_group(group)
 
@@ -2553,7 +2561,11 @@ class ActivateDrawingBase(tool.Ifc.Operator):
         dprops = tool.Drawing.get_document_props()
 
         if self.use_quick_preview:
-            tool.Blender.activate_camera(tool.Drawing.import_temporary_drawing_camera(drawing))
+            try:
+                tool.Blender.activate_camera(tool.Drawing.import_temporary_drawing_camera(drawing))
+            except tool.Drawing.CameraGeometryError as e:
+                self.report({"ERROR"}, str(e))
+                return {"CANCELLED"}
             return {"FINISHED"}
 
         viewport_position = None
@@ -2581,7 +2593,11 @@ class ActivateDrawingBase(tool.Ifc.Operator):
             else:
                 viewport_position = tool.Blender.get_viewport_position()
 
-        core.activate_drawing_view(tool.Ifc, tool.Blender, tool.Drawing, drawing=drawing)
+        try:
+            core.activate_drawing_view(tool.Ifc, tool.Blender, tool.Drawing, drawing=drawing)
+        except tool.Drawing.CameraGeometryError as e:
+            self.report({"ERROR"}, str(e))
+            return {"CANCELLED"}
 
         if not self.should_view_from_camera:
             if viewport_position is None:
