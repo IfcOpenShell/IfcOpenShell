@@ -180,8 +180,10 @@ class AssignDocument(bpy.types.Operator, tool.Ifc.Operator):
     document: bpy.props.IntProperty()
 
     def _execute(self, context):
-        objs = [bpy.data.objects[self.obj]] if self.obj else tool.Blender.get_selected_objects()
+        objs = [bpy.data.objects.get(self.obj)] if self.obj else tool.Blender.get_selected_objects()
         for obj in objs:
+            if not obj:
+                continue
             element = tool.Ifc.get_entity(obj)
             if element:
                 core.assign_document(tool.Ifc, product=element, ifc_document=tool.Ifc.get().by_id(self.document))
