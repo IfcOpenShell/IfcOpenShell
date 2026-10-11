@@ -525,20 +525,35 @@ namespace {
 #endif
 
         IfcSchema::IfcSurfaceStyle surface_style_;
+        IfcSchema::IfcSurfaceStyle negative_surface_style_;
+        std::pair<IfcSchema::IfcSurfaceStyle, T> negative_fallback{ IfcSchema::IfcSurfaceStyle{}, T{} };
         for (auto& style : prs_styles) {
             if (auto surface_style = style.as<IfcSchema::IfcSurfaceStyle>()) {
-                if (surface_style.Side() != IfcSchema::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE) {
+                const bool is_negative = surface_style.Side() == IfcSchema::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE;
+                if (!is_negative) {
                     surface_style_ = surface_style;
-                    auto styles_elements = surface_style.Styles();
-                    for (auto mt = styles_elements.begin(); mt != styles_elements.end(); ++mt) {
-                        if (auto mtt = (*mt).template as<T>()) {
+                } else if (!negative_surface_style_) {
+                    negative_surface_style_ = surface_style;
+                }
+                auto styles_elements = surface_style.Styles();
+                for (auto mt = styles_elements.begin(); mt != styles_elements.end(); ++mt) {
+                    if (auto mtt = (*mt).template as<T>()) {
+                        if (!is_negative) {
                             return std::make_pair(surface_style, mtt);
+                        } else if (!negative_fallback.first) {
+                            negative_fallback = std::make_pair(surface_style, mtt);
                         }
                     }
                 }
             }
         }
-        return std::make_pair(surface_style_, T{});
+        if (negative_fallback.first) {
+            return negative_fallback;
+        }
+        if (surface_style_) {
+            return std::make_pair(surface_style_, T{});
+        }
+        return std::make_pair(negative_surface_style_, T{});
     }
 
     bool process_colour(const IfcSchema::IfcColourRgb& colour, std::array<double, 3>& rgb) {
