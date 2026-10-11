@@ -1,5 +1,5 @@
 # IfcOpenShell - IFC toolkit and geometry engine
-# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2026 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of IfcOpenShell.
 #
@@ -15,7 +15,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
-
+# This file was generated with the assistance of an AI coding tool.
 
 import datetime
 
@@ -26,19 +26,8 @@ import test.bootstrap
 
 # NOTE: sequence module features relies on entities introduced in IFC4
 # therefore no IFC2X3 tests
-class TestRemoveWorkTime(test.bootstrap.IFC4):
-    def test_remove_work_time(self):
-        self.file.create_entity("IfcProject")
-        work_calendar = ifcopenshell.api.sequence.add_work_calendar(self.file)
-        work_time = ifcopenshell.api.sequence.add_work_time(self.file, work_calendar)
-        ifcopenshell.api.sequence.assign_recurrence_pattern(self.file, work_time)
-        assert len(self.file.by_type("IfcRecurrencePattern")) == 1
-
-        ifcopenshell.api.sequence.remove_work_time(self.file, work_time)
-        assert len(self.file.by_type("IfcWorkTime")) == 0
-        assert len(self.file.by_type("IfcRecurrencePattern")) == 0
-
-    def test_removing_an_exception_time_updates_calculated_working_days(self):
+class TestEditWorkCalendar(test.bootstrap.IFC4):
+    def test_editing_exception_times_updates_calculated_working_days(self):
         self.file.create_entity("IfcProject")
         calendar = ifcopenshell.api.sequence.add_work_calendar(self.file)
         work_time = ifcopenshell.api.sequence.add_work_time(self.file, work_calendar=calendar)
@@ -57,9 +46,11 @@ class TestRemoveWorkTime(test.bootstrap.IFC4):
         finish = datetime.date(2020, 1, 14)
         assert ifcopenshell.util.sequence.count_working_days(start, finish, calendar) == 8
 
-        ifcopenshell.api.sequence.remove_work_time(self.file, work_time=exception_time)
+        ifcopenshell.api.sequence.edit_work_calendar(
+            self.file, work_calendar=calendar, attributes={"ExceptionTimes": None}
+        )
         assert ifcopenshell.util.sequence.count_working_days(start, finish, calendar) == 10
 
 
-class TestRemoveWorkTimeIFC4X3(test.bootstrap.IFC4X3, TestRemoveWorkTime):
+class TestEditWorkCalendarIFC4X3(test.bootstrap.IFC4X3, TestEditWorkCalendar):
     pass
