@@ -1,0 +1,14 @@
+// This file was generated with the assistance of an AI coding tool.
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "extends": ["./typedoc.json"],
+  "plugin": ["typedoc-plugin-markdown"],
+  "out": "../../../docs/output/typescript-api",
+  "readme": "none",
+  "outputFileStrategy": "modules",
+  "entryFileName": "index",
+  "hidePageHeader": true,
+  "hideBreadcrumbs": true,
+  "useHTMLAnchors": true,
+  "sanitizeComments": true
+}

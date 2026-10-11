@@ -213,7 +213,7 @@ class Structural(bonsai.core.tool.Structural):
         """
         if not (ccs := getattr(item, "ConditionCoordinateSystem", None)):
             return 0.0
-        rotation = ifcopenshell.util.placement.get_axis2placement(ccs)[:3, :3]
+        rotation = ifcopenshell.util.placement.get_placement(ccs)[:3, :3]
         x, y = rotation[:, 0], rotation[:, 1]
         if abs(x[1]) > 1e-6 or abs(y[1] - 1) > 1e-6:
             return None

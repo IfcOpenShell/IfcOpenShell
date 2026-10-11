@@ -1045,7 +1045,7 @@ struct shape_rtti : public boost::static_visitor<PyObject*>
 			} else {
 				return brep;
 			}
-		} else if (instance.declaration().is("IfcPlacement") || instance.declaration().is("IfcObjectPlacement")) {
+		} else if (instance.declaration().is("IfcPlacement") || instance.declaration().is("IfcObjectPlacement") || instance.declaration().is("IfcCartesianTransformationOperator")) {
 			auto item = ifcopenshell::geom::taxonomy::cast<ifcopenshell::geom::taxonomy::matrix4>(kernel.mapping()->map(instance));
 			if (item == nullptr) {
 				throw ifcopenshell::exception("Failed to convert placement");
