@@ -98,3 +98,34 @@ def test_create_shape_prefers_body_over_axis_9771(axis_first):
     column.Representation = model.createIfcProductDefinitionShape(Representations=representations)
     shape = ifcopenshell.geom.create_shape(ifcopenshell.geom.settings(), column)
     assert len(shape.geometry.verts) // 3 == 8
+
+
+@pytest.mark.parametrize(
+    "points, length",
+    [(((0.0, 0.0), (1.0, 0.0)), 1.0), (((0.0, 0.0), (1.0, 0.0), (1.0, 1.0)), 2.0)],
+    ids=["straight", "mitered"],
+)
+def test_center_line_profile_volume_2077(points, length):
+    model = ifcopenshell.file(schema="IFC4")
+    placement = model.createIfcAxis2Placement3D(model.createIfcCartesianPoint((0.0, 0.0, 0.0)))
+    context = model.createIfcGeometricRepresentationContext(None, "Model", 3, 1e-5, placement, None)
+    units = model.createIfcUnitAssignment([model.createIfcSIUnit(None, "LENGTHUNIT", None, "METRE")])
+    model.createIfcProject(ifcopenshell.guid.new(), None, "Test", None, None, None, None, [context], units)
+    thickness = 0.1
+    curve = model.createIfcPolyline([model.createIfcCartesianPoint(p) for p in points])
+    profile = model.createIfcCenterLineProfileDef("AREA", None, curve, thickness)
+    solid = model.createIfcExtrudedAreaSolid(profile, placement, model.createIfcDirection((0.0, 0.0, 1.0)), 1.0)
+    representation = model.createIfcShapeRepresentation(context, "Body", "SweptSolid", [solid])
+    product = model.createIfcBuildingElementProxy(
+        ifcopenshell.guid.new(),
+        None,
+        "Flashing",
+        None,
+        None,
+        model.createIfcLocalPlacement(None, placement),
+        model.createIfcProductDefinitionShape(None, None, [representation]),
+    )
+    settings = ifcopenshell.geom.settings()
+    settings.set("use-world-coords", True)
+    shape = ifcopenshell.geom.create_shape(settings, product, geometry_library="opencascade")
+    assert ifcopenshell.util.shape.get_volume(shape.geometry) == pytest.approx(length * thickness, rel=1e-6)
