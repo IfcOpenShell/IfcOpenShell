@@ -40,6 +40,11 @@ import pystache
 import bonsai.tool as tool
 from bonsai.bim.module.structural.load_decoration_data import ShaderInfo
 
+# What is white in the viewport, as resultants, made near black for paper; symbols in it are left uncoloured.
+NEUTRAL = "#222222"
+# X, Y and Z components, as red, green and blue that read on white and on dark pages alike.
+AXIS_COLORS = {(1.0, 0.0, 0.0): "#d23a3a", (0.0, 1.0, 0.0): "#2e9e44", (0.0, 0.0, 1.0): "#3b74d8"}
+
 # How each eighth's angle is measured, as Edit Load enters it.
 EIGHTH_AXES = {
     "Q1": "from +X, turning up",
@@ -206,7 +211,7 @@ def get_resultant_calculation(
     text_unit = r"\ \text{" + re.sub(r"([#$%&_{}])", r"\\\1", unit) + "}"
     forces = [get_force_terms(activity, i) for i, activity in enumerate(activities, 1)]
     # Each force in the colour of its arrow. Markdown keeps colour only in math, so symbols are coloured there.
-    palette = [(colors or {}).get(activity.id(), "#222222") for activity in activities]
+    palette = [(colors or {}).get(activity.id(), NEUTRAL) for activity in activities]
     rows = []
     for force, color in zip(forces, palette):
         found = [text for text, locked in zip(("magnitude", "direction"), force["locks"]) if not locked]
@@ -231,7 +236,7 @@ def get_resultant_calculation(
         eighth, angle, _, _ = tool.Structural.get_eighth(total[0], total[2])
         direction = f"{angle:.1f}° {eighth}, {EIGHTH_AXES[eighth]}"
     found = resultant_found
-    rows.append(get_table_row("R", "Resultant", magnitude, direction, found, "#222222"))
+    rows.append(get_table_row("R", "Resultant", magnitude, direction, found, NEUTRAL))
     rows[-1]["magnitude"] += f" {unit}"
     # Detailed steps in grey, applied in LaTeX so that both formats show it; force symbols keep their colours.
     gray = lambda step: f"{{\\color{{#8c8c8c}}\\qquad {step}}}" if isinstance(step, Detail) else step  # Indented.
@@ -261,7 +266,9 @@ def get_resultant_calculation(
 
 def get_tilted_steps(forces: list[dict[str, Any]], tilt: float, text_unit: str) -> list[str]:
     """Each force resolved along a point's tilted axes x' and z', by its angle to each, then their sums"""
-    steps: list[str] = []
+    steps: list[str] = [
+        Detail("\\text{A component along an axis is the force times the cosine of the angle between them}")
+    ]
     totals = {"x'": [], "z'": []}
     for i, force in enumerate(forces, 1):
         if not force["in_plane"]:
@@ -270,18 +277,32 @@ def get_tilted_steps(forces: list[dict[str, Any]], tilt: float, text_unit: str) 
         magnitude, direction = math.hypot(x, z), math.degrees(math.atan2(z, x)) % 360
         steps.append(Lead(f"{force['symbol']} \\text{{ acts at }} {direction:.1f}^\\circ \\text{{ from }} +X"))
         for name, axis in (("x'", tilt % 360), ("z'", (tilt + 90) % 360)):
-            between = abs((direction - axis + 180) % 360 - 180)
-            value = magnitude * math.cos(math.radians(between))
+            difference = abs(direction - axis)
+            between = min(difference, 360 - difference)
+            cosine = math.cos(math.radians(between))
+            value = magnitude * cosine
+            steps.append(Lead(f"{name} \\text{{ lies at }} {axis:.1f}^\\circ \\text{{ from }} +X"))
             steps.append(
                 Detail(
-                    f"{name} \\text{{ lies at }} {axis:.1f}^\\circ \\text{{ so the angle between is }} {between:.1f}^\\circ"
+                    f"\\text{{Angle between: }} |{direction:.1f}^\\circ - {axis:.1f}^\\circ| = {difference:.1f}^\\circ"
                 )
             )
+            if difference > 180:
+                steps.append(
+                    Detail(
+                        f"\\text{{The smaller way round: }} 360^\\circ - {difference:.1f}^\\circ = {between:.1f}^\\circ"
+                    )
+                )
             steps.append(
                 f"F_{{{name}{i}}} = F_{{{i}}} \\cos {between:.1f}^\\circ = ({magnitude:.2f}) \\cos {between:.1f}^\\circ "
                 f"= {value:.2f}{text_unit}"
             )
-            steps.append(Detail(f"\\cos {between:.1f}^\\circ = {math.cos(math.radians(between)):.4f}"))
+            steps.append(Detail(f"\\cos {between:.1f}^\\circ = {cosine:.4f}"))
+            steps.append(Detail(f"({magnitude:.2f})({cosine:.4f}) = {value:.2f}"))
+            if value < -0.005:
+                steps.append(Detail(f"\\text{{Negative: it points along }} -{name}"))
+            elif abs(value) < 0.005:
+                steps.append(Detail(f"\\text{{Zero: it lies square to }} {name}"))
             totals[name].append((i, value))
     for name, values in totals.items():
         if len(values) > 1:
@@ -298,7 +319,7 @@ def get_table_row(
     return {
         "color": color,
         "symbol": symbol,
-        "colored_symbol": f"{{\\color{{{color}}}{symbol}}}",
+        "colored_symbol": f"{{\\color{{{color}}}{symbol}}}" if color != NEUTRAL else symbol,
         "name": name,
         "magnitude": f"{magnitude:.2f}",
         "direction": direction,
@@ -354,6 +375,8 @@ def get_colored_symbols(
             color = axis_colors[axis]
         else:
             return symbol
+        if color == NEUTRAL:
+            return symbol  # Left to the page's own text colour, which reads on dark themes too.
         return f"{{\\color{{{color}}}{symbol}}}"
 
     return re.sub(r"F_\{([xyz]'?)?(\d+)\}|R_(?:\{([xyz]'?)\}|([xyz])(?![A-Za-z]))|\\theta_\{(\d+)\}", colored, step)
@@ -703,7 +726,8 @@ def write_diagram(
     margin = 90
     to_svg = lambda point: (flat(point) - low) * scale + margin
     width, height = (high - low) * scale + 2 * margin
-    elements = []
+    # On white, as a figure on paper, so that its near-black lines read on dark pages too.
+    elements = ['<rect width="100%" height="100%" fill="white"/>']
     for shape in shapes:
         color, size = get_svg_color(shape["color"]), shape["size"] * scale
         if shape["type"] == "LINE":
@@ -748,7 +772,10 @@ def get_svg_color(color: tuple) -> str:
     """A viewport colour made to read on white paper: darkened, and white as near black"""
     rgb = [min(max(c, 0.0), 1.0) for c in color[:3]]
     if min(rgb) > 0.9:
-        return "#222222"
+        return NEUTRAL
+    # Axis colours, of components, darkened would be too dark for dark pages, so take mid tones instead.
+    if axis_color := AXIS_COLORS.get(tuple(round(c, 3) for c in rgb)):
+        return axis_color
     return "#" + "".join(f"{round(c * 0.72 * 255):02x}" for c in rgb)
 
 
