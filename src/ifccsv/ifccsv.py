@@ -105,6 +105,9 @@ class IfcCsv:
             attributes.insert(0, "GlobalId")
             headers.insert(0, "GlobalId")
 
+        elements = list(elements)
+        attributes, headers = self.expand_wildcard_attributes(attributes, headers, elements)
+
         for element in elements:
             result = []
 
@@ -384,6 +387,39 @@ class IfcCsv:
         self.dataframe = pd.DataFrame(self.results, columns=self.headers)
         return self.dataframe
 
+    def expand_wildcard_attributes(self, attributes, headers, elements):
+        """Expand ``*`` and ``Pset_Name.*`` attributes into concrete attribute names.
+
+        Any other attribute, including a regex query, passes through unchanged.
+        """
+        expanded_attributes = []
+        expanded_headers = []
+        for attribute, header in zip(attributes, headers):
+            if attribute != "*" and not (attribute.endswith(".*") and not attribute.startswith("/")):
+                expanded_attributes.append(attribute)
+                expanded_headers.append(header)
+                continue
+            if attribute == "*":
+                expansions = self.get_element_attributes(elements)
+            else:
+                expansions = self.get_wildcard_attributes(attribute)
+            for expanded in expansions:
+                if expanded in expanded_attributes:
+                    continue
+                expanded_attributes.append(expanded)
+                expanded_headers.append(None)
+        return expanded_attributes, expanded_headers
+
+    def get_element_attributes(self, elements):
+        results = []
+        for element in elements:
+            for name in element.get_info(recursive=False):
+                if name in ("id", "type"):
+                    continue
+                if name not in results:
+                    results.append(name)
+        return results
+
     def get_wildcard_attributes(self, attribute):
         results = set()
         pset_qto_name = attribute.split(".", 1)[0]
@@ -394,7 +430,7 @@ class IfcCsv:
                 results.update([p.Name for p in element.HasProperties])
             else:
                 results.update([p.Name for p in element.Quantities])
-        return ["{}.{}".format(pset_qto_name, n) for n in results]
+        return ["{}.{}".format(pset_qto_name, n) for n in sorted(results)]
 
     def Import(
         self,
