@@ -1951,7 +1951,13 @@ class Blender(bonsai.core.tool.Blender):
     @classmethod
     def get_addon_preferences(cls) -> bonsai.bim.ui.BIM_ADDON_preferences:
         blender_package_name = cls.get_blender_addon_package_name()
-        return bpy.context.preferences.addons[blender_package_name].preferences
+        addon = bpy.context.preferences.addons.get(blender_package_name)
+        if addon is None:
+            raise RuntimeError(
+                f"Bonsai registered as '{blender_package_name}', which is not an enabled addon. "
+                "Restart Blender or reinstall the Bonsai extension."
+            )
+        return addon.preferences
 
     @classmethod
     def get_addon(cls, name: str) -> Union[types.ModuleType, None]:
