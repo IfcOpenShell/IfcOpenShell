@@ -33,7 +33,8 @@ class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
         "set RL value in Spatial Tool (it's a height of the cutting plane to generate space footprint), "
         "select the right default space container and run the operator.\n\n"
         "Note that if object is active, it will be used as a reference point instead of cursor. "
-        "If the active object is IfcSpace, it will be reused instead of creating a new IfcSpace"
+        "If the active object is IfcSpace, it will be reused instead of creating a new IfcSpace.\n\n"
+        "Enable 'Follow Slopes' in the Spatial tool to shape the space top to sloping roofs/slabs found above"
     )
 
     def _execute(self, context):
