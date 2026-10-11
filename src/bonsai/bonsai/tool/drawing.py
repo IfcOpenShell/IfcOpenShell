@@ -1366,6 +1366,14 @@ class Drawing(bonsai.core.tool.Drawing):
         )
 
     @classmethod
+    def setup_annotation_object_type(cls, element: ifcopenshell.entity_instance, object_type: str) -> None:
+        """Store the annotation kind in ObjectType; in IFC4X3 also set PredefinedType to USERDEFINED to stay valid."""
+        if element.ObjectType != object_type:
+            element.ObjectType = object_type
+        if hasattr(element, "PredefinedType") and element.PredefinedType != "USERDEFINED":
+            element.PredefinedType = "USERDEFINED"
+
+    @classmethod
     def run_type_assign_type(cls, element: ifcopenshell.entity_instance, relating_type: ifcopenshell.entity_instance):
         return bonsai.core.type.assign_type(tool.Ifc, tool.Model, tool.Type, element=element, type=relating_type)
 
