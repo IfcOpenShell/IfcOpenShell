@@ -133,6 +133,18 @@ class TestMarkManualBooleans(NewFile):
         assert set(value) == {boolean.id()}
 
 
+class TestAddDoorOnEmpty(NewFile):
+    def test_empty_is_recreated_as_a_mesh(self):
+        bpy.ops.bim.create_project()
+        empty = bpy.data.objects.new("Door", None)
+        bpy.context.scene.collection.objects.link(empty)
+        bpy.context.view_layer.objects.active = empty
+        empty.select_set(True)
+        bpy.ops.bim.assign_class(ifc_class="IfcDoor", predefined_type="DOOR")
+        bpy.ops.bim.add_door()
+        assert isinstance(bpy.context.active_object.data, bpy.types.Mesh)
+
+
 class TestUnmarkManualBooleans(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
