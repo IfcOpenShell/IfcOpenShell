@@ -388,6 +388,21 @@ class TestAttribute:
             inst=element,
             expected=True,
         )
+        facet = Attribute(name="Description", cardinality="optional")
+        unset_element = ifc.createIfcWall(Name="Foobar")
+        run(
+            "An optional facet passes when a valid attribute is simply unset",
+            facet=facet,
+            inst=unset_element,
+            expected=True,
+        )
+        unset_element.Description = ""
+        run(
+            "An optional facet fails when a valid attribute is an empty string",
+            facet=facet,
+            inst=unset_element,
+            expected=False,
+        )
 
         ifc = ifcopenshell.file()
         facet = Attribute(name="Name")
