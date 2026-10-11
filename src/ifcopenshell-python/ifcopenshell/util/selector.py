@@ -335,7 +335,10 @@ class FormatTransformer(lark.Transformer):
     def number(self, args):
         arg_val = args[0]
         if isinstance(arg_val, str):
-            arg_val = float(arg_val) if "." in arg_val else int(arg_val)
+            try:
+                arg_val = float(arg_val) if "." in arg_val else int(arg_val)
+            except ValueError:
+                return args[0]
         if len(args) >= 3 and args[2]:
             return "{:,}".format(arg_val).replace(".", "*").replace(",", args[2]).replace("*", args[1])
         elif len(args) >= 2 and args[1]:
@@ -381,7 +384,11 @@ class FormatTransformer(lark.Transformer):
 
     def int(self, args: list[str]) -> str:
         value = 0.0 if args[0] == "None" else args[0] or 0.0
-        return str(int(float(value)))
+        try:
+            return str(int(float(value)))
+        except (TypeError, ValueError):
+            # Non-numeric value: pass through rather than fail the expression (#6776).
+            return args[0]
 
 
 class GetElementTransformer(lark.Transformer):
