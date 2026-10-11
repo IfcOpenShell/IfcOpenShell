@@ -18,7 +18,9 @@
 
 from __future__ import annotations
 
+import csv
 import json
+import os
 from collections import Counter
 from typing import TYPE_CHECKING
 
@@ -173,6 +175,134 @@ class ExportCsvAttributes(bpy.types.Operator, ExportHelper):
             json.dump(data, outfile)
 
         return {"FINISHED"}
+
+
+class AddStackedCsvTemplates(bpy.types.Operator, ImportHelper):
+    bl_idname = "bim.add_stacked_csv_templates"
+    bl_label = "Add CSV Templates to Stack"
+    bl_description = "Add saved CSV settings templates to the stacked export list"
+    bl_options = {"REGISTER", "UNDO"}
+    filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
+    filename_ext = ".json"
+    files: bpy.props.CollectionProperty(type=bpy.types.OperatorFileListElement, options={"HIDDEN", "SKIP_SAVE"})
+    directory: bpy.props.StringProperty(subtype="DIR_PATH", options={"HIDDEN", "SKIP_SAVE"})
+
+    def execute(self, context):
+        props = tool.Blender.get_csv_props()
+        filepaths = [os.path.join(self.directory, f.name) for f in self.files if f.name] or [self.filepath]
+        for filepath in filepaths:
+            if not filepath:
+                continue
+            template = props.stacked_templates.add()
+            template.name = filepath
+        return {"FINISHED"}
+
+
+class RemoveStackedCsvTemplate(bpy.types.Operator):
+    bl_idname = "bim.remove_stacked_csv_template"
+    bl_label = "Remove CSV Template from Stack"
+    bl_description = "Remove a template from the stacked export list"
+    bl_options = {"REGISTER", "UNDO"}
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = tool.Blender.get_csv_props()
+        props.stacked_templates.remove(self.index)
+        return {"FINISHED"}
+
+
+class ExportStackedIfcCsv(bpy.types.Operator, ExportHelper):
+    bl_idname = "bim.export_stacked_ifccsv"
+    bl_label = "Export Stacked CSV"
+    bl_description = (
+        "Export one CSV where every listed template is appended as its own block.\n"
+        "Each block keeps its own header and summary rows, so per-template summaries become sub-totals"
+    )
+    filename_ext = ".csv"
+    filter_glob: bpy.props.StringProperty(default="*.csv", options={"HIDDEN"})
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    @classmethod
+    def poll(cls, context):
+        props = tool.Blender.get_csv_props()
+        if not props.stacked_templates:
+            cls.poll_message_set("Add at least one saved CSV settings template to the stack.")
+            return False
+        if not props.should_load_from_memory and not props.csv_ifc_file:
+            cls.poll_message_set("Select an IFC file or use 'load from memory' if it's loaded in Bonsai.")
+            return False
+        return True
+
+    def execute(self, context):
+        props = tool.Blender.get_csv_props()
+        self.filepath = bpy.path.ensure_ext(self.filepath, ".csv")
+        if props.should_load_from_memory:
+            ifc_file = tool.Ifc.get()
+        else:
+            ifc_file = ifcopenshell.open(props.csv_ifc_file)
+
+        blocks = []
+        for template in props.stacked_templates:
+            try:
+                blocks.append(self.get_template_block(ifc_file, template.name))
+            except Exception as e:
+                self.report({"ERROR"}, f"Failed to export template '{template.name}': {e}")
+                return {"CANCELLED"}
+
+        sep = props.csv_custom_delimiter if props.csv_delimiter == "CUSTOM" else props.csv_delimiter
+        with open(self.filepath, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f, delimiter=sep)
+            for i, (headers, results, summary) in enumerate(blocks):
+                if i:
+                    writer.writerow([])
+                writer.writerow(headers)
+                writer.writerows(results)
+                if summary is not None:
+                    writer.writerow(summary)
+
+        self.report({"INFO"}, f"Stacked {len(blocks)} templates to {os.path.basename(self.filepath)}.")
+        return {"FINISHED"}
+
+    def get_template_block(self, ifc_file: ifcopenshell.file, filepath: str) -> tuple[list, list, list | None]:
+        import ifccsv
+
+        with open(filepath) as f:
+            data = json.load(f)
+        settings = data["settings"]
+        attributes = [a["name"] for a in data["attributes"]]
+        headers = [a["header"] for a in data["attributes"]]
+        sort = [{"name": a["name"], "order": a["sort"]} for a in data["attributes"] if a["sort"] != "NONE"]
+        groups = [
+            {"name": a["name"], "type": a["group"], "varies_value": "Varies"}
+            for a in data["attributes"]
+            if a["group"] != "NONE"
+        ]
+        summaries = [{"name": a["name"], "type": a["summary"]} for a in data["attributes"] if a["summary"] != "NONE"]
+        formatting = [
+            {"name": a["name"], "format": a["formatting"]}
+            for a in data["attributes"]
+            if a["formatting"] != "{{value}}" and "{{value}}" in a["formatting"]
+        ]
+        elements = ifcopenshell.util.selector.filter_elements(ifc_file, data["query"])
+        ifc_csv = ifccsv.IfcCsv()
+        ifc_csv.export(
+            ifc_file,
+            elements,
+            attributes,
+            headers=headers,
+            include_global_id=settings["include_global_id"],
+            null=settings["null_value"],
+            empty=settings["empty_value"],
+            bool_true=settings["true_value"],
+            bool_false=settings["false_value"],
+            concat=settings["concat_value"],
+            sort=sort,
+            groups=groups,
+            summaries=summaries,
+            formatting=formatting,
+        )
+        summary_row = ifc_csv.summaries if ifc_csv.has_summaries() else None
+        return ifc_csv.headers, list(ifc_csv.results), summary_row
 
 
 class ExportIfcCsv(bpy.types.Operator, ExportHelper):
