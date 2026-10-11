@@ -1,0 +1,35 @@
+/*
+ * Bonsai - OpenBIM Blender Add-on
+ * Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+ *
+ * This file is part of Bonsai.
+ *
+ * Bonsai is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Bonsai is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY, without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * long with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
+ * Starter override: finer lineweight, for dense drawings where the
+ * defaults look too heavy (small-scale details, tightly packed plans).
+ * This is NOT a full stylesheet. Load it after default.css, for example:
+ *   default.css, override-fine-lineweight.css
+ * See docs/guides/drawings/styling.rst for the full guide.
+ */
+
+.cut { stroke-width: 0.25; }
+.projection { stroke-width: 0.18; }
+path.outline { stroke-width: 0.25; }
+path.boundary { stroke-width: 0.2; }
+
+/* Default plain linework annotations (grids, sketch lines) a touch finer too. */
+.PredefinedType-LINEWORK { stroke-width: 0.18; }
