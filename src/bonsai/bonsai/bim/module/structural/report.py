@@ -44,6 +44,8 @@ from bonsai.bim.module.structural.load_decoration_data import ShaderInfo
 NEUTRAL = "#222222"
 # X, Y and Z components, as red, green and blue that read on white and on dark pages alike.
 AXIS_COLORS = {(1.0, 0.0, 0.0): "#d23a3a", (0.0, 1.0, 0.0): "#2e9e44", (0.0, 0.0, 1.0): "#3b74d8"}
+# A symbol's subscript in diagram labels, written F_{x1} as in the steps.
+SUBSCRIPT = re.compile(r"_\{([^}]*)\}")
 
 # How each eighth's angle is measured, as Edit Load enters it.
 EIGHTH_AXES = {
@@ -849,7 +851,7 @@ def write_diagram(
     low, high = np.min(points, axis=0), np.max(points, axis=0)
     scale = 420 / max(*(high - low), 1e-9)
     # Room for the longest label beside its anchor, as labels run out from their anchors.
-    longest = max((len(re.sub(r"_\{([^}]*)\}", r"\1", t["text"])) for t in texts), default=0)
+    longest = max((len(get_shown_text(t["text"])) for t in texts), default=0)
     margin = max(90, 20 + 8.2 * longest)
     to_svg = lambda point: (flat(point) - low) * scale + margin
     width, height = (high - low) * scale + 2 * margin
@@ -906,6 +908,11 @@ def get_svg_color(color: tuple) -> str:
     return "#" + "".join(f"{round(c * 0.72 * 255):02x}" for c in rgb)
 
 
+def get_shown_text(text: str) -> str:
+    """A label as read, its subscripts inline, as they take about as much room as they show"""
+    return SUBSCRIPT.sub(r"\1", text)
+
+
 def get_svg_label(
     text: dict, anchor: np.ndarray, placed: list[tuple[float, float, float, float]], found: bool = False
 ) -> str:
@@ -916,8 +923,7 @@ def get_svg_label(
     content = str(text["text"])
     # Found values a little larger than the 13 px of the rest, rather than bold, which reads badly in SVG.
     font_size = 15 if found else 13
-    shown = re.sub(r"_\{([^}]*)\}", r"\1", content)  # As read, a subscript taking about as much room as it shows.
-    width, height = 7.5 * font_size / 13 * len(shown), 14.0 * font_size / 13
+    width, height = 7.5 * font_size / 13 * len(get_shown_text(content)), 14.0 * font_size / 13
     align = "start" if direction[0] > 0.3 else "end" if direction[0] < -0.3 else "middle"
     position = anchor + 8 * direction
     for _ in range(40):
@@ -931,7 +937,7 @@ def get_svg_label(
     color = get_svg_color(text.get("color", (0.3, 0.3, 0.3, 1)))
     escaped = content.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     # Symbols' subscripts, written F_{x1} as in the steps, set lower and smaller; Unicode has no subscript z.
-    escaped = re.sub(r"_\{([^}]*)\}", r'<tspan baseline-shift="sub" font-size="75%">\1</tspan>', escaped)
+    escaped = SUBSCRIPT.sub(r'<tspan baseline-shift="sub" font-size="75%">\1</tspan>', escaped)
     size = f' font-size="{font_size}"' if found else ""
     # On a white box, so that lines running under it do not cross the text.
     return (

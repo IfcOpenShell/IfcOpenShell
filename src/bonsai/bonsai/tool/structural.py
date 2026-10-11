@@ -271,6 +271,22 @@ class Structural(bonsai.core.tool.Structural):
             cls.edit_bbim_structural(item, {"AxesRise": rise, "AxesRun": run})
 
     @classmethod
+    def get_axes_terms(
+        cls, item: ifcopenshell.entity_instance
+    ) -> tuple[str, Union[str, None], float, Union[tuple[float, float], None]]:
+        """The terms a point's axes were set in, as Edit Axes takes them.
+
+        :return: "THREE_D", or "ANGLE" or "SLOPE" in the X-Z plane, then the eighth x' points into, its angle
+            from that eighth's axis, and the slope's rise and run if set as one.
+        """
+        if cls.get_axes_tilt(item) is None:
+            return "THREE_D", None, 0.0, None
+        rotation = cls.get_axes_rotation(item)
+        eighth, angle, _, _ = cls.get_eighth(rotation[0, 0], rotation[2, 0])
+        slope = cls.get_axes_slope(item)
+        return ("SLOPE" if slope else "ANGLE"), eighth, angle, slope
+
+    @classmethod
     def get_activity_load_case(
         cls, activity: ifcopenshell.entity_instance
     ) -> Union[ifcopenshell.entity_instance, None]:

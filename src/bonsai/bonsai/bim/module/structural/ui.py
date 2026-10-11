@@ -402,17 +402,15 @@ class BIM_PT_structural_connection(Panel):
         elif StructuralConnectionData.data["active_object_class"] == "IfcStructuralPointConnection":
             # The point's own axes, in the terms they were set in, with one dialog to edit them.
             element = tool.Ifc.get_entity(obj)
-            tilt, slope = tool.Structural.get_axes_tilt(element), tool.Structural.get_axes_slope(element)
-            rotation = tool.Structural.get_axes_rotation(element)
-            if tilt is None:
+            mode, eighth, angle, slope = tool.Structural.get_axes_terms(element)
+            tilt = tool.Structural.get_axes_tilt(element)
+            if mode == "THREE_D":
                 text = "Axes: Turned in 3D"
             elif slope:
-                eighth = tool.Structural.get_eighth(rotation[0, 0], rotation[2, 0])[0]
                 text = f"Axes: {slope[0]:g}:{slope[1]:g} {eighth} ({tilt:.1f}°)"
             elif abs(tilt) < 1e-9:
                 text = "Axes: Global"
             else:
-                eighth, angle, _, _ = tool.Structural.get_eighth(rotation[0, 0], rotation[2, 0])
                 text = f"Axes: {angle:.1f}° {eighth}"
             row = self.layout.row(align=True)
             row.label(text=text)
