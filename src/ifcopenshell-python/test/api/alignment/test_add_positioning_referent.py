@@ -21,6 +21,7 @@ import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 import ifcopenshell.api.unit
 import ifcopenshell.util.element
+import ifcopenshell.validate
 
 
 def test_add_positioning_referent():
@@ -96,5 +97,23 @@ def test_add_positioning_referent_creates_separate_referent_per_call():
     assert second_referent.Positions[0].RelatedProducts == (other_product,)
 
 
+def test_add_positioning_referent_without_alignment_object_placement():
+    file = ifcopenshell.file(schema="IFC4X3")
+    file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
+    alignment = file.createIfcAlignment(GlobalId=ifcopenshell.guid.new(), Name="TestAlignment")
+    product = file.createIfcBuildingElementProxy(GlobalId=ifcopenshell.guid.new(), Name="Sign")
+
+    referent = ifcopenshell.api.alignment.add_positioning_referent(
+        file, "P.C.", alignment, distance_along=0.0, station=100.0, positioned_product=product
+    )
+
+    assert referent.ObjectPlacement.RelativePlacement.Location.Coordinates == (0.0, 0.0)
+    assert alignment.ObjectPlacement.RelativePlacement.Location.Coordinates == (0.0, 0.0)
+    logger = ifcopenshell.validate.json_logger()
+    ifcopenshell.validate.validate(file, logger, express_rules=True)
+    assert not [s for s in logger.statements if "HasPlacement" in str(s)]
+
+
 test_add_positioning_referent()
 test_add_positioning_referent_creates_separate_referent_per_call()
+test_add_positioning_referent_without_alignment_object_placement()
