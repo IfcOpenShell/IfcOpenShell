@@ -29,6 +29,7 @@ from bonsai.bim.module.document.data import ObjectDocumentData
 class LoadProjectDocuments(bpy.types.Operator):
     bl_idname = "bim.load_project_documents"
     bl_label = "Load Project Documents"
+    bl_description = "Load the tree of documents and document references attached to the project"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -39,6 +40,7 @@ class LoadProjectDocuments(bpy.types.Operator):
 class DisableDocumentEditingUI(bpy.types.Operator):
     bl_idname = "bim.disable_document_editing_ui"
     bl_label = "Disable Document Editing UI"
+    bl_description = "Close the project documents tree"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -49,6 +51,7 @@ class DisableDocumentEditingUI(bpy.types.Operator):
 class DisableObjectDocumentEditingUI(bpy.types.Operator):
     bl_idname = "bim.disable_object_document_editing_ui"
     bl_label = "Disable Object Document Editing UI"
+    bl_description = "Close the list of documents assignable to the active object"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -59,6 +62,7 @@ class DisableObjectDocumentEditingUI(bpy.types.Operator):
 class EnableEditingDocument(bpy.types.Operator):
     bl_idname = "bim.enable_editing_document"
     bl_label = "Enable Editing Document"
+    bl_description = "Load the attributes of the selected document or reference for editing"
     bl_options = {"REGISTER", "UNDO"}
     document: bpy.props.IntProperty()
 
@@ -70,6 +74,7 @@ class EnableEditingDocument(bpy.types.Operator):
 class DisableEditingDocument(bpy.types.Operator):
     bl_idname = "bim.disable_editing_document"
     bl_label = "Disable Editing Document"
+    bl_description = "Close the document editing form without saving changes"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -80,6 +85,7 @@ class DisableEditingDocument(bpy.types.Operator):
 class AddInformation(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_information"
     bl_label = "Add Information"
+    bl_description = "Add a new document information to the project, or as a child of the selected document"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -117,6 +123,7 @@ class AddInformation(bpy.types.Operator, tool.Ifc.Operator):
 class AddDocumentReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_document_reference"
     bl_label = "Add Document Reference"
+    bl_description = "Add a new reference (e.g. file or URI) as a child of the selected document information"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -152,6 +159,7 @@ class AddDocumentReference(bpy.types.Operator, tool.Ifc.Operator):
 class EditDocument(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_document"
     bl_label = "Edit Information"
+    bl_description = "Save the edited attributes to the document or reference"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -164,6 +172,7 @@ class EditDocument(bpy.types.Operator, tool.Ifc.Operator):
 class RemoveDocument(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_document"
     bl_label = "Remove Document"
+    bl_description = "Remove the document information or reference, and any children references, from the project"
     bl_options = {"REGISTER", "UNDO"}
     document: bpy.props.IntProperty()
 
@@ -194,6 +203,7 @@ class AssignDocument(bpy.types.Operator, tool.Ifc.Operator):
 class UnassignDocument(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_document"
     bl_label = "Unassign Document"
+    bl_description = "Unassign the document from the selected objects, or the active object if none are selected"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     document: bpy.props.IntProperty()
@@ -223,6 +233,7 @@ class UnassignDocument(bpy.types.Operator, tool.Ifc.Operator):
 class SelectDocumentObjects(bpy.types.Operator):
     bl_idname = "bim.select_document_objects"
     bl_label = "Select Document Objects"
+    bl_description = "Select all objects that reference the provided document"
     bl_options = {"REGISTER", "UNDO"}
     document: bpy.props.IntProperty(name="Document ID", default=0)
 
@@ -294,6 +305,7 @@ class OpenIFCDocument(bpy.types.Operator):
 class ToggleDocument(bpy.types.Operator):
     bl_idname = "bim.toggle_document"
     bl_label = "Toggle Document"
+    bl_description = "Expand or collapse the document in the project documents tree"
     bl_options = {"REGISTER", "UNDO"}
     document: bpy.props.IntProperty()
     option: bpy.props.StringProperty()
