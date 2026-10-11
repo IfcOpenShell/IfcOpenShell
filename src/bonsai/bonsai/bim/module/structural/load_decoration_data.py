@@ -624,6 +624,11 @@ class ShaderInfo:
                     activity=activity,
                     force_of=force_of,
                 )
+            if not has_angle:
+                # A component, tagged with its axis so that a report can name it, as F_x1 or R_x.
+                k = int(np.argmax(np.abs(axes.T @ vector)))
+                tilted = props.reference_frame == "LOCAL_COORDS" and not np.allclose(rotation, np.eye(3))
+                self.text_info[-1]["component"] = "xyz"[k] + ("′" if tilted else "")
             if props.show_force_angles and has_angle:
                 self.add_force_angle(tail, vector, size, color, arcs_at_tail, reference_axes, activity)
             if props.show_force_slopes and has_angle:

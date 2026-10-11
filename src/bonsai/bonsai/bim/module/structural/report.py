@@ -101,9 +101,9 @@ def get_report_data(
                 drawing.update()
             name = f"{get_slug(case.Name)}_{get_slug(item.Name)}_{item.id()}.svg"
             # Forces are numbered as they are drawn, tip to tail; the diagram names them so too.
-            symbols = {a.id(): f"F{str(i).translate(SUBSCRIPTS)}" for i, a in enumerate(activities, 1)}
+            numbers = {a.id(): i for i, a in enumerate(activities, 1)}
             resultant_found = bool(get_resultant_found([tool.Structural.get_locks(a) for a in activities]))
-            has_diagram = write_diagram(drawing, item, directory / "diagrams" / name, symbols, resultant_found)
+            has_diagram = write_diagram(drawing, item, directory / "diagrams" / name, numbers, resultant_found)
             point = {"name": item.Name or "Unnamed", "diagram": f"diagrams/{name}" if has_diagram else None}
             colors = get_force_colors(drawing, item)
             tilt = tool.Structural.get_axes_tilt(item)
@@ -123,9 +123,6 @@ def get_report_data(
         "has_cases": bool(cases),
         "detailed": detailed,
     }
-
-
-SUBSCRIPTS = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
 
 
 def get_force_colors(drawing: ShaderInfo, item: ifcopenshell.entity_instance) -> dict[int, str]:
@@ -742,7 +739,7 @@ def write_diagram(
     drawing: ShaderInfo,
     item: ifcopenshell.entity_instance,
     path: Path,
-    symbols: Union[dict[int, str], None] = None,
+    numbers: Union[dict[int, int], None] = None,
     resultant_found: bool = False,
 ) -> bool:
     """Write a structural item's load diagram as an SVG, as the X-Z plane is seen from -Y, or nothing if none.
@@ -755,11 +752,20 @@ def write_diagram(
         e["primitive"] | {"color": e["color"]} for e in drawing.info if e.get("object") == obj.name and "primitive" in e
     ]
     texts = [t for t in drawing.text_info if t.get("object") == obj.name]
-    # Name each force's magnitude by its symbol in the calculations.
-    texts = [
-        t | {"text": f"{symbols[t['force_of']]} = {t['text']}"} if t.get("force_of") in (symbols or {}) else t
-        for t in texts
-    ]
+    # Name each force and component by its symbol in the calculations: a single force's components as its
+    # own, F_x1, and several forces' as their resultant's, R_x.
+    numbers = numbers or {}
+
+    def get_symbol(text: dict) -> Union[str, None]:
+        if text.get("force_of") in numbers:
+            return f"F_{{{numbers[text['force_of']]}}}"
+        if axis := text.get("component"):
+            if len(numbers) == 1:
+                return f"F_{{{axis}{next(iter(numbers.values()))}}}"
+            return f"R_{{{axis}}}"
+        return None
+
+    texts = [t | {"text": f"{symbol} = {t['text']}"} if (symbol := get_symbol(t)) else t for t in texts]
     if not shapes:
         return False
     flat = lambda point: np.array((point[0], -point[2]))  # SVG's Y runs down.
@@ -833,7 +839,8 @@ def get_svg_label(
     content = str(text["text"])
     # Found values a little larger than the 13 px of the rest, rather than bold, which reads badly in SVG.
     font_size = 15 if found else 13
-    width, height = 7.5 * font_size / 13 * len(content), 14.0 * font_size / 13
+    shown = re.sub(r"_\{([^}]*)\}", r"\1", content)  # As read, a subscript taking about as much room as it shows.
+    width, height = 7.5 * font_size / 13 * len(shown), 14.0 * font_size / 13
     align = "start" if direction[0] > 0.3 else "end" if direction[0] < -0.3 else "middle"
     position = anchor + 8 * direction
     for _ in range(40):
@@ -846,6 +853,8 @@ def get_svg_label(
     # The label's middle line sits at the box's middle, which is its top plus half its height.
     color = get_svg_color(text.get("color", (0.3, 0.3, 0.3, 1)))
     escaped = content.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    # Symbols' subscripts, written F_{x1} as in the steps, set lower and smaller; Unicode has no subscript z.
+    escaped = re.sub(r"_\{([^}]*)\}", r'<tspan baseline-shift="sub" font-size="75%">\1</tspan>', escaped)
     size = f' font-size="{font_size}"' if found else ""
     # On a white box, so that lines running under it do not cross the text.
     return (
