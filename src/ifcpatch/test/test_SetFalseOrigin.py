@@ -64,9 +64,9 @@ class TestSetFalseOrigin(test.bootstrap.IFC4):
         else:
             assert self.file.by_type("IfcProjectedCRS")[0].Name == "EPSG:1234"
         assert ifcopenshell.util.geolocation.auto_xyz2enh(self.file, 0, 0, 0) == (1000, 2000, 3000)
-        m = ifcopenshell.util.placement.get_local_placement(site.ObjectPlacement)
+        m = ifcopenshell.util.placement.get_placement(site.ObjectPlacement)
         assert np.allclose(m, np.eye(4))
-        m = ifcopenshell.util.placement.get_local_placement(wall.ObjectPlacement)
+        m = ifcopenshell.util.placement.get_placement(wall.ObjectPlacement)
         m2 = np.eye(4)
         m2[0][3] = -5
         assert np.allclose(m, m2)
