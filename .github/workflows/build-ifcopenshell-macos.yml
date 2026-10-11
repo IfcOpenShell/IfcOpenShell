@@ -11,10 +11,12 @@ jobs:
       matrix:
         include:
           - os: macos
-            runner: macos-15-intel
+            # Cross-compiled on Apple Silicon, it's about twice as fast as the Intel runner.
+            runner: macos-15
             arch: x64
             oldarch: ""
             without: -without-bonsaiviewer
+            test_args: --skip-bonsaiviewer
           - os: macos
             # macos-14 no longer receives Homebrew bottles, so `brew install qt`
             # compiles Qt (and QtWebEngine) from source there and fails.
@@ -22,6 +24,7 @@ jobs:
             arch: arm64
             oldarch: m1
             without: ""
+            test_args: ""
 
     steps:
       - name: Checkout Repository
@@ -43,16 +46,25 @@ jobs:
 
       - name: Install Dependencies
         run: |
+          # Since 2023, brew doesn't need taps and having them slows down the update for no reason.
+          # See https://github.com/actions/runner-images/issues/14882
+          brew untap homebrew/core homebrew/cask
           brew update
           # preinstalled: xz, cmake
-          brew install git bison autoconf automake libffi findutils
+          # If we drop cross-compilation:
+          # build bison from source on the Intel runner, as Intel bottles disappear soon.
+          brew install bison
           # qt brings in Qt6 + Svg; nix/build-all.py honours pre-set
           # QT_DIR so BonsaiViewer doesn't try to aqtinstall (which is
           # Linux-only). Only the viewer needs it.
           if [ "${{ matrix.arch }}" == "arm64" ]; then
+            # Unlinking openssl@3 is currently required for `qt` to succeed,
+            # see https://github.com/Homebrew/brew/issues/24204
+            brew unlink openssl@3
             brew install qt
           fi
-          echo "$(brew --prefix findutils)/libexec/gnubin" >> $GITHUB_PATH
+          # build-all's gmp has no gmpxx, so CGAL would pick up the preinstalled one.
+          brew uninstall --ignore-dependencies gmp
           # Mac is using bison 2.5 by default, but we need 3.5+ for swig.
           echo "$(brew --prefix bison)/bin" >> $GITHUB_PATH
 
@@ -75,9 +87,9 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2.24
         with:
           key: mac-${{ matrix.arch }}
-          # No Intel bottle in brew, so use the prebuilt release binary.
+          # If we drop cross-compilation:
+          # use `install: binary` on the Intel runner, as there's no Intel bottle in brew.
           # See https://github.com/hendrikmuhs/ccache-action/issues/374
-          install: ${{ matrix.arch == 'x64' && 'binary' || 'detect' }}
 
       - name: Run Build Script
         shell: bash
@@ -89,26 +101,17 @@ jobs:
           if [ "${{ matrix.arch }}" == "arm64" ]; then
             export QT_DIR="$(brew --prefix qt)"
           fi
-          # --ifcopenshell-shared mirrors build_rocky.yml after 27249770e: builds
-          # IfcOpenShell as shared libs so each plug-in dylib references
-          # libIfcParse / libIfcGeom via @rpath instead of statically
-          # embedding them — the dominant size win for BonsaiViewer.app
-          # (per-plugin libs go from ~30-50 MB to a few MB).
-          #
-          # IfcOpenShell-Python is back on after the ifcwrap rpath fix:
-          # INSTALL_RPATH "$ORIGIN" is a Linux-ism that macOS dyld bakes
-          # in as a literal string, so `@rpath/ifcopenshell.document.rdb
-          # .dylib` failed to resolve at import time. ifcwrap now sets
-          # INSTALL_RPATH to "@loader_path" on Apple.
           CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" \
             QT_DIR="${QT_DIR}" \
             uv run ./nix/build-all.py \
               -v \
               --diskcleanup \
               --shared \
+              --split-instance-builds \
               --add-commit-sha \
               --build-cfg Release \
               --use-ninja \
+              ${{ matrix.arch == 'x64' && '--mac-cross-compile-intel' || '' }} \
               ${{ matrix.without }} \
             | tee build.log
 
@@ -119,7 +122,7 @@ jobs:
           name: build-logs-osx-${{ matrix.arch }}
           path: |
             build.log
-            build/*/*/*/logs/*.log
+            build/*/*/*/logs/latest.log
             build/*/*/*/build/ifcopenshell/**/CMakeCache.txt
           retention-days: 30
 
@@ -139,13 +142,14 @@ jobs:
 
       - name: Package .zip archives
         run: |
-          uv run nix/package-zip-archives.py "macos${{ matrix.oldarch }}64" --shared
+          uv run nix/package-zip-archives.py "macos${{ matrix.oldarch }}64"
 
-      - name: Test packaged Python wrapper
-        # Imports the *packaged* wrapper and exercises the cross-plug-in hand-offs
-        # (kernel -> tree, kernel -> SVG serializer) that a duplicated OCCT breaks.
+      - name: Test packages
+        env:
+          # Colored output for pytest.
+          FORCE_COLOR: 1
         run: |
-          uv run --python 3.13 test/package/run_against_package.py "$HOME/output/ifcopenshell-python-313-*-macos${{ matrix.oldarch }}64.zip"
+          uv run test/package/run_against_package.py ${{ matrix.test_args }} "$HOME/output"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6

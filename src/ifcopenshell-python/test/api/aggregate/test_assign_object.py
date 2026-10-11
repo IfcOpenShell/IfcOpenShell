@@ -101,7 +101,7 @@ class TestAssignObject(test.bootstrap.IFC4):
         )
         ifcopenshell.api.aggregate.assign_object(self.file, products=[subelement], relating_object=element2)
         assert subelement.ObjectPlacement.PlacementRelTo.PlacesObject[0] == element2
-        assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(subelement.ObjectPlacement), matrix1)
+        assert numpy.array_equal(ifcopenshell.util.placement.get_placement(subelement.ObjectPlacement), matrix1)
 
     def test_not_updating_placement_if_placement_is_not_relative(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")

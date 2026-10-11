@@ -1,5 +1,8 @@
+# /// script
+# ///
+import argparse
 import os
-import sys
+from typing import NamedTuple
 
 
 def find_whl_files(directory: str) -> list[str]:
@@ -20,14 +23,22 @@ def update_pyproject_toml(pyproject_path: str, whl_files: list[str]) -> None:
         f.write("]\n")
 
 
+class Args(NamedTuple):
+    folder_path: str
+    pyproject_toml_path: str
+
+
+def parse_args() -> Args:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("folder_path", help="Directory to search for .whl files.")
+    parser.add_argument("pyproject_toml_path", help="TOML file to append the `wheels` list to.")
+    namespace = parser.parse_args()
+    return Args(folder_path=namespace.folder_path, pyproject_toml_path=namespace.pyproject_toml_path)
+
+
+ARGS = parse_args()
+
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: python script.py <folder_path> <pyproject.toml_path>")
-        sys.exit(1)
-
-    folder_path = sys.argv[1]
-    pyproject_toml_path = sys.argv[2]
-
-    whl_files = find_whl_files(folder_path)
-    update_pyproject_toml(pyproject_toml_path, whl_files)
+    whl_files = find_whl_files(ARGS.folder_path)
+    update_pyproject_toml(ARGS.pyproject_toml_path, whl_files)
     print("pyproject.toml has been updated with the wheel files.")

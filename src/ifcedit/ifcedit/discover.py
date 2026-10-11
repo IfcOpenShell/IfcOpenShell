@@ -21,16 +21,9 @@ from __future__ import annotations
 
 import importlib
 import inspect
+import pkgutil
 import re
 import typing
-from pathlib import Path
-
-
-def _api_package_path() -> Path:
-    """Return the filesystem path to the ifcopenshell.api package."""
-    import ifcopenshell.api
-
-    return Path(ifcopenshell.api.__file__).parent
 
 
 def list_modules() -> list[dict]:
@@ -38,16 +31,15 @@ def list_modules() -> list[dict]:
 
     Returns a list of dicts: [{"module": "root", "description": "...", "functions": [...], "count": 4}, ...]
     """
-    api_path = _api_package_path()
+    import ifcopenshell.api
+
     modules = []
-    for child in sorted(api_path.iterdir()):
-        if not child.is_dir() or child.name.startswith("_"):
-            continue
-        init_file = child / "__init__.py"
-        if not init_file.exists():
+    for module_info in pkgutil.iter_modules(ifcopenshell.api.__path__):
+        name = module_info.name
+        if not module_info.ispkg or name.startswith("_"):
             continue
         try:
-            mod = importlib.import_module(f"ifcopenshell.api.{child.name}")
+            mod = importlib.import_module(f"ifcopenshell.api.{name}")
         except Exception:
             continue
         all_names = getattr(mod, "__all__", [])
@@ -58,7 +50,7 @@ def list_modules() -> list[dict]:
             description = mod.__doc__.strip().split("\n")[0]
         modules.append(
             {
-                "module": child.name,
+                "module": name,
                 "description": description,
                 "functions": list(all_names),
                 "count": len(all_names),
