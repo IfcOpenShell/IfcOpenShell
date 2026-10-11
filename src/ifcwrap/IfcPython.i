@@ -247,7 +247,6 @@
 %{
 	#include "../ifcgeom/iterator.h"
 	#include "../ifcgeom/tree.h"
-	#include "../ifcgeom/serialization/serialization.h"
 	#include "../ifcgeom/taxonomy.h"
 	#include "../ifcgeom/function_item_evaluator.h"
 
@@ -283,7 +282,6 @@
 %module ifcopenshell_wrapper %{
 	#include "../ifcgeom/converter.h"
 	#include "../ifcgeom/tree.h"
-	#include "../ifcgeom/serialization/serialization.h"
 	#include "../ifcgeom/taxonomy.h"
 	#include "../ifcgeom/function_item_evaluator.h"
 	#include "../ifcgeom/iterator.h"

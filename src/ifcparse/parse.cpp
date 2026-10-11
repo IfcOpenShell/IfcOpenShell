@@ -3462,6 +3462,12 @@ void file::erase_instances_(const std::vector<uint32_t>& ids) {
     std::visit([this, &ids](auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
             for (auto id : ids) {
+#ifndef IFOPSH_SAFE_INSTANCE
+                auto it = x.byid_.find(id);
+                if (it != x.byid_.end()) {
+                    delete it->second;
+                }
+#endif
                 byid_.erase(id);
             }
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
@@ -4074,10 +4080,19 @@ void ifcopenshell::file::reset_identity_cache() {
     std::visit([](auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
             std::lock_guard<std::mutex> lock(x.instance_cache_mutex_);
+#ifndef IFOPSH_SAFE_INSTANCE
+            for (const auto& entry : x.instance_cache_) {
+                delete entry.second;
+            }
+            for (const auto& entry : x.type_instance_cache_) {
+                delete entry.second;
+            }
+#endif
             x.instance_cache_.clear();
             x.type_instance_cache_.clear();
         }
-	}, storage_);
+    },
+               storage_);
 }
 
 void ifcopenshell::file::build_inverses() {

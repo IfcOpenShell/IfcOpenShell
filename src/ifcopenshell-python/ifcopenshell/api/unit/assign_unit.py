@@ -16,18 +16,23 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Any, Optional
+from typing import TypedDict
 
 import ifcopenshell
 import ifcopenshell.util.unit
 
 
+class UnitDict(TypedDict):
+    is_metric: bool
+    raw: str
+
+
 def assign_unit(
     file: ifcopenshell.file,
-    units: Optional[list[ifcopenshell.entity_instance]] = None,
-    length: Optional[dict] = None,
-    area: Optional[dict] = None,
-    volume: Optional[dict] = None,
+    units: list[ifcopenshell.entity_instance] | None = None,
+    length: UnitDict | None = None,
+    area: UnitDict | None = None,
+    volume: UnitDict | None = None,
 ) -> ifcopenshell.entity_instance:
     """Assign default project units
 
@@ -43,6 +48,12 @@ def assign_unit(
     :param units: A list of units to assign as project defaults. See
         ifcopenshell.api.unit.add_si_unit, unit.add_conversion_based_unit,
         and unit.add_monetary_unit for information on how to create units.
+    :param length: Only used if ``units`` is not provided. A dict like
+        ``{"is_metric": True, "raw": "MILLIMETERS"}`` to create the default
+        length unit. Imperial ``raw`` values are INCHES, FEET, MILES, or THOU.
+        Defaults to millimeters.
+    :param area: Same as ``length``, for the area unit. Defaults to square meters.
+    :param volume: Same as ``length``, for the volume unit. Defaults to cubic meters.
     :return: The IfcUnitAssignment element
 
     Example:
@@ -71,26 +82,27 @@ def assign_unit(
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {"units": units}
-    # This is a convenience function, likely to be deprecated in the future.
-    usecase.settings["length"] = length or {"is_metric": True, "raw": "MILLIMETERS"}
-    usecase.settings["area"] = area or {"is_metric": True, "raw": "METERS"}
-    usecase.settings["volume"] = volume or {"is_metric": True, "raw": "METERS"}
-    return usecase.execute()
+    return usecase.execute(units, length, area, volume)
 
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
 
-    def execute(self):
-        # We're going to refactor this to split unit creation and assignment
-        if self.settings["units"]:
-            units = self.settings["units"]
-        else:
-            del self.settings["units"]  # TODO refactor
+    def execute(
+        self,
+        units: list[ifcopenshell.entity_instance] | None,
+        length: UnitDict | None,
+        area: UnitDict | None,
+        volume: UnitDict | None,
+    ) -> ifcopenshell.entity_instance:
+        if not units:
+            # This is a convenience function, likely to be deprecated in the future.
             units = []
-            for unit_type, data in self.settings.items():
+            for unit_type, data in (
+                ("length", length or {"is_metric": True, "raw": "MILLIMETERS"}),
+                ("area", area or {"is_metric": True, "raw": "METERS"}),
+                ("volume", volume or {"is_metric": True, "raw": "METERS"}),
+            ):
                 if data["is_metric"]:
                     units.append(self.create_metric_unit(unit_type, data))
                 else:
@@ -121,7 +133,7 @@ class Usecase:
             units.add(unit)
         unit_assignment.Units = list(units)
 
-    def create_metric_unit(self, unit_type: str, data: dict) -> ifcopenshell.entity_instance:
+    def create_metric_unit(self, unit_type: str, data: UnitDict) -> ifcopenshell.entity_instance:
         type_prefix = ""
         if unit_type == "area":
             type_prefix = "SQUARE_"
@@ -134,7 +146,7 @@ class Usecase:
             type_prefix + ifcopenshell.util.unit.get_unit_name(data["raw"]),
         )
 
-    def create_imperial_unit(self, unit_type: str, data: dict) -> ifcopenshell.entity_instance:
+    def create_imperial_unit(self, unit_type: str, data: UnitDict) -> ifcopenshell.entity_instance:
         if unit_type == "length":
             dimensional_exponents = self.file.createIfcDimensionalExponents(1, 0, 0, 0, 0, 0, 0)
             name_prefix = ""

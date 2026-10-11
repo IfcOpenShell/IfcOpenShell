@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 from math import cos, sin
-from typing import Any, Optional, Union
+from typing import Any
 
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
@@ -33,8 +33,8 @@ def add_wall_representation(
     offset: float = 0.0,
     thickness: float = 0.2,
     x_angle: float = 0.0,
-    clippings: Optional[list[Union[Clipping, dict[str, Any]]]] = None,
-    booleans: Optional[list[ifcopenshell.entity_instance]] = None,
+    clippings: list[Clipping | dict[str, Any]] | None = None,
+    booleans: list[ifcopenshell.entity_instance] | None = None,
 ) -> ifcopenshell.entity_instance:
     """
     Add a geometric representation for a wall.
@@ -55,40 +55,42 @@ def add_wall_representation(
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {
-        "context": context,
-        "length": length,
-        "height": height,
-        "direction_sense": direction_sense,
-        "offset": offset,
-        "thickness": thickness,
-        "x_angle": x_angle,
-        "clippings": clippings if clippings is not None else [],
-        "booleans": booleans if booleans is not None else [],
-    }
-    return usecase.execute()
+    return usecase.execute(
+        context,
+        length,
+        height,
+        direction_sense,
+        offset,
+        thickness,
+        x_angle,
+        clippings if clippings is not None else [],
+        booleans if booleans is not None else [],
+    )
 
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
-    clippings: list[Clipping]
+    unit_scale: float
 
-    def execute(self) -> ifcopenshell.entity_instance:
+    def execute(
+        self,
+        context: ifcopenshell.entity_instance,
+        length: float,
+        height: float,
+        direction_sense: str,
+        offset: float,
+        thickness: float,
+        x_angle: float,
+        clippings: list[Clipping | dict[str, Any]],
+        booleans: list[ifcopenshell.entity_instance],
+    ) -> ifcopenshell.entity_instance:
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
-        self.clippings = [Clipping.parse(c) for c in self.settings["clippings"]]
-        return self.file.createIfcShapeRepresentation(
-            self.settings["context"],
-            self.settings["context"].ContextIdentifier,
-            "Clipping" if self.clippings or self.settings["booleans"] else "SweptSolid",
-            [self.create_item()],
-        )
+        parsed_clippings = [Clipping.parse(c) for c in clippings]
 
-    def create_item(self) -> ifcopenshell.entity_instance:
-        length = self.convert_si_to_unit(self.settings["length"])
-        thickness = self.convert_si_to_unit(self.settings["thickness"])
-        thickness *= 1 / cos(self.settings["x_angle"])
-        if self.settings["direction_sense"] == "NEGATIVE":
+        length = self.convert_si_to_unit(length)
+        thickness = self.convert_si_to_unit(thickness)
+        thickness *= 1 / cos(x_angle)
+        if direction_sense == "NEGATIVE":
             thickness *= -1
         points = (
             (0.0, 0.0),
@@ -101,38 +103,46 @@ class Usecase:
             curve = self.file.createIfcPolyline([self.file.createIfcCartesianPoint(p) for p in points])
         else:
             curve = self.file.createIfcIndexedPolyCurve(self.file.createIfcCartesianPointList2D(points), None, False)
-        if self.settings["x_angle"]:
-            extrusion_direction = self.file.createIfcDirection(
-                (0.0, sin(self.settings["x_angle"]), cos(self.settings["x_angle"]))
-            )
+        if x_angle:
+            extrusion_direction = self.file.createIfcDirection((0.0, sin(x_angle), cos(x_angle)))
         else:
             extrusion_direction = self.file.createIfcDirection((0.0, 0.0, 1.0))
         extrusion = self.file.createIfcExtrudedAreaSolid(
             self.file.createIfcArbitraryClosedProfileDef("AREA", None, curve),
             self.file.createIfcAxis2Placement3D(
-                self.file.createIfcCartesianPoint((0.0, self.convert_si_to_unit(self.settings["offset"]), 0.0)),
+                self.file.createIfcCartesianPoint((0.0, self.convert_si_to_unit(offset), 0.0)),
                 self.file.createIfcDirection((0.0, 0.0, 1.0)),
                 self.file.createIfcDirection((1.0, 0.0, 0.0)),
             ),
             extrusion_direction,
-            self.convert_si_to_unit(self.settings["height"]) * abs(1 / cos(self.settings["x_angle"])),
+            self.convert_si_to_unit(height) * abs(1 / cos(x_angle)),
         )
-        if self.settings["booleans"]:
-            extrusion = self.apply_booleans(extrusion)
-        if self.clippings:
-            extrusion = self.apply_clippings(extrusion)
-        return extrusion
+        if booleans:
+            extrusion = self.apply_booleans(extrusion, booleans)
+        if parsed_clippings:
+            extrusion = self.apply_clippings(extrusion, parsed_clippings)
 
-    def apply_booleans(self, first_operand: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
-        while self.settings["booleans"]:
-            boolean = self.settings["booleans"].pop()
+        return self.file.createIfcShapeRepresentation(
+            context,
+            context.ContextIdentifier,
+            "Clipping" if parsed_clippings or booleans else "SweptSolid",
+            [extrusion],
+        )
+
+    def apply_booleans(
+        self, first_operand: ifcopenshell.entity_instance, booleans: list[ifcopenshell.entity_instance]
+    ) -> ifcopenshell.entity_instance:
+        for boolean in reversed(booleans):
             boolean.FirstOperand = first_operand
             first_operand = boolean
         return first_operand
 
-    def apply_clippings(self, first_operand: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
-        while self.clippings:
-            clipping = self.clippings.pop()
+    def apply_clippings(
+        self,
+        first_operand: ifcopenshell.entity_instance,
+        clippings: list[ifcopenshell.entity_instance | Clipping],
+    ) -> ifcopenshell.entity_instance:
+        for clipping in reversed(clippings):
             if isinstance(clipping, ifcopenshell.entity_instance):
                 new = ifcopenshell.util.element.copy(self.file, clipping)
                 new.FirstOperand = first_operand
@@ -141,5 +151,5 @@ class Usecase:
                 first_operand = clipping.apply(self.file, first_operand, self.unit_scale)
         return first_operand
 
-    def convert_si_to_unit(self, co: Any) -> Any:
+    def convert_si_to_unit(self, co: float) -> float:
         return co / self.unit_scale
