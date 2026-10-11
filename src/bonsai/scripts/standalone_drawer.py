@@ -1,5 +1,5 @@
+import argparse
 import multiprocessing
-import sys
 from typing import NamedTuple
 
 import ifcopenshell
@@ -14,24 +14,46 @@ class LineworkContexts(NamedTuple):
     annotation: list[list[int]]
 
 
+class Args(NamedTuple):
+    ifc_path: str
+    drawing_guid: str
+    drawing_element_guids: str | None
+    output_path: str
+
+
+def parse_args() -> Args:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("ifc_path", help="IFC file to draw.")
+    parser.add_argument("drawing_guid", help="GlobalId of the drawing camera.")
+    parser.add_argument(
+        "drawing_element_guids",
+        nargs="?",
+        help="Comma-separated GlobalIds of elements to draw (all elements by default).",
+    )
+    parser.add_argument("output_path", help="SVG file to write.")
+    namespace = parser.parse_args()
+    return Args(
+        ifc_path=namespace.ifc_path,
+        drawing_guid=namespace.drawing_guid,
+        drawing_element_guids=namespace.drawing_element_guids,
+        output_path=namespace.output_path,
+    )
+
+
+ARGS = parse_args()
+
+
 class Drawer:
     def execute(self):
-        if len(sys.argv) < 4:
-            print(f"Expected 3 or 4 arguments, got {len(sys.argv) - 1}. Example usage:")
-            print(
-                "python standalone_drawer.py drawing.ifc drawing_guid [drawing_element_guid1,drawing_element_guid2,drawing_element_guid3] output.svg"
-            )
-            exit(1)
-
         ifc: ifcopenshell.file
-        ifc = ifcopenshell.open(sys.argv[1])
-        self.camera_element = ifc.by_guid(sys.argv[2])
+        ifc = ifcopenshell.open(ARGS.ifc_path)
+        self.camera_element = ifc.by_guid(ARGS.drawing_guid)
         # Don't use draw.main() just whilst we're prototyping and experimenting
         # Get all representation contexts to see what we're dealing with.
         target_view = ifcopenshell.util.element.get_psets(self.camera_element)["EPset_Drawing"]["TargetView"]
         contexts = self.get_linework_contexts(ifc, target_view)
-        if len(sys.argv) == 6:
-            drawing_elements = set([ifc.by_guid(g) for g in sys.argv[3].split(",")])
+        if ARGS.drawing_element_guids:
+            drawing_elements = set([ifc.by_guid(g) for g in ARGS.drawing_element_guids.split(",")])
         else:
             drawing_elements = set(ifc.by_type("IfcElement")) - set(ifc.by_type("IfcFeatureElement"))
 
@@ -58,7 +80,7 @@ class Drawer:
         results = self.svg_buffer.get_value()
         print("results", results)
 
-        with open(sys.argv[-1], "w") as svg:
+        with open(ARGS.output_path, "w") as svg:
             svg.write(results)
 
     def get_linework_contexts(self, ifc, target_view) -> LineworkContexts:

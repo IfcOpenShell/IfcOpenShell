@@ -41,7 +41,12 @@ struct provider_state {
 };
 
 std::filesystem::path plugin_directory() {
-	return ifcopenshell::plugin::module_directory(reinterpret_cast<const void*>(&svgfill::svg_to_line_segments));
+	// This file is compiled into the wrapper, so we can't use any symbols from it as a source for search path -
+	// wrapper can be built without CREATE_BUNDLE (e.g. conda) and then plugins won't be next to the wrapper.
+	// Using `add_search_paths_or_default` locates `libifcopenshell.plugin`, which is always next to
+	// the installed plugins.
+	return ifcopenshell::plugin::module_directory(
+		reinterpret_cast<const void*>(&ifcopenshell::plugin::add_search_paths_or_default));
 }
 
 void validate(const svgfill::linework_processing_plugin::api& api) {

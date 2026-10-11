@@ -105,7 +105,7 @@ signals:
     void federationChanged();
     void visibilityChanged();
     // Fires when a model's geometry has been pushed to the viewport. Fires
-    // for both sidecar-cache and stream loads; subscribers that just need to
+    // for both .ifcview-cache and stream loads; subscribers that just need to
     // re-derive view state (e.g. ViewportView::refresh) listen to this.
     void modelGeometryReady(uint32_t session_model_id);
     // Fires when a model was unloaded from, or loaded back onto, the GPU
@@ -113,7 +113,7 @@ signals:
     // for the state itself — ViewportWindow::isModelUnloaded.
     void modelLoadStateChanged(const QString& model_id);
     // Fires when a model's live IFC data source (the .ifc/.rdb, opened in the
-    // background after a sidecar-cache hit) becomes available for queries —
+    // background after a .ifcview-cache hit) becomes available for queries —
     // e.g. so the spatial hierarchy can be built once the file is loaded.
     void modelDataSourceReady(uint32_t session_model_id);
     // Fires when the active model changes (empty model_id when cleared).
