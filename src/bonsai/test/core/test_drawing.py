@@ -16,6 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
+import subprocess
+from unittest.mock import Mock
+
+import pytest
+
 import bonsai.core.drawing as subject
 from test.core.bootstrap import Prophecy, blender, collector, drawing, geometry, ifc  # ruff: ignore[unused-import]
 
@@ -663,3 +669,28 @@ class TestAddAnnotation:
             relating_type="element_type",
             enable_editing=True,
         )
+
+
+class TestRunConversionCommand:
+    def test_bad_json_raises_conversion_command_error(self):
+        drawing_tool = Mock()
+        drawing_tool.run_conversion_command.side_effect = json.JSONDecodeError("Expecting value", "not json", 0)
+        with pytest.raises(subject.ConversionCommandError, match="svg2pdf_command"):
+            subject.run_conversion_command(drawing_tool, "not json", {}, "svg2pdf_command")
+
+    def test_missing_program_raises_conversion_command_error(self):
+        drawing_tool = Mock()
+        drawing_tool.run_conversion_command.side_effect = FileNotFoundError(2, "No such file or directory", "inkscape")
+        with pytest.raises(subject.ConversionCommandError, match="inkscape"):
+            subject.run_conversion_command(drawing_tool, "[]", {}, "svg2pdf_command")
+
+    def test_nonzero_exit_raises_conversion_command_error(self):
+        drawing_tool = Mock()
+        drawing_tool.run_conversion_command.side_effect = subprocess.CalledProcessError(1, ["inkscape", "svg"])
+        with pytest.raises(subject.ConversionCommandError, match="exit code 1"):
+            subject.run_conversion_command(drawing_tool, "[]", {}, "svg2pdf_command")
+
+    def test_success_does_not_raise(self):
+        drawing_tool = Mock()
+        subject.run_conversion_command(drawing_tool, "[]", {"svg": "a.svg"}, "svg2pdf_command")
+        drawing_tool.run_conversion_command.assert_called_once_with("[]", {"svg": "a.svg"})
