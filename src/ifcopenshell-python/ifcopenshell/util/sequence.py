@@ -204,20 +204,14 @@ def is_day_in_work_time(day, work_time: ifcopenshell.entity_instance) -> bool:
     is_day_in_work_time = True
     if isinstance(day, datetime.datetime):
         day = datetime.date(day.year, day.month, day.day)
-    # 4 IfcWorktime Start
+    # 4 IfcWorktime Start (inclusive, 0:00 of that date)
     if start := work_time[4]:
         start = ifcopenshell.util.date.ifc2datetime(start)
-        if day > start:
-            is_day_in_work_time = True
-        else:
-            is_day_in_work_time = False
-    # 5 IfcWorktime Finish
+        is_day_in_work_time = is_day_in_work_time and day >= start
+    # 5 IfcWorktime Finish (inclusive, 24:00 of that date)
     if finish := work_time[5]:
         finish = ifcopenshell.util.date.ifc2datetime(finish)
-        if day < finish:
-            is_day_in_work_time = True
-        else:
-            is_day_in_work_time = False
+        is_day_in_work_time = is_day_in_work_time and day <= finish
     return is_day_in_work_time
 
 
