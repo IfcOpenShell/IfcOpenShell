@@ -87,6 +87,15 @@
     {{/steps}}
   </div>
   <p class="result">{{summary}}</p>
+  {{#has_tilted}}
+  <h4>Along the point's axes</h4>
+  <p>{{tilt_note}}</p>
+  <div class="steps">
+    {{#tilted}}
+    <div class="{{#detail}}detail{{/detail}}{{^detail}}main{{/detail}}{{#lead}} lead{{/lead}}">$${{latex}}$$</div>
+    {{/tilted}}
+  </div>
+  {{/has_tilted}}
 </section>
 {{/points}}
 {{/cases}}

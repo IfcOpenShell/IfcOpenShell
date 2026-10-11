@@ -100,7 +100,10 @@ def get_report_data(
             resultant_found = bool(get_resultant_found([tool.Structural.get_locks(a) for a in activities]))
             has_diagram = write_diagram(drawing, item, directory / "diagrams" / name, symbols, resultant_found)
             point = {"name": item.Name or "Unnamed", "diagram": f"diagrams/{name}" if has_diagram else None}
-            point.update(get_resultant_calculation(activities, unit, get_force_colors(drawing, item), detailed))
+            colors = get_force_colors(drawing, item)
+            tilt = tool.Structural.get_axes_tilt(item)
+            axis_colors = get_axis_colors(len(activities), tilt)
+            point.update(get_resultant_calculation(activities, unit, colors, detailed, tilt, axis_colors))
             points.append(point)
         if points:
             cases.append({"name": case.Name or "Unnamed", "points": points})
@@ -188,8 +191,13 @@ def get_resultant_calculation(
     unit: str,
     colors: Union[dict[int, str], None] = None,
     detailed: bool = False,
+    tilt: Union[float, None] = 0.0,
+    axis_colors: Union[dict[str, str], None] = None,
 ) -> dict[str, Any]:
     """The steps for concurrent point forces and their resultant.
+
+    :param tilt: Degrees the point's own axes are tilted by in the X-Z plane: if any, forces are also resolved
+        along them, as along an incline.
 
     If some force values were unknown (unlocked) and found by Edit Resultant, the steps find them first, as
     the problem was posed, then add the forces up as a check. Edit Resultant solves two unknowns, so the
@@ -229,13 +237,14 @@ def get_resultant_calculation(
     gray = lambda step: f"{{\\color{{#8c8c8c}}\\qquad {step}}}" if isinstance(step, Detail) else step  # Indented.
     render = lambda steps: [
         {
-            "latex": get_colored_symbols(gray(step), palette),
+            "latex": get_colored_symbols(gray(step), palette, axis_colors, len(forces) == 1),
             "detail": isinstance(step, Detail),
             "lead": isinstance(step, Lead),
         }
         for step in steps
         if detailed or not isinstance(step, Detail)
     ]
+    tilted = get_tilted_steps(forces, tilt, text_unit) if tilt else []
     return {
         "forces": rows,
         "find": get_colored_symbols(find, palette),  # With inline math, $F_{2}$, as both formats read.
@@ -244,7 +253,43 @@ def get_resultant_calculation(
         "components": render(components),
         "steps": render(steps),
         "summary": summary,
+        "tilted": render(tilted),
+        "has_tilted": bool(tilted),
+        "tilt_note": f"x′ is tilted {tilt:.1f}° from +X towards +Z, with z′ square to it." if tilted else "",
     }
+
+
+def get_tilted_steps(forces: list[dict[str, Any]], tilt: float, text_unit: str) -> list[str]:
+    """Each force resolved along a point's tilted axes x' and z', by its angle to each, then their sums"""
+    steps: list[str] = []
+    totals = {"x'": [], "z'": []}
+    for i, force in enumerate(forces, 1):
+        if not force["in_plane"]:
+            continue
+        x, _, z = force["vector"]
+        magnitude, direction = math.hypot(x, z), math.degrees(math.atan2(z, x)) % 360
+        steps.append(Lead(f"{force['symbol']} \\text{{ acts at }} {direction:.1f}^\\circ \\text{{ from }} +X"))
+        for name, axis in (("x'", tilt % 360), ("z'", (tilt + 90) % 360)):
+            between = abs((direction - axis + 180) % 360 - 180)
+            value = magnitude * math.cos(math.radians(between))
+            steps.append(
+                Detail(
+                    f"{name} \\text{{ lies at }} {axis:.1f}^\\circ \\text{{ so the angle between is }} {between:.1f}^\\circ"
+                )
+            )
+            steps.append(
+                f"F_{{{name}{i}}} = F_{{{i}}} \\cos {between:.1f}^\\circ = ({magnitude:.2f}) \\cos {between:.1f}^\\circ "
+                f"= {value:.2f}{text_unit}"
+            )
+            steps.append(Detail(f"\\cos {between:.1f}^\\circ = {math.cos(math.radians(between)):.4f}"))
+            totals[name].append((i, value))
+    for name, values in totals.items():
+        if len(values) > 1:
+            symbols = " + ".join(f"F_{{{name}{i}}}" for i, _ in values)
+            numbers = " + ".join(f"({v:.2f})" if v < 0 else f"{v:.2f}" for _, v in values)
+            total = sum(v for _, v in values)
+            steps.append(f"R_{{{name}}} = \\Sigma F_{{{name}}} = {symbols} = {numbers} = {total:.2f}{text_unit}")
+    return steps
 
 
 def get_table_row(
@@ -264,14 +309,54 @@ def get_table_row(
     }
 
 
-def get_colored_symbols(step: str, palette: list[str]) -> str:
-    """Colour each force's symbols in a step, F_{2}, F_{x2} and \\theta_{2}, as its arrow is coloured"""
+def get_axis_colors(count: int, tilt: Union[float, None]) -> dict[str, str]:
+    """The colours of the components the diagram draws, by the axis of their symbols, if it draws any.
+
+    A single force is drawn with its components; several forces show their resultant's components only
+    when components are shown. With tilted axes in the local frame, they lie along x' and z'.
+    """
+    props = tool.Structural.get_structural_props()
+    if not ((count == 1 and props.force_display != "RESULTANT") or props.force_display in ("COMPONENTS", "BOTH")):
+        return {}
+    prime = "'" if props.reference_frame == "LOCAL_COORDS" and tilt else ""
+    return {f"x{prime}": get_svg_color((1, 0, 0, 1)), f"z{prime}": get_svg_color((0, 0, 1, 1))}
+
+
+def get_colored_symbols(
+    step: str,
+    palette: list[str],
+    axis_colors: Union[dict[str, str], None] = None,
+    color_force_components: bool = False,
+) -> str:
+    """Colour symbols in a step as the diagram colours what they stand for.
+
+    A force's symbols, F_{2}, F_{x2} and \\theta_{2}, take its arrow's colour. Components the diagram draws
+    take their axis colours instead: the resultant's, R_x, and a force's, F_{x1}, if it is drawn resolved.
+    """
+    axis_colors = axis_colors or {}
 
     def colored(match: re.Match) -> str:
-        i = int(match[2] or match[3]) - 1
-        return f"{{\\color{{{palette[i]}}}{match[1]}}}" if 0 <= i < len(palette) else match[1]
+        symbol = match[0]
+        if match[2]:  # A force's symbol.
+            axis, i = match[1], int(match[2]) - 1
+            if axis and color_force_components and axis in axis_colors:
+                color = axis_colors[axis]
+            elif 0 <= i < len(palette):
+                color = palette[i]
+            else:
+                return symbol
+        elif match[5]:  # A force's angle.
+            i = int(match[5]) - 1
+            if not 0 <= i < len(palette):
+                return symbol
+            color = palette[i]
+        elif (axis := match[3] or match[4]) in axis_colors:  # A component of the resultant.
+            color = axis_colors[axis]
+        else:
+            return symbol
+        return f"{{\\color{{{color}}}{symbol}}}"
 
-    return re.sub(r"(F_\{[xyz]?(\d+)\}|\\theta_\{(\d+)\})", colored, step)
+    return re.sub(r"F_\{([xyz]'?)?(\d+)\}|R_(?:\{([xyz]'?)\}|([xyz])(?![A-Za-z]))|\\theta_\{(\d+)\}", colored, step)
 
 
 def get_force_terms(activity: ifcopenshell.entity_instance, i: int) -> dict[str, Any]:
