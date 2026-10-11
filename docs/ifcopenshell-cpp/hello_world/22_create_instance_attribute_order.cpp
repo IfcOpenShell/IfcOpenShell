@@ -1,0 +1,33 @@
+// This file was generated with the assistance of an AI coding tool.
+//
+// Hello, world! (C++): filling in attributes as an instance is created.
+
+#include <ifcparse/file.h>
+#include <ifcparse/global_id.h>
+#include <ifcparse/schemas/Ifc4.h>
+#include <iostream>
+#include <string>
+
+int main(int argc, char** argv) {
+    if (argc < 2) {
+        std::cerr << "usage: 22_create_instance_attribute_order <model.ifc>" << std::endl;
+        return 1;
+    }
+    ifcopenshell::file model(argv[1]);
+    if (!model.good()) {
+        std::cerr << "Unable to parse .ifc file" << std::endl;
+        return 1;
+    }
+
+    // tag::example
+    // Attributes can be filled in as the instance is created, in the order of
+    // the attributes. The first attribute of an IfcRoot is the GlobalId.
+    auto new_wall = model.create(model.schema()->declaration_by_name("IfcWall"));
+    ifcopenshell::global_id new_global_id;
+    new_wall.set_attribute_value(0, static_cast<const std::string&>(new_global_id));
+    new_wall.to_string(std::cout);
+    std::cout << std::endl;
+    // end::example
+
+    return 0;
+}

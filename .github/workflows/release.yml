@@ -37,6 +37,9 @@ jobs:
 
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1.2.24
+        with:
+          # Distro ccache is < 4.10, too old for the job summary, install from GitHub releases.
+          install: binary
 
       # TODO: reuse nix/build-all.py for this.
       - name: build swig
@@ -64,7 +67,7 @@ jobs:
            -G Ninja \
            -DCMAKE_INSTALL_PREFIX=$PWD/install/ \
            -DCMAKE_BUILD_TYPE=Release \
-           "-DSCHEMA_VERSIONS=2x3;4;4x3_add2" \
+           -DBUILD_ONLY_COMMON_SCHEMAS=ON \
            -DUSE_CCACHE=ON \
            -DBUILD_PACKAGE=On \
            -DPYTHON_EXECUTABLE:FILEPATH=$(which python) \

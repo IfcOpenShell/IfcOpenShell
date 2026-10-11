@@ -96,6 +96,35 @@ class TestImportMaterialDefinitions(NewFile):
         assert props.materials[1].name == "Name"
         assert props.materials[1].total_elements == 0
 
+    def test_importing_collapsed_material_categories_when_filter_is_active(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        material = ifc.createIfcMaterial(Name="Name", Category="Category")
+        props = tool.Material.get_material_props()
+        props.material_filter = "nam"
+        subject.import_material_definitions("IfcMaterial")
+        assert len(props.materials) == 2
+        assert props.materials[0].name == "Category"
+        assert props.materials[0].is_category is True
+        assert props.materials[0].is_expanded is False
+        assert props.materials[1].ifc_definition_id == material.id()
+        assert props.materials[1].name == "Name"
+
+    def test_importing_materials_preserves_selected_material(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifc.createIfcMaterial(Name="A1", Category="A")
+        selected = ifc.createIfcMaterial(Name="B1", Category="B")
+        props = tool.Material.get_material_props()
+        props.material_filter = "1"
+        props.active_material_index = next(
+            index for index, material in enumerate(props.materials) if material.ifc_definition_id == selected.id()
+        )
+        # Shift the selected material to a higher index.
+        ifc.createIfcMaterial(Name="A0", Category="A")
+        subject.import_material_definitions("IfcMaterial")
+        assert props.materials[props.active_material_index].ifc_definition_id == selected.id()
+
     def test_import_material_layer_sets(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
@@ -135,6 +164,45 @@ class TestImportMaterialDefinitions(NewFile):
         assert props.materials[0].ifc_definition_id == material.id()
         assert props.materials[0].name == "Unnamed"
         assert props.materials[0].total_elements == 0
+
+
+class TestUpdateMaterialFilter(NewFile):
+    def test_changing_filter_text_while_active_does_not_reload_materials(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifc.createIfcMaterial(Name="Existing", Category="ExistingCategory")
+        props = tool.Material.get_material_props()
+        props.material_filter = "e"
+        assert len(props.materials) == 2
+        ifc.createIfcMaterial(Name="New", Category="NewCategory")
+        props.material_filter = "ex"
+        assert len(props.materials) == 2
+        assert all(material.name != "New" for material in props.materials)
+
+    def test_clearing_filter_restores_collapsed_categories(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifc.createIfcMaterial(Name="Name", Category="Category")
+        props = tool.Material.get_material_props()
+        props.material_filter = "nam"
+        assert len(props.materials) == 2
+        props.material_filter = ""
+        assert len(props.materials) == 1
+        assert props.materials[0].is_category is True
+        assert props.materials[0].is_expanded is False
+
+    def test_clearing_filter_selects_the_category_of_the_selected_material(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        material = ifc.createIfcMaterial(Name="Name", Category="Category")
+        props = tool.Material.get_material_props()
+        props.material_filter = "nam"
+        props.active_material_index = next(
+            index for index, item in enumerate(props.materials) if item.ifc_definition_id == material.id()
+        )
+        props.material_filter = ""
+        assert props.materials[props.active_material_index].is_category is True
+        assert props.materials[props.active_material_index].name == "Category"
 
 
 class TestRefresh(NewFile):

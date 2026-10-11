@@ -128,7 +128,7 @@ namespace {
 					curve = std::get<Handle(Geom_Curve)>(crv_or_wire);
 				} else {
 					// @todo
-					const double precision_ = 1.e-5;
+					auto precision_ = kernel->settings().get<settings::Precision>().get();
 					ifcopenshell::logger::root().warning("GEO", 180, "Approximating BasisCurve due to possible discontinuities", e->instance);
 					const auto& w = std::get<TopoDS_Wire>(crv_or_wire);
 #if OCC_VERSION_HEX < 0x70600
@@ -138,7 +138,7 @@ namespace {
 					auto hcc = new BRepAdaptor_CompCurve(w, true);
 #endif
 					// @todo, arbitrary numbers here, note they cannot be too high as contiguous memory is allocated based on them.
-					Approx_Curve3d approx(hcc, precision_, GeomAbs_C0, 10, 10);
+                    Approx_Curve3d approx(hcc, precision_, GeomAbs_C0, 10, 10);
 					curve = approx.Curve();
 				}
 
@@ -277,7 +277,7 @@ bool open_cascade_kernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& w
 #endif
 
 		ShapeFix_ShapeTolerance FTol;
-		FTol.SetTolerance(segment_wire, precision_, TopAbs_WIRE);
+		FTol.SetTolerance(segment_wire, settings_.get<settings::Precision>().get(), TopAbs_WIRE);
 
 		converted_segments.Append(segment_wire);
 	}
@@ -300,7 +300,7 @@ bool open_cascade_kernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& w
 		force_close = profile.size() > 0;
 	}
 
-	wire_builder bld(precision_, loop->instance ? loop->instance.as<express::entity>() : express::base{});
+	wire_builder bld(settings_.get<settings::Precision>().get(), loop->instance ? loop->instance.as<express::entity>() : express::base{});
 	shape_pair_enumerate(it, bld, force_close);
 	wire = bld.wire();
 

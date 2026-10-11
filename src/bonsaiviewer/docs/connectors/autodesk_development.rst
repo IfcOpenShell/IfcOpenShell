@@ -70,7 +70,7 @@ and clippy-clean lints. From the connector directory:
    cargo fmt --all -- --check
 
 CI runs the same three commands in
-``.github/workflows/build-bonsaiviewer-autodesk.yml``.
+``.github/workflows/test-bonsaiviewer-autodesk.yml``.
 
 Protocol probing
 ----------------
@@ -179,7 +179,7 @@ Expected output: ``autodesk-windows-x86_64.zip``.
 CI
 --
 
-``.github/workflows/build-bonsaiviewer-autodesk.yml`` runs ``cargo fmt
+``.github/workflows/test-bonsaiviewer-autodesk.yml`` runs ``cargo fmt
 --check``, ``cargo clippy -- -D warnings``, and
 ``cargo test --all-features``, then matrix-builds the four shipping
 packages (Linux x86_64, macOS arm64, macOS x86_64, Windows x86_64) and

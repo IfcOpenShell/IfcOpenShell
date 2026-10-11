@@ -282,7 +282,7 @@ class TestImportTemporaryDrawingCamera(NewFile):
         bpy.ops.bim.load_drawings()
         bpy.ops.bim.add_drawing()
         drawing = tool.Ifc.get().by_type("IfcAnnotation")[0]
-        placement = ifcopenshell.util.placement.get_local_placement(drawing.ObjectPlacement)
+        placement = ifcopenshell.util.placement.get_placement(drawing.ObjectPlacement)
         props = tool.Georeference.get_georeference_props()
         props.has_blender_offset = True
         props.blender_offset_x = "1000"
