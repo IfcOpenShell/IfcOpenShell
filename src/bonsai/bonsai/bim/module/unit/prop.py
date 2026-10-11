@@ -65,6 +65,25 @@ class Unit(PropertyGroup):
 
 class BIMUnitProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing")
+    display_length_unit: EnumProperty(
+        name="Display Length Unit",
+        description=(
+            "Unit used when Bonsai displays lengths in the interface. "
+            "Purely visual, the project length unit and all stored IFC values are unchanged"
+        ),
+        items=[
+            ("PROJECT", "Project Unit", "Display lengths in the project length unit"),
+            ("MILLIMETERS", "Millimeters", "Display lengths in millimeters"),
+            ("CENTIMETERS", "Centimeters", "Display lengths in centimeters"),
+            ("DECIMETERS", "Decimeters", "Display lengths in decimeters"),
+            ("METERS", "Meters", "Display lengths in meters"),
+            ("FEET_FRACTIONAL", "Feet and Inches - Fractional", "Display lengths in feet and fractional inches"),
+            ("FEET_DECIMAL", "Feet - Decimal", "Display lengths in decimal feet"),
+            ("INCHES_FRACTIONAL", "Inches - Fractional", "Display lengths in fractional inches"),
+            ("INCHES_DECIMAL", "Inches - Decimal", "Display lengths in decimal inches"),
+        ],
+        default="PROJECT",
+    )
     units: CollectionProperty(name="Units", type=Unit)
     active_unit_index: IntProperty(name="Active Unit Index")
     active_unit_id: IntProperty(name="Active Unit Id")
@@ -75,6 +94,7 @@ class BIMUnitProperties(PropertyGroup):
 
     if TYPE_CHECKING:
         is_editing: bool
+        display_length_unit: str
         units: bpy.types.bpy_prop_collection_idprop[Unit]
         active_unit_index: int
         active_unit_id: int
