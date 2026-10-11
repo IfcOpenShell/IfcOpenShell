@@ -71,8 +71,9 @@ def assign_connection_geometry(
 
     .. code:: python
 
+        boundary = ifcopenshell.api.root.create_entity(model, ifc_class="IfcRelSpaceBoundary")
         ifcopenshell.api.boundary.assign_connection_geometry(model,
-            rel_space_boundary=element,
+            rel_space_boundary=boundary,
             outer_boundary=[(0., 0.), (1., 0.), (1., 1.), (0., 1.)],
             location=[0., 0., 0.], axis=[1., 0., 0.], ref_direction=[0., 0., 1.],
             )

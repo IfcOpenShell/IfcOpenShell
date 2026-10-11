@@ -57,6 +57,11 @@ def update_alignment_parameter_segment_tags(
 
     .. code:: python
 
+        model = ifcopenshell.file(schema="IFC4X3")
+        ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(model)
+        alignment = ifcopenshell.api.alignment.create_by_pi_method(model,
+            name="A1", hpoints=[(0.0, 0.0), (100.0, 0.0), (100.0, 100.0)], radii=[20.0])
         horizontal = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
         ifcopenshell.api.alignment.update_alignment_parameter_segment_tags(model, horizontal)
     """

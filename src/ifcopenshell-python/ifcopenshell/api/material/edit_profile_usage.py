@@ -79,7 +79,10 @@ def edit_profile_usage(
             products=[beam], type="IfcMaterialProfileSetUsage")
 
         # Let's give a 1000mm long beam body representation.
-        body = ifcopenshell.api.geometry.add_profile_representation(
+        model3d = ifcopenshell.api.context.add_context(model, context_type="Model")
+        body_context = ifcopenshell.api.context.add_context(model,
+            context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model3d)
+        body = ifcopenshell.api.geometry.add_profile_representation(model,
             context=body_context, profile=hea100, depth=1000)
         ifcopenshell.api.geometry.assign_representation(model, product=beam, representation=body)
         ifcopenshell.api.geometry.edit_object_placement(model, product=beam)
