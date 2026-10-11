@@ -112,6 +112,11 @@ class CoveringToolUI:
 
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_A")
+            row.operator("bim.add_instance_wall_coverings_from_walls")
+
+            row = cls.layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_G")
             row.operator("bim.regen_selected_covering_object")
 
@@ -193,6 +198,11 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
                 bpy.ops.bim.add_instance_ceiling_coverings_from_walls()
             elif container:
                 bpy.ops.bim.add_instance_ceiling_covering_from_cursor()
+            else:
+                bpy.ops.bim.add_occurrence()
+        elif AuthoringData.data["relating_type_data"].get("predefined_type") in tool.Covering.WALL_COVERING_TYPES:
+            if element and bpy.context.selected_objects and element.is_a("IfcWall"):
+                bpy.ops.bim.add_instance_wall_coverings_from_walls()
             else:
                 bpy.ops.bim.add_occurrence()
         else:
