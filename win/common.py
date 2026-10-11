@@ -157,6 +157,7 @@ class HelpStrings:
 
     ADD_COMMIT_SHA = (
         "Add the commit SHA to the built version string. "
+        "Sets ADD_COMMIT_SHA and VERSION_OVERRIDE CMake options to ON. "
         "Also can be specified by using ADD_COMMIT_SHA env variable. "
         f"(default: {ADD_COMMIT_SHA_DEFAULT})"
     )
@@ -203,3 +204,39 @@ def validate_cmake_version() -> None:
     if not match or tuple(map(int, match.groups())) < MIN_CMAKE_VERSION:
         logger.error(error_msg)
         sys.exit(1)
+
+
+def is_geometry_writer(path: Path) -> bool:
+    # Geometry writers are left out of the packages: only `geom::serialise` and `geom::tesselate`
+    # load them, and neither the executables nor the Python bindings currently use those.
+    prefixes = (
+        "ifcopenshell.geometry.writer.",  # Core library, `lib`-prefixed on Unix.
+        "ifcopenshell_geometry_writer_",  # Per-schema plugins.
+    )
+    return path.name.removeprefix("lib").startswith(prefixes)
+
+
+def is_json_or_xml_document_serializer(path: Path) -> bool:
+    # Only IfcConvert writes .json and .xml documents, the rest of the packages leave them out.
+    return path.name.startswith(("ifcopenshell_document_json_", "ifcopenshell_document_xml_"))
+
+
+def is_geometry_serializer(path: Path) -> bool:
+    # Besides the Python bindings, geometry serializers (obj, svg, glb, ...) are only used by IfcConvert,
+    # the other executables leave them out.
+    return not is_svgfill(path) and re.fullmatch(r"ifcopenshell_geometry_[A-Za-z]+", path.stem) is not None
+
+
+def is_svgfill(path: Path) -> bool:
+    # Besides the Python bindings, svgfill is only used by the svgfill executable, the other executables leave it out.
+    return path.stem == "ifcopenshell_geometry_svgfill"
+
+
+def is_geometry_tree(path: Path) -> bool:
+    # Geometry trees are only used by the Python bindings (`ifcopenshell.geom.tree`), the executables leave them out.
+    return path.name.startswith("ifcopenshell_geometry_tree_")
+
+
+def is_wgpu_native(path: Path) -> bool:
+    # wgpu-native is only used by the viewers (BonsaiViewer, IfcViewerMinimal), the other packages leave it out.
+    return path.name.removeprefix("lib").startswith("wgpu_native.")

@@ -465,7 +465,7 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
                 (0.0, 0.0, 0.0, 1.0),
             )
         )
-        assert np.array_equal(ifcopenshell.util.placement.get_local_placement(new.ObjectPlacement), resulting_matrix)
+        assert np.array_equal(ifcopenshell.util.placement.get_placement(new.ObjectPlacement), resulting_matrix)
 
     def test_append_a_distribution_element_with_its_ports(self):
         library = ifcopenshell.api.project.create_file(version=self.file.schema)

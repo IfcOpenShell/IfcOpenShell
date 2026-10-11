@@ -44,7 +44,6 @@ jobs:
               - 'src/ifcedit/**'
               - 'src/ifcmcp/**'
               - 'src/ifcopenshell-python/**'
-              - '!src/ifcopenshell-python/docs/**'
               - 'src/ifcparse/**'
               - 'src/ifcpatch/**'
               - 'src/ifcquery/**'
@@ -120,7 +119,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2.24
         with:
           key: ubuntu-22.04-${{ runner.arch }}
-          # The prebuilt ccache 4.13.6 handles native CPU flags correctly across runners.
+          # Distro ccache is < 4.10, too old for the job summary, install from GitHub releases.
           install: binary
 
       # RTTI is only enabled by default in Debug builds of rocksdb.
@@ -322,6 +321,8 @@ jobs:
           ERROR=0
           cd test
           python tests.py || fail "tests.py"
+          pytest -vv package/test_ifcopenshell_python_shared_libraries.py --not-bundled \
+            || fail "test_ifcopenshell_python_shared_libraries.py"
           cd ../src/ifcopenshell-python
           pip install -e ../ifcpatch --no-deps # Needed for sql.py tests.
           make test-parallel || fail "ifcopenshell-python"

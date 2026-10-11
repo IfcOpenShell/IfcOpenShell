@@ -37,6 +37,9 @@ jobs:
 
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1.2.24
+        with:
+          # Distro ccache is < 4.10, too old for the job summary, install from GitHub releases.
+          install: binary
 
       # TODO: reuse nix/build-all.py for this.
       - name: build swig
