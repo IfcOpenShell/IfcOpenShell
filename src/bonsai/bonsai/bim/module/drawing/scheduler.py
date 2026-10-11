@@ -32,7 +32,7 @@ from odf.table import Table, TableCell, TableColumn, TableRow
 from odf.text import P
 
 import bonsai.tool as tool
-from bonsai.bim.module.drawing.svgwriter import SvgWriter
+from bonsai.bim.module.drawing.svgwriter import SvgWriter, strip_css_comments
 
 DEBUG = False
 
@@ -83,7 +83,7 @@ class Scheduler:
             if not os.path.exists(stylesheet_path):
                 stylesheet_path = tool.Blender.get_data_dir_path(Path("assets") / "schedule.css")
         with open(stylesheet_path, "r") as stylesheet:
-            css = stylesheet.read()
+            css = strip_css_comments(stylesheet.read())
 
         matches = re.search(r"--font-size-pt:\s*([0-9.]+);", css)
         self.font_size_pt = float(matches.groups()[0]) if matches else 12  # Default to 12pt
