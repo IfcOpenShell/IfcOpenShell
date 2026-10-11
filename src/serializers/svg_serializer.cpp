@@ -2854,6 +2854,7 @@ void svg_serializer::setSectionHeightsFromStoreys(double offset) {
 	auto storeys = file->instances_by_type("IfcBuildingStorey");
 	const double lu = file->get_unit("LENGTHUNIT").second;
     if (!storeys.empty()) {
+        auto mapping = ifcopenshell::geom::impl::mapping_implementations().construct(file, settings_, logger());
         for (auto& s : storeys) {
             auto attr_value = s.as<express::entity>().get("Elevation");
             if (!attr_value.isNull()) {
@@ -2864,12 +2865,26 @@ void svg_serializer::setSectionHeightsFromStoreys(double offset) {
                     logger().error("SER", 33, e);
                     continue;
                 }
-                if (!section_data_->empty()) {
-                    boost::get<horizontal_plan>(section_data_->back()).next_elevation = elev * lu;
+                // Elevation ignores ancestor placement Z; use the global placement Z, falling back to Elevation.
+                double elev_global = elev * lu;
+                auto placement = s.as<express::entity>().get("ObjectPlacement");
+                if (mapping && !placement.isNull()) {
+                    auto item = mapping->map(placement);
+                    auto matrix = ifcopenshell::geom::taxonomy::cast<ifcopenshell::geom::taxonomy::matrix4>(item);
+                    if (matrix) {
+                        elev_global = matrix->translation_part()(2);
+#ifdef TAXONOMY_USE_NAKED_PTR
+                        delete matrix;
+#endif
+                    }
                 }
-                section_data_->push_back(horizontal_plan{s, elev * lu, offset, std::numeric_limits<double>::infinity()});
+                if (!section_data_->empty()) {
+                    boost::get<horizontal_plan>(section_data_->back()).next_elevation = elev_global;
+                }
+                section_data_->push_back(horizontal_plan{s, elev_global, offset, std::numeric_limits<double>::infinity()});
             }
         }
+        delete mapping;
 	} else {
 		section_data_->push_back(horizontal_plan_at_element{});
 	}
