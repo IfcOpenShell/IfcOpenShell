@@ -593,6 +593,12 @@ class ShaderInfo:
         # the polygon the chain and its resultant make; elsewhere tails are shared, so labels go at the tips.
         chain = np.cumsum([np.zeros(3)] + [vector for vector, *_ in vectors], axis=0) * scale + location
         centre = chain.mean(axis=0) if mode == "TIP_TO_TAIL" else None
+        # A push arrives at its point. Drawn alone, its picture is mirrored through the point, arrows
+        # reversed; added to others, it is slid along its line to pull, by the principle of transmissibility.
+        ifc_file = tool.Ifc.get()
+        pushes = {a for a in activities if a and tool.Structural.get_push(ifc_file.by_id(a))}
+        arriving = len(activities) == 1 and activities[0] in pushes
+        flip = lambda point: 2 * location - point if arriving else point
         for i, (vector, color, has_angle, activity) in enumerate(vectors):
             tail = start if mode == "TIP_TO_TAIL" else location
             if mode == "PARALLELOGRAM" and i:
@@ -600,16 +606,25 @@ class ShaderInfo:
                 # as the vector it is parallel to; the sum of the vectors so far is a resultant, in white.
                 corner = location + (running + vector) * scale
                 running_color = vectors[0][1] if i == 1 else (1, 1, 1, 1)
-                self.add_dashed_line(location + running * scale, corner, size, color)
-                self.add_dashed_line(location + vector * scale, corner, size, running_color)
+                self.add_dashed_line(flip(location + running * scale), flip(corner), size, color)
+                self.add_dashed_line(flip(location + vector * scale), flip(corner), size, running_color)
                 if i < len(vectors) - 1:
-                    self.add_dashed_line(location, corner, size, (1, 1, 1, 1))  # An intermediate resultant.
+                    self.add_dashed_line(location, flip(corner), size, (1, 1, 1, 1))  # An intermediate resultant.
             tip = tail + vector * scale
             label = f"{np.linalg.norm(vector):.{props.force_decimals}f} {self.force_unit}"
             if has_angle:
                 label += self.get_unknown_marks(activity)[0]
             force_of = activity if has_angle else 0
-            if centre is None:
+            if has_angle and activity in pushes:
+                # Slid along its line to pull, with the line it arrives along shown beyond the point.
+                label += " (push)"
+                self.add_dashed_line(location, location - vector * scale * 0.4, size, color)
+            if arriving:
+                side = None
+                self.add_force_arrow(
+                    flip(tip), flip(tail), color, label, size, activity=activity, force_of=force_of, label_at_tail=True
+                )
+            elif centre is None:
                 self.add_force_arrow(tail, tip, color, label, size, activity=activity, force_of=force_of)
             else:
                 side = self.get_label_side(vector, (tail + tip) / 2 - centre)
@@ -632,7 +647,8 @@ class ShaderInfo:
             if props.show_force_angles and has_angle:
                 self.add_force_angle(tail, vector, size, color, arcs_at_tail, reference_axes, activity)
             if props.show_force_slopes and has_angle:
-                self.add_force_slope(tail, tip, size, color, activity, avoid=None if centre is None else side)
+                arrow = (flip(tip), flip(tail)) if arriving else (tail, tip)
+                self.add_force_slope(*arrow, size, color, activity, avoid=None if centre is None else side)
             start = tip
             running = running + vector
 
@@ -648,24 +664,26 @@ class ShaderInfo:
             outside = np.array((0, 0, 1.0)) if centre is None else (location + tip) / 2 - centre
             side = self.get_label_side(resultant, outside)
             self.add_force_arrow(
-                location,
-                tip,
+                flip(tip) if arriving else location,
+                location if arriving else tip,
                 (1, 1, 1, 2),
                 label,
                 size,
                 spacing=0.3,
-                label_away=side,
+                label_away=None if arriving else side,
                 label_at_middle=centre is not None,
                 activity=single,
                 resultant_of=activities if len(activities) > 1 else None,
                 force_of=single,
+                label_at_tail=arriving,
             )
             if props.show_force_angles:
                 self.add_force_angle(
                     location, resultant, size, (1, 1, 1, 1), arcs_at_tail, reference_axes, single or None
                 )
             if props.show_force_slopes:
-                self.add_force_slope(location, tip, size, (1, 1, 1, 1), avoid=side)
+                arrow = (flip(tip), location) if arriving else (location, tip)
+                self.add_force_slope(*arrow, size, (1, 1, 1, 1), avoid=side)
         self.add_reference_axes(reference_axes, size)
         if not np.allclose(rotation, np.eye(3)):
             self.add_point_axes(location, rotation, size)
@@ -868,10 +886,12 @@ class ShaderInfo:
         activity: int = 0,
         resultant_of: Union[list[int], None] = None,
         force_of: int = 0,
+        label_at_tail: bool = False,
     ) -> None:
         """Add an arrow from tail to tip, its head and shaft sized to size, the longest arrow drawn with it.
 
         :param force_of: The activity whose whole force the arrow is, not a component, to name it in a report.
+        :param label_at_tail: Label it beyond its tail, as a push arriving at its point is.
         """
         length = np.linalg.norm(tip - tail)
         if not length:
@@ -907,8 +927,8 @@ class ShaderInfo:
                 pickable["activities"] = resultant_of
             self.pickables.append(pickable)
         # Labelled beside the tip, as arrows often share their tail.
-        away = direction if label_away is None else label_away
-        position = (tail + tip) / 2 if label_at_middle else tip
+        away = (-direction if label_at_tail else direction) if label_away is None else label_away
+        position = (tail + tip) / 2 if label_at_middle else tail if label_at_tail else tip
         text = {"position": position, "text": label, "color": color, "away": away}
         if force_of:
             text["force_of"] = force_of

@@ -206,6 +206,16 @@ class Structural(bonsai.core.tool.Structural):
             cls.edit_bbim_structural(activity, {"MagnitudeLocked": magnitude, "DirectionLocked": direction})
 
     @classmethod
+    def get_push(cls, activity: ifcopenshell.entity_instance) -> bool:
+        """Whether an applied load pushes on its item rather than pulls, which IFC's force vector cannot say"""
+        return bool(ifcopenshell.util.element.get_pset(activity, "BBIM_Structural", "Push"))
+
+    @classmethod
+    def set_push(cls, activity: ifcopenshell.entity_instance, push: bool) -> None:
+        if push != cls.get_push(activity):
+            cls.edit_bbim_structural(activity, {"Push": push})
+
+    @classmethod
     def get_axes_tilt(cls, item: ifcopenshell.entity_instance) -> Union[float, None]:
         """The degrees a structural item's own axes are tilted by in the X-Z plane, x' turning from +X towards +Z.
 

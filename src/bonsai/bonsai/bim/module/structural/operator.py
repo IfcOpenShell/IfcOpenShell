@@ -1211,6 +1211,15 @@ class StructuralForceInput:
         options={"SKIP_SAVE"},
         update=update_force_inputs,
     )
+    acts_as: bpy.props.EnumProperty(
+        name="Acts As",
+        description="Whether the force pulls on its item or pushes on it, which only changes how it is drawn",
+        items=[
+            ("PULL", "Pull", "Drawn from its point, as a cable pulls"),
+            ("PUSH", "Push", "Drawn arriving at its point, as a strut pushes"),
+        ],
+        options={"SKIP_SAVE"},
+    )
     direction_locked: bpy.props.BoolProperty(
         name="Direction Known",
         description="Whether the direction is known. Edit Resultant keeps it, or finds it if unlocked",
@@ -1353,6 +1362,8 @@ class ApplyStructuralLoad(bpy.types.Operator, tool.Ifc.Operator, StructuralForce
         if self.load_group == "0":
             layout.prop(self, "new_load_case_name")
         self.draw_force_inputs(layout, category, show_locks=True)
+        if category == "IfcStructuralPointConnection":
+            layout.row().prop(self, "acts_as", expand=True)
         if category:
             layout.label(text=f"Applies to {len(elements)} {category[3:]}", icon="INFO")
         if not tool.Ifc.get().by_type("IfcStructuralAnalysisModel"):
@@ -1406,6 +1417,7 @@ class ApplyStructuralLoad(bpy.types.Operator, tool.Ifc.Operator, StructuralForce
         ifcopenshell.api.group.assign_group(ifc_file, products=activities, group=group)
         for activity in activities:  # Only an unlocked value is recorded; loads are known unless said.
             tool.Structural.set_locks(activity, self.magnitude_locked, self.direction_locked)
+            tool.Structural.set_push(activity, self.acts_as == "PUSH")
         resolve_resultants(self, activities)
         self.show_load_group(context, group)
         return {"FINISHED"}
@@ -1498,6 +1510,7 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         self.load_name = get_default_load_name(self, category) if DEFAULT_LOAD_NAME.match(name) else name
         if lock_activity := self.get_lock_activity():
             self.magnitude_locked, self.direction_locked = tool.Structural.get_locks(lock_activity)
+            self.acts_as = "PUSH" if tool.Structural.get_push(lock_activity) else "PULL"
         if (activities := self.get_movable_activities()) and (groups := get_activity_load_groups(activities[0])):
             self.load_group = str(groups[0].id())
         # Set last, so that filling in the values above does not start a preview.
@@ -1538,6 +1551,8 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         if not lock_activity:
             layout.label(text="Open it from an applied load to lock its values", icon="INFO")
         self.draw_force_inputs(layout, category, show_locks=bool(lock_activity))
+        if lock_activity and category == "IfcStructuralPointConnection":
+            layout.row().prop(self, "acts_as", expand=True)
         if self.input_mode != "COMPONENTS" and (self.y or self.moment_x or self.moment_y or self.moment_z):
             layout.label(text="Y and moments will be set to zero", icon="ERROR")
 
@@ -1554,6 +1569,7 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         ifcopenshell.api.structural.edit_structural_load(ifc_file, structural_load=load, attributes=attributes)
         if lock_activity := self.get_lock_activity():
             tool.Structural.set_locks(lock_activity, self.magnitude_locked, self.direction_locked)
+            tool.Structural.set_push(lock_activity, self.acts_as == "PUSH")
         activities = self.get_movable_activities()
         if activities and (target := self.get_target_load_group(ifc_file)):
             for activity in activities:

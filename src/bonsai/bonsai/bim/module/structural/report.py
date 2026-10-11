@@ -258,6 +258,12 @@ def get_resultant_calculation(
         "tilted": render(tilted),
         "has_tilted": bool(tilted),
         "tilt_note": f"x′ is tilted {tilt:.1f}° from +X towards +Z, with z′ square to it." if tilted else "",
+        # A push added to other forces is drawn, and added, as a pull along its line.
+        "push_note": (
+            "By the principle of transmissibility, a push is added as a pull along its line of action."
+            if len(forces) > 1 and any(force.get("push") for force in forces)
+            else ""
+        ),
     }
 
 
@@ -403,6 +409,9 @@ def get_force_terms(activity: ifcopenshell.entity_instance, i: int) -> dict[str,
             force["slope"] = slope
             force["direction"] = f"{rise:g}:{run:g} slope, {force['direction']}"
             force["terms"] = get_slope_terms(x, z, rise, run)
+    if tool.Structural.get_push(activity):
+        force["push"] = True
+        force["direction"] += ", push"
     return force
 
 
@@ -773,7 +782,9 @@ def write_diagram(
     points += [flat(text["position"]) for text in texts]
     low, high = np.min(points, axis=0), np.max(points, axis=0)
     scale = 420 / max(*(high - low), 1e-9)
-    margin = 90
+    # Room for the longest label beside its anchor, as labels run out from their anchors.
+    longest = max((len(re.sub(r"_\{([^}]*)\}", r"\1", t["text"])) for t in texts), default=0)
+    margin = max(90, 20 + 8.2 * longest)
     to_svg = lambda point: (flat(point) - low) * scale + margin
     width, height = (high - low) * scale + 2 * margin
     # On white, as a figure on paper, so that its near-black lines read on dark pages too.
