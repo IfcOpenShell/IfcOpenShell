@@ -1044,3 +1044,30 @@ class TestGetSiblingOccurrenceCount(NewFile):
         ifcopenshell.api.type.assign_type(ifc, related_objects=occurrences, relating_type=wall_type)
 
         assert subject.get_sibling_occurrence_count(wall_type) == 2
+
+
+class TestAutoDetectAnnotationFillArea(NewFile):
+    def add_square_loops(self, loops):
+        vertices, edges = [], []
+        for size in loops:
+            first = len(vertices)
+            vertices += [(-size, -size, 0.0), (size, -size, 0.0), (size, size, 0.0), (-size, size, 0.0)]
+            edges += [(first + i, first + (i + 1) % 4) for i in range(4)]
+        mesh = bpy.data.meshes.new("Fill")
+        mesh.from_pydata(vertices, edges, [])
+        obj = bpy.data.objects.new("Fill", mesh)
+        bpy.context.scene.collection.objects.link(obj)
+        return obj
+
+    def test_a_loop_inside_another_loop_becomes_an_inner_boundary(self):
+        tool.Ifc.set(ifcopenshell.file(schema="IFC4"))
+        obj = self.add_square_loops([2.0, 1.0])
+        result = subject.auto_detect_annotation_fill_area(obj, obj.data)
+        fill_area = result["annotation_fill_area"]
+        assert len(fill_area.InnerBoundaries) == 1
+
+    def test_a_single_loop_has_no_inner_boundary(self):
+        tool.Ifc.set(ifcopenshell.file(schema="IFC4"))
+        obj = self.add_square_loops([2.0])
+        result = subject.auto_detect_annotation_fill_area(obj, obj.data)
+        assert result["annotation_fill_area"].InnerBoundaries is None
