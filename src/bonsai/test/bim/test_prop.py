@@ -18,6 +18,7 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api.context
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
@@ -322,3 +323,19 @@ class TestGetAttributeUnitEnumItemsWithAMismatchedUnit(NewFile):
 
         items = bonsai.bim.prop.get_attribute_unit_enum_items(metadata, bpy.context)
         assert str(mismatched_unit.id()) in [i[0] for i in items]
+
+
+class TestGetValueRoundsLengthToModelPrecision(NewFile):
+    def test_strips_float32_noise_from_a_length_value(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.context.add_context(ifc, context_type="Model")
+
+        element = ifc.createIfcWall()
+        prop = ifc.createIfcPropertySingleValue(Name="Foo", NominalValue=ifc.createIfcLengthMeasure(1.0))
+        metadata = import_single_property(ifc, element, prop)
+        metadata.float_value = 67.74
+
+        assert metadata.special_type == "LENGTH"
+        assert metadata.get_value() == 67.74
