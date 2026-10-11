@@ -1452,6 +1452,11 @@ class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
             props = tool.Project.get_project_props()
             filepath = tool.Ifc.get_uri(filepath, use_relative_path=self.use_relative_path)
 
+            # A repeat invocation for an already linked file and query would duplicate the row (#9029).
+            if any(link.filepath == filepath and link.query == self.query for link in props.links):
+                self.report({"INFO"}, f"'{Path(filepath).name}' is already linked, skipping duplicate.")
+                continue
+
             new = props.links.add()
             if tool.Ifc.get():
                 if not (document := existing_links.get(filepath)):
@@ -1545,7 +1550,9 @@ class LoadLink(bpy.types.Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
         self.filepath_ = filepath
         if filepath.suffix.lower().endswith(".ifc"):
-            return self.link_ifc()
+            message = f"Linking '{filepath.name}'... large models can take a while."
+            with tool.Project.report_linking_progress(context, message):
+                return self.link_ifc()
 
     def link_blend(self, filepath: Path) -> None:
         with bpy.data.libraries.load(str(filepath), link=True) as (data_from, data_to):
