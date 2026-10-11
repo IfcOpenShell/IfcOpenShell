@@ -29,9 +29,9 @@ import ifcopenshell.util.element
 import ifcopenshell.util.unit
 
 import bonsai.bim.helper
-import bonsai.bim.schema
 import bonsai.core.tool
 import bonsai.tool as tool
+from bonsai.bim import schema as bim_schema
 
 if TYPE_CHECKING:
     from bonsai.bim.module.pset.prop import (
@@ -148,7 +148,7 @@ class Pset(bonsai.core.tool.Pset):
             predefined_type = ifcopenshell.util.element.get_predefined_type(element)
         return bool(
             pset_name
-            in bonsai.bim.schema.ifc.psetqto.get_applicable_names(
+            in bim_schema.ifc.psetqto.get_applicable_names(
                 element.is_a(), predefined_type, pset_only=True, schema=tool.Ifc.get_schema()
             )
         )
@@ -588,7 +588,7 @@ class Pset(bonsai.core.tool.Pset):
 
     @classmethod
     def get_pset_template(cls, name: str) -> Union[ifcopenshell.entity_instance, None]:
-        return bonsai.bim.schema.ifc.psetqto.get_by_name(name)
+        return bim_schema.ifc.psetqto.get_by_name(name)
 
     @classmethod
     def add_proposed_property(cls, name: str, value: Any, props: bpy.types.PropertyGroup) -> Union[None, str]:
