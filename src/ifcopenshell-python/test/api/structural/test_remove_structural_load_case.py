@@ -1,5 +1,5 @@
 # IfcOpenShell - IFC toolkit and geometry engine
-# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2026 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of IfcOpenShell.
 #
@@ -15,26 +15,17 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+# This file was generated with the assistance of an AI coding tool.
 
-import ifcopenshell
 import ifcopenshell.api.structural
-import ifcopenshell.util.element
+import test.bootstrap
 
 
-def remove_structural_connection_condition(file: ifcopenshell.file, relation: ifcopenshell.entity_instance) -> None:
-    """Removes a relationship between a connection and a condition
-
-    The condition and the member itself is preserved.
-
-    :param relation: The IfcRelConnectsStructuralMember to remove.
-    :return: None
-    """
-    if relation.AppliedCondition:
-        ifcopenshell.api.structural.remove_structural_boundary_condition(
-            file,
-            connection=relation,
-        )
-    history = relation.OwnerHistory
-    file.remove(relation)
-    if history:
-        ifcopenshell.util.element.remove_deep2(file, history)
+class TestRemoveStructuralLoadCase(test.bootstrap.IFC4):
+    # IfcStructuralLoadCase does not exist in IFC2X3, so add_structural_load_case
+    # (and therefore this test) is IFC4+ only.
+    def test_removing_a_structural_load_case_without_owner_history(self):
+        load_case = ifcopenshell.api.structural.add_structural_load_case(self.file, name="LC1")
+        assert load_case.OwnerHistory is None
+        ifcopenshell.api.structural.remove_structural_load_case(self.file, load_case=load_case)
+        assert len(self.file.by_type("IfcStructuralLoadCase")) == 0
