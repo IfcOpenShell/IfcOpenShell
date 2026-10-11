@@ -930,6 +930,26 @@ class Drawing(bonsai.core.tool.Drawing):
         return props.is_editing_sheets
 
     @classmethod
+    def unescape_literal_newlines(cls, value: str) -> str:
+        """Turn the legacy ``\\n`` escape sequence into a real line break."""
+        return value.replace("\\n", "\n")
+
+    @classmethod
+    def sanitize_multiline_literal(cls, value: str) -> str:
+        # Blender's Text.as_string() always terminates with a line break.
+        return value.replace("\r\n", "\n").rstrip("\n")
+
+    @classmethod
+    def edit_text_literal_value(cls, obj: bpy.types.Object, literal_index: int, value: str) -> None:
+        props = cls.get_text_props(obj)
+        if props.is_editing and literal_index < len(props.literals):
+            props.literals[literal_index].attributes["Literal"].string_value = value
+        ifc_literals = cls.get_text_literal(obj, return_list=True)
+        assert isinstance(ifc_literals, list)
+        if literal_index < len(ifc_literals):
+            ifc_literals[literal_index].Literal = value
+
+    @classmethod
     def edit_text_literals(cls, obj: bpy.types.Object, literal_attributes: dict) -> None:
         if not literal_attributes:
             return

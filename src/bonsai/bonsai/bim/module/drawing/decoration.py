@@ -618,7 +618,7 @@ class BaseDecorator:
             if newline_at != 0:
                 text = helper.add_newline_between_words(text, newline_at)
 
-            multiple_lines = text.split("\n")
+            multiple_lines = text.replace("\\n", "\n").split("\n")
 
             for line in multiple_lines:
                 self.draw_label(
