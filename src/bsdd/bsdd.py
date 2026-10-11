@@ -1027,11 +1027,14 @@ def apply_ifc_classification_properties(
         predefinedValue = prop.get("predefinedValue")
         if not predefinedValue or predefinedValue == "None" or prop.get("propertyDomainName") != "IFC":
             continue
-        pset = psets.get(prop["propertySet"])
+        # propertySet is NotRequired; skip properties without one.
+        if not (property_set := prop.get("propertySet")):
+            continue
+        pset = psets.get(property_set)
         if pset:
             pset = ifc_file.by_id(pset["id"])
         else:
-            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name=prop["propertySet"])
-        if prop["dataType"] == "boolean":
+            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name=property_set)
+        if prop.get("dataType") == "boolean":
             predefinedValue = predefinedValue == "TRUE"
         ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={prop["name"]: predefinedValue})
