@@ -716,12 +716,18 @@ class Loader(bonsai.core.tool.Loader):
     @classmethod
     def create_settings(cls, is_gross=False):
         results = []
-        for context in cls.settings.contexts:
+        contexts = cls.settings.contexts
+        ifc_file = contexts[0].file if contexts else None
+        for context in contexts:
             settings = ifcopenshell.geom.settings()
             settings.set("mesher-linear-deflection", cls.settings.deflection_tolerance)
             settings.set("mesher-angular-deflection", cls.settings.angular_tolerance)
             settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
-            settings.set("context-ids", [context.id()])
+            context_ids = {context.id()}
+            if not is_gross:
+                assert ifc_file
+                context_ids |= ifcopenshell.util.representation.get_missing_opening_context_ids(ifc_file, context_ids)
+            settings.set("context-ids", sorted(context_ids))
             settings.set("apply-default-materials", False)
             settings.set("keep-bounding-boxes", True)
             settings.set("layerset-first", True)
