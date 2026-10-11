@@ -258,7 +258,7 @@ def info(model: ifcopenshell.file, element: ifcopenshell.entity_instance) -> dic
     # Placement (as 4x4 matrix)
     try:
         if hasattr(element, "ObjectPlacement") and element.ObjectPlacement:
-            matrix = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+            matrix = ifcopenshell.util.placement.get_placement(element.ObjectPlacement)
             result["placement"] = matrix.tolist()
     except Exception:
         pass

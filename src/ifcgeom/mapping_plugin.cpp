@@ -21,6 +21,10 @@
 
 #include <boost/algorithm/string/case_conv.hpp>
 
+#ifdef __EMSCRIPTEN__
+#include <dlfcn.h>
+#endif
+
 namespace ifcopenshell {
 namespace plugin {
 PLUGIN_API std::filesystem::path add_search_paths_or_default(manager& manager, std::filesystem::path (*default_search_path)());
@@ -68,6 +72,22 @@ bool ifcopenshell::geom::impl::load_mapping_plugin(mapping_registry& registry, c
 
 	const auto expected_schema = boost::to_upper_copy(schema_name);
 	const auto basename = std::string(mapping_plugin_prefix) + boost::to_lower_copy(schema_name);
+
+#ifdef __EMSCRIPTEN__
+	using emscripten_register_fn = void (*)(mapping_registry*);
+	const auto emscripten_symbol = std::string("ifcopenshell_emscripten_register_mapping_") + boost::to_lower_copy(schema_name);
+	if (auto* register_ptr = dlsym(RTLD_DEFAULT, emscripten_symbol.c_str())) {
+		union {
+			void* ptr;
+			emscripten_register_fn fn;
+		} register_symbol;
+		register_symbol.ptr = register_ptr;
+		if (register_symbol.fn) {
+			register_symbol.fn(&registry);
+			return true;
+		}
+	}
+#endif
 
 	for (const auto& path : manager.discover_exact(basename)) {
 		auto module = manager.load(path);
