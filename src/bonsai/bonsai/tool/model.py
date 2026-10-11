@@ -1086,6 +1086,13 @@ class Model(bonsai.core.tool.Model):
                 return "PROFILE"
 
     @classmethod
+    def get_local_horizontal_extents(cls, obj: bpy.types.Object) -> tuple[float, float]:
+        """Return the (x, y) extents of the object's local bounding box."""
+        xs = [v[0] for v in obj.bound_box]
+        ys = [v[1] for v in obj.bound_box]
+        return (max(xs) - min(xs), max(ys) - min(ys))
+
+    @classmethod
     def get_wall_axis(
         cls, obj: bpy.types.Object, layers: Optional[MaterialLayerParameters] = None
     ) -> dict[str, list[Vector]]:
