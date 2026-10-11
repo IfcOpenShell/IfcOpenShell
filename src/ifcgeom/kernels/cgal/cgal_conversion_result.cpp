@@ -543,9 +543,15 @@ void ifcopenshell::geom::cgal_shape::triangulate(ifcopenshell::geom::settings se
 				);
 				welds.insert({ pn, vidx });
 
-				auto nx = CGAL::to_double(face_normals_map[face].cartesian(0));
-				auto ny = CGAL::to_double(face_normals_map[face].cartesian(1));
-				auto nz = CGAL::to_double(face_normals_map[face].cartesian(2));
+				auto nx = CGAL::to_double(vertex_norm.cartesian(0));
+				auto ny = CGAL::to_double(vertex_norm.cartesian(1));
+				auto nz = CGAL::to_double(vertex_norm.cartesian(2));
+				const double nlen = std::sqrt(nx * nx + ny * ny + nz * nz);
+				if (nlen > 0) {
+					nx /= nlen;
+					ny /= nlen;
+					nz /= nlen;
+				}
 
 				t->addNormal(nx, ny, nz);
 			} else {
