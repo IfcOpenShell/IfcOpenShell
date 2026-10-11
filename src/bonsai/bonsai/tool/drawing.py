@@ -47,6 +47,7 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.selector
 import ifcopenshell.util.shape
+import ifcopenshell.util.type
 import ifcopenshell.util.unit
 import lark
 import mathutils
@@ -407,11 +408,10 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def get_annotation_type_object_type(cls, element_type: ifcopenshell.entity_instance) -> Union[str, None]:
-        applicable_occurrence: Union[str, None]
-        applicable_occurrence = element_type.ApplicableOccurrence
-        if not applicable_occurrence or not applicable_occurrence.startswith("IfcAnnotation/"):
-            return
-        return applicable_occurrence.split("/", 1)[1]
+        for occurrence in ifcopenshell.util.type.get_applicable_entities(element_type):
+            if occurrence.ifc_class == "IfcAnnotation":
+                return occurrence.predefined_type
+        return None
 
     @classmethod
     def get_annotation_representation(
@@ -1718,13 +1718,9 @@ class Drawing(bonsai.core.tool.Drawing):
             return
 
         xmin, xmax, ymin, ymax = helper.ortho_view_frame(camera.data)[:4]
-        rl = ifcopenshell.util.placement.get_local_placement(storey.ObjectPlacement)[2][3]
+        rl = ifcopenshell.util.placement.get_placement(storey.ObjectPlacement, should_return_si=True)[2][3]
 
-        # Convert RL from project units (feet) to meters for Blender world space
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        rl_meters = rl * unit_scale
-
-        y = (camera.matrix_world.inverted() @ Vector((0.0, 0.0, rl_meters))).y
+        y = (camera.matrix_world.inverted() @ Vector((0.0, 0.0, rl))).y
         if y < ymin or y > ymax:
             return
 
@@ -1979,7 +1975,7 @@ class Drawing(bonsai.core.tool.Drawing):
         shape = ifcopenshell.geom.create_shape(settings, elevation)
         m = Matrix(ifcopenshell.util.shape.get_shape_matrix(shape))
         if cls.is_matrix_perpendicular(camera.matrix_world, m) and cls.does_shape_intersect_camera(shape, camera):
-            existing_matrix = Matrix(ifcopenshell.util.placement.get_local_placement(annotation.ObjectPlacement))
+            existing_matrix = Matrix(ifcopenshell.util.placement.get_placement(annotation.ObjectPlacement))
             # The user is allowed to shift the elevation, but not rotate it
             if not np.allclose(np.array(m.to_3x3()), np.array(existing_matrix.to_3x3()), atol=1e-4):
                 mw = cls.get_default_annotation_matrix(camera, matrix_world=m)
@@ -2008,7 +2004,7 @@ class Drawing(bonsai.core.tool.Drawing):
         geometry = ifcopenshell.geom.create_shape(settings, axis.AxisCurve)
         verts = ifcopenshell.util.shape.get_vertices(geometry)
         grid = (axis.PartOfU or axis.PartOfV or axis.PartOfW)[0]
-        m = ifcopenshell.util.placement.get_local_placement(grid.ObjectPlacement)
+        m = ifcopenshell.util.placement.get_placement(grid.ObjectPlacement)
         im = camera.matrix_world.inverted()
         v1, v2 = [im @ Vector((m @ np.append(v, 1.0))[:3]) for v in verts[:2]]
 

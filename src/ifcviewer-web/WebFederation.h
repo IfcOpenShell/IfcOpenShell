@@ -72,7 +72,7 @@ public:
 
     // ---- Lifecycle -------------------------------------------------------
 
-    // Call when a sidecar load completes. Binds the source to its session model
+    // Call when a .ifcview load completes. Binds the source to its session model
     // id, applies whatever state was staged against the source id, and — for
     // the first model only, and only when no origin was set explicitly — runs
     // the false-origin guess.

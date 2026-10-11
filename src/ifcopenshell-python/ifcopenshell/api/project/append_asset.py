@@ -424,7 +424,7 @@ class Usecase:
 
         placement = new_element.ObjectPlacement
         if placement is not None:
-            matrix = ifcopenshell.util.placement.get_local_placement(placement)
+            matrix = ifcopenshell.util.placement.get_placement(placement)
             matrix = ifcopenshell.util.geolocation.auto_local2global(self.library, matrix)
             matrix = ifcopenshell.util.geolocation.auto_global2local(self.file, matrix)
             with SafeRemovalContext(self.file, self.reuse_identities, self.assume_asset_uniqueness_by_name):

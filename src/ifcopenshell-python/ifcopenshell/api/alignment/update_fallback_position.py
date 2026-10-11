@@ -34,7 +34,7 @@ def update_fallback_position(file: ifcopenshell.file, lp: entity_instance):
     if not lp.CartesianPosition:
         lp.CartesianPosition = file.createIfcAxis2Placement3D(Location=file.createIfcCartesianPoint((0.0, 0.0, 0.0)))
 
-    p = ifcopenshell.util.placement.get_local_placement(lp)
+    p = ifcopenshell.util.placement.get_placement(lp)
 
     x = float(p[0, 3])
     y = float(p[1, 3])
