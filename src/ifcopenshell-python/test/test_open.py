@@ -59,7 +59,6 @@ class TestOpen:
             ".ifcXML",
         )
 
-    @pytest.mark.skip("IFC-XML temporarily disabled")
     def test_open_threads(self):
         path = TEST_FILE_DIR / "WallInstance_IFC4Add2.ifc"
         serial = ifcopenshell.open(path, threads=1)
