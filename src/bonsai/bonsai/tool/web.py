@@ -28,6 +28,7 @@ import subprocess
 import sys
 import threading
 import time
+import traceback
 import webbrowser
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional, Union
@@ -306,17 +307,20 @@ class Web(bonsai.core.tool.Web):
             operator = web_operator_queue.get_nowait()
             if not operator:
                 continue
-            if operator["sourcePage"] == "csv":
-                cls.handle_csv_operator(operator["operator"])
-            elif operator["sourcePage"] == "gantt":
-                cls.handle_gantt_operator(operator["operator"])
-            elif operator["sourcePage"] == "drawings":
-                cls.handle_drawings_operator(operator["operator"])
-            elif operator["sourcePage"] == "demo":
-                message = operator["operator"]["message"]
-                print(f"Message from demo page: {message}")
-            elif operator["sourcePage"] == "cost":
-                cls.handle_cost_operator(operator["operator"])
+            try:
+                if operator["sourcePage"] == "csv":
+                    cls.handle_csv_operator(operator["operator"])
+                elif operator["sourcePage"] == "gantt":
+                    cls.handle_gantt_operator(operator["operator"])
+                elif operator["sourcePage"] == "drawings":
+                    cls.handle_drawings_operator(operator["operator"])
+                elif operator["sourcePage"] == "demo":
+                    message = operator["operator"]["message"]
+                    print(f"Message from demo page: {message}")
+                elif operator["sourcePage"] == "cost":
+                    cls.handle_cost_operator(operator["operator"])
+            except Exception:
+                traceback.print_exc()
         return 1.0
 
     @classmethod
@@ -448,7 +452,7 @@ class Web(bonsai.core.tool.Web):
                     }
                 elif value_data["costType"] == "SUM":
                     attributes = {"Category": "*"}
-                if value_data["unitBasisValue"]:
+                if value_data.get("unitBasisValue"):
                     attributes["UnitBasis"] = {
                         "ValueComponent": value_data["unitBasisValue"],
                         "UnitComponent": ifc_file.by_id(value_data["unitComponent"]),
