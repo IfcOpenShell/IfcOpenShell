@@ -110,7 +110,7 @@ SpatialHierarchyPanelView::SpatialHierarchyPanelView(SpatialHierarchyPanel* widg
     });
 
     // The tree reflects the active model only. Rebuild when it changes, when its
-    // geometry or its live IFC data source arrives (the .ifc for a sidecar hit
+    // geometry or its live IFC data source arrives (the .ifc for a .ifcview hit
     // loads asynchronously), and on project open/reset.
     connect(session_state_, &bonsaiviewer::SessionState::activeModelChanged, this, [this](const QString&) { rebuild(); });
     connect(session_state_, &bonsaiviewer::SessionState::modelDataSourceReady, this, [this](uint32_t) { rebuild(); });

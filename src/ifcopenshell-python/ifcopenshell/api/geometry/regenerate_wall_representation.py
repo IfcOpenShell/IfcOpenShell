@@ -352,10 +352,10 @@ class Regenerator:
         if not np.allclose(self.reference_p1, np.array((0.0, 0.0))) and not manual_booleans:
             children = []
             for referenced_placement in wall.ObjectPlacement.ReferencedByPlacements:
-                matrix = ifcopenshell.util.placement.get_local_placement(referenced_placement)
+                matrix = ifcopenshell.util.placement.get_placement(referenced_placement)
                 children.append((matrix, referenced_placement.PlacesObject))
 
-            matrix = ifcopenshell.util.placement.get_local_placement(wall.ObjectPlacement)
+            matrix = ifcopenshell.util.placement.get_placement(wall.ObjectPlacement)
             matrix[:, 3] = matrix @ np.concatenate((self.reference_p1, (0, 1)))
             ifcopenshell.api.geometry.edit_object_placement(
                 self.file, product=wall, matrix=matrix, is_si=False, should_transform_children=True
@@ -381,8 +381,8 @@ class Regenerator:
         wall_vectors2 = self.get_wall_vectors(wall2)
         axes1 = self.get_axes(wall1, reference1, layers1, self.wall_vectors["a"])
         axes2 = self.get_axes(wall2, reference2, layers2, wall_vectors2["a"])
-        matrix1i = np.linalg.inv(ifcopenshell.util.placement.get_local_placement(wall1.ObjectPlacement))
-        matrix2 = ifcopenshell.util.placement.get_local_placement(wall2.ObjectPlacement)
+        matrix1i = np.linalg.inv(ifcopenshell.util.placement.get_placement(wall1.ObjectPlacement))
+        matrix2 = ifcopenshell.util.placement.get_placement(wall2.ObjectPlacement)
 
         # Convert wall2 data to wall1 local coordinates
         for axis in axes2:

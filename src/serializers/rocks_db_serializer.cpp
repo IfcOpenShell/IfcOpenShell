@@ -122,8 +122,11 @@ void RocksDbSerializer::write_streaming_() {
 			const auto& data = std::get<2>(*inst);
 
 			const bool is_header = decl->schema() == &Header_section_schema::get_schema();
+#ifndef IFOPSH_SAFE_INSTANCE
+            std::unique_ptr<ifcopenshell::instance_data> owned_data(is_header ? nullptr : data);
+#endif
 
-			if (!is_header && decl->as_entity() && !skip_supertypes_.empty()) {
+            if (!is_header && decl->as_entity() && !skip_supertypes_.empty()) {
 				bool skip = false;
 				for (const auto& super : skip_supertypes_) {
 					if (decl->is(super)) {
