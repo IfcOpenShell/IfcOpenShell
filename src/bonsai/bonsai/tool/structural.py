@@ -206,6 +206,17 @@ class Structural(bonsai.core.tool.Structural):
             cls.edit_bbim_structural(activity, {"MagnitudeLocked": magnitude, "DirectionLocked": direction})
 
     @classmethod
+    def get_known_component(cls, activity: ifcopenshell.entity_instance) -> Union[str, None]:
+        """Which component of an applied load is known, X or Z, its magnitude following from it and its direction"""
+        component = ifcopenshell.util.element.get_pset(activity, "BBIM_Structural", "KnownComponent")
+        return component if component in ("X", "Z") else None
+
+    @classmethod
+    def set_known_component(cls, activity: ifcopenshell.entity_instance, component: Union[str, None]) -> None:
+        if component != cls.get_known_component(activity):
+            cls.edit_bbim_structural(activity, {"KnownComponent": component})
+
+    @classmethod
     def get_push(cls, activity: ifcopenshell.entity_instance) -> bool:
         """Whether an applied load pushes on its item rather than pulls, which IFC's force vector cannot say"""
         return bool(ifcopenshell.util.element.get_pset(activity, "BBIM_Structural", "Push"))

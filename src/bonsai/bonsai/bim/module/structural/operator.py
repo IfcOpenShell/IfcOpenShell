@@ -993,6 +993,7 @@ def get_load_attributes(props: "StructuralForceInput", category: str) -> dict[st
 
 
 is_normalising_angle = False
+is_setting_magnitude = False
 
 
 def update_force_inputs(self: "StructuralForceInput", context: bpy.types.Context) -> None:
@@ -1005,6 +1006,24 @@ def update_force_inputs(self: "StructuralForceInput", context: bpy.types.Context
         if eighth != self.direction and (int(eighth[1]) + 1) // 2 == (int(self.direction[1]) + 1) // 2:
             self.direction = eighth  # Which updates again, with this eighth.
             return
+    global is_setting_magnitude
+    if (
+        self.input_mode != "COMPONENTS"
+        and getattr(self, "given", "MAGNITUDE") != "MAGNITUDE"
+        and not is_setting_magnitude
+    ):
+        x, z = tool.Structural.get_in_plane_components(
+            self.input_mode, magnitude=1.0, angle=self.angle, rise=self.rise, run=self.run, direction=self.direction
+        )
+        part = abs(x if self.given == "X" else z)
+        magnitude = abs(self.given_value) / part if part > 1e-9 else 0.0
+        # Blender keeps float properties to single precision, so compare as closely as it can hold them.
+        if not math.isclose(magnitude, self.magnitude, rel_tol=1e-6, abs_tol=1e-9):
+            is_setting_magnitude = True  # Setting it updates again, which must not set it again.
+            try:
+                self.magnitude = magnitude
+            finally:
+                is_setting_magnitude = False
     global is_normalising_angle
     if self.input_mode == "ANGLE" and self.magnitude and not 0 <= self.angle <= 45 and not is_normalising_angle:
         # An angle past its eighth points into another: show it there, from that eighth's axis, as names are read.
@@ -1194,6 +1213,20 @@ class StructuralForceInput:
         update=update_force_inputs,
     )
     magnitude: bpy.props.FloatProperty(name="Magnitude", update=update_force_inputs)
+    given: bpy.props.EnumProperty(
+        name="Given",
+        description="The value known: the magnitude, or a component, from which and the direction the magnitude follows",
+        items=[
+            ("MAGNITUDE", "Magnitude", "The magnitude is known"),
+            ("X", "X", "The X component is known, as a horizontal capacity; the magnitude is found"),
+            ("Z", "Z", "The Z component is known, as a vertical capacity; the magnitude is found"),
+        ],
+        options={"SKIP_SAVE"},
+        update=update_force_inputs,
+    )
+    given_value: bpy.props.FloatProperty(
+        name="Component", description="The size of the known component", update=update_force_inputs
+    )
     angle: bpy.props.FloatProperty(name="Angle", description="Degrees from +X towards +Z", update=update_force_inputs)
     rise: bpy.props.FloatProperty(name="Rise", description="Towards +Z", default=1.0, update=update_force_inputs)
     run: bpy.props.FloatProperty(name="Run", description="Towards +X", default=1.0, update=update_force_inputs)
@@ -1254,6 +1287,7 @@ class StructuralForceInput:
         show_name: bool = True,
         show_locks: bool = False,
         grey_unknowns: bool = False,
+        show_given: bool = False,
     ) -> None:
         """Draw the force inputs.
 
@@ -1300,7 +1334,14 @@ class StructuralForceInput:
                 ("angle",) if self.input_mode == "ANGLE" else ("rise", "run"),
                 "direction_locked" if show_locks else None,
             )
-            draw_with_lock(("magnitude",), "magnitude_locked" if show_locks else None)
+            if show_given:
+                layout.row().prop(self, "given", expand=True)
+            if show_given and self.given != "MAGNITUDE":
+                # The component is typed, and the magnitude found from it.
+                layout.prop(self, "given_value", text=f"{self.given} Component")
+                layout.label(text=f"Magnitude = {self.magnitude:.4f}  (found)", icon="UNLOCKED")
+            else:
+                draw_with_lock(("magnitude",), "magnitude_locked" if show_locks else None)
             x, _, z = self.get_components()
             unit = self.get_unit_symbol(category) if category else ""
             layout.label(text=f"X = {x:.4f}   Z = {z:.4f} {unit}", icon="ORIENTATION_GLOBAL")
@@ -1361,7 +1402,7 @@ class ApplyStructuralLoad(bpy.types.Operator, tool.Ifc.Operator, StructuralForce
         layout.prop(self, "load_group")
         if self.load_group == "0":
             layout.prop(self, "new_load_case_name")
-        self.draw_force_inputs(layout, category, show_locks=True)
+        self.draw_force_inputs(layout, category, show_locks=True, show_given=True)
         if category == "IfcStructuralPointConnection":
             layout.row().prop(self, "acts_as", expand=True)
         if category:
@@ -1418,6 +1459,7 @@ class ApplyStructuralLoad(bpy.types.Operator, tool.Ifc.Operator, StructuralForce
         for activity in activities:  # Only an unlocked value is recorded; loads are known unless said.
             tool.Structural.set_locks(activity, self.magnitude_locked, self.direction_locked)
             tool.Structural.set_push(activity, self.acts_as == "PUSH")
+            tool.Structural.set_known_component(activity, None if self.given == "MAGNITUDE" else self.given)
         resolve_resultants(self, activities)
         self.show_load_group(context, group)
         return {"FINISHED"}
@@ -1511,6 +1553,9 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         if lock_activity := self.get_lock_activity():
             self.magnitude_locked, self.direction_locked = tool.Structural.get_locks(lock_activity)
             self.acts_as = "PUSH" if tool.Structural.get_push(lock_activity) else "PULL"
+            if self.input_mode != "COMPONENTS" and (component := tool.Structural.get_known_component(lock_activity)):
+                self.given_value = abs(x if component == "X" else z)
+                self.given = component
         if (activities := self.get_movable_activities()) and (groups := get_activity_load_groups(activities[0])):
             self.load_group = str(groups[0].id())
         # Set last, so that filling in the values above does not start a preview.
@@ -1550,7 +1595,7 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         lock_activity = self.get_lock_activity()
         if not lock_activity:
             layout.label(text="Open it from an applied load to lock its values", icon="INFO")
-        self.draw_force_inputs(layout, category, show_locks=bool(lock_activity))
+        self.draw_force_inputs(layout, category, show_locks=bool(lock_activity), show_given=bool(lock_activity))
         if lock_activity and category == "IfcStructuralPointConnection":
             layout.row().prop(self, "acts_as", expand=True)
         if self.input_mode != "COMPONENTS" and (self.y or self.moment_x or self.moment_y or self.moment_z):
@@ -1570,6 +1615,8 @@ class EditStructuralLoadValues(bpy.types.Operator, tool.Ifc.Operator, Structural
         if lock_activity := self.get_lock_activity():
             tool.Structural.set_locks(lock_activity, self.magnitude_locked, self.direction_locked)
             tool.Structural.set_push(lock_activity, self.acts_as == "PUSH")
+            known = None if self.input_mode == "COMPONENTS" or self.given == "MAGNITUDE" else self.given
+            tool.Structural.set_known_component(lock_activity, known)
         activities = self.get_movable_activities()
         if activities and (target := self.get_target_load_group(ifc_file)):
             for activity in activities:

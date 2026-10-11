@@ -212,12 +212,16 @@ def get_resultant_calculation(
     rows = []
     for force, color in zip(forces, palette):
         found = [text for text, locked in zip(("magnitude", "direction"), force["locks"]) if not locked]
+        if force.get("given") and "magnitude" not in found:
+            found.insert(0, "magnitude")  # Found from its known component.
         rows.append(get_table_row(force["symbol"], force["name"], force["magnitude"], force["direction"], found, color))
         rows[-1]["magnitude"] += f" {unit}"
     solving, find = get_solving_steps(forces, text_unit)
     # Components first, then the unknowns found from them, then the resultant with what was found.
     found = {
-        i: "MAGNITUDE" if force["locks"][1] else "WHOLE" for i, force in enumerate(forces) if not all(force["locks"])
+        i: "MAGNITUDE" if force["locks"][1] else "WHOLE"
+        for i, force in enumerate(forces)
+        if not all(force["locks"]) or force.get("given")
     }
     resultant_found = get_resultant_found([force["locks"] for force in forces])
     components, steps, summary = get_sum_steps(forces, text_unit, unit, found if solving else None, resultant_found)
@@ -409,6 +413,7 @@ def get_force_terms(activity: ifcopenshell.entity_instance, i: int) -> dict[str,
             force["slope"] = slope
             force["direction"] = f"{rise:g}:{run:g} slope, {force['direction']}"
             force["terms"] = get_slope_terms(x, z, rise, run)
+    force["given"] = tool.Structural.get_known_component(activity) if force["in_plane"] else None
     if tool.Structural.get_push(activity):
         force["push"] = True
         force["direction"] += ", push"
@@ -543,6 +548,28 @@ def get_sum_steps(
 
 
 def get_solving_steps(forces: list[dict[str, Any]], text_unit: str) -> tuple[list[str], str]:
+    """The steps finding what was unknown, and what they find: magnitudes from known components, then unlocked values"""
+    steps, finds = [], []
+    for n, force in enumerate(forces, 1):
+        if not (given := force.get("given")):
+            continue
+        # The known component, written with the unknown magnitude, then solved for it.
+        axis = given.lower()
+        value = force["vector"][0 if axis == "x" else 2]
+        term = force["terms"][axis]
+        sign, ratio = ("-", term[1:]) if term.startswith("-") else ("", term)
+        part = abs(value) / force["magnitude"]
+        steps.append(f"F_{{{axis}{n}}} = {sign}F_{{{n}}} {ratio} = {value:.2f}{text_unit}")
+        steps.append(Detail(f"{ratio} = {part:.4f}"))
+        steps.append(Detail(f"\\text{{Divide both sides by }} {ratio}:"))
+        magnitude = f"{force['magnitude']:.2f}"
+        steps.append(f"F_{{{n}}} = \\frac{{{abs(value):.2f}}}{{{ratio}}} = {bold(magnitude, True, text_unit)}")
+        finds.append(f"The magnitude of ${force['symbol']}$, its {axis} component and direction being known.")
+    unknown_steps, unknown_find = get_unknown_steps(forces, text_unit)
+    return steps + unknown_steps, " ".join(finds + ([unknown_find] if unknown_find else []))
+
+
+def get_unknown_steps(forces: list[dict[str, Any]], text_unit: str) -> tuple[list[str], str]:
     """The steps finding the unknown (unlocked) values, and what they find, or none if all were known.
 
     Unknown magnitudes are found from the sums along X and Z, as the book does.

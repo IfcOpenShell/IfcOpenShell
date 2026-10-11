@@ -721,7 +721,10 @@ class ShaderInfo:
         """Marks for an applied load's magnitude and direction labels, if they are unknown: to be found"""
         if not activity:
             return "", ""
-        magnitude, direction = tool.Structural.get_locks(tool.Ifc.get().by_id(activity))
+        element = tool.Ifc.get().by_id(activity)
+        magnitude, direction = tool.Structural.get_locks(element)
+        # A magnitude following from a known component is found too.
+        magnitude = magnitude and not tool.Structural.get_known_component(element)
         return ("" if magnitude else " 🔓"), ("" if direction else " 🔓")
 
     def add_force_angle(
