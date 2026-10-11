@@ -384,6 +384,7 @@ void ifcopenshell::geom::cgal_shape::triangulate(ifcopenshell::geom::settings se
 	}
 
 	const bool setting_use_original_edges = settings.get<ifcopenshell::geom::settings::CgalEmitOriginalEdges>().get();
+	const bool calculate_normals = !settings.get<ifcopenshell::geom::settings::DontEmitNormals>().get();
 
 	std::set<std::set<kernel_::Point_3>> original_edges;
 	if (setting_use_original_edges) {
@@ -543,11 +544,13 @@ void ifcopenshell::geom::cgal_shape::triangulate(ifcopenshell::geom::settings se
 				);
 				welds.insert({ pn, vidx });
 
-				auto nx = CGAL::to_double(face_normals_map[face].cartesian(0));
-				auto ny = CGAL::to_double(face_normals_map[face].cartesian(1));
-				auto nz = CGAL::to_double(face_normals_map[face].cartesian(2));
+				if (calculate_normals) {
+					auto nx = CGAL::to_double(face_normals_map[face].cartesian(0));
+					auto ny = CGAL::to_double(face_normals_map[face].cartesian(1));
+					auto nz = CGAL::to_double(face_normals_map[face].cartesian(2));
 
-				t->addNormal(nx, ny, nz);
+					t->addNormal(nx, ny, nz);
+				}
 			} else {
 				vidx = it->second;
 			}
