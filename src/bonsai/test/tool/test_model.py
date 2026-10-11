@@ -697,6 +697,39 @@ class TestUsingArrays(NewFile):
         bpy.ops.bim.remove_array(item=0)
         assert ifcopenshell.util.element.get_pset(parent_element, "BBIM_Array") is None
 
+    def test_setup_arrays_tolerates_stale_child_guid(self):
+        """A BBIM_Array child GUID missing from the file must not abort
+        the whole project load (#8893). setup_arrays should skip the
+        stale child and record the parent on broken_arrays instead of
+        letting the RuntimeError from by_guid propagate."""
+        import logging
+
+        import bonsai.bim.import_ifc as import_ifc
+
+        self.setup_array()
+        parent_obj = bpy.context.active_object
+        parent_element = tool.Ifc.get_entity(parent_obj)
+        ifc_file = tool.Ifc.get()
+
+        pset = ifcopenshell.util.element.get_pset(parent_element, "BBIM_Array")
+        data = json.loads(pset["Data"])
+        data[0]["children"].append("3iyt7r$Hf4_hQYNhBIDJI4")
+        ifcopenshell.api.pset.edit_pset(
+            ifc_file,
+            pset=ifc_file.by_id(pset["id"]),
+            properties={"Data": json.dumps(data)},
+        )
+
+        ifc_import_settings = import_ifc.IfcImportSettings.factory(
+            bpy.context, tool.Ifc.get_path(), logging.getLogger("ImportIFC")
+        )
+        ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
+        ifc_importer.file = ifc_file
+
+        ifc_importer.setup_arrays()
+
+        assert parent_element in ifc_importer.broken_arrays
+
 
 class TestApplyIfcMaterialChanges(NewFile):
     def get_used_styles(self, obj: bpy.types.Object) -> set[ifcopenshell.entity_instance]:
