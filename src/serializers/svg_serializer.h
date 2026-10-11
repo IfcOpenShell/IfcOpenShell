@@ -153,11 +153,14 @@ typedef boost::variant<
 namespace {
 	class hlr_writer {
 		const TopoDS_Shape& shape_;
+		double linear_deflection_;
 
 	public:
 		typedef void result_type;
 
-		hlr_writer(const TopoDS_Shape& shape) : shape_(shape)
+		hlr_writer(const TopoDS_Shape& shape, double linear_deflection)
+			: shape_(shape)
+			, linear_deflection_(linear_deflection)
 		{}
 
 		void operator()(boost::blank&) const {
@@ -169,7 +172,8 @@ namespace {
 		}
 
 		void operator()(opencascade::handle<HLRBRep_PolyAlgo>& algo) const {
-			BRepMesh_IncrementalMesh(shape_, 0.10);
+			// Mesh with the configured mesher-linear-deflection (see #7162).
+			BRepMesh_IncrementalMesh(shape_, linear_deflection_);
 			algo->Load(shape_);
 		}
 	};
@@ -372,6 +376,7 @@ namespace {
 		bool use_prefiltering_;
 		bool use_hlr_poly_;
 		bool segment_projection_;
+		double linear_deflection_;
 		gp_Ax1 view_direction_;
 		HLRAlgo_Projector projector_;
 
@@ -384,10 +389,11 @@ namespace {
 
 	public:
 
-		prefiltered_hlr(ifcopenshell::logger& logger, bool use_prefiltering, bool use_hlr_poly, bool segment_projection, const gp_Pln& view_direction)
+		prefiltered_hlr(ifcopenshell::logger& logger, bool use_prefiltering, bool use_hlr_poly, bool segment_projection, double linear_deflection, const gp_Pln& view_direction)
 			: use_prefiltering_(use_prefiltering)
 			, use_hlr_poly_(use_hlr_poly)
 			, segment_projection_(segment_projection)
+			, linear_deflection_(linear_deflection)
 			// @nb negative z in accordance with occt projector convention (and opengl)
 			, view_direction_(view_direction.Axis())
 			, logger_(logger)
@@ -533,9 +539,17 @@ namespace {
 			size_t n_included = 0;
 			for (auto it = items_.begin(); it != items_.end(); ++it) {
 				if (!use_prefiltering_ || !is_obscured_(&it->second)) {
-					hlr_writer vis(it->second);
-					boost::apply_visitor(vis, engine_);
-					n_included++;
+					// Skip an element whose HLR throws on invalid topology
+					// instead of aborting the whole drawing.
+					try {
+						hlr_writer vis(it->second, linear_deflection_);
+						boost::apply_visitor(vis, engine_);
+						n_included++;
+					} catch (const std::exception& e) {
+						logger_.error("SER", 38, std::string("Skipped element in hidden line removal: ") + e.what(), it->first);
+					} catch (...) {
+						logger_.error("SER", 38, "Skipped element in hidden line removal", it->first);
+					}
 				}
 			}
 			if (use_prefiltering_) {
@@ -547,7 +561,16 @@ namespace {
 				vis.set_product_shape(&items_);
 			}
 			vis.set_classified_shapes(&classified_items_);
-			return boost::apply_visitor(vis, engine_);
+			// The combined projection can still throw; degrade to an empty
+			// projection layer instead of aborting the drawing.
+			try {
+				return boost::apply_visitor(vis, engine_);
+			} catch (const std::exception& e) {
+				logger_.error("SER", 39, std::string("Hidden line removal failed for drawing: ") + e.what());
+			} catch (...) {
+				logger_.error("SER", 39, "Hidden line removal failed for drawing");
+			}
+			return {};
 		}
 	};
 }
