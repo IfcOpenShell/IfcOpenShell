@@ -18,8 +18,8 @@
 
 from collections.abc import Iterable
 
-import ifcopenshell.api.style
 import ifcopenshell.util.element
+from ifcopenshell.api.style.remove_surface_style import _remove_surface_style_item
 
 
 def remove_style(file: ifcopenshell.file, style: ifcopenshell.entity_instance) -> None:
@@ -54,8 +54,11 @@ class Usecase:
         self.purge_inverses(style)
         ifc_class = style.is_a()
         if ifc_class == "IfcSurfaceStyle":
+            # Not ifcopenshell.api.style.remove_surface_style: the
+            # IfcSurfaceStyle itself is removed below, so the
+            # last-item guard does not apply here.
             for style_ in style.Styles:
-                ifcopenshell.api.style.remove_surface_style(self.file, style=style_)
+                _remove_surface_style_item(self.file, style=style_)
         elif ifc_class == "IfcFillAreaStyle":
             for style_ in style.FillStyles:
                 ifcopenshell.util.element.remove_deep2(

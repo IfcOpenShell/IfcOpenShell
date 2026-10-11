@@ -15,6 +15,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell.api.material
 import ifcopenshell.util.element
 
 
@@ -23,8 +24,9 @@ def remove_layer(
 ) -> None:
     """Removes a layer from a layer set
 
-    Note that it is invalid to have zero items in a set, so you should leave
-    at least one layer to ensure a valid IFC dataset.
+    It is invalid to have zero items in a layer set. If you remove the last
+    layer, the entire IfcMaterialLayerSet is removed instead, following the
+    same convention as ifcopenshell.api.material.remove_material_set.
 
     :param layer: The IfcMaterialLayer entity you want to remove
     :param should_remove_material: If true, materials with no users will be removed
@@ -55,6 +57,10 @@ def remove_layer(
         ifcopenshell.api.material.remove_layer(model, layer=layer3)
     """
     material = layer.Material
-    file.remove(layer)
+    layer_set = next(i for i in file.get_inverse(layer) if i.is_a("IfcMaterialLayerSet"))
+    if len(layer_set.MaterialLayers) == 1:
+        ifcopenshell.api.material.remove_material_set(file, material=layer_set)
+    else:
+        file.remove(layer)
     if material and should_remove_material:
         ifcopenshell.util.element.remove_deep2(file, material)

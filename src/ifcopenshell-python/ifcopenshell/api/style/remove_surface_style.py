@@ -23,7 +23,14 @@ import ifcopenshell.util.element
 def remove_surface_style(file: ifcopenshell.file, style: ifcopenshell.entity_instance) -> None:
     """Removes a presentation item from a presentation style
 
+    It is invalid for IfcSurfaceStyle.Styles to have zero items. If style is
+    the last remaining item, this raises instead of leaving the parent
+    schema-invalid. Use ifcopenshell.api.style.remove_style to remove the
+    whole IfcSurfaceStyle.
+
     :param style: The IfcPresentationItem to remove.
+    :raises ValueError: If style is the last remaining item of its
+        IfcSurfaceStyle.
     :return: None
 
     Example:
@@ -43,7 +50,16 @@ def remove_surface_style(file: ifcopenshell.file, style: ifcopenshell.entity_ins
         # Remove the shading item
         ifcopenshell.api.style.remove_surface_style(model, style=shading)
     """
+    parent = next((i for i in file.get_inverse(style) if i.is_a("IfcSurfaceStyle")), None)
+    if parent and len(parent.Styles) == 1:
+        raise ValueError(
+            "Cannot remove the last item of IfcSurfaceStyle.Styles, it is a mandatory "
+            "attribute. Use ifcopenshell.api.style.remove_style to remove the whole style."
+        )
+    _remove_surface_style_item(file, style)
 
+
+def _remove_surface_style_item(file: ifcopenshell.file, style: ifcopenshell.entity_instance) -> None:
     to_delete = set()
     if style.is_a("IfcSurfaceStyleWithTextures"):
         textures = style.Textures
