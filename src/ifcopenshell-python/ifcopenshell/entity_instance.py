@@ -339,6 +339,18 @@ class entity_instance_mixin:
             >>> dict_keys(['Description', 'Name', 'BuildingAddress', 'LongName', 'GlobalId', 'ObjectPlacement', 'OwnerHistory', 'ObjectType',
             >>> ...'ElevationOfTerrain', 'CompositionType', 'id', 'Representation', 'type', 'ElevationOfRefHeight'])
         """
+        return self._get_info_py(include_identifier, recursive, return_type, ignore, scalar_only, [])
+
+    def _get_info_py(self, include_identifier, recursive, return_type, ignore, scalar_only, path):
+        tracked = recursive and self.is_entity()
+        if tracked:
+            identity = self.identity()
+            if identity in path:
+                marker = [("type", self.is_a()), ("_CYCLE", len(path) - path.index(identity))]
+                if include_identifier:
+                    marker.insert(0, ("id", self.id()))
+                return return_type(marker)
+            path.append(identity)
 
         def _():
             try:
@@ -361,6 +373,10 @@ class entity_instance_mixin:
                             return isinstance(e, entity_instance_mixin)
 
                         def get_info_(inst):
+                            if inst.is_entity():
+                                return entity_instance_mixin._get_info_py(
+                                    inst, include_identifier, recursive, return_type, ignore, False, path
+                                )
                             return entity_instance_mixin.get_info(
                                 inst,
                                 include_identifier=include_identifier,
@@ -382,7 +398,11 @@ class entity_instance_mixin:
                 except BaseException:
                     logging.exception("unhandled exception occurred setting attribute name for {}".format(self))
 
-        return return_type(_())
+        try:
+            return return_type(_())
+        finally:
+            if tracked:
+                path.pop()
 
     def get_info(
         self,
@@ -400,8 +420,6 @@ class entity_instance_mixin:
         """
         if recursive and return_type is dict and not ignore:
             return ifcopenshell_wrapper.get_info_cpp(self, recursive, include_identifier)
-        return self.get_info_py(
-            include_identifier=include_identifier, recursive=recursive, return_type=return_type, ignore=ignore
-        )
+        return self._get_info_py(include_identifier, recursive, return_type, ignore, False, [])
 
     __dict__ = property(get_info)
