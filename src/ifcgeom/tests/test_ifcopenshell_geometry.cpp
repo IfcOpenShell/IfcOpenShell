@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <cmath>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -381,4 +383,118 @@ TEST_CASE("IfcGeom context priorities create tasks from highest priority represe
     const auto* wall_with_body_only_task = task_for_product(body_first_tasks, wall_with_body_only);
     REQUIRE(wall_with_body_only_task != nullptr);
     REQUIRE(wall_with_body_only_task->representation.id() == body_only_representation.id());
+}
+
+namespace {
+
+// A wall whose box sits 3 km east and 4 km north of its own placement, which
+// itself is 1 m east and 2 m north of the storey origin. Lengths are in mm.
+IfcSchema::IfcWallStandardCase add_far_away_wall(hierarchy_helper<IfcSchema>& file) {
+    auto wall = file.create<IfcSchema::IfcWallStandardCase>();
+    wall.setGlobalId(ifcopenshell::global_id());
+    file.addBuildingProduct(wall);
+    const auto storey_placement = file.getSingle<IfcSchema::IfcBuildingStorey>().ObjectPlacement();
+    wall.setObjectPlacement(file.addLocalPlacement(storey_placement, 1000.0, 2000.0, 0.0));
+    wall.setRepresentation(file.addBox(
+        400.0, 300.0, 2500.0,
+        IfcSchema::IfcAxis2Placement2D{},
+        file.addPlacement3d(3000000.0, 4000000.0, 0.0)));
+    return wall;
+}
+
+std::unique_ptr<ifcopenshell::geom::native_element> convert_wall(
+    hierarchy_helper<IfcSchema>& file,
+    const IfcSchema::IfcWallStandardCase& wall,
+    ifcopenshell::geom::settings settings)
+{
+    ifcopenshell::logger log;
+    log.output_format(ifcopenshell::logger::FMT_INMEMORY);
+    ifcopenshell::geom::converter converter(
+        ifcopenshell::geom::kernels::construct(&file, "opencascade", settings, log), &file, settings, log);
+    std::unique_ptr<ifcopenshell::geom::native_element> element(
+        converter.create_brep_for_representation_and_product(wall.Representation().Representations().back(), wall));
+    REQUIRE(element);
+    return element;
+}
+
+Eigen::Vector3d translation_of(const ifcopenshell::geom::element& element) {
+    return element.transformation().data()->ccomponents().block<3, 1>(0, 3);
+}
+
+Eigen::Vector3d first_vertex(const ifcopenshell::geom::triangulation& geometry) {
+    REQUIRE(geometry.verts().size() >= 3);
+    return Eigen::Vector3d(geometry.verts()[0], geometry.verts()[1], geometry.verts()[2]);
+}
+
+Eigen::Vector3d world_first_vertex(const ifcopenshell::geom::triangulation_element& element) {
+    const Eigen::Vector4d local = first_vertex(element.geometry()).homogeneous();
+    return (element.transformation().data()->ccomponents() * local).head<3>();
+}
+
+double max_abs_vertex_coordinate(const ifcopenshell::geom::triangulation& geometry) {
+    double result = 0.0;
+    for (double v : geometry.verts()) {
+        result = std::max(result, std::abs(v));
+    }
+    return result;
+}
+
+bool approx_equal(const Eigen::Vector3d& a, const Eigen::Vector3d& b, double tolerance = 1e-6) {
+    return (a - b).norm() < tolerance;
+}
+
+} // namespace
+
+TEST_CASE("IfcGeom vertex rebase is off by default", "[ifcgeom][rebase]") {
+    hierarchy_helper<IfcSchema> file;
+    auto wall = add_far_away_wall(file);
+    ifcopenshell::geom::settings settings;
+    ifcopenshell::geom::triangulation_element element(*convert_wall(file, wall, settings));
+
+    REQUIRE(max_abs_vertex_coordinate(element.geometry()) > 3000.0);
+    REQUIRE(element.geometry().rebase_offset() == std::vector<double>{0.0, 0.0, 0.0});
+    REQUIRE(approx_equal(translation_of(element), Eigen::Vector3d(1.0, 2.0, 0.0)));
+}
+
+TEST_CASE("IfcGeom vertex rebase shifts vertices and folds the offset into the placement", "[ifcgeom][rebase]") {
+    hierarchy_helper<IfcSchema> file;
+    auto wall = add_far_away_wall(file);
+    ifcopenshell::geom::settings settings;
+    ifcopenshell::geom::triangulation_element original(*convert_wall(file, wall, settings));
+    settings.set("vertex-rebase-distance", 1000.0);
+    const auto native = convert_wall(file, wall, settings);
+    ifcopenshell::geom::triangulation_element rebased(*native);
+
+    const Eigen::Vector3d original_first = first_vertex(original.geometry());
+    const auto& offset = rebased.geometry().rebase_offset();
+    REQUIRE(offset.size() == 3);
+    REQUIRE(approx_equal(Eigen::Vector3d(offset[0], offset[1], offset[2]), original_first));
+    REQUIRE(max_abs_vertex_coordinate(rebased.geometry()) < 10.0);
+    REQUIRE(rebased.geometry().verts().size() == original.geometry().verts().size());
+    REQUIRE(approx_equal(translation_of(rebased), Eigen::Vector3d(1.0, 2.0, 0.0) + original_first));
+    REQUIRE(approx_equal(world_first_vertex(rebased), world_first_vertex(original)));
+
+    SECTION("an element reusing the geometry gets the same placement fold") {
+        ifcopenshell::geom::triangulation_element reused(*native, rebased.geometry_pointer());
+        REQUIRE(reused.geometry_pointer() == rebased.geometry_pointer());
+        REQUIRE(approx_equal(translation_of(reused), translation_of(rebased)));
+    }
+}
+
+TEST_CASE("IfcGeom vertex rebase keeps vertices, offset and placement in file units", "[ifcgeom][rebase]") {
+    hierarchy_helper<IfcSchema> file;
+    auto wall = add_far_away_wall(file);
+    ifcopenshell::geom::settings settings;
+    settings.set("convert-back-units", true);
+    ifcopenshell::geom::triangulation_element original(*convert_wall(file, wall, settings));
+    settings.set("vertex-rebase-distance", 1000.0);
+    ifcopenshell::geom::triangulation_element rebased(*convert_wall(file, wall, settings));
+
+    const Eigen::Vector3d original_first = first_vertex(original.geometry());
+    REQUIRE(original_first.norm() > 3000000.0);
+    const auto& offset = rebased.geometry().rebase_offset();
+    REQUIRE(approx_equal(Eigen::Vector3d(offset[0], offset[1], offset[2]), original_first));
+    REQUIRE(max_abs_vertex_coordinate(rebased.geometry()) < 10000.0);
+    REQUIRE(approx_equal(translation_of(rebased), Eigen::Vector3d(1000.0, 2000.0, 0.0) + original_first, 1e-3));
+    REQUIRE(approx_equal(world_first_vertex(rebased), world_first_vertex(original), 1e-3));
 }
