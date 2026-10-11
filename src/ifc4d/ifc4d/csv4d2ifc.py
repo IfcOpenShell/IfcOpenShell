@@ -26,6 +26,8 @@ import ifcopenshell.api.root
 import ifcopenshell.api.sequence
 import ifcopenshell.util.date
 
+from .common import validate_input_path
+
 
 class Csv2Ifc:
     def __init__(self):
@@ -38,6 +40,7 @@ class Csv2Ifc:
         self.units = {}
 
     def execute(self):
+        validate_input_path(self.csv, "schedule .csv file")
         self.parse_csv()
         self.create_ifc()
 
