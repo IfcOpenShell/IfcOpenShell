@@ -37,7 +37,7 @@ test.beforeAll(() => {
 
 async function loadModel(page) {
   const loaded = page.waitForEvent('console', {
-    predicate: (m) => /loaded sidecar \(source/.test(m.text()),
+    predicate: (m) => /loaded .ifcview \(source/.test(m.text()),
     timeout: 30_000,
   });
   await page.goto(MODEL);

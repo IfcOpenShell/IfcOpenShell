@@ -5,7 +5,7 @@
 
 Script links existing Bonsai installation to the provided IfcOpenShell repository.
 
-If Bonsai is installed from unstable repo (raw_githubusercontent_com) and this script is already part
+If Bonsai is installed from unstable repo (bonsai_unstable or raw_githubusercontent_com) and this script is already part
 of IfcOpenShell repo you want to link, then you can just run it and it will just work.
 
 Otherwise, see the SETTINGS section below to validate script settings to ensure it fits your environment.
@@ -98,7 +98,9 @@ BLENDER_PATH = BLENDER_CONFIG_PATH / BLENDER_VERSION
 
 
 BONSAI_PATH_CANDIDATES = (
-    # Installed from Bonsai Unstable Repo.
+    # Installed from Bonsai Unstable Repo (via install-bonsai-unstable.py).
+    BLENDER_PATH / r"extensions/bonsai_unstable/bonsai",
+    # Installed from Bonsai Unstable Repo (added manually).
     BLENDER_PATH / r"extensions/raw_githubusercontent_com/bonsai",
     # Installed via offline installation.
     BLENDER_PATH / r"extensions/user_default/bonsai",

@@ -25,9 +25,7 @@ import re
 import zipfile
 from collections.abc import Callable, Generator
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, Optional, TypedDict, Union, overload
-
-from typing_extensions import assert_never
+from typing import TYPE_CHECKING, Any, Literal, Optional, TypedDict, Union, assert_never, overload
 
 import ifcopenshell
 from ifcopenshell.util.mvd_info import LARK_AVAILABLE, MvdInfo

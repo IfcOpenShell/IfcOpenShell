@@ -23,11 +23,10 @@ import urllib.parse
 import uuid
 import warnings
 import webbrowser
-from typing import TYPE_CHECKING, Any, Literal, Optional, TypedDict
+from typing import TYPE_CHECKING, Any, Literal, NotRequired, Optional, TypedDict
 
 import requests
 from requests.adapters import HTTPAdapter
-from typing_extensions import NotRequired
 from urllib3.util import Retry
 
 if TYPE_CHECKING:

@@ -707,9 +707,9 @@ class Loader(bonsai.core.tool.Loader):
     @classmethod
     def is_element_far_away(cls, element: ifcopenshell.entity_instance) -> bool:
         try:
-            placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+            placement = ifcopenshell.util.placement.get_placement(element.ObjectPlacement, should_return_si=True)
             point = placement[:, 3][0:3]
-            return tool.Loader.is_point_far_away(point, is_meters=False)
+            return tool.Loader.is_point_far_away(point)
         except:
             return False
 
@@ -771,7 +771,7 @@ class Loader(bonsai.core.tool.Loader):
     ) -> None:
         if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
             return
-        placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+        placement = ifcopenshell.util.placement.get_placement(element.ObjectPlacement)
         offset_point = [placement[0][3], placement[1][3], placement[2][3]]
         cls.settings.false_origin = ifcopenshell.util.geolocation.auto_xyz2enh(
             ifc_file, *offset_point, should_return_in_map_units=False
@@ -1107,6 +1107,15 @@ class Loader(bonsai.core.tool.Loader):
         else:
             assert False, usage.LayerSetDirection
         no *= sense_factor
+        # Detect non-conformant exports (e.g. Revit) where DirectionSense=POSITIVE
+        # but the geometry extrudes in the negative direction. If the mesh centroid
+        # in object local space is on the wrong side of the starting plane, flip no.
+        layers = list(layer_set.MaterialLayers)
+        if bm.verts:
+            mesh_centroid = sum((v.co for v in bm.verts), Vector((0.0, 0.0, 0.0))) / len(bm.verts)
+            if (mesh_centroid - co).dot(no) < 0:
+                no = -no
+                layers = list(reversed(layers))
         # Cache this
         body = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
         styles = {}
@@ -1114,9 +1123,9 @@ class Loader(bonsai.core.tool.Loader):
         for i, material in enumerate(mesh.materials):
             if style := tool.Ifc.get_entity(material):
                 styles[style] = i
-        last_i = len(layer_set.MaterialLayers) - 1
+        last_i = len(layers) - 1
         bisect_geom = None
-        for i, layer in enumerate(layer_set.MaterialLayers):
+        for i, layer in enumerate(layers):
             if i != last_i:
                 prev_co = co.copy()
                 co += no * layer.LayerThickness * cls.unit_scale

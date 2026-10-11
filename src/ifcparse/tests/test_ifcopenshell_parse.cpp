@@ -1,12 +1,14 @@
 // This file was generated with the assistance of an AI coding tool.
 
 #include <catch2/catch_test_macros.hpp>
-#include <ifcparse/exception.h>
-#include <ifcparse/file.h>
-#include <ifcparse/parse.h>
+#include <catch2/matchers/catch_matchers_string.hpp>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <ifcparse/exception.h>
+#include <ifcparse/file.h>
+#include <ifcparse/parse.h>
+#include <plugin/plugin.h>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -18,6 +20,46 @@ TEST_CASE("SPF strings can be encoded and decoded", "[ifcparse]") {
     CHECK(ifcopenshell::encode_spf_string(decoded) == encoded);
     CHECK(ifcopenshell::decode_spf_string(encoded) == decoded);
     CHECK(ifcopenshell::decode_spf_string(encoded.substr(1, encoded.size() - 2)) == decoded);
+}
+
+TEST_CASE("Plug-in ABI includes the caller's instance handle mode", "[ifcparse][abi]") {
+    const auto abi = ifcopenshell::plugin::host_abi();
+    CHECK(abi.plugin_api_version == 2);
+#ifdef IFOPSH_SAFE_INSTANCE
+    CHECK(abi.safe_instance);
+#else
+    CHECK_FALSE(abi.safe_instance);
+#endif
+    CHECK_NOTHROW(ifcopenshell::plugin::validate_abi(abi));
+    const auto mismatch = ifcopenshell::plugin::host_abi(!abi.safe_instance);
+    CHECK_THROWS_WITH(ifcopenshell::plugin::validate_abi(mismatch),
+                      Catch::Matchers::ContainsSubstring("safe instance"));
+}
+
+TEST_CASE("Streamed instances and inline values survive transfer out of the streamer", "[ifcparse][ownership]") {
+    const std::string contents =
+        "ISO-10303-21;HEADER;FILE_DESCRIPTION((''),'2;1');"
+        "FILE_NAME('','',(''),(''),'','','');FILE_SCHEMA(('IFC4'));ENDSEC;DATA;"
+        "#1=IFCPROPERTYSINGLEVALUE('name',$,IFCLABEL('value'),$);"
+        "ENDSEC;END-ISO-10303-21;";
+    ifcopenshell::impl::in_memory_file_storage retained;
+    {
+        ifcopenshell::instance_streamer streamer((void*)contents.data(), (int)contents.size());
+        streamer.yield_header_instances(false);
+        auto instance = streamer.read_instance();
+        REQUIRE(instance);
+        retained.byid_.emplace(1, std::get<2>(*instance));
+        retained.read_simple_type_instances = streamer.steal_instances();
+        CHECK(streamer.steal_instances().empty());
+    }
+    REQUIRE(retained.read_simple_type_instances.size() == 1);
+    {
+        auto borrowed = retained.instance_by_id(1);
+        CHECK(borrowed.declaration().name() == "IfcPropertySingleValue");
+    }
+    const express::base value = retained.instance_by_id(1).get_attribute_value(2);
+    CHECK(value.declaration().name() == "IfcLabel");
+    CHECK((std::string)value.get_attribute_value(0) == "value");
 }
 
 TEST_CASE("IfcPropertySetDefinitionSet references are resolved without replacing their owner", "[ifcparse]") {
@@ -172,11 +214,13 @@ TEST_CASE("Inverse lookups stay consistent across interleaved adds, removals and
 
     // Deleting a referencing instance drops its records; deleting the
     // target drops the records into it.
+    const auto removed_polyline_id = polylines[1].id();
     file.remove_entity(polylines[1]);
-    expected.erase(std::find(expected.begin(), expected.end(), polylines[1].id()));
+    expected.erase(std::find(expected.begin(), expected.end(), removed_polyline_id));
     CHECK(referencing_ids(target) == expected);
+    const auto removed_point_id = other.id();
     file.remove_entity(other);
-    CHECK(file.instances_by_reference(other.id()).empty());
+    CHECK(file.instances_by_reference(removed_point_id).empty());
 
     // Removing most of the base tombstones it past the compaction threshold.
     for (int i = 2; i < 600; ++i) {
@@ -249,19 +293,22 @@ TEST_CASE("Batch deletion prunes surviving referencers and leaves no stale recor
     REQUIRE(file.instances_by_reference(kept_point.id()).size() == 2);
 
     file.batch();
+    std::vector<uint32_t> doomed_point_ids;
     for (auto& point : doomed_points) {
+        doomed_point_ids.push_back(point.id());
         file.remove_entity(point);
     }
+    const auto doomed_referencer_id = doomed_referencer.id();
     file.remove_entity(doomed_referencer);
     file.unbatch();
 
     CHECK((std::vector<express::base>)survivor.get_attribute_value(0) == std::vector<express::base>{kept_point});
     CHECK(file.instances_by_reference(kept_point.id()).size() == 1);
     CHECK(file.get_total_inverses(kept_point.id()) == 1);
-    for (auto& point : doomed_points) {
-        CHECK(file.instances_by_reference(point.id()).empty());
+    for (auto id : doomed_point_ids) {
+        CHECK(file.instances_by_reference(id).empty());
     }
-    CHECK(file.instances_by_reference(doomed_referencer.id()).empty());
+    CHECK(file.instances_by_reference(doomed_referencer_id).empty());
 }
 
 TEST_CASE("Only a 22-character GlobalId is indexed", "[ifcparse]") {
@@ -641,6 +688,13 @@ TEST_CASE("Paged and lazy parsing yield the same instances, attributes, inverses
     }
     big += source.substr(data_end);
     const auto path = std::filesystem::temp_directory_path() / "ifcopenshell_paged_parse_test.ifc";
+    struct fixture_cleanup {
+        std::filesystem::path path;
+        ~fixture_cleanup() {
+            std::error_code ignored;
+            std::filesystem::remove(path, ignored);
+        }
+    } cleanup{path};
     {
         std::ofstream out(path, std::ios::binary);
         out << big;
@@ -656,7 +710,9 @@ TEST_CASE("Paged and lazy parsing yield the same instances, attributes, inverses
     lazy.lazy_loading(true);
     REQUIRE(lazy.initialize(path.string()));
     REQUIRE(lazy.lazy_loading());
+#ifndef _WIN32
     std::filesystem::remove(path);
+#endif
 
     size_t count = 0;
     for (auto it = serial.begin(); it != serial.end(); ++it) {

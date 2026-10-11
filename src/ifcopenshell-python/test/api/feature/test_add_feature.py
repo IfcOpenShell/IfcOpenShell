@@ -87,7 +87,7 @@ class TestAddFeature(test.bootstrap.IFC4):
         ifcopenshell.api.geometry.edit_object_placement(self.file, product=opening, matrix=matrix1.copy(), is_si=False)
         ifcopenshell.api.feature.add_feature(self.file, feature=opening, element=wall)
         assert opening.ObjectPlacement.PlacementRelTo.PlacesObject[0] == wall
-        assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement), matrix1)
+        assert numpy.array_equal(ifcopenshell.util.placement.get_placement(opening.ObjectPlacement), matrix1)
 
     def test_not_updating_placement_if_placement_is_not_relative(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")

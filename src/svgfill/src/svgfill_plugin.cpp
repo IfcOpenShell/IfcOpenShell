@@ -63,6 +63,6 @@ void register_plugin(api& api) {
 }
 }
 
-BOOST_DLL_ALIAS(svgfill::linework_processing_plugin::plugin_abi, ifcopenshell_plugin_abi_v1)
+BOOST_DLL_ALIAS(svgfill::linework_processing_plugin::plugin_abi, ifcopenshell_plugin_abi_v2)
 BOOST_DLL_ALIAS(svgfill::linework_processing_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
 BOOST_DLL_ALIAS(svgfill::linework_processing_plugin::register_plugin, ifcopenshell_register_linework_processing_plugin_v1)

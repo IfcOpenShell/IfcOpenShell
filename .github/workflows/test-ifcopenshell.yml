@@ -44,7 +44,6 @@ jobs:
               - 'src/ifcedit/**'
               - 'src/ifcmcp/**'
               - 'src/ifcopenshell-python/**'
-              - '!src/ifcopenshell-python/docs/**'
               - 'src/ifcparse/**'
               - 'src/ifcpatch/**'
               - 'src/ifcquery/**'
@@ -120,7 +119,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2.24
         with:
           key: ubuntu-22.04-${{ runner.arch }}
-          # The prebuilt ccache 4.13.6 handles native CPU flags correctly across runners.
+          # Distro ccache is < 4.10, too old for the job summary, install from GitHub releases.
           install: binary
 
       # RTTI is only enabled by default in Debug builds of rocksdb.
@@ -131,7 +130,8 @@ jobs:
           git clone https://github.com/facebook/rocksdb --branch v9.11.2
           cd rocksdb
           mkdir build && cd build
-          # rocksdb is using ccache automatically.
+          # rocksdb autodetects ccache on PATH and uses it as a compiler launcher,
+          # so no need to pass CMAKE_<LANG>_COMPILER_LAUNCHER=ccache here.
           cmake .. \
             -G Ninja \
             -DFAIL_ON_WARNINGS=Off \
@@ -268,7 +268,7 @@ jobs:
                -DUSE_MMAP=On \
                -DUSE_CCACHE=ON \
                -DBUILD_SHARED_LIBS=${{ matrix.build_shared_libs == 'shared' && 'ON' || 'OFF' }} \
-               "-DSCHEMA_VERSIONS=2x3;4;4x3_add2" \
+               -DBUILD_ONLY_COMMON_SCHEMAS=ON \
                -DGLTF_SUPPORT=On \
                -DWITH_ROCKSDB=On \
                -DWITH_MANIFOLD=ON \
@@ -321,6 +321,8 @@ jobs:
           ERROR=0
           cd test
           python tests.py || fail "tests.py"
+          pytest -vv package/test_ifcopenshell_python_shared_libraries.py --not-bundled \
+            || fail "test_ifcopenshell_python_shared_libraries.py"
           cd ../src/ifcopenshell-python
           pip install -e ../ifcpatch --no-deps # Needed for sql.py tests.
           make test-parallel || fail "ifcopenshell-python"
